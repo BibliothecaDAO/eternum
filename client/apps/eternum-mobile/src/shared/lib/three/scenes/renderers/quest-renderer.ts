@@ -1,0 +1,157 @@
+import * as THREE from "three";
+import { BuildingTileRenderer } from "../tiles/building-tile-renderer";
+import { BuildingTileIndex } from "../tiles/tile-enums";
+import { ObjectRenderer } from "./base-object-renderer";
+import { QuestObject } from "./types";
+
+export class QuestRenderer extends ObjectRenderer<QuestObject> {
+  private buildingTileRenderer: BuildingTileRenderer;
+
+  constructor(scene: THREE.Scene) {
+    super(scene);
+    this.buildingTileRenderer = new BuildingTileRenderer(scene);
+  }
+
+  public addObject(object: QuestObject): void {
+    this.objects.set(object.id, object);
+    // Use Chest tile index for quests temporarily
+    this.buildingTileRenderer.addTileByIndex(object.col, object.row, BuildingTileIndex.Chest, true);
+  }
+
+  public updateObject(object: QuestObject): void {
+    const existingQuest = this.objects.get(object.id);
+
+    // Check if the quest has moved to a new position (unlikely but consistent API)
+    if (existingQuest && (existingQuest.col !== object.col || existingQuest.row !== object.row)) {
+      // If currently moving, don't start another movement
+      if (this.isObjectMoving(object.id)) {
+        return;
+      }
+
+      // Start movement animation from current position to new position
+      this.moveObject(object.id, object.col, object.row, 1000);
+    } else {
+      // Just update properties without position change
+      this.objects.set(object.id, object);
+      this.buildingTileRenderer.addTileByIndex(object.col, object.row, BuildingTileIndex.Chest, true);
+    }
+  }
+
+  public removeObject(objectId: number): void {
+    const quest = this.objects.get(objectId);
+    if (quest) {
+      this.buildingTileRenderer.removeTile(quest.col, quest.row);
+    }
+    this.objects.delete(objectId);
+  }
+
+  public updateObjectPosition(objectId: number, col: number, row: number): void {
+    const oldQuest = this.objects.get(objectId);
+    if (oldQuest) {
+      this.buildingTileRenderer.removeTile(oldQuest.col, oldQuest.row);
+    }
+
+    const quest = this.objects.get(objectId);
+    if (quest) {
+      quest.col = col;
+      quest.row = row;
+      this.buildingTileRenderer.addTileByIndex(col, row, BuildingTileIndex.Chest, true);
+    }
+  }
+
+  public setVisibleBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void {
+    this.visibleBounds = bounds;
+    this.buildingTileRenderer.setVisibleBounds(bounds);
+  }
+
+  public selectObject(objectId: number): void {
+    this.selectedObjectId = objectId;
+    const quest = this.objects.get(objectId);
+
+    if (quest) {
+      this.buildingTileRenderer.selectTile(quest.col, quest.row);
+    }
+  }
+
+  public deselectObject(): void {
+    this.buildingTileRenderer.deselectTile();
+    this.selectedObjectId = null;
+  }
+
+  public getObject(objectId: number): QuestObject | undefined {
+    return this.objects.get(objectId);
+  }
+
+  public getObjectsAtHex(col: number, row: number): QuestObject[] {
+    return Array.from(this.objects.values()).filter((obj) => obj.col === col && obj.row === row);
+  }
+
+  public getAllObjects(): QuestObject[] {
+    return Array.from(this.objects.values());
+  }
+
+  public getSelectedObjectId(): number | null {
+    return this.selectedObjectId;
+  }
+
+  public moveObject(objectId: number, targetCol: number, targetRow: number, duration: number = 1000): Promise<void> {
+    const quest = this.objects.get(objectId);
+    if (!quest) {
+      return Promise.resolve();
+    }
+
+    const startCol = quest.col;
+    const startRow = quest.row;
+
+    return this.buildingTileRenderer.moveTile(startCol, startRow, targetCol, targetRow, duration).then(() => {
+      // Update quest position after movement completes
+      quest.col = targetCol;
+      quest.row = targetRow;
+    });
+  }
+
+  public moveObjectAlongPath(
+    objectId: number,
+    path: Array<{ col: number; row: number }>,
+    stepDuration: number = 300,
+  ): Promise<void> {
+    const quest = this.objects.get(objectId);
+    if (!quest || path.length === 0) {
+      return Promise.resolve();
+    }
+
+    const startCol = quest.col;
+    const startRow = quest.row;
+    const finalHex = path[path.length - 1];
+
+    return this.buildingTileRenderer.moveTileAlongPath(startCol, startRow, path, stepDuration).then(() => {
+      // Update quest position after movement completes
+      quest.col = finalHex.col;
+      quest.row = finalHex.row;
+    });
+  }
+
+  public isObjectMoving(objectId: number): boolean {
+    const quest = this.objects.get(objectId);
+    if (!quest) return false;
+    return this.buildingTileRenderer.isTileMoving(quest.col, quest.row);
+  }
+
+  protected isHexVisible(col: number, row: number): boolean {
+    if (!this.visibleBounds) return true;
+    return (
+      col >= this.visibleBounds.minCol &&
+      col <= this.visibleBounds.maxCol &&
+      row >= this.visibleBounds.minRow &&
+      row <= this.visibleBounds.maxRow
+    );
+  }
+
+  public dispose(): void {
+    this.buildingTileRenderer.dispose();
+  }
+
+  public static disposeStaticAssets(): void {
+    // No longer needed
+  }
+}
