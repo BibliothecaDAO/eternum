@@ -1,8 +1,86 @@
-import { BuildingType, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BuildingType, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 
 /**
  * Component factory for creating reusable label UI elements
  */
+
+/**
+ * Building type to resource icon mapping
+ */
+export const BuildingTypeToIcon: Partial<Record<BuildingType, string>> = {
+  [BuildingType.ResourceWood]: "Wood",
+  [BuildingType.ResourceStone]: "Stone",
+  [BuildingType.ResourceCoal]: "Coal",
+  [BuildingType.ResourceCopper]: "Copper",
+  [BuildingType.ResourceObsidian]: "Obsidian",
+  [BuildingType.ResourceSilver]: "Silver",
+  [BuildingType.ResourceIronwood]: "Ironwood",
+  [BuildingType.ResourceColdIron]: "ColdIron",
+  [BuildingType.ResourceGold]: "Gold",
+  [BuildingType.ResourceHartwood]: "Hartwood",
+  [BuildingType.ResourceDiamonds]: "Diamonds",
+  [BuildingType.ResourceSapphire]: "Sapphire",
+  [BuildingType.ResourceRuby]: "Ruby",
+  [BuildingType.ResourceDeepCrystal]: "DeepCrystal",
+  [BuildingType.ResourceIgnium]: "Ignium",
+  [BuildingType.ResourceEtherealSilica]: "EtherealSilica",
+  [BuildingType.ResourceTrueIce]: "TrueIce",
+  [BuildingType.ResourceTwilightQuartz]: "TwilightQuartz",
+  [BuildingType.ResourceAlchemicalSilver]: "AlchemicalSilver",
+  [BuildingType.ResourceAdamantine]: "Adamantine",
+  [BuildingType.ResourceMithral]: "Mithral",
+  [BuildingType.ResourceDragonhide]: "Dragonhide",
+  [BuildingType.WorkersHut]: "House",
+  [BuildingType.Storehouse]: "Silo",
+  [BuildingType.ResourceWheat]: "Wheat",
+  [BuildingType.ResourceFish]: "Fish",
+  [BuildingType.ResourceDonkey]: "Donkey",
+  [BuildingType.ResourceLabor]: "Labor",
+  [BuildingType.ResourceCrossbowmanT1]: "Crossbowman",
+  [BuildingType.ResourceCrossbowmanT2]: "Crossbowman",
+  [BuildingType.ResourceCrossbowmanT3]: "Crossbowman",
+  [BuildingType.ResourcePaladinT1]: "Paladin",
+  [BuildingType.ResourcePaladinT2]: "Paladin",
+  [BuildingType.ResourcePaladinT3]: "Paladin",
+  [BuildingType.ResourceKnightT1]: "Knight",
+  [BuildingType.ResourceKnightT2]: "Knight",
+  [BuildingType.ResourceKnightT3]: "Knight",
+  [BuildingType.ResourceEssence]: "Essence",
+};
+
+/**
+ * Tier style configuration
+ */
+export const getTierStyle = (tier: number): string => {
+  switch (tier) {
+    case 1:
+      return "bg-gradient-to-b from-blue-500/30 to-blue-500/10 border-blue-400/40 text-blue-300 shadow-blue-500/10";
+    case 2:
+      return "bg-gradient-to-b from-emerald-500/30 to-emerald-500/10 border-emerald-400/40 text-emerald-300 shadow-emerald-500/10";
+    case 3:
+      return "!bg-purple-600 !text-white !border-purple-400 animate-pulse";
+    default:
+      return "bg-gradient-to-b from-gold/30 to-gold/10 border-gold/40 text-gold shadow-gold/10";
+  }
+};
+
+/**
+ * Get troop resource ID from category name
+ */
+export const getTroopResourceIdFromCategory = (category: string | null): number | null => {
+  if (!category) return null;
+
+  switch (category.toLowerCase()) {
+    case "knight":
+      return ResourcesIds.Knight;
+    case "crossbowman":
+      return ResourcesIds.Crossbowman;
+    case "paladin":
+      return ResourcesIds.Paladin;
+    default:
+      return null;
+  }
+};
 
 /**
  * Clean text by removing null characters and trimming whitespace
@@ -129,30 +207,62 @@ export function updateStaminaBar(staminaBar: HTMLElement, currentStamina: number
 export function createGuardArmyDisplay(
   guardArmies: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>,
 ): HTMLElement {
-  const guardContainer = document.createElement("div");
-  guardContainer.classList.add("flex", "flex-col", "gap-0.5", "mt-1");
-  guardContainer.setAttribute("data-component", "guard-armies");
+  const container = document.createElement("div");
+  container.classList.add("flex", "flex-row", "gap-1", "text-xxs", "overflow-x-auto", "text-gray-400");
+  container.setAttribute("data-component", "guard-armies");
+
+  if (guardArmies.length === 0) {
+    const noGuards = document.createElement("span");
+    noGuards.textContent = "No Guards";
+    noGuards.classList.add("italic");
+    container.appendChild(noGuards);
+    return container;
+  }
 
   guardArmies.forEach((guard) => {
     if (guard.count > 0) {
-      const guardRow = document.createElement("div");
-      guardRow.classList.add("flex", "items-center", "gap-1", "text-xxs");
+      const guardDiv = document.createElement("div");
+      guardDiv.classList.add("flex", "items-center", "gap-1", "rounded", "px-1.5", "py-0.5", "bg-black/40");
 
-      const guardIcon = document.createElement("span");
-      guardIcon.textContent = "🛡️";
-      guardIcon.classList.add("text-blue-400");
-      guardRow.appendChild(guardIcon);
+      const shieldIcon = document.createElement("span");
+      shieldIcon.textContent = "🛡️";
+      guardDiv.appendChild(shieldIcon);
 
-      const guardText = document.createElement("span");
-      guardText.classList.add("text-white", "font-mono");
-      guardText.textContent = `${guard.count}x T${guard.tier}`;
-      guardRow.appendChild(guardText);
+      const resourceId = getTroopResourceIdFromCategory(guard.category);
+      if (resourceId) {
+        const iconContainer = document.createElement("div");
+        iconContainer.classList.add("w-4", "h-4", "flex-shrink-0");
 
-      guardContainer.appendChild(guardRow);
+        const img = document.createElement("img");
+        img.src = `/images/resources/${resourceId}.png`;
+        img.classList.add("w-full", "h-full", "object-contain");
+        iconContainer.appendChild(img);
+        guardDiv.appendChild(iconContainer);
+      }
+
+      const countSpan = document.createElement("span");
+      countSpan.textContent = guard.count.toString();
+      countSpan.classList.add("font-semibold", "min-w-[1rem]", "text-center");
+      guardDiv.appendChild(countSpan);
+
+      const tierBadge = document.createElement("span");
+      tierBadge.textContent = `T${guard.tier}`;
+      tierBadge.classList.add(
+        "px-1",
+        "py-0.5",
+        "rounded",
+        "text-[10px]",
+        "font-bold",
+        "border",
+        ...getTierStyle(guard.tier).split(" "),
+      );
+      guardDiv.appendChild(tierBadge);
+
+      container.appendChild(guardDiv);
     }
   });
 
-  return guardContainer;
+  return container;
 }
 
 /**
@@ -161,28 +271,54 @@ export function createGuardArmyDisplay(
 export function createProductionDisplay(
   activeProductions: Array<{ buildingCount: number; buildingType: BuildingType }>,
 ): HTMLElement {
-  const productionContainer = document.createElement("div");
-  productionContainer.classList.add("flex", "flex-col", "gap-0.5", "mt-1");
-  productionContainer.setAttribute("data-component", "productions");
+  const container = document.createElement("div");
+  container.classList.add("flex", "flex-wrap", "items-center", "gap-2", "text-xxs", "py-1");
+  container.setAttribute("data-component", "productions");
+
+  if (activeProductions.length === 0) {
+    const noProduction = document.createElement("span");
+    noProduction.textContent = "No Active Production";
+    noProduction.classList.add("text-gray-400", "italic");
+    container.appendChild(noProduction);
+    return container;
+  }
 
   activeProductions.forEach((production) => {
-    const productionRow = document.createElement("div");
-    productionRow.classList.add("flex", "items-center", "gap-1", "text-xxs");
+    const productionDiv = document.createElement("div");
+    productionDiv.classList.add("flex", "items-center", "gap-1", "bg-black/40", "rounded", "px-1.5", "py-0.5");
 
-    const productionIcon = document.createElement("span");
-    productionIcon.textContent = "🏭";
-    productionIcon.classList.add("text-orange-400");
-    productionRow.appendChild(productionIcon);
+    const resourceName = BuildingTypeToIcon[production.buildingType];
+    if (resourceName) {
+      const iconContainer = document.createElement("div");
+      iconContainer.classList.add("w-4", "h-4", "flex-shrink-0");
 
-    const productionText = document.createElement("span");
-    productionText.classList.add("text-white", "font-mono");
-    productionText.textContent = `${production.buildingCount}x ${getBuildingDisplayName(production.buildingType)}`;
-    productionRow.appendChild(productionText);
+      const img = document.createElement("img");
 
-    productionContainer.appendChild(productionRow);
+      if (resourceName === "House") {
+        img.src = "/images/buildings/thumb/house.png";
+      } else if (resourceName === "Silo") {
+        img.src = "/images/buildings/thumb/silo.png";
+      } else {
+        const resourceId = ResourcesIds[resourceName as keyof typeof ResourcesIds];
+        if (resourceId) {
+          img.src = `/images/resources/${resourceId}.png`;
+        }
+      }
+
+      img.classList.add("w-full", "h-full", "object-contain");
+      iconContainer.appendChild(img);
+      productionDiv.appendChild(iconContainer);
+    }
+
+    const countSpan = document.createElement("span");
+    countSpan.textContent = `${production.buildingCount}`;
+    countSpan.classList.add("text-white", "font-semibold");
+    productionDiv.appendChild(countSpan);
+
+    container.appendChild(productionDiv);
   });
 
-  return productionContainer;
+  return container;
 }
 
 /**
@@ -202,12 +338,4 @@ export function getTroopDisplayName(troopType: TroopType, troopTier: TroopTier):
   };
 
   return `${typeNames[troopType] || "Unknown"} ${tierNames[troopTier] || ""}`;
-}
-
-/**
- * Get display name for building type
- */
-function getBuildingDisplayName(buildingType: BuildingType): string {
-  // This would need to be implemented based on your BuildingType enum
-  return `Building ${buildingType}`;
 }
