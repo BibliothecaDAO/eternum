@@ -951,6 +951,7 @@ export class HexagonMap {
       hexCoords: { col, row },
       owner: { address },
       entityId,
+      structureType,
     } = update;
 
     const normalized = new Position({ x: col, y: row }).getNormalized();
@@ -967,8 +968,8 @@ export class HexagonMap {
       row: normalized.y,
       owner: address || 0n,
       type: "structure",
+      structureType: structureType.toString(),
     };
-
     this.structureRenderer.updateObject(structure);
   }
 

@@ -1,7 +1,10 @@
-import { TroopTier, TroopType } from "@bibliothecadao/types";
+import { BuildingType, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { loggedInAccount } from "../helpers/utils";
+import { BuildingTileRenderer } from "./tiles/building-tile-renderer";
+import { BuildingTileIndex, getBuildingTileIndex } from "./tiles/tile-enums";
+import { UnitTilePosition, UnitTileRenderer } from "./tiles/unit-tile-renderer";
 import { getWorldPositionForTile, HEX_SIZE } from "./utils";
 
 export interface MapObject {
@@ -33,6 +36,7 @@ export interface StructureObject extends MapObject {
   type: "structure";
   structureType?: string;
   level?: number;
+  buildingType?: BuildingType;
 }
 
 export interface QuestObject extends MapObject {
@@ -50,7 +54,7 @@ export abstract class ObjectRenderer<T extends MapObject> {
   protected selectedObjectId: number | null = null;
   protected animationId: number | null = null;
   protected visibleBounds: { minCol: number; maxCol: number; minRow: number; maxRow: number } | null = null;
-  
+
   // Track objects that are currently moving to prevent conflicts
   protected movingObjects: Set<number> = new Set();
 
@@ -105,7 +109,7 @@ export abstract class ObjectRenderer<T extends MapObject> {
   public addObject(object: T): void {
     // Remove any existing object first to prevent duplicates
     this.removeObject(object.id);
-    
+
     this.objects.set(object.id, object);
     const sprite = this.createSprite(object);
     this.sprites.set(object.id, sprite);
@@ -126,7 +130,7 @@ export abstract class ObjectRenderer<T extends MapObject> {
         sprite.material.dispose();
       }
     }
-    
+
     this.sprites.delete(objectId);
     this.objects.delete(objectId);
     this.movingObjects.delete(objectId);
@@ -160,7 +164,7 @@ export abstract class ObjectRenderer<T extends MapObject> {
     };
 
     // Update army-specific properties if it's an army
-    if ('troopType' in object && 'troopTier' in object) {
+    if ("troopType" in object && "troopTier" in object) {
       (updatedObject as any).troopType = (object as any).troopType;
       (updatedObject as any).troopTier = (object as any).troopTier;
       (updatedObject as any).ownerName = (object as any).ownerName;
@@ -257,7 +261,7 @@ export abstract class ObjectRenderer<T extends MapObject> {
         const easeProgress = 1 - Math.pow(1 - progress, 3);
 
         sprite.position.lerpVectors(startPosition, endPosition, easeProgress);
-        
+
         // Update label position to follow sprite smoothly
         this.updateLabelPositionFromSprite(objectId);
 
@@ -375,7 +379,7 @@ export abstract class ObjectRenderer<T extends MapObject> {
   }
 
   public getObjectsAtHex(col: number, row: number): T[] {
-    return Array.from(this.objects.values()).filter(obj => obj.col === col && obj.row === row);
+    return Array.from(this.objects.values()).filter((obj) => obj.col === col && obj.row === row);
   }
 
   public selectObject(objectId: number): void {
@@ -497,72 +501,27 @@ export abstract class ObjectRenderer<T extends MapObject> {
 }
 
 export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
-  private static armyMaterial: THREE.SpriteMaterial | null = null;
-  private static armyTexture: THREE.Texture | null = null;
-  private static textureLoader = new THREE.TextureLoader();
   private labels: Map<number, CSS2DObject> = new Map();
+  private unitTileRenderer: UnitTileRenderer;
+
+  constructor(scene: THREE.Scene) {
+    super(scene);
+    this.unitTileRenderer = new UnitTileRenderer(scene);
+  }
 
   protected initializeMaterials(): void {
-    if (!ArmyRenderer.armyMaterial) {
-      this.loadArmyTexture();
-    }
-  }
-
-  private async loadArmyTexture(): Promise<void> {
-    try {
-      if (!ArmyRenderer.armyTexture) {
-        ArmyRenderer.armyTexture = await ArmyRenderer.textureLoader.loadAsync("/images/tiles/biomes-tiles.png");
-        ArmyRenderer.armyTexture.magFilter = THREE.LinearFilter;
-        ArmyRenderer.armyTexture.minFilter = THREE.LinearFilter;
-        ArmyRenderer.armyTexture.colorSpace = THREE.SRGBColorSpace;
-      }
-
-      const tileWidthWithGap = 256 + 1;
-      const tilesPerRow = Math.floor((ArmyRenderer.armyTexture.image.width + 1) / tileWidthWithGap);
-      const tileIndex = 15;
-
-      const tileUV = this.calculateTileUV(
-        tileIndex,
-        tilesPerRow,
-        ArmyRenderer.armyTexture.image.width,
-        ArmyRenderer.armyTexture.image.height,
-      );
-
-      ArmyRenderer.armyMaterial = new THREE.SpriteMaterial({
-        map: ArmyRenderer.armyTexture.clone(),
-        transparent: true,
-        alphaTest: 0.1,
-        opacity: 1.0,
-      });
-
-      ArmyRenderer.armyMaterial.map!.offset.set(tileUV.offsetX, tileUV.offsetY);
-      ArmyRenderer.armyMaterial.map!.repeat.set(tileUV.repeatX, tileUV.repeatY);
-    } catch (error) {
-      console.error("Failed to load army texture:", error);
-    }
-  }
-
-  private calculateTileUV(tileIndex: number, tilesPerRow: number, textureWidth: number, textureHeight: number) {
-    const tileX = tileIndex % tilesPerRow;
-    const tileY = Math.floor(tileIndex / tilesPerRow);
-
-    const tileWidth = 256;
-    const tileHeight = 304;
-    const tileGap = 1;
-    const tileWidthWithGap = tileWidth + tileGap;
-    const tileHeightWithGap = tileHeight + tileGap;
-
-    const repeatX = tileWidth / textureWidth;
-    const repeatY = tileHeight / textureHeight;
-
-    const offsetX = (tileX * tileWidthWithGap) / textureWidth;
-    const offsetY = 1 - ((tileY + 1) * tileHeightWithGap) / textureHeight;
-
-    return { offsetX, offsetY, repeatX, repeatY };
+    // No longer needed - tiles are handled by UnitTileRenderer
   }
 
   protected createSprite(army: ArmyObject): THREE.Sprite {
-    const sprite = new THREE.Sprite(ArmyRenderer.armyMaterial!);
+    // Create invisible sprite for interaction - visual representation handled by UnitTileRenderer
+    const material = new THREE.SpriteMaterial({
+      transparent: true,
+      opacity: 0,
+    });
+
+    const sprite = new THREE.Sprite(material);
+    sprite.userData.hasIndividualMaterial = true;
 
     const spriteScale = HEX_SIZE * 3.2;
     sprite.scale.set(spriteScale, spriteScale * 1.15, 1);
@@ -578,14 +537,14 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
 
   public addObject(object: ArmyObject): void {
     super.addObject(object);
-    // Create label for the army
     this.createLabel(object);
+    this.syncUnitTile(object);
   }
 
   public updateObject(object: ArmyObject): void {
-    // Update existing label content instead of recreating
     this.updateLabelContent(object);
     super.updateObject(object);
+    this.syncUnitTile(object);
   }
 
   private updateLabelContent(army: ArmyObject): void {
@@ -594,7 +553,7 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
 
     const playerAddress = loggedInAccount();
     const isPlayerArmy = army.owner && army.owner.toString() === playerAddress?.toString();
-    
+
     // Update ownership colors
     let backgroundColor: string;
     let borderColor: string;
@@ -664,12 +623,15 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
     // Update stamina if present
     const staminaElement = label.element.querySelector('[data-component="stamina-info"] span:last-child');
     if (staminaElement && army.currentStamina !== undefined) {
-      staminaElement.textContent = `${army.currentStamina}${army.maxStamina ? `/${army.maxStamina}` : ''}`;
+      staminaElement.textContent = `${army.currentStamina}${army.maxStamina ? `/${army.maxStamina}` : ""}`;
     }
   }
 
   public removeObject(objectId: number): void {
-    // Remove label
+    const army = this.objects.get(objectId);
+    if (army) {
+      this.unitTileRenderer.removeTile(army.col, army.row);
+    }
     this.removeLabel(objectId);
     super.removeObject(objectId);
   }
@@ -694,7 +656,7 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
       "duration-700",
       "ease-in-out",
       "h-auto",
-      "has-[.opacity-0]:h-12"
+      "has-[.opacity-0]:h-12",
     );
 
     // Apply desktop-style ownership colors
@@ -761,7 +723,7 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
     const ownerText = document.createElement("span");
     ownerText.classList.add("truncate", "text-xxs");
     ownerText.style.color = "inherit";
-    
+
     if (army.ownerName && army.ownerName !== "test") {
       ownerText.textContent = army.ownerName;
     } else if (army.isDaydreamsAgent) {
@@ -771,7 +733,7 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
     } else {
       ownerText.textContent = "Army";
     }
-    
+
     ownerDisplay.appendChild(ownerText);
     textContainer.appendChild(ownerDisplay);
 
@@ -789,7 +751,7 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
       const troopText = document.createElement("span");
       troopText.classList.add("text-white", "font-mono");
       troopText.setAttribute("data-role", "count");
-      
+
       const troopName = this.getTroopDisplayName(army.troopType, army.troopTier);
       const troopCountText = army.troopCount ? `${army.troopCount}x ${troopName}` : troopName;
       troopText.textContent = troopCountText;
@@ -810,7 +772,7 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
       staminaInfo.appendChild(staminaIcon);
 
       const staminaText = document.createElement("span");
-      staminaText.textContent = `${army.currentStamina}${army.maxStamina ? `/${army.maxStamina}` : ''}`;
+      staminaText.textContent = `${army.currentStamina}${army.maxStamina ? `/${army.maxStamina}` : ""}`;
       staminaText.classList.add("text-white", "font-mono");
       staminaInfo.appendChild(staminaText);
 
@@ -825,7 +787,7 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
     // Position the label above the army sprite
     getWorldPositionForTile({ col: army.col, row: army.row }, true, this.tempVector3);
     label.position.set(this.tempVector3.x, 2.1, this.tempVector3.z - HEX_SIZE * 2.25);
-    
+
     // Store entityId in userData for identification
     label.userData.entityId = army.id;
 
@@ -835,6 +797,10 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
     if (this.isHexVisible(army.col, army.row)) {
       this.scene.add(label);
     }
+  }
+
+  private syncUnitTile(army: ArmyObject): void {
+    this.unitTileRenderer.addTile(army.col, army.row, army.troopType, army.troopTier, false, true);
   }
 
   private removeLabel(armyId: number): void {
@@ -870,6 +836,23 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
     this.visibleBounds = bounds;
     this.updateObjectVisibility();
     this.updateLabelVisibility();
+    this.unitTileRenderer.setVisibleBounds(bounds);
+  }
+
+  public getUnitTileRenderer(): UnitTileRenderer {
+    return this.unitTileRenderer;
+  }
+
+  public updateAllUnitTiles(): void {
+    const unitTilePositions: UnitTilePosition[] = Array.from(this.objects.values()).map((army) => ({
+      col: army.col,
+      row: army.row,
+      troopType: army.troopType,
+      troopTier: army.troopTier,
+      isExplored: true,
+    }));
+
+    this.unitTileRenderer.updateTilesForHexes(unitTilePositions);
   }
 
   private updateLabelVisibility(): void {
@@ -894,7 +877,8 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
   }
 
   protected getSharedMaterial(_objectType: string): THREE.SpriteMaterial {
-    return ArmyRenderer.armyMaterial!;
+    // Return transparent material since visual representation is handled by UnitTileRenderer
+    return new THREE.SpriteMaterial({ transparent: true, opacity: 0 });
   }
 
   protected updateLabelPosition(objectId: number, col: number, row: number): void {
@@ -914,22 +898,31 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
     }
   }
 
-  // Override to implement smooth label following for armies
+  public updateObjectPosition(objectId: number, col: number, row: number): void {
+    const oldArmy = this.objects.get(objectId);
+    if (oldArmy) {
+      this.unitTileRenderer.removeTile(oldArmy.col, oldArmy.row);
+    }
+
+    super.updateObjectPosition(objectId, col, row);
+
+    const army = this.objects.get(objectId);
+    if (army) {
+      this.syncUnitTile(army);
+    }
+  }
+
   protected updateLabelPositionFromSprite(objectId: number): void {
     const label = this.labels.get(objectId);
     const sprite = this.sprites.get(objectId);
     if (label && sprite) {
-      // Copy sprite position and adjust for label offset
       label.position.copy(sprite.position);
-      label.position.y = 2.1; // Fixed height above ground
-      label.position.z += HEX_SIZE * 0.825 - HEX_SIZE * 2.25; // Adjust for sprite vs label offset difference
+      label.position.y = 2.1;
+      label.position.z += HEX_SIZE * 0.825 - HEX_SIZE * 2.25;
     }
   }
 
-
-
   public dispose(): void {
-    // Remove all labels
     this.labels.forEach((label) => {
       if (label.parent) {
         this.scene.remove(label);
@@ -940,92 +933,32 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
     });
     this.labels.clear();
 
+    this.unitTileRenderer.dispose();
     super.dispose();
-  }
-
-  public static disposeStaticAssets(): void {
-    if (ArmyRenderer.armyMaterial) {
-      ArmyRenderer.armyMaterial.dispose();
-      if (ArmyRenderer.armyMaterial.map) {
-        ArmyRenderer.armyMaterial.map.dispose();
-      }
-      ArmyRenderer.armyMaterial = null;
-    }
-    if (ArmyRenderer.armyTexture) {
-      ArmyRenderer.armyTexture.dispose();
-      ArmyRenderer.armyTexture = null;
-    }
   }
 }
 
 export class StructureRenderer extends ObjectRenderer<StructureObject> {
-  private static structureMaterial: THREE.SpriteMaterial | null = null;
-  private static structureTexture: THREE.Texture | null = null;
-  private static textureLoader = new THREE.TextureLoader();
+  private buildingTileRenderer: BuildingTileRenderer;
+
+  constructor(scene: THREE.Scene) {
+    super(scene);
+    this.buildingTileRenderer = new BuildingTileRenderer(scene);
+  }
 
   protected initializeMaterials(): void {
-    if (!StructureRenderer.structureMaterial) {
-      this.loadStructureTexture();
-    }
-  }
-
-  private async loadStructureTexture(): Promise<void> {
-    try {
-      if (!StructureRenderer.structureTexture) {
-        StructureRenderer.structureTexture = await StructureRenderer.textureLoader.loadAsync(
-          "/images/tiles/biomes-tiles.png",
-        );
-        StructureRenderer.structureTexture.magFilter = THREE.LinearFilter;
-        StructureRenderer.structureTexture.minFilter = THREE.LinearFilter;
-        StructureRenderer.structureTexture.colorSpace = THREE.SRGBColorSpace;
-      }
-
-      const tileWidthWithGap = 256 + 1;
-      const tilesPerRow = Math.floor((StructureRenderer.structureTexture.image.width + 1) / tileWidthWithGap);
-      const tileIndex = 14;
-
-      const tileUV = this.calculateTileUV(
-        tileIndex,
-        tilesPerRow,
-        StructureRenderer.structureTexture.image.width,
-        StructureRenderer.structureTexture.image.height,
-      );
-
-      StructureRenderer.structureMaterial = new THREE.SpriteMaterial({
-        map: StructureRenderer.structureTexture.clone(),
-        transparent: true,
-        alphaTest: 0.1,
-        opacity: 1.0,
-      });
-
-      StructureRenderer.structureMaterial.map!.offset.set(tileUV.offsetX, tileUV.offsetY);
-      StructureRenderer.structureMaterial.map!.repeat.set(tileUV.repeatX, tileUV.repeatY);
-    } catch (error) {
-      console.error("Failed to load structure texture:", error);
-    }
-  }
-
-  private calculateTileUV(tileIndex: number, tilesPerRow: number, textureWidth: number, textureHeight: number) {
-    const tileX = tileIndex % tilesPerRow;
-    const tileY = Math.floor(tileIndex / tilesPerRow);
-
-    const tileWidth = 256;
-    const tileHeight = 304;
-    const tileGap = 1;
-    const tileWidthWithGap = tileWidth + tileGap;
-    const tileHeightWithGap = tileHeight + tileGap;
-
-    const repeatX = tileWidth / textureWidth;
-    const repeatY = tileHeight / textureHeight;
-
-    const offsetX = (tileX * tileWidthWithGap) / textureWidth;
-    const offsetY = 1 - ((tileY + 1) * tileHeightWithGap) / textureHeight;
-
-    return { offsetX, offsetY, repeatX, repeatY };
+    // No longer needed - tiles are handled by BuildingTileRenderer
   }
 
   protected createSprite(structure: StructureObject): THREE.Sprite {
-    const sprite = new THREE.Sprite(StructureRenderer.structureMaterial!);
+    // Create invisible sprite for interaction - visual representation handled by BuildingTileRenderer
+    const material = new THREE.SpriteMaterial({
+      transparent: true,
+      opacity: 0,
+    });
+
+    const sprite = new THREE.Sprite(material);
+    sprite.userData.hasIndividualMaterial = true;
 
     const spriteScale = HEX_SIZE * 3.2;
     sprite.scale.set(spriteScale, spriteScale * 1.15, 1);
@@ -1044,21 +977,77 @@ export class StructureRenderer extends ObjectRenderer<StructureObject> {
   }
 
   protected getSharedMaterial(_objectType: string): THREE.SpriteMaterial {
-    return StructureRenderer.structureMaterial!;
+    // Return transparent material since visual representation is handled by BuildingTileRenderer
+    return new THREE.SpriteMaterial({ transparent: true, opacity: 0 });
   }
 
-  public static disposeStaticAssets(): void {
-    if (StructureRenderer.structureMaterial) {
-      StructureRenderer.structureMaterial.dispose();
-      if (StructureRenderer.structureMaterial.map) {
-        StructureRenderer.structureMaterial.map.dispose();
-      }
-      StructureRenderer.structureMaterial = null;
+  public addObject(object: StructureObject): void {
+    super.addObject(object);
+    this.syncBuildingTile(object);
+  }
+
+  public updateObject(object: StructureObject): void {
+    super.updateObject(object);
+    this.syncBuildingTile(object);
+  }
+
+  public removeObject(objectId: number): void {
+    const structure = this.objects.get(objectId);
+    if (structure) {
+      this.buildingTileRenderer.removeTile(structure.col, structure.row);
     }
-    if (StructureRenderer.structureTexture) {
-      StructureRenderer.structureTexture.dispose();
-      StructureRenderer.structureTexture = null;
+    super.removeObject(objectId);
+  }
+
+  public updateObjectPosition(objectId: number, col: number, row: number): void {
+    const oldStructure = this.objects.get(objectId);
+    if (oldStructure) {
+      this.buildingTileRenderer.removeTile(oldStructure.col, oldStructure.row);
     }
+
+    super.updateObjectPosition(objectId, col, row);
+
+    const structure = this.objects.get(objectId);
+    if (structure) {
+      this.syncBuildingTile(structure);
+    }
+  }
+
+  private syncBuildingTile(structure: StructureObject): void {
+    const tileIndex = this.getTileIndexFromStructure(structure);
+    this.buildingTileRenderer.addTileByIndex(structure.col, structure.row, tileIndex, true);
+  }
+
+  private getTileIndexFromStructure(structure: StructureObject): BuildingTileIndex {
+    const structureType = structure.structureType ? (parseInt(structure.structureType) as StructureType) : undefined;
+    const buildingType = structure.buildingType;
+    const level = structure.level;
+
+    return getBuildingTileIndex(structureType, buildingType, level);
+  }
+
+  public getBuildingTileRenderer(): BuildingTileRenderer {
+    return this.buildingTileRenderer;
+  }
+
+  public updateAllBuildingTiles(): void {
+    this.buildingTileRenderer.clearTiles();
+
+    Array.from(this.objects.values()).forEach((structure) => {
+      const tileIndex = this.getTileIndexFromStructure(structure);
+      this.buildingTileRenderer.addTileByIndex(structure.col, structure.row, tileIndex, true);
+    });
+  }
+
+  public setVisibleBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void {
+    this.visibleBounds = bounds;
+    this.updateObjectVisibility();
+    this.buildingTileRenderer.setVisibleBounds(bounds);
+  }
+
+  public dispose(): void {
+    this.buildingTileRenderer.dispose();
+    super.dispose();
   }
 }
 
