@@ -23,7 +23,7 @@ import { createHexagonShape } from "./hexagon-geometry";
 import { HighlightRenderer } from "./highlight-renderer";
 import { ArmyObject, ArmyRenderer, QuestRenderer, StructureObject, StructureRenderer } from "./object-renderer";
 import { SelectionManager } from "./selection-manager";
-import { TilePosition, TileRenderer } from "./tiles/tile-renderer";
+import { BiomeTileRenderer, BiomeTilePosition } from "./tiles/biome-tile-renderer";
 import { getHexagonCoordinates, getWorldPositionForHex, HEX_SIZE } from "./utils";
 
 export class HexagonMap {
