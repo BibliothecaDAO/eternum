@@ -60,6 +60,9 @@ export class HexagonMap {
   private lastChunkX: number = -9999;
   private lastChunkZ: number = -9999;
 
+  private performanceMetrics: Map<string, number[]> = new Map();
+  private chunkUpdateCount: number = 0;
+
   private static readonly CHUNK_LOAD_RADIUS_X = 2;
   private static readonly CHUNK_LOAD_RADIUS_Z = 3;
   private static readonly CHUNK_SIZE = 5;
@@ -124,6 +127,7 @@ export class HexagonMap {
 
     this.GUIFolder = GUIManager.addFolder(folderName);
     this.GUIFolder.add(this, "moveCameraToColRow");
+    this.GUIFolder.add(this, "getPerformanceSummary").name("Performance Summary");
   }
 
   private initializeStaticAssets(): void {
@@ -157,6 +161,9 @@ export class HexagonMap {
   }
 
   private async updateVisibleHexes(centerChunkX: number, centerChunkZ: number): Promise<void> {
+    const updateStartTime = performance.now();
+    console.log(`[CHUNK-TIMING] Starting chunk update (${centerChunkX}, ${centerChunkZ})`);
+
     if (this.isLoadingChunks) {
       this.pendingChunkUpdate = { chunkX: centerChunkX, chunkZ: centerChunkZ };
       return;
@@ -165,7 +172,9 @@ export class HexagonMap {
     this.isLoadingChunks = true;
 
     try {
+      const clearStartTime = performance.now();
       this.visibleHexes.clear();
+      console.log(`[CHUNK-TIMING] Clear visible hexes: ${(performance.now() - clearStartTime).toFixed(2)}ms`);
 
       const radiusX = this.chunkLoadRadiusX;
       const radiusZ = this.chunkLoadRadiusZ;
@@ -174,8 +183,13 @@ export class HexagonMap {
       );
 
       const chunkKey = `${centerChunkZ * HexagonMap.CHUNK_SIZE},${centerChunkX * HexagonMap.CHUNK_SIZE}`;
-      await this.computeTileEntities(chunkKey);
+      const entityFetchStartTime = performance.now();
+      this.computeTileEntities(chunkKey);
+      const entityFetchTime = performance.now() - entityFetchStartTime;
+      console.log(`[CHUNK-TIMING] Compute tile entities: ${entityFetchTime.toFixed(2)}ms`);
+      this.recordPerformanceMetric("Compute Tile Entities", entityFetchTime);
 
+      const loadHexesStartTime = performance.now();
       for (let x = centerChunkX - radiusX; x <= centerChunkX + radiusX; x++) {
         for (let z = centerChunkZ - radiusZ; z <= centerChunkZ + radiusZ; z++) {
           if (this.isChunkInBounds(x, z)) {
@@ -185,7 +199,9 @@ export class HexagonMap {
           }
         }
       }
+      console.log(`[CHUNK-TIMING] Load chunk hexes: ${(performance.now() - loadHexesStartTime).toFixed(2)}ms`);
 
+      const boundsCalcStartTime = performance.now();
       if (this.visibleHexes.size > 0) {
         const hexArray = Array.from(this.visibleHexes).map((hexString) => {
           const [col, row] = hexString.split(",").map(Number);
@@ -203,11 +219,25 @@ export class HexagonMap {
       } else {
         console.log("No visible hexes loaded");
       }
+      console.log(`[CHUNK-TIMING] Bounds calculation: ${(performance.now() - boundsCalcStartTime).toFixed(2)}ms`);
       console.log("=== End update ===\n");
 
+      const renderStartTime = performance.now();
       this.renderHexes();
+      const renderTime = performance.now() - renderStartTime;
+      console.log(`[CHUNK-TIMING] Render hexes: ${renderTime.toFixed(2)}ms`);
+      this.recordPerformanceMetric("Render Hexes", renderTime);
     } finally {
       this.isLoadingChunks = false;
+      const totalTime = performance.now() - updateStartTime;
+      console.log(`[CHUNK-TIMING] Total chunk update time: ${totalTime.toFixed(2)}ms`);
+      this.recordPerformanceMetric("Total Chunk Update", totalTime);
+
+      this.chunkUpdateCount++;
+      if (this.chunkUpdateCount % 3 === 0) {
+        console.log(`[CHUNK-TIMING] Completed ${this.chunkUpdateCount} chunk updates. Performance summary:`);
+        this.getPerformanceSummary();
+      }
 
       if (this.pendingChunkUpdate) {
         const { chunkX, chunkZ } = this.pendingChunkUpdate;
@@ -240,11 +270,14 @@ export class HexagonMap {
   }
 
   private renderHexes(): void {
+    const cleanupStartTime = performance.now();
     if (this.hexagonMesh) {
       this.scene.remove(this.hexagonMesh);
       this.hexagonMesh.dispose();
     }
+    console.log(`[RENDER-TIMING] Cleanup old mesh: ${(performance.now() - cleanupStartTime).toFixed(2)}ms`);
 
+    const prepareStartTime = performance.now();
     const allVisibleHexes = Array.from(this.visibleHexes).map((hexString) => {
       const [col, row] = hexString.split(",").map(Number);
       return { col, row, hexString };
@@ -261,7 +294,11 @@ export class HexagonMap {
     this.hexagonMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(instanceCount * 3), 3);
 
     allVisibleHexes.sort((a, b) => b.row - a.row);
+    console.log(
+      `[RENDER-TIMING] Prepare mesh (${instanceCount} hexes): ${(performance.now() - prepareStartTime).toFixed(2)}ms`,
+    );
 
+    const instanceSetupStartTime = performance.now();
     let index = 0;
     const tilePositions: TilePosition[] = [];
 
@@ -284,25 +321,40 @@ export class HexagonMap {
 
       index++;
     });
+    const instanceSetupTime = performance.now() - instanceSetupStartTime;
+    console.log(`[RENDER-TIMING] Setup instances: ${instanceSetupTime.toFixed(2)}ms`);
+    this.recordPerformanceMetric("Setup Instances", instanceSetupTime);
 
+    const addToSceneStartTime = performance.now();
     if (this.hexagonMesh!.instanceColor) {
       this.hexagonMesh!.instanceColor.needsUpdate = true;
     }
 
     this.scene.add(this.hexagonMesh);
-    this.tileRenderer.renderTilesForHexes(tilePositions);
+    console.log(`[RENDER-TIMING] Add to scene: ${(performance.now() - addToSceneStartTime).toFixed(2)}ms`);
 
+    const tileRenderStartTime = performance.now();
+    this.tileRenderer.renderTilesForHexes(tilePositions);
+    const tileRenderTime = performance.now() - tileRenderStartTime;
+    console.log(`[RENDER-TIMING] Render tiles: ${tileRenderTime.toFixed(2)}ms`);
+    this.recordPerformanceMetric("Render Tiles", tileRenderTime);
+
+    const boundsUpdateStartTime = performance.now();
     const bounds = this.getMapBounds();
     this.armyRenderer.setVisibleBounds(bounds);
     this.structureRenderer.setVisibleBounds(bounds);
     this.questRenderer.setVisibleBounds(bounds);
+    console.log(`[RENDER-TIMING] Update bounds: ${(performance.now() - boundsUpdateStartTime).toFixed(2)}ms`);
   }
 
   public updateChunkLoading(cameraPosition: THREE.Vector3, force: boolean = false): void {
+    const chunkLoadStartTime = performance.now();
+
     if (this.isLoadingChunks && !force) {
       return;
     }
 
+    const coordCalcStartTime = performance.now();
     const hexRadius = HEX_SIZE;
     const hexHeight = hexRadius * 2;
     const hexWidth = hexHeight * 1.6;
@@ -315,12 +367,14 @@ export class HexagonMap {
 
     const chunkX = Math.floor(col / HexagonMap.CHUNK_SIZE);
     const chunkZ = Math.floor(row / HexagonMap.CHUNK_SIZE);
+    console.log(`[CHUNK-TIMING] Coordinate calculations: ${(performance.now() - coordCalcStartTime).toFixed(2)}ms`);
 
     if (chunkX !== this.lastChunkX || chunkZ !== this.lastChunkZ || force) {
       console.log(
-        `Moving from chunk (${this.lastChunkX}, ${this.lastChunkZ}) to chunk (${chunkX}, ${chunkZ})${force ? " (forced)" : ""}`,
+        `[CHUNK-TIMING] Moving from chunk (${this.lastChunkX}, ${this.lastChunkZ}) to chunk (${chunkX}, ${chunkZ})${force ? " (forced)" : ""}`,
       );
       console.log(`Camera at (${cameraPosition.x.toFixed(2)}, ${cameraPosition.z.toFixed(2)}) -> Hex (${col}, ${row})`);
+      console.log(`[CHUNK-TIMING] Chunk loading check: ${(performance.now() - chunkLoadStartTime).toFixed(2)}ms`);
       this.updateVisibleHexes(chunkX, chunkZ).catch((error) => {
         console.error("Error updating visible hexes:", error);
       });
@@ -1028,5 +1082,38 @@ export class HexagonMap {
 
   public isArmySelectable(armyId: number): boolean {
     return !this.pendingArmyMovements.has(armyId) && !this.armyRenderer.isObjectMoving(armyId);
+  }
+
+  private recordPerformanceMetric(operation: string, duration: number): void {
+    if (!this.performanceMetrics.has(operation)) {
+      this.performanceMetrics.set(operation, []);
+    }
+    const metrics = this.performanceMetrics.get(operation)!;
+    metrics.push(duration);
+
+    // Keep only last 10 measurements to avoid memory bloat
+    if (metrics.length > 10) {
+      metrics.shift();
+    }
+  }
+
+  public getPerformanceSummary(): void {
+    console.log("\n=== CHUNK PERFORMANCE SUMMARY ===");
+
+    this.performanceMetrics.forEach((durations, operation) => {
+      if (durations.length === 0) return;
+
+      const avg = durations.reduce((sum, d) => sum + d, 0) / durations.length;
+      const max = Math.max(...durations);
+      const min = Math.min(...durations);
+      const latest = durations[durations.length - 1];
+
+      console.log(`${operation}:`);
+      console.log(
+        `  Latest: ${latest.toFixed(2)}ms | Avg: ${avg.toFixed(2)}ms | Min: ${min.toFixed(2)}ms | Max: ${max.toFixed(2)}ms`,
+      );
+    });
+
+    console.log("=== END PERFORMANCE SUMMARY ===\n");
   }
 }

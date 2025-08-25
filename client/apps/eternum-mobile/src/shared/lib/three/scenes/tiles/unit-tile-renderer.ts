@@ -53,9 +53,7 @@ export class UnitTileRenderer extends BaseTileRenderer<UnitTileIndex> {
 
     let tileId: UnitTileIndex;
 
-    if (isDonkey) {
-      tileId = UnitTileIndex.Donkey;
-    } else if (troopType && troopTier) {
+    if (troopType && troopTier) {
       tileId = getTroopTileIndex(troopType, troopTier);
     } else {
       return;
@@ -114,9 +112,7 @@ export class UnitTileRenderer extends BaseTileRenderer<UnitTileIndex> {
           const currentTileId = this.getTileIdFromSprite(existingSprite);
           let expectedTileId: UnitTileIndex;
 
-          if (hex.isDonkey) {
-            expectedTileId = UnitTileIndex.Donkey;
-          } else if (hex.troopType && hex.troopTier) {
+          if (hex.troopType && hex.troopTier) {
             expectedTileId = getTroopTileIndex(hex.troopType, hex.troopTier);
           } else {
             return;

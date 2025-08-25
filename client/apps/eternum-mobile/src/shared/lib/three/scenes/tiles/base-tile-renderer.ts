@@ -113,15 +113,15 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
     row: number,
     isOverlay: boolean = false,
   ): void {
-    const prototypeSprite = this.prototypeSprites.get(tileId);
+    const material = this.materials.get(tileId);
 
-    if (!prototypeSprite) {
-      console.warn(`Prototype sprite for tileId: ${tileId} not found in ${this.constructor.name}`);
+    if (!material) {
+      console.warn(`Material for tileId: ${tileId} not found in ${this.constructor.name}`);
       return;
     }
 
-    const sprite = prototypeSprite.clone();
-
+    const sprite = new THREE.Sprite(material);
+    this.configureSpriteScale(sprite, tileId);
     this.configureSpritePosition(sprite, position, row, isOverlay);
 
     sprite.renderOrder = Math.max(BaseTileRenderer.BASE_RENDER_ORDER + row, 1) + (isOverlay ? 1000 : 0);
@@ -150,10 +150,17 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
   }
 
   public clearTiles(): void {
+    const clearStartTime = performance.now();
+    const spriteCount = this.sprites.size;
     this.sprites.forEach((sprite) => {
       this.scene.remove(sprite);
     });
     this.sprites.clear();
+    if (spriteCount > 0) {
+      console.log(
+        `[TILE-TIMING] Cleared ${spriteCount} sprites in ${(performance.now() - clearStartTime).toFixed(2)}ms`,
+      );
+    }
   }
 
   public removeTile(col: number, row: number): void {
