@@ -110,6 +110,9 @@ export default class InstancedModel {
         }
         const tmp = new InstancedMesh(child.geometry, material, count) as AnimatedInstancedMesh;
         tmp.renderOrder = 10;
+        // Preserve the GLTF child local transform (rotation/scale) so instances render correctly
+        // We will combine this base transform with the per-instance transform in setMatrixAt
+        (tmp.userData as any).baseMatrix = child.matrix.clone();
         const biomeMesh = child;
         if (gltf.animations.length > 0) {
           if (
@@ -197,7 +200,15 @@ export default class InstancedModel {
         // Guard against exceeding instanced capacity
         const capacity = (child.instanceMatrix as any).count ?? 0;
         if (index < capacity) {
-          child.setMatrixAt(index, matrix);
+          // Combine the instance matrix (position/rotation for the instance)
+          // with the GLTF child base transform (rotation/scale) to preserve authoring transforms.
+          const base: Matrix4 | undefined = (child.userData as any)?.baseMatrix;
+          if (base) {
+            instanceMatrix.copy(matrix).multiply(base);
+            child.setMatrixAt(index, instanceMatrix);
+          } else {
+            child.setMatrixAt(index, matrix);
+          }
         }
       }
     });

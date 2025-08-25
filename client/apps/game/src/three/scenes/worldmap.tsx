@@ -1381,8 +1381,9 @@ export default class WorldmapScene extends HexagonScene {
     const startRow = parseInt(chunkKey.split(",")[0]);
     const startCol = parseInt(chunkKey.split(",")[1]);
     const chunks: string[] = [];
-    for (let i = -this.renderChunkSize.width / 2; i <= this.renderChunkSize.width / 2; i += this.chunkSize) {
-      for (let j = -this.renderChunkSize.width / 2; j <= this.renderChunkSize.height / 2; j += this.chunkSize) {
+    // Cover full visible rectangle: rows span renderChunkSize.height, cols span renderChunkSize.width
+    for (let i = -this.renderChunkSize.height / 2; i <= this.renderChunkSize.height / 2; i += this.chunkSize) {
+      for (let j = -this.renderChunkSize.width / 2; j <= this.renderChunkSize.width / 2; j += this.chunkSize) {
         const { x, z } = getWorldPositionForHex({ row: startRow + i, col: startCol + j });
         const { chunkX, chunkZ } = this.worldToChunkCoordinates(x, z);
         const _chunkKey = `${chunkZ * this.chunkSize},${chunkX * this.chunkSize}`;
@@ -1837,11 +1838,10 @@ export default class WorldmapScene extends HexagonScene {
       this.removeCachedMatricesForChunk(startRow, startCol);
     }
 
-    // Load surrounding chunks for better UX (3x3 grid)
-    const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
-
-    // Start loading all surrounding chunks (they will deduplicate automatically)
-    surroundingChunks.forEach((chunk) => this.computeTileEntities(chunk));
+    // Load all chunks covering the full visible area (matches renderChunkSize)
+    const visibleChunks = this.getChunksAround(chunkKey);
+    // Start loading all visible chunks (deduplicated by pending/fetched maps)
+    visibleChunks.forEach((chunk) => this.computeTileEntities(chunk));
 
     // (Reverted) Do not force-wait center chunk fetch here
 
