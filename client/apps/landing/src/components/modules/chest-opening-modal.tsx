@@ -1,7 +1,7 @@
 import chestOpeningCommon from "@/assets/videos/chest-opening/common.mp4";
 // todo: fix this
-import chestOpeningLegendary from "@/assets/videos/chest-opening/epic.mp4";
-import chestOpeningEpic from "@/assets/videos/chest-opening/legendary.mp4";
+import chestOpeningEpic from "@/assets/videos/chest-opening/epic.mp4";
+import chestOpeningLegendary from "@/assets/videos/chest-opening/legendary.mp4";
 import chestOpeningRare from "@/assets/videos/chest-opening/rare.mp4";
 import chestOpeningUncommon from "@/assets/videos/chest-opening/uncommon.mp4";
 

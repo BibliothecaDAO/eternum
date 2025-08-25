@@ -327,7 +327,7 @@ fi
 
 if [ "$COMMAND" = "torii" ]; then
     echo -e "\n${YELLOW}► Setting up Torii indexer...${NC}"
-    slot deployments create -t epic $PROJECT_NAME torii \
+    slot deployments create -t basic $PROJECT_NAME torii \
         --version v1.2.1 \
         --world $WORLD \
         --rpc $RPC_URL \
