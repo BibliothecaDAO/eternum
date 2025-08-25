@@ -90,8 +90,8 @@ pub fn MOCK_TROOP_STAMINA_CONFIG() -> TroopStaminaConfig {
         stamina_knight_max: 120,
         stamina_paladin_max: 120,
         stamina_crossbowman_max: 140,
-        stamina_attack_req: 30,
-        stamina_attack_max: 60,
+        stamina_attack_req: 50,
+        stamina_defense_req: 60,
         stamina_explore_wheat_cost: 2,
         stamina_explore_fish_cost: 1,
         stamina_explore_stamina_cost: 30, // 30 stamina per hex

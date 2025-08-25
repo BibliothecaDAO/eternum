@@ -193,6 +193,7 @@ pub impl iExplorerImpl of iExplorerTrait {
             tier: troop_tier,
             count: troop_amount,
             stamina: Default::default(),
+            battle_cooldown_end: 0,
             boosts: TroopBoosts {
                 incr_damage_dealt_percent_num: 0,
                 incr_damage_dealt_end_tick: 0,

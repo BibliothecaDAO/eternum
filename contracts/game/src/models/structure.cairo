@@ -253,6 +253,7 @@ pub impl StructureDefaultImpl of Default<Structure> {
             tier: TroopTier::T1,
             count: 0,
             stamina: Stamina { amount: 0, updated_tick: 0 },
+            battle_cooldown_end: 0,
             boosts: TroopBoosts {
                 incr_damage_dealt_percent_num: 0,
                 incr_damage_dealt_end_tick: 0,

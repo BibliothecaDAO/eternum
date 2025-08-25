@@ -132,6 +132,7 @@ pub mod troop_raid_systems {
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let current_tick = tick.current();
+            let current_tick_interval = tick.interval();
 
             let mut sum_damage_to_explorer = 0;
             let mut sum_damage_to_guards = 0;
@@ -163,7 +164,9 @@ pub mod troop_raid_systems {
                     let structure_non_zero_guard_slot = *structure_non_zero_guard_slots.at(i);
                     let (mut guard_defender_troops, guard_defender_troops_destroyed_tick) = guard_defender
                         .from_slot(structure_non_zero_guard_slot);
-                    let (damage_dealt_to_guard, damage_dealt_to_explorer, explorer_stamina_loss) =
+                    let (
+                        damage_dealt_to_guard, damage_dealt_to_explorer, explorer_stamina_loss, guard_slot_stamina_loss,
+                    ) =
                         individual_explorer_aggressor_troops
                         .damage(
                             ref guard_defender_troops,
@@ -171,6 +174,7 @@ pub mod troop_raid_systems {
                             troop_stamina_config,
                             troop_damage_config,
                             current_tick,
+                            current_tick_interval,
                         );
 
                     if explorer_stamina_loss > max_explorer_stamina_loss {
@@ -185,16 +189,18 @@ pub mod troop_raid_systems {
                     guard_damage_applied += RESOURCE_PRECISION - (guard_damage_applied % RESOURCE_PRECISION);
                     guard_defender_troops.count -= core::cmp::min(guard_defender_troops.count, guard_damage_applied);
 
-                    // // deduct stamina spent
-                    // guard_defender_troops
-                    //     .stamina
-                    //     .spend(
-                    //         guard_defender_troops.category,
-                    //         troop_stamina_config,
-                    //         troop_stamina_config.stamina_attack_req.into(),
-                    //         current_tick,
-                    //         false,
-                    //     );
+                    // deduct stamina spent
+                    guard_defender_troops
+                        .stamina
+                        .spend(
+                            ref guard_defender_troops.boosts,
+                            guard_defender_troops.category,
+                            guard_defender_troops.tier,
+                            troop_stamina_config,
+                            guard_slot_stamina_loss,
+                            current_tick,
+                            true,
+                        );
 
                     // update structure guard
                     if guard_defender_troops.count.is_zero() {
