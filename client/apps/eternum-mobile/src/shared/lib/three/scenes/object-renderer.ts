@@ -84,6 +84,7 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
   private labels: Map<number, CSS2DObject> = new Map();
   private unitTileRenderer: UnitTileRenderer;
   private movingObjects: Set<number> = new Set();
+  private labelAttachmentState: Map<number, boolean> = new Map();
 
   constructor(scene: THREE.Scene) {
     super(scene);
@@ -380,8 +381,14 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
 
     this.labels.set(army.id, label);
 
-    // Add label to the tile group instead of directly to scene
-    this.unitTileRenderer.addObjectToTileGroup(army.col, army.row, label);
+    // Set initial attachment state based on visibility bounds
+    const shouldBeVisible = this.isHexVisible(army.col, army.row);
+    if (shouldBeVisible) {
+      this.unitTileRenderer.addObjectToTileGroup(army.col, army.row, label);
+      this.labelAttachmentState.set(army.id, true);
+    } else {
+      this.labelAttachmentState.set(army.id, false);
+    }
   }
 
   private syncUnitTile(army: ArmyObject): void {
@@ -395,11 +402,15 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
     const label = this.labels.get(armyId);
     const army = this.objects.get(armyId);
     if (label && army) {
-      this.unitTileRenderer.removeObjectFromTileGroup(army.col, army.row, label);
+      const isAttached = this.labelAttachmentState.get(armyId) ?? false;
+      if (isAttached) {
+        this.unitTileRenderer.removeObjectFromTileGroup(army.col, army.row, label);
+      }
       if (label.element && label.element.parentNode) {
         label.element.parentNode.removeChild(label.element);
       }
       this.labels.delete(armyId);
+      this.labelAttachmentState.delete(armyId);
     }
   }
 
@@ -422,10 +433,29 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
   public setVisibleBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void {
     this.visibleBounds = bounds;
     this.unitTileRenderer.setVisibleBounds(bounds);
+    this.updateLabelVisibility();
   }
 
   public getUnitTileRenderer(): UnitTileRenderer {
     return this.unitTileRenderer;
+  }
+
+  private updateLabelVisibility(): void {
+    this.labels.forEach((label, armyId) => {
+      const army = this.objects.get(armyId);
+      if (army) {
+        const shouldBeVisible = this.isHexVisible(army.col, army.row);
+        const isCurrentlyAttached = this.labelAttachmentState.get(armyId) ?? false;
+
+        if (shouldBeVisible && !isCurrentlyAttached) {
+          this.unitTileRenderer.addObjectToTileGroup(army.col, army.row, label);
+          this.labelAttachmentState.set(armyId, true);
+        } else if (!shouldBeVisible && isCurrentlyAttached) {
+          this.unitTileRenderer.removeObjectFromTileGroup(army.col, army.row, label);
+          this.labelAttachmentState.set(armyId, false);
+        }
+      }
+    });
   }
 
   public updateAllUnitTiles(): void {
@@ -455,7 +485,10 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
 
       const label = this.labels.get(objectId);
       if (label) {
-        this.unitTileRenderer.removeObjectFromTileGroup(oldArmy.col, oldArmy.row, label);
+        const wasAttached = this.labelAttachmentState.get(objectId) ?? false;
+        if (wasAttached) {
+          this.unitTileRenderer.removeObjectFromTileGroup(oldArmy.col, oldArmy.row, label);
+        }
       }
     }
 
@@ -468,7 +501,13 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
 
       const label = this.labels.get(objectId);
       if (label) {
-        this.unitTileRenderer.addObjectToTileGroup(col, row, label);
+        const shouldBeVisible = this.isHexVisible(col, row);
+        if (shouldBeVisible) {
+          this.unitTileRenderer.addObjectToTileGroup(col, row, label);
+          this.labelAttachmentState.set(objectId, true);
+        } else {
+          this.labelAttachmentState.set(objectId, false);
+        }
       }
     }
   }
@@ -545,6 +584,21 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
       army.col = targetCol;
       army.row = targetRow;
 
+      // Update label attachment for new position
+      const label = this.labels.get(objectId);
+      if (label) {
+        const shouldBeVisible = this.isHexVisible(targetCol, targetRow);
+        const isCurrentlyAttached = this.labelAttachmentState.get(objectId) ?? false;
+
+        if (shouldBeVisible && !isCurrentlyAttached) {
+          this.unitTileRenderer.addObjectToTileGroup(targetCol, targetRow, label);
+          this.labelAttachmentState.set(objectId, true);
+        } else if (!shouldBeVisible && isCurrentlyAttached) {
+          this.unitTileRenderer.removeObjectFromTileGroup(targetCol, targetRow, label);
+          this.labelAttachmentState.set(objectId, false);
+        }
+      }
+
       // Mark as no longer moving
       this.movingObjects.delete(objectId);
       console.log(
@@ -575,6 +629,21 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
       army.col = finalHex.col;
       army.row = finalHex.row;
 
+      // Update label attachment for final position
+      const label = this.labels.get(objectId);
+      if (label) {
+        const shouldBeVisible = this.isHexVisible(finalHex.col, finalHex.row);
+        const isCurrentlyAttached = this.labelAttachmentState.get(objectId) ?? false;
+
+        if (shouldBeVisible && !isCurrentlyAttached) {
+          this.unitTileRenderer.addObjectToTileGroup(finalHex.col, finalHex.row, label);
+          this.labelAttachmentState.set(objectId, true);
+        } else if (!shouldBeVisible && isCurrentlyAttached) {
+          this.unitTileRenderer.removeObjectFromTileGroup(finalHex.col, finalHex.row, label);
+          this.labelAttachmentState.set(objectId, false);
+        }
+      }
+
       // Mark as no longer moving
       this.movingObjects.delete(objectId);
     });
@@ -592,6 +661,7 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
     });
     this.labels.clear();
     this.movingObjects.clear();
+    this.labelAttachmentState.clear();
 
     this.unitTileRenderer.dispose();
   }

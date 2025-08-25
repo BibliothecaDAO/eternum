@@ -183,10 +183,24 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
 
       if (shouldBeVisible && !group.parent) {
         this.scene.add(group);
+        this.onTileGroupShown(col, row, group);
       } else if (!shouldBeVisible && group.parent) {
         this.scene.remove(group);
+        this.onTileGroupHidden(col, row, group);
       }
     }
+  }
+
+  protected onTileGroupShown(col: number, row: number, group: THREE.Group): void {
+    void col;
+    void row;
+    void group;
+  }
+
+  protected onTileGroupHidden(col: number, row: number, group: THREE.Group): void {
+    void col;
+    void row;
+    void group;
   }
 
   protected isHexVisible(col: number, row: number): boolean {
