@@ -7,6 +7,7 @@ import {
   createProductionDisplay,
   createStaminaBar,
   createTroopCountDisplay,
+  getTroopDisplayName,
   updateStaminaBar,
 } from "./label-components";
 import { getOwnershipStyle, LABEL_STYLES, LABEL_TYPE_CONFIGS } from "./label-config";
@@ -218,7 +219,9 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
     // Update troop count if present
     const troopCountElement = element.querySelector('[data-component="troop-count"] [data-role="count"]');
     if (troopCountElement && data.troopCount !== undefined) {
-      troopCountElement.textContent = data.troopCount.toString();
+      const troopName = getTroopDisplayName(data.category, data.tier);
+      const troopCountText = data.troopCount ? `${data.troopCount}x ${troopName}` : troopName;
+      troopCountElement.textContent = troopCountText;
     }
 
     // Update stamina bar if present

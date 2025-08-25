@@ -188,7 +188,7 @@ export function createProductionDisplay(
 /**
  * Get display name for troop type and tier
  */
-function getTroopDisplayName(troopType: TroopType, troopTier: TroopTier): string {
+export function getTroopDisplayName(troopType: TroopType, troopTier: TroopTier): string {
   const typeNames: Record<TroopType, string> = {
     [TroopType.Paladin]: "Paladin",
     [TroopType.Crossbowman]: "Crossbowman",
