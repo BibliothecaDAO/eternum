@@ -22,16 +22,24 @@ export class BiomeTileRenderer extends BaseTileRenderer<BiomeTileIndex> {
   }
 
   public renderTilesForHexes(hexes: BiomeTilePosition[]): void {
+    const renderStartTime = performance.now();
+    console.log(`[BIOME-TIMING] Starting biome tile render for ${hexes.length} hexes`);
+
+    const clearStartTime = performance.now();
     this.clearTiles();
+    console.log(`[BIOME-TIMING] Clear tiles: ${(performance.now() - clearStartTime).toFixed(2)}ms`);
 
     if (!this.materialsInitialized) {
       console.warn("Biome tile materials not yet initialized");
       return;
     }
 
+    const createSpritesStartTime = performance.now();
     hexes.forEach(({ col, row, biome, isExplored }) => {
       this.createTileSprite(col, row, biome, isExplored);
     });
+    console.log(`[BIOME-TIMING] Create sprites: ${(performance.now() - createSpritesStartTime).toFixed(2)}ms`);
+    console.log(`[BIOME-TIMING] Total biome render time: ${(performance.now() - renderStartTime).toFixed(2)}ms`);
   }
 
   private createTileSprite(col: number, row: number, biome?: BiomeType, isExplored: boolean = true): void {

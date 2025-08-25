@@ -156,17 +156,15 @@ export const BuildingTypeToTileIndex: Record<BuildingType, BuildingTileIndex> = 
 };
 
 export enum UnitTileIndex {
-  None = 0,
-  KnightT1 = 1,
-  KnightT2 = 2,
-  KnightT3 = 3,
-  CrossbowmanT1 = 4,
-  CrossbowmanT2 = 5,
-  CrossbowmanT3 = 6,
-  PaladinT1 = 7,
-  PaladinT2 = 8,
-  PaladinT3 = 9,
-  Donkey = 10,
+  KnightT1 = 0,
+  KnightT2 = 1,
+  KnightT3 = 2,
+  CrossbowmanT1 = 3,
+  CrossbowmanT2 = 4,
+  CrossbowmanT3 = 5,
+  PaladinT1 = 6,
+  PaladinT2 = 7,
+  PaladinT3 = 8,
 }
 
 export function getTroopTileIndex(troopType: TroopType, troopTier: TroopTier): UnitTileIndex {

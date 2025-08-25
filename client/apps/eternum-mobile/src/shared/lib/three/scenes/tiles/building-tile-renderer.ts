@@ -148,9 +148,11 @@ export class BuildingTileRenderer extends BaseTileRenderer<BuildingTileIndex> {
   }
 
   public setVisibleBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void {
+    const boundsStartTime = performance.now();
     console.log(`[BuildingTileRenderer] setVisibleBounds: sprites=${this.sprites.size}, bounds:`, bounds);
     // Building tiles need bounds-based visibility management
     this.updateTileVisibility(bounds);
+    console.log(`[BUILDING-TIMING] Set visible bounds: ${(performance.now() - boundsStartTime).toFixed(2)}ms`);
   }
 
   private updateTileVisibility(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void {
