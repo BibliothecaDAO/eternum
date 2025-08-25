@@ -13,18 +13,17 @@ import {
 import { DojoResult } from "@bibliothecadao/react";
 import { BiomeType, FELT_CENTER, HexEntityInfo } from "@bibliothecadao/types";
 import * as THREE from "three";
-import { getMapFromTorii } from "../../../../app/dojo/queries";
-import { getBlockTimestamp } from "../../../../shared/hooks/use-block-timestamp";
-import { GUIManager } from "../helpers/gui-manager";
-import { findShortestPath } from "../helpers/pathfinding";
-import { loggedInAccount } from "../helpers/utils";
-import { FXManager } from "./fx-manager";
-import { createHexagonShape } from "./hexagon-geometry";
-import { HighlightRenderer } from "./highlight-renderer";
-import { ArmyObject, ArmyRenderer, QuestRenderer, StructureObject, StructureRenderer } from "./renderers";
-import { SelectionManager } from "./selection-manager";
-import { BiomeTilePosition, BiomeTileRenderer } from "./tiles/biome-tile-renderer";
-import { getHexagonCoordinates, getWorldPositionForHex, HEX_SIZE } from "./utils";
+import { getMapFromTorii } from "../../../../../app/dojo/queries";
+import { getBlockTimestamp } from "../../../../hooks/use-block-timestamp";
+import { FXManager } from "../../managers/fx-manager";
+import { GUIManager } from "../../managers/gui-manager";
+import { HighlightRenderer } from "../../managers/highlight-renderer";
+import { SelectionManager } from "../../managers/selection-manager";
+import { ArmyObject, ArmyRenderer, QuestRenderer, StructureObject, StructureRenderer } from "../../renderers";
+import { BiomeTilePosition, BiomeTileRenderer } from "../../tiles/biome-tile-renderer";
+import { createHexagonShape } from "../../utils/hexagon-geometry";
+import { findShortestPath } from "../../utils/pathfinding";
+import { getHexagonCoordinates, getWorldPositionForHex, HEX_SIZE, loggedInAccount } from "../../utils/utils";
 
 export class HexagonMap {
   private scene: THREE.Scene;

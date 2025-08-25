@@ -2,7 +2,7 @@ import { DojoResult } from "@bibliothecadao/react";
 import throttle from "lodash/throttle";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { BaseScene } from "./base-scene";
+import { BaseScene } from "../base-scene";
 import { HexagonMap } from "./hexagon-map";
 
 export class WorldmapScene extends BaseScene {

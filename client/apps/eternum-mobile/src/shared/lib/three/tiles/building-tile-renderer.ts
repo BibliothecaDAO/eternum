@@ -1,6 +1,6 @@
 import { BuildingType } from "@bibliothecadao/types";
 import * as THREE from "three";
-import { getWorldPositionForTile, HEX_SIZE } from "../utils";
+import { getWorldPositionForTile, HEX_SIZE } from "../utils/utils";
 import { BaseTileRenderer, TilePosition } from "./base-tile-renderer";
 import { BuildingTileIndex, BuildingTypeToTileIndex, TILEMAP_CONFIGS } from "./tile-enums";
 

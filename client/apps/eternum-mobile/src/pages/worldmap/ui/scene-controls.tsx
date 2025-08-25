@@ -1,11 +1,11 @@
-import { DEFAULT_SCENES } from "@/shared/lib/three/constants";
+import { DEFAULT_SCENES } from "@/shared/lib/three/constants/constants";
 import { useStore } from "@/shared/store";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { SelectStructureDrawer } from "@/shared/ui/select-structure-drawer";
-import { getStructureName } from "@bibliothecadao/eternum";
+import { getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 import { usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
 import { FELT_CENTER, getLevelName } from "@bibliothecadao/types";
 import { ChevronDown, Copy, Map, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
@@ -51,6 +51,8 @@ const CompactRealmHeader = () => {
     }
   };
 
+  const isBlitz = getIsBlitz();
+
   return (
     <div className="flex items-center justify-between gap-2">
       {/* Structure Selector */}
@@ -65,7 +67,7 @@ const CompactRealmHeader = () => {
         >
           <div className="flex items-center gap-1 text-sm font-medium truncate cursor-pointer hover:text-primary">
             <span className="truncate">
-              {selectedRealm ? getStructureName(selectedRealm?.structure).name : "Select Structure"}
+              {selectedRealm ? getStructureName(selectedRealm?.structure, isBlitz).name : "Select Structure"}
             </span>
             <ChevronDown className="h-3 w-3 flex-shrink-0" />
           </div>

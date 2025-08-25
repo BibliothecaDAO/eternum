@@ -1,6 +1,6 @@
 import { TroopTier, TroopType } from "@bibliothecadao/types";
 import * as THREE from "three";
-import { getWorldPositionForTile } from "../utils";
+import { getWorldPositionForTile } from "../utils/utils";
 import { BaseTileRenderer, TilePosition } from "./base-tile-renderer";
 import { getTroopTileIndex, TILEMAP_CONFIGS, UnitTileIndex } from "./tile-enums";
 

@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import { createHexagonShape } from "./hexagon-geometry";
-import { getWorldPositionForHex, HEX_SIZE } from "./utils";
+import { createHexagonShape } from "../utils/hexagon-geometry";
+import { getWorldPositionForHex, HEX_SIZE } from "../utils/utils";
 
 export interface HighlightHex {
   col: number;

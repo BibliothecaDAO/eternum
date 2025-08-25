@@ -3,11 +3,11 @@ import { DojoResult } from "@bibliothecadao/react";
 import * as THREE from "three";
 import { CSS2DRenderer } from "three-stdlib";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { CAMERA_CONFIG, CONTROLS_CONFIG, RENDERER_CONFIG } from "./constants";
-import { GUIManager } from "./helpers/gui-manager";
+import { CAMERA_CONFIG, CONTROLS_CONFIG, RENDERER_CONFIG } from "./constants/constants";
+import { GUIManager } from "./managers/gui-manager";
 import { BaseScene } from "./scenes/base-scene";
 import { GenericScene } from "./scenes/generic-scene";
-import { WorldmapScene } from "./scenes/worldmap-scene";
+import { WorldmapScene } from "./scenes/worldmap/worldmap-scene";
 
 export class GameRenderer {
   private scene: THREE.Scene;

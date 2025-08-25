@@ -1,7 +1,7 @@
 import { ActionPath, ActionPaths, ActionType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import useStore from "../../../store";
-import { HighlightRenderer } from "./highlight-renderer";
+import { HighlightRenderer } from "../highlight-renderer";
 import { GameMapObject, ObjectRenderer } from "./object-renderer";
 
 export class SelectionManager {
