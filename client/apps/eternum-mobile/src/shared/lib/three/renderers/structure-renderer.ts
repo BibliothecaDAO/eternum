@@ -247,7 +247,7 @@ export class StructureRenderer extends ObjectRenderer<StructureObject> {
     const label = new CSS2DObject(labelDiv);
 
     // Position the label above the tile (relative to tile group position)
-    label.position.set(0, 2.1, -HEX_SIZE * 1.425);
+    label.position.set(0, 2.1, -HEX_SIZE * 2);
 
     // Store entityId in userData for identification
     label.userData.entityId = structure.id;

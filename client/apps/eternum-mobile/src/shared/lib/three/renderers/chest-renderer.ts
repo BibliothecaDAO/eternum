@@ -25,7 +25,7 @@ export class ChestRenderer extends ObjectRenderer<ChestObject> {
 
     const label = new CSS2DObject(labelDiv);
 
-    label.position.set(0, 2.1, -HEX_SIZE * 1.425);
+    label.position.set(0, 2.1, -HEX_SIZE * 1.225);
 
     label.userData.entityId = chest.id;
 
