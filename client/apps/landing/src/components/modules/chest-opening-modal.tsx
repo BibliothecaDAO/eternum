@@ -61,7 +61,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
   const [chestType, setChestType] = useState<ChestAsset["rarity"]>(AssetRarity.Common);
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
 
-  const { chestContent, resetChestContent } = useChestContent(true);
+  const { chestContent, resetChestContent } = useChestContent();
 
   const ambienceAudio = useAmbienceAudio({
     src: "/sound/music/ShadowSong.mp3",
