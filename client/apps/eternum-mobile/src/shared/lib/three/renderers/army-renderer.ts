@@ -1,7 +1,9 @@
+import { Position } from "@bibliothecadao/eternum";
 import { TroopTier, TroopType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { UnitTilePosition, UnitTileRenderer } from "../tiles/unit-tile-renderer";
+import { ArmyLabelData, ArmyLabelType } from "../utils/labels/label-factory";
 import { HEX_SIZE, loggedInAccount } from "../utils/utils";
 import { ObjectRenderer } from "./base-object-renderer";
 import { ArmyObject } from "./types";
@@ -18,7 +20,6 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
   }
 
   public addObject(object: ArmyObject): void {
-    console.log(`[ArmyRenderer] addObject: Adding army ${object.id} at (${object.col},${object.row})`);
     this.objects.set(object.id, object);
     this.createLabel(object);
     this.syncUnitTile(object);
@@ -27,33 +28,19 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
   public updateObject(object: ArmyObject): void {
     const existingArmy = this.objects.get(object.id);
 
-    console.log(`[ArmyRenderer] updateObject called for army ${object.id}`, {
-      existingPosition: existingArmy ? { col: existingArmy.col, row: existingArmy.row } : null,
-      newPosition: { col: object.col, row: object.row },
-      hasPositionChanged: existingArmy ? existingArmy.col !== object.col || existingArmy.row !== object.row : false,
-      isCurrentlyMoving: this.movingObjects.has(object.id),
-    });
-
     // Check if the army has moved to a new position
     if (existingArmy && (existingArmy.col !== object.col || existingArmy.row !== object.row)) {
       // If currently moving, don't start another movement
       if (this.movingObjects.has(object.id)) {
-        console.log(`[ArmyRenderer] Army ${object.id} is already moving, skipping update`);
         return;
       }
 
-      console.log(
-        `[ArmyRenderer] Starting movement animation for army ${object.id} from (${existingArmy.col},${existingArmy.row}) to (${object.col},${object.row})`,
-      );
-
       // Start movement animation from current position to new position
       this.moveObject(object.id, object.col, object.row, 1000).then(() => {
-        console.log(`[ArmyRenderer] Movement completed for army ${object.id}`);
         // Update label content after movement completes
         this.updateLabelContent(object);
       });
     } else {
-      console.log(`[ArmyRenderer] No position change for army ${object.id}, updating properties only`);
       // Just update properties without position change
       this.objects.set(object.id, object);
       this.updateLabelContent(object);
@@ -65,80 +52,8 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
     const label = this.labels.get(army.id);
     if (!label || !label.element) return;
 
-    const playerAddress = loggedInAccount();
-    const isPlayerArmy = army.owner && army.owner.toString() === playerAddress?.toString();
-
-    // Update ownership colors
-    let backgroundColor: string;
-    let borderColor: string;
-    let textColor: string;
-    let hoverBackgroundColor: string;
-
-    if (army.isDaydreamsAgent) {
-      backgroundColor = "rgba(147, 51, 234, 0.3)";
-      borderColor = "rgba(147, 51, 234, 0.5)";
-      textColor = "#a855f7";
-      hoverBackgroundColor = "rgba(147, 51, 234, 0.5)";
-    } else if (isPlayerArmy) {
-      backgroundColor = "rgba(34, 197, 94, 0.3)";
-      borderColor = "rgba(34, 197, 94, 0.5)";
-      textColor = "#d9f99d";
-      hoverBackgroundColor = "rgba(34, 197, 94, 0.5)";
-    } else {
-      backgroundColor = "rgba(239, 68, 68, 0.3)";
-      borderColor = "rgba(239, 68, 68, 0.5)";
-      textColor = "#fecdd3";
-      hoverBackgroundColor = "rgba(239, 68, 68, 0.5)";
-    }
-
-    label.element.style.setProperty("background-color", backgroundColor, "important");
-    label.element.style.setProperty("border", `1px solid ${borderColor}`, "important");
-    label.element.style.setProperty("color", textColor, "important");
-
-    // Update hover effects
-    label.element.onmouseenter = () => {
-      label.element.style.setProperty("background-color", hoverBackgroundColor, "important");
-    };
-
-    label.element.onmouseleave = () => {
-      label.element.style.setProperty("background-color", backgroundColor, "important");
-    };
-
-    // Update army icon
-    const armyIcon = label.element.querySelector('[data-component="army-icon"]') as HTMLImageElement;
-    if (armyIcon) {
-      armyIcon.src = army.isDaydreamsAgent
-        ? "/images/logos/daydreams.png"
-        : `/images/labels/${isPlayerArmy ? "army" : "enemy_army"}.png`;
-    }
-
-    // Update owner text
-    const ownerElement = label.element.querySelector('[data-component="owner"] span');
-    if (ownerElement) {
-      if (army.ownerName && army.ownerName !== "test") {
-        ownerElement.textContent = army.ownerName;
-      } else if (army.isDaydreamsAgent) {
-        ownerElement.textContent = "Agent";
-      } else if (isPlayerArmy) {
-        ownerElement.textContent = "My Army";
-      } else {
-        ownerElement.textContent = "Army";
-      }
-    }
-
-    // Update troop count if present
-    const troopCountElement = label.element.querySelector('[data-component="troop-count"] [data-role="count"]');
-    if (troopCountElement && army.troopType && army.troopTier) {
-      const troopName = this.getTroopDisplayName(army.troopType, army.troopTier);
-      const troopCountText = army.troopCount ? `${army.troopCount}x ${troopName}` : troopName;
-      troopCountElement.textContent = troopCountText;
-    }
-
-    // Update stamina if present
-    const staminaElement = label.element.querySelector('[data-component="stamina-info"] span:last-child');
-    if (staminaElement && army.currentStamina !== undefined) {
-      staminaElement.textContent = `${army.currentStamina}${army.maxStamina ? `/${army.maxStamina}` : ""}`;
-    }
+    const armyLabelData = this.convertArmyToLabelData(army);
+    ArmyLabelType.updateElement?.(label.element, armyLabelData);
   }
 
   public removeObject(objectId: number): void {
@@ -152,149 +67,9 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
   }
 
   private createLabel(army: ArmyObject): void {
-    const playerAddress = loggedInAccount();
-    const isPlayerArmy = army.owner && army.owner.toString() === playerAddress?.toString();
+    const armyLabelData = this.convertArmyToLabelData(army);
 
-    // Create base label element with desktop styling
-    const labelDiv = document.createElement("div");
-    labelDiv.classList.add(
-      "rounded-md",
-      "p-0.5",
-      "-translate-x-1/2",
-      "text-xxs",
-      "flex",
-      "items-center",
-      "group",
-      "shadow-md",
-      "font-semibold",
-      "transition-[height]",
-      "duration-700",
-      "ease-in-out",
-      "h-auto",
-      "has-[.opacity-0]:h-12",
-    );
-
-    // Apply desktop-style ownership colors
-    let backgroundColor: string;
-    let borderColor: string;
-    let textColor: string;
-    let hoverBackgroundColor: string;
-
-    if (army.isDaydreamsAgent) {
-      backgroundColor = "rgba(147, 51, 234, 0.3)";
-      borderColor = "rgba(147, 51, 234, 0.5)";
-      textColor = "#a855f7";
-      hoverBackgroundColor = "rgba(147, 51, 234, 0.5)";
-    } else if (isPlayerArmy) {
-      backgroundColor = "rgba(34, 197, 94, 0.3)";
-      borderColor = "rgba(34, 197, 94, 0.5)";
-      textColor = "#d9f99d";
-      hoverBackgroundColor = "rgba(34, 197, 94, 0.5)";
-    } else {
-      backgroundColor = "rgba(239, 68, 68, 0.3)";
-      borderColor = "rgba(239, 68, 68, 0.5)";
-      textColor = "#fecdd3";
-      hoverBackgroundColor = "rgba(239, 68, 68, 0.5)";
-    }
-
-    labelDiv.style.setProperty("background-color", backgroundColor, "important");
-    labelDiv.style.setProperty("border", `1px solid ${borderColor}`, "important");
-    labelDiv.style.setProperty("color", textColor, "important");
-
-    // Add hover effects
-    labelDiv.addEventListener("mouseenter", () => {
-      labelDiv.style.setProperty("background-color", hoverBackgroundColor, "important");
-    });
-
-    labelDiv.addEventListener("mouseleave", () => {
-      labelDiv.style.setProperty("background-color", backgroundColor, "important");
-    });
-
-    // Prevent right click
-    labelDiv.addEventListener("contextmenu", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-    });
-
-    // Add army icon
-    const img = document.createElement("img");
-    img.src = army.isDaydreamsAgent
-      ? "/images/logos/daydreams.png"
-      : `/images/labels/${isPlayerArmy ? "army" : "enemy_army"}.png`;
-    img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
-    img.setAttribute("data-component", "army-icon");
-    labelDiv.appendChild(img);
-
-    // Create content container
-    const textContainer = document.createElement("div");
-    textContainer.classList.add("ml-1", "flex", "flex-col", "justify-center", "items-start", "text-left", "min-w-0");
-    textContainer.setAttribute("data-component", "content-container");
-
-    // Add owner information
-    const ownerDisplay = document.createElement("div");
-    ownerDisplay.classList.add("flex", "items-center", "gap-1", "min-w-0");
-    ownerDisplay.setAttribute("data-component", "owner");
-
-    const ownerText = document.createElement("span");
-    ownerText.classList.add("truncate", "text-xxs");
-    ownerText.style.color = "inherit";
-
-    if (army.ownerName && army.ownerName !== "test") {
-      ownerText.textContent = army.ownerName;
-    } else if (army.isDaydreamsAgent) {
-      ownerText.textContent = "Agent";
-    } else if (isPlayerArmy) {
-      ownerText.textContent = "My Army";
-    } else {
-      ownerText.textContent = "Army";
-    }
-
-    ownerDisplay.appendChild(ownerText);
-    textContainer.appendChild(ownerDisplay);
-
-    // Add troop info if available
-    if (army.troopType && army.troopTier) {
-      const troopDisplay = document.createElement("div");
-      troopDisplay.classList.add("flex", "items-center", "text-xxs", "gap-1");
-      troopDisplay.setAttribute("data-component", "troop-count");
-
-      const troopIcon = document.createElement("span");
-      troopIcon.textContent = "⚔️";
-      troopIcon.classList.add("text-yellow-400");
-      troopDisplay.appendChild(troopIcon);
-
-      const troopText = document.createElement("span");
-      troopText.classList.add("text-white", "font-mono");
-      troopText.setAttribute("data-role", "count");
-
-      const troopName = this.getTroopDisplayName(army.troopType, army.troopTier);
-      const troopCountText = army.troopCount ? `${army.troopCount}x ${troopName}` : troopName;
-      troopText.textContent = troopCountText;
-      troopDisplay.appendChild(troopText);
-
-      textContainer.appendChild(troopDisplay);
-    }
-
-    // Add stamina bar if available
-    if (army.currentStamina !== undefined) {
-      const staminaInfo = document.createElement("div");
-      staminaInfo.classList.add("flex", "items-center", "text-xxs", "gap-1");
-      staminaInfo.setAttribute("data-component", "stamina-info");
-
-      const staminaIcon = document.createElement("span");
-      staminaIcon.textContent = "⚡";
-      staminaIcon.classList.add("text-yellow-400");
-      staminaInfo.appendChild(staminaIcon);
-
-      const staminaText = document.createElement("span");
-      staminaText.textContent = `${army.currentStamina}${army.maxStamina ? `/${army.maxStamina}` : ""}`;
-      staminaText.classList.add("text-white", "font-mono");
-      staminaInfo.appendChild(staminaText);
-
-      textContainer.appendChild(staminaInfo);
-    }
-
-    labelDiv.appendChild(textContainer);
+    const labelDiv = ArmyLabelType.createElement(armyLabelData);
 
     // Create CSS2DObject
     const label = new CSS2DObject(labelDiv);
@@ -318,9 +93,6 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
   }
 
   private syncUnitTile(army: ArmyObject): void {
-    console.log(
-      `[ArmyRenderer] syncUnitTile: Syncing tile for army ${army.id} at (${army.col},${army.row}) with troopType ${army.troopType}, troopTier ${army.troopTier}`,
-    );
     this.unitTileRenderer.addTile(army.col, army.row, army.troopType, army.troopTier, false, true);
   }
 
@@ -340,20 +112,27 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
     }
   }
 
-  private getTroopDisplayName(troopType: TroopType, troopTier: TroopTier): string {
-    const typeNames: Record<TroopType, string> = {
-      [TroopType.Paladin]: "Paladin",
-      [TroopType.Crossbowman]: "Crossbowman",
-      [TroopType.Knight]: "Knight",
-    };
+  private convertArmyToLabelData(army: ArmyObject): ArmyLabelData {
+    const playerAddress = loggedInAccount();
+    const isPlayerArmy = army.owner && army.owner.toString() === playerAddress?.toString();
 
-    const tierNames: Record<TroopTier, string> = {
-      [TroopTier.T1]: "I",
-      [TroopTier.T2]: "II",
-      [TroopTier.T3]: "III",
+    return {
+      entityId: army.id,
+      hexCoords: new Position({ x: army.col, y: army.row }),
+      category: army.troopType || TroopType.Paladin,
+      tier: army.troopTier || TroopTier.T1,
+      isMine: Boolean(isPlayerArmy),
+      isDaydreamsAgent: Boolean(army.isDaydreamsAgent),
+      owner: {
+        address: army.owner || 0n,
+        ownerName: army.ownerName || (army.isDaydreamsAgent ? "Agent" : isPlayerArmy ? "My Army" : "Army"),
+        guildName: "",
+      },
+      color: isPlayerArmy ? "green" : "red",
+      troopCount: army.troopCount || 0,
+      currentStamina: army.currentStamina || 0,
+      maxStamina: army.maxStamina || 0,
     };
-
-    return `${typeNames[troopType] || "Unknown"} ${tierNames[troopTier] || ""}`;
   }
 
   public setVisibleBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void {
@@ -486,26 +265,15 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
   public moveObject(objectId: number, targetCol: number, targetRow: number, duration: number = 1000): Promise<void> {
     const army = this.objects.get(objectId);
     if (!army) {
-      console.log(`[ArmyRenderer] moveObject: Army ${objectId} not found`);
       return Promise.resolve();
     }
 
     const startCol = army.col;
     const startRow = army.row;
-
-    console.log(
-      `[ArmyRenderer] moveObject: Moving army ${objectId} from (${startCol},${startRow}) to (${targetCol},${targetRow}) with duration ${duration}ms`,
-    );
-
     // Mark as moving
     this.movingObjects.add(objectId);
-    console.log(
-      `[ArmyRenderer] moveObject: Marked army ${objectId} as moving. Moving objects count: ${this.movingObjects.size}`,
-    );
 
     return this.unitTileRenderer.moveTile(startCol, startRow, targetCol, targetRow, duration).then(() => {
-      console.log(`[ArmyRenderer] moveObject: Tile movement completed for army ${objectId}`);
-
       // Update army position after movement completes
       army.col = targetCol;
       army.row = targetRow;
@@ -527,9 +295,6 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
 
       // Mark as no longer moving
       this.movingObjects.delete(objectId);
-      console.log(
-        `[ArmyRenderer] moveObject: Unmarked army ${objectId} as moving. Moving objects count: ${this.movingObjects.size}`,
-      );
     });
   }
 

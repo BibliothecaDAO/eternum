@@ -73,7 +73,6 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
       this.createPrototypeSprites();
 
       this.materialsInitialized = true;
-      console.log(`${this.constructor.name} materials and prototype sprites initialized successfully`);
     } catch (error) {
       console.error(`Failed to load texture for ${this.constructor.name}:`, error);
     }
@@ -163,8 +162,6 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
   ): void {
     void position; // Position is now handled by the group
 
-    console.log(`[BaseTileRenderer] createSingleTileSprite: Creating sprite for key ${spriteKey}, tileId ${tileId}`);
-
     // Try to get a sprite from the pool first
     let sprite = this.getPooledSprite(tileId);
 
@@ -183,14 +180,10 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
     sprite.renderOrder = Math.max(BaseTileRenderer.BASE_RENDER_ORDER + row, 1) + (isOverlay ? 1000 : 0);
 
     this.sprites.set(spriteKey, sprite);
-    console.log(`[BaseTileRenderer] createSingleTileSprite: Added sprite to sprites map with key ${spriteKey}`);
 
     const [col, row_pos] = spriteKey.split(",").map(Number);
     const group = this.createTileGroup(col, row_pos);
     group.add(sprite);
-    console.log(
-      `[BaseTileRenderer] createSingleTileSprite: Added sprite to group for (${col},${row_pos}). Group children count: ${group.children.length}`,
-    );
   }
 
   public setVisibleBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void {
@@ -257,11 +250,8 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
     }
 
     if (tilesToHide.size === 0 && tilesToShow.size === 0) {
-      console.log(`[VISIBILITY-TIMING] No visibility changes needed`);
       return;
     }
-
-    console.log(`[VISIBILITY-TIMING] Hiding ${tilesToHide.size} tiles, showing ${tilesToShow.size} tiles`);
 
     this.startBatchSceneOps();
 
@@ -290,10 +280,6 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
     // Update our tracking
     this.visibleTileKeys = newVisibleTileKeys;
     this.previousVisibleBounds = { ...bounds };
-
-    console.log(
-      `[VISIBILITY-TIMING] Visibility update completed in ${(performance.now() - visibilityStartTime).toFixed(2)}ms`,
-    );
   }
 
   protected onTileGroupShown(col: number, row: number, group: THREE.Group): void {
@@ -363,17 +349,11 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
     this.pendingSceneAdds.forEach((group) => {
       this.scene.add(group);
     });
-    console.log(
-      `[BATCH-TIMING] Added ${this.pendingSceneAdds.size} groups in ${(performance.now() - addStartTime).toFixed(2)}ms`,
-    );
 
     const removeStartTime = performance.now();
     this.pendingSceneRemoves.forEach((group) => {
       this.scene.remove(group);
     });
-    console.log(
-      `[BATCH-TIMING] Removed ${this.pendingSceneRemoves.size} groups in ${(performance.now() - removeStartTime).toFixed(2)}ms`,
-    );
 
     this.pendingSceneAdds.clear();
     this.pendingSceneRemoves.clear();
@@ -403,7 +383,6 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
     let group = this.tileGroups.get(hexKey);
 
     if (!group) {
-      console.log(`[BaseTileRenderer] createTileGroup: Creating new group for (${col},${row})`);
       group = new THREE.Group();
       const cachedPosition = this.getCachedWorldPosition(col, row);
       group.position.set(cachedPosition.x, 0, cachedPosition.z - HEX_SIZE * 0.825);
@@ -412,12 +391,9 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
       if (this.isHexVisible(col, row)) {
         this.addGroupToScene(group);
         this.visibleTileKeys.add(hexKey);
-        console.log(`[BaseTileRenderer] createTileGroup: Added group to scene for (${col},${row})`);
       } else {
-        console.log(`[BaseTileRenderer] createTileGroup: Group created but not visible for (${col},${row})`);
       }
     } else {
-      console.log(`[BaseTileRenderer] createTileGroup: Reusing existing group for (${col},${row})`);
     }
 
     return group;
@@ -492,12 +468,6 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
     this.tileGroups.clear();
     this.sprites.clear();
     this.visibleTileKeys.clear();
-
-    if (groupCount > 0) {
-      console.log(
-        `[TILE-TIMING] Cleared ${groupCount} tile groups in ${(performance.now() - clearStartTime).toFixed(2)}ms`,
-      );
-    }
   }
 
   public removeTile(col: number, row: number): void {
@@ -624,30 +594,18 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
     const targetHexKey = `${targetCol},${targetRow}`;
     const group = this.tileGroups.get(hexKey);
 
-    console.log(
-      `[BaseTileRenderer] moveTile: Attempting to move tile from (${col},${row}) to (${targetCol},${targetRow})`,
-    );
-    console.log(`[BaseTileRenderer] moveTile: Group exists:`, !!group);
-    console.log(`[BaseTileRenderer] moveTile: Available groups:`, Array.from(this.tileGroups.keys()));
-
     if (!group) {
-      console.log(`[BaseTileRenderer] moveTile: No group found at (${col},${row}), cannot move`);
       return Promise.resolve();
     }
 
-    console.log(
-      `[BaseTileRenderer] moveTile: Starting movement animation for ${hexKey} -> ${targetHexKey} over ${duration}ms`,
-    );
     this.movingTiles.add(hexKey);
 
     return new Promise((resolve) => {
       const startPosition = group.position.clone();
-      console.log(`[BaseTileRenderer] moveTile: Start position:`, startPosition);
 
       const endPosition = this.getCachedWorldPosition(targetCol, targetRow).clone();
       endPosition.y = 0;
       endPosition.z -= HEX_SIZE * 0.825;
-      console.log(`[BaseTileRenderer] moveTile: End position:`, endPosition);
 
       const startTime = performance.now();
 
@@ -661,7 +619,6 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
         if (progress < 1) {
           requestAnimationFrame(animate);
         } else {
-          console.log(`[BaseTileRenderer] moveTile: Animation completed for ${hexKey}`);
           this.handleTileMoveComplete(hexKey, targetHexKey, targetCol, targetRow);
           this.movingTiles.delete(hexKey);
           resolve();

@@ -438,10 +438,25 @@ export class HexagonMap {
   }
 
   private async handleHexClick(col: number, row: number): Promise<void> {
-    const armies = this.armyRenderer.getObjectsAtHex(col, row);
-    const structures = this.structureRenderer.getObjectsAtHex(col, row);
-    const quests = this.questRenderer.getObjectsAtHex(col, row);
-    const chests = this.chestRenderer.getObjectsAtHex(col, row);
+    const armyInfo = this.armyHexes.get(col)?.get(row);
+    const structureInfo = this.structureHexes.get(col)?.get(row);
+    const questInfo = this.questHexes.get(col)?.get(row);
+    const chestInfo = this.chestHexes.get(col)?.get(row);
+
+    const armies = armyInfo
+      ? [this.armyRenderer.getObject(armyInfo.id)].filter((obj): obj is NonNullable<typeof obj> => obj !== undefined)
+      : [];
+    const structures = structureInfo
+      ? [this.structureRenderer.getObject(structureInfo.id)].filter(
+          (obj): obj is NonNullable<typeof obj> => obj !== undefined,
+        )
+      : [];
+    const quests = questInfo
+      ? [this.questRenderer.getObject(questInfo.id)].filter((obj): obj is NonNullable<typeof obj> => obj !== undefined)
+      : [];
+    const chests = chestInfo
+      ? [this.chestRenderer.getObject(chestInfo.id)].filter((obj): obj is NonNullable<typeof obj> => obj !== undefined)
+      : [];
 
     // Check if we have a selected object and clicked on a highlighted hex
     const selectedObject = this.selectionManager.getSelectedObject();
@@ -1127,47 +1142,41 @@ export class HexagonMap {
 
   public hasArmyAtHex(col: number, row: number): boolean {
     const normalized = new Position({ x: col, y: row }).getNormalized();
-    return this.armyRenderer.getObjectsAtHex(normalized.x, normalized.y).length > 0;
+    return this.armyHexes.has(normalized.x) && this.armyHexes.get(normalized.x)!.has(normalized.y);
   }
 
   public hasStructureAtHex(col: number, row: number): boolean {
     const normalized = new Position({ x: col, y: row }).getNormalized();
-    return this.structureRenderer.getObjectsAtHex(normalized.x, normalized.y).length > 0;
+    return this.structureHexes.has(normalized.x) && this.structureHexes.get(normalized.x)!.has(normalized.y);
   }
 
   public hasChestAtHex(col: number, row: number): boolean {
     const normalized = new Position({ x: col, y: row }).getNormalized();
-    return this.chestRenderer.getObjectsAtHex(normalized.x, normalized.y).length > 0;
+    return this.chestHexes.has(normalized.x) && this.chestHexes.get(normalized.x)!.has(normalized.y);
   }
 
   public getArmyAtHex(col: number, row: number): { id: number; owner: bigint } | undefined {
     const normalized = new Position({ x: col, y: row }).getNormalized();
-    const armies = this.armyRenderer.getObjectsAtHex(normalized.x, normalized.y);
-    return armies.length > 0 ? { id: armies[0].id, owner: armies[0].owner! } : undefined;
+    return this.armyHexes.get(normalized.x)?.get(normalized.y);
   }
 
   public getStructureAtHex(col: number, row: number): { id: number; owner: bigint } | undefined {
     const normalized = new Position({ x: col, y: row }).getNormalized();
-    const structures = this.structureRenderer.getObjectsAtHex(normalized.x, normalized.y);
-    return structures.length > 0 ? { id: structures[0].id, owner: structures[0].owner! } : undefined;
+    return this.structureHexes.get(normalized.x)?.get(normalized.y);
   }
 
   public getChestAtHex(col: number, row: number): { id: number; owner: bigint } | undefined {
     const normalized = new Position({ x: col, y: row }).getNormalized();
-    const chests = this.chestRenderer.getObjectsAtHex(normalized.x, normalized.y);
-    return chests.length > 0 ? { id: chests[0].id, owner: chests[0].owner! } : undefined;
+    return this.chestHexes.get(normalized.x)?.get(normalized.y);
   }
 
   public getHexagonEntity(hexCoords: { col: number; row: number }) {
     const hex = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
-    const armies = this.armyRenderer.getObjectsAtHex(hex.x, hex.y);
-    const structures = this.structureRenderer.getObjectsAtHex(hex.x, hex.y);
-    const chests = this.chestRenderer.getObjectsAtHex(hex.x, hex.y);
 
     return {
-      army: armies.length > 0 ? { id: armies[0].id, owner: armies[0].owner! } : undefined,
-      structure: structures.length > 0 ? { id: structures[0].id, owner: structures[0].owner! } : undefined,
-      chest: chests.length > 0 ? { id: chests[0].id, owner: chests[0].owner! } : undefined,
+      army: this.armyHexes.get(hex.x)?.get(hex.y),
+      structure: this.structureHexes.get(hex.x)?.get(hex.y),
+      chest: this.chestHexes.get(hex.x)?.get(hex.y),
     };
   }
 
