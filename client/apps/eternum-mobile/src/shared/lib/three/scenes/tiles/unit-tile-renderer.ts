@@ -143,4 +143,9 @@ export class UnitTileRenderer extends BaseTileRenderer<UnitTileIndex> {
       this.addTile(col, row, troopType, troopTier, isDonkey, isExplored);
     });
   }
+
+  public setVisibleBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void {
+    // Unit tiles don't need bounds-based visibility since they're managed by the army renderer
+    // This method is here for interface compatibility
+  }
 }

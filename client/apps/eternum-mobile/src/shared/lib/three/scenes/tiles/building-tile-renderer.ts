@@ -1,6 +1,6 @@
 import { BuildingType } from "@bibliothecadao/types";
 import * as THREE from "three";
-import { getWorldPositionForTile } from "../utils";
+import { getWorldPositionForTile, HEX_SIZE } from "../utils";
 import { BaseTileRenderer, TilePosition } from "./base-tile-renderer";
 import { BuildingTileIndex, BuildingTypeToTileIndex, TILEMAP_CONFIGS } from "./tile-enums";
 
@@ -11,6 +11,24 @@ export interface BuildingTilePosition extends TilePosition {
 export class BuildingTileRenderer extends BaseTileRenderer<BuildingTileIndex> {
   constructor(scene: THREE.Scene) {
     super(scene, TILEMAP_CONFIGS.buildings);
+  }
+
+  protected configureSpriteScale(sprite: THREE.Sprite, tileId: BuildingTileIndex): void {
+    const spriteScale = HEX_SIZE * 3.2;
+    const heightRatio = this.config.tileHeight / 312;
+    sprite.scale.set(spriteScale, spriteScale * 1.15 * heightRatio, 1);
+  }
+
+  protected configureSpritePosition(
+    sprite: THREE.Sprite,
+    position: THREE.Vector3,
+    row: number,
+    isOverlay: boolean,
+  ): void {
+    const yOffset = isOverlay ? 0.25 : 0.2;
+    const heightRatio = this.config.tileHeight / 312;
+    const zAdjustment = HEX_SIZE * 0.825 * heightRatio;
+    sprite.position.set(position.x, yOffset, position.z - zAdjustment * 1.575);
   }
 
   protected async createTileMaterials(tilesPerRow: number, texture: THREE.Texture): Promise<void> {
@@ -35,12 +53,12 @@ export class BuildingTileRenderer extends BaseTileRenderer<BuildingTileIndex> {
   }
 
   private createTileSprite(col: number, row: number, buildingType?: BuildingType, isExplored: boolean = true): void {
-    if (!isExplored || !buildingType || buildingType === BuildingType.None) {
+    if (!isExplored || buildingType === undefined || buildingType === BuildingType.None) {
       return;
     }
 
     const hexKey = `${col},${row}`;
-    getWorldPositionForTile({ col, row }, true, this.tempVector3);
+    getWorldPositionForTile({ col, row }, false, this.tempVector3);
 
     const tileId = BuildingTypeToTileIndex[buildingType];
     this.createSingleTileSprite(hexKey, tileId, this.tempVector3, row, true);
@@ -49,11 +67,22 @@ export class BuildingTileRenderer extends BaseTileRenderer<BuildingTileIndex> {
   public addTile(col: number, row: number, buildingType?: BuildingType, isExplored: boolean = true): void {
     const hexKey = `${col},${row}`;
 
-    if (this.sprites.has(hexKey) || !isExplored || !buildingType || buildingType === BuildingType.None) {
+    if (this.sprites.has(hexKey) || !isExplored || buildingType === undefined || buildingType === BuildingType.None) {
       return;
     }
 
     this.createTileSprite(col, row, buildingType, isExplored);
+  }
+
+  public addTileByIndex(col: number, row: number, tileIndex: BuildingTileIndex, isExplored: boolean = true): void {
+    const hexKey = `${col},${row}`;
+
+    if (this.sprites.has(hexKey) || !isExplored) {
+      return;
+    }
+
+    getWorldPositionForTile({ col, row }, false, this.tempVector3);
+    this.createSingleTileSprite(hexKey, tileIndex, this.tempVector3, row, true);
   }
 
   public updateTilesForHexes(hexes: BuildingTilePosition[]): void {
@@ -64,7 +93,10 @@ export class BuildingTileRenderer extends BaseTileRenderer<BuildingTileIndex> {
 
     const newHexKeys = new Set(
       hexes
-        .filter(({ buildingType, isExplored }) => isExplored && buildingType && buildingType !== BuildingType.None)
+        .filter(
+          ({ buildingType, isExplored }) =>
+            isExplored && buildingType !== undefined && buildingType !== BuildingType.None,
+        )
         .map(({ col, row }) => `${col},${row}`),
     );
     const currentHexKeys = new Set(this.sprites.keys());
@@ -80,7 +112,7 @@ export class BuildingTileRenderer extends BaseTileRenderer<BuildingTileIndex> {
     });
 
     hexes.forEach((hex) => {
-      if (!hex.isExplored || !hex.buildingType || hex.buildingType === BuildingType.None) {
+      if (!hex.isExplored || hex.buildingType === undefined || hex.buildingType === BuildingType.None) {
         return;
       }
 
@@ -112,6 +144,27 @@ export class BuildingTileRenderer extends BaseTileRenderer<BuildingTileIndex> {
 
     toAdd.forEach(({ col, row, buildingType, isExplored }) => {
       this.addTile(col, row, buildingType, isExplored);
+    });
+  }
+
+  public setVisibleBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void {
+    console.log(`[BuildingTileRenderer] setVisibleBounds: sprites=${this.sprites.size}, bounds:`, bounds);
+    // Building tiles need bounds-based visibility management
+    this.updateTileVisibility(bounds);
+  }
+
+  private updateTileVisibility(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void {
+    this.sprites.forEach((sprite, hexKey) => {
+      const [col, row] = hexKey.split(",").map(Number);
+      const shouldBeVisible =
+        col >= bounds.minCol && col <= bounds.maxCol && row >= bounds.minRow && row <= bounds.maxRow;
+
+      if (shouldBeVisible && !sprite.parent) {
+        console.log(`[BuildingTileRenderer] Making tile visible at (${col}, ${row})`);
+        this.scene.add(sprite);
+      } else if (!shouldBeVisible && sprite.parent) {
+        this.scene.remove(sprite);
+      }
     });
   }
 }

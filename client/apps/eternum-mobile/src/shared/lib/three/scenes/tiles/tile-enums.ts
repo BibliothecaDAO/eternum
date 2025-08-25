@@ -1,4 +1,4 @@
-import { BiomeType, BuildingType, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BiomeType, BuildingType, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 
 export enum BiomeTileIndex {
   Outline = 0,
@@ -42,28 +42,78 @@ export const BiomeTypeToTileIndex: Record<BiomeType, BiomeTileIndex> = {
 };
 
 export enum BuildingTileIndex {
-  None = 0,
-  WorkersHut = 1,
-  Storehouse = 2,
-  Farm = 3,
-  FishingVillage = 4,
-  Mine = 5,
-  LumberMill = 6,
-  Forge = 7,
+  Hyperstructure = 0,
+  Chest = 1,
+  EssenceRift = 2,
+  Castle0 = 3,
+  Castle1 = 4,
+  Castle2 = 5,
+  Castle3 = 6,
+  ArcherRange = 7,
   Barracks = 8,
-  Archery = 9,
-  Stable = 10,
-  Market = 11,
-  Bank = 12,
-  FragmentMine = 13,
-  Dragonhide = 14,
-  Wonder = 15,
-  Hyperstructure = 16,
-  Village = 17,
+  Camp = 9,
+  Farm = 10,
+  FishingVillage = 11,
+  Forge = 12,
+  LumberMill = 13,
+  Market = 14,
+  Mine = 15,
+  Stable = 16,
+  Storehouse = 17,
+  WorkersHut = 18,
+}
+
+export const structureTypeToBuildingTileIndex: Record<StructureType, BuildingTileIndex> = {
+  [StructureType.Bank]: BuildingTileIndex.Market,
+  [StructureType.Realm]: BuildingTileIndex.Castle0,
+  [StructureType.FragmentMine]: BuildingTileIndex.EssenceRift,
+  [StructureType.Hyperstructure]: BuildingTileIndex.Hyperstructure,
+  [StructureType.Village]: BuildingTileIndex.Camp,
+};
+
+export const structureTypeToBuildingType: Record<StructureType, BuildingType> = {
+  [StructureType.Bank]: BuildingType.ResourceDonkey,
+  [StructureType.Realm]: BuildingType.ResourceLabor,
+  [StructureType.FragmentMine]: BuildingType.ResourceAncientFragment,
+  [StructureType.Hyperstructure]: BuildingType.ResourceLabor,
+  [StructureType.Village]: BuildingType.ResourceLabor,
+};
+
+export function getStructureTileIndex(structureType: StructureType, level?: number): BuildingTileIndex {
+  if (structureType === StructureType.Realm && level !== undefined) {
+    switch (level) {
+      case 1:
+        return BuildingTileIndex.Castle1;
+      case 2:
+        return BuildingTileIndex.Castle2;
+      case 3:
+        return BuildingTileIndex.Castle3;
+      default:
+        return BuildingTileIndex.Castle0;
+    }
+  }
+
+  return structureTypeToBuildingTileIndex[structureType] || BuildingTileIndex.Camp;
+}
+
+export function getBuildingTileIndex(
+  structureType?: StructureType,
+  buildingType?: BuildingType,
+  level?: number,
+): BuildingTileIndex {
+  if (buildingType !== undefined) {
+    return BuildingTypeToTileIndex[buildingType] || BuildingTileIndex.WorkersHut;
+  }
+
+  if (structureType !== undefined) {
+    return getStructureTileIndex(structureType, level);
+  }
+
+  return BuildingTileIndex.WorkersHut;
 }
 
 export const BuildingTypeToTileIndex: Record<BuildingType, BuildingTileIndex> = {
-  [BuildingType.None]: BuildingTileIndex.None,
+  [BuildingType.None]: BuildingTileIndex.WorkersHut,
   [BuildingType.WorkersHut]: BuildingTileIndex.WorkersHut,
   [BuildingType.Storehouse]: BuildingTileIndex.Storehouse,
   [BuildingType.ResourceStone]: BuildingTileIndex.Mine,
@@ -87,16 +137,16 @@ export const BuildingTypeToTileIndex: Record<BuildingType, BuildingTileIndex> = 
   [BuildingType.ResourceAdamantine]: BuildingTileIndex.Mine,
   [BuildingType.ResourceSapphire]: BuildingTileIndex.Mine,
   [BuildingType.ResourceEtherealSilica]: BuildingTileIndex.Mine,
-  [BuildingType.ResourceDragonhide]: BuildingTileIndex.Dragonhide,
+  [BuildingType.ResourceDragonhide]: BuildingTileIndex.Mine,
   [BuildingType.ResourceLabor]: BuildingTileIndex.WorkersHut,
-  [BuildingType.ResourceAncientFragment]: BuildingTileIndex.FragmentMine,
+  [BuildingType.ResourceAncientFragment]: BuildingTileIndex.EssenceRift,
   [BuildingType.ResourceDonkey]: BuildingTileIndex.Market,
   [BuildingType.ResourceKnightT1]: BuildingTileIndex.Barracks,
   [BuildingType.ResourceKnightT2]: BuildingTileIndex.Barracks,
   [BuildingType.ResourceKnightT3]: BuildingTileIndex.Barracks,
-  [BuildingType.ResourceCrossbowmanT1]: BuildingTileIndex.Archery,
-  [BuildingType.ResourceCrossbowmanT2]: BuildingTileIndex.Archery,
-  [BuildingType.ResourceCrossbowmanT3]: BuildingTileIndex.Archery,
+  [BuildingType.ResourceCrossbowmanT1]: BuildingTileIndex.ArcherRange,
+  [BuildingType.ResourceCrossbowmanT2]: BuildingTileIndex.ArcherRange,
+  [BuildingType.ResourceCrossbowmanT3]: BuildingTileIndex.ArcherRange,
   [BuildingType.ResourcePaladinT1]: BuildingTileIndex.Stable,
   [BuildingType.ResourcePaladinT2]: BuildingTileIndex.Stable,
   [BuildingType.ResourcePaladinT3]: BuildingTileIndex.Stable,

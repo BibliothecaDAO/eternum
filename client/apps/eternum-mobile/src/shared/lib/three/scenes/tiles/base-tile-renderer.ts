@@ -80,10 +80,14 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
   protected createPrototypeSprites(): void {
     this.materials.forEach((material, tileId) => {
       const sprite = new THREE.Sprite(material);
-      const spriteScale = HEX_SIZE * 3.2;
-      sprite.scale.set(spriteScale, spriteScale * 1.15, 1);
+      this.configureSpriteScale(sprite, tileId);
       this.prototypeSprites.set(tileId, sprite);
     });
+  }
+
+  protected configureSpriteScale(sprite: THREE.Sprite, tileId: TTileIndex): void {
+    const spriteScale = HEX_SIZE * 3.2;
+    sprite.scale.set(spriteScale, spriteScale * 1.15, 1);
   }
 
   protected calculateTileUV(tileIndex: number, tilesPerRow: number, textureWidth: number, textureHeight: number) {
@@ -118,13 +122,22 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
 
     const sprite = prototypeSprite.clone();
 
-    const yOffset = isOverlay ? 0.25 : 0.2;
-    sprite.position.set(position.x, yOffset, position.z - HEX_SIZE * 0.825);
+    this.configureSpritePosition(sprite, position, row, isOverlay);
 
     sprite.renderOrder = Math.max(BaseTileRenderer.BASE_RENDER_ORDER + row, 1) + (isOverlay ? 1000 : 0);
 
     this.sprites.set(spriteKey, sprite);
     this.scene.add(sprite);
+  }
+
+  protected configureSpritePosition(
+    sprite: THREE.Sprite,
+    position: THREE.Vector3,
+    row: number,
+    isOverlay: boolean,
+  ): void {
+    const yOffset = isOverlay ? 0.25 : 0.2;
+    sprite.position.set(position.x, yOffset, position.z - HEX_SIZE * 0.825);
   }
 
   protected getTileIdFromSprite(sprite: THREE.Sprite): TTileIndex | null {
