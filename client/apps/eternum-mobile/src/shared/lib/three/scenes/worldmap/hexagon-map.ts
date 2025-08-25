@@ -5,17 +5,23 @@ import {
   ArmyActionManager,
   ArmySystemUpdate,
   ChestSystemUpdate,
+  configManager,
+  ExplorerMoveSystemUpdate,
+  ExplorerTroopsSystemUpdate,
+  getBlockTimestamp,
   Position,
+  QuestSystemUpdate,
+  RelicEffectSystemUpdate,
+  StaminaManager,
   StructureActionManager,
   StructureSystemUpdate,
   TileSystemUpdate,
   WorldUpdateListener,
 } from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
-import { BiomeType, FELT_CENTER, HexEntityInfo } from "@bibliothecadao/types";
+import { BiomeType, FELT_CENTER, HexEntityInfo, ID } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { getMapFromTorii } from "../../../../../app/dojo/queries";
-import { getBlockTimestamp } from "../../../../hooks/use-block-timestamp";
 import { FXManager } from "../../managers/fx-manager";
 import { GUIManager } from "../../managers/gui-manager";
 import { HighlightRenderer } from "../../managers/highlight-renderer";
@@ -55,15 +61,11 @@ export class HexagonMap {
   private GUIFolder: any;
 
   private raycaster: THREE.Raycaster;
-  private matrix = new THREE.Matrix4();
-  private position = new THREE.Vector3();
   private dummy = new THREE.Object3D();
   private systemManager: WorldUpdateListener;
 
   private tempVector3 = new THREE.Vector3();
   private tempColor = new THREE.Color();
-  private tempQuaternion = new THREE.Quaternion();
-  private tempMatrix = new THREE.Matrix4();
 
   private static hexagonGeometry: THREE.ShapeGeometry | null = null;
   private static hexagonMaterial: THREE.MeshLambertMaterial | null = null;
@@ -129,10 +131,19 @@ export class HexagonMap {
 
     this.systemManager.Tile.onTileUpdate((value) => this.updateExploredHex(value));
     this.systemManager.Army.onTileUpdate((update) => this.updateArmyHexes(update));
+    this.systemManager.Army.onExplorerTroopsUpdate((update) => this.updateArmyFromExplorerTroopsUpdate(update));
     this.systemManager.Army.onDeadArmy((entityId) => this.deleteArmy(entityId));
     this.systemManager.Structure.onTileUpdate((update) => this.updateStructureHexes(update));
+    this.systemManager.Structure.onStructureUpdate((update) => this.updateStructureFromStructureUpdate(update));
+    this.systemManager.Structure.onStructureBuildingsUpdate((update) => this.updateStructureFromBuildingUpdate(update));
+    this.systemManager.Structure.onContribution((value) => this.updateStructureContribution(value));
+    this.systemManager.Quest.onTileUpdate((update) => this.updateQuestHexes(update));
     this.systemManager.Chest.onTileUpdate((update) => this.updateChestHexes(update));
     this.systemManager.Chest.onDeadChest((entityId) => this.deleteChest(entityId));
+    this.systemManager.RelicEffect.onExplorerTroopsUpdate((update) => this.handleRelicEffectUpdate(update));
+    this.systemManager.RelicEffect.onStructureGuardUpdate((update) => this.handleRelicEffectUpdate(update));
+    this.systemManager.RelicEffect.onStructureProductionUpdate((update) => this.handleRelicEffectUpdate(update));
+    this.systemManager.ExplorerMove.onExplorerMoveEventUpdate((update) => this.handleExplorerMoveUpdate(update));
 
     // Setup GUI with duplicate prevention
     const folderName = "HexagonMap";
@@ -169,11 +180,6 @@ export class HexagonMap {
     this.lastChunkZ = centerChunkZ;
 
     this.updateVisibleHexes(centerChunkX, centerChunkZ);
-  }
-
-  private addHex(hex: { col: number; row: number }): void {
-    const key = `${hex.col},${hex.row}`;
-    this.allHexes.add(key);
   }
 
   private async updateVisibleHexes(centerChunkX: number, centerChunkZ: number): Promise<void> {
@@ -266,7 +272,7 @@ export class HexagonMap {
     }
   }
 
-  private isChunkInBounds(chunkX: number, chunkZ: number): boolean {
+  private isChunkInBounds(_chunkX: number, _chunkZ: number): boolean {
     return true;
   }
 
@@ -304,7 +310,7 @@ export class HexagonMap {
     const prepareStartTime = performance.now();
     const allVisibleHexes = Array.from(this.visibleHexes).map((hexString) => {
       const [col, row] = hexString.split(",").map(Number);
-      return { col, row, hexString };
+      return { col, row };
     });
 
     const instanceCount = allVisibleHexes.length;
@@ -329,7 +335,7 @@ export class HexagonMap {
     let index = 0;
     const tilePositions: BiomeTilePosition[] = [];
 
-    allVisibleHexes.forEach(({ col, row, hexString }) => {
+    allVisibleHexes.forEach(({ col, row }) => {
       getWorldPositionForHex({ col, row }, true, this.tempVector3);
 
       this.dummy.position.copy(this.tempVector3);
@@ -888,10 +894,6 @@ export class HexagonMap {
     }
   }
 
-  private isHexExplored(col: number, row: number): boolean {
-    return this.exploredTiles.has(col) && this.exploredTiles.get(col)!.has(row);
-  }
-
   public updateArmyHexes(update: ArmySystemUpdate) {
     const {
       hexCoords: { col, row },
@@ -902,6 +904,9 @@ export class HexagonMap {
       troopType,
       troopTier,
       isDaydreamsAgent,
+      troopCount,
+      currentStamina,
+      maxStamina,
     } = update;
 
     if (ownerAddress === undefined) return;
@@ -918,8 +923,20 @@ export class HexagonMap {
     const isNewArmy = !existingArmy;
 
     if (isNewArmy) {
+      // Calculate maxStamina if not provided
+      let finalMaxStamina = maxStamina || 0;
+      if (!finalMaxStamina && troopType && troopTier) {
+        try {
+          finalMaxStamina = Number(configManager.getTroopStaminaConfig(troopType, troopTier));
+        } catch (error) {
+          console.warn(`Failed to get max stamina config for ${troopType} ${troopTier}:`, error);
+        }
+      }
+
       // New army - add it
-      console.log(`[HexagonMap] Added new army ${entityId} at (${newPos.col}, ${newPos.row})`);
+      console.log(
+        `[HexagonMap] Added new army ${entityId} at (${newPos.col}, ${newPos.row}) with stamina ${currentStamina || 0}/${finalMaxStamina}`,
+      );
 
       const army: ArmyObject = {
         id: entityId,
@@ -933,6 +950,9 @@ export class HexagonMap {
         guildName,
         isDaydreamsAgent,
         isAlly: false,
+        troopCount: troopCount || 0,
+        currentStamina: currentStamina || 0,
+        maxStamina: finalMaxStamina,
       };
 
       this.armyRenderer.addObject(army);
@@ -958,6 +978,16 @@ export class HexagonMap {
           this.selectionManager.clearSelection();
         }
 
+        // Calculate maxStamina if not provided
+        let finalMaxStamina = maxStamina || existingArmy.maxStamina || 0;
+        if (!finalMaxStamina && troopType && troopTier) {
+          try {
+            finalMaxStamina = Number(configManager.getTroopStaminaConfig(troopType, troopTier));
+          } catch (error) {
+            console.warn(`Failed to get max stamina config for ${troopType} ${troopTier}:`, error);
+          }
+        }
+
         // Update army properties BEFORE starting movement (so movement logic has correct data)
         const updatedArmy: ArmyObject = {
           ...existingArmy,
@@ -968,6 +998,9 @@ export class HexagonMap {
           guildName,
           isDaydreamsAgent,
           isAlly: false,
+          troopCount: troopCount || existingArmy.troopCount || 0,
+          currentStamina: currentStamina || existingArmy.currentStamina || 0,
+          maxStamina: finalMaxStamina,
         };
         this.armyRenderer.updateObject(updatedArmy);
 
@@ -979,6 +1012,16 @@ export class HexagonMap {
           this.armyHexes.set(newPos.col, new Map());
         }
         this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: ownerAddress });
+
+        // Calculate maxStamina if not provided
+        let finalMaxStamina = maxStamina || existingArmy.maxStamina || 0;
+        if (!finalMaxStamina && troopType && troopTier) {
+          try {
+            finalMaxStamina = Number(configManager.getTroopStaminaConfig(troopType, troopTier));
+          } catch (error) {
+            console.warn(`Failed to get max stamina config for ${troopType} ${troopTier}:`, error);
+          }
+        }
 
         // Update army properties without position change
         const updatedArmy: ArmyObject = {
@@ -992,6 +1035,9 @@ export class HexagonMap {
           guildName,
           isDaydreamsAgent,
           isAlly: false,
+          troopCount: troopCount || existingArmy.troopCount || 0,
+          currentStamina: currentStamina || existingArmy.currentStamina || 0,
+          maxStamina: finalMaxStamina,
         };
 
         this.armyRenderer.updateObject(updatedArmy);
@@ -1097,6 +1143,30 @@ export class HexagonMap {
 
     // Remove from renderer (this will properly dispose of the sprite)
     this.armyRenderer.removeObject(entityId);
+  }
+
+  public updateQuestHexes(update: QuestSystemUpdate) {
+    const {
+      hexCoords: { col, row },
+      entityId,
+    } = update;
+
+    const normalized = new Position({ x: col, y: row }).getNormalized();
+
+    // Update quest hexes map for action path calculation
+    if (!this.questHexes.has(normalized.x)) {
+      this.questHexes.set(normalized.x, new Map());
+    }
+    this.questHexes.get(normalized.x)?.set(normalized.y, { id: entityId, owner: 0n });
+
+    const quest = {
+      id: entityId,
+      col: normalized.x,
+      row: normalized.y,
+      owner: 0n,
+      type: "quest" as const,
+    };
+    this.questRenderer.addObject(quest);
   }
 
   public updateChestHexes(update: ChestSystemUpdate) {
@@ -1223,5 +1293,136 @@ export class HexagonMap {
     });
 
     console.log("=== END PERFORMANCE SUMMARY ===\n");
+  }
+
+  private updateArmyFromExplorerTroopsUpdate(update: ExplorerTroopsSystemUpdate): void {
+    console.log("[HexagonMap] Army explorer troops update:", update);
+
+    // Get the army from our renderer
+    const armyObject = this.armyRenderer.getObject(update.entityId);
+
+    if (!armyObject) {
+      // Army doesn't exist in renderer yet, this is expected for armies not yet loaded
+      console.log(
+        `[HexagonMap] Army ${update.entityId} not found in renderer - update will be applied when army loads`,
+      );
+      return;
+    }
+
+    // Calculate current stamina using StaminaManager (mirroring desktop implementation)
+    const { currentArmiesTick } = getBlockTimestamp();
+    let currentStamina = armyObject.currentStamina || 0;
+    let maxStamina = armyObject.maxStamina || 0;
+
+    if (armyObject.troopType && armyObject.troopTier) {
+      try {
+        const staminaResult = StaminaManager.getStamina(
+          {
+            category: armyObject.troopType,
+            tier: armyObject.troopTier,
+            count: BigInt(update.troopCount),
+            stamina: {
+              amount: BigInt(update.onChainStamina.amount),
+              updated_tick: BigInt(update.onChainStamina.updatedTick),
+            },
+            boosts: {
+              incr_stamina_regen_percent_num: 0,
+              incr_stamina_regen_tick_count: 0,
+              incr_explore_reward_percent_num: 0,
+              incr_explore_reward_end_tick: 0,
+              incr_damage_dealt_percent_num: 0,
+              incr_damage_dealt_end_tick: 0,
+              decr_damage_gotten_percent_num: 0,
+              decr_damage_gotten_end_tick: 0,
+            },
+          },
+          currentArmiesTick,
+        );
+
+        currentStamina = Number(staminaResult.amount);
+        // Calculate maxStamina using configManager based on troop type and tier
+        maxStamina = Number(configManager.getTroopStaminaConfig(armyObject.troopType, armyObject.troopTier));
+
+        console.log(`[HexagonMap] Stamina update for army ${update.entityId}: ${currentStamina}/${maxStamina}`);
+      } catch (error) {
+        console.warn(`Failed to calculate stamina for army ${update.entityId}:`, error);
+      }
+    }
+
+    // Update the army object with new troop count and stamina data
+    const updatedArmy = {
+      ...armyObject,
+      troopCount: update.troopCount,
+      currentStamina,
+      maxStamina,
+      ownerName: update.ownerName,
+      owner: update.ownerAddress,
+    };
+
+    console.log(`[HexagonMap] Updating army ${update.entityId} with data:`, {
+      troopCount: updatedArmy.troopCount,
+      currentStamina: updatedArmy.currentStamina,
+      maxStamina: updatedArmy.maxStamina,
+      ownerName: updatedArmy.ownerName,
+    });
+
+    this.armyRenderer.updateObject(updatedArmy);
+
+    // Update hex tracking with the new owner information if it changed
+    const position = this.armiesPositions.get(update.entityId);
+    if (position) {
+      if (!this.armyHexes.has(position.col)) {
+        this.armyHexes.set(position.col, new Map());
+      }
+      this.armyHexes.get(position.col)?.set(position.row, {
+        id: update.entityId,
+        owner: update.ownerAddress,
+      });
+    }
+  }
+
+  private updateStructureFromStructureUpdate(update: {
+    entityId: ID;
+    guardArmies: any[];
+    owner: { address: bigint; ownerName: string; guildName: string };
+  }): void {
+    console.log("[HexagonMap] Structure guard update:", update);
+    // For mobile, structure renderer handles its own updates
+  }
+
+  private updateStructureFromBuildingUpdate(update: {
+    entityId: ID;
+    activeProductions: Array<{ buildingCount: number; buildingType: any }>;
+  }): void {
+    console.log("[HexagonMap] Structure building update:", update);
+    // For mobile, structure renderer handles its own updates
+  }
+
+  private updateStructureContribution(value: { entityId: ID; structureType: any; stage: any }): void {
+    console.log("[HexagonMap] Structure contribution update:", value);
+    // For mobile, structure renderer handles its own updates
+  }
+
+  private handleRelicEffectUpdate(update: RelicEffectSystemUpdate): void {
+    console.log("[HexagonMap] Relic effect update:", update);
+    // For mobile, relic effects are handled by individual renderers
+    // This is a placeholder for future relic effect implementation
+  }
+
+  private handleExplorerMoveUpdate(update: ExplorerMoveSystemUpdate): void {
+    const { explorerId, resourceId, amount } = update;
+    console.log("[HexagonMap] Explorer move update:", update);
+
+    // Find the army position using explorerId
+    setTimeout(() => {
+      const armyPosition = this.armiesPositions.get(explorerId);
+      if (armyPosition && resourceId !== 0) {
+        // For mobile, we could display resource gain effects here
+        // Currently just log the resource gain
+        console.log(
+          `Army ${explorerId} found resource ${resourceId} (amount: ${amount}) at position (${armyPosition.col}, ${armyPosition.row})`,
+        );
+      }
+    }, 500);
   }
 }
