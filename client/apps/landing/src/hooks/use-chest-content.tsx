@@ -7,7 +7,7 @@ import { fetchTokenBalancesWithMetadata } from "./services";
 
 // todo: this is not good, we need to listen to CollectibleClaimed events but they
 // were not indexed yet. This is a temporary solution to get the chest content.
-export const useChestContent = () => {
+export const useChestContent = (debugMode: boolean = false) => {
   const [chestContent, setChestContent] = useState<ChestAsset[]>([]);
   const previousLengthRef = useRef<number>(0);
 
@@ -21,6 +21,13 @@ export const useChestContent = () => {
   });
 
   useEffect(() => {
+    // Debug mode: return all chest assets
+    if (debugMode) {
+      console.log("Debug mode enabled - returning all chest assets");
+      setChestContent(chestAssets);
+      return;
+    }
+
     if (tokenBalanceQuery && Array.isArray(tokenBalanceQuery)) {
       const currentLength = tokenBalanceQuery.length;
 
@@ -44,7 +51,7 @@ export const useChestContent = () => {
       // Update ref with current length for next comparison
       previousLengthRef.current = currentLength;
     }
-  }, [tokenBalanceQuery]); // Only depend on tokenBalanceQuery
+  }, [tokenBalanceQuery, debugMode]); // Added debugMode to dependencies
 
   const resetChestContent = () => {
     setChestContent([]);

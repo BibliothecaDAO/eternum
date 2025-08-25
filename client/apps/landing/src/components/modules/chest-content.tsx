@@ -1,8 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { useClickSound } from "@/hooks/use-click-sound";
 import { TroopType } from "@bibliothecadao/types";
 import { BarChart3, Diamond, Swords, Target } from "lucide-react";
 import { useState } from "react";
-import { useClickSound } from "@/hooks/use-click-sound";
 import { ModelViewer } from "./model-viewer";
 
 export enum AssetType {
@@ -43,6 +43,9 @@ export interface ChestAsset {
   positionY: number;
   scale: number;
   rotationY?: number | undefined;
+  rotationX?: number | undefined;
+  rotationZ?: number | undefined;
+  cameraPosition?: { x: number; y: number; z: number } | undefined;
 }
 // Dynamic rarity percentages based on actual chest assets
 const calculateRarityPercentages = (assets: ChestAsset[]) => {
@@ -118,6 +121,7 @@ export const chestAssets: ChestAsset[] = [
     imagePath: "images/cosmetics/legacy-realm-aura.png",
     positionY: -0.1,
     scale: 2.4,
+    cameraPosition: { x: 0, y: 1.3, z: 1 },
   },
   {
     id: "5",
@@ -132,7 +136,9 @@ export const chestAssets: ChestAsset[] = [
     imagePath: "images/cosmetics/winter-lord-realm.png",
     positionY: 0,
     scale: 1,
-    rotationY: -2,
+    rotationY: 1.2,
+    rotationX: 0,
+    cameraPosition: { x: 0, y: 1.3, z: 1 },
   },
   {
     id: "6",
@@ -161,6 +167,8 @@ export const chestAssets: ChestAsset[] = [
     imagePath: "images/cosmetics/legacy-troop-aura.png",
     positionY: 0,
     scale: 1,
+    rotationY: -0.1,
+    cameraPosition: { x: 0, y: 1.3, z: 1 },
   },
   {
     id: "2",
@@ -176,6 +184,9 @@ export const chestAssets: ChestAsset[] = [
     imagePath: "images/cosmetics/legacy-knight.png",
     positionY: 0.2,
     scale: 1,
+    rotationY: 0.7,
+    rotationX: 0,
+    cameraPosition: { x: 0, y: 1.3, z: 1 },
   },
   {
     id: "7",
@@ -220,7 +231,7 @@ export const chestAssets: ChestAsset[] = [
     imagePath: "images/cosmetics/common-bow.png",
     positionY: -0.8,
     scale: 1,
-    rotationY: 5,
+    rotationY: 1,
   },
   {
     id: "10",
@@ -234,7 +245,9 @@ export const chestAssets: ChestAsset[] = [
     modelPath: "models/cosmetics/high-res/common_quiver.glb",
     imagePath: "images/cosmetics/common-quiver.png",
     positionY: 0,
-    scale: 1,
+    scale: 0.8,
+    rotationX: 0,
+    rotationZ: -0.8,
   },
   {
     id: "11",
@@ -249,6 +262,7 @@ export const chestAssets: ChestAsset[] = [
     imagePath: "images/cosmetics/common-base.png",
     positionY: 0.2,
     scale: 1,
+    cameraPosition: { x: -0.4, y: 3, z: 1 },
   },
 ];
 
@@ -357,9 +371,9 @@ export const ChestContent = ({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const rarityStats = calculateRarityStats(chestContent);
   const RARITY_PERCENTAGES = calculateRarityPercentages(chestAssets);
-  
+
   const { playClickSound } = useClickSound({
-    src: '/sound/ui/click-2.wav',
+    src: "/sound/ui/click-2.wav",
     volume: 0.6,
   });
 
@@ -368,7 +382,7 @@ export const ChestContent = ({
 
     // Play click sound
     playClickSound();
-    
+
     setIsTransitioning(true);
     setTimeout(() => {
       setSelectedAsset(asset);
@@ -410,6 +424,9 @@ export const ChestContent = ({
             positionY={selectedAsset.positionY}
             scale={selectedAsset.scale}
             rotationY={selectedAsset.rotationY}
+            rotationZ={selectedAsset.rotationZ}
+            rotationX={selectedAsset.rotationX}
+            cameraPosition={selectedAsset.cameraPosition}
           />
         </div>
 

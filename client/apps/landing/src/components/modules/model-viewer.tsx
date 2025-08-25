@@ -9,7 +9,10 @@ interface ModelViewerProps {
   positionY?: number;
   scale?: number;
   rotationY?: number;
+  rotationX?: number | undefined;
+  rotationZ?: number | undefined;
   rarity?: "common" | "uncommon" | "rare" | "epic" | "legendary";
+  cameraPosition?: { x: number; y: number; z: number };
 }
 
 const getRarityAmbientColor = (rarity: "common" | "uncommon" | "rare" | "epic" | "legendary" | undefined) => {
@@ -34,8 +37,11 @@ export const ModelViewer = ({
   positionY = 0,
   scale = 1,
   rotationY = 0,
+  rotationX = 0,
+  rotationZ = 0,
   rarity,
   className = "",
+  cameraPosition = { x: 0, y: 1, z: 1 },
 }: ModelViewerProps) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -60,7 +66,7 @@ export const ModelViewer = ({
 
     // Camera setup
     const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-    camera.position.set(0, 1, 1);
+    camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z);
     cameraRef.current = camera;
 
     // Renderer setup
@@ -83,7 +89,6 @@ export const ModelViewer = ({
     controls.minDistance = 2;
     controls.maxDistance = 5;
     controlsRef.current = controls;
-
 
     // Enhanced lighting setup with rarity-based ambient light
     const rarityColor = getRarityAmbientColor(rarity);
@@ -147,6 +152,8 @@ export const ModelViewer = ({
 
         // Apply Y rotation
         model.rotation.y = rotationY;
+        model.rotation.x = rotationX;
+        model.rotation.z = rotationZ;
 
         // Enable shadows
         model.traverse((child) => {

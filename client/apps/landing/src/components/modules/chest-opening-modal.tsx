@@ -13,7 +13,7 @@ import { useOpenChest } from "@/hooks/use-open-chest";
 import { useLootChestOpeningStore } from "@/stores/loot-chest-opening";
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { ChestAsset, ChestContent } from "./chest-content";
+import { AssetRarity, ChestAsset, ChestContent } from "./chest-content";
 
 const LoadingAnimation = () => {
   return (
@@ -58,10 +58,10 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
   const [showContent, setShowContent] = useState(false);
   const [isVideoReady, setIsVideoReady] = useState(false);
   const [loadError, setLoadError] = useState(false);
-  const [chestType, setChestType] = useState<ChestAsset["rarity"]>("common");
+  const [chestType, setChestType] = useState<ChestAsset["rarity"]>(AssetRarity.Common);
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
 
-  const { chestContent, resetChestContent } = useChestContent();
+  const { chestContent, resetChestContent } = useChestContent(true);
 
   const ambienceAudio = useAmbienceAudio({
     src: "/sound/music/ShadowSong.mp3",
