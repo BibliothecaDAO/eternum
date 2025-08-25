@@ -34,6 +34,8 @@ export class HexagonMap {
   private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
 
   private hexagonMesh: THREE.InstancedMesh | null = null;
+  private hexagonMeshCapacity: number = 0;
+  private static readonly MAX_HEX_CAPACITY = 5000;
   private tileRenderer: TileRenderer;
   private highlightRenderer: HighlightRenderer;
   private armyRenderer: ArmyRenderer;
@@ -269,14 +271,22 @@ export class HexagonMap {
     }
   }
 
-  private renderHexes(): void {
-    const cleanupStartTime = performance.now();
-    if (this.hexagonMesh) {
-      this.scene.remove(this.hexagonMesh);
-      this.hexagonMesh.dispose();
-    }
-    console.log(`[RENDER-TIMING] Cleanup old mesh: ${(performance.now() - cleanupStartTime).toFixed(2)}ms`);
+  private ensureHexagonMeshCapacity(requiredCapacity: number): void {
+    if (!this.hexagonMesh || this.hexagonMeshCapacity < requiredCapacity) {
+      if (this.hexagonMesh) {
+        this.scene.remove(this.hexagonMesh);
+        this.hexagonMesh.dispose();
+      }
 
+      const capacity = Math.min(Math.max(requiredCapacity, 1000), HexagonMap.MAX_HEX_CAPACITY);
+      this.hexagonMesh = new THREE.InstancedMesh(HexagonMap.hexagonGeometry!, HexagonMap.hexagonMaterial!, capacity);
+      this.hexagonMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(capacity * 3), 3);
+      this.hexagonMeshCapacity = capacity;
+      this.scene.add(this.hexagonMesh);
+    }
+  }
+
+  private renderHexes(): void {
     const prepareStartTime = performance.now();
     const allVisibleHexes = Array.from(this.visibleHexes).map((hexString) => {
       const [col, row] = hexString.split(",").map(Number);
@@ -287,15 +297,18 @@ export class HexagonMap {
 
     if (instanceCount === 0) {
       this.tileRenderer.clearTiles();
+      if (this.hexagonMesh) {
+        this.hexagonMesh.count = 0;
+      }
       return;
     }
 
-    this.hexagonMesh = new THREE.InstancedMesh(HexagonMap.hexagonGeometry!, HexagonMap.hexagonMaterial!, instanceCount);
-    this.hexagonMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(instanceCount * 3), 3);
+    const capacityStartTime = performance.now();
+    this.ensureHexagonMeshCapacity(instanceCount);
+    console.log(`[RENDER-TIMING] Ensure mesh capacity: ${(performance.now() - capacityStartTime).toFixed(2)}ms`);
 
-    allVisibleHexes.sort((a, b) => b.row - a.row);
     console.log(
-      `[RENDER-TIMING] Prepare mesh (${instanceCount} hexes): ${(performance.now() - prepareStartTime).toFixed(2)}ms`,
+      `[RENDER-TIMING] Prepare data (${instanceCount} hexes): ${(performance.now() - prepareStartTime).toFixed(2)}ms`,
     );
 
     const instanceSetupStartTime = performance.now();
@@ -317,21 +330,24 @@ export class HexagonMap {
       const biome = this.exploredTiles.get(col)?.get(row);
       const isExplored = biome !== undefined;
 
-      tilePositions.push({ col, row, biome, isExplored });
+      if (!this.hasStructureAtHex(col, row)) {
+        tilePositions.push({ col, row, biome, isExplored });
+      }
 
       index++;
     });
+
+    this.hexagonMesh!.count = instanceCount;
     const instanceSetupTime = performance.now() - instanceSetupStartTime;
     console.log(`[RENDER-TIMING] Setup instances: ${instanceSetupTime.toFixed(2)}ms`);
     this.recordPerformanceMetric("Setup Instances", instanceSetupTime);
 
-    const addToSceneStartTime = performance.now();
+    const updateStartTime = performance.now();
+    this.hexagonMesh!.instanceMatrix.needsUpdate = true;
     if (this.hexagonMesh!.instanceColor) {
       this.hexagonMesh!.instanceColor.needsUpdate = true;
     }
-
-    this.scene.add(this.hexagonMesh);
-    console.log(`[RENDER-TIMING] Add to scene: ${(performance.now() - addToSceneStartTime).toFixed(2)}ms`);
+    console.log(`[RENDER-TIMING] Update attributes: ${(performance.now() - updateStartTime).toFixed(2)}ms`);
 
     const tileRenderStartTime = performance.now();
     this.tileRenderer.renderTilesForHexes(tilePositions);
@@ -680,6 +696,8 @@ export class HexagonMap {
     if (this.hexagonMesh) {
       this.scene.remove(this.hexagonMesh);
       this.hexagonMesh.dispose();
+      this.hexagonMesh = null;
+      this.hexagonMeshCapacity = 0;
     }
 
     this.tileRenderer.dispose();
