@@ -24,6 +24,17 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
   protected prototypeSprites: Map<TTileIndex, THREE.Sprite> = new Map();
   protected tempVector3 = new THREE.Vector3();
 
+  protected spritePool: Map<TTileIndex, THREE.Sprite[]> = new Map();
+  protected readonly POOL_SIZE = 100;
+  protected positionCache: Map<string, THREE.Vector3> = new Map();
+
+  protected pendingSceneAdds: Set<THREE.Group> = new Set();
+  protected pendingSceneRemoves: Set<THREE.Group> = new Set();
+  protected isBatchingSceneOps: boolean = false;
+
+  protected visibleTileKeys: Set<string> = new Set();
+  protected previousVisibleBounds: { minCol: number; maxCol: number; minRow: number; maxRow: number } | null = null;
+
   protected static textureLoader = new THREE.TextureLoader();
   protected static readonly BASE_RENDER_ORDER = 100;
 
@@ -98,6 +109,14 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
       const sprite = new THREE.Sprite(material);
       this.configureSpriteScale(sprite, tileId);
       this.prototypeSprites.set(tileId, sprite);
+
+      // Pre-populate sprite pool
+      this.spritePool.set(tileId, []);
+      for (let i = 0; i < this.POOL_SIZE; i++) {
+        const pooledSprite = new THREE.Sprite(material);
+        this.configureSpriteScale(pooledSprite, tileId);
+        this.spritePool.get(tileId)!.push(pooledSprite);
+      }
     });
   }
 
@@ -146,15 +165,20 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
 
     console.log(`[BaseTileRenderer] createSingleTileSprite: Creating sprite for key ${spriteKey}, tileId ${tileId}`);
 
-    const material = this.materials.get(tileId);
+    // Try to get a sprite from the pool first
+    let sprite = this.getPooledSprite(tileId);
 
-    if (!material) {
-      console.warn(`Material for tileId: ${tileId} not found in ${this.constructor.name}`);
-      return;
+    if (!sprite) {
+      // If pool is empty, create a new sprite
+      const material = this.materials.get(tileId);
+      if (!material) {
+        console.warn(`Material for tileId: ${tileId} not found in ${this.constructor.name}`);
+        return;
+      }
+      sprite = new THREE.Sprite(material);
+      this.configureSpriteScale(sprite, tileId);
     }
 
-    const sprite = new THREE.Sprite(material);
-    this.configureSpriteScale(sprite, tileId);
     this.configureSpritePosition(sprite, position, row, isOverlay);
     sprite.renderOrder = Math.max(BaseTileRenderer.BASE_RENDER_ORDER + row, 1) + (isOverlay ? 1000 : 0);
 
@@ -171,24 +195,105 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
 
   public setVisibleBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void {
     this.visibleBounds = bounds;
-    this.updateTileVisibility();
+    this.updateTileVisibilitySmart(bounds);
   }
 
   protected updateTileVisibility(): void {
     if (!this.visibleBounds) return;
+
+    this.startBatchSceneOps();
 
     for (const [hexKey, group] of this.tileGroups) {
       const [col, row] = hexKey.split(",").map(Number);
       const shouldBeVisible = this.isHexVisible(col, row);
 
       if (shouldBeVisible && !group.parent) {
-        this.scene.add(group);
+        this.addGroupToScene(group);
         this.onTileGroupShown(col, row, group);
       } else if (!shouldBeVisible && group.parent) {
-        this.scene.remove(group);
+        this.removeGroupFromScene(group);
         this.onTileGroupHidden(col, row, group);
       }
     }
+
+    this.applyBatchedSceneOps();
+  }
+
+  protected updateTileVisibilitySmart(bounds: {
+    minCol: number;
+    maxCol: number;
+    minRow: number;
+    maxRow: number;
+  }): void {
+    const visibilityStartTime = performance.now();
+
+    // Build set of tiles that should be visible with new bounds
+    const newVisibleTileKeys = new Set<string>();
+
+    // Only check tiles that we have sprites for (existing tiles)
+    for (const [hexKey] of this.tileGroups) {
+      const [col, row] = hexKey.split(",").map(Number);
+      if (col >= bounds.minCol && col <= bounds.maxCol && row >= bounds.minRow && row <= bounds.maxRow) {
+        newVisibleTileKeys.add(hexKey);
+      }
+    }
+
+    // Find tiles that changed visibility status
+    const tilesToHide = new Set<string>();
+    const tilesToShow = new Set<string>();
+
+    // Find tiles that became invisible (were visible, now invisible)
+    for (const hexKey of this.visibleTileKeys) {
+      if (!newVisibleTileKeys.has(hexKey)) {
+        tilesToHide.add(hexKey);
+      }
+    }
+
+    // Find tiles that became visible (were invisible, now visible)
+    for (const hexKey of newVisibleTileKeys) {
+      if (!this.visibleTileKeys.has(hexKey)) {
+        tilesToShow.add(hexKey);
+      }
+    }
+
+    if (tilesToHide.size === 0 && tilesToShow.size === 0) {
+      console.log(`[VISIBILITY-TIMING] No visibility changes needed`);
+      return;
+    }
+
+    console.log(`[VISIBILITY-TIMING] Hiding ${tilesToHide.size} tiles, showing ${tilesToShow.size} tiles`);
+
+    this.startBatchSceneOps();
+
+    // Hide tiles that became invisible
+    for (const hexKey of tilesToHide) {
+      const group = this.tileGroups.get(hexKey);
+      if (group && group.parent) {
+        this.removeGroupFromScene(group);
+        const [col, row] = hexKey.split(",").map(Number);
+        this.onTileGroupHidden(col, row, group);
+      }
+    }
+
+    // Show tiles that became visible
+    for (const hexKey of tilesToShow) {
+      const group = this.tileGroups.get(hexKey);
+      if (group && !group.parent) {
+        this.addGroupToScene(group);
+        const [col, row] = hexKey.split(",").map(Number);
+        this.onTileGroupShown(col, row, group);
+      }
+    }
+
+    this.applyBatchedSceneOps();
+
+    // Update our tracking
+    this.visibleTileKeys = newVisibleTileKeys;
+    this.previousVisibleBounds = { ...bounds };
+
+    console.log(
+      `[VISIBILITY-TIMING] Visibility update completed in ${(performance.now() - visibilityStartTime).toFixed(2)}ms`,
+    );
   }
 
   protected onTileGroupShown(col: number, row: number, group: THREE.Group): void {
@@ -213,6 +318,86 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
     );
   }
 
+  protected getPooledSprite(tileId: TTileIndex): THREE.Sprite | null {
+    const pool = this.spritePool.get(tileId);
+    if (pool && pool.length > 0) {
+      return pool.pop()!;
+    }
+    return null;
+  }
+
+  protected returnSpriteToPool(sprite: THREE.Sprite, tileId: TTileIndex): void {
+    const pool = this.spritePool.get(tileId);
+    if (pool && pool.length < this.POOL_SIZE) {
+      sprite.position.set(0, 0, 0);
+      sprite.rotation.set(0, 0, 0);
+      sprite.scale.set(1, 1, 1);
+      this.configureSpriteScale(sprite, tileId);
+      pool.push(sprite);
+    }
+  }
+
+  protected getCachedWorldPosition(col: number, row: number): THREE.Vector3 {
+    const hexKey = `${col},${row}`;
+    let cachedPosition = this.positionCache.get(hexKey);
+
+    if (!cachedPosition) {
+      getWorldPositionForTile({ col, row }, true, this.tempVector3);
+      cachedPosition = this.tempVector3.clone();
+      this.positionCache.set(hexKey, cachedPosition);
+    }
+
+    return cachedPosition;
+  }
+
+  protected startBatchSceneOps(): void {
+    this.isBatchingSceneOps = true;
+    this.pendingSceneAdds.clear();
+    this.pendingSceneRemoves.clear();
+  }
+
+  protected applyBatchedSceneOps(): void {
+    if (!this.isBatchingSceneOps) return;
+
+    const addStartTime = performance.now();
+    this.pendingSceneAdds.forEach((group) => {
+      this.scene.add(group);
+    });
+    console.log(
+      `[BATCH-TIMING] Added ${this.pendingSceneAdds.size} groups in ${(performance.now() - addStartTime).toFixed(2)}ms`,
+    );
+
+    const removeStartTime = performance.now();
+    this.pendingSceneRemoves.forEach((group) => {
+      this.scene.remove(group);
+    });
+    console.log(
+      `[BATCH-TIMING] Removed ${this.pendingSceneRemoves.size} groups in ${(performance.now() - removeStartTime).toFixed(2)}ms`,
+    );
+
+    this.pendingSceneAdds.clear();
+    this.pendingSceneRemoves.clear();
+    this.isBatchingSceneOps = false;
+  }
+
+  protected addGroupToScene(group: THREE.Group): void {
+    if (this.isBatchingSceneOps) {
+      this.pendingSceneAdds.add(group);
+      this.pendingSceneRemoves.delete(group); // Remove from removes if it was there
+    } else {
+      this.scene.add(group);
+    }
+  }
+
+  protected removeGroupFromScene(group: THREE.Group): void {
+    if (this.isBatchingSceneOps) {
+      this.pendingSceneRemoves.add(group);
+      this.pendingSceneAdds.delete(group); // Remove from adds if it was there
+    } else {
+      this.scene.remove(group);
+    }
+  }
+
   public createTileGroup(col: number, row: number): THREE.Group {
     const hexKey = `${col},${row}`;
     let group = this.tileGroups.get(hexKey);
@@ -220,12 +405,13 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
     if (!group) {
       console.log(`[BaseTileRenderer] createTileGroup: Creating new group for (${col},${row})`);
       group = new THREE.Group();
-      getWorldPositionForTile({ col, row }, true, this.tempVector3);
-      group.position.set(this.tempVector3.x, 0, this.tempVector3.z - HEX_SIZE * 0.825);
+      const cachedPosition = this.getCachedWorldPosition(col, row);
+      group.position.set(cachedPosition.x, 0, cachedPosition.z - HEX_SIZE * 0.825);
       this.tileGroups.set(hexKey, group);
 
       if (this.isHexVisible(col, row)) {
-        this.scene.add(group);
+        this.addGroupToScene(group);
+        this.visibleTileKeys.add(hexKey);
         console.log(`[BaseTileRenderer] createTileGroup: Added group to scene for (${col},${row})`);
       } else {
         console.log(`[BaseTileRenderer] createTileGroup: Group created but not visible for (${col},${row})`);
@@ -249,9 +435,10 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
       group.remove(object);
       if (group.children.length === 0) {
         if (group.parent) {
-          this.scene.remove(group);
+          this.removeGroupFromScene(group);
         }
         this.tileGroups.delete(hexKey);
+        this.visibleTileKeys.delete(hexKey);
       }
     }
   }
@@ -261,12 +448,13 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
     const group = this.tileGroups.get(hexKey);
     if (group) {
       if (group.parent) {
-        this.scene.remove(group);
+        this.removeGroupFromScene(group);
       }
       group.children.forEach((child) => {
         group.remove(child);
       });
       this.tileGroups.delete(hexKey);
+      this.visibleTileKeys.delete(hexKey);
     }
   }
 
@@ -283,16 +471,27 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
     const clearStartTime = performance.now();
     const groupCount = this.tileGroups.size;
 
+    // Return all sprites to pool before clearing
+    this.sprites.forEach((sprite) => {
+      const tileId = this.getTileIdFromSprite(sprite);
+      if (tileId !== null) {
+        this.returnSpriteToPool(sprite, tileId);
+      }
+    });
+
+    this.startBatchSceneOps();
     this.tileGroups.forEach((group) => {
       if (group.parent) {
-        this.scene.remove(group);
+        this.removeGroupFromScene(group);
       }
       group.children.forEach((child) => {
         group.remove(child);
       });
     });
+    this.applyBatchedSceneOps();
     this.tileGroups.clear();
     this.sprites.clear();
+    this.visibleTileKeys.clear();
 
     if (groupCount > 0) {
       console.log(
@@ -310,11 +509,18 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
       group.remove(sprite);
       this.sprites.delete(hexKey);
 
+      // Return sprite to pool if possible
+      const tileId = this.getTileIdFromSprite(sprite);
+      if (tileId !== null) {
+        this.returnSpriteToPool(sprite, tileId);
+      }
+
       if (group.children.length === 0) {
         if (group.parent) {
-          this.scene.remove(group);
+          this.removeGroupFromScene(group);
         }
         this.tileGroups.delete(hexKey);
+        this.visibleTileKeys.delete(hexKey);
       }
     }
   }
@@ -438,8 +644,7 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
       const startPosition = group.position.clone();
       console.log(`[BaseTileRenderer] moveTile: Start position:`, startPosition);
 
-      getWorldPositionForTile({ col: targetCol, row: targetRow }, true, this.tempVector3);
-      const endPosition = this.tempVector3.clone();
+      const endPosition = this.getCachedWorldPosition(targetCol, targetRow).clone();
       endPosition.y = 0;
       endPosition.z -= HEX_SIZE * 0.825;
       console.log(`[BaseTileRenderer] moveTile: End position:`, endPosition);
@@ -496,10 +701,8 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
         }
 
         const targetHex = path[currentStep];
-        getWorldPositionForTile({ col: targetHex.col, row: targetHex.row }, true, this.tempVector3);
-
         const startPosition = group.position.clone();
-        const endPosition = this.tempVector3.clone();
+        const endPosition = this.getCachedWorldPosition(targetHex.col, targetHex.row).clone();
         endPosition.y = 0;
         endPosition.z -= HEX_SIZE * 0.825;
 
@@ -577,6 +780,15 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
     });
     this.prototypeSprites.clear();
 
+    // Clear sprite pools
+    this.spritePool.forEach((pool) => {
+      pool.forEach((sprite) => {
+        void sprite; // Pool sprites share materials, no individual cleanup needed
+      });
+      pool.length = 0;
+    });
+    this.spritePool.clear();
+
     this.materials.forEach((material) => {
       material.dispose();
       if (material.map) {
@@ -587,6 +799,12 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
     this.materials.clear();
     this.materialsInitialized = false;
     this.movingTiles.clear();
+    this.positionCache.clear();
+    this.pendingSceneAdds.clear();
+    this.pendingSceneRemoves.clear();
+    this.isBatchingSceneOps = false;
+    this.visibleTileKeys.clear();
+    this.previousVisibleBounds = null;
 
     if (this.texture) {
       this.texture.dispose();

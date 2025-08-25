@@ -1,6 +1,5 @@
 import { BiomeType } from "@bibliothecadao/types";
 import * as THREE from "three";
-import { getWorldPositionForTile } from "../utils";
 import { BaseTileRenderer, TilePosition } from "./base-tile-renderer";
 import { BiomeTileIndex, BiomeTypeToTileIndex, TILEMAP_CONFIGS } from "./tile-enums";
 
@@ -14,7 +13,7 @@ export class BiomeTileRenderer extends BaseTileRenderer<BiomeTileIndex> {
   }
 
   protected async createTileMaterials(tilesPerRow: number, texture: THREE.Texture): Promise<void> {
-    Object.entries(BiomeTypeToTileIndex).forEach(([biomeType, tileIndex]) => {
+    Object.entries(BiomeTypeToTileIndex).forEach(([, tileIndex]) => {
       this.createTileMaterial(tileIndex, tileIndex, tilesPerRow, texture);
     });
 
@@ -25,26 +24,21 @@ export class BiomeTileRenderer extends BaseTileRenderer<BiomeTileIndex> {
     const renderStartTime = performance.now();
     console.log(`[BIOME-TIMING] Starting biome tile render for ${hexes.length} hexes`);
 
-    const clearStartTime = performance.now();
-    this.clearTiles();
-    console.log(`[BIOME-TIMING] Clear tiles: ${(performance.now() - clearStartTime).toFixed(2)}ms`);
-
     if (!this.materialsInitialized) {
       console.warn("Biome tile materials not yet initialized");
       return;
     }
 
-    const createSpritesStartTime = performance.now();
-    hexes.forEach(({ col, row, biome, isExplored }) => {
-      this.createTileSprite(col, row, biome, isExplored);
-    });
-    console.log(`[BIOME-TIMING] Create sprites: ${(performance.now() - createSpritesStartTime).toFixed(2)}ms`);
+    // Use differential update instead of clear+rebuild
+    const differentialStartTime = performance.now();
+    this.updateTilesForHexes(hexes);
+    console.log(`[BIOME-TIMING] Differential update: ${(performance.now() - differentialStartTime).toFixed(2)}ms`);
     console.log(`[BIOME-TIMING] Total biome render time: ${(performance.now() - renderStartTime).toFixed(2)}ms`);
   }
 
   private createTileSprite(col: number, row: number, biome?: BiomeType, isExplored: boolean = true): void {
     const hexKey = `${col},${row}`;
-    getWorldPositionForTile({ col, row }, true, this.tempVector3);
+    const cachedPosition = this.getCachedWorldPosition(col, row);
 
     let tileId: BiomeTileIndex;
     if (isExplored && biome) {
@@ -53,7 +47,7 @@ export class BiomeTileRenderer extends BaseTileRenderer<BiomeTileIndex> {
       tileId = BiomeTileIndex.Outline;
     }
 
-    this.createSingleTileSprite(hexKey, tileId, this.tempVector3, row, false);
+    this.createSingleTileSprite(hexKey, tileId, cachedPosition, row, false);
   }
 
   public addTile(col: number, row: number, biome?: BiomeType, isExplored: boolean = true): void {
@@ -102,6 +96,9 @@ export class BiomeTileRenderer extends BaseTileRenderer<BiomeTileIndex> {
       }
     });
 
+    // Batch all scene operations for this update
+    this.startBatchSceneOps();
+
     toRemove.forEach((hexKey) => {
       const [col, row] = hexKey.split(",").map(Number);
       this.removeTile(col, row);
@@ -115,5 +112,7 @@ export class BiomeTileRenderer extends BaseTileRenderer<BiomeTileIndex> {
     toAdd.forEach(({ col, row, biome, isExplored }) => {
       this.addTile(col, row, biome, isExplored);
     });
+
+    this.applyBatchedSceneOps();
   }
 }
