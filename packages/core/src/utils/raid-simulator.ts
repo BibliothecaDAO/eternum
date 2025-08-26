@@ -97,9 +97,11 @@ export class RaidSimulator {
 
     // Calculate combined defensive damage for outcome determination
     // and damage to each defender
+    let now = Math.floor(Date.now() / 1000);
     for (const defender of defenders) {
       if (defender.troopCount > 0) {
         const combat = this.combatSimulator.simulateBattle(
+          now,
           dividedRaider,
           defender,
           biome,

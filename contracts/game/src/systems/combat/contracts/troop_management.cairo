@@ -516,6 +516,11 @@ pub mod troop_management_systems {
                 to_explorer.troops.stamina.updated_tick = current_tick;
             }
 
+            // ensure there is no battle timer gain by swapping
+            if from_explorer.troops.battle_cooldown_end > to_explorer.troops.battle_cooldown_end {
+                to_explorer.troops.battle_cooldown_end = from_explorer.troops.battle_cooldown_end;
+            }
+
             // update from_explorer model
             if from_explorer.troops.count.is_zero() {
                 // delete from_explorer if count is 0
@@ -682,6 +687,11 @@ pub mod troop_management_systems {
                 to_structure_troops.stamina.updated_tick = current_tick;
             }
 
+            // ensure there is no battle timer gain by swapping
+            if from_explorer.troops.battle_cooldown_end > to_structure_troops.battle_cooldown_end {
+                to_structure_troops.battle_cooldown_end = from_explorer.troops.battle_cooldown_end;
+            }
+
             // add troops to structure guard
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             iGuardImpl::add(
@@ -820,6 +830,11 @@ pub mod troop_management_systems {
             if from_structure_troops.stamina.amount < to_explorer.troops.stamina.amount {
                 to_explorer.troops.stamina.amount = from_structure_troops.stamina.amount;
                 to_explorer.troops.stamina.updated_tick = current_tick;
+            }
+
+            // ensure there is no battle timer gain by swapping
+            if from_structure_troops.battle_cooldown_end > to_explorer.troops.battle_cooldown_end {
+                to_explorer.troops.battle_cooldown_end = from_structure_troops.battle_cooldown_end;
             }
 
             // update to_explorer model

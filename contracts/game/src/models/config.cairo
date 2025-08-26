@@ -629,7 +629,7 @@ pub struct TroopStaminaConfig {
     pub stamina_crossbowman_max: u16, // Maximum stamina for crossbowmen
     // Combat stamina requirements
     pub stamina_attack_req: u16, // Minimum stamina required to attack
-    pub stamina_attack_max: u16, // Maximum stamina that can be used in attack
+    pub stamina_defense_req: u16, // Minimum stamina required for effecttive defense
     // Exploration and travel stamina costs
     pub stamina_explore_stamina_cost: u16,
     pub stamina_travel_stamina_cost: u16,

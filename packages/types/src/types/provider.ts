@@ -480,7 +480,7 @@ export interface TroopStaminaConfigProps {
   stamina_paladin_max: BigNumberish;
   stamina_crossbowman_max: BigNumberish;
   stamina_attack_req: BigNumberish;
-  stamina_attack_max: BigNumberish;
+  stamina_defense_req: BigNumberish;
   stamina_explore_wheat_cost: BigNumberish;
   stamina_explore_fish_cost: BigNumberish;
   stamina_explore_stamina_cost: BigNumberish;

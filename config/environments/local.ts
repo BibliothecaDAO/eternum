@@ -35,17 +35,8 @@ export const LocalEternumGlobalConfig: Config = {
   },
   exploration: {
     ...CommonEternumGlobalConfig.exploration,
-    shardsMinesWinProbability: 1,
-    shardsMinesFailProbability: 9,
     hyperstructureWinProbAtCenter: 0,
     hyperstructureFailProbAtCenter: 1,
-    villageFindProbability: 1,
-    villageFindFailProbability: 8,
-    // hyperstructureFailProbIncreasePerHexDistance: 20,
-    agentFindProbability: 3_000,
-    agentFindFailProbability: 10_000,
-    questFindProbability: 1_000,
-    questFindFailProbability: 10_000,
   },
   // cheap hyperstructures
   hyperstructures: {

@@ -146,6 +146,7 @@ pub mod troop_battle_systems {
                     troop_stamina_config,
                     troop_damage_config,
                     tick.current(),
+                    tick.interval(),
                 );
 
             // update both explorers
@@ -417,7 +418,14 @@ pub mod troop_battle_systems {
             let guard_troop_count_before_attack = guard_troops.count;
 
             explorer_aggressor_troops
-                .attack(ref guard_troops, defender_biome, troop_stamina_config, troop_damage_config, tick.current());
+                .attack(
+                    ref guard_troops,
+                    defender_biome,
+                    troop_stamina_config,
+                    troop_damage_config,
+                    tick.current(),
+                    tick.interval(),
+                );
             // update explorer
             explorer_aggressor.troops = explorer_aggressor_troops;
 
@@ -657,6 +665,7 @@ pub mod troop_battle_systems {
                     troop_stamina_config,
                     troop_damage_config,
                     tick.current(),
+                    tick.interval(),
                 );
 
             // update explorer

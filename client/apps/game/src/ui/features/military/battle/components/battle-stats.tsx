@@ -1,13 +1,18 @@
-import { Trophy, Skull, Zap, Target } from "lucide-react";
+import { Skull, Target, Trophy } from "lucide-react";
 
 interface BattleStatsProps {
   attackerCasualties: number;
   defenderCasualties: number;
   attackerCasualtyPercentage: number;
   defenderCasualtyPercentage: number;
-  staminaChange: number;
+  attackerStaminaChange: number;
+  defenderStaminaChange: number;
+  attackerCooldownEnd: number;
+  defenderCooldownEnd: number;
   outcome: "Victory" | "Defeat" | "Draw";
   className?: string;
+  attackerTroopsLeft?: number;
+  defenderTroopsLeft?: number;
 }
 
 export const BattleStats = ({
@@ -15,9 +20,14 @@ export const BattleStats = ({
   defenderCasualties,
   attackerCasualtyPercentage,
   defenderCasualtyPercentage,
-  staminaChange,
+  attackerStaminaChange,
+  defenderStaminaChange,
+  attackerCooldownEnd,
+  defenderCooldownEnd,
   outcome,
   className = "",
+  attackerTroopsLeft,
+  defenderTroopsLeft,
 }: BattleStatsProps) => {
   const getOutcomeColor = (outcome: string) => {
     switch (outcome) {
@@ -42,46 +52,96 @@ export const BattleStats = ({
   };
 
   return (
-    <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 ${className}`}>
-      {/* Attacker Casualties */}
-      <div className="p-2 sm:p-3 border border-gold/20 rounded-lg bg-brown-900/50 text-center">
-        <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1 sm:mb-2">
-          <Skull className="w-3 h-3 sm:w-4 sm:h-4 text-red-400 flex-shrink-0" />
-          <span className="text-xs text-gold/70 truncate">Your Casualties</span>
+    <div className={`grid grid-cols-1 lg:grid-cols-3 gap-3 ${className}`}>
+      {/* Attacker Side */}
+      <div className="flex flex-col gap-3 p-3 border border-gold/20 rounded-lg bg-brown-900/50 text-center">
+        <div className="text-gold font-semibold text-sm mb-2 flex items-center justify-center gap-2">
+          <span className="text-lg">⚔️</span>
+          <span>Attacker</span>
         </div>
-        <div className="text-base sm:text-lg font-bold text-red-400">{Math.ceil(attackerCasualties)}</div>
-        <div className="text-xs text-gold/60 mt-1">({attackerCasualtyPercentage}%)</div>
+        <div>
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <Skull className="w-4 h-4 text-red-400" />
+            <span className="text-xs text-gold/70">Casualties</span>
+          </div>
+          <div className="text-lg font-bold text-red-400">{Math.ceil(attackerCasualties)}</div>
+          <div className="text-xs text-gold/60 mt-1">({attackerCasualtyPercentage}%)</div>
+          {typeof attackerTroopsLeft === "number" && (
+            <div className="text-xs text-gold/80 mt-2">
+              <span className="font-semibold">Troops Left:</span> {Math.max(0, Math.floor(attackerTroopsLeft))}
+            </div>
+          )}
+        </div>
+        <div>
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <span className="text-lg">⚡</span>
+            <span className="text-xs text-gold/70">Stamina Change</span>
+          </div>
+          <div className={`text-lg font-bold ${attackerStaminaChange >= 0 ? "text-green-400" : "text-red-400"}`}>
+            {attackerStaminaChange >= 0 ? "+" : ""}
+            {attackerStaminaChange}
+          </div>
+        </div>
+        <div>
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <span className="text-lg">⏳</span>
+            <span className="text-xs text-gold/70">Cooldown End</span>
+          </div>
+          <div className="text-base font-bold text-gold">
+            {new Date(attackerCooldownEnd * 1000).toLocaleTimeString()}{" "}
+            <span className="text-xs ml-2 text-gold/60">({attackerCooldownEnd})</span>
+          </div>
+        </div>
       </div>
 
-      {/* Defender Casualties */}
-      <div className="p-2 sm:p-3 border border-gold/20 rounded-lg bg-brown-900/50 text-center">
-        <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1 sm:mb-2">
-          <Skull className="w-3 h-3 sm:w-4 sm:h-4 text-orange-400 flex-shrink-0" />
-          <span className="text-xs text-gold/70 truncate">Enemy Casualties</span>
+      {/* Outcome */}
+      <div className="flex flex-col items-center justify-center gap-3 p-3 border border-gold/20 rounded-lg bg-brown-900/50 text-center">
+        <div className="flex items-center justify-center gap-2 mb-1">
+          <div className="w-4 h-4">{getOutcomeIcon(outcome)}</div>
+          <span className="text-xs text-gold/70">Outcome</span>
         </div>
-        <div className="text-base sm:text-lg font-bold text-orange-400">{Math.ceil(defenderCasualties)}</div>
-        <div className="text-xs text-gold/60 mt-1">({defenderCasualtyPercentage}%)</div>
+        <div className={`text-lg font-bold ${getOutcomeColor(outcome)}`}>{outcome}</div>
       </div>
 
-      {/* Stamina Change */}
-      <div className="p-2 sm:p-3 border border-gold/20 rounded-lg bg-brown-900/50 text-center">
-        <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1 sm:mb-2">
-          <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400 flex-shrink-0" />
-          <span className="text-xs text-gold/70 truncate">Stamina Change</span>
+      {/* Defender Side */}
+      <div className="flex flex-col gap-3 p-3 border border-gold/20 rounded-lg bg-brown-900/50 text-center">
+        <div className="text-gold font-semibold text-sm mb-2 flex items-center justify-center gap-2">
+          <span className="text-lg">🛡️</span>
+          <span>Defender</span>
         </div>
-        <div className={`text-base sm:text-lg font-bold ${staminaChange >= 0 ? "text-green-400" : "text-red-400"}`}>
-          {staminaChange >= 0 ? "+" : ""}
-          {staminaChange}
+        <div>
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <Skull className="w-4 h-4 text-orange-400" />
+            <span className="text-xs text-gold/70">Casualties</span>
+          </div>
+          <div className="text-lg font-bold text-orange-400">{Math.ceil(defenderCasualties)}</div>
+          <div className="text-xs text-gold/60 mt-1">({defenderCasualtyPercentage}%)</div>
+          {typeof defenderTroopsLeft === "number" && (
+            <div className="text-xs text-gold/80 mt-2">
+              <span className="font-semibold">Troops Left:</span> {Math.max(0, Math.floor(defenderTroopsLeft))}
+            </div>
+          )}
         </div>
-      </div>
-
-      {/* Battle Outcome */}
-      <div className="p-2 sm:p-3 border border-gold/20 rounded-lg bg-brown-900/50 text-center">
-        <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1 sm:mb-2">
-          <div className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0">{getOutcomeIcon(outcome)}</div>
-          <span className="text-xs text-gold/70 truncate">Outcome</span>
+        <div>
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <span className="text-lg">🛡️</span>
+            <span className="text-xs text-gold/70">Stamina Change</span>
+          </div>
+          <div className={`text-lg font-bold ${defenderStaminaChange >= 0 ? "text-green-400" : "text-red-400"}`}>
+            {defenderStaminaChange >= 0 ? "+" : ""}
+            {defenderStaminaChange}
+          </div>
         </div>
-        <div className={`text-base sm:text-lg font-bold ${getOutcomeColor(outcome)}`}>{outcome}</div>
+        <div>
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <span className="text-lg">⏳</span>
+            <span className="text-xs text-gold/70">Cooldown End</span>
+          </div>
+          <div className="text-base font-bold text-gold">
+            {new Date(defenderCooldownEnd * 1000).toLocaleTimeString()}{" "}
+            <span className="text-xs ml-2 text-gold/60">({defenderCooldownEnd})</span>
+          </div>
+        </div>
       </div>
     </div>
   );

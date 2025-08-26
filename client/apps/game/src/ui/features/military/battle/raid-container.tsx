@@ -92,6 +92,7 @@ export const RaidContainer = ({
         category: army?.troops.category as TroopType,
         tier: army?.troops.tier as TroopTier,
         stamina: army ? StaminaManager.getStamina(army?.troops, currentArmiesTick) : { amount: 0n, updated_tick: 0n },
+        battle_cooldown_end: army?.troops.battle_cooldown_end || 0,
       },
     };
   }, [attackerEntityId, attackerActiveRelicEffects]);
@@ -113,6 +114,7 @@ export const RaidContainer = ({
       troopCount: divideByPrecision(Number(attackerArmyData.troops.count)),
       troopType: attackerArmyData.troops.category as TroopType,
       tier: attackerArmyData.troops.tier as TroopTier,
+      battle_cooldown_end: attackerArmyData.troops.battle_cooldown_end,
     };
 
     // Convert all defender troops into simulator armies
@@ -122,6 +124,7 @@ export const RaidContainer = ({
       troopCount: divideByPrecision(Number(troop.count)),
       troopType: troop.category as TroopType,
       tier: troop.tier as TroopTier,
+      battle_cooldown_end: troop.battle_cooldown_end || 0,
     }));
 
     // Use the raid simulator to predict the outcome
@@ -147,7 +150,7 @@ export const RaidContainer = ({
       attackerTroopsLeft: attackerArmy.troopCount - result.raiderDamageTaken,
       defenderTroopsLeft: defenders.map((troop) => troop.troopCount - result.defenderDamageTaken),
       newAttackerStamina: Math.max(
-        Number(attackerArmyData.troops.stamina.amount) - Number(combatConfig.stamina_attack_max),
+        Number(attackerArmyData.troops.stamina.amount) - Number(combatConfig.stamina_attack_req),
         0,
       ),
       newDefendersStamina: defenders.map((troop) => troop.stamina - result.defenderDamageTaken),
