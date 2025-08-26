@@ -370,7 +370,6 @@ export const ChestContent = ({
   // Sort assets by rarity (rarest first)
   const sortedChestContent = sortAssetsByRarity(chestContent);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const [modelScale, setModelScale] = useState(1);
   const selectedAsset = sortedChestContent[selectedIndex];
   const rarityStats = calculateRarityStats(chestContent);
@@ -388,7 +387,6 @@ export const ChestContent = ({
     playClickSound();
 
     // Start scale down animation
-    setIsTransitioning(true);
     setModelScale(0);
     
     // Wait for scale down, then switch model and scale up
@@ -396,7 +394,6 @@ export const ChestContent = ({
       setSelectedIndex(index);
       // Immediately scale back up
       setModelScale(1);
-      setTimeout(() => setIsTransitioning(false), 80);
     }, 80);
   };
 
@@ -426,7 +423,7 @@ export const ChestContent = ({
             className="absolute inset-0"
             style={{
               transform: `scale(${modelScale})`,
-              transition: "transform 80ms cubic-bezier(0.4, 0, 0.2, 1)",
+              transition: "transform 80ms cubic-bezier(0.4, 0, 0.2, 1), opacity 1000ms",
               opacity: showContent ? 1 : 0,
             }}
           >
