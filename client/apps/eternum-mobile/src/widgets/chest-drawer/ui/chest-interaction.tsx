@@ -5,10 +5,17 @@ interface ChestInteractionProps {
   clickCount: number;
   isShaking: boolean;
   isOpening: boolean;
+  showResult: boolean;
   onChestClick: () => void;
 }
 
-export const ChestInteraction = ({ clickCount, isShaking, isOpening, onChestClick }: ChestInteractionProps) => {
+export const ChestInteraction = ({
+  clickCount,
+  isShaking,
+  isOpening,
+  showResult,
+  onChestClick,
+}: ChestInteractionProps) => {
   const progress = (clickCount / 5) * 100;
   const shakeIntensity = Math.min(clickCount * 2, 10);
 
@@ -128,7 +135,7 @@ export const ChestInteraction = ({ clickCount, isShaking, isOpening, onChestClic
       </div>
 
       {/* Instructions */}
-      {!isOpening && !chestState.showResult && (
+      {!isOpening && !showResult && (
         <motion.div
           className="text-center space-y-2"
           initial={{ opacity: 0, y: 20 }}

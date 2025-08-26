@@ -54,13 +54,13 @@ export const RelicCarousel = ({ foundRelics }: RelicCarouselProps) => {
         <p className="text-sm text-gold/60">Swipe to explore what you might find</p>
       </div>
 
-      <div className="relative h-24 overflow-visible mb-4">
+      <div className="relative h-24 overflow-hidden mb-4 will-change-auto">
         <div className="absolute left-0 top-0 w-8 h-full bg-gradient-to-r from-dark-brown via-dark-brown/80 to-transparent z-10 pointer-events-none" />
         <div className="absolute right-0 top-0 w-8 h-full bg-gradient-to-l from-dark-brown via-dark-brown/80 to-transparent z-10 pointer-events-none" />
 
         <div className="relative h-full flex items-center overflow-hidden">
           <motion.div
-            className="flex"
+            className="flex will-change-transform"
             style={{ x }}
             drag="x"
             dragConstraints={{
@@ -68,7 +68,9 @@ export const RelicCarousel = ({ foundRelics }: RelicCarouselProps) => {
               right: totalWidth,
             }}
             dragElastic={0.1}
+            dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
             onDragStart={() => setHoveredRelic(null)}
+            dragMomentum={false}
           >
             {extendedRelics.map((relic, index) => (
               <div
@@ -85,19 +87,24 @@ export const RelicCarousel = ({ foundRelics }: RelicCarouselProps) => {
         </div>
       </div>
 
-      {hoveredRelicInfo && (
-        <motion.div
-          className="bg-dark-brown/90 border border-gold/30 rounded-lg p-3"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 10 }}
-        >
-          <div className="text-center">
-            <h4 className="font-semibold text-gold">{hoveredRelicInfo.name}</h4>
-            <p className="text-xs text-gold/60 mt-1">Level {hoveredRelicInfo.level} Relic</p>
-          </div>
-        </motion.div>
-      )}
+      <div className="h-16 flex items-center justify-center">
+        {hoveredRelicInfo ? (
+          <motion.div
+            className="bg-dark-brown/90 border border-gold/30 rounded-lg p-3 w-full"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="text-center">
+              <h4 className="font-semibold text-gold">{hoveredRelicInfo.name}</h4>
+              <p className="text-xs text-gold/60 mt-1">Level {hoveredRelicInfo.level} Relic</p>
+            </div>
+          </motion.div>
+        ) : (
+          <div className="text-center text-gold/40 text-sm">Hover over a relic to see details</div>
+        )}
+      </div>
     </div>
   );
 };

@@ -1,6 +1,5 @@
 import { Button } from "@/shared/ui/button";
 import { Drawer, DrawerContent, DrawerHeader } from "@/shared/ui/drawer";
-import { Position } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { defineComponentSystem, isComponentUpdate } from "@dojoengine/recs";
 import { useCallback, useEffect, useState } from "react";
@@ -12,8 +11,8 @@ import { RelicResultCards } from "./relic-result-cards";
 export const ChestDrawer = ({ explorerEntityId, chestHex, open, onOpenChange }: ChestDrawerProps) => {
   const {
     account,
-    setup: { systemCalls, contractComponents },
-    network: { world },
+    setup: { systemCalls },
+    network: { world, contractComponents },
   } = useDojo();
 
   const [chestState, setChestState] = useState<ChestState>({
@@ -26,7 +25,6 @@ export const ChestDrawer = ({ explorerEntityId, chestHex, open, onOpenChange }: 
     revealedCards: [],
   });
 
-  const chestPosition = new Position({ x: chestHex.x, y: chestHex.y });
   const chestName = `Chest at (${chestHex.x}, ${chestHex.y})`;
 
   // Event listener for OpenRelicChestEvent
@@ -86,7 +84,7 @@ export const ChestDrawer = ({ explorerEntityId, chestHex, open, onOpenChange }: 
       setChestState((prev) => ({ ...prev, hasClicked: true }));
       try {
         await systemCalls.open_chest({
-          signer: account,
+          signer: account.account,
           explorer_id: explorerEntityId,
           chest_coord: {
             x: chestHex.x,
@@ -123,19 +121,20 @@ export const ChestDrawer = ({ explorerEntityId, chestHex, open, onOpenChange }: 
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="bg-dark-brown border-gold/30">
+      <DrawerContent>
         <DrawerHeader className="text-center">
           <h2 className="text-xl font-bold text-gold">✨ Open Relic Crate ✨</h2>
           <p className="text-sm text-gold/70">{chestName}</p>
         </DrawerHeader>
 
-        <div className="flex-1 p-4 space-y-6">
+        <div className="flex-1 p-4 space-y-6 overflow-hidden">
           {!chestState.showResult ? (
             <>
               <ChestInteraction
                 clickCount={chestState.clickCount}
                 isShaking={chestState.isShaking}
                 isOpening={chestState.isOpening}
+                showResult={chestState.showResult}
                 onChestClick={handleChestClick}
               />
 
