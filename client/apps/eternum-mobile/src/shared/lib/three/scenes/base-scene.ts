@@ -19,6 +19,7 @@ export abstract class BaseScene {
   protected controls?: OrbitControls;
   protected GUIFolder: any;
   protected sceneId: string;
+  protected state: any;
 
   // Lighting components
   protected ambientLight!: THREE.AmbientLight;
@@ -43,6 +44,7 @@ export abstract class BaseScene {
     this.tileRenderer = new BiomeTileRenderer(this.scene);
     this.fxManager = new FXManager(this.scene);
     this.raycaster = new THREE.Raycaster();
+    this.state = useStore.getState();
 
     this.initializeScene();
     this.setupLighting();

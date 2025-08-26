@@ -1,4 +1,5 @@
 import { useStore } from "@/shared/store";
+import { ChestDrawer } from "@/widgets/chest-drawer/ui/chest-drawer";
 import { useEffect, useRef, useState } from "react";
 import { SceneControls } from "./scene-controls";
 import { ThreeCanvas, type ThreeCanvasRef } from "./three-canvas";
@@ -6,7 +7,7 @@ import { ThreeCanvas, type ThreeCanvasRef } from "./three-canvas";
 export function WorldmapPage() {
   const [currentScene, setCurrentScene] = useState("worldmap");
   const canvasRef = useRef<ThreeCanvasRef>(null);
-  const { selectedRealm } = useStore();
+  const { selectedRealm, isChestDrawerOpen, chestDrawerData, closeChestDrawer } = useStore();
   const [isCanvasReady, setIsCanvasReady] = useState(false);
 
   const handleSceneChange = (sceneId: string) => {
@@ -70,6 +71,16 @@ export function WorldmapPage() {
 
       {/* Bottom spacing for footer */}
       <div className="h-20" />
+
+      {/* Chest Drawer */}
+      {isChestDrawerOpen && chestDrawerData.explorerEntityId && chestDrawerData.chestHex && (
+        <ChestDrawer
+          explorerEntityId={chestDrawerData.explorerEntityId}
+          chestHex={chestDrawerData.chestHex}
+          open={isChestDrawerOpen}
+          onOpenChange={(open) => !open && closeChestDrawer()}
+        />
+      )}
     </div>
   );
 }

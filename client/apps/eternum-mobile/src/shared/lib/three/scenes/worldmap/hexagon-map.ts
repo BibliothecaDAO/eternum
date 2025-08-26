@@ -43,6 +43,7 @@ import { getHexagonCoordinates, getWorldPositionForHex, HEX_SIZE, loggedInAccoun
 export class HexagonMap {
   private scene: THREE.Scene;
   private dojo: DojoResult;
+  private store: any;
   private allHexes: Set<string> = new Set();
   private visibleHexes: Set<string> = new Set();
   private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
@@ -106,11 +107,18 @@ export class HexagonMap {
   // Track armies with pending movement transactions
   private pendingArmyMovements: Set<number> = new Set();
 
-  constructor(scene: THREE.Scene, dojo: DojoResult, systemManager: WorldUpdateListener, fxManager: FXManager) {
+  constructor(
+    scene: THREE.Scene,
+    dojo: DojoResult,
+    systemManager: WorldUpdateListener,
+    fxManager: FXManager,
+    store: any,
+  ) {
     this.scene = scene;
     this.dojo = dojo;
     this.systemManager = systemManager;
     this.fxManager = fxManager;
+    this.store = store;
     this.raycaster = new THREE.Raycaster();
 
     this.tileRenderer = new BiomeTileRenderer(scene);
@@ -491,7 +499,7 @@ export class HexagonMap {
           this.selectionManager.clearSelection();
         } else if (actionType === ActionType.Chest) {
           console.log(`Chest action at (${col}, ${row})`);
-          // Handle chest action
+          this.handleChestAction(selectedObject.id, col, row);
           this.selectionManager.clearSelection();
         }
 
@@ -507,7 +515,7 @@ export class HexagonMap {
     } else if (quests.length > 0) {
       this.selectionManager.selectObject(quests[0].id, "quest");
     } else if (chests.length > 0) {
-      this.selectionManager.selectObject(chests[0].id, "chest");
+      this.handleDirectChestClick(chests[0].id, col, row);
     } else {
       this.selectionManager.clearSelection();
     }
@@ -586,6 +594,29 @@ export class HexagonMap {
       // Re-throw error to let caller handle it
       throw error;
     }
+  }
+
+  private handleChestAction(explorerEntityId: number, col: number, row: number): void {
+    this.store.openChestDrawer(explorerEntityId, { x: col, y: row });
+  }
+
+  private handleDirectChestClick(_chestId: number, col: number, row: number): void {
+    const playerArmies = this.armyRenderer
+      .getAllObjects()
+      .filter((army) => army.owner === BigInt(this.dojo.account.account.address));
+
+    if (playerArmies.length === 0) {
+      console.log("No player armies available to open chest");
+      return;
+    }
+
+    const nearestArmy = playerArmies.reduce((nearest, army) => {
+      const distance = Math.abs(army.col - col) + Math.abs(army.row - row);
+      const nearestDistance = Math.abs(nearest.col - col) + Math.abs(nearest.row - row);
+      return distance < nearestDistance ? army : nearest;
+    });
+
+    this.store.openChestDrawer(nearestArmy.id, { x: col, y: row });
   }
 
   private selectArmy(armyId: number): void {

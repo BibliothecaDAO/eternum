@@ -20,7 +20,7 @@ export class WorldmapScene extends BaseScene {
   }
 
   private createHexagonMap(): void {
-    this.hexagonMap = new HexagonMap(this.scene, this.dojo, this.systemManager, this.fxManager);
+    this.hexagonMap = new HexagonMap(this.scene, this.dojo, this.systemManager, this.fxManager, this.state);
   }
 
   private setupControlsListener(): void {
