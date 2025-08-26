@@ -165,7 +165,10 @@ pub mod troop_raid_systems {
                     let (mut guard_defender_troops, guard_defender_troops_destroyed_tick) = guard_defender
                         .from_slot(structure_non_zero_guard_slot);
                     let (
-                        damage_dealt_to_guard, damage_dealt_to_explorer, explorer_stamina_loss, guard_slot_stamina_loss,
+                        damage_dealt_to_guard,
+                        damage_dealt_to_explorer,
+                        explorer_stamina_loss,
+                        _guard_slot_stamina_loss,
                     ) =
                         individual_explorer_aggressor_troops
                         .damage(
@@ -190,17 +193,17 @@ pub mod troop_raid_systems {
                     guard_defender_troops.count -= core::cmp::min(guard_defender_troops.count, guard_damage_applied);
 
                     // deduct stamina spent
-                    guard_defender_troops
-                        .stamina
-                        .spend(
-                            ref guard_defender_troops.boosts,
-                            guard_defender_troops.category,
-                            guard_defender_troops.tier,
-                            troop_stamina_config,
-                            guard_slot_stamina_loss,
-                            current_tick,
-                            true,
-                        );
+                    // guard_defender_troops
+                    //     .stamina
+                    //     .spend(
+                    //         ref guard_defender_troops.boosts,
+                    //         guard_defender_troops.category,
+                    //         guard_defender_troops.tier,
+                    //         troop_stamina_config,
+                    //         guard_slot_stamina_loss,
+                    //         current_tick,
+                    //         true,
+                    //     );
 
                     // update structure guard
                     if guard_defender_troops.count.is_zero() {
