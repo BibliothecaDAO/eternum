@@ -1,12 +1,10 @@
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { OrbitControls } from "three-stdlib";
-import { LoadedModel } from "@/services/model-loader-service";
+import { DRACOLoader, GLTFLoader, OrbitControls } from "three-stdlib";
 
 interface ModelViewerProps {
-  modelPath?: string; // Made optional for backward compatibility
-  preloadedModel?: LoadedModel; // New prop for pre-loaded models
+  modelPath: string;
   className?: string;
   positionY?: number;
   scale?: number;
@@ -15,7 +13,6 @@ interface ModelViewerProps {
   rotationZ?: number | undefined;
   rarity?: "common" | "uncommon" | "rare" | "epic" | "legendary";
   cameraPosition?: { x: number; y: number; z: number };
-  showLoadingSpinner?: boolean; // Control loading spinner visibility
 }
 
 const getRarityAmbientColor = (rarity: "common" | "uncommon" | "rare" | "epic" | "legendary" | undefined) => {
@@ -37,7 +34,6 @@ const getRarityAmbientColor = (rarity: "common" | "uncommon" | "rare" | "epic" |
 
 export const ModelViewer = ({
   modelPath,
-  preloadedModel,
   positionY = 0,
   scale = 1,
   rotationY = 0,
@@ -46,7 +42,6 @@ export const ModelViewer = ({
   rarity,
   className = "",
   cameraPosition = { x: 0, y: 1, z: 1 },
-  showLoadingSpinner = true,
 }: ModelViewerProps) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -129,7 +124,58 @@ export const ModelViewer = ({
     pointLight.position.set(0, 2, 1);
     scene.add(pointLight);
 
-    // Start animation loop
+    const loader = new GLTFLoader();
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.6/");
+    loader.setDRACOLoader(dracoLoader);
+    let model: THREE.Group | null = null;
+
+    loader.load(
+      modelPath,
+      (gltf) => {
+        model = gltf.scene;
+
+        // Get bounding box and center the model
+        const box = new THREE.Box3().setFromObject(model);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+
+        // Center the model horizontally and position vertically
+        model.position.x = -center.x;
+        model.position.z = -center.z;
+        model.position.y = -box.min.y + positionY; // Apply Y offset from prop
+
+        // Scale model appropriately
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const autoScale = 2 / maxDim;
+        model.scale.setScalar(autoScale * scale);
+
+        // Apply Y rotation
+        model.rotation.y = rotationY;
+        model.rotation.x = rotationX;
+        model.rotation.z = rotationZ;
+
+        // Enable shadows
+        model.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+
+        scene.add(model);
+        setIsLoading(false);
+      },
+      (progress) => {
+        console.log("Loading progress:", (progress.loaded / progress.total) * 100 + "%");
+      },
+      (error) => {
+        console.error("Error loading model:", error);
+        setError("Failed to load 3D model");
+        setIsLoading(false);
+      },
+    );
+
     const animate = () => {
       frameIdRef.current = requestAnimationFrame(animate);
 
@@ -167,7 +213,7 @@ export const ModelViewer = ({
         controls.dispose();
       }
 
-      if (mount && renderer && mount.contains(renderer.domElement)) {
+      if (mount && renderer) {
         mount.removeChild(renderer.domElement);
       }
 
@@ -188,67 +234,15 @@ export const ModelViewer = ({
         });
         scene.clear();
       }
+
+      dracoLoader.dispose();
     };
-  }, [cameraPosition.x, cameraPosition.y, cameraPosition.z, rarity]);
-
-  // Separate effect for handling model changes
-  useEffect(() => {
-    const scene = sceneRef.current;
-    if (!scene) return;
-
-    // Clear existing model from scene
-    const existingModel = scene.getObjectByName('chest-model');
-    if (existingModel) {
-      scene.remove(existingModel);
-    }
-
-    // Add preloaded model if available
-    if (preloadedModel) {
-      const model = preloadedModel.scene.clone();
-      model.name = 'chest-model';
-
-      // Get bounding box and center the model
-      const box = new THREE.Box3().setFromObject(model);
-      const center = box.getCenter(new THREE.Vector3());
-      const size = box.getSize(new THREE.Vector3());
-
-      // Center the model horizontally and position vertically
-      model.position.x = -center.x;
-      model.position.z = -center.z;
-      model.position.y = -box.min.y + positionY; // Apply Y offset from prop
-
-      // Scale model appropriately
-      const maxDim = Math.max(size.x, size.y, size.z);
-      const autoScale = 2 / maxDim;
-      model.scale.setScalar(autoScale * scale);
-
-      // Apply rotations
-      model.rotation.y = rotationY;
-      model.rotation.x = rotationX;
-      model.rotation.z = rotationZ;
-
-      // Enable shadows
-      model.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-        }
-      });
-
-      scene.add(model);
-      setIsLoading(false);
-      setError(null);
-    } else if (modelPath && showLoadingSpinner) {
-      // Fallback to old loading behavior if no preloaded model
-      setIsLoading(true);
-      setError(null);
-    }
-  }, [preloadedModel, modelPath, positionY, scale, rotationY, rotationX, rotationZ, showLoadingSpinner]);
+  }, [modelPath, positionY, scale, rotationY, rarity]);
 
   return (
     <div className={`relative ${className}`}>
       <div ref={mountRef} className="w-full h-full" />
-      {isLoading && showLoadingSpinner && (
+      {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="flex flex-col items-center gap-2 text-white">
             <Loader2 className="w-8 h-8 animate-spin" />

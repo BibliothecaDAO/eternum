@@ -1,9 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { useClickSound } from "@/hooks/use-click-sound";
-import { useChestModelPreloader } from "@/hooks/use-model-loader";
 import { TroopType } from "@bibliothecadao/types";
 import { BarChart3, Diamond, Swords, Target } from "lucide-react";
-import { memo, useMemo, useState } from "react";
+import { useState } from "react";
 import { ModelViewer } from "./model-viewer";
 
 enum AssetType {
@@ -357,375 +356,343 @@ const scrollbarStyles = `
   }
 `;
 
-export const ChestContent = memo(
-  ({
-    chestType,
-    showContent,
-    chestContent,
-  }: {
-    chestType: AssetRarity;
-    showContent: boolean;
-    chestContent: ChestAsset[];
-  }) => {
-    // Sort assets by rarity (rarest first) - memoized to prevent unnecessary recalculations
-    const sortedChestContent = useMemo(() => sortAssetsByRarity(chestContent), [chestContent]);
-    const [selectedIndex, setSelectedIndex] = useState<number>(0);
-    const [isTransitioning, setIsTransitioning] = useState(false);
-    const selectedAsset = sortedChestContent[selectedIndex];
-    const rarityStats = useMemo(() => calculateRarityStats(chestContent), [chestContent]);
-    const RARITY_PERCENTAGES = useMemo(() => calculateRarityPercentages(chestAssets), []);
+export const ChestContent = ({
+  chestType,
+  showContent,
+  chestContent,
+}: {
+  chestType: AssetRarity;
+  showContent: boolean;
+  chestContent: ChestAsset[];
+}) => {
+  // Sort assets by rarity (rarest first)
+  const sortedChestContent = sortAssetsByRarity(chestContent);
+  const [selectedIndex, setSelectedIndex] = useState<number>(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const selectedAsset = sortedChestContent[selectedIndex];
+  const rarityStats = calculateRarityStats(chestContent);
+  const RARITY_PERCENTAGES = calculateRarityPercentages(chestAssets);
 
-    // Initialize model preloader for chest assets
-    const { 
-      getModel, 
-      isModelReady, 
-      isPreloading, 
-      preloadedCount, 
-      totalCount 
-    } = useChestModelPreloader({
-      chestAssets: sortedChestContent,
-      autoPreload: showContent, // Start preloading when content is shown
-    });
+  const { playClickSound } = useClickSound({
+    src: "/sound/ui/click-2.wav",
+    volume: 0.6,
+  });
 
-    const { playClickSound } = useClickSound({
-      src: "/sound/ui/click-2.wav",
-      volume: 0.6,
-    });
+  const handleAssetSelect = (index: number) => {
+    if (index === selectedIndex) return;
 
-    const handleAssetSelect = (index: number) => {
-      if (index === selectedIndex) return;
+    // Play click sound
+    playClickSound();
 
-      // Play click sound
-      playClickSound();
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setSelectedIndex(index);
+      setTimeout(() => setIsTransitioning(false), 50);
+    }, 150);
+  };
 
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setSelectedIndex(index);
-        setTimeout(() => setIsTransitioning(false), 50);
-      }, 150);
-    };
+  const renderTitle = () => {
+    return (
+      <h1
+        className="flex items-center justify-center gap-2 text-4xl font-bold text-center text-white"
+        style={{
+          transition: "opacity 5000ms",
+          opacity: showContent ? 1 : 0,
+        }}
+      >
+        <span className={getRarityClass(chestType)}>{chestType.toUpperCase()} Chest</span>
+        <span className="text-sm text-white">(3 items)</span>
+      </h1>
+    );
+  };
 
-    const renderTitle = () => {
-      return (
-        <div className="flex flex-col items-center gap-2">
-          <h1
-            className="flex items-center justify-center gap-2 text-4xl font-bold text-center text-white"
-            style={{
-              transition: "opacity 5000ms",
-              opacity: showContent ? 1 : 0,
-            }}
-          >
-            <span className={getRarityClass(chestType)}>{chestType.toUpperCase()} Chest</span>
-            <span className="text-sm text-white">(3 items)</span>
-          </h1>
-          {isPreloading && totalCount > 0 && (
+  return (
+    <>
+      <style dangerouslySetInnerHTML={{ __html: scrollbarStyles }} />
+      <div className="relative w-full h-screen text-white">
+        {/* Full-screen 3D background */}
+        <div
+          className="absolute inset-0"
+          style={{
+            transition: "opacity 5000ms",
+            opacity: showContent && !isTransitioning ? 1 : 0,
+          }}
+        >
+          <ModelViewer
+            rarity={selectedAsset.rarity}
+            modelPath={selectedAsset.modelPath}
+            className="w-full h-full"
+            positionY={selectedAsset.positionY}
+            scale={selectedAsset.scale}
+            rotationY={selectedAsset.rotationY}
+            rotationZ={selectedAsset.rotationZ}
+            rotationX={selectedAsset.rotationX}
+            cameraPosition={selectedAsset.cameraPosition}
+          />
+        </div>
+
+        {/* Overlay UI - pointer-events-none to allow 3D interaction */}
+        <div className="relative z-10 flex flex-col h-full pointer-events-none">
+          {/* Title at top */}
+          <div className="flex justify-center pt-8">{renderTitle()}</div>
+
+          {/* Main content area with drop rates on left and items on right */}
+          <div className="flex-1 flex justify-between items-center px-8">
+            {/* Left sidebar with Drop Rate Summary and Item Preview */}
             <div
-              className="flex items-center gap-2 text-xs text-yellow-400"
+              className="pointer-events-auto space-y-4"
               style={{
-                transition: "opacity 300ms",
+                transition: "opacity 1000ms",
                 opacity: showContent ? 1 : 0,
               }}
             >
-              <Diamond className="w-3 h-3 animate-pulse" />
-              <span>Loading 3D models... ({preloadedCount}/{totalCount})</span>
-            </div>
-          )}
-        </div>
-      );
-    };
-
-    return (
-      <>
-        <style dangerouslySetInnerHTML={{ __html: scrollbarStyles }} />
-        <div className="relative w-full h-screen text-white">
-          {/* Full-screen 3D background */}
-          <div
-            className="absolute inset-0"
-            style={{
-              transition: "opacity 300ms",
-              opacity: showContent && !isTransitioning ? 1 : 0,
-            }}
-          >
-            {selectedAsset && (
-              <ModelViewer
-                preloadedModel={getModel(selectedAsset.modelPath)}
-                modelPath={selectedAsset.modelPath} // Fallback for legacy behavior
-                rarity={selectedAsset.rarity}
-                className="w-full h-full"
-                positionY={selectedAsset.positionY}
-                scale={selectedAsset.scale}
-                rotationY={selectedAsset.rotationY}
-                rotationZ={selectedAsset.rotationZ}
-                rotationX={selectedAsset.rotationX}
-                cameraPosition={selectedAsset.cameraPosition}
-                showLoadingSpinner={!isModelReady(selectedAsset.modelPath)}
-              />
-            )}
-          </div>
-
-          {/* Overlay UI - pointer-events-none to allow 3D interaction */}
-          <div className="relative z-10 flex flex-col h-full pointer-events-none">
-            {/* Title at top */}
-            <div className="flex justify-center pt-8">{renderTitle()}</div>
-
-            {/* Main content area with drop rates on left and items on right */}
-            <div className="flex-1 flex justify-between items-center px-8">
-              {/* Left sidebar with Drop Rate Summary and Item Preview */}
-              <div
-                className="pointer-events-auto space-y-4"
-                style={{
-                  transition: "opacity 1000ms",
-                  opacity: showContent ? 1 : 0,
-                }}
-              >
-                {/* Drop Rate Summary */}
-                <div className="p-4 bg-gradient-to-br from-black/80 to-gray-900/60 rounded-xl border-2 border-gray-600 shadow-2xl backdrop-blur-sm">
-                  <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-2 flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4 text-yellow-400" />
-                    Drop Rates
-                  </h4>
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-center py-1">
-                      <span className="text-rarity-legendary font-medium text-sm flex items-center gap-1">
-                        <Diamond className="w-3 h-3" />
-                        Legendary
-                      </span>
-                      <span className="text-white text-xs font-heading">{RARITY_PERCENTAGES.legendary}%</span>
-                    </div>
-                    <div className="flex justify-between items-center py-1">
-                      <span className="text-rarity-epic font-medium text-sm flex items-center gap-1">
-                        <Diamond className="w-3 h-3" />
-                        Epic
-                      </span>
-                      <span className="text-white text-xs font-heading">{RARITY_PERCENTAGES.epic}%</span>
-                    </div>
-                    <div className="flex justify-between items-center py-1">
-                      <span className="text-rarity-rare font-medium text-sm flex items-center gap-1">
-                        <Diamond className="w-3 h-3" />
-                        Rare
-                      </span>
-                      <span className="text-white text-xs font-heading">{RARITY_PERCENTAGES.rare}%</span>
-                    </div>
-                    <div className="flex justify-between items-center py-1">
-                      <span className="text-rarity-uncommon font-medium text-sm flex items-center gap-1">
-                        <Diamond className="w-3 h-3" />
-                        Uncommon
-                      </span>
-                      <span className="text-white text-xs font-heading">{RARITY_PERCENTAGES.uncommon}%</span>
-                    </div>
-                    <div className="flex justify-between items-center py-1">
-                      <span className="text-rarity-common font-medium text-sm flex items-center gap-1">
-                        <Diamond className="w-3 h-3" />
-                        Common
-                      </span>
-                      <span className="text-white text-xs font-heading">{RARITY_PERCENTAGES.common}%</span>
-                    </div>
+              {/* Drop Rate Summary */}
+              <div className="p-4 bg-gradient-to-br from-black/80 to-gray-900/60 rounded-xl border-2 border-gray-600 shadow-2xl backdrop-blur-sm">
+                <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-yellow-400" />
+                  Drop Rates
+                </h4>
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center py-1">
+                    <span className="text-rarity-legendary font-medium text-sm flex items-center gap-1">
+                      <Diamond className="w-3 h-3" />
+                      Legendary
+                    </span>
+                    <span className="text-white text-xs font-heading">{RARITY_PERCENTAGES.legendary}%</span>
                   </div>
-                </div>
-
-                {/* Selected Item Preview */}
-                <div
-                  className="p-5 bg-gradient-to-br from-black/80 to-gray-900/60 rounded-xl border-2 shadow-2xl backdrop-blur-sm transition-all duration-300"
-                  style={{
-                    borderColor: getRarityAccentColor(selectedAsset.rarity),
-                    boxShadow: `0 0 30px ${getRarityAccentColor(selectedAsset.rarity)}40`,
-                  }}
-                >
-                  <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <Target className="w-4 h-4 text-yellow-400" />
-                    Selected Item
-                  </h4>
-
-                  {/* Item Image */}
-                  <div className="relative mb-4 overflow-hidden rounded-lg bg-gradient-to-br from-gray-800/50 to-gray-900/50">
-                    <div
-                      className="absolute inset-0 opacity-20"
-                      style={{
-                        background: `radial-gradient(circle at center, ${getRarityAccentColor(selectedAsset.rarity)}40 0%, transparent 70%)`,
-                      }}
-                    />
-                    <img
-                      key={selectedAsset.id}
-                      src={selectedAsset.imagePath}
-                      alt={selectedAsset.name}
-                      className="w-full h-48 object-contain relative z-10 item-preview-image"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = "/images/placeholder.png";
-                      }}
-                    />
+                  <div className="flex justify-between items-center py-1">
+                    <span className="text-rarity-epic font-medium text-sm flex items-center gap-1">
+                      <Diamond className="w-3 h-3" />
+                      Epic
+                    </span>
+                    <span className="text-white text-xs font-heading">{RARITY_PERCENTAGES.epic}%</span>
                   </div>
-
-                  {/* Item Details */}
-                  <div className="space-y-2 w-[250px]">
-                    <h3 className="text-base font-bold text-white break-words">{selectedAsset.name}</h3>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`text-xs px-3 py-1 rounded-full font-medium ${getRarityBgClass(selectedAsset.rarity)} `}
-                      >
-                        {selectedAsset.rarity.toUpperCase()}
-                      </span>
-                      <span className={`text-xs px-2 py-1 rounded ${getTypeClass(selectedAsset.type)}`}>
-                        {selectedAsset.type.toUpperCase()}
-                      </span>
-                    </div>
-                    <p className="text-xs text-white leading-relaxed mt-2">Drop chance: {selectedAsset.drawChance}%</p>
+                  <div className="flex justify-between items-center py-1">
+                    <span className="text-rarity-rare font-medium text-sm flex items-center gap-1">
+                      <Diamond className="w-3 h-3" />
+                      Rare
+                    </span>
+                    <span className="text-white text-xs font-heading">{RARITY_PERCENTAGES.rare}%</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1">
+                    <span className="text-rarity-uncommon font-medium text-sm flex items-center gap-1">
+                      <Diamond className="w-3 h-3" />
+                      Uncommon
+                    </span>
+                    <span className="text-white text-xs font-heading">{RARITY_PERCENTAGES.uncommon}%</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1">
+                    <span className="text-rarity-common font-medium text-sm flex items-center gap-1">
+                      <Diamond className="w-3 h-3" />
+                      Common
+                    </span>
+                    <span className="text-white text-xs font-heading">{RARITY_PERCENTAGES.common}%</span>
                   </div>
                 </div>
               </div>
 
-              {/* Asset list on the right side */}
+              {/* Selected Item Preview */}
               <div
-                className="w-[420px] max-h-[90vh] overflow-y-auto space-y-4 pointer-events-auto custom-scrollbar"
+                className="p-5 bg-gradient-to-br from-black/80 to-gray-900/60 rounded-xl border-2 shadow-2xl backdrop-blur-sm transition-all duration-300"
                 style={{
-                  transition: "opacity 1000ms",
-                  opacity: showContent ? 1 : 0,
+                  borderColor: getRarityAccentColor(selectedAsset.rarity),
+                  boxShadow: `0 0 30px ${getRarityAccentColor(selectedAsset.rarity)}40`,
                 }}
               >
-                {/* Container for the asset list */}
-                <div className="backdrop-blur-md rounded-2xl p-6 bg-gradient-to-br from-black/80 to-gray-900/60 border-2 border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.1)]">
-                  {/* Container header */}
-                  <div className="mb-4 text-center">
-                    <div className="text-sm text-white font-heading font-semibold tracking-wider uppercase flex items-center justify-center gap-2">
-                      <Swords className="w-4 h-4" />
-                      Item Selection
-                      <Swords className="w-4 h-4" />
-                    </div>
-                    <div className="mt-1 w-16 mx-auto h-px bg-gradient-to-r from-transparent via-gray-500 to-transparent" />
-                    {/* Rarity breakdown */}
-                    <div className="mt-3 flex justify-center gap-3 text-xs">
-                      {rarityStats.legendary > 0 && (
-                        <span className="text-rarity-legendary flex items-center gap-1">
-                          <Diamond className="w-2 h-2" />
-                          {rarityStats.legendary} Legendary
-                        </span>
-                      )}
-                      {rarityStats.epic > 0 && (
-                        <span className="text-rarity-epic flex items-center gap-1">
-                          <Diamond className="w-2 h-2" />
-                          {rarityStats.epic} Epic
-                        </span>
-                      )}
-                      {rarityStats.rare > 0 && (
-                        <span className="text-rarity-rare flex items-center gap-1">
-                          <Diamond className="w-2 h-2" />
-                          {rarityStats.rare} Rare
-                        </span>
-                      )}
-                      {rarityStats.uncommon > 0 && (
-                        <span className="text-rarity-uncommon flex items-center gap-1">
-                          <Diamond className="w-2 h-2" />
-                          {rarityStats.uncommon} Uncommon
-                        </span>
-                      )}
-                      {rarityStats.common > 0 && (
-                        <span className="text-rarity-common flex items-center gap-1">
-                          <Diamond className="w-2 h-2" />
-                          {rarityStats.common} Common
-                        </span>
-                      )}
-                    </div>
+                <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <Target className="w-4 h-4 text-yellow-400" />
+                  Selected Item
+                </h4>
+
+                {/* Item Image */}
+                <div className="relative mb-4 overflow-hidden rounded-lg bg-gradient-to-br from-gray-800/50 to-gray-900/50">
+                  <div
+                    className="absolute inset-0 opacity-20"
+                    style={{
+                      background: `radial-gradient(circle at center, ${getRarityAccentColor(selectedAsset.rarity)}40 0%, transparent 70%)`,
+                    }}
+                  />
+                  <img
+                    key={selectedAsset.id}
+                    src={selectedAsset.imagePath}
+                    alt={selectedAsset.name}
+                    className="w-full h-48 object-contain relative z-10 item-preview-image"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = "/images/placeholder.png";
+                    }}
+                  />
+                </div>
+
+                {/* Item Details */}
+                <div className="space-y-2 w-[250px]">
+                  <h3 className="text-base font-bold text-white break-words">{selectedAsset.name}</h3>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-xs px-3 py-1 rounded-full font-medium ${getRarityBgClass(selectedAsset.rarity)} `}
+                    >
+                      {selectedAsset.rarity.toUpperCase()}
+                    </span>
+                    <span className={`text-xs px-2 py-1 rounded ${getTypeClass(selectedAsset.type)}`}>
+                      {selectedAsset.type.toUpperCase()}
+                    </span>
                   </div>
+                  <p className="text-xs text-white leading-relaxed mt-2">Drop chance: {selectedAsset.drawChance}%</p>
+                </div>
+              </div>
+            </div>
 
-                  {/* Asset grid with enhanced spacing */}
-                  <div className="space-y-3">
-                    {sortedChestContent.map((asset, index) => {
-                      const isSelected = index === selectedIndex;
-                      const baseCardClass = "cursor-pointer transition-all duration-200 backdrop-blur-sm";
-                      const cardClass = isSelected
-                        ? `${baseCardClass} ${getRarityGlowClass(asset.rarity)}`
-                        : `${baseCardClass} border-2 border-gray-600 bg-black/40 hover:border-gray-500 hover:bg-white/10`;
+            {/* Asset list on the right side */}
+            <div
+              className="w-[420px] max-h-[90vh] overflow-y-auto space-y-4 pointer-events-auto custom-scrollbar"
+              style={{
+                transition: "opacity 1000ms",
+                opacity: showContent ? 1 : 0,
+              }}
+            >
+              {/* Container for the asset list */}
+              <div className="backdrop-blur-md rounded-2xl p-6 bg-gradient-to-br from-black/80 to-gray-900/60 border-2 border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.1)]">
+                {/* Container header */}
+                <div className="mb-4 text-center">
+                  <div className="text-sm text-white font-heading font-semibold tracking-wider uppercase flex items-center justify-center gap-2">
+                    <Swords className="w-4 h-4" />
+                    Item Selection
+                    <Swords className="w-4 h-4" />
+                  </div>
+                  <div className="mt-1 w-16 mx-auto h-px bg-gradient-to-r from-transparent via-gray-500 to-transparent" />
+                  {/* Rarity breakdown */}
+                  <div className="mt-3 flex justify-center gap-3 text-xs">
+                    {rarityStats.legendary > 0 && (
+                      <span className="text-rarity-legendary flex items-center gap-1">
+                        <Diamond className="w-2 h-2" />
+                        {rarityStats.legendary} Legendary
+                      </span>
+                    )}
+                    {rarityStats.epic > 0 && (
+                      <span className="text-rarity-epic flex items-center gap-1">
+                        <Diamond className="w-2 h-2" />
+                        {rarityStats.epic} Epic
+                      </span>
+                    )}
+                    {rarityStats.rare > 0 && (
+                      <span className="text-rarity-rare flex items-center gap-1">
+                        <Diamond className="w-2 h-2" />
+                        {rarityStats.rare} Rare
+                      </span>
+                    )}
+                    {rarityStats.uncommon > 0 && (
+                      <span className="text-rarity-uncommon flex items-center gap-1">
+                        <Diamond className="w-2 h-2" />
+                        {rarityStats.uncommon} Uncommon
+                      </span>
+                    )}
+                    {rarityStats.common > 0 && (
+                      <span className="text-rarity-common flex items-center gap-1">
+                        <Diamond className="w-2 h-2" />
+                        {rarityStats.common} Common
+                      </span>
+                    )}
+                  </div>
+                </div>
 
-                      const itemSet = getItemSet(asset);
+                {/* Asset grid with enhanced spacing */}
+                <div className="space-y-3">
+                  {sortedChestContent.map((asset, index) => {
+                    const isSelected = index === selectedIndex;
+                    const baseCardClass = "cursor-pointer transition-all duration-200 backdrop-blur-sm";
+                    const cardClass = isSelected
+                      ? `${baseCardClass} ${getRarityGlowClass(asset.rarity)}`
+                      : `${baseCardClass} border-2 border-gray-600 bg-black/40 hover:border-gray-500 hover:bg-white/10`;
 
-                      return (
-                        <Card
-                          key={index}
-                          className={cardClass}
-                          onClick={() => handleAssetSelect(index)}
-                          style={{
-                            transition: "all 0.3s ease",
-                            transform: isSelected ? "scale(1.02)" : "scale(1)",
-                          }}
-                        >
-                          <CardContent className="p-5">
-                            <div className="flex items-start gap-4">
-                              {/* Left side - Asset image/icon */}
-                              <div className="flex-shrink-0">
-                                <div
-                                  className={`w-12 h-12 text-white rounded-lg flex items-center justify-center ${getRarityBgClass(asset.rarity)} border `}
-                                >
-                                  {(asset.type === AssetType.TroopArmor ||
-                                    asset.type === AssetType.TroopPrimary ||
-                                    asset.type === AssetType.TroopSecondary) && <Swords className="w-6 h-6" />}
-                                  {asset.type === AssetType.RealmSkin && <Target className="w-6 h-6" />}
-                                  {(asset.type === AssetType.TroopAura || asset.type === AssetType.RealmAura) && (
-                                    <Diamond className="w-6 h-6" />
-                                  )}
-                                  {asset.type === AssetType.TroopBase && <BarChart3 className="w-6 h-6" />}
-                                </div>
-                              </div>
+                    const itemSet = getItemSet(asset);
 
-                              {/* Right side - Asset details */}
-                              <div className="flex-1 min-w-0">
-                                {/* Header row */}
-                                <div className="flex items-start justify-between mb-3">
-                                  <div className="min-w-0 flex-1">
-                                    <h3 className="font-semibold text-white text-sm leading-tight mb-1 truncate">
-                                      {asset.name}
-                                    </h3>
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <span
-                                        className={`text-xs px-2 py-1 rounded-full font-medium text-white ${getRarityBgClass(asset.rarity)}`}
-                                      >
-                                        {asset.rarity.toUpperCase()}
-                                      </span>
-                                      <span
-                                        className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeClass(asset.type)}`}
-                                      >
-                                        {asset.type.toUpperCase()}
-                                      </span>
-                                      {/* Drop rate badge */}
-                                      <span className="px-2 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-200 border border-amber-400/40">
-                                        {asset.drawChance}% Drop
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Additional info row */}
-                                <div className="flex items-center gap-2 mb-3">
-                                  {asset.troopType && (
-                                    <span className="text-xs px-2 py-1 rounded-full bg-slate-700/80 text-slate-200 border border-slate-600/50">
-                                      {TroopType[asset.troopType]}
-                                    </span>
-                                  )}
-                                  {itemSet && (
-                                    <span className="text-xs px-2 py-1 rounded-full bg-indigo-600/30 text-indigo-200 border border-indigo-500/40">
-                                      {itemSet}
-                                    </span>
-                                  )}
-                                </div>
-
-                                {/* Expandable description */}
-                                {isSelected && (
-                                  <div className="mt-3 pt-3 border-t border-gray-700/50">
-                                    <p className="text-xs text-white leading-relaxed">{asset.description}</p>
-                                  </div>
+                    return (
+                      <Card
+                        key={index}
+                        className={cardClass}
+                        onClick={() => handleAssetSelect(index)}
+                        style={{
+                          transition: "all 0.3s ease",
+                          transform: isSelected ? "scale(1.02)" : "scale(1)",
+                        }}
+                      >
+                        <CardContent className="p-5">
+                          <div className="flex items-start gap-4">
+                            {/* Left side - Asset image/icon */}
+                            <div className="flex-shrink-0">
+                              <div
+                                className={`w-12 h-12 text-white rounded-lg flex items-center justify-center ${getRarityBgClass(asset.rarity)} border `}
+                              >
+                                {(asset.type === AssetType.TroopArmor ||
+                                  asset.type === AssetType.TroopPrimary ||
+                                  asset.type === AssetType.TroopSecondary) && <Swords className="w-6 h-6" />}
+                                {asset.type === AssetType.RealmSkin && <Target className="w-6 h-6" />}
+                                {(asset.type === AssetType.TroopAura || asset.type === AssetType.RealmAura) && (
+                                  <Diamond className="w-6 h-6" />
                                 )}
+                                {asset.type === AssetType.TroopBase && <BarChart3 className="w-6 h-6" />}
                               </div>
                             </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
+
+                            {/* Right side - Asset details */}
+                            <div className="flex-1 min-w-0">
+                              {/* Header row */}
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="min-w-0 flex-1">
+                                  <h3 className="font-semibold text-white text-sm leading-tight mb-1 truncate">
+                                    {asset.name}
+                                  </h3>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span
+                                      className={`text-xs px-2 py-1 rounded-full font-medium text-white ${getRarityBgClass(asset.rarity)}`}
+                                    >
+                                      {asset.rarity.toUpperCase()}
+                                    </span>
+                                    <span
+                                      className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeClass(asset.type)}`}
+                                    >
+                                      {asset.type.toUpperCase()}
+                                    </span>
+                                    {/* Drop rate badge */}
+                                    <span className="px-2 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-200 border border-amber-400/40">
+                                      {asset.drawChance}% Drop
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Additional info row */}
+                              <div className="flex items-center gap-2 mb-3">
+                                {asset.troopType && (
+                                  <span className="text-xs px-2 py-1 rounded-full bg-slate-700/80 text-slate-200 border border-slate-600/50">
+                                    {TroopType[asset.troopType]}
+                                  </span>
+                                )}
+                                {itemSet && (
+                                  <span className="text-xs px-2 py-1 rounded-full bg-indigo-600/30 text-indigo-200 border border-indigo-500/40">
+                                    {itemSet}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Expandable description */}
+                              {isSelected && (
+                                <div className="mt-3 pt-3 border-t border-gray-700/50">
+                                  <p className="text-xs text-white leading-relaxed">{asset.description}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </>
-    );
-  },
-);
+      </div>
+    </>
+  );
+};

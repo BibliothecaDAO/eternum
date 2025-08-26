@@ -8,12 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useAmbienceAudio } from "@/hooks/use-ambience-audio";
 import { useChestContent } from "@/hooks/use-chest-content";
-import { useChestModelPreloader } from "@/hooks/use-model-loader";
 import { useOpenChest } from "@/hooks/use-open-chest";
 import { useLootChestOpeningStore } from "@/stores/loot-chest-opening";
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { AssetRarity, ChestAsset, ChestContent, chestAssets } from "./chest-content";
+import { AssetRarity, ChestAsset, ChestContent } from "./chest-content";
 
 const LoadingAnimation = () => {
   return (
@@ -70,37 +69,22 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
     loop: true,
   });
 
-  // Initialize model preloader for all chest assets
-  const { 
-    preloadModels, 
-    isPreloading: isModelPreloading, 
-    preloadedCount, 
-    totalCount 
-  } = useChestModelPreloader({
-    chestAssets,
-    autoPreload: false, // Manual control
-  });
-
-  // Start ambient music and preload models when modal opens
+  // Start ambient music when modal opens
   useEffect(() => {
     ambienceAudio.play();
-    console.log("Starting model preloading for chest opening modal...");
-    
-    // Preload all chest models for smooth experience
-    const modelPaths = chestAssets.map(asset => asset.modelPath);
-    preloadModels(modelPaths);
 
     // Cleanup: stop audio when component unmounts
     return () => {
       ambienceAudio.stop();
     };
-  }, [ambienceAudio, preloadModels]);
+  }, []);
 
   // Cycle through loading messages every 2 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentMessageIndex((prev) => (prev + 1) % loadingMessages.length);
     }, 3000);
+
     return () => clearInterval(interval);
   }, []);
 
@@ -307,11 +291,6 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4">
               <LoadingAnimation />
               <div className="text-gold text-xl">{loadingMessages[currentMessageIndex]}</div>
-              {isModelPreloading && totalCount > 0 && (
-                <div className="text-gold/80 text-sm">
-                  Preparing 3D models... ({preloadedCount}/{totalCount})
-                </div>
-              )}
             </div>
           )}
 
