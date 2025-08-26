@@ -2,6 +2,7 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { DRACOLoader, GLTFLoader, OrbitControls } from "three-stdlib";
+import { AssetRarity } from "./chest-content";
 
 interface ModelViewerProps {
   modelPath: string;
@@ -11,21 +12,21 @@ interface ModelViewerProps {
   rotationY?: number;
   rotationX?: number | undefined;
   rotationZ?: number | undefined;
-  rarity?: "common" | "uncommon" | "rare" | "epic" | "legendary";
+  rarity?: AssetRarity;
   cameraPosition?: { x: number; y: number; z: number };
 }
 
-const getRarityAmbientColor = (rarity: "common" | "uncommon" | "rare" | "epic" | "legendary" | undefined) => {
+const getRarityAmbientColor = (rarity: AssetRarity | undefined) => {
   switch (rarity) {
-    case "common":
+    case AssetRarity.Common:
       return "#848484";
-    case "uncommon":
+    case AssetRarity.Uncommon:
       return "#6cc95e";
-    case "rare":
+    case AssetRarity.Rare:
       return "#56c8da";
-    case "epic":
+    case AssetRarity.Epic:
       return "#ba37d4";
-    case "legendary":
+    case AssetRarity.Legendary:
       return "#e9b062";
     default:
       return "#666666";

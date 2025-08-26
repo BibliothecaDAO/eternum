@@ -17,6 +17,7 @@ import { AlertTriangle, Info, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { formatUnits } from "viem";
+import { env } from "../../../env";
 import { Badge } from "../ui/badge";
 import { Card } from "../ui/card";
 import { ResourceIcon } from "../ui/elements/resource-icon";
@@ -156,16 +157,20 @@ export const TokenDetailModal = ({
   const handleOpenChest = () => {
     setIsChestOpeningLoading(true);
     setOpenedChestTokenId(tokenData.token_id.toString());
-    openChest({
-      tokenId: BigInt(tokenData.token_id),
-      onSuccess: () => {
-        console.log("Chest opened successfully");
-        setShowLootChestOpening(true);
-      },
-      onError: (error) => {
-        console.error("Failed to open chest:", error);
-      },
-    });
+    if (!env.VITE_PUBLIC_CHEST_DEBUG_MODE) {
+      openChest({
+        tokenId: BigInt(tokenData.token_id),
+        onSuccess: () => {
+          console.log("Chest opened successfully");
+          setShowLootChestOpening(true);
+        },
+        onError: (error) => {
+          console.error("Failed to open chest:", error);
+        },
+      });
+    } else {
+      setShowLootChestOpening(true);
+    }
   };
 
   // Effect to detect when indexer data has updated props

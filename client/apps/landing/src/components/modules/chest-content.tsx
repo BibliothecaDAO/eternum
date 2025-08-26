@@ -107,6 +107,8 @@ const RARITY_STYLES = {
   },
 } as const;
 
+const modelPath = "models/cosmetics/low-res";
+
 export const chestAssets: ChestAsset[] = [
   {
     id: "4",
@@ -117,7 +119,7 @@ export const chestAssets: ChestAsset[] = [
     set: AssetSet.FirstLegacySet,
     description: "An aura of golden magnificence for a distinguished Realm.",
     drawChance: 4.22,
-    modelPath: "models/cosmetics/high-res/s1_legacy_realm_aura.glb",
+    modelPath: `${modelPath}/s1_legacy_realm_aura.glb`,
     imagePath: "images/cosmetics/legacy-realm-aura.png",
     positionY: -0.1,
     scale: 2.4,
@@ -149,7 +151,7 @@ export const chestAssets: ChestAsset[] = [
     set: AssetSet.WinterLordSet,
     description: "A ring of razor-sharp ice spikes to deter a Lord's foes.",
     drawChance: 8.45,
-    modelPath: "models/cosmetics/high-res/winter_lord_spike_aura.glb",
+    modelPath: `${modelPath}/winter_lord_spike_aura.glb`,
     imagePath: "images/cosmetics/winter-lord-realm-aura.png",
     positionY: 0.2,
     scale: 1,
@@ -163,7 +165,7 @@ export const chestAssets: ChestAsset[] = [
     set: AssetSet.FirstLegacySet,
     description: "An aura of golden magnificence for troops of a distinguished Realm.",
     drawChance: 1.41,
-    modelPath: "models/cosmetics/high-res/s1_legacy_troop_aura.glb",
+    modelPath: `${modelPath}/s1_legacy_troop_aura.glb`,
     imagePath: "images/cosmetics/legacy-troop-aura.png",
     positionY: 0,
     scale: 1,
@@ -180,7 +182,7 @@ export const chestAssets: ChestAsset[] = [
     description:
       "An impressive and timeless Knight armor set, inspired by the Knight troop models of Eternum Season 1.",
     drawChance: 1.41,
-    modelPath: "models/cosmetics/high-res/legacy_knight_t3.glb",
+    modelPath: `${modelPath}/legacy_knight_t3.glb`,
     imagePath: "images/cosmetics/legacy-knight.png",
     positionY: 0.2,
     scale: 1,
@@ -197,7 +199,7 @@ export const chestAssets: ChestAsset[] = [
     set: AssetSet.WinterLordSet,
     description: "A frosty, spiked battleaxe wielded by Winter Paladins.",
     drawChance: 12.68,
-    modelPath: "models/cosmetics/high-res/winter_lord_paladin_primary.glb",
+    modelPath: `${modelPath}/winter_lord_paladin_primary.glb`,
     imagePath: "images/cosmetics/winter-lord-paladin-axe.png",
     positionY: 0.5,
     scale: 1,
@@ -212,7 +214,7 @@ export const chestAssets: ChestAsset[] = [
     set: AssetSet.WinterLordSet,
     description: "An elegant, snowflake-patterned cavalry shield wielded by Winter Paladins.",
     drawChance: 12.68,
-    modelPath: "models/cosmetics/high-res/winter_lord_paladin_secondary.glb",
+    modelPath: `${modelPath}/winter_lord_paladin_secondary.glb`,
     imagePath: "images/cosmetics/winter-lord-paladin-shield.png",
     positionY: 0.5,
     scale: 1,
@@ -227,7 +229,7 @@ export const chestAssets: ChestAsset[] = [
     set: AssetSet.S1AlternatesSet,
     description: "A wooden hunting bow.",
     drawChance: 16.9,
-    modelPath: "models/cosmetics/high-res/bow_common.glb",
+    modelPath: `${modelPath}/bow_common.glb`,
     imagePath: "images/cosmetics/common-bow.png",
     positionY: -0.8,
     scale: 1,
@@ -242,7 +244,7 @@ export const chestAssets: ChestAsset[] = [
     set: AssetSet.S1AlternatesSet,
     description: "A leather quiver filled with hunting arrows.",
     drawChance: 16.9,
-    modelPath: "models/cosmetics/high-res/common_quiver.glb",
+    modelPath: `${modelPath}/common_quiver.glb`,
     imagePath: "images/cosmetics/common-quiver.png",
     positionY: 0,
     scale: 0.8,
@@ -258,7 +260,7 @@ export const chestAssets: ChestAsset[] = [
     set: AssetSet.S1AlternatesSet,
     description: "A basic-but-sturdy wooden platform.",
     drawChance: 16.9,
-    modelPath: "models/cosmetics/high-res/common_platform.glb",
+    modelPath: `${modelPath}/common_platform.glb`,
     imagePath: "images/cosmetics/common-base.png",
     positionY: 0.2,
     scale: 1,
@@ -414,7 +416,7 @@ export const ChestContent = ({
         <div
           className="absolute inset-0"
           style={{
-            transition: "opacity 5000ms",
+            transition: "opacity 300ms",
             opacity: showContent && !isTransitioning ? 1 : 0,
           }}
         >
