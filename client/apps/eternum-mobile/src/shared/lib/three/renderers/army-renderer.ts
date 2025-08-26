@@ -36,10 +36,7 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
       }
 
       // Start movement animation from current position to new position
-      this.moveObject(object.id, object.col, object.row, 1000).then(() => {
-        // Update label content after movement completes
-        this.updateLabelContent(object);
-      });
+      this.moveObject(object.id, object.col, object.row, 1000);
     } else {
       // Just update properties without position change
       this.objects.set(object.id, object);
@@ -52,6 +49,8 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
     const label = this.labels.get(army.id);
     if (!label || !label.element) return;
 
+    // Don't recalculate stamina - use the values provided by the system
+    // The hexagon-map has already calculated the correct stamina values
     const armyLabelData = this.convertArmyToLabelData(army);
     ArmyLabelType.updateElement?.(label.element, armyLabelData);
   }
@@ -130,8 +129,8 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
       },
       color: isPlayerArmy ? "green" : "red",
       troopCount: army.troopCount || 0,
-      currentStamina: army.currentStamina || 0,
-      maxStamina: army.maxStamina || 0,
+      currentStamina: isNaN(army.currentStamina ?? 0) ? 0 : (army.currentStamina ?? 0),
+      maxStamina: isNaN(army.maxStamina ?? 0) ? 0 : (army.maxStamina ?? 0),
     };
   }
 
@@ -278,6 +277,8 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
       army.col = targetCol;
       army.row = targetRow;
 
+      // Note: Don't update label content here - wait for system update with fresh stamina data
+
       // Update label attachment for new position
       const label = this.labels.get(objectId);
       if (label) {
@@ -319,6 +320,8 @@ export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
       // Update army position after movement completes
       army.col = finalHex.col;
       army.row = finalHex.row;
+
+      // Note: Don't update label content here - wait for system update with fresh stamina data
 
       // Update label attachment for final position
       const label = this.labels.get(objectId);

@@ -23,6 +23,7 @@ export interface ArmyObject extends MapObject {
   troopCount?: number;
   currentStamina?: number;
   maxStamina?: number;
+  onChainStamina?: { amount: bigint; updatedTick: number };
 }
 
 export interface StructureObject extends MapObject {

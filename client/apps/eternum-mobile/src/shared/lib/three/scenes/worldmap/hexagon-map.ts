@@ -19,7 +19,7 @@ import {
   WorldUpdateListener,
 } from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
-import { BiomeType, FELT_CENTER, HexEntityInfo, ID } from "@bibliothecadao/types";
+import { BiomeType, FELT_CENTER, HexEntityInfo, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { getMapFromTorii } from "../../../../../app/dojo/queries";
 import { FXManager } from "../../managers/fx-manager";
@@ -930,6 +930,7 @@ export class HexagonMap {
       troopCount,
       currentStamina,
       maxStamina,
+      onChainStamina,
     } = update;
 
     if (ownerAddress === undefined) return;
@@ -976,6 +977,7 @@ export class HexagonMap {
         troopCount: troopCount || 0,
         currentStamina: currentStamina || 0,
         maxStamina: finalMaxStamina,
+        onChainStamina: onChainStamina,
       };
 
       this.armyRenderer.addObject(army);
@@ -1005,13 +1007,19 @@ export class HexagonMap {
         let finalMaxStamina = maxStamina || existingArmy.maxStamina || 0;
         if (!finalMaxStamina && troopType && troopTier) {
           try {
-            finalMaxStamina = Number(configManager.getTroopStaminaConfig(troopType, troopTier));
+            const troopTypeEnum =
+              typeof troopType === "string" ? TroopType[troopType as keyof typeof TroopType] : troopType;
+            const troopTierEnum =
+              typeof troopTier === "string" ? TroopTier[troopTier as keyof typeof TroopTier] : troopTier;
+            const staminaConfig = configManager.getTroopStaminaConfig(troopTypeEnum, troopTierEnum);
+            finalMaxStamina = Number(staminaConfig.staminaMax);
           } catch (error) {
             console.warn(`Failed to get max stamina config for ${troopType} ${troopTier}:`, error);
           }
         }
 
         // Update army properties BEFORE starting movement (so movement logic has correct data)
+        // ArmySystemUpdate is for position changes - preserve existing stamina values from ExplorerTroopsSystemUpdate
         const updatedArmy: ArmyObject = {
           ...existingArmy,
           owner: ownerAddress,
@@ -1021,9 +1029,11 @@ export class HexagonMap {
           guildName,
           isDaydreamsAgent,
           isAlly: false,
-          troopCount: troopCount || existingArmy.troopCount || 0,
-          currentStamina: currentStamina || existingArmy.currentStamina || 0,
-          maxStamina: finalMaxStamina,
+          troopCount: troopCount ?? existingArmy.troopCount ?? 0,
+          // Always preserve existing stamina values - ArmySystemUpdate has stale stamina data
+          currentStamina: existingArmy.currentStamina ?? 0,
+          maxStamina: existingArmy.maxStamina ?? 0,
+          onChainStamina: existingArmy.onChainStamina,
         };
         this.armyRenderer.updateObject(updatedArmy);
 
@@ -1040,13 +1050,19 @@ export class HexagonMap {
         let finalMaxStamina = maxStamina || existingArmy.maxStamina || 0;
         if (!finalMaxStamina && troopType && troopTier) {
           try {
-            finalMaxStamina = Number(configManager.getTroopStaminaConfig(troopType, troopTier));
+            const troopTypeEnum =
+              typeof troopType === "string" ? TroopType[troopType as keyof typeof TroopType] : troopType;
+            const troopTierEnum =
+              typeof troopTier === "string" ? TroopTier[troopTier as keyof typeof TroopTier] : troopTier;
+            const staminaConfig = configManager.getTroopStaminaConfig(troopTypeEnum, troopTierEnum);
+            finalMaxStamina = Number(staminaConfig.staminaMax);
           } catch (error) {
             console.warn(`Failed to get max stamina config for ${troopType} ${troopTier}:`, error);
           }
         }
 
         // Update army properties without position change
+        // ArmySystemUpdate is for position changes - preserve existing stamina values from ExplorerTroopsSystemUpdate
         const updatedArmy: ArmyObject = {
           ...existingArmy,
           col: newPos.col,
@@ -1058,9 +1074,11 @@ export class HexagonMap {
           guildName,
           isDaydreamsAgent,
           isAlly: false,
-          troopCount: troopCount || existingArmy.troopCount || 0,
-          currentStamina: currentStamina || existingArmy.currentStamina || 0,
-          maxStamina: finalMaxStamina,
+          troopCount: troopCount ?? existingArmy.troopCount ?? 0,
+          // Always preserve existing stamina values - ArmySystemUpdate has stale stamina data
+          currentStamina: existingArmy.currentStamina ?? 0,
+          maxStamina: existingArmy.maxStamina ?? 0,
+          onChainStamina: existingArmy.onChainStamina,
         };
 
         this.armyRenderer.updateObject(updatedArmy);
@@ -1329,8 +1347,6 @@ export class HexagonMap {
   }
 
   private updateArmyFromExplorerTroopsUpdate(update: ExplorerTroopsSystemUpdate): void {
-    console.log("[HexagonMap] Army explorer troops update:", update);
-
     // Get the army from our renderer
     const armyObject = this.armyRenderer.getObject(update.entityId);
 
@@ -1373,10 +1389,32 @@ export class HexagonMap {
         );
 
         currentStamina = Number(staminaResult.amount);
-        // Calculate maxStamina using configManager based on troop type and tier
-        maxStamina = Number(configManager.getTroopStaminaConfig(armyObject.troopType, armyObject.troopTier));
 
-        console.log(`[HexagonMap] Stamina update for army ${update.entityId}: ${currentStamina}/${maxStamina}`);
+        // Calculate maxStamina using configManager based on troop type and tier
+        let troopType = armyObject.troopType;
+        let troopTier = armyObject.troopTier;
+
+        if (troopType && troopTier) {
+          try {
+            // Convert string values to enum values if needed
+            const troopTypeEnum =
+              typeof troopType === "string" ? TroopType[troopType as keyof typeof TroopType] : troopType;
+            const troopTierEnum =
+              typeof troopTier === "string" ? TroopTier[troopTier as keyof typeof TroopTier] : troopTier;
+
+            const staminaConfig = configManager.getTroopStaminaConfig(troopTypeEnum, troopTierEnum);
+            maxStamina = Number(staminaConfig.staminaMax);
+          } catch (error) {
+            console.warn(`[HexagonMap] Failed to calculate maxStamina for ${troopType} ${troopTier}:`, error);
+            maxStamina = armyObject.maxStamina || 0;
+          }
+        } else {
+          console.warn(`[HexagonMap] Missing troopType or troopTier for army ${update.entityId}:`, {
+            armyObjectTroopType: armyObject.troopType,
+            armyObjectTroopTier: armyObject.troopTier,
+          });
+          maxStamina = armyObject.maxStamina || 0;
+        }
       } catch (error) {
         console.warn(`Failed to calculate stamina for army ${update.entityId}:`, error);
       }
@@ -1390,14 +1428,8 @@ export class HexagonMap {
       maxStamina,
       ownerName: update.ownerName,
       owner: update.ownerAddress,
+      onChainStamina: update.onChainStamina,
     };
-
-    console.log(`[HexagonMap] Updating army ${update.entityId} with data:`, {
-      troopCount: updatedArmy.troopCount,
-      currentStamina: updatedArmy.currentStamina,
-      maxStamina: updatedArmy.maxStamina,
-      ownerName: updatedArmy.ownerName,
-    });
 
     this.armyRenderer.updateObject(updatedArmy);
 
