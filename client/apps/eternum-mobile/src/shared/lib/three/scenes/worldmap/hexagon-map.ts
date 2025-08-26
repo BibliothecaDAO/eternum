@@ -499,7 +499,7 @@ export class HexagonMap {
           this.selectionManager.clearSelection();
         } else if (actionType === ActionType.Chest) {
           console.log(`Chest action at (${col}, ${row})`);
-          this.handleChestAction(selectedObject.id, col, row);
+          this.handleChestAction(selectedObject.id, actionPath);
           this.selectionManager.clearSelection();
         }
 
@@ -597,8 +597,11 @@ export class HexagonMap {
     }
   }
 
-  private handleChestAction(explorerEntityId: number, col: number, row: number): void {
-    this.store.openChestDrawer(explorerEntityId, { x: col, y: row });
+  private handleChestAction(explorerEntityId: number, actionPath: ActionPath[]): void {
+    // Get the target hex (last hex in the path) like desktop implementation
+    const targetHex = actionPath[actionPath.length - 1].hex;
+
+    this.store.openChestDrawer(explorerEntityId, { x: targetHex.col, y: targetHex.row });
   }
 
   private selectArmy(armyId: number): void {

@@ -1,6 +1,7 @@
 import { Button } from "@/shared/ui/button";
 import { Drawer, DrawerContent, DrawerHeader } from "@/shared/ui/drawer";
 import { useDojo } from "@bibliothecadao/react";
+import { FELT_CENTER } from "@bibliothecadao/types";
 import { defineComponentSystem, isComponentUpdate } from "@dojoengine/recs";
 import { useCallback, useEffect, useState } from "react";
 import { ChestDrawerProps, ChestState } from "../model/types";
@@ -10,7 +11,7 @@ import { RelicResultCards } from "./relic-result-cards";
 
 export const ChestDrawer = ({ explorerEntityId, chestHex, open, onOpenChange }: ChestDrawerProps) => {
   const {
-    account,
+    account: { account },
     setup: { systemCalls },
     network: { world, contractComponents },
   } = useDojo();
@@ -25,7 +26,7 @@ export const ChestDrawer = ({ explorerEntityId, chestHex, open, onOpenChange }: 
     revealedCards: [],
   });
 
-  const chestName = `Chest at (${chestHex.x}, ${chestHex.y})`;
+  const chestName = `Chest at (${chestHex.x - FELT_CENTER}, ${chestHex.y - FELT_CENTER})`;
 
   // Event listener for OpenRelicChestEvent
   useEffect(() => {
@@ -84,7 +85,7 @@ export const ChestDrawer = ({ explorerEntityId, chestHex, open, onOpenChange }: 
       setChestState((prev) => ({ ...prev, hasClicked: true }));
       try {
         await systemCalls.open_chest({
-          signer: account.account,
+          signer: account,
           explorer_id: explorerEntityId,
           chest_coord: {
             x: chestHex.x,
@@ -122,7 +123,7 @@ export const ChestDrawer = ({ explorerEntityId, chestHex, open, onOpenChange }: 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent>
-        <DrawerHeader className="text-center">
+        <DrawerHeader className="!text-center">
           <h2 className="text-xl font-bold text-gold">✨ Open Relic Crate ✨</h2>
           <p className="text-sm text-gold/70">{chestName}</p>
         </DrawerHeader>

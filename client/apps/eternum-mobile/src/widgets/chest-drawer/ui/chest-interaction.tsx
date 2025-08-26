@@ -35,15 +35,20 @@ export const ChestInteraction = ({
           onClick={onChestClick}
           whileTap={{ scale: 0.95 }}
         >
-          {/* Chest Base */}
-          <div className="w-32 h-32 bg-gradient-to-b from-amber-600 to-amber-800 rounded-lg border-2 border-amber-400 shadow-lg relative overflow-hidden">
-            {/* Chest Lock */}
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-8 bg-yellow-300 rounded-sm border border-yellow-400">
-              <div className="w-2 h-2 bg-yellow-600 rounded-full absolute top-1 left-1/2 transform -translate-x-1/2"></div>
-            </div>
+          {/* Chest Image */}
+          <div className="w-32 h-32 relative">
+            <img
+              src={
+                isOpening || showResult
+                  ? "/images/relic-chest/chest-opened.png"
+                  : "/images/relic-chest/chest-closed.png"
+              }
+              alt="Treasure Chest"
+              className="w-full h-full object-contain"
+            />
 
             {/* Crack Overlay */}
-            {clickCount > 0 && (
+            {clickCount > 0 && !isOpening && !showResult && (
               <motion.div
                 className="absolute inset-0 bg-gradient-to-br from-transparent via-red-900/30 to-red-800/50"
                 initial={{ opacity: 0 }}
