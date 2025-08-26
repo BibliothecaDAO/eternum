@@ -354,7 +354,7 @@ const scrollbarStyles = `
   }
   
   .item-preview-image {
-    animation: fadeIn 0.3s ease-out;
+    animation: fadeIn 0.1s ease-out;
   }
 `;
 
@@ -387,10 +387,9 @@ export const ChestContent = ({
     playClickSound();
 
     setIsTransitioning(true);
-    setTimeout(() => {
-      setSelectedIndex(index);
-      setTimeout(() => setIsTransitioning(false), 50);
-    }, 150);
+    setSelectedIndex(index);
+    // Reduced transition time for snappier feel
+    setTimeout(() => setIsTransitioning(false), 50);
   };
 
   const renderTitle = () => {
@@ -416,7 +415,7 @@ export const ChestContent = ({
         <div
           className="absolute inset-0"
           style={{
-            transition: "opacity 300ms",
+            transition: "opacity 1000ms",
             opacity: showContent && !isTransitioning ? 1 : 0,
           }}
         >
@@ -495,7 +494,7 @@ export const ChestContent = ({
 
               {/* Selected Item Preview */}
               <div
-                className="p-5 bg-gradient-to-br from-black/80 to-gray-900/60 rounded-xl border-2 shadow-2xl backdrop-blur-sm transition-all duration-300"
+                className="p-5 bg-gradient-to-br from-black/80 to-gray-900/60 rounded-xl border-2 shadow-2xl backdrop-blur-sm transition-all duration-100"
                 style={{
                   borderColor: getRarityAccentColor(selectedAsset.rarity),
                   boxShadow: `0 0 30px ${getRarityAccentColor(selectedAsset.rarity)}40`,
@@ -601,7 +600,7 @@ export const ChestContent = ({
                 <div className="space-y-3">
                   {sortedChestContent.map((asset, index) => {
                     const isSelected = index === selectedIndex;
-                    const baseCardClass = "cursor-pointer transition-all duration-200 backdrop-blur-sm";
+                    const baseCardClass = "cursor-pointer transition-all duration-100 backdrop-blur-sm";
                     const cardClass = isSelected
                       ? `${baseCardClass} ${getRarityGlowClass(asset.rarity)}`
                       : `${baseCardClass} border-2 border-gray-600 bg-black/40 hover:border-gray-500 hover:bg-white/10`;
@@ -614,7 +613,7 @@ export const ChestContent = ({
                         className={cardClass}
                         onClick={() => handleAssetSelect(index)}
                         style={{
-                          transition: "all 0.3s ease",
+                          transition: "all 0.1s ease",
                           transform: isSelected ? "scale(1.02)" : "scale(1)",
                         }}
                       >
