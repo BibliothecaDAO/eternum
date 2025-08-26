@@ -515,7 +515,8 @@ export class HexagonMap {
     } else if (quests.length > 0) {
       this.selectionManager.selectObject(quests[0].id, "quest");
     } else if (chests.length > 0) {
-      this.handleDirectChestClick(chests[0].id, col, row);
+      // Don't open chest directly - just clear selection like desktop
+      this.selectionManager.clearSelection();
     } else {
       this.selectionManager.clearSelection();
     }
@@ -598,25 +599,6 @@ export class HexagonMap {
 
   private handleChestAction(explorerEntityId: number, col: number, row: number): void {
     this.store.openChestDrawer(explorerEntityId, { x: col, y: row });
-  }
-
-  private handleDirectChestClick(_chestId: number, col: number, row: number): void {
-    const playerArmies = this.armyRenderer
-      .getAllObjects()
-      .filter((army) => army.owner === BigInt(this.dojo.account.account.address));
-
-    if (playerArmies.length === 0) {
-      console.log("No player armies available to open chest");
-      return;
-    }
-
-    const nearestArmy = playerArmies.reduce((nearest, army) => {
-      const distance = Math.abs(army.col - col) + Math.abs(army.row - row);
-      const nearestDistance = Math.abs(nearest.col - col) + Math.abs(nearest.row - row);
-      return distance < nearestDistance ? army : nearest;
-    });
-
-    this.store.openChestDrawer(nearestArmy.id, { x: col, y: row });
   }
 
   private selectArmy(armyId: number): void {
