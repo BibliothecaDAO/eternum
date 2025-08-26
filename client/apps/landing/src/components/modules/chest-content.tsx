@@ -371,6 +371,7 @@ export const ChestContent = ({
   const sortedChestContent = sortAssetsByRarity(chestContent);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [modelScale, setModelScale] = useState(1);
   const selectedAsset = sortedChestContent[selectedIndex];
   const rarityStats = calculateRarityStats(chestContent);
   const RARITY_PERCENTAGES = calculateRarityPercentages(chestAssets);
@@ -386,10 +387,17 @@ export const ChestContent = ({
     // Play click sound
     playClickSound();
 
+    // Start scale down animation
     setIsTransitioning(true);
-    setSelectedIndex(index);
-    // Reduced transition time for snappier feel
-    setTimeout(() => setIsTransitioning(false), 50);
+    setModelScale(0);
+    
+    // Wait for scale down, then switch model and scale up
+    setTimeout(() => {
+      setSelectedIndex(index);
+      // Immediately scale back up
+      setModelScale(1);
+      setTimeout(() => setIsTransitioning(false), 80);
+    }, 80);
   };
 
   const renderTitle = () => {
@@ -412,24 +420,28 @@ export const ChestContent = ({
       <style dangerouslySetInnerHTML={{ __html: scrollbarStyles }} />
       <div className="relative w-full h-screen text-white">
         {/* Full-screen 3D background */}
-        <div
-          className="absolute inset-0"
-          style={{
-            transition: "opacity 1000ms",
-            opacity: showContent && !isTransitioning ? 1 : 0,
-          }}
-        >
-          <ModelViewer
-            rarity={selectedAsset.rarity}
-            modelPath={selectedAsset.modelPath}
-            className="w-full h-full"
-            positionY={selectedAsset.positionY}
-            scale={selectedAsset.scale}
-            rotationY={selectedAsset.rotationY}
-            rotationZ={selectedAsset.rotationZ}
-            rotationX={selectedAsset.rotationX}
-            cameraPosition={selectedAsset.cameraPosition}
-          />
+        <div className="absolute inset-0">
+          {/* Model viewer with scale transition */}
+          <div
+            className="absolute inset-0"
+            style={{
+              transform: `scale(${modelScale})`,
+              transition: "transform 80ms cubic-bezier(0.4, 0, 0.2, 1)",
+              opacity: showContent ? 1 : 0,
+            }}
+          >
+            <ModelViewer
+              rarity={selectedAsset.rarity}
+              modelPath={selectedAsset.modelPath}
+              className="w-full h-full"
+              positionY={selectedAsset.positionY}
+              scale={selectedAsset.scale}
+              rotationY={selectedAsset.rotationY}
+              rotationZ={selectedAsset.rotationZ}
+              rotationX={selectedAsset.rotationX}
+              cameraPosition={selectedAsset.cameraPosition}
+            />
+          </div>
         </div>
 
         {/* Overlay UI - pointer-events-none to allow 3D interaction */}
