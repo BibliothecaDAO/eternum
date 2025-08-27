@@ -476,7 +476,7 @@ export const ChestContent = ({
       <div
         className="flex justify-center"
         style={{
-          transition: "opacity 5000ms",
+          transition: "opacity 1000ms",
           opacity: showContent ? 1 : 0,
         }}
       >
