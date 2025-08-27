@@ -233,6 +233,8 @@ export const chestAssets: ChestAsset[] = [
     positionY: -0.8,
     scale: 1,
     rotationY: 1,
+    rotationX: 0,
+    rotationZ: 0,
   },
   {
     id: "10",
@@ -359,14 +361,16 @@ const calculateRarityStats = (items: ChestAsset[]) => {
 };
 
 // Function to sort assets by rarity (rarest first)
-const sortAssetsByRarity = (assets: ChestAsset[]): ChestAsset[] => {
+const sortAssetsByRarity = (assets: (ChestAsset & { count: number })[]): (ChestAsset & { count: number })[] => {
   const rarityOrder = { legendary: 0, epic: 1, rare: 2, uncommon: 3, common: 4 };
   return [...assets].sort((a, b) => rarityOrder[a.rarity] - rarityOrder[b.rarity]);
 };
 
 // Group assets by type and sort each group by rarity
-const groupAssetsByType = (assets: ChestAsset[]): Map<AssetType, ChestAsset[]> => {
-  const grouped = new Map<AssetType, ChestAsset[]>();
+const groupAssetsByType = (
+  assets: (ChestAsset & { count: number })[],
+): Map<AssetType, (ChestAsset & { count: number })[]> => {
+  const grouped = new Map<AssetType, (ChestAsset & { count: number })[]>();
 
   // Define the order of asset types for consistent display
   const typeOrder = [
@@ -424,6 +428,22 @@ const scrollbarStyles = `
   }
 `;
 
+// Group identical assets by their id and count them
+const groupIdenticalAssets = (assets: ChestAsset[]): (ChestAsset & { count: number })[] => {
+  const grouped = new Map<string, ChestAsset & { count: number }>();
+
+  assets.forEach((asset) => {
+    const existing = grouped.get(asset.id);
+    if (existing) {
+      existing.count += 1;
+    } else {
+      grouped.set(asset.id, { ...asset, count: 1 });
+    }
+  });
+
+  return Array.from(grouped.values());
+};
+
 export const ChestContent = ({
   chestType,
   showContent,
@@ -433,21 +453,24 @@ export const ChestContent = ({
   showContent: boolean;
   chestContent: ChestAsset[];
 }) => {
-  // Group assets by type and sort each group by rarity
-  const groupedAssets = groupAssetsByType(chestContent);
+  // Group identical assets by their id and count them
+  const uniqueAssets = groupIdenticalAssets(chestContent);
 
-  // Create a flat array for index mapping
-  const flatAssets: ChestAsset[] = [];
+  // Group assets by type and sort each group by rarity
+  const groupedAssets = groupAssetsByType(uniqueAssets);
+
+  // Create a flat array for selection
+  const flatAssets: (ChestAsset & { count: number })[] = [];
   groupedAssets.forEach((group) => {
     flatAssets.push(...group);
   });
 
   // Find the most rare item (Legendary first, then Epic, etc.)
-  const findMostRareItemIndex = (assets: ChestAsset[]): number => {
+  const findMostRareItemIndex = (assets: (ChestAsset & { count: number })[]): number => {
     const rarityOrder = { legendary: 0, epic: 1, rare: 2, uncommon: 3, common: 4 };
     let mostRareIndex = 0;
     let highestRarity = rarityOrder.common;
-    
+
     assets.forEach((asset, index) => {
       const assetRarity = rarityOrder[asset.rarity];
       if (assetRarity < highestRarity) {
@@ -455,7 +478,7 @@ export const ChestContent = ({
         mostRareIndex = index;
       }
     });
-    
+
     return mostRareIndex;
   };
 
@@ -499,7 +522,7 @@ export const ChestContent = ({
       >
         <div className="relative">
           {/* Decorative background container */}
-          <div 
+          <div
             className="px-8 py-4 bg-slate-900/30 backdrop-blur-sm rounded-xl border border-slate-700/40 shadow-2xl"
             style={{
               borderColor: `${rarityColor}30`,
@@ -509,7 +532,7 @@ export const ChestContent = ({
             {/* Main title content */}
             <div className="flex flex-col items-center gap-1">
               <h1 className="text-4xl font-heading font-bold text-gray-200 tracking-wide">
-                <span 
+                <span
                   className={getRarityClass(chestType)}
                   style={{
                     textShadow: `0 0 20px ${rarityColor}40`,
@@ -519,7 +542,7 @@ export const ChestContent = ({
                 </span>
                 <span className="text-gray-300 ml-2">Chest</span>
               </h1>
-              
+
               {/* Subtitle with item count */}
               <div className="flex items-center gap-3 text-sm text-gray-400">
                 <span className="flex items-center gap-1">
@@ -527,29 +550,26 @@ export const ChestContent = ({
                   {chestContent.length} Items Revealed
                 </span>
                 <span className="flex items-center gap-1">
-                  <div 
-                    className="w-1.5 h-1.5 rounded-full"
-                    style={{ backgroundColor: rarityColor }}
-                  ></div>
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: rarityColor }}></div>
                   {chestType} Tier
                 </span>
               </div>
             </div>
-            
+
             {/* Decorative corner elements */}
-            <div 
+            <div
               className="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 rounded-tl"
               style={{ borderColor: `${rarityColor}60` }}
             ></div>
-            <div 
+            <div
               className="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 rounded-tr"
               style={{ borderColor: `${rarityColor}60` }}
             ></div>
-            <div 
+            <div
               className="absolute bottom-2 left-2 w-3 h-3 border-b-2 border-l-2 rounded-bl"
               style={{ borderColor: `${rarityColor}60` }}
             ></div>
-            <div 
+            <div
               className="absolute bottom-2 right-2 w-3 h-3 border-b-2 border-r-2 rounded-br"
               style={{ borderColor: `${rarityColor}60` }}
             ></div>
@@ -752,7 +772,8 @@ export const ChestContent = ({
 
                         {/* Assets in this category */}
                         {assets.map((asset) => {
-                          const assetIndex = flatAssets.indexOf(asset);
+                          // Find the index of this asset in flatAssets
+                          const assetIndex = flatAssets.findIndex((fa) => fa.id === asset.id);
                           const isSelected = assetIndex === selectedIndex;
                           const rarityColor = getRarityAccentColor(asset.rarity);
                           const baseCardClass = "cursor-pointer transition-all duration-200 border-l-4 rounded-lg";
@@ -775,7 +796,7 @@ export const ChestContent = ({
                               <div className="p-3">
                                 <div className="flex items-center gap-3">
                                   {/* NFT Image */}
-                                  <div className="flex-shrink-0">
+                                  <div className="flex-shrink-0 relative">
                                     <div className="w-12 h-12 rounded-md overflow-hidden bg-slate-700/20 border border-slate-600/30">
                                       <img
                                         src={asset.imagePath}
@@ -786,7 +807,6 @@ export const ChestContent = ({
                                           target.style.display = "none";
                                           const parent = target.parentElement;
                                           if (parent) {
-                                            const Icon = getAssetTypeIcon(asset.type);
                                             const iconWrapper = document.createElement("div");
                                             iconWrapper.className = "w-full h-full flex items-center justify-center";
                                             parent.appendChild(iconWrapper);
@@ -794,6 +814,11 @@ export const ChestContent = ({
                                         }}
                                       />
                                     </div>
+                                    {asset.count > 1 && (
+                                      <div className="absolute -top-1 -right-1 bg-slate-800 text-gray-300 text-xs px-1.5 py-0.5 rounded-md font-bold border border-slate-600/50">
+                                        {asset.count}
+                                      </div>
+                                    )}
                                   </div>
 
                                   {/* Content */}
