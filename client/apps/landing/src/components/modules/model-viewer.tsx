@@ -52,9 +52,14 @@ export const ModelViewer = ({
   const frameIdRef = useRef<number>();
   const modelRef = useRef<THREE.Group | null>(null);
   const ambientLightRef = useRef<THREE.AmbientLight | null>(null);
+  const smokeParticlesRef = useRef<THREE.Mesh[]>([]);
   const startTimeRef = useRef<number>(Date.now());
   const basePositionYRef = useRef<number>(0);
   const baseScaleRef = useRef<number>(1);
+  const modelRotationRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const targetRotationRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const isDraggingRef = useRef<boolean>(false);
+  const previousMouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -86,14 +91,14 @@ export const ModelViewer = ({
 
     mount.appendChild(renderer.domElement);
 
-    // OrbitControls setup exactly like Three.js example
+    // OrbitControls setup - only for zoom, no rotation
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.target.set(0, 1, 0);
     controls.enableDamping = true;
     controls.enablePan = false;
-    controls.maxPolarAngle = Math.PI / 2 - 0.05;
+    controls.enableRotate = false; // Disable camera rotation
     controls.minDistance = 2;
-    controls.maxDistance = 5;
+    controls.maxDistance = 3.5;
     controlsRef.current = controls;
 
     // Enhanced lighting setup with rarity-based ambient light
@@ -131,6 +136,133 @@ export const ModelViewer = ({
     pointLight.position.set(0, 2, 1);
     scene.add(pointLight);
 
+    // Create smoke effect
+    const createSmokeEffect = () => {
+      // Create smoke texture using canvas (since we can't load external images in this context)
+      const canvas = document.createElement("canvas");
+      canvas.width = 64;
+      canvas.height = 64;
+      const context = canvas.getContext("2d");
+
+      if (context) {
+        // Create a circular gradient for smoke texture
+        const gradient = context.createRadialGradient(32, 32, 0, 32, 32, 32);
+        gradient.addColorStop(0, "rgba(255, 255, 255, 1)");
+        gradient.addColorStop(0.2, "rgba(255, 255, 255, 0.8)");
+        gradient.addColorStop(0.5, "rgba(255, 255, 255, 0.3)");
+        gradient.addColorStop(1, "rgba(255, 255, 255, 0)");
+
+        context.fillStyle = gradient;
+        context.fillRect(0, 0, 64, 64);
+      }
+
+      const smokeTexture = new THREE.CanvasTexture(canvas);
+      const smokeMaterial = new THREE.MeshLambertMaterial({
+        color: 0xffffff,
+        map: smokeTexture,
+        transparent: true,
+        opacity: 0.3,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+
+      const smokeGeo = new THREE.PlaneGeometry(1, 1); // Scaled for our smaller scene
+      const smokeParticles: THREE.Mesh[] = [];
+
+      // Create 30 smoke particles (scaled down from 150 for smaller scene)
+      for (let p = 0; p < 30; p++) {
+        const particle = new THREE.Mesh(smokeGeo, smokeMaterial);
+
+        // Position particles around the scene (scaled for 2-4 unit scene)
+        particle.position.set(
+          Math.random() * 4 - 2, // -2 to 2
+          Math.random() * 4 - 2, // -2 to 2
+          Math.random() * 4 - 2, // -2 to 2
+        );
+
+        particle.rotation.z = Math.random() * Math.PI * 2;
+        scene.add(particle);
+        smokeParticles.push(particle);
+      }
+
+      smokeParticlesRef.current = smokeParticles;
+    };
+
+    createSmokeEffect();
+
+    // Custom mouse rotation handlers with smooth damping
+    const handleMouseDown = (event: MouseEvent) => {
+      isDraggingRef.current = true;
+      previousMouseRef.current = { x: event.clientX, y: event.clientY };
+      event.preventDefault();
+    };
+
+    const handleMouseMove = (event: MouseEvent) => {
+      if (!isDraggingRef.current) return;
+
+      const deltaX = event.clientX - previousMouseRef.current.x;
+      const deltaY = event.clientY - previousMouseRef.current.y;
+
+      // Convert mouse movement to rotation with improved sensitivity
+      const rotationSpeed = 0.005;
+      targetRotationRef.current.y += deltaX * rotationSpeed;
+      targetRotationRef.current.x += deltaY * rotationSpeed; // Drag down = see top of model
+
+      // Clamp X rotation to prevent flipping
+      targetRotationRef.current.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, targetRotationRef.current.x));
+
+      previousMouseRef.current = { x: event.clientX, y: event.clientY };
+      event.preventDefault();
+    };
+
+    const handleMouseUp = (event: MouseEvent) => {
+      isDraggingRef.current = false;
+      event.preventDefault();
+    };
+
+    // Add mouse event listeners
+    renderer.domElement.addEventListener("mousedown", handleMouseDown);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    renderer.domElement.addEventListener("mouseleave", handleMouseUp); // Handle mouse leaving canvas
+
+    // Touch events for mobile support
+    const handleTouchStart = (event: TouchEvent) => {
+      if (event.touches.length === 1) {
+        isDraggingRef.current = true;
+        const touch = event.touches[0];
+        previousMouseRef.current = { x: touch.clientX, y: touch.clientY };
+        event.preventDefault();
+      }
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+      if (!isDraggingRef.current || event.touches.length !== 1) return;
+
+      const touch = event.touches[0];
+      const deltaX = touch.clientX - previousMouseRef.current.x;
+      const deltaY = touch.clientY - previousMouseRef.current.y;
+
+      const rotationSpeed = 0.005;
+      targetRotationRef.current.y += deltaX * rotationSpeed;
+      targetRotationRef.current.x += deltaY * rotationSpeed;
+
+      targetRotationRef.current.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, targetRotationRef.current.x));
+
+      previousMouseRef.current = { x: touch.clientX, y: touch.clientY };
+      event.preventDefault();
+    };
+
+    const handleTouchEnd = (event: TouchEvent) => {
+      isDraggingRef.current = false;
+      event.preventDefault();
+    };
+
+    // Add touch event listeners
+    renderer.domElement.addEventListener("touchstart", handleTouchStart, { passive: false });
+    renderer.domElement.addEventListener("touchmove", handleTouchMove, { passive: false });
+    renderer.domElement.addEventListener("touchend", handleTouchEnd, { passive: false });
+
     const loader = new GLTFLoader();
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.6/");
@@ -160,10 +292,14 @@ export const ModelViewer = ({
         model.scale.setScalar(finalScale);
         baseScaleRef.current = finalScale;
 
-        // Apply Y rotation
+        // Apply initial rotations and store base rotation
         model.rotation.y = rotationY;
         model.rotation.x = rotationX;
         model.rotation.z = rotationZ;
+
+        // Initialize model rotation ref with initial values
+        modelRotationRef.current = { x: rotationX, y: rotationY };
+        targetRotationRef.current = { x: rotationX, y: rotationY };
 
         // Enable shadows
         model.traverse((child) => {
@@ -199,11 +335,39 @@ export const ModelViewer = ({
 
       // Animate the model if it exists
       if (modelRef.current) {
+        // Smooth rotation interpolation with damping
+        const dampingFactor = 0.1; // Lower = smoother but slower response
+        modelRotationRef.current.x += (targetRotationRef.current.x - modelRotationRef.current.x) * dampingFactor;
+        modelRotationRef.current.y += (targetRotationRef.current.y - modelRotationRef.current.y) * dampingFactor;
+
+        // Apply smoothed rotation to model
+        modelRef.current.rotation.x = modelRotationRef.current.x;
+        modelRef.current.rotation.y = modelRotationRef.current.y;
+
         // Very subtle floating motion - gentle up-down movement based on base position
         const floatAmplitude = 0.02; // Small, uniform amplitude for all rarities
         const floatSpeed = 1.2; // Gentle, consistent speed
         const floatOffset = Math.sin(time * floatSpeed) * floatAmplitude;
         modelRef.current.position.y = basePositionYRef.current + floatOffset;
+      }
+
+      // Animate smoke particles
+      const smokeParticles = smokeParticlesRef.current;
+      if (smokeParticles.length > 0) {
+        for (let i = 0; i < smokeParticles.length; i++) {
+          const particle = smokeParticles[i];
+
+          // Make particles always face the camera
+          particle.lookAt(cameraRef.current!.position);
+
+          // Add some gentle floating motion to smoke
+          particle.position.y += Math.sin(time * 0.5 + i) * 0.002;
+          particle.position.x += Math.cos(time * 0.3 + i) * 0.001;
+
+          // Keep particles visible at all times
+          const material = particle.material as THREE.MeshLambertMaterial;
+          material.opacity = 0.25;
+        }
       }
 
       renderer.render(scene, camera);
@@ -230,6 +394,17 @@ export const ModelViewer = ({
       }
 
       window.removeEventListener("resize", handleResize);
+
+      // Clean up event listeners
+      if (renderer && renderer.domElement) {
+        renderer.domElement.removeEventListener("mousedown", handleMouseDown);
+        window.removeEventListener("mousemove", handleMouseMove);
+        window.removeEventListener("mouseup", handleMouseUp);
+        renderer.domElement.removeEventListener("mouseleave", handleMouseUp);
+        renderer.domElement.removeEventListener("touchstart", handleTouchStart);
+        renderer.domElement.removeEventListener("touchmove", handleTouchMove);
+        renderer.domElement.removeEventListener("touchend", handleTouchEnd);
+      }
 
       if (controls) {
         controls.dispose();
