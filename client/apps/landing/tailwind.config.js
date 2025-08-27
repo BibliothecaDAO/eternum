@@ -123,7 +123,7 @@ export default {
         },
         slate: {
           600: "#6b5b47", // Medium warm brown-gray
-          700: "#5a4a38", // Dark warm brown-gray  
+          700: "#5a4a38", // Dark warm brown-gray
           800: "#4a3a2a", // Very dark warm brown
           900: "#3a2a1c", // Almost black warm brown
         },
