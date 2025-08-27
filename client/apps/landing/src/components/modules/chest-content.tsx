@@ -35,6 +35,7 @@ export interface ChestAsset {
   troopType: TroopType | undefined;
   rarity: AssetRarity;
   set: AssetSet;
+  attributesRaw: string;
   description: string;
   drawChance: number;
   modelPath: string;
@@ -123,6 +124,7 @@ export const chestAssets: ChestAsset[] = [
     positionY: -0.1,
     scale: 2.4,
     cameraPosition: { x: 0, y: 1.3, z: 1 },
+    attributesRaw: "0x4050301",
   },
   {
     id: "5",
@@ -140,6 +142,7 @@ export const chestAssets: ChestAsset[] = [
     rotationY: 1.2,
     rotationX: 0,
     cameraPosition: { x: 0, y: 1.3, z: 1 },
+    attributesRaw: "0x3030501",
   },
   {
     id: "6",
@@ -154,6 +157,7 @@ export const chestAssets: ChestAsset[] = [
     imagePath: "images/cosmetics/winter-lord-realm-aura.png",
     positionY: 0.2,
     scale: 1,
+    attributesRaw: "0x2030601",
   },
   {
     id: "3",
@@ -170,6 +174,7 @@ export const chestAssets: ChestAsset[] = [
     scale: 1,
     rotationY: -0.1,
     cameraPosition: { x: 0, y: 1.3, z: 1 },
+    attributesRaw: "0x2040401",
   },
   {
     id: "2",
@@ -188,6 +193,7 @@ export const chestAssets: ChestAsset[] = [
     rotationY: 0.7,
     rotationX: 0,
     cameraPosition: { x: 0, y: 1.3, z: 1 },
+    attributesRaw: "0x107050201",
   },
   {
     id: "7",
@@ -203,6 +209,7 @@ export const chestAssets: ChestAsset[] = [
     positionY: 0.5,
     scale: 1,
     rotationY: -1.5,
+    attributesRaw: "0x305020701",
   },
   {
     id: "8",
@@ -218,6 +225,7 @@ export const chestAssets: ChestAsset[] = [
     positionY: 0.5,
     scale: 1,
     rotationY: -1.5,
+    attributesRaw: "0x306020801",
   },
   {
     id: "9",
@@ -235,6 +243,7 @@ export const chestAssets: ChestAsset[] = [
     rotationY: 1,
     rotationX: 0,
     rotationZ: 0,
+    attributesRaw: "0x205010901",
   },
   {
     id: "10",
@@ -251,6 +260,7 @@ export const chestAssets: ChestAsset[] = [
     scale: 0.8,
     rotationX: 0,
     rotationZ: -0.8,
+    attributesRaw: "0x206010a01",
   },
   {
     id: "11",
@@ -266,9 +276,9 @@ export const chestAssets: ChestAsset[] = [
     positionY: 0.2,
     scale: 1,
     cameraPosition: { x: -0.4, y: 3, z: 1 },
+    attributesRaw: "0x8010b01",
   },
 ];
-
 
 const getRarityClass = (rarity: AssetRarity) => {
   return RARITY_STYLES[rarity]?.text || "text-gray-500";
@@ -277,7 +287,6 @@ const getRarityClass = (rarity: AssetRarity) => {
 const getRarityBgClass = (rarity: AssetRarity) => {
   return RARITY_STYLES[rarity]?.bg || "bg-gray-500";
 };
-
 
 // Minimalistic rarity accent for clean UI
 const getRarityAccent = (rarity: AssetRarity) => {
@@ -474,7 +483,7 @@ export const ChestContent = ({
 
     // Play click sound
     playClickSound();
-    
+
     // Change selection immediately - animation is handled in ModelViewer
     setSelectedIndex(index);
   };
@@ -553,7 +562,7 @@ export const ChestContent = ({
       <style dangerouslySetInnerHTML={{ __html: scrollbarStyles }} />
       <div className="relative w-full h-screen text-white">
         {/* Full-screen 3D background */}
-        <div 
+        <div
           className="absolute inset-0"
           style={{
             opacity: showContent ? 1 : 0,

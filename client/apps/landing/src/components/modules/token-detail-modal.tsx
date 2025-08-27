@@ -126,7 +126,7 @@ export const TokenDetailModal = ({
 
   console.log("[TokenDetailModal] tokenData", tokenData);
 
-  const { setShowLootChestOpening } = useLootChestOpeningStore();
+  const { setShowLootChestOpening, setChestOpenTimestamp } = useLootChestOpeningStore();
 
   // Get wallet state
   const { address } = useAccount();
@@ -157,6 +157,10 @@ export const TokenDetailModal = ({
   const handleOpenChest = () => {
     setIsChestOpeningLoading(true);
     setOpenedChestTokenId(tokenData.token_id.toString());
+    
+    // Set timestamp for when chest is opened to listen for new events
+    setChestOpenTimestamp(Math.floor(Date.now() / 1000));
+    
     if (!env.VITE_PUBLIC_CHEST_DEBUG_MODE) {
       openChest({
         tokenId: BigInt(tokenData.token_id),

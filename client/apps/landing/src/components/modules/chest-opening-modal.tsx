@@ -61,7 +61,8 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
   const [chestType, setChestType] = useState<ChestAsset["rarity"]>(AssetRarity.Common);
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
 
-  const { chestContent, resetChestContent } = useChestContent(env.VITE_PUBLIC_CHEST_DEBUG_MODE);
+  const { chestOpenTimestamp, setChestOpenTimestamp } = useLootChestOpeningStore();
+  const { chestContent, resetChestContent } = useChestContent(env.VITE_PUBLIC_CHEST_DEBUG_MODE, chestOpenTimestamp);
 
   const ambienceAudio = useAmbienceAudio({
     src: "/sound/music/ShadowSong.mp3",
@@ -194,6 +195,9 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
   const handleOpenChest = () => {
     if (!nextToken) return;
     setIsChestOpeningLoading(true);
+
+    // Set timestamp for when chest is opened to listen for new events
+    setChestOpenTimestamp(Math.floor(Date.now() / 1000));
 
     // Immediately reset video state to loading when opening new chest
     setVideoState("loading");
