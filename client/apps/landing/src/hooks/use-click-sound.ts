@@ -21,6 +21,8 @@ export const useClickSound = ({ src, volume = 0.5 }: UseClickSoundOptions) => {
     initializeAudio();
 
     if (audioRef.current) {
+      // Stop any currently playing sound first
+      audioRef.current.pause();
       // Reset audio to beginning and play
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch((error) => {
