@@ -111,10 +111,21 @@ export default {
         white: colors.white,
         black: colors.black,
         gray: {
+          100: colors.gray[100],
+          200: colors.gray[200],
           300: colors.gray[300],
+          400: colors.gray[400],
           500: colors.gray[500],
           600: colors.gray[600],
+          700: colors.gray[700],
+          800: colors.gray[800],
           900: colors.gray[900],
+        },
+        slate: {
+          600: "#6b5b47", // Medium warm brown-gray
+          700: "#5a4a38", // Dark warm brown-gray  
+          800: "#4a3a2a", // Very dark warm brown
+          900: "#3a2a1c", // Almost black warm brown
         },
         blue: {
           500: colors.blue[500],
