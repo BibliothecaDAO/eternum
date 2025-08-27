@@ -157,10 +157,10 @@ export const TokenDetailModal = ({
   const handleOpenChest = () => {
     setIsChestOpeningLoading(true);
     setOpenedChestTokenId(tokenData.token_id.toString());
-    
+
     // Set timestamp for when chest is opened to listen for new events
     setChestOpenTimestamp(Math.floor(Date.now() / 1000));
-    
+
     if (!env.VITE_PUBLIC_CHEST_DEBUG_MODE) {
       openChest({
         tokenId: BigInt(tokenData.token_id),
@@ -282,21 +282,31 @@ export const TokenDetailModal = ({
                   <span>Send to Cartridge Controller to open chests</span>
                 </div>
               )}
-              <Button
-                variant="default"
-                className="w-full"
-                onClick={handleOpenChest}
-                disabled={isLoading || !isController || isChestOpeningLoading}
-              >
-                {isChestOpeningLoading ? (
-                  <>
-                    <Loader2 className="animate-spin mr-2 h-4 w-4" />
-                    Opening...
-                  </>
-                ) : (
-                  "Open Chest"
-                )}
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="w-full">
+                      <Button
+                        variant="default"
+                        className="w-full"
+                        onClick={handleOpenChest}
+                        disabled={
+                          isLoading || !isController || isChestOpeningLoading || env.VITE_PUBLIC_BLOCK_CHEST_OPENING
+                        }
+                      >
+                        {isChestOpeningLoading ? (
+                          <>
+                            <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                            Opening...
+                          </>
+                        ) : (
+                          "Open Chest " + (env.VITE_PUBLIC_BLOCK_CHEST_OPENING ? "(Coming soon)" : "")
+                        )}
+                      </Button>
+                    </div>
+                  </TooltipTrigger>
+                </Tooltip>
+              </TooltipProvider>
             </>
           )}
           <CreateListingsDrawer
