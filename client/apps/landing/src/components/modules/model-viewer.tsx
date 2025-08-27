@@ -50,6 +50,11 @@ export const ModelViewer = ({
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
   const frameIdRef = useRef<number>();
+  const modelRef = useRef<THREE.Group | null>(null);
+  const ambientLightRef = useRef<THREE.AmbientLight | null>(null);
+  const startTimeRef = useRef<number>(Date.now());
+  const basePositionYRef = useRef<number>(0);
+  const baseScaleRef = useRef<number>(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,6 +99,7 @@ export const ModelViewer = ({
     // Enhanced lighting setup with rarity-based ambient light
     const rarityColor = getRarityAmbientColor(rarity);
     const ambientLight = new THREE.AmbientLight(rarityColor, 0.6);
+    ambientLightRef.current = ambientLight;
     scene.add(ambientLight);
 
     // Key light - main directional light from front-top
@@ -129,12 +135,11 @@ export const ModelViewer = ({
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.6/");
     loader.setDRACOLoader(dracoLoader);
-    let model: THREE.Group | null = null;
-
     loader.load(
       modelPath,
       (gltf) => {
-        model = gltf.scene;
+        const model = gltf.scene;
+        modelRef.current = model;
 
         // Get bounding box and center the model
         const box = new THREE.Box3().setFromObject(model);
@@ -144,12 +149,16 @@ export const ModelViewer = ({
         // Center the model horizontally and position vertically
         model.position.x = -center.x;
         model.position.z = -center.z;
-        model.position.y = -box.min.y + positionY; // Apply Y offset from prop
+        const baseY = -box.min.y + positionY;
+        model.position.y = baseY;
+        basePositionYRef.current = baseY;
 
         // Scale model appropriately
         const maxDim = Math.max(size.x, size.y, size.z);
         const autoScale = 2 / maxDim;
-        model.scale.setScalar(autoScale * scale);
+        const finalScale = autoScale * scale;
+        model.scale.setScalar(finalScale);
+        baseScaleRef.current = finalScale;
 
         // Apply Y rotation
         model.rotation.y = rotationY;
@@ -183,6 +192,18 @@ export const ModelViewer = ({
       // Update controls with damping
       if (controls) {
         controls.update();
+      }
+
+      // Animation calculations
+      const time = (Date.now() - startTimeRef.current) * 0.001; // Convert to seconds
+
+      // Animate the model if it exists
+      if (modelRef.current) {
+        // Very subtle floating motion - gentle up-down movement based on base position
+        const floatAmplitude = 0.02; // Small, uniform amplitude for all rarities
+        const floatSpeed = 1.2; // Gentle, consistent speed
+        const floatOffset = Math.sin(time * floatSpeed) * floatAmplitude;
+        modelRef.current.position.y = basePositionYRef.current + floatOffset;
       }
 
       renderer.render(scene, camera);
