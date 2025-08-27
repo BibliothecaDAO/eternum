@@ -1328,8 +1328,8 @@
   },
   "contracts": [
     {
-      "address": "0x761fece92cf0a7d2d54ce194e410efd4091355f068b33f6bcf5350a031a7a8b",
-      "class_hash": "0xca714fd2e2bfaa5493e8066e9554bc0fa5d1269d1684682d76e86df1c5f604",
+      "address": "0x6f027e351c30130e30a0df26618bf7881c76496205cb9ebf9d8ff415941d110",
+      "class_hash": "0x4b13c6df7c148f43212020fa594996cbb5327700627c1854e97ce1403d8b759",
       "abi": [
         {
           "type": "impl",
@@ -1573,7 +1573,7 @@
               "type": "core::integer::u16"
             },
             {
-              "name": "stamina_attack_max",
+              "name": "stamina_defense_req",
               "type": "core::integer::u16"
             },
             {
@@ -1604,7 +1604,7 @@
         },
         {
           "type": "enum",
-          "name": "s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind",
+          "name": "s1_eternum::models::events::ExploreFind",
           "variants": [
             {
               "name": "None",
@@ -1675,7 +1675,7 @@
               ],
               "outputs": [
                 {
-                  "type": "(core::bool, s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind)"
+                  "type": "(core::bool, s1_eternum::models::events::ExploreFind)"
                 }
               ],
               "state_mutability": "view"
@@ -1805,8 +1805,8 @@
       ]
     },
     {
-      "address": "0x125569935e03f337f8763a7b0786a9e7ef6b894ebd1cfc587e62bf0ce0f4e5",
-      "class_hash": "0x6c335844cbd3e6f9e96aa4ad36b960b8acf88c6a8a095c581dd5445a6b7f1d8",
+      "address": "0x6df4ed21cacf88a855b2ac5491377a83cce980d6bbf8ebd4a8f0cb6297949fe",
+      "class_hash": "0x7153f976bfee72e96eff164cb848fe80821843a764e4551a2b7ef6622c31825",
       "abi": [
         {
           "type": "impl",
@@ -2057,8 +2057,8 @@
       ]
     },
     {
-      "address": "0x665fa5fb122c776bc75d444ae830acf05392c83314863ea1967b5030fb5529b",
-      "class_hash": "0x7bfc23b1b00e6853def63b2d29a58b9742d13a05e40a7752ad2051e62f4dbc1",
+      "address": "0x3fd571795c9f56c2397f1f7fd2fa10763d659607ad0dff381b29ddf54bd639f",
+      "class_hash": "0xc91f72150164bd1b4b2f4ed172944004618d258a98b80aa94cf09514c2e3f0",
       "abi": [
         {
           "type": "impl",
@@ -2286,8 +2286,8 @@
       ]
     },
     {
-      "address": "0x441c2f1deb40a3efae73c1782fbaddb2f81516434fbbfca6eeff2704116f0f",
-      "class_hash": "0x429a4e6ea1dc320787bb5d1095b066ec860d693c3c000c54305b7d577bd5d79",
+      "address": "0x17b8eaf3c2f63f562e4d9903f3e84c2a93fc7a024c0aa03e803f3b760ea181e",
+      "class_hash": "0xb553c69d0d13cc308e0b3b696d493fc325b30676700759c75ad6cdd7fdff87",
       "abi": [
         {
           "type": "impl",
@@ -2501,6 +2501,20 @@
           "interface_name": "s1_eternum::systems::config::contracts::ISeasonConfig"
         },
         {
+          "type": "enum",
+          "name": "core::bool",
+          "variants": [
+            {
+              "name": "False",
+              "type": "()"
+            },
+            {
+              "name": "True",
+              "type": "()"
+            }
+          ]
+        },
+        {
           "type": "interface",
           "name": "s1_eternum::systems::config::contracts::ISeasonConfig",
           "items": [
@@ -2508,6 +2522,10 @@
               "type": "function",
               "name": "set_season_config",
               "inputs": [
+                {
+                  "name": "dev_mode_on",
+                  "type": "core::bool"
+                },
                 {
                   "name": "season_pass_address",
                   "type": "core::starknet::contract_address::ContractAddress"
@@ -3109,7 +3127,7 @@
               "type": "core::integer::u16"
             },
             {
-              "name": "stamina_attack_max",
+              "name": "stamina_defense_req",
               "type": "core::integer::u16"
             },
             {
@@ -3423,20 +3441,6 @@
           "type": "impl",
           "name": "IResourceBridgeConfig",
           "interface_name": "s1_eternum::systems::config::contracts::IResourceBridgeConfig"
-        },
-        {
-          "type": "enum",
-          "name": "core::bool",
-          "variants": [
-            {
-              "name": "False",
-              "type": "()"
-            },
-            {
-              "name": "True",
-              "type": "()"
-            }
-          ]
         },
         {
           "type": "struct",
@@ -4012,8 +4016,8 @@
       ]
     },
     {
-      "address": "0x3e7740eeb024369668d569e7f2063206e96842df882ff8c3f7e81405c51dfa9",
-      "class_hash": "0x52a3f169a472b377201f3760bbf662f2133c90605b8c2d518bf8169d539cf40",
+      "address": "0x7777c122b2e6dfc8ec3f31ac51ef90eb8d24fa4a5072dd711f0e963fc88ef9c",
+      "class_hash": "0x5354ce834270c8fa905f9c11b73288924e5f4c7310dffff4d6e9e6868a68f12",
       "abi": [
         {
           "type": "impl",
@@ -5312,8 +5316,8 @@
       ]
     },
     {
-      "address": "0x7025a6056f512884b1c7bfd3ef4c1fe7795b9dfad1b6a565e35f83d010bb497",
-      "class_hash": "0x6701e2353ffdba9cb3a21f3baee58c3e201505354617962dc19b8f130257cdb",
+      "address": "0x7a12f3f14899c5fa96889562efab30b00ca27bb17fd7779bcc097dbfeaffc4b",
+      "class_hash": "0xe75e0be0534d714f3803f5ed3989f9f90b2e4ac65e49f127d3073c3aa5abc3",
       "abi": [
         {
           "type": "impl",
@@ -5581,8 +5585,8 @@
       ]
     },
     {
-      "address": "0x7d68456187e5514109565de5e11200a8daa43d438ef8136468cd9523cfbd08f",
-      "class_hash": "0x74eb69cb5d7568c437a0083f5a6489510eaa127f9b9a7da01d35896a1f01e86",
+      "address": "0x4d3b228ef9b970dcf9c406c89da5f7791429529a2df3da49ad09e0f13709a3e",
+      "class_hash": "0x17ae450503a9f5ba8af21fbbf02d367bfb9643d69eceeda827731000c19f6f1",
       "abi": [
         {
           "type": "impl",
@@ -5826,7 +5830,7 @@
               "type": "core::integer::u16"
             },
             {
-              "name": "stamina_attack_max",
+              "name": "stamina_defense_req",
               "type": "core::integer::u16"
             },
             {
@@ -5857,7 +5861,7 @@
         },
         {
           "type": "enum",
-          "name": "s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind",
+          "name": "s1_eternum::models::events::ExploreFind",
           "variants": [
             {
               "name": "None",
@@ -5928,7 +5932,7 @@
               ],
               "outputs": [
                 {
-                  "type": "(core::bool, s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind)"
+                  "type": "(core::bool, s1_eternum::models::events::ExploreFind)"
                 }
               ],
               "state_mutability": "view"
@@ -6058,8 +6062,8 @@
       ]
     },
     {
-      "address": "0x595653070a289197c76f8878c89ce846ba4e6585bae35b2916b8fde5f13559e",
-      "class_hash": "0x453fc022119a7e4dd710c2ecb8443100c90089b3f4789eae972331e2d6d2137",
+      "address": "0x673c25122ba6a07744eb0fe294c949517a8cda75f1e5f0cdf01a908b60d4671",
+      "class_hash": "0x71017ce9dea56f8ddb02bc07504a5a27cd2bc67c85cb37d805edd09ccaedb9f",
       "abi": [
         {
           "type": "impl",
@@ -6374,8 +6378,8 @@
       ]
     },
     {
-      "address": "0x23af0d501d0ce4ccd7b174aaee4e6a9652e6a9d0073752cd657313a54e14a1f",
-      "class_hash": "0x2a28a41910b1477962d19a0d4329dddb26643825aceb754375784d63da58797",
+      "address": "0x6e9bb75f969487eb836bb5620ee03665cd0eafe8418213fdb3f1ea757c8be21",
+      "class_hash": "0x62effa4ec40958bf4a36aaa243c68ddb3f82654f4192d2d54f6b106efcffa5f",
       "abi": [
         {
           "type": "impl",
@@ -6615,8 +6619,8 @@
       ]
     },
     {
-      "address": "0x5661ee0540ec56905a4a2d73aaf8def2e43e0ee37e9b4e779e900c55ed1ec9a",
-      "class_hash": "0x387fde933ba30e569bbe872795a141b0c96c2c491b4ad3dc125f4a9d321fbf1",
+      "address": "0x1900e188957e0fcd6cd84d2ec13cce7b098d19fb8314df908da88768400a846",
+      "class_hash": "0x5ca92930b7bb11200977f23e5b71160c7ff2126931afe87b99f679b974ffa17",
       "abi": [
         {
           "type": "impl",
@@ -6860,7 +6864,7 @@
               "type": "core::integer::u16"
             },
             {
-              "name": "stamina_attack_max",
+              "name": "stamina_defense_req",
               "type": "core::integer::u16"
             },
             {
@@ -6891,7 +6895,7 @@
         },
         {
           "type": "enum",
-          "name": "s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind",
+          "name": "s1_eternum::models::events::ExploreFind",
           "variants": [
             {
               "name": "None",
@@ -6962,7 +6966,7 @@
               ],
               "outputs": [
                 {
-                  "type": "(core::bool, s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind)"
+                  "type": "(core::bool, s1_eternum::models::events::ExploreFind)"
                 }
               ],
               "state_mutability": "view"
@@ -7292,8 +7296,8 @@
       ]
     },
     {
-      "address": "0x58ea2427c804535dfe54daf1d4e35c9603583138b47d7cc77ace36051503aa4",
-      "class_hash": "0x336eb837afbe18b2235cd23f31d424421975f6c9bfc38c9cc336cd781a46355",
+      "address": "0x30c37bc20de01f7a2fcd93870ae3bca70172fee879518e34124463924379764",
+      "class_hash": "0x78cf4991e55b631d886bc759b24d941f584aa223a439249c50aa3da1bc207b1",
       "abi": [
         {
           "type": "impl",
@@ -7513,8 +7517,8 @@
       ]
     },
     {
-      "address": "0x3ca6fb3163cfcd76ba198229c548b247cf10e3762958199adb8f666ca379b30",
-      "class_hash": "0x7c70d1680fa4b63f1064043f911c691a9205e9a70908536daa0cc485d5853ee",
+      "address": "0x306be7c9d249edd73bc43db052fc93dafdcb05d0fbd1a10461b3103f40af5d5",
+      "class_hash": "0x1826a3c84357b1950e55c5f9f906560f2b39188851e19b7f222e71e40a5a9c8",
       "abi": [
         {
           "type": "impl",
@@ -8110,8 +8114,8 @@
       ]
     },
     {
-      "address": "0xa858563a54948dbda7d887d39afaa609e1674164346f40af25d327dfff70db",
-      "class_hash": "0x74d932c4bfa5cb74b59f1627fae82212be42a93f76faf38e249f8c82897b29",
+      "address": "0x589ad9b21b7e00ebcdb20c9ee1227b20cd01eab427729a60bc6e182be24b847",
+      "class_hash": "0x55cf2449c5f5ed8732f65d5673a3a016af08aace7e66e27f706ae9e64f5cbbb",
       "abi": [
         {
           "type": "impl",
@@ -8691,8 +8695,8 @@
       ]
     },
     {
-      "address": "0x4e1e4222c31f8d041c79d316c61adda8aa34ec0253fda3188ac95f21071b101",
-      "class_hash": "0x113f7a5bbe727b697bc0ed7d9f0ddcc7fad0aa4216c53c16972db626536279",
+      "address": "0x32b014072b79ff9bb5637fd90bfad01fd9003b38bd030e587edc15e2d89aa27",
+      "class_hash": "0x22ad00b0a5fc5dfda65ddd5ba30deacc9779f5b17fac0649ae94f1a9de91ef4",
       "abi": [
         {
           "type": "impl",
@@ -8947,8 +8951,8 @@
       ]
     },
     {
-      "address": "0x4afc34f029a6237124da22bbdeb754139ba976455f0b955f7e9dc0045e87010",
-      "class_hash": "0x7f81dfd7592affdcc7d522116c7ef930e3634a9a6d4983a8062e05f9528b152",
+      "address": "0x67f5c0e040dbf92071622b95d84eee29bf101ae2fc710002414b48bbcbdb03c",
+      "class_hash": "0x10ee7fe5208745ccb5847581ea54569a61a4f90254bda3f4f147f469400b516",
       "abi": [
         {
           "type": "impl",
@@ -9181,8 +9185,8 @@
       ]
     },
     {
-      "address": "0x738c670f4b3e3b1103ace1702a7e81aaebe6cf3b479476ca91c363ecac52ed2",
-      "class_hash": "0x431e12723dfe860ae2eac12d0979e620c0baaf0f95dc595fbf041e01877f84a",
+      "address": "0x58fcd95690ee8355add3647e7dae5e396e07b8d16d9d68624a371038569c5fe",
+      "class_hash": "0x1a64992b538af70d447a76a051b48982277d18131de731c179564442da1b4d7",
       "abi": [
         {
           "type": "impl",
@@ -9426,7 +9430,7 @@
               "type": "core::integer::u16"
             },
             {
-              "name": "stamina_attack_max",
+              "name": "stamina_defense_req",
               "type": "core::integer::u16"
             },
             {
@@ -9457,7 +9461,7 @@
         },
         {
           "type": "enum",
-          "name": "s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind",
+          "name": "s1_eternum::models::events::ExploreFind",
           "variants": [
             {
               "name": "None",
@@ -9528,7 +9532,7 @@
               ],
               "outputs": [
                 {
-                  "type": "(core::bool, s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind)"
+                  "type": "(core::bool, s1_eternum::models::events::ExploreFind)"
                 }
               ],
               "state_mutability": "view"
@@ -9658,8 +9662,8 @@
       ]
     },
     {
-      "address": "0x504fd3d0cd728897d312c54039b140611cba6c4c45318abe70723524382c456",
-      "class_hash": "0x74edd37fa2fff56bd69fc15e28ff344d7ecd020ac2b495d3a51bb7b61a3ab90",
+      "address": "0x76d9da406c3168759bea0795bce32f10d072ea377f31f6f2ecd45740ab3a153",
+      "class_hash": "0x12f4adb11ad321bdd715974b8c23fe58082e4c1e74f2bc70ed66fb0553cd97d",
       "abi": [
         {
           "type": "impl",
@@ -9915,8 +9919,8 @@
       ]
     },
     {
-      "address": "0x36b70b9962236b062ba1b97c966d340b0e4c9cbfeb5c6077d77eccf28ab5344",
-      "class_hash": "0x4038690513461d54021e4a2cce784e1ee07591b62c2ff40ac8f8f019513c408",
+      "address": "0x4edb00f7d81367cbbb4825e4db3d3c24cdda7e54c00a83c3adb11a644faf120",
+      "class_hash": "0x6c361beff70052e5016227c3b966a5c9c1ffb6ed0a4f71ceb5f92c28cab30c1",
       "abi": [
         {
           "type": "impl",
@@ -10203,8 +10207,8 @@
       ]
     },
     {
-      "address": "0x4c42238d113198b3b9308e1afb12ca0843071c10b49b937463f63aa5842984c",
-      "class_hash": "0x3d84088e9f0f67c9a70ca8ba97a62a8b5ded3222500214293256b465e5c926c",
+      "address": "0x58c565097cd6568bbe023f066d638ade77da60ccbb403385b6432fa0936572a",
+      "class_hash": "0x416503e0097baf6b602033ca8d40bb8be68c0ae2c36b20ede593efc3a64f470",
       "abi": [
         {
           "type": "impl",
@@ -10598,8 +10602,8 @@
       ]
     },
     {
-      "address": "0x2332dc4cbce92a9300acbeee21d62b7fb372b4f9c0d34ec73afb832db5f1abd",
-      "class_hash": "0x4753d4edbb9f494d3235c45a27ef8d7bc98a45c9b8a5d5c593160f83a961f21",
+      "address": "0x389d8879cd3c269da321d8add1883992b42ecdc9b58b104dfcea47abae15493",
+      "class_hash": "0x67b7e9f31c73553321b847b8d7b7c2c1c30c5e068565b18a0c16f6adf7971f5",
       "abi": [
         {
           "type": "impl",
@@ -10793,8 +10797,8 @@
       ]
     },
     {
-      "address": "0x361ab9bb9e5d0593435887c16d3fc5a5e1806e2c9e90964b1439f20d67d4b74",
-      "class_hash": "0x71cc01687f3865800c6678d5155361aefbe263575488260f791d30338fe967f",
+      "address": "0x192e71c88e5afba699792d829b22f257f7205d6fae824625ee74136667f85a1",
+      "class_hash": "0x67c649ba940080f9efc30f6a413056588134e1226f9d0894487d08281c93818",
       "abi": [
         {
           "type": "impl",
@@ -10993,8 +10997,8 @@
       ]
     },
     {
-      "address": "0x7a8d1f68925427cacc116132fa5b6d705fdfbb7fd2656b04740fe322231d46c",
-      "class_hash": "0x75f985434e4b82adf44a93d240c43c9bd7af08913befc05782b92b95e31a5b5",
+      "address": "0x26edd74a0f3fe2e3566bebe2f210454b460d9258ac26da48c6ef249294f6ac2",
+      "class_hash": "0x6621761f0efe396df09c825b504bdb10966cd4c57ae949fc6c2bb974c2e5796",
       "abi": [
         {
           "type": "impl",
@@ -11230,8 +11234,8 @@
       ]
     },
     {
-      "address": "0x165378c75e202eddcfb3a8f448d1dc02406665ba1ed3e7aeaa106b6c74c2758",
-      "class_hash": "0x66b562deeaebbbe1ad509d38064e5430bd5daba0d8975f344ad3d20b3beb793",
+      "address": "0x4480145ba99ca1118fa4fe321e3acfa6e4fe5b646c2802ba0e5f82d94e3f2f2",
+      "class_hash": "0x4a322f9c33fdf6b4bb6ad96107b1f6bb14fba83bbca44922339ace2f81a4a08",
       "abi": [
         {
           "type": "impl",
@@ -11496,8 +11500,8 @@
       ]
     },
     {
-      "address": "0x293f8ccbfb855c8df466ff5fb62d0588b131a0c0c50bb7836997be43734455b",
-      "class_hash": "0x7ba432ee5e992c094ae02b60f457e3f766e86cd70b22ce1679729a03b15c4c7",
+      "address": "0x3a5a475eff892338e0c0f761cde96e98e40bafdc68640be496f8923aac9044a",
+      "class_hash": "0x38e3500c42123efa61c610fae68d712cf37c5f323ac82c6418598dd9a6e84e0",
       "abi": [
         {
           "type": "impl",
@@ -11816,8 +11820,8 @@
       ]
     },
     {
-      "address": "0x3e477533fe43415ddfa91634b9a15d7b50a42b49f191070e738d8f4f3859a26",
-      "class_hash": "0xfd261e723b88ef44c868b26a9c89c0bfacd0d0031237ac6b56caadfdadccc8",
+      "address": "0x10b2e218a4c8f0095cbd5897ead3675d83a46609cd30aee5b0bb9a33fadfc16",
+      "class_hash": "0x208c8092c4b97a3fe2e36cbed6662abba6bdc3d6c547cb0016b548c20ea2ebc",
       "abi": [
         {
           "type": "impl",
@@ -12287,8 +12291,8 @@
       ]
     },
     {
-      "address": "0x5e63af8a9c51582d91edd7b1d66a80c131008d9aea907d1f29ffb63804fe26f",
-      "class_hash": "0x35e9fa250767d59f41b449430a2b0f5fb90ceb2ad5a883116b0658cc3270fe5",
+      "address": "0x498706ccb23e1c2ff3cce15924b63c15cc1a9a81159d51059b806c09d565f61",
+      "class_hash": "0x4d495bd8f4ddbfda1a764d9349b253c7722d777a6baf703422a7fc0dbed7580",
       "abi": [
         {
           "type": "impl",
@@ -12593,8 +12597,8 @@
       ]
     },
     {
-      "address": "0x4c7cd7680e6d51c34d6a86e648c86185678a8d09fc25e3e83deff7f1e31c5b9",
-      "class_hash": "0x9bd01dca1e9d3824dc65345d44da5e72805ffe6ed1e28ed5ec95c9857fd157",
+      "address": "0x5fe6bbc9e9d4470845fd5233b417e64233dad40017219837df458dd2eb2252d",
+      "class_hash": "0x278776ec1bd1809780567cce7ec56e018693a199f0b194b28d66a2426303143",
       "abi": [
         {
           "type": "impl",
@@ -12838,7 +12842,7 @@
               "type": "core::integer::u16"
             },
             {
-              "name": "stamina_attack_max",
+              "name": "stamina_defense_req",
               "type": "core::integer::u16"
             },
             {
@@ -12869,7 +12873,7 @@
         },
         {
           "type": "enum",
-          "name": "s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind",
+          "name": "s1_eternum::models::events::ExploreFind",
           "variants": [
             {
               "name": "None",
@@ -12940,7 +12944,7 @@
               ],
               "outputs": [
                 {
-                  "type": "(core::bool, s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind)"
+                  "type": "(core::bool, s1_eternum::models::events::ExploreFind)"
                 }
               ],
               "state_mutability": "view"
@@ -13070,8 +13074,8 @@
       ]
     },
     {
-      "address": "0x24d3496f9170d992707ab4c80521f229c169548eefd930d328aada47da83e61",
-      "class_hash": "0x48973ef53327002ad8a7106d38c5f63271c2f8606ba156a5447563f7c8e1d25",
+      "address": "0x114564983cfd00410242bc85fb5350f47b60265cf7ad140b0a39fef0bbd0f3a",
+      "class_hash": "0x3bd854a7715d3055a056d912c4abee6df643223cf08bb60d699ef491a54da6b",
       "abi": [
         {
           "type": "impl",
@@ -13322,8 +13326,8 @@
       ]
     },
     {
-      "address": "0x6c35888886981dde3ef3791f3fd01a53d908e83b89f2535cfc712b7b06abc51",
-      "class_hash": "0x292285bdfc9a4659452e020d3aa7fca540cd9ffd496cfcd060b6ff7ee6f5dc7",
+      "address": "0x791c074d177f549e2d8a4cb25566c9005b8a9e5b181a4997799642e5e1eed76",
+      "class_hash": "0x52e8b80c42b9155b2dc556981461269d216ed27e329cd324aa33d6f8f7cebea",
       "abi": [
         {
           "type": "impl",
@@ -13567,7 +13571,7 @@
               "type": "core::integer::u16"
             },
             {
-              "name": "stamina_attack_max",
+              "name": "stamina_defense_req",
               "type": "core::integer::u16"
             },
             {
@@ -13598,7 +13602,7 @@
         },
         {
           "type": "enum",
-          "name": "s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind",
+          "name": "s1_eternum::models::events::ExploreFind",
           "variants": [
             {
               "name": "None",
@@ -13669,7 +13673,7 @@
               ],
               "outputs": [
                 {
-                  "type": "(core::bool, s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind)"
+                  "type": "(core::bool, s1_eternum::models::events::ExploreFind)"
                 }
               ],
               "state_mutability": "view"
@@ -13799,8 +13803,8 @@
       ]
     },
     {
-      "address": "0x4d3a71d7f8b109b8256732e9911bf4ca1396cadd9c193b45a4e06d66269edfb",
-      "class_hash": "0x68dfef04b22e0167976a4122f52bbf39f1bf31a9f727f0d57e3958a9f7cf4da",
+      "address": "0x59055559a192131e97be3c302710610270255ab0e0e83676002ea3be50379ec",
+      "class_hash": "0x23f0ac0739b5007a7aa46fca22663ecbd509baa875c2c9c985b21ce0c2def72",
       "abi": [
         {
           "type": "impl",
@@ -14117,7 +14121,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x2ae17325587067a8399b23d1c8d3d31d2951865d76a478dfb58309c32fa9bc8",
+      "class_hash": "0x6aa6c555112eb156488ac41bda7a01ed25e5c686a173b355ce049fa9085335",
       "tag": "s1_eternum-ExplorerTroops",
       "selector": "0x15b04275000fff7a4726d78e8083bfc8818a1b44138f368441ca8dd6fb0465f"
     },
@@ -14345,7 +14349,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x4ecd63c3c3525c19c8613e159f2225143b73a76f4d39a1289fafd1d192f0c1",
+      "class_hash": "0x48fa363d63ed3b90646e104d108207db741fff8b7e954e1f12070dfaa216287",
       "tag": "s1_eternum-Structure",
       "selector": "0x3b407b0e3490f7044ce3870614a93f2a0fcbec02710f0975bfdb6c28fdfbecc"
     },
@@ -14417,7 +14421,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x86b622e5492be598dabfc09fdd43920f6c1157201807d658fd668756af368d",
+      "class_hash": "0x72bc4ea05f6bc17f13f9757a191787508982a4202bffe5e887cef06d28bb4c6",
       "tag": "s1_eternum-WorldConfig",
       "selector": "0x6212a03a10506a6661b44a6685e9d2978709dfdfc8de36fe93d947b939f200a"
     },
@@ -14467,12 +14471,6 @@
     },
     {
       "members": [],
-      "class_hash": "0x3381ba1a793e9b006a05637bb2e6368d87ba1629b9c7955c0abc59d6ca93f7d",
-      "tag": "s1_eternum-CreateGuild",
-      "selector": "0x45b5322475ee81006e7e7df176c2f31829e57224ae86ca261738a15ef8c88a7"
-    },
-    {
-      "members": [],
       "class_hash": "0x5904853a7a91b5d15ff6becf6af3fd00a4c89572c50c8a9ec27efc6ae141f50",
       "tag": "s1_eternum-CreateOrder",
       "selector": "0x10edec58284a982448a15b0f37a3abc65944a16091efed6a39389b5064a6319"
@@ -14485,7 +14483,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x590a6336910a1f87f30ae7d58231c2b75c90e8937e41a809867ce70e673cb1a",
+      "class_hash": "0x1f4874a3931bb2999640bcfb095c98ca039b6f47af01d963a5db9109dddec10",
       "tag": "s1_eternum-ExplorerMoveEvent",
       "selector": "0x771febd17a135066bdc92bc5cd00e8f07b39bb0e8501141c2c67e4a5287b4e9"
     },
@@ -14500,12 +14498,6 @@
       "class_hash": "0x15a3085db97ff7e292a7af8492c645c5afd182286d8a653e0c12b4939b42919",
       "tag": "s1_eternum-ExplorerRaidEvent",
       "selector": "0x524ff0171e1bb2aaf232b86a14fcf1f3dc78c1149bab1e87ead801ba9203c0a"
-    },
-    {
-      "members": [],
-      "class_hash": "0x5fbf047fa535f1bb4d1cd446c7fdfd1a0600e8473a2994fc24b85535c470b3b",
-      "tag": "s1_eternum-JoinGuild",
-      "selector": "0x1341888a2238268a519a7c39af6c03489343fe2288ef7f66bea5c1f479cc1e4"
     },
     {
       "members": [],
@@ -14527,9 +14519,9 @@
     },
     {
       "members": [],
-      "class_hash": "0x22dc8f4fb0b3de5f86fd82c6796495016450ff3b00b6396bdf93c32c1112119",
-      "tag": "s1_eternum-SettleRealmData",
-      "selector": "0x7eff418a618f1ecd46303c1e0560094940d883e7ec2edde98bcb002a6e1ccca"
+      "class_hash": "0x40324e851f5c45718f10f2e7aeddf69af4ab00467a309fc1b4ee907a39841ae",
+      "tag": "s1_eternum-StoryEvent",
+      "selector": "0x6b9bb187e0946522eb890cc2148826a81a2030e8a34dbc5607ee6dfdda50dd8"
     },
     {
       "members": [],
