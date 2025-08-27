@@ -442,7 +442,24 @@ export const ChestContent = ({
     flatAssets.push(...group);
   });
 
-  const [selectedIndex, setSelectedIndex] = useState<number>(0);
+  // Find the most rare item (Legendary first, then Epic, etc.)
+  const findMostRareItemIndex = (assets: ChestAsset[]): number => {
+    const rarityOrder = { legendary: 0, epic: 1, rare: 2, uncommon: 3, common: 4 };
+    let mostRareIndex = 0;
+    let highestRarity = rarityOrder.common;
+    
+    assets.forEach((asset, index) => {
+      const assetRarity = rarityOrder[asset.rarity];
+      if (assetRarity < highestRarity) {
+        highestRarity = assetRarity;
+        mostRareIndex = index;
+      }
+    });
+    
+    return mostRareIndex;
+  };
+
+  const [selectedIndex, setSelectedIndex] = useState<number>(() => findMostRareItemIndex(flatAssets));
   const [modelScale, setModelScale] = useState(1);
   const selectedAsset = flatAssets[selectedIndex];
   const rarityStats = calculateRarityStats(chestContent);
