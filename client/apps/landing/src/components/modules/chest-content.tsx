@@ -269,26 +269,6 @@ export const chestAssets: ChestAsset[] = [
   },
 ];
 
-const getTypeClass = (type: AssetType) => {
-  switch (type) {
-    case AssetType.TroopArmor:
-      return "bg-blue-600 text-white";
-    case AssetType.TroopPrimary:
-      return "bg-blue-500 text-white";
-    case AssetType.TroopSecondary:
-      return "bg-purple-600 text-white";
-    case AssetType.TroopAura:
-      return "bg-yellow-600 text-black";
-    case AssetType.TroopBase:
-      return "bg-orange-500 text-white";
-    case AssetType.RealmSkin:
-      return "bg-purple-500 text-white";
-    case AssetType.RealmAura:
-      return "bg-green-600 text-white";
-    default:
-      return "bg-gray-600 text-white";
-  }
-};
 
 const getRarityClass = (rarity: AssetRarity) => {
   return RARITY_STYLES[rarity]?.text || "text-gray-500";
@@ -298,9 +278,6 @@ const getRarityBgClass = (rarity: AssetRarity) => {
   return RARITY_STYLES[rarity]?.bg || "bg-gray-500";
 };
 
-const getRarityGlowClass = (rarity: AssetRarity) => {
-  return RARITY_STYLES[rarity]?.glow || "border-2 border-gray-500 bg-gray-500/15";
-};
 
 // Minimalistic rarity accent for clean UI
 const getRarityAccent = (rarity: AssetRarity) => {
@@ -483,7 +460,6 @@ export const ChestContent = ({
   };
 
   const [selectedIndex, setSelectedIndex] = useState<number>(() => findMostRareItemIndex(flatAssets));
-  const [modelScale, setModelScale] = useState(1);
   const selectedAsset = flatAssets[selectedIndex];
   const rarityStats = calculateRarityStats(chestContent);
   const RARITY_PERCENTAGES = calculateRarityPercentages(chestAssets);
@@ -498,16 +474,9 @@ export const ChestContent = ({
 
     // Play click sound
     playClickSound();
-
-    // Start scale down animation
-    setModelScale(0);
-
-    // Wait for scale down, then switch model and scale up
-    setTimeout(() => {
-      setSelectedIndex(index);
-      // Immediately scale back up
-      setModelScale(1);
-    }, 80);
+    
+    // Change selection immediately - animation is handled in ModelViewer
+    setSelectedIndex(index);
   };
 
   const renderTitle = () => {
@@ -584,28 +553,24 @@ export const ChestContent = ({
       <style dangerouslySetInnerHTML={{ __html: scrollbarStyles }} />
       <div className="relative w-full h-screen text-white">
         {/* Full-screen 3D background */}
-        <div className="absolute inset-0">
-          {/* Model viewer with scale transition */}
-          <div
-            className="absolute inset-0"
-            style={{
-              transform: `scale(${modelScale})`,
-              transition: "transform 80ms cubic-bezier(0.4, 0, 0.2, 1), opacity 1000ms",
-              opacity: showContent ? 1 : 0,
-            }}
-          >
-            <ModelViewer
-              rarity={selectedAsset.rarity}
-              modelPath={selectedAsset.modelPath}
-              className="w-full h-full"
-              positionY={selectedAsset.positionY}
-              scale={selectedAsset.scale}
-              rotationY={selectedAsset.rotationY}
-              rotationZ={selectedAsset.rotationZ}
-              rotationX={selectedAsset.rotationX}
-              cameraPosition={selectedAsset.cameraPosition}
-            />
-          </div>
+        <div 
+          className="absolute inset-0"
+          style={{
+            opacity: showContent ? 1 : 0,
+            transition: "opacity 1000ms",
+          }}
+        >
+          <ModelViewer
+            rarity={selectedAsset.rarity}
+            modelPath={selectedAsset.modelPath}
+            className="w-full h-full"
+            positionY={selectedAsset.positionY}
+            scale={selectedAsset.scale}
+            rotationY={selectedAsset.rotationY}
+            rotationZ={selectedAsset.rotationZ}
+            rotationX={selectedAsset.rotationX}
+            cameraPosition={selectedAsset.cameraPosition}
+          />
         </div>
 
         {/* Overlay UI - pointer-events-none to allow 3D interaction */}

@@ -62,9 +62,12 @@ export const ModelViewer = ({
   const previousMouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isSceneInitializedRef = useRef<boolean>(false);
+  const dracoLoaderRef = useRef<DRACOLoader | null>(null);
 
+  // Initialize scene, camera, renderer, lights, and smoke particles (runs once)
   useEffect(() => {
-    if (!mountRef.current) return;
+    if (!mountRef.current || isSceneInitializedRef.current) return;
 
     const mount = mountRef.current;
     const width = mount.clientWidth;
@@ -263,65 +266,7 @@ export const ModelViewer = ({
     renderer.domElement.addEventListener("touchmove", handleTouchMove, { passive: false });
     renderer.domElement.addEventListener("touchend", handleTouchEnd, { passive: false });
 
-    const loader = new GLTFLoader();
-    const dracoLoader = new DRACOLoader();
-    dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.6/");
-    loader.setDRACOLoader(dracoLoader);
-    loader.load(
-      modelPath,
-      (gltf) => {
-        const model = gltf.scene;
-        modelRef.current = model;
-
-        // Get bounding box and center the model
-        const box = new THREE.Box3().setFromObject(model);
-        const center = box.getCenter(new THREE.Vector3());
-        const size = box.getSize(new THREE.Vector3());
-
-        // Center the model horizontally and position vertically
-        model.position.x = -center.x;
-        model.position.z = -center.z;
-        const baseY = -box.min.y + positionY;
-        model.position.y = baseY;
-        basePositionYRef.current = baseY;
-
-        // Scale model appropriately
-        const maxDim = Math.max(size.x, size.y, size.z);
-        const autoScale = 2 / maxDim;
-        const finalScale = autoScale * scale;
-        model.scale.setScalar(finalScale);
-        baseScaleRef.current = finalScale;
-
-        // Apply initial rotations and store base rotation
-        model.rotation.y = rotationY;
-        model.rotation.x = rotationX;
-        model.rotation.z = rotationZ;
-
-        // Initialize model rotation ref with initial values
-        modelRotationRef.current = { x: rotationX, y: rotationY };
-        targetRotationRef.current = { x: rotationX, y: rotationY };
-
-        // Enable shadows
-        model.traverse((child) => {
-          if (child instanceof THREE.Mesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-          }
-        });
-
-        scene.add(model);
-        setIsLoading(false);
-      },
-      (progress) => {
-        console.log("Loading progress:", (progress.loaded / progress.total) * 100 + "%");
-      },
-      (error) => {
-        console.error("Error loading model:", error);
-        setError("Failed to load 3D model");
-        setIsLoading(false);
-      },
-    );
-
+    // Animation loop
     const animate = () => {
       frameIdRef.current = requestAnimationFrame(animate);
 
@@ -360,6 +305,11 @@ export const ModelViewer = ({
           // Make particles always face the camera
           particle.lookAt(cameraRef.current!.position);
 
+          // Keep particles same size regardless of zoom
+          const distance = camera.position.distanceTo(particle.position);
+          const scale = distance * 0.3; // Adjust this multiplier to control particle size
+          particle.scale.setScalar(scale);
+
           // Add some gentle floating motion to smoke
           particle.position.y += Math.sin(time * 0.5 + i) * 0.002;
           particle.position.x += Math.cos(time * 0.3 + i) * 0.001;
@@ -375,6 +325,7 @@ export const ModelViewer = ({
 
     animate();
 
+    // Resize handler
     const handleResize = () => {
       if (!mount || !renderer || !camera) return;
 
@@ -388,6 +339,10 @@ export const ModelViewer = ({
 
     window.addEventListener("resize", handleResize);
 
+    // Mark scene as initialized
+    isSceneInitializedRef.current = true;
+
+    // Cleanup function
     return () => {
       if (frameIdRef.current) {
         cancelAnimationFrame(frameIdRef.current);
@@ -432,9 +387,189 @@ export const ModelViewer = ({
         scene.clear();
       }
 
-      dracoLoader.dispose();
+      isSceneInitializedRef.current = false;
     };
-  }, [modelPath, positionY, scale, rotationY, rarity]);
+  }, []); // Empty dependency array - runs once
+
+  // Update ambient light color when rarity changes
+  useEffect(() => {
+    if (ambientLightRef.current) {
+      const rarityColor = getRarityAmbientColor(rarity);
+      ambientLightRef.current.color = new THREE.Color(rarityColor);
+    }
+  }, [rarity]);
+
+  // Handle model loading separately
+  useEffect(() => {
+    if (!sceneRef.current || !isSceneInitializedRef.current) return;
+
+    const scene = sceneRef.current;
+    let isMounted = true;
+
+    const loadModel = async () => {
+      setError(null);
+      setIsLoading(true);
+
+      // Create loaders
+      if (!dracoLoaderRef.current) {
+        dracoLoaderRef.current = new DRACOLoader();
+        dracoLoaderRef.current.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.6/");
+      }
+      const loader = new GLTFLoader();
+      loader.setDRACOLoader(dracoLoaderRef.current);
+
+      // Start loading the new model immediately
+      const loadPromise = new Promise<THREE.Group>((resolve, reject) => {
+        loader.load(
+          modelPath,
+          (gltf) => {
+            if (!isMounted) {
+              gltf.scene.traverse((child) => {
+                if (child instanceof THREE.Mesh) {
+                  child.geometry.dispose();
+                  if (Array.isArray(child.material)) {
+                    child.material.forEach((material) => material.dispose());
+                  } else {
+                    child.material.dispose();
+                  }
+                }
+              });
+              return;
+            }
+            resolve(gltf.scene);
+          },
+          (progress) => {
+            console.log("Loading progress:", (progress.loaded / progress.total) * 100 + "%");
+          },
+          (error) => {
+            console.error("Error loading model:", error);
+            setError("Failed to load 3D model");
+            setIsLoading(false);
+            reject(error);
+          },
+        );
+      });
+
+      // If there's an existing model, animate it out while new model loads
+      const existingModel = modelRef.current;
+      if (existingModel) {
+        // Scale down the existing model
+        const scaleDownDuration = 100; // ms - faster
+        const startScale = existingModel.scale.x;
+        const startTime = Date.now();
+
+        const scaleDown = () => {
+          if (!isMounted) return;
+
+          const elapsed = Date.now() - startTime;
+          const progress = Math.min(elapsed / scaleDownDuration, 1);
+          const scale = startScale * (1 - progress);
+
+          existingModel.scale.setScalar(scale);
+
+          if (progress < 1) {
+            requestAnimationFrame(scaleDown);
+          } else {
+            // Remove the model from scene
+            scene.remove(existingModel);
+            existingModel.traverse((child) => {
+              if (child instanceof THREE.Mesh) {
+                child.geometry.dispose();
+                if (Array.isArray(child.material)) {
+                  child.material.forEach((material) => material.dispose());
+                } else {
+                  child.material.dispose();
+                }
+              }
+            });
+          }
+        };
+
+        scaleDown();
+      }
+
+      // Wait for model to load
+      try {
+        const model = await loadPromise;
+
+        if (!isMounted) return;
+
+        modelRef.current = model;
+
+        // Get bounding box and center the model
+        const box = new THREE.Box3().setFromObject(model);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+
+        // Center the model horizontally and position vertically
+        model.position.x = -center.x;
+        model.position.z = -center.z;
+        const baseY = -box.min.y + positionY;
+        model.position.y = baseY;
+        basePositionYRef.current = baseY;
+
+        // Scale model appropriately
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const autoScale = 2 / maxDim;
+        const finalScale = autoScale * scale;
+        model.scale.setScalar(0); // Start at scale 0
+        baseScaleRef.current = finalScale;
+
+        // Apply initial rotations and store base rotation
+        model.rotation.y = rotationY;
+        model.rotation.x = rotationX;
+        model.rotation.z = rotationZ;
+
+        // Initialize model rotation ref with initial values
+        modelRotationRef.current = { x: rotationX, y: rotationY };
+        targetRotationRef.current = { x: rotationX, y: rotationY };
+
+        // Enable shadows
+        model.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+
+        scene.add(model);
+
+        // Animate scale up
+        const scaleUpDuration = 100; // ms - faster
+        const startTime = Date.now();
+
+        const scaleUp = () => {
+          if (!isMounted) return;
+
+          const elapsed = Date.now() - startTime;
+          const progress = Math.min(elapsed / scaleUpDuration, 1);
+          const easeOutQuad = 1 - (1 - progress) * (1 - progress);
+          const currentScale = finalScale * easeOutQuad;
+
+          model.scale.setScalar(currentScale);
+
+          if (progress < 1) {
+            requestAnimationFrame(scaleUp);
+          }
+        };
+
+        scaleUp();
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Failed to load model:", error);
+        if (isMounted) {
+          setError("Failed to load 3D model");
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadModel();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [modelPath, positionY, scale, rotationY, rotationX, rotationZ]); // Model-specific dependencies
 
   return (
     <div className={`relative ${className}`}>
