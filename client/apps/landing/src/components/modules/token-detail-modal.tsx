@@ -17,6 +17,7 @@ import { AlertTriangle, Info, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { formatUnits } from "viem";
+import { env } from "../../../env";
 import { Badge } from "../ui/badge";
 import { Card } from "../ui/card";
 import { ResourceIcon } from "../ui/elements/resource-icon";
@@ -125,7 +126,7 @@ export const TokenDetailModal = ({
 
   console.log("[TokenDetailModal] tokenData", tokenData);
 
-  const { setShowLootChestOpening } = useLootChestOpeningStore();
+  const { setShowLootChestOpening, setChestOpenTimestamp } = useLootChestOpeningStore();
 
   // Get wallet state
   const { address } = useAccount();
@@ -156,16 +157,24 @@ export const TokenDetailModal = ({
   const handleOpenChest = () => {
     setIsChestOpeningLoading(true);
     setOpenedChestTokenId(tokenData.token_id.toString());
-    openChest({
-      tokenId: BigInt(tokenData.token_id),
-      onSuccess: () => {
-        console.log("Chest opened successfully");
-        setShowLootChestOpening(true);
-      },
-      onError: (error) => {
-        console.error("Failed to open chest:", error);
-      },
-    });
+
+    // Set timestamp for when chest is opened to listen for new events
+    setChestOpenTimestamp(Math.floor(Date.now() / 1000));
+
+    if (!env.VITE_PUBLIC_CHEST_DEBUG_MODE) {
+      openChest({
+        tokenId: BigInt(tokenData.token_id),
+        onSuccess: () => {
+          console.log("Chest opened successfully");
+          setShowLootChestOpening(true);
+        },
+        onError: (error) => {
+          console.error("Failed to open chest:", error);
+        },
+      });
+    } else {
+      setShowLootChestOpening(true);
+    }
   };
 
   // Effect to detect when indexer data has updated props
@@ -273,21 +282,31 @@ export const TokenDetailModal = ({
                   <span>Send to Cartridge Controller to open chests</span>
                 </div>
               )}
-              <Button
-                variant="default"
-                className="w-full"
-                onClick={handleOpenChest}
-                disabled={isLoading || !isController || isChestOpeningLoading}
-              >
-                {isChestOpeningLoading ? (
-                  <>
-                    <Loader2 className="animate-spin mr-2 h-4 w-4" />
-                    Opening...
-                  </>
-                ) : (
-                  "Open Chest"
-                )}
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="w-full">
+                      <Button
+                        variant="default"
+                        className="w-full"
+                        onClick={handleOpenChest}
+                        disabled={
+                          isLoading || !isController || isChestOpeningLoading || env.VITE_PUBLIC_BLOCK_CHEST_OPENING
+                        }
+                      >
+                        {isChestOpeningLoading ? (
+                          <>
+                            <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                            Opening...
+                          </>
+                        ) : (
+                          "Open Chest " + (env.VITE_PUBLIC_BLOCK_CHEST_OPENING ? "(Coming soon)" : "")
+                        )}
+                      </Button>
+                    </div>
+                  </TooltipTrigger>
+                </Tooltip>
+              </TooltipProvider>
             </>
           )}
           <CreateListingsDrawer

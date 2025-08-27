@@ -349,15 +349,17 @@ interface CollectibleClaimed {
  * Fetch collectible claimed events for a specific player
  */
 // TODO: Uncomment this when the query is implemented
-// export async function fetchCollectibleClaimed(
-//   playerAddress: string,
-//   minTimestamp: number = 0,
-// ): Promise<CollectibleClaimed[]> {
-//   const query = QUERIES.COLLECTIBLE_CLAIMED.replace("{playerAddress}", playerAddress).replace(
-//     "{minTimestamp}",
-//     minTimestamp.toString(),
-//   );
+export async function fetchCollectibleClaimed(
+  contractAddress: string,
+  playerAddress: string,
+  minTimestamp: number = 0,
+): Promise<CollectibleClaimed[]> {
+  // Convert Unix timestamp to ISO string format for SQL datetime comparison
+  const formattedTimestamp = new Date(minTimestamp * 1000).toISOString().replace("T", " ").replace("Z", "");
 
-//   console.log({ query });
-//   return await gameClientFetch<CollectibleClaimed[]>(query);
-// }
+  const query = QUERIES.COLLECTIBLE_CLAIMED.replace("{contractAddress}", contractAddress)
+    .replace("{playerAddress}", playerAddress)
+    .replace("{minTimestamp}", `'${formattedTimestamp}'`);
+
+  return await gameClientFetch<CollectibleClaimed[]>(query);
+}

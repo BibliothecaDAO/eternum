@@ -12,6 +12,7 @@ import { useOpenChest } from "@/hooks/use-open-chest";
 import { useLootChestOpeningStore } from "@/stores/loot-chest-opening";
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { env } from "../../../env";
 import { AssetRarity, ChestAsset, ChestContent } from "./chest-content";
 
 const LoadingAnimation = () => {
@@ -60,7 +61,8 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
   const [chestType, setChestType] = useState<ChestAsset["rarity"]>(AssetRarity.Common);
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
 
-  const { chestContent, resetChestContent } = useChestContent();
+  const { chestOpenTimestamp, setChestOpenTimestamp } = useLootChestOpeningStore();
+  const { chestContent, resetChestContent } = useChestContent(env.VITE_PUBLIC_CHEST_DEBUG_MODE, chestOpenTimestamp);
 
   const ambienceAudio = useAmbienceAudio({
     src: "/sound/music/ShadowSong.mp3",
@@ -194,6 +196,9 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
     if (!nextToken) return;
     setIsChestOpeningLoading(true);
 
+    // Set timestamp for when chest is opened to listen for new events
+    setChestOpenTimestamp(Math.floor(Date.now() / 1000));
+
     // Immediately reset video state to loading when opening new chest
     setVideoState("loading");
     setShowWhiteScreen(false);
@@ -204,16 +209,18 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
     // Reset chest content to empty array
     resetChestContent();
 
-    openChest({
-      tokenId: BigInt(nextToken),
-      onSuccess: () => {
-        console.log("Chest opened successfully");
-        setOpenedChestTokenId(nextToken);
-      },
-      onError: (error) => {
-        console.error("Failed to open chest:", error);
-      },
-    });
+    if (!env.VITE_PUBLIC_CHEST_DEBUG_MODE) {
+      openChest({
+        tokenId: BigInt(nextToken),
+        onSuccess: () => {
+          console.log("Chest opened successfully");
+          setOpenedChestTokenId(nextToken);
+        },
+        onError: (error) => {
+          console.error("Failed to open chest:", error);
+        },
+      });
+    }
   };
   const handleSkip = () => {
     console.log("Skipping video");
