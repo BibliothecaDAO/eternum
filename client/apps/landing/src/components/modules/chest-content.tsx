@@ -593,37 +593,37 @@ export const ChestContent = ({
                   <div className="flex justify-between items-center py-1 px-2 rounded bg-slate-800/10">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-rarity-legendary"></div>
-                      <span className="text-xs font-medium text-rarity-legendary">Legendary</span>
+                      <span className="text-sm font-medium text-rarity-legendary">Legendary</span>
                     </div>
-                    <span className="text-xs font-bold text-gray-300">{RARITY_PERCENTAGES.legendary}%</span>
+                    <span className="text-sm font-bold text-gray-300">{RARITY_PERCENTAGES.legendary}%</span>
                   </div>
                   <div className="flex justify-between items-center py-1 px-2 rounded bg-slate-800/10">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-rarity-epic"></div>
-                      <span className="text-xs font-medium text-rarity-epic">Epic</span>
+                      <span className="text-sm font-medium text-rarity-epic">Epic</span>
                     </div>
-                    <span className="text-xs font-bold text-gray-300">{RARITY_PERCENTAGES.epic}%</span>
+                    <span className="text-sm font-bold text-gray-300">{RARITY_PERCENTAGES.epic}%</span>
                   </div>
                   <div className="flex justify-between items-center py-1 px-2 rounded bg-slate-800/10">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-rarity-rare"></div>
-                      <span className="text-xs font-medium text-rarity-rare">Rare</span>
+                      <span className="text-sm font-medium text-rarity-rare">Rare</span>
                     </div>
-                    <span className="text-xs font-bold text-gray-300">{RARITY_PERCENTAGES.rare}%</span>
+                    <span className="text-sm font-bold text-gray-300">{RARITY_PERCENTAGES.rare}%</span>
                   </div>
                   <div className="flex justify-between items-center py-1 px-2 rounded bg-slate-800/10">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-rarity-uncommon"></div>
-                      <span className="text-xs font-medium text-rarity-uncommon">Uncommon</span>
+                      <span className="text-sm font-medium text-rarity-uncommon">Uncommon</span>
                     </div>
-                    <span className="text-xs font-bold text-gray-300">{RARITY_PERCENTAGES.uncommon}%</span>
+                    <span className="text-sm font-bold text-gray-300">{RARITY_PERCENTAGES.uncommon}%</span>
                   </div>
                   <div className="flex justify-between items-center py-1 px-2 rounded bg-slate-800/10">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-rarity-common"></div>
-                      <span className="text-xs font-medium text-rarity-common">Common</span>
+                      <span className="text-sm font-medium text-rarity-common">Common</span>
                     </div>
-                    <span className="text-xs font-bold text-gray-300">{RARITY_PERCENTAGES.common}%</span>
+                    <span className="text-sm font-bold text-gray-300">{RARITY_PERCENTAGES.common}%</span>
                   </div>
                 </div>
               </div>
@@ -692,7 +692,7 @@ export const ChestContent = ({
 
             {/* Asset list on the right side */}
             <div
-              className="w-[420px] max-h-[90vh] overflow-y-auto space-y-4 pointer-events-auto custom-scrollbar"
+              className="w-[420px] max-h-[75vh] overflow-y-auto space-y-4 pointer-events-auto custom-scrollbar"
               style={{
                 transition: "opacity 1000ms",
                 opacity: showContent ? 1 : 0,
