@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { useClickSound } from "@/hooks/use-click-sound";
 import { TroopType } from "@bibliothecadao/types";
-import { BarChart3, Diamond, Swords, Target } from "lucide-react";
+import { BarChart3, Diamond, Swords, Target, Shield, Sword, Sparkles, Castle, Crown, Hexagon } from "lucide-react";
 import { useState } from "react";
 import { ModelViewer } from "./model-viewer";
 
@@ -309,6 +309,28 @@ const getItemSet = (item: ChestAsset): string => {
   return item.set;
 };
 
+// Get icon component for each asset type
+const getAssetTypeIcon = (type: AssetType) => {
+  switch (type) {
+    case AssetType.TroopArmor:
+      return Shield;
+    case AssetType.TroopPrimary:
+      return Sword;
+    case AssetType.TroopSecondary:
+      return Shield;
+    case AssetType.TroopAura:
+      return Sparkles;
+    case AssetType.TroopBase:
+      return Hexagon;
+    case AssetType.RealmSkin:
+      return Castle;
+    case AssetType.RealmAura:
+      return Crown;
+    default:
+      return Diamond;
+  }
+};
+
 const calculateRarityStats = (items: ChestAsset[]) => {
   const stats = {
     legendary: 0,
@@ -329,6 +351,39 @@ const calculateRarityStats = (items: ChestAsset[]) => {
 const sortAssetsByRarity = (assets: ChestAsset[]): ChestAsset[] => {
   const rarityOrder = { legendary: 0, epic: 1, rare: 2, uncommon: 3, common: 4 };
   return [...assets].sort((a, b) => rarityOrder[a.rarity] - rarityOrder[b.rarity]);
+};
+
+// Group assets by type and sort each group by rarity
+const groupAssetsByType = (assets: ChestAsset[]): Map<AssetType, ChestAsset[]> => {
+  const grouped = new Map<AssetType, ChestAsset[]>();
+  
+  // Define the order of asset types for consistent display
+  const typeOrder = [
+    AssetType.TroopArmor,
+    AssetType.TroopPrimary,
+    AssetType.TroopSecondary,
+    AssetType.TroopAura,
+    AssetType.TroopBase,
+    AssetType.RealmSkin,
+    AssetType.RealmAura,
+  ];
+  
+  // Initialize map with empty arrays in order
+  typeOrder.forEach(type => grouped.set(type, []));
+  
+  // Group assets
+  assets.forEach(asset => {
+    const group = grouped.get(asset.type) || [];
+    group.push(asset);
+    grouped.set(asset.type, group);
+  });
+  
+  // Sort each group by rarity
+  grouped.forEach((group, type) => {
+    grouped.set(type, sortAssetsByRarity(group));
+  });
+  
+  return grouped;
 };
 
 // Add custom scrollbar styles
@@ -367,11 +422,18 @@ export const ChestContent = ({
   showContent: boolean;
   chestContent: ChestAsset[];
 }) => {
-  // Sort assets by rarity (rarest first)
-  const sortedChestContent = sortAssetsByRarity(chestContent);
+  // Group assets by type and sort each group by rarity
+  const groupedAssets = groupAssetsByType(chestContent);
+  
+  // Create a flat array for index mapping
+  const flatAssets: ChestAsset[] = [];
+  groupedAssets.forEach(group => {
+    flatAssets.push(...group);
+  });
+  
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [modelScale, setModelScale] = useState(1);
-  const selectedAsset = sortedChestContent[selectedIndex];
+  const selectedAsset = flatAssets[selectedIndex];
   const rarityStats = calculateRarityStats(chestContent);
   const RARITY_PERCENTAGES = calculateRarityPercentages(chestAssets);
 
@@ -605,22 +667,41 @@ export const ChestContent = ({
                   </div>
                 </div>
 
-                {/* Asset grid with enhanced spacing */}
-                <div className="space-y-3">
-                  {sortedChestContent.map((asset, index) => {
-                    const isSelected = index === selectedIndex;
-                    const baseCardClass = "cursor-pointer transition-all duration-100 backdrop-blur-sm";
-                    const cardClass = isSelected
-                      ? `${baseCardClass} ${getRarityGlowClass(asset.rarity)}`
-                      : `${baseCardClass} border-2 border-gray-600 bg-black/40 hover:border-gray-500 hover:bg-white/10`;
-
-                    const itemSet = getItemSet(asset);
-
+                {/* Asset grid grouped by type */}
+                <div className="space-y-6">
+                  {Array.from(groupedAssets.entries()).map(([type, assets]) => {
+                    if (assets.length === 0) return null;
+                    
+                    const TypeIcon = getAssetTypeIcon(type);
+                    
                     return (
-                      <Card
-                        key={index}
-                        className={cardClass}
-                        onClick={() => handleAssetSelect(index)}
+                      <div key={type} className="space-y-3">
+                        {/* Category header */}
+                        <div className="flex items-center gap-2 px-2">
+                          <TypeIcon className="w-4 h-4 text-gray-300" />
+                          <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">
+                            {type}
+                          </h3>
+                          <span className="text-xs text-gray-500 font-normal">({assets.length})</span>
+                          <div className="flex-1 h-px bg-gradient-to-r from-gray-700/70 via-gray-700/30 to-transparent" />
+                        </div>
+                        
+                        {/* Assets in this category */}
+                        {assets.map((asset) => {
+                          const assetIndex = flatAssets.indexOf(asset);
+                          const isSelected = assetIndex === selectedIndex;
+                          const baseCardClass = "cursor-pointer transition-all duration-100 backdrop-blur-sm";
+                          const cardClass = isSelected
+                            ? `${baseCardClass} ${getRarityGlowClass(asset.rarity)}`
+                            : `${baseCardClass} border-2 border-gray-600 bg-black/40 hover:border-gray-500 hover:bg-white/10`;
+
+                          const itemSet = getItemSet(asset);
+
+                          return (
+                            <Card
+                              key={asset.id}
+                              className={cardClass}
+                              onClick={() => handleAssetSelect(assetIndex)}
                         style={{
                           transition: "all 0.1s ease",
                           transform: isSelected ? "scale(1.02)" : "scale(1)",
@@ -633,14 +714,10 @@ export const ChestContent = ({
                               <div
                                 className={`w-12 h-12 text-white rounded-lg flex items-center justify-center ${getRarityBgClass(asset.rarity)} border `}
                               >
-                                {(asset.type === AssetType.TroopArmor ||
-                                  asset.type === AssetType.TroopPrimary ||
-                                  asset.type === AssetType.TroopSecondary) && <Swords className="w-6 h-6" />}
-                                {asset.type === AssetType.RealmSkin && <Target className="w-6 h-6" />}
-                                {(asset.type === AssetType.TroopAura || asset.type === AssetType.RealmAura) && (
-                                  <Diamond className="w-6 h-6" />
-                                )}
-                                {asset.type === AssetType.TroopBase && <BarChart3 className="w-6 h-6" />}
+                                {(() => {
+                                  const Icon = getAssetTypeIcon(asset.type);
+                                  return <Icon className="w-6 h-6" />;
+                                })()}
                               </div>
                             </div>
 
@@ -695,6 +772,9 @@ export const ChestContent = ({
                           </div>
                         </CardContent>
                       </Card>
+                          );
+                        })}
+                      </div>
                     );
                   })}
                 </div>
