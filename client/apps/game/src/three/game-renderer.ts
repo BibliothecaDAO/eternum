@@ -29,11 +29,13 @@ import {
   PCFSoftShadowMap,
   PerspectiveCamera,
   PMREMGenerator,
+  Texture,
   Raycaster,
   ReinhardToneMapping,
   Vector2,
   WebGLRenderer,
 } from "three";
+import { UnsignedByteType } from "three";
 import { CSS2DRenderer } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
@@ -54,6 +56,8 @@ export default class GameRenderer {
   private controls!: MapControls;
   private composer!: EffectComposer;
   private renderPass!: RenderPass;
+  // Environment resources to dispose
+  private environmentMap?: Texture;
 
   // Stats and Monitoring
   private stats!: Stats;
@@ -212,7 +216,7 @@ export default class GameRenderer {
     this.renderer.autoClear = false;
     //this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.composer = new EffectComposer(this.renderer, {
-      frameBufferType: HalfFloatType,
+      frameBufferType: this.graphicsSetting === GraphicsSettings.HIGH ? HalfFloatType : UnsignedByteType,
     });
   }
 
@@ -614,7 +618,7 @@ export default class GameRenderer {
   private createBloomEffect() {
     return new BloomEffect({
       luminanceThreshold: 1.1,
-      mipmapBlur: true,
+      mipmapBlur: this.graphicsSetting === GraphicsSettings.HIGH,
       intensity: 0.25,
     });
   }
@@ -622,11 +626,15 @@ export default class GameRenderer {
   applyEnvironment() {
     const pmremGenerator = new PMREMGenerator(this.renderer);
     pmremGenerator.compileEquirectangularShader();
-    const roomEnvironment = pmremGenerator.fromScene(new RoomEnvironment()).texture;
     const hdriLoader = new RGBELoader();
-    const hdriTexture = hdriLoader.load("/textures/environment/models_env.hdr", (texture) => {
+    hdriLoader.load("/textures/environment/models_env.hdr", (texture) => {
       const envMap = pmremGenerator.fromEquirectangular(texture).texture;
+      // We no longer need the HDR texture or generator
       texture.dispose();
+      pmremGenerator.dispose();
+
+      // Apply to scenes and keep reference for cleanup
+      this.environmentMap = envMap;
       this.hexceptionScene.setEnvironment(envMap, 0.1);
       this.worldmapScene.setEnvironment(envMap, 0.1);
     });
@@ -764,6 +772,17 @@ export default class GameRenderer {
         this.hudScene.destroy();
       }
 
+      // Remove environment to allow GC of textures
+      try {
+        if (this.environmentMap) {
+          // Clear environment refs from scenes
+          this.hexceptionScene.setEnvironment(null as any, 0);
+          this.worldmapScene.setEnvironment(null as any, 0);
+          this.environmentMap.dispose();
+          this.environmentMap = undefined;
+        }
+      } catch {}
+
       // Clean up controls
       if (this.controls) {
         this.controls.dispose();
@@ -778,6 +797,11 @@ export default class GameRenderer {
       if (this.memoryStatsElement && this.memoryStatsElement.parentNode) {
         this.memoryStatsElement.parentNode.removeChild(this.memoryStatsElement);
       }
+
+      // Dispose pooled materials to release references
+      try {
+        MaterialPool.getInstance().dispose();
+      } catch {}
 
       console.log("GameRenderer: Destroyed and cleaned up successfully");
     } catch (error) {

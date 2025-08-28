@@ -1,7 +1,7 @@
 {
-  "name": "@bibliothecadao/eternum",
+  "name": "@bibliothecadao/telemetry",
   "version": "0.2.0",
-  "description": "Eternum SDK for Starknet & Dojo",
+  "description": "Eternum telemetry",
   "license": "MIT",
   "author": "Loaf",
   "type": "module",
@@ -18,19 +18,6 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "vitest"
-  },
-  "dependencies": {
-    "@latticexyz/utils": "^2.0.0-next.12",
-    "@dojoengine/core": "catalog:",
-    "@bibliothecadao/dojo": "workspace:*",
-    "@bibliothecadao/provider": "workspace:*",
-    "@bibliothecadao/types": "workspace:*",
-    "@bibliothecadao/torii": "workspace:*",
-    "@bibliothecadao/telemetry": "workspace:*",
-    "@scure/starknet": "^1.1.0",
-    "chalk": "^5.4.1",
-    "eventemitter3": "^5.0.1",
-    "starknet": "catalog:"
   },
   "devDependencies": {
     "@types/node": "^20.11.10",

@@ -13,7 +13,7 @@ import { createChestLabel } from "../utils/labels/label-factory";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { gltfLoader } from "../utils/utils";
 
-const MAX_INSTANCES = 1000;
+const MAX_INSTANCES = 256;
 
 export class ChestManager {
   private scene: THREE.Scene;
@@ -84,6 +84,32 @@ export class ChestManager {
     // Clean up animations
     this.animations.forEach((mixer) => mixer.stopAllAction());
     this.animations.clear();
+
+    // Remove labels
+    this.entityIdLabels.forEach((label) => {
+      if (label.parent) this.labelsGroup.remove(label);
+      if (label.element && label.element.parentNode) {
+        label.element.parentNode.removeChild(label.element);
+      }
+    });
+    this.entityIdLabels.clear();
+
+    // Dispose chest model
+    if (this.chestModel) {
+      if (typeof this.chestModel.dispose === "function") {
+        this.chestModel.dispose();
+      }
+      if (this.chestModel.group && this.chestModel.group.parent) {
+        this.chestModel.group.parent.remove(this.chestModel.group);
+      }
+      // @ts-ignore
+      this.chestModel = undefined;
+    }
+
+    // Clear maps
+    this.entityIdMap.clear();
+    this.chestHexCoords.clear();
+    this.chests.getChests().clear();
   }
 
   private async loadModel(): Promise<void> {
@@ -110,6 +136,9 @@ export class ChestManager {
         this.chestModel = model;
         this.animationClips = clips;
         this.scene.add(model.group);
+        try {
+          console.log(`[CHEST DEBUG] Model loaded: name=Chest meshes=${model.group.children.length}`);
+        } catch {}
       })
       .catch((error) => {
         console.error(`Failed to load chest model:`, error);
@@ -119,6 +148,11 @@ export class ChestManager {
   async onUpdate(update: ChestSystemUpdate) {
     const { occupierId, hexCoords } = update;
     const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
+    try {
+      console.log(
+        `[CHEST DEBUG] onUpdate: id=${occupierId} col=${hexCoords.col} row=${hexCoords.row} norm=(${normalizedCoord.col},${normalizedCoord.row})`,
+      );
+    } catch {}
     // Add the chest to the map
     const position = new Position({ x: hexCoords.col, y: hexCoords.row });
 
@@ -209,6 +243,20 @@ export class ChestManager {
 
     this.visibleChests = this.getVisibleChestsForChunk(_chests, startRow, startCol);
 
+    try {
+      console.log(
+        `[CHEST DEBUG] renderVisibleChests: chunk=${chunkKey} ` +
+          `bounds: col=[${startCol - this.renderChunkSize.width / 2}, ${startCol + this.renderChunkSize.width / 2}] ` +
+          `row=[${startRow - this.renderChunkSize.height / 2}, ${startRow + this.renderChunkSize.height / 2}] ` +
+          `total=${_chests.size} visible=${this.visibleChests.length}`,
+      );
+    } catch {}
+
+    if (!this.chestModel) {
+      console.warn(`[CHEST DEBUG] chestModel not yet loaded; skipping render`);
+      return;
+    }
+
     if (this.chestModel) {
       this.chestModel.setCount(0);
       this.entityIdMap.clear();
@@ -240,6 +288,31 @@ export class ChestManager {
       });
 
       this.chestModel.needsUpdate();
+      try {
+        const instancedMeshCount = this.chestModel.group.children.filter(
+          (c) => c instanceof THREE.InstancedMesh,
+        ).length;
+        console.log(
+          `[CHEST DEBUG] instancedMeshes=${instancedMeshCount} modelCount=${this.chestModel.getCount()}`,
+        );
+
+        // Log material properties once per render to diagnose visibility
+        const mats: any[] = [];
+        this.chestModel.group.children.forEach((c: any) => {
+          if (c instanceof THREE.InstancedMesh) {
+            const m = c.material as THREE.Material & any;
+            mats.push({
+              name: m?.name,
+              transparent: m?.transparent,
+              opacity: m?.opacity,
+              alphaTest: m?.alphaTest,
+              depthWrite: m?.depthWrite,
+              color: m?.color?.getHex?.(),
+            });
+          }
+        });
+        console.log(`[CHEST DEBUG] materials:`, mats);
+      } catch {}
     }
 
     // Remove labels for chests that are no longer visible

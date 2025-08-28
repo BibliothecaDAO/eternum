@@ -76,6 +76,11 @@ const envSchema = z.object({
   VITE_TRACING_SERVICE_NAME: z.string().optional().default("eternum-game"),
   VITE_TRACING_SAMPLE_RATE: z.string().optional().default("0.1"),
   VITE_TRACING_ERROR_SAMPLE_RATE: z.string().optional().default("1.0"),
+  VITE_TRACING_USE_OTEL: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("false"),
   VITE_PERF_MONITORING_ENABLED: z
     .string()
     .transform((v) => v === "true")

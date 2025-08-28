@@ -22,6 +22,7 @@
  * const army = mapStore.getArmyById(456);
  */
 
+import { telemetry } from "@bibliothecadao/telemetry";
 import { SqlApi, StructureMapDataRaw } from "@bibliothecadao/torii";
 import { BuildingType, ID, StructureType, TroopTier } from "@bibliothecadao/types";
 import { shortString } from "starknet";
@@ -270,65 +271,75 @@ export class MapDataStore {
   }
 
   public async refresh(): Promise<void> {
-    console.log("Refreshing map data store");
+    return telemetry.span("state.refresh", undefined, async () => {
+      console.log("Refreshing map data store");
 
-    // If already loading, wait for the existing promise
-    if (this.isLoading) {
-      if (this.loadingPromise) {
-        return this.loadingPromise;
+      // If already loading, wait for the existing promise
+      if (this.isLoading) {
+        if (this.loadingPromise) {
+          return this.loadingPromise;
+        }
+        // If isLoading is true but loadingPromise is null, wait a bit and retry
+        // This can happen during the race condition in the finally block
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        if (this.isLoading && this.loadingPromise) {
+          return this.loadingPromise;
+        }
+        // If still no promise but still loading, something went wrong - reset state
+        if (this.isLoading && !this.loadingPromise) {
+          console.warn("MapDataStore: Inconsistent state detected, resetting...");
+          this.isLoading = false;
+        }
       }
-      // If isLoading is true but loadingPromise is null, wait a bit and retry
-      // This can happen during the race condition in the finally block
-      await new Promise((resolve) => setTimeout(resolve, 10));
-      if (this.isLoading && this.loadingPromise) {
-        return this.loadingPromise;
-      }
-      // If still no promise but still loading, something went wrong - reset state
-      if (this.isLoading && !this.loadingPromise) {
-        console.warn("MapDataStore: Inconsistent state detected, resetting...");
+
+      // Set loading state and create promise atomically
+      this.isLoading = true;
+      this.loadingPromise = this.fetchAndStoreMapData();
+
+      try {
+        await this.loadingPromise;
+        console.log("Map data store refreshed at ", new Date().toISOString());
+        this.retryCount = 0;
+
+        // Notify all registered callbacks that data has been refreshed
+        this.notifyRefreshCallbacks();
+      } catch (error) {
+        console.error("Failed to refresh map data store:", error);
+        telemetry.event("state.refresh.error", { message: (error as Error)?.message });
+        if (this.retryCount < this.MAX_RETRIES) {
+          this.retryCount++;
+          // Use setTimeout to avoid recursive call stack issues
+          setTimeout(() => {
+            this.refresh().catch((err) => {
+              console.error("Retry refresh failed:", err);
+            });
+          }, 1000 * this.retryCount);
+        }
+      } finally {
+        // Reset state atomically
         this.isLoading = false;
+        this.loadingPromise = null;
       }
-    }
-
-    // Set loading state and create promise atomically
-    this.isLoading = true;
-    this.loadingPromise = this.fetchAndStoreMapData();
-
-    try {
-      await this.loadingPromise;
-      console.log("Map data store refreshed at ", new Date().toISOString());
-      this.retryCount = 0;
-
-      // Notify all registered callbacks that data has been refreshed
-      this.notifyRefreshCallbacks();
-    } catch (error) {
-      console.error("Failed to refresh map data store:", error);
-      if (this.retryCount < this.MAX_RETRIES) {
-        this.retryCount++;
-        // Use setTimeout to avoid recursive call stack issues
-        setTimeout(() => {
-          this.refresh().catch((err) => {
-            console.error("Retry refresh failed:", err);
-          });
-        }, 1000 * this.retryCount);
-      }
-    } finally {
-      // Reset state atomically
-      this.isLoading = false;
-      this.loadingPromise = null;
-    }
+    });
   }
 
   private async fetchAndStoreMapData(): Promise<void> {
     const isBlitz = getIsBlitz();
     const realmsData = realms as Record<string, { name: string }>;
 
-    // Fetch all structures and armies in parallel
-    const [structuresRaw, armiesRaw, hyperstructuresWithRealmCount] = await Promise.all([
-      this.sqlApi.fetchAllStructuresMapData(),
-      this.sqlApi.fetchAllArmiesMapData(),
-      this.sqlApi.fetchHyperstructuresWithRealmCount(8),
-    ]);
+    // Fetch all structures and armies in parallel with telemetry
+    const [structuresRaw, armiesRaw, hyperstructuresWithRealmCount] = await telemetry.span(
+      "state.fetch.all",
+      undefined,
+      () =>
+        Promise.all([
+          telemetry.span("state.fetch.structures", undefined, () => this.sqlApi.fetchAllStructuresMapData()),
+          telemetry.span("state.fetch.armies", undefined, () => this.sqlApi.fetchAllArmiesMapData()),
+          telemetry.span("state.fetch.hyperstructures", undefined, () =>
+            this.sqlApi.fetchHyperstructuresWithRealmCount(8),
+          ),
+        ]),
+    );
 
     // Transform and store structures
     structuresRaw.forEach((structure: StructureMapDataRaw) => {
@@ -402,6 +413,12 @@ export class MapDataStore {
         hyperstructure.hyperstructure_entity_id,
         hyperstructure.realm_count_within_radius,
       );
+    });
+
+    telemetry.event("state.fetch.counts", {
+      structures: structuresRaw.length,
+      armies: armiesRaw.length,
+      hyperstructures: hyperstructuresWithRealmCount.length,
     });
 
     this.lastFetchTime = Date.now();

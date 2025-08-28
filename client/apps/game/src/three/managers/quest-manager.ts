@@ -11,7 +11,7 @@ import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { QuestLabelData, QuestLabelType } from "../utils/labels/label-factory";
 import { LabelManager } from "../utils/labels/label-manager";
 import { gltfLoader } from "../utils/utils";
-const MAX_INSTANCES = 1000;
+const MAX_INSTANCES = 256;
 
 export class QuestManager {
   private scene: THREE.Scene;
@@ -77,6 +77,23 @@ export class QuestManager {
 
     // Clean up the label manager
     this.labelManager.destroy();
+
+    // Dispose quest models and remove from scene
+    this.questModels.forEach((models) => {
+      models.forEach((model) => {
+        if (typeof model.dispose === "function") {
+          model.dispose();
+        }
+        if (model.group && model.group.parent) {
+          model.group.parent.remove(model.group);
+        }
+      });
+    });
+    this.questModels.clear();
+
+    // Clear entity maps and coords
+    this.entityIdMaps.clear();
+    this.questHexCoords.clear();
   }
 
   private async loadModels(): Promise<void> {

@@ -33,6 +33,7 @@ import {
   ExplorerMoveSystemUpdate,
   getBlockTimestamp,
   isRelicActive,
+  
   QuestSystemUpdate,
   RelicEffectSystemUpdate,
   SelectableArmy,
@@ -51,12 +52,14 @@ import {
   ID,
   RelicEffect,
   Structure,
+  TroopType,
 } from "@bibliothecadao/types";
 import { Account, AccountInterface } from "starknet";
 import { Color, Group, InstancedBufferAttribute, Matrix4, Object3D, Raycaster, Vector2, Vector3 } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { FXManager } from "../managers/fx-manager";
 import { HoverLabelManager } from "../managers/hover-label-manager";
+import { PathVisualizer } from "../managers/path-visualizer";
 import { QuestManager } from "../managers/quest-manager";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { SceneName } from "../types/common";
@@ -108,6 +111,9 @@ export default class WorldmapScene extends HexagonScene {
   private minimap!: Minimap;
   private previouslyHoveredHex: HexPosition | null = null;
   private cachedMatrices: Map<string, Map<string, { matrices: InstancedBufferAttribute; count: number }>> = new Map();
+  // LRU tracking for cachedMatrices to prevent unbounded growth
+  private matrixCacheOrder: string[] = [];
+  private matrixCacheCapacity: number = 12; // current + neighbors (~9) with a small cushion
   private updateHexagonGridPromise: Promise<void> | null = null;
   private travelEffects: Map<string, () => void> = new Map();
 
@@ -135,6 +141,7 @@ export default class WorldmapScene extends HexagonScene {
   private fxManager: FXManager;
   private resourceFXManager: ResourceFXManager;
   private questManager: QuestManager;
+  private pathVisualizer!: PathVisualizer;
   private armyIndex: number = 0;
   private selectableArmies: SelectableArmy[] = [];
   private structureIndex: number = 0;
@@ -142,6 +149,10 @@ export default class WorldmapScene extends HexagonScene {
 
   // Hover-based label expansion manager
   private hoverLabelManager: HoverLabelManager;
+  private storeUnsubscribes: Array<() => void> = [];
+  private onUrlChangedHandler = () => {
+    this.clearSelection();
+  };
 
   constructor(
     dojoContext: SetupResult,
@@ -168,60 +179,76 @@ export default class WorldmapScene extends HexagonScene {
 
     this.loadBiomeModels(this.renderChunkSize.width * this.renderChunkSize.height);
 
-    useUIStore.subscribe(
-      (state) => state.selectableArmies,
-      (selectableArmies) => {
-        this.updateSelectableArmies(selectableArmies);
-      },
+    this.storeUnsubscribes.push(
+      useUIStore.subscribe(
+        (state) => state.selectableArmies,
+        (selectableArmies) => {
+          this.updateSelectableArmies(selectableArmies);
+        },
+      ),
     );
 
-    useUIStore.subscribe(
-      (state) => state.playerStructures,
-      (playerStructures) => {
-        this.updatePlayerStructures(playerStructures);
-      },
+    this.storeUnsubscribes.push(
+      useUIStore.subscribe(
+        (state) => state.playerStructures,
+        (playerStructures) => {
+          this.updatePlayerStructures(playerStructures);
+        },
+      ),
     );
 
-    useUIStore.subscribe(
-      (state) => state.entityActions,
-      (armyActions) => {
-        this.state.entityActions = armyActions;
-      },
+    this.storeUnsubscribes.push(
+      useUIStore.subscribe(
+        (state) => state.entityActions,
+        (armyActions) => {
+          this.state.entityActions = armyActions;
+        },
+      ),
     );
-    useUIStore.subscribe(
-      (state) => state.selectedHex,
-      (selectedHex) => {
-        this.state.selectedHex = selectedHex;
-      },
+    this.storeUnsubscribes.push(
+      useUIStore.subscribe(
+        (state) => state.selectedHex,
+        (selectedHex) => {
+          this.state.selectedHex = selectedHex;
+        },
+      ),
     );
-    useUIStore.subscribe(
-      (state) => state.isSoundOn,
-      (isSoundOn) => {
-        this.state.isSoundOn = isSoundOn;
-      },
+    this.storeUnsubscribes.push(
+      useUIStore.subscribe(
+        (state) => state.isSoundOn,
+        (isSoundOn) => {
+          this.state.isSoundOn = isSoundOn;
+        },
+      ),
     );
-    useUIStore.subscribe(
-      (state) => state.effectsLevel,
-      (effectsLevel) => {
-        this.state.effectsLevel = effectsLevel;
-      },
+    this.storeUnsubscribes.push(
+      useUIStore.subscribe(
+        (state) => state.effectsLevel,
+        (effectsLevel) => {
+          this.state.effectsLevel = effectsLevel;
+        },
+      ),
     );
 
     // Subscribe to zoom setting changes
-    useUIStore.subscribe(
-      (state) => state.enableMapZoom,
-      (enableMapZoom) => {
-        if (this.controls) {
-          this.controls.enableZoom = enableMapZoom;
-        }
-      },
+    this.storeUnsubscribes.push(
+      useUIStore.subscribe(
+        (state) => state.enableMapZoom,
+        (enableMapZoom) => {
+          if (this.controls) {
+            this.controls.enableZoom = enableMapZoom;
+          }
+        },
+      ),
     );
 
-    useUIStore.subscribe(
-      (state) => state.entityActions.selectedEntityId,
-      (selectedEntityId) => {
-        if (!selectedEntityId) this.clearEntitySelection();
-      },
+    this.storeUnsubscribes.push(
+      useUIStore.subscribe(
+        (state) => state.entityActions.selectedEntityId,
+        (selectedEntityId) => {
+          if (!selectedEntityId) this.clearEntitySelection();
+        },
+      ),
     );
 
     // Initialize label groups
@@ -257,6 +284,7 @@ export default class WorldmapScene extends HexagonScene {
 
     // Initialize the quest manager
     this.questManager = new QuestManager(this.scene, this.renderChunkSize, this.questLabelsGroup, this);
+    this.pathVisualizer = new PathVisualizer(this.scene);
 
     // Initialize the chest manager
     this.chestManager = new ChestManager(this.scene, this.renderChunkSize, this.chestLabelsGroup, this);
@@ -293,9 +321,28 @@ export default class WorldmapScene extends HexagonScene {
         this.exploredTiles.get(normalizedPos.x)!.set(normalizedPos.y, BiomeType.Grassland);
       }
 
-      await this.armyManager.onTileUpdate(update, this.armyHexes, this.structureHexes, this.exploredTiles);
+      const started = await this.armyManager.onTileUpdate(
+        update,
+        this.armyHexes,
+        this.structureHexes,
+        this.exploredTiles,
+      );
+
+      // Clear selection only if the moving army is still the selected entity
+      // This prevents clearing a newer selection (e.g., user selected a different army)
+      if (started) {
+        const { selectedEntityId } = this.state.entityActions;
+        if (selectedEntityId === update.entityId) {
+          this.clearSelection();
+        }
+      }
 
       this.invalidateAllChunkCachesContainingHex(normalizedPos.x, normalizedPos.y);
+
+      // Trim committed path as the army advances
+      try {
+        this.pathVisualizer.trimToHex(update.entityId, { col: normalizedPos.x, row: normalizedPos.y });
+      } catch {}
     });
 
     // Listen for troop count and stamina changes
@@ -474,13 +521,13 @@ export default class WorldmapScene extends HexagonScene {
       });
     }
 
-    window.addEventListener("urlChanged", () => {
-      this.clearSelection();
-    });
+    window.addEventListener("urlChanged", this.onUrlChangedHandler);
 
     // Start relic effect validation timer (every 5 seconds)
     this.startRelicValidationTimer();
   }
+
+  // (duplicate destroy removed; see unified destroy at bottom)
 
   private setupCameraZoomHandler() {
     // Add mouse wheel handler
@@ -548,10 +595,27 @@ export default class WorldmapScene extends HexagonScene {
 
     const { selectedEntityId, actionPaths } = this.state.entityActions;
     if (selectedEntityId && actionPaths.size > 0) {
+      // If this entity already has a committed path, do not show preview
+      try {
+        if (this.pathVisualizer.hasActivePath(Number(selectedEntityId))) {
+          return;
+        }
+      } catch {}
       if (this.previouslyHoveredHex?.col !== hexCoords.col || this.previouslyHoveredHex?.row !== hexCoords.row) {
         this.previouslyHoveredHex = hexCoords;
       }
       this.state.updateEntityActionHoveredHex(hexCoords);
+
+      // Update path preview to hovered hex if a path exists
+      const key = (ActionPaths as any).posKey
+        ? (ActionPaths as any).posKey(hexCoords, true)
+        : `${hexCoords.col},${hexCoords.row}`;
+      const path = (actionPaths as any).get ? (actionPaths as any).get(key) : undefined;
+      if (path && Array.isArray(path) && path.length > 1) {
+        const hexes = path.map((p: any) => ({ col: p.hex.col - FELT_CENTER, row: p.hex.row - FELT_CENTER }));
+        const points = hexes.map((h: any) => getWorldPositionForHex(h));
+        this.pathVisualizer.updatePreview(points);
+      }
     }
   }
 
@@ -715,6 +779,13 @@ export default class WorldmapScene extends HexagonScene {
       // Monitor memory usage before army movement action
       this.memoryMonitor.getCurrentStats(`worldmap-moveArmy-start-${selectedEntityId}`);
 
+      // Build positions array for visual path
+      const path = actionPath;
+      const hexesNorm = path.map((p) => ({ col: p.hex.col - FELT_CENTER, row: p.hex.row - FELT_CENTER }));
+      const points = hexesNorm.map((h) => getWorldPositionForHex(h));
+      // Commit path visualization immediately
+      this.pathVisualizer.commitPath(selectedEntityId, hexesNorm, points);
+
       armyActionManager
         .moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick)
         .then(() => {
@@ -727,13 +798,14 @@ export default class WorldmapScene extends HexagonScene {
           // Transaction failed, remove from pending and cleanup
           this.pendingArmyMovements.delete(selectedEntityId);
           cleanup();
+          // Remove committed path on failure
+          this.pathVisualizer.trimToHex(selectedEntityId, hexesNorm[hexesNorm.length - 1]);
           console.error("Army movement failed:", e);
         });
 
       this.state.updateEntityActionHoveredHex(null);
     }
-    // clear after movement
-    this.clearSelection();
+    // Do not clear selection immediately; keep label visible until movement starts
   }
 
   private onArmyAttack(actionPath: ActionPath[], selectedEntityId: ID) {
@@ -943,6 +1015,8 @@ export default class WorldmapScene extends HexagonScene {
     this.structureManager.showLabels();
     this.questManager.addLabelsToScene();
     this.chestManager.addLabelsToScene();
+    // Clear transient path preview on deselect
+    this.pathVisualizer.clearPreview();
   }
 
   setup() {
@@ -1307,8 +1381,9 @@ export default class WorldmapScene extends HexagonScene {
     const startRow = parseInt(chunkKey.split(",")[0]);
     const startCol = parseInt(chunkKey.split(",")[1]);
     const chunks: string[] = [];
-    for (let i = -this.renderChunkSize.width / 2; i <= this.renderChunkSize.width / 2; i += this.chunkSize) {
-      for (let j = -this.renderChunkSize.width / 2; j <= this.renderChunkSize.height / 2; j += this.chunkSize) {
+    // Cover full visible rectangle: rows span renderChunkSize.height, cols span renderChunkSize.width
+    for (let i = -this.renderChunkSize.height / 2; i <= this.renderChunkSize.height / 2; i += this.chunkSize) {
+      for (let j = -this.renderChunkSize.width / 2; j <= this.renderChunkSize.width / 2; j += this.chunkSize) {
         const { x, z } = getWorldPositionForHex({ row: startRow + i, col: startCol + j });
         const { chunkX, chunkZ } = this.worldToChunkCoordinates(x, z);
         const _chunkKey = `${chunkZ * this.chunkSize},${chunkX * this.chunkSize}`;
@@ -1642,17 +1717,25 @@ export default class WorldmapScene extends HexagonScene {
       }
       this.cachedMatrices.get(chunkKey)!.set(biome, { matrices: matrices as any, count });
     }
+    this.touchMatrixCacheKey(chunkKey);
+    this.enforceMatrixCacheCapacity();
   }
 
   removeCachedMatricesForChunk(startRow: number, startCol: number) {
     const chunkKey = `${startRow},${startCol}`;
     this.cachedMatrices.delete(chunkKey);
+    // Remove from LRU order as well
+    const idx = this.matrixCacheOrder.indexOf(chunkKey);
+    if (idx !== -1) {
+      this.matrixCacheOrder.splice(idx, 1);
+    }
   }
 
   private applyCachedMatricesForChunk(startRow: number, startCol: number) {
     const chunkKey = `${startRow},${startCol}`;
     const cachedMatrices = this.cachedMatrices.get(chunkKey);
     if (cachedMatrices) {
+      this.touchMatrixCacheKey(chunkKey);
       for (const [biome, { matrices, count }] of cachedMatrices) {
         const hexMesh = this.biomeModels.get(biome as any)!;
         hexMesh.setMatricesAndCount(matrices, count);
@@ -1660,6 +1743,46 @@ export default class WorldmapScene extends HexagonScene {
       return true;
     }
     return false;
+  }
+
+  private touchMatrixCacheKey(key: string) {
+    const idx = this.matrixCacheOrder.indexOf(key);
+    if (idx !== -1) {
+      this.matrixCacheOrder.splice(idx, 1);
+    }
+    this.matrixCacheOrder.push(key);
+  }
+
+  private enforceMatrixCacheCapacity() {
+    // Preserve the current chunk and its immediate neighbors when evicting
+    const preserve = new Set<string>();
+    if (this.currentChunk && typeof this.currentChunk === "string") {
+      preserve.add(this.currentChunk);
+      try {
+        const [rowStr, colStr] = this.currentChunk.split(",");
+        const startRow = parseInt(rowStr);
+        const startCol = parseInt(colStr);
+        const neighbors = this.getSurroundingChunkKeys(startRow, startCol);
+        neighbors.forEach((k) => preserve.add(k));
+      } catch {}
+    }
+
+    while (this.cachedMatrices.size > this.matrixCacheCapacity) {
+      // Find the oldest non-preserved key to evict
+      let evicted = false;
+      for (let i = 0; i < this.matrixCacheOrder.length; i++) {
+        const key = this.matrixCacheOrder[i];
+        if (!preserve.has(key)) {
+          // Evict this key
+          this.cachedMatrices.delete(key);
+          this.matrixCacheOrder.splice(i, 1);
+          evicted = true;
+          break;
+        }
+      }
+      // If all remaining keys are preserved, break to avoid infinite loop
+      if (!evicted) break;
+    }
   }
 
   private worldToChunkCoordinates(x: number, z: number): { chunkX: number; chunkZ: number } {
@@ -1715,11 +1838,12 @@ export default class WorldmapScene extends HexagonScene {
       this.removeCachedMatricesForChunk(startRow, startCol);
     }
 
-    // Load surrounding chunks for better UX (3x3 grid)
-    const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
+    // Load all chunks covering the full visible area (matches renderChunkSize)
+    const visibleChunks = this.getChunksAround(chunkKey);
+    // Start loading all visible chunks (deduplicated by pending/fetched maps)
+    visibleChunks.forEach((chunk) => this.computeTileEntities(chunk));
 
-    // Start loading all surrounding chunks (they will deduplicate automatically)
-    surroundingChunks.forEach((chunk) => this.computeTileEntities(chunk));
+    // (Reverted) Do not force-wait center chunk fetch here
 
     // Calculate the starting position for the new chunk
     await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
@@ -1731,6 +1855,8 @@ export default class WorldmapScene extends HexagonScene {
       this.renderChunkSize.width,
       this.renderChunkSize.height,
     );
+
+    // (Removed hydration) ArmyManager relies on live tile updates + its own chunking
 
     // Update all managers in sequence to prevent race conditions
     // Changed from Promise.all to sequential execution
@@ -1755,9 +1881,12 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
+  // (Removed hydration helper)
+
   update(deltaTime: number) {
     super.update(deltaTime);
     this.armyManager.update(deltaTime);
+    this.pathVisualizer.update(deltaTime);
     this.selectedHexManager.update(deltaTime);
     this.structureManager.updateAnimations(deltaTime);
     this.chestManager.update(deltaTime);
@@ -1959,21 +2088,51 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   destroy() {
-    this.resourceFXManager.destroy();
-    this.stopRelicValidationTimer();
+    try {
+      // Stop relic validation timer
+      this.stopRelicValidationTimer();
 
-    // Clean up hover label manager
-    this.hoverLabelManager.destroy();
+      // Unsubscribe store listeners
+      this.storeUnsubscribes.forEach((u) => u());
+      this.storeUnsubscribes = [];
 
-    // Clean up selection pulse manager
-    this.selectionPulseManager.dispose();
+      // Remove window listeners
+      window.removeEventListener("urlChanged", this.onUrlChangedHandler);
 
-    // Clean up input manager
-    this.inputManager.destroy();
+      // Clean up managers and effects
+      if (this.armyManager && typeof (this.armyManager as any).destroy === "function") {
+        (this.armyManager as any).destroy();
+      }
+      if (this.fxManager) this.fxManager.destroy();
+      if (this.resourceFXManager) this.resourceFXManager.destroy();
+      if (this.hoverLabelManager) this.hoverLabelManager.destroy();
+      if (this.selectionPulseManager) this.selectionPulseManager.dispose();
+      if (this.selectedHexManager && typeof (this.selectedHexManager as any).dispose === "function") {
+        (this.selectedHexManager as any).dispose();
+      }
+      if (this.questManager && typeof (this.questManager as any).destroy === "function") {
+        (this.questManager as any).destroy();
+      }
+      if (this.chestManager && typeof (this.chestManager as any).destroy === "function") {
+        (this.chestManager as any).destroy();
+      }
+      if (this.structureManager && typeof (this.structureManager as any).destroy === "function") {
+        (this.structureManager as any).destroy();
+      }
+      if (this.minimap && typeof (this.minimap as any).dispose === "function") {
+        (this.minimap as any).dispose();
+      }
+      if (this.inputManager) this.inputManager.destroy();
 
-    // Clean up shortcuts when scene is actually destroyed
-    if (this.shortcutManager instanceof SceneShortcutManager) {
-      this.shortcutManager.cleanup();
+      // Clean up shortcuts when scene is actually destroyed
+      if (this.shortcutManager instanceof SceneShortcutManager) {
+        this.shortcutManager.cleanup();
+      }
+
+      // Clear caches
+      this.cachedMatrices.clear();
+    } catch (e) {
+      console.warn("WorldmapScene.destroy error", e);
     }
   }
 

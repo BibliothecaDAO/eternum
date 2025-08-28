@@ -18,6 +18,9 @@ interface MaterialKey {
   color?: number;
   metalness?: number;
   roughness?: number;
+  depthWrite?: boolean;
+  alphaTest?: number;
+  emissiveIntensity?: number;
 }
 
 interface MaterialStats {
@@ -58,6 +61,9 @@ export class MaterialPool {
       color: overrides?.color ?? (sourceMaterial as any).color?.getHex(),
       metalness: overrides?.metalness ?? (sourceMaterial as any).metalness,
       roughness: overrides?.roughness ?? (sourceMaterial as any).roughness,
+      depthWrite: overrides?.depthWrite ?? (sourceMaterial as any).depthWrite,
+      alphaTest: overrides?.alphaTest ?? (sourceMaterial as any).alphaTest,
+      emissiveIntensity: overrides?.emissiveIntensity ?? (sourceMaterial as any).emissiveIntensity,
     };
 
     return JSON.stringify(key);
@@ -72,6 +78,9 @@ export class MaterialPool {
       opacity?: number;
       color?: number;
       transparent?: boolean;
+      depthWrite?: boolean;
+      alphaTest?: number;
+      emissiveIntensity?: number;
     },
   ): MeshBasicMaterial {
     const materialOverrides = {
@@ -96,6 +105,11 @@ export class MaterialPool {
       color: overrides?.color ?? sourceAsStandard.color,
     });
 
+    // Apply additional overrides not in constructor
+    if (overrides?.depthWrite !== undefined) (newMaterial as any).depthWrite = overrides.depthWrite;
+    if (overrides?.alphaTest !== undefined) (newMaterial as any).alphaTest = overrides.alphaTest;
+    if (overrides?.emissiveIntensity !== undefined) (newMaterial as any).emissiveIntensity = overrides.emissiveIntensity as any;
+
     // Store references
     this.materials.set(key, newMaterial);
     this.referenceCount.set(key, 1);
@@ -115,6 +129,9 @@ export class MaterialPool {
       metalness?: number;
       roughness?: number;
       transparent?: boolean;
+      depthWrite?: boolean;
+      alphaTest?: number;
+      emissiveIntensity?: number;
     },
   ): MeshStandardMaterial {
     const materialOverrides = {
@@ -141,6 +158,10 @@ export class MaterialPool {
       roughness: overrides?.roughness ?? sourceAsStandard.roughness,
     });
 
+    if (overrides?.depthWrite !== undefined) newMaterial.depthWrite = overrides.depthWrite;
+    if (overrides?.alphaTest !== undefined) newMaterial.alphaTest = overrides.alphaTest;
+    if (overrides?.emissiveIntensity !== undefined) (newMaterial as any).emissiveIntensity = overrides.emissiveIntensity as any;
+
     // Store references
     this.materials.set(key, newMaterial);
     this.referenceCount.set(key, 1);
@@ -152,11 +173,11 @@ export class MaterialPool {
   /**
    * Release a material reference (decrements reference count)
    */
-  public releaseMaterial(material: Material): void {
+  public releaseMaterial(material: Material): boolean {
     const key = this.materialKeys.get(material);
     if (!key) {
-      console.warn("MaterialPool: Attempting to release material not managed by pool");
-      return;
+      // Not managed by pool
+      return false;
     }
 
     const count = this.referenceCount.get(key) || 0;
@@ -170,6 +191,7 @@ export class MaterialPool {
       // Decrement reference count
       this.referenceCount.set(key, count - 1);
     }
+    return true;
   }
 
   /**

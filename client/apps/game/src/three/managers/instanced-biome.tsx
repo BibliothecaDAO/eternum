@@ -14,6 +14,9 @@ export default class InstancedModel {
   private animation: AnimationClip | null = null;
   private animationActions: Map<number, THREE.AnimationAction> = new Map();
   timeOffsets: Float32Array;
+  // Frame limiting for morph updates to reduce GPU churn
+  private lastAnimationUpdate = 0;
+  private animationUpdateInterval = 1000 / 30; // ~30 FPS
 
   constructor(gltf: any, count: number, enableRaycast: boolean = false, name: string = "") {
     this.group = new THREE.Group();
@@ -47,11 +50,9 @@ export default class InstancedModel {
         }
         const tmp = new THREE.InstancedMesh(child.geometry, child.material, count);
         const biomeMesh = child;
+        // Defer morph initialization; perform on-demand when instances become active
         if (gltf.animations.length > 0) {
-          for (let i = 0; i < count; i++) {
-            tmp.setMorphAt(i, biomeMesh as any);
-          }
-          tmp.morphTexture!.needsUpdate = true;
+          (tmp as any).animated = true;
         }
 
         if (name !== "Outline" && !name.toLowerCase().includes("ocean")) {
@@ -78,6 +79,8 @@ export default class InstancedModel {
         this.animation = gltf.animations[0];
 
         tmp.count = 0;
+        // Track morph initialization progress per mesh
+        (tmp.userData as any).morphInitCount = 0;
         this.group.add(tmp);
         this.instancedMeshes.push(tmp);
         this.biomeMeshes.push(biomeMesh);
@@ -105,9 +108,11 @@ export default class InstancedModel {
   }
 
   setMatricesAndCount(matrices: THREE.InstancedBufferAttribute, count: number) {
-    this.group.children.forEach((child) => {
+    this.group.children.forEach((child, idx) => {
       if (child instanceof THREE.InstancedMesh) {
         child.instanceMatrix.copy(matrices);
+        // Ensure morph data initialized for newly visible instances (works even on LOW settings)
+        this.ensureMorphInitialized(child, this.biomeMeshes[idx], count);
         child.count = count;
         child.instanceMatrix.needsUpdate = true;
       }
@@ -117,7 +122,10 @@ export default class InstancedModel {
   setMatrixAt(index: number, matrix: THREE.Matrix4) {
     this.group.children.forEach((child) => {
       if (child instanceof THREE.InstancedMesh) {
-        child.setMatrixAt(index, matrix);
+        const capacity = (child.instanceMatrix as any).count ?? 0;
+        if (index < capacity) {
+          child.setMatrixAt(index, matrix);
+        }
       }
     });
   }
@@ -125,19 +133,45 @@ export default class InstancedModel {
   setColorAt(index: number, color: THREE.Color) {
     this.group.children.forEach((child) => {
       if (child instanceof THREE.InstancedMesh) {
-        child.setColorAt(index, color);
+        const capacity = (child.instanceMatrix as any).count ?? 0;
+        if (index < capacity) {
+          child.setColorAt(index, color);
+        }
       }
     });
   }
 
   setCount(count: number) {
     this.count = count;
-    this.group.children.forEach((child) => {
+    this.group.children.forEach((child, idx) => {
       if (child instanceof THREE.InstancedMesh) {
-        child.count = count;
+        const capacity = ((child.instanceMatrix as any).count ?? this.count) as number;
+        const target = Math.min(count, capacity);
+        // Initialize morphs only for new indices
+        this.ensureMorphInitialized(child, this.biomeMeshes[idx], target);
+        child.count = target;
       }
     });
     this.needsUpdate();
+  }
+
+  private ensureMorphInitialized(mesh: THREE.InstancedMesh, biomeMesh: any, targetCount: number) {
+    try {
+      // Only for animated meshes
+      if (!(mesh as any).animated) return;
+      if (!biomeMesh) return;
+      const initCount: number = (mesh.userData as any).morphInitCount || 0;
+      if (targetCount <= initCount) return;
+      for (let i = initCount; i < targetCount; i++) {
+        (mesh as any).setMorphAt(i, biomeMesh as any);
+      }
+      if ((mesh as any).morphTexture) {
+        (mesh as any).morphTexture.needsUpdate = true;
+      }
+      (mesh.userData as any).morphInitCount = targetCount;
+    } catch (e) {
+      console.warn('[InstancedBiome] ensureMorphInitialized error', e);
+    }
   }
 
   removeInstance(index: number) {
@@ -169,8 +203,13 @@ export default class InstancedModel {
       return;
     }
 
+    const now = performance.now();
+    if (now - this.lastAnimationUpdate < this.animationUpdateInterval) {
+      return;
+    }
+
     if (this.mixer && this.animation) {
-      const time = performance.now() * 0.001;
+      const time = now * 0.001;
       this.instancedMeshes.forEach((mesh, meshIndex) => {
         // Create a single action for each mesh if it doesn't exist
         if (!this.animationActions.has(meshIndex)) {
@@ -187,6 +226,7 @@ export default class InstancedModel {
         }
         mesh.morphTexture!.needsUpdate = true;
       });
+      this.lastAnimationUpdate = now;
     }
   }
 
@@ -210,7 +250,7 @@ export default class InstancedModel {
         if (Array.isArray(mesh.material)) {
           mesh.material.forEach((mat) => mat.dispose());
         } else {
-          mesh.material.dispose();
+          (mesh.material as any).dispose();
         }
       }
       if (mesh.morphTexture) {

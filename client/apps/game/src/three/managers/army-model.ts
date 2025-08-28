@@ -63,10 +63,11 @@ export class ArmyModel {
 
   // Configuration constants
   private readonly SCALE_TRANSITION_SPEED = 5.0;
-  private readonly MOVEMENT_SPEED = 1.25;
+  // Faster base movement for snappier feel
+  private readonly MOVEMENT_SPEED = 2.1;
   private readonly FLOAT_HEIGHT = 0.5;
-  private readonly FLOAT_TRANSITION_SPEED = 3.0;
-  private readonly ROTATION_SPEED = 5.0;
+  private readonly FLOAT_TRANSITION_SPEED = 3.6;
+  private readonly ROTATION_SPEED = 8.0;
   private readonly zeroScale = new Vector3(0, 0, 0);
   private readonly normalScale = new Vector3(1, 1, 1);
   private readonly boatScale = new Vector3(1, 1, 1);
@@ -84,8 +85,8 @@ export class ArmyModel {
   // Movement easing configuration
   private defaultEasingType: EasingType = EasingType.EaseOut;
   private tierEasingMap: Map<TroopTier, EasingType> = new Map([
-    ["T1" as TroopTier, EasingType.EaseOut],
-    ["T2" as TroopTier, EasingType.EaseOutCubic],
+    ["T1" as TroopTier, EasingType.EaseOutCubic],
+    ["T2" as TroopTier, EasingType.EaseOutQuart],
     ["T3" as TroopTier, EasingType.EaseOutQuart],
   ]);
 
@@ -188,12 +189,20 @@ export class ArmyModel {
   }
 
   private createInstancedMesh(mesh: Mesh, animations: any[], meshIndex: number): AnimatedInstancedMesh {
-    const geometry = mesh.geometry.clone();
+    // Share source geometry to avoid duplicate GPU/heap allocations
+    // Geometry is owned by the GLTF scene; we must not dispose it here.
+    const geometry = mesh.geometry;
 
     // Handle both single material and material array cases
-    const sourceMaterial = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
-    const overrides = sourceMaterial.name?.includes("stand") ? { opacity: 0.9 } : {};
-    const material = ArmyModel.materialPool.getBasicMaterial(sourceMaterial, overrides);
+    const sourceMaterial = Array.isArray(mesh.material) ? (mesh.material as any[])[0] : (mesh.material as any);
+    const needsOpacityOverride = sourceMaterial?.name?.includes("stand");
+    let material = sourceMaterial as any;
+    if (needsOpacityOverride) {
+      // Clone to safely adjust transparency without affecting the original
+      material = sourceMaterial.clone();
+      material.transparent = true;
+      material.opacity = 0.9;
+    }
     const instancedMesh = new InstancedMesh(geometry, material, MAX_INSTANCES) as AnimatedInstancedMesh;
 
     instancedMesh.frustumCulled = true;
@@ -202,6 +211,7 @@ export class ArmyModel {
     instancedMesh.renderOrder = 10 + meshIndex;
     // @ts-ignore
     if (mesh.material.name.includes("stand")) {
+      // Use Float32 colors for correctness with setColorAt
       instancedMesh.instanceColor = new InstancedBufferAttribute(new Float32Array(MAX_INSTANCES * 3), 3);
     }
 
@@ -209,19 +219,65 @@ export class ArmyModel {
       this.setupMeshAnimation(instancedMesh, mesh, animations);
     }
 
+    // Track morph initialization progress
+    (instancedMesh.userData as any).morphInitCount = 0;
     instancedMesh.count = 0;
     return instancedMesh;
+  }
+
+  // Dispose instanced resources (materials via pool, morph textures) and detach from scene
+  public dispose(): void {
+    try {
+      this.models.forEach((modelData) => {
+        // Remove group from scene
+        if (modelData.group.parent) {
+          modelData.group.parent.remove(modelData.group);
+        }
+
+        // Release instanced mesh resources
+        modelData.instancedMeshes.forEach((mesh) => {
+          // Release pooled materials (handle arrays defensively)
+          const material = mesh.material as any;
+          if (Array.isArray(material)) {
+            material.forEach((m) => {
+              if (!ArmyModel.materialPool.releaseMaterial(m)) m.dispose();
+            });
+          } else if (material) {
+            if (!ArmyModel.materialPool.releaseMaterial(material)) material.dispose();
+          }
+
+          // Morph textures are created per-instanced mesh
+          if ((mesh as any).morphTexture) {
+            (mesh as any).morphTexture.dispose();
+          }
+        });
+
+        // Stop animations and clear references
+        try {
+          modelData.animationActions.clear();
+          modelData.mixer.stopAllAction();
+        } catch {}
+      });
+
+      this.models.clear();
+      this.entityModelMap.clear();
+      this.movingInstances.clear();
+      this.instanceData.clear();
+      this.labels.clear();
+      this.instanceCount = 0;
+      this.currentVisibleCount = 0;
+    } catch (e) {
+      console.warn("ArmyModel.dispose error", e);
+    }
   }
 
   private setupMeshAnimation(instancedMesh: AnimatedInstancedMesh, mesh: Mesh, animations: any[]): void {
     const hasAnimation = animations[0].tracks.find((track: any) => track.name.split(".")[0] === mesh.name);
 
     if (hasAnimation) {
+      // Mark as animated, but defer morph initialization until instances become visible.
       instancedMesh.animated = true;
-      for (let i = 0; i < MAX_INSTANCES; i++) {
-        instancedMesh.setMorphAt(i, mesh as any);
-      }
-      instancedMesh.morphTexture!.needsUpdate = true;
+      (instancedMesh.userData as any).baseMeshRef = mesh;
     }
   }
 
@@ -277,18 +333,28 @@ export class ArmyModel {
 
   private updateInstanceMeshes(modelData: ModelData, index: number, color?: Color): void {
     modelData.instancedMeshes.forEach((mesh) => {
-      mesh.setMatrixAt(index, this.dummyObject.matrix);
-      mesh.instanceMatrix.needsUpdate = true;
+      const capacity = ((mesh.instanceMatrix as any).count ?? 0) as number;
+      if (index < capacity) {
+        mesh.setMatrixAt(index, this.dummyObject.matrix);
+        mesh.instanceMatrix.needsUpdate = true;
+      } else {
+        // Out of capacity; skip safely
+        return;
+      }
 
       if (color && mesh.instanceColor) {
-        mesh.setColorAt(index, color);
-        mesh.instanceColor.needsUpdate = true;
+        try {
+          mesh.setColorAt(index, color);
+          mesh.instanceColor.needsUpdate = true;
+        } catch {}
       }
 
       mesh.userData.entityIdMap = mesh.userData.entityIdMap || new Map();
       mesh.userData.entityIdMap.set(index, index);
     });
   }
+
+  
 
   // Animation Methods
   public updateAnimations(deltaTime: number): void {
@@ -489,6 +555,13 @@ export class ArmyModel {
 
     this.updateLabelPosition(entityId, this.tempVector1);
 
+    // Smoothly restore scale back to normal during descent
+    const instanceScale = instanceData.scale;
+    const restoreSpeed = 8.0 * deltaTime;
+    instanceScale.x += (1.0 - instanceScale.x) * restoreSpeed;
+    instanceScale.y += (1.0 - instanceScale.y) * restoreSpeed;
+    instanceScale.z += (1.0 - instanceScale.z) * restoreSpeed;
+
     if (movement.floatingHeight <= 0 || isBoat) {
       this.movingInstances.delete(entityId);
     }
@@ -553,6 +626,12 @@ export class ArmyModel {
       // Apply dynamic easing based on army type for juicy movement
       const easingType = this.getEasingTypeForMovement(instanceData.entityId, instanceData);
       const easedProgress = applyEasing(movement.progress, easingType);
+      // Add squash-and-stretch for juice (skip for boats)
+      const modelType = this.entityModelMap.get(instanceData.entityId);
+      const isBoat = modelType === ModelType.Boat;
+      if (!isBoat) {
+        this.applyJuicyScale(instanceData, movement.progress);
+      }
       instanceData.position.copy(movement.startPos).lerp(movement.endPos, easedProgress);
     }
   }
@@ -576,6 +655,32 @@ export class ArmyModel {
     movement.progress = 0;
 
     this.updateInstanceDirection(instanceData.entityId, movement.startPos, movement.endPos);
+  }
+
+  // Squash and stretch: early stretch, late squash, then normalize
+  private applyJuicyScale(instanceData: ArmyInstanceData, linearProgress: number): void {
+    // Base normal
+    const sx0 = 1.0, sy0 = 1.0, sz0 = 1.0;
+    let sx = sx0, sy = sy0, sz = sz0;
+
+    // Anticipation/stretch for first 15% of movement
+    if (linearProgress < 0.15) {
+      const t = linearProgress / 0.15; // 0..1
+      // Stretch up, thin horizontally
+      sy = 1.0 + 0.15 * (1.0 - (1.0 - t) * (1.0 - t)); // easeOut
+      sx = 1.0 - 0.08 * (1.0 - t);
+      sz = sx;
+    }
+    // Squash right before arrival (last 15%)
+    else if (linearProgress > 0.85) {
+      const t = (linearProgress - 0.85) / 0.15; // 0..1
+      // Squash down, widen horizontally
+      sy = 1.0 - 0.10 * t;
+      sx = 1.0 + 0.06 * t;
+      sz = sx;
+    }
+
+    instanceData.scale.set(sx, sy, sz);
   }
 
   private updateInstanceDirection(entityId: number, fromPos: Vector3, toPos: Vector3): void {
@@ -824,12 +929,39 @@ export class ArmyModel {
   public setVisibleCount(count: number): void {
     if (count === this.currentVisibleCount) return;
 
-    this.currentVisibleCount = count;
+    let clampedVisible = count;
     this.models.forEach((modelData) => {
-      modelData.instancedMeshes.forEach((mesh) => {
-        mesh.count = count;
+      modelData.instancedMeshes.forEach((mesh, meshIndex) => {
+        const capacity = ((mesh.instanceMatrix as any).count ?? MAX_INSTANCES) as number;
+        const target = Math.min(count, capacity);
+        // Ensure morphs are initialized for new indices (handles LOW setting too)
+        const baseMesh = modelData.baseMeshes[meshIndex];
+        this.ensureMorphInitialized(mesh, baseMesh, target);
+        mesh.count = target;
+        if (target < clampedVisible) clampedVisible = target;
       });
     });
+    this.currentVisibleCount = clampedVisible;
+  }
+
+  private ensureMorphInitialized(mesh: AnimatedInstancedMesh, baseMesh: Mesh, targetCount: number) {
+    try {
+      if (!mesh.animated) return;
+      if (!baseMesh) return;
+      const capacity = ((mesh.instanceMatrix as any).count ?? MAX_INSTANCES) as number;
+      const initCount: number = (mesh.userData as any).morphInitCount || 0;
+      const target = Math.min(targetCount, capacity);
+      if (target <= initCount) return;
+      for (let i = initCount; i < target; i++) {
+        mesh.setMorphAt(i, baseMesh as any);
+      }
+      if ((mesh as any).morphTexture) {
+        (mesh as any).morphTexture.needsUpdate = true;
+      }
+      (mesh.userData as any).morphInitCount = target;
+    } catch (e) {
+      console.warn('[ArmyModel] ensureMorphInitialized error', e);
+    }
   }
 
   public setAnimationState(index: number, isWalking: boolean): void {
@@ -873,40 +1005,7 @@ export class ArmyModel {
     });
   }
 
-  /**
-   * Dispose of all resources including shared materials
-   */
-  public dispose(): void {
-    // Dispose geometries and release materials from pool
-    this.models.forEach((modelData) => {
-      modelData.instancedMeshes.forEach((mesh) => {
-        // Release material from pool (handle both single and array materials)
-        const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
-        ArmyModel.materialPool.releaseMaterial(material);
-
-        // Dispose geometry
-        mesh.geometry.dispose();
-
-        // Remove from scene
-        this.scene.remove(mesh);
-      });
-
-      // Dispose animations
-      modelData.mixer.stopAllAction();
-
-      // Remove group from scene
-      this.scene.remove(modelData.group);
-    });
-
-    // Clear all data structures
-    this.models.clear();
-    this.entityModelMap.clear();
-    this.movingInstances.clear();
-    this.instanceData.clear();
-    this.labels.clear();
-
-    console.log("ArmyModel: Disposed all resources");
-  }
+  // (duplicate dispose removed; see unified dispose above)
 }
 
 // Global debug functions for testing easing in armies

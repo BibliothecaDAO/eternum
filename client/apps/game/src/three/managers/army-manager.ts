@@ -58,6 +58,8 @@ export class ArmyManager {
   private currentChunkKey: string | null = "190,170";
   private renderChunkSize: RenderChunkSize;
   private visibleArmies: ArmyData[] = [];
+  // Debug: track last set of visible armies to log newly visible ones per chunk render
+  private lastVisibleIds: Set<ID> = new Set();
   private armyPaths: Map<ID, Position[]> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
   private labelsGroup: Group;
@@ -184,6 +186,8 @@ export class ArmyManager {
     this.startPendingUpdatesCleanup();
   }
 
+  // (duplicate destroy removed; see unified destroy below)
+
   private scheduleTickCheck() {
     this.tickCheckTimeout = setTimeout(() => {
       const { currentArmiesTick } = getBlockTimestamp();
@@ -250,14 +254,28 @@ export class ArmyManager {
     armyHexes: Map<number, Map<number, HexEntityInfo>>,
     structureHexes: Map<number, Map<number, HexEntityInfo>>,
     exploredTiles: Map<number, Map<number, BiomeType>>,
-  ) {
+  ): Promise<boolean> {
     await this.armyModel.loadPromise;
     const { entityId, hexCoords, ownerAddress, ownerName, guildName, troopType, troopTier } = update;
 
     const newPosition = new Position({ x: hexCoords.col, y: hexCoords.row });
 
+    // Debug: log incoming tile update
+    try {
+      console.log(
+        `[ARMY DEBUG] onTileUpdate: id=${entityId} col=${hexCoords.col} row=${hexCoords.row} ` +
+          `type=${troopType} tier=${troopTier} ownerName=${ownerName} hasExisting=${this.armies.has(entityId)}`,
+      );
+    } catch {}
+
     if (this.armies.has(entityId)) {
-      this.moveArmy(entityId, newPosition, armyHexes, structureHexes, exploredTiles);
+      const started = await this.moveArmy(entityId, newPosition, armyHexes, structureHexes, exploredTiles);
+      try {
+        console.log(
+          `[ARMY DEBUG] moveArmy: id=${entityId} started=${started} chunk=${this.currentChunkKey}`,
+        );
+      } catch {}
+      return started;
     } else {
       this.addArmy({
         entityId,
@@ -275,6 +293,12 @@ export class ArmyManager {
         onChainStamina: update.onChainStamina,
         maxStamina: update.maxStamina,
       });
+      try {
+        const n = newPosition.getNormalized();
+        console.log(
+          `[ARMY DEBUG] addArmy done: id=${entityId} norm=(${n.x},${n.y}) total=${this.armies.size} chunk=${this.currentChunkKey}`,
+        );
+      } catch {}
     }
     return false;
   }
@@ -321,6 +345,25 @@ export class ArmyManager {
 
     // Reset all model instances
     this.armyModel.resetInstanceCounts();
+
+    try {
+      console.log(
+        `[ARMY DEBUG] renderVisibleArmies: chunk=${chunkKey} ` +
+          `bounds: col=[${startCol - this.renderChunkSize.width / 2}, ${startCol + this.renderChunkSize.width / 2}] ` +
+          `row=[${startRow - this.renderChunkSize.height / 2}, ${startRow + this.renderChunkSize.height / 2}] ` +
+          `total=${this.armies.size} visible=${this.visibleArmies.length}`,
+      );
+      // Log newly visible army IDs since last render
+      const nowSet = new Set(this.visibleArmies.map((a) => a.entityId));
+      const newlyVisible: ID[] = [];
+      nowSet.forEach((id) => {
+        if (!this.lastVisibleIds.has(id)) newlyVisible.push(id);
+      });
+      if (newlyVisible.length > 0) {
+        console.log(`[ARMY DEBUG] newly visible armies in chunk ${chunkKey}: ${newlyVisible.join(',')}`);
+      }
+      this.lastVisibleIds = nowSet;
+    } catch {}
 
     let currentCount = 0;
     this.visibleArmies.forEach((army) => {
@@ -545,7 +588,10 @@ export class ArmyManager {
         }
       }
 
-      await this.renderVisibleArmies(this.currentChunkKey!);
+      // Re-render visible armies for the current chunk to include any newly added
+      if (this.currentChunkKey) {
+        await this.renderVisibleArmies(this.currentChunkKey);
+      }
     }
   }
 
@@ -555,17 +601,17 @@ export class ArmyManager {
     armyHexes: Map<number, Map<number, HexEntityInfo>>,
     structureHexes: Map<number, Map<number, HexEntityInfo>>,
     exploredTiles: Map<number, Map<number, BiomeType>>,
-  ) {
+  ): Promise<boolean> {
     // Monitor memory usage before army movement
     this.memoryMonitor.getCurrentStats(`moveArmy-start-${entityId}`);
 
     const armyData = this.armies.get(entityId);
-    if (!armyData) return;
+    if (!armyData) return false;
 
     const startPos = armyData.hexCoords.getNormalized();
     const targetPos = hexCoords.getNormalized();
 
-    if (startPos.x === targetPos.x && startPos.y === targetPos.y) return;
+    if (startPos.x === targetPos.x && startPos.y === targetPos.y) return false;
 
     // todo: currently taking max stamina of paladin as max stamina but need to refactor
     const maxTroopStamina = configManager.getTroopStaminaConfig(TroopType.Paladin, TroopTier.T3);
@@ -576,7 +622,7 @@ export class ArmyManager {
     if (!path || path.length === 0) {
       // If no path is found, just teleport the army to the target position
       this.armies.set(entityId, { ...armyData, hexCoords });
-      return;
+      return false;
     }
 
     // Convert path to world positions
@@ -594,6 +640,7 @@ export class ArmyManager {
 
     // Monitor memory usage after army movement setup
     this.memoryMonitor.getCurrentStats(`moveArmy-complete-${entityId}`);
+    return true;
   }
 
   public async updateRelicEffects(entityId: ID, newRelicEffects: Array<{ relicNumber: number; effect: RelicEffect }>) {
@@ -719,7 +766,7 @@ export class ArmyManager {
     // Create label using centralized function
     const labelDiv = createArmyLabel(army, this.currentCameraView);
 
-    // Create CSS2DObject normally (revert pooling for now)
+    // Create CSS2DObject normally (no pooling)
     const label = new CSS2DObject(labelDiv);
     label.position.copy(position);
     label.position.y += 2.1;
@@ -756,7 +803,7 @@ export class ArmyManager {
   }
 
   private removeEntityIdLabel(entityId: ID) {
-    // Remove label normally (revert pooling for now)
+    // Remove label normally
     this.armyModel.removeLabel(entityId);
     this.entityIdLabels.delete(entityId);
   }
@@ -1029,9 +1076,16 @@ ${
     // Dispose army model resources including shared materials
     this.armyModel.dispose();
 
+    // Dispose FX
+    this.fxManager.destroy();
+
     // Clear entity ID labels
     this.entityIdLabels.clear();
 
-    // Clean up any other resources...
+    // Clear maps
+    this.armies.clear();
+    this.armyPaths.clear();
+    this.armyRelicEffects.clear();
+    this.pendingExplorerTroopsUpdate.clear();
   }
 }

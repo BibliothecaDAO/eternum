@@ -1,3 +1,5 @@
+import { telemetry } from "@bibliothecadao/telemetry";
+
 /**
  * Properly formats an address by converting to bigint and padding to 64 hex characters
  * This ensures consistent address formatting for database queries by:
@@ -47,20 +49,36 @@ export function buildApiUrl(baseUrl: string, query: string): string {
  * @throws Error if the request fails or response is not ok
  */
 export async function fetchWithErrorHandling<T>(url: string, errorMessage: string): Promise<T[]> {
-  const response = await fetch(url);
+  const u = new URL(url);
+  return telemetry.span(
+    "state.sync.sql.fetch",
+    {
+      path: u.pathname,
+      host: u.host,
+      params_count: Array.from(u.searchParams.keys()).length,
+    },
+    async () => {
+      const response = await fetch(url);
+      if (!response.ok) {
+        telemetry.event("state.sync.sql.error", {
+          path: u.pathname,
+          status: response.status,
+          statusText: response.statusText,
+        });
+        throw new Error(`${errorMessage}: ${response.statusText}`);
+      }
 
-  if (!response.ok) {
-    throw new Error(`${errorMessage}: ${response.statusText}`);
-  }
+      const result = await response.json();
 
-  const result = await response.json();
+      if (!Array.isArray(result)) {
+        telemetry.event("state.sync.sql.error", { path: u.pathname, error: "non_array_response" });
+        throw new Error(`${errorMessage}: Expected array response but got ${typeof result}`);
+      }
 
-  // Ensure the result is always an array (defensive programming)
-  if (!Array.isArray(result)) {
-    throw new Error(`${errorMessage}: Expected array response but got ${typeof result}`);
-  }
-
-  return result as T[];
+      telemetry.event("state.sync.sql.count", { path: u.pathname, count: result.length });
+      return result as T[];
+    },
+  );
 }
 
 /**

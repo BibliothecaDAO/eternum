@@ -14,6 +14,7 @@ import {
   MeshStandardMaterial,
   Vector3,
 } from "three";
+import { MaterialPool } from "../utils/material-pool";
 
 const BIG_DETAILS_NAME = "big_details";
 const BUILDING_NAME = "building";
@@ -56,32 +57,62 @@ export default class InstancedModel {
       this.timeOffsets[i] = Math.random() * 3;
     }
 
+    let anyAnimated = false;
     gltf.scene.traverse((child: any) => {
       if (child instanceof Mesh) {
-        if (child.scale.x !== 1) {
-          return;
-        }
-        let material = child.material;
+        // Do not skip meshes based on authoring-time scale; some GLBs (e.g., chests/quests)
+        // include non-1.0 scaled children. We still want to instance those.
+        const materialPool = MaterialPool.getInstance();
+        let material: MeshStandardMaterial | undefined;
         if (name.includes("Quest") || name.includes("Chest")) {
-          if (!material.depthWrite) {
-            material.depthWrite = true;
-            material.alphaTest = 0.075;
-          }
-          if (material.emissiveIntensity > 1) {
-            material.emissiveIntensity = 1.5;
-          }
+          const depthWrite = true;
+          const alphaTest = 0.075;
+          const emissiveIntensity = (child.material as MeshStandardMaterial).emissiveIntensity > 1 ? 1.5 : undefined;
+          material = materialPool.getStandardMaterial(child.material as any, {
+            transparent: child.material.transparent,
+            opacity: child.material.opacity,
+            color: (child.material as MeshStandardMaterial).color?.getHex(),
+            metalness: (child.material as MeshStandardMaterial).metalness,
+            roughness: (child.material as MeshStandardMaterial).roughness,
+            depthWrite,
+            alphaTest,
+            emissiveIntensity,
+          });
         }
         //name.includes("FragmentMine")
         if (name.includes("FragmentMine")) {
-          if (material.emissiveIntensity > 1) {
-            material.emissiveIntensity = 15;
-          }
+          const emissiveIntensity = 15;
+          material = materialPool.getStandardMaterial(child.material as any, {
+            transparent: child.material.transparent,
+            opacity: child.material.opacity,
+            color: (child.material as MeshStandardMaterial).color?.getHex(),
+            metalness: (child.material as MeshStandardMaterial).metalness,
+            roughness: (child.material as MeshStandardMaterial).roughness,
+            emissiveIntensity,
+          });
         }
         if (name === StructureType[StructureType.FragmentMine] && child.material.name.includes("crystal")) {
+          // Keep explicit material for crystal variant (unique params), no pooling
           material = new MeshStandardMaterial(MinesMaterialsParams[ResourcesIds.AncientFragment]);
+        }
+        // Fallback to pooled material if not set yet
+        if (!material) {
+          material = materialPool.getStandardMaterial(child.material as any, {
+            transparent: child.material.transparent,
+            opacity: child.material.opacity,
+            color: (child.material as MeshStandardMaterial).color?.getHex(),
+            metalness: (child.material as MeshStandardMaterial).metalness,
+            roughness: (child.material as MeshStandardMaterial).roughness,
+            depthWrite: (child.material as MeshStandardMaterial).depthWrite,
+            alphaTest: (child.material as MeshStandardMaterial).alphaTest,
+            emissiveIntensity: (child.material as MeshStandardMaterial).emissiveIntensity,
+          });
         }
         const tmp = new InstancedMesh(child.geometry, material, count) as AnimatedInstancedMesh;
         tmp.renderOrder = 10;
+        // Preserve the GLTF child local transform (rotation/scale) so instances render correctly
+        // We will combine this base transform with the per-instance transform in setMatrixAt
+        (tmp.userData as any).baseMatrix = child.matrix.clone();
         const biomeMesh = child;
         if (gltf.animations.length > 0) {
           if (
@@ -90,11 +121,8 @@ export default class InstancedModel {
             name !== "wonder"
           ) {
             console.log("animated", gltf.animations[0]);
-            tmp.animated = true;
-            for (let i = 0; i < count; i++) {
-              tmp.setMorphAt(i, biomeMesh as any);
-            }
-            tmp.morphTexture!.needsUpdate = true;
+            tmp.animated = true; // defer actual morph initialization
+            anyAnimated = true;
           }
         }
 
@@ -119,6 +147,8 @@ export default class InstancedModel {
           tmp.raycast = () => {};
         }
 
+        // Track morph initialization per mesh
+        (tmp.userData as any).morphInitCount = 0;
         tmp.count = 0;
         this.group.add(tmp);
         this.instancedMeshes.push(tmp);
@@ -126,8 +156,8 @@ export default class InstancedModel {
       }
     });
 
-    // Create mixer once, outside the loop to prevent memory leaks
-    if (gltf.animations.length > 0) {
+    // Create mixer only if at least one mesh is animated
+    if (gltf.animations.length > 0 && anyAnimated) {
       this.mixer = new AnimationMixer(gltf.scene);
       this.animation = gltf.animations[0];
     }
@@ -153,9 +183,11 @@ export default class InstancedModel {
   }
 
   setMatricesAndCount(matrices: InstancedBufferAttribute, count: number) {
-    this.group.children.forEach((child) => {
+    this.group.children.forEach((child, idx) => {
       if (child instanceof InstancedMesh) {
         child.instanceMatrix.copy(matrices);
+        // Ensure morphs exist for visible instances (even on LOW settings)
+        this.ensureMorphInitialized(child, this.biomeMeshes[idx], count);
         child.count = count;
         child.instanceMatrix.needsUpdate = true;
       }
@@ -165,7 +197,19 @@ export default class InstancedModel {
   setMatrixAt(index: number, matrix: Matrix4) {
     this.group.children.forEach((child) => {
       if (child instanceof InstancedMesh) {
-        child.setMatrixAt(index, matrix);
+        // Guard against exceeding instanced capacity
+        const capacity = (child.instanceMatrix as any).count ?? 0;
+        if (index < capacity) {
+          // Combine the instance matrix (position/rotation for the instance)
+          // with the GLTF child base transform (rotation/scale) to preserve authoring transforms.
+          const base: Matrix4 | undefined = (child.userData as any)?.baseMatrix;
+          if (base) {
+            instanceMatrix.copy(matrix).multiply(base);
+            child.setMatrixAt(index, instanceMatrix);
+          } else {
+            child.setMatrixAt(index, matrix);
+          }
+        }
       }
     });
   }
@@ -173,19 +217,43 @@ export default class InstancedModel {
   setColorAt(index: number, color: Color) {
     this.group.children.forEach((child) => {
       if (child instanceof InstancedMesh) {
-        child.setColorAt(index, color);
+        const capacity = (child.instanceMatrix as any).count ?? 0;
+        if (index < capacity) {
+          child.setColorAt(index, color);
+        }
       }
     });
   }
 
   setCount(count: number) {
     this.count = count;
-    this.group.children.forEach((child) => {
+    this.group.children.forEach((child, idx) => {
       if (child instanceof InstancedMesh) {
-        child.count = count;
+        const capacity = ((child.instanceMatrix as any).count ?? this.count) as number;
+        const target = Math.min(count, capacity);
+        this.ensureMorphInitialized(child, this.biomeMeshes[idx], target);
+        child.count = target;
       }
     });
     this.needsUpdate();
+  }
+
+  private ensureMorphInitialized(mesh: InstancedMesh, sourceMesh: any, targetCount: number) {
+    try {
+      if (!(mesh as any).animated) return;
+      if (!sourceMesh) return;
+      const initCount: number = (mesh.userData as any).morphInitCount || 0;
+      if (targetCount <= initCount) return;
+      for (let i = initCount; i < targetCount; i++) {
+        (mesh as any).setMorphAt(i, sourceMesh as any);
+      }
+      if ((mesh as any).morphTexture) {
+        (mesh as any).morphTexture.needsUpdate = true;
+      }
+      (mesh.userData as any).morphInitCount = targetCount;
+    } catch (e) {
+      console.warn('[InstancedModel] ensureMorphInitialized error', e);
+    }
   }
 
   removeInstance(index: number) {
@@ -294,15 +362,18 @@ export default class InstancedModel {
     this.animationActions.clear();
 
     // Dispose of instanced meshes and their resources
+    const materialPool = MaterialPool.getInstance();
     this.instancedMeshes.forEach((mesh) => {
       if (mesh.geometry) {
         mesh.geometry.dispose();
       }
       if (mesh.material) {
         if (Array.isArray(mesh.material)) {
-          mesh.material.forEach((mat) => mat.dispose());
+          mesh.material.forEach((mat) => {
+            if (!materialPool.releaseMaterial(mat)) mat.dispose();
+          });
         } else {
-          mesh.material.dispose();
+          if (!materialPool.releaseMaterial(mesh.material as any)) (mesh.material as any).dispose();
         }
       }
       if (mesh.morphTexture) {

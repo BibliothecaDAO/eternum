@@ -20,6 +20,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@bibliothecadao/telemetry": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
     "@dojoengine/core": "catalog:",
     "@scure/starknet": "^1.1.0",
