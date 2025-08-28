@@ -15,13 +15,22 @@ import {
   getStructureArmyRelicEffects,
   getStructureName,
   getStructureRelicEffects,
+  getTroopResourceId,
   MAP_DATA_REFRESH_INTERVAL,
   MapDataStore,
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getStructureFromToriiClient } from "@bibliothecadao/torii";
-import { ContractAddress, ID, MERCENARIES, RelicEffectWithEndTick, StructureType } from "@bibliothecadao/types";
+import {
+  ContractAddress,
+  ID,
+  MERCENARIES,
+  RelicEffectWithEndTick,
+  StructureType,
+  TroopTier,
+  TroopType,
+} from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, Loader, MessageCircle, RefreshCw, Shield } from "lucide-react";
 import { memo, useCallback, useMemo, useState } from "react";
@@ -85,7 +94,7 @@ export const StructureEntityDetail = memo(
 
         const isMine = structure.owner === userAddress;
         const guild = getGuildFromPlayerAddress(ContractAddress(structure.owner), components);
-        const guards = getGuardsByStructure(structure).filter((guard) => guard.troops.count > 0n);
+        const guards = getGuardsByStructure(structure).filter((guard) => guard.troops && guard.troops.count > 0n);
         const userGuild = getGuildFromPlayerAddress(userAddress, components);
         const isAlly = isMine || (guild && userGuild && guild.entityId === userGuild.entityId) || false;
         const addressName = structure.owner ? getAddressName(structure.owner, components) : MERCENARIES;
@@ -158,8 +167,6 @@ export const StructureEntityDetail = memo(
       );
     }
 
-    if (!structure || !structureDetails) return null;
-
     const { currentDefaultTick } = getBlockTimestamp();
 
     // Get resource balances using proper ResourceManager
@@ -172,7 +179,7 @@ export const StructureEntityDetail = memo(
     // Get active productions using proper ResourceManager
     const activeProductions = resources ? ResourceManager.getActiveProductions(resources) : [];
 
-    const isBlitz = getIsBlitz();
+    if (!structure || !structureDetails) return null;
 
     return (
       <Card>
@@ -203,7 +210,7 @@ export const StructureEntityDetail = memo(
 
           <div className="flex flex-col gap-1 mt-2">
             <div className="text-sm text-muted-foreground">
-              Owner: {addressName || `0x${structure.owner.toString(16)}`}
+              Owner: {addressName || (structure ? `0x${structure.owner.toString(16)}` : "Unknown")}
             </div>
             {playerGuild && <div className="text-xs text-muted-foreground">Guild: {playerGuild.name}</div>}
           </div>
@@ -275,51 +282,41 @@ export const StructureEntityDetail = memo(
 
           {/* Defense Section */}
           {guards.length > 0 && (
-            <Collapsible>
-              <div className="bg-red-50 dark:bg-red-950/20 rounded p-3 border border-red-200 dark:border-red-800">
-                <CollapsibleTrigger className="w-full">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Shield className="h-4 w-4 text-red-600 dark:text-red-400" />
-                      <div className="text-sm font-medium text-red-800 dark:text-red-200">
-                        Defense ({guards.length})
+            <div className="bg-red-50 dark:bg-red-950/20 rounded p-3 border border-red-200 dark:border-red-800">
+              <div className="flex items-center gap-2 mb-3">
+                <Shield className="h-4 w-4 text-red-600 dark:text-red-400" />
+                <div className="text-sm font-medium text-red-800 dark:text-red-200">
+                  Defense (
+                  {guards.reduce((total, guard) => total + divideByPrecision(Number(guard.troops?.count || 0)), 0)}{" "}
+                  troops)
+                </div>
+              </div>
+
+              {/* Army badges - always visible */}
+              <div className="flex flex-wrap gap-2">
+                {guards.map((guard, index) => {
+                  if (!guard.troops) return null;
+                  const resourceId = getTroopResourceId(
+                    guard.troops.category as TroopType,
+                    guard.troops.tier as TroopTier,
+                  );
+                  const troopCount = divideByPrecision(Number(guard.troops.count), false);
+                  return (
+                    <div key={index} className="flex items-center gap-2 p-2 bg-white dark:bg-gray-800 rounded border">
+                      <ResourceIcon resourceId={resourceId} size={20} />
+                      <div className="flex flex-col">
+                        <div className="font-medium text-sm">
+                          {troopCount} {guard.troops.category}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {guard.troops.tier} • Slot {guard.slot}
+                        </div>
                       </div>
                     </div>
-                    <ChevronDown className="h-4 w-4 text-red-600 dark:text-red-400" />
-                  </div>
-                </CollapsibleTrigger>
-
-                {/* Collapsed view - show summary */}
-                <div className="mt-2 text-xs text-red-700 dark:text-red-300">
-                  {guards.reduce((total, guard) => total + divideByPrecision(Number(guard.troops.count)), 0)} total
-                  troops
-                </div>
-
-                <CollapsibleContent className="mt-3">
-                  <div className="space-y-2">
-                    {guards.map((guard, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded text-xs"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Shield className="h-3 w-3" />
-                          <span>Slot {guard.slot}</span>
-                        </div>
-                        <div className="flex flex-col items-end">
-                          <span className="font-medium">{divideByPrecision(Number(guard.troops.count))} troops</span>
-                          {guard.troops.category && (
-                            <span className="text-muted-foreground capitalize">
-                              {guard.troops.category} {guard.troops.tier}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CollapsibleContent>
+                  );
+                })}
               </div>
-            </Collapsible>
+            </div>
           )}
 
           {/* Resources Section */}
