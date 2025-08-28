@@ -385,6 +385,7 @@ export class HexagonMap {
 
     const boundsUpdateStartTime = performance.now();
     const bounds = this.getMapBounds();
+    this.tileRenderer.setVisibleBounds(bounds);
     this.armyRenderer.setVisibleBounds(bounds);
     this.structureRenderer.setVisibleBounds(bounds);
     this.questRenderer.setVisibleBounds(bounds);
@@ -898,9 +899,9 @@ export class HexagonMap {
     return worldPosition;
   }
 
-  private updateExploredHex(update: TileSystemUpdate) {
+  private async updateExploredHex(update: TileSystemUpdate) {
     const { hexCoords, removeExplored, biome } = update;
-    console.log("[HexagonMap] updateExploredHex", update);
+    console.log("[ADDING-TILE] [HexagonMap] updateExploredHex", update);
     const normalized = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
 
     const col = normalized.x;
@@ -919,6 +920,9 @@ export class HexagonMap {
     if (!this.exploredTiles.get(col)!.has(row)) {
       this.exploredTiles.get(col)!.set(row, biome);
 
+      // Ensure materials are initialized before adding tile
+      await this.tileRenderer.ensureMaterialsReady();
+      console.log("[ADDING-TILE] [HexagonMap] Materials ready, adding tile", col, row, biome);
       // Update the tile directly instead of re-rendering all hexes
       this.tileRenderer.addTile(col, row, biome, true);
     }

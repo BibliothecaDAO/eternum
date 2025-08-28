@@ -179,6 +179,8 @@ export function getTroopTileIndex(troopType: TroopType, troopTier: TroopTier): U
           return UnitTileIndex.KnightT2;
         case TroopTier.T3:
           return UnitTileIndex.KnightT3;
+        default:
+          return UnitTileIndex.KnightT1;
       }
     case TroopType.Crossbowman:
       switch (troopTier) {
@@ -188,6 +190,8 @@ export function getTroopTileIndex(troopType: TroopType, troopTier: TroopTier): U
           return UnitTileIndex.CrossbowmanT2;
         case TroopTier.T3:
           return UnitTileIndex.CrossbowmanT3;
+        default:
+          return UnitTileIndex.CrossbowmanT1;
       }
     case TroopType.Paladin:
       switch (troopTier) {
@@ -197,7 +201,11 @@ export function getTroopTileIndex(troopType: TroopType, troopTier: TroopTier): U
           return UnitTileIndex.PaladinT2;
         case TroopTier.T3:
           return UnitTileIndex.PaladinT3;
+        default:
+          return UnitTileIndex.PaladinT1;
       }
+    default:
+      return UnitTileIndex.KnightT1;
   }
 }
 

@@ -13,10 +13,12 @@ export class BiomeTileRenderer extends BaseTileRenderer<BiomeTileIndex> {
   }
 
   protected async createTileMaterials(tilesPerRow: number, texture: THREE.Texture): Promise<void> {
-    Object.entries(BiomeTypeToTileIndex).forEach(([, tileIndex]) => {
-      this.createTileMaterial(tileIndex, tileIndex, tilesPerRow, texture);
+    // Create materials for all biome types
+    Object.entries(BiomeTypeToTileIndex).forEach(([, biomeTileIndex]) => {
+      this.createTileMaterial(biomeTileIndex, biomeTileIndex, tilesPerRow, texture);
     });
 
+    // Create material for outline (unexplored tiles)
     this.createTileMaterial(BiomeTileIndex.Outline, BiomeTileIndex.Outline, tilesPerRow, texture, 0.3);
   }
 
@@ -48,6 +50,11 @@ export class BiomeTileRenderer extends BaseTileRenderer<BiomeTileIndex> {
     }
 
     this.createSingleTileSprite(hexKey, tileId, cachedPosition, row, false);
+    console.log("[ADDING-TILE] [BiomeTileRenderer] Created tile sprite", hexKey, tileId);
+  }
+
+  public async ensureMaterialsReady(): Promise<void> {
+    await this.initializeTileMaterials();
   }
 
   public addTile(col: number, row: number, biome?: BiomeType, isExplored: boolean = true): void {
@@ -56,7 +63,7 @@ export class BiomeTileRenderer extends BaseTileRenderer<BiomeTileIndex> {
     if (this.sprites.has(hexKey)) {
       return;
     }
-
+    console.log("[ADDING-TILE] [BiomeTileRenderer] Adding tile", hexKey, biome, isExplored);
     this.createTileSprite(col, row, biome, isExplored);
   }
 
