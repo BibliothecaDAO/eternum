@@ -1758,3 +1758,4 @@ export class HexagonMap {
       }
     });
   }
+}
