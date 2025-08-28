@@ -9,6 +9,7 @@ import {
   ExplorerMoveSystemUpdate,
   ExplorerTroopsSystemUpdate,
   getBlockTimestamp,
+  isRelicActive,
   Position,
   QuestSystemUpdate,
   RelicEffectSystemUpdate,
@@ -19,7 +20,7 @@ import {
   WorldUpdateListener,
 } from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
-import { BiomeType, FELT_CENTER, HexEntityInfo, ID, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BiomeType, FELT_CENTER, HexEntityInfo, ID, RelicEffect, TroopTier, TroopType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { getMapFromTorii } from "../../../../../app/dojo/queries";
 import {
@@ -102,6 +103,15 @@ export class HexagonMap {
 
   private pendingArmyMovements: Set<number> = new Set();
 
+  // Relic effects storage - holds active relic effects for each army
+  private armyRelicEffects: Map<number, Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void; instance?: any } }>> = new Map();
+  
+  // Pending relic effects store - holds relic effects for entities that aren't loaded yet
+  private pendingRelicEffects: Map<number, Set<{ relicResourceId: number; effect: RelicEffect }>> = new Map();
+  
+  // Relic effect validation timer
+  private relicValidationInterval: NodeJS.Timeout | null = null;
+
   constructor(
     scene: THREE.Scene,
     dojo: DojoResult,
@@ -143,7 +153,7 @@ export class HexagonMap {
     this.systemManager.Quest.onTileUpdate((update) => this.updateQuestHexes(update));
     this.systemManager.Chest.onTileUpdate((update) => this.updateChestHexes(update));
     this.systemManager.Chest.onDeadChest((entityId) => this.deleteChest(entityId));
-    this.systemManager.RelicEffect.onExplorerTroopsUpdate((update) => this.handleRelicEffectUpdate(update));
+    this.systemManager.RelicEffect.onExplorerTroopsUpdate(async (update) => this.handleRelicEffectUpdate(update));
     this.systemManager.RelicEffect.onStructureGuardUpdate((update) => this.handleRelicEffectUpdate(update));
     this.systemManager.RelicEffect.onStructureProductionUpdate((update) => this.handleRelicEffectUpdate(update));
     this.systemManager.ExplorerMove.onExplorerMoveEventUpdate((update) => this.handleExplorerMoveUpdate(update));
@@ -157,6 +167,9 @@ export class HexagonMap {
     this.GUIFolder = GUIManager.addFolder(folderName);
     this.GUIFolder.add(this, "moveCameraToColRow");
     this.GUIFolder.add(this, "getPerformanceSummary").name("Performance Summary");
+    
+    // Start relic effect validation timer (every 5 seconds)
+    this.startRelicValidationTimer();
   }
 
   private initializeStaticAssets(): void {
@@ -718,6 +731,16 @@ export class HexagonMap {
       effect.end();
     });
     this.activeTravelEffects.clear();
+    
+    // Stop relic validation timer
+    this.stopRelicValidationTimer();
+    
+    // Clean up relic effects
+    for (const [entityId] of this.armyRelicEffects) {
+      this.updateArmyRelicEffects(entityId, []);
+    }
+    this.armyRelicEffects.clear();
+    this.pendingRelicEffects.clear();
 
     if (this.GUIFolder) {
       this.GUIFolder.destroy();
@@ -907,7 +930,7 @@ export class HexagonMap {
     }
   }
 
-  public updateArmyHexes(update: ArmySystemUpdate) {
+  public async updateArmyHexes(update: ArmySystemUpdate) {
     const {
       hexCoords: { col, row },
       ownerAddress,
@@ -967,6 +990,9 @@ export class HexagonMap {
       };
 
       this.armyManager.addObject(army);
+      
+      // Apply any pending relic effects for this newly added army
+      await this.applyPendingRelicEffects(entityId);
 
       if (!this.armyHexes.has(newPos.col)) {
         this.armyHexes.set(newPos.col, new Map());
@@ -1147,6 +1173,12 @@ export class HexagonMap {
   }
 
   public deleteArmy(entityId: number) {
+    // Clear any relic effects for this army
+    this.updateArmyRelicEffects(entityId, []);
+    
+    // Clear any pending relic effects
+    this.clearPendingRelicEffects(entityId);
+    
     const oldPos = this.armiesPositions.get(entityId);
     if (oldPos) {
       this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
@@ -1443,8 +1475,59 @@ export class HexagonMap {
     }
   }
 
-  private handleRelicEffectUpdate(update: RelicEffectSystemUpdate): void {
-    console.log("[HexagonMap] Relic effect update:", update);
+  /**
+   * Handle relic effect updates from the game system
+   * @param update The relic effect update containing entity ID and array of relic effects
+   */
+  private async handleRelicEffectUpdate(update: RelicEffectSystemUpdate) {
+    const { entityId, relicEffects } = update;
+
+    let entityFound = false;
+
+    // Check if this is an army entity
+    const army = this.armyManager.getObject(entityId);
+    if (army) {
+      // Convert RelicEffectWithEndTick to the format expected by updateRelicEffects
+      const { currentArmiesTick } = getBlockTimestamp();
+      const newEffects = relicEffects.map((relicEffect) => ({
+        relicNumber: relicEffect.id,
+        effect: {
+          start_tick: currentArmiesTick,
+          end_tick: relicEffect.endTick,
+          usage_left: 1,
+        },
+      }));
+
+      await this.updateArmyRelicEffects(entityId, newEffects);
+      entityFound = true;
+    }
+
+    // If entity is not currently loaded, store as pending effects
+    if (!entityFound) {
+      // Get or create the entity's pending effects set
+      let entityPendingSet = this.pendingRelicEffects.get(entityId);
+      if (!entityPendingSet) {
+        entityPendingSet = new Set();
+        this.pendingRelicEffects.set(entityId, entityPendingSet);
+      }
+
+      // Clear existing pending effects for this entity and add new ones
+      entityPendingSet.clear();
+      for (const relicEffect of relicEffects) {
+        entityPendingSet.add({
+          relicResourceId: relicEffect.id,
+          effect: {
+            end_tick: relicEffect.endTick,
+            usage_left: 1,
+          },
+        });
+      }
+
+      // If no effects, remove the entity from pending
+      if (entityPendingSet.size === 0) {
+        this.pendingRelicEffects.delete(entityId);
+      }
+    }
   }
 
   private handleExplorerMoveUpdate(update: ExplorerMoveSystemUpdate): void {
@@ -1459,5 +1542,250 @@ export class HexagonMap {
         );
       }
     }, 500);
+  }
+  
+  /**
+   * Update army relic effects and display them visually
+   */
+  public async updateArmyRelicEffects(entityId: number, newRelicEffects: Array<{ relicNumber: number; effect: RelicEffect }>) {
+    const army = this.armyManager.getObject(entityId);
+    if (!army) {
+      console.warn(`Army ${entityId} not found for relic effects update`);
+      return;
+    }
+
+    const currentEffects = this.armyRelicEffects.get(entityId) || [];
+    const currentRelicNumbers = new Set(currentEffects.map((e) => e.relicNumber));
+    const newRelicNumbers = new Set(newRelicEffects.map((e) => e.relicNumber));
+
+    // Remove effects that are no longer in the new list
+    for (const currentEffect of currentEffects) {
+      if (!newRelicNumbers.has(currentEffect.relicNumber)) {
+        currentEffect.fx.end();
+      }
+    }
+
+    // Add new effects that weren't previously active
+    const effectsToAdd: Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void; instance?: any } }> = [];
+    for (const newEffect of newRelicEffects) {
+      if (!currentRelicNumbers.has(newEffect.relicNumber)) {
+        try {
+          const position = this.getArmyWorldPosition(army);
+          position.y += 1.5;
+
+          // Register and play the relic effect
+          await this.registerRelicFX(newEffect.relicNumber);
+
+          // Play the relic effect
+          const fx = this.fxManager.playFxAtCoords(
+            `relic_${newEffect.relicNumber}`,
+            position.x,
+            position.y,
+            position.z,
+            0.8,
+            undefined,
+            true,
+          );
+
+          effectsToAdd.push({ relicNumber: newEffect.relicNumber, effect: newEffect.effect, fx });
+        } catch (error) {
+          console.error(`Failed to add relic effect ${newEffect.relicNumber} for army ${entityId}:`, error);
+        }
+      }
+    }
+
+    // Update the stored effects
+    if (newRelicEffects.length === 0) {
+      this.armyRelicEffects.delete(entityId);
+    } else {
+      // Keep existing effects that are still in the new list, add new ones
+      const updatedEffects = currentEffects.filter((e) => newRelicNumbers.has(e.relicNumber)).concat(effectsToAdd);
+      this.armyRelicEffects.set(entityId, updatedEffects);
+    }
+  }
+  
+  /**
+   * Register a relic FX texture if not already registered
+   */
+  private async registerRelicFX(relicNumber: number): Promise<void> {
+    const fxType = `relic_${relicNumber}`;
+    
+    // Check if this relic FX is already registered
+    if (this.fxManager['fxConfigs'].has(fxType)) {
+      return;
+    }
+    
+    // Register the relic FX
+    const textureUrl = `/images/resources/${relicNumber}.png`;
+    
+    return new Promise((resolve, reject) => {
+      new THREE.TextureLoader().load(
+        textureUrl,
+        (loadedTexture) => {
+          loadedTexture.colorSpace = THREE.SRGBColorSpace;
+          loadedTexture.minFilter = THREE.LinearFilter;
+          loadedTexture.magFilter = THREE.LinearFilter;
+          
+          // Register the FX configuration
+          this.fxManager['fxConfigs'].set(fxType, {
+            textureUrl,
+            animate: (fx: any, t: number) => {
+              // Orbital animation around the army
+              const orbitRadius = 0.3;
+              const orbitSpeed = 2;
+              const hoverHeight = 0.2;
+              
+              // Circular orbit
+              const angle = t * orbitSpeed;
+              const x = Math.cos(angle) * orbitRadius;
+              const z = Math.sin(angle) * orbitRadius;
+              const y = Math.sin(t * 3) * hoverHeight;
+              
+              fx.group.position.x = fx.initialX + x;
+              fx.group.position.y = fx.initialY + y;
+              fx.group.position.z = fx.initialZ + z;
+              
+              // Fade in
+              if (t < 0.5) {
+                fx.material.opacity = t / 0.5;
+              } else {
+                fx.material.opacity = 1;
+              }
+              
+              // Gentle scaling pulse
+              const scale = 0.8 + Math.sin(t * 4) * 0.1;
+              fx.sprite.scale.set(scale, scale, scale);
+              
+              return true; // Continue animation indefinitely
+            },
+            isInfinite: true,
+          });
+          
+          this.fxManager['textures'].set(textureUrl, loadedTexture);
+          resolve();
+        },
+        undefined,
+        (error) => {
+          console.warn(`Failed to load relic texture for ${relicNumber}:`, error);
+          reject(error);
+        }
+      );
+    });
+  }
+  
+  /**
+   * Get army relic effects for external access
+   */
+  public getArmyRelicEffects(entityId: number): { relicId: number; effect: RelicEffect }[] {
+    const effects = this.armyRelicEffects.get(entityId);
+    return effects ? effects.map((effect) => ({ relicId: effect.relicNumber, effect: effect.effect })) : [];
+  }
+  
+  /**
+   * Get world position for an army
+   */
+  private getArmyWorldPosition(army: ArmyObject): THREE.Vector3 {
+    getWorldPositionForHex({ col: army.col, row: army.row }, true, this.tempVector3);
+    return this.tempVector3.clone();
+  }
+  
+  /**
+   * Apply all pending relic effects for an entity (called when entity is loaded)
+   */
+  private async applyPendingRelicEffects(entityId: number) {
+    const entityPendingSet = this.pendingRelicEffects.get(entityId);
+    if (!entityPendingSet || entityPendingSet.size === 0) return;
+
+    // Check if this is an army entity
+    const army = this.armyManager.getObject(entityId);
+    if (army) {
+      try {
+        // Convert pending relics to array format for updateRelicEffects
+        const relicEffectsArray = Array.from(entityPendingSet).map((pendingRelic) => ({
+          relicNumber: pendingRelic.relicResourceId,
+          effect: pendingRelic.effect,
+        }));
+
+        await this.updateArmyRelicEffects(entityId, relicEffectsArray);
+        console.log(`Applied ${relicEffectsArray.length} pending relic effects to army ${entityId}`);
+      } catch (error) {
+        console.error(`Failed to apply pending relic effects to army ${entityId}:`, error);
+      }
+      
+      // Clear the pending effects
+      this.pendingRelicEffects.delete(entityId);
+    }
+  }
+  
+  /**
+   * Clear all pending relic effects for an entity (called when entity is removed)
+   */
+  private clearPendingRelicEffects(entityId: number) {
+    const entityPendingSet = this.pendingRelicEffects.get(entityId);
+    if (entityPendingSet) {
+      console.log(`Cleared ${entityPendingSet.size} pending relic effects for entity ${entityId}`);
+      this.pendingRelicEffects.delete(entityId);
+    }
+  }
+  
+  /**
+   * Start the periodic relic effect validation timer
+   */
+  private startRelicValidationTimer() {
+    // Clear any existing timer
+    this.stopRelicValidationTimer();
+
+    // Set up new timer to run every 5 seconds
+    this.relicValidationInterval = setInterval(() => {
+      this.validateActiveRelicEffects();
+    }, 5000);
+  }
+
+  /**
+   * Stop the periodic relic effect validation timer
+   */
+  private stopRelicValidationTimer() {
+    if (this.relicValidationInterval) {
+      clearInterval(this.relicValidationInterval);
+      this.relicValidationInterval = null;
+    }
+  }
+
+  /**
+   * Validate all currently displayed relic effects and remove inactive ones
+   */
+  private async validateActiveRelicEffects() {
+    try {
+      const { currentArmiesTick } = getBlockTimestamp();
+      let removedCount = 0;
+
+      // Validate army relic effects
+      const armies = this.armyManager.getAllObjects();
+      for (const army of armies) {
+        const currentRelics = this.getArmyRelicEffects(army.id);
+        if (currentRelics.length > 0) {
+          // Filter out inactive relics
+          const activeRelics = currentRelics.filter((relic) => isRelicActive(relic.effect, currentArmiesTick));
+
+          // If some relics were removed, update the effects
+          if (activeRelics.length < currentRelics.length) {
+            const removedThisArmy = currentRelics.length - activeRelics.length;
+            console.log(`Removing ${removedThisArmy} inactive relic effect(s) from army: entityId=${army.id}`);
+
+            await this.updateArmyRelicEffects(
+              army.id,
+              activeRelics.map((r) => ({ relicNumber: r.relicId, effect: r.effect })),
+            );
+            removedCount += removedThisArmy;
+          }
+        }
+      }
+
+      if (removedCount > 0) {
+        console.log(`Removed ${removedCount} total inactive relic effects`);
+      }
+    } catch (error) {
+      console.error("Error during relic effect validation:", error);
+    }
   }
 }

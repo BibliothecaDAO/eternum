@@ -7,11 +7,15 @@ import { ArmyLabelData, ArmyLabelType } from "../utils/labels/label-factory";
 import { HEX_SIZE, loggedInAccount } from "../utils/utils";
 import { EntityManager } from "./entity-manager";
 import { ArmyObject } from "./types";
+import { RelicEffect } from "@bibliothecadao/types";
 
 export class ArmyManager extends EntityManager<ArmyObject> {
   private labels: Map<number, CSS2DObject> = new Map();
   private movingObjects: Set<number> = new Set();
   private labelAttachmentState: Map<number, boolean> = new Map();
+  
+  // Relic effects storage - holds active relic effects for each army
+  private armyRelicEffects: Map<number, Array<{ relicNumber: number; effect: RelicEffect; fx?: { end: () => void; instance?: any } }>> = new Map();
 
   protected renderer: UnitTileRenderer;
 
@@ -115,6 +119,10 @@ export class ArmyManager extends EntityManager<ArmyObject> {
   private convertArmyToLabelData(army: ArmyObject): ArmyLabelData {
     const playerAddress = loggedInAccount();
     const isPlayerArmy = army.owner && army.owner.toString() === playerAddress?.toString();
+    
+    // Get relic effects count for display
+    const relicEffects = this.armyRelicEffects.get(army.id) || [];
+    const activeRelicCount = relicEffects.length;
 
     return {
       entityId: army.id,
@@ -132,6 +140,8 @@ export class ArmyManager extends EntityManager<ArmyObject> {
       troopCount: army.troopCount || 0,
       currentStamina: isNaN(army.currentStamina ?? 0) ? 0 : (army.currentStamina ?? 0),
       maxStamina: isNaN(army.maxStamina ?? 0) ? 0 : (army.maxStamina ?? 0),
+      // Add relic effects info if any are active
+      ...(activeRelicCount > 0 && { relicEffectsCount: activeRelicCount }),
     };
   }
 
@@ -348,7 +358,70 @@ export class ArmyManager extends EntityManager<ArmyObject> {
     return this.movingObjects.has(objectId);
   }
 
+  /**
+   * Update army relic effects (for compatibility with desktop version)
+   */
+  public async updateRelicEffects(entityId: number, newRelicEffects: Array<{ relicNumber: number; effect: RelicEffect }>) {
+    const army = this.objects.get(entityId);
+    if (!army) {
+      console.warn(`Army ${entityId} not found for relic effects update`);
+      return;
+    }
+
+    const currentEffects = this.armyRelicEffects.get(entityId) || [];
+    const currentRelicNumbers = new Set(currentEffects.map((e) => e.relicNumber));
+    const newRelicNumbers = new Set(newRelicEffects.map((e) => e.relicNumber));
+
+    // Remove effects that are no longer in the new list
+    for (const currentEffect of currentEffects) {
+      if (!newRelicNumbers.has(currentEffect.relicNumber)) {
+        if (currentEffect.fx) {
+          currentEffect.fx.end();
+        }
+      }
+    }
+
+    // Add new effects that weren't previously active
+    const effectsToAdd: Array<{ relicNumber: number; effect: RelicEffect; fx?: { end: () => void; instance?: any } }> = [];
+    for (const newEffect of newRelicEffects) {
+      if (!currentRelicNumbers.has(newEffect.relicNumber)) {
+        // For mobile, we don't create visual FX here - that's handled by the HexagonMap
+        // We just store the effect data for label updates and validation
+        effectsToAdd.push({ 
+          relicNumber: newEffect.relicNumber, 
+          effect: newEffect.effect 
+        });
+      }
+    }
+
+    // Update the stored effects
+    if (newRelicEffects.length === 0) {
+      this.armyRelicEffects.delete(entityId);
+    } else {
+      // Keep existing effects that are still in the new list, add new ones
+      const updatedEffects = currentEffects.filter((e) => newRelicNumbers.has(e.relicNumber)).concat(effectsToAdd);
+      this.armyRelicEffects.set(entityId, updatedEffects);
+    }
+    
+    // Update the army label to show relic effects count
+    this.updateLabelContent(army);
+  }
+  
+  /**
+   * Get army relic effects for external access
+   */
+  public getArmyRelicEffects(entityId: number): { relicId: number; effect: RelicEffect }[] {
+    const effects = this.armyRelicEffects.get(entityId);
+    return effects ? effects.map((effect) => ({ relicId: effect.relicNumber, effect: effect.effect })) : [];
+  }
+
   public dispose(): void {
+    // Clean up relic effects
+    for (const [entityId] of this.armyRelicEffects) {
+      this.updateRelicEffects(entityId, []);
+    }
+    this.armyRelicEffects.clear();
+    
     this.labels.forEach((label) => {
       if (label.element && label.element.parentNode) {
         label.element.parentNode.removeChild(label.element);
