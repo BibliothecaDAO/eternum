@@ -65,7 +65,7 @@ export const HexEntityDetailsDrawer = ({ open, onOpenChange }: HexEntityDetailsD
 
   const getDrawerTitle = () => {
     if (!selectedHex) return "Hex Details";
-    return `Hex (${displayCoordinates?.col}, ${displayCoordinates?.row})`;
+    return `Hex (${displayCoordinates?.col - FELT_CENTER}, ${displayCoordinates?.row - FELT_CENTER})`;
   };
 
   return (
