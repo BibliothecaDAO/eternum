@@ -283,6 +283,13 @@ WITH limited_active_orders AS (
   AND tb.balance != "0x0000000000000000000000000000000000000000000000000000000000000000"
   AND tb.account_address = '{trimmedAccountAddress}';
   `,
+  COLLECTIBLE_CLAIMED: `
+    SELECT *
+    FROM [events]
+    WHERE keys LIKE '0x6d9857ff29ce02c8a34db3a4387b1438bd738b0b4c17679553432d8fc11ecb/{contractAddress}/%{playerAddress}/'
+      AND created_at > {minTimestamp}
+    ORDER BY created_at DESC
+  `,
   DONKEY_BURN: `
     SELECT 
         json_extract(data, '$.amount') as amount

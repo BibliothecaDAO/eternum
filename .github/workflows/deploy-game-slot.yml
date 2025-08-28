@@ -6,19 +6,14 @@ env:
   SLOT_NAME: "eternum-blitz-slot-1"
   SLOT_TEAM: "realms-eternum"
   SLOT_AUTH: ${{ secrets.SLOT_AUTH }}
-  SLOT_TIER: "basic"
+  SLOT_TIER: "pro"
   TORII_VERSION: "v1.6.0-alpha.2"
   TORII_CONFIG: "torii-slot.toml"
   NODE_VERSION: "18"
   CI: "true"
-  CONFIG_START_MAIN_AT: ${{ github.event.inputs.config_start_main_at }}
 
 on:
-  # Scheduled deployment every 6 hours
   # schedule:
-  #   - cron: '0 */6 * * *'
-  
-  # Manual trigger
   workflow_dispatch:
     inputs:
       slot_name:
@@ -29,9 +24,6 @@ on:
         description: 'Torii version to deploy'
         required: false
         default: 'v1.6.0-alpha.2'
-      config_start_main_at:
-        description: 'Unix timestamp of when game should start. It should be at least 1h, 20 mins from now'
-        required: true
 
 jobs:
   deploy-slot:
@@ -92,6 +84,38 @@ jobs:
       - name: 📚 Install Dependencies
         run: pnpm install
 
+      - name: ⏰ Calculate Game Start Time
+        id: game-timing
+        run: |
+          # Calculate game start time: round down to current hour, then add 2 hours 30 minutes (Unix timestamp)
+          CURRENT_HOUR_START=$(date -d "$(date '+%Y-%m-%d %H:00:00')" +%s)
+          GAME_START_TIMESTAMP=$((CURRENT_HOUR_START + 9000))
+          
+          # Create Discord timestamp format for automatic timezone conversion
+          DISCORD_TIMESTAMP="<t:$GAME_START_TIMESTAMP:F>"
+          GAME_START_READABLE=$(date -d "@$GAME_START_TIMESTAMP" -u '+%Y-%m-%d %H:%M:%S UTC')
+          
+          # Calculate registration start time (10 minutes from now)
+          CURRENT_TIMESTAMP=$(date +%s)
+          REGISTRATION_START_TIMESTAMP=$((CURRENT_TIMESTAMP + 600))
+          REGISTRATION_DISCORD_TIMESTAMP="<t:$REGISTRATION_START_TIMESTAMP:R>"
+          
+          # Calculate next deployment time (5 hours from now)
+          NEXT_DEPLOYMENT_TIMESTAMP=$((CURRENT_TIMESTAMP + 18000))
+          NEXT_DEPLOYMENT_DISCORD_TIMESTAMP="<t:$NEXT_DEPLOYMENT_TIMESTAMP:R>"
+          
+          echo "🕐 Game start time set to: $GAME_START_READABLE"
+          echo "🕐 Discord timestamp: $DISCORD_TIMESTAMP"
+          echo "🕐 Registration timestamp: $REGISTRATION_DISCORD_TIMESTAMP"
+          echo "🕐 Next deployment timestamp: $NEXT_DEPLOYMENT_DISCORD_TIMESTAMP"
+          echo "🕐 Unix timestamp: $GAME_START_TIMESTAMP"
+          
+          echo "timestamp=$GAME_START_TIMESTAMP" >> $GITHUB_OUTPUT
+          echo "readable=$GAME_START_READABLE" >> $GITHUB_OUTPUT
+          echo "discord_timestamp=$DISCORD_TIMESTAMP" >> $GITHUB_OUTPUT
+          echo "registration_timestamp=$REGISTRATION_DISCORD_TIMESTAMP" >> $GITHUB_OUTPUT
+          echo "next_deployment_timestamp=$NEXT_DEPLOYMENT_DISCORD_TIMESTAMP" >> $GITHUB_OUTPUT
+
       - name: 🎲 Generate New Seed
         id: generate-seed
         working-directory: ./contracts/game
@@ -112,17 +136,25 @@ jobs:
           grep "^seed = " dojo_slot.toml
 
       - name: 🏗️ Run Game Migration
-        working-directory: ./contracts
-        run: |
-          echo "🚀 Starting game migration for slot..."
-          pnpm run game:migrate:slot
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 20
+          max_attempts: 10
+          retry_on: error
+          on_retry_command: echo "Retrying game migration due to network error (possibly 504 Gateway Timeout)..."
+          command: |
+            cd contracts
+            echo "🚀 Starting game migration for slot..."
+            pnpm run game:migrate:slot
 
       - name: ⚙️ Deploy Configuration
         working-directory: ./contracts
         run: |
-          CONFIG_START_MAIN_AT="${{ github.event.inputs.config_start_main_at || env.CONFIG_START_MAIN_AT }}"
+          CONFIG_START_MAIN_AT="${{ steps.game-timing.outputs.timestamp }}"
+          export CONFIG_START_MAIN_AT
 
           echo "🔧 Deploying slot configuration..."
+          echo "🕐 Game will start at: ${{ steps.game-timing.outputs.readable }}"
           pnpm run config:deploy:slot
 
       - name: 🌍 Update Torii Configuration
@@ -150,7 +182,7 @@ jobs:
           echo "  Version: $TORII_VERSION"
           echo "  Config: ${{ env.TORII_CONFIG }}"
           
-          cd contracts/game && slot d create \
+          cd contracts/game && slot d create -f \
             --team ${{ env.SLOT_TEAM }} \
             --tier ${{ env.SLOT_TIER }} \
             $SLOT_NAME torii \
@@ -178,10 +210,84 @@ jobs:
           echo "| **Seed** | ✅ Updated | \`${{ steps.generate-seed.outputs.new_seed }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| **Game Migration** | ✅ Completed | Slot profile |" >> $GITHUB_STEP_SUMMARY
           echo "| **Configuration** | ✅ Deployed | Slot environment |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Game Start Time** | 🕐 Scheduled | ${{ steps.game-timing.outputs.readable }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Torii Slot** | ✅ Created | \`${{ github.event.inputs.slot_name || env.SLOT_NAME }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| **Version** | 📦 ${{ github.event.inputs.torii_version || env.TORII_VERSION }} | Latest deployment |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Deployment completed at:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+
+      # Discord Success Notification
+      - name: 📢 Discord Success Notification
+        if: success()
+        run: |
+          curl -X POST "${{ secrets.DISCORD_BLITZ_DEPLOY_SUCCESS_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "Babe wake up! New Blitz game just dropped! 🚀",
+                "description": "New game has been deployed",
+                "color": 65280,
+                "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'",
+                "fields": [
+                  {
+                    "name": "🕐 Game Starts",
+                    "value": "${{ steps.game-timing.outputs.discord_timestamp }}",
+                    "inline": false
+                  },
+                  {
+                    "name": "⚡ Registration Starts",
+                    "value": "${{ steps.game-timing.outputs.registration_timestamp }}",
+                    "inline": true
+                  },
+                  {
+                    "name": "⚡ Next Deployment",
+                    "value": "${{ steps.game-timing.outputs.next_deployment_timestamp }}",
+                    "inline": true
+                  }
+                ],
+                "footer": {
+                  "text": "Eternum Blitz Auto-Deploy Bot"
+                },
+                "thumbnail": {
+                  "url": "https://eternum.realms.world/images/buildings/construction/farm.png"
+                }
+              }]
+            }'
+
+      # Discord Failure Notification
+      - name: 🚨 Discord Failure Notification
+        if: failure()
+        run: |
+          curl -X POST "${{ secrets.DISCORD_BLITZ_DEPLOY_FAILURE_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "❌ Eternum Blitz Deployment Failed!",
+                "description": "The deployment encountered an error and needs attention.",
+                "color": 16711680,
+                "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'",
+                "fields": [
+                  {
+                    "name": "🌿 Branch",
+                    "value": "`${{ env.BRANCH }}`",
+                    "inline": true
+                  },
+                  {
+                    "name": "🏷️ Slot Name",
+                    "value": "`${{ github.event.inputs.slot_name || env.SLOT_NAME }}`",
+                    "inline": true
+                  },
+                  {
+                    "name": "🔗 Workflow Run",
+                    "value": "[View Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})",
+                    "inline": false
+                  }
+                ],
+                "footer": {
+                  "text": "Eternum Auto-Deploy Bot"
+                }
+              }]
+            }'
 
       - name: 🚨 Notify on Failure
         if: failure()

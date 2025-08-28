@@ -6,7 +6,7 @@ import { MergedNftData } from "@/types";
 import { RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types";
 import { useAccount } from "@starknet-react/core";
 import { ArrowRightLeft, Check, Plus } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { formatUnits } from "viem";
 import { Button } from "../ui/button";
 import { ResourceIcon } from "../ui/elements/resource-icon";
@@ -17,46 +17,25 @@ interface TokenCardProps {
   isSelected?: boolean;
   onToggleSelection?: () => void;
   toggleNftSelection?: () => void;
+  totalOwnedChests?: number;
 }
 
-export const TokenCard = ({ token, isSelected = false, onToggleSelection, toggleNftSelection }: TokenCardProps) => {
+export const TokenCard = ({
+  token,
+  isSelected = false,
+  onToggleSelection,
+  toggleNftSelection,
+  totalOwnedChests = 0,
+}: TokenCardProps) => {
   const { token_id, metadata, contract_address } = token;
   const { address: accountAddress } = useAccount();
   const marketplaceActions = useMarketplace();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState<string | null>(null);
 
   const isOwner = token.account_address === trimAddress(accountAddress);
   const collection = getCollectionByAddress(contract_address);
   const collectionName = collection?.name;
-  // Calculate time remaining for auctions about to expire
-  useEffect(() => {
-    if (!token.expiration) return;
-
-    const expirationTime = Number(token.expiration) * 1000;
-    const updateCountdown = () => {
-      const now = Date.now();
-      const diff = expirationTime - now;
-
-      if (diff <= 0) {
-        setTimeRemaining("Expired");
-        return;
-      }
-
-      // Only show countdown if less than an hour remains
-      if (diff < 60 * 60 * 1000) {
-        const minutes = Math.floor((diff / (1000 * 60)) % 60);
-        const seconds = Math.floor((diff / 1000) % 60);
-        setTimeRemaining(`${minutes}m ${seconds}s remaining`);
-      } else {
-        setTimeRemaining(null);
-      }
-    };
-
-    updateCountdown();
-    const interval = setInterval(updateCountdown, 1000);
-    return () => clearInterval(interval);
-  }, [token.expiration]);
+  const isLootChest = collection?.name === "Loot Chest";
 
   const handleCardClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -168,16 +147,6 @@ export const TokenCard = ({ token, isSelected = false, onToggleSelection, toggle
               ) : (
                 <div className="text-xl text-muted-foreground">Not Listed</div>
               )}
-
-              {/*listingActive && (
-                <div className="text-sm text-muted-foreground mt-1">
-                  {timeRemaining ? (
-                    <span className="text-red-500 font-medium">{timeRemaining}</span>
-                  ) : (
-                    `Expires ${new Date(Number(pass.expiration) * 1000).toLocaleString()}`
-                  )}
-                </div>
-              )}*/}
             </div>
           </div>
         </CardContent>
@@ -187,14 +156,22 @@ export const TokenCard = ({ token, isSelected = false, onToggleSelection, toggle
           ${isSelected ? "bg-gold/5" : ""}`}
         >
           <div className="flex w-full gap-4">
-            <Button
-              disabled={isSelected}
-              variant={isOwner ? "outline" : "default"}
-              className="w-full"
-              onClick={handleCardClick}
-            >
-              {isOwner ? "Manage" : isSelected ? "Selected" : "Buy Now"}
-            </Button>
+            {isOwner && isLootChest ? (
+              <>
+                <Button disabled={isSelected} variant="outline" className="w-full" onClick={handleCardClick}>
+                  Manage
+                </Button>
+              </>
+            ) : (
+              <Button
+                disabled={isSelected}
+                variant={isOwner ? "outline" : "default"}
+                className="w-full"
+                onClick={handleCardClick}
+              >
+                {isOwner ? "Manage" : isSelected ? "Selected" : "Buy Now"}
+              </Button>
+            )}
 
             {isOwner && (
               <Button variant="default" size="icon" onClick={handleTransferClick} title="Transfer Pass">
@@ -205,10 +182,11 @@ export const TokenCard = ({ token, isSelected = false, onToggleSelection, toggle
         </CardFooter>
       </Card>
 
-      {collection?.id && (
+      {collection?.id && isModalOpen && (
         <TokenDetailModal
-          isOpen={isModalOpen}
           onOpenChange={setIsModalOpen}
+          isOpen={isModalOpen}
+          isLootChest={isLootChest}
           tokenData={token}
           isOwner={isOwner}
           marketplaceActions={marketplaceActions}

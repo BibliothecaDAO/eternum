@@ -1,4 +1,6 @@
 import {
+  getCosmeticsAddress,
+  getCosmeticsClaimAddress,
   getLootChestsAddress,
   getLordsAddress,
   getMarketplaceAddress,
@@ -11,18 +13,23 @@ export const lordsAddress = getLordsAddress();
 export const seasonPassAddress = getSeasonPassAddress();
 export const realmsAddress = getRealmsAddress();
 export const marketplaceAddress = getMarketplaceAddress();
-const lootChestsAddress = getLootChestsAddress();
+export const lootChestsAddress = getLootChestsAddress();
+const cosmeticsAddress = getCosmeticsAddress();
+export const cosmeticsClaimAddress = getCosmeticsClaimAddress();
+
 // Collection IDs for different networks
 const COLLECTION_IDS = {
   mainnet: {
     "season-passes": 1,
     realms: 2,
     "loot-chests": 3,
+    cosmetics: 4, // TODO: Replace with actual collection ID
   },
   sepolia: {
     "season-passes": 3,
     realms: 4,
     "loot-chests": 5,
+    cosmetics: 6, // TODO: Replace with actual collection ID
   },
 } as const;
 
@@ -47,6 +54,12 @@ export const marketplaceCollections = {
     id: COLLECTION_IDS[currentNetwork]["loot-chests"],
     name: "Loot Chest",
     image: "/collections/LootChest.png",
+  },
+  cosmetics: {
+    address: cosmeticsAddress,
+    id: COLLECTION_IDS[currentNetwork].cosmetics,
+    name: "Cosmetics",
+    image: "/collections/cosmetics.png", // TODO: Replace with actual cosmetics image
   },
 } as const;
 
