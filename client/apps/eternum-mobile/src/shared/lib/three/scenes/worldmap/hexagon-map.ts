@@ -202,9 +202,13 @@ export class HexagonMap {
         `\n=== Updating visible hexes for center chunk (${centerChunkX}, ${centerChunkZ}) with radius (${radiusX}, ${radiusZ}) ===`,
       );
 
-      const chunkKey = `${centerChunkZ * HexagonMap.CHUNK_SIZE},${centerChunkX * HexagonMap.CHUNK_SIZE}`;
       const entityFetchStartTime = performance.now();
-      this.computeTileEntities(chunkKey);
+      for (let x = centerChunkX - radiusX; x <= centerChunkX + radiusX; x++) {
+        for (let z = centerChunkZ - radiusZ; z <= centerChunkZ + radiusZ; z++) {
+          const chunkKey = `${z * HexagonMap.CHUNK_SIZE},${x * HexagonMap.CHUNK_SIZE}`;
+          this.computeTileEntities(chunkKey);
+        }
+      }
       const entityFetchTime = performance.now() - entityFetchStartTime;
       console.log(`[CHUNK-TIMING] Compute tile entities: ${entityFetchTime.toFixed(2)}ms`);
       this.recordPerformanceMetric("Compute Tile Entities", entityFetchTime);
