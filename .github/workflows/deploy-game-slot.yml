@@ -25,7 +25,6 @@ on:
         required: false
         default: 'v1.6.0-alpha.2'
 
-
 jobs:
   deploy-slot:
     name: 🎯 Deploy New Game on Slot
