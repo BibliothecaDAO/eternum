@@ -10,13 +10,14 @@ import { ArmyObject } from "./types";
 
 export class ArmyManager extends EntityManager<ArmyObject> {
   private labels: Map<number, CSS2DObject> = new Map();
-  private unitTileRenderer: UnitTileRenderer;
   private movingObjects: Set<number> = new Set();
   private labelAttachmentState: Map<number, boolean> = new Map();
 
+  protected renderer: UnitTileRenderer;
+
   constructor(scene: THREE.Scene) {
     super(scene);
-    this.unitTileRenderer = new UnitTileRenderer(scene);
+    this.renderer = new UnitTileRenderer(scene);
   }
 
   public addObject(object: ArmyObject): void {
@@ -58,7 +59,7 @@ export class ArmyManager extends EntityManager<ArmyObject> {
   public removeObject(objectId: number): void {
     const army = this.objects.get(objectId);
     if (army) {
-      this.unitTileRenderer.removeTile(army.col, army.row);
+      this.renderer.removeTile(army.col, army.row);
     }
     this.removeLabel(objectId);
     this.objects.delete(objectId);
@@ -84,7 +85,7 @@ export class ArmyManager extends EntityManager<ArmyObject> {
     // Set initial attachment state based on visibility bounds
     const shouldBeVisible = this.isHexVisible(army.col, army.row);
     if (shouldBeVisible) {
-      this.unitTileRenderer.addObjectToTileGroup(army.col, army.row, label);
+      this.renderer.addObjectToTileGroup(army.col, army.row, label);
       this.labelAttachmentState.set(army.id, true);
     } else {
       this.labelAttachmentState.set(army.id, false);
@@ -92,7 +93,7 @@ export class ArmyManager extends EntityManager<ArmyObject> {
   }
 
   private syncUnitTile(army: ArmyObject): void {
-    this.unitTileRenderer.addTile(army.col, army.row, army.troopType, army.troopTier, false, true);
+    this.renderer.addTile(army.col, army.row, army.troopType, army.troopTier, false, true);
   }
 
   private removeLabel(armyId: number): void {
@@ -101,7 +102,7 @@ export class ArmyManager extends EntityManager<ArmyObject> {
     if (label && army) {
       const isAttached = this.labelAttachmentState.get(armyId) ?? false;
       if (isAttached) {
-        this.unitTileRenderer.removeObjectFromTileGroup(army.col, army.row, label);
+        this.renderer.removeObjectFromTileGroup(army.col, army.row, label);
       }
       if (label.element && label.element.parentNode) {
         label.element.parentNode.removeChild(label.element);
@@ -136,12 +137,12 @@ export class ArmyManager extends EntityManager<ArmyObject> {
 
   public setVisibleBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void {
     this.visibleBounds = bounds;
-    this.unitTileRenderer.setVisibleBounds(bounds);
+    this.renderer.setVisibleBounds(bounds);
     this.updateLabelVisibility();
   }
 
   public getUnitTileRenderer(): UnitTileRenderer {
-    return this.unitTileRenderer;
+    return this.renderer;
   }
 
   private updateLabelVisibility(): void {
@@ -152,10 +153,10 @@ export class ArmyManager extends EntityManager<ArmyObject> {
         const isCurrentlyAttached = this.labelAttachmentState.get(armyId) ?? false;
 
         if (shouldBeVisible && !isCurrentlyAttached) {
-          this.unitTileRenderer.addObjectToTileGroup(army.col, army.row, label);
+          this.renderer.addObjectToTileGroup(army.col, army.row, label);
           this.labelAttachmentState.set(armyId, true);
         } else if (!shouldBeVisible && isCurrentlyAttached) {
-          this.unitTileRenderer.removeObjectFromTileGroup(army.col, army.row, label);
+          this.renderer.removeObjectFromTileGroup(army.col, army.row, label);
           this.labelAttachmentState.set(armyId, false);
         }
       }
@@ -171,7 +172,7 @@ export class ArmyManager extends EntityManager<ArmyObject> {
       isExplored: true,
     }));
 
-    this.unitTileRenderer.updateTilesForHexes(unitTilePositions);
+    this.renderer.updateTilesForHexes(unitTilePositions);
   }
 
   protected updateLabelPosition(objectId: number, col: number, row: number): void {
@@ -185,13 +186,13 @@ export class ArmyManager extends EntityManager<ArmyObject> {
   public updateObjectPosition(objectId: number, col: number, row: number): void {
     const oldArmy = this.objects.get(objectId);
     if (oldArmy) {
-      this.unitTileRenderer.removeTile(oldArmy.col, oldArmy.row);
+      this.renderer.removeTile(oldArmy.col, oldArmy.row);
 
       const label = this.labels.get(objectId);
       if (label) {
         const wasAttached = this.labelAttachmentState.get(objectId) ?? false;
         if (wasAttached) {
-          this.unitTileRenderer.removeObjectFromTileGroup(oldArmy.col, oldArmy.row, label);
+          this.renderer.removeObjectFromTileGroup(oldArmy.col, oldArmy.row, label);
         }
       }
     }
@@ -207,7 +208,7 @@ export class ArmyManager extends EntityManager<ArmyObject> {
       if (label) {
         const shouldBeVisible = this.isHexVisible(col, row);
         if (shouldBeVisible) {
-          this.unitTileRenderer.addObjectToTileGroup(col, row, label);
+          this.renderer.addObjectToTileGroup(col, row, label);
           this.labelAttachmentState.set(objectId, true);
         } else {
           this.labelAttachmentState.set(objectId, false);
@@ -252,12 +253,12 @@ export class ArmyManager extends EntityManager<ArmyObject> {
     const army = this.objects.get(objectId);
 
     if (army) {
-      this.unitTileRenderer.selectTile(army.col, army.row);
+      this.renderer.selectTile(army.col, army.row);
     }
   }
 
   public deselectObject(): void {
-    this.unitTileRenderer.deselectTile();
+    this.renderer.deselectTile();
     this.selectedObjectId = null;
   }
 
@@ -272,7 +273,7 @@ export class ArmyManager extends EntityManager<ArmyObject> {
     // Mark as moving
     this.movingObjects.add(objectId);
 
-    return this.unitTileRenderer.moveTile(startCol, startRow, targetCol, targetRow, duration).then(() => {
+    return this.renderer.moveTile(startCol, startRow, targetCol, targetRow, duration).then(() => {
       // Update army position after movement completes
       army.col = targetCol;
       army.row = targetRow;
@@ -286,10 +287,10 @@ export class ArmyManager extends EntityManager<ArmyObject> {
         const isCurrentlyAttached = this.labelAttachmentState.get(objectId) ?? false;
 
         if (shouldBeVisible && !isCurrentlyAttached) {
-          this.unitTileRenderer.addObjectToTileGroup(targetCol, targetRow, label);
+          this.renderer.addObjectToTileGroup(targetCol, targetRow, label);
           this.labelAttachmentState.set(objectId, true);
         } else if (!shouldBeVisible && isCurrentlyAttached) {
-          this.unitTileRenderer.removeObjectFromTileGroup(targetCol, targetRow, label);
+          this.renderer.removeObjectFromTileGroup(targetCol, targetRow, label);
           this.labelAttachmentState.set(objectId, false);
         }
       }
@@ -316,7 +317,7 @@ export class ArmyManager extends EntityManager<ArmyObject> {
     // Mark as moving
     this.movingObjects.add(objectId);
 
-    return this.unitTileRenderer.moveTileAlongPath(startCol, startRow, path, stepDuration).then(() => {
+    return this.renderer.moveTileAlongPath(startCol, startRow, path, stepDuration).then(() => {
       // Update army position after movement completes
       army.col = finalHex.col;
       army.row = finalHex.row;
@@ -330,10 +331,10 @@ export class ArmyManager extends EntityManager<ArmyObject> {
         const isCurrentlyAttached = this.labelAttachmentState.get(objectId) ?? false;
 
         if (shouldBeVisible && !isCurrentlyAttached) {
-          this.unitTileRenderer.addObjectToTileGroup(finalHex.col, finalHex.row, label);
+          this.renderer.addObjectToTileGroup(finalHex.col, finalHex.row, label);
           this.labelAttachmentState.set(objectId, true);
         } else if (!shouldBeVisible && isCurrentlyAttached) {
-          this.unitTileRenderer.removeObjectFromTileGroup(finalHex.col, finalHex.row, label);
+          this.renderer.removeObjectFromTileGroup(finalHex.col, finalHex.row, label);
           this.labelAttachmentState.set(objectId, false);
         }
       }
@@ -357,6 +358,6 @@ export class ArmyManager extends EntityManager<ArmyObject> {
     this.movingObjects.clear();
     this.labelAttachmentState.clear();
 
-    this.unitTileRenderer.dispose();
+    this.renderer.dispose();
   }
 }

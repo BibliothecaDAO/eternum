@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { BaseTileRenderer } from "../tiles";
 import { MapObject } from "./types";
 
 export abstract class EntityManager<T extends MapObject> {
@@ -6,11 +7,19 @@ export abstract class EntityManager<T extends MapObject> {
   protected objects: Map<number, T> = new Map();
   protected selectedObjectId: number | null = null;
   protected visibleBounds: { minCol: number; maxCol: number; minRow: number; maxRow: number } | null = null;
+  protected renderer: BaseTileRenderer<any> | null = null;
 
   protected tempVector3 = new THREE.Vector3();
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
+  }
+
+  public ensureMaterialsReady(): Promise<void> {
+    if (!this.renderer) {
+      throw new Error("Renderer not set");
+    }
+    return this.renderer.ensureMaterialsReady();
   }
 
   public abstract setVisibleBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void;

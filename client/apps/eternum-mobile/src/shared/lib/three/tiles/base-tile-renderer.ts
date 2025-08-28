@@ -78,6 +78,10 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
     }
   }
 
+  public async ensureMaterialsReady(): Promise<void> {
+    await this.initializeTileMaterials();
+  }
+
   protected abstract createTileMaterials(tilesPerRow: number, texture: THREE.Texture): Promise<void>;
 
   protected createTileMaterial(
@@ -168,6 +172,7 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
     if (!sprite) {
       // If pool is empty, create a new sprite
       const material = this.materials.get(tileId);
+
       if (!material) {
         console.warn(`Material for tileId: ${tileId} not found in ${this.constructor.name}`);
         return;

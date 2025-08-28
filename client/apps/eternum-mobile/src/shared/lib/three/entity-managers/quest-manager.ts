@@ -5,17 +5,17 @@ import { EntityManager } from "./entity-manager";
 import { QuestObject } from "./types";
 
 export class QuestManager extends EntityManager<QuestObject> {
-  private buildingTileRenderer: BuildingTileRenderer;
+  protected renderer: BuildingTileRenderer;
 
   constructor(scene: THREE.Scene) {
     super(scene);
-    this.buildingTileRenderer = new BuildingTileRenderer(scene);
+    this.renderer = new BuildingTileRenderer(scene);
   }
 
   public addObject(object: QuestObject): void {
     this.objects.set(object.id, object);
     // Use Chest tile index for quests temporarily
-    this.buildingTileRenderer.addTileByIndex(object.col, object.row, BuildingTileIndex.Chest, true);
+    this.renderer.addTileByIndex(object.col, object.row, BuildingTileIndex.Chest, true);
   }
 
   public updateObject(object: QuestObject): void {
@@ -33,14 +33,14 @@ export class QuestManager extends EntityManager<QuestObject> {
     } else {
       // Just update properties without position change
       this.objects.set(object.id, object);
-      this.buildingTileRenderer.addTileByIndex(object.col, object.row, BuildingTileIndex.Chest, true);
+      this.renderer.addTileByIndex(object.col, object.row, BuildingTileIndex.Chest, true);
     }
   }
 
   public removeObject(objectId: number): void {
     const quest = this.objects.get(objectId);
     if (quest) {
-      this.buildingTileRenderer.removeTile(quest.col, quest.row);
+      this.renderer.removeTile(quest.col, quest.row);
     }
     this.objects.delete(objectId);
   }
@@ -48,20 +48,20 @@ export class QuestManager extends EntityManager<QuestObject> {
   public updateObjectPosition(objectId: number, col: number, row: number): void {
     const oldQuest = this.objects.get(objectId);
     if (oldQuest) {
-      this.buildingTileRenderer.removeTile(oldQuest.col, oldQuest.row);
+      this.renderer.removeTile(oldQuest.col, oldQuest.row);
     }
 
     const quest = this.objects.get(objectId);
     if (quest) {
       quest.col = col;
       quest.row = row;
-      this.buildingTileRenderer.addTileByIndex(col, row, BuildingTileIndex.Chest, true);
+      this.renderer.addTileByIndex(col, row, BuildingTileIndex.Chest, true);
     }
   }
 
   public setVisibleBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void {
     this.visibleBounds = bounds;
-    this.buildingTileRenderer.setVisibleBounds(bounds);
+    this.renderer.setVisibleBounds(bounds);
   }
 
   public selectObject(objectId: number): void {
@@ -69,12 +69,12 @@ export class QuestManager extends EntityManager<QuestObject> {
     const quest = this.objects.get(objectId);
 
     if (quest) {
-      this.buildingTileRenderer.selectTile(quest.col, quest.row);
+      this.renderer.selectTile(quest.col, quest.row);
     }
   }
 
   public deselectObject(): void {
-    this.buildingTileRenderer.deselectTile();
+    this.renderer.deselectTile();
     this.selectedObjectId = null;
   }
 
@@ -103,7 +103,7 @@ export class QuestManager extends EntityManager<QuestObject> {
     const startCol = quest.col;
     const startRow = quest.row;
 
-    return this.buildingTileRenderer.moveTile(startCol, startRow, targetCol, targetRow, duration).then(() => {
+    return this.renderer.moveTile(startCol, startRow, targetCol, targetRow, duration).then(() => {
       // Update quest position after movement completes
       quest.col = targetCol;
       quest.row = targetRow;
@@ -124,7 +124,7 @@ export class QuestManager extends EntityManager<QuestObject> {
     const startRow = quest.row;
     const finalHex = path[path.length - 1];
 
-    return this.buildingTileRenderer.moveTileAlongPath(startCol, startRow, path, stepDuration).then(() => {
+    return this.renderer.moveTileAlongPath(startCol, startRow, path, stepDuration).then(() => {
       // Update quest position after movement completes
       quest.col = finalHex.col;
       quest.row = finalHex.row;
@@ -134,7 +134,7 @@ export class QuestManager extends EntityManager<QuestObject> {
   public isObjectMoving(objectId: number): boolean {
     const quest = this.objects.get(objectId);
     if (!quest) return false;
-    return this.buildingTileRenderer.isTileMoving(quest.col, quest.row);
+    return this.renderer.isTileMoving(quest.col, quest.row);
   }
 
   protected isHexVisible(col: number, row: number): boolean {
@@ -148,7 +148,7 @@ export class QuestManager extends EntityManager<QuestObject> {
   }
 
   public dispose(): void {
-    this.buildingTileRenderer.dispose();
+    this.renderer.dispose();
   }
 
   public static disposeStaticAssets(): void {

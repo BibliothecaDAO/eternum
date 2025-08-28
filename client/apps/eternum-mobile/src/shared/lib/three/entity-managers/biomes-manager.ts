@@ -5,11 +5,11 @@ import { EntityManager } from "./entity-manager";
 import { BiomeObject } from "./types";
 
 export class BiomesManager extends EntityManager<BiomeObject> {
-  private biomeTileRenderer: BiomeTileRenderer;
+  protected renderer: BiomeTileRenderer;
 
   constructor(scene: THREE.Scene) {
     super(scene);
-    this.biomeTileRenderer = new BiomeTileRenderer(scene);
+    this.renderer = new BiomeTileRenderer(scene);
   }
 
   public addObject(object: BiomeObject): void {
@@ -20,7 +20,7 @@ export class BiomesManager extends EntityManager<BiomeObject> {
     this.objects.set(object.id, object);
 
     if (this.isHexVisible(object.col, object.row)) {
-      this.biomeTileRenderer.addTile(object.col, object.row, object.biome, object.isExplored);
+      this.renderer.addTile(object.col, object.row, object.biome, object.isExplored);
     }
   }
 
@@ -41,9 +41,9 @@ export class BiomesManager extends EntityManager<BiomeObject> {
 
       if (this.isHexVisible(object.col, object.row)) {
         if (needsUpdate) {
-          this.biomeTileRenderer.removeTile(object.col, object.row);
+          this.renderer.removeTile(object.col, object.row);
         }
-        this.biomeTileRenderer.addTile(object.col, object.row, object.biome, object.isExplored);
+        this.renderer.addTile(object.col, object.row, object.biome, object.isExplored);
       }
     }
   }
@@ -51,7 +51,7 @@ export class BiomesManager extends EntityManager<BiomeObject> {
   public removeObject(objectId: number): void {
     const biome = this.objects.get(objectId);
     if (biome && this.isHexVisible(biome.col, biome.row)) {
-      this.biomeTileRenderer.removeTile(biome.col, biome.row);
+      this.renderer.removeTile(biome.col, biome.row);
     }
     this.objects.delete(objectId);
   }
@@ -60,14 +60,14 @@ export class BiomesManager extends EntityManager<BiomeObject> {
     const oldBiome = this.objects.get(objectId);
     if (oldBiome) {
       if (this.isHexVisible(oldBiome.col, oldBiome.row)) {
-        this.biomeTileRenderer.removeTile(oldBiome.col, oldBiome.row);
+        this.renderer.removeTile(oldBiome.col, oldBiome.row);
       }
 
       const updatedBiome = { ...oldBiome, col, row };
       this.objects.set(objectId, updatedBiome);
 
       if (this.isHexVisible(col, row)) {
-        this.biomeTileRenderer.addTile(col, row, updatedBiome.biome, updatedBiome.isExplored);
+        this.renderer.addTile(col, row, updatedBiome.biome, updatedBiome.isExplored);
       }
     }
   }
@@ -81,14 +81,14 @@ export class BiomesManager extends EntityManager<BiomeObject> {
     const oldRow = biome.row;
 
     if (this.isHexVisible(oldCol, oldRow)) {
-      this.biomeTileRenderer.removeTile(oldCol, oldRow);
+      this.renderer.removeTile(oldCol, oldRow);
     }
 
     const updatedBiome = { ...biome, col: targetCol, row: targetRow };
     this.objects.set(objectId, updatedBiome);
 
     if (this.isHexVisible(targetCol, targetRow)) {
-      this.biomeTileRenderer.addTile(targetCol, targetRow, updatedBiome.biome, updatedBiome.isExplored);
+      this.renderer.addTile(targetCol, targetRow, updatedBiome.biome, updatedBiome.isExplored);
     }
   }
 
@@ -134,7 +134,7 @@ export class BiomesManager extends EntityManager<BiomeObject> {
 
   public setVisibleBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void {
     this.visibleBounds = bounds;
-    this.biomeTileRenderer.setVisibleBounds(bounds);
+    this.renderer.setVisibleBounds(bounds);
     this.fillUnexploredTilesInBounds(bounds);
     this.updateTileVisibility();
   }
@@ -180,11 +180,11 @@ export class BiomesManager extends EntityManager<BiomeObject> {
       }
     });
 
-    this.biomeTileRenderer.renderTilesForHexes(visibleBiomeTiles);
+    this.renderer.renderTilesForHexes(visibleBiomeTiles);
   }
 
   public async ensureMaterialsReady(): Promise<void> {
-    await this.biomeTileRenderer.ensureMaterialsReady();
+    await this.renderer.ensureMaterialsReady();
   }
 
   public addUnexploredTile(col: number, row: number, biome: BiomeType): void {
@@ -228,7 +228,7 @@ export class BiomesManager extends EntityManager<BiomeObject> {
 
   public dispose(): void {
     this.objects.clear();
-    this.biomeTileRenderer.dispose();
+    this.renderer.dispose();
     this.selectedObjectId = null;
     this.visibleBounds = null;
   }

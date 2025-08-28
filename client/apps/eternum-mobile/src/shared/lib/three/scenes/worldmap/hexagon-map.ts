@@ -174,14 +174,24 @@ export class HexagonMap {
     }
   }
 
-  private initializeMap(): void {
+  private async initializeMap(): Promise<void> {
     const centerChunkX = 0;
     const centerChunkZ = 0;
 
     this.lastChunkX = centerChunkX;
     this.lastChunkZ = centerChunkZ;
 
+    await this.waitUntilMaterialsReady();
+
     this.updateVisibleHexes(centerChunkX, centerChunkZ);
+  }
+
+  private async waitUntilMaterialsReady(): Promise<void> {
+    await this.biomesManager.ensureMaterialsReady();
+    await this.structureManager.ensureMaterialsReady();
+    await this.armyManager.ensureMaterialsReady();
+    await this.questManager.ensureMaterialsReady();
+    await this.chestManager.ensureMaterialsReady();
   }
 
   private async updateVisibleHexes(centerChunkX: number, centerChunkZ: number): Promise<void> {
@@ -372,7 +382,9 @@ export class HexagonMap {
     console.log(`[RENDER-TIMING] Update bounds: ${(performance.now() - boundsUpdateStartTime).toFixed(2)}ms`);
   }
 
-  public updateChunkLoading(cameraPosition: THREE.Vector3, force: boolean = false): void {
+  public async updateChunkLoading(cameraPosition: THREE.Vector3, force: boolean = false): Promise<void> {
+    await this.waitUntilMaterialsReady();
+
     const chunkLoadStartTime = performance.now();
 
     if (this.isLoadingChunks && !force) {

@@ -9,13 +9,13 @@ import { EntityManager } from "./entity-manager";
 import { ChestObject } from "./types";
 
 export class ChestManager extends EntityManager<ChestObject> {
-  private buildingTileRenderer: BuildingTileRenderer;
   private labels: Map<number, CSS2DObject> = new Map();
   private labelAttachmentState: Map<number, boolean> = new Map();
+  protected renderer: BuildingTileRenderer;
 
   constructor(scene: THREE.Scene) {
     super(scene);
-    this.buildingTileRenderer = new BuildingTileRenderer(scene);
+    this.renderer = new BuildingTileRenderer(scene);
   }
 
   private createLabel(chest: ChestObject): void {
@@ -33,7 +33,7 @@ export class ChestManager extends EntityManager<ChestObject> {
 
     const shouldBeVisible = this.isHexVisible(chest.col, chest.row);
     if (shouldBeVisible) {
-      this.buildingTileRenderer.addObjectToTileGroup(chest.col, chest.row, label);
+      this.renderer.addObjectToTileGroup(chest.col, chest.row, label);
       this.labelAttachmentState.set(chest.id, true);
     } else {
       this.labelAttachmentState.set(chest.id, false);
@@ -46,7 +46,7 @@ export class ChestManager extends EntityManager<ChestObject> {
     if (label && chest) {
       const isAttached = this.labelAttachmentState.get(chestId) ?? false;
       if (isAttached) {
-        this.buildingTileRenderer.removeObjectFromTileGroup(chest.col, chest.row, label);
+        this.renderer.removeObjectFromTileGroup(chest.col, chest.row, label);
       }
       if (label.element && label.element.parentNode) {
         label.element.parentNode.removeChild(label.element);
@@ -80,7 +80,7 @@ export class ChestManager extends EntityManager<ChestObject> {
 
     this.objects.set(object.id, object);
     this.createLabel(object);
-    this.buildingTileRenderer.addTileByIndex(object.col, object.row, BuildingTileIndex.Chest, true, true);
+    this.renderer.addTileByIndex(object.col, object.row, BuildingTileIndex.Chest, true, true);
   }
 
   public updateObject(object: ChestObject): void {
@@ -94,14 +94,14 @@ export class ChestManager extends EntityManager<ChestObject> {
       this.moveObject(object.id, object.col, object.row, 1000);
     } else {
       this.objects.set(object.id, object);
-      this.buildingTileRenderer.addTileByIndex(object.col, object.row, BuildingTileIndex.Chest, true, true);
+      this.renderer.addTileByIndex(object.col, object.row, BuildingTileIndex.Chest, true, true);
     }
   }
 
   public removeObject(objectId: number): void {
     const chest = this.objects.get(objectId);
     if (chest) {
-      this.buildingTileRenderer.removeTile(chest.col, chest.row);
+      this.renderer.removeTile(chest.col, chest.row);
     }
     this.removeLabel(objectId);
     this.objects.delete(objectId);
@@ -110,25 +110,25 @@ export class ChestManager extends EntityManager<ChestObject> {
   public updateObjectPosition(objectId: number, col: number, row: number): void {
     const oldChest = this.objects.get(objectId);
     if (oldChest) {
-      this.buildingTileRenderer.removeTile(oldChest.col, oldChest.row);
+      this.renderer.removeTile(oldChest.col, oldChest.row);
 
       const label = this.labels.get(objectId);
       if (label) {
         const wasAttached = this.labelAttachmentState.get(objectId) ?? false;
         if (wasAttached) {
-          this.buildingTileRenderer.removeObjectFromTileGroup(oldChest.col, oldChest.row, label);
+          this.renderer.removeObjectFromTileGroup(oldChest.col, oldChest.row, label);
         }
       }
 
       const updatedChest = { ...oldChest, col, row };
       this.objects.set(objectId, updatedChest);
 
-      this.buildingTileRenderer.addTileByIndex(col, row, BuildingTileIndex.Chest, true, true);
+      this.renderer.addTileByIndex(col, row, BuildingTileIndex.Chest, true, true);
 
       if (label) {
         const shouldBeVisible = this.isHexVisible(col, row);
         if (shouldBeVisible) {
-          this.buildingTileRenderer.addObjectToTileGroup(col, row, label);
+          this.renderer.addObjectToTileGroup(col, row, label);
           this.labelAttachmentState.set(objectId, true);
         } else {
           this.labelAttachmentState.set(objectId, false);
@@ -150,12 +150,12 @@ export class ChestManager extends EntityManager<ChestObject> {
     const oldCol = chest.col;
     const oldRow = chest.row;
 
-    this.buildingTileRenderer.removeTile(oldCol, oldRow);
+    this.renderer.removeTile(oldCol, oldRow);
 
     const updatedChest = { ...chest, col: targetCol, row: targetRow };
     this.objects.set(objectId, updatedChest);
 
-    this.buildingTileRenderer.addTileByIndex(targetCol, targetRow, BuildingTileIndex.Chest, true, true);
+    this.renderer.addTileByIndex(targetCol, targetRow, BuildingTileIndex.Chest, true, true);
 
     const label = this.labels.get(objectId);
     if (label) {
@@ -163,10 +163,10 @@ export class ChestManager extends EntityManager<ChestObject> {
       const isCurrentlyAttached = this.labelAttachmentState.get(objectId) ?? false;
 
       if (shouldBeVisible && !isCurrentlyAttached) {
-        this.buildingTileRenderer.addObjectToTileGroup(targetCol, targetRow, label);
+        this.renderer.addObjectToTileGroup(targetCol, targetRow, label);
         this.labelAttachmentState.set(objectId, true);
       } else if (!shouldBeVisible && isCurrentlyAttached) {
-        this.buildingTileRenderer.removeObjectFromTileGroup(targetCol, targetRow, label);
+        this.renderer.removeObjectFromTileGroup(targetCol, targetRow, label);
         this.labelAttachmentState.set(objectId, false);
       }
     }
@@ -214,7 +214,7 @@ export class ChestManager extends EntityManager<ChestObject> {
 
   public setVisibleBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void {
     this.visibleBounds = bounds;
-    this.buildingTileRenderer.setVisibleBounds(bounds);
+    this.renderer.setVisibleBounds(bounds);
     this.updateLabelVisibility();
   }
 
@@ -226,10 +226,10 @@ export class ChestManager extends EntityManager<ChestObject> {
         const isCurrentlyAttached = this.labelAttachmentState.get(chestId) ?? false;
 
         if (shouldBeVisible && !isCurrentlyAttached) {
-          this.buildingTileRenderer.addObjectToTileGroup(chest.col, chest.row, label);
+          this.renderer.addObjectToTileGroup(chest.col, chest.row, label);
           this.labelAttachmentState.set(chestId, true);
         } else if (!shouldBeVisible && isCurrentlyAttached) {
-          this.buildingTileRenderer.removeObjectFromTileGroup(chest.col, chest.row, label);
+          this.renderer.removeObjectFromTileGroup(chest.col, chest.row, label);
           this.labelAttachmentState.set(chestId, false);
         }
       }
@@ -246,7 +246,7 @@ export class ChestManager extends EntityManager<ChestObject> {
     this.labelAttachmentState.clear();
 
     this.objects.clear();
-    this.buildingTileRenderer.dispose();
+    this.renderer.dispose();
     this.selectedObjectId = null;
     this.visibleBounds = null;
   }

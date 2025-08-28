@@ -10,13 +10,13 @@ import { EntityManager } from "./entity-manager";
 import { StructureObject } from "./types";
 
 export class StructureManager extends EntityManager<StructureObject> {
-  private buildingTileRenderer: BuildingTileRenderer;
   private labels: Map<number, CSS2DObject> = new Map();
   private labelAttachmentState: Map<number, boolean> = new Map();
+  protected renderer: BuildingTileRenderer;
 
   constructor(scene: THREE.Scene) {
     super(scene);
-    this.buildingTileRenderer = new BuildingTileRenderer(scene);
+    this.renderer = new BuildingTileRenderer(scene);
   }
 
   public addObject(object: StructureObject): void {
@@ -54,7 +54,7 @@ export class StructureManager extends EntityManager<StructureObject> {
   public removeObject(objectId: number): void {
     const structure = this.objects.get(objectId);
     if (structure) {
-      this.buildingTileRenderer.removeTile(structure.col, structure.row);
+      this.renderer.removeTile(structure.col, structure.row);
     }
     this.removeLabel(objectId);
     this.objects.delete(objectId);
@@ -63,13 +63,13 @@ export class StructureManager extends EntityManager<StructureObject> {
   public updateObjectPosition(objectId: number, col: number, row: number): void {
     const oldStructure = this.objects.get(objectId);
     if (oldStructure) {
-      this.buildingTileRenderer.removeTile(oldStructure.col, oldStructure.row);
+      this.renderer.removeTile(oldStructure.col, oldStructure.row);
 
       const label = this.labels.get(objectId);
       if (label) {
         const wasAttached = this.labelAttachmentState.get(objectId) ?? false;
         if (wasAttached) {
-          this.buildingTileRenderer.removeObjectFromTileGroup(oldStructure.col, oldStructure.row, label);
+          this.renderer.removeObjectFromTileGroup(oldStructure.col, oldStructure.row, label);
         }
       }
     }
@@ -84,7 +84,7 @@ export class StructureManager extends EntityManager<StructureObject> {
       if (label) {
         const shouldBeVisible = this.isHexVisible(col, row);
         if (shouldBeVisible) {
-          this.buildingTileRenderer.addObjectToTileGroup(col, row, label);
+          this.renderer.addObjectToTileGroup(col, row, label);
           this.labelAttachmentState.set(objectId, true);
         } else {
           this.labelAttachmentState.set(objectId, false);
@@ -95,7 +95,7 @@ export class StructureManager extends EntityManager<StructureObject> {
 
   private syncBuildingTile(structure: StructureObject): void {
     const tileIndex = this.getTileIndexFromStructure(structure);
-    this.buildingTileRenderer.addTileByIndex(structure.col, structure.row, tileIndex, true);
+    this.renderer.addTileByIndex(structure.col, structure.row, tileIndex, true);
   }
 
   private getTileIndexFromStructure(structure: StructureObject): BuildingTileIndex {
@@ -107,15 +107,15 @@ export class StructureManager extends EntityManager<StructureObject> {
   }
 
   public getBuildingTileRenderer(): BuildingTileRenderer {
-    return this.buildingTileRenderer;
+    return this.renderer;
   }
 
   public updateAllBuildingTiles(): void {
-    this.buildingTileRenderer.clearTiles();
+    this.renderer.clearTiles();
 
     Array.from(this.objects.values()).forEach((structure) => {
       const tileIndex = this.getTileIndexFromStructure(structure);
-      this.buildingTileRenderer.addTileByIndex(structure.col, structure.row, tileIndex, true);
+      this.renderer.addTileByIndex(structure.col, structure.row, tileIndex, true);
     });
   }
 
@@ -124,18 +124,18 @@ export class StructureManager extends EntityManager<StructureObject> {
     const structure = this.objects.get(objectId);
 
     if (structure) {
-      this.buildingTileRenderer.selectTile(structure.col, structure.row);
+      this.renderer.selectTile(structure.col, structure.row);
     }
   }
 
   public deselectObject(): void {
-    this.buildingTileRenderer.deselectTile();
+    this.renderer.deselectTile();
     this.selectedObjectId = null;
   }
 
   public setVisibleBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }): void {
     this.visibleBounds = bounds;
-    this.buildingTileRenderer.setVisibleBounds(bounds);
+    this.renderer.setVisibleBounds(bounds);
     this.updateLabelVisibility();
   }
 
@@ -164,7 +164,7 @@ export class StructureManager extends EntityManager<StructureObject> {
     const startCol = structure.col;
     const startRow = structure.row;
 
-    return this.buildingTileRenderer.moveTile(startCol, startRow, targetCol, targetRow, duration).then(() => {
+    return this.renderer.moveTile(startCol, startRow, targetCol, targetRow, duration).then(() => {
       // Update structure position after movement completes
       structure.col = targetCol;
       structure.row = targetRow;
@@ -176,10 +176,10 @@ export class StructureManager extends EntityManager<StructureObject> {
         const isCurrentlyAttached = this.labelAttachmentState.get(objectId) ?? false;
 
         if (shouldBeVisible && !isCurrentlyAttached) {
-          this.buildingTileRenderer.addObjectToTileGroup(targetCol, targetRow, label);
+          this.renderer.addObjectToTileGroup(targetCol, targetRow, label);
           this.labelAttachmentState.set(objectId, true);
         } else if (!shouldBeVisible && isCurrentlyAttached) {
-          this.buildingTileRenderer.removeObjectFromTileGroup(targetCol, targetRow, label);
+          this.renderer.removeObjectFromTileGroup(targetCol, targetRow, label);
           this.labelAttachmentState.set(objectId, false);
         }
       }
@@ -200,7 +200,7 @@ export class StructureManager extends EntityManager<StructureObject> {
     const startRow = structure.row;
     const finalHex = path[path.length - 1];
 
-    return this.buildingTileRenderer.moveTileAlongPath(startCol, startRow, path, stepDuration).then(() => {
+    return this.renderer.moveTileAlongPath(startCol, startRow, path, stepDuration).then(() => {
       // Update structure position after movement completes
       structure.col = finalHex.col;
       structure.row = finalHex.row;
@@ -212,10 +212,10 @@ export class StructureManager extends EntityManager<StructureObject> {
         const isCurrentlyAttached = this.labelAttachmentState.get(objectId) ?? false;
 
         if (shouldBeVisible && !isCurrentlyAttached) {
-          this.buildingTileRenderer.addObjectToTileGroup(finalHex.col, finalHex.row, label);
+          this.renderer.addObjectToTileGroup(finalHex.col, finalHex.row, label);
           this.labelAttachmentState.set(objectId, true);
         } else if (!shouldBeVisible && isCurrentlyAttached) {
-          this.buildingTileRenderer.removeObjectFromTileGroup(finalHex.col, finalHex.row, label);
+          this.renderer.removeObjectFromTileGroup(finalHex.col, finalHex.row, label);
           this.labelAttachmentState.set(objectId, false);
         }
       }
@@ -225,7 +225,7 @@ export class StructureManager extends EntityManager<StructureObject> {
   public isObjectMoving(objectId: number): boolean {
     const structure = this.objects.get(objectId);
     if (!structure) return false;
-    return this.buildingTileRenderer.isTileMoving(structure.col, structure.row);
+    return this.renderer.isTileMoving(structure.col, structure.row);
   }
 
   protected isHexVisible(col: number, row: number): boolean {
@@ -257,7 +257,7 @@ export class StructureManager extends EntityManager<StructureObject> {
     // Set initial attachment state based on visibility bounds
     const shouldBeVisible = this.isHexVisible(structure.col, structure.row);
     if (shouldBeVisible) {
-      this.buildingTileRenderer.addObjectToTileGroup(structure.col, structure.row, label);
+      this.renderer.addObjectToTileGroup(structure.col, structure.row, label);
       this.labelAttachmentState.set(structure.id, true);
     } else {
       this.labelAttachmentState.set(structure.id, false);
@@ -278,7 +278,7 @@ export class StructureManager extends EntityManager<StructureObject> {
     if (label && structure) {
       const isAttached = this.labelAttachmentState.get(structureId) ?? false;
       if (isAttached) {
-        this.buildingTileRenderer.removeObjectFromTileGroup(structure.col, structure.row, label);
+        this.renderer.removeObjectFromTileGroup(structure.col, structure.row, label);
       }
       if (label.element && label.element.parentNode) {
         label.element.parentNode.removeChild(label.element);
@@ -331,10 +331,10 @@ export class StructureManager extends EntityManager<StructureObject> {
         const isCurrentlyAttached = this.labelAttachmentState.get(structureId) ?? false;
 
         if (shouldBeVisible && !isCurrentlyAttached) {
-          this.buildingTileRenderer.addObjectToTileGroup(structure.col, structure.row, label);
+          this.renderer.addObjectToTileGroup(structure.col, structure.row, label);
           this.labelAttachmentState.set(structureId, true);
         } else if (!shouldBeVisible && isCurrentlyAttached) {
-          this.buildingTileRenderer.removeObjectFromTileGroup(structure.col, structure.row, label);
+          this.renderer.removeObjectFromTileGroup(structure.col, structure.row, label);
           this.labelAttachmentState.set(structureId, false);
         }
       }
@@ -350,6 +350,6 @@ export class StructureManager extends EntityManager<StructureObject> {
     this.labels.clear();
     this.labelAttachmentState.clear();
 
-    this.buildingTileRenderer.dispose();
+    this.renderer.dispose();
   }
 }

@@ -52,10 +52,6 @@ export class BiomeTileRenderer extends BaseTileRenderer<BiomeTileIndex> {
     this.createSingleTileSprite(hexKey, tileId, cachedPosition, row, false);
   }
 
-  public async ensureMaterialsReady(): Promise<void> {
-    await this.initializeTileMaterials();
-  }
-
   public addTile(col: number, row: number, biome?: BiomeType, isExplored: boolean = true): void {
     const hexKey = `${col},${row}`;
 
