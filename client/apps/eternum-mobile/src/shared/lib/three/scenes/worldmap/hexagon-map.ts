@@ -78,7 +78,7 @@ export class HexagonMap {
   private performanceMetrics: Map<string, number[]> = new Map();
   private chunkUpdateCount: number = 0;
 
-  private static readonly CHUNK_LOAD_RADIUS_X = 2;
+  private static readonly CHUNK_LOAD_RADIUS_X = 1;
   private static readonly CHUNK_LOAD_RADIUS_Z = 3;
   private static readonly CHUNK_SIZE = 5;
 
