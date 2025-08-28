@@ -141,7 +141,7 @@ export class GameRenderer {
     // Handle click for current scene
     const currentSceneInstance = this.sceneInstances.get(this.currentScene);
     if (currentSceneInstance && currentSceneInstance.handleClick) {
-      currentSceneInstance.handleClick(this.mouse, this.camera);
+      currentSceneInstance.handleClick(this.mouse, this.controls.object);
     }
   }
 

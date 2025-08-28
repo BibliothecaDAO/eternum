@@ -163,6 +163,8 @@ export class HexagonMap {
     if (!HexagonMap.hexagonGeometry) {
       const hexagonShape = createHexagonShape(HEX_SIZE);
       HexagonMap.hexagonGeometry = new THREE.ShapeGeometry(hexagonShape);
+      HexagonMap.hexagonGeometry.computeBoundingBox();
+      HexagonMap.hexagonGeometry.computeBoundingSphere();
     }
 
     if (!HexagonMap.hexagonMaterial) {
@@ -313,6 +315,8 @@ export class HexagonMap {
       const capacity = Math.min(Math.max(requiredCapacity, 1000), HexagonMap.MAX_HEX_CAPACITY);
       this.hexagonMesh = new THREE.InstancedMesh(HexagonMap.hexagonGeometry!, HexagonMap.hexagonMaterial!, capacity);
       this.hexagonMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(capacity * 3), 3);
+      this.hexagonMesh.computeBoundingBox();
+      this.hexagonMesh.computeBoundingSphere();
       this.hexagonMeshCapacity = capacity;
       this.scene.add(this.hexagonMesh);
     }
@@ -350,7 +354,8 @@ export class HexagonMap {
 
       this.dummy.position.copy(this.tempVector3);
       this.dummy.position.y = 0.1;
-      this.dummy.rotation.x = -Math.PI / 2;
+      this.dummy.rotation.set(-Math.PI / 2, 0, 0);
+      this.dummy.scale.set(1, 1, 1);
       this.dummy.updateMatrix();
       this.hexagonMesh!.setMatrixAt(index, this.dummy.matrix);
 
@@ -360,7 +365,7 @@ export class HexagonMap {
       index++;
     });
 
-    this.hexagonMesh!.count = instanceCount;
+    this.hexagonMesh!.count = index;
     const instanceSetupTime = performance.now() - instanceSetupStartTime;
     console.log(`[RENDER-TIMING] Setup instances: ${instanceSetupTime.toFixed(2)}ms`);
     this.recordPerformanceMetric("Setup Instances", instanceSetupTime);
@@ -370,6 +375,8 @@ export class HexagonMap {
     if (this.hexagonMesh!.instanceColor) {
       this.hexagonMesh!.instanceColor.needsUpdate = true;
     }
+    this.hexagonMesh!.computeBoundingBox();
+    this.hexagonMesh!.computeBoundingSphere();
     console.log(`[RENDER-TIMING] Update attributes: ${(performance.now() - updateStartTime).toFixed(2)}ms`);
 
     const boundsUpdateStartTime = performance.now();
@@ -391,7 +398,6 @@ export class HexagonMap {
       return;
     }
 
-    const coordCalcStartTime = performance.now();
     const hexRadius = HEX_SIZE;
     const hexHeight = hexRadius * 2;
     const hexWidth = hexHeight * 1.6;
@@ -420,25 +426,52 @@ export class HexagonMap {
   }
 
   public handleClick(mouse: THREE.Vector2, camera: THREE.Camera): void {
-    if (!this.hexagonMesh) return;
+    if (!this.hexagonMesh) {
+      console.log("[HexagonMap] No hexagon mesh available for click detection");
+      return;
+    }
+
+    if (this.hexagonMesh.count === 0) {
+      console.log("[HexagonMap] Hexagon mesh has no instances");
+      return;
+    }
 
     this.raycaster.setFromCamera(mouse, camera);
-    const intersects = this.raycaster.intersectObjects([this.hexagonMesh], true);
-    console.log("intersects", intersects);
+    this.raycaster.layers.enableAll();
+    this.raycaster.params.Points!.threshold = 0.1;
+
+    const intersects = this.raycaster.intersectObjects([this.hexagonMesh], false);
+
+    console.log(
+      `[HexagonMap] Click at mouse (${mouse.x.toFixed(3)}, ${mouse.y.toFixed(3)}) found ${intersects.length} intersections`,
+    );
+
     if (intersects.length > 0) {
       const intersect = intersects[0];
       const intersectedObject = intersect.object;
 
+      console.log(`[HexagonMap] Intersected object:`, intersectedObject.type, intersectedObject.uuid);
+
       if (intersectedObject instanceof THREE.InstancedMesh) {
         const instanceId = intersect.instanceId;
-        if (instanceId !== undefined) {
+        console.log(`[HexagonMap] Instance ID: ${instanceId}, Distance: ${intersect.distance.toFixed(3)}`);
+
+        if (instanceId !== undefined && instanceId >= 0 && instanceId < this.hexagonMesh.count) {
           const hexData = getHexagonCoordinates(intersectedObject, instanceId);
-          console.log(`Hexagon clicked: col=${hexData.hexCoords.col}, row=${hexData.hexCoords.row}`);
+          console.log(`[HexagonMap] Hexagon clicked: col=${hexData.hexCoords.col}, row=${hexData.hexCoords.row}`);
 
           this.handleHexClick(hexData.hexCoords.col, hexData.hexCoords.row);
           this.showClickFeedback(instanceId);
+        } else {
+          console.warn(`[HexagonMap] Invalid instance ID: ${instanceId}, mesh count: ${this.hexagonMesh.count}`);
         }
       }
+    } else {
+      console.log(
+        `[HexagonMap] No intersections found. Mesh bounds:`,
+        this.hexagonMesh.boundingBox,
+        this.hexagonMesh.boundingSphere,
+      );
     }
   }
 
@@ -584,10 +617,10 @@ export class HexagonMap {
       return;
     }
 
-    this.selectionManager.selectObject(armyId, "army", army.col, army.row);
-
     const army = this.armyManager.getObject(armyId);
     if (!army) return;
+
+    this.selectionManager.selectObject(armyId, "army", army.col, army.row);
 
     console.log(`[HexagonMap] Selecting army ${armyId} at position (${army.col}, ${army.row})`);
 
