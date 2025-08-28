@@ -424,7 +424,7 @@ export class HexagonMap {
 
     this.raycaster.setFromCamera(mouse, camera);
     const intersects = this.raycaster.intersectObjects([this.hexagonMesh], true);
-
+    console.log("intersects", intersects);
     if (intersects.length > 0) {
       const intersect = intersects[0];
       const intersectedObject = intersect.object;
@@ -495,9 +495,9 @@ export class HexagonMap {
     if (armies.length > 0) {
       this.selectArmy(armies[0].id);
     } else if (structures.length > 0) {
-      this.selectStructure(structures[0].id);
+      this.selectStructure(structures[0].id, col, row);
     } else if (quests.length > 0) {
-      this.selectionManager.selectObject(quests[0].id, "quest");
+      this.selectionManager.selectObject(quests[0].id, "quest", col, row);
     } else if (chests.length > 0) {
       this.selectionManager.clearSelection();
     } else {
@@ -584,7 +584,7 @@ export class HexagonMap {
       return;
     }
 
-    this.selectionManager.selectObject(armyId, "army");
+    this.selectionManager.selectObject(armyId, "army", army.col, army.row);
 
     const army = this.armyManager.getObject(armyId);
     if (!army) return;
@@ -611,8 +611,8 @@ export class HexagonMap {
     this.selectionManager.setActionPaths(actionPaths);
   }
 
-  private selectStructure(structureId: number): void {
-    this.selectionManager.selectObject(structureId, "structure");
+  private selectStructure(structureId: number, col: number, row: number): void {
+    this.selectionManager.selectObject(structureId, "structure", col, row);
 
     const structureActionManager = new StructureActionManager(this.dojo.setup.components, structureId);
 

@@ -1,8 +1,8 @@
 import { ActionPath, ActionPaths, ActionType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import useStore from "../../../store";
-import { HighlightRenderer } from "../highlight-renderer";
 import { EntityManager, GameMapObject } from "../entity-managers";
+import { HighlightRenderer } from "../highlight-renderer";
 
 export class SelectionManager {
   private highlightRenderer: HighlightRenderer;
@@ -27,7 +27,7 @@ export class SelectionManager {
     this.objectRenderers.set(type, renderer);
   }
 
-  public selectObject(objectId: number, objectType: string): void {
+  public selectObject(objectId: number, objectType: string, col: number, row: number): void {
     this.clearSelection();
 
     const renderer = this.objectRenderers.get(objectType);
@@ -42,7 +42,7 @@ export class SelectionManager {
       return;
     }
 
-    useStore.getState().setSelectedObject(objectId, objectType);
+    useStore.getState().setSelectedObject(objectId, objectType, col, row);
 
     renderer.selectObject(objectId);
   }

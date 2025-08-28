@@ -1,11 +1,12 @@
 import { ActionPath, ActionPaths } from "@bibliothecadao/eternum";
-import { FELT_CENTER } from "@bibliothecadao/types";
+import { FELT_CENTER, HexPosition } from "@bibliothecadao/types";
 
 export interface SelectionSlice {
   selectedObjectId: number | null;
   selectedObjectType: string | null;
+  selectedHex: HexPosition | null;
   actionPaths: Map<string, ActionPath[]>;
-  setSelectedObject: (objectId: number | null, objectType: string | null) => void;
+  setSelectedObject: (objectId: number | null, objectType: string | null, col: number, row: number) => void;
   setActionPaths: (actionPaths: Map<string, ActionPath[]>) => void;
   clearSelection: () => void;
   getSelectedObject: () => { id: number; type: string } | null;
@@ -17,12 +18,14 @@ export interface SelectionSlice {
 export const createSelectionSlice = (set: any, get: any) => ({
   selectedObjectId: null,
   selectedObjectType: null,
+  selectedHex: null,
   actionPaths: new Map<string, ActionPath[]>(),
 
-  setSelectedObject: (objectId: number | null, objectType: string | null) => {
+  setSelectedObject: (objectId: number | null, objectType: string | null, col: number, row: number) => {
     set({
       selectedObjectId: objectId,
       selectedObjectType: objectType,
+      selectedHex: { col, row },
     });
   },
 
