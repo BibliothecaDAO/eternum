@@ -3,7 +3,9 @@ import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/ui/collapsible";
 import { ResourceAmount } from "@/shared/ui/resource-amount";
+import { ResourceIcon } from "@/shared/ui/resource-icon";
 import {
+  divideByPrecision,
   getAddressName,
   getBlockTimestamp,
   getGuardsByStructure,
@@ -15,6 +17,7 @@ import {
   getStructureRelicEffects,
   MAP_DATA_REFRESH_INTERVAL,
   MapDataStore,
+  ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getStructureFromToriiClient } from "@bibliothecadao/torii";
@@ -157,11 +160,17 @@ export const StructureEntityDetail = memo(
 
     if (!structure || !structureDetails) return null;
 
-    const resourceCount = resources
-      ? Object.keys(resources).filter(
-          (key) => key.endsWith("_BALANCE") && Number(resources[key as keyof typeof resources]) > 0,
-        ).length
-      : 0;
+    const { currentDefaultTick } = getBlockTimestamp();
+
+    // Get resource balances using proper ResourceManager
+    const resourceBalances = resources
+      ? ResourceManager.getResourceBalancesWithProduction(resources, currentDefaultTick).filter(
+          (resource) => resource.amount > 0,
+        )
+      : [];
+
+    // Get active productions using proper ResourceManager
+    const activeProductions = resources ? ResourceManager.getActiveProductions(resources) : [];
 
     const isBlitz = getIsBlitz();
 
@@ -239,22 +248,27 @@ export const StructureEntityDetail = memo(
           )}
 
           {/* Resource Production Section */}
-          {resources && Object.keys(resources).some((key) => key.includes("PRODUCTION")) && (
+          {activeProductions.length > 0 && (
             <div className="bg-cyan-50 dark:bg-cyan-950/20 rounded p-3 border border-cyan-200 dark:border-cyan-800">
               <div className="text-sm font-medium text-cyan-800 dark:text-cyan-200 mb-2">Active Productions</div>
-              <div className="space-y-2">
-                {Object.entries(resources)
-                  .filter(([key, value]) => key.includes("PRODUCTION") && Number(value) > 0)
-                  .slice(0, 3)
-                  .map(([key, value]) => {
-                    const resourceName = key.replace("_PRODUCTION", "").toLowerCase();
-                    return (
-                      <div key={key} className="flex items-center justify-between text-xs">
-                        <span className="capitalize">{resourceName}</span>
-                        <span className="font-medium text-cyan-700 dark:text-cyan-300">+{Number(value)}/tick</span>
-                      </div>
-                    );
-                  })}
+              <div className="flex flex-wrap gap-2">
+                {activeProductions.slice(0, 6).map(({ resourceId, productionRate }) => {
+                  const ratePerSecond = Number(divideByPrecision(Number(productionRate), false));
+                  return (
+                    <div
+                      key={resourceId}
+                      className="flex items-center gap-1 bg-white dark:bg-gray-800 rounded px-2 py-1"
+                    >
+                      <ResourceIcon resourceId={resourceId} size={20} />
+                      <span className="text-xs text-cyan-700 dark:text-cyan-300">+{ratePerSecond}/s</span>
+                    </div>
+                  );
+                })}
+                {activeProductions.length > 6 && (
+                  <div className="text-xs text-muted-foreground bg-gray-100 dark:bg-gray-800 rounded px-2 py-1">
+                    +{activeProductions.length - 6} more
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -277,7 +291,8 @@ export const StructureEntityDetail = memo(
 
                 {/* Collapsed view - show summary */}
                 <div className="mt-2 text-xs text-red-700 dark:text-red-300">
-                  {guards.reduce((total, guard) => total + Number(guard.troops.count), 0)} total troops
+                  {guards.reduce((total, guard) => total + divideByPrecision(Number(guard.troops.count)), 0)} total
+                  troops
                 </div>
 
                 <CollapsibleContent className="mt-3">
@@ -292,7 +307,7 @@ export const StructureEntityDetail = memo(
                           <span>Slot {guard.slot}</span>
                         </div>
                         <div className="flex flex-col items-end">
-                          <span className="font-medium">{Number(guard.troops.count)} troops</span>
+                          <span className="font-medium">{divideByPrecision(Number(guard.troops.count))} troops</span>
                           {guard.troops.category && (
                             <span className="text-muted-foreground capitalize">
                               {guard.troops.category} {guard.troops.tier}
@@ -308,13 +323,13 @@ export const StructureEntityDetail = memo(
           )}
 
           {/* Resources Section */}
-          {resources && resourceCount > 0 && (
+          {resourceBalances.length > 0 && (
             <Collapsible>
               <div className="bg-green-50 dark:bg-green-950/20 rounded p-3 border border-green-200 dark:border-green-800">
                 <CollapsibleTrigger className="w-full">
                   <div className="flex items-center justify-between">
                     <div className="text-sm font-medium text-green-800 dark:text-green-200">
-                      Resources ({resourceCount})
+                      Resources ({resourceBalances.length})
                     </div>
                     <ChevronDown className="h-4 w-4 text-green-600 dark:text-green-400" />
                   </div>
@@ -322,44 +337,45 @@ export const StructureEntityDetail = memo(
 
                 {/* Collapsed view - show first few resources */}
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {Object.entries(resources)
-                    .filter(([key, value]) => key.endsWith("_BALANCE") && Number(value) > 0)
-                    .slice(0, 4)
-                    .map(([key, value]) => {
-                      const resourceId = parseInt(key.split("_")[0]) || 1;
-                      return (
-                        <div key={key} className="flex items-center gap-1 bg-white dark:bg-gray-800 rounded px-2 py-1">
-                          <ResourceAmount resourceId={resourceId} amount={Number(value)} size="sm" showName={false} />
-                        </div>
-                      );
-                    })}
-                  {resourceCount > 4 && (
+                  {resourceBalances.slice(0, 4).map((resource) => (
+                    <div
+                      key={resource.resourceId}
+                      className="flex items-center gap-1 bg-white dark:bg-gray-800 rounded px-2 py-1"
+                    >
+                      <ResourceAmount
+                        resourceId={resource.resourceId}
+                        amount={divideByPrecision(Number(resource.amount))}
+                        size="sm"
+                        showName={false}
+                      />
+                    </div>
+                  ))}
+                  {resourceBalances.length > 4 && (
                     <div className="text-xs text-muted-foreground bg-gray-100 dark:bg-gray-800 rounded px-2 py-1">
-                      +{resourceCount - 4} more
+                      +{resourceBalances.length - 4} more
                     </div>
                   )}
                 </div>
 
                 <CollapsibleContent className="mt-3">
                   <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
-                    {Object.entries(resources)
-                      .filter(([key, value]) => key.endsWith("_BALANCE") && Number(value) > 0)
-                      .slice(0, maxInventory === Infinity ? undefined : maxInventory)
-                      .map(([key, value]) => {
-                        const resourceId = parseInt(key.split("_")[0]) || 1;
-                        return (
-                          <div
-                            key={key}
-                            className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded"
-                          >
-                            <ResourceAmount resourceId={resourceId} amount={Number(value)} size="sm" showName={true} />
-                          </div>
-                        );
-                      })}
+                    {resourceBalances.slice(0, maxInventory === Infinity ? undefined : maxInventory).map((resource) => (
+                      <div
+                        key={resource.resourceId}
+                        className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded"
+                      >
+                        <ResourceAmount
+                          resourceId={resource.resourceId}
+                          amount={divideByPrecision(Number(resource.amount))}
+                          size="sm"
+                          showName={true}
+                        />
+                      </div>
+                    ))}
                   </div>
-                  {maxInventory !== Infinity && resourceCount > maxInventory && (
+                  {maxInventory !== Infinity && resourceBalances.length > maxInventory && (
                     <div className="text-xs text-muted-foreground mt-2 text-center">
-                      +{resourceCount - maxInventory} more items (showing first {maxInventory})
+                      +{resourceBalances.length - maxInventory} more items (showing first {maxInventory})
                     </div>
                   )}
                 </CollapsibleContent>
