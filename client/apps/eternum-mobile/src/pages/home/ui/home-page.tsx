@@ -22,42 +22,42 @@ const appIcons: AppIcon[] = [
     icon: "/images/icons/worldmap.png",
     route: ROUTES.WORLDMAP,
   },
-  {
-    id: "armies",
-    name: "Armies",
-    icon: "/images/icons/armies.png",
-    route: ROUTES.HOME, // dummy
-  },
-  {
-    id: "resources",
-    name: "Resources",
-    icon: "/images/icons/resources.png",
-    route: ROUTES.HOME, // dummy
-  },
-  {
-    id: "amm",
-    name: "Trade",
-    icon: "/images/icons/amm.png",
-    route: ROUTES.TRADE,
-  },
-  {
-    id: "construction",
-    name: "Construction",
-    icon: "/images/icons/construction.png",
-    route: ROUTES.HOME, // dummy
-  },
-  {
-    id: "hyperstructures",
-    name: "Hyperstructures",
-    icon: "/images/icons/hyperstructures.png",
-    route: ROUTES.HOME, // dummy
-  },
-  {
-    id: "relics",
-    name: "Relics",
-    icon: "/images/icons/relics.png",
-    route: ROUTES.HOME, // dummy
-  },
+  // {
+  //   id: "armies",
+  //   name: "Armies",
+  //   icon: "/images/icons/armies.png",
+  //   route: ROUTES.HOME, // dummy
+  // },
+  // {
+  //   id: "resources",
+  //   name: "Resources",
+  //   icon: "/images/icons/resources.png",
+  //   route: ROUTES.HOME, // dummy
+  // },
+  // {
+  //   id: "amm",
+  //   name: "Trade",
+  //   icon: "/images/icons/amm.png",
+  //   route: ROUTES.TRADE,
+  // },
+  // {
+  //   id: "construction",
+  //   name: "Construction",
+  //   icon: "/images/icons/construction.png",
+  //   route: ROUTES.HOME, // dummy
+  // },
+  // {
+  //   id: "hyperstructures",
+  //   name: "Hyperstructures",
+  //   icon: "/images/icons/hyperstructures.png",
+  //   route: ROUTES.HOME, // dummy
+  // },
+  // {
+  //   id: "relics",
+  //   name: "Relics",
+  //   icon: "/images/icons/relics.png",
+  //   route: ROUTES.HOME, // dummy
+  // },
   {
     id: "lordpedia",
     name: "Lordpedia",
