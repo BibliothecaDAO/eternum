@@ -1,3 +1,4 @@
+import { ArmyCapacity } from "@/shared/ui/army-capacity";
 import { Badge } from "@/shared/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { ProgressCircle } from "@/shared/ui/progress-circle";
@@ -138,15 +139,13 @@ export const ArmyEntityDetail = ({
     );
   }
 
-  if (!explorer || !derivedData) return null;
-
   const staminaPercentage =
     derivedData.maxStamina > 0 && derivedData.stamina?.amount
       ? Math.round((Number(derivedData.stamina.amount) / Number(derivedData.maxStamina)) * 100)
       : 0;
 
-  const { regularResources, relics, totalCapacity } = useMemo(() => {
-    if (!explorerResources) return { regularResources: [], relics: [], totalCapacity: 0 };
+  const { regularResources, relics } = useMemo(() => {
+    if (!explorerResources) return { regularResources: [], relics: [] };
 
     const { currentDefaultTick } = getBlockTimestamp();
     const balances = ResourceManager.getResourceBalancesWithProduction(explorerResources, currentDefaultTick).filter(
@@ -164,14 +163,13 @@ export const ArmyEntityDetail = ({
       }
     });
 
-    const totalItems = balances.reduce((sum, resource) => sum + divideByPrecision(Number(resource.amount)), 0);
-
     return {
       regularResources: regular.sort((a, b) => b.amount - a.amount),
       relics: relicList.sort((a, b) => b.amount - a.amount),
-      totalCapacity: totalItems,
     };
   }, [explorerResources]);
+
+  if (!explorer || !derivedData) return null;
 
   return (
     <Card>
@@ -221,7 +219,7 @@ export const ArmyEntityDetail = ({
 
           <div className="space-y-1">
             <div className="text-xs font-medium uppercase text-muted-foreground">Capacity</div>
-            <div className="text-xs">{Math.floor(totalCapacity)} items</div>
+            <ArmyCapacity resource={explorerResources} />
           </div>
         </div>
 
