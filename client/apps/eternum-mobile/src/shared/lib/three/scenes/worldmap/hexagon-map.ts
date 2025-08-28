@@ -22,20 +22,20 @@ import { DojoResult } from "@bibliothecadao/react";
 import { BiomeType, FELT_CENTER, HexEntityInfo, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { getMapFromTorii } from "../../../../../app/dojo/queries";
-import { FXManager } from "../../managers/fx-manager";
-import { GUIManager } from "../../managers/gui-manager";
-import { HighlightRenderer } from "../../managers/highlight-renderer";
-import { SelectionManager } from "../../managers/selection-manager";
 import {
   ArmyManager,
   ArmyObject,
+  BiomesManager,
   ChestManager,
   ChestObject,
   QuestManager,
   StructureManager,
   StructureObject,
 } from "../../entity-managers";
-import { BiomeTilePosition, BiomeTileRenderer } from "../../tiles/biome-tile-renderer";
+import { FXManager } from "../../managers/fx-manager";
+import { GUIManager } from "../../managers/gui-manager";
+import { HighlightRenderer } from "../../managers/highlight-renderer";
+import { SelectionManager } from "../../managers/selection-manager";
 import { createHexagonShape } from "../../utils/hexagon-geometry";
 import { findShortestPath } from "../../utils/pathfinding";
 import { getHexagonCoordinates, getWorldPositionForHex, HEX_SIZE, loggedInAccount } from "../../utils/utils";
@@ -51,7 +51,7 @@ export class HexagonMap {
   private hexagonMesh: THREE.InstancedMesh | null = null;
   private hexagonMeshCapacity: number = 0;
   private static readonly MAX_HEX_CAPACITY = 5000;
-  private tileRenderer: BiomeTileRenderer;
+  private biomesManager: BiomesManager;
   private highlightRenderer: HighlightRenderer;
   private armyManager: ArmyManager;
   private structureManager: StructureManager;
@@ -89,22 +89,17 @@ export class HexagonMap {
   private pendingChunkUpdate: { chunkX: number; chunkZ: number } | null = null;
   private currentAbortController: AbortController | null = null;
 
-  // Data structures for action path calculation
   private armyHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
   private structureHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
   private questHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
   private chestHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
 
-  // Store armies positions by ID, to remove previous positions when army moves
   private armiesPositions: Map<number, { col: number; row: number }> = new Map();
 
-  // Debounced re-render for tile updates
   private tileUpdateTimeout: NodeJS.Timeout | null = null;
 
-  // Travel effects tracking
   private activeTravelEffects: Map<number, { promise: Promise<void>; end: () => void }> = new Map();
 
-  // Track armies with pending movement transactions
   private pendingArmyMovements: Set<number> = new Set();
 
   constructor(
@@ -121,7 +116,7 @@ export class HexagonMap {
     this.store = store;
     this.raycaster = new THREE.Raycaster();
 
-    this.tileRenderer = new BiomeTileRenderer(scene);
+    this.biomesManager = new BiomesManager(scene);
     this.highlightRenderer = new HighlightRenderer(scene);
     this.armyManager = new ArmyManager(scene);
     this.structureManager = new StructureManager(scene);
@@ -153,7 +148,6 @@ export class HexagonMap {
     this.systemManager.RelicEffect.onStructureProductionUpdate((update) => this.handleRelicEffectUpdate(update));
     this.systemManager.ExplorerMove.onExplorerMoveEventUpdate((update) => this.handleExplorerMoveUpdate(update));
 
-    // Setup GUI with duplicate prevention
     const folderName = "HexagonMap";
     const existingFolder = GUIManager.folders.find((folder: any) => folder._title === folderName);
     if (existingFolder) {
@@ -324,7 +318,6 @@ export class HexagonMap {
     const instanceCount = allVisibleHexes.length;
 
     if (instanceCount === 0) {
-      this.tileRenderer.clearTiles();
       if (this.hexagonMesh) {
         this.hexagonMesh.count = 0;
       }
@@ -341,7 +334,6 @@ export class HexagonMap {
 
     const instanceSetupStartTime = performance.now();
     let index = 0;
-    const tilePositions: BiomeTilePosition[] = [];
 
     allVisibleHexes.forEach(({ col, row }) => {
       getWorldPositionForHex({ col, row }, true, this.tempVector3);
@@ -354,13 +346,6 @@ export class HexagonMap {
 
       this.tempColor.setHex(0x4a90e2);
       this.hexagonMesh!.setColorAt(index, this.tempColor);
-
-      const biome = this.exploredTiles.get(col)?.get(row);
-      const isExplored = biome !== undefined;
-
-      if (!this.hasStructureAtHex(col, row)) {
-        tilePositions.push({ col, row, biome, isExplored });
-      }
 
       index++;
     });
@@ -377,15 +362,9 @@ export class HexagonMap {
     }
     console.log(`[RENDER-TIMING] Update attributes: ${(performance.now() - updateStartTime).toFixed(2)}ms`);
 
-    const tileRenderStartTime = performance.now();
-    this.tileRenderer.renderTilesForHexes(tilePositions);
-    const tileRenderTime = performance.now() - tileRenderStartTime;
-    console.log(`[RENDER-TIMING] Render tiles: ${tileRenderTime.toFixed(2)}ms`);
-    this.recordPerformanceMetric("Render Tiles", tileRenderTime);
-
     const boundsUpdateStartTime = performance.now();
     const bounds = this.getMapBounds();
-    this.tileRenderer.setVisibleBounds(bounds);
+    this.biomesManager.setVisibleBounds(bounds);
     this.armyManager.setVisibleBounds(bounds);
     this.structureManager.setVisibleBounds(bounds);
     this.questManager.setVisibleBounds(bounds);
@@ -472,7 +451,6 @@ export class HexagonMap {
       ? [this.chestManager.getObject(chestInfo.id)].filter((obj): obj is NonNullable<typeof obj> => obj !== undefined)
       : [];
 
-    // Check if we have a selected object and clicked on a highlighted hex
     const selectedObject = this.selectionManager.getSelectedObject();
     if (selectedObject) {
       const actionPath = this.selectionManager.getActionPath(col, row);
@@ -480,22 +458,17 @@ export class HexagonMap {
         const actionType = ActionPaths.getActionType(actionPath);
 
         if (actionType === ActionType.Move || actionType === ActionType.Explore) {
-          // Clear selection immediately to prevent further interactions
           this.selectionManager.clearSelection();
 
-          // Move the army to the clicked hex
           await this.handleArmyMovement(selectedObject.id, actionPath);
         } else if (actionType === ActionType.Attack) {
           console.log(`Attack action at (${col}, ${row})`);
-          // Handle attack action
           this.selectionManager.clearSelection();
         } else if (actionType === ActionType.Help) {
           console.log(`Help action at (${col}, ${row})`);
-          // Handle help action
           this.selectionManager.clearSelection();
         } else if (actionType === ActionType.Quest) {
           console.log(`Quest action at (${col}, ${row})`);
-          // Handle quest action
           this.selectionManager.clearSelection();
         } else if (actionType === ActionType.Chest) {
           console.log(`Chest action at (${col}, ${row})`);
@@ -507,7 +480,6 @@ export class HexagonMap {
       }
     }
 
-    // Normal selection logic
     if (armies.length > 0) {
       this.selectArmy(armies[0].id);
     } else if (structures.length > 0) {
@@ -515,7 +487,6 @@ export class HexagonMap {
     } else if (quests.length > 0) {
       this.selectionManager.selectObject(quests[0].id, "quest");
     } else if (chests.length > 0) {
-      // Don't open chest directly - just clear selection like desktop
       this.selectionManager.clearSelection();
     } else {
       this.selectionManager.clearSelection();
@@ -526,23 +497,19 @@ export class HexagonMap {
     const army = this.armyManager.getObject(armyId);
     if (!army || actionPath.length < 2) return;
 
-    // Get target hex position
     const targetHex = actionPath[actionPath.length - 1].hex;
     const targetCol = targetHex.col - FELT_CENTER;
     const targetRow = targetHex.row - FELT_CENTER;
 
-    // Get world position for target hex
     getWorldPositionForHex({ col: targetCol, row: targetRow }, true, this.tempVector3);
     const targetWorldPos = this.tempVector3.clone();
 
-    // Determine action type and use appropriate effect
     const actionType = ActionPaths.getActionType(actionPath);
     const isExplored = actionType === ActionType.Move;
 
     const effectType = isExplored ? "travel" : "compass";
     const effectLabel = isExplored ? "Traveling" : "Exploring";
 
-    // Start appropriate effect at destination
     const effect = this.fxManager.playFxAtCoords(
       effectType,
       targetWorldPos.x,
@@ -555,10 +522,8 @@ export class HexagonMap {
 
     this.activeTravelEffects.set(armyId, effect);
 
-    // Mark army as having pending movement transaction
     this.pendingArmyMovements.add(armyId);
 
-    // Get account from store
     const account = this.dojo.account.account;
     if (!account) {
       console.error("No account available for army movement");
@@ -569,16 +534,12 @@ export class HexagonMap {
     }
 
     try {
-      // Create army action manager and perform actual movement
       const armyActionManager = new ArmyActionManager(this.dojo.setup.components, this.dojo.setup.systemCalls, armyId);
 
-      // Get current timestamps for movement
       const { currentArmiesTick } = getBlockTimestamp();
 
-      // Perform the actual movement call
       await armyActionManager.moveArmy(account, actionPath, isExplored, currentArmiesTick);
 
-      // End effect when transaction completes
       effect.end();
       this.activeTravelEffects.delete(armyId);
 
@@ -587,30 +548,25 @@ export class HexagonMap {
       );
     } catch (error) {
       console.error("Army movement failed:", error);
-      // Clean up effects and pending state on error
       effect.end();
       this.activeTravelEffects.delete(armyId);
       this.pendingArmyMovements.delete(armyId);
 
-      // Re-throw error to let caller handle it
       throw error;
     }
   }
 
   private handleChestAction(explorerEntityId: number, actionPath: ActionPath[]): void {
-    // Get the target hex (last hex in the path) like desktop implementation
     const targetHex = actionPath[actionPath.length - 1].hex;
 
     this.store.openChestDrawer(explorerEntityId, { x: targetHex.col, y: targetHex.row });
   }
 
   private selectArmy(armyId: number): void {
-    // Check if army has pending movement transactions
     if (this.pendingArmyMovements.has(armyId)) {
       return;
     }
 
-    // Check if army is currently moving
     if (this.armyManager.isObjectMoving(armyId)) {
       console.log(`[HexagonMap] Cannot select army ${armyId} - it is currently moving`);
       return;
@@ -618,22 +574,17 @@ export class HexagonMap {
 
     this.selectionManager.selectObject(armyId, "army");
 
-    // Get army object to find current position
     const army = this.armyManager.getObject(armyId);
     if (!army) return;
 
     console.log(`[HexagonMap] Selecting army ${armyId} at position (${army.col}, ${army.row})`);
 
-    // Create army action manager
     const armyActionManager = new ArmyActionManager(this.dojo.setup.components, this.dojo.setup.systemCalls, armyId);
 
-    // Get actual player address from store
     const playerAddress = loggedInAccount();
 
-    // Get proper timestamps from block timestamp utility
     const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
 
-    // Find action paths for the army
     const actionPaths = armyActionManager.findActionPaths(
       this.structureHexes,
       this.armyHexes,
@@ -645,23 +596,18 @@ export class HexagonMap {
       playerAddress,
     );
 
-    // Set action paths in selection manager for highlighting - pass ActionPaths object directly
     this.selectionManager.setActionPaths(actionPaths);
   }
 
   private selectStructure(structureId: number): void {
     this.selectionManager.selectObject(structureId, "structure");
 
-    // Create structure action manager
     const structureActionManager = new StructureActionManager(this.dojo.setup.components, structureId);
 
-    // Get actual player address from store
     const playerAddress = loggedInAccount();
 
-    // Find action paths for the structure
     const actionPaths = structureActionManager.findActionPaths(this.armyHexes, this.exploredTiles, playerAddress);
 
-    // Set action paths in selection manager for highlighting - pass ActionPaths object directly
     this.selectionManager.setActionPaths(actionPaths);
   }
 
@@ -723,7 +669,6 @@ export class HexagonMap {
   }
 
   public dispose(): void {
-    // Clean up active travel effects
     this.activeTravelEffects.forEach((effect) => {
       effect.end();
     });
@@ -751,7 +696,7 @@ export class HexagonMap {
       this.hexagonMeshCapacity = 0;
     }
 
-    this.tileRenderer.dispose();
+    this.biomesManager.dispose();
     this.highlightRenderer.dispose();
     this.armyManager.dispose();
     this.structureManager.dispose();
@@ -845,7 +790,6 @@ export class HexagonMap {
       this.currentAbortController = null;
     }
 
-    // Clear all objects from renderers
     this.armyManager.getAllObjects().forEach((army) => {
       this.armyManager.removeObject(army.id);
     });
@@ -862,7 +806,6 @@ export class HexagonMap {
       this.questManager.removeObject(quest.id);
     });
 
-    // Clear hex data
     this.armyHexes.clear();
     this.chestHexes.clear();
     this.structureHexes.clear();
@@ -879,11 +822,8 @@ export class HexagonMap {
     if (controls) {
       console.log("Moving camera to col", col, "row", row);
 
-      // Update the target to the hex position
       controls.target.copy(worldPosition);
 
-      // Maintain the top-down view by setting camera position relative to target
-      // Keep the same height (y=10) and directly above the target
       const camera = controls.object;
       if (camera) {
         camera.position.set(worldPosition.x, 10, worldPosition.z);
@@ -892,7 +832,6 @@ export class HexagonMap {
 
       controls.update();
 
-      // Force chunk loading at the new camera position
       this.updateChunkLoading(worldPosition, true);
     }
 
@@ -901,7 +840,6 @@ export class HexagonMap {
 
   private async updateExploredHex(update: TileSystemUpdate) {
     const { hexCoords, removeExplored, biome } = update;
-    console.log("[ADDING-TILE] [HexagonMap] updateExploredHex", update);
     const normalized = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
 
     const col = normalized.x;
@@ -909,8 +847,7 @@ export class HexagonMap {
 
     if (removeExplored) {
       this.exploredTiles.get(col)?.delete(row);
-      // Also remove the tile from the renderer
-      this.tileRenderer.removeTile(col, row);
+      this.biomesManager.removeExploredTile(col, row);
       return;
     }
 
@@ -920,11 +857,8 @@ export class HexagonMap {
     if (!this.exploredTiles.get(col)!.has(row)) {
       this.exploredTiles.get(col)!.set(row, biome);
 
-      // Ensure materials are initialized before adding tile
-      await this.tileRenderer.ensureMaterialsReady();
-      console.log("[ADDING-TILE] [HexagonMap] Materials ready, adding tile", col, row, biome);
-      // Update the tile directly instead of re-rendering all hexes
-      this.tileRenderer.addTile(col, row, biome, true);
+      await this.biomesManager.ensureMaterialsReady();
+      this.biomesManager.addExploredTile(col, row, biome);
     }
   }
 
@@ -950,15 +884,12 @@ export class HexagonMap {
     const newPos = { col: normalized.x, row: normalized.y };
     const oldPos = this.armiesPositions.get(entityId);
 
-    // Update army position in our tracking
     this.armiesPositions.set(entityId, newPos);
 
-    // Check if this is a new army or an existing one
     const existingArmy = this.armyManager.getObject(entityId);
     const isNewArmy = !existingArmy;
 
     if (isNewArmy) {
-      // Calculate maxStamina if not provided
       let finalMaxStamina = maxStamina || 0;
       if (!finalMaxStamina && troopType && troopTier) {
         try {
@@ -968,7 +899,6 @@ export class HexagonMap {
         }
       }
 
-      // New army - add it
       console.log(
         `[HexagonMap] Added new army ${entityId} at (${newPos.col}, ${newPos.row}) with stamina ${currentStamina || 0}/${finalMaxStamina}`,
       );
@@ -993,28 +923,23 @@ export class HexagonMap {
 
       this.armyManager.addObject(army);
 
-      // Update hex tracking immediately for new armies
       if (!this.armyHexes.has(newPos.col)) {
         this.armyHexes.set(newPos.col, new Map());
       }
       this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: ownerAddress });
     } else {
-      // Existing army - check if it moved
       const hasMoved = oldPos && (oldPos.col !== newPos.col || oldPos.row !== newPos.row);
 
       if (hasMoved) {
-        // Army moved - start movement (hex tracking will be updated after movement completes)
         console.log(
           `[HexagonMap] Moved army ${entityId} from (${oldPos.col}, ${oldPos.row}) to (${newPos.col}, ${newPos.row})`,
         );
 
-        // Clear selection if this army is currently selected and has moved
         const selectedObject = this.selectionManager.getSelectedObject();
         if (selectedObject && selectedObject.id === entityId && selectedObject.type === "army") {
           this.selectionManager.clearSelection();
         }
 
-        // Calculate maxStamina if not provided
         let finalMaxStamina = maxStamina || existingArmy.maxStamina || 0;
         if (!finalMaxStamina && troopType && troopTier) {
           try {
@@ -1029,8 +954,6 @@ export class HexagonMap {
           }
         }
 
-        // Update army properties BEFORE starting movement (so movement logic has correct data)
-        // ArmySystemUpdate is for position changes - preserve existing stamina values from ExplorerTroopsSystemUpdate
         const updatedArmy: ArmyObject = {
           ...existingArmy,
           owner: ownerAddress,
@@ -1041,23 +964,19 @@ export class HexagonMap {
           isDaydreamsAgent,
           isAlly: false,
           troopCount: troopCount ?? existingArmy.troopCount ?? 0,
-          // Always preserve existing stamina values - ArmySystemUpdate has stale stamina data
           currentStamina: existingArmy.currentStamina ?? 0,
           maxStamina: existingArmy.maxStamina ?? 0,
           onChainStamina: existingArmy.onChainStamina,
         };
         this.armyManager.updateObject(updatedArmy);
 
-        // Start smooth movement animation
         this.startSmoothArmyMovement(entityId, oldPos, newPos);
       } else {
-        // Army didn't move, update hex tracking immediately
         if (!this.armyHexes.has(newPos.col)) {
           this.armyHexes.set(newPos.col, new Map());
         }
         this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: ownerAddress });
 
-        // Calculate maxStamina if not provided
         let finalMaxStamina = maxStamina || existingArmy.maxStamina || 0;
         if (!finalMaxStamina && troopType && troopTier) {
           try {
@@ -1072,8 +991,6 @@ export class HexagonMap {
           }
         }
 
-        // Update army properties without position change
-        // ArmySystemUpdate is for position changes - preserve existing stamina values from ExplorerTroopsSystemUpdate
         const updatedArmy: ArmyObject = {
           ...existingArmy,
           col: newPos.col,
@@ -1086,7 +1003,6 @@ export class HexagonMap {
           isDaydreamsAgent,
           isAlly: false,
           troopCount: troopCount ?? existingArmy.troopCount ?? 0,
-          // Always preserve existing stamina values - ArmySystemUpdate has stale stamina data
           currentStamina: existingArmy.currentStamina ?? 0,
           maxStamina: existingArmy.maxStamina ?? 0,
           onChainStamina: existingArmy.onChainStamina,
@@ -1096,7 +1012,6 @@ export class HexagonMap {
       }
     }
 
-    // Remove from pending movements when position is updated from blockchain
     this.pendingArmyMovements.delete(entityId);
   }
 
@@ -1105,15 +1020,12 @@ export class HexagonMap {
     oldPos: { col: number; row: number },
     newPos: { col: number; row: number },
   ) {
-    // Update hex tracking immediately before starting animation
     this.updateArmyHexTracking(entityId, oldPos, newPos);
 
-    // Calculate path using pathfinding
     const oldPosition = new Position({ x: oldPos.col, y: oldPos.row });
     const newPosition = new Position({ x: newPos.col, y: newPos.row });
 
-    // Use a reasonable max distance for pathfinding (similar to desktop)
-    const maxDistance = 50; // This should be based on army stamina, but using a reasonable default
+    const maxDistance = 50;
 
     const path = findShortestPath(
       oldPosition,
@@ -1125,16 +1037,13 @@ export class HexagonMap {
     );
 
     if (path && path.length > 0) {
-      // Convert path to movement format for the renderer
       const movementPath = path.map((pos) => {
         const normalized = pos.getNormalized();
         return { col: normalized.x, row: normalized.y };
       });
 
-      // Start smooth movement animation (hex tracking already updated)
       this.armyManager.moveObjectAlongPath(entityId, movementPath, 300);
     } else {
-      // If no path found, just update the sprite position to match the object position
       this.armyManager.updateObjectPosition(entityId, newPos.col, newPos.row);
     }
   }
@@ -1144,10 +1053,8 @@ export class HexagonMap {
     oldPos: { col: number; row: number },
     newPos: { col: number; row: number },
   ) {
-    // Remove from old position in hex tracking
     this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
 
-    // Add to new position in hex tracking
     if (!this.armyHexes.has(newPos.col)) {
       this.armyHexes.set(newPos.col, new Map());
     }
@@ -1169,7 +1076,6 @@ export class HexagonMap {
 
     const normalized = new Position({ x: col, y: row }).getNormalized();
 
-    // Update structure hexes map for action path calculation
     if (!this.structureHexes.has(normalized.x)) {
       this.structureHexes.set(normalized.x, new Map());
     }
@@ -1196,14 +1102,12 @@ export class HexagonMap {
   }
 
   public deleteArmy(entityId: number) {
-    // Remove from army hexes map
     const oldPos = this.armiesPositions.get(entityId);
     if (oldPos) {
       this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
       this.armiesPositions.delete(entityId);
     }
 
-    // Remove from renderer (this will properly dispose of the sprite)
     this.armyManager.removeObject(entityId);
   }
 
@@ -1215,7 +1119,6 @@ export class HexagonMap {
 
     const normalized = new Position({ x: col, y: row }).getNormalized();
 
-    // Update quest hexes map for action path calculation
     if (!this.questHexes.has(normalized.x)) {
       this.questHexes.set(normalized.x, new Map());
     }
@@ -1239,7 +1142,6 @@ export class HexagonMap {
 
     const normalized = new Position({ x: col, y: row }).getNormalized();
 
-    // Update chest hexes map for action path calculation
     if (!this.chestHexes.has(normalized.x)) {
       this.chestHexes.set(normalized.x, new Map());
     }
@@ -1256,7 +1158,6 @@ export class HexagonMap {
   }
 
   public deleteChest(entityId: number) {
-    // Find and remove from chestHexes
     this.chestHexes.forEach((rowMap, col) => {
       rowMap.forEach((chestInfo, row) => {
         if (chestInfo.id === entityId) {
@@ -1268,7 +1169,6 @@ export class HexagonMap {
       });
     });
 
-    // Remove from renderer
     this.chestManager.removeObject(entityId);
   }
 
@@ -1331,7 +1231,6 @@ export class HexagonMap {
     const metrics = this.performanceMetrics.get(operation)!;
     metrics.push(duration);
 
-    // Keep only last 10 measurements to avoid memory bloat
     if (metrics.length > 10) {
       metrics.shift();
     }
@@ -1358,18 +1257,15 @@ export class HexagonMap {
   }
 
   private updateArmyFromExplorerTroopsUpdate(update: ExplorerTroopsSystemUpdate): void {
-    // Get the army from our renderer
     const armyObject = this.armyManager.getObject(update.entityId);
 
     if (!armyObject) {
-      // Army doesn't exist in renderer yet, this is expected for armies not yet loaded
       console.log(
         `[HexagonMap] Army ${update.entityId} not found in renderer - update will be applied when army loads`,
       );
       return;
     }
 
-    // Calculate current stamina using StaminaManager (mirroring desktop implementation)
     const { currentArmiesTick } = getBlockTimestamp();
     let currentStamina = armyObject.currentStamina || 0;
     let maxStamina = armyObject.maxStamina || 0;
@@ -1401,13 +1297,11 @@ export class HexagonMap {
 
         currentStamina = Number(staminaResult.amount);
 
-        // Calculate maxStamina using configManager based on troop type and tier
         let troopType = armyObject.troopType;
         let troopTier = armyObject.troopTier;
 
         if (troopType && troopTier) {
           try {
-            // Convert string values to enum values if needed
             const troopTypeEnum =
               typeof troopType === "string" ? TroopType[troopType as keyof typeof TroopType] : troopType;
             const troopTierEnum =
@@ -1431,7 +1325,6 @@ export class HexagonMap {
       }
     }
 
-    // Update the army object with new troop count and stamina data
     const updatedArmy = {
       ...armyObject,
       troopCount: update.troopCount,
@@ -1444,7 +1337,6 @@ export class HexagonMap {
 
     this.armyManager.updateObject(updatedArmy);
 
-    // Update hex tracking with the new owner information if it changed
     const position = this.armiesPositions.get(update.entityId);
     if (position) {
       if (!this.armyHexes.has(position.col)) {
@@ -1466,7 +1358,6 @@ export class HexagonMap {
 
     const existingStructure = this.structureManager.getObject(update.entityId);
     if (existingStructure) {
-      // Update structure with guard data
       const updatedStructure = {
         ...existingStructure,
         guardArmies: update.guardArmies,
@@ -1485,7 +1376,6 @@ export class HexagonMap {
 
     const existingStructure = this.structureManager.getObject(update.entityId);
     if (existingStructure) {
-      // Update structure with production data
       const updatedStructure = {
         ...existingStructure,
         activeProductions: update.activeProductions,
@@ -1499,11 +1389,10 @@ export class HexagonMap {
 
     const existingStructure = this.structureManager.getObject(value.entityId);
     if (existingStructure) {
-      // Update structure with contribution data (hyperstructure realm count)
       const updatedStructure = {
         ...existingStructure,
         stage: value.stage,
-        hyperstructureRealmCount: value.stage, // Stage represents VP/s for hyperstructures
+        hyperstructureRealmCount: value.stage,
       };
       this.structureManager.updateObject(updatedStructure);
     }
@@ -1511,20 +1400,15 @@ export class HexagonMap {
 
   private handleRelicEffectUpdate(update: RelicEffectSystemUpdate): void {
     console.log("[HexagonMap] Relic effect update:", update);
-    // For mobile, relic effects are handled by individual renderers
-    // This is a placeholder for future relic effect implementation
   }
 
   private handleExplorerMoveUpdate(update: ExplorerMoveSystemUpdate): void {
     const { explorerId, resourceId, amount } = update;
     console.log("[HexagonMap] Explorer move update:", update);
 
-    // Find the army position using explorerId
     setTimeout(() => {
       const armyPosition = this.armiesPositions.get(explorerId);
       if (armyPosition && resourceId !== 0) {
-        // For mobile, we could display resource gain effects here
-        // Currently just log the resource gain
         console.log(
           `Army ${explorerId} found resource ${resourceId} (amount: ${amount}) at position (${armyPosition.col}, ${armyPosition.row})`,
         );

@@ -81,7 +81,7 @@ export class BuildingTileRenderer extends BaseTileRenderer<BuildingTileIndex> {
       return;
     }
 
-    this.createTileSprite(col, row, buildingType, isExplored);
+    this.createTileSprite(col, row, buildingType, isExplored, true);
   }
 
   public addTileByIndex(

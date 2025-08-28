@@ -50,7 +50,6 @@ export class BiomeTileRenderer extends BaseTileRenderer<BiomeTileIndex> {
     }
 
     this.createSingleTileSprite(hexKey, tileId, cachedPosition, row, false);
-    console.log("[ADDING-TILE] [BiomeTileRenderer] Created tile sprite", hexKey, tileId);
   }
 
   public async ensureMaterialsReady(): Promise<void> {
@@ -63,7 +62,6 @@ export class BiomeTileRenderer extends BaseTileRenderer<BiomeTileIndex> {
     if (this.sprites.has(hexKey)) {
       return;
     }
-    console.log("[ADDING-TILE] [BiomeTileRenderer] Adding tile", hexKey, biome, isExplored);
     this.createTileSprite(col, row, biome, isExplored);
   }
 

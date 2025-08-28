@@ -1,4 +1,4 @@
-import { BuildingType, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BiomeType, BuildingType, TroopTier, TroopType } from "@bibliothecadao/types";
 
 export interface MapObject {
   id: number;
@@ -51,4 +51,10 @@ export interface ChestObject extends MapObject {
   type: "chest";
 }
 
-export type GameMapObject = ArmyObject | StructureObject | QuestObject | ChestObject;
+export interface BiomeObject extends MapObject {
+  type: "biome";
+  biome: BiomeType;
+  isExplored: boolean;
+}
+
+export type GameMapObject = ArmyObject | StructureObject | QuestObject | ChestObject | BiomeObject;
