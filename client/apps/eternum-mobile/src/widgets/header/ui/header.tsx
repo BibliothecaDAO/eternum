@@ -1,7 +1,7 @@
 import { ROUTES } from "@/shared/consts/routes";
 import useStore from "@/shared/store";
 import { Button } from "@/shared/ui/button";
-import { useMatches, useNavigate } from "@tanstack/react-router";
+import { useMatches } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -15,12 +15,11 @@ const routeTitles: Record<string, string> = {
 };
 
 export function Header() {
-  const navigate = useNavigate();
   const matches = useMatches();
   const connector = useStore((state) => state.connector);
-  const [userName, setUserName] = useState<string | undefined>(undefined);
+  const [_, setUserName] = useState<string | undefined>(undefined);
   const currentPath = matches.at(-1)?.pathname;
-  
+
   useEffect(() => {
     if (!connector || !connector!.controller) return;
 
@@ -31,11 +30,9 @@ export function Header() {
     }
   }, [connector]);
 
-
   const handleBack = () => {
     window.history.back();
   };
-
 
   const currentTitle = routeTitles[currentPath || ""] || "Eternum";
 

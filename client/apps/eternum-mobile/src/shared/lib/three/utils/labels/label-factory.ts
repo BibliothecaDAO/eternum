@@ -643,7 +643,7 @@ export const ChestLabelType: LabelTypeDefinition<ChestLabelData> = {
   type: "chest",
   defaultConfig: LABEL_TYPE_CONFIGS.CHEST,
 
-  createElement: (data: ChestLabelData): HTMLElement => {
+  createElement: (_data: ChestLabelData): HTMLElement => {
     // Create base label with chest styling
     const labelDiv = createLabelBase(false); // Chests don't have ownership
 
@@ -686,7 +686,7 @@ export const QuestLabelType: LabelTypeDefinition<QuestLabelData> = {
     positionOffset: { x: 0, y: 1.5, z: 0 },
   },
 
-  createElement: (data: QuestLabelData): HTMLElement => {
+  createElement: (_data: QuestLabelData): HTMLElement => {
     // Create base label with quest styling
     const labelDiv = createLabelBase(false); // Quests don't have ownership
 
@@ -729,7 +729,7 @@ export function createCustomLabelType<T extends LabelData = LabelData>(
   return {
     type,
     defaultConfig: config.defaultConfig || LABEL_TYPE_CONFIGS.ARMY,
-    createElement: config.createElement || ((data) => document.createElement("div")),
+    createElement: config.createElement || ((_data) => document.createElement("div")),
     updateElement: config.updateElement,
     shouldDisplay: config.shouldDisplay,
   };

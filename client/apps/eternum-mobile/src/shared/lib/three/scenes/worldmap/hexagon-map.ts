@@ -94,7 +94,7 @@ export class HexagonMap {
     this.relicEffectsManager = new RelicEffectsManager(fxManager);
 
     // Set dependencies for managers
-    this.armyManager.setDependencies(dojo, fxManager, this.biomesManager.getExploredTiles());
+    this.armyManager.setDependencies(dojo, this.fxManager, this.biomesManager.getExploredTiles());
     this.structureManager.setDependencies(dojo, this.biomesManager.getExploredTiles());
 
     this.selectionManager = new SelectionManager(this.highlightRenderer);
@@ -485,7 +485,7 @@ export class HexagonMap {
         if (actionType === ActionType.Move || actionType === ActionType.Explore) {
           this.selectionManager.clearSelection();
 
-          await this.armyManager.handleArmyMovement(selectedObject.id, actionPath, this.store);
+          await this.armyManager.handleArmyMovement(selectedObject.id, actionPath);
         } else if (actionType === ActionType.Attack) {
           console.log(`Attack action at (${col}, ${row})`);
           this.selectionManager.clearSelection();

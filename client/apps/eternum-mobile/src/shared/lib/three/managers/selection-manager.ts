@@ -2,7 +2,7 @@ import { ActionPath, ActionPaths, ActionType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import useStore from "../../../store";
 import { EntityManager, GameMapObject } from "../entity-managers";
-import { HighlightRenderer } from "../highlight-renderer";
+import { HighlightRenderer } from "./highlight-renderer";
 
 export class SelectionManager {
   private highlightRenderer: HighlightRenderer;

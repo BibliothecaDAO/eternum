@@ -1,4 +1,4 @@
-import type { CameraConfig, ControlsConfig, SceneConfig } from "./types";
+import type { CameraConfig, ControlsConfig, SceneConfig } from "../types";
 
 export const DEFAULT_SCENES: SceneConfig[] = [
   {

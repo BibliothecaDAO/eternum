@@ -670,7 +670,7 @@ export class ArmyManager extends EntityManager<ArmyObject> {
     }
   }
 
-  public async handleArmyMovement(armyId: number, actionPath: ActionPath[], store: any): Promise<void> {
+  public async handleArmyMovement(armyId: number, actionPath: ActionPath[]): Promise<void> {
     if (!this.dojo || !this.fxManager) {
       console.error("Dependencies not set for army movement");
       return;
@@ -844,7 +844,7 @@ export class ArmyManager extends EntityManager<ArmyObject> {
     if (clearRelicEffectsCallback) {
       clearRelicEffectsCallback(entityId);
     }
-    
+
     // Clear relic effects stored in this manager
     this.updateRelicEffects(entityId, []);
 

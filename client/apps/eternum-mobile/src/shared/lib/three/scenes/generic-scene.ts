@@ -34,11 +34,11 @@ export class GenericScene extends BaseScene {
     this.scene.add(box);
   }
 
-  public update(camera: THREE.Camera): void {
+  public update(_camera: THREE.Camera): void {
     // Generic scenes don't need updates by default
   }
 
-  public handleClick(mouse: THREE.Vector2, camera: THREE.Camera): void {
+  public handleClick(_mouse: THREE.Vector2, _camera: THREE.Camera): void {
     console.log(`Click on ${this.sceneId} scene`);
   }
 }

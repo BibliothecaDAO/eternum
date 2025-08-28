@@ -32,7 +32,7 @@ export const getWorldPositionForHex = (hexCoords: HexPosition, flat: boolean = t
   const hexRadius = HEX_SIZE; // This represents height/2
   const hexHeight = hexRadius * 2;
   const hexWidth = hexHeight * 1.6; // width = height * 1.6
-  const sideLength = hexHeight / 2; // tile side length = height / 2
+  //const sideLength = hexHeight / 2; // tile side length = height / 2
 
   // For isometric hexagons, we need different spacing calculations
   // Vertical distance between row centers
@@ -59,7 +59,7 @@ export const getWorldPositionForTile = (hexCoords: HexPosition, flat: boolean = 
   const hexRadius = HEX_SIZE; // This represents height/2
   const hexHeight = hexRadius * 2;
   const hexWidth = hexHeight * 1.6; // width = height * 1.6
-  const sideLength = hexHeight / 2; // tile side length = height / 2
+  //const sideLength = hexHeight / 2; // tile side length = height / 2
 
   // For isometric hexagons, we need different spacing calculations
   // Vertical distance between row centers
@@ -86,7 +86,7 @@ export const getHexForWorldPosition = (worldPosition: { x: number; y: number; z:
   const hexRadius = HEX_SIZE; // This represents height/2
   const hexHeight = hexRadius * 2;
   const hexWidth = hexHeight * 1.6; // width = height * 1.6
-  const sideLength = hexHeight / 2; // tile side length = height / 2
+  //const _sideLength = hexHeight / 2; // tile side length = height / 2
 
   // For isometric hexagons, we need different spacing calculations
   // Vertical distance between row centers

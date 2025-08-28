@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import { Hexagon } from "./hexagon";
-import { getWorldPositionForHex } from "./utils";
+import { Hexagon } from "../../utils/hexagon";
+import { getWorldPositionForHex } from "../../utils/utils";
 
 export interface ChunkCoordinates {
   x: number;

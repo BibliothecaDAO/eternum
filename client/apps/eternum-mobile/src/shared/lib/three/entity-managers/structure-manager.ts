@@ -442,8 +442,8 @@ export class StructureManager extends EntityManager<StructureObject> {
 
   public selectStructure(
     structureId: number,
-    col: number,
-    row: number,
+    _col: number,
+    _row: number,
     armyHexes: Map<number, Map<number, HexEntityInfo>>,
   ): ActionPaths | null {
     if (!this.dojo) {

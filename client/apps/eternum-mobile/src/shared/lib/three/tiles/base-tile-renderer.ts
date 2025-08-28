@@ -223,7 +223,7 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
     minRow: number;
     maxRow: number;
   }): void {
-    const visibilityStartTime = performance.now();
+    //const visibilityStartTime = performance.now();
 
     // Build set of tiles that should be visible with new bounds
     const newVisibleTileKeys = new Set<string>();
@@ -350,12 +350,12 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
   protected applyBatchedSceneOps(): void {
     if (!this.isBatchingSceneOps) return;
 
-    const addStartTime = performance.now();
+    //const addStartTime = performance.now();
     this.pendingSceneAdds.forEach((group) => {
       this.scene.add(group);
     });
 
-    const removeStartTime = performance.now();
+    //const removeStartTime = performance.now();
     this.pendingSceneRemoves.forEach((group) => {
       this.scene.remove(group);
     });
@@ -450,8 +450,8 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
   }
 
   public clearTiles(): void {
-    const clearStartTime = performance.now();
-    const groupCount = this.tileGroups.size;
+    //const clearStartTime = performance.now();
+    //const groupCount = this.tileGroups.size;
 
     // Return all sprites to pool before clearing
     this.sprites.forEach((sprite) => {

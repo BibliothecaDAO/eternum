@@ -39,7 +39,7 @@ export class WorldmapScene extends BaseScene {
     return this.hexagonMap;
   }
 
-  public update(camera: THREE.Camera): void {
+  public update(_camera: THREE.Camera): void {
     // Chunk loading is now handled by controls listener
   }
 

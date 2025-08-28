@@ -163,7 +163,7 @@ export function SceneControls({
           {/* Expanded Info */}
           {isExpanded && currentSceneConfig?.description && (
             <div className="mt-3 pt-3 border-t border-border/50">
-              <p className="text-xs text-muted-foreground">{currentSceneConfig.description}</p>
+              <p className="text-xs text-muted-foreground">{currentSceneConfig?.description}</p>
             </div>
           )}
         </Card>

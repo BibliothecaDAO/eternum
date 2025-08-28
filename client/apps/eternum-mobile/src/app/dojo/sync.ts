@@ -1,9 +1,8 @@
 import { type SetupResult } from "@bibliothecadao/dojo";
 
-import type { Entity, Schema } from "@dojoengine/recs";
+import type { Entity } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
 import type { Clause, ToriiClient, Entity as ToriiEntity } from "@dojoengine/torii-wasm/types";
-import { sqlApi } from "../services/api";
 import {
   getAddressNamesFromTorii,
   getBankStructuresFromTorii,
@@ -17,7 +16,7 @@ function isToriiDeleteNotification(entity: ToriiEntity): boolean {
   return Object.keys(entity.models).length === 0;
 }
 
-const syncEntitiesDebounced = async <S extends Schema>(
+const syncEntitiesDebounced = async (
   client: ToriiClient,
   setupResult: SetupResult,
   entityKeyClause: Clause | undefined | null,
@@ -171,7 +170,7 @@ export const initialSync = async (setup: SetupResult, setInitialSyncProgress: (p
   setInitialSyncProgress(10);
 
   // // SPECTATOR REALM
-  const firstNonOwnedStructure = await sqlApi.fetchFirstStructure();
+  //const firstNonOwnedStructure = await sqlApi.fetchFirstStructure();
 
   // if (firstNonOwnedStructure) {
   //   state.setSpectatorRealmEntityId(firstNonOwnedStructure.entity_id);

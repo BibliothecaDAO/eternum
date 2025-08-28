@@ -54,7 +54,7 @@ export abstract class BaseScene {
       (state) => ({
         account: state.account,
       }),
-      (account) => {
+      (_) => {
         // this.systemManager.setLoggedInAccount(BigInt(account?.account?.address || "0"));
       },
     );

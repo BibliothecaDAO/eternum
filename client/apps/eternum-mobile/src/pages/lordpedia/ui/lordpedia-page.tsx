@@ -1,4 +1,3 @@
-import { ROUTES } from "@/shared/consts/routes";
 import { Buildings } from "@/shared/ui/hint-components/buildings";
 import { Combat } from "@/shared/ui/hint-components/combat";
 import { GettingStarted } from "@/shared/ui/hint-components/getting-started";
@@ -13,7 +12,6 @@ import { Transfers } from "@/shared/ui/hint-components/transfers";
 import { WorldStructures } from "@/shared/ui/hint-components/world-structures";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 import { SectionTabs } from "@/shared/ui/section-tabs";
-import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { HintSection, SECTIONS } from "../model/sections";
 
@@ -33,12 +31,12 @@ const SECTION_COMPONENTS = {
 };
 
 export function LordpediaPage() {
-  const navigate = useNavigate();
+  //const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState<HintSection>(HintSection.TheWorld);
 
-  const handleBack = () => {
-    navigate({ to: ROUTES.HOME });
-  };
+  // const handleBack = () => {
+  //   navigate({ to: ROUTES.HOME });
+  // };
 
   const handleSectionChange = (sectionId: string) => {
     setActiveSection(sectionId as HintSection);

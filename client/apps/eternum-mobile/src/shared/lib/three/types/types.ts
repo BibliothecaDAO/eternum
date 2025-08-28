@@ -31,3 +31,20 @@ export interface ControlsConfig {
   enablePan: boolean;
   enableZoom: boolean;
 }
+
+export enum ModelType {
+  Boat = "boat",
+  Knight1 = "knight1",
+  Knight2 = "knight2",
+  Knight3 = "knight3",
+  Crossbowman1 = "crossbowman1",
+  Crossbowman2 = "crossbowman2",
+  Crossbowman3 = "crossbowman3",
+  Paladin1 = "paladin1",
+  Paladin2 = "paladin2",
+  Paladin3 = "paladin3",
+  AgentApix = "apix",
+  AgentElisa = "elisa",
+  AgentIstarai = "istarai",
+  AgentYP = "ypanther",
+}
