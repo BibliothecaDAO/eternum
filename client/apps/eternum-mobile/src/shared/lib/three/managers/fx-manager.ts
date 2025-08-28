@@ -17,7 +17,9 @@ class FXInstance {
   public clock: THREE.Clock;
   public animationFrameId?: number;
   public isDestroyed = false;
+  public initialX: number;
   public initialY: number;
+  public initialZ: number;
   public baseSize: number;
   public resolvePromise?: () => void;
   public label?: CSS2DObject;
@@ -45,7 +47,9 @@ class FXInstance {
     this.group = new THREE.Group();
     this.group.renderOrder = Infinity;
     this.group.position.set(x, y, z);
+    this.initialX = x;
     this.initialY = y;
+    this.initialZ = z;
     this.baseSize = size;
     this.type = type;
     this.animateCallback = animateCallback;
@@ -179,7 +183,7 @@ export class FXManager {
 
   private registerBuiltInFX() {
     this.registerFX("skull", {
-      textureUrl: "/images/fx/skull.png",
+      textureUrl: "textures/skull.png",
       animate: (fx, t) => {
         const hoverHeight = 1.5;
 
@@ -205,7 +209,7 @@ export class FXManager {
     });
 
     this.registerFX("compass", {
-      textureUrl: "/images/fx/compass.png",
+      textureUrl: "textures/compass.png",
       animate: (fx, t) => {
         // Fade in animation
         if (t < 0.3) {
@@ -222,7 +226,7 @@ export class FXManager {
     });
 
     this.registerFX("travel", {
-      textureUrl: "/images/fx/travel.png",
+      textureUrl: "textures/travel.png",
       animate: (fx, t) => {
         // Fade in animation
         if (t < 0.3) {
@@ -238,6 +242,75 @@ export class FXManager {
         fx.group.position.y = fx.initialY + bob;
         fx.group.position.x += sway * 0.01;
         fx.sprite.scale.set(fx.baseSize, fx.baseSize, fx.baseSize);
+
+        return true;
+      },
+      isInfinite: true,
+    });
+  }
+
+  public async registerRelicFX(relicNumber: number): Promise<void> {
+    const type = `relic_${relicNumber}`;
+    const textureUrl = `images/resources/${relicNumber}.png`;
+
+    // Pre-load the texture and wait for it to load
+    if (!this.textures.has(textureUrl)) {
+      const texture = await new Promise<THREE.Texture>((resolve, _reject) => {
+        const loader = new THREE.TextureLoader();
+        loader.load(
+          textureUrl,
+          (loadedTexture) => {
+            loadedTexture.colorSpace = THREE.SRGBColorSpace;
+            loadedTexture.minFilter = THREE.LinearFilter;
+            loadedTexture.magFilter = THREE.LinearFilter;
+            resolve(loadedTexture);
+          },
+          undefined,
+          (error) => {
+            console.warn(`Failed to load relic texture ${textureUrl}:`, error);
+            // Create a fallback white texture
+            const canvas = document.createElement("canvas");
+            canvas.width = 64;
+            canvas.height = 64;
+            const context = canvas.getContext("2d")!;
+            context.fillStyle = "#ffffff";
+            context.fillRect(0, 0, 64, 64);
+            const fallbackTexture = new THREE.CanvasTexture(canvas);
+            fallbackTexture.colorSpace = THREE.SRGBColorSpace;
+            resolve(fallbackTexture);
+          },
+        );
+      });
+      this.textures.set(textureUrl, texture);
+    }
+
+    this.registerFX(type, {
+      textureUrl,
+      animate: (fx, t) => {
+        // Fade in animation
+        if (t < 0.5) {
+          fx.material.opacity = t / 0.5;
+          const scale = (t / 0.5) * fx.baseSize;
+          fx.sprite.scale.set(scale, scale, scale);
+        } else {
+          fx.material.opacity = 1;
+          fx.sprite.scale.set(fx.baseSize, fx.baseSize, fx.baseSize);
+        }
+
+        // Get unique orbit parameters based on fx instance
+        const orbitSpeed = 0.5 + (fx.sprite.id % 3) * 0.2; // Different speeds
+        const orbitRadius = 0.5 + (fx.sprite.id % 2) * 0.3; // Different radii
+        const verticalOffset = (fx.sprite.id % 4) * 0.2; // Different heights
+        const phase = (fx.sprite.id % 6) * (Math.PI / 3); // Different starting positions
+
+        // Orbital motion
+        const angle = t * orbitSpeed + phase;
+        fx.group.position.x = fx.initialX + Math.cos(angle) * orbitRadius;
+        fx.group.position.z = fx.initialZ + Math.sin(angle) * orbitRadius;
+
+        // Vertical bobbing
+        const bob = Math.sin(t * 2 + phase) * 0.1;
+        fx.group.position.y = fx.initialY + verticalOffset + bob;
 
         return true;
       },
@@ -265,13 +338,14 @@ export class FXManager {
     size?: number,
     labelText?: string,
     isInfinite: boolean = false,
-  ): { promise: Promise<void>; end: () => void } {
+  ): { promise: Promise<void>; end: () => void; instance?: FXInstance } {
     const config = this.fxConfigs.get(type);
     if (!config) {
       console.warn(`FX type '${type}' is not registered.`);
       return {
         promise: Promise.reject(`FX type '${type}' not registered.`),
         end: () => {},
+        instance: undefined,
       };
     }
 
@@ -281,29 +355,33 @@ export class FXManager {
       return {
         promise: Promise.reject("Texture not loaded"),
         end: () => {},
+        instance: undefined,
       };
     }
 
-    let fxInstance: FXInstance | null = null;
-    const promise = new Promise<void>((resolve) => {
-      fxInstance = new FXInstance(
-        this.scene,
-        texture,
-        type,
-        x,
-        y,
-        z,
-        size ?? this.defaultSize,
-        labelText,
-        config.animate,
-        isInfinite || config.isInfinite,
-      );
+    const fxInstance = new FXInstance(
+      this.scene,
+      texture,
+      type,
+      x,
+      y,
+      z,
+      size ?? this.defaultSize,
+      labelText,
+      config.animate,
+      isInfinite || config.isInfinite,
+    );
 
+    // Set initial position for orbital effects
+    fxInstance.initialX = x;
+    fxInstance.initialZ = z;
+
+    const promise = new Promise<void>((resolve) => {
       fxInstance.onComplete(resolve);
       this.activeFX.add(fxInstance);
 
       const cleanup = () => {
-        this.activeFX.delete(fxInstance!);
+        this.activeFX.delete(fxInstance);
       };
 
       const originalDestroy = fxInstance.destroy;
@@ -320,6 +398,7 @@ export class FXManager {
           fxInstance.startEnding();
         }
       },
+      instance: fxInstance,
     };
   }
 
