@@ -1,10 +1,10 @@
 import * as THREE from "three";
 import { BuildingTileRenderer } from "../tiles/building-tile-renderer";
 import { BuildingTileIndex } from "../tiles/tile-enums";
-import { ObjectRenderer } from "./base-object-renderer";
+import { EntityManager } from "./entity-manager";
 import { QuestObject } from "./types";
 
-export class QuestRenderer extends ObjectRenderer<QuestObject> {
+export class QuestManager extends EntityManager<QuestObject> {
   private buildingTileRenderer: BuildingTileRenderer;
 
   constructor(scene: THREE.Scene) {

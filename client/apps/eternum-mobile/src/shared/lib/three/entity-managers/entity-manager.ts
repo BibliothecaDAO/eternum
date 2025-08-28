@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { MapObject } from "./types";
 
-export abstract class ObjectRenderer<T extends MapObject> {
+export abstract class EntityManager<T extends MapObject> {
   protected scene: THREE.Scene;
   protected objects: Map<number, T> = new Map();
   protected selectedObjectId: number | null = null;

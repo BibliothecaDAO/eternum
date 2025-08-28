@@ -6,10 +6,10 @@ import { BuildingTileRenderer } from "../tiles/building-tile-renderer";
 import { BuildingTileIndex, getBuildingTileIndex } from "../tiles/tile-enums";
 import { StructureLabelData, StructureLabelType } from "../utils/labels/label-factory";
 import { HEX_SIZE, loggedInAccount } from "../utils/utils";
-import { ObjectRenderer } from "./base-object-renderer";
+import { EntityManager } from "./entity-manager";
 import { StructureObject } from "./types";
 
-export class StructureRenderer extends ObjectRenderer<StructureObject> {
+export class StructureManager extends EntityManager<StructureObject> {
   private buildingTileRenderer: BuildingTileRenderer;
   private labels: Map<number, CSS2DObject> = new Map();
   private labelAttachmentState: Map<number, boolean> = new Map();
@@ -295,7 +295,7 @@ export class StructureRenderer extends ObjectRenderer<StructureObject> {
       ? (parseInt(structure.structureType) as StructureType)
       : StructureType.Realm;
 
-    console.log(`[StructureRenderer] Converting structure ${structure.id} to label data:`, {
+    console.log(`[StructureManager] Converting structure ${structure.id} to label data:`, {
       structureType,
       hyperstructureRealmCount: structure.hyperstructureRealmCount,
       guardArmies: structure.guardArmies?.length || 0,

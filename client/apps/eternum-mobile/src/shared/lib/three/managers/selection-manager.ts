@@ -2,11 +2,11 @@ import { ActionPath, ActionPaths, ActionType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import useStore from "../../../store";
 import { HighlightRenderer } from "../highlight-renderer";
-import { GameMapObject, ObjectRenderer } from "./object-renderer";
+import { EntityManager, GameMapObject } from "../entity-managers";
 
 export class SelectionManager {
   private highlightRenderer: HighlightRenderer;
-  private objectRenderers: Map<string, ObjectRenderer<any>> = new Map();
+  private objectRenderers: Map<string, EntityManager<any>> = new Map();
 
   private readonly HIGHLIGHT_COLORS = {
     [ActionType.Move]: new THREE.Color().setRGB(0.5, 2.0, 0.0), // Emerald green
@@ -23,7 +23,7 @@ export class SelectionManager {
     this.highlightRenderer = highlightRenderer;
   }
 
-  public registerObjectRenderer(type: string, renderer: ObjectRenderer<any>): void {
+  public registerObjectRenderer(type: string, renderer: EntityManager<any>): void {
     this.objectRenderers.set(type, renderer);
   }
 

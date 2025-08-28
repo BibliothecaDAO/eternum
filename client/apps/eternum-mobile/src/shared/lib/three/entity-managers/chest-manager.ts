@@ -5,10 +5,10 @@ import { BuildingTileRenderer } from "../tiles/building-tile-renderer";
 import { BuildingTileIndex } from "../tiles/tile-enums";
 import { ChestLabelData, ChestLabelType } from "../utils/labels/label-factory";
 import { HEX_SIZE } from "../utils/utils";
-import { ObjectRenderer } from "./base-object-renderer";
+import { EntityManager } from "./entity-manager";
 import { ChestObject } from "./types";
 
-export class ChestRenderer extends ObjectRenderer<ChestObject> {
+export class ChestManager extends EntityManager<ChestObject> {
   private buildingTileRenderer: BuildingTileRenderer;
   private labels: Map<number, CSS2DObject> = new Map();
   private labelAttachmentState: Map<number, boolean> = new Map();

@@ -5,10 +5,10 @@ import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { UnitTilePosition, UnitTileRenderer } from "../tiles/unit-tile-renderer";
 import { ArmyLabelData, ArmyLabelType } from "../utils/labels/label-factory";
 import { HEX_SIZE, loggedInAccount } from "../utils/utils";
-import { ObjectRenderer } from "./base-object-renderer";
+import { EntityManager } from "./entity-manager";
 import { ArmyObject } from "./types";
 
-export class ArmyRenderer extends ObjectRenderer<ArmyObject> {
+export class ArmyManager extends EntityManager<ArmyObject> {
   private labels: Map<number, CSS2DObject> = new Map();
   private unitTileRenderer: UnitTileRenderer;
   private movingObjects: Set<number> = new Set();

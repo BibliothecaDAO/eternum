@@ -27,14 +27,14 @@ import { GUIManager } from "../../managers/gui-manager";
 import { HighlightRenderer } from "../../managers/highlight-renderer";
 import { SelectionManager } from "../../managers/selection-manager";
 import {
+  ArmyManager,
   ArmyObject,
-  ArmyRenderer,
+  ChestManager,
   ChestObject,
-  ChestRenderer,
-  QuestRenderer,
+  QuestManager,
+  StructureManager,
   StructureObject,
-  StructureRenderer,
-} from "../../renderers";
+} from "../../entity-managers";
 import { BiomeTilePosition, BiomeTileRenderer } from "../../tiles/biome-tile-renderer";
 import { createHexagonShape } from "../../utils/hexagon-geometry";
 import { findShortestPath } from "../../utils/pathfinding";
@@ -53,10 +53,10 @@ export class HexagonMap {
   private static readonly MAX_HEX_CAPACITY = 5000;
   private tileRenderer: BiomeTileRenderer;
   private highlightRenderer: HighlightRenderer;
-  private armyRenderer: ArmyRenderer;
-  private structureRenderer: StructureRenderer;
-  private questRenderer: QuestRenderer;
-  private chestRenderer: ChestRenderer;
+  private armyManager: ArmyManager;
+  private structureManager: StructureManager;
+  private questManager: QuestManager;
+  private chestManager: ChestManager;
   private selectionManager: SelectionManager;
   private fxManager: FXManager;
   private GUIFolder: any;
@@ -123,16 +123,16 @@ export class HexagonMap {
 
     this.tileRenderer = new BiomeTileRenderer(scene);
     this.highlightRenderer = new HighlightRenderer(scene);
-    this.armyRenderer = new ArmyRenderer(scene);
-    this.structureRenderer = new StructureRenderer(scene);
-    this.questRenderer = new QuestRenderer(scene);
-    this.chestRenderer = new ChestRenderer(scene);
+    this.armyManager = new ArmyManager(scene);
+    this.structureManager = new StructureManager(scene);
+    this.questManager = new QuestManager(scene);
+    this.chestManager = new ChestManager(scene);
 
     this.selectionManager = new SelectionManager(this.highlightRenderer);
-    this.selectionManager.registerObjectRenderer("army", this.armyRenderer);
-    this.selectionManager.registerObjectRenderer("structure", this.structureRenderer);
-    this.selectionManager.registerObjectRenderer("quest", this.questRenderer);
-    this.selectionManager.registerObjectRenderer("chest", this.chestRenderer);
+    this.selectionManager.registerObjectRenderer("army", this.armyManager);
+    this.selectionManager.registerObjectRenderer("structure", this.structureManager);
+    this.selectionManager.registerObjectRenderer("quest", this.questManager);
+    this.selectionManager.registerObjectRenderer("chest", this.chestManager);
 
     this.initializeStaticAssets();
     this.initializeMap();
@@ -386,10 +386,10 @@ export class HexagonMap {
     const boundsUpdateStartTime = performance.now();
     const bounds = this.getMapBounds();
     this.tileRenderer.setVisibleBounds(bounds);
-    this.armyRenderer.setVisibleBounds(bounds);
-    this.structureRenderer.setVisibleBounds(bounds);
-    this.questRenderer.setVisibleBounds(bounds);
-    this.chestRenderer.setVisibleBounds(bounds);
+    this.armyManager.setVisibleBounds(bounds);
+    this.structureManager.setVisibleBounds(bounds);
+    this.questManager.setVisibleBounds(bounds);
+    this.chestManager.setVisibleBounds(bounds);
     console.log(`[RENDER-TIMING] Update bounds: ${(performance.now() - boundsUpdateStartTime).toFixed(2)}ms`);
   }
 
@@ -458,18 +458,18 @@ export class HexagonMap {
     const chestInfo = this.chestHexes.get(col)?.get(row);
 
     const armies = armyInfo
-      ? [this.armyRenderer.getObject(armyInfo.id)].filter((obj): obj is NonNullable<typeof obj> => obj !== undefined)
+      ? [this.armyManager.getObject(armyInfo.id)].filter((obj): obj is NonNullable<typeof obj> => obj !== undefined)
       : [];
     const structures = structureInfo
-      ? [this.structureRenderer.getObject(structureInfo.id)].filter(
+      ? [this.structureManager.getObject(structureInfo.id)].filter(
           (obj): obj is NonNullable<typeof obj> => obj !== undefined,
         )
       : [];
     const quests = questInfo
-      ? [this.questRenderer.getObject(questInfo.id)].filter((obj): obj is NonNullable<typeof obj> => obj !== undefined)
+      ? [this.questManager.getObject(questInfo.id)].filter((obj): obj is NonNullable<typeof obj> => obj !== undefined)
       : [];
     const chests = chestInfo
-      ? [this.chestRenderer.getObject(chestInfo.id)].filter((obj): obj is NonNullable<typeof obj> => obj !== undefined)
+      ? [this.chestManager.getObject(chestInfo.id)].filter((obj): obj is NonNullable<typeof obj> => obj !== undefined)
       : [];
 
     // Check if we have a selected object and clicked on a highlighted hex
@@ -523,7 +523,7 @@ export class HexagonMap {
   }
 
   private async handleArmyMovement(armyId: number, actionPath: ActionPath[]): Promise<void> {
-    const army = this.armyRenderer.getObject(armyId);
+    const army = this.armyManager.getObject(armyId);
     if (!army || actionPath.length < 2) return;
 
     // Get target hex position
@@ -611,7 +611,7 @@ export class HexagonMap {
     }
 
     // Check if army is currently moving
-    if (this.armyRenderer.isObjectMoving(armyId)) {
+    if (this.armyManager.isObjectMoving(armyId)) {
       console.log(`[HexagonMap] Cannot select army ${armyId} - it is currently moving`);
       return;
     }
@@ -619,7 +619,7 @@ export class HexagonMap {
     this.selectionManager.selectObject(armyId, "army");
 
     // Get army object to find current position
-    const army = this.armyRenderer.getObject(armyId);
+    const army = this.armyManager.getObject(armyId);
     if (!army) return;
 
     console.log(`[HexagonMap] Selecting army ${armyId} at position (${army.col}, ${army.row})`);
@@ -753,10 +753,10 @@ export class HexagonMap {
 
     this.tileRenderer.dispose();
     this.highlightRenderer.dispose();
-    this.armyRenderer.dispose();
-    this.structureRenderer.dispose();
-    this.questRenderer.dispose();
-    this.chestRenderer.dispose();
+    this.armyManager.dispose();
+    this.structureManager.dispose();
+    this.questManager.dispose();
+    this.chestManager.dispose();
     this.selectionManager.dispose();
 
     this.allHexes.clear();
@@ -846,20 +846,20 @@ export class HexagonMap {
     }
 
     // Clear all objects from renderers
-    this.armyRenderer.getAllObjects().forEach((army) => {
-      this.armyRenderer.removeObject(army.id);
+    this.armyManager.getAllObjects().forEach((army) => {
+      this.armyManager.removeObject(army.id);
     });
 
-    this.chestRenderer.getAllObjects().forEach((chest) => {
-      this.chestRenderer.removeObject(chest.id);
+    this.chestManager.getAllObjects().forEach((chest) => {
+      this.chestManager.removeObject(chest.id);
     });
 
-    this.structureRenderer.getAllObjects().forEach((structure) => {
-      this.structureRenderer.removeObject(structure.id);
+    this.structureManager.getAllObjects().forEach((structure) => {
+      this.structureManager.removeObject(structure.id);
     });
 
-    this.questRenderer.getAllObjects().forEach((quest) => {
-      this.questRenderer.removeObject(quest.id);
+    this.questManager.getAllObjects().forEach((quest) => {
+      this.questManager.removeObject(quest.id);
     });
 
     // Clear hex data
@@ -954,7 +954,7 @@ export class HexagonMap {
     this.armiesPositions.set(entityId, newPos);
 
     // Check if this is a new army or an existing one
-    const existingArmy = this.armyRenderer.getObject(entityId);
+    const existingArmy = this.armyManager.getObject(entityId);
     const isNewArmy = !existingArmy;
 
     if (isNewArmy) {
@@ -991,7 +991,7 @@ export class HexagonMap {
         onChainStamina: onChainStamina,
       };
 
-      this.armyRenderer.addObject(army);
+      this.armyManager.addObject(army);
 
       // Update hex tracking immediately for new armies
       if (!this.armyHexes.has(newPos.col)) {
@@ -1046,7 +1046,7 @@ export class HexagonMap {
           maxStamina: existingArmy.maxStamina ?? 0,
           onChainStamina: existingArmy.onChainStamina,
         };
-        this.armyRenderer.updateObject(updatedArmy);
+        this.armyManager.updateObject(updatedArmy);
 
         // Start smooth movement animation
         this.startSmoothArmyMovement(entityId, oldPos, newPos);
@@ -1092,7 +1092,7 @@ export class HexagonMap {
           onChainStamina: existingArmy.onChainStamina,
         };
 
-        this.armyRenderer.updateObject(updatedArmy);
+        this.armyManager.updateObject(updatedArmy);
       }
     }
 
@@ -1132,10 +1132,10 @@ export class HexagonMap {
       });
 
       // Start smooth movement animation (hex tracking already updated)
-      this.armyRenderer.moveObjectAlongPath(entityId, movementPath, 300);
+      this.armyManager.moveObjectAlongPath(entityId, movementPath, 300);
     } else {
       // If no path found, just update the sprite position to match the object position
-      this.armyRenderer.updateObjectPosition(entityId, newPos.col, newPos.row);
+      this.armyManager.updateObjectPosition(entityId, newPos.col, newPos.row);
     }
   }
 
@@ -1152,7 +1152,7 @@ export class HexagonMap {
       this.armyHexes.set(newPos.col, new Map());
     }
 
-    const army = this.armyRenderer.getObject(entityId);
+    const army = this.armyManager.getObject(entityId);
     if (army) {
       this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: army.owner || 0n });
     }
@@ -1192,7 +1192,7 @@ export class HexagonMap {
       level: update.level,
       hasWonder: update.hasWonder,
     };
-    this.structureRenderer.updateObject(structure);
+    this.structureManager.updateObject(structure);
   }
 
   public deleteArmy(entityId: number) {
@@ -1204,7 +1204,7 @@ export class HexagonMap {
     }
 
     // Remove from renderer (this will properly dispose of the sprite)
-    this.armyRenderer.removeObject(entityId);
+    this.armyManager.removeObject(entityId);
   }
 
   public updateQuestHexes(update: QuestSystemUpdate) {
@@ -1228,7 +1228,7 @@ export class HexagonMap {
       owner: 0n,
       type: "quest" as const,
     };
-    this.questRenderer.addObject(quest);
+    this.questManager.addObject(quest);
   }
 
   public updateChestHexes(update: ChestSystemUpdate) {
@@ -1252,7 +1252,7 @@ export class HexagonMap {
       owner: 0n,
       type: "chest",
     };
-    this.chestRenderer.addObject(chest);
+    this.chestManager.addObject(chest);
   }
 
   public deleteChest(entityId: number) {
@@ -1269,7 +1269,7 @@ export class HexagonMap {
     });
 
     // Remove from renderer
-    this.chestRenderer.removeObject(entityId);
+    this.chestManager.removeObject(entityId);
   }
 
   public hasArmyAtHex(col: number, row: number): boolean {
@@ -1321,7 +1321,7 @@ export class HexagonMap {
   }
 
   public isArmySelectable(armyId: number): boolean {
-    return !this.pendingArmyMovements.has(armyId) && !this.armyRenderer.isObjectMoving(armyId);
+    return !this.pendingArmyMovements.has(armyId) && !this.armyManager.isObjectMoving(armyId);
   }
 
   private recordPerformanceMetric(operation: string, duration: number): void {
@@ -1359,7 +1359,7 @@ export class HexagonMap {
 
   private updateArmyFromExplorerTroopsUpdate(update: ExplorerTroopsSystemUpdate): void {
     // Get the army from our renderer
-    const armyObject = this.armyRenderer.getObject(update.entityId);
+    const armyObject = this.armyManager.getObject(update.entityId);
 
     if (!armyObject) {
       // Army doesn't exist in renderer yet, this is expected for armies not yet loaded
@@ -1442,7 +1442,7 @@ export class HexagonMap {
       onChainStamina: update.onChainStamina,
     };
 
-    this.armyRenderer.updateObject(updatedArmy);
+    this.armyManager.updateObject(updatedArmy);
 
     // Update hex tracking with the new owner information if it changed
     const position = this.armiesPositions.get(update.entityId);
@@ -1464,7 +1464,7 @@ export class HexagonMap {
   }): void {
     console.log("[HexagonMap] Structure guard update:", update);
 
-    const existingStructure = this.structureRenderer.getObject(update.entityId);
+    const existingStructure = this.structureManager.getObject(update.entityId);
     if (existingStructure) {
       // Update structure with guard data
       const updatedStructure = {
@@ -1473,7 +1473,7 @@ export class HexagonMap {
         ownerName: update.owner.ownerName,
         guildName: update.owner.guildName,
       };
-      this.structureRenderer.updateObject(updatedStructure);
+      this.structureManager.updateObject(updatedStructure);
     }
   }
 
@@ -1483,21 +1483,21 @@ export class HexagonMap {
   }): void {
     console.log("[HexagonMap] Structure building update:", update);
 
-    const existingStructure = this.structureRenderer.getObject(update.entityId);
+    const existingStructure = this.structureManager.getObject(update.entityId);
     if (existingStructure) {
       // Update structure with production data
       const updatedStructure = {
         ...existingStructure,
         activeProductions: update.activeProductions,
       };
-      this.structureRenderer.updateObject(updatedStructure);
+      this.structureManager.updateObject(updatedStructure);
     }
   }
 
   private updateStructureContribution(value: { entityId: ID; structureType: any; stage: any }): void {
     console.log("[HexagonMap] Structure contribution update:", value);
 
-    const existingStructure = this.structureRenderer.getObject(value.entityId);
+    const existingStructure = this.structureManager.getObject(value.entityId);
     if (existingStructure) {
       // Update structure with contribution data (hyperstructure realm count)
       const updatedStructure = {
@@ -1505,7 +1505,7 @@ export class HexagonMap {
         stage: value.stage,
         hyperstructureRealmCount: value.stage, // Stage represents VP/s for hyperstructures
       };
-      this.structureRenderer.updateObject(updatedStructure);
+      this.structureManager.updateObject(updatedStructure);
     }
   }
 
