@@ -104,11 +104,14 @@ export class HexagonMap {
   private pendingArmyMovements: Set<number> = new Set();
 
   // Relic effects storage - holds active relic effects for each army
-  private armyRelicEffects: Map<number, Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void; instance?: any } }>> = new Map();
-  
+  private armyRelicEffects: Map<
+    number,
+    Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void; instance?: any } }>
+  > = new Map();
+
   // Pending relic effects store - holds relic effects for entities that aren't loaded yet
   private pendingRelicEffects: Map<number, Set<{ relicResourceId: number; effect: RelicEffect }>> = new Map();
-  
+
   // Relic effect validation timer
   private relicValidationInterval: NodeJS.Timeout | null = null;
 
@@ -167,7 +170,7 @@ export class HexagonMap {
     this.GUIFolder = GUIManager.addFolder(folderName);
     this.GUIFolder.add(this, "moveCameraToColRow");
     this.GUIFolder.add(this, "getPerformanceSummary").name("Performance Summary");
-    
+
     // Start relic effect validation timer (every 5 seconds)
     this.startRelicValidationTimer();
   }
@@ -538,6 +541,9 @@ export class HexagonMap {
       }
     }
 
+    // TEST: Play relic fx at clicked hex coordinates
+    // await this.playTestRelicFx(col, row);
+
     if (armies.length > 0) {
       this.selectArmy(armies[0].id);
     } else if (structures.length > 0) {
@@ -731,10 +737,10 @@ export class HexagonMap {
       effect.end();
     });
     this.activeTravelEffects.clear();
-    
+
     // Stop relic validation timer
     this.stopRelicValidationTimer();
-    
+
     // Clean up relic effects
     for (const [entityId] of this.armyRelicEffects) {
       this.updateArmyRelicEffects(entityId, []);
@@ -990,7 +996,7 @@ export class HexagonMap {
       };
 
       this.armyManager.addObject(army);
-      
+
       // Apply any pending relic effects for this newly added army
       await this.applyPendingRelicEffects(entityId);
 
@@ -1113,9 +1119,13 @@ export class HexagonMap {
         return { col: normalized.x, row: normalized.y };
       });
 
+      // Update relic effects to follow the moving army
+      this.updateRelicEffectPositions(entityId);
       this.armyManager.moveObjectAlongPath(entityId, movementPath, 300);
     } else {
       this.armyManager.updateObjectPosition(entityId, newPos.col, newPos.row);
+      // Update relic effects for teleported army
+      this.updateRelicEffectPositions(entityId);
     }
   }
 
@@ -1175,10 +1185,10 @@ export class HexagonMap {
   public deleteArmy(entityId: number) {
     // Clear any relic effects for this army
     this.updateArmyRelicEffects(entityId, []);
-    
+
     // Clear any pending relic effects
     this.clearPendingRelicEffects(entityId);
-    
+
     const oldPos = this.armiesPositions.get(entityId);
     if (oldPos) {
       this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
@@ -1543,11 +1553,14 @@ export class HexagonMap {
       }
     }, 500);
   }
-  
+
   /**
    * Update army relic effects and display them visually
    */
-  public async updateArmyRelicEffects(entityId: number, newRelicEffects: Array<{ relicNumber: number; effect: RelicEffect }>) {
+  public async updateArmyRelicEffects(
+    entityId: number,
+    newRelicEffects: Array<{ relicNumber: number; effect: RelicEffect }>,
+  ) {
     const army = this.armyManager.getObject(entityId);
     if (!army) {
       console.warn(`Army ${entityId} not found for relic effects update`);
@@ -1566,15 +1579,16 @@ export class HexagonMap {
     }
 
     // Add new effects that weren't previously active
-    const effectsToAdd: Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void; instance?: any } }> = [];
+    const effectsToAdd: Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void; instance?: any } }> =
+      [];
     for (const newEffect of newRelicEffects) {
       if (!currentRelicNumbers.has(newEffect.relicNumber)) {
         try {
           const position = this.getArmyWorldPosition(army);
           position.y += 1.5;
 
-          // Register and play the relic effect
-          await this.registerRelicFX(newEffect.relicNumber);
+          // Register the relic FX if not already registered (wait for texture to load)
+          await this.fxManager.registerRelicFX(newEffect.relicNumber);
 
           // Play the relic effect
           const fx = this.fxManager.playFxAtCoords(
@@ -1603,76 +1617,7 @@ export class HexagonMap {
       this.armyRelicEffects.set(entityId, updatedEffects);
     }
   }
-  
-  /**
-   * Register a relic FX texture if not already registered
-   */
-  private async registerRelicFX(relicNumber: number): Promise<void> {
-    const fxType = `relic_${relicNumber}`;
-    
-    // Check if this relic FX is already registered
-    if (this.fxManager['fxConfigs'].has(fxType)) {
-      return;
-    }
-    
-    // Register the relic FX
-    const textureUrl = `/images/resources/${relicNumber}.png`;
-    
-    return new Promise((resolve, reject) => {
-      new THREE.TextureLoader().load(
-        textureUrl,
-        (loadedTexture) => {
-          loadedTexture.colorSpace = THREE.SRGBColorSpace;
-          loadedTexture.minFilter = THREE.LinearFilter;
-          loadedTexture.magFilter = THREE.LinearFilter;
-          
-          // Register the FX configuration
-          this.fxManager['fxConfigs'].set(fxType, {
-            textureUrl,
-            animate: (fx: any, t: number) => {
-              // Orbital animation around the army
-              const orbitRadius = 0.3;
-              const orbitSpeed = 2;
-              const hoverHeight = 0.2;
-              
-              // Circular orbit
-              const angle = t * orbitSpeed;
-              const x = Math.cos(angle) * orbitRadius;
-              const z = Math.sin(angle) * orbitRadius;
-              const y = Math.sin(t * 3) * hoverHeight;
-              
-              fx.group.position.x = fx.initialX + x;
-              fx.group.position.y = fx.initialY + y;
-              fx.group.position.z = fx.initialZ + z;
-              
-              // Fade in
-              if (t < 0.5) {
-                fx.material.opacity = t / 0.5;
-              } else {
-                fx.material.opacity = 1;
-              }
-              
-              // Gentle scaling pulse
-              const scale = 0.8 + Math.sin(t * 4) * 0.1;
-              fx.sprite.scale.set(scale, scale, scale);
-              
-              return true; // Continue animation indefinitely
-            },
-            isInfinite: true,
-          });
-          
-          this.fxManager['textures'].set(textureUrl, loadedTexture);
-          resolve();
-        },
-        undefined,
-        (error) => {
-          console.warn(`Failed to load relic texture for ${relicNumber}:`, error);
-          reject(error);
-        }
-      );
-    });
-  }
-  
+
   /**
    * Get army relic effects for external access
    */
@@ -1680,7 +1625,7 @@ export class HexagonMap {
     const effects = this.armyRelicEffects.get(entityId);
     return effects ? effects.map((effect) => ({ relicId: effect.relicNumber, effect: effect.effect })) : [];
   }
-  
+
   /**
    * Get world position for an army
    */
@@ -1688,7 +1633,7 @@ export class HexagonMap {
     getWorldPositionForHex({ col: army.col, row: army.row }, true, this.tempVector3);
     return this.tempVector3.clone();
   }
-  
+
   /**
    * Apply all pending relic effects for an entity (called when entity is loaded)
    */
@@ -1711,12 +1656,12 @@ export class HexagonMap {
       } catch (error) {
         console.error(`Failed to apply pending relic effects to army ${entityId}:`, error);
       }
-      
+
       // Clear the pending effects
       this.pendingRelicEffects.delete(entityId);
     }
   }
-  
+
   /**
    * Clear all pending relic effects for an entity (called when entity is removed)
    */
@@ -1727,7 +1672,7 @@ export class HexagonMap {
       this.pendingRelicEffects.delete(entityId);
     }
   }
-  
+
   /**
    * Start the periodic relic effect validation timer
    */
@@ -1788,4 +1733,28 @@ export class HexagonMap {
       console.error("Error during relic effect validation:", error);
     }
   }
-}
+
+  /**
+   * Update relic effect positions to follow moving armies
+   */
+  private updateRelicEffectPositions(entityId: number) {
+    const army = this.armyManager.getObject(entityId);
+    if (!army) return;
+
+    const relicEffects = this.armyRelicEffects.get(entityId);
+    if (!relicEffects || relicEffects.length === 0) return;
+
+    // Get the current world position of the army
+    const armyPosition = this.getArmyWorldPosition(army);
+    armyPosition.y += 1.5; // Relic effects are positioned 1.5 units above the army
+
+    // Update each relic effect to follow the army
+    relicEffects.forEach((relicEffect) => {
+      if (relicEffect.fx && relicEffect.fx.instance) {
+        // Update the base position that the orbital animation uses
+        relicEffect.fx.instance.initialX = armyPosition.x;
+        relicEffect.fx.instance.initialY = armyPosition.y;
+        relicEffect.fx.instance.initialZ = armyPosition.z;
+      }
+    });
+  }

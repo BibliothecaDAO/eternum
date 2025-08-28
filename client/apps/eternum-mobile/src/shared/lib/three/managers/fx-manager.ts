@@ -183,7 +183,7 @@ export class FXManager {
 
   private registerBuiltInFX() {
     this.registerFX("skull", {
-      textureUrl: "textures/skull.png",
+      textureUrl: "/images/fx/skull.png",
       animate: (fx, t) => {
         const hoverHeight = 1.5;
 
@@ -209,7 +209,7 @@ export class FXManager {
     });
 
     this.registerFX("compass", {
-      textureUrl: "textures/compass.png",
+      textureUrl: "/images/fx/compass.png",
       animate: (fx, t) => {
         // Fade in animation
         if (t < 0.3) {
@@ -226,7 +226,7 @@ export class FXManager {
     });
 
     this.registerFX("travel", {
-      textureUrl: "textures/travel.png",
+      textureUrl: "/images/fx/travel.png",
       animate: (fx, t) => {
         // Fade in animation
         if (t < 0.3) {
