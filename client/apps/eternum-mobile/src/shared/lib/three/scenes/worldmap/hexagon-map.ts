@@ -412,7 +412,6 @@ export class HexagonMap {
 
     const chunkX = Math.floor(col / HexagonMap.CHUNK_SIZE);
     const chunkZ = Math.floor(row / HexagonMap.CHUNK_SIZE);
-    console.log(`[CHUNK-TIMING] Coordinate calculations: ${(performance.now() - coordCalcStartTime).toFixed(2)}ms`);
 
     if (chunkX !== this.lastChunkX || chunkZ !== this.lastChunkZ || force) {
       console.log(
@@ -632,14 +631,6 @@ export class HexagonMap {
 
     // Get proper timestamps from block timestamp utility
     const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
-
-    // Debug: Log current armyHexes state
-    console.log(`[HexagonMap] Current armyHexes state:`);
-    for (const [col, rowMap] of this.armyHexes) {
-      for (const [row, armyInfo] of rowMap) {
-        console.log(`  Army ${armyInfo.id} at (${col}, ${row})`);
-      }
-    }
 
     // Find action paths for the army
     const actionPaths = armyActionManager.findActionPaths(
@@ -909,7 +900,7 @@ export class HexagonMap {
 
   private updateExploredHex(update: TileSystemUpdate) {
     const { hexCoords, removeExplored, biome } = update;
-
+    console.log("[HexagonMap] updateExploredHex", update);
     const normalized = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
 
     const col = normalized.x;
