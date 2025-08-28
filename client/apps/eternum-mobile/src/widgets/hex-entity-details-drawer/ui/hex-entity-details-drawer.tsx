@@ -100,7 +100,7 @@ export const HexEntityDetailsDrawer = ({ open, onOpenChange }: HexEntityDetailsD
               {hasOccupier && tile && (
                 <div className="space-y-3">
                   {isStructure ? (
-                    <StructureEntityDetail structureEntityId={tile.occupier_id} compact={true} />
+                    <StructureEntityDetail structureEntityId={tile.occupier_id} compact={true} showButtons={true} />
                   ) : isTileOccupierQuest(tile.occupier_type) ? (
                     <QuestEntityDetail questEntityId={tile.occupier_id} compact={true} />
                   ) : (
