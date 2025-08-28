@@ -8,7 +8,7 @@ import { ThreeCanvas, type ThreeCanvasRef } from "./three-canvas";
 export function WorldmapPage() {
   const [currentScene, setCurrentScene] = useState("worldmap");
   const canvasRef = useRef<ThreeCanvasRef>(null);
-  const { selectedRealm, selectedHex, isChestDrawerOpen, chestDrawerData, closeChestDrawer } = useStore();
+  const { selectedRealm, selectedHex, isDoubleClickedObject, isChestDrawerOpen, chestDrawerData, closeChestDrawer, resetDoubleClickState } = useStore();
   const [isCanvasReady, setIsCanvasReady] = useState(false);
   const [hexDrawerOpen, setHexDrawerOpen] = useState(false);
 
@@ -38,12 +38,12 @@ export function WorldmapPage() {
     }
   }, [selectedRealm, currentScene, isCanvasReady]);
 
-  // Open hex drawer when a hex is selected
+  // Open hex drawer only when an object is double-clicked
   useEffect(() => {
-    if (selectedHex) {
+    if (selectedHex && isDoubleClickedObject) {
       setHexDrawerOpen(true);
     }
-  }, [selectedHex]);
+  }, [selectedHex, isDoubleClickedObject]);
 
   const handleCameraReset = () => {
     console.log("Reset camera");
@@ -55,6 +55,14 @@ export function WorldmapPage() {
 
   const handleZoomOut = () => {
     console.log("Zoom out");
+  };
+
+  const handleHexDrawerClose = (open: boolean) => {
+    setHexDrawerOpen(open);
+    if (!open) {
+      // Reset only the double-click state when drawer is closed, keep the selection
+      resetDoubleClickState();
+    }
   };
 
   return (
@@ -92,7 +100,7 @@ export function WorldmapPage() {
       )}
 
       {/* Hex Entity Details Drawer */}
-      <HexEntityDetailsDrawer open={hexDrawerOpen} onOpenChange={setHexDrawerOpen} />
+      <HexEntityDetailsDrawer open={hexDrawerOpen} onOpenChange={handleHexDrawerClose} />
     </div>
   );
 }

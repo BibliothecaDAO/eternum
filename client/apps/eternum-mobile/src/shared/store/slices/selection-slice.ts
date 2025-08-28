@@ -6,6 +6,7 @@ export interface SelectionSlice {
   selectedObjectType: string | null;
   selectedHex: HexPosition | null;
   actionPaths: Map<string, ActionPath[]>;
+  isDoubleClickedObject: boolean;
   setSelectedObject: (objectId: number | null, objectType: string | null, col: number, row: number) => void;
   setActionPaths: (actionPaths: Map<string, ActionPath[]>) => void;
   clearSelection: () => void;
@@ -13,6 +14,8 @@ export interface SelectionSlice {
   isObjectSelected: (objectId: number, objectType: string) => boolean;
   hasActionAt: (col: number, row: number) => boolean;
   getActionPath: (col: number, row: number) => ActionPath[] | undefined;
+  handleObjectClick: (objectId: number, objectType: string, col: number, row: number) => boolean;
+  resetDoubleClickState: () => void;
 }
 
 export const createSelectionSlice = (set: any, get: any) => ({
@@ -20,6 +23,7 @@ export const createSelectionSlice = (set: any, get: any) => ({
   selectedObjectType: null,
   selectedHex: null,
   actionPaths: new Map<string, ActionPath[]>(),
+  isDoubleClickedObject: false,
 
   setSelectedObject: (objectId: number | null, objectType: string | null, col: number, row: number) => {
     set({
@@ -38,6 +42,7 @@ export const createSelectionSlice = (set: any, get: any) => ({
       selectedObjectId: null,
       selectedObjectType: null,
       actionPaths: new Map<string, ActionPath[]>(),
+      isDoubleClickedObject: false,
     });
   },
 
@@ -67,5 +72,34 @@ export const createSelectionSlice = (set: any, get: any) => ({
     const state = get();
     const key = ActionPaths.posKey({ col: col + FELT_CENTER, row: row + FELT_CENTER });
     return state.actionPaths.get(key);
+  },
+
+  handleObjectClick: (objectId: number, objectType: string, col: number, row: number) => {
+    const state = get();
+    const isSameObject = state.selectedObjectId === objectId && state.selectedObjectType === objectType;
+    
+    if (isSameObject) {
+      // Second click on the same object - mark as double clicked
+      set({
+        isDoubleClickedObject: true,
+        selectedHex: { col, row },
+      });
+      return true; // Indicates this is a double click
+    } else {
+      // First click on a new object - select it but don't mark as double clicked
+      set({
+        selectedObjectId: objectId,
+        selectedObjectType: objectType,
+        selectedHex: { col, row },
+        isDoubleClickedObject: false,
+      });
+      return false; // Indicates this is a first click
+    }
+  },
+
+  resetDoubleClickState: () => {
+    set({
+      isDoubleClickedObject: false,
+    });
   },
 });

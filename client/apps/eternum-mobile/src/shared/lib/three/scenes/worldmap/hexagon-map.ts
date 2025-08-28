@@ -509,11 +509,20 @@ export class HexagonMap {
     // await this.playTestRelicFx(col, row);
 
     if (armies.length > 0) {
-      this.selectArmy(armies[0].id);
+      const isDoubleClick = this.store.handleObjectClick(armies[0].id, "army", col, row);
+      if (!isDoubleClick) {
+        this.selectArmy(armies[0].id);
+      }
     } else if (structures.length > 0) {
-      this.selectStructure(structures[0].id, col, row);
+      const isDoubleClick = this.store.handleObjectClick(structures[0].id, "structure", col, row);
+      if (!isDoubleClick) {
+        this.selectStructure(structures[0].id, col, row);
+      }
     } else if (quests.length > 0) {
-      this.selectionManager.selectObject(quests[0].id, "quest", col, row);
+      const isDoubleClick = this.store.handleObjectClick(quests[0].id, "quest", col, row);
+      if (!isDoubleClick) {
+        this.selectionManager.selectObject(quests[0].id, "quest", col, row);
+      }
     } else if (chests.length > 0) {
       this.selectionManager.clearSelection();
     } else {
