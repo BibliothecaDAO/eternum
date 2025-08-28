@@ -38,7 +38,8 @@ export const useChestContent = (debugMode: boolean = false, timestamp: number) =
   const previousLengthRef = useRef<number>(0);
 
   const { address: rawAddress } = useAccount();
-  const address = rawAddress ? `0x${rawAddress.slice(3)}` : undefined;
+  // Remove leading zeros from the address
+  const address = rawAddress ? `0x${rawAddress.slice(2).replace(/^0+/, "")}` : undefined;
   const cosmeticsAddress = getCosmeticsAddress();
 
   const { data: collectibleClaimedQuery } = useQuery({
