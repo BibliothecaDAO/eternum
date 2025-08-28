@@ -2,44 +2,21 @@ import {
   ActionPath,
   ActionPaths,
   ActionType,
-  ArmyActionManager,
-  ArmySystemUpdate,
-  ChestSystemUpdate,
-  configManager,
   ExplorerMoveSystemUpdate,
-  ExplorerTroopsSystemUpdate,
-  getBlockTimestamp,
-  isRelicActive,
-  Position,
-  QuestSystemUpdate,
-  RelicEffectSystemUpdate,
-  StaminaManager,
-  StructureActionManager,
-  StructureSystemUpdate,
-  TileSystemUpdate,
   WorldUpdateListener,
 } from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
-import { BiomeType, FELT_CENTER, HexEntityInfo, ID, RelicEffect, TroopTier, TroopType } from "@bibliothecadao/types";
+import { FELT_CENTER } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { getMapFromTorii } from "../../../../../app/dojo/queries";
-import {
-  ArmyManager,
-  ArmyObject,
-  BiomesManager,
-  ChestManager,
-  ChestObject,
-  QuestManager,
-  StructureManager,
-  StructureObject,
-} from "../../entity-managers";
+import { ArmyManager, BiomesManager, ChestManager, QuestManager, StructureManager } from "../../entity-managers";
 import { FXManager } from "../../managers/fx-manager";
 import { GUIManager } from "../../managers/gui-manager";
 import { HighlightRenderer } from "../../managers/highlight-renderer";
+import { RelicEffectsManager } from "../../managers/relic-effects-manager";
 import { SelectionManager } from "../../managers/selection-manager";
 import { createHexagonShape } from "../../utils/hexagon-geometry";
-import { findShortestPath } from "../../utils/pathfinding";
-import { getHexagonCoordinates, getWorldPositionForHex, HEX_SIZE, loggedInAccount } from "../../utils/utils";
+import { getHexagonCoordinates, getWorldPositionForHex, HEX_SIZE } from "../../utils/utils";
 
 export class HexagonMap {
   private scene: THREE.Scene;
@@ -47,7 +24,6 @@ export class HexagonMap {
   private store: any;
   private allHexes: Set<string> = new Set();
   private visibleHexes: Set<string> = new Set();
-  private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
 
   private hexagonMesh: THREE.InstancedMesh | null = null;
   private hexagonMeshCapacity: number = 0;
@@ -60,6 +36,7 @@ export class HexagonMap {
   private chestManager: ChestManager;
   private selectionManager: SelectionManager;
   private fxManager: FXManager;
+  private relicEffectsManager: RelicEffectsManager;
   private GUIFolder: any;
 
   private raycaster: THREE.Raycaster;
@@ -94,18 +71,6 @@ export class HexagonMap {
 
   private activeTravelEffects: Map<number, { promise: Promise<void>; end: () => void }> = new Map();
 
-  // Relic effects storage - holds active relic effects for each army
-  private armyRelicEffects: Map<
-    number,
-    Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void; instance?: any } }>
-  > = new Map();
-
-  // Pending relic effects store - holds relic effects for entities that aren't loaded yet
-  private pendingRelicEffects: Map<number, Set<{ relicResourceId: number; effect: RelicEffect }>> = new Map();
-
-  // Relic effect validation timer
-  private relicValidationInterval: NodeJS.Timeout | null = null;
-
   constructor(
     scene: THREE.Scene,
     dojo: DojoResult,
@@ -126,10 +91,11 @@ export class HexagonMap {
     this.structureManager = new StructureManager(scene);
     this.questManager = new QuestManager(scene);
     this.chestManager = new ChestManager(scene);
+    this.relicEffectsManager = new RelicEffectsManager(fxManager);
 
     // Set dependencies for managers
-    this.armyManager.setDependencies(dojo, fxManager, this.exploredTiles);
-    this.structureManager.setDependencies(dojo, this.exploredTiles);
+    this.armyManager.setDependencies(dojo, fxManager, this.biomesManager.getExploredTiles());
+    this.structureManager.setDependencies(dojo, this.biomesManager.getExploredTiles());
 
     this.selectionManager = new SelectionManager(this.highlightRenderer);
     this.selectionManager.registerObjectRenderer("army", this.armyManager);
@@ -140,20 +106,30 @@ export class HexagonMap {
     this.initializeStaticAssets();
     this.initializeMap();
 
-    this.systemManager.Tile.onTileUpdate((value) => this.updateExploredHex(value));
+    this.systemManager.Tile.onTileUpdate((value) => this.biomesManager.handleTileUpdate(value));
     this.systemManager.Army.onTileUpdate((update) => this.armyManager.handleSystemUpdate(update));
     this.systemManager.Army.onExplorerTroopsUpdate((update) => this.armyManager.handleExplorerTroopsUpdate(update));
-    this.systemManager.Army.onDeadArmy((entityId) => this.deleteArmy(entityId));
+    this.systemManager.Army.onDeadArmy((entityId) =>
+      this.armyManager.deleteArmy(entityId, (id) => this.relicEffectsManager.clearEntityRelicEffects(id)),
+    );
     this.systemManager.Structure.onTileUpdate((update) => this.structureManager.handleSystemUpdate(update));
     this.systemManager.Structure.onStructureUpdate((update) => this.structureManager.handleStructureUpdate(update));
-    this.systemManager.Structure.onStructureBuildingsUpdate((update) => this.structureManager.handleBuildingUpdate(update));
+    this.systemManager.Structure.onStructureBuildingsUpdate((update) =>
+      this.structureManager.handleBuildingUpdate(update),
+    );
     this.systemManager.Structure.onContribution((value) => this.structureManager.handleContributionUpdate(value));
     this.systemManager.Quest.onTileUpdate((update) => this.questManager.handleSystemUpdate(update));
     this.systemManager.Chest.onTileUpdate((update) => this.chestManager.handleSystemUpdate(update));
     this.systemManager.Chest.onDeadChest((entityId) => this.chestManager.deleteChest(entityId));
-    this.systemManager.RelicEffect.onExplorerTroopsUpdate(async (update) => this.handleRelicEffectUpdate(update));
-    this.systemManager.RelicEffect.onStructureGuardUpdate((update) => this.handleRelicEffectUpdate(update));
-    this.systemManager.RelicEffect.onStructureProductionUpdate((update) => this.handleRelicEffectUpdate(update));
+    this.systemManager.RelicEffect.onExplorerTroopsUpdate(async (update) =>
+      this.relicEffectsManager.handleRelicEffectUpdate(update, (id) => this.armyManager.getArmyPosition(id)),
+    );
+    this.systemManager.RelicEffect.onStructureGuardUpdate((update) =>
+      this.relicEffectsManager.handleRelicEffectUpdate(update, (id) => this.getStructurePosition(id)),
+    );
+    this.systemManager.RelicEffect.onStructureProductionUpdate((update) =>
+      this.relicEffectsManager.handleRelicEffectUpdate(update, (id) => this.getStructurePosition(id)),
+    );
     this.systemManager.ExplorerMove.onExplorerMoveEventUpdate((update) => this.handleExplorerMoveUpdate(update));
 
     const folderName = "HexagonMap";
@@ -165,9 +141,6 @@ export class HexagonMap {
     this.GUIFolder = GUIManager.addFolder(folderName);
     this.GUIFolder.add(this, "moveCameraToColRow");
     this.GUIFolder.add(this, "getPerformanceSummary").name("Performance Summary");
-
-    // Start relic effect validation timer (every 5 seconds)
-    this.startRelicValidationTimer();
   }
 
   private initializeStaticAssets(): void {
@@ -239,11 +212,7 @@ export class HexagonMap {
       const loadHexesStartTime = performance.now();
       for (let x = centerChunkX - radiusX; x <= centerChunkX + radiusX; x++) {
         for (let z = centerChunkZ - radiusZ; z <= centerChunkZ + radiusZ; z++) {
-          if (this.isChunkInBounds(x, z)) {
-            this.loadChunkHexes(x, z);
-          } else {
-            console.log(`Skipping chunk (${x}, ${z}) - out of bounds`);
-          }
+          this.loadChunkHexes(x, z);
         }
       }
       console.log(`[CHUNK-TIMING] Load chunk hexes: ${(performance.now() - loadHexesStartTime).toFixed(2)}ms`);
@@ -295,10 +264,6 @@ export class HexagonMap {
         }
       }
     }
-  }
-
-  private isChunkInBounds(_chunkX: number, _chunkZ: number): boolean {
-    return true;
   }
 
   private loadChunkHexes(chunkX: number, chunkZ: number): void {
@@ -552,7 +517,6 @@ export class HexagonMap {
     }
   }
 
-
   private handleChestAction(explorerEntityId: number, actionPath: ActionPath[]): void {
     const targetHex = actionPath[actionPath.length - 1].hex;
 
@@ -567,7 +531,7 @@ export class HexagonMap {
       armyId,
       this.structureManager.getStructureHexes(),
       this.questManager.getQuestHexes(),
-      this.chestManager.getChestHexes()
+      this.chestManager.getChestHexes(),
     );
 
     if (actionPaths) {
@@ -578,12 +542,7 @@ export class HexagonMap {
   }
 
   private selectStructure(structureId: number, col: number, row: number): void {
-    const actionPaths = this.structureManager.selectStructure(
-      structureId,
-      col,
-      row,
-      this.armyManager.getArmyHexes()
-    );
+    const actionPaths = this.structureManager.selectStructure(structureId, col, row, this.armyManager.getArmyHexes());
 
     if (actionPaths) {
       this.selectionManager.selectObject(structureId, "structure", col, row);
@@ -629,40 +588,14 @@ export class HexagonMap {
     return { minCol, maxCol, minRow, maxRow };
   }
 
-  public debugChunkCalculations(chunkX: number, chunkZ: number): void {
-    console.log(`\n=== DEBUG: Chunk (${chunkX}, ${chunkZ}) calculations ===`);
-
-    const inBounds = this.isChunkInBounds(chunkX, chunkZ);
-    console.log(`Chunk in bounds: ${inBounds}`);
-
-    if (inBounds) {
-      const startCol = chunkX * HexagonMap.CHUNK_SIZE;
-      const startRow = chunkZ * HexagonMap.CHUNK_SIZE;
-      const endCol = startCol + HexagonMap.CHUNK_SIZE;
-      const endRow = startRow + HexagonMap.CHUNK_SIZE;
-
-      console.log(`Chunk bounds: cols ${startCol}-${endCol - 1}, rows ${startRow}-${endRow - 1}`);
-      console.log(`Would load ${HexagonMap.CHUNK_SIZE * HexagonMap.CHUNK_SIZE} hexes`);
-    }
-
-    console.log("=== END DEBUG ===\n");
-  }
-
   public dispose(): void {
     this.activeTravelEffects.forEach((effect) => {
       effect.end();
     });
     this.activeTravelEffects.clear();
 
-    // Stop relic validation timer
-    this.stopRelicValidationTimer();
-
     // Clean up relic effects
-    for (const [entityId] of this.armyRelicEffects) {
-      this.updateArmyRelicEffects(entityId, []);
-    }
-    this.armyRelicEffects.clear();
-    this.pendingRelicEffects.clear();
+    this.relicEffectsManager.dispose();
 
     if (this.GUIFolder) {
       this.GUIFolder.destroy();
@@ -774,38 +707,6 @@ export class HexagonMap {
     }
   }
 
-  public clearTileEntityCache() {
-    if (this.currentAbortController) {
-      this.currentAbortController.abort();
-      this.currentAbortController = null;
-    }
-
-    this.armyManager.getAllObjects().forEach((army) => {
-      this.armyManager.removeObject(army.id);
-    });
-
-    this.chestManager.getAllObjects().forEach((chest) => {
-      this.chestManager.removeObject(chest.id);
-    });
-
-    this.structureManager.getAllObjects().forEach((structure) => {
-      this.structureManager.removeObject(structure.id);
-    });
-
-    this.questManager.getAllObjects().forEach((quest) => {
-      this.questManager.removeObject(quest.id);
-    });
-
-    this.armyManager.clearArmyData();
-    this.chestManager.clearChestData();
-    this.structureManager.clearStructureData();
-    this.questManager.clearQuestData();
-
-    this.fetchedChunks.clear();
-    this.isLoadingChunks = false;
-    this.pendingChunkUpdate = null;
-  }
-
   public moveCameraToColRow(col: number, row: number, controls?: any) {
     const worldPosition = getWorldPositionForHex({ col, row }, true, this.tempVector3);
 
@@ -826,87 +727,6 @@ export class HexagonMap {
     }
 
     return worldPosition;
-  }
-
-  private async updateExploredHex(update: TileSystemUpdate) {
-    const { hexCoords, removeExplored, biome } = update;
-    const normalized = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
-
-    const col = normalized.x;
-    const row = normalized.y;
-
-    if (removeExplored) {
-      this.exploredTiles.get(col)?.delete(row);
-      this.biomesManager.removeExploredTile(col, row);
-      return;
-    }
-
-    if (!this.exploredTiles.has(col)) {
-      this.exploredTiles.set(col, new Map());
-    }
-    if (!this.exploredTiles.get(col)!.has(row)) {
-      this.exploredTiles.get(col)!.set(row, biome);
-
-      await this.biomesManager.ensureMaterialsReady();
-      this.biomesManager.addExploredTile(col, row, biome);
-    }
-  }
-
-
-
-
-  public deleteArmy(entityId: number) {
-    // Clear any relic effects for this army
-    this.updateArmyRelicEffects(entityId, []);
-
-    // Clear any pending relic effects
-    this.clearPendingRelicEffects(entityId);
-
-    this.armyManager.removeObject(entityId);
-  }
-
-
-  public hasArmyAtHex(col: number, row: number): boolean {
-    const normalized = new Position({ x: col, y: row }).getNormalized();
-    const armyHexes = this.armyManager.getArmyHexes();
-    return armyHexes.has(normalized.x) && armyHexes.get(normalized.x)!.has(normalized.y);
-  }
-
-  public hasStructureAtHex(col: number, row: number): boolean {
-    const normalized = new Position({ x: col, y: row }).getNormalized();
-    const structureHexes = this.structureManager.getStructureHexes();
-    return structureHexes.has(normalized.x) && structureHexes.get(normalized.x)!.has(normalized.y);
-  }
-
-  public hasChestAtHex(col: number, row: number): boolean {
-    const normalized = new Position({ x: col, y: row }).getNormalized();
-    const chestHexes = this.chestManager.getChestHexes();
-    return chestHexes.has(normalized.x) && chestHexes.get(normalized.x)!.has(normalized.y);
-  }
-
-  public getArmyAtHex(col: number, row: number): { id: number; owner: bigint } | undefined {
-    const normalized = new Position({ x: col, y: row }).getNormalized();
-    return this.armyManager.getArmyHexes().get(normalized.x)?.get(normalized.y);
-  }
-
-  public getStructureAtHex(col: number, row: number): { id: number; owner: bigint } | undefined {
-    const normalized = new Position({ x: col, y: row }).getNormalized();
-    return this.structureManager.getStructureHexes().get(normalized.x)?.get(normalized.y);
-  }
-
-  public getChestAtHex(col: number, row: number): { id: number; owner: bigint } | undefined {
-    const normalized = new Position({ x: col, y: row }).getNormalized();
-    return this.chestManager.getChestHexes().get(normalized.x)?.get(normalized.y);
-  }
-
-  public getHexagonEntity(hexCoords: { col: number; row: number }) {
-    const hex = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
-
-    return {
-      army: this.armyManager.getArmyHexes().get(hex.x)?.get(hex.y),
-      structure: this.structureManager.getStructureHexes().get(hex.x)?.get(hex.y),
-      chest: this.chestManager.getChestHexes().get(hex.x)?.get(hex.y),
-    };
   }
 
   public getSelectionManager(): SelectionManager {
@@ -953,63 +773,6 @@ export class HexagonMap {
     console.log("=== END PERFORMANCE SUMMARY ===\n");
   }
 
-
-
-  /**
-   * Handle relic effect updates from the game system
-   * @param update The relic effect update containing entity ID and array of relic effects
-   */
-  private async handleRelicEffectUpdate(update: RelicEffectSystemUpdate) {
-    const { entityId, relicEffects } = update;
-
-    let entityFound = false;
-
-    // Check if this is an army entity
-    const army = this.armyManager.getObject(entityId);
-    if (army) {
-      // Convert RelicEffectWithEndTick to the format expected by updateRelicEffects
-      const { currentArmiesTick } = getBlockTimestamp();
-      const newEffects = relicEffects.map((relicEffect) => ({
-        relicNumber: relicEffect.id,
-        effect: {
-          start_tick: currentArmiesTick,
-          end_tick: relicEffect.endTick,
-          usage_left: 1,
-        },
-      }));
-
-      await this.updateArmyRelicEffects(entityId, newEffects);
-      entityFound = true;
-    }
-
-    // If entity is not currently loaded, store as pending effects
-    if (!entityFound) {
-      // Get or create the entity's pending effects set
-      let entityPendingSet = this.pendingRelicEffects.get(entityId);
-      if (!entityPendingSet) {
-        entityPendingSet = new Set();
-        this.pendingRelicEffects.set(entityId, entityPendingSet);
-      }
-
-      // Clear existing pending effects for this entity and add new ones
-      entityPendingSet.clear();
-      for (const relicEffect of relicEffects) {
-        entityPendingSet.add({
-          relicResourceId: relicEffect.id,
-          effect: {
-            end_tick: relicEffect.endTick,
-            usage_left: 1,
-          },
-        });
-      }
-
-      // If no effects, remove the entity from pending
-      if (entityPendingSet.size === 0) {
-        this.pendingRelicEffects.delete(entityId);
-      }
-    }
-  }
-
   private handleExplorerMoveUpdate(update: ExplorerMoveSystemUpdate): void {
     const { explorerId, resourceId, amount } = update;
     console.log("[HexagonMap] Explorer move update:", update);
@@ -1024,208 +787,8 @@ export class HexagonMap {
     }, 500);
   }
 
-  /**
-   * Update army relic effects and display them visually
-   */
-  public async updateArmyRelicEffects(
-    entityId: number,
-    newRelicEffects: Array<{ relicNumber: number; effect: RelicEffect }>,
-  ) {
-    const army = this.armyManager.getObject(entityId);
-    if (!army) {
-      console.warn(`Army ${entityId} not found for relic effects update`);
-      return;
-    }
-
-    const currentEffects = this.armyRelicEffects.get(entityId) || [];
-    const currentRelicNumbers = new Set(currentEffects.map((e) => e.relicNumber));
-    const newRelicNumbers = new Set(newRelicEffects.map((e) => e.relicNumber));
-
-    // Remove effects that are no longer in the new list
-    for (const currentEffect of currentEffects) {
-      if (!newRelicNumbers.has(currentEffect.relicNumber)) {
-        currentEffect.fx.end();
-      }
-    }
-
-    // Add new effects that weren't previously active
-    const effectsToAdd: Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void; instance?: any } }> =
-      [];
-    for (const newEffect of newRelicEffects) {
-      if (!currentRelicNumbers.has(newEffect.relicNumber)) {
-        try {
-          const position = this.getArmyWorldPosition(army);
-          position.y += 1.5;
-
-          // Register the relic FX if not already registered (wait for texture to load)
-          await this.fxManager.registerRelicFX(newEffect.relicNumber);
-
-          // Play the relic effect
-          const fx = this.fxManager.playFxAtCoords(
-            `relic_${newEffect.relicNumber}`,
-            position.x,
-            position.y,
-            position.z,
-            0.8,
-            undefined,
-            true,
-          );
-
-          effectsToAdd.push({ relicNumber: newEffect.relicNumber, effect: newEffect.effect, fx });
-        } catch (error) {
-          console.error(`Failed to add relic effect ${newEffect.relicNumber} for army ${entityId}:`, error);
-        }
-      }
-    }
-
-    // Update the stored effects
-    if (newRelicEffects.length === 0) {
-      this.armyRelicEffects.delete(entityId);
-    } else {
-      // Keep existing effects that are still in the new list, add new ones
-      const updatedEffects = currentEffects.filter((e) => newRelicNumbers.has(e.relicNumber)).concat(effectsToAdd);
-      this.armyRelicEffects.set(entityId, updatedEffects);
-    }
-  }
-
-  /**
-   * Get army relic effects for external access
-   */
-  public getArmyRelicEffects(entityId: number): { relicId: number; effect: RelicEffect }[] {
-    const effects = this.armyRelicEffects.get(entityId);
-    return effects ? effects.map((effect) => ({ relicId: effect.relicNumber, effect: effect.effect })) : [];
-  }
-
-  /**
-   * Get world position for an army
-   */
-  private getArmyWorldPosition(army: ArmyObject): THREE.Vector3 {
-    getWorldPositionForHex({ col: army.col, row: army.row }, true, this.tempVector3);
-    return this.tempVector3.clone();
-  }
-
-  /**
-   * Apply all pending relic effects for an entity (called when entity is loaded)
-   */
-  private async applyPendingRelicEffects(entityId: number) {
-    const entityPendingSet = this.pendingRelicEffects.get(entityId);
-    if (!entityPendingSet || entityPendingSet.size === 0) return;
-
-    // Check if this is an army entity
-    const army = this.armyManager.getObject(entityId);
-    if (army) {
-      try {
-        // Convert pending relics to array format for updateRelicEffects
-        const relicEffectsArray = Array.from(entityPendingSet).map((pendingRelic) => ({
-          relicNumber: pendingRelic.relicResourceId,
-          effect: pendingRelic.effect,
-        }));
-
-        await this.updateArmyRelicEffects(entityId, relicEffectsArray);
-        console.log(`Applied ${relicEffectsArray.length} pending relic effects to army ${entityId}`);
-      } catch (error) {
-        console.error(`Failed to apply pending relic effects to army ${entityId}:`, error);
-      }
-
-      // Clear the pending effects
-      this.pendingRelicEffects.delete(entityId);
-    }
-  }
-
-  /**
-   * Clear all pending relic effects for an entity (called when entity is removed)
-   */
-  private clearPendingRelicEffects(entityId: number) {
-    const entityPendingSet = this.pendingRelicEffects.get(entityId);
-    if (entityPendingSet) {
-      console.log(`Cleared ${entityPendingSet.size} pending relic effects for entity ${entityId}`);
-      this.pendingRelicEffects.delete(entityId);
-    }
-  }
-
-  /**
-   * Start the periodic relic effect validation timer
-   */
-  private startRelicValidationTimer() {
-    // Clear any existing timer
-    this.stopRelicValidationTimer();
-
-    // Set up new timer to run every 5 seconds
-    this.relicValidationInterval = setInterval(() => {
-      this.validateActiveRelicEffects();
-    }, 5000);
-  }
-
-  /**
-   * Stop the periodic relic effect validation timer
-   */
-  private stopRelicValidationTimer() {
-    if (this.relicValidationInterval) {
-      clearInterval(this.relicValidationInterval);
-      this.relicValidationInterval = null;
-    }
-  }
-
-  /**
-   * Validate all currently displayed relic effects and remove inactive ones
-   */
-  private async validateActiveRelicEffects() {
-    try {
-      const { currentArmiesTick } = getBlockTimestamp();
-      let removedCount = 0;
-
-      // Validate army relic effects
-      const armies = this.armyManager.getAllObjects();
-      for (const army of armies) {
-        const currentRelics = this.getArmyRelicEffects(army.id);
-        if (currentRelics.length > 0) {
-          // Filter out inactive relics
-          const activeRelics = currentRelics.filter((relic) => isRelicActive(relic.effect, currentArmiesTick));
-
-          // If some relics were removed, update the effects
-          if (activeRelics.length < currentRelics.length) {
-            const removedThisArmy = currentRelics.length - activeRelics.length;
-            console.log(`Removing ${removedThisArmy} inactive relic effect(s) from army: entityId=${army.id}`);
-
-            await this.updateArmyRelicEffects(
-              army.id,
-              activeRelics.map((r) => ({ relicNumber: r.relicId, effect: r.effect })),
-            );
-            removedCount += removedThisArmy;
-          }
-        }
-      }
-
-      if (removedCount > 0) {
-        console.log(`Removed ${removedCount} total inactive relic effects`);
-      }
-    } catch (error) {
-      console.error("Error during relic effect validation:", error);
-    }
-  }
-
-  /**
-   * Update relic effect positions to follow moving armies
-   */
-  private updateRelicEffectPositions(entityId: number) {
-    const army = this.armyManager.getObject(entityId);
-    if (!army) return;
-
-    const relicEffects = this.armyRelicEffects.get(entityId);
-    if (!relicEffects || relicEffects.length === 0) return;
-
-    // Get the current world position of the army
-    const armyPosition = this.getArmyWorldPosition(army);
-    armyPosition.y += 1.5; // Relic effects are positioned 1.5 units above the army
-
-    // Update each relic effect to follow the army
-    relicEffects.forEach((relicEffect) => {
-      if (relicEffect.fx && relicEffect.fx.instance) {
-        // Update the base position that the orbital animation uses
-        relicEffect.fx.instance.initialX = armyPosition.x;
-        relicEffect.fx.instance.initialY = armyPosition.y;
-        relicEffect.fx.instance.initialZ = armyPosition.z;
-      }
-    });
+  private getStructurePosition(structureId: number): { col: number; row: number } | undefined {
+    const structure = this.structureManager.getObject(structureId);
+    return structure ? { col: structure.col, row: structure.row } : undefined;
   }
 }

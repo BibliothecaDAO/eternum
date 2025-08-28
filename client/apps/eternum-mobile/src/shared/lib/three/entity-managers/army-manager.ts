@@ -839,6 +839,18 @@ export class ArmyManager extends EntityManager<ArmyObject> {
     return actionPaths;
   }
 
+  public deleteArmy(entityId: number, clearRelicEffectsCallback?: (entityId: number) => void): void {
+    // Clear any relic effects for this army if callback provided
+    if (clearRelicEffectsCallback) {
+      clearRelicEffectsCallback(entityId);
+    }
+    
+    // Clear relic effects stored in this manager
+    this.updateRelicEffects(entityId, []);
+
+    this.removeObject(entityId);
+  }
+
   public clearArmyData(): void {
     this.armyHexes.clear();
     this.armiesPositions.clear();

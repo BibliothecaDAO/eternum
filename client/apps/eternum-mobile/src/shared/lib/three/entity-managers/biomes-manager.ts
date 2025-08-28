@@ -1,3 +1,4 @@
+import { Position, TileSystemUpdate } from "@bibliothecadao/eternum";
 import { BiomeType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { BiomeTilePosition, BiomeTileRenderer } from "../tiles/biome-tile-renderer";
@@ -6,6 +7,9 @@ import { BiomeObject } from "./types";
 
 export class BiomesManager extends EntityManager<BiomeObject> {
   protected renderer: BiomeTileRenderer;
+  
+  // Track explored tiles
+  private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
 
   constructor(scene: THREE.Scene) {
     super(scene);
@@ -226,8 +230,42 @@ export class BiomesManager extends EntityManager<BiomeObject> {
     return (col << 16) | (row & 0xffff);
   }
 
+  // Method moved from HexagonMap
+  public async handleTileUpdate(update: TileSystemUpdate): Promise<void> {
+    const { hexCoords, removeExplored, biome } = update;
+    const normalized = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
+
+    const col = normalized.x;
+    const row = normalized.y;
+
+    if (removeExplored) {
+      this.exploredTiles.get(col)?.delete(row);
+      this.removeExploredTile(col, row);
+      return;
+    }
+
+    if (!this.exploredTiles.has(col)) {
+      this.exploredTiles.set(col, new Map());
+    }
+    if (!this.exploredTiles.get(col)!.has(row)) {
+      this.exploredTiles.get(col)!.set(row, biome);
+
+      await this.ensureMaterialsReady();
+      this.addExploredTile(col, row, biome);
+    }
+  }
+
+  public getExploredTiles(): Map<number, Map<number, BiomeType>> {
+    return this.exploredTiles;
+  }
+
+  public clearExploredTiles(): void {
+    this.exploredTiles.clear();
+  }
+
   public dispose(): void {
     this.objects.clear();
+    this.clearExploredTiles();
     this.renderer.dispose();
     this.selectedObjectId = null;
     this.visibleBounds = null;
