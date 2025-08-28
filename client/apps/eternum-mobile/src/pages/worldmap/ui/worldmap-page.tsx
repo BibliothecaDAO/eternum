@@ -1,5 +1,6 @@
 import { useStore } from "@/shared/store";
 import { ChestDrawer } from "@/widgets/chest-drawer/ui/chest-drawer";
+import { HexEntityDetailsDrawer } from "@/widgets/hex-entity-details-drawer";
 import { useEffect, useRef, useState } from "react";
 import { SceneControls } from "./scene-controls";
 import { ThreeCanvas, type ThreeCanvasRef } from "./three-canvas";
@@ -7,8 +8,9 @@ import { ThreeCanvas, type ThreeCanvasRef } from "./three-canvas";
 export function WorldmapPage() {
   const [currentScene, setCurrentScene] = useState("worldmap");
   const canvasRef = useRef<ThreeCanvasRef>(null);
-  const { selectedRealm, isChestDrawerOpen, chestDrawerData, closeChestDrawer } = useStore();
+  const { selectedRealm, selectedHex, isChestDrawerOpen, chestDrawerData, closeChestDrawer } = useStore();
   const [isCanvasReady, setIsCanvasReady] = useState(false);
+  const [hexDrawerOpen, setHexDrawerOpen] = useState(false);
 
   const handleSceneChange = (sceneId: string) => {
     setCurrentScene(sceneId);
@@ -35,6 +37,13 @@ export function WorldmapPage() {
       canvasRef.current.moveCameraToStructure(selectedRealm.position);
     }
   }, [selectedRealm, currentScene, isCanvasReady]);
+
+  // Open hex drawer when a hex is selected
+  useEffect(() => {
+    if (selectedHex) {
+      setHexDrawerOpen(true);
+    }
+  }, [selectedHex]);
 
   const handleCameraReset = () => {
     console.log("Reset camera");
@@ -81,6 +90,9 @@ export function WorldmapPage() {
           onOpenChange={(open) => !open && closeChestDrawer()}
         />
       )}
+
+      {/* Hex Entity Details Drawer */}
+      <HexEntityDetailsDrawer open={hexDrawerOpen} onOpenChange={setHexDrawerOpen} />
     </div>
   );
 }
