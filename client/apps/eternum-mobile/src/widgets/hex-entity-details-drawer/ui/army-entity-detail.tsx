@@ -83,12 +83,12 @@ export const ArmyEntityDetail = ({
   const explorerResources = explorerData?.resources;
 
   const { data: structureData, isLoading: isLoadingStructure } = useQuery({
-    queryKey: ["structure", explorer?.owner ? String(explorer.owner) : undefined],
+    queryKey: ["structure", explorer?.owner ? String(explorer.owner) : "no-owner"],
     queryFn: async () => {
       if (!toriiClient || !explorer?.owner) return undefined;
       return getStructureFromToriiClient(toriiClient, explorer.owner);
     },
-    enabled: !!explorer?.owner,
+    enabled: !!toriiClient && !!explorer?.owner,
     staleTime: 30000,
   });
 
@@ -127,22 +127,10 @@ export const ArmyEntityDetail = ({
     };
   }, [explorer, structure, components, userAddress, armyEntityId]);
 
-  if (isLoadingExplorer || (explorer?.owner && isLoadingStructure)) {
-    return (
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-center">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const staminaPercentage =
-    derivedData.maxStamina > 0 && derivedData.stamina?.amount
-      ? Math.round((Number(derivedData.stamina.amount) / Number(derivedData.maxStamina)) * 100)
-      : 0;
+  const staminaPercentage = useMemo(() => {
+    if (!derivedData?.maxStamina || !derivedData?.stamina?.amount) return 0;
+    return Math.round((Number(derivedData.stamina.amount) / Number(derivedData.maxStamina)) * 100);
+  }, [derivedData?.maxStamina, derivedData?.stamina?.amount]);
 
   const { regularResources, relics } = useMemo(() => {
     if (!explorerResources) return { regularResources: [], relics: [] };
@@ -168,6 +156,18 @@ export const ArmyEntityDetail = ({
       relics: relicList.sort((a, b) => b.amount - a.amount),
     };
   }, [explorerResources]);
+
+  if (isLoadingExplorer || (explorer?.owner && isLoadingStructure)) {
+    return (
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (!explorer || !derivedData) return null;
 
