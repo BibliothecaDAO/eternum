@@ -187,7 +187,7 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
     this.sprites.set(spriteKey, sprite);
 
     const [col, row_pos] = spriteKey.split(",").map(Number);
-    const group = this.createTileGroup(col, row_pos);
+    const group = this.createTileGroup(col, row_pos, isOverlay);
     group.add(sprite);
   }
 
@@ -383,7 +383,7 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
     }
   }
 
-  public createTileGroup(col: number, row: number): THREE.Group {
+  public createTileGroup(col: number, row: number, isOverlay: boolean = false): THREE.Group {
     const hexKey = `${col},${row}`;
     let group = this.tileGroups.get(hexKey);
 
@@ -391,6 +391,7 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
       group = new THREE.Group();
       const cachedPosition = this.getCachedWorldPosition(col, row);
       group.position.set(cachedPosition.x, 0, cachedPosition.z - HEX_SIZE * 0.825);
+      group.renderOrder = Math.max(BaseTileRenderer.BASE_RENDER_ORDER + row, 1) + (isOverlay ? 1000 : 0);
       this.tileGroups.set(hexKey, group);
 
       if (this.isHexVisible(col, row)) {
