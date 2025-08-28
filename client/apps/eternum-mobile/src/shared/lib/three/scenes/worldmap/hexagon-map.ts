@@ -90,18 +90,9 @@ export class HexagonMap {
   private pendingChunkUpdate: { chunkX: number; chunkZ: number } | null = null;
   private currentAbortController: AbortController | null = null;
 
-  private armyHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
-  private structureHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
-  private questHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
-  private chestHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
-
-  private armiesPositions: Map<number, { col: number; row: number }> = new Map();
-
   private tileUpdateTimeout: NodeJS.Timeout | null = null;
 
   private activeTravelEffects: Map<number, { promise: Promise<void>; end: () => void }> = new Map();
-
-  private pendingArmyMovements: Set<number> = new Set();
 
   // Relic effects storage - holds active relic effects for each army
   private armyRelicEffects: Map<
@@ -136,6 +127,10 @@ export class HexagonMap {
     this.questManager = new QuestManager(scene);
     this.chestManager = new ChestManager(scene);
 
+    // Set dependencies for managers
+    this.armyManager.setDependencies(dojo, fxManager, this.exploredTiles);
+    this.structureManager.setDependencies(dojo, this.exploredTiles);
+
     this.selectionManager = new SelectionManager(this.highlightRenderer);
     this.selectionManager.registerObjectRenderer("army", this.armyManager);
     this.selectionManager.registerObjectRenderer("structure", this.structureManager);
@@ -146,16 +141,16 @@ export class HexagonMap {
     this.initializeMap();
 
     this.systemManager.Tile.onTileUpdate((value) => this.updateExploredHex(value));
-    this.systemManager.Army.onTileUpdate((update) => this.updateArmyHexes(update));
-    this.systemManager.Army.onExplorerTroopsUpdate((update) => this.updateArmyFromExplorerTroopsUpdate(update));
+    this.systemManager.Army.onTileUpdate((update) => this.armyManager.handleSystemUpdate(update));
+    this.systemManager.Army.onExplorerTroopsUpdate((update) => this.armyManager.handleExplorerTroopsUpdate(update));
     this.systemManager.Army.onDeadArmy((entityId) => this.deleteArmy(entityId));
-    this.systemManager.Structure.onTileUpdate((update) => this.updateStructureHexes(update));
-    this.systemManager.Structure.onStructureUpdate((update) => this.updateStructureFromStructureUpdate(update));
-    this.systemManager.Structure.onStructureBuildingsUpdate((update) => this.updateStructureFromBuildingUpdate(update));
-    this.systemManager.Structure.onContribution((value) => this.updateStructureContribution(value));
-    this.systemManager.Quest.onTileUpdate((update) => this.updateQuestHexes(update));
-    this.systemManager.Chest.onTileUpdate((update) => this.updateChestHexes(update));
-    this.systemManager.Chest.onDeadChest((entityId) => this.deleteChest(entityId));
+    this.systemManager.Structure.onTileUpdate((update) => this.structureManager.handleSystemUpdate(update));
+    this.systemManager.Structure.onStructureUpdate((update) => this.structureManager.handleStructureUpdate(update));
+    this.systemManager.Structure.onStructureBuildingsUpdate((update) => this.structureManager.handleBuildingUpdate(update));
+    this.systemManager.Structure.onContribution((value) => this.structureManager.handleContributionUpdate(value));
+    this.systemManager.Quest.onTileUpdate((update) => this.questManager.handleSystemUpdate(update));
+    this.systemManager.Chest.onTileUpdate((update) => this.chestManager.handleSystemUpdate(update));
+    this.systemManager.Chest.onDeadChest((entityId) => this.chestManager.deleteChest(entityId));
     this.systemManager.RelicEffect.onExplorerTroopsUpdate(async (update) => this.handleRelicEffectUpdate(update));
     this.systemManager.RelicEffect.onStructureGuardUpdate((update) => this.handleRelicEffectUpdate(update));
     this.systemManager.RelicEffect.onStructureProductionUpdate((update) => this.handleRelicEffectUpdate(update));
@@ -492,10 +487,10 @@ export class HexagonMap {
   }
 
   private async handleHexClick(col: number, row: number): Promise<void> {
-    const armyInfo = this.armyHexes.get(col)?.get(row);
-    const structureInfo = this.structureHexes.get(col)?.get(row);
-    const questInfo = this.questHexes.get(col)?.get(row);
-    const chestInfo = this.chestHexes.get(col)?.get(row);
+    const armyInfo = this.armyManager.getArmyHexes().get(col)?.get(row);
+    const structureInfo = this.structureManager.getStructureHexes().get(col)?.get(row);
+    const questInfo = this.questManager.getQuestHexes().get(col)?.get(row);
+    const chestInfo = this.chestManager.getChestHexes().get(col)?.get(row);
 
     const armies = armyInfo
       ? [this.armyManager.getObject(armyInfo.id)].filter((obj): obj is NonNullable<typeof obj> => obj !== undefined)
@@ -521,7 +516,7 @@ export class HexagonMap {
         if (actionType === ActionType.Move || actionType === ActionType.Explore) {
           this.selectionManager.clearSelection();
 
-          await this.handleArmyMovement(selectedObject.id, actionPath);
+          await this.armyManager.handleArmyMovement(selectedObject.id, actionPath, this.store);
         } else if (actionType === ActionType.Attack) {
           console.log(`Attack action at (${col}, ${row})`);
           this.selectionManager.clearSelection();
@@ -557,68 +552,6 @@ export class HexagonMap {
     }
   }
 
-  private async handleArmyMovement(armyId: number, actionPath: ActionPath[]): Promise<void> {
-    const army = this.armyManager.getObject(armyId);
-    if (!army || actionPath.length < 2) return;
-
-    const targetHex = actionPath[actionPath.length - 1].hex;
-    const targetCol = targetHex.col - FELT_CENTER;
-    const targetRow = targetHex.row - FELT_CENTER;
-
-    getWorldPositionForHex({ col: targetCol, row: targetRow }, true, this.tempVector3);
-    const targetWorldPos = this.tempVector3.clone();
-
-    const actionType = ActionPaths.getActionType(actionPath);
-    const isExplored = actionType === ActionType.Move;
-
-    const effectType = isExplored ? "travel" : "compass";
-    const effectLabel = isExplored ? "Traveling" : "Exploring";
-
-    const effect = this.fxManager.playFxAtCoords(
-      effectType,
-      targetWorldPos.x,
-      targetWorldPos.y + 1,
-      targetWorldPos.z - 1,
-      2,
-      effectLabel,
-      true,
-    );
-
-    this.activeTravelEffects.set(armyId, effect);
-
-    this.pendingArmyMovements.add(armyId);
-
-    const account = this.dojo.account.account;
-    if (!account) {
-      console.error("No account available for army movement");
-      effect.end();
-      this.activeTravelEffects.delete(armyId);
-      this.pendingArmyMovements.delete(armyId);
-      return;
-    }
-
-    try {
-      const armyActionManager = new ArmyActionManager(this.dojo.setup.components, this.dojo.setup.systemCalls, armyId);
-
-      const { currentArmiesTick } = getBlockTimestamp();
-
-      await armyActionManager.moveArmy(account, actionPath, isExplored, currentArmiesTick);
-
-      effect.end();
-      this.activeTravelEffects.delete(armyId);
-
-      console.log(
-        `Army ${armyId} ${isExplored ? "moved" : "explored"} from (${army.col}, ${army.row}) to (${targetCol}, ${targetRow})`,
-      );
-    } catch (error) {
-      console.error("Army movement failed:", error);
-      effect.end();
-      this.activeTravelEffects.delete(armyId);
-      this.pendingArmyMovements.delete(armyId);
-
-      throw error;
-    }
-  }
 
   private handleChestAction(explorerEntityId: number, actionPath: ActionPath[]): void {
     const targetHex = actionPath[actionPath.length - 1].hex;
@@ -627,52 +560,35 @@ export class HexagonMap {
   }
 
   private selectArmy(armyId: number): void {
-    if (this.pendingArmyMovements.has(armyId)) {
-      return;
-    }
-
-    if (this.armyManager.isObjectMoving(armyId)) {
-      console.log(`[HexagonMap] Cannot select army ${armyId} - it is currently moving`);
-      return;
-    }
-
     const army = this.armyManager.getObject(armyId);
     if (!army) return;
 
-    this.selectionManager.selectObject(armyId, "army", army.col, army.row);
-
-    console.log(`[HexagonMap] Selecting army ${armyId} at position (${army.col}, ${army.row})`);
-
-    const armyActionManager = new ArmyActionManager(this.dojo.setup.components, this.dojo.setup.systemCalls, armyId);
-
-    const playerAddress = loggedInAccount();
-
-    const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
-
-    const actionPaths = armyActionManager.findActionPaths(
-      this.structureHexes,
-      this.armyHexes,
-      this.exploredTiles,
-      this.questHexes,
-      this.chestHexes,
-      currentDefaultTick,
-      currentArmiesTick,
-      playerAddress,
+    const actionPaths = this.armyManager.selectArmy(
+      armyId,
+      this.structureManager.getStructureHexes(),
+      this.questManager.getQuestHexes(),
+      this.chestManager.getChestHexes()
     );
 
-    this.selectionManager.setActionPaths(actionPaths);
+    if (actionPaths) {
+      this.selectionManager.selectObject(armyId, "army", army.col, army.row);
+      this.selectionManager.setActionPaths(actionPaths);
+      console.log(`[HexagonMap] Selecting army ${armyId} at position (${army.col}, ${army.row})`);
+    }
   }
 
   private selectStructure(structureId: number, col: number, row: number): void {
-    this.selectionManager.selectObject(structureId, "structure", col, row);
+    const actionPaths = this.structureManager.selectStructure(
+      structureId,
+      col,
+      row,
+      this.armyManager.getArmyHexes()
+    );
 
-    const structureActionManager = new StructureActionManager(this.dojo.setup.components, structureId);
-
-    const playerAddress = loggedInAccount();
-
-    const actionPaths = structureActionManager.findActionPaths(this.armyHexes, this.exploredTiles, playerAddress);
-
-    this.selectionManager.setActionPaths(actionPaths);
+    if (actionPaths) {
+      this.selectionManager.selectObject(structureId, "structure", col, row);
+      this.selectionManager.setActionPaths(actionPaths);
+    }
   }
 
   private showClickFeedback(instanceId: number): void {
@@ -880,10 +796,10 @@ export class HexagonMap {
       this.questManager.removeObject(quest.id);
     });
 
-    this.armyHexes.clear();
-    this.chestHexes.clear();
-    this.structureHexes.clear();
-    this.questHexes.clear();
+    this.armyManager.clearArmyData();
+    this.chestManager.clearChestData();
+    this.structureManager.clearStructureData();
+    this.questManager.clearQuestData();
 
     this.fetchedChunks.clear();
     this.isLoadingChunks = false;
@@ -936,251 +852,8 @@ export class HexagonMap {
     }
   }
 
-  public async updateArmyHexes(update: ArmySystemUpdate) {
-    const {
-      hexCoords: { col, row },
-      ownerAddress,
-      ownerName,
-      guildName,
-      entityId,
-      troopType,
-      troopTier,
-      isDaydreamsAgent,
-      troopCount,
-      currentStamina,
-      maxStamina,
-      onChainStamina,
-    } = update;
 
-    if (ownerAddress === undefined) return;
 
-    const normalized = new Position({ x: col, y: row }).getNormalized();
-    const newPos = { col: normalized.x, row: normalized.y };
-    const oldPos = this.armiesPositions.get(entityId);
-
-    this.armiesPositions.set(entityId, newPos);
-
-    const existingArmy = this.armyManager.getObject(entityId);
-    const isNewArmy = !existingArmy;
-
-    if (isNewArmy) {
-      let finalMaxStamina = maxStamina || 0;
-      if (!finalMaxStamina && troopType && troopTier) {
-        try {
-          finalMaxStamina = Number(configManager.getTroopStaminaConfig(troopType, troopTier));
-        } catch (error) {
-          console.warn(`Failed to get max stamina config for ${troopType} ${troopTier}:`, error);
-        }
-      }
-
-      console.log(
-        `[HexagonMap] Added new army ${entityId} at (${newPos.col}, ${newPos.row}) with stamina ${currentStamina || 0}/${finalMaxStamina}`,
-      );
-
-      const army: ArmyObject = {
-        id: entityId,
-        col: newPos.col,
-        row: newPos.row,
-        owner: ownerAddress,
-        type: "army",
-        troopType,
-        troopTier,
-        ownerName,
-        guildName,
-        isDaydreamsAgent,
-        isAlly: false,
-        troopCount: troopCount || 0,
-        currentStamina: currentStamina || 0,
-        maxStamina: finalMaxStamina,
-        onChainStamina: onChainStamina,
-      };
-
-      this.armyManager.addObject(army);
-
-      // Apply any pending relic effects for this newly added army
-      await this.applyPendingRelicEffects(entityId);
-
-      if (!this.armyHexes.has(newPos.col)) {
-        this.armyHexes.set(newPos.col, new Map());
-      }
-      this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: ownerAddress });
-    } else {
-      const hasMoved = oldPos && (oldPos.col !== newPos.col || oldPos.row !== newPos.row);
-
-      if (hasMoved) {
-        console.log(
-          `[HexagonMap] Moved army ${entityId} from (${oldPos.col}, ${oldPos.row}) to (${newPos.col}, ${newPos.row})`,
-        );
-
-        const selectedObject = this.selectionManager.getSelectedObject();
-        if (selectedObject && selectedObject.id === entityId && selectedObject.type === "army") {
-          this.selectionManager.clearSelection();
-        }
-
-        let finalMaxStamina = maxStamina || existingArmy.maxStamina || 0;
-        if (!finalMaxStamina && troopType && troopTier) {
-          try {
-            const troopTypeEnum =
-              typeof troopType === "string" ? TroopType[troopType as keyof typeof TroopType] : troopType;
-            const troopTierEnum =
-              typeof troopTier === "string" ? TroopTier[troopTier as keyof typeof TroopTier] : troopTier;
-            const staminaConfig = configManager.getTroopStaminaConfig(troopTypeEnum, troopTierEnum);
-            finalMaxStamina = Number(staminaConfig.staminaMax);
-          } catch (error) {
-            console.warn(`Failed to get max stamina config for ${troopType} ${troopTier}:`, error);
-          }
-        }
-
-        const updatedArmy: ArmyObject = {
-          ...existingArmy,
-          owner: ownerAddress,
-          troopType,
-          troopTier,
-          ownerName,
-          guildName,
-          isDaydreamsAgent,
-          isAlly: false,
-          troopCount: troopCount ?? existingArmy.troopCount ?? 0,
-          currentStamina: existingArmy.currentStamina ?? 0,
-          maxStamina: existingArmy.maxStamina ?? 0,
-          onChainStamina: existingArmy.onChainStamina,
-        };
-        this.armyManager.updateObject(updatedArmy);
-
-        this.startSmoothArmyMovement(entityId, oldPos, newPos);
-      } else {
-        if (!this.armyHexes.has(newPos.col)) {
-          this.armyHexes.set(newPos.col, new Map());
-        }
-        this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: ownerAddress });
-
-        let finalMaxStamina = maxStamina || existingArmy.maxStamina || 0;
-        if (!finalMaxStamina && troopType && troopTier) {
-          try {
-            const troopTypeEnum =
-              typeof troopType === "string" ? TroopType[troopType as keyof typeof TroopType] : troopType;
-            const troopTierEnum =
-              typeof troopTier === "string" ? TroopTier[troopTier as keyof typeof TroopTier] : troopTier;
-            const staminaConfig = configManager.getTroopStaminaConfig(troopTypeEnum, troopTierEnum);
-            finalMaxStamina = Number(staminaConfig.staminaMax);
-          } catch (error) {
-            console.warn(`Failed to get max stamina config for ${troopType} ${troopTier}:`, error);
-          }
-        }
-
-        const updatedArmy: ArmyObject = {
-          ...existingArmy,
-          col: newPos.col,
-          row: newPos.row,
-          owner: ownerAddress,
-          troopType,
-          troopTier,
-          ownerName,
-          guildName,
-          isDaydreamsAgent,
-          isAlly: false,
-          troopCount: troopCount ?? existingArmy.troopCount ?? 0,
-          currentStamina: existingArmy.currentStamina ?? 0,
-          maxStamina: existingArmy.maxStamina ?? 0,
-          onChainStamina: existingArmy.onChainStamina,
-        };
-
-        this.armyManager.updateObject(updatedArmy);
-      }
-    }
-
-    this.pendingArmyMovements.delete(entityId);
-  }
-
-  private startSmoothArmyMovement(
-    entityId: number,
-    oldPos: { col: number; row: number },
-    newPos: { col: number; row: number },
-  ) {
-    this.updateArmyHexTracking(entityId, oldPos, newPos);
-
-    const oldPosition = new Position({ x: oldPos.col, y: oldPos.row });
-    const newPosition = new Position({ x: newPos.col, y: newPos.row });
-
-    const maxDistance = 50;
-
-    const path = findShortestPath(
-      oldPosition,
-      newPosition,
-      this.exploredTiles,
-      this.structureHexes,
-      this.armyHexes,
-      maxDistance,
-    );
-
-    if (path && path.length > 0) {
-      const movementPath = path.map((pos) => {
-        const normalized = pos.getNormalized();
-        return { col: normalized.x, row: normalized.y };
-      });
-
-      // Update relic effects to follow the moving army
-      this.updateRelicEffectPositions(entityId);
-      this.armyManager.moveObjectAlongPath(entityId, movementPath, 300);
-    } else {
-      this.armyManager.updateObjectPosition(entityId, newPos.col, newPos.row);
-      // Update relic effects for teleported army
-      this.updateRelicEffectPositions(entityId);
-    }
-  }
-
-  private updateArmyHexTracking(
-    entityId: number,
-    oldPos: { col: number; row: number },
-    newPos: { col: number; row: number },
-  ) {
-    this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
-
-    if (!this.armyHexes.has(newPos.col)) {
-      this.armyHexes.set(newPos.col, new Map());
-    }
-
-    const army = this.armyManager.getObject(entityId);
-    if (army) {
-      this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: army.owner || 0n });
-    }
-  }
-
-  public updateStructureHexes(update: StructureSystemUpdate) {
-    console.log("[HexagonMap] Structure tile update:", update);
-    const {
-      hexCoords: { col, row },
-      owner: { address },
-      entityId,
-      structureType,
-    } = update;
-
-    const normalized = new Position({ x: col, y: row }).getNormalized();
-
-    if (!this.structureHexes.has(normalized.x)) {
-      this.structureHexes.set(normalized.x, new Map());
-    }
-    this.structureHexes.get(normalized.x)?.set(normalized.y, { id: entityId, owner: address || 0n });
-
-    const structure: StructureObject = {
-      id: entityId,
-      col: normalized.x,
-      row: normalized.y,
-      owner: address || 0n,
-      type: "structure",
-      structureType: structureType.toString(),
-      ownerName: update.owner.ownerName,
-      guildName: update.owner.guildName,
-      guardArmies: update.guardArmies,
-      activeProductions: update.activeProductions,
-      hyperstructureRealmCount: update.hyperstructureRealmCount,
-      stage: update.stage,
-      initialized: update.initialized,
-      level: update.level,
-      hasWonder: update.hasWonder,
-    };
-    this.structureManager.updateObject(structure);
-  }
 
   public deleteArmy(entityId: number) {
     // Clear any relic effects for this army
@@ -1189,113 +862,50 @@ export class HexagonMap {
     // Clear any pending relic effects
     this.clearPendingRelicEffects(entityId);
 
-    const oldPos = this.armiesPositions.get(entityId);
-    if (oldPos) {
-      this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
-      this.armiesPositions.delete(entityId);
-    }
-
     this.armyManager.removeObject(entityId);
   }
 
-  public updateQuestHexes(update: QuestSystemUpdate) {
-    const {
-      hexCoords: { col, row },
-      entityId,
-    } = update;
-
-    const normalized = new Position({ x: col, y: row }).getNormalized();
-
-    if (!this.questHexes.has(normalized.x)) {
-      this.questHexes.set(normalized.x, new Map());
-    }
-    this.questHexes.get(normalized.x)?.set(normalized.y, { id: entityId, owner: 0n });
-
-    const quest = {
-      id: entityId,
-      col: normalized.x,
-      row: normalized.y,
-      owner: 0n,
-      type: "quest" as const,
-    };
-    this.questManager.addObject(quest);
-  }
-
-  public updateChestHexes(update: ChestSystemUpdate) {
-    const {
-      hexCoords: { col, row },
-      occupierId,
-    } = update;
-
-    const normalized = new Position({ x: col, y: row }).getNormalized();
-
-    if (!this.chestHexes.has(normalized.x)) {
-      this.chestHexes.set(normalized.x, new Map());
-    }
-    this.chestHexes.get(normalized.x)?.set(normalized.y, { id: occupierId, owner: 0n });
-
-    const chest: ChestObject = {
-      id: occupierId,
-      col: normalized.x,
-      row: normalized.y,
-      owner: 0n,
-      type: "chest",
-    };
-    this.chestManager.addObject(chest);
-  }
-
-  public deleteChest(entityId: number) {
-    this.chestHexes.forEach((rowMap, col) => {
-      rowMap.forEach((chestInfo, row) => {
-        if (chestInfo.id === entityId) {
-          rowMap.delete(row);
-          if (rowMap.size === 0) {
-            this.chestHexes.delete(col);
-          }
-        }
-      });
-    });
-
-    this.chestManager.removeObject(entityId);
-  }
 
   public hasArmyAtHex(col: number, row: number): boolean {
     const normalized = new Position({ x: col, y: row }).getNormalized();
-    return this.armyHexes.has(normalized.x) && this.armyHexes.get(normalized.x)!.has(normalized.y);
+    const armyHexes = this.armyManager.getArmyHexes();
+    return armyHexes.has(normalized.x) && armyHexes.get(normalized.x)!.has(normalized.y);
   }
 
   public hasStructureAtHex(col: number, row: number): boolean {
     const normalized = new Position({ x: col, y: row }).getNormalized();
-    return this.structureHexes.has(normalized.x) && this.structureHexes.get(normalized.x)!.has(normalized.y);
+    const structureHexes = this.structureManager.getStructureHexes();
+    return structureHexes.has(normalized.x) && structureHexes.get(normalized.x)!.has(normalized.y);
   }
 
   public hasChestAtHex(col: number, row: number): boolean {
     const normalized = new Position({ x: col, y: row }).getNormalized();
-    return this.chestHexes.has(normalized.x) && this.chestHexes.get(normalized.x)!.has(normalized.y);
+    const chestHexes = this.chestManager.getChestHexes();
+    return chestHexes.has(normalized.x) && chestHexes.get(normalized.x)!.has(normalized.y);
   }
 
   public getArmyAtHex(col: number, row: number): { id: number; owner: bigint } | undefined {
     const normalized = new Position({ x: col, y: row }).getNormalized();
-    return this.armyHexes.get(normalized.x)?.get(normalized.y);
+    return this.armyManager.getArmyHexes().get(normalized.x)?.get(normalized.y);
   }
 
   public getStructureAtHex(col: number, row: number): { id: number; owner: bigint } | undefined {
     const normalized = new Position({ x: col, y: row }).getNormalized();
-    return this.structureHexes.get(normalized.x)?.get(normalized.y);
+    return this.structureManager.getStructureHexes().get(normalized.x)?.get(normalized.y);
   }
 
   public getChestAtHex(col: number, row: number): { id: number; owner: bigint } | undefined {
     const normalized = new Position({ x: col, y: row }).getNormalized();
-    return this.chestHexes.get(normalized.x)?.get(normalized.y);
+    return this.chestManager.getChestHexes().get(normalized.x)?.get(normalized.y);
   }
 
   public getHexagonEntity(hexCoords: { col: number; row: number }) {
     const hex = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
 
     return {
-      army: this.armyHexes.get(hex.x)?.get(hex.y),
-      structure: this.structureHexes.get(hex.x)?.get(hex.y),
-      chest: this.chestHexes.get(hex.x)?.get(hex.y),
+      army: this.armyManager.getArmyHexes().get(hex.x)?.get(hex.y),
+      structure: this.structureManager.getStructureHexes().get(hex.x)?.get(hex.y),
+      chest: this.chestManager.getChestHexes().get(hex.x)?.get(hex.y),
     };
   }
 
@@ -1308,7 +918,7 @@ export class HexagonMap {
   }
 
   public isArmySelectable(armyId: number): boolean {
-    return !this.pendingArmyMovements.has(armyId) && !this.armyManager.isObjectMoving(armyId);
+    return this.armyManager.isArmySelectable(armyId);
   }
 
   private recordPerformanceMetric(operation: string, duration: number): void {
@@ -1343,147 +953,7 @@ export class HexagonMap {
     console.log("=== END PERFORMANCE SUMMARY ===\n");
   }
 
-  private updateArmyFromExplorerTroopsUpdate(update: ExplorerTroopsSystemUpdate): void {
-    const armyObject = this.armyManager.getObject(update.entityId);
 
-    if (!armyObject) {
-      console.log(
-        `[HexagonMap] Army ${update.entityId} not found in renderer - update will be applied when army loads`,
-      );
-      return;
-    }
-
-    const { currentArmiesTick } = getBlockTimestamp();
-    let currentStamina = armyObject.currentStamina || 0;
-    let maxStamina = armyObject.maxStamina || 0;
-
-    if (armyObject.troopType && armyObject.troopTier) {
-      try {
-        const staminaResult = StaminaManager.getStamina(
-          {
-            category: armyObject.troopType,
-            tier: armyObject.troopTier,
-            count: BigInt(update.troopCount),
-            stamina: {
-              amount: BigInt(update.onChainStamina.amount),
-              updated_tick: BigInt(update.onChainStamina.updatedTick),
-            },
-            boosts: {
-              incr_stamina_regen_percent_num: 0,
-              incr_stamina_regen_tick_count: 0,
-              incr_explore_reward_percent_num: 0,
-              incr_explore_reward_end_tick: 0,
-              incr_damage_dealt_percent_num: 0,
-              incr_damage_dealt_end_tick: 0,
-              decr_damage_gotten_percent_num: 0,
-              decr_damage_gotten_end_tick: 0,
-            },
-          },
-          currentArmiesTick,
-        );
-
-        currentStamina = Number(staminaResult.amount);
-
-        let troopType = armyObject.troopType;
-        let troopTier = armyObject.troopTier;
-
-        if (troopType && troopTier) {
-          try {
-            const troopTypeEnum =
-              typeof troopType === "string" ? TroopType[troopType as keyof typeof TroopType] : troopType;
-            const troopTierEnum =
-              typeof troopTier === "string" ? TroopTier[troopTier as keyof typeof TroopTier] : troopTier;
-
-            const staminaConfig = configManager.getTroopStaminaConfig(troopTypeEnum, troopTierEnum);
-            maxStamina = Number(staminaConfig.staminaMax);
-          } catch (error) {
-            console.warn(`[HexagonMap] Failed to calculate maxStamina for ${troopType} ${troopTier}:`, error);
-            maxStamina = armyObject.maxStamina || 0;
-          }
-        } else {
-          console.warn(`[HexagonMap] Missing troopType or troopTier for army ${update.entityId}:`, {
-            armyObjectTroopType: armyObject.troopType,
-            armyObjectTroopTier: armyObject.troopTier,
-          });
-          maxStamina = armyObject.maxStamina || 0;
-        }
-      } catch (error) {
-        console.warn(`Failed to calculate stamina for army ${update.entityId}:`, error);
-      }
-    }
-
-    const updatedArmy = {
-      ...armyObject,
-      troopCount: update.troopCount,
-      currentStamina,
-      maxStamina,
-      ownerName: update.ownerName,
-      owner: update.ownerAddress,
-      onChainStamina: update.onChainStamina,
-    };
-
-    this.armyManager.updateObject(updatedArmy);
-
-    const position = this.armiesPositions.get(update.entityId);
-    if (position) {
-      if (!this.armyHexes.has(position.col)) {
-        this.armyHexes.set(position.col, new Map());
-      }
-      this.armyHexes.get(position.col)?.set(position.row, {
-        id: update.entityId,
-        owner: update.ownerAddress,
-      });
-    }
-  }
-
-  private updateStructureFromStructureUpdate(update: {
-    entityId: ID;
-    guardArmies: any[];
-    owner: { address: bigint; ownerName: string; guildName: string };
-  }): void {
-    console.log("[HexagonMap] Structure guard update:", update);
-
-    const existingStructure = this.structureManager.getObject(update.entityId);
-    if (existingStructure) {
-      const updatedStructure = {
-        ...existingStructure,
-        guardArmies: update.guardArmies,
-        ownerName: update.owner.ownerName,
-        guildName: update.owner.guildName,
-      };
-      this.structureManager.updateObject(updatedStructure);
-    }
-  }
-
-  private updateStructureFromBuildingUpdate(update: {
-    entityId: ID;
-    activeProductions: Array<{ buildingCount: number; buildingType: any }>;
-  }): void {
-    console.log("[HexagonMap] Structure building update:", update);
-
-    const existingStructure = this.structureManager.getObject(update.entityId);
-    if (existingStructure) {
-      const updatedStructure = {
-        ...existingStructure,
-        activeProductions: update.activeProductions,
-      };
-      this.structureManager.updateObject(updatedStructure);
-    }
-  }
-
-  private updateStructureContribution(value: { entityId: ID; structureType: any; stage: any }): void {
-    console.log("[HexagonMap] Structure contribution update:", value);
-
-    const existingStructure = this.structureManager.getObject(value.entityId);
-    if (existingStructure) {
-      const updatedStructure = {
-        ...existingStructure,
-        stage: value.stage,
-        hyperstructureRealmCount: value.stage,
-      };
-      this.structureManager.updateObject(updatedStructure);
-    }
-  }
 
   /**
    * Handle relic effect updates from the game system
@@ -1545,7 +1015,7 @@ export class HexagonMap {
     console.log("[HexagonMap] Explorer move update:", update);
 
     setTimeout(() => {
-      const armyPosition = this.armiesPositions.get(explorerId);
+      const armyPosition = this.armyManager.getArmyPosition(explorerId);
       if (armyPosition && resourceId !== 0) {
         console.log(
           `Army ${explorerId} found resource ${resourceId} (amount: ${amount}) at position (${armyPosition.col}, ${armyPosition.row})`,

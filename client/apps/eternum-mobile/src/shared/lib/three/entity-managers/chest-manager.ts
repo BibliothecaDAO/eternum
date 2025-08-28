@@ -1,4 +1,5 @@
-import { Position } from "@bibliothecadao/eternum";
+import { ChestSystemUpdate, Position } from "@bibliothecadao/eternum";
+import { HexEntityInfo } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { BuildingTileRenderer } from "../tiles/building-tile-renderer";
@@ -12,6 +13,9 @@ export class ChestManager extends EntityManager<ChestObject> {
   private labels: Map<number, CSS2DObject> = new Map();
   private labelAttachmentState: Map<number, boolean> = new Map();
   protected renderer: BuildingTileRenderer;
+
+  // Chest tracking data
+  private chestHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
 
   constructor(scene: THREE.Scene) {
     super(scene);
@@ -236,6 +240,53 @@ export class ChestManager extends EntityManager<ChestObject> {
     });
   }
 
+  // Chest-specific methods moved from HexagonMap
+  public handleSystemUpdate(update: ChestSystemUpdate): void {
+    const {
+      hexCoords: { col, row },
+      occupierId,
+    } = update;
+
+    const normalized = new Position({ x: col, y: row }).getNormalized();
+
+    if (!this.chestHexes.has(normalized.x)) {
+      this.chestHexes.set(normalized.x, new Map());
+    }
+    this.chestHexes.get(normalized.x)?.set(normalized.y, { id: occupierId, owner: 0n });
+
+    const chest: ChestObject = {
+      id: occupierId,
+      col: normalized.x,
+      row: normalized.y,
+      owner: 0n,
+      type: "chest",
+    };
+    this.addObject(chest);
+  }
+
+  public deleteChest(entityId: number): void {
+    this.chestHexes.forEach((rowMap, col) => {
+      rowMap.forEach((chestInfo, row) => {
+        if (chestInfo.id === entityId) {
+          rowMap.delete(row);
+          if (rowMap.size === 0) {
+            this.chestHexes.delete(col);
+          }
+        }
+      });
+    });
+
+    this.removeObject(entityId);
+  }
+
+  public getChestHexes(): Map<number, Map<number, HexEntityInfo>> {
+    return this.chestHexes;
+  }
+
+  public clearChestData(): void {
+    this.chestHexes.clear();
+  }
+
   public dispose(): void {
     this.labels.forEach((label) => {
       if (label.element && label.element.parentNode) {
@@ -244,6 +295,7 @@ export class ChestManager extends EntityManager<ChestObject> {
     });
     this.labels.clear();
     this.labelAttachmentState.clear();
+    this.clearChestData();
 
     this.objects.clear();
     this.renderer.dispose();

@@ -1,5 +1,6 @@
-import { Position } from "@bibliothecadao/eternum";
-import { StructureType } from "@bibliothecadao/types";
+import { ActionPaths, Position, StructureActionManager, StructureSystemUpdate } from "@bibliothecadao/eternum";
+import { DojoResult } from "@bibliothecadao/react";
+import { HexEntityInfo, ID, StructureType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { BuildingTileRenderer } from "../tiles/building-tile-renderer";
@@ -14,9 +15,21 @@ export class StructureManager extends EntityManager<StructureObject> {
   private labelAttachmentState: Map<number, boolean> = new Map();
   protected renderer: BuildingTileRenderer;
 
+  // Structure tracking data
+  private structureHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
+  private exploredTiles: Map<number, Map<number, any>> = new Map();
+
+  // Dependencies
+  private dojo: DojoResult | null = null;
+
   constructor(scene: THREE.Scene) {
     super(scene);
     this.renderer = new BuildingTileRenderer(scene);
+  }
+
+  public setDependencies(dojo: DojoResult, exploredTiles: Map<number, Map<number, any>>): void {
+    this.dojo = dojo;
+    this.exploredTiles = exploredTiles;
   }
 
   public addObject(object: StructureObject): void {
@@ -341,6 +354,120 @@ export class StructureManager extends EntityManager<StructureObject> {
     });
   }
 
+  // Structure-specific methods moved from HexagonMap
+  public handleSystemUpdate(update: StructureSystemUpdate): void {
+    console.log("[StructureManager] Structure tile update:", update);
+    const {
+      hexCoords: { col, row },
+      owner: { address },
+      entityId,
+      structureType,
+    } = update;
+
+    const normalized = new Position({ x: col, y: row }).getNormalized();
+
+    if (!this.structureHexes.has(normalized.x)) {
+      this.structureHexes.set(normalized.x, new Map());
+    }
+    this.structureHexes.get(normalized.x)?.set(normalized.y, { id: entityId, owner: address || 0n });
+
+    const structure: StructureObject = {
+      id: entityId,
+      col: normalized.x,
+      row: normalized.y,
+      owner: address || 0n,
+      type: "structure",
+      structureType: structureType.toString(),
+      ownerName: update.owner.ownerName,
+      guildName: update.owner.guildName,
+      guardArmies: update.guardArmies,
+      activeProductions: update.activeProductions,
+      hyperstructureRealmCount: update.hyperstructureRealmCount,
+      stage: update.stage,
+      initialized: update.initialized,
+      level: update.level,
+      hasWonder: update.hasWonder,
+    };
+    this.updateObject(structure);
+  }
+
+  public handleStructureUpdate(update: {
+    entityId: ID;
+    guardArmies: any[];
+    owner: { address: bigint; ownerName: string; guildName: string };
+  }): void {
+    console.log("[StructureManager] Structure guard update:", update);
+
+    const existingStructure = this.getObject(update.entityId);
+    if (existingStructure) {
+      const updatedStructure = {
+        ...existingStructure,
+        guardArmies: update.guardArmies,
+        ownerName: update.owner.ownerName,
+        guildName: update.owner.guildName,
+      };
+      this.updateObject(updatedStructure);
+    }
+  }
+
+  public handleBuildingUpdate(update: {
+    entityId: ID;
+    activeProductions: Array<{ buildingCount: number; buildingType: any }>;
+  }): void {
+    console.log("[StructureManager] Structure building update:", update);
+
+    const existingStructure = this.getObject(update.entityId);
+    if (existingStructure) {
+      const updatedStructure = {
+        ...existingStructure,
+        activeProductions: update.activeProductions,
+      };
+      this.updateObject(updatedStructure);
+    }
+  }
+
+  public handleContributionUpdate(value: { entityId: ID; structureType: any; stage: any }): void {
+    console.log("[StructureManager] Structure contribution update:", value);
+
+    const existingStructure = this.getObject(value.entityId);
+    if (existingStructure) {
+      const updatedStructure = {
+        ...existingStructure,
+        stage: value.stage,
+        hyperstructureRealmCount: value.stage,
+      };
+      this.updateObject(updatedStructure);
+    }
+  }
+
+  public selectStructure(
+    structureId: number,
+    col: number,
+    row: number,
+    armyHexes: Map<number, Map<number, HexEntityInfo>>,
+  ): ActionPaths | null {
+    if (!this.dojo) {
+      console.error("Dependencies not set for structure selection");
+      return null;
+    }
+
+    this.selectObject(structureId);
+
+    const structureActionManager = new StructureActionManager(this.dojo.setup.components, structureId);
+    const playerAddress = loggedInAccount();
+
+    const actionPaths = structureActionManager.findActionPaths(armyHexes, this.exploredTiles, playerAddress);
+    return actionPaths;
+  }
+
+  public getStructureHexes(): Map<number, Map<number, HexEntityInfo>> {
+    return this.structureHexes;
+  }
+
+  public clearStructureData(): void {
+    this.structureHexes.clear();
+  }
+
   public dispose(): void {
     this.labels.forEach((label) => {
       if (label.element && label.element.parentNode) {
@@ -349,6 +476,7 @@ export class StructureManager extends EntityManager<StructureObject> {
     });
     this.labels.clear();
     this.labelAttachmentState.clear();
+    this.clearStructureData();
 
     this.renderer.dispose();
   }

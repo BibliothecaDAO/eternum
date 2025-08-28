@@ -1,3 +1,5 @@
+import { Position, QuestSystemUpdate } from "@bibliothecadao/eternum";
+import { HexEntityInfo } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { BuildingTileRenderer } from "../tiles/building-tile-renderer";
 import { BuildingTileIndex } from "../tiles/tile-enums";
@@ -6,6 +8,9 @@ import { QuestObject } from "./types";
 
 export class QuestManager extends EntityManager<QuestObject> {
   protected renderer: BuildingTileRenderer;
+
+  // Quest tracking data
+  private questHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
 
   constructor(scene: THREE.Scene) {
     super(scene);
@@ -147,7 +152,40 @@ export class QuestManager extends EntityManager<QuestObject> {
     );
   }
 
+  // Quest-specific methods moved from HexagonMap
+  public handleSystemUpdate(update: QuestSystemUpdate): void {
+    const {
+      hexCoords: { col, row },
+      entityId,
+    } = update;
+
+    const normalized = new Position({ x: col, y: row }).getNormalized();
+
+    if (!this.questHexes.has(normalized.x)) {
+      this.questHexes.set(normalized.x, new Map());
+    }
+    this.questHexes.get(normalized.x)?.set(normalized.y, { id: entityId, owner: 0n });
+
+    const quest = {
+      id: entityId,
+      col: normalized.x,
+      row: normalized.y,
+      owner: 0n,
+      type: "quest" as const,
+    };
+    this.addObject(quest);
+  }
+
+  public getQuestHexes(): Map<number, Map<number, HexEntityInfo>> {
+    return this.questHexes;
+  }
+
+  public clearQuestData(): void {
+    this.questHexes.clear();
+  }
+
   public dispose(): void {
+    this.clearQuestData();
     this.renderer.dispose();
   }
 
