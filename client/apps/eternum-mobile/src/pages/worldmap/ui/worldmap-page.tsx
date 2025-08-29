@@ -2,6 +2,7 @@ import { UnifiedArmyCreationDrawer } from "@/features/armies/ui/unified-army-cre
 import { useStore } from "@/shared/store";
 import { ChestDrawer } from "@/widgets/chest-drawer/ui/chest-drawer";
 import { HexEntityDetailsDrawer } from "@/widgets/hex-entity-details-drawer";
+import { TransferDrawer } from "@/widgets/transfer-drawer";
 import { useEffect, useRef, useState } from "react";
 import { SceneControls } from "./scene-controls";
 import { ThreeCanvas, type ThreeCanvasRef } from "./three-canvas";
@@ -125,6 +126,9 @@ export function WorldmapPage() {
 
       {/* Hex Entity Details Drawer */}
       <HexEntityDetailsDrawer open={hexDrawerOpen} onOpenChange={handleHexDrawerClose} />
+
+      {/* Transfer Drawer */}
+      <TransferDrawer />
     </div>
   );
 }

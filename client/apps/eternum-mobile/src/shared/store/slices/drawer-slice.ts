@@ -1,4 +1,4 @@
-import { Direction, ID } from "@bibliothecadao/types";
+import { ActorType, Direction, ID } from "@bibliothecadao/types";
 
 export interface DrawerSlice {
   // Chest drawer state
@@ -16,6 +16,22 @@ export interface DrawerSlice {
     isExplorer: boolean;
   };
 
+  // Transfer drawer state
+  isTransferDrawerOpen: boolean;
+  transferDrawerData: {
+    selected: {
+      type: ActorType;
+      id: ID;
+      hex: { x: number; y: number };
+    } | null;
+    target: {
+      type: ActorType;
+      id: ID;
+      hex: { x: number; y: number };
+    } | null;
+    allowBothDirections: boolean;
+  };
+
   // Chest drawer actions
   toggleChestDrawer: () => void;
   setChestDrawer: (isOpen: boolean) => void;
@@ -30,6 +46,15 @@ export interface DrawerSlice {
     isExplorer?: boolean;
   }) => void;
   closeArmyCreationDrawer: () => void;
+
+  // Transfer drawer actions
+  openTransferDrawer: (
+    selected: { type: ActorType; id: ID; hex: { x: number; y: number } },
+    target: { type: ActorType; id: ID; hex: { x: number; y: number } },
+    allowBothDirections?: boolean
+  ) => void;
+  closeTransferDrawer: () => void;
+  setTransferDrawer: (isOpen: boolean) => void;
 }
 
 export const createDrawerSlice = (set: any) => ({
@@ -46,6 +71,14 @@ export const createDrawerSlice = (set: any) => ({
     structureId: null,
     direction: null,
     isExplorer: true,
+  },
+
+  // Initial transfer drawer state
+  isTransferDrawerOpen: false,
+  transferDrawerData: {
+    selected: null,
+    target: null,
+    allowBothDirections: false,
   },
 
   // Chest drawer actions
@@ -104,6 +137,39 @@ export const createDrawerSlice = (set: any) => ({
         direction: null,
         isExplorer: true,
       },
+    });
+  },
+
+  // Transfer drawer actions
+  openTransferDrawer: (
+    selected: { type: ActorType; id: ID; hex: { x: number; y: number } },
+    target: { type: ActorType; id: ID; hex: { x: number; y: number } },
+    allowBothDirections: boolean = false
+  ) => {
+    set({
+      isTransferDrawerOpen: true,
+      transferDrawerData: {
+        selected,
+        target,
+        allowBothDirections,
+      },
+    });
+  },
+
+  closeTransferDrawer: () => {
+    set({
+      isTransferDrawerOpen: false,
+      transferDrawerData: {
+        selected: null,
+        target: null,
+        allowBothDirections: false,
+      },
+    });
+  },
+
+  setTransferDrawer: (isOpen: boolean) => {
+    set({
+      isTransferDrawerOpen: isOpen,
     });
   },
 });

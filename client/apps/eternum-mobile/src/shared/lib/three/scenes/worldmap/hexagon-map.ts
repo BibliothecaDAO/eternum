@@ -1,6 +1,6 @@
 import { ActionPaths, ActionType, ExplorerMoveSystemUpdate, WorldUpdateListener } from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
-import { FELT_CENTER, findResourceById, getDirectionBetweenAdjacentHexes } from "@bibliothecadao/types";
+import { ActorType, FELT_CENTER, findResourceById, getDirectionBetweenAdjacentHexes } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { getMapFromTorii } from "../../../../../app/dojo/queries";
 import { ArmyManager, BiomesManager, ChestManager, QuestManager, StructureManager } from "../../entity-managers";
@@ -526,6 +526,7 @@ export class HexagonMap {
         break;
       case ActionType.Help:
         console.log(`Help action at (${col}, ${row})`);
+        this.handleHelpAction(actionPath, selectedObject.id);
         break;
       case ActionType.Quest:
         console.log(`Quest action at (${col}, ${row})`);
@@ -647,6 +648,46 @@ export class HexagonMap {
       direction: direction,
       isExplorer: true,
     });
+  }
+
+  private handleHelpAction(actionPath: any[], selectedEntityId: number): void {
+    const selectedPath = actionPath.map((path) => path.hex);
+    const targetHex = selectedPath[selectedPath.length - 1];
+    const selectedHex = selectedPath[0];
+
+    // Get entity information for both selected and target hexes
+    const selectedEntityInfo = this.getHexEntityInfo(selectedHex.col, selectedHex.row);
+    const targetEntityInfo = this.getHexEntityInfo(targetHex.col, targetHex.row);
+
+    // Determine if selected entity is army or structure
+    const selectedIsArmy = selectedEntityInfo.armies.length > 0;
+    const selectedEntity = selectedIsArmy ? selectedEntityInfo.armies[0] : selectedEntityInfo.structures[0];
+
+    // Determine if target entity is army or structure
+    const targetIsArmy = targetEntityInfo.armies.length > 0;
+    const targetEntity = targetIsArmy ? targetEntityInfo.armies[0] : targetEntityInfo.structures[0];
+
+    if (!selectedEntity || !targetEntity) return;
+
+    // Check ownership to determine if both directions are allowed
+    const selectedOwner = selectedEntity.owner;
+    const targetOwner = targetEntity.owner;
+    const allowBothDirections = selectedOwner === targetOwner;
+
+    // Trigger mobile TransferDrawer
+    this.store?.openTransferDrawer(
+      {
+        type: selectedIsArmy ? ActorType.Explorer : ActorType.Structure,
+        id: selectedEntityId,
+        hex: { x: selectedHex.col, y: selectedHex.row },
+      },
+      {
+        type: targetIsArmy ? ActorType.Explorer : ActorType.Structure,
+        id: targetEntity.id,
+        hex: { x: targetHex.col, y: targetHex.row },
+      },
+      allowBothDirections,
+    );
   }
 
   private showClickFeedback(instanceId: number): void {
