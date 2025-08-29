@@ -6,8 +6,9 @@ import { Card } from "@/shared/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/ui/collapsible";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { ScrollArea } from "@/shared/ui/scroll-area";
-import { divideByPrecision } from "@bibliothecadao/eternum";
-import { ID, RESOURCE_TIERS, resources, ResourcesIds } from "@bibliothecadao/types";
+import { divideByPrecision, getIsBlitz } from "@bibliothecadao/eternum";
+import { getResourceTiers, ID, resources, ResourcesIds } from "@bibliothecadao/types";
+
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
@@ -17,7 +18,7 @@ interface ResourcesCardProps {
   entityId: ID;
 }
 
-const TIER_ORDER = [
+const NORMAL_TIER_ORDER = [
   "lords",
   "labor",
   "transport",
@@ -30,14 +31,19 @@ const TIER_ORDER = [
   "military",
 ] as const;
 
-type ResourceTier = (typeof TIER_ORDER)[number];
+const BLITZ_TIER_ORDER = ["lords", "relics", "essence", "labor", "military", "transport", "food", "materials"] as const;
 
-const HIDDEN_TIERS_IN_COLLAPSED: ResourceTier[] = ["lords", "labor", "military", "transport"];
+type ResourceTier = (typeof NORMAL_TIER_ORDER | typeof BLITZ_TIER_ORDER)[number];
+
+const HIDDEN_TIERS_IN_COLLAPSED: ResourceTier[] = ["lords", "labor", "military", "transport", "relics", "essence"];
 
 export const ResourcesCard = ({ className, entityId }: ResourcesCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const { resourceAmounts } = useResourceBalances(entityId);
   const navigate = useNavigate();
+  const isBlitz = getIsBlitz();
+  const RESOURCE_TIERS = getResourceTiers(isBlitz);
+  const TIER_ORDER = isBlitz ? BLITZ_TIER_ORDER : NORMAL_TIER_ORDER;
 
   const handleTradeClick = (resourceId: number) => {
     const amount = resourceAmounts.find((r) => r.id === resourceId)?.amount || 0;
@@ -95,7 +101,7 @@ export const ResourcesCard = ({ className, entityId }: ResourcesCardProps) => {
 
   const orderedTiers = useMemo(() => {
     return TIER_ORDER.filter((tier): tier is ResourceTier => tier in RESOURCE_TIERS).map(
-      (tier) => [tier, RESOURCE_TIERS[tier]] as const,
+      (tier) => [tier, RESOURCE_TIERS[tier as keyof typeof RESOURCE_TIERS]] as const,
     );
   }, []);
 
@@ -122,14 +128,32 @@ export const ResourcesCard = ({ className, entityId }: ResourcesCardProps) => {
         <CollapsibleContent className="data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up">
           <ScrollArea className="h-[50vh]">
             <div className="space-y-6 px-2">
-              {orderedTiers.map(([tier, resourceIds]) => (
-                <div key={tier} className="space-y-2">
-                  <h4 className="text-sm font-medium text-muted-foreground sticky top-0 bg-background/95 backdrop-blur-sm py-2 capitalize">
-                    {tier}
-                  </h4>
-                  <div className="space-y-2">{resourceIds.map((resourceId) => renderResourceItem(resourceId))}</div>
-                </div>
-              ))}
+              {orderedTiers
+                .map(([tier, resourceIds]) => {
+                  const filteredResourceIds = resourceIds.filter((resourceId: ResourcesIds) => {
+                    if (tier === "relics" || tier === "military") {
+                      const amount = resourceAmounts.find((r) => r.id === resourceId)?.amount || 0;
+                      return amount > 0;
+                    }
+                    return true;
+                  });
+
+                  if (filteredResourceIds.length === 0) {
+                    return null;
+                  }
+
+                  return (
+                    <div key={tier} className="space-y-2">
+                      <h4 className="text-sm font-medium text-muted-foreground sticky top-0 bg-background/95 backdrop-blur-sm py-2 capitalize">
+                        {tier}
+                      </h4>
+                      <div className="space-y-2">
+                        {filteredResourceIds.map((resourceId: ResourcesIds) => renderResourceItem(resourceId))}
+                      </div>
+                    </div>
+                  );
+                })
+                .filter(Boolean)}
             </div>
           </ScrollArea>
         </CollapsibleContent>

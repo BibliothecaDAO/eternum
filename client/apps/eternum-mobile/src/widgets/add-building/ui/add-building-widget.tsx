@@ -18,8 +18,9 @@ import {
   getBuildingFromResource,
   isEconomyBuilding,
   ResourceMiningTypes,
+  ResourcesIds,
 } from "@bibliothecadao/types";
-import { Warehouse, Wheat } from "lucide-react";
+import { Shield, Warehouse, Wheat } from "lucide-react";
 import { useState } from "react";
 import { BuildingPreviewCard } from "./building-preview-card";
 
@@ -27,6 +28,7 @@ import { BuildingPreviewCard } from "./building-preview-card";
 enum BuildingCategory {
   RESOURCE = "resource",
   ECONOMIC = "economic",
+  MILITARY = "military",
 }
 
 // Building interface
@@ -40,6 +42,14 @@ interface Building {
   canBuild: boolean;
   hasBalance: boolean;
   hasEnoughPopulation: boolean;
+  militaryType?: string;
+  tier?: number;
+  missingResources?: Array<{
+    resourceId: number;
+    needed: number;
+    available: number;
+    missing: number;
+  }>;
 }
 
 const BUILDING_IMAGES_PATH: Record<string, string> = {
@@ -87,10 +97,37 @@ const BUILDING_IMAGES_PATH: Record<string, string> = {
   [ResourceMiningTypes.Dragonhide]: `/images/buildings/dragonhide.png`,
 };
 
+// Helper function to determine military building type and tier
+const getMilitaryBuildingInfo = (building: BuildingType) => {
+  // Check for Crossbowman buildings
+  if (building === BuildingType.ResourceCrossbowmanT1)
+    return { type: "Archery", tier: 1, resourceId: ResourcesIds.Crossbowman };
+  if (building === BuildingType.ResourceCrossbowmanT2)
+    return { type: "Archery", tier: 2, resourceId: ResourcesIds.CrossbowmanT2 };
+  if (building === BuildingType.ResourceCrossbowmanT3)
+    return { type: "Archery", tier: 3, resourceId: ResourcesIds.CrossbowmanT3 };
+
+  // Check for Paladin buildings
+  if (building === BuildingType.ResourcePaladinT1) return { type: "Stable", tier: 1, resourceId: ResourcesIds.Paladin };
+  if (building === BuildingType.ResourcePaladinT2)
+    return { type: "Stable", tier: 2, resourceId: ResourcesIds.PaladinT2 };
+  if (building === BuildingType.ResourcePaladinT3)
+    return { type: "Stable", tier: 3, resourceId: ResourcesIds.PaladinT3 };
+
+  // Check for Knight buildings
+  if (building === BuildingType.ResourceKnightT1) return { type: "Barracks", tier: 1, resourceId: ResourcesIds.Knight };
+  if (building === BuildingType.ResourceKnightT2)
+    return { type: "Barracks", tier: 2, resourceId: ResourcesIds.KnightT2 };
+  if (building === BuildingType.ResourceKnightT3)
+    return { type: "Barracks", tier: 3, resourceId: ResourcesIds.KnightT3 };
+
+  return null;
+};
+
 export const AddBuildingWidget = ({ entityId }: { entityId: number }) => {
   const dojo = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
-  const [activeCategory, setActiveCategory] = useState<BuildingCategory | "all">("all");
+  const [activeCategory, setActiveCategory] = useState<BuildingCategory>(BuildingCategory.RESOURCE);
   const [useSimpleCost, setUseSimpleCost] = useState(false);
 
   const realm = getRealmInfo(getEntityIdFromKeys([BigInt(entityId)]), dojo.setup.components);
@@ -114,12 +151,39 @@ export const AddBuildingWidget = ({ entityId }: { entityId: number }) => {
       return divideByPrecision(balance.balance) >= resourceCost.amount;
     });
 
+  const getMissingResources = (cost: any) => {
+    const missing: Array<{
+      resourceId: number;
+      needed: number;
+      available: number;
+      missing: number;
+    }> = [];
+
+    Object.keys(cost).forEach((resourceId) => {
+      const resourceCost = cost[Number(resourceId)];
+      const balance = getBalance(entityId, resourceCost.resource, currentDefaultTick, dojo.setup.components);
+      const available = divideByPrecision(balance.balance);
+      const needed = resourceCost.amount;
+
+      if (available < needed) {
+        missing.push({
+          resourceId: resourceCost.resource,
+          needed,
+          available,
+          missing: needed - available,
+        });
+      }
+    });
+
+    return missing;
+  };
+
   // Filter buildings based on the selected category
   const getFilteredBuildings = () => {
     const buildings: Building[] = [];
 
     // Add resource buildings
-    if (activeCategory === "all" || activeCategory === BuildingCategory.RESOURCE) {
+    if (activeCategory === BuildingCategory.RESOURCE) {
       realm?.resources.forEach((resourceId) => {
         const resource = findResourceById(resourceId);
         if (!resource) return;
@@ -127,9 +191,10 @@ export const AddBuildingWidget = ({ entityId }: { entityId: number }) => {
         const building = getBuildingFromResource(resourceId);
         const buildingCosts = getBuildingCosts(entityId, dojo.setup.components, building, useSimpleCost);
 
-        if (!buildingCosts) return;
+        if (!buildingCosts || buildingCosts.length === 0) return;
 
         const hasBalance = checkBalance(buildingCosts);
+        const missingResources = getMissingResources(buildingCosts);
         const hasEnoughPopulation = hasEnoughPopulationForBuilding(
           realm,
           configManager.getBuildingCategoryConfig(building).population_cost,
@@ -153,12 +218,13 @@ export const AddBuildingWidget = ({ entityId }: { entityId: number }) => {
           canBuild,
           hasBalance,
           hasEnoughPopulation,
+          missingResources,
         });
       });
     }
 
     // Add economic buildings
-    if (activeCategory === "all" || activeCategory === BuildingCategory.ECONOMIC) {
+    if (activeCategory === BuildingCategory.ECONOMIC) {
       buildingTypes
         .filter((a) => isEconomyBuilding(BuildingType[a as keyof typeof BuildingType]))
         .sort((a, b) => {
@@ -174,10 +240,10 @@ export const AddBuildingWidget = ({ entityId }: { entityId: number }) => {
         .forEach((buildingType) => {
           const building = BuildingType[buildingType as keyof typeof BuildingType];
           const buildingCosts = getBuildingCosts(entityId, dojo.setup.components, building, useSimpleCost);
-
-          if (!buildingCosts) return;
+          if (!buildingCosts || buildingCosts.length === 0) return;
 
           const hasBalance = checkBalance(buildingCosts);
+          const missingResources = getMissingResources(buildingCosts);
           const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
 
           // Make sure we have a boolean value
@@ -197,6 +263,50 @@ export const AddBuildingWidget = ({ entityId }: { entityId: number }) => {
             canBuild,
             hasBalance,
             hasEnoughPopulation,
+            missingResources,
+          });
+        });
+    }
+
+    // Add military buildings
+    if (activeCategory === BuildingCategory.MILITARY) {
+      buildingTypes
+        .filter((a) => {
+          const building = BuildingType[a as keyof typeof BuildingType];
+          const info = getMilitaryBuildingInfo(building);
+          return info !== null;
+        })
+        .forEach((buildingType) => {
+          const building = BuildingType[buildingType as keyof typeof BuildingType];
+          const info = getMilitaryBuildingInfo(building);
+          if (!info) return;
+
+          const buildingCosts = getBuildingCosts(entityId, dojo.setup.components, building, useSimpleCost);
+          if (!buildingCosts || buildingCosts.length === 0) return;
+
+          const hasBalance = checkBalance(buildingCosts);
+          const missingResources = getMissingResources(buildingCosts);
+          const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
+
+          // Make sure we have a boolean value
+          const hasCapacity = realm?.hasCapacity || false;
+          const canBuild = hasBalance && hasCapacity && hasEnoughPopulation;
+
+          // Get image path from BUILDING_IMAGES_PATH
+          const imagePath = BUILDING_IMAGES_PATH[building] || `/images/buildings/${buildingType.toLowerCase()}.png`;
+
+          buildings.push({
+            id: buildingType,
+            buildingId: building,
+            name: `${BuildingTypeToString[building]} (T${info.tier})`,
+            image: imagePath,
+            category: BuildingCategory.MILITARY,
+            canBuild,
+            hasBalance,
+            hasEnoughPopulation,
+            militaryType: info.type,
+            tier: info.tier,
+            missingResources,
           });
         });
     }
@@ -229,11 +339,11 @@ export const AddBuildingWidget = ({ entityId }: { entityId: number }) => {
         </div>
       </div>
 
-      <Tabs defaultValue="all" onValueChange={(value) => setActiveCategory(value as BuildingCategory | "all")}>
+      <Tabs
+        defaultValue={BuildingCategory.RESOURCE}
+        onValueChange={(value) => setActiveCategory(value as BuildingCategory)}
+      >
         <TabsList className="grid grid-cols-3 bg-white/5">
-          <TabsTrigger value="all" className="data-[state=active]:bg-white/10">
-            All
-          </TabsTrigger>
           <TabsTrigger value={BuildingCategory.RESOURCE} className="data-[state=active]:bg-white/10">
             <Wheat className="h-4 w-4 mr-1.5" />
             Resources
@@ -242,20 +352,11 @@ export const AddBuildingWidget = ({ entityId }: { entityId: number }) => {
             <Warehouse className="h-4 w-4 mr-1.5" />
             Economic
           </TabsTrigger>
+          <TabsTrigger value={BuildingCategory.MILITARY} className="data-[state=active]:bg-white/10">
+            <Shield className="h-4 w-4 mr-1.5" />
+            Military
+          </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="all" className="mt-4">
-          <div className="space-y-3">
-            {filteredBuildings.map((building) => (
-              <BuildingPreviewCard
-                key={building.id}
-                building={building}
-                entityId={entityId}
-                useSimpleCost={useSimpleCost}
-              />
-            ))}
-          </div>
-        </TabsContent>
 
         <TabsContent value={BuildingCategory.RESOURCE} className="mt-4">
           <div className="space-y-3">
@@ -271,6 +372,19 @@ export const AddBuildingWidget = ({ entityId }: { entityId: number }) => {
         </TabsContent>
 
         <TabsContent value={BuildingCategory.ECONOMIC} className="mt-4">
+          <div className="space-y-3">
+            {filteredBuildings.map((building) => (
+              <BuildingPreviewCard
+                key={building.id}
+                building={building}
+                entityId={entityId}
+                useSimpleCost={useSimpleCost}
+              />
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value={BuildingCategory.MILITARY} className="mt-4">
           <div className="space-y-3">
             {filteredBuildings.map((building) => (
               <BuildingPreviewCard

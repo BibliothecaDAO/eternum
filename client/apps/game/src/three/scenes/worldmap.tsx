@@ -70,7 +70,7 @@ import {
 } from "../utils/navigation";
 import { SceneShortcutManager } from "../utils/shortcuts";
 
-const dummyObject = new Object3D();
+//const dummyObject = new Object3D();
 const dummyVector = new Vector3();
 
 export default class WorldmapScene extends HexagonScene {
@@ -1629,7 +1629,7 @@ export default class WorldmapScene extends HexagonScene {
       // Always remove from pending chunks
       this.pendingChunks.delete(chunkKey);
       this.state.setLoading(LoadingStateKey.Map, false);
-      const end = performance.now();
+      //const end = performance.now();
     }
   }
 

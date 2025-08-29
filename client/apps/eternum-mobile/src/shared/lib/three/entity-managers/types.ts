@@ -1,0 +1,60 @@
+import { BiomeType, BuildingType, TroopTier, TroopType } from "@bibliothecadao/types";
+
+export interface MapObject {
+  id: number;
+  col: number;
+  row: number;
+  owner?: bigint;
+  type: string;
+}
+
+export interface ArmyObject extends MapObject {
+  type: "army";
+  strength?: number;
+  isMoving?: boolean;
+  targetCol?: number;
+  targetRow?: number;
+  troopType?: TroopType;
+  troopTier?: TroopTier;
+  ownerName?: string;
+  guildName?: string;
+  isDaydreamsAgent?: boolean;
+  isAlly?: boolean;
+  troopCount?: number;
+  currentStamina?: number;
+  maxStamina?: number;
+  onChainStamina?: { amount: bigint; updatedTick: number };
+}
+
+export interface StructureObject extends MapObject {
+  type: "structure";
+  structureType?: string;
+  level?: number;
+  buildingType?: BuildingType;
+  ownerName?: string;
+  guildName?: string;
+  guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
+  activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
+  hyperstructureRealmCount?: number;
+  stage?: number;
+  initialized?: boolean;
+  hasWonder?: boolean;
+}
+
+export interface QuestObject extends MapObject {
+  type: "quest";
+  questType?: string;
+  isCompleted?: boolean;
+}
+
+export interface ChestObject extends MapObject {
+  type: "chest";
+}
+
+export interface BiomeObject extends MapObject {
+  type: "biome";
+  biome: BiomeType;
+  isExplored: boolean;
+}
+
+export type GameMapObject = ArmyObject | StructureObject | QuestObject | ChestObject | BiomeObject;

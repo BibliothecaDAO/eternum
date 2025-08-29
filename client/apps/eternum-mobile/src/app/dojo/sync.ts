@@ -3,7 +3,12 @@ import { type SetupResult } from "@bibliothecadao/dojo";
 import type { Entity } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
 import type { Clause, ToriiClient, Entity as ToriiEntity } from "@dojoengine/torii-wasm/types";
-import { getBankStructuresFromTorii, getConfigFromTorii, getMarketFromTorii } from "./queries";
+import {
+  getAddressNamesFromTorii,
+  getBankStructuresFromTorii,
+  getConfigFromTorii,
+  getGuildsFromTorii,
+} from "./queries";
 
 export const EVENT_QUERY_LIMIT = 40_000;
 
@@ -121,22 +126,22 @@ const syncEntitiesDebounced = async (
   };
 
   // Handle entity updates
-  const entitySub = client.onEntityUpdated(entityKeyClause, (fetchedEntities: any, data: any) => {
-    if (logging) console.log("Entity updated", fetchedEntities, data);
+  const entitySub = await client.onEntityUpdated(entityKeyClause, (data: any) => {
+    if (logging) console.log("Entity updated", data);
 
     try {
-      queueUpdate(fetchedEntities, data);
+      queueUpdate(data.hashed_keys, data);
     } catch (error) {
       console.error("Error queuing entity update:", error);
     }
   });
 
   // Handle event message updates
-  const eventSub = client.onEventMessageUpdated(entityKeyClause, (fetchedEntities: any, data: any) => {
-    if (logging) console.log("Event message updated", fetchedEntities);
+  const eventSub = await client.onEventMessageUpdated(entityKeyClause, (data: any) => {
+    if (logging) console.log("Event message updated", data.hashed_keys);
 
     try {
-      queueUpdate(fetchedEntities, data);
+      queueUpdate(data.hashed_keys, data);
     } catch (error) {
       console.error("Error queuing event message update:", error);
     }
@@ -164,17 +169,37 @@ export const initialSync = async (setup: SetupResult, setInitialSyncProgress: (p
   console.log("[sync] bank structures query", end - start);
   setInitialSyncProgress(10);
 
-  // CONFIG
+  // // SPECTATOR REALM
+  //const firstNonOwnedStructure = await sqlApi.fetchFirstStructure();
+
+  // if (firstNonOwnedStructure) {
+  //   state.setSpectatorRealmEntityId(firstNonOwnedStructure.entity_id);
+  //   await getStructuresDataFromTorii(setup.network.toriiClient, setup.network.contractComponents as any, [
+  //     {
+  //       entityId: firstNonOwnedStructure.entity_id,
+  //       position: { col: firstNonOwnedStructure.coord_x, row: firstNonOwnedStructure.coord_y },
+  //     },
+  //   ]);
+  //   end = performance.now();
+  //   console.log("[sync] first structure query", end - start);
+  //   setInitialSyncProgress(25);
+  // }
+
   start = performance.now();
   await getConfigFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
   end = performance.now();
   console.log("[sync] config query", end - start);
-  setInitialSyncProgress(50);
+  setInitialSyncProgress(75);
 
-  // AMM MARKET
   start = performance.now();
-  await getMarketFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+  await getAddressNamesFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
   end = performance.now();
-  console.log("[sync] market query", end - start);
-  setInitialSyncProgress(99);
+  console.log("[sync] address names query", end - start);
+  setInitialSyncProgress(90);
+
+  start = performance.now();
+  await getGuildsFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+  end = performance.now();
+  console.log("[sync] guilds query", end - start);
+  setInitialSyncProgress(100);
 };
