@@ -55,6 +55,7 @@ const loadingMessages = [
 
 export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningModalProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const backgroundVideoRef = useRef<HTMLVideoElement>(null);
   const [videoState, setVideoState] = useState<"loading" | "playing" | "ended">("loading");
   const [showWhiteScreen, setShowWhiteScreen] = useState(false);
   const [showContent, setShowContent] = useState(false);
@@ -132,9 +133,23 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
             videoRef.current.currentTime = 0;
             videoRef.current.volume = 1;
           }
-          
-          await videoRef.current!.play();
-          console.log("Video playing successfully");
+
+          // Sync background video with main video
+          if (backgroundVideoRef.current && videoRef.current) {
+            backgroundVideoRef.current.currentTime = videoRef.current.currentTime;
+          }
+
+          // Play both videos simultaneously
+          const playPromises = [];
+          if (videoRef.current) {
+            playPromises.push(videoRef.current.play());
+          }
+          if (backgroundVideoRef.current) {
+            playPromises.push(backgroundVideoRef.current.play());
+          }
+
+          await Promise.all(playPromises);
+          console.log("Videos playing successfully");
           setVideoState("playing");
           // Fade ambience audio to quiet when video starts
           ambienceAudio.fadeToQuiet(500);
@@ -144,8 +159,13 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
           if (videoRef.current) {
             videoRef.current.muted = true;
             try {
-              await videoRef.current.play();
-              console.log("Video playing muted");
+              const playPromises = [];
+              playPromises.push(videoRef.current.play());
+              if (backgroundVideoRef.current) {
+                playPromises.push(backgroundVideoRef.current.play());
+              }
+              await Promise.all(playPromises);
+              console.log("Videos playing muted");
               setVideoState("playing");
               // Fade ambience audio to quiet when video starts
               ambienceAudio.fadeToQuiet(500);
@@ -236,9 +256,12 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
   const handleSkip = () => {
     console.log("Skipping video");
 
-    // Stop video and immediately show content
+    // Stop both videos and immediately show content
     if (videoRef.current) {
       videoRef.current.pause();
+    }
+    if (backgroundVideoRef.current) {
+      backgroundVideoRef.current.pause();
     }
     setVideoState("ended");
     setShowWhiteScreen(false);
@@ -260,60 +283,81 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
   };
 
   // Check if we should show loading state - show until both videos and chest content are loaded
-  const shouldShowLoading = !chestContent || chestContent.length === 0 || (videoState === "loading" && !loadError) || !allVideosLoaded;
+  const shouldShowLoading =
+    !chestContent || chestContent.length === 0 || (videoState === "loading" && !loadError) || !allVideosLoaded;
 
   return (
     <Dialog open={true} onOpenChange={clearLootChestOpening}>
       <DialogContent className="max-w-full w-full h-full p-0 border-0 bg-black">
         <DialogTitle className="sr-only">Chest Opening</DialogTitle>
         <div className="relative w-full h-full flex items-center justify-center">
-          {/* Video - only show when chestContent is available */}
+          {/* Video layers - only show when chestContent is available */}
           {chestContent && chestContent.length > 0 && (
-            <video
-              ref={videoRef}
-              className={`absolute inset-0 w-full h-full object-cover ${
+            <div
+              className={`absolute inset-0 ${
                 videoState === "ended" ? "hidden" : videoState === "loading" ? "opacity-0" : "opacity-100"
               }`}
-              onEnded={handleVideoEnd}
-              onError={(e) => {
-                console.error("Video error:", e);
-                setLoadError(true);
-                setVideoState("playing");
-              }}
-              onLoadedData={() => {
-                console.log("Video data loaded");
-                setIsVideoReady(true);
-              }}
-              onLoadedMetadata={() => console.log("Video metadata loaded")}
-              onCanPlay={() => console.log("Video can play")}
-              onCanPlayThrough={() => {
-                console.log("Video can play through without buffering");
-                setIsVideoReady(true);
-              }}
-              onPlay={() => console.log("Video started playing")}
-              onPause={() => console.log("Video paused")}
-              onTimeUpdate={(e) => {
-                const video = e.currentTarget;
-                if (video.currentTime > 0 && video.currentTime < 1) {
-                  console.log("Video is playing, current time:", video.currentTime);
-                }
-              }}
-              playsInline
-              muted={false}
-              autoPlay={false}
-              preload={window.innerWidth < 768 ? "metadata" : "auto"}
-              controls={false}
-              crossOrigin="anonymous"
             >
-              <source src={chestOpeningVideo[chestType]} type="video/mp4" />
-            </video>
+              {/* Background layer: Blurred video fill */}
+              <video
+                ref={backgroundVideoRef}
+                className="absolute inset-0 w-full h-full object-cover blur-sm scale-110 opacity-50"
+                src={chestOpeningVideo[chestType]}
+                playsInline
+                muted={true}
+                autoPlay={false}
+                preload={window.innerWidth < 768 ? "metadata" : "auto"}
+                controls={false}
+                style={{ filter: "blur(8px) brightness(0.7)" }}
+              />
+
+              {/* Foreground layer: Main video with proper aspect ratio */}
+              <video
+                ref={videoRef}
+                className="absolute inset-0 w-full h-full object-contain scale-150"
+                onEnded={handleVideoEnd}
+                onError={(e) => {
+                  console.error("Video error:", e);
+                  setLoadError(true);
+                  setVideoState("playing");
+                }}
+                onLoadedData={() => {
+                  console.log("Video data loaded");
+                  setIsVideoReady(true);
+                }}
+                onLoadedMetadata={() => console.log("Video metadata loaded")}
+                onCanPlay={() => console.log("Video can play")}
+                onCanPlayThrough={() => {
+                  console.log("Video can play through without buffering");
+                  setIsVideoReady(true);
+                }}
+                onPlay={() => console.log("Video started playing")}
+                onPause={() => console.log("Video paused")}
+                onTimeUpdate={(e) => {
+                  const video = e.currentTarget;
+                  if (video.currentTime > 0 && video.currentTime < 1) {
+                    console.log("Video is playing, current time:", video.currentTime);
+                  }
+                }}
+                playsInline
+                muted={false}
+                autoPlay={false}
+                preload={window.innerWidth < 768 ? "metadata" : "auto"}
+                controls={false}
+                crossOrigin="anonymous"
+              >
+                <source src={chestOpeningVideo[chestType]} type="video/mp4" />
+              </video>
+            </div>
           )}
 
           {/* Loading state */}
           {shouldShowLoading && (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4">
               <LoadingAnimation />
-              <div className="text-gold text-base sm:text-xl px-4 text-center">{loadingMessages[currentMessageIndex]}</div>
+              <div className="text-gold text-base sm:text-xl px-4 text-center">
+                {loadingMessages[currentMessageIndex]}
+              </div>
             </div>
           )}
 
@@ -336,9 +380,9 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
           )}
 
           {/* Controls */}
-          <div 
+          <div
             className="absolute bottom-8 sm:bottom-12 left-1/2 transform -translate-x-1/2 flex gap-2 sm:gap-4 z-[60] px-4 max-w-full"
-            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
             {/* Skip button during video */}
             {videoState === "playing" && (
@@ -357,7 +401,13 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
 
             {/* Open Next button */}
             {remainingChests > 0 && nextToken && videoState === "ended" && showContent && (
-              <Button variant="cta" size="lg" onClick={handleOpenChest} className="min-h-[44px] px-4 sm:px-6" disabled={isChestOpeningLoading}>
+              <Button
+                variant="cta"
+                size="lg"
+                onClick={handleOpenChest}
+                className="min-h-[44px] px-4 sm:px-6"
+                disabled={isChestOpeningLoading}
+              >
                 {isChestOpeningLoading ? (
                   <>
                     <Loader2 className="animate-spin mr-2 h-4 w-4" />
