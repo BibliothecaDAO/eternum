@@ -19,8 +19,8 @@ import { ChestContent } from "./chest-content";
 
 const LoadingAnimation = () => {
   return (
-    <div className="p-10 w-1/6 flex justify-center">
-      <img src="/images/logos/eternum-loader.png" className="scale-50 self-center" />
+    <div className="p-6 sm:p-10 w-1/3 sm:w-1/6 flex justify-center">
+      <img src="/images/logos/eternum-loader.png" className="scale-75 sm:scale-50 self-center" />
     </div>
   );
 };
@@ -67,7 +67,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
   const { chestContent, resetChestContent } = useChestContent(env.VITE_PUBLIC_CHEST_DEBUG_MODE, chestOpenTimestamp);
 
   // Preload all chest videos when modal mounts
-  const { allVideosLoaded, overallProgress } = useVideoPreloader(chestOpeningVideo);
+  const { allVideosLoaded } = useVideoPreloader(chestOpeningVideo);
 
   const ambienceAudio = useAmbienceAudio({
     src: "/sound/music/ShadowSong.mp3",
@@ -301,7 +301,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
               playsInline
               muted={false}
               autoPlay={false}
-              preload="auto"
+              preload={window.innerWidth < 768 ? "metadata" : "auto"}
               controls={false}
               crossOrigin="anonymous"
             >
@@ -313,7 +313,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
           {shouldShowLoading && (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4">
               <LoadingAnimation />
-              <div className="text-gold text-xl">{loadingMessages[currentMessageIndex]}</div>
+              <div className="text-gold text-base sm:text-xl px-4 text-center">{loadingMessages[currentMessageIndex]}</div>
             </div>
           )}
 
@@ -336,31 +336,39 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
           )}
 
           {/* Controls */}
-          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-4 z-[60]">
+          <div 
+            className="absolute bottom-8 sm:bottom-12 left-1/2 transform -translate-x-1/2 flex gap-2 sm:gap-4 z-[60] px-4 max-w-full"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+          >
             {/* Skip button during video */}
             {videoState === "playing" && (
-              <Button variant="outline" size="lg" onClick={handleSkip} className="text-gold">
+              <Button variant="outline" size="lg" onClick={handleSkip} className="text-gold min-h-[44px] px-6">
                 Skip
               </Button>
             )}
 
             {/* Stop Opening button only when content is shown */}
             {videoState === "ended" && showContent && (
-              <Button variant="outline" size="lg" onClick={handleClose} className="text-gold">
-                Stop Opening
+              <Button variant="outline" size="lg" onClick={handleClose} className="text-gold min-h-[44px] px-4 sm:px-6">
+                <span className="hidden sm:inline">Stop Opening</span>
+                <span className="sm:hidden">Stop</span>
               </Button>
             )}
 
             {/* Open Next button */}
             {remainingChests > 0 && nextToken && videoState === "ended" && showContent && (
-              <Button variant="cta" size="lg" onClick={handleOpenChest} className="" disabled={isChestOpeningLoading}>
+              <Button variant="cta" size="lg" onClick={handleOpenChest} className="min-h-[44px] px-4 sm:px-6" disabled={isChestOpeningLoading}>
                 {isChestOpeningLoading ? (
                   <>
                     <Loader2 className="animate-spin mr-2 h-4 w-4" />
-                    Opening...
+                    <span className="hidden sm:inline">Opening...</span>
+                    <span className="sm:hidden">...</span>
                   </>
                 ) : (
-                  `Open Next Chest (${remainingChests} remaining)`
+                  <>
+                    <span className="hidden sm:inline">{`Open Next Chest (${remainingChests} remaining)`}</span>
+                    <span className="sm:hidden">{`Open Next (${remainingChests})`}</span>
+                  </>
                 )}
               </Button>
             )}
