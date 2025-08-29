@@ -115,8 +115,7 @@ export class HighlightRenderer {
       getWorldPositionForHex({ col: highlight.col, row: highlight.row }, true, this.tempVector3);
 
       this.dummy.position.copy(this.tempVector3);
-      this.dummy.position.y = 0.25;
-      this.dummy.position.z -= 0.15;
+      this.dummy.position.y = 0.35; // Slightly higher position
       this.dummy.rotation.x = -Math.PI / 2;
       this.dummy.updateMatrix();
 
@@ -125,7 +124,7 @@ export class HighlightRenderer {
     });
 
     this.highlightMesh.instanceColor!.needsUpdate = true;
-    this.highlightMesh.renderOrder = 2000;
+    this.highlightMesh.renderOrder = 3000; // Much higher render order to ensure it's on top of everything
     this.scene.add(this.highlightMesh);
   }
 
