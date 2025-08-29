@@ -66,8 +66,11 @@ export class ArmyManager extends EntityManager<ArmyObject> {
 
     // Check if the army has moved to a new position
     if (existingArmy && (existingArmy.col !== object.col || existingArmy.row !== object.row)) {
-      // If currently moving, don't start another movement
+      // If currently moving, update the object data but don't start another movement animation
       if (this.movingObjects.has(object.id)) {
+        // Update the object data to keep it in sync, but don't trigger visual movement
+        this.objects.set(object.id, object);
+        this.updateLabelContent(object);
         return;
       }
 
