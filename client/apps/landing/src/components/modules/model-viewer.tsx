@@ -4,6 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { DRACOLoader, GLTFLoader, OrbitControls } from "three-stdlib";
 
+// Mobile device detection
+const isMobileDevice = () => {
+  return (
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    window.innerWidth <= 768
+  );
+};
+
 interface ModelViewerProps {
   modelPath: string;
   className?: string;
@@ -83,11 +91,12 @@ export const ModelViewer = ({
     camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z);
     cameraRef.current = camera;
 
-    // Renderer setup
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    // Renderer setup with mobile optimization
+    const isMobile = isMobileDevice();
+    const renderer = new THREE.WebGLRenderer({ antialias: !isMobile, alpha: true });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.shadowMap.enabled = true;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
+    renderer.shadowMap.enabled = !isMobile; // Disable shadows on mobile
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     rendererRef.current = renderer;
@@ -100,8 +109,8 @@ export const ModelViewer = ({
     controls.enableDamping = true;
     controls.enablePan = false;
     controls.enableRotate = false; // Disable camera rotation
-    controls.minDistance = 2;
-    controls.maxDistance = 3.5;
+    controls.minDistance = isMobile ? 2.5 : 2; // Closer view on mobile
+    controls.maxDistance = isMobile ? 4 : 3.5;
     controlsRef.current = controls;
 
     // Enhanced lighting setup with rarity-based ambient light
@@ -113,9 +122,9 @@ export const ModelViewer = ({
     // Key light - main directional light from front-top
     const keyLight = new THREE.DirectionalLight(0xffffff, 4);
     keyLight.position.set(2, 3, 2);
-    keyLight.castShadow = true;
-    keyLight.shadow.mapSize.width = 2048;
-    keyLight.shadow.mapSize.height = 2048;
+    keyLight.castShadow = !isMobile;
+    keyLight.shadow.mapSize.width = isMobile ? 1024 : 2048;
+    keyLight.shadow.mapSize.height = isMobile ? 1024 : 2048;
     keyLight.shadow.camera.near = 0.1;
     keyLight.shadow.camera.far = 50;
     keyLight.shadow.camera.left = -10;
@@ -139,8 +148,10 @@ export const ModelViewer = ({
     pointLight.position.set(0, 2, 1);
     scene.add(pointLight);
 
-    // Create smoke effect
+    // Create smoke effect with mobile optimization
     const createSmokeEffect = () => {
+      // Detect mobile device for performance optimization
+      const isMobile = isMobileDevice();
       // Create smoke texture using canvas (since we can't load external images in this context)
       const canvas = document.createElement("canvas");
       canvas.width = 64;
@@ -172,8 +183,9 @@ export const ModelViewer = ({
       const smokeGeo = new THREE.PlaneGeometry(1, 1); // Scaled for our smaller scene
       const smokeParticles: THREE.Mesh[] = [];
 
-      // Create 30 smoke particles (scaled down from 150 for smaller scene)
-      for (let p = 0; p < 30; p++) {
+      // Create fewer smoke particles on mobile for better performance
+      const particleCount = isMobile ? 15 : 30;
+      for (let p = 0; p < particleCount; p++) {
         const particle = new THREE.Mesh(smokeGeo, smokeMaterial);
 
         // Position particles around the scene (scaled for 2-4 unit scene)
@@ -296,9 +308,11 @@ export const ModelViewer = ({
         modelRef.current.position.y = basePositionYRef.current + floatOffset;
       }
 
-      // Animate smoke particles
+      // Animate smoke particles (reduce animation on mobile)
       const smokeParticles = smokeParticlesRef.current;
-      if (smokeParticles.length > 0) {
+      const isMobileDevice = window.innerWidth < 768;
+      if (smokeParticles.length > 0 && (!isMobileDevice || frameIdRef.current! % 2 === 0)) {
+        // Skip every other frame on mobile
         for (let i = 0; i < smokeParticles.length; i++) {
           const particle = smokeParticles[i];
 
@@ -307,16 +321,17 @@ export const ModelViewer = ({
 
           // Keep particles same size regardless of zoom
           const distance = camera.position.distanceTo(particle.position);
-          const scale = distance * 0.3; // Adjust this multiplier to control particle size
+          const scale = distance * (isMobileDevice ? 0.2 : 0.3); // Smaller particles on mobile
           particle.scale.setScalar(scale);
 
-          // Add some gentle floating motion to smoke
-          particle.position.y += Math.sin(time * 0.5 + i) * 0.002;
-          particle.position.x += Math.cos(time * 0.3 + i) * 0.001;
+          // Add some gentle floating motion to smoke (reduced on mobile)
+          const motionScale = isMobileDevice ? 0.5 : 1;
+          particle.position.y += Math.sin(time * 0.5 + i) * 0.002 * motionScale;
+          particle.position.x += Math.cos(time * 0.3 + i) * 0.001 * motionScale;
 
-          // Keep particles visible at all times
+          // Keep particles visible at all times (reduced opacity on mobile)
           const material = particle.material as THREE.MeshLambertMaterial;
-          material.opacity = 0.25;
+          material.opacity = isMobileDevice ? 0.15 : 0.25;
         }
       }
 
@@ -524,11 +539,12 @@ export const ModelViewer = ({
         modelRotationRef.current = { x: rotationX, y: rotationY };
         targetRotationRef.current = { x: rotationX, y: rotationY };
 
-        // Enable shadows
+        // Enable shadows (only on desktop)
+        const isMobileDevice = window.innerWidth < 768;
         model.traverse((child) => {
           if (child instanceof THREE.Mesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
+            child.castShadow = !isMobileDevice;
+            child.receiveShadow = !isMobileDevice;
           }
         });
 
