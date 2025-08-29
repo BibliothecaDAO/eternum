@@ -136,7 +136,6 @@ export const TokenDetailModal = ({
   const { connector, connectors, connect } = useConnect();
 
   const [isController, setIsController] = useState(false);
-  const [isChestOpeningLoading, setIsChestOpeningLoading] = useState(false);
   const { setOpenedChestTokenId } = useLootChestOpeningStore();
 
   useEffect(() => {
@@ -158,7 +157,6 @@ export const TokenDetailModal = ({
   const { openChest, error: chestOpeningError } = useOpenChest();
 
   const handleOpenChest = () => {
-    setIsChestOpeningLoading(true);
     setOpenedChestTokenId(tokenData.token_id.toString());
 
     // Set timestamp for when chest is opened to listen for new events
@@ -178,6 +176,11 @@ export const TokenDetailModal = ({
     } else {
       setShowLootChestOpening(true);
     }
+
+    // close modal after 500ms
+    setTimeout(() => {
+      onOpenChange(false);
+    }, 500);
   };
 
   // Effect to detect when indexer data has updated props
@@ -293,18 +296,9 @@ export const TokenDetailModal = ({
                         variant="default"
                         className="w-full"
                         onClick={handleOpenChest}
-                        disabled={
-                          isLoading || !isController || isChestOpeningLoading || env.VITE_PUBLIC_BLOCK_CHEST_OPENING
-                        }
+                        disabled={isLoading || !isController || env.VITE_PUBLIC_BLOCK_CHEST_OPENING}
                       >
-                        {isChestOpeningLoading ? (
-                          <>
-                            <Loader2 className="animate-spin mr-2 h-4 w-4" />
-                            Opening...
-                          </>
-                        ) : (
-                          "Open Chest " + (env.VITE_PUBLIC_BLOCK_CHEST_OPENING ? "(Coming soon)" : "")
-                        )}
+                        Open Chest {env.VITE_PUBLIC_BLOCK_CHEST_OPENING ? "(Coming soon)" : ""}
                       </Button>
                     </div>
                   </TooltipTrigger>
