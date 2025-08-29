@@ -176,11 +176,6 @@ export const TokenDetailModal = ({
     } else {
       setShowLootChestOpening(true);
     }
-
-    // close modal after 500ms
-    setTimeout(() => {
-      onOpenChange(false);
-    }, 500);
   };
 
   // Effect to detect when indexer data has updated props
