@@ -20,6 +20,7 @@ class ResourceFXInstance {
   public animationFrameId?: number;
   public isDestroyed = false;
   public initialY: number;
+  public initialZ: number;
   public baseSize: number;
   public resolvePromise?: () => void;
   public label?: CSS2DObject;
@@ -51,6 +52,7 @@ class ResourceFXInstance {
     this.group.renderOrder = Infinity;
     this.group.position.set(x, y, z);
     this.initialY = y;
+    this.initialZ = z;
     this.baseSize = size;
     this.resourceId = resourceId;
     this.amount = amount;
@@ -80,7 +82,7 @@ class ResourceFXInstance {
     amountDiv.style.textShadow = "0 0 5px black";
 
     this.amountLabel = new CSS2DObject(amountDiv);
-    this.amountLabel.position.set(0.8, 0.2, 0);
+    this.amountLabel.position.set(0, 0, -0.8);
     this.group.add(this.amountLabel);
 
     // Create resource name label if provided
@@ -95,7 +97,7 @@ class ResourceFXInstance {
       div.style.textShadow = "0 0 5px black";
 
       this.label = new CSS2DObject(div);
-      this.label.position.set(0, -1, 0);
+      this.label.position.set(0, 0, -1.1);
       this.group.add(this.label);
     }
 
@@ -155,7 +157,7 @@ class ResourceFXInstance {
       const progress = Math.min(elapsed / this.duration, 1);
       const easeOut = 1 - Math.pow(1 - progress, 3); // Cubic ease out
 
-      // Position based on progress
+      // Position based on progress (vertical movement for top-down view)
       this.group.position.y = this.initialY + this.floatHeight * easeOut;
 
       // Slight sway for visual interest
