@@ -56,7 +56,12 @@ const DirectionButton = ({
     <Button
       variant={isSelected ? "default" : isAvailable ? "outline" : "ghost"}
       size="sm"
-      onClick={() => isAvailable && onClick(direction)}
+      onClick={() => {
+        console.log('Direction clicked:', direction, 'isAvailable:', isAvailable);
+        if (isAvailable) {
+          onClick(direction);
+        }
+      }}
       disabled={!isAvailable}
       className={cn(
         "aspect-square text-lg font-bold",
@@ -91,7 +96,12 @@ export function UnifiedArmyCreationDrawer({
   const [isLoading, setIsLoading] = useState(false);
   const [freeDirections, setFreeDirections] = useState<Direction[]>([]);
   const [isLoadingDirections, setIsLoadingDirections] = useState(false);
-  const [selectedDirection, setSelectedDirection] = useState<Direction | null>(direction || null);
+  const [selectedDirection, setSelectedDirection] = useState<Direction | null>(direction ?? null);
+  
+  const handleDirectionChange = (newDirection: Direction) => {
+    console.log('Setting direction:', newDirection, 'type:', typeof newDirection);
+    setSelectedDirection(newDirection);
+  };
   const [selectedTroopType, setSelectedTroopType] = useState<TroopType>(TroopType.Crossbowman);
   const [selectedTier, setSelectedTier] = useState<TroopTier>(TroopTier.T1);
   const [troopCount, setTroopCount] = useState(0);
@@ -111,12 +121,12 @@ export function UnifiedArmyCreationDrawer({
           // For now, we'll assume all directions are available - in a real implementation
           // you would fetch tile data to check which are free using getNeighborHexes
           const allDirections = [
-            Direction.NORTH_EAST,
             Direction.EAST,
-            Direction.SOUTH_EAST,
-            Direction.SOUTH_WEST,
-            Direction.WEST,
+            Direction.NORTH_EAST,
             Direction.NORTH_WEST,
+            Direction.WEST,
+            Direction.SOUTH_WEST,
+            Direction.SOUTH_EAST,
           ];
           setFreeDirections(allDirections);
         } catch (error) {
@@ -133,6 +143,7 @@ export function UnifiedArmyCreationDrawer({
   // Auto-select first available direction
   useEffect(() => {
     if (freeDirections.length > 0 && selectedDirection === null) {
+      console.log('Auto-selecting first direction:', freeDirections[0]);
       setSelectedDirection(freeDirections[0]);
     }
   }, [freeDirections, selectedDirection]);
@@ -354,26 +365,26 @@ export function UnifiedArmyCreationDrawer({
               ) : freeDirections.length > 0 ? (
                 <div className="grid grid-cols-3 gap-2 max-w-xs mx-auto">
                   <DirectionButton
-                    direction={Direction.NORTH_WEST}
+                    direction={Direction.SOUTH_WEST}
                     label="↖"
                     availableDirections={freeDirections}
                     selectedDirection={selectedDirection}
-                    onClick={setSelectedDirection}
+                    onClick={handleDirectionChange}
                   />
                   <div />
                   <DirectionButton
-                    direction={Direction.NORTH_EAST}
+                    direction={Direction.SOUTH_EAST}
                     label="↗"
                     availableDirections={freeDirections}
                     selectedDirection={selectedDirection}
-                    onClick={setSelectedDirection}
+                    onClick={handleDirectionChange}
                   />
                   <DirectionButton
                     direction={Direction.WEST}
                     label="←"
                     availableDirections={freeDirections}
                     selectedDirection={selectedDirection}
-                    onClick={setSelectedDirection}
+                    onClick={handleDirectionChange}
                   />
                   <div className="flex items-center justify-center text-2xl">🏰</div>
                   <DirectionButton
@@ -381,22 +392,22 @@ export function UnifiedArmyCreationDrawer({
                     label="→"
                     availableDirections={freeDirections}
                     selectedDirection={selectedDirection}
-                    onClick={setSelectedDirection}
+                    onClick={handleDirectionChange}
                   />
                   <DirectionButton
-                    direction={Direction.SOUTH_WEST}
+                    direction={Direction.NORTH_WEST}
                     label="↙"
                     availableDirections={freeDirections}
                     selectedDirection={selectedDirection}
-                    onClick={setSelectedDirection}
+                    onClick={handleDirectionChange}
                   />
                   <div />
                   <DirectionButton
-                    direction={Direction.SOUTH_EAST}
+                    direction={Direction.NORTH_EAST}
                     label="↘"
                     availableDirections={freeDirections}
                     selectedDirection={selectedDirection}
-                    onClick={setSelectedDirection}
+                    onClick={handleDirectionChange}
                   />
                 </div>
               ) : (
