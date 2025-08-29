@@ -1,3 +1,4 @@
+import { Store } from "@/shared/store";
 import { ActionPaths, ActionType, ExplorerMoveSystemUpdate, WorldUpdateListener } from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
 import { ActorType, FELT_CENTER, findResourceById, getDirectionBetweenAdjacentHexes } from "@bibliothecadao/types";
@@ -25,7 +26,7 @@ export class HexagonMap {
   // === CORE DEPENDENCIES ===
   private scene: THREE.Scene;
   private dojo: DojoResult;
-  private store: any;
+  private store: Store;
   private systemManager: WorldUpdateListener;
   private fxManager: FXManager;
   private resourceFXManager: ResourceFXManager;

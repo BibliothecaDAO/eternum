@@ -6,7 +6,7 @@ import { createSelectionSlice, SelectionSlice } from "./slices/selection-slice";
 import { createStructuresSlice, StructuresSlice } from "./slices/structures-slice";
 import { createWorldSlice, WorldSlice } from "./slices/world-loading-slice";
 
-type Store = WorldSlice & AccountSlice & StructuresSlice & SelectionSlice & DrawerSlice;
+export type Store = WorldSlice & AccountSlice & StructuresSlice & SelectionSlice & DrawerSlice;
 
 export const useStore = create<Store>()(
   subscribeWithSelector<Store>((set, get) => ({
