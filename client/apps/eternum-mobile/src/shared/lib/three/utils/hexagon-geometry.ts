@@ -58,11 +58,37 @@ export const createRoundedHexagonShape = (radius: number, cornerRadius: number =
   ];
 
   // Create the path with rounded corners
-  shape.moveTo(points[0].x, points[0].y);
+  // First, calculate the start point for the first segment (after the curve from the last point)
+  const lastIndex = points.length - 1;
+  const firstIndex = 0;
+  const secondIndex = 1;
   
+  // Calculate vectors for the last-to-first segment
+  const lastToFirstDx = points[firstIndex].x - points[lastIndex].x;
+  const lastToFirstDy = points[firstIndex].y - points[lastIndex].y;
+  const lastToFirstDistance = Math.sqrt(lastToFirstDx * lastToFirstDx + lastToFirstDy * lastToFirstDy);
+  const lastToFirstRadius = Math.min(cornerRadius, lastToFirstDistance / 2);
+  
+  // Calculate vectors for the first-to-second segment
+  const firstToSecondDx = points[secondIndex].x - points[firstIndex].x;
+  const firstToSecondDy = points[secondIndex].y - points[firstIndex].y;
+  const firstToSecondDistance = Math.sqrt(firstToSecondDx * firstToSecondDx + firstToSecondDy * firstToSecondDy);
+  const firstToSecondRadius = Math.min(cornerRadius, firstToSecondDistance / 2);
+  
+  // Calculate the start point (after the curve from the last point)
+  const firstDirX = firstToSecondDx / firstToSecondDistance;
+  const firstDirY = firstToSecondDy / firstToSecondDistance;
+  const startX = points[firstIndex].x + firstDirX * firstToSecondRadius;
+  const startY = points[firstIndex].y + firstDirY * firstToSecondRadius;
+  
+  // Start the shape at this point
+  shape.moveTo(startX, startY);
+  
+  // Now process all points
   for (let i = 0; i < points.length; i++) {
     const current = points[i];
     const next = points[(i + 1) % points.length];
+    const nextNext = points[(i + 2) % points.length];
     
     // Calculate the direction vector between current and next point
     const dx = next.x - current.x;
@@ -72,35 +98,31 @@ export const createRoundedHexagonShape = (radius: number, cornerRadius: number =
     // Limit corner radius to half the side length
     const actualRadius = Math.min(cornerRadius, distance / 2);
     
+    // Calculate the direction vector for the next segment
+    const nextDx = nextNext.x - next.x;
+    const nextDy = nextNext.y - next.y;
+    const nextDistance = Math.sqrt(nextDx * nextDx + nextDy * nextDy);
+    const nextRadius = Math.min(cornerRadius, nextDistance / 2);
+    
     // Calculate points for the rounded corner
     const dirX = dx / distance;
     const dirY = dy / distance;
+    const nextDirX = nextDx / nextDistance;
+    const nextDirY = nextDy / nextDistance;
     
-    // End point of current segment
-    const segEndX = current.x + dirX * (distance - actualRadius);
-    const segEndY = current.y + dirY * (distance - actualRadius);
+    // End point of current segment (before the curve)
+    const segEndX = next.x - dirX * actualRadius;
+    const segEndY = next.y - dirY * actualRadius;
     
-    // Draw line to the end of the current segment (before the curve)
+    // Start point of next segment (after the curve)
+    const nextSegStartX = next.x + nextDirX * nextRadius;
+    const nextSegStartY = next.y + nextDirY * nextRadius;
+    
+    // Draw line to the end of the current segment
     shape.lineTo(segEndX, segEndY);
     
-    // If this is not the last point, add the curve to the next point
-    if (i < points.length - 1) {
-      const nextNext = points[(i + 2) % points.length];
-      
-      // Calculate the direction vector for the next segment
-      const nextDx = nextNext.x - next.x;
-      const nextDy = nextNext.y - next.y;
-      const nextDistance = Math.sqrt(nextDx * nextDx + nextDy * nextDy);
-      const nextDirX = nextDx / nextDistance;
-      const nextDirY = nextDy / nextDistance;
-      
-      // Start point of next segment
-      const nextSegStartX = next.x + nextDirX * actualRadius;
-      const nextSegStartY = next.y + nextDirY * actualRadius;
-      
-      // Add the quadratic curve
-      shape.quadraticCurveTo(next.x, next.y, nextSegStartX, nextSegStartY);
-    }
+    // Add the quadratic curve around the corner
+    shape.quadraticCurveTo(next.x, next.y, nextSegStartX, nextSegStartY);
   }
   
   // Close the shape
