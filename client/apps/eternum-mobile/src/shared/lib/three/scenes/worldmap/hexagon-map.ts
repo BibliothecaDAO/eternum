@@ -1,6 +1,6 @@
 import { ActionPaths, ActionType, ExplorerMoveSystemUpdate, WorldUpdateListener } from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
-import { FELT_CENTER } from "@bibliothecadao/types";
+import { FELT_CENTER, findResourceById } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { getMapFromTorii } from "../../../../../app/dojo/queries";
 import { ArmyManager, BiomesManager, ChestManager, QuestManager, StructureManager } from "../../entity-managers";
@@ -8,6 +8,7 @@ import { FXManager } from "../../managers/fx-manager";
 import { GUIManager } from "../../managers/gui-manager";
 import { HighlightRenderer } from "../../managers/highlight-renderer";
 import { RelicEffectsManager } from "../../managers/relic-effects-manager";
+import { ResourceFXManager } from "../../managers/resource-fx-manager";
 import { SelectionManager } from "../../managers/selection-manager";
 import { createHexagonShape } from "../../utils/hexagon-geometry";
 import { getHexagonCoordinates, getWorldPositionForHex, HEX_SIZE } from "../../utils/utils";
@@ -27,6 +28,7 @@ export class HexagonMap {
   private store: any;
   private systemManager: WorldUpdateListener;
   private fxManager: FXManager;
+  private resourceFXManager: ResourceFXManager;
 
   // === ENTITY MANAGERS ===
   private biomesManager!: BiomesManager;
@@ -77,6 +79,7 @@ export class HexagonMap {
     this.dojo = dojo;
     this.systemManager = systemManager;
     this.fxManager = fxManager;
+    this.resourceFXManager = new ResourceFXManager(this.scene, 1.2);
     this.store = store;
     this.raycaster = new THREE.Raycaster();
 
@@ -322,7 +325,7 @@ export class HexagonMap {
     this.updateManagerBounds();
   }
 
-  private prepareHexRenderingData(): { allVisibleHexes: Array<{col: number, row: number}>, instanceCount: number } {
+  private prepareHexRenderingData(): { allVisibleHexes: Array<{ col: number; row: number }>; instanceCount: number } {
     const prepareStartTime = performance.now();
     const allVisibleHexes = Array.from(this.visibleHexes).map((hexString) => {
       const [col, row] = hexString.split(",").map(Number);
@@ -343,7 +346,7 @@ export class HexagonMap {
     console.log(`[RENDER-TIMING] Ensure mesh capacity: ${(performance.now() - capacityStartTime).toFixed(2)}ms`);
   }
 
-  private setupHexInstances(allVisibleHexes: Array<{col: number, row: number}>): void {
+  private setupHexInstances(allVisibleHexes: Array<{ col: number; row: number }>): void {
     const instanceSetupStartTime = performance.now();
     let index = 0;
 
@@ -666,6 +669,9 @@ export class HexagonMap {
     // Clean up relic effects
     this.relicEffectsManager.dispose();
 
+    // Clean up resource FX manager
+    this.resourceFXManager.destroy();
+
     if (this.GUIFolder) {
       this.GUIFolder.destroy();
       this.GUIFolder = null;
@@ -835,6 +841,9 @@ export class HexagonMap {
         console.log(
           `Army ${explorerId} found resource ${resourceId} (amount: ${amount}) at position (${armyPosition.col}, ${armyPosition.row})`,
         );
+
+        // Display the resource gain at the army's position
+        this.displayResourceGain(resourceId, amount, armyPosition.col, armyPosition.row);
       }
     }, 500);
   }
@@ -842,5 +851,25 @@ export class HexagonMap {
   private getStructurePosition(structureId: number): { col: number; row: number } | undefined {
     const structure = this.structureManager.getObject(structureId);
     return structure ? { col: structure.col, row: structure.row } : undefined;
+  }
+
+  /**
+   * Display a resource gain effect at a hex position
+   * @param resourceId The resource ID
+   * @param amount Amount of resource (positive for gain, negative for loss)
+   * @param col Hex column
+   * @param row Hex row
+   * @param text Optional text to display
+   */
+  private displayResourceGain(resourceId: number, amount: number, col: number, row: number, text?: string): void {
+    const resource = findResourceById(resourceId);
+    const resourceText = text || (resource?.trait ? `${resource.trait} found` : undefined);
+
+    // Use ResourceFXManager to display resource gain effect
+    this.resourceFXManager
+      .playResourceFx(resourceId, amount, col, row, resourceText, { duration: 3.0 })
+      .catch((error) => {
+        console.warn(`Failed to display resource gain for resource ${resourceId}:`, error);
+      });
   }
 }
