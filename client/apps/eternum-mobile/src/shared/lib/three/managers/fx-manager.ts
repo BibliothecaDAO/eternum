@@ -78,7 +78,7 @@ class FXInstance {
       div.style.textShadow = "0 0 5px black";
 
       this.label = new CSS2DObject(div);
-      this.label.position.set(0, 1.15, 0);
+      this.label.position.set(0, 0, -1.1);
       this.group.add(this.label);
     }
 
