@@ -263,7 +263,7 @@ export const ChestContent = ({
                 </span>
                 <span className="flex items-center gap-1">
                   <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: rarityColor }}></div>
-                  {chestType} Tier
+                  {chestType.charAt(0).toUpperCase() + chestType.slice(1)} Tier
                 </span>
               </div>
             </div>
@@ -340,35 +340,35 @@ export const ChestContent = ({
                       <div className="w-2 h-2 rounded-full bg-rarity-legendary"></div>
                       <span className="text-sm font-medium text-rarity-legendary">Legendary</span>
                     </div>
-                    <span className="text-sm font-bold text-gray-300">{RARITY_PERCENTAGES.legendary}%</span>
+                    <span className="text-sm font-bold text-gray-300">{Math.round(RARITY_PERCENTAGES.legendary)}%</span>
                   </div>
                   <div className="flex justify-between items-center py-1 px-2 rounded bg-slate-800/10">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-rarity-epic"></div>
                       <span className="text-sm font-medium text-rarity-epic">Epic</span>
                     </div>
-                    <span className="text-sm font-bold text-gray-300">{RARITY_PERCENTAGES.epic}%</span>
+                    <span className="text-sm font-bold text-gray-300">{Math.round(RARITY_PERCENTAGES.epic)}%</span>
                   </div>
                   <div className="flex justify-between items-center py-1 px-2 rounded bg-slate-800/10">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-rarity-rare"></div>
                       <span className="text-sm font-medium text-rarity-rare">Rare</span>
                     </div>
-                    <span className="text-sm font-bold text-gray-300">{RARITY_PERCENTAGES.rare}%</span>
+                    <span className="text-sm font-bold text-gray-300">{Math.round(RARITY_PERCENTAGES.rare)}%</span>
                   </div>
                   <div className="flex justify-between items-center py-1 px-2 rounded bg-slate-800/10">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-rarity-uncommon"></div>
                       <span className="text-sm font-medium text-rarity-uncommon">Uncommon</span>
                     </div>
-                    <span className="text-sm font-bold text-gray-300">{RARITY_PERCENTAGES.uncommon}%</span>
+                    <span className="text-sm font-bold text-gray-300">{Math.round(RARITY_PERCENTAGES.uncommon)}%</span>
                   </div>
                   <div className="flex justify-between items-center py-1 px-2 rounded bg-slate-800/10">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-rarity-common"></div>
                       <span className="text-sm font-medium text-rarity-common">Common</span>
                     </div>
-                    <span className="text-sm font-bold text-gray-300">{RARITY_PERCENTAGES.common}%</span>
+                    <span className="text-sm font-bold text-gray-300">{Math.round(RARITY_PERCENTAGES.common)}%</span>
                   </div>
                 </div>
               </div>
@@ -414,7 +414,8 @@ export const ChestContent = ({
 
                   <div className="text-sm text-gray-400 space-y-1 flex-shrink-0">
                     <p>
-                      Drop rate: <span className="text-gray-300 font-medium">{selectedAsset.drawChance}%</span>
+                      Drop rate:{" "}
+                      <span className="text-gray-300 font-medium">{Math.round(selectedAsset.drawChance)}%</span>
                     </p>
                     {selectedAsset.troopType && (
                       <p>
@@ -538,7 +539,7 @@ export const ChestContent = ({
                                         {asset.name}
                                       </h3>
                                       <span className="text-sm text-gray-400 flex-shrink-0 font-medium">
-                                        {asset.drawChance}%
+                                        {Math.round(asset.drawChance)}%
                                       </span>
                                     </div>
 
