@@ -8,8 +8,9 @@ import { SelectStructureDrawer } from "@/shared/ui/select-structure-drawer";
 import { getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 import { usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
 import { FELT_CENTER, getLevelName } from "@bibliothecadao/types";
-import { ChevronDown, Copy, Map, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ChevronDown, Copy, Eye, EyeOff, Map, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
+import { RefObject, useEffect, useMemo, useState } from "react";
+import { ThreeCanvasRef } from "./three-canvas";
 
 interface SceneControlsProps {
   currentScene: string;
@@ -18,11 +19,13 @@ interface SceneControlsProps {
   onZoomIn?: () => void;
   onZoomOut?: () => void;
   className?: string;
+  canvasRef: RefObject<ThreeCanvasRef>;
 }
 
 const CompactRealmHeader = () => {
   const playerRealms = usePlayerOwnedRealmsInfo();
   const playerVillages = usePlayerOwnedVillagesInfo();
+  const { isCompactView, toggleCompactView } = useStore();
 
   const playerRealmsAndVillages = useMemo(() => {
     return [...playerRealms, ...playerVillages];
@@ -84,6 +87,17 @@ const CompactRealmHeader = () => {
         </Badge>
 
         {selectedRealm && <span className="text-xs text-muted-foreground">{getLevelName(selectedRealm.level)}</span>}
+        
+        {/* Compact View Toggle */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={toggleCompactView}
+          className="h-6 w-6 p-0"
+          title={isCompactView ? "Expand labels" : "Compact labels"}
+        >
+          {isCompactView ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+        </Button>
       </div>
     </div>
   );
@@ -96,10 +110,27 @@ export function SceneControls({
   onZoomIn,
   onZoomOut,
   className,
+  canvasRef,
 }: SceneControlsProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { isCompactView } = useStore();
 
   const currentSceneConfig = DEFAULT_SCENES.find((scene) => scene.id === currentScene);
+
+  // Apply/remove compact class to label renderer element
+  useEffect(() => {
+    const gameRenderer = canvasRef.current?.getGameRenderer();
+    const labelRenderer = gameRenderer?.getLabelRenderer();
+    const labelRendererElement = labelRenderer?.domElement;
+
+    if (labelRendererElement) {
+      if (isCompactView) {
+        labelRendererElement.classList.add('compact-labels');
+      } else {
+        labelRendererElement.classList.remove('compact-labels');
+      }
+    }
+  }, [isCompactView, canvasRef]);
 
   return (
     <div className={`fixed top-4 left-4 right-4 z-20 space-y-3 ${className}`}>

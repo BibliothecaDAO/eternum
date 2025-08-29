@@ -13,6 +13,7 @@ export interface ThreeCanvasRef {
   getCurrentScene: () => string;
   getAvailableScenes: () => string[];
   moveCameraToStructure: (structurePosition: { x: number; y: number }) => void;
+  getGameRenderer: () => GameRenderer | null;
 }
 
 export const ThreeCanvas = forwardRef<ThreeCanvasRef, ThreeCanvasProps>(
@@ -97,12 +98,17 @@ export const ThreeCanvas = forwardRef<ThreeCanvasRef, ThreeCanvasProps>(
       }
     };
 
+    const getGameRenderer = () => {
+      return rendererRef.current;
+    };
+
     // Expose methods via ref
     useImperativeHandle(ref, () => ({
       switchScene,
       getCurrentScene,
       getAvailableScenes,
       moveCameraToStructure,
+      getGameRenderer,
     }));
 
     if (error) {

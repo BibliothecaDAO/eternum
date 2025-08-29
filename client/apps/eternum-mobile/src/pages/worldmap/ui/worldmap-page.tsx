@@ -97,6 +97,7 @@ export function WorldmapPage() {
         onCameraReset={handleCameraReset}
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
+        canvasRef={canvasRef}
       />
 
       {/* Bottom spacing for footer */}
