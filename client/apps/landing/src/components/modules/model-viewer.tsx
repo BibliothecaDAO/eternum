@@ -1,8 +1,8 @@
+import { AssetRarity } from "@/utils/cosmetics";
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { DRACOLoader, GLTFLoader, OrbitControls } from "three-stdlib";
-import { AssetRarity } from "./chest-content";
 
 interface ModelViewerProps {
   modelPath: string;

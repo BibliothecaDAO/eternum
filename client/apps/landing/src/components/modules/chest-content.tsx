@@ -1,13 +1,11 @@
 import { useClickSound } from "@/hooks/use-click-sound";
-import { 
-  AssetRarity, 
-  AssetSet, 
-  AssetType, 
-  ChestAsset, 
-  chestAssets, 
-  COSMETIC_NAMES,
+import {
+  AssetRarity,
+  AssetType,
+  calculateRarityPercentages,
+  ChestAsset,
+  chestAssets,
   RARITY_STYLES,
-  calculateRarityPercentages 
 } from "@/utils/cosmetics";
 import { TroopType } from "@bibliothecadao/types";
 import { Castle, Crown, Diamond, Hexagon, Shield, Sparkles, Sword } from "lucide-react";

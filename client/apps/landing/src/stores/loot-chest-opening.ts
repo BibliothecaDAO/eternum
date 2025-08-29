@@ -1,4 +1,4 @@
-import { ChestAsset } from "@/components/modules/chest-content";
+import { ChestAsset } from "@/utils/cosmetics";
 import { createStore, StoreApi, useStore } from "zustand";
 
 interface LootChestOpeningStore {

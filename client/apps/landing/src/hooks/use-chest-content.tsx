@@ -1,5 +1,5 @@
-import { ChestAsset, chestAssets } from "@/components/modules/chest-content";
 import { getCosmeticsAddress } from "@/components/ui/utils/addresses";
+import { ChestAsset, chestAssets } from "@/utils/cosmetics";
 import { useAccount } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";

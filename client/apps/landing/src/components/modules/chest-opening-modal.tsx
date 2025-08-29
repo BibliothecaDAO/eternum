@@ -10,10 +10,11 @@ import { useAmbienceAudio } from "@/hooks/use-ambience-audio";
 import { useChestContent } from "@/hooks/use-chest-content";
 import { useOpenChest } from "@/hooks/use-open-chest";
 import { useLootChestOpeningStore } from "@/stores/loot-chest-opening";
+import { AssetRarity, ChestAsset } from "@/utils/cosmetics";
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { env } from "../../../env";
-import { AssetRarity, ChestAsset, ChestContent } from "./chest-content";
+import { ChestContent } from "./chest-content";
 
 const LoadingAnimation = () => {
   return (
