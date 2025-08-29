@@ -787,7 +787,7 @@ export class HexagonMap {
 
       controls.update();
 
-      this.updateChunkLoading(worldPosition, true);
+      this.updateChunkLoading(camera.position, true);
     }
 
     return worldPosition;
