@@ -1,5 +1,11 @@
 import { Store } from "@/shared/store";
-import { ActionPaths, ActionType, ExplorerMoveSystemUpdate, WorldUpdateListener } from "@bibliothecadao/eternum";
+import {
+  ActionPaths,
+  ActionType,
+  ExplorerMoveSystemUpdate,
+  Position,
+  WorldUpdateListener,
+} from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
 import { ActorType, FELT_CENTER, findResourceById, getDirectionBetweenAdjacentHexes } from "@bibliothecadao/types";
 import * as THREE from "three";
@@ -545,10 +551,12 @@ export class HexagonMap {
   }
 
   private getHexEntityInfo(col: number, row: number) {
-    const armyInfo = this.armyManager.getArmyHexes().get(col)?.get(row);
-    const structureInfo = this.structureManager.getStructureHexes().get(col)?.get(row);
-    const questInfo = this.questManager.getQuestHexes().get(col)?.get(row);
-    const chestInfo = this.chestManager.getChestHexes().get(col)?.get(row);
+    const position = new Position({ x: col, y: row });
+    const normalized = position.getNormalized();
+    const armyInfo = this.armyManager.getArmyHexes().get(normalized.x)?.get(normalized.y);
+    const structureInfo = this.structureManager.getStructureHexes().get(normalized.x)?.get(normalized.y);
+    const questInfo = this.questManager.getQuestHexes().get(normalized.x)?.get(normalized.y);
+    const chestInfo = this.chestManager.getChestHexes().get(normalized.x)?.get(normalized.y);
 
     return {
       armies: armyInfo
