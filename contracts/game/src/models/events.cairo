@@ -44,6 +44,9 @@ pub enum Story {
     ExplorerExplorerSwapStory: ExplorerExplorerSwapStory,
     ExplorerGuardSwapStory: ExplorerGuardSwapStory,
     GuardExplorerSwapStory: GuardExplorerSwapStory,
+    // Prize Distribution
+    PrizeDistributionFinalStory: PrizeDistributionFinalStory,
+    PrizeDistributedStory: PrizeDistributedStory,
 }
 
 ///////////////////////////////////////////////
@@ -265,3 +268,20 @@ pub struct GuardExplorerSwapStory {
     pub count: u128,
 }
 
+
+///////////////////////////////////////////////
+///  Prize Distribution
+///
+///////////////////////////////////////////////
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct PrizeDistributedStory {
+    pub to_player_address: ContractAddress,
+    pub amount: u128,
+    pub decimals: u8,
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct PrizeDistributionFinalStory {
+    pub trial_id: u128,
+}
