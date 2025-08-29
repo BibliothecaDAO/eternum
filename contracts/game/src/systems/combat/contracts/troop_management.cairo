@@ -920,7 +920,7 @@ mod tests {
         agent_discovery_systems, hyperstructure_discovery_systems, mine_discovery_systems, troop_movement_systems,
         troop_movement_util_systems,
     };
-    use s1_eternum::systems::realm::contracts::realm_internal_systems;
+    use s1_eternum::systems::realm::utils::contracts::realm_internal_systems;
     use s1_eternum::systems::resources::contracts::resource_systems::resource_systems;
     use s1_eternum::systems::village::contracts::village_systems;
     use s1_eternum::utils::testing::helpers::{
@@ -1153,6 +1153,7 @@ mod tests {
             end_at: 0,
             end_grace_seconds: 0,
             registration_grace_seconds: 0,
+            dev_mode_on: false,
         };
         WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), inactive_season_config);
 
@@ -1489,6 +1490,7 @@ mod tests {
             end_at: 0,
             end_grace_seconds: 0,
             registration_grace_seconds: 0,
+            dev_mode_on: false,
         };
         WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), inactive_season_config);
 
@@ -1696,6 +1698,7 @@ mod tests {
             end_at: 0,
             end_grace_seconds: 0,
             registration_grace_seconds: 0,
+            dev_mode_on: false,
         };
         WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), inactive_season_config);
 
@@ -2082,6 +2085,7 @@ mod tests {
             end_at: 0,
             end_grace_seconds: 0,
             registration_grace_seconds: 0,
+            dev_mode_on: false,
         };
         WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), inactive_season_config);
 
@@ -2409,6 +2413,7 @@ mod tests {
             end_at: 0,
             end_grace_seconds: 0,
             registration_grace_seconds: 0,
+            dev_mode_on: false,
         };
         WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), inactive_season_config);
 
@@ -2736,6 +2741,7 @@ mod tests {
             end_at: 0,
             end_grace_seconds: 0,
             registration_grace_seconds: 0,
+            dev_mode_on: false,
         };
         WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), inactive_season_config);
 
