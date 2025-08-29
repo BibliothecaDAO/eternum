@@ -216,10 +216,10 @@ export function UnifiedArmyCreationDrawer({
           </DrawerDescription>
         </DrawerHeader>
 
-        <div className="px-4 pb-4 space-y-4 overflow-y-auto flex-1">
+        <div className="px-4 pb-4 space-y-3 overflow-y-auto flex-1">
           {/* Army Type Toggle */}
           <div>
-            <h4 className="text-lg font-semibold mb-3">Army Type</h4>
+            <h4 className="text-base font-semibold mb-2">Army Type</h4>
             <Tabs
               value={armyType ? "explorer" : "defense"}
               onValueChange={(value) => setArmyType(value === "explorer")}
@@ -240,7 +240,7 @@ export function UnifiedArmyCreationDrawer({
           {/* Defense Slot Selection */}
           {!armyType && (
             <div>
-              <h4 className="text-sm font-medium mb-3">Defense Slot</h4>
+              <h4 className="text-sm font-medium mb-2">Defense Slot</h4>
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(DEFENSE_NAMES).map(([slotIndex, slotName]) => {
                   const slot = parseInt(slotIndex);
@@ -254,13 +254,13 @@ export function UnifiedArmyCreationDrawer({
                       onClick={() => isSlotAvailable && setGuardSlot(slot)}
                       disabled={!isSlotAvailable}
                       className={cn(
-                        "p-3 flex flex-col items-center text-center",
+                        "p-2 flex flex-col items-center text-center h-auto min-h-[60px]",
                         isSelected && "bg-blue-500 text-white",
                         !isSlotAvailable && "opacity-30",
                       )}
                     >
-                      <div className="font-semibold text-sm">{slotName}</div>
-                      <div className="text-xs opacity-70">Slot {slot + 1}</div>
+                      <div className="font-medium text-xs leading-tight">{slotName}</div>
+                      <div className="text-xs opacity-70 mt-1">Slot {slot + 1}</div>
                     </Button>
                   );
                 })}
@@ -269,7 +269,7 @@ export function UnifiedArmyCreationDrawer({
           )}
 
           {/* Configuration Section */}
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* Tier Selection */}
             <div>
               <h4 className="text-sm font-medium mb-2">Tier</h4>
@@ -284,7 +284,7 @@ export function UnifiedArmyCreationDrawer({
 
             {/* Troop Type Selection with embedded controls */}
             <div>
-              <h4 className="text-lg font-semibold mb-3">Select Troops</h4>
+              <h4 className="text-base font-semibold mb-2">Select Troops</h4>
               <div className="space-y-3">
                 {troops.map((troop) => {
                   const balance = getTroopBalance(troop.troopType, selectedTier);
@@ -295,12 +295,12 @@ export function UnifiedArmyCreationDrawer({
                     <div
                       key={troop.troopType}
                       className={cn(
-                        "border rounded-lg p-4 transition-all cursor-pointer",
+                        "border rounded-lg p-3 transition-all cursor-pointer",
                         isSelected ? "border-blue-500 bg-blue-500/10" : "border-border hover:border-blue-500/50",
                       )}
                       onClick={() => setSelectedTroopType(troop.troopType)}
                     >
-                      <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center justify-between mb-2">
                         <h5 className="font-semibold">{getTroopName(troop.troopType, selectedTier)}</h5>
                         <ResourceAmount
                           resourceId={troopResourceId}
@@ -311,7 +311,7 @@ export function UnifiedArmyCreationDrawer({
                       </div>
 
                       {isSelected && (
-                        <div className="space-y-3 pt-3 border-t border-border/50">
+                        <div className="space-y-2 pt-2 border-t border-border/50">
                           <div className="flex gap-2">
                             <Button
                               variant="outline"
@@ -370,9 +370,9 @@ export function UnifiedArmyCreationDrawer({
           {/* Direction Selection (only if not pre-selected) */}
           {shouldShowDirectionSelection && (
             <div>
-              <h4 className="text-sm font-medium mb-3">Spawn Direction</h4>
+              <h4 className="text-sm font-medium mb-2">Spawn Direction</h4>
               {isLoadingDirections ? (
-                <div className="text-center py-4 text-muted-foreground">Loading directions...</div>
+                <div className="text-center py-3 text-muted-foreground text-sm">Loading directions...</div>
               ) : freeDirections.length > 0 ? (
                 <div className="grid grid-cols-3 gap-2 max-w-xs mx-auto">
                   <DirectionButton
