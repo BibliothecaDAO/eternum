@@ -322,17 +322,17 @@ export const ChestContent = ({
           <div className="flex justify-center pt-8">{renderTitle()}</div>
 
           {/* Main content area with drop rates on left and items on right */}
-          <div className="flex-1 flex justify-between items-center px-8">
+          <div className="flex-1 flex justify-between items-center px-4 lg:px-8 gap-4">
             {/* Left sidebar with Drop Rate Summary and Item Preview */}
             <div
-              className="pointer-events-auto space-y-4 w-[280px]"
+              className="pointer-events-auto space-y-4 w-[280px] flex flex-col max-h-[calc(100vh-150px)]"
               style={{
                 transition: "opacity 1000ms",
                 opacity: showContent ? 1 : 0,
               }}
             >
               {/* Drop Rate Summary - Redesigned */}
-              <div className="p-4 bg-slate-900/20 rounded-xl border border-slate-700/30 backdrop-blur-sm shadow-xl h-[220px] flex flex-col">
+              <div className="p-3 lg:p-4 bg-slate-900/20 rounded-xl border border-slate-700/30 backdrop-blur-sm shadow-xl flex-shrink-0 flex flex-col">
                 <h4 className="text-sm font-semibold text-gray-300 mb-3 text-center">Drop Rates</h4>
                 <div className="flex-1 space-y-1.5">
                   <div className="flex justify-between items-center py-1 px-2 rounded bg-slate-800/10">
@@ -375,12 +375,12 @@ export const ChestContent = ({
 
               {/* Selected Item Preview - Minimalistic */}
               <div
-                className={`p-5 bg-slate-900/20 rounded-xl border border-slate-700/30 backdrop-blur-sm shadow-xl border-l-4 h-[450px] flex flex-col ${getRarityAccent(selectedAsset.rarity)}`}
+                className={`p-3 lg:p-5 bg-slate-900/20 rounded-xl border border-slate-700/30 backdrop-blur-sm shadow-xl border-l-4 flex-1 min-h-0 flex flex-col ${getRarityAccent(selectedAsset.rarity)}`}
               >
                 <h4 className="text-sm font-semibold text-gray-300 mb-3 flex-shrink-0">Selected Item</h4>
 
                 {/* Item Image - Simplified */}
-                <div className="bg-slate-800/15 rounded-lg p-4 border border-slate-700/30 h-40 flex items-center justify-center flex-shrink-0">
+                <div className="bg-slate-800/15 rounded-lg p-3 border border-slate-700/30 h-32 lg:h-40 flex items-center justify-center flex-shrink-0">
                   <img
                     key={selectedAsset.id}
                     src={selectedAsset.imagePath}
@@ -440,7 +440,7 @@ export const ChestContent = ({
 
             {/* Asset list on the right side */}
             <div
-              className="w-[420px] max-h-[75vh] overflow-y-auto space-y-4 pointer-events-auto custom-scrollbar"
+              className="w-[420px] max-h-[calc(100vh-150px)] overflow-y-auto space-y-4 pointer-events-auto custom-scrollbar"
               style={{
                 transition: "opacity 1000ms",
                 opacity: showContent ? 1 : 0,
