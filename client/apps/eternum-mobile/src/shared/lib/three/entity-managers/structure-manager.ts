@@ -1,4 +1,4 @@
-import { ActionPath, ActionPaths, Position, StructureActionManager, StructureSystemUpdate } from "@bibliothecadao/eternum";
+import { ActionPaths, Position, StructureActionManager, StructureSystemUpdate } from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
 import { HexEntityInfo, ID, StructureType } from "@bibliothecadao/types";
 import * as THREE from "three";
@@ -461,14 +461,14 @@ export class StructureManager extends EntityManager<StructureObject> {
   }
 
   public handleHexClick(
-    structureId: number, 
-    col: number, 
-    row: number, 
+    structureId: number,
+    col: number,
+    row: number,
     store: any,
-    armyHexes: Map<number, Map<number, HexEntityInfo>>
+    armyHexes: Map<number, Map<number, HexEntityInfo>>,
   ): { shouldSelect: boolean; actionPaths?: ActionPaths } {
     const isDoubleClick = store.handleObjectClick(structureId, "structure", col, row);
-    
+
     if (isDoubleClick) {
       return { shouldSelect: false };
     }

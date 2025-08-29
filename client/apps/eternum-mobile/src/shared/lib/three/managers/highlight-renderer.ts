@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { createHexagonShape, createRoundedHexagonShape } from "../utils/hexagon-geometry";
+import { createRoundedHexagonShape } from "../utils/hexagon-geometry";
 import { getWorldPositionForHex, HEX_SIZE } from "../utils/utils";
 
 export interface HighlightHex {

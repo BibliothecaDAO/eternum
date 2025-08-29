@@ -1,17 +1,12 @@
+import { useStore } from "@/shared/store";
 import { Button } from "@/shared/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
-import { useStore } from "@/shared/store";
 import { ActorType } from "@bibliothecadao/types";
+import { ArrowLeftRight } from "lucide-react";
 import { useState } from "react";
-import { 
-  TransferDirection, 
-  TransferType, 
-  TransferEntity, 
-  getActorTypes 
-} from "../model/types";
+import { TransferDirection, TransferEntity, TransferType } from "../model/types";
 import { TransferResourcesContainer } from "./transfer-resources-container";
 import { TransferTroopsContainer } from "./transfer-troops-container";
-import { ArrowLeftRight } from "lucide-react";
 
 interface TransferContainerProps {
   selected: TransferEntity;
@@ -19,11 +14,7 @@ interface TransferContainerProps {
   allowBothDirections?: boolean;
 }
 
-export const TransferContainer = ({
-  selected,
-  target,
-  allowBothDirections = false,
-}: TransferContainerProps) => {
+export const TransferContainer = ({ selected, target, allowBothDirections = false }: TransferContainerProps) => {
   const { closeTransferDrawer } = useStore((state) => ({
     closeTransferDrawer: state.closeTransferDrawer,
   }));
@@ -79,12 +70,7 @@ export const TransferContainer = ({
                   : "Explorer → Explorer"}
             </div>
             {allowBothDirections && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSwapEntities}
-                className="flex items-center gap-1"
-              >
+              <Button variant="outline" size="sm" onClick={handleSwapEntities} className="flex items-center gap-1">
                 <ArrowLeftRight size={14} />
                 Swap
               </Button>
@@ -98,10 +84,7 @@ export const TransferContainer = ({
   return (
     <div className="flex h-full flex-col space-y-4">
       {/* Transfer Type Selection */}
-      <Tabs
-        value={transferType.toString()}
-        onValueChange={(value) => setTransferType(parseInt(value) as TransferType)}
-      >
+      <Tabs value={transferType.toString()} onValueChange={(value) => setTransferType(parseInt(value) as TransferType)}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value={TransferType.Resources.toString()} className="flex items-center gap-2">
             💰 Resources
