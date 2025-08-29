@@ -13,54 +13,59 @@ import { createHexagonShape } from "../../utils/hexagon-geometry";
 import { getHexagonCoordinates, getWorldPositionForHex, HEX_SIZE } from "../../utils/utils";
 
 export class HexagonMap {
-  private scene: THREE.Scene;
-  private dojo: DojoResult;
-  private store: any;
-  private allHexes: Set<string> = new Set();
-  private visibleHexes: Set<string> = new Set();
-
-  private hexagonMesh: THREE.InstancedMesh | null = null;
-  private hexagonMeshCapacity: number = 0;
+  // === STATIC ASSETS & CONSTANTS ===
   private static readonly MAX_HEX_CAPACITY = 5000;
-  private biomesManager: BiomesManager;
-  private highlightRenderer: HighlightRenderer;
-  private armyManager: ArmyManager;
-  private structureManager: StructureManager;
-  private questManager: QuestManager;
-  private chestManager: ChestManager;
-  private selectionManager: SelectionManager;
-  private fxManager: FXManager;
-  private relicEffectsManager: RelicEffectsManager;
-  private GUIFolder: any;
-
-  private raycaster: THREE.Raycaster;
-  private dummy = new THREE.Object3D();
-  private systemManager: WorldUpdateListener;
-
-  private tempVector3 = new THREE.Vector3();
-  private tempColor = new THREE.Color();
-
-  private static hexagonGeometry: THREE.ShapeGeometry | null = null;
-  private static hexagonMaterial: THREE.MeshLambertMaterial | null = null;
-
-  private lastChunkX: number = -9999;
-  private lastChunkZ: number = -9999;
-
-  private performanceMetrics: Map<string, number[]> = new Map();
-  private chunkUpdateCount: number = 0;
-
   private static readonly CHUNK_LOAD_RADIUS_X = 1;
   private static readonly CHUNK_LOAD_RADIUS_Z = 3;
   private static readonly CHUNK_SIZE = 5;
+  private static hexagonGeometry: THREE.ShapeGeometry | null = null;
+  private static hexagonMaterial: THREE.MeshLambertMaterial | null = null;
 
+  // === CORE DEPENDENCIES ===
+  private scene: THREE.Scene;
+  private dojo: DojoResult;
+  private store: any;
+  private systemManager: WorldUpdateListener;
+  private fxManager: FXManager;
+
+  // === ENTITY MANAGERS ===
+  private biomesManager!: BiomesManager;
+  private highlightRenderer!: HighlightRenderer;
+  private armyManager!: ArmyManager;
+  private structureManager!: StructureManager;
+  private questManager!: QuestManager;
+  private chestManager!: ChestManager;
+  private selectionManager!: SelectionManager;
+  private relicEffectsManager!: RelicEffectsManager;
+
+  // === HEX STATE ===
+  private allHexes: Set<string> = new Set();
+  private visibleHexes: Set<string> = new Set();
+  private hexagonMesh: THREE.InstancedMesh | null = null;
+  private hexagonMeshCapacity: number = 0;
+
+  // === CHUNK MANAGEMENT ===
+  private lastChunkX: number = -9999;
+  private lastChunkZ: number = -9999;
   private chunkLoadRadiusX = HexagonMap.CHUNK_LOAD_RADIUS_X;
   private chunkLoadRadiusZ = HexagonMap.CHUNK_LOAD_RADIUS_Z;
-
   private fetchedChunks: Set<string> = new Set();
   private isLoadingChunks: boolean = false;
   private pendingChunkUpdate: { chunkX: number; chunkZ: number } | null = null;
   private currentAbortController: AbortController | null = null;
 
+  // === THREE.JS UTILITIES ===
+  private raycaster: THREE.Raycaster;
+  private dummy = new THREE.Object3D();
+  private tempVector3 = new THREE.Vector3();
+  private tempColor = new THREE.Color();
+
+  // === PERFORMANCE & GUI ===
+  private performanceMetrics: Map<string, number[]> = new Map();
+  private chunkUpdateCount: number = 0;
+  private GUIFolder: any;
+
+  // === CONSTRUCTOR & INITIALIZATION ===
   constructor(
     scene: THREE.Scene,
     dojo: DojoResult,
@@ -75,27 +80,34 @@ export class HexagonMap {
     this.store = store;
     this.raycaster = new THREE.Raycaster();
 
-    this.biomesManager = new BiomesManager(scene);
-    this.highlightRenderer = new HighlightRenderer(scene);
-    this.armyManager = new ArmyManager(scene);
-    this.structureManager = new StructureManager(scene);
-    this.questManager = new QuestManager(scene);
-    this.chestManager = new ChestManager(scene);
-    this.relicEffectsManager = new RelicEffectsManager(fxManager);
+    this.initializeManagers();
+    this.setupSystemListeners();
+    this.initializeGUI();
 
-    // Set dependencies for managers
-    this.armyManager.setDependencies(dojo, this.fxManager, this.biomesManager.getExploredTiles());
-    this.structureManager.setDependencies(dojo, this.biomesManager.getExploredTiles());
+    this.initializeStaticAssets();
+    this.initializeMap();
+  }
+
+  private initializeManagers(): void {
+    this.biomesManager = new BiomesManager(this.scene);
+    this.highlightRenderer = new HighlightRenderer(this.scene);
+    this.armyManager = new ArmyManager(this.scene);
+    this.structureManager = new StructureManager(this.scene);
+    this.questManager = new QuestManager(this.scene);
+    this.chestManager = new ChestManager(this.scene);
+    this.relicEffectsManager = new RelicEffectsManager(this.fxManager);
+
+    this.armyManager.setDependencies(this.dojo, this.fxManager, this.biomesManager.getExploredTiles());
+    this.structureManager.setDependencies(this.dojo, this.biomesManager.getExploredTiles());
 
     this.selectionManager = new SelectionManager(this.highlightRenderer);
     this.selectionManager.registerObjectRenderer("army", this.armyManager);
     this.selectionManager.registerObjectRenderer("structure", this.structureManager);
     this.selectionManager.registerObjectRenderer("quest", this.questManager);
     this.selectionManager.registerObjectRenderer("chest", this.chestManager);
+  }
 
-    this.initializeStaticAssets();
-    this.initializeMap();
-
+  private setupSystemListeners(): void {
     this.systemManager.Tile.onTileUpdate((value) => this.biomesManager.handleTileUpdate(value));
     this.systemManager.Army.onTileUpdate((update) => this.armyManager.handleSystemUpdate(update));
     this.systemManager.Army.onExplorerTroopsUpdate((update) => this.armyManager.handleExplorerTroopsUpdate(update));
@@ -121,7 +133,9 @@ export class HexagonMap {
       this.relicEffectsManager.handleRelicEffectUpdate(update, (id) => this.getStructurePosition(id)),
     );
     this.systemManager.ExplorerMove.onExplorerMoveEventUpdate((update) => this.handleExplorerMoveUpdate(update));
+  }
 
+  private initializeGUI(): void {
     const folderName = "HexagonMap";
     const existingFolder = GUIManager.folders.find((folder: any) => folder._title === folderName);
     if (existingFolder) {
@@ -292,7 +306,23 @@ export class HexagonMap {
     }
   }
 
+  // === RENDERING ===
   private renderHexes(): void {
+    const hexRenderData = this.prepareHexRenderingData();
+    if (hexRenderData.instanceCount === 0) {
+      if (this.hexagonMesh) {
+        this.hexagonMesh.count = 0;
+      }
+      return;
+    }
+
+    this.ensureHexagonMeshCapacityWithTiming(hexRenderData.instanceCount);
+    this.setupHexInstances(hexRenderData.allVisibleHexes);
+    this.updateRenderAttributes();
+    this.updateManagerBounds();
+  }
+
+  private prepareHexRenderingData(): { allVisibleHexes: Array<{col: number, row: number}>, instanceCount: number } {
     const prepareStartTime = performance.now();
     const allVisibleHexes = Array.from(this.visibleHexes).map((hexString) => {
       const [col, row] = hexString.split(",").map(Number);
@@ -300,22 +330,20 @@ export class HexagonMap {
     });
 
     const instanceCount = allVisibleHexes.length;
-
-    if (instanceCount === 0) {
-      if (this.hexagonMesh) {
-        this.hexagonMesh.count = 0;
-      }
-      return;
-    }
-
-    const capacityStartTime = performance.now();
-    this.ensureHexagonMeshCapacity(instanceCount);
-    console.log(`[RENDER-TIMING] Ensure mesh capacity: ${(performance.now() - capacityStartTime).toFixed(2)}ms`);
-
     console.log(
       `[RENDER-TIMING] Prepare data (${instanceCount} hexes): ${(performance.now() - prepareStartTime).toFixed(2)}ms`,
     );
 
+    return { allVisibleHexes, instanceCount };
+  }
+
+  private ensureHexagonMeshCapacityWithTiming(instanceCount: number): void {
+    const capacityStartTime = performance.now();
+    this.ensureHexagonMeshCapacity(instanceCount);
+    console.log(`[RENDER-TIMING] Ensure mesh capacity: ${(performance.now() - capacityStartTime).toFixed(2)}ms`);
+  }
+
+  private setupHexInstances(allVisibleHexes: Array<{col: number, row: number}>): void {
     const instanceSetupStartTime = performance.now();
     let index = 0;
 
@@ -339,7 +367,9 @@ export class HexagonMap {
     const instanceSetupTime = performance.now() - instanceSetupStartTime;
     console.log(`[RENDER-TIMING] Setup instances: ${instanceSetupTime.toFixed(2)}ms`);
     this.recordPerformanceMetric("Setup Instances", instanceSetupTime);
+  }
 
+  private updateRenderAttributes(): void {
     const updateStartTime = performance.now();
     this.hexagonMesh!.instanceMatrix.needsUpdate = true;
     if (this.hexagonMesh!.instanceColor) {
@@ -348,7 +378,9 @@ export class HexagonMap {
     this.hexagonMesh!.computeBoundingBox();
     this.hexagonMesh!.computeBoundingSphere();
     console.log(`[RENDER-TIMING] Update attributes: ${(performance.now() - updateStartTime).toFixed(2)}ms`);
+  }
 
+  private updateManagerBounds(): void {
     const boundsUpdateStartTime = performance.now();
     const bounds = this.getMapBounds();
     this.biomesManager.setVisibleBounds(bounds);
@@ -396,21 +428,34 @@ export class HexagonMap {
   }
 
   public handleClick(mouse: THREE.Vector2, camera: THREE.Camera): void {
+    if (!this.validateClickPreconditions()) return;
+
+    const intersect = this.performRaycast(mouse, camera);
+    if (intersect) {
+      this.processHexagonClick(intersect);
+    }
+  }
+
+  private validateClickPreconditions(): boolean {
     if (!this.hexagonMesh) {
       console.log("[HexagonMap] No hexagon mesh available for click detection");
-      return;
+      return false;
     }
 
     if (this.hexagonMesh.count === 0) {
       console.log("[HexagonMap] Hexagon mesh has no instances");
-      return;
+      return false;
     }
 
+    return true;
+  }
+
+  private performRaycast(mouse: THREE.Vector2, camera: THREE.Camera): THREE.Intersection | null {
     this.raycaster.setFromCamera(mouse, camera);
     this.raycaster.layers.enableAll();
     this.raycaster.params.Points!.threshold = 0.1;
 
-    const intersects = this.raycaster.intersectObjects([this.hexagonMesh], false);
+    const intersects = this.raycaster.intersectObjects([this.hexagonMesh!], false);
 
     console.log(
       `[HexagonMap] Click at mouse (${mouse.x.toFixed(3)}, ${mouse.y.toFixed(3)}) found ${intersects.length} intersections`,
@@ -418,125 +463,165 @@ export class HexagonMap {
 
     if (intersects.length > 0) {
       const intersect = intersects[0];
-      const intersectedObject = intersect.object;
-
-      console.log(`[HexagonMap] Intersected object:`, intersectedObject.type, intersectedObject.uuid);
-
-      if (intersectedObject instanceof THREE.InstancedMesh) {
-        const instanceId = intersect.instanceId;
-        console.log(`[HexagonMap] Instance ID: ${instanceId}, Distance: ${intersect.distance.toFixed(3)}`);
-
-        if (instanceId !== undefined && instanceId >= 0 && instanceId < this.hexagonMesh.count) {
-          const hexData = getHexagonCoordinates(intersectedObject, instanceId);
-          console.log(`[HexagonMap] Hexagon clicked: col=${hexData.hexCoords.col}, row=${hexData.hexCoords.row}`);
-
-          this.handleHexClick(hexData.hexCoords.col, hexData.hexCoords.row);
-          this.showClickFeedback(instanceId);
-        } else {
-          console.warn(`[HexagonMap] Invalid instance ID: ${instanceId}, mesh count: ${this.hexagonMesh.count}`);
-        }
-      }
+      console.log(`[HexagonMap] Intersected object:`, intersect.object.type, intersect.object.uuid);
+      return intersect;
     } else {
       console.log(
         `[HexagonMap] No intersections found. Mesh bounds:`,
-        this.hexagonMesh.boundingBox,
-        this.hexagonMesh.boundingSphere,
+        this.hexagonMesh!.boundingBox,
+        this.hexagonMesh!.boundingSphere,
       );
+      return null;
     }
   }
 
+  private processHexagonClick(intersect: THREE.Intersection): void {
+    const intersectedObject = intersect.object;
+
+    if (intersectedObject instanceof THREE.InstancedMesh) {
+      const instanceId = intersect.instanceId;
+      console.log(`[HexagonMap] Instance ID: ${instanceId}, Distance: ${intersect.distance.toFixed(3)}`);
+
+      if (instanceId !== undefined && instanceId >= 0 && instanceId < this.hexagonMesh!.count) {
+        const hexData = getHexagonCoordinates(intersectedObject, instanceId);
+        console.log(`[HexagonMap] Hexagon clicked: col=${hexData.hexCoords.col}, row=${hexData.hexCoords.row}`);
+
+        this.handleHexClick(hexData.hexCoords.col, hexData.hexCoords.row);
+        this.showClickFeedback(instanceId);
+      } else {
+        console.warn(`[HexagonMap] Invalid instance ID: ${instanceId}, mesh count: ${this.hexagonMesh!.count}`);
+      }
+    }
+  }
+
+  // === USER INTERACTION ===
   private async handleHexClick(col: number, row: number): Promise<void> {
+    const selectedObject = this.selectionManager.getSelectedObject();
+    if (selectedObject) {
+      const handled = await this.executeSelectedObjectAction(selectedObject, col, row);
+      if (handled) return;
+    }
+
+    const entityInfo = this.getHexEntityInfo(col, row);
+    this.selectHexEntity(entityInfo, col, row);
+  }
+
+  private async executeSelectedObjectAction(selectedObject: any, col: number, row: number): Promise<boolean> {
+    const actionPath = this.selectionManager.getActionPath(col, row);
+    if (!actionPath) return false;
+
+    const actionType = ActionPaths.getActionType(actionPath);
+    this.selectionManager.clearSelection();
+
+    switch (actionType) {
+      case ActionType.Move:
+      case ActionType.Explore:
+        await this.armyManager.handleArmyMovement(selectedObject.id, actionPath);
+        break;
+      case ActionType.Attack:
+        console.log(`Attack action at (${col}, ${row})`);
+        break;
+      case ActionType.Help:
+        console.log(`Help action at (${col}, ${row})`);
+        break;
+      case ActionType.Quest:
+        console.log(`Quest action at (${col}, ${row})`);
+        break;
+      case ActionType.Chest:
+        console.log(`Chest action at (${col}, ${row})`);
+        this.chestManager.handleChestAction(selectedObject.id, actionPath, this.store);
+        break;
+    }
+
+    return true;
+  }
+
+  private getHexEntityInfo(col: number, row: number) {
     const armyInfo = this.armyManager.getArmyHexes().get(col)?.get(row);
     const structureInfo = this.structureManager.getStructureHexes().get(col)?.get(row);
     const questInfo = this.questManager.getQuestHexes().get(col)?.get(row);
     const chestInfo = this.chestManager.getChestHexes().get(col)?.get(row);
 
-    const armies = armyInfo
-      ? [this.armyManager.getObject(armyInfo.id)].filter((obj): obj is NonNullable<typeof obj> => obj !== undefined)
-      : [];
-    const structures = structureInfo
-      ? [this.structureManager.getObject(structureInfo.id)].filter(
-          (obj): obj is NonNullable<typeof obj> => obj !== undefined,
-        )
-      : [];
-    const quests = questInfo
-      ? [this.questManager.getObject(questInfo.id)].filter((obj): obj is NonNullable<typeof obj> => obj !== undefined)
-      : [];
-    const chests = chestInfo
-      ? [this.chestManager.getObject(chestInfo.id)].filter((obj): obj is NonNullable<typeof obj> => obj !== undefined)
-      : [];
+    return {
+      armies: armyInfo
+        ? [this.armyManager.getObject(armyInfo.id)].filter((obj): obj is NonNullable<typeof obj> => obj !== undefined)
+        : [],
+      structures: structureInfo
+        ? [this.structureManager.getObject(structureInfo.id)].filter(
+            (obj): obj is NonNullable<typeof obj> => obj !== undefined,
+          )
+        : [],
+      quests: questInfo
+        ? [this.questManager.getObject(questInfo.id)].filter((obj): obj is NonNullable<typeof obj> => obj !== undefined)
+        : [],
+      chests: chestInfo
+        ? [this.chestManager.getObject(chestInfo.id)].filter((obj): obj is NonNullable<typeof obj> => obj !== undefined)
+        : [],
+    };
+  }
 
-    const selectedObject = this.selectionManager.getSelectedObject();
-    if (selectedObject) {
-      const actionPath = this.selectionManager.getActionPath(col, row);
-      if (actionPath) {
-        const actionType = ActionPaths.getActionType(actionPath);
-
-        if (actionType === ActionType.Move || actionType === ActionType.Explore) {
-          this.selectionManager.clearSelection();
-
-          await this.armyManager.handleArmyMovement(selectedObject.id, actionPath);
-        } else if (actionType === ActionType.Attack) {
-          console.log(`Attack action at (${col}, ${row})`);
-          this.selectionManager.clearSelection();
-        } else if (actionType === ActionType.Help) {
-          console.log(`Help action at (${col}, ${row})`);
-          this.selectionManager.clearSelection();
-        } else if (actionType === ActionType.Quest) {
-          console.log(`Quest action at (${col}, ${row})`);
-          this.selectionManager.clearSelection();
-        } else if (actionType === ActionType.Chest) {
-          console.log(`Chest action at (${col}, ${row})`);
-          this.chestManager.handleChestAction(selectedObject.id, actionPath, this.store);
-          this.selectionManager.clearSelection();
-        }
-
-        return;
-      }
-    }
-
-    // TEST: Play relic fx at clicked hex coordinates
-    // await this.playTestRelicFx(col, row);
+  private selectHexEntity(entityInfo: any, col: number, row: number): void {
+    const { armies, structures, quests, chests } = entityInfo;
 
     if (armies.length > 0) {
-      const result = this.armyManager.handleHexClick(
-        armies[0].id,
-        col,
-        row,
-        this.store,
-        this.structureManager.getStructureHexes(),
-        this.questManager.getQuestHexes(),
-        this.chestManager.getChestHexes(),
-      );
-
-      if (result.shouldSelect && result.actionPaths) {
-        this.selectionManager.selectObject(armies[0].id, "army", col, row);
-        this.selectionManager.setActionPaths(result.actionPaths);
-      }
+      this.handleArmyHexClick(armies[0], col, row);
     } else if (structures.length > 0) {
-      const result = this.structureManager.handleHexClick(
-        structures[0].id,
-        col,
-        row,
-        this.store,
-        this.armyManager.getArmyHexes(),
-      );
-
-      if (result.shouldSelect && result.actionPaths) {
-        this.selectionManager.selectObject(structures[0].id, "structure", col, row);
-        this.selectionManager.setActionPaths(result.actionPaths);
-      }
+      this.handleStructureHexClick(structures[0], col, row);
     } else if (quests.length > 0) {
-      const result = this.questManager.handleHexClick(quests[0].id, col, row, this.store);
-
-      if (result.shouldSelect) {
-        this.selectionManager.selectObject(quests[0].id, "quest", col, row);
-      }
+      this.handleQuestHexClick(quests[0], col, row);
     } else if (chests.length > 0) {
-      this.selectionManager.clearSelection();
+      this.handleChestHexClick();
     } else {
-      this.selectionManager.clearSelection();
+      this.handleEmptyHexClick();
     }
+  }
+
+  private handleArmyHexClick(army: any, col: number, row: number): void {
+    const result = this.armyManager.handleHexClick(
+      army.id,
+      col,
+      row,
+      this.store,
+      this.structureManager.getStructureHexes(),
+      this.questManager.getQuestHexes(),
+      this.chestManager.getChestHexes(),
+    );
+
+    if (result.shouldSelect && result.actionPaths) {
+      this.selectionManager.selectObject(army.id, "army", col, row);
+      this.selectionManager.setActionPaths(result.actionPaths);
+    }
+  }
+
+  private handleStructureHexClick(structure: any, col: number, row: number): void {
+    const result = this.structureManager.handleHexClick(
+      structure.id,
+      col,
+      row,
+      this.store,
+      this.armyManager.getArmyHexes(),
+    );
+
+    if (result.shouldSelect && result.actionPaths) {
+      this.selectionManager.selectObject(structure.id, "structure", col, row);
+      this.selectionManager.setActionPaths(result.actionPaths);
+    }
+  }
+
+  private handleQuestHexClick(quest: any, col: number, row: number): void {
+    const result = this.questManager.handleHexClick(quest.id, col, row, this.store);
+
+    if (result.shouldSelect) {
+      this.selectionManager.selectObject(quest.id, "quest", col, row);
+    }
+  }
+
+  private handleChestHexClick(): void {
+    this.selectionManager.clearSelection();
+  }
+
+  private handleEmptyHexClick(): void {
+    this.selectionManager.clearSelection();
   }
 
   private showClickFeedback(instanceId: number): void {
