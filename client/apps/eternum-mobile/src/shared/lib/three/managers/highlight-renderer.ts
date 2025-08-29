@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { createHexagonShape } from "../utils/hexagon-geometry";
+import { createHexagonShape, createRoundedHexagonShape } from "../utils/hexagon-geometry";
 import { getWorldPositionForHex, HEX_SIZE } from "../utils/utils";
 
 export interface HighlightHex {
@@ -17,7 +17,7 @@ export class HighlightRenderer {
   private animationId: number | null = null;
 
   private static highlightGeometry: THREE.ShapeGeometry | null = null;
-  private static highlightMaterial: THREE.MeshLambertMaterial | null = null;
+  private static highlightMaterial: THREE.MeshBasicMaterial | null = null;
 
   private dummy = new THREE.Object3D();
   private tempVector3 = new THREE.Vector3();
@@ -32,12 +32,12 @@ export class HighlightRenderer {
 
   private initializeStaticAssets(): void {
     if (!HighlightRenderer.highlightGeometry) {
-      const hexagonShape = createHexagonShape(HEX_SIZE * 0.975);
+      const hexagonShape = createRoundedHexagonShape(HEX_SIZE * 0.975);
       HighlightRenderer.highlightGeometry = new THREE.ShapeGeometry(hexagonShape);
     }
 
     if (!HighlightRenderer.highlightMaterial) {
-      HighlightRenderer.highlightMaterial = new THREE.MeshLambertMaterial({
+      HighlightRenderer.highlightMaterial = new THREE.MeshBasicMaterial({
         color: 0xffffff,
         transparent: true,
         opacity: 0.6,

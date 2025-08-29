@@ -38,23 +38,73 @@ export const createHexagonShape = (radius: number) => {
 export const createRoundedHexagonShape = (radius: number, cornerRadius: number = radius * 0.15) => {
   const shape = new THREE.Shape();
 
-  // Calculate points of the hexagon
-  const points = [];
-  for (let i = 0; i < 6; i++) {
-    const angle = (Math.PI / 3) * i - Math.PI / 2;
-    const x = radius * Math.cos(angle);
-    const y = radius * Math.sin(angle);
-    points.push(new THREE.Vector2(x, y));
-  }
+  // For isometric-like hexagon: width = height * 1.6, tile side length = height / 2
+  // radius parameter represents the height/2, so height = radius * 2
+  const height = radius * 2;
+  const width = height * 1.6;
+  const sideLength = height / 2;
 
-  // Get rounded corner points
-  const roundedPoints = getRoundPoints(points, cornerRadius, 5);
+  // Calculate the horizontal radius (half width)
+  const horizontalRadius = width / 2;
 
-  // Create shape from rounded points
-  shape.moveTo(roundedPoints[0].x, roundedPoints[0].y);
-  for (let i = 1; i < roundedPoints.length; i++) {
-    shape.lineTo(roundedPoints[i].x, roundedPoints[i].y);
+  // Create hexagon points with isometric proportions
+  const points = [
+    new THREE.Vector2(0, radius), // Top
+    new THREE.Vector2(horizontalRadius, sideLength / 2), // Top-right
+    new THREE.Vector2(horizontalRadius, -sideLength / 2), // Bottom-right
+    new THREE.Vector2(0, -radius), // Bottom
+    new THREE.Vector2(-horizontalRadius, -sideLength / 2), // Bottom-left
+    new THREE.Vector2(-horizontalRadius, sideLength / 2), // Top-left
+  ];
+
+  // Create the path with rounded corners
+  shape.moveTo(points[0].x, points[0].y);
+  
+  for (let i = 0; i < points.length; i++) {
+    const current = points[i];
+    const next = points[(i + 1) % points.length];
+    
+    // Calculate the direction vector between current and next point
+    const dx = next.x - current.x;
+    const dy = next.y - current.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    // Limit corner radius to half the side length
+    const actualRadius = Math.min(cornerRadius, distance / 2);
+    
+    // Calculate points for the rounded corner
+    const dirX = dx / distance;
+    const dirY = dy / distance;
+    
+    // End point of current segment
+    const segEndX = current.x + dirX * (distance - actualRadius);
+    const segEndY = current.y + dirY * (distance - actualRadius);
+    
+    // Draw line to the end of the current segment (before the curve)
+    shape.lineTo(segEndX, segEndY);
+    
+    // If this is not the last point, add the curve to the next point
+    if (i < points.length - 1) {
+      const nextNext = points[(i + 2) % points.length];
+      
+      // Calculate the direction vector for the next segment
+      const nextDx = nextNext.x - next.x;
+      const nextDy = nextNext.y - next.y;
+      const nextDistance = Math.sqrt(nextDx * nextDx + nextDy * nextDy);
+      const nextDirX = nextDx / nextDistance;
+      const nextDirY = nextDy / nextDistance;
+      
+      // Start point of next segment
+      const nextSegStartX = next.x + nextDirX * actualRadius;
+      const nextSegStartY = next.y + nextDirY * actualRadius;
+      
+      // Add the quadratic curve
+      shape.quadraticCurveTo(next.x, next.y, nextSegStartX, nextSegStartY);
+    }
   }
+  
+  // Close the shape
+  shape.closePath();
 
   return shape;
 };
