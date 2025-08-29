@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { DRACOLoader, GLTFLoader, OrbitControls } from "three-stdlib";
 
-// Mobile device detection
+// Mobile device detection  - TODO: move to utils
 const isMobileDevice = () => {
   return (
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
