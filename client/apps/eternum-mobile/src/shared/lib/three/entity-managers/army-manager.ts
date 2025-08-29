@@ -857,6 +857,25 @@ export class ArmyManager extends EntityManager<ArmyObject> {
     this.pendingArmyMovements.clear();
   }
 
+  public handleHexClick(
+    armyId: number, 
+    col: number, 
+    row: number, 
+    store: any,
+    structureHexes: Map<number, Map<number, HexEntityInfo>>,
+    questHexes: Map<number, Map<number, HexEntityInfo>>,
+    chestHexes: Map<number, Map<number, HexEntityInfo>>
+  ): { shouldSelect: boolean; actionPaths?: ActionPaths } {
+    const isDoubleClick = store.handleObjectClick(armyId, "army", col, row);
+    
+    if (isDoubleClick) {
+      return { shouldSelect: false };
+    }
+
+    const actionPaths = this.selectArmy(armyId, structureHexes, questHexes, chestHexes);
+    return { shouldSelect: true, actionPaths: actionPaths || undefined };
+  }
+
   public dispose(): void {
     // Clean up relic effects
     for (const [entityId] of this.armyRelicEffects) {

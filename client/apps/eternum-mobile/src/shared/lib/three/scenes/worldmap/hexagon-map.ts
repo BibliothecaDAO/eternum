@@ -1,10 +1,4 @@
-import {
-  ActionPath,
-  ActionPaths,
-  ActionType,
-  ExplorerMoveSystemUpdate,
-  WorldUpdateListener,
-} from "@bibliothecadao/eternum";
+import { ActionPaths, ActionType, ExplorerMoveSystemUpdate, WorldUpdateListener } from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
 import { FELT_CENTER } from "@bibliothecadao/types";
 import * as THREE from "three";
@@ -66,10 +60,6 @@ export class HexagonMap {
   private isLoadingChunks: boolean = false;
   private pendingChunkUpdate: { chunkX: number; chunkZ: number } | null = null;
   private currentAbortController: AbortController | null = null;
-
-  private tileUpdateTimeout: NodeJS.Timeout | null = null;
-
-  private activeTravelEffects: Map<number, { promise: Promise<void>; end: () => void }> = new Map();
 
   constructor(
     scene: THREE.Scene,
@@ -497,7 +487,7 @@ export class HexagonMap {
           this.selectionManager.clearSelection();
         } else if (actionType === ActionType.Chest) {
           console.log(`Chest action at (${col}, ${row})`);
-          this.handleChestAction(selectedObject.id, actionPath);
+          this.chestManager.handleChestAction(selectedObject.id, actionPath, this.store);
           this.selectionManager.clearSelection();
         }
 
@@ -509,57 +499,43 @@ export class HexagonMap {
     // await this.playTestRelicFx(col, row);
 
     if (armies.length > 0) {
-      const isDoubleClick = this.store.handleObjectClick(armies[0].id, "army", col, row);
-      if (!isDoubleClick) {
-        this.selectArmy(armies[0].id);
+      const result = this.armyManager.handleHexClick(
+        armies[0].id,
+        col,
+        row,
+        this.store,
+        this.structureManager.getStructureHexes(),
+        this.questManager.getQuestHexes(),
+        this.chestManager.getChestHexes(),
+      );
+
+      if (result.shouldSelect && result.actionPaths) {
+        this.selectionManager.selectObject(armies[0].id, "army", col, row);
+        this.selectionManager.setActionPaths(result.actionPaths);
       }
     } else if (structures.length > 0) {
-      const isDoubleClick = this.store.handleObjectClick(structures[0].id, "structure", col, row);
-      if (!isDoubleClick) {
-        this.selectStructure(structures[0].id, col, row);
+      const result = this.structureManager.handleHexClick(
+        structures[0].id,
+        col,
+        row,
+        this.store,
+        this.armyManager.getArmyHexes(),
+      );
+
+      if (result.shouldSelect && result.actionPaths) {
+        this.selectionManager.selectObject(structures[0].id, "structure", col, row);
+        this.selectionManager.setActionPaths(result.actionPaths);
       }
     } else if (quests.length > 0) {
-      const isDoubleClick = this.store.handleObjectClick(quests[0].id, "quest", col, row);
-      if (!isDoubleClick) {
+      const result = this.questManager.handleHexClick(quests[0].id, col, row, this.store);
+
+      if (result.shouldSelect) {
         this.selectionManager.selectObject(quests[0].id, "quest", col, row);
       }
     } else if (chests.length > 0) {
       this.selectionManager.clearSelection();
     } else {
       this.selectionManager.clearSelection();
-    }
-  }
-
-  private handleChestAction(explorerEntityId: number, actionPath: ActionPath[]): void {
-    const targetHex = actionPath[actionPath.length - 1].hex;
-
-    this.store.openChestDrawer(explorerEntityId, { x: targetHex.col, y: targetHex.row });
-  }
-
-  private selectArmy(armyId: number): void {
-    const army = this.armyManager.getObject(armyId);
-    if (!army) return;
-
-    const actionPaths = this.armyManager.selectArmy(
-      armyId,
-      this.structureManager.getStructureHexes(),
-      this.questManager.getQuestHexes(),
-      this.chestManager.getChestHexes(),
-    );
-
-    if (actionPaths) {
-      this.selectionManager.selectObject(armyId, "army", army.col, army.row);
-      this.selectionManager.setActionPaths(actionPaths);
-      console.log(`[HexagonMap] Selecting army ${armyId} at position (${army.col}, ${army.row})`);
-    }
-  }
-
-  private selectStructure(structureId: number, col: number, row: number): void {
-    const actionPaths = this.structureManager.selectStructure(structureId, col, row, this.armyManager.getArmyHexes());
-
-    if (actionPaths) {
-      this.selectionManager.selectObject(structureId, "structure", col, row);
-      this.selectionManager.setActionPaths(actionPaths);
     }
   }
 
@@ -602,11 +578,6 @@ export class HexagonMap {
   }
 
   public dispose(): void {
-    this.activeTravelEffects.forEach((effect) => {
-      effect.end();
-    });
-    this.activeTravelEffects.clear();
-
     // Clean up relic effects
     this.relicEffectsManager.dispose();
 
@@ -618,11 +589,6 @@ export class HexagonMap {
     if (this.currentAbortController) {
       this.currentAbortController.abort();
       this.currentAbortController = null;
-    }
-
-    if (this.tileUpdateTimeout) {
-      clearTimeout(this.tileUpdateTimeout);
-      this.tileUpdateTimeout = null;
     }
 
     if (this.hexagonMesh) {
@@ -740,18 +706,6 @@ export class HexagonMap {
     }
 
     return worldPosition;
-  }
-
-  public getSelectionManager(): SelectionManager {
-    return this.selectionManager;
-  }
-
-  public clearSelection(): void {
-    this.selectionManager.clearSelection();
-  }
-
-  public isArmySelectable(armyId: number): boolean {
-    return this.armyManager.isArmySelectable(armyId);
   }
 
   private recordPerformanceMetric(operation: string, duration: number): void {

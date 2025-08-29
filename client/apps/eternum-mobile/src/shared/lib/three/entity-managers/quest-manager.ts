@@ -1,4 +1,4 @@
-import { Position, QuestSystemUpdate } from "@bibliothecadao/eternum";
+import { ActionPath, Position, QuestSystemUpdate } from "@bibliothecadao/eternum";
 import { HexEntityInfo } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { BuildingTileRenderer } from "../tiles/building-tile-renderer";
@@ -178,6 +178,21 @@ export class QuestManager extends EntityManager<QuestObject> {
 
   public getQuestHexes(): Map<number, Map<number, HexEntityInfo>> {
     return this.questHexes;
+  }
+
+  public handleHexClick(
+    questId: number, 
+    col: number, 
+    row: number, 
+    store: any
+  ): { shouldSelect: boolean } {
+    const isDoubleClick = store.handleObjectClick(questId, "quest", col, row);
+    
+    if (isDoubleClick) {
+      return { shouldSelect: false };
+    }
+
+    return { shouldSelect: true };
   }
 
   public clearQuestData(): void {

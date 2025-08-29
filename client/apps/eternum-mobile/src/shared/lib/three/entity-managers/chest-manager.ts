@@ -1,4 +1,4 @@
-import { ChestSystemUpdate, Position } from "@bibliothecadao/eternum";
+import { ActionPath, ChestSystemUpdate, Position } from "@bibliothecadao/eternum";
 import { HexEntityInfo } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
@@ -285,6 +285,11 @@ export class ChestManager extends EntityManager<ChestObject> {
 
   public clearChestData(): void {
     this.chestHexes.clear();
+  }
+
+  public handleChestAction(explorerEntityId: number, actionPath: ActionPath[], store: any): void {
+    const targetHex = actionPath[actionPath.length - 1].hex;
+    store.openChestDrawer(explorerEntityId, { x: targetHex.col, y: targetHex.row });
   }
 
   public dispose(): void {

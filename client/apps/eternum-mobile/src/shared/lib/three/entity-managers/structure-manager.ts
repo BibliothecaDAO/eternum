@@ -1,4 +1,4 @@
-import { ActionPaths, Position, StructureActionManager, StructureSystemUpdate } from "@bibliothecadao/eternum";
+import { ActionPath, ActionPaths, Position, StructureActionManager, StructureSystemUpdate } from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
 import { HexEntityInfo, ID, StructureType } from "@bibliothecadao/types";
 import * as THREE from "three";
@@ -458,6 +458,23 @@ export class StructureManager extends EntityManager<StructureObject> {
 
     const actionPaths = structureActionManager.findActionPaths(armyHexes, this.exploredTiles, playerAddress);
     return actionPaths;
+  }
+
+  public handleHexClick(
+    structureId: number, 
+    col: number, 
+    row: number, 
+    store: any,
+    armyHexes: Map<number, Map<number, HexEntityInfo>>
+  ): { shouldSelect: boolean; actionPaths?: ActionPaths } {
+    const isDoubleClick = store.handleObjectClick(structureId, "structure", col, row);
+    
+    if (isDoubleClick) {
+      return { shouldSelect: false };
+    }
+
+    const actionPaths = this.selectStructure(structureId, col, row, armyHexes);
+    return { shouldSelect: true, actionPaths: actionPaths || undefined };
   }
 
   public getStructureHexes(): Map<number, Map<number, HexEntityInfo>> {
