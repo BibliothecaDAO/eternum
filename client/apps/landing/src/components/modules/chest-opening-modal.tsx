@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useAmbienceAudio } from "@/hooks/use-ambience-audio";
 import { useChestContent } from "@/hooks/use-chest-content";
 import { useOpenChest } from "@/hooks/use-open-chest";
+import { useVideoPreloader } from "@/hooks/use-video-preloader";
 import { useLootChestOpeningStore } from "@/stores/loot-chest-opening";
 import { AssetRarity, ChestAsset } from "@/utils/cosmetics";
 import { Loader2 } from "lucide-react";
@@ -65,6 +66,9 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
   const { chestOpenTimestamp, setChestOpenTimestamp } = useLootChestOpeningStore();
   const { chestContent, resetChestContent } = useChestContent(env.VITE_PUBLIC_CHEST_DEBUG_MODE, chestOpenTimestamp);
 
+  // Preload all chest videos when modal mounts
+  const { allVideosLoaded, overallProgress } = useVideoPreloader(chestOpeningVideo);
+
   const ambienceAudio = useAmbienceAudio({
     src: "/sound/music/ShadowSong.mp3",
     volume: 0.4,
@@ -114,15 +118,21 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
 
   const { clearLootChestOpening, setOpenedChestTokenId } = useLootChestOpeningStore();
 
-  // Handle video loading and playing - only when chestContent is available
+  // Handle video loading and playing - only when chestContent is available and videos are preloaded
   useEffect(() => {
-    if (isVideoReady && videoRef.current && chestContent && chestContent.length > 0) {
-      console.log("Video is ready, attempting to play...");
+    if (isVideoReady && videoRef.current && chestContent && chestContent.length > 0 && allVideosLoaded) {
+      console.log("Video is ready and preloaded, attempting to play...");
 
       const playVideo = async () => {
         try {
-          videoRef.current!.currentTime = 0;
-          videoRef.current!.volume = 1; // Reset volume to full
+          // Use cached video if available
+          const cachedVideo = (window as any).__videoCache?.[chestOpeningVideo[chestType]];
+          if (cachedVideo && videoRef.current) {
+            // Copy preloaded video properties to our video element
+            videoRef.current.currentTime = 0;
+            videoRef.current.volume = 1;
+          }
+          
           await videoRef.current!.play();
           console.log("Video playing successfully");
           setVideoState("playing");
@@ -150,7 +160,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
 
       playVideo();
     }
-  }, [isVideoReady, chestContent]);
+  }, [isVideoReady, chestContent, allVideosLoaded, chestType]);
 
   // Fade out audio before video ends
   useEffect(() => {
@@ -190,7 +200,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
     }, 500);
   };
 
-  const { openChest, error: chestOpeningError } = useOpenChest();
+  const { openChest } = useOpenChest();
   const [isChestOpeningLoading, setIsChestOpeningLoading] = useState(false);
 
   const handleOpenChest = () => {
@@ -249,8 +259,8 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
     clearLootChestOpening();
   };
 
-  // Check if we should show loading state
-  const shouldShowLoading = !chestContent || chestContent.length === 0 || (videoState === "loading" && !loadError);
+  // Check if we should show loading state - show until both videos and chest content are loaded
+  const shouldShowLoading = !chestContent || chestContent.length === 0 || (videoState === "loading" && !loadError) || !allVideosLoaded;
 
   return (
     <Dialog open={true} onOpenChange={clearLootChestOpening}>
@@ -276,6 +286,10 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
               }}
               onLoadedMetadata={() => console.log("Video metadata loaded")}
               onCanPlay={() => console.log("Video can play")}
+              onCanPlayThrough={() => {
+                console.log("Video can play through without buffering");
+                setIsVideoReady(true);
+              }}
               onPlay={() => console.log("Video started playing")}
               onPause={() => console.log("Video paused")}
               onTimeUpdate={(e) => {
@@ -289,6 +303,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
               autoPlay={false}
               preload="auto"
               controls={false}
+              crossOrigin="anonymous"
             >
               <source src={chestOpeningVideo[chestType]} type="video/mp4" />
             </video>
