@@ -377,10 +377,10 @@ export const ChestContent = ({
               <div
                 className={`p-5 bg-slate-900/20 rounded-xl border border-slate-700/30 backdrop-blur-sm shadow-xl border-l-4 h-[450px] flex flex-col ${getRarityAccent(selectedAsset.rarity)}`}
               >
-                <h4 className="text-sm font-semibold text-gray-300 mb-3">Selected Item</h4>
+                <h4 className="text-sm font-semibold text-gray-300 mb-3 flex-shrink-0">Selected Item</h4>
 
                 {/* Item Image - Simplified */}
-                <div className="bg-slate-800/15 rounded-lg p-4 border border-slate-700/30 h-40 flex items-center justify-center">
+                <div className="bg-slate-800/15 rounded-lg p-4 border border-slate-700/30 h-40 flex items-center justify-center flex-shrink-0">
                   <img
                     key={selectedAsset.id}
                     src={selectedAsset.imagePath}
@@ -394,8 +394,8 @@ export const ChestContent = ({
                 </div>
 
                 {/* Item Details - Clean and minimal */}
-                <div className="flex-1 space-y-3 overflow-hidden">
-                  <div>
+                <div className="flex-1 space-y-3 overflow-hidden min-h-0 flex flex-col">
+                  <div className="flex-shrink-0">
                     <h3 className="text-lg font-semibold text-gray-200 mb-2">{selectedAsset.name}</h3>
                     <div className="flex items-center gap-3">
                       <span
@@ -412,7 +412,7 @@ export const ChestContent = ({
                     </div>
                   </div>
 
-                  <div className="text-sm text-gray-400 space-y-1">
+                  <div className="text-sm text-gray-400 space-y-1 flex-shrink-0">
                     <p>
                       Drop rate: <span className="text-gray-300 font-medium">{selectedAsset.drawChance}%</span>
                     </p>
@@ -428,9 +428,11 @@ export const ChestContent = ({
                     )}
                   </div>
 
-                  <p className="text-sm text-gray-400 leading-relaxed pt-2 border-t border-slate-700/50">
-                    {selectedAsset.description}
-                  </p>
+                  <div className="flex-1 min-h-0 overflow-hidden">
+                    <p className="text-sm text-gray-400 leading-relaxed pt-2 border-t border-slate-700/50 h-full overflow-y-auto custom-scrollbar pr-2">
+                      {selectedAsset.description}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
