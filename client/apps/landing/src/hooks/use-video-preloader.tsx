@@ -91,7 +91,9 @@ export const useVideoPreloader = (videos: Record<string, string>) => {
   }, [videos]);
 
   // Calculate overall loading progress
-  const overallProgress = Object.values(loadingStatus).reduce((acc, status) => acc + status.progress, 0) / Object.keys(loadingStatus).length || 0;
+  const overallProgress =
+    Object.values(loadingStatus).reduce((acc, status) => acc + status.progress, 0) /
+      Object.keys(loadingStatus).length || 0;
 
   return {
     loadingStatus,

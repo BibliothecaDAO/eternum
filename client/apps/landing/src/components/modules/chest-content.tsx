@@ -331,10 +331,12 @@ export const ChestContent = ({
         {/* Overlay UI - pointer-events-none to allow 3D interaction */}
         <div className="relative z-10 flex flex-col h-full pointer-events-none">
           {/* Title at top */}
-          <div 
-            className="flex justify-center pt-4 md:pt-8" 
-            style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
-          >{renderTitle()}</div>
+          <div
+            className="flex justify-center pt-4 md:pt-8"
+            style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
+          >
+            {renderTitle()}
+          </div>
 
           {/* Mobile Selected Item Preview - Right below title */}
           <div
@@ -361,7 +363,7 @@ export const ChestContent = ({
                     }}
                   />
                 </div>
-                
+
                 {/* Item Details */}
                 <div className="flex-1 min-w-0">
                   <h3 className="text-base font-semibold text-gray-200 truncate mb-1">{selectedAsset.name}</h3>
@@ -386,7 +388,6 @@ export const ChestContent = ({
 
           {/* Main content area with drop rates on left and items on right */}
           <div className="flex-1 flex flex-col md:flex-row md:justify-between items-stretch px-4 lg:px-8 gap-4 overflow-hidden">
-
             {/* Left sidebar with Drop Rate Summary and Item Preview */}
             <div
               className="pointer-events-auto space-y-4 w-full md:w-[280px] flex flex-col max-h-[40vh] md:max-h-[calc(100vh-150px)] order-3 md:order-1"
@@ -507,11 +508,11 @@ export const ChestContent = ({
 
             {/* Asset list on the right side - collapsible on mobile, positioned above buttons */}
             <div
-              className={`w-full md:w-[420px] ${isItemsListExpanded ? 'max-h-[50vh]' : 'max-h-[20vh]'} md:max-h-[calc(100vh-150px)] overflow-y-auto space-y-4 pointer-events-auto custom-scrollbar order-2 md:order-2 transition-all duration-300 ease-in-out flex-shrink-0`}
+              className={`w-full md:w-[420px] ${isItemsListExpanded ? "max-h-[50vh]" : "max-h-[20vh]"} md:max-h-[calc(100vh-150px)] overflow-y-auto space-y-4 pointer-events-auto custom-scrollbar order-2 md:order-2 transition-all duration-300 ease-in-out flex-shrink-0`}
               style={{
                 transition: "opacity 1000ms",
                 opacity: showContent ? 1 : 0,
-                marginBottom: '80px', // Space for buttons below
+                marginBottom: "80px", // Space for buttons below
               }}
             >
               {/* Container for the asset list */}
@@ -530,7 +531,7 @@ export const ChestContent = ({
                     >
                       <svg
                         className={`w-4 h-4 transform transition-transform duration-200 ${
-                          isItemsListExpanded ? 'rotate-180' : 'rotate-0'
+                          isItemsListExpanded ? "rotate-180" : "rotate-0"
                         }`}
                         fill="none"
                         stroke="currentColor"
@@ -561,12 +562,14 @@ export const ChestContent = ({
                 </div>
 
                 {/* Asset grid grouped by type */}
-                <div className={`space-y-4 relative ${!isItemsListExpanded ? 'md:overflow-visible overflow-hidden' : ''}`}>
+                <div
+                  className={`space-y-4 relative ${!isItemsListExpanded ? "md:overflow-visible overflow-hidden" : ""}`}
+                >
                   {Array.from(groupedAssets.entries()).map(([type, assets]) => {
                     if (assets.length === 0) return null;
 
                     const TypeIcon = getAssetTypeIcon(type);
-                    
+
                     // On mobile, show limited items when collapsed
                     const isMobile = window.innerWidth < 768;
                     const displayedAssets = isMobile && !isItemsListExpanded ? assets.slice(0, 2) : assets;
@@ -578,9 +581,11 @@ export const ChestContent = ({
                           <TypeIcon className="w-4 h-4 text-gray-400" />
                           <h3 className="text-sm font-medium text-gray-400">{type}</h3>
                           <span className="text-sm text-gray-600">
-                            ({isMobile && !isItemsListExpanded && assets.length > 2 
-                              ? `${displayedAssets.length}/${assets.length}` 
-                              : assets.length})
+                            (
+                            {isMobile && !isItemsListExpanded && assets.length > 2
+                              ? `${displayedAssets.length}/${assets.length}`
+                              : assets.length}
+                            )
                           </span>
                         </div>
 
@@ -663,16 +668,24 @@ export const ChestContent = ({
                                       {isSelected && (
                                         <>
                                           {asset.troopType && (
-                                            <span className="text-xs md:text-sm text-gray-500 hidden sm:inline">{TroopType[asset.troopType]}</span>
+                                            <span className="text-xs md:text-sm text-gray-500 hidden sm:inline">
+                                              {TroopType[asset.troopType]}
+                                            </span>
                                           )}
-                                          {itemSet && <span className="text-xs md:text-sm text-gray-500 hidden sm:inline">{itemSet}</span>}
+                                          {itemSet && (
+                                            <span className="text-xs md:text-sm text-gray-500 hidden sm:inline">
+                                              {itemSet}
+                                            </span>
+                                          )}
                                         </>
                                       )}
                                     </div>
 
                                     {/* Description - only when selected on desktop */}
                                     {isSelected && (
-                                      <p className="text-xs md:text-sm text-gray-400 mt-2 leading-relaxed hidden md:block">{asset.description}</p>
+                                      <p className="text-xs md:text-sm text-gray-400 mt-2 leading-relaxed hidden md:block">
+                                        {asset.description}
+                                      </p>
                                     )}
                                   </div>
                                 </div>
@@ -683,7 +696,7 @@ export const ChestContent = ({
                       </div>
                     );
                   })}
-                  
+
                   {/* Mobile fade-out gradient when collapsed */}
                   {!isItemsListExpanded && (
                     <div className="md:hidden absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-slate-900/80 to-transparent pointer-events-none" />
