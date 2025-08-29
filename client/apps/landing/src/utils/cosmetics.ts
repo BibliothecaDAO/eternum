@@ -90,7 +90,7 @@ export const chestAssets: ChestAsset[] = [
     set: AssetSet.WinterLordSet,
     description: "The icy domain of a Lord that has withstood the fiercest of winters.",
     drawChance: 8.45,
-    modelPath: "models/cosmetics/high-res/castle_winter_lord_l3.glb",
+    modelPath: `${modelPath}/castle_winter_lord_l3.glb`,
     imagePath: "images/cosmetics/winter-lord-realm.png",
     positionY: 0,
     scale: 1,
