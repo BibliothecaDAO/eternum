@@ -11,7 +11,7 @@ export enum AssetType {
   RealmAura = "Realm Aura",
 }
 
-export enum AssetSet {
+enum AssetSet {
   FirstLegacySet = "First Legacy Set",
   WinterLordSet = "Winter Lord Set",
   S1HunterSet = "S1 Hunter Set",
