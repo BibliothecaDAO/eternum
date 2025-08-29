@@ -3,6 +3,7 @@ import { getCollectionByAddress } from "@/config";
 import { useMarketplace } from "@/hooks/use-marketplace";
 import { trimAddress } from "@/lib/utils";
 import { MergedNftData } from "@/types";
+import { COSMETIC_NAMES } from "@/utils/cosmetics";
 import { RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types";
 import { useAccount } from "@starknet-react/core";
 import { ArrowRightLeft, Check, Plus } from "lucide-react";
@@ -11,6 +12,12 @@ import { formatUnits } from "viem";
 import { Button } from "../ui/button";
 import { ResourceIcon } from "../ui/elements/resource-icon";
 import { TokenDetailModal } from "./token-detail-modal";
+
+export enum CollectionType {
+  LootChest = "Loot Chest",
+  Cosmetics = "Cosmetics",
+  Other = "Other",
+}
 
 interface TokenCardProps {
   token: MergedNftData;
@@ -35,7 +42,15 @@ export const TokenCard = ({
   const isOwner = token.account_address === trimAddress(accountAddress);
   const collection = getCollectionByAddress(contract_address);
   const collectionName = collection?.name;
-  const isLootChest = collection?.name === "Loot Chest";
+
+  // Determine collection type based on collection name
+  const getCollectionType = (name?: string): CollectionType => {
+    if (name === "Loot Chest") return CollectionType.LootChest;
+    if (name === "Cosmetics") return CollectionType.Cosmetics;
+    return CollectionType.Other;
+  };
+
+  const collectionType = getCollectionType(collectionName);
 
   const handleCardClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -53,6 +68,21 @@ export const TokenCard = ({
   const image = originalImage?.startsWith("ipfs://")
     ? originalImage.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")
     : originalImage;
+
+  // Determine display name for cosmetics based on attributes
+  const getDisplayName = () => {
+    if (collectionType === CollectionType.Cosmetics && attributes) {
+      const epochAttr = attributes.find((attr) => attr.trait_type === "Epoch");
+      const idAttr = attributes.find((attr) => attr.trait_type === "Epoch Item");
+      if (epochAttr && idAttr) {
+        const cosmetic = COSMETIC_NAMES.find((c) => c.id === idAttr.value && c.epoch === epochAttr.value);
+        return cosmetic ? `${cosmetic.name} #${token_id}` : name || "N/A";
+      }
+    }
+    return name || "N/A";
+  };
+
+  const displayName = getDisplayName();
 
   const listingActive = useMemo(() => {
     if (token.expiration !== null && token.best_price_hex !== null) {
@@ -110,7 +140,7 @@ export const TokenCard = ({
               {collectionName}
             </div>
             <div className="flex justify-between gap-2">
-              <h4 className="text-xl truncate">{name || `#${token_id}`}</h4>
+              <h4 className="text-xl truncate">{displayName || `#${token_id}`}</h4>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -156,7 +186,7 @@ export const TokenCard = ({
           ${isSelected ? "bg-gold/5" : ""}`}
         >
           <div className="flex w-full gap-4">
-            {isOwner && isLootChest ? (
+            {isOwner && collectionType === CollectionType.LootChest ? (
               <>
                 <Button disabled={isSelected} variant="outline" className="w-full" onClick={handleCardClick}>
                   Manage
@@ -186,7 +216,7 @@ export const TokenCard = ({
         <TokenDetailModal
           onOpenChange={setIsModalOpen}
           isOpen={isModalOpen}
-          isLootChest={isLootChest}
+          collectionType={collectionType}
           tokenData={token}
           isOwner={isOwner}
           marketplaceActions={marketplaceActions}
@@ -194,6 +224,7 @@ export const TokenCard = ({
           orderId={token.order_id?.toString() ?? undefined}
           isListed={token.expiration !== null}
           expiration={token.expiration ? Number(token.expiration) : undefined}
+          displayName={displayName}
         />
       )}
     </>

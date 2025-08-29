@@ -24,6 +24,7 @@ import { ResourceIcon } from "../ui/elements/resource-icon";
 import { Separator } from "../ui/separator";
 import { CreateListingsDrawer } from "./marketplace-create-listings-drawer";
 import { EditListingDrawer } from "./marketplace-edit-listing-drawer";
+import { CollectionType } from "./token-card";
 
 // Marketplace fee percentage
 const MARKETPLACE_FEE_PERCENT = 5;
@@ -88,13 +89,14 @@ interface TokenDetailModalProps {
   onOpenChange: (isOpen: boolean) => void;
   tokenData: MergedNftData;
   isOwner: boolean;
-  isLootChest: boolean;
+  collectionType: CollectionType;
   marketplaceActions: ReturnType<typeof useMarketplace>;
   // Listing details passed from RealmCard
   isListed: boolean;
   price?: bigint;
   orderId?: string;
   expiration?: number; // Added: Expiration timestamp (seconds)
+  displayName: string; // Added: Display name passed from parent
 }
 
 export const TokenDetailModal = ({
@@ -102,12 +104,13 @@ export const TokenDetailModal = ({
   onOpenChange,
   tokenData,
   isOwner,
-  isLootChest,
+  collectionType,
   marketplaceActions,
   isListed,
   price,
   orderId,
   expiration, // Added
+  displayName, // Added
 }: TokenDetailModalProps) => {
   const { attributes, name, image: originalImage } = tokenData.metadata ?? {};
 
@@ -274,7 +277,7 @@ export const TokenDetailModal = ({
         </div>
       ) : (
         <div className="flex flex-col gap-2 mt-2">
-          {isOwner && isLootChest && (
+          {isOwner && collectionType === CollectionType.LootChest && (
             <>
               {!isController && (
                 <div className="flex items-center gap-2 text-sm text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-md p-3 mb-2">
@@ -395,7 +398,7 @@ export const TokenDetailModal = ({
                 </div>
                 <div className="flex flex-col gap-5">
                   <div className="flex flex-col gap-2">
-                    <h3 className="text-gold font-semibold text-3xl">{name || "N/A"}</h3>
+                    <h3 className="text-gold font-semibold text-3xl">{displayName}</h3>
                     <div className="flex items-center gap-2  ">
                       <div className="flex items-center gap-2">{tokenData.name}</div>
                       <Separator orientation="vertical" className="h-4" />
@@ -440,18 +443,24 @@ export const TokenDetailModal = ({
                     {renderPriceSection()}
                     {isOwner ? renderOwnerActions() : isListed && price !== undefined && renderBuyerActions()}
                   </div>
-                  <div className="grid grid-cols-4 flex-wrap gap-2">
-                    {attributes
-                      ?.filter((attribute) => ["Regions", "Cities", "Harbors", "Rivers"].includes(attribute.trait_type))
-                      .map((attribute, index) => (
-                        <Card key={`${attribute.trait_type}-${index}`} className="flex flex-col items-center p-1">
-                          <Label className="uppercase tracking-wider flex justify-between items-center text-muted-foreground text-xs">
-                            {attribute.trait_type}
-                          </Label>
-                          <span>{attribute.value}</span>
-                        </Card>
-                      ))}
-                  </div>
+                  {/* Display all attributes */}
+                  {attributes && attributes.length > 0 && (
+                    <div>
+                      <Label className="uppercase tracking-wider mb-2 flex justify-between items-center text-muted-foreground text-xs">
+                        All Attributes
+                      </Label>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {attributes.map((attribute, index) => (
+                          <Card key={`${attribute.trait_type}-${index}`} className="flex flex-col p-3">
+                            <Label className="uppercase tracking-wider flex justify-between items-center text-muted-foreground text-xs mb-1">
+                              {attribute.trait_type}
+                            </Label>
+                            <span className="text-sm font-medium">{attribute.value}</span>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
