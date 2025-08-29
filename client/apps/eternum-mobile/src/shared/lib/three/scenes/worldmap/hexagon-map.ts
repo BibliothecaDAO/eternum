@@ -1,6 +1,6 @@
 import { ActionPaths, ActionType, ExplorerMoveSystemUpdate, WorldUpdateListener } from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
-import { FELT_CENTER, findResourceById } from "@bibliothecadao/types";
+import { FELT_CENTER, findResourceById, getDirectionBetweenAdjacentHexes } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { getMapFromTorii } from "../../../../../app/dojo/queries";
 import { ArmyManager, BiomesManager, ChestManager, QuestManager, StructureManager } from "../../entity-managers";
@@ -534,6 +534,9 @@ export class HexagonMap {
         console.log(`Chest action at (${col}, ${row})`);
         this.chestManager.handleChestAction(selectedObject.id, actionPath, this.store);
         break;
+      case ActionType.CreateArmy:
+        this.handleArmyCreate(actionPath, selectedObject.id);
+        break;
     }
 
     return true;
@@ -625,6 +628,25 @@ export class HexagonMap {
 
   private handleEmptyHexClick(): void {
     this.selectionManager.clearSelection();
+  }
+
+  private handleArmyCreate(actionPath: any[], selectedEntityId: number): void {
+    const selectedPath = actionPath.map((path) => path.hex);
+    const targetHex = selectedPath[selectedPath.length - 1];
+    const direction = getDirectionBetweenAdjacentHexes(
+      { col: selectedPath[0].col, row: selectedPath[0].row },
+      { col: targetHex.col, row: targetHex.row },
+    );
+
+    if (direction === undefined || direction === null) return;
+
+    // Trigger mobile drawer for army creation
+    this.store?.setArmyCreationDrawer({
+      isOpen: true,
+      structureId: selectedEntityId,
+      direction: direction,
+      isExplorer: true,
+    });
   }
 
   private showClickFeedback(instanceId: number): void {

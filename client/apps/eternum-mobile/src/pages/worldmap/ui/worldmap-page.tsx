@@ -1,3 +1,4 @@
+import { UnifiedArmyCreationDrawer } from "@/features/armies/ui/unified-army-creation-drawer";
 import { useStore } from "@/shared/store";
 import { ChestDrawer } from "@/widgets/chest-drawer/ui/chest-drawer";
 import { HexEntityDetailsDrawer } from "@/widgets/hex-entity-details-drawer";
@@ -8,7 +9,18 @@ import { ThreeCanvas, type ThreeCanvasRef } from "./three-canvas";
 export function WorldmapPage() {
   const [currentScene, setCurrentScene] = useState("worldmap");
   const canvasRef = useRef<ThreeCanvasRef>(null);
-  const { selectedRealm, selectedHex, isDoubleClickedObject, isChestDrawerOpen, chestDrawerData, closeChestDrawer, resetDoubleClickState } = useStore();
+  const { 
+    selectedRealm, 
+    selectedHex, 
+    isDoubleClickedObject, 
+    isChestDrawerOpen, 
+    chestDrawerData, 
+    closeChestDrawer, 
+    resetDoubleClickState,
+    isArmyCreationDrawerOpen,
+    armyCreationDrawerData,
+    closeArmyCreationDrawer
+  } = useStore();
   const [isCanvasReady, setIsCanvasReady] = useState(false);
   const [hexDrawerOpen, setHexDrawerOpen] = useState(false);
 
@@ -96,6 +108,18 @@ export function WorldmapPage() {
           chestHex={chestDrawerData.chestHex}
           open={isChestDrawerOpen}
           onOpenChange={(open) => !open && closeChestDrawer()}
+        />
+      )}
+
+      {/* Army Creation Drawer */}
+      {isArmyCreationDrawerOpen && armyCreationDrawerData.structureId && (
+        <UnifiedArmyCreationDrawer
+          isOpen={isArmyCreationDrawerOpen}
+          onOpenChange={(open) => !open && closeArmyCreationDrawer()}
+          structureId={armyCreationDrawerData.structureId}
+          direction={armyCreationDrawerData.direction || undefined}
+          isExplorer={armyCreationDrawerData.isExplorer}
+          onSuccess={() => closeArmyCreationDrawer()}
         />
       )}
 
