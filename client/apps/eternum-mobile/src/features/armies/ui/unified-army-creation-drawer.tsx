@@ -57,7 +57,7 @@ const DirectionButton = ({
       variant={isSelected ? "default" : isAvailable ? "outline" : "ghost"}
       size="sm"
       onClick={() => {
-        console.log('Direction clicked:', direction, 'isAvailable:', isAvailable);
+        console.log("Direction clicked:", direction, "isAvailable:", isAvailable);
         if (isAvailable) {
           onClick(direction);
         }
@@ -97,9 +97,9 @@ export function UnifiedArmyCreationDrawer({
   const [freeDirections, setFreeDirections] = useState<Direction[]>([]);
   const [isLoadingDirections, setIsLoadingDirections] = useState(false);
   const [selectedDirection, setSelectedDirection] = useState<Direction | null>(direction ?? null);
-  
+
   const handleDirectionChange = (newDirection: Direction) => {
-    console.log('Setting direction:', newDirection, 'type:', typeof newDirection);
+    console.log("Setting direction:", newDirection, "type:", typeof newDirection);
     setSelectedDirection(newDirection);
   };
   const [selectedTroopType, setSelectedTroopType] = useState<TroopType>(TroopType.Crossbowman);
@@ -108,10 +108,12 @@ export function UnifiedArmyCreationDrawer({
   const [guardSlot, setGuardSlot] = useState(0);
   const [armyType, setArmyType] = useState(isExplorer);
 
+  const shouldShowDirectionSelection = armyType && !direction;
+
   // Load available directions for explorer armies
   useEffect(() => {
     const fetchDirections = async () => {
-      if (!armyType) return;
+      if (!shouldShowDirectionSelection) return;
 
       setIsLoadingDirections(true);
       const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(structureId)]));
@@ -138,15 +140,15 @@ export function UnifiedArmyCreationDrawer({
     };
 
     fetchDirections();
-  }, [structureId, armyType, components]);
+  }, [structureId, shouldShowDirectionSelection, components]);
 
-  // Auto-select first available direction
+  // Auto-select first available direction (only if not pre-selected)
   useEffect(() => {
-    if (freeDirections.length > 0 && selectedDirection === null) {
-      console.log('Auto-selecting first direction:', freeDirections[0]);
+    if (shouldShowDirectionSelection && freeDirections.length > 0 && selectedDirection === null) {
+      console.log("Auto-selecting first direction:", freeDirections[0]);
       setSelectedDirection(freeDirections[0]);
     }
-  }, [freeDirections, selectedDirection]);
+  }, [shouldShowDirectionSelection, freeDirections, selectedDirection]);
 
   const getMaxAffordable = () => {
     const resourceId = getTroopResourceId(selectedTroopType, selectedTier);
@@ -214,10 +216,10 @@ export function UnifiedArmyCreationDrawer({
           </DrawerDescription>
         </DrawerHeader>
 
-        <div className="px-4 pb-4 space-y-6 overflow-y-auto flex-1">
+        <div className="px-4 pb-4 space-y-4 overflow-y-auto flex-1">
           {/* Army Type Toggle */}
           <div>
-            <h4 className="text-sm font-semibold mb-3">Army Type</h4>
+            <h4 className="text-lg font-semibold mb-3">Army Type</h4>
             <Tabs
               value={armyType ? "explorer" : "defense"}
               onValueChange={(value) => setArmyType(value === "explorer")}
@@ -238,7 +240,7 @@ export function UnifiedArmyCreationDrawer({
           {/* Defense Slot Selection */}
           {!armyType && (
             <div>
-              <h4 className="text-sm font-semibold mb-3">Defense Slot</h4>
+              <h4 className="text-sm font-medium mb-3">Defense Slot</h4>
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(DEFENSE_NAMES).map(([slotIndex, slotName]) => {
                   const slot = parseInt(slotIndex);
@@ -266,102 +268,111 @@ export function UnifiedArmyCreationDrawer({
             </div>
           )}
 
-          {/* Tier Selection */}
-          <div>
-            <h4 className="text-sm font-semibold mb-3">Select Tier</h4>
-            <Tabs value={selectedTier} onValueChange={(value) => setSelectedTier(value as TroopTier)}>
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value={TroopTier.T1}>Tier 1</TabsTrigger>
-                <TabsTrigger value={TroopTier.T2}>Tier 2</TabsTrigger>
-                <TabsTrigger value={TroopTier.T3}>Tier 3</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-
-          {/* Troop Type Selection */}
-          <div>
-            <h4 className="text-sm font-semibold mb-3">Select Troop Type</h4>
-            <div className="space-y-3">
-              {troops.map((troop) => {
-                const balance = getTroopBalance(troop.troopType, selectedTier);
-                const isSelected = selectedTroopType === troop.troopType;
-                const troopResourceId = getTroopResourceId(troop.troopType, selectedTier);
-
-                return (
-                  <div
-                    key={troop.troopType}
-                    className={cn(
-                      "border rounded-lg p-4 transition-all cursor-pointer",
-                      isSelected ? "border-blue-500 bg-blue-500/10" : "border-border hover:border-blue-500/50",
-                    )}
-                    onClick={() => setSelectedTroopType(troop.troopType)}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <h5 className="font-semibold">{getTroopName(troop.troopType, selectedTier)}</h5>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <ResourceAmount
-                        resourceId={troopResourceId}
-                        amount={divideByPrecision(balance)}
-                        size="sm"
-                        showName={true}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Troop Count */}
-          <div>
-            <h4 className="text-sm font-semibold mb-3">Troop Count</h4>
-            <div className="flex gap-2 mb-3">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1"
-                onClick={() => incrementTroopCount(100)}
-                disabled={troopCount >= maxAffordable}
-              >
-                +100
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1"
-                onClick={() => incrementTroopCount(500)}
-                disabled={troopCount >= maxAffordable}
-              >
-                +500
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1"
-                onClick={setMaxTroopCount}
-                disabled={troopCount >= maxAffordable}
-              >
-                MAX
-              </Button>
-            </div>
-
-            <NumericInput
-              value={troopCount}
-              onChange={setTroopCount}
-              max={maxAffordable}
-              label="Enter troop count"
-              description={`Max: ${maxAffordable.toLocaleString()}`}
-            />
-          </div>
-
-          {/* Direction Selection (for explorers only) */}
-          {armyType && (
+          {/* Configuration Section */}
+          <div className="space-y-4">
+            {/* Tier Selection */}
             <div>
-              <h4 className="text-sm font-semibold mb-3">Spawn Direction</h4>
+              <h4 className="text-sm font-medium mb-2">Tier</h4>
+              <Tabs value={selectedTier} onValueChange={(value) => setSelectedTier(value as TroopTier)}>
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value={TroopTier.T1}>T1</TabsTrigger>
+                  <TabsTrigger value={TroopTier.T2}>T2</TabsTrigger>
+                  <TabsTrigger value={TroopTier.T3}>T3</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+
+            {/* Troop Type Selection with embedded controls */}
+            <div>
+              <h4 className="text-lg font-semibold mb-3">Select Troops</h4>
+              <div className="space-y-3">
+                {troops.map((troop) => {
+                  const balance = getTroopBalance(troop.troopType, selectedTier);
+                  const isSelected = selectedTroopType === troop.troopType;
+                  const troopResourceId = getTroopResourceId(troop.troopType, selectedTier);
+
+                  return (
+                    <div
+                      key={troop.troopType}
+                      className={cn(
+                        "border rounded-lg p-4 transition-all cursor-pointer",
+                        isSelected ? "border-blue-500 bg-blue-500/10" : "border-border hover:border-blue-500/50",
+                      )}
+                      onClick={() => setSelectedTroopType(troop.troopType)}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <h5 className="font-semibold">{getTroopName(troop.troopType, selectedTier)}</h5>
+                        <ResourceAmount
+                          resourceId={troopResourceId}
+                          amount={divideByPrecision(balance)}
+                          size="lg"
+                          showName={false}
+                        />
+                      </div>
+
+                      {isSelected && (
+                        <div className="space-y-3 pt-3 border-t border-border/50">
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                incrementTroopCount(100);
+                              }}
+                              disabled={troopCount >= maxAffordable}
+                            >
+                              +100
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                incrementTroopCount(500);
+                              }}
+                              disabled={troopCount >= maxAffordable}
+                            >
+                              +500
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMaxTroopCount();
+                              }}
+                              disabled={troopCount >= maxAffordable}
+                            >
+                              MAX
+                            </Button>
+                          </div>
+
+                          <NumericInput
+                            value={troopCount}
+                            onChange={setTroopCount}
+                            max={maxAffordable}
+                            label="Troop count"
+                            description={`Available: ${maxAffordable.toLocaleString()}`}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Direction Selection (only if not pre-selected) */}
+          {shouldShowDirectionSelection && (
+            <div>
+              <h4 className="text-sm font-medium mb-3">Spawn Direction</h4>
               {isLoadingDirections ? (
-                <div className="text-center py-4">Loading directions...</div>
+                <div className="text-center py-4 text-muted-foreground">Loading directions...</div>
               ) : freeDirections.length > 0 ? (
                 <div className="grid grid-cols-3 gap-2 max-w-xs mx-auto">
                   <DirectionButton
