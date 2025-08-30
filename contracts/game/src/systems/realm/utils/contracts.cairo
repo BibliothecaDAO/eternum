@@ -5,7 +5,10 @@ use starknet::ContractAddress;
 
 #[starknet::interface]
 pub trait IERC20<TState> {
+    fn balance_of(self: @TState, owner: ContractAddress) -> u256;
+    fn decimals(self: @TState) -> u8;
     fn approve(ref self: TState, spender: ContractAddress, amount: u256) -> bool;
+    fn transfer(ref self: TState, to: ContractAddress, amount: u256) -> bool;
     fn transfer_from(ref self: TState, from: ContractAddress, to: ContractAddress, amount: u256) -> bool;
 }
 

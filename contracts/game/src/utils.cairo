@@ -1,5 +1,6 @@
 pub mod achievements;
 pub mod cartridge;
+pub mod fixed_constants;
 pub mod map;
 pub mod math;
 pub mod number;

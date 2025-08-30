@@ -175,6 +175,15 @@ pub impl SeasonConfigImpl of SeasonConfigTrait {
             );
         }
     }
+
+    fn assert_game_ended_and_points_registration_closed(self: SeasonConfig) {
+        self.assert_started_main();
+        assert!(self.has_ended(), "Season is not over");
+
+        let now = starknet::get_block_timestamp();
+        assert!(now > self.end_at + self.registration_grace_seconds.into(), "The registration grace period is over");
+    }
+
     fn end_season(ref world: WorldStorage) {
         let season_config_selector = selector!("season_config");
         let mut season_config: SeasonConfig = WorldConfigUtilImpl::get_member(world, season_config_selector);
