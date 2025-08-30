@@ -9,7 +9,7 @@ sierra-replace-ids = true
 
 [dependencies]
 starknet = "2.10.1"
-dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.6.0-alpha.2" }
+dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.7.0-alpha.1" }
 alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "162bed1" }
 alexandria_data_structures = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "162bed1" }
 achievement = { git = "https://github.com/cartridge-gg/arcade", rev = "bf2f7ac" }
@@ -17,7 +17,7 @@ cubit = { git = "https://github.com/edisontim/cubit.git", branch = "feat/cairo-2
 tournaments = { git = "https://github.com/credence0x/tournaments.git", rev = "50157ca" }
 
 [dev-dependencies]
-dojo_cairo_test = { git = "https://github.com/dojoengine/dojo.git", tag = "v1.6.0-alpha.2" }
+dojo_cairo_test = { git = "https://github.com/dojoengine/dojo.git", tag = "v1.7.0-alpha.1" }
 openzeppelin_token = { git = "https://github.com/openzeppelin/cairo-contracts", tag = "v1.0.0" }
 openzeppelin = { git = "https://github.com/openzeppelin/cairo-contracts", tag = "v1.0.0" }
 
