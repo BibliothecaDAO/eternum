@@ -54,7 +54,7 @@ jobs:
       - name: 🔧 Setup Scarb
         uses: software-mansion/setup-scarb@v1
         with:
-          scarb-version: "2.11.4"
+          scarb-version: "nightly-2025-05-08"
 
       - name: 📥 Download Dojo Release
         run: |
