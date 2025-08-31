@@ -6,9 +6,55 @@ import { DamageCalculation } from "@/components/DamageCalculation";
 
 Damage is defined as the number of casualties dealt by one army against the other in an instance of combat. When combat
 is initiated (i.e. one army attacks another), damage for both the attacking and defending army is calculated based on
-the number of troops, troop tier, stamina, and biome bonuses. Damage is then simultaneously inflicted by both sides.
-Battles can last multiple rounds (requiring multiple combat instances) depending on the relative strength and number of
-troops involved. Armies with higher-tier troops deal significantly more damage. However, careful management of troop
-numbers, stamina, and biome positioning can enable lower-tier armies to overcome stronger opponents.
+a damage formula that considers troop numbers, troop tier, biome effects, stamina penalties, and battle timer
+penalties.
+
+## Combat Process
+
+When an army attacks another from an adjacent tile, the following sequence occurs:
+
+1. **Stamina Assessment**: The attacker must have sufficient stamina to engage in combat, the defender must have enough 
+to avoid a low-stamina damage penalty
+2. **Damage Calculation**: Damage is calculated for both combatants using the damage formula
+3. **Casualty Application**: Damage is applied simultaneously to both armies
+4. **Battle Timers**: Each combatant receives a battle timer, which prevents them from initiating new attacks while active.
+5. **Refunds**: Damage-ratio refunds are calculated and applied to battle timers and stamina
+
+## Damage Calculation
 
 <DamageCalculation />
+
+## Battle Timers
+
+Immediately after damage is applied, each combatant receives a **battle timer** that prevents it from attacking an army 
+or Realm until the timer expires. Armies are free to take any other action while the timer is active. The base duration 
+is the length of a single Phase (one minute in Blitz). Timers for different armies are maintained independently of the world clock.
+
+If an army that currently has a battle timer is attacked by another army, it will deal 15% less damage during that combat round. 
+This reduction is represented by the battle timer penalty modifier (T) in the damage equation and reflects the army's reduced combat 
+readiness while recovering from previous engagements.
+
+## Damage-Ratio Refunds
+
+The combat system includes a refund mechanism designed to prevent smaller, weaker armies from indefinitely stalling 
+larger forces. When combat is significantly imbalanced, the dominant army receives:
+
+- **Stamina Refunds**: Based on the damage ratio between armies
+- **Battle Timer Reduction**: Shorter cooldowns for overwhelming victories
+
+### Refund Calculation
+
+The system calculates a **Refund Factor** based on the damage ratio between armies **x** and **y**:
+
+- **Damage Ratio (R<sub>x</sub>)**: **x**'s damage ÷ **y**'s damage
+- **Refund Factor f(R<sub>x</sub>)**: determines the amount of stamina refunded and battle timer reduction
+
+- **If R<sub>x</sub> ≥ 10**: f(R<sub>x</sub>) = 1 (maximum refund)
+- **If R<sub>x</sub> ≤ 2.5**: f(R<sub>x</sub>) = 0 (no refund)
+- **If 2.5 < R<sub>x</sub> < 10**: f(R<sub>x</sub>) = (R<sub>x</sub> - 2.5) ÷ (10 - 2.5)
+
+For army **x**:
+- **Refunded Stamina**: (combat cost) × f(R<sub>x</sub>), rounded up
+- **Battle Timer Length**: (base timer) × [1 - f(R<sub>x</sub>)]
+
+The same calculations are applied for army **y**

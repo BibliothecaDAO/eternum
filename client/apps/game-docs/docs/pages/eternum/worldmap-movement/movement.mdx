@@ -12,7 +12,7 @@ stamina, a critical resource Lords must carefully manage.
 
 Stamina is expended whenever an army moves between hexes, explores previously unrevealed areas, or launches an attack
 against enemy forces. Each of these actions has a specific stamina cost, making strategic planning essential to
-maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +20 stamina per Eternum Day. Each
+maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +2 stamina per Phase (10 minutes), totaling +12 stamina per Eternum Day. Each
 troop type possesses different maximum stamina capacities, outlined in the table below:
 
 <TroopMovementTable />
@@ -63,9 +63,11 @@ armies are well-prepared and capable of defending themselves in unexpected comba
 Lords may transfer troops from one army to another, provided that they are on adjacent hexes, the same troop type, and
 the same tier. To transfer troops from one army to another, or to a structure, the player first needs to select its army
 on the worldmap using left-click, then right-click on the target and select the Transfer -> Transfer Troops tab.
-Transferring troops from one army to another with lower stamina makes no change to the stamina of either army.
-Transferring from an army with lower stamina to an army with higher stamina will reduce the higher-stamina army to equal
-that of the lower stamina army.
+Troops can be transferred between armies (and Realm defense slots) at any time, and transfers are not impacted by battle 
+timers. However, in all instances of a troop transfer, the army that has received troops:
+
+- adopts the **lower** of the two armies' stamina values, and
+- adopts the **higher** of the two armies' battle timers.
 
 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
   <img src="/gifs/transfer-troops.gif" alt="Transfer Troops" />

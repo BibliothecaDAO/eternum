@@ -19,7 +19,7 @@ standard and simple building modes._
 ### Standard Mode
 
 This is the classic building experience. Construction requires a combination of labor and a particular set of resources
-as building materials. Standard mode is more complex and involves a greater number of materials in storage, however it
+as building materials. Standard mode is more complex and involves a greater number of materials, however it
 is far more efficient overall.
 
 ### Simple Mode
@@ -208,8 +208,8 @@ have the same requirements in simple and standard mode.
 
 ### Economic Buildings
 
-These buildings define the utility of a Realm or Village, including food production, donkey production, population
-capacity, and storage capacity. All of these buildings can be constructed in either standard or simple mode, but have
+These buildings define the utility of a Realm or Village, including food production, donkey production, and population
+capacity. All of these buildings can be constructed in either standard or simple mode, but have
 varying costs and population requirements:
 
 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
@@ -240,20 +240,7 @@ varying costs and population requirements:
   ]}
 />
 
-<BlitzBuildingCard
-  title="Storehouse"
-  image="/images/buildings/construction/storehouse.png"
-  buildingType={2}
-  description={["Increases storage capacity by 20,000 kg for each material"]}
-  simpleCosts={[
-    { resource: 23, amount: 480 }, // Labor
-  ]}
-  standardCosts={[
-    { resource: 23, amount: 60 }, // Labor
-    { resource: 3, amount: 90 }, // Wood
-    { resource: 4, amount: 60 }, // Copper
-  ]}
-/>
+
 
 <BlitzBuildingCard
   title="Market"
