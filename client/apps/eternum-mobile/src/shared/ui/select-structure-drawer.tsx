@@ -1,6 +1,6 @@
 import { Button } from "@/shared/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/shared/ui/drawer";
-import { getStructureName } from "@bibliothecadao/eternum";
+import { getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 import { RealmInfo } from "@bibliothecadao/types";
 import { ReactNode, useState } from "react";
 
@@ -24,6 +24,8 @@ export const SelectStructureDrawer = ({
     setOpen(false);
   };
 
+  const isBlitz = getIsBlitz();
+
   return (
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>{children}</DrawerTrigger>
@@ -39,7 +41,7 @@ export const SelectStructureDrawer = ({
               className="w-full justify-start"
               onClick={() => handleSelect(structure.entityId)}
             >
-              {getStructureName(structure.structure).name}
+              {getStructureName(structure.structure, isBlitz).name}
             </Button>
           ))}
         </div>

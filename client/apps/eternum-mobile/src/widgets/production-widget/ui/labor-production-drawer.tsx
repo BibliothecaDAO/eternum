@@ -5,29 +5,52 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/shared/ui/dr
 import { NumericInput } from "@/shared/ui/numeric-input";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { ResourceSelectDrawer } from "@/shared/ui/resource-select-drawer";
-import { configManager, divideByPrecision, formatTime, multiplyByPrecision } from "@bibliothecadao/eternum";
-import { findResourceById, RealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import {
+  configManager,
+  divideByPrecision,
+  formatTime,
+  getIsBlitz,
+  multiplyByPrecision,
+  TileManager,
+} from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
-import { ChevronDownIcon, Loader2Icon, XIcon } from "lucide-react";
-import { useMemo, useState } from "react";
+import { findResourceById, RealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { ChevronDownIcon, Loader2Icon, PauseIcon, PlayIcon, XIcon } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface LaborDrawerProps {
   realm: RealmInfo;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  building?: {
+    innerCol: number;
+    innerRow: number;
+    paused: boolean;
+  };
 }
 
-export const LaborProductionDrawer = ({ realm, open, onOpenChange }: LaborDrawerProps) => {
+export const LaborProductionDrawer = ({ realm, open, onOpenChange, building }: LaborDrawerProps) => {
   const {
     setup: {
       account: { account },
       systemCalls: { burn_resource_for_labor_production },
+      components,
+      systemCalls,
     },
   } = useDojo();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isPauseLoading, setIsPauseLoading] = useState(false);
+  const [isPaused, setIsPaused] = useState<boolean>(false);
   const [selectedResources, setSelectedResources] = useState<{ id: number; amount: number }[]>([]);
   const resourceManager = useResourceManager(realm.entityId);
+  const isBlitz = getIsBlitz();
+
+  useEffect(() => {
+    if (building) {
+      setIsPaused(building.paused);
+    }
+  }, [building?.paused]);
 
   const handleProduce = async () => {
     setIsLoading(true);
@@ -47,6 +70,25 @@ export const LaborProductionDrawer = ({ realm, open, onOpenChange }: LaborDrawer
       setIsLoading(false);
     }
   };
+
+  const handlePauseResumeProduction = useCallback(async () => {
+    if (!building) return;
+
+    setIsPauseLoading(true);
+    const tileManager = new TileManager(components, systemCalls, {
+      col: realm.position?.x || 0,
+      row: realm.position?.y || 0,
+    });
+
+    try {
+      const action = !isPaused ? tileManager.pauseProduction : tileManager.resumeProduction;
+      await action(account, realm.entityId, building.innerCol, building.innerRow);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsPauseLoading(false);
+    }
+  }, [components, systemCalls, realm.position, account, realm.entityId, building, isPaused]);
 
   const laborConfig = useMemo(() => {
     return selectedResources.map((r) => configManager.getLaborConfig(r.id));
@@ -132,6 +174,25 @@ export const LaborProductionDrawer = ({ realm, open, onOpenChange }: LaborDrawer
     setSelectedResources(newResources);
   };
 
+  const renderProductionRate = () => {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between p-4 bg-white/5 rounded-md">
+          <span className="text-sm text-muted-foreground">Resource Type:</span>
+          <div className="flex items-center gap-2">
+            <ResourceIcon resourceId={ResourcesIds.Labor} size={20} showTooltip />
+            <span className="font-medium">Labor</span>
+          </div>
+        </div>
+        <div className="flex items-center justify-center p-4 bg-primary/10 rounded-md">
+          <span className="text-sm text-center text-muted-foreground">
+            Labor produces automatically in Blitz mode. Use the controls below to pause/resume or destroy the building.
+          </span>
+        </div>
+      </div>
+    );
+  };
+
   const renderResourceRow = (resource: { id: number; amount: number }, index: number) => {
     const resourceInfo = findResourceById(resource.id);
     const balance = divideByPrecision(
@@ -185,48 +246,94 @@ export const LaborProductionDrawer = ({ realm, open, onOpenChange }: LaborDrawer
           <DrawerTitle className="text-3xl font-bokor">Manage Production</DrawerTitle>
         </DrawerHeader>
         <div className="p-4">
-          <div className="space-y-4">
-            {selectedResources.map((resource, index) => renderResourceRow(resource, index))}
-            <Button onClick={addResource} variant="outline" className="w-full">
-              Add Resource
-            </Button>
-          </div>
+          {isBlitz ? (
+            renderProductionRate()
+          ) : (
+            <div className="space-y-4">
+              {selectedResources.map((resource, index) => renderResourceRow(resource, index))}
+              <Button onClick={addResource} variant="outline" className="w-full">
+                Add Resource
+              </Button>
+            </div>
+          )}
 
-          <Card className="mt-6">
-            <CardContent className="p-4 space-y-4">
-              <div className="text-sm space-y-2">
-                <div>Production Details:</div>
-                <div className="flex items-center gap-2">
-                  <ResourceIcon resourceId={ResourcesIds.Labor} size={16} />
-                  <span>Total Labor Generated: {laborAmount}</span>
+          {!isBlitz && (
+            <Card className="mt-6">
+              <CardContent className="p-4 space-y-4">
+                <div className="text-sm space-y-2">
+                  <div>Production Details:</div>
+                  <div className="flex items-center gap-2">
+                    <ResourceIcon resourceId={ResourcesIds.Labor} size={16} />
+                    <span>Total Labor Generated: {laborAmount}</span>
+                  </div>
+                  <div>Time Required: {formatTime(ticks * (realm.category === StructureType.Village ? 2 : 1))}</div>
                 </div>
-                <div>Time Required: {formatTime(ticks * (realm.category === StructureType.Village ? 2 : 1))}</div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
-          <div className="mt-6">
-            <Button
-              className="w-full"
-              onClick={handleProduce}
-              disabled={
-                selectedResources.length === 0 ||
-                selectedResources.some((r) => r.amount <= 0) ||
-                hasInsufficientResources ||
-                isLoading
-              }
-            >
-              {isLoading ? (
-                <>
-                  <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                  Starting Production...
-                </>
-              ) : hasInsufficientResources ? (
-                "Insufficient Resources"
-              ) : (
-                "Start Production"
-              )}
-            </Button>
+          <div className="mt-6 space-y-3">
+            {isBlitz ? (
+              building && (
+                <Button
+                  variant="outline"
+                  onClick={handlePauseResumeProduction}
+                  disabled={isPauseLoading}
+                  className="w-full"
+                >
+                  {isPauseLoading ? (
+                    <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                  ) : isPaused ? (
+                    <PlayIcon className="mr-2 h-4 w-4" />
+                  ) : (
+                    <PauseIcon className="mr-2 h-4 w-4" />
+                  )}
+                  {isPauseLoading ? "Loading..." : isPaused ? "Resume" : "Pause"}
+                </Button>
+              )
+            ) : (
+              <>
+                <Button
+                  className="w-full"
+                  onClick={handleProduce}
+                  disabled={
+                    selectedResources.length === 0 ||
+                    selectedResources.some((r) => r.amount <= 0) ||
+                    hasInsufficientResources ||
+                    isLoading
+                  }
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                      Starting Production...
+                    </>
+                  ) : hasInsufficientResources ? (
+                    "Insufficient Resources"
+                  ) : (
+                    "Start Production"
+                  )}
+                </Button>
+
+                {building && (
+                  <Button
+                    variant="outline"
+                    onClick={handlePauseResumeProduction}
+                    disabled={isPauseLoading}
+                    className="w-full"
+                  >
+                    {isPauseLoading ? (
+                      <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                    ) : isPaused ? (
+                      <PlayIcon className="mr-2 h-4 w-4" />
+                    ) : (
+                      <PauseIcon className="mr-2 h-4 w-4" />
+                    )}
+                    {isPauseLoading ? "Loading..." : isPaused ? "Resume" : "Pause"}
+                  </Button>
+                )}
+              </>
+            )}
           </div>
         </div>
       </DrawerContent>

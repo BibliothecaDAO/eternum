@@ -14,8 +14,8 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { getBuildingFromResource, RealmInfo, resources, ResourcesIds, StructureType } from "@bibliothecadao/types";
-import { Loader2Icon } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Loader2Icon, PauseIcon, PlayIcon, Trash2Icon } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { LaborBuilding } from "../model/types";
 
 interface ResourcesProductionDrawerProps {
@@ -47,11 +47,20 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
   const [outputAmount, setOutputAmount] = useState(0);
   const [inputAmounts, setInputAmounts] = useState<ResourceAmounts>({});
   const [laborInputAmounts, setLaborInputAmounts] = useState<ResourceAmounts>({});
+  const [showDestroyConfirm, setShowDestroyConfirm] = useState(false);
+  const [isPaused, setIsPaused] = useState<boolean>(false);
 
   const resourceManager = useResourceManager(realm.entityId);
   const outputResource = resources.find((r) => r.id === building.produced.resource);
   const laborConfig = configManager.getLaborConfig(building.produced.resource);
   const isActive = resourceManager.isActive(building.produced.resource);
+
+  const shouldHideProductionForm =
+    building.produced.resource === ResourcesIds.Wheat || building.produced.resource === ResourcesIds.Fish;
+
+  useEffect(() => {
+    setIsPaused(building.paused);
+  }, [building.paused]);
 
   if (!outputResource) return null;
 
@@ -119,7 +128,7 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
     }
   };
 
-  const handlePauseResumeProduction = async () => {
+  const handlePauseResumeProduction = useCallback(async () => {
     setIsPauseLoading(true);
     const tileManager = new TileManager(components, systemCalls, {
       col: realm.position?.x || 0,
@@ -127,17 +136,53 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
     });
 
     try {
-      if (isActive && !building.paused) {
-        await tileManager.pauseProduction(account, realm.entityId, building.innerCol, building.innerRow);
-      } else {
-        await tileManager.resumeProduction(account, realm.entityId, building.innerCol, building.innerRow);
-      }
+      const action = !isPaused ? tileManager.pauseProduction : tileManager.resumeProduction;
+      await action(account, realm.entityId, building.innerCol, building.innerRow);
     } catch (error) {
       console.error(error);
     } finally {
       setIsPauseLoading(false);
     }
-  };
+  }, [
+    components,
+    systemCalls,
+    realm.position,
+    account,
+    realm.entityId,
+    building.innerCol,
+    building.innerRow,
+    isPaused,
+  ]);
+
+  const handleDestroyBuilding = useCallback(async () => {
+    if (!showDestroyConfirm) {
+      setShowDestroyConfirm(true);
+      return;
+    }
+
+    const tileManager = new TileManager(components, systemCalls, {
+      col: realm.position?.x || 0,
+      row: realm.position?.y || 0,
+    });
+
+    try {
+      await tileManager.destroyBuilding(account, realm.entityId, building.innerCol, building.innerRow);
+      setShowDestroyConfirm(false);
+      onOpenChange(false);
+    } catch (error) {
+      console.error(error);
+    }
+  }, [
+    components,
+    systemCalls,
+    realm.position,
+    account,
+    realm.entityId,
+    building.innerCol,
+    building.innerRow,
+    showDestroyConfirm,
+    onOpenChange,
+  ]);
 
   const handleInputChange = (resourceId: ResourcesIds, value: number, isLabor: boolean = false) => {
     if (isLabor) {
@@ -289,7 +334,31 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
     );
   };
 
+  const renderProductionRate = () => {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between p-4 bg-white/5 rounded-md">
+          <span className="text-sm text-muted-foreground">Resource Type:</span>
+          <div className="flex items-center gap-2">
+            <ResourceIcon resourceId={building.produced.resource} size={20} showTooltip />
+            <span className="font-medium">{outputResource?.trait}</span>
+          </div>
+        </div>
+        <div className="flex items-center justify-center p-4 bg-primary/10 rounded-md">
+          <span className="text-sm text-center text-muted-foreground">
+            This resource produces automatically from farms and fishing villages. Use the controls below to pause/resume
+            or destroy the building.
+          </span>
+        </div>
+      </div>
+    );
+  };
+
   const renderContent = () => {
+    if (shouldHideProductionForm) {
+      return renderProductionRate();
+    }
+
     const rawInputs = configManager.complexSystemResourceInputs[building.produced.resource];
     const laborInputs = laborConfig?.inputResources || [];
 
@@ -362,99 +431,152 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
         <div className="p-4">
           {renderContent()}
 
-          <Card className="mt-6">
-            <CardContent className="p-4 space-y-4">
-              <div className="grid grid-cols-[1fr_auto] gap-4 items-center">
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <ResourceIcon resourceId={outputResource.id} size={24} showTooltip />
-                    <span>{outputResource.trait}</span>
+          {!shouldHideProductionForm && (
+            <Card className="mt-6">
+              <CardContent className="p-4 space-y-4">
+                <div className="grid grid-cols-[1fr_auto] gap-4 items-center">
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <ResourceIcon resourceId={outputResource.id} size={24} showTooltip />
+                      <span>{outputResource.trait}</span>
+                    </div>
                   </div>
+                  <NumericInput
+                    value={outputAmount}
+                    onChange={handleOutputChange}
+                    className="w-24"
+                    label={`Enter Amount`}
+                    description={outputResource.trait}
+                  />
                 </div>
-                <NumericInput
-                  value={outputAmount}
-                  onChange={handleOutputChange}
-                  className="w-24"
-                  label={`Enter Amount`}
-                  description={outputResource.trait}
-                />
-              </div>
 
-              <div className="flex items-center gap-2 justify-center p-2 bg-white/5 rounded-md">
-                <span className="text-gold/80">Production Time:</span>
-                <span className="font-medium">
-                  {formatTime(Math.floor((ticks / buildingCount) * (isVillage ? 2 : 1)))}
-                </span>
-              </div>
-
-              {isActive && timeLeft > 0 && (
-                <div className="flex items-center gap-2 justify-center p-2 bg-primary/5 rounded-md">
-                  <span className="text-primary/80">Time Left:</span>
-                  <span className="font-medium">{formatTime(timeLeft)}</span>
+                <div className="flex items-center gap-2 justify-center p-2 bg-white/5 rounded-md">
+                  <span className="text-gold/80">Production Time:</span>
+                  <span className="font-medium">
+                    {formatTime(Math.floor((ticks / buildingCount) * (isVillage ? 2 : 1)))}
+                  </span>
                 </div>
-              )}
 
-              {building.paused && (
-                <div className="flex items-center gap-2 justify-center p-2 bg-destructive/50 rounded-md">
-                  <span className="text-white/50">Production Paused</span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                {isActive && timeLeft > 0 && (
+                  <div className="flex items-center gap-2 justify-center p-2 bg-primary/5 rounded-md">
+                    <span className="text-primary/80">Time Left:</span>
+                    <span className="font-medium">{formatTime(timeLeft)}</span>
+                  </div>
+                )}
+
+                {isPaused && (
+                  <div className="flex items-center gap-2 justify-center p-2 bg-destructive/50 rounded-md">
+                    <span className="text-white/50">Production Paused</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           <div className="mt-6 flex gap-2">
-            {(isActive && timeLeft > 0) || building.paused || isPauseLoading ? (
+            {shouldHideProductionForm ? (
               <>
                 <Button
-                  className="flex-1"
-                  onClick={activeTab === "raw" ? handleRawResourcesProduce : handleLaborResourcesProduce}
-                  disabled={isExtendLoading || isPauseLoading}
-                >
-                  {isExtendLoading ? (
-                    <>
-                      <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                      Extending...
-                    </>
-                  ) : (
-                    "Extend"
-                  )}
-                </Button>
-                <Button
-                  variant="destructive"
+                  variant="outline"
                   onClick={handlePauseResumeProduction}
-                  disabled={isExtendLoading || isPauseLoading}
+                  disabled={isPauseLoading}
+                  className="flex-1"
                 >
                   {isPauseLoading ? (
-                    <>
-                      <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                      {"Loading..."}
-                    </>
-                  ) : isActive && !building.paused ? (
-                    "Pause"
+                    <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                  ) : isPaused ? (
+                    <PlayIcon className="mr-2 h-4 w-4" />
                   ) : (
-                    "Resume"
+                    <PauseIcon className="mr-2 h-4 w-4" />
                   )}
+                  {isPauseLoading ? "Loading..." : isPaused ? "Resume" : "Pause"}
+                </Button>
+                <Button variant="destructive" onClick={handleDestroyBuilding} disabled={isPauseLoading}>
+                  {showDestroyConfirm ? "Confirm Destroy" : <Trash2Icon className="h-4 w-4" />}
                 </Button>
               </>
             ) : (
-              <Button
-                className="w-full"
-                onClick={activeTab === "raw" ? handleRawResourcesProduce : handleLaborResourcesProduce}
-                disabled={isLoading || outputAmount <= 0 || !hasBalanceRaw || !hasBalanceLabor}
-              >
-                {isLoading ? (
+              <>
+                {(isActive && timeLeft > 0) || isPaused || isPauseLoading ? (
                   <>
-                    <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                    Starting Production...
+                    <Button
+                      className="flex-1"
+                      onClick={activeTab === "raw" ? handleRawResourcesProduce : handleLaborResourcesProduce}
+                      disabled={isExtendLoading || isPauseLoading}
+                    >
+                      {isExtendLoading ? (
+                        <>
+                          <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                          Extending...
+                        </>
+                      ) : (
+                        "Extend"
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handlePauseResumeProduction}
+                      disabled={isExtendLoading || isPauseLoading}
+                    >
+                      {isPauseLoading ? (
+                        <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                      ) : isPaused ? (
+                        <PlayIcon className="h-4 w-4" />
+                      ) : (
+                        <PauseIcon className="h-4 w-4" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={handleDestroyBuilding}
+                      disabled={isExtendLoading || isPauseLoading}
+                    >
+                      {showDestroyConfirm ? "Confirm" : <Trash2Icon className="h-4 w-4" />}
+                    </Button>
                   </>
-                ) : !hasBalanceRaw ? (
-                  "Insufficient Raw Resources"
-                ) : !hasBalanceLabor ? (
-                  "Insufficient Labor Resources"
                 ) : (
-                  "Start Production"
+                  <>
+                    <Button
+                      className="flex-1"
+                      onClick={activeTab === "raw" ? handleRawResourcesProduce : handleLaborResourcesProduce}
+                      disabled={isLoading || outputAmount <= 0 || !hasBalanceRaw || !hasBalanceLabor}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                          Starting Production...
+                        </>
+                      ) : !hasBalanceRaw ? (
+                        "Insufficient Raw Resources"
+                      ) : !hasBalanceLabor ? (
+                        "Insufficient Labor Resources"
+                      ) : (
+                        "Start Production"
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handlePauseResumeProduction}
+                      disabled={isLoading || isPauseLoading}
+                    >
+                      {isPauseLoading ? (
+                        <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                      ) : isPaused ? (
+                        <PlayIcon className="h-4 w-4" />
+                      ) : (
+                        <PauseIcon className="h-4 w-4" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={handleDestroyBuilding}
+                      disabled={isLoading || isPauseLoading}
+                    >
+                      {showDestroyConfirm ? "Confirm" : <Trash2Icon className="h-4 w-4" />}
+                    </Button>
+                  </>
                 )}
-              </Button>
+              </>
             )}
           </div>
         </div>

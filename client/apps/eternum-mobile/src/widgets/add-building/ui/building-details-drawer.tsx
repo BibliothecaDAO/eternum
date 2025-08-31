@@ -1,5 +1,7 @@
 import { getBlockTimestamp } from "@/shared/hooks/use-block-timestamp";
-import { currencyIntlFormat, generateHexPositions } from "@/shared/lib/utils";
+import { generateHexPositions } from "@/shared/lib/three/utils/utils";
+import { currencyIntlFormat } from "@/shared/lib/utils";
+
 import { useStore } from "@/shared/store";
 import { Button } from "@/shared/ui/button";
 import { Drawer, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle } from "@/shared/ui/drawer";
@@ -28,6 +30,7 @@ import React, { useCallback, useMemo, useState } from "react";
 enum BuildingCategory {
   RESOURCE = "resource",
   ECONOMIC = "economic",
+  MILITARY = "military",
 }
 
 // Building interface
@@ -41,6 +44,14 @@ interface Building {
   canBuild: boolean;
   hasBalance: boolean;
   hasEnoughPopulation: boolean;
+  militaryType?: string;
+  tier?: number;
+  missingResources?: Array<{
+    resourceId: number;
+    needed: number;
+    available: number;
+    missing: number;
+  }>;
 }
 
 interface BuildingDetailsDrawerProps {

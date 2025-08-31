@@ -89,6 +89,8 @@ const DojoContextProvider = ({
   masterAccount: Account;
   controllerAccount: AccountInterface | null;
 }) => {
+  // const setAddressName = useStore((state) => state.setAddressName);
+
   const currentValue = useContext(DojoContext);
   if (currentValue) throw new Error("DojoProvider can only be used once");
 

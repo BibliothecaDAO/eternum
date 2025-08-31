@@ -1,8 +1,11 @@
 import { ChatPage } from "@/pages/chat";
+import { HomePage } from "@/pages/home";
 import { LoginPage } from "@/pages/login";
+import { LordpediaPage } from "@/pages/lordpedia";
 import { RealmPage } from "@/pages/realm";
 import { SettingsPage } from "@/pages/settings";
 import { TradePage } from "@/pages/trade";
+import { WorldmapPage } from "@/pages/worldmap";
 import { ROUTES } from "@/shared/consts/routes";
 import { useAuth } from "@/shared/hooks/use-auth";
 import { Outlet, createRootRoute, createRoute, createRouter, redirect } from "@tanstack/react-router";
@@ -34,9 +37,21 @@ const indexRoute = createRoute({
   beforeLoad: async () => {
     const { isAuthenticated } = useAuth.getState();
     if (isAuthenticated) {
-      throw redirect({ to: ROUTES.REALM });
+      throw redirect({ to: ROUTES.HOME });
     }
   },
+});
+
+const homeRoute = createRoute({
+  getParentRoute: () => protectedLayoutRoute,
+  path: ROUTES.HOME,
+  component: HomePage,
+});
+
+const lordpediaRoute = createRoute({
+  getParentRoute: () => protectedLayoutRoute,
+  path: ROUTES.LORDPEDIA,
+  component: LordpediaPage,
 });
 
 const realmRoute = createRoute({
@@ -67,6 +82,12 @@ const chatRoute = createRoute({
   component: ChatPage,
 });
 
+const worldmapRoute = createRoute({
+  getParentRoute: () => protectedLayoutRoute,
+  path: ROUTES.WORLDMAP,
+  component: WorldmapPage,
+});
+
 // Add catch-all route for 404
 const notFoundRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -79,7 +100,15 @@ const notFoundRoute = createRoute({
 // Create the route tree
 const routeTree = rootRoute.addChildren([
   indexRoute,
-  protectedLayoutRoute.addChildren([realmRoute, settingsRoute, tradeRoute, chatRoute]),
+  protectedLayoutRoute.addChildren([
+    homeRoute,
+    lordpediaRoute,
+    realmRoute,
+    settingsRoute,
+    tradeRoute,
+    chatRoute,
+    worldmapRoute,
+  ]),
   notFoundRoute,
 ]);
 
