@@ -217,16 +217,10 @@ pub trait IQuestConfig<T> {
 #[dojo::contract]
 pub mod config_systems {
     use core::num::traits::zero::Zero;
-
     use dojo::model::ModelStorage;
-    use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcherTrait};
-
-    use s1_eternum::constants::DEFAULT_NS;
-
-    use s1_eternum::constants::{WORLD_CONFIG_ID};
+    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
+    use s1_eternum::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
     use s1_eternum::models::agent::AgentConfig;
-
     use s1_eternum::models::config::{
         AgentControllerConfig, BankConfig, BattleConfig, BlitzHypersSettlementConfigImpl, BlitzRegistrationConfig,
         BlitzSettlementConfigImpl, BuildingCategoryConfig, BuildingConfig, CapacityConfig, HyperstructureConfig,
@@ -239,7 +233,7 @@ pub mod config_systems {
         WonderProductionBonusConfig, WorldConfig, WorldConfigUtilImpl,
     };
     use s1_eternum::models::name::AddressName;
-    use s1_eternum::models::resource::production::building::{BuildingCategory};
+    use s1_eternum::models::resource::production::building::BuildingCategory;
     use s1_eternum::models::resource::resource::{ResourceList, ResourceMinMaxList};
     use s1_eternum::utils::achievements::index::AchievementTrait;
 
@@ -343,7 +337,8 @@ pub mod config_systems {
             assert_caller_is_admin(world);
 
             // assert that name not set
-            let mut address_name: AddressName = world.read_model(starknet::contract_address_const::<0>());
+            let zero_addr: starknet::ContractAddress = Zero::zero();
+            let mut address_name: AddressName = world.read_model(zero_addr);
             address_name.name = name;
             world.write_model(@address_name);
         }
@@ -417,7 +412,7 @@ pub mod config_systems {
                             entity_id: realm_resources_list_id, index: i, resource_type, amount: resource_amount,
                         },
                     );
-            };
+            }
             let realm_starting_resources = StartingResourcesConfig {
                 resources_list_id: realm_resources_list_id,
                 resources_list_count: realm_starting_resources.len().try_into().unwrap(),
@@ -436,7 +431,7 @@ pub mod config_systems {
                             entity_id: village_resources_list_id, index: i, resource_type, amount: resource_amount,
                         },
                     );
-            };
+            }
             let village_starting_resources = StartingResourcesConfig {
                 resources_list_id: village_resources_list_id,
                 resources_list_count: village_starting_resources.len().try_into().unwrap(),
@@ -527,7 +522,7 @@ pub mod config_systems {
                             entity_id: simple_input_list_id, index: i, resource_type, amount: resource_amount,
                         },
                     );
-            };
+            }
 
             // save cost of converting resource into labor
             let complex_input_list_id = world.dispatcher.uuid();
@@ -539,7 +534,7 @@ pub mod config_systems {
                             entity_id: complex_input_list_id, index: i, resource_type, amount: resource_amount,
                         },
                     );
-            };
+            }
             // save production config
             let mut resource_factory_config: ResourceFactoryConfig = Default::default();
             resource_factory_config.resource_type = resource_type;
@@ -599,7 +594,7 @@ pub mod config_systems {
                 assert!(construction_resource.max_amount >= construction_resource.min_amount, "max less than min");
                 construction_resources_ids.append(*construction_resource.resource_type);
                 world.write_model(@(*construction_resource));
-            };
+            }
 
             // save general hyperstructure config
             let hyperstructure_config = HyperstructureConfig { initialize_shards_amount };
@@ -689,7 +684,7 @@ pub mod config_systems {
                     );
 
                 index += 1;
-            };
+            }
 
             // set building cost when using non complex
             let simple_building_cost_id = world.dispatcher.uuid();
@@ -706,7 +701,7 @@ pub mod config_systems {
                         },
                     );
                 index += 1;
-            };
+            }
 
             world
                 .write_model(
@@ -799,7 +794,7 @@ pub mod config_systems {
                     );
 
                 index += 1;
-            };
+            }
 
             world
                 .write_model(
@@ -918,7 +913,7 @@ pub mod config_systems {
                     );
 
                 index += 1;
-            };
+            }
 
             WorldConfigUtilImpl::set_member(
                 ref world,

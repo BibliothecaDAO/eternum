@@ -2,7 +2,7 @@ use core::num::traits::zero::Zero;
 use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
-use s1_eternum::constants::{WORLD_CONFIG_ID};
+use s1_eternum::constants::WORLD_CONFIG_ID;
 use s1_eternum::models::position::{Coord, CoordImpl, Direction};
 use s1_eternum::utils::random::VRFImpl;
 use starknet::ContractAddress;
@@ -55,28 +55,28 @@ pub struct WorldConfig {
     pub victory_points_win_config: VictoryPointsWinConfig,
 }
 
-#[derive(Introspect, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct WonderProductionBonusConfig {
     pub within_tile_distance: u8,
     pub bonus_percent_num: u128,
 }
 
-#[derive(Introspect, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct AgentControllerConfig {
     pub address: ContractAddress,
 }
-#[derive(Introspect, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct VillageTokenConfig {
     pub token_address: ContractAddress,
     pub mint_recipient_address: ContractAddress,
 }
 
-#[derive(Introspect, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct VillageControllerConfig {
     pub addresses: Span<ContractAddress>,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct SeasonConfig {
     pub dev_mode_on: bool,
     pub start_settling_at: u64,
@@ -197,13 +197,13 @@ pub impl WorldConfigUtilImpl of WorldConfigTrait {
 }
 
 
-#[derive(Introspect, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct TradeConfig {
     pub max_count: u8,
 }
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct SeasonAddressesConfig {
     pub season_pass_address: ContractAddress,
     pub realms_address: ContractAddress,
@@ -221,17 +221,17 @@ pub struct HyperstructureConstructConfig {
     pub max_amount: u32,
 }
 
-#[derive(Introspect, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct HyperstructureConfig {
     pub initialize_shards_amount: u128,
 }
 
-#[derive(Introspect, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct HyperstructureCostConfig {
     pub construction_resources_ids: Span<u8>,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct CapacityConfig {
     pub structure_capacity: u128, // grams // deprecated
     pub troop_capacity: u32, // grams
@@ -239,7 +239,7 @@ pub struct CapacityConfig {
     pub storehouse_boost_capacity: u32,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct StructureCapacityConfig {
     pub realm_capacity: u64, // grams
     pub village_capacity: u64, // grams
@@ -249,7 +249,7 @@ pub struct StructureCapacityConfig {
 }
 
 // speed
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct SpeedConfig {
     pub donkey_sec_per_km: u16,
 }
@@ -262,7 +262,7 @@ pub impl SpeedImpl of SpeedTrait {
     }
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct MapConfig {
     pub reward_resource_amount: u16,
     pub shards_mines_win_probability: u16,
@@ -283,20 +283,20 @@ pub struct MapConfig {
     pub relic_chest_relics_per_chest: u8,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct QuestConfig {
     pub quest_discovery_prob: u16,
     pub quest_discovery_fail_prob: u16,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct SettlementConfig {
     pub center: u32,
     pub base_distance: u32,
     pub subsequent_distance: u32,
 }
 
-#[derive(Introspect, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct RealmCountConfig {
     pub count: u16,
 }
@@ -304,7 +304,6 @@ pub struct RealmCountConfig {
 
 #[generate_trait]
 pub impl SettlementConfigImpl of SettlementConfigTrait {
-    #[test]
     fn log_layer_capacity() { // // Get the current realm count
     // let realm_count: u16 =  8000;
     // // Calculate the maximum layer based on realm count
@@ -373,12 +372,9 @@ pub impl SettlementConfigImpl of SettlementConfigTrait {
 
         let mut start_coord: Coord = CoordImpl::center();
         let start_directions: Array<(Direction, Direction)> = array![
-            (Direction::East, Direction::NorthWest),
-            (Direction::East, Direction::SouthWest),
-            (Direction::West, Direction::NorthEast),
-            (Direction::West, Direction::SouthEast),
-            (Direction::SouthEast, Direction::West),
-            (Direction::NorthEast, Direction::West),
+            (Direction::East, Direction::NorthWest), (Direction::East, Direction::SouthWest),
+            (Direction::West, Direction::NorthEast), (Direction::West, Direction::SouthEast),
+            (Direction::SouthEast, Direction::West), (Direction::NorthEast, Direction::West),
         ];
         let (start_direction, triangle_direction) = *start_directions.at(side);
         assert!(self.base_distance % 2 == 0, "base distance must be exactly divisble by 2 so the map isnt skewed");
@@ -398,7 +394,7 @@ pub impl SettlementConfigImpl of SettlementConfigTrait {
     }
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct BlitzSettlementConfig {
     pub base_distance: u32,
     pub side: u32,
@@ -451,12 +447,9 @@ pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
     fn generate_coords(ref self: BlitzSettlementConfig) -> Array<Coord> {
         let mut start_coord: Coord = CoordImpl::center();
         let start_directions: Array<(Direction, Direction)> = array![
-            (Direction::NorthEast, Direction::West),
-            (Direction::West, Direction::SouthEast),
-            (Direction::SouthEast, Direction::NorthEast),
-            (Direction::NorthWest, Direction::SouthWest),
-            (Direction::SouthWest, Direction::East),
-            (Direction::East, Direction::NorthWest),
+            (Direction::NorthEast, Direction::West), (Direction::West, Direction::SouthEast),
+            (Direction::SouthEast, Direction::NorthEast), (Direction::NorthWest, Direction::SouthWest),
+            (Direction::SouthWest, Direction::East), (Direction::East, Direction::NorthWest),
         ];
         let (start_direction, triangle_direction) = *start_directions.at(self.side);
         assert!(self.base_distance % 2 == 0, "base distance must be exactly divisble by 2 so the map isnt skewed");
@@ -494,7 +487,7 @@ pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
 }
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct BlitzHypersSettlementConfig {
     pub max_ring_count: u8,
     pub current_ring_count: u8,
@@ -537,12 +530,9 @@ pub impl BlitzHypersSettlementConfigImpl of BlitzHypersSettlementConfigTrait {
     fn next_coord(self: BlitzHypersSettlementConfig) -> Coord {
         let mut start_coord: Coord = CoordImpl::center();
         let start_directions: Array<(Direction, Direction)> = array![
-            (Direction::East, Direction::NorthWest),
-            (Direction::SouthEast, Direction::NorthEast),
-            (Direction::SouthWest, Direction::East),
-            (Direction::West, Direction::SouthEast),
-            (Direction::NorthWest, Direction::SouthWest),
-            (Direction::NorthEast, Direction::West),
+            (Direction::East, Direction::NorthWest), (Direction::SouthEast, Direction::NorthEast),
+            (Direction::SouthWest, Direction::East), (Direction::West, Direction::SouthEast),
+            (Direction::NorthWest, Direction::SouthWest), (Direction::NorthEast, Direction::West),
         ];
         let (start_direction, triangle_direction) = *start_directions.at(self.side);
         return start_coord
@@ -552,7 +542,7 @@ pub impl BlitzHypersSettlementConfigImpl of BlitzHypersSettlementConfigTrait {
 }
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct BlitzRegistrationConfig {
     pub fee_amount: u256,
     pub fee_token: ContractAddress,
@@ -578,7 +568,7 @@ pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
     }
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct VictoryPointsGrantConfig {
     pub hyp_points_per_second: u32,
     // Only granted when claim hyperstructure from bandits
@@ -588,12 +578,12 @@ pub struct VictoryPointsGrantConfig {
     pub explore_tiles_points: u32,
 }
 
-#[derive(Introspect, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct VictoryPointsWinConfig {
     pub points_for_win: u128,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct TickConfig {
     pub armies_tick_in_seconds: u64,
     pub delivery_tick_in_seconds: u64,
@@ -601,7 +591,7 @@ pub struct TickConfig {
 
 
 // todo: regroup meaningfully to avoid retrieving too many fields
-#[derive(Copy, Drop, Serde, IntrospectPacked, Debug, PartialEq, Default)]
+#[derive(Copy, Drop, Serde, IntrospectPacked, Debug, PartialEq, Default, DojoStore)]
 pub struct TroopDamageConfig {
     pub damage_raid_percent_num: u16,
     // Combat modifiers. Used for biome damage calculations
@@ -617,7 +607,7 @@ pub struct TroopDamageConfig {
     pub t3_damage_multiplier: u128,
 }
 
-#[derive(Copy, Drop, Serde, IntrospectPacked, Debug, PartialEq, Default)]
+#[derive(Copy, Drop, Serde, IntrospectPacked, Debug, PartialEq, Default, DojoStore)]
 pub struct TroopStaminaConfig {
     // Base stamina settings
     pub stamina_gain_per_tick: u16, // Stamina gained per tick
@@ -642,7 +632,7 @@ pub struct TroopStaminaConfig {
 }
 
 
-#[derive(Copy, Drop, Serde, IntrospectPacked, Debug, PartialEq, Default)]
+#[derive(Copy, Drop, Serde, IntrospectPacked, Debug, PartialEq, Default, DojoStore)]
 pub struct TroopLimitConfig {
     // Maximum number of explorers allowed per structure
     pub explorer_max_party_count: u8,
@@ -678,7 +668,7 @@ pub impl CombatConfigImpl of CombatConfigTrait {
 }
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde, DojoStore)]
 pub struct TickInterval {
     pub tick_interval: u64,
 }
@@ -777,14 +767,14 @@ pub struct BuildingCategoryConfig {
 }
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct BuildingConfig {
     pub base_population: u32,
     pub base_cost_percent_increase: u16,
 }
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct BankConfig {
     pub lp_fee_num: u32,
     pub lp_fee_denom: u32,
@@ -792,7 +782,7 @@ pub struct BankConfig {
     pub owner_fee_denom: u32,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct BattleConfig {
     pub regular_immunity_ticks: u8,
     pub hyperstructure_immunity_ticks: u8,
@@ -806,25 +796,25 @@ pub impl BattleConfigImpl of BattleConfigTrait {
 }
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct StartingResourcesConfig {
     pub resources_list_id: ID,
     pub resources_list_count: u8,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct VillageFoundResourcesConfig {
     pub resources_mm_list_id: ID,
     pub resources_mm_list_count: u8,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct ResourceBridgeConfig {
     pub deposit_paused: bool,
     pub withdraw_paused: bool,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct ResourceBridgeFeeSplitConfig {
     // the percentage of the deposit and withdrawal amount that the velords addr will receive
     pub velords_fee_on_dpt_percent: u16,
@@ -862,7 +852,7 @@ pub struct ResourceRevBridgeWhtelistConfig {
 }
 
 // speed
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct StructureMaxLevelConfig {
     pub realm_max: u8,
     pub village_max: u8,

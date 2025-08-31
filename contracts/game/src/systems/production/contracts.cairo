@@ -1,7 +1,7 @@
 use s1_eternum::alias::ID;
 use s1_eternum::models::position::{Coord, Direction};
 use s1_eternum::models::resource::production::building::BuildingCategory;
-use s1_eternum::models::resource::production::production::{ProductionStrategyImpl};
+use s1_eternum::models::resource::production::production::ProductionStrategyImpl;
 
 #[starknet::interface]
 trait IProductionContract<TContractState> {
@@ -46,17 +46,16 @@ mod production_systems {
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS};
+    use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::config::{SeasonConfigImpl, WonderProductionBonusConfig, WorldConfigUtilImpl};
     use s1_eternum::models::map::{Tile, TileOccupier};
+    use s1_eternum::models::owner::OwnerAddressTrait;
+    use s1_eternum::models::position::{Coord, CoordTrait, TravelImpl};
+    use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl, BuildingProductionImpl};
+    use s1_eternum::models::resource::production::production::{ProductionBoostBonus, ProductionStrategyImpl};
     use s1_eternum::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureMetadata,
         StructureMetadataStoreImpl, StructureOwnerStoreImpl, StructureResourcesImpl, StructureResourcesPackedStoreImpl,
-    };
-    use s1_eternum::models::{
-        owner::{OwnerAddressTrait}, position::{Coord, CoordTrait, TravelImpl},
-        resource::production::building::{BuildingCategory, BuildingImpl, BuildingProductionImpl},
-        resource::production::production::{ProductionBoostBonus, ProductionStrategyImpl},
     };
     use s1_eternum::systems::utils::map::IMapImpl;
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
@@ -102,7 +101,7 @@ mod production_systems {
                     Option::Some(direction) => { building_coord = building_coord.neighbor(*direction); },
                     Option::None => { break; },
                 }
-            };
+            }
 
             let caller: ContractAddress = starknet::get_caller_address();
             let (building, building_count) = BuildingImpl::create(

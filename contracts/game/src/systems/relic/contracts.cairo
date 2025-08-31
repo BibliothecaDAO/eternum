@@ -1,5 +1,5 @@
 use s1_eternum::alias::ID;
-use s1_eternum::models::position::{Coord};
+use s1_eternum::models::position::Coord;
 
 #[derive(Copy, Drop, Serde)]
 pub enum RelicRecipientTypeParam {
@@ -21,22 +21,19 @@ pub mod relic_systems {
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::RESOURCE_PRECISION;
-    use s1_eternum::constants::{DEFAULT_NS, ResourceTypes, relic_essence_cost};
-    use s1_eternum::models::config::MapConfig;
+    use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes, relic_essence_cost};
     use s1_eternum::models::config::{
-        CombatConfigImpl, SeasonConfig, SeasonConfigImpl, TickImpl, TroopStaminaConfig, WorldConfigUtilImpl,
+        CombatConfigImpl, MapConfig, SeasonConfig, SeasonConfigImpl, TickImpl, TroopStaminaConfig, WorldConfigUtilImpl,
     };
     use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
     use s1_eternum::models::owner::OwnerAddressTrait;
     use s1_eternum::models::position::{Coord, TravelTrait};
-    use s1_eternum::models::relic::RELIC_EFFECT;
-    use s1_eternum::models::relic::{RelicEffectImpl};
-    use s1_eternum::models::resource::production::production::{ProductionBoostBonus};
+    use s1_eternum::models::relic::{RELIC_EFFECT, RelicEffectImpl};
+    use s1_eternum::models::resource::production::production::ProductionBoostBonus;
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::stamina::{StaminaImpl};
+    use s1_eternum::models::stamina::StaminaImpl;
     use s1_eternum::models::structure::{
         StructureBase, StructureBaseStoreImpl, StructureOwnerStoreImpl, StructureTroopGuardStoreImpl,
     };
@@ -44,10 +41,10 @@ pub mod relic_systems {
     use s1_eternum::models::weight::Weight;
     use s1_eternum::systems::utils::map::IMapImpl;
     use s1_eternum::systems::utils::relic::iRelicChestResourceFactoryImpl;
-    use s1_eternum::systems::utils::{
-        resource::{iResourceTransferImpl}, structure::{iStructureImpl}, troop::{iExplorerImpl, iGuardImpl, iTroopImpl},
-    };
-    use s1_eternum::utils::random::{VRFImpl};
+    use s1_eternum::systems::utils::resource::iResourceTransferImpl;
+    use s1_eternum::systems::utils::structure::iStructureImpl;
+    use s1_eternum::systems::utils::troop::{iExplorerImpl, iGuardImpl, iTroopImpl};
+    use s1_eternum::utils::random::VRFImpl;
     use super::RelicRecipientTypeParam;
 
 
@@ -149,7 +146,7 @@ pub mod relic_systems {
                     // apply relic effect
                     InternalImpl::structure_production_boost(ref world, entity_id, relic_resource_id, current_tick);
                 },
-            };
+            }
 
             // spend the relic resource
             let mut entity_weight: Weight = WeightStoreImpl::retrieve(ref world, entity_id);
@@ -267,7 +264,7 @@ pub mod relic_systems {
                 slot_troops.boosts.decr_damage_gotten_percent_num = rate;
                 slot_troops.boosts.decr_damage_gotten_end_tick = current_tick + duration;
                 guards.to_slot(slot, slot_troops, troop_destroyed_tick.into());
-            };
+            }
 
             StructureTroopGuardStoreImpl::store(ref guards, ref world, structure_id);
         }

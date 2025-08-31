@@ -1,7 +1,7 @@
 use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
-use s1_eternum::constants::{WORLD_CONFIG_ID};
+use s1_eternum::constants::WORLD_CONFIG_ID;
 
 //
 // GLOBAL RECORDS
@@ -15,7 +15,7 @@ pub struct WorldRecord {
     pub relic_record: RelicRecord,
 }
 
-#[derive(Introspect, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct RelicRecord {
     pub last_discovered_at: u64,
 }

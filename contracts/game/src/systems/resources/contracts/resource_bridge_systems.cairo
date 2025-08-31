@@ -22,17 +22,16 @@ pub trait IResourceBridgeSystems<T> {
 #[dojo::contract]
 pub mod resource_bridge_systems {
     use core::num::traits::Zero;
-    use dojo::model::{ModelStorage};
+    use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS, ResourceTypes};
     use s1_eternum::models::config::{
-        ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, ResourceRevBridgeWhtelistConfig,
+        ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, ResourceRevBridgeWhtelistConfig, SeasonConfigImpl,
         WorldConfigUtilImpl,
     };
-    use s1_eternum::models::config::{SeasonConfigImpl};
-    use s1_eternum::models::owner::{OwnerAddressImpl};
-    use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
+    use s1_eternum::models::owner::OwnerAddressImpl;
+    use s1_eternum::models::resource::arrivals::ResourceArrivalImpl;
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
@@ -40,14 +39,13 @@ pub mod resource_bridge_systems {
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureMetadataStoreImpl,
         StructureOwnerStoreImpl,
     };
-    use s1_eternum::models::weight::{Weight};
+    use s1_eternum::models::weight::Weight;
     use s1_eternum::systems::utils::bridge::{BridgeTxType, iBridgeImpl};
     use s1_eternum::systems::utils::erc20::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
-    use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
+    use s1_eternum::systems::utils::resource::iResourceTransferImpl;
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
     use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
-    use starknet::ContractAddress;
-    use starknet::{get_caller_address, get_contract_address};
+    use starknet::{ContractAddress, get_caller_address, get_contract_address};
 
     #[abi(embed_v0)]
     impl ResourceBridgeImpl of super::IResourceBridgeSystems<ContractState> {

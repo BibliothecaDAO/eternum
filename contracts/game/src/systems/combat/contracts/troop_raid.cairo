@@ -1,5 +1,5 @@
 use s1_eternum::alias::ID;
-use s1_eternum::models::position::{Direction};
+use s1_eternum::models::position::Direction;
 #[starknet::interface]
 pub trait ITroopRaidSystems<T> {
     fn raid_explorer_vs_guard(
@@ -23,26 +23,25 @@ pub mod troop_raid_systems {
         BattleConfig, CombatConfigImpl, SeasonConfig, SeasonConfigImpl, TickImpl, TroopDamageConfig, TroopStaminaConfig,
         WorldConfigUtilImpl,
     };
-    use s1_eternum::models::owner::{OwnerAddressTrait};
+    use s1_eternum::models::owner::OwnerAddressTrait;
     use s1_eternum::models::position::{CoordTrait, Direction};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::stamina::{StaminaImpl};
+    use s1_eternum::models::stamina::StaminaImpl;
     use s1_eternum::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
         StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
     };
     use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, GuardTroops, TroopsImpl, TroopsTrait};
     use s1_eternum::models::weight::Weight;
-    use s1_eternum::systems::utils::{
-        resource::{iResourceTransferImpl}, structure::iStructureImpl,
-        troop::{TroopRaidOutcome, iExplorerImpl, iGuardImpl, iTroopImpl},
-    };
+    use s1_eternum::systems::utils::resource::iResourceTransferImpl;
+    use s1_eternum::systems::utils::structure::iStructureImpl;
+    use s1_eternum::systems::utils::troop::{TroopRaidOutcome, iExplorerImpl, iGuardImpl, iTroopImpl};
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
     use s1_eternum::utils::map::biomes::{Biome, get_biome};
-    use s1_eternum::utils::math::{PercentageValueImpl};
-    use s1_eternum::utils::random::{VRFImpl};
+    use s1_eternum::utils::math::PercentageValueImpl;
+    use s1_eternum::utils::random::VRFImpl;
     use super::super::super::super::super::models::structure::StructureBaseTrait;
     use super::super::super::super::super::models::troop::GuardTrait;
 
@@ -146,7 +145,7 @@ pub mod troop_raid_systems {
                 if guard_defender_troops.count.is_non_zero() {
                     structure_non_zero_guard_slots.append(structure_functional_guard_slot);
                 }
-            };
+            }
 
             if structure_non_zero_guard_slots.len().is_non_zero() {
                 let mut structure_non_zero_guard_slots_damage_dealt = array![];
@@ -233,7 +232,7 @@ pub mod troop_raid_systems {
                     sum_damage_to_guards += damage_dealt_to_guard;
 
                     structure_non_zero_guard_slots_damage_dealt.append(damage_dealt_to_explorer);
-                };
+                }
 
                 // apply damage to explorer troops
                 let mut explorer_damage_received = 0;
@@ -241,7 +240,7 @@ pub mod troop_raid_systems {
                     // note: damage received by explorer is limited by number of troops
                     //       used to enter each battle
                     explorer_damage_received += core::cmp::min(damage, individual_explorer_aggressor_troops.count);
-                };
+                }
 
                 let mut explorer_damage_applied = troop_damage_config.damage_raid_percent_num.into()
                     * explorer_damage_received
@@ -339,7 +338,7 @@ pub mod troop_raid_systems {
                     1,
                     starknet::get_block_timestamp(),
                 );
-            };
+            }
 
             world
                 .emit_event(

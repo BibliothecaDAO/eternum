@@ -9,8 +9,9 @@ use s1_eternum::utils::map::biomes::Biome;
 use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
 
 
-#[derive(PartialEq, Debug, Copy, Drop, Serde, Introspect)]
+#[derive(PartialEq, Debug, Copy, Drop, Serde, Introspect, Default, DojoStore)]
 pub enum TroopType {
+    #[default]
     Knight,
     Paladin,
     Crossbowman,
@@ -26,8 +27,9 @@ pub impl TroopTypeIntoFelt252 of Into<TroopType, felt252> {
     }
 }
 
-#[derive(PartialEq, Debug, Copy, Drop, Serde, Introspect)]
+#[derive(PartialEq, Debug, Copy, Drop, Serde, Introspect, Default, DojoStore)]
 pub enum TroopTier {
+    #[default]
     T1,
     T2,
     T3,
@@ -44,7 +46,7 @@ pub impl TroopTierIntoFelt252 of Into<TroopTier, felt252> {
 }
 
 
-#[derive(Copy, Drop, Serde, Introspect)]
+#[derive(Copy, Drop, Serde, Introspect, DojoStore)]
 pub struct Troops {
     pub category: TroopType,
     pub tier: TroopTier,
@@ -54,7 +56,7 @@ pub struct Troops {
     pub battle_cooldown_end: u32,
 }
 
-#[derive(Copy, Drop, Serde, Introspect)]
+#[derive(Copy, Drop, Serde, Introspect, Default, DojoStore)]
 pub struct TroopBoosts {
     pub incr_damage_dealt_percent_num: u16,
     pub incr_damage_dealt_end_tick: u32,
@@ -66,7 +68,7 @@ pub struct TroopBoosts {
     pub incr_explore_reward_end_tick: u32,
 }
 
-#[derive(Introspect, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct GuardTroops {
     // slot 4
     pub delta: Troops,
@@ -106,7 +108,7 @@ pub impl GuardImpl of GuardTrait {
                 is_functional_slot = true;
                 break;
             }
-        };
+        }
         assert!(is_functional_slot, "slot can't be selected");
     }
 

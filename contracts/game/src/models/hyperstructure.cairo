@@ -1,9 +1,11 @@
 use core::num::traits::Zero;
-use dojo::model::ModelStorage;
-use dojo::model::{Model};
+use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
+use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, WORLD_CONFIG_ID};
-use s1_eternum::{alias::ID, models::{config::HyperstructureConstructConfig, guild::{GuildMember}, season::SeasonPrize}};
+use s1_eternum::models::config::HyperstructureConstructConfig;
+use s1_eternum::models::guild::GuildMember;
+use s1_eternum::models::season::SeasonPrize;
 use starknet::ContractAddress;
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -223,8 +225,9 @@ pub impl PlayerRegisteredPointsImpl of PlayerRegisteredPointsTrait {
 }
 
 
-#[derive(PartialEq, Copy, Drop, Serde, IntrospectPacked)]
+#[derive(PartialEq, Copy, Drop, Serde, IntrospectPacked, Default, DojoStore)]
 pub enum ConstructionAccess {
+    #[default]
     Public,
     Private,
     GuildOnly,

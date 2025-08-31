@@ -1,5 +1,5 @@
 use s1_eternum::alias::ID;
-use s1_eternum::models::position::{Coord};
+use s1_eternum::models::position::Coord;
 
 #[derive(Copy, Drop, Serde)]
 struct BankCreateParams {
@@ -15,24 +15,22 @@ pub trait IBankSystems<T> {
 #[dojo::contract]
 pub mod bank_systems {
     use dojo::model::ModelStorage;
-
     use dojo::world::WorldStorage;
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{
         DEFAULT_NS, REGIONAL_BANK_FIVE_ID, REGIONAL_BANK_FOUR_ID, REGIONAL_BANK_ONE_ID, REGIONAL_BANK_SIX_ID,
         REGIONAL_BANK_THREE_ID, REGIONAL_BANK_TWO_ID,
     };
-    use s1_eternum::models::config::{CombatConfigImpl, TickImpl};
-    use s1_eternum::models::config::{WorldConfigUtilImpl};
-    use s1_eternum::models::map::{TileOccupier};
+    use s1_eternum::models::config::{CombatConfigImpl, TickImpl, WorldConfigUtilImpl};
+    use s1_eternum::models::map::TileOccupier;
     use s1_eternum::models::name::AddressName;
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::structure::{StructureCategory, StructureImpl, StructureOwnerStoreImpl};
     use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
-    use s1_eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
-    use s1_eternum::systems::utils::structure::{iStructureImpl};
+    use s1_eternum::systems::config::contracts::config_systems::assert_caller_is_admin;
+    use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::systems::utils::troop::iMercenariesImpl;
 
     const MAX_BANK_COUNT: u8 = 6;
@@ -50,12 +48,8 @@ pub mod bank_systems {
 
             let caller = starknet::get_caller_address();
             let mut bank_ids = array![
-                REGIONAL_BANK_ONE_ID,
-                REGIONAL_BANK_TWO_ID,
-                REGIONAL_BANK_THREE_ID,
-                REGIONAL_BANK_FOUR_ID,
-                REGIONAL_BANK_FIVE_ID,
-                REGIONAL_BANK_SIX_ID,
+                REGIONAL_BANK_ONE_ID, REGIONAL_BANK_TWO_ID, REGIONAL_BANK_THREE_ID, REGIONAL_BANK_FOUR_ID,
+                REGIONAL_BANK_FIVE_ID, REGIONAL_BANK_SIX_ID,
             ];
             for bank in banks {
                 // create the bank structure
@@ -95,10 +89,10 @@ pub mod bank_systems {
                         tick,
                     );
                     count += 1;
-                };
+                }
 
                 bank_ids.append(bank_entity_id);
-            };
+            }
 
             bank_ids.span()
         }

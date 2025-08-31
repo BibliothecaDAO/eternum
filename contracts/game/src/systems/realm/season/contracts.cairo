@@ -24,21 +24,19 @@ pub mod realm_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{WorldStorage, WorldStorageTrait};
-
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS};
+    use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::config::{
         RealmCountConfig, SeasonAddressesConfig, SeasonConfigImpl, SettlementConfig, SettlementConfigImpl,
         WorldConfigUtilImpl,
     };
     use s1_eternum::models::events::{RealmCreatedStory, Story, StoryEvent};
-    use s1_eternum::models::map::{TileImpl};
-    use s1_eternum::models::position::{Coord};
+    use s1_eternum::models::map::TileImpl;
+    use s1_eternum::models::position::Coord;
     use s1_eternum::models::realm::{RealmNameAndAttrsDecodingImpl, RealmReferenceImpl};
-    use s1_eternum::models::resource::production::building::{BuildingImpl};
-    use s1_eternum::models::resource::resource::{ResourceImpl};
+    use s1_eternum::models::resource::production::building::BuildingImpl;
     use s1_eternum::models::resource::resource::{
-        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+        ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::structure::{
         StructureBaseStoreImpl, StructureImpl, StructureMetadataStoreImpl, StructureOwnerStoreImpl,
@@ -49,8 +47,7 @@ pub mod realm_systems {
     use s1_eternum::systems::utils::realm::iRealmImpl;
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
-    use starknet::ContractAddress;
-    use starknet::TxInfo;
+    use starknet::{ContractAddress, TxInfo};
     use super::RealmSettlement;
 
 

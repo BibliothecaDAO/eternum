@@ -1,5 +1,5 @@
 use s1_eternum::alias::ID;
-use s1_eternum::models::position::{Direction};
+use s1_eternum::models::position::Direction;
 use s1_eternum::models::troop::GuardSlot;
 
 
@@ -31,23 +31,22 @@ pub mod troop_battle_systems {
         WorldConfigUtilImpl,
     };
     use s1_eternum::models::events::{BattleStory, BattleType, Story, StoryEvent};
-    use s1_eternum::models::owner::{OwnerAddressTrait};
+    use s1_eternum::models::owner::OwnerAddressTrait;
     use s1_eternum::models::position::{CoordTrait, Direction};
     use s1_eternum::models::resource::resource::{ResourceWeightImpl, SingleResourceStoreImpl, WeightStoreImpl};
-    use s1_eternum::models::stamina::{StaminaImpl};
+    use s1_eternum::models::stamina::StaminaImpl;
     use s1_eternum::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
         StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
     };
     use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, Troops, TroopsImpl, TroopsTrait};
     use s1_eternum::models::weight::Weight;
-    use s1_eternum::systems::utils::{
-        resource::{iResourceTransferImpl}, structure::iStructureImpl, troop::{iExplorerImpl, iGuardImpl, iTroopImpl},
-    };
+    use s1_eternum::systems::utils::resource::iResourceTransferImpl;
+    use s1_eternum::systems::utils::structure::iStructureImpl;
+    use s1_eternum::systems::utils::troop::{iExplorerImpl, iGuardImpl, iTroopImpl};
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
     use s1_eternum::utils::map::biomes::{Biome, get_biome};
-    use s1_eternum::utils::random::{VRFImpl};
-
+    use s1_eternum::utils::random::VRFImpl;
     use super::super::super::super::super::models::troop::GuardTrait;
 
 

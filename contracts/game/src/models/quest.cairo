@@ -102,7 +102,7 @@ pub struct QuestLevels {
 }
 
 /// Defines the parameters for a single difficulty level within a quest game.
-#[derive(Introspect, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct Level {
     /// The score required to successfully complete this level.
     pub target_score: u32,

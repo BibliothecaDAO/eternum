@@ -1,16 +1,16 @@
 use core::num::traits::zero::Zero;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
-use s1_eternum::models::config::TickImpl;
-use s1_eternum::models::config::{MapConfig, TickInterval, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl};
-use s1_eternum::models::map::{TileOccupier};
-use s1_eternum::models::position::{Coord};
+use s1_eternum::models::config::{
+    MapConfig, TickImpl, TickInterval, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
+};
+use s1_eternum::models::map::TileOccupier;
+use s1_eternum::models::position::Coord;
 use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl};
 use s1_eternum::models::resource::production::production::{Production, ProductionImpl};
 use s1_eternum::models::resource::resource::{
     ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
 };
-
 use s1_eternum::models::structure::{StructureCategory, StructureImpl};
 use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
 use s1_eternum::models::weight::Weight;

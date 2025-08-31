@@ -1,9 +1,8 @@
 use core::fmt::{Display, Error, Formatter};
 use core::num::traits::zero::Zero;
 use core::option::OptionTrait;
-use core::traits::Into;
-use core::traits::TryInto;
-use s1_eternum::utils::number::{NumberTrait};
+use core::traits::{Into, TryInto};
+use s1_eternum::utils::number::NumberTrait;
 
 // todo@credence revisit zone calculation
 
@@ -129,7 +128,7 @@ impl CubeImpl of CubeTrait {
                 results.append(hex);
                 hex = hex.neighbor_after_distance(direction, 1);
             }
-        };
+        }
         results
     }
 }
@@ -137,8 +136,9 @@ impl CubeImpl of CubeTrait {
 
 pub const NUM_DIRECTIONS: u8 = 6;
 
-#[derive(Drop, Copy, Serde, Introspect, PartialEq)]
+#[derive(Drop, Copy, Serde, Introspect, PartialEq, Default, DojoStore)]
 pub enum Direction {
+    #[default]
     East,
     NorthEast,
     NorthWest,
@@ -151,11 +151,7 @@ pub enum Direction {
 pub impl DirectionImpl of DirectionTrait {
     fn all() -> Array<Direction> {
         array![
-            Direction::East,
-            Direction::NorthEast,
-            Direction::NorthWest,
-            Direction::West,
-            Direction::SouthWest,
+            Direction::East, Direction::NorthEast, Direction::NorthWest, Direction::West, Direction::SouthWest,
             Direction::SouthEast,
         ]
     }
@@ -179,7 +175,7 @@ pub impl DirectionDisplay of Display<Direction> {
 }
 
 
-#[derive(Copy, Drop, PartialEq, Serde, IntrospectPacked, Debug, Default)]
+#[derive(Copy, Drop, PartialEq, Serde, Introspect, Debug, Default, DojoStore)]
 pub struct Coord {
     pub x: u32,
     pub y: u32,
@@ -239,7 +235,7 @@ pub impl CoordImpl of CoordTrait {
         let mut coord_ring: Array<Coord> = array![];
         for cube in cube_ring {
             coord_ring.append(cube.into());
-        };
+        }
         coord_ring
     }
 }

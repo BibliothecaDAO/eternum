@@ -1,31 +1,28 @@
-use cubit::f128::types::fixed::{FixedTrait};
+use cubit::f128::types::fixed::FixedTrait;
 use dojo::model::{ModelStorage, ModelStorageTest};
-use dojo::world::{IWorldDispatcherTrait};
-use dojo::world::{WorldStorage, WorldStorageTrait};
-use dojo_cairo_test::deploy_contract;
-use dojo_cairo_test::{ContractDef, NamespaceDef, WorldStorageTestTrait, spawn_test_world};
+use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
+use dojo_cairo_test::{ContractDef, NamespaceDef, WorldStorageTestTrait, deploy_contract, spawn_test_world};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{
-    CapacityConfig, MapConfig, QuestConfig, StructureCapacityConfig, TickConfig, TroopDamageConfig, TroopLimitConfig,
-    TroopStaminaConfig, VillageTokenConfig, WeightConfig, WorldConfigUtilImpl,
+    CapacityConfig, CombatConfigImpl, MapConfig, QuestConfig, ResourceFactoryConfig, StructureCapacityConfig,
+    TickConfig, TickImpl, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VillageTokenConfig, WeightConfig,
+    WorldConfigUtilImpl,
 };
-use s1_eternum::models::config::{CombatConfigImpl, TickImpl};
-use s1_eternum::models::config::{ResourceFactoryConfig};
 use s1_eternum::models::map::{Tile, TileOccupier};
-use s1_eternum::models::position::{Coord};
+use s1_eternum::models::position::Coord;
 use s1_eternum::models::quest::{Level, QuestTile};
-use s1_eternum::models::resource::resource::{ResourceList};
 use s1_eternum::models::resource::resource::{
-    ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl, WeightStoreImpl,
+    ResourceList, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl,
+    WeightStoreImpl,
 };
 use s1_eternum::models::stamina::{StaminaImpl, StaminaTrait};
 use s1_eternum::models::structure::{
     Structure, StructureBase, StructureCategory, StructureMetadata, StructureVillageSlots,
 };
 use s1_eternum::models::troop::{ExplorerTroops, GuardTroops, TroopTier, TroopType, Troops};
-use s1_eternum::models::weight::{Weight};
-use s1_eternum::systems::quest::constants::{QUEST_REWARD_BASE_MULTIPLIER};
+use s1_eternum::models::weight::Weight;
+use s1_eternum::systems::quest::constants::QUEST_REWARD_BASE_MULTIPLIER;
 use s1_eternum::systems::quest::contracts::{IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait};
 use s1_eternum::systems::utils::realm::iRealmImpl;
 use s1_eternum::utils::testing::contracts::villagepassmock::EternumVillagePassMock;
@@ -34,11 +31,7 @@ use starknet::ContractAddress;
 
 fn deploy_mock_village_pass(ref world: WorldStorage, admin: starknet::ContractAddress) -> ContractAddress {
     let mock_calldata: Array<felt252> = array![
-        admin.into(),
-        admin.into(),
-        starknet::get_contract_address().into(),
-        2,
-        starknet::get_contract_address().into(),
+        admin.into(), admin.into(), starknet::get_contract_address().into(), 2, starknet::get_contract_address().into(),
         admin.into(),
     ];
     let mock_village_pass_address = deploy_contract(EternumVillagePassMock::TEST_CLASS_HASH, mock_calldata.span());
@@ -189,7 +182,7 @@ pub fn tgrant_resources(ref world: WorldStorage, to: ID, resources: Span<(u8, u1
         );
         resource.add(amount, ref to_weight, resource_weight_grams);
         resource.store(ref world);
-    };
+    }
 
     to_weight.store(ref world, to);
 }
@@ -271,7 +264,7 @@ pub fn tstore_production_config(ref world: WorldStorage, resource_type: u8) {
             .write_model_test(
                 @ResourceList { entity_id: simple_input_list_id, index: i, resource_type, amount: resource_amount },
             );
-    };
+    }
 
     let complex_input_list: Array<(u8, u128)> = array![(ResourceTypes::WOOD, 1)];
     let complex_input_list_id = world.dispatcher.uuid();
@@ -281,7 +274,7 @@ pub fn tstore_production_config(ref world: WorldStorage, resource_type: u8) {
             .write_model_test(
                 @ResourceList { entity_id: complex_input_list_id, index: i, resource_type, amount: resource_amount },
             );
-    };
+    }
     // save production config
     let mut resource_factory_config: ResourceFactoryConfig = Default::default();
     resource_factory_config.resource_type = resource_type;
@@ -323,10 +316,8 @@ pub fn init_config(ref world: WorldStorage) {
     tstore_weight_config(
         ref world,
         array![
-            MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1),
-            MOCK_WEIGHT_CONFIG(ResourceTypes::CROSSBOWMAN_T2),
-            MOCK_WEIGHT_CONFIG(ResourceTypes::WHEAT),
-            MOCK_WEIGHT_CONFIG(ResourceTypes::FISH),
+            MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1), MOCK_WEIGHT_CONFIG(ResourceTypes::CROSSBOWMAN_T2),
+            MOCK_WEIGHT_CONFIG(ResourceTypes::WHEAT), MOCK_WEIGHT_CONFIG(ResourceTypes::FISH),
         ]
             .span(),
     );

@@ -11,12 +11,10 @@ pub trait IBlitzRealmSystems<T> {
 
 #[dojo::contract]
 pub mod blitz_realm_systems {
-    use core::num::traits::Bounded;
-    use core::num::traits::Zero;
+    use core::num::traits::{Bounded, Zero};
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{WorldStorage, WorldStorageTrait};
-
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS, ResourceTypes, blitz_produceable_resources};
     use s1_eternum::models::config::{
@@ -26,24 +24,23 @@ pub mod blitz_realm_systems {
         WorldConfigUtilImpl,
     };
     use s1_eternum::models::events::{RealmCreatedStory, Story, StoryEvent};
-    use s1_eternum::models::map::{TileImpl};
-    use s1_eternum::models::name::{AddressName};
-    use s1_eternum::models::position::{Coord};
+    use s1_eternum::models::map::TileImpl;
+    use s1_eternum::models::name::AddressName;
+    use s1_eternum::models::position::Coord;
     use s1_eternum::models::realm::{RealmNameAndAttrsDecodingImpl, RealmReferenceImpl};
-    use s1_eternum::models::resource::production::building::{BuildingImpl};
+    use s1_eternum::models::resource::production::building::BuildingImpl;
     use s1_eternum::models::resource::production::production::{Production, ProductionImpl};
     use s1_eternum::models::resource::resource::{
         ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::structure::StructureOwnerStats;
     use s1_eternum::models::structure::{
-        StructureBaseStoreImpl, StructureImpl, StructureMetadataStoreImpl, StructureOwnerStoreImpl,
+        StructureBaseStoreImpl, StructureImpl, StructureMetadataStoreImpl, StructureOwnerStats, StructureOwnerStoreImpl,
         StructureReservation,
     };
     use s1_eternum::systems::realm::utils::contracts::{
         IERC20Dispatcher, IERC20DispatcherTrait, IRealmInternalSystemsDispatcher, IRealmInternalSystemsDispatcherTrait,
     };
-    use s1_eternum::systems::utils::hyperstructure::{iHyperstructureDiscoveryImpl};
+    use s1_eternum::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
     use s1_eternum::systems::utils::realm::iRealmImpl;
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
@@ -138,7 +135,7 @@ pub mod blitz_realm_systems {
             // store structure reservation
             for coord in coords {
                 world.write_model(@StructureReservation { coord: coord, reserved: true });
-            };
+            }
 
             ////////////////////////////////////////////////
             /// Update Hyperstructure Ring Count
@@ -245,7 +242,7 @@ pub mod blitz_realm_systems {
 
                 // move to the next location and see if we are done
                 blitz_hyperstructure_settlement_config.next();
-            };
+            }
 
             WorldConfigUtilImpl::set_member(
                 ref world, selector!("blitz_hypers_settlement_config"), blitz_hyperstructure_settlement_config,
@@ -357,7 +354,7 @@ pub mod blitz_realm_systems {
                 AchievementTrait::progress(world, caller.into(), Tasks::REALM_SETTLEMENT, 1, now.into());
 
                 structure_ids.append(structure_id);
-            };
+            }
 
             // update realm count
             WorldConfigUtilImpl::set_member(ref world, realm_count_selector, realm_count);

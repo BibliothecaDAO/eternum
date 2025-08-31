@@ -1,30 +1,28 @@
 use core::num::traits::Zero;
-use dojo::model::{ModelStorage};
+use dojo::model::ModelStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{ResourceTypes, blitz_produceable_resources};
-use s1_eternum::models::config::TickImpl;
-use s1_eternum::models::config::{MapConfig, TickInterval, TroopLimitConfig, TroopStaminaConfig};
-use s1_eternum::models::config::{VillageFoundResourcesConfig, WorldConfigUtilImpl};
-use s1_eternum::models::map::{TileOccupier};
-use s1_eternum::models::position::{Coord};
-use s1_eternum::models::position::{TravelImpl};
+use s1_eternum::models::config::{
+    MapConfig, TickImpl, TickInterval, TroopLimitConfig, TroopStaminaConfig, VillageFoundResourcesConfig,
+    WorldConfigUtilImpl,
+};
+use s1_eternum::models::map::TileOccupier;
+use s1_eternum::models::position::{Coord, TravelImpl};
 use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl};
-use s1_eternum::models::resource::production::production::{ProductionImpl};
-use s1_eternum::models::resource::resource::{ResourceMinMaxList};
+use s1_eternum::models::resource::production::production::ProductionImpl;
 use s1_eternum::models::resource::resource::{
-    ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+    ResourceMinMaxList, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
 };
 use s1_eternum::models::structure::{
     StructureBaseImpl, StructureCategory, StructureImpl, StructureMetadata, StructureOwnerStoreImpl,
 };
 use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
 use s1_eternum::models::weight::Weight;
-
 use s1_eternum::systems::utils::structure::iStructureImpl;
 use s1_eternum::systems::utils::troop::iMercenariesImpl;
 use s1_eternum::utils::random;
-use s1_eternum::utils::random::{VRFImpl};
+use s1_eternum::utils::random::VRFImpl;
 use starknet::ContractAddress;
 
 #[generate_trait]
@@ -71,28 +69,12 @@ pub impl iVillageResourceImpl of iVillageResourceTrait {
 
     fn resources() -> Array<u8> {
         array![
-            ResourceTypes::WOOD,
-            ResourceTypes::STONE,
-            ResourceTypes::COAL,
-            ResourceTypes::COPPER,
-            ResourceTypes::OBSIDIAN,
-            ResourceTypes::SILVER,
-            ResourceTypes::IRONWOOD,
-            ResourceTypes::COLD_IRON,
-            ResourceTypes::GOLD,
-            ResourceTypes::HARTWOOD,
-            ResourceTypes::DIAMONDS,
-            ResourceTypes::SAPPHIRE,
-            ResourceTypes::RUBY,
-            ResourceTypes::DEEP_CRYSTAL,
-            ResourceTypes::IGNIUM,
-            ResourceTypes::ETHEREAL_SILICA,
-            ResourceTypes::TRUE_ICE,
-            ResourceTypes::TWILIGHT_QUARTZ,
-            ResourceTypes::ALCHEMICAL_SILVER,
-            ResourceTypes::ADAMANTINE,
-            ResourceTypes::MITHRAL,
-            ResourceTypes::DRAGONHIDE,
+            ResourceTypes::WOOD, ResourceTypes::STONE, ResourceTypes::COAL, ResourceTypes::COPPER,
+            ResourceTypes::OBSIDIAN, ResourceTypes::SILVER, ResourceTypes::IRONWOOD, ResourceTypes::COLD_IRON,
+            ResourceTypes::GOLD, ResourceTypes::HARTWOOD, ResourceTypes::DIAMONDS, ResourceTypes::SAPPHIRE,
+            ResourceTypes::RUBY, ResourceTypes::DEEP_CRYSTAL, ResourceTypes::IGNIUM, ResourceTypes::ETHEREAL_SILICA,
+            ResourceTypes::TRUE_ICE, ResourceTypes::TWILIGHT_QUARTZ, ResourceTypes::ALCHEMICAL_SILVER,
+            ResourceTypes::ADAMANTINE, ResourceTypes::MITHRAL, ResourceTypes::DRAGONHIDE,
         ]
     }
 
@@ -204,7 +186,7 @@ pub impl iVillageDiscoveryImpl of iVillageDiscoveryTrait {
             );
             starting_resource.add(starting_resource_amount, ref structure_weight, resource_weight_grams);
             starting_resource.store(ref world);
-        };
+        }
 
         // update structure weight
         structure_weight.store(ref world, structure_id);

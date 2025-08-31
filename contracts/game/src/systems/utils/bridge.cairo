@@ -1,14 +1,13 @@
 use core::num::traits::zero::Zero;
-use dojo::model::{ModelStorage};
+use dojo::model::ModelStorage;
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use s1_eternum::alias::ID;
-use s1_eternum::constants::{RESOURCE_PRECISION};
-use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
+use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
 use s1_eternum::models::config::{
     ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, WorldConfigUtilImpl,
 };
-use s1_eternum::models::hyperstructure::{HyperstructureGlobals};
-use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
+use s1_eternum::models::hyperstructure::HyperstructureGlobals;
+use s1_eternum::models::resource::arrivals::ResourceArrivalImpl;
 use s1_eternum::models::resource::resource::{
     ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
 };
@@ -16,12 +15,12 @@ use s1_eternum::models::structure::{
     StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureMetadata,
     StructureMetadataStoreImpl, StructureOwnerStoreImpl,
 };
-use s1_eternum::models::weight::{Weight};
+use s1_eternum::models::weight::Weight;
 use s1_eternum::systems::utils::erc20::{
     ERC20ABIDispatcher, ERC20ABIDispatcherTrait, ResourceERC20MintableABIDispatcher,
     ResourceERC20MintableABIDispatcherTrait,
 };
-use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
+use s1_eternum::systems::utils::resource::iResourceTransferImpl;
 use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl, pow};
 use starknet::ContractAddress;
 
@@ -159,7 +158,7 @@ pub impl iBridgeImpl of iBridgeTrait {
                         false,
                     );
                 },
-            };
+            }
             return realm_fee_amount;
         }
         return 0;
@@ -189,7 +188,7 @@ pub impl iBridgeImpl of iBridgeTrait {
                         ref world, bank_structure_id, array![(resource_type, bank_fee_amount)].span(),
                     );
                 },
-            };
+            }
             return bank_fee_amount;
         }
         return 0;

@@ -1,4 +1,4 @@
-use dojo::model::{ModelStorage};
+use dojo::model::ModelStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::alias::ID;
 use s1_eternum::models::config::{MapConfig, QuestConfig, TickImpl, TickTrait, WorldConfigUtilImpl};
@@ -10,7 +10,7 @@ use s1_eternum::systems::quest::constants::{
     QUEST_REWARD_BASE_MULTIPLIER, VERSION, VRF_OFFSET,
 };
 use s1_eternum::systems::utils::map::IMapImpl;
-use s1_eternum::systems::utils::troop::{iExplorerImpl};
+use s1_eternum::systems::utils::troop::iExplorerImpl;
 use s1_eternum::utils::map::biomes::{Biome, get_biome};
 use s1_eternum::utils::random;
 use starknet::ContractAddress;
@@ -33,6 +33,24 @@ pub trait IQuestSystems<T> {
     fn is_quest_feature_enabled(self: @T) -> bool;
 }
 
+#[starknet::interface]
+pub trait IBudokanGame<T> {
+    fn score(self: @T, token_id: u64) -> u32;
+    // fn mint_game(
+//     self: @T,
+//     player_name: Option<felt252>,
+//     settings_id: Option<u32>,
+//     start: Option<u64>,
+//     end: Option<u64>,
+//     objective_ids: Option<Span<u32>>,
+//     context: Option<GameContextDetails>,
+//     client_url: Option<ByteArray>,
+//     renderer_address: Option<ContractAddress>,
+//     to: ContractAddress,
+//     soulbound: bool,
+// ) -> u64;
+}
+
 #[dojo::contract]
 pub mod quest_systems {
     use core::array::ArrayTrait;
@@ -43,7 +61,7 @@ pub mod quest_systems {
     use s1_eternum::constants::{DEFAULT_NS, ErrorMessages, resource_type_name};
     use s1_eternum::models::map::Tile;
     use s1_eternum::models::owner::OwnerAddressTrait;
-    use s1_eternum::models::position::{TravelTrait};
+    use s1_eternum::models::position::TravelTrait;
     use s1_eternum::models::quest::{
         Level, Quest, QuestDetails, QuestFeatureFlag, QuestGameRegistry, QuestLevels, QuestRegistrations, QuestTile,
     };
@@ -53,12 +71,9 @@ pub mod quest_systems {
     use s1_eternum::models::structure::{StructureMetadataStoreImpl, StructureOwnerStoreImpl};
     use s1_eternum::models::troop::ExplorerTroops;
     use s1_eternum::models::weight::Weight;
-    use s1_eternum::systems::quest::constants::{VERSION};
+    use s1_eternum::systems::quest::constants::VERSION;
     use starknet::ContractAddress;
-    use super::iQuestDiscoveryImpl;
-    use tournaments::components::interfaces::{
-        IGameDetailsDispatcher, IGameDetailsDispatcherTrait, IGameTokenDispatcher, IGameTokenDispatcherTrait,
-    };
+    use super::{IBudokanGameDispatcher, IBudokanGameDispatcherTrait, iQuestDiscoveryImpl};
 
     fn dojo_init(self: @ContractState) {
         // initialize quest feature flag to enabled
@@ -142,7 +157,7 @@ pub mod quest_systems {
                     new_games.append(game_address);
                 }
                 i += 1;
-            };
+            }
 
             // Assert the game exists in the registry by checking if the length changed
             assert!(new_games.len() < original_length, "Game is not in registry");
@@ -176,75 +191,84 @@ pub mod quest_systems {
             player_name: felt252,
             to_address: ContractAddress,
         ) -> u64 {
-            let mut world = self.world(DEFAULT_NS());
+            // let mut world = self.world(DEFAULT_NS());
 
-            let feature_toggle: QuestFeatureFlag = world.read_model(VERSION);
-            assert!(feature_toggle.enabled, "Quest feature is disabled");
+            // let feature_toggle: QuestFeatureFlag = world.read_model(VERSION);
+            // assert!(feature_toggle.enabled, "Quest feature is disabled");
 
-            let mut quest_tile: QuestTile = world.read_model(quest_tile_id);
-            assert!(quest_tile.game_address.is_non_zero(), "Quest tile not found for id: {}", quest_tile_id);
-            assert!(
-                quest_tile.participant_count < quest_tile.capacity, "Quest is at capacity for id: {}", quest_tile_id,
-            );
+            // let mut quest_tile: QuestTile = world.read_model(quest_tile_id);
+            // assert!(quest_tile.game_address.is_non_zero(), "Quest tile not found for id: {}", quest_tile_id);
+            // assert!(
+            //     quest_tile.participant_count < quest_tile.capacity, "Quest is at capacity for id: {}", quest_tile_id,
+            // );
 
-            let explorer: ExplorerTroops = world.read_model(explorer_id);
-            assert!(explorer.coord.is_adjacent(quest_tile.coord), "Explorer is not adjacent to quest tile");
+            // let explorer: ExplorerTroops = world.read_model(explorer_id);
+            // assert!(explorer.coord.is_adjacent(quest_tile.coord), "Explorer is not adjacent to quest tile");
 
-            // verify caller is owner of explorer
-            StructureOwnerStoreImpl::retrieve(ref world, explorer.owner).assert_caller_owner();
+            // // verify caller is owner of explorer
+            // StructureOwnerStoreImpl::retrieve(ref world, explorer.owner).assert_caller_owner();
 
-            // Get the realm ID from the explorer's owner structure
-            let structure_metadata = StructureMetadataStoreImpl::retrieve(ref world, explorer.owner);
+            // // Get the realm ID from the explorer's owner structure
+            // let structure_metadata = StructureMetadataStoreImpl::retrieve(ref world, explorer.owner);
 
-            // if the structure is a village
-            let realm_or_village_id = if structure_metadata.village_realm != 0 {
-                //  use the owner (structure id) of explorer
-                explorer.owner
-            } else {
-                // otherwise use realm id
-                structure_metadata.realm_id.into()
-            };
+            // // if the structure is a village
+            // let realm_or_village_id = if structure_metadata.village_realm != 0 {
+            //     //  use the owner (structure id) of explorer
+            //     explorer.owner
+            // } else {
+            //     // otherwise use realm id
+            //     structure_metadata.realm_id.into()
+            // };
 
-            // Check if this realm already has a participant in this quest
-            let realm_or_village_participant: QuestRegistrations = world
-                .read_model((quest_tile_id, realm_or_village_id));
-            assert!(
-                realm_or_village_participant.game_token_id == 0, "Realm or Village has already attempted this quest",
-            );
+            // // Check if this realm already has a participant in this quest
+            // let realm_or_village_participant: QuestRegistrations = world
+            //     .read_model((quest_tile_id, realm_or_village_id));
+            // assert!(
+            //     realm_or_village_participant.game_token_id == 0, "Realm or Village has already attempted this quest",
+            // );
 
-            // TODO: Consider scenario in which game has been removed from registry
-            let game: QuestLevels = world.read_model(quest_tile.game_address);
-            let config: Level = *game.levels.at(quest_tile.level.into());
+            // // TODO: Consider scenario in which game has been removed from registry
+            // let game: QuestLevels = world.read_model(quest_tile.game_address);
+            // let config: Level = *game.levels.at(quest_tile.level.into());
 
-            // we don't currently use start delay but could be used as part of future, multi-player
-            // raid feature
-            let game_start_delay: Option<u64> = Option::None;
+            // // we don't currently use start delay but could be used as part of future, multi-player
+            // // raid feature
+            // let game_start_delay: Option<u64> = Option::None;
 
-            // use optional expiration if set on level config
-            let game_expiration: Option<u64> = if config.time_limit > 0 {
-                Option::Some(starknet::get_block_timestamp() + config.time_limit)
-            } else {
-                Option::None
-            };
+            // // use optional expiration if set on level config
+            // let game_expiration: Option<u64> = if config.time_limit > 0 {
+            //     Option::Some(starknet::get_block_timestamp() + config.time_limit)
+            // } else {
+            //     Option::None
+            // };
 
-            let game_dispatcher = IGameTokenDispatcher { contract_address: quest_tile.game_address };
-            let game_token_id: u64 = game_dispatcher
-                .mint(player_name, config.settings_id, game_start_delay, game_expiration, to_address);
+            // let game_dispatcher = IBudokanGameDispatcher { contract_address: quest_tile.game_address };
+            // let game_token_id: u64 = game_dispatcher
+            //     .mint(
+            //         player_name,
+            //         config.settings_id,
+            //         game_start_delay,
+            //         game_expiration,
+            //         to_address
+            //     );
 
-            let quest = Quest {
-                game_token_id, game_address: quest_tile.game_address, quest_tile_id, explorer_id, completed: false,
-            };
-            world.write_model(@quest);
+            // let quest = Quest {
+            //     game_token_id, game_address: quest_tile.game_address, quest_tile_id, explorer_id, completed: false,
+            // };
+            // world.write_model(@quest);
 
-            // increment participant count
-            quest_tile.participant_count += 1;
-            world.write_model(@quest_tile);
+            // // increment participant count
+            // quest_tile.participant_count += 1;
+            // world.write_model(@quest_tile);
 
-            // Record realm participation with this quest
-            let realm_or_village_participant = QuestRegistrations { quest_tile_id, realm_or_village_id, game_token_id };
-            world.write_model(@realm_or_village_participant);
+            // // Record realm participation with this quest
+            // let realm_or_village_participant = QuestRegistrations { quest_tile_id, realm_or_village_id, game_token_id
+            // };
+            // world.write_model(@realm_or_village_participant);
 
-            game_token_id
+            // game_token_id
+
+            1
         }
 
         fn claim_reward(ref self: ContractState, game_token_id: u64, game_address: ContractAddress) {
@@ -266,7 +290,7 @@ pub mod quest_systems {
             let quest_levels: QuestLevels = world.read_model(quest_tile.game_address);
             let level: Level = *quest_levels.levels.at(quest_tile.level.into());
 
-            let game_dispatcher = IGameDetailsDispatcher { contract_address: quest_tile.game_address };
+            let game_dispatcher = IBudokanGameDispatcher { contract_address: quest_tile.game_address };
             let score: u32 = game_dispatcher.score(quest.game_token_id);
 
             // check if the score is greater than or equal to the target score
@@ -454,37 +478,38 @@ pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
 #[cfg(test)]
 mod tests {
     use achievement::events::index::{e_TrophyCreation, e_TrophyProgression};
+    use budokan::components::models::game::{
+        TokenMetadata, m_GameCounter, m_GameMetadata, m_Score, m_Settings, m_SettingsCounter, m_SettingsDetails,
+        m_TokenMetadata,
+    };
+    use budokan::components::tests::mocks::game_mock::{
+        IGameTokenMockDispatcher, IGameTokenMockDispatcherTrait, IGameTokenMockInitDispatcher,
+        IGameTokenMockInitDispatcherTrait, game_mock,
+    };
     use core::num::traits::Zero;
     use dojo::model::{ModelStorage, ModelStorageTest};
     use dojo::world::{IWorldDispatcherTrait, WorldStorageTrait};
     use dojo_cairo_test::{ContractDef, ContractDefTrait, NamespaceDef, TestResource};
-
     use openzeppelin_token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
     use s1_eternum::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
-    use s1_eternum::models::config::{CombatConfigImpl};
-    use s1_eternum::models::config::{WorldConfigUtilImpl};
-    use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
-    use s1_eternum::models::map::{m_BiomeDiscovered};
-    use s1_eternum::models::position::{Coord, Direction};
-    use s1_eternum::models::position::{TravelTrait};
+    use s1_eternum::models::config::{CombatConfigImpl, WorldConfigUtilImpl, m_WeightConfig, m_WorldConfig};
+    use s1_eternum::models::map::{Tile, TileImpl, TileOccupier, m_BiomeDiscovered, m_Tile};
+    use s1_eternum::models::position::{Coord, Direction, TravelTrait};
+    use s1_eternum::models::quest::{
+        Level, Quest, QuestGameRegistry, QuestLevels, QuestTile, m_Quest, m_QuestFeatureFlag, m_QuestGameRegistry,
+        m_QuestLevels, m_QuestRegistrations, m_QuestTile,
+    };
+    use s1_eternum::models::resource::production::building::{m_Building, m_StructureBuildings};
     use s1_eternum::models::resource::resource::{
-        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl, m_Resource,
     };
-    use s1_eternum::models::stamina::{StaminaImpl};
+    use s1_eternum::models::stamina::StaminaImpl;
     use s1_eternum::models::structure::{
-        StructureBaseImpl, StructureBaseStoreImpl, StructureImpl, StructureTroopExplorerStoreImpl,
-        m_StructureVillageSlots,
+        StructureBaseImpl, StructureBaseStoreImpl, StructureImpl, StructureTroopExplorerStoreImpl, m_Structure,
+        m_StructureOwnerStats, m_StructureVillageSlots,
     };
-    use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, TroopTier, TroopType};
-    use s1_eternum::models::{
-        config::{m_WeightConfig, m_WorldConfig}, map::{m_Tile},
-        quest::{
-            Level, Quest, QuestGameRegistry, QuestLevels, QuestTile, m_Quest, m_QuestFeatureFlag, m_QuestGameRegistry,
-            m_QuestLevels, m_QuestRegistrations, m_QuestTile,
-        },
-        resource::production::building::{m_Building, m_StructureBuildings}, resource::resource::{m_Resource},
-        structure::{m_Structure, m_StructureOwnerStats}, troop::{m_ExplorerTroops}, weight::{Weight},
-    };
+    use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, TroopTier, TroopType, m_ExplorerTroops};
+    use s1_eternum::models::weight::Weight;
     use s1_eternum::systems::combat::contracts::troop_management::{
         ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait, troop_management_systems,
     };
@@ -498,23 +523,15 @@ mod tests {
     use s1_eternum::systems::quest::contracts::{
         IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait, iQuestDiscoveryImpl, quest_systems,
     };
-    use s1_eternum::systems::resources::contracts::resource_systems::{resource_systems};
+    use s1_eternum::systems::resources::contracts::resource_systems::resource_systems;
     use s1_eternum::systems::village::contracts::village_systems;
-    use s1_eternum::utils::map::biomes::{Biome};
+    use s1_eternum::utils::map::biomes::Biome;
     use s1_eternum::utils::testing::helpers::{
         MOCK_MAP_CONFIG, MOCK_TICK_CONFIG, MOCK_TROOP_LIMIT_CONFIG, init_config, tgrant_resources, tspawn_explorer,
         tspawn_quest_tile, tspawn_realm_with_resources, tspawn_simple_realm, tspawn_village, tspawn_village_explorer,
         tspawn_world,
     };
     use starknet::ContractAddress;
-    use tournaments::components::models::game::{
-        TokenMetadata, m_GameCounter, m_GameMetadata, m_Score, m_Settings, m_SettingsCounter, m_SettingsDetails,
-        m_TokenMetadata,
-    };
-    use tournaments::components::tests::mocks::game_mock::{
-        IGameTokenMockDispatcher, IGameTokenMockDispatcherTrait, IGameTokenMockInitDispatcher,
-        IGameTokenMockInitDispatcherTrait, game_mock,
-    };
 
     fn namespace_def() -> NamespaceDef {
         let ndef = NamespaceDef {
@@ -688,7 +705,7 @@ mod tests {
             starknet::testing::set_block_timestamp(current_time + 100);
 
             tiles_explored += 1;
-        };
+        }
 
         // assert explorer is adjacent to the quest tile
         let explorer: ExplorerTroops = world.read_model(explorer_id);
@@ -1810,7 +1827,7 @@ mod tests {
                 break;
             }
             i += 1;
-        };
+        }
 
         assert!(found, "Game should be in registry before removal");
 
@@ -1830,7 +1847,7 @@ mod tests {
                 break;
             }
             j += 1;
-        };
+        }
         assert!(!found_after, "Game should not be in registry after removal");
     }
 
@@ -1961,7 +1978,7 @@ mod tests {
                 found_game3 = true;
             }
             i += 1;
-        };
+        }
 
         assert!(found_game1, "Game1 should still be in registry");
         assert!(!found_game2, "Game2 should be removed from registry");
@@ -2060,7 +2077,7 @@ mod tests {
                 world.write_model_test(@quest_levels);
 
                 i += 1;
-            };
+            }
 
             // Remove all games from registry
             let mut j = 0;

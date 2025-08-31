@@ -1,15 +1,13 @@
-use dojo::model::{ModelStorage};
+use dojo::model::ModelStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{
     RELICS_RESOURCE_END_ID, RELICS_RESOURCE_START_ID, RESOURCE_PRECISION, ResourceTypes, relic_level,
 };
-use s1_eternum::models::config::TickImpl;
-use s1_eternum::models::config::{MapConfig, WorldConfigUtilImpl};
-use s1_eternum::models::map::{Tile, TileImpl};
-use s1_eternum::models::map::{TileOccupier};
+use s1_eternum::models::config::{MapConfig, TickImpl, WorldConfigUtilImpl};
+use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
 use s1_eternum::models::position::{Coord, CoordImpl, Direction, DirectionImpl, TravelImpl};
-use s1_eternum::models::record::{RelicRecord};
+use s1_eternum::models::record::RelicRecord;
 use s1_eternum::models::resource::resource::{
     ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
 };
@@ -21,7 +19,7 @@ use s1_eternum::systems::utils::troop::iMercenariesImpl;
 use s1_eternum::utils::map::biomes::{Biome, get_biome};
 use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
 use s1_eternum::utils::random;
-use s1_eternum::utils::random::{VRFImpl};
+use s1_eternum::utils::random::VRFImpl;
 
 #[generate_trait]
 pub impl iRelicChestDiscoveryImpl of iRelicChestDiscoveryTrait {
@@ -59,7 +57,7 @@ pub impl iRelicChestDiscoveryImpl of iRelicChestDiscoveryTrait {
             destination_coord = destination_coord
                 .neighbor_after_distance(*direction, map_config.relic_hex_dist_from_center.into() / i);
             i += 1;
-        };
+        }
 
         loop {
             let mut tile: Tile = world.read_model((destination_coord.x, destination_coord.y));
@@ -97,7 +95,7 @@ pub impl iRelicChestResourceFactoryImpl of iRelicChestResourceFactoryTrait {
             } else {
                 panic!("Eternum: Invalid relic id for chance calculation");
             }
-        };
+        }
         (relic_ids.span(), chances.span())
     }
 
@@ -123,7 +121,7 @@ pub impl iRelicChestResourceFactoryImpl of iRelicChestResourceFactoryTrait {
             );
             relic_resource.add(1 * RESOURCE_PRECISION, ref to_explorer_weight, relic_resource_weight_grams);
             relic_resource.store(ref world);
-        };
+        }
 
         to_explorer_weight.store(ref world, to_explorer_id);
 

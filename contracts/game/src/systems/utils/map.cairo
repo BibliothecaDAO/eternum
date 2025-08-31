@@ -149,7 +149,7 @@ pub impl IMapImpl of IMapTrait {
                 let mut tile: Tile = world.read_model((coord.x, coord.y));
                 let biome: Biome = get_biome(coord.x.into(), coord.y.into());
                 Self::explore(ref world, ref tile, biome);
-            };
+            }
             radius -= 1;
         }
     }

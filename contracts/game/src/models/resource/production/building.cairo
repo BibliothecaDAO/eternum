@@ -1,20 +1,19 @@
 use alexandria_math::U128BitShift;
 use core::num::traits::zero::Zero;
 use dojo::event::EventStorage;
-use dojo::model::{ModelStorage};
-use dojo::world::WorldStorage;
-use dojo::world::{IWorldDispatcherTrait};
+use dojo::model::ModelStorage;
+use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{
     BuildingCategoryConfig, BuildingConfig, CapacityConfig, ResourceFactoryConfig, TickImpl, WorldConfigUtilImpl,
 };
 use s1_eternum::models::events::{BuildingPaymentStory, BuildingPlacementStory, Story, StoryEvent};
-use s1_eternum::models::position::{Coord};
+use s1_eternum::models::position::Coord;
 use s1_eternum::models::resource::production::production::{Production, ProductionTrait};
-use s1_eternum::models::resource::resource::{ResourceList};
 use s1_eternum::models::resource::resource::{
-    ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl, WeightStoreImpl,
+    ResourceList, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl,
+    WeightStoreImpl,
 };
 use s1_eternum::models::structure::{
     StructureBase, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureOwnerStoreImpl,
@@ -58,7 +57,7 @@ pub struct StructureBuildings {
     pub population: Population,
 }
 
-#[derive(Copy, Drop, Serde, IntrospectPacked, Default)]
+#[derive(Copy, Drop, Serde, IntrospectPacked, Default, DojoStore)]
 pub struct Population {
     pub current: u32,
     pub max: u32,
@@ -119,7 +118,7 @@ pub impl StructureBuildingCategoryCountImpl of StructureBuildingCategoryCountTra
             let shift_amount = relative_category * 8;
             count = U128BitShift::shr(packed_value, shift_amount.into()) & mask;
             break;
-        };
+        }
 
         count.try_into().unwrap()
     }
@@ -146,7 +145,7 @@ pub impl StructureBuildingCategoryCountImpl of StructureBuildingCategoryCountTra
             let shifted_count: u128 = U128BitShift::shl(count.into(), shift_amount.into());
             let new_packed_value: u128 = (packed_value & ~mask) | shifted_count;
             new_packed.append(new_packed_value);
-        };
+        }
         self.packed_counts_1 = *new_packed.at(0);
         self.packed_counts_2 = *new_packed.at(1);
         self.packed_counts_3 = *new_packed.at(2);
@@ -861,7 +860,7 @@ pub impl BuildingImpl of BuildingTrait {
 
             tcost.append((erection_cost.resource_type, resource_amount));
             index += 1;
-        };
+        }
 
         // update structure weight
         structure_weight.store(ref world, self.outer_entity_id);

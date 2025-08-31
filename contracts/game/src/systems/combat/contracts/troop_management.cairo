@@ -61,39 +61,36 @@ pub mod troop_management_systems {
     use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::world::{IWorldDispatcherTrait};
-    use dojo::world::{WorldStorageTrait};
+    use dojo::world::{IWorldDispatcherTrait, WorldStorageTrait};
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::constants::{RESOURCE_PRECISION};
+    use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION};
+    use s1_eternum::models::config::{
+        CombatConfigImpl, SeasonConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig,
+        WorldConfigUtilImpl,
+    };
     use s1_eternum::models::events::{
         ExplorerAddStory, ExplorerCreateStory, ExplorerDeleteStory, ExplorerExplorerSwapStory, ExplorerGuardSwapStory,
         GuardAddStory, GuardDeleteStory, GuardExplorerSwapStory, Story, StoryEvent,
     };
-    use s1_eternum::models::stamina::StaminaImpl;
-    use s1_eternum::models::{
-        config::{
-            CombatConfigImpl, SeasonConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig,
-            WorldConfigUtilImpl,
-        },
-        map::{Tile, TileImpl}, owner::{OwnerAddressTrait}, position::{Coord, CoordTrait, Direction},
-        resource::{
-            resource::{
-                ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl,
-                StructureSingleResourceFoodImpl, WeightStoreImpl,
-            },
-        },
-        stamina::{StaminaTrait},
-        structure::{
-            StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureOwnerStoreImpl,
-            StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
-        },
-        troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTrait, GuardTroops, TroopTier, TroopType, Troops},
+    use s1_eternum::models::map::{Tile, TileImpl};
+    use s1_eternum::models::owner::OwnerAddressTrait;
+    use s1_eternum::models::position::{Coord, CoordTrait, Direction};
+    use s1_eternum::models::resource::resource::{
+        ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl,
+        WeightStoreImpl,
+    };
+    use s1_eternum::models::stamina::{StaminaImpl, StaminaTrait};
+    use s1_eternum::models::structure::{
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureOwnerStoreImpl,
+        StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
+    };
+    use s1_eternum::models::troop::{
+        ExplorerTroops, GuardImpl, GuardSlot, GuardTrait, GuardTroops, TroopTier, TroopType, Troops,
     };
     use s1_eternum::systems::utils::map::IMapImpl;
-    use s1_eternum::systems::utils::{mine::iMineDiscoveryImpl, troop::{iExplorerImpl, iGuardImpl, iTroopImpl}};
+    use s1_eternum::systems::utils::mine::iMineDiscoveryImpl;
+    use s1_eternum::systems::utils::troop::{iExplorerImpl, iGuardImpl, iTroopImpl};
     use starknet::ContractAddress;
-
     use super::ITroopManagementSystems;
 
     #[abi(embed_v0)]
@@ -891,34 +888,31 @@ pub mod troop_management_systems {
 mod tests {
     use achievement::events::index::e_TrophyProgression;
     use dojo::model::{ModelStorage, ModelStorageTest};
-    use dojo::world::{WorldStorageTrait};
+    use dojo::world::WorldStorageTrait;
     use dojo_cairo_test::{
         ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
     };
-
     use s1_eternum::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
-    use s1_eternum::models::{
-        config::{CombatConfigImpl, SeasonConfig, TroopLimitConfig, WorldConfigUtilImpl, m_WeightConfig, m_WorldConfig},
-        map::{Tile, TileTrait, m_Tile}, position::{Coord, CoordTrait, Direction},
-        resource::production::building::{m_Building, m_StructureBuildings},
-        resource::resource::{ResourceImpl, m_Resource},
-        structure::{
-            StructureBaseStoreImpl, StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl, m_Structure,
-            m_StructureOwnerStats, m_StructureVillageSlots,
-        },
-        troop::{ExplorerTroops, GuardSlot, GuardTrait, TroopTier, TroopType, m_ExplorerTroops},
+    use s1_eternum::models::config::{
+        CombatConfigImpl, SeasonConfig, TroopLimitConfig, WorldConfigUtilImpl, m_WeightConfig, m_WorldConfig,
     };
+    use s1_eternum::models::map::{Tile, TileTrait, m_Tile};
+    use s1_eternum::models::position::{Coord, CoordTrait, Direction};
+    use s1_eternum::models::resource::production::building::{m_Building, m_StructureBuildings};
+    use s1_eternum::models::resource::resource::{ResourceImpl, m_Resource};
+    use s1_eternum::models::structure::{
+        StructureBaseStoreImpl, StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl, m_Structure,
+        m_StructureOwnerStats, m_StructureVillageSlots,
+    };
+    use s1_eternum::models::troop::{ExplorerTroops, GuardSlot, GuardTrait, TroopTier, TroopType, m_ExplorerTroops};
 
     // use s1_eternum::models::weight::m_Weight; // Removed: Weight is not a model
     use s1_eternum::systems::combat::contracts::troop_management::{
         ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait, troop_management_systems,
     };
     use s1_eternum::systems::combat::contracts::troop_movement::{
-        ITroopMovementSystemsDispatcher, ITroopMovementSystemsDispatcherTrait,
-    };
-    use s1_eternum::systems::combat::contracts::troop_movement::{
-        agent_discovery_systems, hyperstructure_discovery_systems, mine_discovery_systems, troop_movement_systems,
-        troop_movement_util_systems,
+        ITroopMovementSystemsDispatcher, ITroopMovementSystemsDispatcherTrait, agent_discovery_systems,
+        hyperstructure_discovery_systems, mine_discovery_systems, troop_movement_systems, troop_movement_util_systems,
     };
     use s1_eternum::systems::realm::contracts::realm_internal_systems;
     use s1_eternum::systems::resources::contracts::resource_systems::resource_systems;
@@ -926,8 +920,8 @@ mod tests {
     use s1_eternum::utils::testing::helpers::{
         init_config, tgrant_resources, tspawn_realm_with_resources, tspawn_simple_realm,
     };
-
-    use starknet::{ContractAddress, testing::{set_account_contract_address, set_contract_address}};
+    use starknet::ContractAddress;
+    use starknet::testing::{set_account_contract_address, set_contract_address};
 
     fn namespace_def() -> NamespaceDef {
         let ndef = NamespaceDef {
@@ -2161,8 +2155,7 @@ mod tests {
             ref world,
             realm_id,
             array![
-                (ResourceTypes::KNIGHT_T1, starting_knight_t1_amount),
-                (ResourceTypes::WHEAT, wheat_amount),
+                (ResourceTypes::KNIGHT_T1, starting_knight_t1_amount), (ResourceTypes::WHEAT, wheat_amount),
                 (ResourceTypes::FISH, fish_amount),
             ]
                 .span(),

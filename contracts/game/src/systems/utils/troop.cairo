@@ -3,24 +3,24 @@ use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::alias::ID;
-use s1_eternum::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes};
-use s1_eternum::constants::{WORLD_CONFIG_ID, split_blitz_exploration_reward_and_probs, split_resources_and_probs};
-use s1_eternum::models::agent::{AgentConfig, AgentLordsMintedImpl};
-use s1_eternum::models::agent::{AgentCountImpl, AgentOwner};
-use s1_eternum::models::config::{AgentControllerConfig, CombatConfigImpl, WorldConfigUtilImpl};
+use s1_eternum::constants::{
+    DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID, split_blitz_exploration_reward_and_probs,
+    split_resources_and_probs,
+};
+use s1_eternum::models::agent::{AgentConfig, AgentCountImpl, AgentLordsMintedImpl, AgentOwner};
 use s1_eternum::models::config::{
-    CapacityConfig, MapConfig, TickImpl, TickInterval, TroopLimitConfig, TroopStaminaConfig,
+    AgentControllerConfig, CapacityConfig, CombatConfigImpl, MapConfig, TickImpl, TickInterval, TroopLimitConfig,
+    TroopStaminaConfig, WorldConfigUtilImpl,
 };
 use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
 use s1_eternum::models::name::AddressName;
 use s1_eternum::models::owner::OwnerAddressTrait;
 use s1_eternum::models::position::{Coord, CoordImpl, Direction};
-
 use s1_eternum::models::resource::resource::{
     RelicResourceImpl, Resource, ResourceImpl, ResourceWeightImpl, SingleResource, SingleResourceImpl,
     SingleResourceStoreImpl, WeightStoreImpl,
 };
-use s1_eternum::models::stamina::{StaminaImpl};
+use s1_eternum::models::stamina::StaminaImpl;
 use s1_eternum::models::structure::{
     StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureOwnerStoreImpl, StructureTroopExplorerStoreImpl,
     StructureTroopGuardStoreImpl,
@@ -129,11 +129,7 @@ pub impl iGuardImpl of iGuardTrait {
 pub impl iExplorerImpl of iExplorerTrait {
     fn attempt_move_to_adjacent_tile(ref world: WorldStorage, ref explorer: ExplorerTroops, ref current_tile: Tile) {
         let adjacent_directions = array![
-            Direction::East,
-            Direction::NorthEast,
-            Direction::NorthWest,
-            Direction::West,
-            Direction::SouthWest,
+            Direction::East, Direction::NorthEast, Direction::NorthWest, Direction::West, Direction::SouthWest,
             Direction::SouthEast,
         ];
         let current_coord: Coord = current_tile.into();
@@ -384,7 +380,7 @@ pub impl iExplorerImpl of iExplorerTrait {
             if explorer_id != explorer.explorer_id {
                 new_explorers.append(explorer_id);
             }
-        };
+        }
         StructureTroopExplorerStoreImpl::store(new_explorers.span(), ref world, structure_id);
 
         // update structure base
@@ -445,7 +441,7 @@ pub impl iExplorerImpl of iExplorerTrait {
                     / PercentageValueImpl::_100().into();
             },
             Option::None => {},
-        };
+        }
 
         return (reward_resource_id, reward_resource_amount * RESOURCE_PRECISION);
     }
@@ -595,7 +591,7 @@ pub impl iMercenariesImpl of iMercenariesTrait {
                 },
                 Option::None => { break; },
             }
-        };
+        }
 
         // update structure guard store
         StructureTroopGuardStoreImpl::store(ref structure_guards, ref world, structure_id);
@@ -725,52 +721,18 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
 
     fn names() -> Array<felt252> {
         array![
-            'Daydreams Agent Bread',
-            'Daydreams Agent Doughnut',
-            'Daydreams Agent Chaos',
-            'Daydreams Agent Giggles',
-            'Daydreams Agent Noodle',
-            'Daydreams Agent Pickle',
-            'Daydreams Agent PuffPuff',
-            'Daydreams Agent Sprinkles',
-            'Daydreams Agent Unstable',
-            'Daydreams Agent Waffle',
-            'Daydreams Agent Mischief',
-            'Daydreams Agent Whiskers',
-            'Daydreams Agent Poptart',
-            'Daydreams Agent Bubbles',
-            'Daydreams Agent Jojo',
-            'Daydreams Agent Pink',
-            'Daydreams Agent Biscuit',
-            'Daydreams Agent Sparkle',
-            'Daydreams Agent Whimsy',
-            'Daydreams Agent Pancake',
-            'Daydreams Agent Mario',
-            'Daydreams Agent Scramble',
-            'Daydreams Agent Jitters',
-            'Daydreams Agent Funny',
-            'Daydreams Agent Waffles',
-            'Daydreams Agent Doodle',
-            'Daydreams Agent Katy',
-            'Daydreams Agent Bumblebee',
-            'Daydreams Agent Happy',
-            'Daydreams Agent Marshmallow',
-            'Daydreams Agent Zigzag',
-            'Daydreams Agent Pebble',
-            'Daydreams Agent Wiggles',
-            'Daydreams Agent Cinnamon',
-            'Daydreams Agent Noodles',
-            'Daydreams Agent Popsicle',
-            'Daydreams Agent Loot',
-            'Daydreams Agent Mumble',
-            'Daydreams Agent French',
-            'Daydreams Agent Angry',
-            'Daydreams Agent Dazzle',
-            'Daydreams Agent Pretzel',
-            'Daydreams Agent Bubblegum',
-            'Daydreams Agent Banana',
-            'Daydreams Agent Pickle',
-            'Daydreams Agent Blobert',
+            'Daydreams Agent Bread', 'Daydreams Agent Doughnut', 'Daydreams Agent Chaos', 'Daydreams Agent Giggles',
+            'Daydreams Agent Noodle', 'Daydreams Agent Pickle', 'Daydreams Agent PuffPuff', 'Daydreams Agent Sprinkles',
+            'Daydreams Agent Unstable', 'Daydreams Agent Waffle', 'Daydreams Agent Mischief',
+            'Daydreams Agent Whiskers', 'Daydreams Agent Poptart', 'Daydreams Agent Bubbles', 'Daydreams Agent Jojo',
+            'Daydreams Agent Pink', 'Daydreams Agent Biscuit', 'Daydreams Agent Sparkle', 'Daydreams Agent Whimsy',
+            'Daydreams Agent Pancake', 'Daydreams Agent Mario', 'Daydreams Agent Scramble', 'Daydreams Agent Jitters',
+            'Daydreams Agent Funny', 'Daydreams Agent Waffles', 'Daydreams Agent Doodle', 'Daydreams Agent Katy',
+            'Daydreams Agent Bumblebee', 'Daydreams Agent Happy', 'Daydreams Agent Marshmallow',
+            'Daydreams Agent Zigzag', 'Daydreams Agent Pebble', 'Daydreams Agent Wiggles', 'Daydreams Agent Cinnamon',
+            'Daydreams Agent Noodles', 'Daydreams Agent Popsicle', 'Daydreams Agent Loot', 'Daydreams Agent Mumble',
+            'Daydreams Agent French', 'Daydreams Agent Angry', 'Daydreams Agent Dazzle', 'Daydreams Agent Pretzel',
+            'Daydreams Agent Bubblegum', 'Daydreams Agent Banana', 'Daydreams Agent Pickle', 'Daydreams Agent Blobert',
         ]
     }
 }

@@ -10,7 +10,7 @@ pub impl iDistanceKmImpl of iDistanceKmTrait {
         let mut travel_time = start_coord.km_travel_time(destination_coord, sec_per_km);
         if round_trip {
             travel_time *= 2;
-        };
+        }
 
         travel_time
     }

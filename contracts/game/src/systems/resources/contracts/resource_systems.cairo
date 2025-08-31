@@ -28,24 +28,22 @@ pub mod resource_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use s1_eternum::alias::ID;
-
-    use s1_eternum::constants::{DEFAULT_NS};
+    use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::config::{SeasonConfigImpl, SpeedImpl};
-    use s1_eternum::models::owner::{OwnerAddressTrait};
-    use s1_eternum::models::position::{TravelTrait};
-    use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
-    use s1_eternum::models::resource::resource::{ResourceAllowance};
+    use s1_eternum::models::owner::OwnerAddressTrait;
+    use s1_eternum::models::position::TravelTrait;
+    use s1_eternum::models::resource::arrivals::ResourceArrivalImpl;
     use s1_eternum::models::resource::resource::{
-        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+        ResourceAllowance, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureImpl, StructureOwnerStoreImpl,
     };
-    use s1_eternum::models::troop::{ExplorerTroops};
-    use s1_eternum::models::weight::{Weight};
-    use s1_eternum::systems::utils::distance::{iDistanceKmImpl};
-    use s1_eternum::systems::utils::donkey::{iDonkeyImpl};
-    use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
+    use s1_eternum::models::troop::ExplorerTroops;
+    use s1_eternum::models::weight::Weight;
+    use s1_eternum::systems::utils::distance::iDistanceKmImpl;
+    use s1_eternum::systems::utils::donkey::iDonkeyImpl;
+    use s1_eternum::systems::utils::resource::iResourceTransferImpl;
     use s1_eternum::systems::utils::troop::iExplorerImpl;
     use starknet::ContractAddress;
 
@@ -239,7 +237,7 @@ pub mod resource_systems {
                     },
                     Option::None(_) => { break; },
                 };
-            };
+            }
 
             let mut owner_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
                 ref world, owner_structure_id,

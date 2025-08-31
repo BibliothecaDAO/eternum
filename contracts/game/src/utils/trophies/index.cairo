@@ -1,4 +1,4 @@
-use achievement::types::task::{Task as BushidoTask};
+use achievement::types::task::Task as BushidoTask;
 use s1_eternum::utils::trophies;
 
 // Constants

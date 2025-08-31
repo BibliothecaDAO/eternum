@@ -1,6 +1,5 @@
 use s1_eternum::alias::ID;
-use s1_eternum::models::position::Coord;
-use s1_eternum::models::position::Direction;
+use s1_eternum::models::position::{Coord, Direction};
 use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
 use starknet::ContractAddress;
 

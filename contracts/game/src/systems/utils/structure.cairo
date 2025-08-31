@@ -19,13 +19,13 @@ use s1_eternum::models::structure::{
     StructureTroopGuardStoreImpl, StructureVillageSlots,
 };
 use s1_eternum::models::troop::{ExplorerTroops, GuardSlot, GuardTrait, GuardTroops, TroopsImpl};
-use s1_eternum::models::weight::{Weight};
+use s1_eternum::models::weight::Weight;
 use s1_eternum::systems::combat::contracts::troop_management::{
     ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait,
 };
 use s1_eternum::systems::utils::map::IMapImpl;
 use s1_eternum::systems::utils::troop::iExplorerImpl;
-use s1_eternum::systems::utils::village::{iVillageImpl};
+use s1_eternum::systems::utils::village::iVillageImpl;
 use s1_eternum::utils::map::biomes::{Biome, get_biome};
 use s1_eternum::utils::village::{IVillagePassDispatcher, IVillagePassDispatcherTrait};
 
@@ -98,11 +98,7 @@ pub impl iStructureImpl of IStructureTrait {
 
         // explore all tiles around the structure, as well as village spots
         let structure_surrounding = array![
-            Direction::East,
-            Direction::NorthEast,
-            Direction::NorthWest,
-            Direction::West,
-            Direction::SouthWest,
+            Direction::East, Direction::NorthEast, Direction::NorthWest, Direction::West, Direction::SouthWest,
             Direction::SouthEast,
         ];
         let mut possible_village_slots: Array<Direction> = array![];
@@ -141,7 +137,7 @@ pub impl iStructureImpl of IStructureTrait {
                     }
                 }
             };
-        };
+        }
 
         if possible_village_slots.len().is_non_zero() {
             let structure_village_slots = StructureVillageSlots {

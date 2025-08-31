@@ -1,5 +1,5 @@
 use s1_eternum::alias::ID;
-use s1_eternum::models::position::{Direction};
+use s1_eternum::models::position::Direction;
 
 #[starknet::interface]
 pub trait IVillageSystems<T> {
@@ -10,16 +10,12 @@ pub trait IVillageSystems<T> {
 pub mod village_systems {
     use core::num::traits::zero::Zero;
     use dojo::model::ModelStorage;
-    use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcherTrait};
-
+    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS};
+    use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::config::{SeasonConfigImpl, VillageTokenConfig, WorldConfigUtilImpl};
-
-    use s1_eternum::models::map::{TileOccupier};
-    use s1_eternum::models::position::{Coord};
-    use s1_eternum::models::position::{Direction, NUM_DIRECTIONS};
+    use s1_eternum::models::map::TileOccupier;
+    use s1_eternum::models::position::{Coord, Direction, NUM_DIRECTIONS};
     use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl};
     use s1_eternum::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
@@ -80,7 +76,7 @@ pub mod village_systems {
                 } else {
                     new_directions_left.append(*slot_direction);
                 }
-            };
+            }
             assert!(slot_available, "the chosen slot is not available");
 
             // remove the used village slot from available slots
@@ -96,7 +92,7 @@ pub mod village_systems {
             let mut village_coord: Coord = connected_structure.coord();
             for _ in 0..iVillageImpl::village_realm_distance() {
                 village_coord = village_coord.neighbor(direction);
-            };
+            }
 
             let village_resources: Span<u8> = array![iVillageResourceImpl::random(caller, world)].span();
 
