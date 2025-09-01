@@ -319,7 +319,7 @@ export const ChestContent = ({
             rarity={selectedAsset.rarity}
             modelPath={selectedAsset.modelPath}
             className="w-full h-full"
-            positionY={selectedAsset.positionY}
+            positionY={selectedAsset.positionY + 0.3}
             scale={selectedAsset.scale}
             rotationY={selectedAsset.rotationY}
             rotationZ={selectedAsset.rotationZ}
@@ -338,52 +338,8 @@ export const ChestContent = ({
             {renderTitle()}
           </div>
 
-          {/* Mobile Selected Item Preview - Right below title */}
-          <div
-            className="md:hidden pointer-events-auto px-4 mb-4 flex-shrink-0"
-            style={{
-              transition: "opacity 1000ms",
-              opacity: showContent ? 1 : 0,
-            }}
-          >
-            <div
-              className={`p-3 bg-slate-900/20 rounded-xl border border-slate-700/30 backdrop-blur-sm shadow-xl border-l-4 ${getRarityAccent(selectedAsset.rarity)}`}
-            >
-              <div className="flex items-start gap-3">
-                {/* Item Image */}
-                <div className="bg-slate-800/15 rounded-lg p-2 border border-slate-700/30 w-20 h-20 flex items-center justify-center flex-shrink-0">
-                  <img
-                    key={selectedAsset.id}
-                    src={selectedAsset.imagePath}
-                    alt={selectedAsset.name}
-                    className="max-w-full max-h-full object-contain"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = "/images/placeholder.png";
-                    }}
-                  />
-                </div>
-
-                {/* Item Details */}
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-base font-semibold text-gray-200 truncate mb-1">{selectedAsset.name}</h3>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full font-bold ${getRarityBgClass(selectedAsset.rarity)}`}
-                      style={{
-                        backgroundColor: `${getRarityAccentColor(selectedAsset.rarity)}30`,
-                        color: getRarityAccentColor(selectedAsset.rarity),
-                        border: `1px solid ${getRarityAccentColor(selectedAsset.rarity)}50`,
-                      }}
-                    >
-                      {selectedAsset.rarity.toUpperCase()}
-                    </span>
-                    <span className="text-xs text-gray-400">{Math.round(selectedAsset.drawChance)}%</span>
-                  </div>
-                  <p className="text-xs text-gray-400 leading-tight line-clamp-2">{selectedAsset.description}</p>
-                </div>
-              </div>
-            </div>
+          {/* Mobile Selected Item Preview - Hidden on mobile */}
+          <div className="hidden">
           </div>
 
           {/* Main content area with drop rates on left and items on right */}
