@@ -355,44 +355,67 @@ export const ChestContent = ({
                 opacity: showContent ? 1 : 0,
               }}
             >
-              {/* Drop Rate Summary - Redesigned */}
-              <div className="p-3 lg:p-4 bg-slate-900/20 rounded-xl border border-slate-700/30 backdrop-blur-sm shadow-xl flex-shrink-0 flex flex-col hidden md:flex">
-                <h4 className="text-sm font-semibold text-gray-300 mb-3 text-center">Drop Rates (10 Items)</h4>
+              {/* Drop Rate Summary - Enhanced */}
+              <div className="p-3 lg:p-4 bg-slate-900/25 rounded-xl border border-slate-700/40 backdrop-blur-sm shadow-xl flex-shrink-0 flex flex-col hidden md:flex">
+                <h4 className="text-sm font-semibold text-gray-300 mb-3 text-center">Drop Rates</h4>
                 <div className="flex-1 space-y-1.5">
-                  <div className="flex justify-between items-center py-1 px-2 rounded bg-slate-800/10">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-rarity-legendary"></div>
-                      <span className="text-sm font-medium text-rarity-legendary">2 Legendary Items</span>
+                  {/* Legendary */}
+                  <div className="group rounded-lg border border-rarity-legendary/20 bg-gradient-to-r from-rarity-legendary/5 via-transparent to-transparent hover:from-rarity-legendary/10 transition-all duration-200">
+                    <div className="flex items-center justify-between p-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-rarity-legendary shadow-lg shadow-rarity-legendary/30"></div>
+                        <span className="text-sm font-semibold text-rarity-legendary">2 Legendary Items</span>
+                      </div>
+                      <span className="text-sm font-bold text-gray-100">
+                        {Math.round(RARITY_PERCENTAGES.legendary)}%
+                      </span>
                     </div>
-                    <span className="text-sm font-bold text-gray-300">{Math.round(RARITY_PERCENTAGES.legendary)}%</span>
                   </div>
-                  <div className="flex justify-between items-center py-1 px-2 rounded bg-slate-800/10">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-rarity-epic"></div>
-                      <span className="text-sm font-medium text-rarity-epic">1 Epic Item</span>
+
+                  {/* Epic */}
+                  <div className="group rounded-lg border border-rarity-epic/20 bg-gradient-to-r from-rarity-epic/5 via-transparent to-transparent hover:from-rarity-epic/10 transition-all duration-200">
+                    <div className="flex items-center justify-between p-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-rarity-epic shadow-lg shadow-rarity-epic/30"></div>
+                        <span className="text-sm font-semibold text-rarity-epic">1 Epic Item</span>
+                      </div>
+                      <span className="text-sm font-bold text-gray-100">{Math.round(RARITY_PERCENTAGES.epic)}%</span>
                     </div>
-                    <span className="text-sm font-bold text-gray-300">{Math.round(RARITY_PERCENTAGES.epic)}%</span>
                   </div>
-                  <div className="flex justify-between items-center py-1 px-2 rounded bg-slate-800/10">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-rarity-rare"></div>
-                      <span className="text-sm font-medium text-rarity-rare">2 Rare Items</span>
+
+                  {/* Rare */}
+                  <div className="group rounded-lg border border-rarity-rare/20 bg-gradient-to-r from-rarity-rare/5 via-transparent to-transparent hover:from-rarity-rare/10 transition-all duration-200">
+                    <div className="flex items-center justify-between p-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-rarity-rare shadow-lg shadow-rarity-rare/30"></div>
+                        <span className="text-sm font-semibold text-rarity-rare">2 Rare Items</span>
+                      </div>
+                      <span className="text-sm font-bold text-gray-100">{Math.round(RARITY_PERCENTAGES.rare)}%</span>
                     </div>
-                    <span className="text-sm font-bold text-gray-300">{Math.round(RARITY_PERCENTAGES.rare)}%</span>
                   </div>
-                  <div className="flex justify-between items-center py-1 px-2 rounded bg-slate-800/10">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-rarity-uncommon"></div>
-                      <span className="text-sm font-medium text-rarity-uncommon">2 Uncommon Items</span>
+
+                  {/* Uncommon */}
+                  <div className="group rounded-lg border border-rarity-uncommon/20 bg-gradient-to-r from-rarity-uncommon/5 via-transparent to-transparent hover:from-rarity-uncommon/10 transition-all duration-200">
+                    <div className="flex items-center justify-between p-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-rarity-uncommon shadow-lg shadow-rarity-uncommon/30"></div>
+                        <span className="text-sm font-semibold text-rarity-uncommon">2 Uncommon Items</span>
+                      </div>
+                      <span className="text-sm font-bold text-gray-100">
+                        {Math.round(RARITY_PERCENTAGES.uncommon)}%
+                      </span>
                     </div>
-                    <span className="text-sm font-bold text-gray-300">{Math.round(RARITY_PERCENTAGES.uncommon)}%</span>
                   </div>
-                  <div className="flex justify-between items-center py-1 px-2 rounded bg-slate-800/10">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-rarity-common"></div>
-                      <span className="text-sm font-medium text-rarity-common">3 Common Items</span>
+
+                  {/* Common */}
+                  <div className="group rounded-lg border border-rarity-common/20 bg-gradient-to-r from-rarity-common/5 via-transparent to-transparent hover:from-rarity-common/10 transition-all duration-200">
+                    <div className="flex items-center justify-between p-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-rarity-common shadow-lg shadow-rarity-common/30"></div>
+                        <span className="text-sm font-semibold text-rarity-common">3 Common Items</span>
+                      </div>
+                      <span className="text-sm font-bold text-gray-100">{Math.round(RARITY_PERCENTAGES.common)}%</span>
                     </div>
-                    <span className="text-sm font-bold text-gray-300">{Math.round(RARITY_PERCENTAGES.common)}%</span>
                   </div>
                 </div>
               </div>
