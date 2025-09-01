@@ -1,14 +1,14 @@
-import chestOpeningCommon from "@videos/chest-opening/high-res/common.mov";
-import chestOpeningEpic from "@videos/chest-opening/high-res/epic.mov";
-import chestOpeningLegendary from "@videos/chest-opening/high-res/legendary.mov";
-import chestOpeningRare from "@videos/chest-opening/high-res/rare.mov";
-import chestOpeningUncommon from "@videos/chest-opening/high-res/uncommon.mov";
+import chestOpeningCommon from "@videos/chest-opening/high-res/common.mp4";
+import chestOpeningEpic from "@videos/chest-opening/high-res/epic.mp4";
+import chestOpeningLegendary from "@videos/chest-opening/high-res/legendary.mp4";
+import chestOpeningRare from "@videos/chest-opening/high-res/rare.mp4";
+import chestOpeningUncommon from "@videos/chest-opening/high-res/uncommon.mp4";
 
-import chestOpeningCommonLowRes from "@videos/chest-opening/low-res/common.mov";
-import chestOpeningEpicLowRes from "@videos/chest-opening/low-res/epic.mov";
-import chestOpeningLegendaryLowRes from "@videos/chest-opening/low-res/legendary.mov";
-import chestOpeningRareLowRes from "@videos/chest-opening/low-res/rare.mov";
-import chestOpeningUncommonLowRes from "@videos/chest-opening/low-res/uncommon.mov";
+import chestOpeningCommonLowRes from "@videos/chest-opening/low-res/common.mp4";
+import chestOpeningEpicLowRes from "@videos/chest-opening/low-res/epic.mp4";
+import chestOpeningLegendaryLowRes from "@videos/chest-opening/low-res/legendary.mp4";
+import chestOpeningRareLowRes from "@videos/chest-opening/low-res/rare.mp4";
+import chestOpeningUncommonLowRes from "@videos/chest-opening/low-res/uncommon.mp4";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -90,8 +90,8 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
 
   const ambienceAudio = useAmbienceAudio({
     src: "/sound/chest-opening/open_chest_ambient.wav",
-    volume: 0.1,
-    quietVolume: 0.1,
+    volume: 0.2,
+    quietVolume: 0.2,
     loop: true,
     isMobile,
   });
