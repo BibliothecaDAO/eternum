@@ -4,14 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { DRACOLoader, GLTFLoader, OrbitControls } from "three-stdlib";
 
-// Mobile device detection  - TODO: move to utils
-const isMobileDevice = () => {
-  return (
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-    window.innerWidth <= 768
-  );
-};
-
 interface ModelViewerProps {
   modelPath: string;
   className?: string;
@@ -73,6 +65,8 @@ export const ModelViewer = ({
   const isSceneInitializedRef = useRef<boolean>(false);
   const dracoLoaderRef = useRef<DRACOLoader | null>(null);
 
+  const isMobile = window.innerWidth < 768;
+
   // Initialize scene, camera, renderer, lights, and smoke particles (runs once)
   useEffect(() => {
     if (!mountRef.current || isSceneInitializedRef.current) return;
@@ -88,11 +82,11 @@ export const ModelViewer = ({
 
     // Camera setup
     const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-    camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z);
+    // make object smaller on mobile
+    camera.position.set(cameraPosition.x, cameraPosition.y, isMobile ? cameraPosition.z + 3 : cameraPosition.z);
     cameraRef.current = camera;
 
     // Renderer setup with mobile optimization
-    const isMobile = isMobileDevice();
     const renderer = new THREE.WebGLRenderer({ antialias: !isMobile, alpha: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
@@ -151,7 +145,6 @@ export const ModelViewer = ({
     // Create smoke effect with mobile optimization
     const createSmokeEffect = () => {
       // Detect mobile device for performance optimization
-      const isMobile = isMobileDevice();
       // Create smoke texture using canvas (since we can't load external images in this context)
       const canvas = document.createElement("canvas");
       canvas.width = 64;
@@ -520,7 +513,7 @@ export const ModelViewer = ({
         // Center the model horizontally and position vertically
         model.position.x = -center.x;
         model.position.z = -center.z;
-        const baseY = -box.min.y + positionY;
+        const baseY = -box.min.y + positionY + (isMobile ? 0.3 : 0);
         model.position.y = baseY;
         basePositionYRef.current = baseY;
 
@@ -586,7 +579,7 @@ export const ModelViewer = ({
     return () => {
       isMounted = false;
     };
-  }, [modelPath, positionY, scale, rotationY, rotationX, rotationZ]); // Model-specific dependencies
+  }, [modelPath, positionY, scale, rotationY, rotationX, rotationZ, isMobile]); // Model-specific dependencies
 
   return (
     <div className={`relative ${className}`}>

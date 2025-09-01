@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useAmbienceAudio } from "@/hooks/use-ambience-audio";
 import { useChestContent } from "@/hooks/use-chest-content";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useOpenChest } from "@/hooks/use-open-chest";
 import { useLootChestOpeningStore } from "@/stores/loot-chest-opening";
 import { AssetRarity, ChestAsset } from "@/utils/cosmetics";
@@ -82,14 +83,14 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
   const [chestType, setChestType] = useState<ChestAsset["rarity"]>(AssetRarity.Common);
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
   const [showPlayButton, setShowPlayButton] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile = useIsMobile();
 
   const { chestOpenTimestamp, setChestOpenTimestamp } = useLootChestOpeningStore();
   const { chestContent, resetChestContent } = useChestContent(env.VITE_PUBLIC_CHEST_DEBUG_MODE, chestOpenTimestamp);
 
   const ambienceAudio = useAmbienceAudio({
-    src: "/sound/music/ShadowSong.mp3",
-    volume: 0.4,
+    src: "/sound/chest-opening/open_chest_ambient.wav",
+    volume: 0.2,
     quietVolume: 0.1,
     loop: true,
   });
@@ -97,9 +98,6 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
   // Start ambient music when modal opens
   useEffect(() => {
     ambienceAudio.play();
-
-    // Check if mobile on mount
-    setIsMobile(window.innerWidth < 768);
 
     // Cleanup: stop audio when component unmounts
     return () => {
@@ -359,7 +357,6 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
     <Dialog open={true} onOpenChange={handleClose}>
       <DialogContent className="max-w-full w-full h-full p-0 border-0 bg-black text-gold">
         <DialogTitle className="sr-only text-white">Chest Opening</DialogTitle>
-
 
         <div className="relative w-full h-full flex items-center justify-center">
           {/* Video layers - only show when chestContent is available */}

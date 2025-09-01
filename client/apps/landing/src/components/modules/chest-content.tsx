@@ -1,4 +1,5 @@
 import { useClickSound } from "@/hooks/use-click-sound";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   AssetRarity,
   AssetType,
@@ -213,6 +214,8 @@ export const ChestContent = ({
     return mostRareIndex;
   };
 
+  const isMobile = useIsMobile();
+
   const [selectedIndex, setSelectedIndex] = useState<number>(() => findMostRareItemIndex(flatAssets));
   const [isItemsListExpanded, setIsItemsListExpanded] = useState(false);
   const selectedAsset = flatAssets[selectedIndex];
@@ -319,7 +322,7 @@ export const ChestContent = ({
             rarity={selectedAsset.rarity}
             modelPath={selectedAsset.modelPath}
             className="w-full h-full"
-            positionY={selectedAsset.positionY + 0.3}
+            positionY={selectedAsset.positionY}
             scale={selectedAsset.scale}
             rotationY={selectedAsset.rotationY}
             rotationZ={selectedAsset.rotationZ}
@@ -339,8 +342,7 @@ export const ChestContent = ({
           </div>
 
           {/* Mobile Selected Item Preview - Hidden on mobile */}
-          <div className="hidden">
-          </div>
+          <div className="hidden"></div>
 
           {/* Main content area with drop rates on left and items on right */}
           <div className="flex-1 flex flex-col md:flex-row md:justify-between items-stretch px-4 lg:px-8 gap-4 overflow-hidden">
@@ -526,8 +528,6 @@ export const ChestContent = ({
 
                     const TypeIcon = getAssetTypeIcon(type);
 
-                    // On mobile, show limited items when collapsed
-                    const isMobile = window.innerWidth < 768;
                     const displayedAssets = isMobile && !isItemsListExpanded ? assets.slice(0, 2) : assets;
 
                     return (
