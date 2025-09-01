@@ -96,7 +96,7 @@ export const chestAssets: ChestAsset[] = [
     scale: 1,
     rotationY: 1.2,
     rotationX: 0,
-    cameraPosition: { x: 0, y: 1.3, z: 1 },
+    cameraPosition: { x: 0, y: 1, z: 1 },
     attributesRaw: "0x3030501",
   },
   {
@@ -212,7 +212,7 @@ export const chestAssets: ChestAsset[] = [
     modelPath: `${modelPath}/common_quiver.glb`,
     imagePath: "images/cosmetics/common-quiver.png",
     positionY: 0,
-    scale: 0.8,
+    scale: 0.6,
     rotationX: 0,
     rotationZ: -0.8,
     attributesRaw: "0x206010a01",

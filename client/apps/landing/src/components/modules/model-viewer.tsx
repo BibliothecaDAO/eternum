@@ -210,15 +210,11 @@ export const ModelViewer = React.memo(
         if (!isDraggingRef.current) return;
 
         const deltaX = event.clientX - previousMouseRef.current.x;
-        const deltaY = event.clientY - previousMouseRef.current.y;
 
         // Convert mouse movement to rotation with improved sensitivity
         const rotationSpeed = 0.005;
         targetRotationRef.current.y += deltaX * rotationSpeed;
-        targetRotationRef.current.x += deltaY * rotationSpeed; // Drag down = see top of model
-
-        // Clamp X rotation to prevent flipping
-        targetRotationRef.current.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, targetRotationRef.current.x));
+        // Removed X rotation - only Y axis rotation allowed
 
         previousMouseRef.current = { x: event.clientX, y: event.clientY };
         event.preventDefault();
@@ -250,14 +246,11 @@ export const ModelViewer = React.memo(
 
         const touch = event.touches[0];
         const deltaX = touch.clientX - previousMouseRef.current.x;
-        const deltaY = touch.clientY - previousMouseRef.current.y;
 
         // Higher rotation speed for touch to make mobile interaction more responsive
         const rotationSpeed = 0.012;
         targetRotationRef.current.y += deltaX * rotationSpeed;
-        targetRotationRef.current.x += deltaY * rotationSpeed;
-
-        targetRotationRef.current.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, targetRotationRef.current.x));
+        // Removed X rotation - only Y axis rotation allowed
 
         previousMouseRef.current = { x: touch.clientX, y: touch.clientY };
         event.preventDefault();
@@ -289,11 +282,9 @@ export const ModelViewer = React.memo(
         if (modelRef.current) {
           // Smooth rotation interpolation with damping
           const dampingFactor = 0.1; // Lower = smoother but slower response
-          modelRotationRef.current.x += (targetRotationRef.current.x - modelRotationRef.current.x) * dampingFactor;
           modelRotationRef.current.y += (targetRotationRef.current.y - modelRotationRef.current.y) * dampingFactor;
 
-          // Apply smoothed rotation to model
-          modelRef.current.rotation.x = modelRotationRef.current.x;
+          // Apply smoothed rotation to model - only Y axis rotation
           modelRef.current.rotation.y = modelRotationRef.current.y;
 
           // Very subtle floating motion - gentle up-down movement based on base position
@@ -399,8 +390,6 @@ export const ModelViewer = React.memo(
         isSceneInitializedRef.current = false;
       };
     }, []); // Empty dependency array - runs once
-
-    console.log({ cameraPosition });
 
     // Update camera position when cameraPosition changes
     useEffect(() => {
