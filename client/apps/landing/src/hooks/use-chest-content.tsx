@@ -48,6 +48,8 @@ export const useChestContent = (debugMode: boolean = false, timestamp: number) =
     refetchInterval: 3_000,
   });
 
+  console.log("collectibleClaimedQuery", collectibleClaimedQuery, timestamp);
+
   useEffect(() => {
     // Debug mode: return all chest assets
     if (debugMode) {

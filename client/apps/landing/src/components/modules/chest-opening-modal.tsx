@@ -9,7 +9,6 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useAmbienceAudio } from "@/hooks/use-ambience-audio";
 import { useChestContent } from "@/hooks/use-chest-content";
 import { useOpenChest } from "@/hooks/use-open-chest";
-import { useVideoPreloader } from "@/hooks/use-video-preloader";
 import { useLootChestOpeningStore } from "@/stores/loot-chest-opening";
 import { AssetRarity, ChestAsset } from "@/utils/cosmetics";
 import { Loader2, Package, X } from "lucide-react";
@@ -69,9 +68,6 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
   const { chestOpenTimestamp, setChestOpenTimestamp } = useLootChestOpeningStore();
   const { chestContent, resetChestContent } = useChestContent(env.VITE_PUBLIC_CHEST_DEBUG_MODE, chestOpenTimestamp);
 
-  // Preload all chest videos when modal mounts
-  const { allVideosLoaded } = useVideoPreloader(chestOpeningVideo);
-
   const ambienceAudio = useAmbienceAudio({
     src: "/sound/music/ShadowSong.mp3",
     volume: 0.4,
@@ -120,15 +116,25 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
       setIsVideoReady(false);
       setLoadError(false);
       setShowPlayButton(false);
+
+      // On mobile, add a fallback timeout in case video events don't fire
+      if (isMobile) {
+        const fallbackTimeout = setTimeout(() => {
+          console.log("Mobile fallback: showing play button after timeout");
+          setIsVideoReady(true);
+        }, 3000); // 3 seconds should be enough for metadata to load
+
+        return () => clearTimeout(fallbackTimeout);
+      }
     }
-  }, [chestContent]);
+  }, [chestContent, isMobile]);
 
   const { clearLootChestOpening, setOpenedChestTokenId } = useLootChestOpeningStore();
 
-  // Handle video loading and playing - only when chestContent is available and videos are preloaded
+  // Handle video loading and playing - only when chestContent is available and video is ready
   useEffect(() => {
-    if (isVideoReady && videoRef.current && chestContent && chestContent.length > 0 && allVideosLoaded) {
-      console.log("Video is ready and preloaded, attempting to play...");
+    if (isVideoReady && videoRef.current && chestContent && chestContent.length > 0) {
+      console.log("Video is ready, attempting to play...");
 
       // On mobile, show play button instead of auto-playing
       if (isMobile) {
@@ -138,14 +144,6 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
 
       const playVideo = async () => {
         try {
-          // Use cached video if available
-          const cachedVideo = (window as any).__videoCache?.[chestOpeningVideo[chestType]];
-          if (cachedVideo && videoRef.current) {
-            // Copy preloaded video properties to our video element
-            videoRef.current.currentTime = 0;
-            videoRef.current.volume = 1;
-          }
-
           // Sync background video with main video
           if (backgroundVideoRef.current && videoRef.current) {
             backgroundVideoRef.current.currentTime = videoRef.current.currentTime;
@@ -154,6 +152,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
           // Play both videos simultaneously
           const playPromises = [];
           if (videoRef.current) {
+            videoRef.current.volume = 1;
             playPromises.push(videoRef.current.play());
           }
           if (backgroundVideoRef.current) {
@@ -192,7 +191,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
 
       playVideo();
     }
-  }, [isVideoReady, chestContent, allVideosLoaded, chestType, isMobile]);
+  }, [isVideoReady, chestContent, chestType, isMobile]);
 
   // Fade out audio before video ends
   useEffect(() => {
@@ -331,9 +330,9 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
     clearLootChestOpening();
   };
 
-  // Check if we should show loading state - show until both videos and chest content are loaded
+  // Check if we should show loading state - show until video is ready
   const shouldShowLoading =
-    !chestContent || chestContent.length === 0 || (videoState === "loading" && !loadError && !showPlayButton) || !allVideosLoaded;
+    !chestContent || chestContent.length === 0 || (videoState === "loading" && !isVideoReady && !loadError && !showPlayButton);
 
   return (
     <Dialog open={true} onOpenChange={clearLootChestOpening}>
