@@ -258,7 +258,8 @@ export const ModelViewer = ({
       const deltaX = touch.clientX - previousMouseRef.current.x;
       const deltaY = touch.clientY - previousMouseRef.current.y;
 
-      const rotationSpeed = 0.005;
+      // Higher rotation speed for touch to make mobile interaction more responsive
+      const rotationSpeed = 0.012;
       targetRotationRef.current.y += deltaX * rotationSpeed;
       targetRotationRef.current.x += deltaY * rotationSpeed;
 
