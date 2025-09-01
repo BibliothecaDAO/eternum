@@ -1,5 +1,5 @@
 import { AssetRarity } from "@/utils/cosmetics";
-import { Loader2 } from "lucide-react";
+import { Loader2, RotateCcw, Hand } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { DRACOLoader, GLTFLoader, OrbitControls } from "three-stdlib";
@@ -63,6 +63,7 @@ export const ModelViewer = React.memo(
     const previousMouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [showRotationHint, setShowRotationHint] = useState(true);
     const isSceneInitializedRef = useRef<boolean>(false);
     const dracoLoaderRef = useRef<DRACOLoader | null>(null);
 
@@ -203,6 +204,8 @@ export const ModelViewer = React.memo(
       const handleMouseDown = (event: MouseEvent) => {
         isDraggingRef.current = true;
         previousMouseRef.current = { x: event.clientX, y: event.clientY };
+        // Hide rotation hint when user starts interacting
+        setShowRotationHint(false);
         event.preventDefault();
       };
 
@@ -237,6 +240,8 @@ export const ModelViewer = React.memo(
           isDraggingRef.current = true;
           const touch = event.touches[0];
           previousMouseRef.current = { x: touch.clientX, y: touch.clientY };
+          // Hide rotation hint when user starts interacting
+          setShowRotationHint(false);
           event.preventDefault();
         }
       };
@@ -586,6 +591,35 @@ export const ModelViewer = React.memo(
     return (
       <div className={`relative ${className}`}>
         <div ref={mountRef} className="w-full h-full" />
+        
+        {/* Rotation Hint Overlay */}
+        {showRotationHint && !isLoading && !error && (
+          <div 
+            className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-500 ${
+              showRotationHint ? 'opacity-100' : 'opacity-0'
+            }`}
+            style={{
+              background: 'radial-gradient(circle, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.1) 50%, transparent 70%)'
+            }}
+          >
+            <div className="flex flex-col items-center gap-3 text-white animate-pulse">
+              <div className="relative">
+                {isMobile ? (
+                  <Hand className="w-8 h-8 text-gold opacity-80" />
+                ) : (
+                  <RotateCcw className="w-8 h-8 text-gold opacity-80" />
+                )}
+                {/* Circular rotation hint */}
+                <div className="absolute -inset-2 border-2 border-gold opacity-30 rounded-full animate-spin" 
+                     style={{ animationDuration: '3s' }} />
+              </div>
+              <span className="text-sm font-medium text-gold opacity-90 bg-black/40 px-3 py-1 rounded-full">
+                {isMobile ? 'Swipe to rotate' : 'Drag to rotate'}
+              </span>
+            </div>
+          </div>
+        )}
+        
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
             <div className="flex flex-col items-center gap-2 text-white">
