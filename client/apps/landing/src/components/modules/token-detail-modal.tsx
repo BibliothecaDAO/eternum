@@ -157,16 +157,14 @@ export const TokenDetailModal = ({
   const { openChest, error: chestOpeningError } = useOpenChest();
 
   const handleOpenChest = () => {
-    setOpenedChestTokenId(tokenData.token_id.toString());
-
-    // Set timestamp for when chest is opened to listen for new events
-    setChestOpenTimestamp(Math.floor(Date.now() / 1000));
-
     if (!env.VITE_PUBLIC_CHEST_DEBUG_MODE) {
       openChest({
         tokenId: BigInt(tokenData.token_id),
         onSuccess: () => {
           console.log("Chest opened successfully");
+          // Set timestamp for when chest is opened to listen for new events
+          setOpenedChestTokenId(tokenData.token_id.toString());
+          setChestOpenTimestamp(Math.floor(Date.now() / 1000));
           setShowLootChestOpening(true);
         },
         onError: (error) => {

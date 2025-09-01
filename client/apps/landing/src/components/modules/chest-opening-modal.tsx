@@ -288,28 +288,25 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
 
   const handleOpenChest = () => {
     if (!nextToken) return;
-    setIsChestOpeningLoading(true);
 
     // Set timestamp for when chest is opened to listen for new events
-    setChestOpenTimestamp(Math.floor(Date.now() / 1000));
-
-    // Immediately reset video state to loading when opening new chest
-    setVideoState("loading");
-    setShowWhiteScreen(false);
-    setShowContent(false);
-    setIsVideoReady(false);
-    setLoadError(false);
-    setShowPlayButton(false);
-
-    // Reset chest content to empty array
-    resetChestContent();
-
     if (!env.VITE_PUBLIC_CHEST_DEBUG_MODE) {
       openChest({
         tokenId: BigInt(nextToken),
         onSuccess: () => {
           console.log("Chest opened successfully");
+          setIsChestOpeningLoading(true);
           setOpenedChestTokenId(nextToken);
+          // Reset chest content to empty array
+          resetChestContent();
+          // Immediately reset video state to loading when opening new chest
+          setVideoState("loading");
+          setShowWhiteScreen(false);
+          setShowContent(false);
+          setIsVideoReady(false);
+          setLoadError(false);
+          setShowPlayButton(false);
+          setChestOpenTimestamp(Math.floor(Date.now() / 1000));
         },
         onError: (error) => {
           console.error("Failed to open chest:", error);
