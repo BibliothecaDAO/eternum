@@ -105,6 +105,8 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
     };
   }, []);
 
+  console.log({ isMobile });
+
   // Cycle through loading messages every 2 seconds
   useEffect(() => {
     const interval = setInterval(() => {
