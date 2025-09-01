@@ -357,40 +357,40 @@ export const ChestContent = ({
             >
               {/* Drop Rate Summary - Redesigned */}
               <div className="p-3 lg:p-4 bg-slate-900/20 rounded-xl border border-slate-700/30 backdrop-blur-sm shadow-xl flex-shrink-0 flex flex-col hidden md:flex">
-                <h4 className="text-sm font-semibold text-gray-300 mb-3 text-center">Drop Rates</h4>
+                <h4 className="text-sm font-semibold text-gray-300 mb-3 text-center">Drop Rates (10 Items)</h4>
                 <div className="flex-1 space-y-1.5">
                   <div className="flex justify-between items-center py-1 px-2 rounded bg-slate-800/10">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-rarity-legendary"></div>
-                      <span className="text-sm font-medium text-rarity-legendary">Legendary</span>
+                      <span className="text-sm font-medium text-rarity-legendary">2 Legendary Items</span>
                     </div>
                     <span className="text-sm font-bold text-gray-300">{Math.round(RARITY_PERCENTAGES.legendary)}%</span>
                   </div>
                   <div className="flex justify-between items-center py-1 px-2 rounded bg-slate-800/10">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-rarity-epic"></div>
-                      <span className="text-sm font-medium text-rarity-epic">Epic</span>
+                      <span className="text-sm font-medium text-rarity-epic">1 Epic Item</span>
                     </div>
                     <span className="text-sm font-bold text-gray-300">{Math.round(RARITY_PERCENTAGES.epic)}%</span>
                   </div>
                   <div className="flex justify-between items-center py-1 px-2 rounded bg-slate-800/10">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-rarity-rare"></div>
-                      <span className="text-sm font-medium text-rarity-rare">Rare</span>
+                      <span className="text-sm font-medium text-rarity-rare">2 Rare Items</span>
                     </div>
                     <span className="text-sm font-bold text-gray-300">{Math.round(RARITY_PERCENTAGES.rare)}%</span>
                   </div>
                   <div className="flex justify-between items-center py-1 px-2 rounded bg-slate-800/10">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-rarity-uncommon"></div>
-                      <span className="text-sm font-medium text-rarity-uncommon">Uncommon</span>
+                      <span className="text-sm font-medium text-rarity-uncommon">2 Uncommon Items</span>
                     </div>
                     <span className="text-sm font-bold text-gray-300">{Math.round(RARITY_PERCENTAGES.uncommon)}%</span>
                   </div>
                   <div className="flex justify-between items-center py-1 px-2 rounded bg-slate-800/10">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-rarity-common"></div>
-                      <span className="text-sm font-medium text-rarity-common">Common</span>
+                      <span className="text-sm font-medium text-rarity-common">3 Common Items</span>
                     </div>
                     <span className="text-sm font-bold text-gray-300">{Math.round(RARITY_PERCENTAGES.common)}%</span>
                   </div>
