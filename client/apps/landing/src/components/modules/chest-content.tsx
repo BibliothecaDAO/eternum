@@ -225,6 +225,7 @@ export const ChestContent = ({
   const { playClickSound } = useClickSound({
     src: "/sound/ui/click-2.wav",
     volume: 0.6,
+    isMobile,
   });
 
   const handleAssetSelect = (index: number) => {

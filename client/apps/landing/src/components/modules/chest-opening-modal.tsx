@@ -93,6 +93,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
     volume: 0.1,
     quietVolume: 0.1,
     loop: true,
+    isMobile,
   });
 
   // Start ambient music when modal opens

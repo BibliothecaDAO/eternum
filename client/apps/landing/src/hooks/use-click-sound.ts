@@ -3,21 +3,26 @@ import { useCallback, useRef } from "react";
 interface UseClickSoundOptions {
   src: string;
   volume?: number;
+  isMobile?: boolean;
 }
 
-export const useClickSound = ({ src, volume = 0.5 }: UseClickSoundOptions) => {
+export const useClickSound = ({ src, volume = 0.5, isMobile = false }: UseClickSoundOptions) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Initialize audio on first use
   const initializeAudio = useCallback(() => {
-    if (!audioRef.current) {
-      audioRef.current = new Audio(src);
-      audioRef.current.volume = volume;
-      audioRef.current.preload = "auto";
-    }
-  }, [src, volume]);
+    // Don't create audio on mobile devices
+    if (isMobile || audioRef.current) return;
+    
+    audioRef.current = new Audio(src);
+    audioRef.current.volume = volume;
+    audioRef.current.preload = "auto";
+  }, [src, volume, isMobile]);
 
   const playClickSound = useCallback(() => {
+    // Don't play audio on mobile devices
+    if (isMobile) return;
+    
     initializeAudio();
 
     if (audioRef.current) {
@@ -30,7 +35,7 @@ export const useClickSound = ({ src, volume = 0.5 }: UseClickSoundOptions) => {
         console.debug("Click sound play failed:", error);
       });
     }
-  }, [initializeAudio]);
+  }, [initializeAudio, isMobile]);
 
   return { playClickSound };
 };
