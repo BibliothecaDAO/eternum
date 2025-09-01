@@ -93,7 +93,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
     volume: 0.2,
     quietVolume: 0.2,
     loop: true,
-    isMobile: false,
+    mute: false,
   });
 
   // Start ambient music when modal opens
@@ -180,8 +180,6 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
           await Promise.all(playPromises);
           console.log("Videos playing successfully");
           setVideoState("playing");
-          // Fade ambience audio to quiet when video starts
-          ambienceAudio.fadeToQuiet(500);
         } catch (error) {
           console.error("Error playing video:", error);
           // Try playing without sound if autoplay policy blocks it
@@ -196,8 +194,6 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
               await Promise.all(playPromises);
               console.log("Videos playing muted");
               setVideoState("playing");
-              // Fade ambience audio to quiet when video starts
-              ambienceAudio.fadeToQuiet(500);
             } catch (e) {
               console.error("Failed to play even when muted:", e);
               // Show manual play button as fallback
@@ -240,9 +236,6 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
     setVideoState("ended");
     setShowWhiteScreen(true);
 
-    // Restore ambience audio to normal volume when video ends
-    ambienceAudio.fadeToNormal(500);
-
     // After 3 seconds, show text and trigger fade
     setTimeout(() => {
       setShowContent(true);
@@ -275,8 +268,6 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
       await Promise.all(playPromises);
       console.log("Videos playing successfully via manual trigger with sound");
       setVideoState("playing");
-      // Fade ambience audio to quiet when video starts
-      ambienceAudio.fadeToQuiet(500);
     } catch (error) {
       console.error("Error playing video with sound:", error);
       // On mobile, if we can't play with sound, skip the video
@@ -328,9 +319,6 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
     setVideoState("ended");
     setShowWhiteScreen(false);
     setShowContent(true);
-
-    // Restore ambience audio to normal volume when skipping
-    ambienceAudio.fadeToNormal(200);
   };
 
   const handleClose = () => {
