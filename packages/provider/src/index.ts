@@ -2749,7 +2749,13 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
     console.log(calls);
 
-    return await this.executeAndCheckTransaction(signer, [approval, ...calls]);
+    // clear all previous approvals by creating a zero approval call intially
+    const zero_approval = {
+      contractAddress: approval.contractAddress,
+      entrypoint: approval.entrypoint,
+      calldata: [props.marketplace_address, 0, 0],
+    };
+    return await this.executeAndCheckTransaction(signer, [zero_approval, approval, ...calls]);
   }
 
   /**
