@@ -12,7 +12,7 @@ import { useOpenChest } from "@/hooks/use-open-chest";
 import { useVideoPreloader } from "@/hooks/use-video-preloader";
 import { useLootChestOpeningStore } from "@/stores/loot-chest-opening";
 import { AssetRarity, ChestAsset } from "@/utils/cosmetics";
-import { Loader2, Package } from "lucide-react";
+import { Loader2, Package, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { env } from "../../../env";
 import { ChestContent } from "./chest-content";
@@ -339,6 +339,18 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
     <Dialog open={true} onOpenChange={clearLootChestOpening}>
       <DialogContent className="max-w-full w-full h-full p-0 border-0 bg-black">
         <DialogTitle className="sr-only">Chest Opening</DialogTitle>
+        
+        {/* Close button - always visible */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleClose}
+          className="absolute top-4 right-4 z-50 text-gray-400 hover:text-white hover:bg-white/10"
+        >
+          <X className="h-5 w-5" />
+          <span className="sr-only">Close</span>
+        </Button>
+        
         <div className="relative w-full h-full flex items-center justify-center">
           {/* Video layers - only show when chestContent is available */}
           {chestContent && chestContent.length > 0 && (
@@ -446,7 +458,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
 
           {/* Loading state */}
           {shouldShowLoading && (
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 pointer-events-none">
               <LoadingAnimation />
               <div className="text-gold text-base sm:text-xl px-4 text-center">
                 {loadingMessages[currentMessageIndex]}
