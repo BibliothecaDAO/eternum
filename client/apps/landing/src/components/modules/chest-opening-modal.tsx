@@ -90,7 +90,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
 
   const ambienceAudio = useAmbienceAudio({
     src: "/sound/chest-opening/open_chest_ambient.wav",
-    volume: 0.2,
+    volume: 0.1,
     quietVolume: 0.1,
     loop: true,
   });
@@ -252,10 +252,9 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
     setShowPlayButton(false);
 
     try {
-      // On mobile, ensure videos are muted for better compatibility
       if (videoRef.current) {
-        videoRef.current.muted = isMobile;
-        videoRef.current.volume = isMobile ? 0 : 1;
+        videoRef.current.muted = false;
+        videoRef.current.volume = 1;
       }
 
       // Sync background video with main video
@@ -273,13 +272,13 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
       }
 
       await Promise.all(playPromises);
-      console.log("Videos playing successfully via manual trigger");
+      console.log("Videos playing successfully via manual trigger with sound");
       setVideoState("playing");
       // Fade ambience audio to quiet when video starts
       ambienceAudio.fadeToQuiet(500);
     } catch (error) {
-      console.error("Error playing video manually:", error);
-      // If still fails, skip to content
+      console.error("Error playing video with sound:", error);
+      // On mobile, if we can't play with sound, skip the video
       handleSkip();
     }
   };
@@ -408,7 +407,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
                   }
                 }}
                 playsInline
-                muted={isMobile}
+                muted={false}
                 autoPlay={false}
                 preload={isMobile ? "metadata" : "auto"}
                 controls={false}
