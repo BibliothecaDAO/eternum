@@ -228,9 +228,8 @@ export const chestAssets: ChestAsset[] = [
     drawChance: 16.9,
     modelPath: `${modelPath}/common_platform.glb`,
     imagePath: "images/cosmetics/common-base.png",
-    positionY: 0.2,
-    scale: 1,
-    cameraPosition: { x: -0.4, y: 3, z: 1 },
+    positionY: 0.5,
+    scale: 0.7,
     attributesRaw: "0x8010b01",
   },
 ];
