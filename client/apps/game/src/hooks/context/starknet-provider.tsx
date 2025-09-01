@@ -81,13 +81,20 @@ const katanaLocalChain = {
     symbol: "ETH",
     decimals: 18,
   },
-
   rpcUrls: {
     default: {
       http: [KATANA_RPC_URL],
     },
     public: {
       http: [KATANA_RPC_URL],
+    },
+  },
+  paymasterRpcUrls: {
+    default: {
+      http: [],
+    },
+    public: {
+      http: [],
     },
   },
 } as const satisfies Chain;
