@@ -1,8 +1,14 @@
-import chestOpeningCommon from "@videos/chest-opening/common.mp4";
-import chestOpeningEpic from "@videos/chest-opening/epic.mp4";
-import chestOpeningLegendary from "@videos/chest-opening/legendary.mp4";
-import chestOpeningRare from "@videos/chest-opening/rare.mp4";
-import chestOpeningUncommon from "@videos/chest-opening/uncommon.mp4";
+import chestOpeningCommon from "@videos/chest-opening/high-res/common.mov";
+import chestOpeningEpic from "@videos/chest-opening/high-res/epic.mov";
+import chestOpeningLegendary from "@videos/chest-opening/high-res/legendary.mov";
+import chestOpeningRare from "@videos/chest-opening/high-res/rare.mov";
+import chestOpeningUncommon from "@videos/chest-opening/high-res/uncommon.mov";
+
+import chestOpeningCommonLowRes from "@videos/chest-opening/low-res/common.mov";
+import chestOpeningEpicLowRes from "@videos/chest-opening/low-res/epic.mov";
+import chestOpeningLegendaryLowRes from "@videos/chest-opening/low-res/legendary.mov";
+import chestOpeningRareLowRes from "@videos/chest-opening/low-res/rare.mov";
+import chestOpeningUncommonLowRes from "@videos/chest-opening/low-res/uncommon.mov";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -29,12 +35,20 @@ interface ChestOpeningModalProps {
   nextToken: string | null;
 }
 
-const chestOpeningVideo: Record<string, string> = {
+const chestOpeningVideoHighRes: Record<string, string> = {
   common: chestOpeningCommon,
   uncommon: chestOpeningUncommon,
   rare: chestOpeningRare,
   epic: chestOpeningEpic,
   legendary: chestOpeningLegendary,
+};
+
+const chestOpeningVideoLowRes: Record<string, string> = {
+  common: chestOpeningCommonLowRes,
+  uncommon: chestOpeningUncommonLowRes,
+  rare: chestOpeningRareLowRes,
+  epic: chestOpeningEpicLowRes,
+  legendary: chestOpeningLegendaryLowRes,
 };
 
 const loadingMessages = [
@@ -51,6 +65,11 @@ const loadingMessages = [
   "Unlocking blades of frozen steel...",
   "Revealing arrows touched by frost...",
 ];
+
+// Helper function to get the appropriate video based on device type
+const getChestOpeningVideo = (chestType: string, isMobile: boolean) => {
+  return isMobile ? chestOpeningVideoLowRes[chestType] : chestOpeningVideoHighRes[chestType];
+};
 
 export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningModalProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -233,7 +252,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
 
   const handleManualPlay = async () => {
     setShowPlayButton(false);
-    
+
     try {
       // On mobile, ensure videos are muted for better compatibility
       if (videoRef.current) {
@@ -332,13 +351,15 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
 
   // Check if we should show loading state - show until video is ready
   const shouldShowLoading =
-    !chestContent || chestContent.length === 0 || (videoState === "loading" && !isVideoReady && !loadError && !showPlayButton);
+    !chestContent ||
+    chestContent.length === 0 ||
+    (videoState === "loading" && !isVideoReady && !loadError && !showPlayButton);
 
   return (
     <Dialog open={true} onOpenChange={clearLootChestOpening}>
       <DialogContent className="max-w-full w-full h-full p-0 border-0 bg-black">
         <DialogTitle className="sr-only">Chest Opening</DialogTitle>
-        
+
         {/* Close button - always visible */}
         <Button
           variant="ghost"
@@ -349,7 +370,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
           <X className="h-5 w-5" />
           <span className="sr-only">Close</span>
         </Button>
-        
+
         <div className="relative w-full h-full flex items-center justify-center">
           {/* Video layers - only show when chestContent is available */}
           {chestContent && chestContent.length > 0 && (
@@ -362,11 +383,11 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
               <video
                 ref={backgroundVideoRef}
                 className="absolute inset-0 w-full h-full object-cover blur-sm scale-110 opacity-50"
-                src={chestOpeningVideo[chestType]}
+                src={getChestOpeningVideo(chestType, isMobile)}
                 playsInline
                 muted={true}
                 autoPlay={false}
-                preload={window.innerWidth < 768 ? "metadata" : "auto"}
+                preload={isMobile ? "metadata" : "auto"}
                 controls={false}
                 style={{ filter: "blur(8px) brightness(0.7)" }}
               />
@@ -402,11 +423,11 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
                 playsInline
                 muted={isMobile}
                 autoPlay={false}
-                preload={window.innerWidth < 768 ? "metadata" : "auto"}
+                preload={isMobile ? "metadata" : "auto"}
                 controls={false}
                 crossOrigin="anonymous"
               >
-                <source src={chestOpeningVideo[chestType]} type="video/mp4" />
+                <source src={getChestOpeningVideo(chestType, isMobile)} type="video/mp4" />
               </video>
             </div>
           )}
@@ -418,11 +439,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
                 {/* Chest icon */}
                 <div className="relative">
                   <div className="w-24 h-24 rounded-full bg-gradient-to-b from-gold/20 to-gold/5 flex items-center justify-center border-2 border-gold/50">
-                    <Package 
-                      size={48}
-                      className="text-gold"
-                      strokeWidth={1.5}
-                    />
+                    <Package size={48} className="text-gold" strokeWidth={1.5} />
                   </div>
                   {/* Sparkle effects around the chest */}
                   <div className="absolute -top-1 -right-1">
@@ -435,17 +452,15 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
                     <div className="w-2 h-2 bg-gold/50 rounded-full animate-pulse animation-delay-400" />
                   </div>
                 </div>
-                
+
                 <div className="text-center space-y-2">
                   <h3 className="text-xl font-bold text-gold">Ready to Open</h3>
-                  <p className="text-sm text-gray-400 max-w-xs">
-                    Tap below to reveal your loot chest
-                  </p>
+                  <p className="text-sm text-gray-400 max-w-xs">Tap below to reveal your loot chest</p>
                 </div>
-                
-                <Button 
-                  variant="default" 
-                  size="lg" 
+
+                <Button
+                  variant="default"
+                  size="lg"
                   onClick={handleManualPlay}
                   className="bg-gold hover:bg-gold/90 text-black font-bold px-8 py-3 text-lg min-h-[52px] shadow-lg"
                 >
