@@ -83,7 +83,7 @@ export const ModelViewer = ({
     // Camera setup
     const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
     // make object smaller on mobile
-    camera.position.set(cameraPosition.x, cameraPosition.y, isMobile ? cameraPosition.z + 3 : cameraPosition.z);
+    camera.position.set(0, 1, isMobile ? 4 : 1);
     cameraRef.current = camera;
 
     // Renderer setup with mobile optimization
@@ -304,8 +304,7 @@ export const ModelViewer = ({
 
       // Animate smoke particles (reduce animation on mobile)
       const smokeParticles = smokeParticlesRef.current;
-      const isMobileDevice = window.innerWidth < 768;
-      if (smokeParticles.length > 0 && (!isMobileDevice || frameIdRef.current! % 2 === 0)) {
+      if (smokeParticles.length > 0 && (!isMobile || frameIdRef.current! % 2 === 0)) {
         // Skip every other frame on mobile
         for (let i = 0; i < smokeParticles.length; i++) {
           const particle = smokeParticles[i];
@@ -315,17 +314,17 @@ export const ModelViewer = ({
 
           // Keep particles same size regardless of zoom
           const distance = camera.position.distanceTo(particle.position);
-          const scale = distance * (isMobileDevice ? 0.2 : 0.3); // Smaller particles on mobile
+          const scale = distance * (isMobile ? 0.2 : 0.3); // Smaller particles on mobile
           particle.scale.setScalar(scale);
 
           // Add some gentle floating motion to smoke (reduced on mobile)
-          const motionScale = isMobileDevice ? 0.5 : 1;
+          const motionScale = isMobile ? 0.5 : 1;
           particle.position.y += Math.sin(time * 0.5 + i) * 0.002 * motionScale;
           particle.position.x += Math.cos(time * 0.3 + i) * 0.001 * motionScale;
 
           // Keep particles visible at all times (reduced opacity on mobile)
           const material = particle.material as THREE.MeshLambertMaterial;
-          material.opacity = isMobileDevice ? 0.15 : 0.25;
+          material.opacity = isMobile ? 0.15 : 0.25;
         }
       }
 
@@ -399,6 +398,17 @@ export const ModelViewer = ({
       isSceneInitializedRef.current = false;
     };
   }, []); // Empty dependency array - runs once
+
+  // Update camera position when cameraPosition changes
+  useEffect(() => {
+    if (cameraRef.current) {
+      cameraRef.current.position.set(
+        cameraPosition.x,
+        cameraPosition.y,
+        isMobile ? cameraPosition.z + 3 : cameraPosition.z,
+      );
+    }
+  }, [cameraPosition, isMobile]);
 
   // Update ambient light color when rarity changes
   useEffect(() => {
@@ -579,7 +589,7 @@ export const ModelViewer = ({
     return () => {
       isMounted = false;
     };
-  }, [modelPath, positionY, scale, rotationY, rotationX, rotationZ, isMobile]); // Model-specific dependencies
+  }, [modelPath, positionY, scale, rotationY, rotationX, rotationZ]); // Model-specific dependencies
 
   return (
     <div className={`relative ${className}`}>
