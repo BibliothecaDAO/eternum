@@ -12,7 +12,7 @@ import { useOpenChest } from "@/hooks/use-open-chest";
 import { useVideoPreloader } from "@/hooks/use-video-preloader";
 import { useLootChestOpeningStore } from "@/stores/loot-chest-opening";
 import { AssetRarity, ChestAsset } from "@/utils/cosmetics";
-import { Loader2 } from "lucide-react";
+import { Loader2, Package } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { env } from "../../../env";
 import { ChestContent } from "./chest-content";
@@ -63,6 +63,8 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
   const [loadError, setLoadError] = useState(false);
   const [chestType, setChestType] = useState<ChestAsset["rarity"]>(AssetRarity.Common);
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
+  const [showPlayButton, setShowPlayButton] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   const { chestOpenTimestamp, setChestOpenTimestamp } = useLootChestOpeningStore();
   const { chestContent, resetChestContent } = useChestContent(env.VITE_PUBLIC_CHEST_DEBUG_MODE, chestOpenTimestamp);
@@ -80,6 +82,9 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
   // Start ambient music when modal opens
   useEffect(() => {
     ambienceAudio.play();
+
+    // Check if mobile on mount
+    setIsMobile(window.innerWidth < 768);
 
     // Cleanup: stop audio when component unmounts
     return () => {
@@ -114,6 +119,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
       setShowContent(false);
       setIsVideoReady(false);
       setLoadError(false);
+      setShowPlayButton(false);
     }
   }, [chestContent]);
 
@@ -123,6 +129,12 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
   useEffect(() => {
     if (isVideoReady && videoRef.current && chestContent && chestContent.length > 0 && allVideosLoaded) {
       console.log("Video is ready and preloaded, attempting to play...");
+
+      // On mobile, show play button instead of auto-playing
+      if (isMobile) {
+        setShowPlayButton(true);
+        return;
+      }
 
       const playVideo = async () => {
         try {
@@ -172,7 +184,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
             } catch (e) {
               console.error("Failed to play even when muted:", e);
               // Show manual play button as fallback
-              setVideoState("playing");
+              setShowPlayButton(true);
             }
           }
         }
@@ -180,7 +192,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
 
       playVideo();
     }
-  }, [isVideoReady, chestContent, allVideosLoaded, chestType]);
+  }, [isVideoReady, chestContent, allVideosLoaded, chestType, isMobile]);
 
   // Fade out audio before video ends
   useEffect(() => {
@@ -220,6 +232,42 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
     }, 500);
   };
 
+  const handleManualPlay = async () => {
+    setShowPlayButton(false);
+    
+    try {
+      // On mobile, ensure videos are muted for better compatibility
+      if (videoRef.current) {
+        videoRef.current.muted = isMobile;
+        videoRef.current.volume = isMobile ? 0 : 1;
+      }
+
+      // Sync background video with main video
+      if (backgroundVideoRef.current && videoRef.current) {
+        backgroundVideoRef.current.currentTime = videoRef.current.currentTime;
+      }
+
+      // Play both videos simultaneously
+      const playPromises = [];
+      if (videoRef.current) {
+        playPromises.push(videoRef.current.play());
+      }
+      if (backgroundVideoRef.current) {
+        playPromises.push(backgroundVideoRef.current.play());
+      }
+
+      await Promise.all(playPromises);
+      console.log("Videos playing successfully via manual trigger");
+      setVideoState("playing");
+      // Fade ambience audio to quiet when video starts
+      ambienceAudio.fadeToQuiet(500);
+    } catch (error) {
+      console.error("Error playing video manually:", error);
+      // If still fails, skip to content
+      handleSkip();
+    }
+  };
+
   const { openChest } = useOpenChest();
   const [isChestOpeningLoading, setIsChestOpeningLoading] = useState(false);
 
@@ -236,6 +284,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
     setShowContent(false);
     setIsVideoReady(false);
     setLoadError(false);
+    setShowPlayButton(false);
 
     // Reset chest content to empty array
     resetChestContent();
@@ -284,7 +333,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
 
   // Check if we should show loading state - show until both videos and chest content are loaded
   const shouldShowLoading =
-    !chestContent || chestContent.length === 0 || (videoState === "loading" && !loadError) || !allVideosLoaded;
+    !chestContent || chestContent.length === 0 || (videoState === "loading" && !loadError && !showPlayButton) || !allVideosLoaded;
 
   return (
     <Dialog open={true} onOpenChange={clearLootChestOpening}>
@@ -340,7 +389,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
                   }
                 }}
                 playsInline
-                muted={false}
+                muted={isMobile}
                 autoPlay={false}
                 preload={window.innerWidth < 768 ? "metadata" : "auto"}
                 controls={false}
@@ -348,6 +397,50 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
               >
                 <source src={chestOpeningVideo[chestType]} type="video/mp4" />
               </video>
+            </div>
+          )}
+
+          {/* Play button for mobile */}
+          {showPlayButton && !shouldShowLoading && (
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-6 bg-black/80 backdrop-blur-sm">
+              <div className="flex flex-col items-center gap-4 px-6">
+                {/* Chest icon */}
+                <div className="relative">
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-b from-gold/20 to-gold/5 flex items-center justify-center border-2 border-gold/50">
+                    <Package 
+                      size={48}
+                      className="text-gold"
+                      strokeWidth={1.5}
+                    />
+                  </div>
+                  {/* Sparkle effects around the chest */}
+                  <div className="absolute -top-1 -right-1">
+                    <div className="w-3 h-3 bg-gold/40 rounded-full animate-pulse" />
+                  </div>
+                  <div className="absolute -bottom-1 -left-1">
+                    <div className="w-2 h-2 bg-gold/30 rounded-full animate-pulse animation-delay-200" />
+                  </div>
+                  <div className="absolute top-4 -right-3">
+                    <div className="w-2 h-2 bg-gold/50 rounded-full animate-pulse animation-delay-400" />
+                  </div>
+                </div>
+                
+                <div className="text-center space-y-2">
+                  <h3 className="text-xl font-bold text-gold">Ready to Open</h3>
+                  <p className="text-sm text-gray-400 max-w-xs">
+                    Tap below to reveal your loot chest
+                  </p>
+                </div>
+                
+                <Button 
+                  variant="default" 
+                  size="lg" 
+                  onClick={handleManualPlay}
+                  className="bg-gold hover:bg-gold/90 text-black font-bold px-8 py-3 text-lg min-h-[52px] shadow-lg"
+                >
+                  Open Chest
+                </Button>
+              </div>
             </div>
           )}
 
