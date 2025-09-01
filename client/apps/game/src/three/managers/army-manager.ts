@@ -501,52 +501,52 @@ export class ArmyManager {
         // Clear the pending update
         this.pendingExplorerTroopsUpdate.delete(entityId);
       }
-
-      const isMine = finalOwnerAddress ? isAddressEqualToAccount(finalOwnerAddress) : false;
-
-      // Determine the color based on ownership (consistent with structure labels)
-      let color: string;
-      if (isDaydreamsAgent) {
-        color = COLORS.SELECTED;
-      } else if (isMine) {
-        color = LABEL_STYLES.MINE.textColor || "#d9f99d";
-      } else {
-        color = LABEL_STYLES.ENEMY.textColor || "#fecdd3";
-      }
-
-      this.armies.set(entityId, {
-        entityId,
-        matrixIndex: this.armies.size - 1,
-        hexCoords,
-        isMine,
-        owner: {
-          address: finalOwnerAddress || 0n,
-          ownerName: finalOwnerName,
-          guildName: finalGuildName,
-        },
-        color,
-        category,
-        tier,
-        isDaydreamsAgent,
-        // Enhanced data
-        troopCount: finalTroopCount,
-        currentStamina: finalCurrentStamina,
-        maxStamina: finalMaxStamina,
-        // we need to check if there's any pending before we set it because onchain stamina might be 0 from the map data store in the system-manager
-        onChainStamina: finalOnChainStamina,
-      });
-
-      // Apply any pending relic effects for this army
-      if (this.applyPendingRelicEffectsCallback) {
-        try {
-          await this.applyPendingRelicEffectsCallback(entityId);
-        } catch (error) {
-          console.error(`Failed to apply pending relic effects for army ${entityId}:`, error);
-        }
-      }
-
-      await this.renderVisibleArmies(this.currentChunkKey!);
     }
+
+    const isMine = finalOwnerAddress ? isAddressEqualToAccount(finalOwnerAddress) : false;
+
+    // Determine the color based on ownership (consistent with structure labels)
+    let color: string;
+    if (isDaydreamsAgent) {
+      color = COLORS.SELECTED;
+    } else if (isMine) {
+      color = LABEL_STYLES.MINE.textColor || "#d9f99d";
+    } else {
+      color = LABEL_STYLES.ENEMY.textColor || "#fecdd3";
+    }
+
+    this.armies.set(entityId, {
+      entityId,
+      matrixIndex: this.armies.size - 1,
+      hexCoords,
+      isMine,
+      owner: {
+        address: finalOwnerAddress || 0n,
+        ownerName: finalOwnerName,
+        guildName: finalGuildName,
+      },
+      color,
+      category,
+      tier,
+      isDaydreamsAgent,
+      // Enhanced data
+      troopCount: finalTroopCount,
+      currentStamina: finalCurrentStamina,
+      maxStamina: finalMaxStamina,
+      // we need to check if there's any pending before we set it because onchain stamina might be 0 from the map data store in the system-manager
+      onChainStamina: finalOnChainStamina,
+    });
+
+    // Apply any pending relic effects for this army
+    if (this.applyPendingRelicEffectsCallback) {
+      try {
+        await this.applyPendingRelicEffectsCallback(entityId);
+      } catch (error) {
+        console.error(`Failed to apply pending relic effects for army ${entityId}:`, error);
+      }
+    }
+
+    await this.renderVisibleArmies(this.currentChunkKey!);
   }
 
   public async moveArmy(
