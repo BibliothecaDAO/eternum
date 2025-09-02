@@ -96,15 +96,18 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
     loop: true,
   });
 
-  // Start ambient music when modal opens
+  // Start ambient music when modal opens (desktop only)
   useEffect(() => {
-    ambienceAudio.play();
+    // Only play ambient music on desktop
+    if (!isMobile) {
+      ambienceAudio.play();
+    }
 
     // Cleanup: stop audio when component unmounts
     return () => {
       ambienceAudio.stop();
     };
-  }, []);
+  }, [isMobile]);
 
   // Cycle through loading messages every 2 seconds
   useEffect(() => {
@@ -162,11 +165,6 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
 
       const playVideo = async () => {
         try {
-          // Fade out ambient audio on mobile before playing video
-          if (isMobile) {
-            ambienceAudio.stop();
-          }
-
           // Sync background video with main video
           if (backgroundVideoRef.current && videoRef.current) {
             backgroundVideoRef.current.currentTime = videoRef.current.currentTime;
@@ -254,11 +252,6 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
 
   const handleManualPlay = async () => {
     setShowPlayButton(false);
-
-    // Fade out ambient audio on mobile before playing video
-    if (isMobile) {
-      ambienceAudio.stop();
-    }
 
     try {
       if (videoRef.current) {
