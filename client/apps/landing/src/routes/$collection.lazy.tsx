@@ -90,9 +90,8 @@ function ManageCollectionRoute() {
 
   useEffect(() => {
     if (!tokensWithFloorPrice || !openedChestTokenId) return;
-    const remainingTokens = tokensWithFloorPrice.filter(
-      (token) => token.token_id !== openedChestTokenId && token.token_id !== "42",
-    );
+    const remainingTokens = tokensWithFloorPrice.filter((token) => token.token_id !== openedChestTokenId);
+    // .filter((token) => token.token_id !== "42" && token.token_id !== "129" && token.token_id !== "84");
     setNextChestToken(remainingTokens.length > 0 ? remainingTokens[0].token_id.toString() : null);
     setRemainingChests(remainingTokens.length);
   }, [tokensWithFloorPrice, openedChestTokenId]);

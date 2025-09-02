@@ -1,12 +1,14 @@
-import { ChestAsset } from "@/components/modules/chest-content";
+import { ChestAsset } from "@/utils/cosmetics";
 import { createStore, StoreApi, useStore } from "zustand";
 
 interface LootChestOpeningStore {
   showLootChestOpening: boolean;
   chestAssets: ChestAsset[];
   openedChestTokenId: string | null;
+  chestOpenTimestamp: number;
   setShowLootChestOpening: (show: boolean, assets?: ChestAsset[]) => void;
   setOpenedChestTokenId: (tokenId: string | null) => void;
+  setChestOpenTimestamp: (timestamp: number) => void;
   clearLootChestOpening: () => void;
 }
 
@@ -19,6 +21,7 @@ const createLootChestOpeningStore = () =>
     showLootChestOpening: false,
     chestAssets: [],
     openedChestTokenId: null,
+    chestOpenTimestamp: Math.floor(Date.now() / 1000),
 
     setShowLootChestOpening: (show: boolean, assets: ChestAsset[] = [], tokenId?: string) => {
       set({
@@ -34,11 +37,18 @@ const createLootChestOpeningStore = () =>
       });
     },
 
+    setChestOpenTimestamp: (timestamp: number) => {
+      set({
+        chestOpenTimestamp: timestamp,
+      });
+    },
+
     clearLootChestOpening: () =>
       set({
         showLootChestOpening: false,
         chestAssets: [],
         openedChestTokenId: null,
+        chestOpenTimestamp: Math.floor(Date.now() / 1000),
       }),
   }));
 
@@ -51,8 +61,10 @@ export const useLootChestOpeningStore = () => {
     showLootChestOpening: useStore(globalStore, (state) => state.showLootChestOpening),
     chestAssets: useStore(globalStore, (state) => state.chestAssets),
     openedChestTokenId: useStore(globalStore, (state) => state.openedChestTokenId),
+    chestOpenTimestamp: useStore(globalStore, (state) => state.chestOpenTimestamp),
     setShowLootChestOpening: useStore(globalStore, (state) => state.setShowLootChestOpening),
     setOpenedChestTokenId: useStore(globalStore, (state) => state.setOpenedChestTokenId),
+    setChestOpenTimestamp: useStore(globalStore, (state) => state.setChestOpenTimestamp),
     clearLootChestOpening: useStore(globalStore, (state) => state.clearLootChestOpening),
   };
 };

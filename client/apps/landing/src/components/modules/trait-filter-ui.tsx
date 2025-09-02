@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { COSMETIC_NAMES } from "@/utils/cosmetics";
 import { RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types";
 import { X } from "lucide-react";
 import { ResourceIcon } from "../ui/elements/resource-icon";
@@ -14,6 +15,130 @@ interface TraitFilterUIProps {
   clearAllFilters: () => void;
 }
 
+const FILTERABLE_TRAITS = ["Resource", "Epoch", "Epoch Item", "Rarity", "Type"] as const;
+
+const getTraitPlaceholder = (traitType: string): string => {
+  const placeholders: Record<string, string> = {
+    Resource: "Filter by Resource",
+    Epoch: "Filter by Epoch",
+    "Epoch Item": "Filter by Name",
+    Rarity: "Filter by Rarity",
+    Type: "Filter by Type",
+  };
+  return placeholders[traitType] || `Filter by ${traitType}`;
+};
+
+const sortResourceValues = (values: string[]): string[] => {
+  return [...values].sort((a, b) => {
+    const normalizeResource = (resource: string) => resource.replace(/\s/g, "");
+    const aId = ResourcesIds[normalizeResource(a) as keyof typeof ResourcesIds];
+    const bId = ResourcesIds[normalizeResource(b) as keyof typeof ResourcesIds];
+    const aRarity = (aId !== undefined ? RESOURCE_RARITY[aId] : undefined) || Infinity;
+    const bRarity = (bId !== undefined ? RESOURCE_RARITY[bId] : undefined) || Infinity;
+    return aRarity - bRarity;
+  });
+};
+
+const sortRarityValues = (values: string[]): string[] => {
+  const rarityOrder = ["Common", "Uncommon", "Rare", "Epic", "Legendary"];
+  return [...values].sort((a, b) => {
+    const aIndex = rarityOrder.indexOf(a);
+    const bIndex = rarityOrder.indexOf(b);
+    if (aIndex === -1) return 1;
+    if (bIndex === -1) return -1;
+    return aIndex - bIndex;
+  });
+};
+
+const getItemNameFromId = (id: string): string => {
+  const cosmetic = COSMETIC_NAMES.find((c) => c.id === id);
+  return cosmetic ? cosmetic.name : id;
+};
+
+const FilterBadge = ({ traitType, value, onRemove }: { traitType: string; value: string; onRemove: () => void }) => {
+  if (traitType === "Wonder") {
+    return (
+      <Badge key={`${traitType}-filter`} variant="default">
+        Has Wonder
+        <button
+          onClick={onRemove}
+          className="ml-1.5 p-0.5 rounded-full hover:bg-muted focus:outline-none focus:ring-1 focus:ring-ring"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      </Badge>
+    );
+  }
+
+  const displayValue = traitType === "Epoch Item" ? getItemNameFromId(value) : value;
+
+  return (
+    <Badge key={`${traitType}-${value}`} variant="default">
+      {traitType === "Resource" && <ResourceIcon resource={value} size="md" className="mr-1 inline-block" />}
+      {displayValue}
+      <button
+        onClick={onRemove}
+        className="ml-1.5 p-0.5 rounded-full hover:bg-muted focus:outline-none focus:ring-1 focus:ring-ring"
+      >
+        <X className="h-3 w-3" />
+      </button>
+    </Badge>
+  );
+};
+
+const WonderFilter = ({ isChecked, onToggle }: { isChecked: boolean; onToggle: (checked: boolean) => void }) => (
+  <div className="flex items-center h-9 px-3 rounded-md border border-input bg-background space-x-2 pb-0">
+    <Checkbox id="wonder-filter" checked={isChecked} onCheckedChange={onToggle} />
+    <Label
+      htmlFor="wonder-filter"
+      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+    >
+      Filter by Wonder
+    </Label>
+  </div>
+);
+
+const TraitSelect = ({
+  traitType,
+  values,
+  selectedValue,
+  onValueChange,
+}: {
+  traitType: string;
+  values: string[];
+  selectedValue: string;
+  onValueChange: (value: string) => void;
+}) => {
+  let sortedValues = values;
+  if (traitType === "Resource") {
+    sortedValues = sortResourceValues(values);
+  } else if (traitType === "Rarity") {
+    sortedValues = sortRarityValues(values);
+  }
+
+  const placeholder = getTraitPlaceholder(traitType);
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Select value={selectedValue} onValueChange={onValueChange}>
+        <SelectTrigger id={`filter-${traitType}`} className="h-9">
+          <SelectValue placeholder={placeholder}>{selectedValue ? placeholder : undefined}</SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          {sortedValues.map((value) => (
+            <SelectItem key={value} value={value} className="flex items-center gap-2 text-lg">
+              <div className="flex items-center gap-2">
+                {traitType === "Resource" && <ResourceIcon resource={value} size="md" />}
+                <span className="text-xs">{traitType === "Epoch Item" ? getItemNameFromId(value) : value}</span>
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+};
+
 export function TraitFilterUI({
   allTraits,
   selectedFilters,
@@ -25,125 +150,55 @@ export function TraitFilterUI({
   const hasTraits = Object.keys(allTraits).length > 0;
 
   if (!hasTraits) {
-    return null; // Don't render anything if there are no traits to filter by
+    return null;
   }
+
+  const handleWonderToggle = (checked: boolean) => {
+    if (checked) {
+      handleFilterChange("Wonder", "__ALL_WONDERS__");
+    } else {
+      clearFilter("Wonder");
+    }
+  };
+
+  const renderFilterBadges = () => {
+    return Object.entries(selectedFilters).map(([traitType, values]) =>
+      values.map((value) => (
+        <FilterBadge
+          key={`${traitType}-${value}`}
+          traitType={traitType}
+          value={value}
+          onRemove={() => (traitType === "Wonder" ? clearFilter(traitType) : handleFilterChange(traitType, value))}
+        />
+      )),
+    );
+  };
+
+  const renderTraitSelects = () => {
+    return Object.entries(allTraits)
+      .filter(([traitType]) => FILTERABLE_TRAITS.includes(traitType as any))
+      .map(([traitType, values]) => (
+        <TraitSelect
+          key={traitType}
+          traitType={traitType}
+          values={values}
+          selectedValue={selectedFilters[traitType]?.[0] || ""}
+          onValueChange={(value) => handleFilterChange(traitType, value)}
+        />
+      ));
+  };
 
   return (
     <>
-      {/* <div className="flex justify-between items-center">
-        {hasActiveFilters && (
-          <Button variant="ghost" size="sm" onClick={clearAllFilters} className="text-xs h-auto py-1 px-2">
-            Clear All Filters
-            <X className="ml-1 h-3 w-3" />
-          </Button>
-        )}
-      </div> */}
-      {/* Display Active Filters */}
       {hasActiveFilters && (
         <div className="border-r pr-4 border-border/50 flex flex-wrap gap-0.5 sm:gap-2 items-center">
-          {Object.entries(selectedFilters).map(([traitType, values]) =>
-            values.map((value) => {
-              // Handle Wonder badge display
-              if (traitType === "Wonder") {
-                return (
-                  <Badge key={`${traitType}-filter`} variant="default" className="">
-                    Has Wonder
-                    <button
-                      onClick={() => clearFilter(traitType)}
-                      className="ml-1.5 p-0.5 rounded-full hover:bg-muted focus:outline-none focus:ring-1 focus:ring-ring"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                );
-              }
-              // Handle other trait badges
-              return (
-                <Badge key={`${traitType}-${value}`} variant="default" className="">
-                  {traitType === "Resource" && (
-                    <ResourceIcon resource={value} size="md" className="mr-1 inline-block" />
-                  )}
-                  {value}
-                  <button
-                    onClick={() => handleFilterChange(traitType, value)} // Use handleFilterChange to remove specific value
-                    className="ml-1.5 p-0.5 rounded-full hover:bg-muted focus:outline-none focus:ring-1 focus:ring-ring"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              );
-            }),
-          )}
+          {renderFilterBadges()}
         </div>
       )}
+
       <div className="flex justify-center items-end gap-4">
-        {/* Render Checkbox for Wonder trait */}
-        {allTraits["Wonder"] && (
-          <div className="flex items-center h-9 px-3 rounded-md border border-input bg-background space-x-2 pb-0">
-            <Checkbox
-              id="wonder-filter"
-              checked={!!selectedFilters["Wonder"]}
-              onCheckedChange={(checked) => {
-                if (checked) {
-                  handleFilterChange("Wonder", "__ALL_WONDERS__"); // Use special value
-                } else {
-                  clearFilter("Wonder");
-                }
-              }}
-            />
-            <Label
-              htmlFor="wonder-filter"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              Filter by Wonder
-            </Label>
-          </div>
-        )}
-
-        {/* Render Select dropdowns for other traits (e.g., Resource) */}
-        {Object.entries(allTraits)
-          .filter(([traitType]) => traitType === "Resource") // Only include Resource
-          .map(([traitType, values]) => {
-            // Sort resources by their ID (rarity)
-            const sortedValues =
-              traitType === "Resource"
-                ? [...values].sort((a, b) => {
-                    const aWithoutSpace = a.replace(/\s/g, "");
-                    const bWithoutSpace = b.replace(/\s/g, "");
-                    const idA = ResourcesIds[aWithoutSpace as keyof typeof ResourcesIds];
-                    const idB = ResourcesIds[bWithoutSpace as keyof typeof ResourcesIds];
-                    const rarityA = (idA !== undefined ? RESOURCE_RARITY[idA] : undefined) || Infinity;
-                    const rarityB = (idB !== undefined ? RESOURCE_RARITY[idB] : undefined) || Infinity;
-                    return rarityA - rarityB;
-                  })
-                : values;
-
-            return (
-              <div key={traitType} className="flex flex-col gap-1.5">
-                <Select
-                  value={selectedFilters[traitType]?.[0] || ""} // Assuming single select
-                  onValueChange={(value) => handleFilterChange(traitType, value)}
-                >
-                  <SelectTrigger id={`filter-${traitType}`} className="h-9">
-                    <SelectValue placeholder="Filter by Resource">
-                      {/* Always display 'Filter by Resource' if a resource is selected */}
-                      {selectedFilters["Resource"]?.[0] ? "Filter by Resource" : undefined}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sortedValues.map((value) => (
-                      <SelectItem key={value} value={value} className="flex items-center gap-2 text-lg">
-                        <div className="flex items-center gap-2">
-                          {traitType === "Resource" && <ResourceIcon resource={value} size="md" />}
-                          <span className="text-xs">{value}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            );
-          })}
+        {allTraits["Wonder"] && <WonderFilter isChecked={!!selectedFilters["Wonder"]} onToggle={handleWonderToggle} />}
+        {renderTraitSelects()}
       </div>
     </>
   );

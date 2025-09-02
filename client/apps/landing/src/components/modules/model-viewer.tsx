@@ -1,5 +1,6 @@
-import { Loader2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { AssetRarity } from "@/utils/cosmetics";
+import { Hand, Loader2, RotateCcw } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { DRACOLoader, GLTFLoader, OrbitControls } from "three-stdlib";
 
@@ -9,252 +10,632 @@ interface ModelViewerProps {
   positionY?: number;
   scale?: number;
   rotationY?: number;
-  rarity?: "common" | "uncommon" | "rare" | "epic" | "legendary";
+  rotationX?: number | undefined;
+  rotationZ?: number | undefined;
+  rarity?: AssetRarity;
+  cameraPosition?: { x: number; y: number; z: number };
 }
 
-const getRarityAmbientColor = (rarity: "common" | "uncommon" | "rare" | "epic" | "legendary" | undefined) => {
+const getRarityAmbientColor = (rarity: AssetRarity | undefined) => {
   switch (rarity) {
-    case "common":
+    case AssetRarity.Common:
       return "#848484";
-    case "uncommon":
+    case AssetRarity.Uncommon:
       return "#6cc95e";
-    case "rare":
+    case AssetRarity.Rare:
       return "#56c8da";
-    case "epic":
-      return "#e9b062";
-    case "legendary":
+    case AssetRarity.Epic:
       return "#ba37d4";
+    case AssetRarity.Legendary:
+      return "#e9b062";
     default:
       return "#666666";
   }
 };
 
-export const ModelViewer = ({
-  modelPath,
-  positionY = 0,
-  scale = 1,
-  rotationY = 0,
-  rarity,
-  className = "",
-}: ModelViewerProps) => {
-  const mountRef = useRef<HTMLDivElement>(null);
-  const sceneRef = useRef<THREE.Scene | null>(null);
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const controlsRef = useRef<OrbitControls | null>(null);
-  const frameIdRef = useRef<number>();
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export const ModelViewer = React.memo(
+  ({
+    modelPath,
+    positionY = 0,
+    scale = 1,
+    rotationY = 0,
+    rotationX = 0,
+    rotationZ = 0,
+    rarity,
+    className = "",
+    cameraPosition = { x: 0, y: 1, z: 1 },
+  }: ModelViewerProps) => {
+    const mountRef = useRef<HTMLDivElement>(null);
+    const sceneRef = useRef<THREE.Scene | null>(null);
+    const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+    const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+    const controlsRef = useRef<OrbitControls | null>(null);
+    const frameIdRef = useRef<number>();
+    const modelRef = useRef<THREE.Group | null>(null);
+    const ambientLightRef = useRef<THREE.AmbientLight | null>(null);
+    const smokeParticlesRef = useRef<THREE.Mesh[]>([]);
+    const startTimeRef = useRef<number>(Date.now());
+    const basePositionYRef = useRef<number>(0);
+    const baseScaleRef = useRef<number>(1);
+    const modelRotationRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+    const targetRotationRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+    const isDraggingRef = useRef<boolean>(false);
+    const previousMouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [showRotationHint, setShowRotationHint] = useState(true);
+    const isSceneInitializedRef = useRef<boolean>(false);
+    const dracoLoaderRef = useRef<DRACOLoader | null>(null);
 
-  useEffect(() => {
-    if (!mountRef.current) return;
+    const isMobile = window.innerWidth < 768;
 
-    const mount = mountRef.current;
-    const width = mount.clientWidth;
-    const height = mount.clientHeight;
+    // Initialize scene, camera, renderer, lights, and smoke particles (runs once)
+    useEffect(() => {
+      if (!mountRef.current || isSceneInitializedRef.current) return;
 
-    // Scene setup with dark background for dramatic lighting
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000);
-    sceneRef.current = scene;
+      const mount = mountRef.current;
+      const width = mount.clientWidth;
+      const height = mount.clientHeight;
 
-    // Camera setup
-    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-    camera.position.set(0, 1, 1);
-    cameraRef.current = camera;
+      // Scene setup with dark background for dramatic lighting
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x000000);
+      sceneRef.current = scene;
 
-    // Renderer setup
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    rendererRef.current = renderer;
+      // Camera setup
+      const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+      // make object smaller on mobile
+      camera.position.set(0, 1, isMobile ? 4 : 1);
+      cameraRef.current = camera;
 
-    mount.appendChild(renderer.domElement);
+      // Renderer setup with mobile optimization
+      const renderer = new THREE.WebGLRenderer({ antialias: !isMobile, alpha: true });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
+      renderer.shadowMap.enabled = !isMobile; // Disable shadows on mobile
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      rendererRef.current = renderer;
 
-    // OrbitControls setup exactly like Three.js example
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(0, 1, 0);
-    controls.enableDamping = true;
-    controls.enablePan = false;
-    controls.maxPolarAngle = Math.PI / 2 - 0.05;
-    controls.minDistance = 2;
-    controls.maxDistance = 5;
-    controlsRef.current = controls;
+      mount.appendChild(renderer.domElement);
 
-    // Ground plane - darker to blend with background
-    const groundGeometry = new THREE.PlaneGeometry(20, 20);
-    const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x111111 });
-    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.y = 0;
-    ground.receiveShadow = true;
-    scene.add(ground);
+      // OrbitControls setup - only for zoom, no rotation
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.target.set(0, 1, 0);
+      controls.enableDamping = true;
+      controls.enablePan = false;
+      controls.enableRotate = false; // Disable camera rotation
+      controls.minDistance = isMobile ? 2.5 : 2; // Closer view on mobile
+      controls.maxDistance = isMobile ? 4 : 3.5;
+      controlsRef.current = controls;
 
-    // Dramatic lighting setup with rarity-based ambient light
-    const rarityColor = getRarityAmbientColor(rarity);
-    const ambientLight = new THREE.AmbientLight(rarityColor, 0.4);
-    scene.add(ambientLight);
+      // Enhanced lighting setup with rarity-based ambient light
+      const rarityColor = getRarityAmbientColor(rarity);
+      const ambientLight = new THREE.AmbientLight(rarityColor, 0.6);
+      ambientLightRef.current = ambientLight;
+      scene.add(ambientLight);
 
-    // Warm directional light
-    const dirLight1 = new THREE.DirectionalLight(0xffddcc, 3);
-    dirLight1.position.set(1, 0.75, 0.5);
-    dirLight1.castShadow = true;
-    dirLight1.shadow.mapSize.width = 2048;
-    dirLight1.shadow.mapSize.height = 2048;
-    dirLight1.shadow.camera.near = 0.1;
-    dirLight1.shadow.camera.far = 50;
-    dirLight1.shadow.camera.left = -10;
-    dirLight1.shadow.camera.right = 10;
-    dirLight1.shadow.camera.top = 10;
-    dirLight1.shadow.camera.bottom = -10;
-    scene.add(dirLight1);
+      // Key light - main directional light from front-top
+      const keyLight = new THREE.DirectionalLight(0xffffff, 4);
+      keyLight.position.set(2, 3, 2);
+      keyLight.castShadow = !isMobile;
+      keyLight.shadow.mapSize.width = isMobile ? 1024 : 2048;
+      keyLight.shadow.mapSize.height = isMobile ? 1024 : 2048;
+      keyLight.shadow.camera.near = 0.1;
+      keyLight.shadow.camera.far = 50;
+      keyLight.shadow.camera.left = -10;
+      keyLight.shadow.camera.right = 10;
+      keyLight.shadow.camera.top = 10;
+      keyLight.shadow.camera.bottom = -10;
+      scene.add(keyLight);
 
-    // Cool directional light
-    const dirLight2 = new THREE.DirectionalLight(0xccccff, 3);
-    dirLight2.position.set(-1, 0.75, -0.5);
-    dirLight2.castShadow = true;
-    dirLight2.shadow.mapSize.width = 2048;
-    dirLight2.shadow.mapSize.height = 2048;
-    dirLight2.shadow.camera.near = 0.1;
-    dirLight2.shadow.camera.far = 50;
-    dirLight2.shadow.camera.left = -10;
-    dirLight2.shadow.camera.right = 10;
-    dirLight2.shadow.camera.top = 10;
-    dirLight2.shadow.camera.bottom = -10;
-    scene.add(dirLight2);
+      // Fill light - softer light from opposite side
+      const fillLight = new THREE.DirectionalLight(0xccddff, 2);
+      fillLight.position.set(-2, 2, 1);
+      scene.add(fillLight);
 
-    const loader = new GLTFLoader();
-    const dracoLoader = new DRACOLoader();
-    dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.6/");
-    loader.setDRACOLoader(dracoLoader);
-    let model: THREE.Group | null = null;
+      // Rim light - dramatic backlighting
+      const rimLight = new THREE.DirectionalLight(0xffffcc, 1.5);
+      rimLight.position.set(0, 1, -3);
+      scene.add(rimLight);
 
-    loader.load(
-      modelPath,
-      (gltf) => {
-        model = gltf.scene;
+      // Additional point light for overall brightness
+      const pointLight = new THREE.PointLight(0xffffff, 2, 10);
+      pointLight.position.set(0, 2, 1);
+      scene.add(pointLight);
 
-        // Get bounding box and center the model
-        const box = new THREE.Box3().setFromObject(model);
-        const center = box.getCenter(new THREE.Vector3());
-        const size = box.getSize(new THREE.Vector3());
+      // Create smoke effect with mobile optimization
+      const createSmokeEffect = () => {
+        // Detect mobile device for performance optimization
+        // Create smoke texture using canvas (since we can't load external images in this context)
+        const canvas = document.createElement("canvas");
+        canvas.width = 64;
+        canvas.height = 64;
+        const context = canvas.getContext("2d");
 
-        // Center the model horizontally and position vertically
-        model.position.x = -center.x;
-        model.position.z = -center.z;
-        model.position.y = -box.min.y + positionY; // Apply Y offset from prop
+        if (context) {
+          // Create a circular gradient for smoke texture
+          const gradient = context.createRadialGradient(32, 32, 0, 32, 32, 32);
+          gradient.addColorStop(0, "rgba(255, 255, 255, 1)");
+          gradient.addColorStop(0.2, "rgba(255, 255, 255, 0.8)");
+          gradient.addColorStop(0.5, "rgba(255, 255, 255, 0.3)");
+          gradient.addColorStop(1, "rgba(255, 255, 255, 0)");
 
-        // Scale model appropriately
-        const maxDim = Math.max(size.x, size.y, size.z);
-        const autoScale = 2 / maxDim;
-        model.scale.setScalar(autoScale * scale);
+          context.fillStyle = gradient;
+          context.fillRect(0, 0, 64, 64);
+        }
 
-        // Apply Y rotation
-        model.rotation.y = rotationY;
-
-        // Enable shadows
-        model.traverse((child) => {
-          if (child instanceof THREE.Mesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-          }
+        const smokeTexture = new THREE.CanvasTexture(canvas);
+        const smokeMaterial = new THREE.MeshLambertMaterial({
+          color: 0xffffff,
+          map: smokeTexture,
+          transparent: true,
+          opacity: 0.3,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
         });
 
-        scene.add(model);
-        setIsLoading(false);
-      },
-      (progress) => {
-        console.log("Loading progress:", (progress.loaded / progress.total) * 100 + "%");
-      },
-      (error) => {
-        console.error("Error loading model:", error);
-        setError("Failed to load 3D model");
-        setIsLoading(false);
-      },
-    );
+        const smokeGeo = new THREE.PlaneGeometry(1, 1); // Scaled for our smaller scene
+        const smokeParticles: THREE.Mesh[] = [];
 
-    const animate = () => {
-      frameIdRef.current = requestAnimationFrame(animate);
+        // Create fewer smoke particles on mobile for better performance
+        const particleCount = isMobile ? 15 : 30;
+        for (let p = 0; p < particleCount; p++) {
+          const particle = new THREE.Mesh(smokeGeo, smokeMaterial);
 
-      // Update controls with damping
-      if (controls) {
-        controls.update();
-      }
+          // Position particles around the scene (scaled for 2-4 unit scene)
+          particle.position.set(
+            Math.random() * 4 - 2, // -2 to 2
+            Math.random() * 4 - 2, // -2 to 2
+            Math.random() * 4 - 2, // -2 to 2
+          );
 
-      renderer.render(scene, camera);
-    };
+          particle.rotation.z = Math.random() * Math.PI * 2;
+          scene.add(particle);
+          smokeParticles.push(particle);
+        }
 
-    animate();
+        smokeParticlesRef.current = smokeParticles;
+      };
 
-    const handleResize = () => {
-      if (!mount || !renderer || !camera) return;
+      createSmokeEffect();
 
-      const newWidth = mount.clientWidth;
-      const newHeight = mount.clientHeight;
+      // Custom mouse rotation handlers with smooth damping
+      const handleMouseDown = (event: MouseEvent) => {
+        isDraggingRef.current = true;
+        previousMouseRef.current = { x: event.clientX, y: event.clientY };
+        // Hide rotation hint when user starts interacting
+        setShowRotationHint(false);
+        event.preventDefault();
+      };
 
-      camera.aspect = newWidth / newHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(newWidth, newHeight);
-    };
+      const handleMouseMove = (event: MouseEvent) => {
+        if (!isDraggingRef.current) return;
 
-    window.addEventListener("resize", handleResize);
+        const deltaX = event.clientX - previousMouseRef.current.x;
 
-    return () => {
-      if (frameIdRef.current) {
-        cancelAnimationFrame(frameIdRef.current);
-      }
+        // Convert mouse movement to rotation with improved sensitivity
+        const rotationSpeed = 0.005;
+        targetRotationRef.current.y += deltaX * rotationSpeed;
+        // Removed X rotation - only Y axis rotation allowed
 
-      window.removeEventListener("resize", handleResize);
+        previousMouseRef.current = { x: event.clientX, y: event.clientY };
+        event.preventDefault();
+      };
 
-      if (controls) {
-        controls.dispose();
-      }
+      const handleMouseUp = (event: MouseEvent) => {
+        isDraggingRef.current = false;
+        event.preventDefault();
+      };
 
-      if (mount && renderer) {
-        mount.removeChild(renderer.domElement);
-      }
+      // Add mouse event listeners
+      renderer.domElement.addEventListener("mousedown", handleMouseDown);
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+      renderer.domElement.addEventListener("mouseleave", handleMouseUp); // Handle mouse leaving canvas
 
-      if (renderer) {
-        renderer.dispose();
-      }
+      // Touch events for mobile support
+      const handleTouchStart = (event: TouchEvent) => {
+        if (event.touches.length === 1) {
+          isDraggingRef.current = true;
+          const touch = event.touches[0];
+          previousMouseRef.current = { x: touch.clientX, y: touch.clientY };
+          // Hide rotation hint when user starts interacting
+          setShowRotationHint(false);
+          event.preventDefault();
+        }
+      };
 
-      if (scene) {
-        scene.traverse((child) => {
-          if (child instanceof THREE.Mesh) {
-            child.geometry.dispose();
-            if (Array.isArray(child.material)) {
-              child.material.forEach((material) => material.dispose());
-            } else {
-              child.material.dispose();
+      const handleTouchMove = (event: TouchEvent) => {
+        if (!isDraggingRef.current || event.touches.length !== 1) return;
+
+        const touch = event.touches[0];
+        const deltaX = touch.clientX - previousMouseRef.current.x;
+
+        // Higher rotation speed for touch to make mobile interaction more responsive
+        const rotationSpeed = 0.012;
+        targetRotationRef.current.y += deltaX * rotationSpeed;
+        // Removed X rotation - only Y axis rotation allowed
+
+        previousMouseRef.current = { x: touch.clientX, y: touch.clientY };
+        event.preventDefault();
+      };
+
+      const handleTouchEnd = (event: TouchEvent) => {
+        isDraggingRef.current = false;
+        event.preventDefault();
+      };
+
+      // Add touch event listeners
+      renderer.domElement.addEventListener("touchstart", handleTouchStart, { passive: false });
+      renderer.domElement.addEventListener("touchmove", handleTouchMove, { passive: false });
+      renderer.domElement.addEventListener("touchend", handleTouchEnd, { passive: false });
+
+      // Animation loop
+      const animate = () => {
+        frameIdRef.current = requestAnimationFrame(animate);
+
+        // Update controls with damping
+        if (controls) {
+          controls.update();
+        }
+
+        // Animation calculations
+        const time = (Date.now() - startTimeRef.current) * 0.001; // Convert to seconds
+
+        // Animate the model if it exists
+        if (modelRef.current) {
+          // Smooth rotation interpolation with damping
+          const dampingFactor = 0.1; // Lower = smoother but slower response
+          modelRotationRef.current.y += (targetRotationRef.current.y - modelRotationRef.current.y) * dampingFactor;
+
+          // Apply smoothed rotation to model - only Y axis rotation
+          modelRef.current.rotation.y = modelRotationRef.current.y;
+
+          // Very subtle floating motion - gentle up-down movement based on base position
+          const floatAmplitude = 0.02; // Small, uniform amplitude for all rarities
+          const floatSpeed = 1.2; // Gentle, consistent speed
+          const floatOffset = Math.sin(time * floatSpeed) * floatAmplitude;
+          modelRef.current.position.y = basePositionYRef.current + floatOffset;
+        }
+
+        // Animate smoke particles (reduce animation on mobile)
+        const smokeParticles = smokeParticlesRef.current;
+        if (smokeParticles.length > 0 && (!isMobile || frameIdRef.current! % 2 === 0)) {
+          // Skip every other frame on mobile
+          for (let i = 0; i < smokeParticles.length; i++) {
+            const particle = smokeParticles[i];
+
+            // Make particles always face the camera
+            particle.lookAt(cameraRef.current!.position);
+
+            // Keep particles same size regardless of zoom
+            const distance = camera.position.distanceTo(particle.position);
+            const scale = distance * (isMobile ? 0.2 : 0.3); // Smaller particles on mobile
+            particle.scale.setScalar(scale);
+
+            // Add some gentle floating motion to smoke (reduced on mobile)
+            const motionScale = isMobile ? 0.5 : 1;
+            particle.position.y += Math.sin(time * 0.5 + i) * 0.002 * motionScale;
+            particle.position.x += Math.cos(time * 0.3 + i) * 0.001 * motionScale;
+
+            // Keep particles visible at all times (reduced opacity on mobile)
+            const material = particle.material as THREE.MeshLambertMaterial;
+            material.opacity = isMobile ? 0.15 : 0.25;
+          }
+        }
+
+        renderer.render(scene, camera);
+      };
+
+      animate();
+
+      // Resize handler
+      const handleResize = () => {
+        if (!mount || !renderer || !camera) return;
+
+        const newWidth = mount.clientWidth;
+        const newHeight = mount.clientHeight;
+
+        camera.aspect = newWidth / newHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(newWidth, newHeight);
+      };
+
+      window.addEventListener("resize", handleResize);
+
+      // Mark scene as initialized
+      isSceneInitializedRef.current = true;
+
+      // Cleanup function
+      return () => {
+        if (frameIdRef.current) {
+          cancelAnimationFrame(frameIdRef.current);
+        }
+
+        window.removeEventListener("resize", handleResize);
+
+        // Clean up event listeners
+        if (renderer && renderer.domElement) {
+          renderer.domElement.removeEventListener("mousedown", handleMouseDown);
+          window.removeEventListener("mousemove", handleMouseMove);
+          window.removeEventListener("mouseup", handleMouseUp);
+          renderer.domElement.removeEventListener("mouseleave", handleMouseUp);
+          renderer.domElement.removeEventListener("touchstart", handleTouchStart);
+          renderer.domElement.removeEventListener("touchmove", handleTouchMove);
+          renderer.domElement.removeEventListener("touchend", handleTouchEnd);
+        }
+
+        if (controls) {
+          controls.dispose();
+        }
+
+        if (mount && renderer) {
+          mount.removeChild(renderer.domElement);
+        }
+
+        if (renderer) {
+          renderer.dispose();
+        }
+
+        if (scene) {
+          scene.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+              child.geometry.dispose();
+              if (Array.isArray(child.material)) {
+                child.material.forEach((material) => material.dispose());
+              } else {
+                child.material.dispose();
+              }
             }
-          }
-        });
-        scene.clear();
+          });
+          scene.clear();
+        }
+
+        isSceneInitializedRef.current = false;
+      };
+    }, []); // Empty dependency array - runs once
+
+    // Update camera position when cameraPosition changes
+    useEffect(() => {
+      if (cameraRef.current) {
+        cameraRef.current.position.set(
+          cameraPosition.x,
+          cameraPosition.y,
+          isMobile ? cameraPosition.z + 3 : cameraPosition.z,
+        );
       }
+    }, [cameraPosition, isMobile]);
 
-      dracoLoader.dispose();
-    };
-  }, [modelPath, positionY, scale, rotationY, rarity]);
+    // Update ambient light color when rarity changes
+    useEffect(() => {
+      if (ambientLightRef.current) {
+        const rarityColor = getRarityAmbientColor(rarity);
+        ambientLightRef.current.color = new THREE.Color(rarityColor);
+      }
+    }, [rarity]);
 
-  return (
-    <div className={`relative ${className}`}>
-      <div ref={mountRef} className="w-full h-full" />
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="flex flex-col items-center gap-2 text-white">
-            <Loader2 className="w-8 h-8 animate-spin" />
-            <span className="text-sm">Loading 3D model...</span>
+    // Handle model loading separately
+    useEffect(() => {
+      if (!sceneRef.current || !isSceneInitializedRef.current) return;
+
+      const scene = sceneRef.current;
+      let isMounted = true;
+
+      const loadModel = async () => {
+        setError(null);
+        setIsLoading(true);
+
+        // Create loaders
+        if (!dracoLoaderRef.current) {
+          dracoLoaderRef.current = new DRACOLoader();
+          dracoLoaderRef.current.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.6/");
+        }
+        const loader = new GLTFLoader();
+        loader.setDRACOLoader(dracoLoaderRef.current);
+
+        // Start loading the new model immediately
+        const loadPromise = new Promise<THREE.Group>((resolve, reject) => {
+          loader.load(
+            modelPath,
+            (gltf) => {
+              if (!isMounted) {
+                gltf.scene.traverse((child) => {
+                  if (child instanceof THREE.Mesh) {
+                    child.geometry.dispose();
+                    if (Array.isArray(child.material)) {
+                      child.material.forEach((material) => material.dispose());
+                    } else {
+                      child.material.dispose();
+                    }
+                  }
+                });
+                return;
+              }
+              resolve(gltf.scene);
+            },
+            (progress) => {
+              console.log("Loading progress:", (progress.loaded / progress.total) * 100 + "%");
+            },
+            (error) => {
+              console.error("Error loading model:", error);
+              setError("Failed to load 3D model");
+              setIsLoading(false);
+              reject(error);
+            },
+          );
+        });
+
+        // If there's an existing model, animate it out while new model loads
+        const existingModel = modelRef.current;
+        if (existingModel) {
+          // Scale down the existing model
+          const scaleDownDuration = 100; // ms - faster
+          const startScale = existingModel.scale.x;
+          const startTime = Date.now();
+
+          const scaleDown = () => {
+            if (!isMounted) return;
+
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / scaleDownDuration, 1);
+            const scale = startScale * (1 - progress);
+
+            existingModel.scale.setScalar(scale);
+
+            if (progress < 1) {
+              requestAnimationFrame(scaleDown);
+            } else {
+              // Remove the model from scene
+              scene.remove(existingModel);
+              existingModel.traverse((child) => {
+                if (child instanceof THREE.Mesh) {
+                  child.geometry.dispose();
+                  if (Array.isArray(child.material)) {
+                    child.material.forEach((material) => material.dispose());
+                  } else {
+                    child.material.dispose();
+                  }
+                }
+              });
+            }
+          };
+
+          scaleDown();
+        }
+
+        // Wait for model to load
+        try {
+          const model = await loadPromise;
+
+          if (!isMounted) return;
+
+          modelRef.current = model;
+
+          // Get bounding box and center the model
+          const box = new THREE.Box3().setFromObject(model);
+          const center = box.getCenter(new THREE.Vector3());
+          const size = box.getSize(new THREE.Vector3());
+
+          // Center the model horizontally and position vertically
+          model.position.x = -center.x;
+          model.position.z = -center.z;
+          const baseY = -box.min.y + positionY + (isMobile ? 0.3 : 0);
+          model.position.y = baseY;
+          basePositionYRef.current = baseY;
+
+          // Scale model appropriately
+          const maxDim = Math.max(size.x, size.y, size.z);
+          const autoScale = 2 / maxDim;
+          const finalScale = autoScale * scale;
+          model.scale.setScalar(0); // Start at scale 0
+          baseScaleRef.current = finalScale;
+
+          // Apply initial rotations and store base rotation
+          model.rotation.y = rotationY;
+          model.rotation.x = rotationX;
+          model.rotation.z = rotationZ;
+
+          // Initialize model rotation ref with initial values
+          modelRotationRef.current = { x: rotationX, y: rotationY };
+          targetRotationRef.current = { x: rotationX, y: rotationY };
+
+          // Enable shadows (only on desktop)
+          const isMobileDevice = window.innerWidth < 768;
+          model.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+              child.castShadow = !isMobileDevice;
+              child.receiveShadow = !isMobileDevice;
+            }
+          });
+
+          scene.add(model);
+
+          // Animate scale up
+          const scaleUpDuration = 100; // ms - faster
+          const startTime = Date.now();
+
+          const scaleUp = () => {
+            if (!isMounted) return;
+
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / scaleUpDuration, 1);
+            const easeOutQuad = 1 - (1 - progress) * (1 - progress);
+            const currentScale = finalScale * easeOutQuad;
+
+            model.scale.setScalar(currentScale);
+
+            if (progress < 1) {
+              requestAnimationFrame(scaleUp);
+            }
+          };
+
+          scaleUp();
+          setIsLoading(false);
+        } catch (error) {
+          console.error("Failed to load model:", error);
+          if (isMounted) {
+            setError("Failed to load 3D model");
+            setIsLoading(false);
+          }
+        }
+      };
+
+      loadModel();
+
+      return () => {
+        isMounted = false;
+      };
+    }, [modelPath, positionY, scale, rotationY, rotationX, rotationZ]); // Model-specific dependencies
+
+    return (
+      <div className={`relative ${className}`}>
+        <div ref={mountRef} className="w-full h-full" />
+
+        {/* Rotation Hint Overlay */}
+        {showRotationHint && !isLoading && !error && (
+          <div
+            className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-500 ${
+              showRotationHint ? "opacity-100" : "opacity-0"
+            }`}
+            style={{
+              background: "radial-gradient(circle, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.1) 50%, transparent 70%)",
+            }}
+          >
+            <div className="flex flex-col items-center gap-3 text-white animate-pulse">
+              <div className="relative">
+                {isMobile ? (
+                  <Hand className="w-8 h-8 text-gold opacity-80" />
+                ) : (
+                  <RotateCcw className="w-8 h-8 text-gold opacity-80" />
+                )}
+                {/* Circular rotation hint */}
+                <div
+                  className="absolute -inset-2 border-2 border-gold opacity-30 rounded-full animate-spin"
+                  style={{ animationDuration: "3s" }}
+                />
+              </div>
+              <span className="text-sm font-medium text-gold opacity-90 bg-black/40 px-3 py-1 rounded-full">
+                {isMobile ? "Swipe to rotate" : "Drag to rotate"}
+              </span>
+            </div>
           </div>
-        </div>
-      )}
-      {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="text-red-400 text-sm text-center p-4">{error}</div>
-        </div>
-      )}
-    </div>
-  );
-};
+        )}
+
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="flex flex-col items-center gap-2 text-white">
+              <Loader2 className="w-8 h-8 animate-spin" />
+              <span className="text-sm">Loading 3D model...</span>
+            </div>
+          </div>
+        )}
+        {error && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="text-red-400 text-sm text-center p-4">{error}</div>
+          </div>
+        )}
+      </div>
+    );
+  },
+);
