@@ -13,7 +13,7 @@ export const useClickSound = ({ src, volume = 0.5, isMobile = false }: UseClickS
   const initializeAudio = useCallback(() => {
     // Don't create audio on mobile devices
     if (isMobile || audioRef.current) return;
-    
+
     audioRef.current = new Audio(src);
     audioRef.current.volume = volume;
     audioRef.current.preload = "auto";
@@ -22,7 +22,7 @@ export const useClickSound = ({ src, volume = 0.5, isMobile = false }: UseClickS
   const playClickSound = useCallback(() => {
     // Don't play audio on mobile devices
     if (isMobile) return;
-    
+
     initializeAudio();
 
     if (audioRef.current) {

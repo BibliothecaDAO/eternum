@@ -401,9 +401,7 @@ export const ChestContent = ({
                         <div className="w-2.5 h-2.5 rounded-full bg-rarity-uncommon shadow-lg shadow-rarity-uncommon/30"></div>
                         <span className="text-sm font-semibold text-rarity-uncommon">2 Uncommon Items</span>
                       </div>
-                      <span className="text-sm font-bold text-gray-100">
-                        {RARITY_PERCENTAGES.uncommon.toFixed(2)}%
-                      </span>
+                      <span className="text-sm font-bold text-gray-100">{RARITY_PERCENTAGES.uncommon.toFixed(2)}%</span>
                     </div>
                   </div>
 
