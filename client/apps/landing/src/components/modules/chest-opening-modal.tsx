@@ -4,6 +4,7 @@ import chestOpeningLegendary from "@videos/chest-opening/high-res/legendary.mp4"
 import chestOpeningRare from "@videos/chest-opening/high-res/rare.mp4";
 import chestOpeningUncommon from "@videos/chest-opening/high-res/uncommon.mp4";
 
+// mp4 videos don't work on mobile so using mov videos
 import chestOpeningCommonLowRes from "@videos/chest-opening/low-res/common.mov";
 import chestOpeningEpicLowRes from "@videos/chest-opening/low-res/epic.mov";
 import chestOpeningLegendaryLowRes from "@videos/chest-opening/low-res/legendary.mov";
@@ -93,7 +94,6 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
     volume: 0.2,
     quietVolume: 0.2,
     loop: true,
-    mute: false,
   });
 
   // Start ambient music when modal opens
