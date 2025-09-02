@@ -7,24 +7,32 @@ import { BiomeCombat } from "@/components/BiomeCombat";
 Stamina is a vital resource governing the mobility and effectiveness of armies. Each deployed army has a maximum stamina
 value determined by its troop type and tier as explained above. Field armies expend stamina when moving, exploring
 unknown hexes, or engaging in combat against other armies and structures. Guard armies only expend stamina when
-attacking armies in hexes adjacent to their structure. During combat, stamina impacts army combat effectiveness:
+attacking armies in hexes adjacent to their structure.
+
+## Daily Phases and Stamina
+
+Every Eternum Day is divided into six equal phases: early hours, dawn, morning, afternoon, dusk, and late evening.
+Stamina is granted instantly when a new Phase begins, and no other automatic stamina regeneration occurs.
+
+**Blitz Stamina System:**
+
+- **Day Length**: 6 minutes (1 minute per phase)
+- **Stamina Regeneration per Phase**: 20 stamina
+- **Total Stamina Regeneration per Day**: 120 stamina
+
+## Combat Stamina Mechanics
 
 ### Attacking Army
 
-The attacking army is the army initiating an instance of combat. Attacks require a minimum of **30 stamina**, so armies
-with less than 30 stamina cannot initiate an attack. Each additional stamina point above this threshold grants a **1%**
-damage bonus, up to a maximum of **+30%** damage at **60 stamina**. Additional stamina spend is not optional, so
-attacking armies will use all available stamina up to a maximum of **60** for any one attack. If the attacking army
-destroys the defending army, they gain **+30 stamina**.
+The attacking army is the army initiating an instance of combat. To begin a combat round, the attacker must spend **50
+stamina** (2.5 × stamina regen per phase). If the attacker does not have the full stamina cost, the attack command is
+rejected and no combat occurs.
 
 ### Defending Army
 
-The defending army is the army being attacked in an instance of combat. Defending armies rely on having stamina
-available to maintain full combat effectiveness. When attacked, defending armies incur a **1%** damage reduction for
-every stamina point below **30**. For example, if an army is attacked while they have **10 stamina**, they would deal
-**-20%** damage to the attacking army. The maximum penalty is **-30%** damage if stamina is completely depleted.
-Successfully defending an attack does not deplete stamina. Lords should manage their armies' stamina carefully, ensuring
-they retain enough reserves to remain effective against unexpected attacks.
+The defending army is the army being attacked in an instance of combat. The defender simultaneously spends **40
+stamina** (2.0 × stamina regen per phase). If the defender's current stamina is below this required threshold, they
+receive a **30% damage penalty** during that combat round.
 
 ## Biomes (Combat Effects)
 

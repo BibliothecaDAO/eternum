@@ -48,6 +48,505 @@ import { HomePage } from "vocs/components";
 
 ---
 
+file: docs/pages/changelog/3-september-2025.mdx
+meta: {
+  "layout": "docs"
+}
+
+# 3rd September 2025
+
+## Documentation Updates
+
+### New Features
+
+* **Changelog Section**: Added new independent Changelog section to sidebar navigation
+* **Changelog Page**: Created first changelog entry for September 3rd, 2025 release
+* **Loot Chest Documentation**: Added comprehensive [Loot Chests](/overview/chests/loot-chests) section with detailed
+  information on chest contents and cosmetic items
+* **Cosmetic Collection**: New [Cosmetics](/overview/chests/cosmetics) page detailing the cosmetic item collection
+  system
+
+### Prize Distribution
+
+* **Game Entry**: Updated Blitz bracket system information to align with current key concepts
+  * Added Gladiator Bracket with 250 $LORDS entry fee
+  * Updated Recruit Bracket
+  * Delineated Warrior and Elite bracket games as being part of a 'series', hosted by the core team.
+* **Blitz Prize Pool**: Added [Prize Pool & Distribution](/blitz/prize-pool) page with detailed formulas and
+  distribution mechanics
+
+### Combat System Updates
+
+* **Time System**: Eternum days are now divided into six 'phases', each phase is 1 minute in Blitz or 12 minutes in
+  Eternum
+* **Damage Calculation**: Updated damage calculation systems for both [Blitz](/blitz/military/damage) and
+  [Eternum](/eternum/military/damage), including the addition of 'battle timer' and refund mechanics
+* **Stamina System**: Updated stamina mechanics and regeneration rates across both game modes
+* **Troop Transfer**: Updated troop transfer to include impact to battle timers
+
+### Blitz Gameplay Changes
+
+* **Storage System Removal**: Completely removed storage system from Blitz, including storehouses - players should
+  review [Materials & Production](/blitz/materials/production)
+* **Victory Points**: Updated [Victory](/blitz/victory) page with changes to VP/second awarded for holding
+  hyperstructures
+
+### Technical Improvements
+
+* **Navigation**: Restructured and updated the sidebar
+
+***
+
+*This changelog reflects all documentation updates made since the previous release. For detailed information about
+specific changes, please refer to the individual documentation pages.*
+
+
+
+---
+
+file: docs/pages/blitz/achievements.mdx
+meta: {}
+
+# 🏆 Achievements
+
+*Work in Progress...*
+
+
+
+---
+
+file: docs/pages/blitz/key-concepts.mdx
+meta: {
+  "title": "Key Concepts",
+  "description": "The foundational mechanics of Blitz"
+}
+
+# 🔑 Key Concepts
+
+<img src="/images/covers/blitz-key-concepts.png" alt="Blitz Key Concepts" className="w-full rounded-lg my-6" />
+
+Realms: Blitz is a real-time strategy variant of Eternum designed for rapid, competitive play. In each two-hour match,
+players strategically manage resources, explore territories, and engage in high-intensity military confrontations.
+Blitz's streamlined mechanics and accelerated gameplay require swift decision-making and adaptability, resulting in a
+high skill ceiling that rewards skill and experience. The no-stakes Recruit bracket allows new players to learn the
+game, while experienced Lords can sharpen their skills or test new strategies in preparation for a Blitz series. Warrior
+bracket games, which require a $LORDS entry fee, form the core of each series—where success brings rewards and
+qualifications for the coveted Elite games, offering even greater prizes.
+
+## Rule Summary
+
+### Game Duration
+
+Each Blitz game runs for exactly **2 hours**. Eternum Days are one minute in length to support the fast-paced format.
+
+### Realms
+
+* **Three Starting Realms**: Each player starts with three Realms, evenly spaced apart in a triangle formation.
+* **Equal Capability**: At the start of the game, all Realms in Blitz are functionally identical.
+* **Free Building**: Players can construct any resource building they wish, restricted only by build space and
+  population.
+* **No Wonders or Villages**: Wonder bonuses and the Village system are not present in Blitz.
+* **Conquest Mechanics**: All Realms are vulnerable to capture by other players, encouraging constant vigilance and
+  strategic interaction.
+
+### Materials
+
+* **Simplified Resources**: Only 9 resources are available - Wood, Coal, Copper, Ironwood, Cold Iron, Gold, Adamantine,
+  Mithril, and Dragonhide.
+* **Simplified Food**: Only 1 food type - Wheat.
+* **Essence**: New material found by exploring the map and interacting with World Structures, required for some
+  production, buildings and upgrades.
+* **Labor**: Produced by each Realm at a fixed rate, required for all construction and 'simple mode' production.
+* **Donkeys**: Required for moving materials around the world, essential for logistics.
+* **Troops**: 3 types (Knights, Crossbowmen, Paladins), 3 tiers (T1, T2, T3).
+* **Restricted Bridging**: Players may only bridge Relics into the game (not out).
+* **Donkey Cost**: Donkeys only cost food to produce (no $LORDS cost).
+* **No P2P Transfers**: No direct transfers or trade between players.
+
+### Buildings
+
+* **Construction**: Standard and simple mode building systems.
+* **Building Types**:
+  * **The Keep**: Central structure automatically constructed at game start.
+  * **Resource Buildings**: Specific buildings for each of the 9 resources.
+  * **Economic Buildings**: Includes Farms, Worker Huts, and Markets.
+  * **Military Buildings**: Nine different buildings for producing three tiers of each troop type.
+* **Placement & Population**: Buildings require buildable hexes and population capacity, with more unlocked as Realms
+  are upgraded.
+
+### Production
+
+* **Production Types**:
+  * **Food**: Wheat can be produced without inputs.
+  * **Resources**: Require combinations of other resources (standard) or labor (simple).
+  * **Labor**: Produced by the Keep at a steady rate.
+  * **Troops**: Essential for exploration and warfare, with production of higher tier troops requiring lower tier troops
+    as inputs.
+  * **Donkeys**: One-time-use transport, consumed after a single journey.
+* **Altered Rates**: All production rates are increased relative to production requirements for the fast-paced game
+  format.
+
+### World Map
+
+* **Exploration System**: Players must explore unrevealed hexes to find essence, claim Hyperstructures, and attack
+  neighbors.
+* **No Resource Discovery**: Players will no longer find resources when exploring.
+* **Essence Discovery**: Players primarily find essence when exploring, along with small stacks of donkeys, T1 troops
+  and labor.
+* **Relic Discovery**: Powerful Relics can be found in Relic Crates that occasionally appear on the world map.
+* **Biomes**: 16 unique biome types affecting combat effectiveness and troop movement.
+* **Movement & Stamina**: Armies move using stamina (regenerating at +20 per Phase, +120 per Eternum Day), with costs
+  varying by biome and troop type.
+
+### Military
+
+* **Army Composition**: Armies consist of a single troop type and tier.
+* **Troop Tiers**: T1, T2, and T3 troops with increasing stamina and combat strength.
+* **Combat Factors**: Battles are resolved based on army damage, stamina modifiers, and biome effects.
+* **Army Types**:
+  * **Field Armies**: Deploy onto the world map for exploration and conquest.
+  * **Guard Armies**: Deployed to defense slots to protect structures.
+* **Stamina System**: Armies recover +20 stamina each Phase (6 phases per Eternum Day, totaling +120 stamina per day).
+* **Biome Effects**: Each troop type has advantages (+30% damage), disadvantages (-30% damage), or no change (0%) in
+  specific biomes.
+* **Reinforcement Movement**: Players can't transport troops by donkey to World Structures - reinforcements must be
+  moved across the map from a Realm.
+
+### Scoring System
+
+Leaderboard placing is determined by total accumulated Victory Points, a measure of a Lord's ability to explore the map
+and control World Structures. Victory Points are awarded for:
+
+* Exploring tiles
+* Claiming World Structures
+* Claiming Hyperstructures
+* Holding Hyperstructures throughout the game
+
+### Victory
+
+Victory Points (VP) determine leaderboard ranking. The players with the highest number of VP at the end of the two hours
+share in the $LORDS prize pool. This pool is made up of the cumulative entry fees that players pay to enter the game.
+
+## Blitz Variants
+
+Blitz games come in many forms, and can be configured and deployed by anyone. But the majority of Blitz games are
+deployed by the core team in the following forms:
+
+### Recruit Bracket
+
+* **No Stakes**: Free-to-enter bracket for introduction, playtesting and practice.
+* **No Entry Cost**: No $LORDS required to participate.
+* **Frequency**: Games run multiple times per day on a rotating schedule.
+
+### Gladiator Bracket
+
+* **$LORDS Stakes**: Competitive games with $LORDS stakes.
+* **Entry Cost**: Players pay a 250 $LORDS entry fee, contributing to a prize pool.
+* **Prize Distribution**: Top 20% of players share the prize pool.
+* **Frequency**: Games run twice per day on a rotating schedule.
+
+### Warrior Bracket
+
+* **Series Games**: These games form part of a competitive Blitz Series.
+* **$LORDS Stakes**: Competitive games requiring a $LORDS entry fee.
+* **Entry Cost**: Players pay a $LORDS fee, contributing to a prize pool.
+* **Prize Distribution**: Top 20% of players share the prize pool.
+* **Additional Rewards**: Relic Chests and Blitz Rewards Chests.
+* **Special Invites**: Highest placing players win tradable NFT invites to the Elite bracket.
+* **Frequency**: Games run a few times weekly during prime time for key timezones (USA, Europe, Asia-Pacific).
+
+### Elite Bracket
+
+* **Series Games**: These games represent the highest level of play in a competitive Blitz Series.
+* **Ticket Entry Cost**: Entry requires an NFT invite from Warrior bracket (no additional $LORDS cost).
+* **Prize Pool**: Large, DAO-funded prize pool (pending BIP).
+* **Rewards**: Relic Chests, Blitz Rewards Chests and Elite Blitz Rewards Chests.
+* **Frequency**: A limited number of games run at the end of a Blitz series.
+
+### Blitz Series
+
+While Recruit and Gladiator games can be deployed and played as frequently as the player base demands, games with stakes
+(Warrior/Elite) are organized into 'series'. Each series takes place between Eternum seasons to bridge the gap in
+gameplay and provide continuous competitive opportunities.
+
+## Rewards
+
+Successful Blitz players can earn various rewards including:
+
+* **$LORDS Token**: Prize pool distributions for top players.
+* **Loot Chests**: Relic Chests, Blitz Rewards Chests and Elite Blitz Rewards Chests containing consumables and cosmetic
+  items.
+* **Entry Tickets**: NFT invites to Elite bracket games for top Warrior bracket performers.
+
+
+
+---
+
+file: docs/pages/blitz/prize-pool.mdx
+meta: {
+  "title": "Prize Pool & Distribution",
+  "description": "How prizes are distributed in Blitz competitive games"
+}
+
+# Prize Pool & Distribution
+
+Blitz competitive games feature a prize distribution system that ensures fair rewards for top-ranked Lords while
+maintaining sustainable game economics. This system is designed to be flexible and can be adapted for use with any token
+on Starknet, allowing game hosts to deploy their own games with customized prize distribution settings.
+
+## Entry Fee Structure
+
+Every Blitz match in the Gladiator and Warrior brackets currently collects an entry fee of **250 LORDS** per player.
+This fee is allocated to support both player rewards and the ecosystem:
+
+* **80%** of the entry fee forms the **prize pool** that gets distributed among winners
+* **20%** of the entry fee is kept as a fee (distribution of this fee within the ecosystem is TBC)
+
+At the conclusion of each Blitz match, players are ranked by their final score. The **top 20% of the field** (rounded up
+to the nearest whole player) are designated as winners and eligible for prize distribution.
+
+## Prize Distribution Mechanics
+
+The prize distribution system employs a weighting formula that ensures fair and predictable rewards. Each winner first
+receives a **refund of their 250 LORDS buy-in**, and the remainder of the prize pool is then distributed among winners
+according to a geometric weighting system based on finishing rank.
+
+### Weighting System
+
+The weighting system uses a decay factor that adjusts based on lobby size, ensuring appropriate reward curves for
+different game scales. The decay factor `s` is calculated using the formula:
+
+`s(n) = min(0.95, 0.2 × log10(n) + 0.4)`
+
+Where `n` represents the number of players in the match. This formula creates steeper reward curves in smaller lobbies
+and flatter curves in larger ones, but never flatter than 0.95.
+
+### Individual Winner Calculations
+
+Each winner's bonus is calculated using their individual weight divided by the total weight sum. The weight for rank `i`
+is `s^(i-1)`, meaning the top finisher has a weight of 1, second place has weight `s`, third place has weight `s²`, and
+so on. The total weight sum `W` is calculated as the sum of this geometric series.
+
+The bonus for each winner is then calculated as: `bonus_i = (weight_i / W) × R`
+
+Where `R` represents the remainder of the prize pool after refunds are distributed.
+
+## Flexibility and Customization
+
+This prize distribution system is designed to be adaptable for various gaming scenarios. Game hosts can deploy their own
+Blitz games with modified prize distribution settings, adjusting factors such as entry fees, winner percentages, and
+decay factors to suit their specific requirements. The system can also be configured to work with any token on Starknet,
+making it versatile for different blockchain gaming ecosystems.
+
+## NFT Prize Distribution
+
+The NFT prize distribution system for Blitz games is currently under development. This system will allow for the
+distribution of unique digital assets, collectibles, and special rewards that complement the existing $LORDS prize
+pools. Until the NFT distribution system is fully implemented, Blitz game rewards will be handled offchain.
+
+
+
+---
+
+file: docs/pages/blitz/victory.mdx
+meta: {}
+
+import { table } from "@/components/styles";
+
+# 👑 Victory
+
+<img src="/images/covers/07.png" alt="Blitz Victory" className="w-full rounded-lg my-6" />
+
+## Scoring System
+
+Leaderboard placing is determined by total accumulated Victory Points (VP), a measure of a Lord's ability to explore the
+map and control World Structures. Victory Points are awarded for:
+
+* Exploring tiles
+* Claiming World Structures (Essence Rifts and Camps)
+* Claiming Hyperstructures
+* Holding Hyperstructures throughout the game
+
+*Note: VP for claiming World Structures and Hyperstructures are only rewarded the first time a structure is captured
+(from bandit forces).*
+
+## Hyperstructure Victory Points
+
+Hyperstructures provide ongoing Victory Points based on the number of surrounding player Realms. The VP/second earned
+from holding a hyperstructure is determined by the number of Realms within 8 tiles.
+
+<img src="/images/hyperstructure_ring_progression.gif" alt="Hyperstructure Ring Progression" className="w-full rounded-lg my-6" />
+
+This system rewards players who can capture hyperstructures in high-traffic areas where many players spawn, while
+hyperstructures in remote locations with no nearby players provide no ongoing VP benefits. Capturing a hyperstructure
+from resident bandits will always yield the VP for the feat of claiming it, even if it offers no ongoing control VP.
+
+The number of VP awarded for each feat described above is as follows:
+
+<div style={table.container}>
+  <div style={table.wrapper}>
+    <table style={table.table}>
+      <thead style={table.tableHead}>
+        <tr>
+          <th style={table.headerCell}>Action</th>
+          <th style={table.headerCell}>VP Awarded</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr style={table.tableRow}>
+          <td style={table.cell}>Explore a tile</td>
+          <td style={table.cell}>50 VP</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>Claim a World Structure from bandits</td>
+          <td style={table.cell}>500 VP</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>Claim a Hyperstructure from bandits</td>
+          <td style={table.cell}>3000 VP</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>Control a Hyperstructure</td>
+          <td style={table.cell}>1-6 VP/second (based on no. of nearby Realms)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+
+---
+
+file: docs/pages/blitz/world-physics.mdx
+meta: {}
+
+import { Biomes } from "@/components/Biomes";
+
+# ⚛️ World Physics
+
+<img src="/images/covers/blitz-world-physics.png" alt="Blitz World Physics - Armies traversing the realm" className="w-full rounded-lg my-6" />
+
+In Blitz, every action is governed by onchain physics—immutable rules encoded directly onto the blockchain, ensuring
+fairness, transparency, and absolute consistency for all Lords. Here, code is law; no exceptions exist outside the
+boundaries set by these protocols.
+
+## Game Duration
+
+Each Blitz game runs for exactly **2 hours**.
+
+## Time
+
+Time within a Blitz game is measured in Eternum Days, and each is precisely six minutes in length. Each Eternum Day is
+divided into six equal phases (early hours, dawn, morning, afternoon, dusk, and late evening), with each phase lasting
+one minute. One day ends and the next begins every six minutes, so a single Blitz game takes place over 20 Eternum Days.
+
+## Materials
+
+In Blitz, materials such as food, resources, troops, and donkeys are isolated within each round. There is no bridging of
+materials in and out of the game (other than Relics, which can be bridged in prior to the start of the game). All
+materials have an associated weight, which determines the amount that can be stored and the number of Donkeys required
+to move the goods from place to place.
+
+*Note: This guide will use 'materials' to refer to all tangible assets - i.e. food, resources, essence, labor, troops,
+and donkeys. This is not to be confused with 'resources', which specifically refers to the 9 resources in Blitz.*
+
+## Cost of Production
+
+With the exception of food and labor, nothing in Blitz is produced for free; every unit of production demands an
+input—food, labor, resources, or some combination of the three. Lords must consider these costs and effectively balance
+production to ensure they can maximize their Score within the 2-hour game window.
+
+## Travel
+
+Transporting materials takes time and donkeys. Every transfer of materials between locations relies exclusively on these
+speedy and dependable creatures. Donkeys are single-use, consumed upon completing their journey, making continuous
+acquisition vital for maintaining supply chains.
+
+Troops can also be moved between Realms using donkeys, but to dominate your enemies and ensure security of your lands,
+troops must be deployed to an army on the world map. Once troops are deployed, they cannot be taken back into the
+inventory. Their mobility is then governed by stamina, limiting the distance they can travel and the number of actions
+they can perform. Traveling between hexes or initiating an attack expends valuable stamina points, which are partially
+replensished each Eternum Day.
+
+## Hexes
+
+Blitz unfolds across a procedurally generated, hexagonal-tile world map. This represents the physical space of the world
+and defines spawn locations, biome distribution, and distances between Realms and other World Structures. This is the
+layer in which armies explore, fight, and capture, and is explorable in the 'World' view.
+
+Zooming in, each Realm hex is broken up into smaller hexes which define the local area and building placement. Here in
+the 'Local' view, Lords can plan out their building placement and closely manage their population, supply chain, and
+production.
+
+## Biomes
+
+Each hexagonal tile on the world map possesses a distinct biome. Each troop type responds uniquely to these varied
+terrains, gaining or losing combat efficiency and stamina based on their affinity with different biomes. Successful
+Lords must master biome knowledge to exploit strategic advantages or avoid costly missteps.
+
+<Biomes />
+
+## The Blitz Arena
+
+The map on which Blitz takes place is designed to position Lords as equally as possible while also providing a dynamic
+battlefield that scales appropriately. Each player starts the game with three Realms, evenly spaced apart in a triangle
+and positioned between three complete and revealed Hyperstructures. Player Realms and Hyperstructures are placed in a
+specific pattern to ensure that all Lords have a comparable number of neighbors and equal access to Hyperstructures.
+More details on the Realm and Hyperstructure placement systems are available in the [Realms](/blitz/realms/realm) and
+[World Map](/blitz/worldmap-movement/worldmap) sections.
+
+The primary objective of Blitz is to capture and hold as many Hyperstructures and World Structures as possible to
+accumulate Victory Points and secure a position at the top of the leaderboard.
+
+<img src="/images/covers/blitz-arena.png" alt="The Blitz Arena - Competitive battleground" className="w-full rounded-lg my-6" />
+
+
+
+---
+
+file: docs/pages/blitz/world-structures.mdx
+meta: {}
+
+# 🏗️ World Structures
+
+All World Structures in Blitz are initially occupied by bandit forces that must be defeated by a player before it can be
+claimed.
+
+## Hyperstructures
+
+In Blitz, Hyperstructures are **fully constructed** and positioned around the map at the start of the game, ready to be
+claimed by eliminating the resident bandit forces. There is no construction process - Hyperstructures are immediately
+functional once claimed and will begin accumulating Victory Points for the owning player.
+
+<img src="/images/buildings/construction/hyperstructure.png" width="800" />
+
+The number of Hyperstructures in the game, and their positioning on the world map, is explained in the
+[World Map](/blitz/worldmap-movement/worldmap) section.
+
+## Essence Rifts
+
+<img src="/images/covers/essence-rift.png" alt="Blitz Essence Rift" className="w-full rounded-lg my-6" />
+
+Essence Rifts are striking fissures in the earth where valuable Essence has swelled from beneath the surface. These
+locations provide a steady source of the valuable dust to the owning player, reducing the need to explore new hexes for
+continued Realm expansion and troop production. Essence Rifts produce Essence at a rate of 5 units per second from the
+moment they're discovered. Lords have a 5% chance of finding one of these structures when exploring a hex.
+
+## Camps
+
+Camps act in a similar capacity to Villages in Eternum, in the sense that they perform as small, discoverable Realms
+that can boost production and act as forward bases. Camps are restricted to the Settlement level and cannot be upgraded.
+Lords have a 5% chance of finding one of these structures when exploring a hex.
+
+
+
+---
+
 file: docs/pages/development/client.mdx
 meta: {}
 
@@ -673,974 +1172,6 @@ this logic in any other project that uses Typescript, e.g. new mobile client, da
 
 ---
 
-file: docs/pages/blitz/achievements.mdx
-meta: {}
-
-# 🏆 Achievements
-
-*Work in Progress...*
-
-
-
----
-
-file: docs/pages/blitz/key-concepts.mdx
-meta: {
-  "title": "Key Concepts",
-  "description": "The foundational mechanics of Blitz"
-}
-
-# 🔑 Key Concepts
-
-<img src="/images/covers/blitz-key-concepts.png" alt="Blitz Key Concepts" className="w-full rounded-lg my-6" />
-
-Realms: Blitz is a real-time strategy variant of Eternum designed for rapid, competitive play. In each two-hour match,
-players strategically manage resources, explore territories, and engage in high-intensity military confrontations.
-Blitz's streamlined mechanics and accelerated gameplay require swift decision-making and adaptability, resulting in a
-high skill ceiling that rewards skill and experience. The no-stakes Recruit bracket allows new players to learn the
-game, while experienced Lords can sharpen their skills or test new strategies in preparation for a Blitz series. Warrior
-bracket games, which require a $LORDS entry fee, form the core of each series—where success brings rewards and
-qualifications for the coveted Elite games, offering even greater prizes.
-
-## Rule Summary
-
-### Game Duration
-
-Each Blitz game runs for exactly **2 hours**. Eternum Days are one minute in length to support the fast-paced format.
-
-### Realms
-
-* **Three Starting Realms**: Each player starts with three Realms, evenly spaced apart in a triangle formation.
-* **Equal Capability**: At the start of the game, all Realms in Blitz are functionally identical.
-* **Free Building**: Players can construct any resource building they wish, restricted only by build space and
-  population.
-* **No Wonders or Villages**: Wonder bonuses and the Village system are not present in Blitz.
-* **Conquest Mechanics**: All Realms are vulnerable to capture by other players, encouraging constant vigilance and
-  strategic interaction.
-
-### Materials
-
-* **Simplified Resources**: Only 9 resources are available - Wood, Coal, Copper, Ironwood, Cold Iron, Gold, Adamantine,
-  Mithril, and Dragonhide.
-* **Simplified Food**: Only 1 food type - Wheat.
-* **Essence**: New material found by exploring the map and interacting with World Structures, required for some
-  production, buildings and upgrades.
-* **Labor**: Produced by each Realm at a fixed rate, required for all construction and 'simple mode' production.
-* **Donkeys**: Required for moving materials around the world, essential for logistics.
-* **Troops**: 3 types (Knights, Crossbowmen, Paladins), 3 tiers (T1, T2, T3).
-* **Restricted Bridging**: Players may only bridge Relics into the game (not out).
-* **Donkey Cost**: Donkeys only cost food to produce (no $LORDS cost).
-* **No P2P Transfers**: No direct transfers or trade between players.
-
-### Buildings
-
-* **Construction**: Standard and simple mode building systems.
-* **Building Types**:
-  * **The Keep**: Central structure automatically constructed at game start.
-  * **Resource Buildings**: Specific buildings for each of the 9 resources.
-  * **Economic Buildings**: Includes Farms, Worker Huts, Storehouses, and Markets.
-  * **Military Buildings**: Nine different buildings for producing three tiers of each troop type.
-* **Placement & Population**: Buildings require buildable hexes and population capacity, with more unlocked as Realms
-  are upgraded.
-
-### Production
-
-* **Production Types**:
-  * **Food**: Wheat can be produced without inputs.
-  * **Resources**: Require combinations of other resources (standard) or labor (simple).
-  * **Labor**: Produced by the Keep at a steady rate.
-  * **Troops**: Essential for exploration and warfare, with production of higher tier troops requiring lower tier troops
-    as inputs.
-  * **Donkeys**: One-time-use transport, consumed after a single journey.
-* **Altered Rates**: All production rates are increased relative to production requirements for the fast-paced game
-  format.
-
-### World Map
-
-* **Exploration System**: Players must explore unrevealed hexes to find essence, claim Hyperstructures, and attack
-  neighbors.
-* **No Resource Discovery**: Players will no longer find resources when exploring.
-* **Essence Discovery**: Players primarily find essence when exploring, along with small stacks of donkeys, T1 troops
-  and labor.
-* **Relic Discovery**: Powerful Relics can be found in Relic Crates that occasionally appear on the world map.
-* **Biomes**: 16 unique biome types affecting combat effectiveness and troop movement.
-* **Movement & Stamina**: Armies move using stamina (regenerating at +30 per Eternum Day), with costs varying by biome
-  and troop type.
-
-### Military
-
-* **Army Composition**: Armies consist of a single troop type and tier.
-* **Troop Tiers**: T1, T2, and T3 troops with increasing stamina and combat strength.
-* **Combat Factors**: Battles are resolved based on army damage, stamina modifiers, and biome effects.
-* **Army Types**:
-  * **Field Armies**: Deploy onto the world map for exploration and conquest.
-  * **Guard Armies**: Deployed to defense slots to protect structures.
-* **Stamina System**: Armies recover +30 stamina each Eternum Day.
-* **Biome Effects**: Each troop type has advantages (+30% damage), disadvantages (-30% damage), or no change (0%) in
-  specific biomes.
-* **Reinforcement Movement**: Players can't transport troops by donkey to World Structures - reinforcements must be
-  moved across the map from a Realm.
-
-### Scoring System
-
-Leaderboard placing is determined by total accumulated Victory Points, a measure of a Lord's ability to explore the map
-and control World Structures. Victory Points are awarded for:
-
-* Exploring tiles
-* Claiming World Structures
-* Claiming Hyperstructures
-* Holding Hyperstructures throughout the game
-
-### Victory
-
-Victory Points (VP) determine leaderboard ranking. The players with the highest number of VP at the end of the two hours
-share in the $LORDS prize pool. This pool is made up of the cumulative entry fees that players pay to enter the game.
-
-## Blitz Brackets
-
-### Recruit Bracket
-
-* **Low Stakes**: Free-to-enter bracket for introduction and practice.
-* **No Entry Cost**: No $LORDS required to participate.
-* **Prizes**: Relic Chests only.
-* **Frequency**: Games run every day on varying schedules to encourage global participation.
-
-### Warrior Bracket
-
-* **Medium Stakes**: Competitive games requiring a $LORDS entry fee.
-* **$LORDS Entry Cost**: $LORDS fee contributes to shared prize pool.
-* **Prize Distribution**: Top 15% of players share the prize pool.
-* **Rewards**: Relic Chests and Blitz Rewards Chests.
-* **Special Reward**: Highest placing players win tradable NFT invites to Elite bracket.
-* **Frequency**: Games run a few times weekly during prime time for key timezones (USA, Europe, Asia-Pacific).
-
-### Elite Bracket
-
-* **High Stakes**: Highest level of Blitz competition.
-* **Ticket Entry Cost**: NFT invite from Warrior bracket (no additional $LORDS cost).
-* **Prize Pool**: Large, DAO-funded prize pool (pending BIP).
-* **Rewards**: Relic Chests, Blitz Rewards Chests and Elite Blitz Rewards Chests.
-* **Frequency**: Games run at the end of a Blitz series.
-
-### Blitz Series
-
-While Recruit games can be deployed and played as frequently as the player base demands, games with stakes
-(Warrior/Elite) are organized into 'series'. Each series takes place between Eternum seasons to bridge the gap in
-gameplay and provide continuous competitive opportunities.
-
-## Rewards
-
-Successful Blitz players can earn various rewards including:
-
-* **$LORDS Token**: Prize pool distributions for top players.
-* **Loot Chests**: Relic Chests, Blitz Rewards Chests and Elite Blitz Rewards Chests containing consumables and cosmetic
-  items.
-* **Entry Tickets**: NFT invites to Elite bracket games for top Warrior bracket performers.
-
-
-
----
-
-file: docs/pages/blitz/prize-pool.mdx
-meta: {}
-
-# 💰 Prize Pool
-
-*Work in Progress...*
-
-
-
----
-
-file: docs/pages/blitz/victory.mdx
-meta: {}
-
-import { table } from "@/components/styles";
-
-# 👑 Victory
-
-<img src="/images/covers/07.png" alt="Blitz Victory" className="w-full rounded-lg my-6" />
-
-## Scoring System
-
-Leaderboard placing is determined by total accumulated Victory Points (VP), a measure of a Lord's ability to explore the
-map and control World Structures. Victory Points are awarded for:
-
-* Exploring tiles
-* Claiming World Structures (Essence Rifts and Camps)
-* Claiming Hyperstructures
-* Holding Hyperstructures throughout the game
-
-*Note: World Structure and Hyperstructure claim VP are only rewarded the first time a structure is captured (from bandit
-forces).*
-
-The number of VP awarded for each feat described above is as follows:
-
-<div style={table.container}>
-  <div style={table.wrapper}>
-    <table style={table.table}>
-      <thead style={table.tableHead}>
-        <tr>
-          <th style={table.headerCell}>Action</th>
-          <th style={table.headerCell}>VP Awarded</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <tr style={table.tableRow}>
-          <td style={table.cell}>Explore a tile</td>
-          <td style={table.cell}>50 VP</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>Claim a World Structure from bandits</td>
-          <td style={table.cell}>500 VP</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>Claim a Hyperstructure from bandits</td>
-          <td style={table.cell}>2000 VP</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>Control a Hyperstructure</td>
-          <td style={table.cell}>5 VP/second</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-
-
----
-
-file: docs/pages/blitz/world-physics.mdx
-meta: {}
-
-import { Biomes } from "@/components/Biomes";
-
-# ⚛️ World Physics
-
-<img src="/images/covers/blitz-world-physics.png" alt="Blitz World Physics - Armies traversing the realm" className="w-full rounded-lg my-6" />
-
-In Blitz, every action is governed by onchain physics—immutable rules encoded directly onto the blockchain, ensuring
-fairness, transparency, and absolute consistency for all Lords. Here, code is law; no exceptions exist outside the
-boundaries set by these protocols.
-
-## Game Duration
-
-Each Blitz game runs for exactly **2 hours**.
-
-## Time
-
-Time within a Blitz game is measured in Eternum Days, and each is precisely one minute in length. One day ends and the
-next begins every minute, so a single Blitz game takes place over 120 Eternum Days.
-
-## Materials
-
-In Blitz, materials such as food, resources, troops, and donkeys are isolated within each round. There is no bridging of
-materials in and out of the game (other than Relics, which can be bridged in prior to the start of the game). All
-materials have an associated weight, which determines the amount that can be stored and the number of Donkeys required
-to move the goods from place to place.
-
-*Note: This guide will use 'materials' to refer to all tangible assets - i.e. food, resources, essence, labor, troops,
-and donkeys. This is not to be confused with 'resources', which specifically refers to the 9 resources in Blitz.*
-
-## Cost of Production
-
-With the exception of food and labor, nothing in Blitz is produced for free; every unit of production demands an
-input—food, labor, resources, or some combination of the three. Lords must consider these costs and effectively balance
-production to ensure they can maximize their Score within the 2-hour game window.
-
-## Travel
-
-Transporting materials takes time and donkeys. Every transfer of materials between locations relies exclusively on these
-speedy and dependable creatures. Donkeys are single-use, consumed upon completing their journey, making continuous
-acquisition vital for maintaining supply chains.
-
-Troops can also be moved between Realms using donkeys, but to dominate your enemies and ensure security of your lands,
-troops must be deployed to an army on the world map. Once troops are deployed, they cannot be taken back into the
-inventory. Their mobility is then governed by stamina, limiting the distance they can travel and the number of actions
-they can perform. Traveling between hexes or initiating an attack expends valuable stamina points, which are partially
-replensished each Eternum Day.
-
-## Hexes
-
-Blitz unfolds across a procedurally generated, hexagonal-tile world map. This represents the physical space of the world
-and defines spawn locations, biome distribution, and distances between Realms and other World Structures. This is the
-layer in which armies explore, fight, and capture, and is explorable in the 'World' view.
-
-Zooming in, each Realm hex is broken up into smaller hexes which define the local area and building placement. Here in
-the 'Local' view, Lords can plan out their building placement and closely manage their population, supply chain, and
-production.
-
-## Biomes
-
-Each hexagonal tile on the world map possesses a distinct biome. Each troop type responds uniquely to these varied
-terrains, gaining or losing combat efficiency and stamina based on their affinity with different biomes. Successful
-Lords must master biome knowledge to exploit strategic advantages or avoid costly missteps.
-
-<Biomes />
-
-## The Blitz Arena
-
-The map on which Blitz takes place is designed to position Lords as equally as possible while also providing a dynamic
-battlefield that scales appropriately. Each player starts the game with three Realms, evenly spaced apart in a triangle
-and positioned between three complete and revealed Hyperstructures. Player Realms and Hyperstructures are placed in a
-specific pattern to ensure that all Lords have a comparable number of neighbors and equal access to Hyperstructures.
-More details on the Realm and Hyperstructure placement systems are available in the [Realms](/blitz/realms/realm) and
-[World Map](/blitz/worldmap-movement/worldmap) sections.
-
-The primary objective of Blitz is to capture and hold as many Hyperstructures and World Structures as possible to
-accumulate Victory Points and secure a position at the top of the leaderboard.
-
-<img src="/images/covers/blitz-arena.png" alt="The Blitz Arena - Competitive battleground" className="w-full rounded-lg my-6" />
-
-
-
----
-
-file: docs/pages/blitz/world-structures.mdx
-meta: {}
-
-# 🏗️ World Structures
-
-All World Structures in Blitz are initially occupied by bandit forces that must be defeated by a player before it can be
-claimed.
-
-## Hyperstructures
-
-In Blitz, Hyperstructures are **fully constructed** and positioned around the map at the start of the game, ready to be
-claimed by eliminating the resident bandit forces. There is no construction process - Hyperstructures are immediately
-functional once claimed and will begin accumulating Victory Points for the owning player.
-
-<img src="/images/buildings/construction/hyperstructure.png" width="800" />
-
-The number of Hyperstructures in the game, and their positioning on the world map, is explained in the
-[World Map](/blitz/worldmap-movement/worldmap) section.
-
-## Essence Rifts
-
-<img src="/images/covers/essence-rift.png" alt="Blitz Essence Rift" className="w-full rounded-lg my-6" />
-
-Essence Rifts are striking fissures in the earth where valuable Essence has swelled from beneath the surface. These
-locations provide a steady source of the valuable dust to the owning player, reducing the need to explore new hexes for
-continued Realm expansion and troop production. Essence Rifts produce Essence at a rate of 5 units per second from the
-moment they're discovered. Lords have a 5% chance of finding one of these structures when exploring a hex.
-
-## Camps
-
-Camps act in a similar capacity to Villages in Eternum, in the sense that they perform as small, discoverable Realms
-that can boost production and act as forward bases. Camps are restricted to the Settlement level and cannot be upgraded.
-Lords have a 5% chance of finding one of these structures when exploring a hex.
-
-
-
----
-
-file: docs/pages/overview/controller.mdx
-meta: {}
-
-import { importantNote } from "@/components/styles";
-
-***
-
-title: Cartridge Controller description: Using the Cartridge Controller in the Realmverse
-
-***
-
-# Cartridge Controller
-
-The Cartridge Controller is a gaming-focused smart contract wallet that makes Web3 gaming accessible and transactionless
-via Session Keys. You must have a controller to play Eternum or Blitz. To find out more about the controller, read their
-documentation [here](https://docs.cartridge.gg/controller/overview).
-
-<img src="/images/screenshots/controller.png" alt="Controller" width="300" className="mx-auto" />
-
-## Using the Controller
-
-If you are playing with a Village in Eternum or entering a Recruit game in Blitz, you can play purely using the
-controller. However, to use Season Passes and **$LORDS**, you will need to transfer them to your controller from
-Starknet using your ArgentX or Braavos wallet.
-
-To use the controller, you can either log in or sign up when starting either Eternum or Blitz. To create a controller,
-simply input a username and sign up.
-
-<img src="/images/screenshots/controller-signup.png" alt="Controller" width="300" className="mx-auto" />
-
-There are multiple ways to securely sign up:
-
-* **Passkey**: Passkeys are a modern and secure way to authenticate users without passwords. They use public key
-  cryptography and are stored by platform authenticators such as Face ID, Touch ID, or password managers like Bitwarden
-  or 1Password.
-* **Metamask**: Connect using your MetaMask wallet.
-* **Rabby**: Connect using your Rabby wallet.
-* **Discord**: Connect using your Discord account.
-* **Wallet Connect**: Connect using a wide range of wallets.
-
-<div style={importantNote.container}>
-  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
-
-  <p style={importantNote.content}>
-    If you are choosing Passkey on a Windows PC that does not have Bluetooth functionality, you will need to use a
-    password manager to set up your controller. There is a known issue in which Windows will ask for a Windows Hello or
-    external security key (USB) that wasn't used in the controller setup, preventing you from being able to sign in.
-  </p>
-</div>
-
-Once this is complete, you will be able to 'Create Session'. This enables all of the game functions in a transactionless
-session.
-
-### Transfer Season Pass to Controller
-
-Transfer an Eternum season pass to your controller easily [here](https://empire.realms.world/season-passes). Connect
-your controller by selecting the controller icon located at the top of the page and select the passes to transfer.
-
-<div className="flex justify-center">
-  <img src="/images/logos/controller-icon.png" alt="Controller Icon" width="60" />
-</div>
-
-## Controller Key Features
-
-### Simple and Secure
-
-* Passwordless authentication using Passkeys for one-click onboarding
-* Self-custodial embedded wallets that put players in control
-* Built-in security features to protect player assets
-
-### Designed for Seamless Gameplay:
-
-* Session keys eliminate transaction popups during gameplay
-* Secure transaction delegation lets games submit actions on behalf of players
-* Free transactions through the Cartridge Paymaster so players focus on playing
-
-### Supported Platforms and Passkey Backup
-
-Passkeys are well-supported across modern platforms. You can use them with device authenticators directly or pair them
-with a mobile device using the QR flow. For those without device authenticators, several password managers like
-Bitwarden (free), 1Password, and Dashlane support Passkeys.
-
-#### Backing Up Your Passkey
-
-* Apple devices: Passkeys are backed up along with your keychain in iCloud.
-
-* Android devices: Passkeys are backed up with your Google account.
-
-* Windows devices: Passkeys are created and managed as part of your Windows account.
-
-#### Using Controller Across Devices
-
-Currently, Controller availability across devices depends on how the Passkey was created. Some platforms automatically
-synchronize them across devices for seamless use. For cross-platform usage (e.g., Apple and Android), synchronization
-might not be available. For now, we recommend using a Password Manager or the QR flow to support this configuration.
-Multi-credential support is coming soon to enhance device compatibility.
-
-Should you have any issues with the controller or require support, you can join the Cartridge Discord
-[here](https://discord.gg/cartridge).
-
-
-
----
-
-file: docs/pages/overview/disclaimer.mdx
-meta: {}
-
-import { formatNumberWithSpaces } from "@/utils/formatting";
-import { ETERNUM_CONFIG } from "@/utils/config";
-import { Callout } from "vocs/components";
-import { HYPERSTRUCTURE_POINT_MULTIPLIER } from "@/components/HyperstructureTable";
-
-# Disclaimer and Risk Acknowledgment
-
-<Callout type="danger">
-  Important Disclaimer – Please Read Carefully <br />
-  By participating in Realms games, you fully acknowledge and accept the following terms and conditions.
-</Callout>
-
-## Immutable Contracts
-
-Each game is governed entirely by **immutable** smart contracts. Once deployed, the game's rules and mechanics **cannot
-be altered, updated, or reversed** by the developers, the DAO, or any other party. These smart contracts have **not**
-been audited. Players should fully understand the implications of interacting with the system and assess the risks
-involved.
-
-## Risk of Loss
-
-All transactions and gameplay actions in these games are **final**. There are no mechanisms for refunds, reversals, or
-compensation. You acknowledge the **risk of loss of funds** and accept that you bear sole responsibility for any
-financial impact incurred.
-
-## Eternum
-
-A season of Eternum concludes when a single player achieves the required
-**{formatNumberWithSpaces(Number(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsForWin)/HYPERSTRUCTURE_POINT_MULTIPLIER)}**
-Victory Points and clicks the "End Season" button. At this point:
-
-### ⚠️ SEASON END CRITICAL INFORMATION
-
-When the season ends, **ALL in-game actions are DISABLED** except:
-
-* transfer materials
-* deposit resource arrivals
-* retrieve LP positions
-* cancel market orders
-* bridge materials out of the game
-
-1. **7-Days Withdrawal Window (starts immediately when "End Season" is clicked)**
-
-   * Starting from the exact moment the season ends, you have **7 days** to bridge out **ALL $LORDS** tokens and
-     bridgeable materials from your Realms' balance
-
-2. **After 7 Days**
-
-   * Any remaining **$LORDS** tokens and **Materials** will be **permanently locked**
-   * These assets **CANNOT** be recovered under any circumstances
-
-3. **Score Registration**
-   * Players have **4 days** to register their scores
-   * Registration is **MANDATORY** to be eligible for prizes
-   * While registration has a deadline, prize claiming does not
-
-Please refer to the documentation for detailed instructions on the bridging process during active gameplay.
-
-## Blitz
-
-Blitz game instances operate on a fixed schedule with immediate prize distribution upon completion. Unlike Eternum
-seasons, Blitz games do not have extended withdrawal windows or bridging requirements, as all gameplay concludes within
-the session timeframe.
-
-## No Recourse
-
-By participating in these games, you waive all rights to claims or recourse against the developers, the DAO, or any
-other associated entities for any losses or disputes arising from your participation in the game.
-
-## Acknowledgment of Terms
-
-Participation in Realms games constitutes your agreement to these terms, as well as all other terms and conditions
-outlined in the game's documentation.
-
-
-
----
-
-file: docs/pages/overview/entry.mdx
-meta: {
-  "title": "Game Entry & Participation",
-  "description": "How to join and participate in the Realmverse"
-}
-
-# Game Entry & Participation
-
-## Eternum
-
-Eternum takes place in 'Seasons', multi-week campaigns with long-term strategic and diplomatic developments. There are
-several weeks between each season that allow for iterative development and feature expansion in each subsequent season.
-
-### Realms NFT Holder Entry <img src="/images/ring_pass.png" alt="Season entry" width="300" className=" float-right" />
-
-Realms NFT holders have the exclusive benefit of free entry into each season of Eternum through the minting of Season
-Passes. Each Season Pass is unique to the Realm it was minted from and allows the holder to initiate a settling
-transaction to enter the game. To do this, Lords must first mint the Season Pass
-[here](https://empire.realms.world/mint) using the wallet that contains the Realms NFT, then transfer the Season Pass to
-their [Cartridge Wallet](/overview/controller).
-
-### Non-Realm Holder Entry
-
-⚖️ **Season Pass Marketplace**
-
-Should a Realm NFT holder decide not to use their Season Pass, they can transfer it or sell it on the
-[Season Pass Marketplace](https://empire.realms.world/trade), providing an avenue for non-Realm holders to acquire
-Season Passes to participate in the game.
-
-🏕️ **Villages**
-
-Villages are modest outposts that can be established around settled Realms, offering an accessible entry point into
-Eternum. Villages have some restrictions but offer a low-cost, casual taste of Eternum gameplay to newcomers while also
-acting as an avenue for established players to expand their production. Each Realm can support up to six surrounding
-Villages.
-
-For detailed information about Villages, including settling mechanics, resource production, and progression paths, visit
-our [Villages guide](/eternum/realm-and-villages/villages).
-
-### Realm Control Mechanics
-
-As long as you maintain control of a settled Realm or Village, you can actively participate without additional entry
-fees, engage in the market using **$LORDS** tokens, and enjoy uninterrupted gameplay until the end of the season.
-However, Eternum is a high-stakes game, it can be unforgiving and players must accept that their valuable holdings may
-become a target for other players. Thankfully, the game offers high-stakes and low-stakes gameplay to ensure that
-players can participate in the world at their own pace and risk tolerance.
-
-⚔️ **Realms - High Stakes**
-
-Once settled, Realms can be conquered and claimed within a Season, transferring control to the conqueror. Realms are the
-key playing pieces in Eternum and allow for the full gameplay experience in producing resources, training armies,
-conducting trade, and pursuing territorial expansion. This level of capability comes with increased risk, as Realms must
-continually manage defenses, alliances, and strategic positioning to protect themselves from rivals.
-
-🌴 **Villages - Low Stakes**
-
-Unlike Realms, Villages cannot be conquered by other players, making them an ideal choice for casual players seeking a
-lower-risk gameplay experience. Villages can still participate in most gameplay activities, but production rates are
-limited to 50% the rate of Realms and progression paths are limited. These features make Villages perfect for new
-players looking to learn the game mechanics without the constant threat of conquest.
-
-## Blitz
-
-While an Eternum season is a single game instance that unfolds over weeks, Blitz competitions take place in 'series'
-that are hosted in the development period between seasons. Unlike Eternum, Blitz does not require ownership of Realms
-NFTs or Season Passes for entry. Entry requirements and stakes are determined by the bracket that players choose to
-compete in.
-
-### Bracket System
-
-Blitz gameplay is structured around three progressively competitive brackets: Recruit, Warrior, and Elite. Each tier
-escalates both the stakes and the rewards, catering to various playstyles and competitiveness levels.
-
-🥉 **Recruit - Low Stakes**
-
-Free-to-enter, this bracket is not beholden to being part of a series and serves as an introduction and practice
-environment. Players can experience Blitz gameplay with no stakes while potentially earning some low-value Loot Chest
-rewards. Recruit bracket games run every day on a varying timetable to encourage participation from players in all time
-zones.
-
-🥈 **Warrior - Medium Stakes**
-
-This bracket makes up the bulk of competitive games in a Blitz series. Each Warrior game requires an entry fee in
-$LORDS, which contributes to a shared prize pool bolstered by additional Loot Chest rewards and entry tickets to the
-coveted Elite bracket games. Warrior bracket games run a few times a week while the series is active, typically during
-prime time gaming windows for three key timezones (USA, Europe, and Asia-Pacific).
-
-🥇 **Elite - High Stakes**
-
-Representing the highest level of Blitz gameplay, Elite bracket games are considered the 'finals' of a Blitz series.
-These games don't require an entry fee in $LORDS, instead demanding an entry ticket NFT that can only be earned in
-leaderboard positions of Warrior bracket games (or purchased off the secondary market from another Lord). These games
-run at the end of a Blitz series and offer substantial $LORDS prize pools, Loot Chest rewards, and prestige to the best
-performing Lords.
-
-### Realm Control Mechanics
-
-Each Lord starts the game in control of three equally capable Realms. As in Eternum, Realms in Blitz can be conquered by
-other Lords, encouraging constant vigilance and strategic interaction. Lords must carefully balance their military
-forces, territorial positioning, and resource management to survive and thrive within the intense two-hour game
-duration. There is no progression beyond the conclusion of the game, and each game instance starts with a refreshed
-world state.
-
-
-
----
-
-file: docs/pages/overview/introduction.mdx
-meta: {
-  "title": "Introduction to the Realmverse",
-  "description": "Understanding the Realmverse"
-}
-
-# Welcome to the Realms
-
-<img src="/images/covers/01.png" alt="Eternum Landscape" className="w-full rounded-lg my-6" />
-
-## The Lords Have Arrived
-
-Across treacherous open seas and endless horizons, the legendary Galleon has finally arrived in a new land, bearing the
-brave and ambitious souls known as Lords. Having journeyed for years, driven by dreams of power, glory, and untold
-riches, these Lords have finally set foot upon their destination—a mysterious landscape ripe with ancient secrets and
-unclaimed territories. Now, as the mists clear, each Lord must forge their own path in this land of promise and peril.
-
-## Establish Your Foothold
-
-Your task begins by settling a seat of power from which your destiny unfolds. Find your place upon the vast, unexplored,
-procedurally generated world map and secure vital materials to fuel your expansion. Grow your influence through shrewd
-economic choices, military strategy, and diplomatic maneuvering, nurturing your humble settlement into a mighty empire.
-
-Yet, strength alone is insufficient, for Eternum is fraught with dangers. Bandits roam unchecked and rival Lords covet
-your lands. Armies must be raised, resources guarded, and alliances carefully chosen. Only through wise leadership and
-vigilant defense can your holdings flourish and endure.
-
-## Find Your Glory
-
-These new lands are dominated by colossal relics from an ancient civilization, known as Hyperstructures. The mysterious
-towers act as conduits of power, providing their masters with the ability to assert dominance over the continent and
-their subjects. They are the focus of ultimate victory.
-
-However, this new and expansive world offers glory beyond mere conquest; whether through trade mastery, military
-prowess, diplomatic excellence, or simply the joy of exploration, every Lord has the freedom to find their own path to
-greatness.
-
-## Core Pillars
-
-* **Fully Onchain Gameplay** - Every action, decision, and outcome is transparently executed and verifiable onchain.
-  Secured by Ethereum and seamlessly scaled by Starknet, the integrity and immutability of gameplay are guaranteed.
-* **Player-Driven Economy** – Every resource produced, trade executed, and asset exchanged originates solely from player
-  decisions. Collectively, these choices dictate supply, demand, and market prices, forming a dynamic and ever-evolving
-  economy across the entire ecosystem.
-* **Strategic Depth** – Long-term success requires efficient production management, tactical territorial expansion, and
-  precisely timed military engagements. Lords who exhibit foresight, adaptability, and strategic mastery will rise to
-  dominate, while others fall into obscurity.
-
-## Game Modes
-
-<img src="/images/covers/02.png" alt="Eternum Game Features" className="w-full rounded-lg my-6" />
-
-Lords can test their skills and strategies in two distinct game modes, each offering unique experiences and challenges:
-
-**Eternum** - The flagship seasonal game mode, Eternum invites players into a rich, evolving world of strategic depth.
-Unfolding over several weeks, Lords shape the world through expansive empire-building, intricate economic management,
-diplomatic maneuvering, and focused military campaigns. The complexity of Eternum is balanced by accessible gameplay
-layers, allowing casual players to participate in lower-stakes activities such as resource trading, exploration, and
-minigames. Whether aspiring to dominate the continent or simply carving out a peaceful corner of the world, Eternum
-offers rewarding experiences suited to every play style.
-
-**Blitz** - Blitz provides an exciting contrast through rapid, high-intensity, free-for-all competition lasting exactly
-two hours. This mode distills strategic gameplay into streamlined mechanics, accelerated resource production, and
-immediate military engagements, rewarding quick thinking and decisive action. Blitz is structured around a three-tier
-competitive bracket system—Recruit, Warrior, and Elite—allowing Lords to engage at their preferred intensity level, from
-casual challenges to elite competitions with significant stakes and rewards. Whether testing new strategies or vying for
-glory, Blitz delivers exhilarating, accessible, and fiercely competitive battles.
-
-## Rewards
-
-Lords who prove their skill and strategic prowess across both Eternum and Blitz are rewarded generously for their
-efforts. Success in competitive events can award portions of [$LORDS token](/overview/lords) prize pools, as well as
-[Loot Chests](/overview/chests/loot-chests) containing consumables and exclusive cosmetic items.
-
-## Vision
-
-Explore our
-[detailed vision document](https://github.com/BibliothecaDAO/world-guide/blob/main/realms-world-guide-v1.0.0.pdf)
-
-
-
----
-
-file: docs/pages/overview/key-concepts.mdx
-meta: {
-  "title": "Key Concepts",
-  "description": "The foundational mechanics of Eternum"
-}
-
-# 🔑 Key Concepts
-
-<img src="/images/covers/07.png" alt="Eternum Key Concepts" className="w-full rounded-lg my-6" />
-
-This section outlines the core mechanics and systems that form the foundation of Eternum's gameplay.
-
-## Realms
-
-* **Limited Assets**: 8,000 unique and irreplaceable Realms serve as the foundation of Eternum, each has the ability to
-  freely mint a Season Pass.
-* **Settling**: Players must burn a Season Pass to settle their Realm in the game world.
-* **Starting Materials**: Each newly settled Realm begins with a set of starting materials.
-* **Progression Path**: Realms can upgrade from Settlements → Cities → Kingdoms → Empires, unlocking additional
-  buildable hexes and defensive army slots.
-* **Resource Production**: Each Realm can produce 1-7 different resources based on the original Realms NFT metadata.
-* **Wonders**: Realms with Wonders have a 20% production bonus and share this bonus with all Realms and Villages in a 12
-  tile radius.
-* **Hardcore Gameplay**: If a Realm’s defenses crumble, it can be claimed by another player—transferring gameplay rights
-  to the conqueror.
-
-## Villages
-
-* **Accessible Entry**: Villages can be established around settled Realms, offering a simple entry system for new
-  players
-* **Scaling**: Up to 6 Villages per Realm, allowing for 48,000 Villages in Season 1
-* **Limited Production**: Produce materials at 50% the rate of Realms and only have access to 1 resource type each
-* **Parent Realm**: Each Village is tied to a parent Realm and will pay bridging fees if moving materials out of the
-  game
-* **Troop Restrictions**: Villages may only receive tokenized troops from their parent Realm, they cannot buy or be sent
-  troops from any other source
-* **Simple Progression**: Villages have a limited upgrade path from Settlement to City
-* **Casual Gameplay**: Villages can be raided, but can’t be claimed by other players.
-
-## Materials
-
-* **Materials Categories**:
-  * **Food**: (Wheat, Fish) - essential for production, troop movement, and construction.
-  * **Resources**: 22 different resource types, distributed based on rarity across both Realms and Villages.
-  * **Troops**: Units with unique properties that can be assigned to armies.
-  * **Donkeys**: Required for moving materials around the world, essential for logistics.
-  * **Labor**: A new material in S1, allows players to build and produce in 'simple mode', acquired through burning
-    resources.
-  * **Ancient Fragments**: Found in game, critical for the construction of Hyperstructures.
-* **ERC20 Compatibility**: All materials (except Labor) can be traded freely and bridged out as ERC20 tokens through
-  Realms.
-
-## Buildings
-
-* **Construction Modes**: Two building systems available - Standard (resource-efficient) and Simple (labor-focused).
-* **Building Types**:
-  * **The Keep**: Central structure automatically constructed when settling, provides baseline population capacity.
-  * **Resource Buildings**: Specific buildings for each of the 22 resources, only requiring food to construct.
-  * **Economic Buildings**: Includes Farms, Fishing Villages, Worker Huts, Storehouses, and Markets.
-  * **Military Buildings**: Nine different buildings for producing three tiers of each troop type.
-* **Placement & Population**: Buildings require buildable hexes and population capacity, with more unlocked as Realms
-  and Villages are upgraded.
-
-## Production
-
-* **Production Modes**: Like buildings, production can be done in Standard (resource-intensive) or Simple (food and
-  labor) mode.
-* **Production Types**:
-  * **Food**: The only resources (Wheat, Fish) that can be produced without inputs.
-  * **Resources**: Require combinations of other resources (standard) or labor (simple).
-  * **Labor**: Produced by burning resources in the Keep, used for simple mode construction and production.
-  * **Troops**: Essential for exploration and warfare, with higher tiers requiring lower tier troops as inputs.
-  * **Donkeys**: One-time-use transport, consumed after a single journey.
-
-## World Map
-
-* **Exploration System**: The world begins shrouded in mystery, with only the six Banks visible at season start;
-  adjacent hexes are revealed when settling, and armies can explore to reveal new areas.
-* **Biomes**: 16 unique biome types procedurally generated across the map, each affecting combat effectiveness and troop
-  movement.
-* **Movement & Stamina**: Armies move using stamina (regenerating at +20 per Eternum Day), with costs varying by biome
-  and troop type; Knights, Crossbowmen, and Paladins each have different maximum stamina capacities.
-* **Exploration Mechanics**: Exploring costs 30 stamina per hex and reveals that area permanently to all Lords;
-  exploring armies may discover resources or encounter world structures and agent armies.
-
-## Military
-
-<img src="/images/covers/04.png" alt="Eternum Military" className="w-full rounded-lg my-6" />
-
-* **Army Composition**: Armies consist of a single troop type and tier (Knights, Crossbowmen, or Paladins).
-* **Troop Tiers**: T1, T2, and T3 troops with increasing combat strength.
-* **Combat Factors**: Battles resolved based on army damage, stamina modifiers, and biome effects.
-* **Army Types**:
-  * **Field Armies**: Deploy onto the world map for exploration and conquest.
-  * **Guard Armies**: Deployed to defense slots to protect structures.
-* **Stamina System**: Armies recover +20 stamina daily, with 30+ stamina needed for full combat effectiveness.
-* **Biome Effects**: Each troop type has advantages (+30% damage), disadvantages (-30% damage), or no change (0%) in
-  specific biomes.
-* **Raiding Mechanics**: Armies can attempt to steal resources from structures without defeating defenders.
-  * Success depends on the raiding army's damage relative to the combined guard armies.
-  * Undefended structures can be raided without casualties.
-
-## Tribes
-
-Tribes are player-formed organizations enabling cooperation and coordination. They can be made public (open to all) or
-private (invitation only) and allow players access to tribe-only features. Tribes are an early form of social structures
-within Eternum and rely on player-driven interactions including arrangements of alliances and declarations of war.
-
-## Victory Conditions
-
-Eternum's seasonal gameplay culminates in victory through the accumulation of victory points earned through the
-construction and ownership of Hyperstructures. However, there are various achievement paths, with players earning
-recognition and rewards for various actions within the Season.
-
-
-
----
-
-file: docs/pages/overview/links.mdx
-meta: {
-  "title": "Quick Links",
-  "description": "Essential links for Eternum"
-}
-
-# Quick Links
-
-## Play & Learn
-
-* [Empire Home](https://empire.realms.world/) - The home of Realms games
-* [Play Eternum](https://eternum.realms.world/) - Season 1 has concluded
-* [Realms NFT Marketplace](https://empire.realms.world/trade/realms) - Trade your Realms NFTs
-* [Loot Chest Marketplace](https://empire.realms.world/trade/loot-chests) - Trade Loot Chests
-* [Statistics](https://stats.eternum.realms.world/) - Revenue and gameplay stats
-* [GitHub](https://github.com/BibliothecaDAO/eternum) - Explore the code
-
-## Community
-
-* [Realms World](https://realms.world/) - The DAO behind Eternum
-* [Discord](https://discord.gg/realmsworld) - Join our discord
-* [Twitter](https://x.com/LootRealms) - Follow the community
-* [Twitter](https://x.com/RealmsEternum) - Follow for Realms game updates
-
-
-
----
-
-file: docs/pages/overview/lords.mdx
-meta: {}
-
-# $LORDS Token
-
-![LORDS Token](/images/resources/37.png)
-
-$LORDS is the native token of the Realms Autonomous World. It serves as the primary currency within the ecosystem,
-enabling economic activity and participation in various games.
-
-## Token Details
-
-* **Name**: LORDS
-* **Network**: Starknet
-* **Contract Address**:
-  [0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49](https://starkscan.co/token/0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49)
-* **Total Supply**: 300,000,000 LORDS
-
-## $LORDS in Gameplay
-
-* **Trading Currency**: $LORDS serves as the primary currency for trading within Eternum's Automated Market Maker (AMM)
-  and the peer-to-peer Orderbook, allowing Lords to facilitate trades and manage their economic interactions.
-
-* **Transport System**: $LORDS are essential for producing donkeys, the backbone of Eternum's transport system,
-  effectively acting as the "gas" token required for facilitating all in-game logistics and resource transfers.
-
-* **Blitz Entry Fees**: In Blitz series, $LORDS are used for entry fees in Warrior bracket competitions, with these fees
-  contributing to the prize pools distributed to top performers.
-
-## How to get $LORDS
-
-### In Game
-
-Within Eternum, Lords can obtain $LORDS through various methods:
-
-* Selling surplus materials through the in-game AMM or Orderbook
-* Defeating or negotiating with AI agents
-* Discovering and playing minigames scattered throughout the Eternum world
-* Earning fees on AMM trades by controlling a Bank
-* Playing the game and receiving allocations from various prize pools
-
-Players can also earn $LORDS by winning Blitz tournaments and earning prize pool distributions.
-
-### On Starknet
-
-Outside of gameplay, $LORDS can be acquired on the Starknet network through decentralized exchanges (DEXs).
-
-#### Recommended Exchanges
-
-| Exchange                                                                          | Compatibility                     | Notes                                                                                                                             |
-| --------------------------------------------------------------------------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| [Ekubo](https://app.ekubo.org/?outputCurrency=LORDS\&amount=1\&inputCurrency=ETH) | ✅ Supports Cartridge Controller   | Swap directly with your game wallet                                                                                               |
-| [Avnu](https://app.avnu.fi/en/eth-lords)                                          | ❌ No Cartridge Controller support | Requires an [Argent](https://x.com/argentHQ) or [Braavos](https://x.com/myBraavos) wallet first, then transfer to your controller |
-
-#### Step-by-Step Guide
-
-For new users, follow this [comprehensive guide](https://x.com/lordcumberlord/status/1920650310621495350) that covers:
-
-1. Setting up a Braavos wallet
-2. Bridging ETH to Starknet via Orbiter
-3. Swapping ETH for STRK and $LORDS
-4. Creating a Cartridge Controller (if needed)
-5. Transferring $LORDS to your game wallet
-
-
-
----
-
-file: docs/pages/overview/resource-addresses.mdx
-meta: {}
-
-import { ResourceAddresses } from "@/components/ResourceAddresses";
-
-# Resource Addresses
-
-<ResourceAddresses />
-
-
-
----
-
 file: docs/pages/eternum/achievements.mdx
 meta: {}
 
@@ -1732,8 +1263,8 @@ This section outlines the core mechanics and systems that form the foundation of
   adjacent hexes are revealed when settling, and armies can explore to reveal new areas.
 * **Biomes**: 16 unique biome types procedurally generated across the map, each affecting combat effectiveness and troop
   movement.
-* **Movement & Stamina**: Armies move using stamina (regenerating at +20 per Eternum Day), with costs varying by biome
-  and troop type; Knights, Crossbowmen, and Paladins each have different maximum stamina capacities.
+* **Movement & Stamina**: Armies move using stamina (regenerating at +2 per Phase, +12 per Eternum Day), with costs
+  varying by biome and troop type; Knights, Crossbowmen, and Paladins each have different maximum stamina capacities.
 * **Exploration Mechanics**: Exploring costs 30 stamina per hex and reveals that area permanently to all Lords;
   exploring armies may discover resources or encounter world structures and agent armies.
 
@@ -1747,7 +1278,7 @@ This section outlines the core mechanics and systems that form the foundation of
 * **Army Types**:
   * **Field Armies**: Deploy onto the world map for exploration and conquest.
   * **Guard Armies**: Deployed to defense slots to protect structures.
-* **Stamina System**: Armies recover +20 stamina daily, with 30+ stamina needed for full combat effectiveness.
+* **Stamina System**: Armies recover +2 stamina per Phase (6 phases per Eternum Day, totaling +12 stamina per day).
 * **Biome Effects**: Each troop type has advantages (+30% damage), disadvantages (-30% damage), or no change (0%) in
   specific biomes.
 * **Raiding Mechanics**: Armies can attempt to steal resources from structures without defeating defenders.
@@ -2041,8 +1572,9 @@ season—signalling the tide to come back in and put an end to the Lords' fun…
 
 ## Time
 
-Time within a season is measured in Eternum Days, and each is precisely one hour in length. One day ends and the next
-begins at the top of every real-world hour.
+Time within a season is measured in Eternum Days, and each is precisely one hour in length. Each Eternum Day is divided
+into six equal phases (early hours, dawn, morning, afternoon, dusk, and late evening), with each phase lasting ten
+minutes. One day ends and the next begins at the top of every real-world hour.
 
 ## Materials
 
@@ -2179,6 +1711,503 @@ contain between 300,000 and 3 million ancient fragments in incremental amounts (
 some time for the full amount of ancient fragments to be produced by the structure, and the more that the mine contains,
 the longer it will take. Lords will need to ensure that their mines are adequately defended from rivals, however they
 only have one defense slot to support a guard army.
+
+
+
+---
+
+file: docs/pages/overview/controller.mdx
+meta: {}
+
+import { importantNote } from "@/components/styles";
+
+***
+
+title: Cartridge Controller description: Using the Cartridge Controller in the Realmverse
+
+***
+
+# Cartridge Controller
+
+The Cartridge Controller is a gaming-focused smart contract wallet that makes Web3 gaming accessible and transactionless
+via Session Keys. You must have a controller to play Eternum or Blitz. To find out more about the controller, read their
+documentation [here](https://docs.cartridge.gg/controller/overview).
+
+<img src="/images/screenshots/controller.png" alt="Controller" width="300" className="mx-auto" />
+
+## Using the Controller
+
+If you are playing with a Village in Eternum or entering a Recruit game in Blitz, you can play purely using the
+controller. However, to use Season Passes and **$LORDS**, you will need to transfer them to your controller from
+Starknet using your ArgentX or Braavos wallet.
+
+To use the controller, you can either log in or sign up when starting either Eternum or Blitz. To create a controller,
+simply input a username and sign up.
+
+<img src="/images/screenshots/controller-signup.png" alt="Controller" width="300" className="mx-auto" />
+
+There are multiple ways to securely sign up:
+
+* **Passkey**: Passkeys are a modern and secure way to authenticate users without passwords. They use public key
+  cryptography and are stored by platform authenticators such as Face ID, Touch ID, or password managers like Bitwarden
+  or 1Password.
+* **Metamask**: Connect using your MetaMask wallet.
+* **Rabby**: Connect using your Rabby wallet.
+* **Discord**: Connect using your Discord account.
+* **Wallet Connect**: Connect using a wide range of wallets.
+
+<div style={importantNote.container}>
+  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
+
+  <p style={importantNote.content}>
+    If you are choosing Passkey on a Windows PC that does not have Bluetooth functionality, you will need to use a
+    password manager to set up your controller. There is a known issue in which Windows will ask for a Windows Hello or
+    external security key (USB) that wasn't used in the controller setup, preventing you from being able to sign in.
+  </p>
+</div>
+
+Once this is complete, you will be able to 'Create Session'. This enables all of the game functions in a transactionless
+session.
+
+### Transfer Season Pass to Controller
+
+Transfer an Eternum season pass to your controller easily [here](https://empire.realms.world/season-passes). Connect
+your controller by selecting the controller icon located at the top of the page and select the passes to transfer.
+
+<div className="flex justify-center">
+  <img src="/images/logos/controller-icon.png" alt="Controller Icon" width="60" />
+</div>
+
+## Controller Key Features
+
+### Simple and Secure
+
+* Passwordless authentication using Passkeys for one-click onboarding
+* Self-custodial embedded wallets that put players in control
+* Built-in security features to protect player assets
+
+### Designed for Seamless Gameplay:
+
+* Session keys eliminate transaction popups during gameplay
+* Secure transaction delegation lets games submit actions on behalf of players
+* Free transactions through the Cartridge Paymaster so players focus on playing
+
+### Supported Platforms and Passkey Backup
+
+Passkeys are well-supported across modern platforms. You can use them with device authenticators directly or pair them
+with a mobile device using the QR flow. For those without device authenticators, several password managers like
+Bitwarden (free), 1Password, and Dashlane support Passkeys.
+
+#### Backing Up Your Passkey
+
+* Apple devices: Passkeys are backed up along with your keychain in iCloud.
+
+* Android devices: Passkeys are backed up with your Google account.
+
+* Windows devices: Passkeys are created and managed as part of your Windows account.
+
+#### Using Controller Across Devices
+
+Currently, Controller availability across devices depends on how the Passkey was created. Some platforms automatically
+synchronize them across devices for seamless use. For cross-platform usage (e.g., Apple and Android), synchronization
+might not be available. For now, we recommend using a Password Manager or the QR flow to support this configuration.
+Multi-credential support is coming soon to enhance device compatibility.
+
+Should you have any issues with the controller or require support, you can join the Cartridge Discord
+[here](https://discord.gg/cartridge).
+
+
+
+---
+
+file: docs/pages/overview/disclaimer.mdx
+meta: {}
+
+# Disclaimer and Risk Acknowledgment
+
+<div
+  style={{
+  backgroundColor: "#dc2626",
+  color: "white",
+  padding: "1rem",
+  borderRadius: "0.5rem",
+  marginBottom: "1.5rem",
+  border: "1px solid #b91c1c",
+}}
+>
+  <h3 style={{ margin: "0 0 0.5rem 0", color: "white" }}>⚠️ Important Disclaimer – Please Read Carefully</h3>
+
+  <p style={{ margin: 0 }}>
+    By participating in Realms games, you fully acknowledge and accept the following terms and conditions.
+  </p>
+</div>
+
+## Immutable Contracts
+
+Each game is governed entirely by **immutable** smart contracts. Once deployed, the game's rules and mechanics **cannot
+be altered, updated, or reversed** by the developers, the DAO, or any other party. These smart contracts have **not**
+been audited. Players should fully understand the implications of interacting with the system and assess the risks
+involved.
+
+## Risk of Loss
+
+All transactions and gameplay actions in these games are **final**. There are no mechanisms for refunds, reversals, or
+compensation. You acknowledge the **risk of loss of funds** and accept that you bear sole responsibility for any
+financial impact incurred.
+
+## Eternum
+
+A season of Eternum concludes when a single player achieves the required **Victory Points** and clicks the "End Season"
+button. At this point:
+
+### ⚠️ SEASON END CRITICAL INFORMATION
+
+When the season ends, **ALL in-game actions are DISABLED** except:
+
+* transfer materials
+* deposit resource arrivals
+* retrieve LP positions
+* cancel market orders
+* bridge materials out of the game
+
+1. **7-Days Withdrawal Window (starts immediately when "End Season" is clicked)**
+
+   * Starting from the exact moment the season ends, you have **7 days** to bridge out **ALL $LORDS** tokens and
+     bridgeable materials from your Realms' balance
+
+2. **After 7 Days**
+
+   * Any remaining **$LORDS** tokens and **Materials** will be **permanently locked**
+   * These assets **CANNOT** be recovered under any circumstances
+
+3. **Score Registration**
+   * Players have **4 days** to register their scores
+   * Registration is **MANDATORY** to be eligible for prizes
+   * While registration has a deadline, prize claiming does not
+
+Please refer to the documentation for detailed instructions on the bridging process during active gameplay.
+
+## Blitz
+
+Blitz game instances operate on a fixed schedule with immediate $LORDS prize distribution upon completion. Unlike
+Eternum seasons, Blitz games do not have extended withdrawal windows or bridging requirements, as all gameplay concludes
+within the session timeframe.
+
+Distribution of Loot Chest NFT rewards is more complex and is currently managed using offchain processes. It is intended
+that a distribution framework will be developed in the near future to handle additional NFT rewards in an automated and
+decentralized manner.
+
+## No Recourse
+
+By participating in these games, you waive all rights to claims or recourse against the developers, the DAO, or any
+other associated entities for any losses or disputes arising from your participation in the game.
+
+## Acknowledgment of Terms
+
+Participation in Realms games constitutes your agreement to these terms, as well as all other terms and conditions
+outlined in the game's documentation.
+
+
+
+---
+
+file: docs/pages/overview/entry.mdx
+meta: {
+  "title": "Game Entry & Participation",
+  "description": "How to join and participate in the Realmverse"
+}
+
+# Game Entry & Participation
+
+## Eternum
+
+Eternum takes place in 'Seasons', multi-week campaigns with long-term strategic and diplomatic developments. There are
+several weeks between each season that allow for iterative development and feature expansion in each subsequent season.
+
+### Realms NFT Holder Entry <img src="/images/ring_pass.png" alt="Season entry" width="300" className=" float-right" />
+
+Realms NFT holders have the exclusive benefit of free entry into each season of Eternum through the minting of Season
+Passes. Each Season Pass is unique to the Realm it was minted from and allows the holder to initiate a settling
+transaction to enter the game. To do this, Lords must first mint the Season Pass
+[here](https://empire.realms.world/mint) using the wallet that contains the Realms NFT, then transfer the Season Pass to
+their [Cartridge Wallet](/overview/controller).
+
+### Non-Realm Holder Entry
+
+⚖️ **Season Pass Marketplace**
+
+Should a Realm NFT holder decide not to use their Season Pass, they can transfer it or sell it on the
+[Season Pass Marketplace](https://empire.realms.world/trade), providing an avenue for non-Realm holders to acquire
+Season Passes to participate in the game.
+
+🏕️ **Villages**
+
+Villages are modest outposts that can be established around settled Realms, offering an accessible entry point into
+Eternum. Villages have some restrictions but offer a low-cost, casual taste of Eternum gameplay to newcomers while also
+acting as an avenue for established players to expand their production. Each Realm can support up to six surrounding
+Villages.
+
+For detailed information about Villages, including settling mechanics, resource production, and progression paths, visit
+our [Villages guide](/eternum/realm-and-villages/villages).
+
+### Realm Control Mechanics
+
+As long as you maintain control of a settled Realm or Village, you can actively participate without additional entry
+fees, engage in the market using **$LORDS** tokens, and enjoy uninterrupted gameplay until the end of the season.
+However, Eternum is a high-stakes game, it can be unforgiving and players must accept that their valuable holdings may
+become a target for other players. Thankfully, the game offers high-stakes and low-stakes gameplay to ensure that
+players can participate in the world at their own pace and risk tolerance.
+
+⚔️ **Realms - High Stakes**
+
+Once settled, Realms can be conquered and claimed within a Season, transferring control to the conqueror. Realms are the
+key playing pieces in Eternum and allow for the full gameplay experience in producing resources, training armies,
+conducting trade, and pursuing territorial expansion. This level of capability comes with increased risk, as Realms must
+continually manage defenses, alliances, and strategic positioning to protect themselves from rivals.
+
+🌴 **Villages - Low Stakes**
+
+Unlike Realms, Villages cannot be conquered by other players, making them an ideal choice for casual players seeking a
+lower-risk gameplay experience. Villages can still participate in most gameplay activities, but production rates are
+limited to 50% the rate of Realms and progression paths are limited. These features make Villages perfect for new
+players looking to learn the game mechanics without the constant threat of conquest.
+
+## Blitz
+
+While an Eternum season is a single game instance that unfolds over weeks, Blitz competitions take place in 'series'
+that are hosted in the development period between seasons. Unlike Eternum, Blitz does not require ownership of Realms
+NFTs or Season Passes for entry. Entry requirements and stakes are determined by the bracket that players choose to
+compete in.
+
+### Bracket System
+
+Blitz gameplay is structured around multiple brackets with varying stakes and entry requirements, catering to different
+playstyles and competitiveness levels.
+
+🍻 **Recruit Bracket - No Stakes**
+
+Free-to-enter bracket for introduction, playtesting and practice. Players can experience Blitz gameplay with no stakes
+while potentially earning some Relic Chest rewards. Recruit games run multiple times per day on a rotating schedule to
+encourage participation from players in all time zones.
+
+💰 **Gladiator Bracket - $LORDS Stakes**
+
+Competitive games with $LORDS stakes. Players pay a 250 $LORDS entry fee, contributing to a shared prize pool. The top
+20% of players split the prize pool at the conclusion of the game, while all players have a chance to earn Relic Chest
+rewards. Games run twice per day on a rotating schedule.
+
+🥈 **Warrior Bracket - Series Games**
+
+These games form the bulk of a competitive Blitz Series. Players pay a $LORDS entry fee, contributing to a prize pool.
+The top 20% of players split the prize pool at the conclusion of the game, with players earning additional rewards in
+the form of Relic Chests and Blitz Rewards Chests. The highest placing players can also win tradable NFT invites to the
+Elite bracket. Games run a few times weekly during prime time for key timezones (USA, Europe, Asia-Pacific).
+
+🥇 **Elite Bracket - Series Finals**
+
+Representing the highest level of Blitz gameplay, Elite bracket games are considered the 'finals' of a Blitz Series.
+Entry requires an NFT invite from Warrior bracket (no additional $LORDS cost). These games offer large, DAO-funded prize
+pools (pending BIP) along with Relic Chests, Blitz Rewards Chests and Elite Blitz Rewards Chests. A limited number of
+Elite games are run at the end of a Blitz series.
+
+### Realm Control Mechanics
+
+Each Lord starts the game in control of three equally capable Realms. As in Eternum, Realms in Blitz can be conquered by
+other Lords, encouraging constant vigilance and strategic interaction. Lords must carefully balance their military
+forces, territorial positioning, and resource management to survive and thrive within the intense two-hour game
+duration. There is no progression beyond the conclusion of the game, and each game instance starts with a refreshed
+world state.
+
+
+
+---
+
+file: docs/pages/overview/introduction.mdx
+meta: {
+  "title": "Introduction to the Realmverse",
+  "description": "Understanding the Realmverse"
+}
+
+# Welcome to the Realms
+
+<img src="/images/covers/01.png" alt="Eternum Landscape" className="w-full rounded-lg my-6" />
+
+## The Lords Have Arrived
+
+Across treacherous open seas and endless horizons, the legendary Galleon has finally arrived in a new land, bearing the
+brave and ambitious souls known as Lords. Having journeyed for years, driven by dreams of power, glory, and untold
+riches, these Lords have finally set foot upon their destination—a mysterious landscape ripe with ancient secrets and
+unclaimed territories. Now, as the mists clear, each Lord must forge their own path in this land of promise and peril.
+
+## Establish Your Foothold
+
+Your task begins by settling a seat of power from which your destiny unfolds. Find your place upon the vast, unexplored,
+procedurally generated world map and secure vital materials to fuel your expansion. Grow your influence through shrewd
+economic choices, military strategy, and diplomatic maneuvering, nurturing your humble settlement into a mighty empire.
+
+Yet, strength alone is insufficient, for Eternum is fraught with dangers. Bandits roam unchecked and rival Lords covet
+your lands. Armies must be raised, resources guarded, and alliances carefully chosen. Only through wise leadership and
+vigilant defense can your holdings flourish and endure.
+
+## Find Your Glory
+
+These new lands are dominated by colossal relics from an ancient civilization, known as Hyperstructures. The mysterious
+towers act as conduits of power, providing their masters with the ability to assert dominance over the continent and
+their subjects. They are the focus of ultimate victory.
+
+However, this new and expansive world offers glory beyond mere conquest; whether through trade mastery, military
+prowess, diplomatic excellence, or simply the joy of exploration, every Lord has the freedom to find their own path to
+greatness.
+
+## Core Pillars
+
+* **Fully Onchain Gameplay** - Every action, decision, and outcome is transparently executed and verifiable onchain.
+  Secured by Ethereum and seamlessly scaled by Starknet, the integrity and immutability of gameplay are guaranteed.
+* **Player-Driven Economy** – Every resource produced, trade executed, and asset exchanged originates solely from player
+  decisions. Collectively, these choices dictate supply, demand, and market prices, forming a dynamic and ever-evolving
+  economy across the entire ecosystem.
+* **Strategic Depth** – Long-term success requires efficient production management, tactical territorial expansion, and
+  precisely timed military engagements. Lords who exhibit foresight, adaptability, and strategic mastery will rise to
+  dominate, while others fall into obscurity.
+
+## Game Modes
+
+<img src="/images/covers/02.png" alt="Eternum Game Features" className="w-full rounded-lg my-6" />
+
+Lords can test their skills and strategies in two distinct game modes, each offering unique experiences and challenges:
+
+**Eternum** - The flagship seasonal game mode, Eternum invites players into a rich, evolving world of strategic depth.
+Unfolding over several weeks, Lords shape the world through expansive empire-building, intricate economic management,
+diplomatic maneuvering, and focused military campaigns. The complexity of Eternum is balanced by accessible gameplay
+layers, allowing casual players to participate in lower-stakes activities such as resource trading, exploration, and
+minigames. Whether aspiring to dominate the continent or simply carving out a peaceful corner of the world, Eternum
+offers rewarding experiences suited to every play style.
+
+**Blitz** - Blitz provides an exciting contrast through rapid, high-intensity, free-for-all competition lasting exactly
+two hours. This mode distills strategic gameplay into streamlined mechanics, accelerated resource production, and
+immediate military engagements, rewarding quick thinking and decisive action. Blitz is structured around a competitive
+bracket system—Recruit, Gladiator, Warrior, and Elite—allowing Lords to engage at their preferred intensity level, from
+casual challenges to elite competitions with significant stakes and rewards. Whether testing new strategies or vying for
+glory, Blitz delivers exhilarating, accessible, and fiercely competitive battles.
+
+## Rewards
+
+Lords who prove their skill and strategic prowess across both Eternum and Blitz are rewarded generously for their
+efforts. Success in competitive events can award portions of [$LORDS token](/overview/lords) prize pools, as well as
+[Loot Chests](/overview/chests/loot-chests) containing consumables and exclusive cosmetic items.
+
+## Vision
+
+Explore our
+[detailed vision document](https://github.com/BibliothecaDAO/world-guide/blob/main/realms-world-guide-v1.0.0.pdf)
+
+
+
+---
+
+file: docs/pages/overview/links.mdx
+meta: {
+  "title": "Quick Links",
+  "description": "Essential links for Eternum"
+}
+
+# Quick Links
+
+## Play & Learn
+
+* [Empire Home](https://empire.realms.world/) - The home of Realms games
+* [Play Eternum](https://eternum.realms.world/) - Season 1 has concluded
+* [Marketplace](https://empire.realms.world/trade) - Trade Realms and other ecosystem assets
+* [Statistics](https://stats.eternum.realms.world/) - Revenue and gameplay stats
+* [GitHub](https://github.com/BibliothecaDAO/eternum) - Explore the code
+
+## Community
+
+* [Realms World](https://realms.world/) - The DAO behind Eternum
+* [Discord](https://discord.gg/realmsworld) - Join our discord
+* [Twitter](https://x.com/LootRealms) - Follow the community
+* [Twitter](https://x.com/RealmsEternum) - Follow for Realms game updates
+
+
+
+---
+
+file: docs/pages/overview/lords.mdx
+meta: {}
+
+# $LORDS Token
+
+![LORDS Token](/images/resources/37.png)
+
+$LORDS is the native token of the Realms Autonomous World. It serves as the primary currency within the ecosystem,
+enabling economic activity and participation in various games.
+
+## Token Details
+
+* **Name**: LORDS
+* **Network**: Starknet
+* **Contract Address**:
+  [0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49](https://starkscan.co/token/0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49)
+* **Total Supply**: 300,000,000 LORDS
+
+## $LORDS in Gameplay
+
+* **Trading Currency**: $LORDS serves as the primary currency for trading within Eternum's Automated Market Maker (AMM)
+  and the peer-to-peer Orderbook, allowing Lords to facilitate trades and manage their economic interactions.
+
+* **Transport System**: $LORDS are essential for producing donkeys, the backbone of Eternum's transport system,
+  effectively acting as the "gas" token required for facilitating all in-game logistics and resource transfers.
+
+* **Blitz Entry Fees**: In Blitz series, $LORDS are used for entry fees in Gladiator and Warrior bracket competitions,
+  with these fees contributing to the prize pools distributed to top performers.
+
+## How to get $LORDS
+
+### In Game
+
+Within Eternum, Lords can obtain $LORDS through various methods:
+
+* Selling surplus materials through the in-game AMM or Orderbook
+* Defeating or negotiating with AI agents
+* Discovering and playing minigames scattered throughout the Eternum world
+* Earning fees on AMM trades by controlling a Bank
+* Playing the game and receiving allocations from various prize pools
+
+Players can also earn $LORDS by winning Blitz tournaments and earning prize pool distributions.
+
+### On Starknet
+
+Outside of gameplay, $LORDS can be acquired on the Starknet network through decentralized exchanges (DEXs).
+
+#### Recommended Exchanges
+
+| Exchange                                                                          | Compatibility                     | Notes                                                                                                                             |
+| --------------------------------------------------------------------------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| [Ekubo](https://app.ekubo.org/?outputCurrency=LORDS\&amount=1\&inputCurrency=ETH) | ✅ Supports Cartridge Controller   | Swap directly with your game wallet                                                                                               |
+| [Avnu](https://app.avnu.fi/en/eth-lords)                                          | ❌ No Cartridge Controller support | Requires an [Argent](https://x.com/argentHQ) or [Braavos](https://x.com/myBraavos) wallet first, then transfer to your controller |
+
+#### Step-by-Step Guide
+
+For new users, follow this [comprehensive guide](https://x.com/lordcumberlord/status/1920650310621495350) that covers:
+
+1. Setting up a Braavos wallet
+2. Bridging ETH to Starknet via Orbiter
+3. Swapping ETH for STRK and $LORDS
+4. Creating a Cartridge Controller (if needed)
+5. Transferring $LORDS to your game wallet
+
+
+
+---
+
+file: docs/pages/overview/resource-addresses.mdx
+meta: {}
+
+import { ResourceAddresses } from "@/components/ResourceAddresses";
+
+# Resource Addresses
+
+<ResourceAddresses />
 
 
 
@@ -2395,8 +2424,6 @@ You can pause automation at different levels:
   realm at the time of processing.
 * **Recipe Dependencies**: Production follows predefined game recipes. You cannot produce resources that don't have
   valid recipes.
-* **Storage Limits**: Produced resources will increase your realm's balance and may cause resource loss if storage is
-  full.
 
 ### Transfer Automation Considerations
 
@@ -2539,10 +2566,10 @@ import RelicTable from "@/components/RelicTable";
 # 🏺 Relics
 
 Relics are powerful consumables that can be discovered in Blitz from
-[Relic Crates](/blitz/worldmap-movement/worldmap#relic-crates), or rewarded for playing Blitz games through Relic
-Chests. Depending on the nature of a relic, it can be consumed by an army or a Realm in exchange for a time-limited
-bonus, such as a damage or production boost. When utilized at the right time, these items can provide a strategic edge
-over your opponents.
+[Relic Crates](/blitz/worldmap-movement/worldmap#relic-crates), or rewarded for playing Blitz games through
+[Relic Chests](/overview/chests/contents#relic-chests). Depending on the nature of a relic, it can be consumed by an
+army or a Realm in exchange for a time-limited bonus, such as a damage or production boost. When utilized at the right
+time, these items can provide a strategic edge over your opponents.
 
 There are currently nine relic types, each with two levels. A level 2 relic is simply a more powerful version of the
 level 1 counterpart. Every relic type has a distinct effect, which determines whether it can be activated by a Realm or
@@ -2667,50 +2694,11 @@ required in all Realm upgrades, as well as for some building construction and pr
 
 ---
 
-file: docs/pages/blitz/materials/storage.mdx
-meta: {}
-
-import { WeightTable } from "@/components/WeightTable";
-import { formatNumberWithCommas } from "@/utils/formatting";
-import { divideByPrecision } from "@/utils/resources";
-import { CapacityConfig, ResourcesIds } from "@bibliothecadao/types";
-import { ETERNUM_CONFIG } from "@/utils/config";
-import { BlitzWeightTable } from "@/components/WeightTable";
-import { StorageTable } from "@/components/StorageTable";
-
-# 📦 Storage System
-
-Your available storage limits the amount of materials your Realm can hold. Each Realm begins with a base capacity of
-**20,000 kg**. You'll need to construct storehouses to expand your storage capabilities.
-
-## Material Weights
-
-Materials have different weights that affect storage:
-
-<BlitzWeightTable />
-
-## Storehouses
-
-<img src="/images/buildings/construction/storehouse.png" alt="Storehouse" width="300" className="float-right" />
-
-Each storehouse adds 20,000 kg of storage capacity. Lords must be careful not to exceed the storage capacity of their
-Realms, as any produced materials that cannot be stored will be permanently lost.
-
-## World Structure Storage
-
-All world structures have set storage capacities **(that cannot be expanded through the use of storehouses)**. These
-capacities are as follows:
-
-<StorageTable />
-
-
-
----
-
 file: docs/pages/blitz/materials/transfers-and-trade.mdx
 meta: {}
 
 import { importantNote } from "@/components/styles";
+import { BlitzWeightTable } from "@/components/WeightTable";
 
 # 📜 Transfers
 
@@ -2743,6 +2731,12 @@ materials, so the number of donkeys required for a transfer depends on the total
 Once a transfer is initiated, it cannot be canceled, and the journey will take some time depending on the distance to
 the destination structure. Upon arrival, transferred materials and donkeys must be manually claimed via the 'Resource
 Arrivals' tab before they become available for use.
+
+### Material Weights
+
+Materials have different weights that affect transportation:
+
+<BlitzWeightTable />
 
 ### Blitz Restrictions
 
@@ -2842,24 +2836,64 @@ import { DamageCalculation } from "@/components/DamageCalculation";
 ## Damage Overview
 
 Damage is defined as the number of casualties dealt by one army against the other in an instance of combat. When combat
-is initiated (i.e. one army attacks another), damage for both the attacking and defending army is calculated based on
-the number of troops, troop tier, stamina, and biome bonuses. Damage is then simultaneously inflicted by both sides.
-Battles can last multiple rounds (requiring multiple combat instances) depending on the relative strength and number of
-troops involved. Armies with higher-tier troops deal significantly more damage. However, careful management of troop
-numbers, stamina, and biome positioning can enable lower-tier armies to overcome stronger opponents.
+is initiated (i.e. one army attacks another), damage for both the attacking and defending army is calculated based on a
+damage formula that considers troop numbers, troop tier, biome effects, stamina penalties, and battle timer penalties.
+
+## Combat Process
+
+When an army attacks another from an adjacent tile, the following sequence occurs:
+
+1. **Stamina Assessment**: The attacker must have sufficient stamina to engage in combat, the defender must have enough
+   to avoid a low-stamina damage penalty
+2. **Damage Calculation**: Damage is calculated for both combatants using the damage formula
+3. **Casualty Application**: Damage is applied simultaneously to both armies
+4. **Battle Timers**: Each combatant receives a battle timer, which prevents them from initiating new attacks while
+   active.
+5. **Refunds**: Damage-ratio refunds are calculated and applied to battle timers and stamina
+
+## Damage Calculation
 
 <DamageCalculation />
 
+## Battle Timers
 
+Immediately after damage is applied, each combatant receives a **battle timer** that prevents it from attacking an army
+or Realm until the timer expires. Armies are free to take any other action while the timer is active. The base duration
+is the length of a single Phase (one minute in Blitz). Timers for different armies are maintained independently of the
+world clock.
 
----
+If an army that currently has a battle timer is attacked by another army, it will deal 15% less damage during that
+combat round. This reduction is represented by the battle timer penalty modifier (T) in the damage equation and reflects
+the army's reduced combat readiness while recovering from previous engagements.
 
-file: docs/pages/blitz/military/raiding.mdx
-meta: {}
+## Damage-Ratio Refunds
 
-# 💰 Raiding
+The combat system includes a refund mechanism designed to prevent smaller, weaker armies from indefinitely stalling
+larger forces. When combat is significantly imbalanced, the dominant army receives:
 
-<span style={{ color: "red" }}>DRAFTING NOTE: Suggest we just remove raiding from Blitz, there's no point in it.</span>
+* **Stamina Refunds**: Based on the damage ratio between armies
+* **Battle Timer Reduction**: Shorter cooldowns for overwhelming victories
+
+### Refund Calculation
+
+The system calculates a **Refund Factor** based on the damage ratio between armies **x** and **y**:
+
+* **Damage Ratio (R<sub>x</sub>)**: **x**'s damage ÷ **y**'s damage
+
+* **Refund Factor f(R<sub>x</sub>)**: determines the amount of stamina refunded and battle timer reduction
+
+* **If R<sub>x</sub> ≥ 10**: f(R<sub>x</sub>) = 1 (maximum refund)
+
+* **If R<sub>x</sub> ≤ 2.5**: f(R<sub>x</sub>) = 0 (no refund)
+
+* **If 2.5 \< R<sub>x</sub> \< 10**: f(R<sub>x</sub>) = (R<sub>x</sub> - 2.5) ÷ (10 - 2.5)
+
+For army **x**:
+
+* **Refunded Stamina**: (combat cost) × f(R<sub>x</sub>), rounded up
+* **Battle Timer Length**: (base timer) × \[1 - f(R<sub>x</sub>)]
+
+The same calculations are applied for army **y**
 
 
 
@@ -2877,24 +2911,32 @@ import { BiomeCombat } from "@/components/BiomeCombat";
 Stamina is a vital resource governing the mobility and effectiveness of armies. Each deployed army has a maximum stamina
 value determined by its troop type and tier as explained above. Field armies expend stamina when moving, exploring
 unknown hexes, or engaging in combat against other armies and structures. Guard armies only expend stamina when
-attacking armies in hexes adjacent to their structure. During combat, stamina impacts army combat effectiveness:
+attacking armies in hexes adjacent to their structure.
+
+## Daily Phases and Stamina
+
+Every Eternum Day is divided into six equal phases: early hours, dawn, morning, afternoon, dusk, and late evening.
+Stamina is granted instantly when a new Phase begins, and no other automatic stamina regeneration occurs.
+
+**Blitz Stamina System:**
+
+* **Day Length**: 6 minutes (1 minute per phase)
+* **Stamina Regeneration per Phase**: 20 stamina
+* **Total Stamina Regeneration per Day**: 120 stamina
+
+## Combat Stamina Mechanics
 
 ### Attacking Army
 
-The attacking army is the army initiating an instance of combat. Attacks require a minimum of **30 stamina**, so armies
-with less than 30 stamina cannot initiate an attack. Each additional stamina point above this threshold grants a **1%**
-damage bonus, up to a maximum of **+30%** damage at **60 stamina**. Additional stamina spend is not optional, so
-attacking armies will use all available stamina up to a maximum of **60** for any one attack. If the attacking army
-destroys the defending army, they gain **+30 stamina**.
+The attacking army is the army initiating an instance of combat. To begin a combat round, the attacker must spend **50
+stamina** (2.5 × stamina regen per phase). If the attacker does not have the full stamina cost, the attack command is
+rejected and no combat occurs.
 
 ### Defending Army
 
-The defending army is the army being attacked in an instance of combat. Defending armies rely on having stamina
-available to maintain full combat effectiveness. When attacked, defending armies incur a **1%** damage reduction for
-every stamina point below **30**. For example, if an army is attacked while they have **10 stamina**, they would deal
-**-20%** damage to the attacking army. The maximum penalty is **-30%** damage if stamina is completely depleted.
-Successfully defending an attack does not deplete stamina. Lords should manage their armies' stamina carefully, ensuring
-they retain enough reserves to remain effective against unexpected attacks.
+The defending army is the army being attacked in an instance of combat. The defender simultaneously spends **40
+stamina** (2.0 × stamina regen per phase). If the defender's current stamina is below this required threshold, they
+receive a **30% damage penalty** during that combat round.
 
 ## Biomes (Combat Effects)
 
@@ -2980,8 +3022,8 @@ standard and simple building modes.*
 ### Standard Mode
 
 This is the classic building experience. Construction requires a combination of labor and a particular set of resources
-as building materials. Standard mode is more complex and involves a greater number of materials in storage, however it
-is far more efficient overall.
+as building materials. Standard mode is more complex and involves a greater number of materials, however it is far more
+efficient overall.
 
 ### Simple Mode
 
@@ -3164,9 +3206,9 @@ have the same requirements in simple and standard mode.
 
 ### Economic Buildings
 
-These buildings define the utility of a Realm or Village, including food production, donkey production, population
-capacity, and storage capacity. All of these buildings can be constructed in either standard or simple mode, but have
-varying costs and population requirements:
+These buildings define the utility of a Realm or Village, including food production, donkey production, and population
+capacity. All of these buildings can be constructed in either standard or simple mode, but have varying costs and
+population requirements:
 
 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
   <BlitzBuildingCard
@@ -3193,21 +3235,6 @@ varying costs and population requirements:
     standardCosts={[
   { resource: 23, amount: 40 }, // Labor
   { resource: 3, amount: 60 }, // Wood
-]}
-  />
-
-  <BlitzBuildingCard
-    title="Storehouse"
-    image="/images/buildings/construction/storehouse.png"
-    buildingType={2}
-    description={["Increases storage capacity by 20,000 kg for each material"]}
-    simpleCosts={[
-  { resource: 23, amount: 480 }, // Labor
-]}
-    standardCosts={[
-  { resource: 23, amount: 60 }, // Labor
-  { resource: 3, amount: 90 }, // Wood
-  { resource: 4, amount: 60 }, // Copper
 ]}
   />
 
@@ -3449,10 +3476,10 @@ information on Blitz registration requirements will be made available prior to l
 
 ## Settling
 
-Realms are settled during the 1-hour 'Settling Phase' prior to the start of the game. During this phase, registered
-Lords must confirm their participation in the game, after which their three Realms will be placed in a randomly assigned
-position. Lords who do not confirm participation within this timeframe will forfeit their entry into the session,
-leaving a potential spawn position empty throughout the game.
+Realms can be settled as soon as the game officially starts. This will confirm a Lord's participation in the game and
+place their Realms in a randomised spawn position. If a Lord fails to settle their Realms, their spawn position will
+remain empty throughout the game and any entry fee paid during registration will be forfeit. Lords should settle their
+Realms as soon as possible after the game starts to avoid falling behind their neighbors.
 
 ### Settling Algorithm
 
@@ -3461,11 +3488,10 @@ for Lords to compete over. A single Hyperstructure marks the center of the map, 
 Hyperstructure 'rings' are spawned every 15 hexes until all players are accommodated. The details of Hyperstructure
 spawns are explained in greater detail in the [World Map](/blitz/worldmap-movement/worldmap) section.
 
-Once the size of the map and the number of Hyperstructures are determined, player positions are determined within the
-bounds of the Hyperstructure rings. While the order in which players are placed is randomised, the positioning is
-sequential and follows a rotational pattern to distribute Lords as evenly as possible and attempt to ensure equal
-opportunity in accessing the Hyperstructure objectives. The map structure and placement sequence for an example of 24
-players is visualized below:
+When the game starts, the size of the map and the number of Hyperstructures are finalized. Player positions are
+randomised within the bounds of the Hyperstructure rings, following a rotational pattern to distribute Lords as evenly
+as possible to ensure equal opportunity in accessing the Hyperstructure objectives. The map structure and placement
+sequence for an example of 24 players is visualized below:
 
 <img src="/images/gifs/blitz-map-build.gif" alt="Blitz map building sequence showing hyperstructure placement and player realm spawns" className="w-full rounded-lg my-6" />
 
@@ -3603,8 +3629,9 @@ import { ExplorationRewards } from "@/components/ExplorationRewards";
 
 Stamina is expended whenever an army moves between hexes, explores previously unrevealed areas, or launches an attack
 against enemy forces. Each of these actions has a specific stamina cost, making strategic planning essential to
-maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +30 stamina per Eternum Day. Each
-troop type possesses different maximum stamina capacities, outlined in the table below:
+maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +20 stamina per Phase (one
+minute), totaling +120 stamina per Eternum Day. Each troop type possesses different maximum stamina capacities, outlined
+in the table below:
 
 <BlitzTroopMovementTable />
 
@@ -3662,10 +3689,12 @@ field will also be burned.
 
 Lords may transfer troops from one army to another, provided that they are on adjacent hexes, the same troop type, and
 the same tier. To transfer troops from one army to another, or to a structure, the player first needs to select its army
-on the worldmap using left-click, then right-click on the target and select the Transfer -> Transfer Troops tab.
-Transferring troops from one army to another with lower stamina makes no change to the stamina of either army.
-Transferring from an army with lower stamina to an army with higher stamina will reduce the higher-stamina army to equal
-that of the lower stamina army.
+on the worldmap using left-click, then right-click on the target and select the Transfer -> Transfer Troops tab. Troops
+can be transferred between armies (and Realm defense slots) at any time, and transfers are not impacted by battle
+timers. However, in all instances of a troop transfer, the army that has received troops:
+
+* adopts the **lower** of the two armies' stamina values, and
+* adopts the **higher** of the two armies' battle timers.
 
 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
   <img src="/gifs/transfer-troops.gif" alt="Transfer Troops" />
@@ -3736,6 +3765,356 @@ activate the crate will receive **three** Relics directly into their inventory, 
 enemies do!
 
 <img src="/images/covers/blitz-relic-crate.png" alt="Relic Crate" className="w-full rounded-lg my-6" />
+
+
+
+---
+
+file: docs/pages/eternum/military/armies.mdx
+meta: {}
+
+import { RealmDefenseSlotsTable, WorldStructureDefenseSlotsTable } from "@/components/DefendingArmies";
+import { ETERNUM_CONFIG } from "@/utils/config";
+import { formatNumberWithCommas } from "@/utils/formatting";
+
+# ⚔️ Armies
+
+<img src="/images/covers/06.png" alt="Eternum World Map" className="w-full rounded-lg my-6" />
+
+In Season 1, individual armies consist of a single troop type and tier—streamlining combat strategy and simplifying
+interactions on the world map. Each hex can host only one army, so Lords must carefully manage their positioning and
+engagement opportunities.
+
+Each Realm and Village has a limited number of guard and field armies The number of armies can be increased by upgrading
+the Realm / Village level as explained in the [Realms](/eternum/realm-and-villages/realm) section. Each military
+building constructed on a Realm or Village also increases total field armies by 1 (up to a maximum of
+**+{ETERNUM_CONFIG().troop.limit.explorerMaxPartyCount-4}**). Lords can deploy armies from the Military tab in the Local
+view. The maximum size of an army is
+**{formatNumberWithCommas(ETERNUM_CONFIG().troop.limit.explorerAndGuardMaxTroopCount)}**.
+
+### Field Armies
+
+Field armies are used to project force on the world map, explore unknown territories, patrol borders, defend key areas,
+or march against your enemies. These armies are deployed onto one of the six hexes surrounding their parent Realm on the
+world map. If all hexes adjacent to the Realm are occupied, a field army cannot be deployed. Once deployed, these armies
+occupy a hex and traverse the world map based on the conditions outlined in the World Map & Movement section.
+
+Lords may direct their field armies to attack another army or structure on any adjacent hex by selecting the army with
+left-click, then right-clicking the target hex. When attacking a structure, the field army will engage in combat against
+any guard armies present.
+
+<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+  <img src="/gifs/create-explorer.gif" alt="Create Army" />
+
+  <em>Flow to create field army in the client</em>
+</div>
+
+### Guard Armies
+
+Guard armies do not appear on the world map; instead, they occupy defense slots visible in the Military tab of the Local
+view. When in the World view, Lords can observe the defensive capabilities of any structure by selecting a hex and
+opening up the Details tab.
+
+Unlike Realms and Villages, world structures have a static number of defence slots:
+
+<WorldStructureDefenseSlotsTable />
+
+<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+  <img src="/gifs/create-guard.gif" alt="Create Army" />
+
+  <em>Flow to create guard in the client</em>
+</div>
+
+When attacked, guard armies are targeted sequentially starting from the outermost occupied slot. If a guard army is
+destroyed, the slot that it occupied becomes unavailable for reinforcement for
+**{Math.floor(ETERNUM_CONFIG().troop.limit.guardResurrectionDelay / 3600)} hours**. Once all guard armies are defeated,
+the structure becomes vulnerable to being claimed by an adjacent field army (with the exception of Villages, which
+cannot be claimed). Lords can also direct their guard armies to launch attacks against adjacent hexes by selecting their
+structure on the worldmap, then right-clicking the target hex.
+
+<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+  <img src="/gifs/attack-from-structure.gif" alt="Attack field army" />
+
+  <em>Attack field army with structure</em>
+</div>
+
+
+
+---
+
+file: docs/pages/eternum/military/damage.mdx
+meta: {}
+
+# 💥 Damage
+
+import { DamageCalculation } from "@/components/DamageCalculation";
+
+## Damage Overview
+
+Damage is defined as the number of casualties dealt by one army against the other in an instance of combat. When combat
+is initiated (i.e. one army attacks another), damage for both the attacking and defending army is calculated based on a
+damage formula that considers troop numbers, troop tier, biome effects, stamina penalties, and battle timer penalties.
+
+## Combat Process
+
+When an army attacks another from an adjacent tile, the following sequence occurs:
+
+1. **Stamina Assessment**: The attacker must have sufficient stamina to engage in combat, the defender must have enough
+   to avoid a low-stamina damage penalty
+2. **Damage Calculation**: Damage is calculated for both combatants using the damage formula
+3. **Casualty Application**: Damage is applied simultaneously to both armies
+4. **Battle Timers**: Each combatant receives a battle timer, which prevents them from initiating new attacks while
+   active.
+5. **Refunds**: Damage-ratio refunds are calculated and applied to battle timers and stamina
+
+## Damage Calculation
+
+<DamageCalculation />
+
+## Battle Timers
+
+Immediately after damage is applied, each combatant receives a **battle timer** that prevents it from attacking an army
+or Realm until the timer expires. Armies are free to take any other action while the timer is active. The base duration
+is the length of a single Phase (ten minutes in Eternum). Timers for different armies are maintained independently of
+the world clock.
+
+If an army that currently has a battle timer is attacked by another army, it will deal 15% less damage during that
+combat round. This reduction is represented by the battle timer penalty modifier (T) in the damage equation and reflects
+the army's reduced combat readiness while recovering from previous engagements.
+
+## Damage-Ratio Refunds
+
+The combat system includes a refund mechanism designed to prevent smaller, weaker armies from indefinitely stalling
+larger forces. When combat is significantly imbalanced, the dominant army receives:
+
+* **Stamina Refunds**: Based on the damage ratio between armies
+* **Battle Timer Reduction**: Shorter cooldowns for overwhelming victories
+
+### Refund Calculation
+
+The system calculates a **Refund Factor** based on the damage ratio between armies **x** and **y**:
+
+* **Damage Ratio (R<sub>x</sub>)**: **x**'s damage ÷ **y**'s damage
+
+* **Refund Factor f(R<sub>x</sub>)**: determines the amount of stamina refunded and battle timer reduction
+
+* **If R<sub>x</sub> ≥ 10**: f(R<sub>x</sub>) = 1 (maximum refund)
+
+* **If R<sub>x</sub> ≤ 2.5**: f(R<sub>x</sub>) = 0 (no refund)
+
+* **If 2.5 \< R<sub>x</sub> \< 10**: f(R<sub>x</sub>) = (R<sub>x</sub> - 2.5) ÷ (10 - 2.5)
+
+For army **x**:
+
+* **Refunded Stamina**: (combat cost) × f(R<sub>x</sub>), rounded up
+* **Battle Timer Length**: (base timer) × \[1 - f(R<sub>x</sub>)]
+
+The same calculations are applied for army **y**
+
+
+
+---
+
+file: docs/pages/eternum/military/raiding.mdx
+meta: {}
+
+import { ETERNUM_CONFIG } from "@/utils/config";
+import { resource } from "@/components/styles";
+import { RaidableResources } from "@/components/RaidableResources";
+import { importantNote } from "@/components/styles";
+
+# 💰 Raiding
+
+Raiding allows field armies to attempt theft of valuable resources directly from an adjacent target structure, without
+first having to battle through enemy guard armies. Lords can direct their armies to complete this action by selecting
+the 'raid' action when attacking an enemy structure.
+
+![Raiding interface showing an army preparing to raid a structure](/screenshots/raiding.png)
+
+## Raid Requirements
+
+Before attempting a raid, your army must meet the following requirements:
+
+* Have at least **{ETERNUM_CONFIG().troop.stamina.staminaAttackReq}** stamina
+* Be adjacent to the target structure
+* Structure must contain raidable resources
+
+## Raidable Materials
+
+Raidable materials are stolen based on rarity, with the most valuable taken first. Rarer materials are prioritized
+during raids:
+
+<RaidableResources />
+
+<div style={importantNote.container}>
+  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
+  <p style={importantNote.content}>No materials are safe from pillagers, $LORDS tokens can be raided as well</p>
+</div>
+
+## Raid Success
+
+The success chance of a raid is determined by the following conditions:
+
+| Condition                                                                  | Raid Success Chance                           |
+| -------------------------------------------------------------------------- | --------------------------------------------- |
+| Raiding army's total damage \< **50%** of combined guard armies' damage    | **0%**                                        |
+| Raiding army's total damage > **200%** of combined guard armies' damage    | **100%**                                      |
+| Raiding army's damage between **50%** and **200%** of guard armies' damage | Scales proportionally from **0%** to **100%** |
+| No guard armies present                                                    | **100%** (automatic success)                  |
+
+Upon a successful raid, resources are transferred directly to the raiding army's inventory up to its carrying capacity.
+It is only possible to steal food, resources, and ancient fragments from a raid, tokens such as $LORDS and $STRK can
+only be stolen from another player by claiming a Realm into which tokens have been bridged or transferred.
+
+## Damage in Raids
+
+At the conclusion of a raid, regardless of whether it was successful or not, damage is calculated for both the raiding
+army and the guard armies. This damage is significantly reduced by a raid damage modifier, simulating the concept of a
+pillaging and looting event as opposed to a full-scale battle. The raid damage modifier reduces damage to
+**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of that which would be applied in an attack action.
+
+Damage from a raiding action is calculated according to the following rules:
+
+* The raiding army troop total is split evenly across each guard army.
+* A standard combat damage calculation is then applied to each combat instance.
+* Each damage number is multiplied by the raid damage modifier before casualties are applied.
+
+### Example:
+
+Consider **1000** raiders attacking a structure with two occupied guard slots:
+
+* Slot 1: **400** troops
+* Slot 2: **600** troops
+
+The raiding army is split into two groups of **500** troops, each attacking one guard slot. Assume that the damage
+calculations result in the following:
+
+* Raiding army deals **180** damage to Slot 1 and **150** damage to Slot 2 = **330** total damage
+* Guard armies deal **120** damage from Slot 1 and **200** damage from Slot 2 = **320** total damage.
+
+Applying the raid damage modifier, actual losses become:
+
+* Guards: Slot 1 loses **36** troops (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of 180), Slot 2
+  loses **30** troops (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of 150).
+* Raiders: Lose **64** troops total (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of 320).
+
+## Raid Outcomes
+
+After a raid attempt, one of two outcomes will occur:
+
+1. **Successful Raid**
+
+   * Resources are transferred to your army's inventory
+   * Resources are limited by your army's carrying capacity
+   * Both armies suffer reduced casualties (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of normal
+     combat damage)
+   * Your army's stamina is reduced by **{ETERNUM_CONFIG().troop.stamina.staminaAttackReq}**
+
+2. **Failed Raid**
+   * No resources are stolen
+   * Both armies still suffer reduced casualties (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of
+     normal combat damage)
+   * Your army's stamina is still reduced by **{ETERNUM_CONFIG().troop.stamina.staminaAttackReq}**
+
+The outcome is determined by comparing your army's total damage output against the combined damage output of all guard
+armies present. If no guard armies are present, the raid automatically succeeds.
+
+
+
+---
+
+file: docs/pages/eternum/military/stamina-and-biomes.mdx
+meta: {}
+
+import { BiomeCombat } from "@/components/BiomeCombat";
+
+# ⚡ Stamina & Biome Effects
+
+## Stamina
+
+Stamina is a vital resource governing the mobility and effectiveness of armies. Each deployed army possesses a maximum
+stamina value determined by its troop type and tier as explained above. Field armies expend stamina when moving,
+exploring unknown hexes, or engaging in combat against other armies and structures. Guard armies only expend stamina
+when attacking armies in hexes adjacent to their structure.
+
+## Daily Phases and Stamina
+
+Every Eternum Day is divided into six equal phases: early hours, dawn, morning, afternoon, dusk, and late evening.
+Stamina is granted instantly when a new Phase begins, and no other automatic stamina regeneration occurs.
+
+**Eternum Stamina System:**
+
+* **Day Length**: 60 minutes (10 minutes per phase)
+* **Stamina Regeneration per Phase**: 2 stamina
+* **Total Stamina Regeneration per Day**: 12 stamina
+
+## Combat Stamina Mechanics
+
+### Attacking Army
+
+The attacking army is the army initiating an instance of combat. To begin a combat round, the attacker must spend **5
+stamina** (2.5 × stamina regen per phase). If the attacker does not have the full stamina cost, the attack command is
+rejected and no combat occurs.
+
+### Defending Army
+
+The defending army is the army being attacked in an instance of combat. The defender simultaneously spends **4 stamina**
+(2 × stamina regen per phase). If the defender's current stamina is below this required threshold, they receive a **30%
+damage penalty** during that combat round.
+
+## Biomes (Combat Effects)
+
+The combat effectiveness of different troop types is impacted by the biome on which the defending army is located when
+engaging in battle. Armies can gain either a combat advantage (**+30%** damage), disadvantage (**-30%** damage), or no
+effect, depending on their affinity with a particular biome. To summarise these combat modifiers for each troop type:
+
+⚔️️ ️️️**Knights** excel in forests, leveraging cover and mobility, but suffer reduced effectiveness in deserts,
+beaches, and snow-covered regions where their heavy armour and weapons can make it difficult to move on the soft ground
+cover. Knights are equally advantaged, disadvantaged or not affected across all biome types.
+
+🏹 **Crossbowmen** benefit from open seas and unstable terrains (such as beaches and snow), where they can remain static
+and make the most of their ranged capabilities. However, they will be disadvantaged in flat, open terrain with no cover
+or opportunity for concealment. Crossbowmen are the least advantaged, but also the least disadvantaged by biome
+modifiers of the three troop types.
+
+🐴 ️**Paladins** dominate open, flat terrain where mounted units thrive, but are hindered in dense forests and on open
+water where their mounted capabilities are negated. They are the most advantaged, but also the most disadvantaged troop
+type. In combination with the biome effects on stamina use, Paladins are less versatile than other Knights or
+Crossbowmen, but are devastatingly effective in the right situations.
+
+**Note: The scorched biome applies +30% damage to all troop types, representing the additional casualties sustained from
+battling in an inhospitable environment.**
+
+<BiomeCombat />
+
+
+
+---
+
+file: docs/pages/eternum/military/troop-tiers.mdx
+meta: {}
+
+import { TroopTiers, TroopTierDamageStats } from "@/components/TroopTiers";
+import { MaxStaminaTable } from "@/components/TroopMovementTable";
+
+# 🛡️ Troop Tiers
+
+Troops in Eternum come in three distinct tiers: T1, T2, and T3. Tier 1 (T1) represents basic troops, while T2 and T3
+troops are more advanced, offering significantly increased combat strength and stamina.
+
+Higher-tier troops are produced by constructing specialized buildings that require rare resources and lower-tier troops
+as inputs:
+
+* Two T1 troops combine to produce one T2 troop
+* Two T2 troops combine to produce one T3 troop
+
+Each troop tier provides escalating advantages in terms of damage output and stamina.
+
+<TroopTiers />
+
+<TroopTierDamageStats />
+
+<MaxStaminaTable />
 
 
 
@@ -4441,428 +4820,6 @@ Key Notes:
 
 ---
 
-file: docs/pages/overview/chests/contents.mdx
-meta: {
-  "title": "Chest Contents",
-  "description": "Understanding the contents of Loot Chests"
-}
-
-import EternumRewardsChestTable from "@/components/EternumRewardsChestTable";
-
-# 📜 Chest Contents
-
-Each Loot Chest contains three items. For each of the three item slots, an independent roll is performed against the
-item list for that Loot Chest type. Every item on the list has a defined draw chance. Because each roll is independent,
-Lords may receive multiple copies of the same item in a single Loot Chest.
-
-As seasons pass and new epochs of Loot Chest emerge, new chests of the same type (but bearing the mark of a new epoch)
-may be discovered. Loot Chest item lists are defined by both the Loot Chest type and the epoch from which they
-originated. So the items that can potentially be drawn from an Eternum Rewards Chest from epoch 2 are different to those
-drawn from an epoch 1 version of that chest.
-
-## Loot Chest Item Lists
-
-The following item lists contain information on the items that can potentially be drawn from the various types of Loot
-Chest in the Realms ecosystem. Each item is defined by:
-
-* **Item Name**
-* **Epoch Item Number** - the ID of unique items within an Epoch, the numbering starts again from 1 for each new epoch
-  (consider each epoch of items as a separate collection).
-* **Description** - a basic description, including the the item set it is part of (if any).
-* **Rarity** - the relative rarity of the item, according to the designed item supply.
-* **Type** - the type of item (i.e. the 'slot' that the cosmetic occupies when outfitting a Realm).
-* **Troop Type** - whether the cosmetic item is relevant to a particular type of troop (Knight, Crossbowman, or
-  Paladin).
-* **Draw Chance** - the percentage chance of rolling this item on any of the three possible draws per Loot Chest.
-
-### Eternum Rewards Chest
-
-<div style={{ textAlign: "center" }}>
-  <img src="/images/loot-chests/eternum-chest.png" alt="Eternum Rewards Chest" style={{ width: "16.67%", height: "auto" }} />
-</div>
-
-The Eternum Rewards Chest can contain three items from the following list:
-
-<EternumRewardsChestTable />
-
-### Blitz Rewards Chest
-
-*Work in progress...*
-
-### Elite Blitz Rewards Chest
-
-*Work in progress...*
-
-### Relic Chest
-
-*Work in progress...*
-
-
-
----
-
-file: docs/pages/overview/chests/cosmetics.mdx
-meta: {
-  "title": "Cosmetic Items",
-  "description": "Understanding cosmetic items in Loot Chests"
-}
-
-# 🎨 Cosmetic Items
-
-*Work in progress...*
-
-
-
----
-
-file: docs/pages/overview/chests/loot-chests.mdx
-meta: {
-  "title": "Loot Chests",
-  "description": "Understanding Loot Chests in the Realmverse"
-}
-
-import { importantNote } from "../../../components/styles";
-
-# 🎁 Loot Chests
-
-Loot Chests are reward containers that Lords can earn through various activities in the ecosystem. These chests are
-primarily rewarded for achievements and high-scoring gameplay and contain advantageous consumables or flashy cosmetic
-items. In their sealed (unopened) form, they can be traded on the
-[Loot Chest Marketplace](https://empire.realms.world/trade/loot-chests).
-
-The secrets of the Loot Chests are now revealed and the secrets of their opening mechanism have been unlocked. Lords can
-find more detail on the contents of each Loot Chest type in the [Chest Contents](/overview/chests/contents) section, and
-open Loot Chests in the [Loot Chest Vault](https://empire.realms.world/vault).
-
-## Epochs
-
-Epochs mark the distinct eras of gameplay and development. An epoch begins with the start of each new Eternum season and
-ends with the start of the next. Each Loot Chest carries the mark of its epoch, defining not only when it was earned but
-also the specific rewards contained within. Chests from different epochs therefore maintain their unique character over
-time, and can be opened or left sealed at the owner's discretion (as some Lords may wish to speculate on long-term
-sealed chest value).
-
-## Chest Types in Epoch 1
-
-The current epoch introduces four distinct chest types with varying contents, each obtained through different gameplay
-experiences within the ecosystem.
-
-**Eternum Rewards Chest** - These premium chests were earned through participation and success in the flagship seasonal
-game mode. 2,244 Eternum Rewards Chests were distributed to players of Eternum Season 1 on the basis of their
-achievement score. There will be no further issuance of these chests in Epoch 1.
-
-**Blitz Rewards Chest** - Fast-paced competition in Series 1 Blitz games will yield these chests (Warrior and Elite
-bracket only).
-
-**Elite Blitz Rewards Chest** - The highest tier of Blitz competition produces these exclusive chests, reserved for
-Lords who prove themselves in Elite bracket games.
-
-**Relic Chest** - These mysterious containers hold various Relics, consumables that can give Lords an edge in
-competition when used correctly. They can be earned through participation in any Blitz bracket and through other
-yet-to-be-announced interactions in the ecosystem.
-
-<div style={importantNote.container}>
-  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
-
-  <p style={importantNote.content}>
-    Loot Chests are a feature in development. Keep an eye out for announcements in the Realms Discord relating to Loot
-    Chest rewards. This section will be updated as more information is made available to the community.
-  </p>
-</div>
-
-
-
----
-
-file: docs/pages/eternum/military/armies.mdx
-meta: {}
-
-import { RealmDefenseSlotsTable, WorldStructureDefenseSlotsTable } from "@/components/DefendingArmies";
-import { ETERNUM_CONFIG } from "@/utils/config";
-import { formatNumberWithCommas } from "@/utils/formatting";
-
-# ⚔️ Armies
-
-<img src="/images/covers/06.png" alt="Eternum World Map" className="w-full rounded-lg my-6" />
-
-In Season 1, individual armies consist of a single troop type and tier—streamlining combat strategy and simplifying
-interactions on the world map. Each hex can host only one army, so Lords must carefully manage their positioning and
-engagement opportunities.
-
-Each Realm and Village has a limited number of guard and field armies The number of armies can be increased by upgrading
-the Realm / Village level as explained in the [Realms](/eternum/realm-and-villages/realm) section. Each military
-building constructed on a Realm or Village also increases total field armies by 1 (up to a maximum of
-**+{ETERNUM_CONFIG().troop.limit.explorerMaxPartyCount-4}**). Lords can deploy armies from the Military tab in the Local
-view. The maximum size of an army is
-**{formatNumberWithCommas(ETERNUM_CONFIG().troop.limit.explorerAndGuardMaxTroopCount)}**.
-
-### Field Armies
-
-Field armies are used to project force on the world map, explore unknown territories, patrol borders, defend key areas,
-or march against your enemies. These armies are deployed onto one of the six hexes surrounding their parent Realm on the
-world map. If all hexes adjacent to the Realm are occupied, a field army cannot be deployed. Once deployed, these armies
-occupy a hex and traverse the world map based on the conditions outlined in the World Map & Movement section.
-
-Lords may direct their field armies to attack another army or structure on any adjacent hex by selecting the army with
-left-click, then right-clicking the target hex. When attacking a structure, the field army will engage in combat against
-any guard armies present.
-
-<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-  <img src="/gifs/create-explorer.gif" alt="Create Army" />
-
-  <em>Flow to create field army in the client</em>
-</div>
-
-### Guard Armies
-
-Guard armies do not appear on the world map; instead, they occupy defense slots visible in the Military tab of the Local
-view. When in the World view, Lords can observe the defensive capabilities of any structure by selecting a hex and
-opening up the Details tab.
-
-Unlike Realms and Villages, world structures have a static number of defence slots:
-
-<WorldStructureDefenseSlotsTable />
-
-<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-  <img src="/gifs/create-guard.gif" alt="Create Army" />
-
-  <em>Flow to create guard in the client</em>
-</div>
-
-When attacked, guard armies are targeted sequentially starting from the outermost occupied slot. If a guard army is
-destroyed, the slot that it occupied becomes unavailable for reinforcement for
-**{Math.floor(ETERNUM_CONFIG().troop.limit.guardResurrectionDelay / 3600)} hours**. Once all guard armies are defeated,
-the structure becomes vulnerable to being claimed by an adjacent field army (with the exception of Villages, which
-cannot be claimed). Lords can also direct their guard armies to launch attacks against adjacent hexes by selecting their
-structure on the worldmap, then right-clicking the target hex.
-
-<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-  <img src="/gifs/attack-from-structure.gif" alt="Attack field army" />
-
-  <em>Attack field army with structure</em>
-</div>
-
-
-
----
-
-file: docs/pages/eternum/military/damage.mdx
-meta: {}
-
-# 💥 Damage
-
-import { DamageCalculation } from "@/components/DamageCalculation";
-
-## Damage Overview
-
-Damage is defined as the number of casualties dealt by one army against the other in an instance of combat. When combat
-is initiated (i.e. one army attacks another), damage for both the attacking and defending army is calculated based on
-the number of troops, troop tier, stamina, and biome bonuses. Damage is then simultaneously inflicted by both sides.
-Battles can last multiple rounds (requiring multiple combat instances) depending on the relative strength and number of
-troops involved. Armies with higher-tier troops deal significantly more damage. However, careful management of troop
-numbers, stamina, and biome positioning can enable lower-tier armies to overcome stronger opponents.
-
-<DamageCalculation />
-
-
-
----
-
-file: docs/pages/eternum/military/raiding.mdx
-meta: {}
-
-import { ETERNUM_CONFIG } from "@/utils/config";
-import { resource } from "@/components/styles";
-import { RaidableResources } from "@/components/RaidableResources";
-import { importantNote } from "@/components/styles";
-
-# 💰 Raiding
-
-Raiding allows field armies to attempt theft of valuable resources directly from an adjacent target structure, without
-first having to battle through enemy guard armies. Lords can direct their armies to complete this action by selecting
-the 'raid' action when attacking an enemy structure.
-
-![Raiding interface showing an army preparing to raid a structure](/screenshots/raiding.png)
-
-## Raid Requirements
-
-Before attempting a raid, your army must meet the following requirements:
-
-* Have at least **{ETERNUM_CONFIG().troop.stamina.staminaAttackReq}** stamina
-* Be adjacent to the target structure
-* Structure must contain raidable resources
-
-## Raidable Materials
-
-Raidable materials are stolen based on rarity, with the most valuable taken first. Rarer materials are prioritized
-during raids:
-
-<RaidableResources />
-
-<div style={importantNote.container}>
-  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
-  <p style={importantNote.content}>No materials are safe from pillagers, $LORDS tokens can be raided as well</p>
-</div>
-
-## Raid Success
-
-The success chance of a raid is determined by the following conditions:
-
-| Condition                                                                  | Raid Success Chance                           |
-| -------------------------------------------------------------------------- | --------------------------------------------- |
-| Raiding army's total damage \< **50%** of combined guard armies' damage    | **0%**                                        |
-| Raiding army's total damage > **200%** of combined guard armies' damage    | **100%**                                      |
-| Raiding army's damage between **50%** and **200%** of guard armies' damage | Scales proportionally from **0%** to **100%** |
-| No guard armies present                                                    | **100%** (automatic success)                  |
-
-Upon a successful raid, resources are transferred directly to the raiding army's inventory up to its carrying capacity.
-It is only possible to steal food, resources, and ancient fragments from a raid, tokens such as $LORDS and $STRK can
-only be stolen from another player by claiming a Realm into which tokens have been bridged or transferred.
-
-## Damage in Raids
-
-At the conclusion of a raid, regardless of whether it was successful or not, damage is calculated for both the raiding
-army and the guard armies. This damage is significantly reduced by a raid damage modifier, simulating the concept of a
-pillaging and looting event as opposed to a full-scale battle. The raid damage modifier reduces damage to
-**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of that which would be applied in an attack action.
-
-Damage from a raiding action is calculated according to the following rules:
-
-* The raiding army troop total is split evenly across each guard army.
-* A standard combat damage calculation is then applied to each combat instance.
-* Each damage number is multiplied by the raid damage modifier before casualties are applied.
-
-### Example:
-
-Consider **1000** raiders attacking a structure with two occupied guard slots:
-
-* Slot 1: **400** troops
-* Slot 2: **600** troops
-
-The raiding army is split into two groups of **500** troops, each attacking one guard slot. Assume that the damage
-calculations result in the following:
-
-* Raiding army deals **180** damage to Slot 1 and **150** damage to Slot 2 = **330** total damage
-* Guard armies deal **120** damage from Slot 1 and **200** damage from Slot 2 = **320** total damage.
-
-Applying the raid damage modifier, actual losses become:
-
-* Guards: Slot 1 loses **36** troops (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of 180), Slot 2
-  loses **30** troops (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of 150).
-* Raiders: Lose **64** troops total (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of 320).
-
-## Raid Outcomes
-
-After a raid attempt, one of two outcomes will occur:
-
-1. **Successful Raid**
-
-   * Resources are transferred to your army's inventory
-   * Resources are limited by your army's carrying capacity
-   * Both armies suffer reduced casualties (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of normal
-     combat damage)
-   * Your army's stamina is reduced by **{ETERNUM_CONFIG().troop.stamina.staminaAttackReq}**
-
-2. **Failed Raid**
-   * No resources are stolen
-   * Both armies still suffer reduced casualties (**{ETERNUM_CONFIG().troop.damage.damageRaidPercentNum/100}%** of
-     normal combat damage)
-   * Your army's stamina is still reduced by **{ETERNUM_CONFIG().troop.stamina.staminaAttackReq}**
-
-The outcome is determined by comparing your army's total damage output against the combined damage output of all guard
-armies present. If no guard armies are present, the raid automatically succeeds.
-
-
-
----
-
-file: docs/pages/eternum/military/stamina-and-biomes.mdx
-meta: {}
-
-import { BiomeCombat } from "@/components/BiomeCombat";
-
-# ⚡ Stamina & Biome Effects
-
-## Stamina
-
-Stamina is a vital resource governing the mobility and effectiveness of armies. Each deployed army possesses a maximum
-stamina value determined by its troop type and tier as explained above. Field armies expend stamina when moving,
-exploring unknown hexes, or engaging in combat against other armies and structures. Guard armies only expend stamina
-when attacking armies in hexes adjacent to their structure. During combat, stamina impacts army combat effectiveness:
-
-### Attacking Army (the army initiating combat)
-
-Attacks require a minimum of **30 stamina**, so armies with less than 30 stamina cannot initiate an attack. Each
-additional stamina point above this threshold grants a **1%** damage bonus, up to a maximum of **+30%** damage at **60
-stamina**. Additional stamina spend is not optional, so attacking armies will use all available stamina up to a maximum
-of **60** for any one attack. If the attacking army destroys the defending army, they gain **+30 stamina**.
-
-### Defending Army (the army being attacked)
-
-Defending armies rely on having stamina available to maintain full combat effectiveness. When attacked, defending armies
-incur a **1%** damage reduction for every stamina point below **30**. For example, if an army is attacked while they
-have **10 stamina**, they would deal **-20%** damage to the attacking army. The maximum penalty is **-30%** damage if
-stamina is completely depleted. Successfully defending an attack does not deplete stamina. Lords should manage their
-armies' stamina carefully, ensuring they retain enough reserves to remain effective against unexpected attacks.
-
-## Biomes (Combat Effects)
-
-The combat effectiveness of different troop types is impacted by the biome on which the defending army is located when
-engaging in battle. Armies can gain either a combat advantage (**+30%** damage), disadvantage (**-30%** damage), or no
-effect, depending on their affinity with a particular biome. To summarise these combat modifiers for each troop type:
-
-⚔️️ ️️️**Knights** excel in forests, leveraging cover and mobility, but suffer reduced effectiveness in deserts,
-beaches, and snow-covered regions where their heavy armour and weapons can make it difficult to move on the soft ground
-cover. Knights are equally advantaged, disadvantaged or not affected across all biome types.
-
-🏹 **Crossbowmen** benefit from open seas and unstable terrains (such as beaches and snow), where they can remain static
-and make the most of their ranged capabilities. However, they will be disadvantaged in flat, open terrain with no cover
-or opportunity for concealment. Crossbowmen are the least advantaged, but also the least disadvantaged by biome
-modifiers of the three troop types.
-
-🐴 ️**Paladins** dominate open, flat terrain where mounted units thrive, but are hindered in dense forests and on open
-water where their mounted capabilities are negated. They are the most advantaged, but also the most disadvantaged troop
-type. In combination with the biome effects on stamina use, Paladins are less versatile than other Knights or
-Crossbowmen, but are devastatingly effective in the right situations.
-
-**Note: The scorched biome applies +30% damage to all troop types, representing the additional casualties sustained from
-battling in an inhospitable environment.**
-
-<BiomeCombat />
-
-
-
----
-
-file: docs/pages/eternum/military/troop-tiers.mdx
-meta: {}
-
-import { TroopTiers, TroopTierDamageStats } from "@/components/TroopTiers";
-import { MaxStaminaTable } from "@/components/TroopMovementTable";
-
-# 🛡️ Troop Tiers
-
-Troops in Eternum come in three distinct tiers: T1, T2, and T3. Tier 1 (T1) represents basic troops, while T2 and T3
-troops are more advanced, offering significantly increased combat strength and stamina.
-
-Higher-tier troops are produced by constructing specialized buildings that require rare resources and lower-tier troops
-as inputs:
-
-* Two T1 troops combine to produce one T2 troop
-* Two T2 troops combine to produce one T3 troop
-
-Each troop tier provides escalating advantages in terms of damage output and stamina.
-
-<TroopTiers />
-
-<TroopTierDamageStats />
-
-<MaxStaminaTable />
-
-
-
----
-
 file: docs/pages/eternum/resources/automation.mdx
 meta: {}
 
@@ -5544,8 +5501,9 @@ stamina, a critical resource Lords must carefully manage.
 
 Stamina is expended whenever an army moves between hexes, explores previously unrevealed areas, or launches an attack
 against enemy forces. Each of these actions has a specific stamina cost, making strategic planning essential to
-maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +20 stamina per Eternum Day. Each
-troop type possesses different maximum stamina capacities, outlined in the table below:
+maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +2 stamina per Phase (10 minutes),
+totaling +12 stamina per Eternum Day. Each troop type possesses different maximum stamina capacities, outlined in the
+table below:
 
 <TroopMovementTable />
 
@@ -5596,10 +5554,12 @@ armies are well-prepared and capable of defending themselves in unexpected comba
 
 Lords may transfer troops from one army to another, provided that they are on adjacent hexes, the same troop type, and
 the same tier. To transfer troops from one army to another, or to a structure, the player first needs to select its army
-on the worldmap using left-click, then right-click on the target and select the Transfer -> Transfer Troops tab.
-Transferring troops from one army to another with lower stamina makes no change to the stamina of either army.
-Transferring from an army with lower stamina to an army with higher stamina will reduce the higher-stamina army to equal
-that of the lower stamina army.
+on the worldmap using left-click, then right-click on the target and select the Transfer -> Transfer Troops tab. Troops
+can be transferred between armies (and Realm defense slots) at any time, and transfers are not impacted by battle
+timers. However, in all instances of a troop transfer, the army that has received troops:
+
+* adopts the **lower** of the two armies' stamina values, and
+* adopts the **higher** of the two armies' battle timers.
 
 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
   <img src="/gifs/transfer-troops.gif" alt="Transfer Troops" />
@@ -5642,4 +5602,172 @@ explained in more detail in the [Military section](/eternum/military/stamina-and
 potential to enhance or impede army maneuvers, as the various biomes impact the stamina consumption of each troop type
 differently as they move between hexes—this is explained further in the
 [Movement & Exploration](/eternum/worldmap-movement/movement) section below.
+
+
+
+---
+
+file: docs/pages/overview/chests/contents.mdx
+meta: {
+  "title": "Chest Contents",
+  "description": "Understanding the contents of Loot Chests"
+}
+
+import EternumRewardsChestTable from "@/components/EternumRewardsChestTable";
+
+# 📜 Chest Contents
+
+Each Loot Chest contains three items. For each of the three item slots, an independent roll is performed against the
+item list for that Loot Chest type. Every item on the list has a defined draw chance. Because each roll is independent,
+Lords may receive multiple copies of the same item in a single Loot Chest.
+
+As seasons pass and new epochs of Loot Chest emerge, new chests of the same type (but bearing the mark of a new epoch)
+may be discovered. Loot Chest item lists are defined by both the Loot Chest type and the epoch from which they
+originated. So the items that can potentially be drawn from an Eternum Rewards Chest from epoch 2 are different to those
+drawn from an epoch 1 version of that chest.
+
+While most types of Loot Chests contain cosmetic items, Relic Chests contain consumable items that can be used in Blitz
+and Eternum to provide minor boosts, giving Lords slight advantages over their opponents when used strategically.
+
+*Note: While relics can currently be found in [Relic Crates](/blitz/worldmap-movement/worldmap#relic-crates) in Blitz,
+onchain Relic Chests are still in development. These sections will be updated with more information as it becomes
+available.*
+
+## Loot Chest Item Lists
+
+The following item lists contain information on the cosmetic items that can potentially be drawn from the various types
+of Loot Chest in the Realms ecosystem. Each cosmetic item is defined by:
+
+* **Item Name**
+* **Epoch Item Number** - the ID of unique items within an Epoch, the numbering starts again from 1 for each new epoch
+  (consider each epoch of items as a separate collection).
+* **Description** - a basic description, including the item set it is part of (if any).
+* **Rarity** - the relative rarity of the item, according to the designed item supply.
+* **Type** - the type of item (i.e. the 'slot' that the cosmetic occupies when outfitting a Realm).
+* **Troop Type** - whether the cosmetic item is relevant to a particular type of troop (Knight, Crossbowman, or
+  Paladin).
+* **Draw Chance** - the percentage chance of rolling this item on any of the three possible draws per Loot Chest.
+
+### Eternum Rewards Chest
+
+The Eternum Rewards Chest can contain three items from the following list:
+
+<EternumRewardsChestTable />
+
+### Blitz Rewards Chest
+
+*Work in progress...*
+
+### Elite Blitz Rewards Chest
+
+*Work in progress...*
+
+## Relic Chests
+
+*Work in progress...*
+
+
+
+---
+
+file: docs/pages/overview/chests/cosmetics.mdx
+meta: {
+  "title": "Cosmetic Items",
+  "description": "Understanding cosmetic items in Loot Chests"
+}
+
+# 🎨 Cosmetic Items
+
+## Equipping Cosmetic Items
+
+The ability to equip cosmetic items in Blitz and Eternum is still in development. However, owners (and aspiring owners)
+of cosmetic items should note the following design intentions, as they are relevant to understanding cosmetic NFT
+collection design and secondary-market valuation.
+
+* **14 slots** - Each Realm has 14 available 'slots' that cosmetic items can be equipped to. These include:
+
+  * 1 x Realm Title
+  * 1 x Realm Aura
+  * 1 x Realm Skin
+  * 1 x Troop Aura
+  * 3 x Troop Primary (One for each troop type)
+  * 3 x Troop Secondary (One for each troop type)
+  * 3 x Troop Armor (One for each troop type)
+  * 1 x Troop Base
+
+* **Items with multiple models** - Equipped Realm Skins and Troop Armors can display evolving models in-game:
+
+  * Realm Skins - one for each Realm level (Settlement, City, Kingdom, Empire)
+  * Troop Armor - one for each troop tier (T1, T2, T3)
+
+* **Troop skins on all armies** - Troop cosmetics equipped to a Realm will apply to all armies deployed from that Realm
+  (items with a troop type only apply to that troop type)
+
+* **One item per slot** - A cosmetic NFT can only be equipped to a slot on a single Realm. If Lords wish to have
+  multiple Realms with the same cosmetic item, they will require multiple copies of that NFT
+
+* **No stakes** - While a Realm with cosmetics equipped may be captured by other players in-game, the cosmetic NFT will
+  remain the property of the original owner
+
+
+
+---
+
+file: docs/pages/overview/chests/loot-chests.mdx
+meta: {
+  "title": "Loot Chests",
+  "description": "Understanding Loot Chests in the Realmverse"
+}
+
+import { importantNote } from "../../../components/styles";
+
+# 🎁 Loot Chests
+
+Loot Chests are reward containers that Lords can earn through various activities in the ecosystem. These chests are
+primarily rewarded for achievements and high-scoring gameplay and contain advantageous consumables or flashy cosmetic
+items. In their sealed (unopened) form, they can be traded on the
+[Loot Chest Marketplace](https://empire.realms.world/trade/loot-chests).
+
+The secrets of the Loot Chests are now revealed and the secrets of their opening mechanism have been unlocked. Lords can
+find more detail on the contents of each Loot Chest type in the [Chest Contents](/overview/chests/contents) section, and
+open Loot Chests in the [Loot Chest Vault](https://empire.realms.world/loot-chests).
+
+## Epochs
+
+Epochs mark the distinct eras of gameplay and development. An epoch begins with the start of each new Eternum season and
+ends with the start of the next. Each Loot Chest carries the mark of its epoch, defining not only when it was earned but
+also the specific rewards contained within. Chests from different epochs therefore maintain their unique character over
+time, and can be opened or left sealed at the owner's discretion (as some Lords may wish to speculate on long-term
+sealed chest value).
+
+## Chest Types in Epoch 1
+
+The current epoch introduces four distinct chest types with varying contents, each obtained through different gameplay
+experiences within the ecosystem.
+
+**Eternum Rewards Chest** - These premium chests were earned through participation and success in the flagship seasonal
+game mode. 2,244 Eternum Rewards Chests were distributed to players of Eternum Season 1 on the basis of their
+achievement score. There will be no further issuance of these chests in Epoch 1.
+
+<div style={{ textAlign: "center" }}>
+  <img src="/images/loot-chests/eternum-chest.png" alt="Eternum Rewards Chest" style={{ width: "25%", height: "auto", display: "block", margin: "0 auto" }} />
+</div>
+
+**Blitz Rewards Chest** - Success in Series 1 Blitz games will yield these chests (Warrior and Elite bracket only).
+
+**Elite Blitz Rewards Chest** - The highest tier of Blitz competition produces these exclusive chests, reserved for
+Lords who prove themselves in Elite bracket games.
+
+**Relic Chest** - These mysterious containers hold various Relics, consumables that can give Lords an edge in
+competition when used correctly. They can be earned through participation in any Blitz bracket and through other
+yet-to-be-announced interactions in the ecosystem.
+
+<div style={importantNote.container}>
+  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
+
+  <p style={importantNote.content}>
+    Loot Chests are a feature in development. Keep an eye out for announcements in the Realms Discord relating to Loot
+    Chest rewards. This section will be updated as more information is made available to the community.
+  </p>
+</div>
 

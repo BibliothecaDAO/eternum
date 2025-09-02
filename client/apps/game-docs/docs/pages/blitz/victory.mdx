@@ -14,8 +14,23 @@ map and control World Structures. Victory Points are awarded for:
 - Claiming Hyperstructures
 - Holding Hyperstructures throughout the game
 
-_Note: World Structure and Hyperstructure claim VP are only rewarded the first time a structure is captured (from bandit
-forces)._
+_Note: VP for claiming World Structures and Hyperstructures are only rewarded the first time a structure is captured
+(from bandit forces)._
+
+## Hyperstructure Victory Points
+
+Hyperstructures provide ongoing Victory Points based on the number of surrounding player Realms. The VP/second earned
+from holding a hyperstructure is determined by the number of Realms within 8 tiles.
+
+<img
+  src="/images/hyperstructure_ring_progression.gif"
+  alt="Hyperstructure Ring Progression"
+  className="w-full rounded-lg my-6"
+/>
+
+This system rewards players who can capture hyperstructures in high-traffic areas where many players spawn, while
+hyperstructures in remote locations with no nearby players provide no ongoing VP benefits. Capturing a hyperstructure
+from resident bandits will always yield the VP for the feat of claiming it, even if it offers no ongoing control VP.
 
 The number of VP awarded for each feat described above is as follows:
 
@@ -39,11 +54,11 @@ The number of VP awarded for each feat described above is as follows:
         </tr>
         <tr style={table.tableRow}>
           <td style={table.cell}>Claim a Hyperstructure from bandits</td>
-          <td style={table.cell}>2000 VP</td>
+          <td style={table.cell}>3000 VP</td>
         </tr>
         <tr style={table.tableRow}>
           <td style={table.cell}>Control a Hyperstructure</td>
-          <td style={table.cell}>5 VP/second</td>
+          <td style={table.cell}>1-6 VP/second (based on no. of nearby Realms)</td>
         </tr>
       </tbody>
     </table>

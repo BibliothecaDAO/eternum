@@ -46,6 +46,7 @@ export default defineConfig({
         {
           text: "Loot Chests",
           collapsed: true,
+          link: "/overview/chests/loot-chests",
           items: [
             { text: "Loot Chests", link: "/overview/chests/loot-chests" },
             { text: "Chest Contents", link: "/overview/chests/contents" },
@@ -65,6 +66,7 @@ export default defineConfig({
         {
           text: "Realms",
           collapsed: true,
+          link: "/blitz/realms/realm",
           items: [
             { text: "Realms", link: "/blitz/realms/realm" },
             { text: "Buildings", link: "/blitz/realms/buildings" },
@@ -73,10 +75,10 @@ export default defineConfig({
         {
           text: "Materials",
           collapsed: true,
+          link: "/blitz/materials/resources",
           items: [
             { text: "Materials", link: "/blitz/materials/resources" },
             { text: "Production", link: "/blitz/materials/production" },
-            { text: "Storage", link: "/blitz/materials/storage" },
             { text: "Transfers & Trade", link: "/blitz/materials/transfers-and-trade" },
             { text: "Bridging", link: "/blitz/materials/bridging" },
             { text: "Relics", link: "/blitz/materials/relics" },
@@ -86,6 +88,7 @@ export default defineConfig({
         {
           text: "Military",
           collapsed: true,
+          link: "/blitz/military/armies",
           items: [
             { text: "Armies", link: "/blitz/military/armies" },
             { text: "Troop Tiers", link: "/blitz/military/troop-tiers" },
@@ -96,6 +99,7 @@ export default defineConfig({
         {
           text: "World Map & Movement",
           collapsed: true,
+          link: "/blitz/worldmap-movement/worldmap",
           items: [
             { text: "World Map", link: "/blitz/worldmap-movement/worldmap" },
             { text: "Movement & Exploration", link: "/blitz/worldmap-movement/movement" },
@@ -174,6 +178,11 @@ export default defineConfig({
         { text: "Collaborators", link: "/development/collaborators" },
         { text: "LLM", link: "/development/llm" },
       ],
+    },
+    {
+      text: "Changelog",
+      collapsed: true,
+      items: [{ text: "3 September 2025", link: "/changelog/3-september-2025" }],
     },
   ],
 });
