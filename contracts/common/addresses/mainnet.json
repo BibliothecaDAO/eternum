@@ -6,7 +6,7 @@
   "marketplace": "0x0489d2220e8b61f43a02786e76e93bc63e07c564fdca823254e8a20072a840a7",
   "lootChests": "0x572fe34a769058c62a66f0c4854d08ccfd21fcbb4f0b1685a1868b84c6ee266",
   "cosmetics": "0x1f36515d7d307c9d3e41df48f29e9a6b4bbc445d0fbdbbce944a4678cd52b02",
-  "cosmeticsClaim": "",
+  "cosmeticsClaim": "0x0117fEcA92E98Eeca862099c0B4567F32c252bF1b736F2946F0df4f42FA8A544",
   "resources": {
     "STONE": [1, "0x439a1c010e3e1bb2d43d43411000893c0042bd88f6c701611a0ea914d426da4"],
     "COAL": [2, "0xce635e3f241b0ae78c46a929d84a9101910188f9c4024eaa7559556503c31a"],
