@@ -164,7 +164,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
         try {
           // Fade out ambient audio on mobile before playing video
           if (isMobile) {
-            ambienceAudio.fadeToQuiet(500);
+            ambienceAudio.stop();
           }
 
           // Sync background video with main video
@@ -239,7 +239,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
 
     // Fade ambient audio back to normal on mobile
     if (isMobile) {
-      ambienceAudio.fadeToNormal(500);
+      ambienceAudio.play();
     }
 
     // Hide video and show white screen
@@ -257,7 +257,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
 
     // Fade out ambient audio on mobile before playing video
     if (isMobile) {
-      ambienceAudio.fadeToQuiet(500);
+      ambienceAudio.stop();
     }
 
     try {
@@ -326,7 +326,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
 
     // Fade ambient audio back to normal on mobile
     if (isMobile) {
-      ambienceAudio.fadeToNormal(500);
+      ambienceAudio.play();
     }
 
     // Stop both videos and immediately show content
