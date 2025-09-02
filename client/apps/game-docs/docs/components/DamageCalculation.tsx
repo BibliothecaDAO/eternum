@@ -26,7 +26,9 @@ export const DamageCalculation = () => {
         }}
       >
         <div style={{ fontSize: "1.5rem" }}>
-          <span style={{ verticalAlign: "middle", marginRight: "0.2em" }}>D<sub>x</sub> =</span>
+          <span style={{ verticalAlign: "middle", marginRight: "0.2em" }}>
+            D<sub>x</sub> =
+          </span>
           <span
             style={{
               display: "inline-block",
@@ -86,7 +88,9 @@ export const DamageCalculation = () => {
           fontSize: "1.1rem",
         }}
       >
-        <div style={{ color: colors.primary, fontWeight: "bold", fontSize: "1.5rem" }}>D<sub>x</sub></div>
+        <div style={{ color: colors.primary, fontWeight: "bold", fontSize: "1.5rem" }}>
+          D<sub>x</sub>
+        </div>
         <div>= Damage of army x</div>
 
         <div style={{ color: colors.primary, fontWeight: "bold", fontSize: "1.5rem" }}>K</div>
@@ -121,8 +125,8 @@ export const DamageCalculation = () => {
       <div style={section.legend}>
         <p>
           The damage scaling coefficient (z = 0.2) is designed to reduce damage in larger conflicts so that larger
-          battles require more combat rounds to resolve. The global damage modifier (K = 2) provides a baseline multiplier
-          for all combat interactions.
+          battles require more combat rounds to resolve. The global damage modifier (K = 2) provides a baseline
+          multiplier for all combat interactions.
         </p>
       </div>
     </div>

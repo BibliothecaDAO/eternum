@@ -163,15 +163,9 @@ const EternumRewardsChestTable = () => {
 
               return (
                 <tr key={item.itemName}>
-                  <td style={componentStyles.itemNameCell}>
-                    {item.itemName}
-                  </td>
+                  <td style={componentStyles.itemNameCell}>{item.itemName}</td>
                   <td style={componentStyles.itemImageCell}>
-                    <img 
-                      src={item.image} 
-                      alt={item.itemName}
-                      style={componentStyles.itemImage}
-                    />
+                    <img src={item.image} alt={item.itemName} style={componentStyles.itemImage} />
                   </td>
                   <td
                     style={{
@@ -181,9 +175,7 @@ const EternumRewardsChestTable = () => {
                   >
                     {item.rarity}
                   </td>
-                  <td style={componentStyles.descriptionCell}>
-                    {item.description}
-                  </td>
+                  <td style={componentStyles.descriptionCell}>{item.description}</td>
                   <td style={table.cell}>
                     <span style={{ color: colors.text.light }}>{item.type}</span>
                   </td>

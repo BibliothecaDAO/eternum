@@ -177,9 +177,7 @@ export default defineConfig({
     {
       text: "Changelog",
       collapsed: true,
-      items: [
-        { text: "3 September 2025", link: "/changelog/3-september-2025" },
-      ],
+      items: [{ text: "3 September 2025", link: "/changelog/3-september-2025" }],
     },
   ],
 });
