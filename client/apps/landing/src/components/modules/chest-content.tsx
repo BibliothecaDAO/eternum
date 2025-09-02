@@ -367,7 +367,7 @@ export const ChestContent = ({
                         <span className="text-sm font-semibold text-rarity-legendary">2 Legendary Items</span>
                       </div>
                       <span className="text-sm font-bold text-gray-100">
-                        {Math.round(RARITY_PERCENTAGES.legendary)}%
+                        {RARITY_PERCENTAGES.legendary.toFixed(2)}%
                       </span>
                     </div>
                   </div>
@@ -379,7 +379,7 @@ export const ChestContent = ({
                         <div className="w-2.5 h-2.5 rounded-full bg-rarity-epic shadow-lg shadow-rarity-epic/30"></div>
                         <span className="text-sm font-semibold text-rarity-epic">1 Epic Item</span>
                       </div>
-                      <span className="text-sm font-bold text-gray-100">{Math.round(RARITY_PERCENTAGES.epic)}%</span>
+                      <span className="text-sm font-bold text-gray-100">{RARITY_PERCENTAGES.epic.toFixed(2)}%</span>
                     </div>
                   </div>
 
@@ -390,7 +390,7 @@ export const ChestContent = ({
                         <div className="w-2.5 h-2.5 rounded-full bg-rarity-rare shadow-lg shadow-rarity-rare/30"></div>
                         <span className="text-sm font-semibold text-rarity-rare">2 Rare Items</span>
                       </div>
-                      <span className="text-sm font-bold text-gray-100">{Math.round(RARITY_PERCENTAGES.rare)}%</span>
+                      <span className="text-sm font-bold text-gray-100">{RARITY_PERCENTAGES.rare.toFixed(2)}%</span>
                     </div>
                   </div>
 
@@ -402,7 +402,7 @@ export const ChestContent = ({
                         <span className="text-sm font-semibold text-rarity-uncommon">2 Uncommon Items</span>
                       </div>
                       <span className="text-sm font-bold text-gray-100">
-                        {Math.round(RARITY_PERCENTAGES.uncommon)}%
+                        {RARITY_PERCENTAGES.uncommon.toFixed(2)}%
                       </span>
                     </div>
                   </div>
@@ -414,7 +414,7 @@ export const ChestContent = ({
                         <div className="w-2.5 h-2.5 rounded-full bg-rarity-common shadow-lg shadow-rarity-common/30"></div>
                         <span className="text-sm font-semibold text-rarity-common">3 Common Items</span>
                       </div>
-                      <span className="text-sm font-bold text-gray-100">{Math.round(RARITY_PERCENTAGES.common)}%</span>
+                      <span className="text-sm font-bold text-gray-100">{RARITY_PERCENTAGES.common.toFixed(2)}%</span>
                     </div>
                   </div>
                 </div>
@@ -462,7 +462,7 @@ export const ChestContent = ({
                   <div className="text-sm text-gray-400 space-y-1 flex-shrink-0">
                     <p>
                       Drop rate:{" "}
-                      <span className="text-gray-300 font-medium">{Math.round(selectedAsset.drawChance)}%</span>
+                      <span className="text-gray-300 font-medium">{selectedAsset.drawChance.toFixed(2)}%</span>
                     </p>
                     {selectedAsset.troopType && (
                       <p>
@@ -627,7 +627,7 @@ export const ChestContent = ({
                                         {asset.name}
                                       </h3>
                                       <span className="text-xs md:text-sm text-gray-400 flex-shrink-0 font-medium">
-                                        {Math.round(asset.drawChance)}%
+                                        {asset.drawChance.toFixed(2)}%
                                       </span>
                                     </div>
 
