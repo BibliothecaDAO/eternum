@@ -493,7 +493,7 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
 
           {/* Complete state content */}
           {videoState === "ended" && (
-            <ChestContent chestType={chestType} showContent={showContent} chestContent={chestContent.slice(0, 3)} />
+            <ChestContent chestType={chestType} showContent={showContent} chestContent={chestContent} />
           )}
 
           {/* Controls */}
