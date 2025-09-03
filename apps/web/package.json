@@ -8,7 +8,7 @@
     "lint": "eslint",
     "start": "pnpm with-env vite start",
     "with-env": "dotenv -e ../../.env --",
-    "postbuild": "cp -r ../../packages/starknet-types-07 .vercel/output/functions/__nitro.func/node_modules/@starknet-io/starknet-types-07 && cp -r ../../packages/starknet-types-08 .vercel/output/functions/__nitro.func/node_modules/@starknet-io/starknet-types-08"
+    "postbuild": "cp -r ../../packages/starknet-types-07 .vercel/output/functions/__nitro.func/node_modules/@starknet-io/starknet-types-07 && cp -r ../../packages/starknet-types-08 .vercel/output/functions/__nitro.func/node_modules/@starknet-io/starknet-types-08 && cp -r ../../packages/starknet-types-09 .vercel/output/functions/__nitro.func/node_modules/@starknet-io/starknet-types-09"
   },
   "devDependencies": {
     "@cartridge/connector": "^0.9.3",
