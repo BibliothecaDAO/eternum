@@ -683,7 +683,7 @@ export const ChestContent = React.memo(
 
               {/* Right side container with items list and drop rates */}
               <div
-                className="w-full md:w-[420px] flex flex-col gap-4 pointer-events-auto order-2 md:order-2 max-h-[40vh] md:max-h-[calc(100vh-150px)]"
+                className="w-full md:w-[420px] flex flex-col gap-4 pointer-events-auto order-1 md:order-2 max-h-[40vh] md:max-h-[calc(100vh-150px)] mb-20 md:mb-0"
                 style={{
                   transition: "opacity 1000ms",
                   opacity: showContent ? 1 : 0,
