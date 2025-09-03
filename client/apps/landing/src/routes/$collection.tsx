@@ -6,9 +6,9 @@ export const Route = createFileRoute("/$collection")({
     const { collection } = params;
     const collectionConfig = marketplaceCollections[collection as keyof typeof marketplaceCollections];
     const collectionName = collectionConfig?.name || collection;
-    
+
     return {
-      title: `${collectionName} Collection | Eternum`,
+      title: `${collectionName} Collection | Realms`,
       meta: [
         {
           name: "description",
@@ -16,7 +16,7 @@ export const Route = createFileRoute("/$collection")({
         },
         {
           property: "og:title",
-          content: `${collectionName} Collection | Eternum`,
+          content: `${collectionName} Collection | Realms`,
         },
         {
           property: "og:description",
@@ -40,11 +40,11 @@ export const Route = createFileRoute("/$collection")({
         },
         {
           name: "twitter:title",
-          content: `${collectionName} Collection | Eternum`,
+          content: `${collectionName} Collection | Realms`,
         },
         {
           name: "twitter:description",
-          content: `View and manage your ${collectionName} NFTs. Browse, filter, and trade your collection on Eternum.`,
+          content: `View and manage your ${collectionName} NFTs. Browse, filter, and trade your collection on Realms.`,
         },
         {
           name: "twitter:image",
