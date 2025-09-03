@@ -31,7 +31,7 @@ struct Cube {
     s: i128,
 }
 
-#[derive(Copy, Drop, Serde, Default, IntrospectPacked)]
+#[derive(Copy, Drop, Serde, Default, Introspect)]
 pub struct Travel {
     pub blocked: bool,
     pub round_trip: bool,

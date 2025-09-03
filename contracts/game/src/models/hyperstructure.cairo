@@ -8,7 +8,7 @@ use s1_eternum::models::guild::GuildMember;
 use s1_eternum::models::season::SeasonPrize;
 use starknet::ContractAddress;
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct HyperstructureGlobals {
     #[key]
@@ -17,7 +17,7 @@ pub struct HyperstructureGlobals {
     pub completed_count: u32,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Hyperstructure {
     #[key]

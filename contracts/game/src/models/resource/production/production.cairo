@@ -17,7 +17,7 @@ use s1_eternum::models::weight::Weight;
 use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
 use s1_eternum::utils::math::{PercentageValueImpl, min};
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct ProductionBoostBonus {
     #[key]

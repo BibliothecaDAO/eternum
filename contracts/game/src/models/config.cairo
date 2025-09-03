@@ -211,7 +211,7 @@ pub struct SeasonAddressesConfig {
 }
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct HyperstructureConstructConfig {
     #[key]
@@ -726,7 +726,7 @@ pub impl TickImpl of TickTrait {
 }
 
 // weight
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct WeightConfig {
     #[key]
@@ -735,7 +735,7 @@ pub struct WeightConfig {
 }
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
+#[derive(Introspect, Copy, Drop, Serde, Default)]
 #[dojo::model]
 pub struct ResourceFactoryConfig {
     #[key]
@@ -858,7 +858,7 @@ pub struct StructureMaxLevelConfig {
     pub village_max: u8,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct StructureLevelConfig {
     #[key]

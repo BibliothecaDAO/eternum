@@ -459,7 +459,7 @@ pub impl ResourceImpl of ResourceTrait {
 }
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct ResourceAllowance {
     #[key]

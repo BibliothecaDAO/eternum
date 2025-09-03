@@ -13,7 +13,7 @@ pub struct BiomeDiscovered {
 }
 
 
-#[derive(Copy, Drop, Serde, IntrospectPacked)]
+#[derive(Copy, Drop, Serde, Introspect)]
 #[dojo::model]
 pub struct Tile {
     #[key]
