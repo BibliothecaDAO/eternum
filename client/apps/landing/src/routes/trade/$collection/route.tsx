@@ -14,7 +14,7 @@ export const Route = createFileRoute("/trade/$collection")({
     const { collection } = params;
     const collectionConfig = marketplaceCollections[collection as keyof typeof marketplaceCollections];
     const collectionName = collectionConfig?.name || collection;
-    
+
     return {
       title: `${collectionName} Marketplace | Eternum`,
       meta: [
