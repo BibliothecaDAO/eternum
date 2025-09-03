@@ -129,14 +129,13 @@ export const TokenDetailModal = ({
 
   console.log("[TokenDetailModal] tokenData", tokenData);
 
-  const { setShowLootChestOpening, setChestOpenTimestamp } = useLootChestOpeningStore();
+  const { setShowLootChestOpening, setChestOpenTimestamp, setOpenedChestTokenId } = useLootChestOpeningStore();
 
   // Get wallet state
   const { address } = useAccount();
   const { connector, connectors, connect } = useConnect();
 
   const [isController, setIsController] = useState(false);
-  const { setOpenedChestTokenId } = useLootChestOpeningStore();
 
   useEffect(() => {
     if (isOpen) {
@@ -163,9 +162,9 @@ export const TokenDetailModal = ({
         onSuccess: () => {
           console.log("Chest opened successfully");
           // Set timestamp for when chest is opened to listen for new events
-          setOpenedChestTokenId(tokenData.token_id.toString());
           setChestOpenTimestamp(Math.floor(Date.now() / 1000));
           setShowLootChestOpening(true);
+          setOpenedChestTokenId(tokenData.token_id.toString());
         },
         onError: (error) => {
           console.error("Failed to open chest:", error);
@@ -173,6 +172,8 @@ export const TokenDetailModal = ({
       });
     } else {
       setShowLootChestOpening(true);
+      setOpenedChestTokenId(tokenData.token_id.toString());
+      setChestOpenTimestamp(Math.floor(Date.now() / 1000));
     }
   };
 

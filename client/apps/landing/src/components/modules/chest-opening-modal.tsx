@@ -312,6 +312,19 @@ export const ChestOpeningModal = ({ remainingChests, nextToken }: ChestOpeningMo
           console.error("Failed to open chest:", error);
         },
       });
+    } else {
+      setIsChestOpeningLoading(true);
+      setOpenedChestTokenId(nextToken);
+      // Reset chest content to empty array
+      resetChestContent();
+      // Immediately reset video state to loading when opening new chest
+      setVideoState("loading");
+      setShowWhiteScreen(false);
+      setShowContent(false);
+      setIsVideoReady(false);
+      setLoadError(false);
+      setShowPlayButton(false);
+      setChestOpenTimestamp(Math.floor(Date.now() / 1000));
     }
   };
   const handleSkip = () => {

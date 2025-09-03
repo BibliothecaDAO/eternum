@@ -50,7 +50,7 @@ function ManageCollectionRoute() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 24;
 
-  const { showLootChestOpening, openedChestTokenId } = useLootChestOpeningStore();
+  const { showLootChestOpening, openedChestTokenId, chestOpenTimestamp } = useLootChestOpeningStore();
 
   const [tokenBalanceQuery] = useSuspenseQueries({
     queries: [
@@ -90,8 +90,9 @@ function ManageCollectionRoute() {
 
   useEffect(() => {
     if (!tokensWithFloorPrice || !openedChestTokenId) return;
-    const remainingTokens = tokensWithFloorPrice.filter((token) => token.token_id !== openedChestTokenId);
-    // .filter((token) => token.token_id !== "42" && token.token_id !== "129" && token.token_id !== "84");
+    const remainingTokens = tokensWithFloorPrice
+      .filter((token) => token.token_id !== openedChestTokenId)
+      .filter((token) => !token.expiration);
     setNextChestToken(remainingTokens.length > 0 ? remainingTokens[0].token_id.toString() : null);
     setRemainingChests(remainingTokens.length);
   }, [tokensWithFloorPrice, openedChestTokenId]);
