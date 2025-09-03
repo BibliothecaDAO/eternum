@@ -10,6 +10,57 @@ import { env } from "../../../../env";
 
 export const Route = createFileRoute("/trade/$collection")({
   component: TradeLayout,
+  head: ({ params }) => {
+    const { collection } = params;
+    const collectionConfig = marketplaceCollections[collection as keyof typeof marketplaceCollections];
+    const collectionName = collectionConfig?.name || collection;
+    
+    return {
+      title: `${collectionName} Marketplace | Eternum`,
+      meta: [
+        {
+          name: "description",
+          content: `Trade ${collectionName} NFTs on the Realms marketplace. View active listings, floor prices, and trading activity.`,
+        },
+        {
+          property: "og:title",
+          content: `${collectionName} Marketplace | Eternum`,
+        },
+        {
+          property: "og:description",
+          content: `Trade ${collectionName} NFTs on the Realms marketplace. View active listings, floor prices, and trading activity.`,
+        },
+        {
+          property: "og:image",
+          content: `https://empire.realms.world/collections/${collection.toLowerCase()}.png`,
+        },
+        {
+          property: "og:url",
+          content: `https://empire.realms.world/trade/${collection}`,
+        },
+        {
+          property: "og:type",
+          content: "website",
+        },
+        {
+          name: "twitter:card",
+          content: "summary_large_image",
+        },
+        {
+          name: "twitter:title",
+          content: `${collectionName} Marketplace | Eternum`,
+        },
+        {
+          name: "twitter:description",
+          content: `Trade ${collectionName} NFTs on the Realms marketplace. View active listings, floor prices, and trading activity.`,
+        },
+        {
+          name: "twitter:image",
+          content: `https://empire.realms.world/collections/${collection.toLowerCase()}.png`,
+        },
+      ],
+    };
+  },
 });
 
 function TradeLayout() {
