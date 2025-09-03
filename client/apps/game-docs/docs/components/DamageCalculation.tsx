@@ -25,51 +25,11 @@ export const DamageCalculation = () => {
           justifyContent: "center",
         }}
       >
-        <div style={{ fontSize: "1.5rem" }}>
-          <span style={{ verticalAlign: "middle", marginRight: "0.2em" }}>
-            D<sub>x</sub> =
-          </span>
-          <span
-            style={{
-              display: "inline-block",
-              textAlign: "center",
-              verticalAlign: "middle",
-              marginRight: "0.2em",
-              position: "relative",
-            }}
-          >
-            <span
-              style={{
-                display: "block",
-                borderBottom: `1px solid ${colors.primary}`,
-                paddingLeft: "0.1em",
-                paddingRight: "0.1em",
-                marginBottom: "0.1em",
-              }}
-            >
-              (K × N × (T<sub>x</sub> ÷ T<sub>y</sub>))
-              <span
-                style={{
-                  display: "inline-block",
-                  marginLeft: "0.1em",
-                  verticalAlign: "middle",
-                  fontSize: "0.95em",
-                }}
-              >
-                ÷ C<sup>z</sup>
-              </span>
-            </span>
-            <span
-              style={{
-                display: "block",
-                paddingTop: "0.1em",
-                fontSize: "0.95em",
-              }}
-            >
-              × B × S × T
-            </span>
-          </span>
-        </div>
+        <img
+          src="/images/other/damage-equation.png"
+          alt="Damage Calculation Equation"
+          style={{ display: "block", maxWidth: "100%", height: "auto", margin: "0 auto", alignSelf: "center" }}
+        />
       </div>
 
       <div style={{ ...section.sectionHeader, fontSize: "1.25rem", marginTop: "1.5rem" }}>
@@ -88,38 +48,50 @@ export const DamageCalculation = () => {
           fontSize: "1.1rem",
         }}
       >
-        <div style={{ color: colors.primary, fontWeight: "bold", fontSize: "1.5rem" }}>
+        <div style={{ color: colors.primary, fontStyle: "italic", fontSize: "1.5rem" }}>
           D<sub>x</sub>
         </div>
-        <div>= Damage of army x</div>
+        <div>=  Damage of army <i>x</i></div>
 
-        <div style={{ color: colors.primary, fontWeight: "bold", fontSize: "1.5rem" }}>K</div>
-        <div>= Global damage modifier = 2</div>
-
-        <div style={{ color: colors.primary, fontWeight: "bold", fontSize: "1.5rem" }}>
-          T<sub style={{ fontSize: "0.6em" }}>x</sub>
+        <div style={{ color: colors.primary, fontStyle: "italic", fontSize: "1.5rem" }}>
+          K
         </div>
-        <div>= Tier of army x</div>
+        <div>=  Global damage modifier  =  2</div>
 
-        <div style={{ color: colors.primary, fontWeight: "bold", fontSize: "1.5rem" }}>
-          T<sub style={{ fontSize: "0.6em" }}>y</sub>
+        <div style={{ color: colors.primary, fontStyle: "italic", fontSize: "1.5rem" }}>
+          T<sub>x</sub>
         </div>
-        <div>= Tier of army y</div>
+        <div>=  Tier of army <i>x</i></div>
 
-        <div style={{ color: colors.primary, fontWeight: "bold", fontSize: "1.5rem" }}>C</div>
-        <div>= Total number of troops (x + y)</div>
+        <div style={{ color: colors.primary, fontStyle: "italic", fontSize: "1.5rem" }}>
+          T<sub>y</sub>
+        </div>
+        <div>=  Tier of army <i>y</i></div>
 
-        <div style={{ color: colors.primary, fontWeight: "bold", fontSize: "1.5rem" }}>z</div>
-        <div>= Damage scaling coefficient = 0.2</div>
+        <div style={{ color: colors.primary, fontStyle: "italic", fontSize: "1.5rem" }}>
+          C
+        </div>
+        <div>=  Total number of troops (<i>x</i> + <i>y</i>)</div>
 
-        <div style={{ color: colors.primary, fontWeight: "bold", fontSize: "1.5rem" }}>B</div>
-        <div>= Biome damage modifier</div>
+        <div style={{ color: colors.primary, fontStyle: "italic", fontSize: "1.5rem" }}>
+          z
+        </div>
+        <div>=  Damage scaling coefficient  =  0.2</div>
 
-        <div style={{ color: colors.primary, fontWeight: "bold", fontSize: "1.5rem" }}>S</div>
-        <div>= Stamina penalty modifier</div>
+        <div style={{ color: colors.primary, fontStyle: "italic", fontSize: "1.5rem" }}>
+          B
+        </div>
+        <div>=  Biome damage modifier</div>
 
-        <div style={{ color: colors.primary, fontWeight: "bold", fontSize: "1.5rem" }}>T</div>
-        <div>= Battle timer penalty modifier</div>
+        <div style={{ color: colors.primary, fontStyle: "italic", fontSize: "1.5rem" }}>
+          S
+        </div>
+        <div>=  Stamina penalty modifier</div>
+
+        <div style={{ color: colors.primary, fontStyle: "italic", fontSize: "1.5rem" }}>
+          T
+        </div>
+        <div>=  Battle timer penalty modifier</div>
       </div>
 
       <div style={section.legend}>
