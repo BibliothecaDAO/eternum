@@ -12,6 +12,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 // Import Routes
 
+import { Route } from "./routes/$collection";
 import { Route as rootRoute } from "./routes/__root";
 import { Route as TradeCollectionRouteImport } from "./routes/trade/$collection/route";
 
@@ -20,7 +21,7 @@ import { Route as TradeCollectionRouteImport } from "./routes/trade/$collection/
 const MintLazyImport = createFileRoute("/mint")();
 const DataLazyImport = createFileRoute("/data")();
 const ClaimLazyImport = createFileRoute("/claim")();
-const CollectionLazyImport = createFileRoute("/$collection")();
+const CollectionLazyImport = Route;
 const IndexLazyImport = createFileRoute("/")();
 const TradeIndexLazyImport = createFileRoute("/trade/")();
 const TradeActivityLazyImport = createFileRoute("/trade/activity")();

@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { COSMETIC_NAMES } from "@/utils/cosmetics";
 import { RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types";
 import { X } from "lucide-react";
 import { ResourceIcon } from "../ui/elements/resource-icon";
@@ -20,7 +21,7 @@ const getTraitPlaceholder = (traitType: string): string => {
   const placeholders: Record<string, string> = {
     Resource: "Filter by Resource",
     Epoch: "Filter by Epoch",
-    "Epoch Item": "Filter by Epoch Item",
+    "Epoch Item": "Filter by Name",
     Rarity: "Filter by Rarity",
     Type: "Filter by Type",
   };
@@ -38,6 +39,22 @@ const sortResourceValues = (values: string[]): string[] => {
   });
 };
 
+const sortRarityValues = (values: string[]): string[] => {
+  const rarityOrder = ["Common", "Uncommon", "Rare", "Epic", "Legendary"];
+  return [...values].sort((a, b) => {
+    const aIndex = rarityOrder.indexOf(a);
+    const bIndex = rarityOrder.indexOf(b);
+    if (aIndex === -1) return 1;
+    if (bIndex === -1) return -1;
+    return aIndex - bIndex;
+  });
+};
+
+const getItemNameFromId = (id: string): string => {
+  const cosmetic = COSMETIC_NAMES.find((c) => c.id === id);
+  return cosmetic ? cosmetic.name : id;
+};
+
 const FilterBadge = ({ traitType, value, onRemove }: { traitType: string; value: string; onRemove: () => void }) => {
   if (traitType === "Wonder") {
     return (
@@ -53,10 +70,12 @@ const FilterBadge = ({ traitType, value, onRemove }: { traitType: string; value:
     );
   }
 
+  const displayValue = traitType === "Epoch Item" ? getItemNameFromId(value) : value;
+
   return (
     <Badge key={`${traitType}-${value}`} variant="default">
       {traitType === "Resource" && <ResourceIcon resource={value} size="md" className="mr-1 inline-block" />}
-      {value}
+      {displayValue}
       <button
         onClick={onRemove}
         className="ml-1.5 p-0.5 rounded-full hover:bg-muted focus:outline-none focus:ring-1 focus:ring-ring"
@@ -90,7 +109,13 @@ const TraitSelect = ({
   selectedValue: string;
   onValueChange: (value: string) => void;
 }) => {
-  const sortedValues = traitType === "Resource" ? sortResourceValues(values) : values;
+  let sortedValues = values;
+  if (traitType === "Resource") {
+    sortedValues = sortResourceValues(values);
+  } else if (traitType === "Rarity") {
+    sortedValues = sortRarityValues(values);
+  }
+
   const placeholder = getTraitPlaceholder(traitType);
 
   return (
@@ -104,7 +129,7 @@ const TraitSelect = ({
             <SelectItem key={value} value={value} className="flex items-center gap-2 text-lg">
               <div className="flex items-center gap-2">
                 {traitType === "Resource" && <ResourceIcon resource={value} size="md" />}
-                <span className="text-xs">{value}</span>
+                <span className="text-xs">{traitType === "Epoch Item" ? getItemNameFromId(value) : value}</span>
               </div>
             </SelectItem>
           ))}

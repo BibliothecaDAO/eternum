@@ -1,3 +1,61 @@
-# 💰 Prize Pool
+---
+title: Prize Pool & Distribution
+description: How prizes are distributed in Blitz competitive games
+---
 
-_Work in Progress..._
+# Prize Pool & Distribution
+
+Blitz competitive games feature a prize distribution system that ensures fair rewards for top-ranked Lords while
+maintaining sustainable game economics. This system is designed to be flexible and can be adapted for use with any token
+on Starknet, allowing game hosts to deploy their own games with customized prize distribution settings.
+
+## Entry Fee Structure
+
+Every Blitz match in the Gladiator and Warrior brackets currently collects an entry fee of **250 LORDS** per player.
+This fee is allocated to support both player rewards and the ecosystem:
+
+- **80%** of the entry fee forms the **prize pool** that gets distributed among winners
+- **20%** of the entry fee is directed to the Realms ecosystem (distribution of this fee within the ecosystem is TBC)
+
+At the conclusion of each Blitz match, players are ranked by their final score. The **top 20% of the field** (rounded up
+to the nearest whole player) are designated as winners and eligible for prize distribution. If there are less than 5
+players, the top ranked player is the sole winner.
+
+## Prize Distribution Mechanics
+
+The prize distribution system employs a weighting formula that ensures fair and predictable rewards. Each winner first
+receives a **refund of their 250 LORDS buy-in**, and the remainder of the prize pool is then distributed among winners
+according to a geometric weighting system based on finishing rank.
+
+### Weighting System
+
+The weighting system uses a decay factor that adjusts based on lobby size, ensuring appropriate reward curves for
+different game scales. The decay factor `s` is calculated using the formula:
+
+`s(n) = min(0.95, 0.2 × log10(n) + 0.4)`
+
+Where `n` represents the number of players in the match. This formula creates steeper reward curves in smaller lobbies
+and flatter curves in larger ones, but never flatter than 0.95.
+
+### Individual Winner Calculations
+
+Each winner's bonus is calculated using their individual weight divided by the total weight sum. The weight for rank `i`
+is `s^(i-1)`, meaning the top finisher has a weight of 1, second place has weight `s`, third place has weight `s²`, and
+so on. The total weight sum `W` is calculated as the sum of this geometric series.
+
+The bonus for each winner is then calculated as: `bonus_i = (weight_i / W) × R`
+
+Where `R` represents the remainder of the prize pool after refunds are distributed.
+
+## Flexibility and Customization
+
+This prize distribution system is designed to be adaptable for various gaming scenarios. Game hosts can deploy their own
+Blitz games with modified prize distribution settings, adjusting factors such as entry fees, winner percentages, and
+decay factors to suit their specific requirements. The system can also be configured to work with any token on Starknet,
+making it versatile for different blockchain gaming ecosystems.
+
+## NFT Prize Distribution
+
+The NFT prize distribution system for Blitz games is currently under development. This system will allow for the
+distribution of unique digital assets, collectibles, and special rewards that complement the existing $LORDS prize
+pools. Until the NFT distribution system is fully implemented, Blitz game rewards will be handled offchain.

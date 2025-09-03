@@ -47,13 +47,13 @@ export const marketplaceCollections = {
     address: seasonPassAddress,
     id: COLLECTION_IDS[currentNetwork]["season-passes"],
     name: "Season 1 Pass",
-    image: "/collections/season-1-pass.png",
+    image: "/collections/season-passes.png",
   },
   "loot-chests": {
     address: lootChestsAddress,
     id: COLLECTION_IDS[currentNetwork]["loot-chests"],
     name: "Loot Chest",
-    image: "/collections/LootChest.png",
+    image: "/collections/loot-chests.png",
   },
   cosmetics: {
     address: cosmeticsAddress,

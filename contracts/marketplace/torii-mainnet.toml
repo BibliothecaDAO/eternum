@@ -24,6 +24,7 @@ contracts = [
 	  "erc721:0x0572fe34a769058c62a66f0c4854d08ccfd21fcbb4f0b1685a1868b84c6ee266", 	 # Loot Chests
 	  "erc20:0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49",	 # Lords
 	  "erc721:0x01f36515d7d307c9d3e41df48f29e9a6b4bbc445d0fbdbbce944a4678cd52b02",    # Cosmetics
+	  "erc721:0x0117fEcA92E98Eeca862099c0B4567F32c252bF1b736F2946F0df4f42FA8A544",    # Cosmetics Claim
 ]
 
 namespaces = ["marketplace"]

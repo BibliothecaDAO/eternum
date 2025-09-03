@@ -7,7 +7,7 @@ env:
   SLOT_TEAM: "realms-eternum"
   SLOT_AUTH: ${{ secrets.SLOT_AUTH }}
   SLOT_TIER: "pro"
-  TORII_VERSION: "v1.6.0-alpha.2"
+  TORII_VERSION: "v1.7.0-alpha.1"
   TORII_CONFIG: "torii-slot.toml"
   NODE_VERSION: "18"
   CI: "true"
@@ -23,7 +23,7 @@ on:
       torii_version:
         description: 'Torii version to deploy'
         required: false
-        default: 'v1.6.0-alpha.2'
+        default: 'v1.7.0-alpha.1'
 
 jobs:
   deploy-slot:
@@ -54,11 +54,11 @@ jobs:
       - name: 🔧 Setup Scarb
         uses: software-mansion/setup-scarb@v1
         with:
-          scarb-version: "2.10.1"
+          scarb-version: "nightly-2025-05-08"
 
       - name: 📥 Download Dojo Release
         run: |
-          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.6.0-alpha.2/dojo_v1.6.0-alpha.2_linux_amd64.tar.gz
+          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.7.0-alpha.1/dojo_v1.7.0-alpha.1_linux_amd64.tar.gz
           tar -xzf dojo-linux-x86_64.tar.gz
           sudo mv sozo /usr/local/bin/
 
@@ -95,25 +95,19 @@ jobs:
           DISCORD_TIMESTAMP="<t:$GAME_START_TIMESTAMP:F>"
           GAME_START_READABLE=$(date -d "@$GAME_START_TIMESTAMP" -u '+%Y-%m-%d %H:%M:%S UTC')
           
-          # Calculate registration start time (10 minutes from now)
-          CURRENT_TIMESTAMP=$(date +%s)
-          REGISTRATION_START_TIMESTAMP=$((CURRENT_TIMESTAMP + 600))
-          REGISTRATION_DISCORD_TIMESTAMP="<t:$REGISTRATION_START_TIMESTAMP:R>"
-          
           # Calculate next deployment time (5 hours from now)
+          CURRENT_TIMESTAMP=$(date +%s)
           NEXT_DEPLOYMENT_TIMESTAMP=$((CURRENT_TIMESTAMP + 18000))
           NEXT_DEPLOYMENT_DISCORD_TIMESTAMP="<t:$NEXT_DEPLOYMENT_TIMESTAMP:R>"
           
           echo "🕐 Game start time set to: $GAME_START_READABLE"
           echo "🕐 Discord timestamp: $DISCORD_TIMESTAMP"
-          echo "🕐 Registration timestamp: $REGISTRATION_DISCORD_TIMESTAMP"
           echo "🕐 Next deployment timestamp: $NEXT_DEPLOYMENT_DISCORD_TIMESTAMP"
           echo "🕐 Unix timestamp: $GAME_START_TIMESTAMP"
           
           echo "timestamp=$GAME_START_TIMESTAMP" >> $GITHUB_OUTPUT
           echo "readable=$GAME_START_READABLE" >> $GITHUB_OUTPUT
           echo "discord_timestamp=$DISCORD_TIMESTAMP" >> $GITHUB_OUTPUT
-          echo "registration_timestamp=$REGISTRATION_DISCORD_TIMESTAMP" >> $GITHUB_OUTPUT
           echo "next_deployment_timestamp=$NEXT_DEPLOYMENT_DISCORD_TIMESTAMP" >> $GITHUB_OUTPUT
 
       - name: 🎲 Generate New Seed
@@ -135,6 +129,12 @@ jobs:
           # Verify the change
           grep "^seed = " dojo_slot.toml
 
+      - name: ⚙️ Run Game Build
+        working-directory: ./contracts
+        run: |
+          echo "🔧 Running Game Build..."
+          pnpm run game:migrate:slot:buildonly
+
       - name: 🏗️ Run Game Migration
         uses: nick-fields/retry@v3
         with:
@@ -145,7 +145,7 @@ jobs:
           command: |
             cd contracts
             echo "🚀 Starting game migration for slot..."
-            pnpm run game:migrate:slot
+            pnpm run game:migrate:slot:migrateonly
 
       - name: ⚙️ Deploy Configuration
         working-directory: ./contracts
@@ -220,6 +220,11 @@ jobs:
       - name: 📢 Discord Success Notification
         if: success()
         run: |
+          # Calculate registration start time (10 minutes from now)
+          CURRENT_TIMESTAMP=$(date +%s)
+          REGISTRATION_START_TIMESTAMP=$((CURRENT_TIMESTAMP + 600))
+          REGISTRATION_DISCORD_TIMESTAMP="<t:$REGISTRATION_START_TIMESTAMP:R>"
+
           curl -X POST "${{ secrets.DISCORD_BLITZ_DEPLOY_SUCCESS_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
             -d '{
@@ -236,7 +241,7 @@ jobs:
                   },
                   {
                     "name": "⚡ Registration Starts",
-                    "value": "${{ steps.game-timing.outputs.registration_timestamp }}",
+                    "value": "'"$REGISTRATION_DISCORD_TIMESTAMP"'",
                     "inline": true
                   },
                   {
@@ -296,4 +301,4 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "The slot deployment encountered an error. Please check the logs above for details." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Failed at:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY 
+          echo "**Failed at:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY

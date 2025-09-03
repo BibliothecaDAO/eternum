@@ -9,7 +9,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Link } from "@tanstack/react-router";
-import { Calendar, Crown, Map, Package, ShoppingBag, Sparkles, Ticket, TwitterIcon, X } from "lucide-react";
+import { Calendar, Crown, Map, Package, ShoppingBag, Sparkles, Ticket, X } from "lucide-react";
 import { TypeH2 } from "../typography/type-h2";
 
 // Menu items.
@@ -124,14 +124,30 @@ export function AppSidebar() {
               ))}
             </SidebarMenu>
             {/* social links */}
-            <div className="flex items-center gap-2 mt-8 justify-center">
+            <div className="flex items-center gap-2 mt-8 justify-center text-gold fill-gold">
               <a
                 href="https://twitter.com/realms_gg"
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={handleLinkClick}
+                className="text-gold fill-gold"
               >
-                <TwitterIcon />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  shape-rendering="geometricPrecision"
+                  text-rendering="geometricPrecision"
+                  image-rendering="optimizeQuality"
+                  fill-rule="evenodd"
+                  clip-rule="evenodd"
+                  viewBox="0 0 512 462.799"
+                  className="w-5 h-5"
+                >
+                  <path
+                    fill-rule="nonzero"
+                    d="M403.229 0h78.506L310.219 196.04 512 462.799H354.002L230.261 301.007 88.669 462.799h-78.56l183.455-209.683L0 0h161.999l111.856 147.88L403.229 0zm-27.556 415.805h43.505L138.363 44.527h-46.68l283.99 371.278z"
+                    fill="currentColor"
+                  />
+                </svg>
               </a>
             </div>
           </SidebarGroupContent>

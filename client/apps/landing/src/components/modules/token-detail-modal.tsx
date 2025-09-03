@@ -129,15 +129,13 @@ export const TokenDetailModal = ({
 
   console.log("[TokenDetailModal] tokenData", tokenData);
 
-  const { setShowLootChestOpening, setChestOpenTimestamp } = useLootChestOpeningStore();
+  const { setShowLootChestOpening, setChestOpenTimestamp, setOpenedChestTokenId } = useLootChestOpeningStore();
 
   // Get wallet state
   const { address } = useAccount();
   const { connector, connectors, connect } = useConnect();
 
   const [isController, setIsController] = useState(false);
-  const [isChestOpeningLoading, setIsChestOpeningLoading] = useState(false);
-  const { setOpenedChestTokenId } = useLootChestOpeningStore();
 
   useEffect(() => {
     if (isOpen) {
@@ -158,18 +156,15 @@ export const TokenDetailModal = ({
   const { openChest, error: chestOpeningError } = useOpenChest();
 
   const handleOpenChest = () => {
-    setIsChestOpeningLoading(true);
-    setOpenedChestTokenId(tokenData.token_id.toString());
-
-    // Set timestamp for when chest is opened to listen for new events
-    setChestOpenTimestamp(Math.floor(Date.now() / 1000));
-
     if (!env.VITE_PUBLIC_CHEST_DEBUG_MODE) {
       openChest({
         tokenId: BigInt(tokenData.token_id),
         onSuccess: () => {
           console.log("Chest opened successfully");
+          // Set timestamp for when chest is opened to listen for new events
+          setChestOpenTimestamp(Math.floor(Date.now() / 1000));
           setShowLootChestOpening(true);
+          setOpenedChestTokenId(tokenData.token_id.toString());
         },
         onError: (error) => {
           console.error("Failed to open chest:", error);
@@ -177,6 +172,8 @@ export const TokenDetailModal = ({
       });
     } else {
       setShowLootChestOpening(true);
+      setOpenedChestTokenId(tokenData.token_id.toString());
+      setChestOpenTimestamp(Math.floor(Date.now() / 1000));
     }
   };
 
@@ -293,18 +290,9 @@ export const TokenDetailModal = ({
                         variant="default"
                         className="w-full"
                         onClick={handleOpenChest}
-                        disabled={
-                          isLoading || !isController || isChestOpeningLoading || env.VITE_PUBLIC_BLOCK_CHEST_OPENING
-                        }
+                        disabled={isLoading || !isController || env.VITE_PUBLIC_BLOCK_CHEST_OPENING}
                       >
-                        {isChestOpeningLoading ? (
-                          <>
-                            <Loader2 className="animate-spin mr-2 h-4 w-4" />
-                            Opening...
-                          </>
-                        ) : (
-                          "Open Chest " + (env.VITE_PUBLIC_BLOCK_CHEST_OPENING ? "(Coming soon)" : "")
-                        )}
+                        Open Chest {env.VITE_PUBLIC_BLOCK_CHEST_OPENING ? "(Coming soon)" : ""}
                       </Button>
                     </div>
                   </TooltipTrigger>

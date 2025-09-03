@@ -29,7 +29,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: software-mansion/setup-scarb@v1
         with:
-          scarb-version: "2.10.1"
+          scarb-version: "nightly-2025-05-08"
       - name: Download Dojo release artifact
         run: |
           curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.5.0/dojo_v1.5.0_linux_amd64.tar.gz
@@ -46,6 +46,6 @@ jobs:
       - uses: actions/checkout@v3
       - uses: software-mansion/setup-scarb@v1
         with:
-          scarb-version: "2.10.1"
+          scarb-version: "2.11.4"
       - name: Run scarb fmt check
         run: cd contracts/game && scarb fmt --check

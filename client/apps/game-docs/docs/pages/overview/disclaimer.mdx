@@ -1,14 +1,20 @@
-import { formatNumberWithSpaces } from "@/utils/formatting";
-import { ETERNUM_CONFIG } from "@/utils/config";
-import { Callout } from "vocs/components";
-import { HYPERSTRUCTURE_POINT_MULTIPLIER } from "@/components/HyperstructureTable";
-
 # Disclaimer and Risk Acknowledgment
 
-<Callout type="danger">
-  Important Disclaimer – Please Read Carefully <br />
-  By participating in Realms games, you fully acknowledge and accept the following terms and conditions.
-</Callout>
+<div
+  style={{
+    backgroundColor: "#dc2626",
+    color: "white",
+    padding: "1rem",
+    borderRadius: "0.5rem",
+    marginBottom: "1.5rem",
+    border: "1px solid #b91c1c",
+  }}
+>
+  <h3 style={{ margin: "0 0 0.5rem 0", color: "white" }}>⚠️ Important Disclaimer – Please Read Carefully</h3>
+  <p style={{ margin: 0 }}>
+    By participating in Realms games, you fully acknowledge and accept the following terms and conditions.
+  </p>
+</div>
 
 ## Immutable Contracts
 
@@ -25,9 +31,8 @@ financial impact incurred.
 
 ## Eternum
 
-A season of Eternum concludes when a single player achieves the required
-**{formatNumberWithSpaces(Number(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsForWin)/HYPERSTRUCTURE_POINT_MULTIPLIER)}**
-Victory Points and clicks the "End Season" button. At this point:
+A season of Eternum concludes when a single player achieves the required **Victory Points** and clicks the "End Season"
+button. At this point:
 
 ### ⚠️ SEASON END CRITICAL INFORMATION
 
@@ -58,9 +63,13 @@ Please refer to the documentation for detailed instructions on the bridging proc
 
 ## Blitz
 
-Blitz game instances operate on a fixed schedule with immediate prize distribution upon completion. Unlike Eternum
-seasons, Blitz games do not have extended withdrawal windows or bridging requirements, as all gameplay concludes within
-the session timeframe.
+Blitz game instances operate on a fixed schedule with immediate $LORDS prize distribution upon completion. Unlike
+Eternum seasons, Blitz games do not have extended withdrawal windows or bridging requirements, as all gameplay concludes
+within the session timeframe.
+
+Distribution of Loot Chest NFT rewards is more complex and is currently managed using offchain processes. It is intended
+that a distribution framework will be developed in the near future to handle additional NFT rewards in an automated and
+decentralized manner.
 
 ## No Recourse
 
