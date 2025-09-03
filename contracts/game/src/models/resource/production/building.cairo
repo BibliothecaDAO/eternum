@@ -57,7 +57,7 @@ pub struct StructureBuildings {
     pub population: Population,
 }
 
-#[derive(Copy, Drop, Serde, IntrospectPacked, Default, DojoStore)]
+#[derive(Copy, Drop, Serde, Introspect, Default, DojoStore)]
 pub struct Population {
     pub current: u32,
     pub max: u32,

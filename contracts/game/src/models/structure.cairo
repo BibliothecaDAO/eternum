@@ -103,7 +103,7 @@ pub impl StructureOwnerStoreImpl of StructureOwnerStoreTrait {
 }
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct StructureBase {
     pub troop_guard_count: u8,
     pub troop_explorer_count: u16,
@@ -116,7 +116,7 @@ pub struct StructureBase {
     pub level: u8,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, Default, DojoStore)]
+#[derive(Introspect, Copy, Drop, Serde, Default, DojoStore)]
 pub struct StructureMetadata {
     // associated with realm
     pub realm_id: u16,

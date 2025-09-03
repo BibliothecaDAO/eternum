@@ -76,7 +76,7 @@ pub struct VillageControllerConfig {
     pub addresses: Span<ContractAddress>,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct SeasonConfig {
     pub dev_mode_on: bool,
     pub start_settling_at: u64,
@@ -203,7 +203,7 @@ pub struct TradeConfig {
 }
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct SeasonAddressesConfig {
     pub season_pass_address: ContractAddress,
     pub realms_address: ContractAddress,
@@ -231,7 +231,7 @@ pub struct HyperstructureCostConfig {
     pub construction_resources_ids: Span<u8>,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct CapacityConfig {
     pub structure_capacity: u128, // grams // deprecated
     pub troop_capacity: u32, // grams
@@ -239,7 +239,7 @@ pub struct CapacityConfig {
     pub storehouse_boost_capacity: u32,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct StructureCapacityConfig {
     pub realm_capacity: u64, // grams
     pub village_capacity: u64, // grams
@@ -249,7 +249,7 @@ pub struct StructureCapacityConfig {
 }
 
 // speed
-#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct SpeedConfig {
     pub donkey_sec_per_km: u16,
 }
@@ -262,7 +262,7 @@ pub impl SpeedImpl of SpeedTrait {
     }
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct MapConfig {
     pub reward_resource_amount: u16,
     pub shards_mines_win_probability: u16,
@@ -283,13 +283,13 @@ pub struct MapConfig {
     pub relic_chest_relics_per_chest: u8,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct QuestConfig {
     pub quest_discovery_prob: u16,
     pub quest_discovery_fail_prob: u16,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct SettlementConfig {
     pub center: u32,
     pub base_distance: u32,
@@ -394,7 +394,7 @@ pub impl SettlementConfigImpl of SettlementConfigTrait {
     }
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct BlitzSettlementConfig {
     pub base_distance: u32,
     pub side: u32,
@@ -487,7 +487,7 @@ pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
 }
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct BlitzHypersSettlementConfig {
     pub max_ring_count: u8,
     pub current_ring_count: u8,
@@ -542,7 +542,7 @@ pub impl BlitzHypersSettlementConfigImpl of BlitzHypersSettlementConfigTrait {
 }
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct BlitzRegistrationConfig {
     pub fee_amount: u256,
     pub fee_token: ContractAddress,
@@ -568,7 +568,7 @@ pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
     }
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct VictoryPointsGrantConfig {
     pub hyp_points_per_second: u32,
     // Only granted when claim hyperstructure from bandits
@@ -583,7 +583,7 @@ pub struct VictoryPointsWinConfig {
     pub points_for_win: u128,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct TickConfig {
     pub armies_tick_in_seconds: u64,
     pub delivery_tick_in_seconds: u64,
@@ -591,7 +591,7 @@ pub struct TickConfig {
 
 
 // todo: regroup meaningfully to avoid retrieving too many fields
-#[derive(Copy, Drop, Serde, IntrospectPacked, Debug, PartialEq, Default, DojoStore)]
+#[derive(Copy, Drop, Serde, Introspect, Debug, PartialEq, Default, DojoStore)]
 pub struct TroopDamageConfig {
     pub damage_raid_percent_num: u16,
     // Combat modifiers. Used for biome damage calculations
@@ -607,7 +607,7 @@ pub struct TroopDamageConfig {
     pub t3_damage_multiplier: u128,
 }
 
-#[derive(Copy, Drop, Serde, IntrospectPacked, Debug, PartialEq, Default, DojoStore)]
+#[derive(Copy, Drop, Serde, Introspect, Debug, PartialEq, Default, DojoStore)]
 pub struct TroopStaminaConfig {
     // Base stamina settings
     pub stamina_gain_per_tick: u16, // Stamina gained per tick
@@ -632,7 +632,7 @@ pub struct TroopStaminaConfig {
 }
 
 
-#[derive(Copy, Drop, Serde, IntrospectPacked, Debug, PartialEq, Default, DojoStore)]
+#[derive(Copy, Drop, Serde, Introspect, Debug, PartialEq, Default, DojoStore)]
 pub struct TroopLimitConfig {
     // Maximum number of explorers allowed per structure
     pub explorer_max_party_count: u8,
@@ -767,14 +767,14 @@ pub struct BuildingCategoryConfig {
 }
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct BuildingConfig {
     pub base_population: u32,
     pub base_cost_percent_increase: u16,
 }
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct BankConfig {
     pub lp_fee_num: u32,
     pub lp_fee_denom: u32,
@@ -782,7 +782,7 @@ pub struct BankConfig {
     pub owner_fee_denom: u32,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct BattleConfig {
     pub regular_immunity_ticks: u8,
     pub hyperstructure_immunity_ticks: u8,
@@ -796,25 +796,25 @@ pub impl BattleConfigImpl of BattleConfigTrait {
 }
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct StartingResourcesConfig {
     pub resources_list_id: ID,
     pub resources_list_count: u8,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct VillageFoundResourcesConfig {
     pub resources_mm_list_id: ID,
     pub resources_mm_list_count: u8,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct ResourceBridgeConfig {
     pub deposit_paused: bool,
     pub withdraw_paused: bool,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct ResourceBridgeFeeSplitConfig {
     // the percentage of the deposit and withdrawal amount that the velords addr will receive
     pub velords_fee_on_dpt_percent: u16,
@@ -844,7 +844,7 @@ pub struct ResourceBridgeWhitelistConfig {
 }
 
 #[dojo::model]
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde)]
 pub struct ResourceRevBridgeWhtelistConfig {
     #[key]
     pub resource_type: u8,
@@ -852,7 +852,7 @@ pub struct ResourceRevBridgeWhtelistConfig {
 }
 
 // speed
-#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct StructureMaxLevelConfig {
     pub realm_max: u8,
     pub village_max: u8,

@@ -98,7 +98,7 @@ pub impl ProductionBoostBonusImpl of ProductionBoostBonusTrait {
     }
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, Default, PartialEq, DojoStore)]
+#[derive(Introspect, Copy, Drop, Serde, Default, PartialEq, DojoStore)]
 pub struct Production {
     // active building count
     pub building_count: u8,
