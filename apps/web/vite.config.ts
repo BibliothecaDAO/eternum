@@ -26,6 +26,7 @@ export default defineConfig({
   ],
   build: {
     chunkSizeWarningLimit: 1000,
+    target: "esnext",
   },
   optimizeDeps: {
     include: [
