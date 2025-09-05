@@ -64,7 +64,7 @@ export const marketplaceCollections = {
     image: "/collections/cosmetics.png", // TODO: Replace with actual cosmetics image
   },
   "golden-tokens": {
-    address: "0x027838dea749f41c6f8a44fcfa791788e6101080c1b3cd646a361f653ad10e2d", // Mainnet support only
+    address: "0x27838dea749f41c6f8a44fcfa791788e6101080c1b3cd646a361f653ad10e2d", // Mainnet support only
     id: COLLECTION_IDS[currentNetwork]["golden-tokens"],
     name: "Golden Tokens",
     image: "/collections/golden-tokens.svg",
