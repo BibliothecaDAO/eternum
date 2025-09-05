@@ -24,12 +24,14 @@ const COLLECTION_IDS = {
     realms: 2,
     "loot-chests": 3,
     cosmetics: 4, // TODO: Replace with actual collection ID
+    "golden-tokens": 5,
   },
   sepolia: {
     "season-passes": 3,
     realms: 4,
     "loot-chests": 5,
     cosmetics: 6, // TODO: Replace with actual collection ID
+    "golden-tokens": null,
   },
 } as const;
 
@@ -60,6 +62,12 @@ export const marketplaceCollections = {
     id: COLLECTION_IDS[currentNetwork].cosmetics,
     name: "Cosmetics",
     image: "/collections/cosmetics.png", // TODO: Replace with actual cosmetics image
+  },
+  "golden-tokens": {
+    address: "0x027838dea749f41c6f8a44fcfa791788e6101080c1b3cd646a361f653ad10e2d", // Mainnet support only
+    id: COLLECTION_IDS[currentNetwork]["golden-tokens"],
+    name: "Golden Tokens",
+    image: "/collections/golden-tokens.svg",
   },
 } as const;
 
