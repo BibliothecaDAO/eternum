@@ -5,7 +5,7 @@ use starknet::ContractAddress;
 
 /// Represents a tile on the map where a quest can be discovered and initiated.
 /// Contains metadata about the quest available at this location.
-#[derive(Copy, Drop, Serde, Introspect)]
+#[derive(Copy, Drop, Serde, IntrospectPacked)]
 #[dojo::model]
 pub struct QuestTile {
     /// Unique identifier for the quest tile.
@@ -29,7 +29,7 @@ pub struct QuestTile {
 
 /// Represents an active quest instance undertaken by an explorer.
 /// Links a specific game attempt (token) to a quest tile and the participating explorer.
-#[derive(Copy, Drop, Serde, Introspect)]
+#[derive(Copy, Drop, Serde, IntrospectPacked)]
 #[dojo::model]
 pub struct Quest {
     /// The unique identifier of the game token minted when the quest was started.
@@ -66,7 +66,7 @@ pub struct QuestDetails {
 
 /// Tracks which realm or village has participated in a specific quest tile.
 /// Used to prevent multiple participations from the same originating structure (realm or village).
-#[derive(Copy, Drop, Serde, Introspect)]
+#[derive(Copy, Drop, Serde, IntrospectPacked)]
 #[dojo::model]
 pub struct QuestRegistrations {
     /// The ID of the QuestTile.
@@ -113,7 +113,7 @@ pub struct Level {
 }
 
 /// A simple feature flag to enable or disable the quest system globally.
-#[derive(Copy, Drop, Serde, Introspect)]
+#[derive(Copy, Drop, Serde, IntrospectPacked)]
 #[dojo::model]
 pub struct QuestFeatureFlag {
     /// A key, often representing a version or identifier for the flag.
