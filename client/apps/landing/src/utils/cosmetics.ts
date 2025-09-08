@@ -79,7 +79,7 @@ export const chestAssets: ChestAsset[] = [
     positionY: -0.3,
     scale: 2.4,
     cameraPosition: { x: 0, y: 1.3, z: 1 },
-    attributesRaw: "0x4050301",
+    attributesRaw: "0x2040401",
   },
   {
     id: "5",
@@ -129,7 +129,7 @@ export const chestAssets: ChestAsset[] = [
     scale: 0.7,
     rotationY: 0,
     // cameraPosition: { x: 0, y: 1.3, z: 1 },
-    attributesRaw: "0x2040401",
+    attributesRaw: "0x4050301",
   },
   {
     id: "2",
