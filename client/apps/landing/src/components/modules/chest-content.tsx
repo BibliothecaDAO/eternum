@@ -102,6 +102,12 @@ const calculateCollectionStats = (allAssets: ChestAsset[], collectedIds: Set<str
     }
   });
 
+  // Special case: if collected id "1" is present, add one epic item to collected count, because
+  // it's not in the allAssets list since you can't get it from a chest
+  if (collectedIds.has("1")) {
+    stats.epic.collected++;
+  }
+
   return stats;
 };
 
