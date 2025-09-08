@@ -288,7 +288,6 @@ export const ChestContent = React.memo(
     const rarityStats = calculateRarityStats(chestContent);
     const RARITY_PERCENTAGES = calculateRarityPercentages(chestAssets);
     const collectionStats = calculateCollectionStats(chestAssets, collectedItems);
-    console.log({ collectedItems });
 
     const { playClickSound } = useClickSound({
       src: "/sound/ui/click-2.wav",
