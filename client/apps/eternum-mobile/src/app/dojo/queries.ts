@@ -7,10 +7,10 @@ import { getEntities } from "@dojoengine/state";
 import { PatternMatching, ToriiClient } from "@dojoengine/torii-client";
 import { Clause, LogicalOperator } from "@dojoengine/torii-wasm";
 import {
-  debouncedGetBuildingsFromTorii,
-  debouncedGetEntitiesFromTorii,
-  debouncedGetOwnedArmiesFromTorii,
-  debouncedGetTilesForPositionsFromTorii,
+    debouncedGetBuildingsFromTorii,
+    debouncedGetEntitiesFromTorii,
+    debouncedGetOwnedArmiesFromTorii,
+    debouncedGetTilesForPositionsFromTorii,
 } from "./debounced-queries";
 import { EVENT_QUERY_LIMIT } from "./sync";
 
@@ -96,11 +96,11 @@ export const getConfigFromTorii = async <S extends Schema>(
 ) => {
   const oneKeyConfigModels = [
     "s1_eternum-WorldConfig",
-    "s1_eternum-HyperstructureConstructConfig",
+    "s1_eternum-HyperstrtConstructConfig",
     "s1_eternum-WeightConfig",
     "s1_eternum-ResourceFactoryConfig",
     "s1_eternum-BuildingCategoryConfig",
-    "s1_eternum-ResourceBridgeWhitelistConfig",
+    "s1_eternum-ResourceBridgeWtlConfig",
     "s1_eternum-StructureLevelConfig",
     "s1_eternum-SeasonPrize",
     "s1_eternum-QuestLevels",

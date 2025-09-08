@@ -1,18 +1,18 @@
 import {
-  BiomeType,
-  BuildingType,
-  CapacityConfig,
-  Config,
-  ContractComponents,
-  EntityType,
-  getProducedResource,
-  RESOURCE_PRECISION,
-  ResourcesIds,
-  StructureType,
-  TickIds,
-  TroopTier,
-  TroopType,
-  WORLD_CONFIG_ID,
+    BiomeType,
+    BuildingType,
+    CapacityConfig,
+    Config,
+    ContractComponents,
+    EntityType,
+    getProducedResource,
+    RESOURCE_PRECISION,
+    ResourcesIds,
+    StructureType,
+    TickIds,
+    TroopTier,
+    TroopType,
+    WORLD_CONFIG_ID,
 } from "@bibliothecadao/types";
 import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -154,7 +154,7 @@ export class ClientConfigManager {
 
     for (const resourceType of Object.values(ResourcesIds).filter(Number.isInteger)) {
       const hyperstructureResourceConfig = getComponentValue(
-        this.components.HyperstructureConstructConfig,
+        this.components.HyperstrtConstructConfig,
         getEntityIdFromKeys([BigInt(resourceType)]),
       );
       if (!hyperstructureResourceConfig) continue;

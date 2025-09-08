@@ -213,7 +213,7 @@ pub struct SeasonAddressesConfig {
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-pub struct HyperstructureConstructConfig {
+pub struct HyperstrtConstructConfig {
     #[key]
     pub resource_type: u8,
     pub resource_contribution_points: u64,
@@ -837,7 +837,7 @@ pub struct ResourceBridgeFeeSplitConfig {
 
 #[dojo::model]
 #[derive(Copy, Drop, Serde)]
-pub struct ResourceBridgeWhitelistConfig {
+pub struct ResourceBridgeWtlConfig {
     #[key]
     pub token: ContractAddress,
     pub resource_type: u8,
@@ -845,7 +845,7 @@ pub struct ResourceBridgeWhitelistConfig {
 
 #[dojo::model]
 #[derive(Introspect, Copy, Drop, Serde)]
-pub struct ResourceRevBridgeWhtelistConfig {
+pub struct ResourceRevBridgeWtlConfig {
     #[key]
     pub resource_type: u8,
     pub token: ContractAddress,

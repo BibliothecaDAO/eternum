@@ -8,13 +8,13 @@ import * as SystemProps from "@bibliothecadao/types";
 import { DojoCall, DojoProvider } from "@dojoengine/core";
 import EventEmitter from "eventemitter3";
 import {
-  Account,
-  AccountInterface,
-  AllowArray,
-  Call,
-  CallData,
-  GetTransactionReceiptResponse,
-  uint256,
+    Account,
+    AccountInterface,
+    AllowArray,
+    Call,
+    CallData,
+    GetTransactionReceiptResponse,
+    uint256,
 } from "starknet";
 import { TransactionType } from "./types";
 export const NAMESPACE = "s1_eternum";
@@ -2282,7 +2282,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_resource_bridge_whitlelist_config(props: SystemProps.SetResourceBridgeWhitelistConfigProps) {
+  public async set_resource_bridge_whitlelist_config(props: SystemProps.SetResourceBridgeWtlConfigProps) {
     const { resource_whitelist_configs, signer } = props;
 
     const calldata = resource_whitelist_configs.map(({ token, resource_type }) => ({

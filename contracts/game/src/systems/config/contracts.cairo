@@ -1,6 +1,6 @@
 use s1_eternum::models::config::{
-    BattleConfig, CapacityConfig, HyperstructureConstructConfig, MapConfig, QuestConfig, ResourceBridgeConfig,
-    ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, StructureCapacityConfig, TradeConfig,
+    BattleConfig, CapacityConfig, HyperstrtConstructConfig, MapConfig, QuestConfig, ResourceBridgeConfig,
+    ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, StructureCapacityConfig, TradeConfig,
     TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig,
     VillageTokenConfig,
 };
@@ -110,7 +110,7 @@ pub trait ITransportConfig<T> {
 #[starknet::interface]
 pub trait IHyperstructureConfig<T> {
     fn set_hyperstructure_config(
-        ref self: T, initialize_shards_amount: u128, construction_resources: Span<HyperstructureConstructConfig>,
+        ref self: T, initialize_shards_amount: u128, construction_resources: Span<HyperstrtConstructConfig>,
     );
 }
 
@@ -177,7 +177,7 @@ pub trait IResourceBridgeConfig<T> {
     fn set_resource_bridge_config(ref self: T, resource_bridge_config: ResourceBridgeConfig);
     fn set_resource_bridge_fee_split_config(ref self: T, res_bridge_fee_split_config: ResourceBridgeFeeSplitConfig);
     fn set_resource_bridge_whitelist_config(
-        ref self: T, resource_bridge_whitelist_config: ResourceBridgeWhitelistConfig,
+        ref self: T, resource_bridge_whitelist_config: ResourceBridgeWtlConfig,
     );
 }
 
@@ -224,9 +224,9 @@ pub mod config_systems {
     use s1_eternum::models::config::{
         AgentControllerConfig, BankConfig, BattleConfig, BlitzHypersSettlementConfigImpl, BlitzRegistrationConfig,
         BlitzSettlementConfigImpl, BuildingCategoryConfig, BuildingConfig, CapacityConfig, HyperstructureConfig,
-        HyperstructureConstructConfig, HyperstructureCostConfig, MapConfig, QuestConfig, ResourceBridgeConfig,
-        ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, ResourceFactoryConfig,
-        ResourceRevBridgeWhtelistConfig, SeasonAddressesConfig, SeasonConfig, SettlementConfig, SpeedConfig,
+        HyperstrtConstructConfig, HyperstructureCostConfig, MapConfig, QuestConfig, ResourceBridgeConfig,
+        ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, ResourceFactoryConfig,
+        ResourceRevBridgeWtlConfig, SeasonAddressesConfig, SeasonConfig, SettlementConfig, SpeedConfig,
         StartingResourcesConfig, StructureCapacityConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig,
         TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig,
         VictoryPointsWinConfig, VillageFoundResourcesConfig, VillageTokenConfig, WeightConfig,
@@ -581,7 +581,7 @@ pub mod config_systems {
         fn set_hyperstructure_config(
             ref self: ContractState,
             initialize_shards_amount: u128,
-            mut construction_resources: Span<HyperstructureConstructConfig>,
+            mut construction_resources: Span<HyperstrtConstructConfig>,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -740,7 +740,7 @@ pub mod config_systems {
         }
 
         fn set_resource_bridge_whitelist_config(
-            ref self: ContractState, mut resource_bridge_whitelist_config: ResourceBridgeWhitelistConfig,
+            ref self: ContractState, mut resource_bridge_whitelist_config: ResourceBridgeWtlConfig,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -758,7 +758,7 @@ pub mod config_systems {
             world.write_model(@resource_bridge_whitelist_config);
 
             // reverse whitelist config
-            let mut resource_bridge_whitelist_reverse_config = ResourceRevBridgeWhtelistConfig {
+            let mut resource_bridge_whitelist_reverse_config = ResourceRevBridgeWtlConfig {
                 resource_type: resource_bridge_whitelist_config.resource_type,
                 token: resource_bridge_whitelist_config.token,
             };
