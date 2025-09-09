@@ -9,7 +9,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Link } from "@tanstack/react-router";
-import { Calendar, Coins, Crown, Map, Package, ShoppingBag, Sparkles, Ticket, X } from "lucide-react";
+import { Coins, Crown, Map, Package, ShoppingBag, Sparkles, X } from "lucide-react";
 import { TypeH2 } from "../typography/type-h2";
 
 // Menu items.
@@ -21,21 +21,21 @@ const items = [
   },
   // { title: "Claim", url: "/claim", icon: Coins },
 
-  {
-    title: "Claim Passes",
-    url: "/mint",
-    icon: Ticket,
-  },
+  // {
+  //   title: "Claim Passes",
+  //   url: "/mint",
+  //   icon: Ticket,
+  // },
   {
     title: "Realms",
     url: "/realms",
     icon: Map,
   },
-  {
-    title: "Season Passes",
-    url: "/season-passes",
-    icon: Calendar,
-  },
+  // {
+  //   title: "Season Passes",
+  //   url: "/season-passes",
+  //   icon: Calendar,
+  // },
   {
     title: "Loot Chests",
     url: "/loot-chests",

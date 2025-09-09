@@ -7,7 +7,7 @@ env:
   SLOT_TEAM: "realms-eternum"
   SLOT_AUTH: ${{ secrets.SLOT_AUTH }}
   SLOT_TIER: "pro"
-  TORII_VERSION: "v1.7.0-alpha.1"
+  TORII_VERSION: "v1.7.0-alpha.5"
   TORII_CONFIG: "torii-slot.toml"
   NODE_VERSION: "18"
   CI: "true"
@@ -23,7 +23,7 @@ on:
       torii_version:
         description: 'Torii version to deploy'
         required: false
-        default: 'v1.7.0-alpha.1'
+        default: 'v1.7.0-alpha.5'
 
 jobs:
   deploy-slot:
@@ -54,11 +54,11 @@ jobs:
       - name: 🔧 Setup Scarb
         uses: software-mansion/setup-scarb@v1
         with:
-          scarb-version: "nightly-2025-05-08"
+          scarb-version: "dev-2025-09-05"
 
       - name: 📥 Download Dojo Release
         run: |
-          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.7.0-alpha.1/dojo_v1.7.0-alpha.1_linux_amd64.tar.gz
+          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.7.0-alpha.2/dojo_v1.7.0-alpha.2_linux_amd64.tar.gz
           tar -xzf dojo-linux-x86_64.tar.gz
           sudo mv sozo /usr/local/bin/
 

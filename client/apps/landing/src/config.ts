@@ -45,12 +45,12 @@ export const marketplaceCollections = {
     name: "Realms",
     image: "/collections/realms.png",
   },
-  "season-passes": {
-    address: seasonPassAddress,
-    id: COLLECTION_IDS[currentNetwork]["season-passes"],
-    name: "Season 1 Pass",
-    image: "/collections/season-passes.png",
-  },
+  // "season-passes": {
+  //   address: seasonPassAddress,
+  //   id: COLLECTION_IDS[currentNetwork]["season-passes"],
+  //   name: "Season 1 Pass",
+  //   image: "/collections/season-passes.png",
+  // },
   "loot-chests": {
     address: lootChestsAddress,
     id: COLLECTION_IDS[currentNetwork]["loot-chests"],
