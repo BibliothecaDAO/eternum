@@ -172,7 +172,7 @@ export const CombatSimulationPanel = () => {
     troopCount: 100,
     troopType: TroopType.Knight,
     tier: TroopTier.T1,
-    battle_cooldown_end: Math.floor(Date.now() / 1000)
+    battle_cooldown_end: Math.floor(Date.now() / 1000),
   });
   const [defender, setDefender] = useState<Army>({
     stamina: 100,
@@ -217,34 +217,26 @@ export const CombatSimulationPanel = () => {
   const defenderTroopsLeft = defender.troopCount - defenderTroopsLost;
 
   // Calculate stamina changes
-  let attackStaminaCost = 50;
-  attackStaminaCost -= Math.ceil(attackStaminaCost * simulationResult.attackerRefundMultiplier);
-
-  let defenseStaminaCost = Math.min(defender.stamina, 40);
-  defenseStaminaCost -= Math.ceil(defenseStaminaCost * simulationResult.defenderRefundMultiplier);
-
-  const newAttackerStamina = attacker.stamina - attackStaminaCost;
-  const newDefenderStamina = defender.stamina - defenseStaminaCost;
-
+  const newAttackerStamina = combatSimulator.calculateNewStaminaAttacker(
+    attacker.stamina,
+    simulationResult.attackerRefundMultiplier,
+  );
+  const newDefenderStamina = combatSimulator.calculateNewStaminaDefender(
+    defender.stamina,
+    simulationResult.defenderRefundMultiplier,
+  );
 
   // Calculate new battle timer cooldown end
-  const tickIntervalSeconds = 60;
-  let attackerCooldownEnd = attacker.battle_cooldown_end;
-  if (attackerCooldownEnd < now) {
-      attackerCooldownEnd = now
-  }
-  attackerCooldownEnd 
-    += Math.floor(tickIntervalSeconds * (1 - simulationResult.attackerRefundMultiplier));
-
-  let defenderCooldownEnd = defender.battle_cooldown_end;
-  if (defenderCooldownEnd < now) {
-    defenderCooldownEnd = now;
-  }
-  defenderCooldownEnd += Math.floor(tickIntervalSeconds * (1 - simulationResult.defenderRefundMultiplier));
-
-  
-
-
+  const attackerCooldownEnd = combatSimulator.calculateBattleCooldownEnd(
+    attacker.battle_cooldown_end,
+    now,
+    simulationResult.attackerRefundMultiplier,
+  );
+  const defenderCooldownEnd = combatSimulator.calculateBattleCooldownEnd(
+    defender.battle_cooldown_end,
+    now,
+    simulationResult.defenderRefundMultiplier,
+  );
 
   // Calculate relic bonuses for display
   const getRelicBonuses = (relics: ResourcesIds[]) => {
@@ -362,7 +354,7 @@ export const CombatSimulationPanel = () => {
                     staminaModifier: combatSimulator.calculateStaminaModifier(defender.stamina, false),
                     biomeBonus: configManager.getBiomeCombatBonus(defender.troopType, biome),
                     relicBonuses: defenderRelicBonuses,
-                    cooldownEnd: defenderCooldownEnd, 
+                    cooldownEnd: defenderCooldownEnd,
                   },
                 },
               ].map(({ label, data }) => (
@@ -496,9 +488,7 @@ export const CombatSimulationPanel = () => {
                           </div>
                           <div className="text-lg font-bold text-gold flex items-baseline">
                             {new Date(data.cooldownEnd * 1000).toLocaleTimeString()}{" "}
-                            <span className="text-xs ml-2 text-gold/60">
-                              ({data.cooldownEnd})
-                            </span>
+                            <span className="text-xs ml-2 text-gold/60">({data.cooldownEnd})</span>
                           </div>
                         </div>
                       </div>

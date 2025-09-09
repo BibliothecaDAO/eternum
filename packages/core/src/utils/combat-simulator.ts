@@ -17,7 +17,7 @@ export interface Army {
   troopCount: number;
   troopType: TroopType;
   tier: TroopTier;
-  battle_cooldown_end: number
+  battle_cooldown_end: number;
 }
 
 export interface CombatParameters {
@@ -33,6 +33,7 @@ export interface CombatParameters {
   t3_damage_multiplier: bigint;
   stamina_attack_req: number;
   stamina_defense_req: number;
+  tick_interval_seconds: number;
 }
 
 export class CombatSimulator {
@@ -42,10 +43,7 @@ export class CombatSimulator {
   private readonly staminaAttackThreshold: number;
   private readonly staminaDefenseThreshold: number;
   private readonly baseDamageFactor: number;
-  // private readonly betaSmall: number;
-  // private readonly betaLarge: number;
-  // private readonly c0: number;
-  // private readonly delta: number;
+  private readonly tickIntervalSeconds: number;
 
   static MAX_U64: bigint = BigInt(2) ** BigInt(64);
 
@@ -57,10 +55,7 @@ export class CombatSimulator {
     this.staminaDefenseThreshold = params.stamina_defense_req;
 
     this.baseDamageFactor = divideWithPrecision(params.damage_scaling_factor, CombatSimulator.MAX_U64);
-    // this.betaSmall = divideWithPrecision(params.damage_beta_small, CombatSimulator.MAX_U64);
-    // this.betaLarge = divideWithPrecision(params.damage_beta_large, CombatSimulator.MAX_U64);
-    // this.c0 = divideWithPrecision(params.damage_c0, CombatSimulator.MAX_U64);
-    // this.delta = divideWithPrecision(params.damage_delta, CombatSimulator.MAX_U64);
+    this.tickIntervalSeconds = params.tick_interval_seconds;
   }
 
   private getTierValue(tier: TroopTier): number {
@@ -114,6 +109,36 @@ export class CombatSimulator {
     return 0.2;
   }
 
+  public calculateStaminaCost(baseStaminaCost: number, refundMultiplier: number): number {
+    return baseStaminaCost - Math.ceil(baseStaminaCost * refundMultiplier);
+  }
+
+  public calculateNewStaminaAttacker(currentStamina: number, refundMultiplier: number): number {
+    const staminaCost = this.calculateStaminaCost(this.staminaAttackThreshold, refundMultiplier);
+    return currentStamina - staminaCost;
+  }
+
+  public calculateNewStaminaDefender(currentStamina: number, refundMultiplier: number): number {
+    const staminaCost = this.calculateStaminaCost(this.staminaDefenseThreshold, refundMultiplier);
+    return currentStamina - staminaCost;
+  }
+
+  public calculateNewCooldownEndAttacker(currentCooldownEnd: number, now: number, refundMultiplier: number): number {
+    return this.calculateBattleCooldownEnd(currentCooldownEnd, now, refundMultiplier);
+  }
+
+  public calculateNewCooldownEndDefender(currentCooldownEnd: number, now: number, refundMultiplier: number): number {
+    return this.calculateBattleCooldownEnd(currentCooldownEnd, now, refundMultiplier);
+  }
+
+  public calculateBattleCooldownEnd(currentCooldownEnd: number, now: number, refundMultiplier: number): number {
+    let cooldownEnd = currentCooldownEnd;
+    if (cooldownEnd < now) {
+      cooldownEnd = now;
+    }
+    return cooldownEnd + Math.floor(this.tickIntervalSeconds * (1 - refundMultiplier));
+  }
+
   /**
    * Simulates a battle between two armies in a specific biome, with support for relic effects.
    *
@@ -149,26 +174,26 @@ export class CombatSimulator {
     // Calculate relic effects
     // Attacker damage relics increase damage output
     const attackerDamageRelics = RELICS.filter((r) => attackerRelics.includes(r.id) && r.type === "Damage");
-    const attackerDamageMultiplier =
+    const attackerDamageMultiplierRelics =
       attackerDamageRelics.length > 0 ? Math.max(...attackerDamageRelics.map((r) => r.bonus)) : 1;
 
     // Defender damage reduction relics reduce incoming damage
     const defenderReductionRelics = RELICS.filter(
       (r) => defenderRelics.includes(r.id) && r.type === "Damage Reduction",
     );
-    const defenderReductionMultiplier =
+    const defenderReductionMultiplierRelics =
       defenderReductionRelics.length > 0 ? Math.min(...defenderReductionRelics.map((r) => r.bonus)) : 1;
 
     // Defender damage relics increase damage output
     const defenderDamageRelics = RELICS.filter((r) => defenderRelics.includes(r.id) && r.type === "Damage");
-    const defenderDamageMultiplier =
+    const defenderDamageMultiplierRelics =
       defenderDamageRelics.length > 0 ? Math.max(...defenderDamageRelics.map((r) => r.bonus)) : 1;
 
     // Attacker damage reduction relics reduce incoming damage
     const attackerReductionRelics = RELICS.filter(
       (r) => attackerRelics.includes(r.id) && r.type === "Damage Reduction",
     );
-    const attackerReductionMultiplier =
+    const attackerReductionMultiplierRelics =
       attackerReductionRelics.length > 0 ? Math.min(...attackerReductionRelics.map((r) => r.bonus)) : 1;
 
     // Calculate base damage for attacker
@@ -192,8 +217,8 @@ export class CombatSimulator {
       Math.pow(totalTroops, betaEff);
 
     // Apply relic modifiers
-    const attackerDamage = baseAttackerDamage * attackerDamageMultiplier * defenderReductionMultiplier;
-    const defenderDamage = baseDefenderDamage * defenderDamageMultiplier * attackerReductionMultiplier;
+    const attackerDamage = baseAttackerDamage * attackerDamageMultiplierRelics * defenderReductionMultiplierRelics;
+    const defenderDamage = baseDefenderDamage * defenderDamageMultiplierRelics * attackerReductionMultiplierRelics;
 
     const attackerRefundMultiplier = this.calculateRefundMultiplier(attackerDamage, defenderDamage);
     const defenderRefundMultiplier = this.calculateRefundMultiplier(defenderDamage, attackerDamage);
@@ -220,12 +245,13 @@ export class CombatSimulator {
       t3_damage_multiplier: 129127208515966861312n, // 7
       stamina_attack_req: 50,
       stamina_defense_req: 40,
+      tick_interval_seconds: 60,
     };
   }
 
   // Static method to simulate with default parameters
   public simulateBattleWithParams(
-    now: number, 
+    now: number,
     attacker: Army,
     defender: Army,
     biome: BiomeType,

@@ -1,4 +1,5 @@
 import { Skull, Target, Trophy } from "lucide-react";
+import { CooldownIndicator } from "./cooldown-indicator";
 
 interface BattleStatsProps {
   attackerCasualties: number;
@@ -52,7 +53,15 @@ export const BattleStats = ({
   };
 
   return (
-    <div className={`grid grid-cols-1 lg:grid-cols-3 gap-3 ${className}`}>
+    <div className={`flex flex-col gap-4 ${className}`}>
+      {/* Cooldown Status Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <CooldownIndicator cooldownEnd={attackerCooldownEnd} isAttacker={true} />
+        <CooldownIndicator cooldownEnd={defenderCooldownEnd} isAttacker={false} />
+      </div>
+
+      {/* Battle Stats Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
       {/* Attacker Side */}
       <div className="flex flex-col gap-3 p-3 border border-gold/20 rounded-lg bg-brown-900/50 text-center">
         <div className="text-gold font-semibold text-sm mb-2 flex items-center justify-center gap-2">
@@ -80,16 +89,6 @@ export const BattleStats = ({
           <div className={`text-lg font-bold ${attackerStaminaChange >= 0 ? "text-green-400" : "text-red-400"}`}>
             {attackerStaminaChange >= 0 ? "+" : ""}
             {attackerStaminaChange}
-          </div>
-        </div>
-        <div>
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <span className="text-lg">⏳</span>
-            <span className="text-xs text-gold/70">Cooldown End</span>
-          </div>
-          <div className="text-base font-bold text-gold">
-            {new Date(attackerCooldownEnd * 1000).toLocaleTimeString()}{" "}
-            <span className="text-xs ml-2 text-gold/60">({attackerCooldownEnd})</span>
           </div>
         </div>
       </div>
@@ -132,16 +131,7 @@ export const BattleStats = ({
             {defenderStaminaChange}
           </div>
         </div>
-        <div>
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <span className="text-lg">⏳</span>
-            <span className="text-xs text-gold/70">Cooldown End</span>
-          </div>
-          <div className="text-base font-bold text-gold">
-            {new Date(defenderCooldownEnd * 1000).toLocaleTimeString()}{" "}
-            <span className="text-xs ml-2 text-gold/60">({defenderCooldownEnd})</span>
-          </div>
-        </div>
+      </div>
       </div>
     </div>
   );
