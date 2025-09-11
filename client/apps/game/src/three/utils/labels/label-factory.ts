@@ -59,6 +59,7 @@ export interface ArmyLabelData extends LabelData {
   maxStamina: number;
   attackedFromDirection?: Direction; // Direction from which this army has been attacked
   attackedTowardDirection?: Direction; // Direction in which this army has attacked someone
+  battleTimerLeft?: number; // Time left in seconds before battle penalty is over
 }
 
 export interface StructureLabelData extends LabelData {
@@ -76,6 +77,9 @@ export interface StructureLabelData extends LabelData {
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
   hyperstructureRealmCount?: number;
+  attackedFromDirection?: Direction; // Direction from which this structure has been attacked
+  attackedTowardDirection?: Direction; // Direction in which this structure has attacked someone
+  battleTimerLeft?: number; // Time left in seconds before battle penalty is over
 }
 
 // For backward compatibility with existing StructureInfo type
@@ -225,7 +229,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
     }
 
     // Add direction indicators
-    const directionIndicators = createDirectionIndicators(data.attackedFromDirection, data.attackedTowardDirection);
+    const directionIndicators = createDirectionIndicators(data.attackedFromDirection, data.attackedTowardDirection, data.battleTimerLeft);
     if (directionIndicators) {
       textContainer.appendChild(directionIndicators);
     }
@@ -270,7 +274,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
     }
 
     // Update direction indicators
-    updateDirectionIndicators(element, data.attackedFromDirection, data.attackedTowardDirection);
+    updateDirectionIndicators(element, data.attackedFromDirection, data.attackedTowardDirection, data.battleTimerLeft);
   },
 };
 
@@ -404,6 +408,12 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
       realmCountDisplay.appendChild(vpLabel);
 
       contentContainer.appendChild(realmCountDisplay);
+    }
+
+    // Add direction indicators
+    const directionIndicators = createDirectionIndicators(data.attackedFromDirection, data.attackedTowardDirection, data.battleTimerLeft);
+    if (directionIndicators) {
+      contentContainer.appendChild(directionIndicators);
     }
 
     labelDiv.appendChild(contentContainer.wrapper);
@@ -595,6 +605,9 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
       // Remove realm count display if no longer needed
       realmCountDisplay.remove();
     }
+
+    // Update direction indicators
+    updateDirectionIndicators(element, data.attackedFromDirection, data.attackedTowardDirection, data.battleTimerLeft);
   },
 };
 

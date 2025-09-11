@@ -546,11 +546,55 @@ const DIRECTION_TO_ARROW: Record<Direction, string> = {
 };
 
 /**
- * Create direction indicator component
+ * Format time in seconds to MM:SS format
+ */
+const formatTime = (seconds: number): string => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
+
+/**
+ * Create battle timer component
+ */
+export const createBattleTimer = (battleTimerLeft: number): HTMLElement => {
+  const timerDiv = document.createElement("div");
+  timerDiv.classList.add("flex", "items-center", "gap-0.5", "px-1.5", "py-0.5", "rounded", "bg-red-900/40", "border", "border-red-500/30");
+  timerDiv.setAttribute("data-component", "battle-timer");
+
+  // Timer icon
+  const timerIcon = document.createElement("span");
+  timerIcon.textContent = "⏱️";
+  timerIcon.classList.add("text-xs");
+  timerDiv.appendChild(timerIcon);
+
+  // Timer text
+  const timerText = document.createElement("span");
+  timerText.textContent = formatTime(battleTimerLeft);
+  timerText.classList.add("text-red-300", "font-mono", "text-xxs", "font-bold");
+  timerText.setAttribute("data-role", "timer-text");
+  timerDiv.appendChild(timerText);
+
+  return timerDiv;
+};
+
+/**
+ * Update battle timer
+ */
+export const updateBattleTimer = (timerElement: HTMLElement, battleTimerLeft: number): void => {
+  const textElement = timerElement.querySelector("[data-role='timer-text']") as HTMLElement;
+  if (textElement) {
+    textElement.textContent = formatTime(battleTimerLeft);
+  }
+};
+
+/**
+ * Create direction indicator component with optional battle timer
  */
 export const createDirectionIndicators = (
   attackedFromDirection?: Direction,
   attackedTowardDirection?: Direction,
+  battleTimerLeft?: number,
 ): HTMLElement | null => {
   // Return null if no directions to display
   if (attackedFromDirection === undefined && attackedTowardDirection === undefined) {
@@ -601,6 +645,12 @@ export const createDirectionIndicators = (
     container.appendChild(defenseDiv);
   }
 
+  // Battle timer (if battle is active)
+  if (battleTimerLeft !== undefined && battleTimerLeft > 0) {
+    const battleTimer = createBattleTimer(battleTimerLeft);
+    container.appendChild(battleTimer);
+  }
+
   return container;
 };
 
@@ -611,6 +661,7 @@ export const updateDirectionIndicators = (
   element: HTMLElement,
   attackedFromDirection?: Direction,
   attackedTowardDirection?: Direction,
+  battleTimerLeft?: number,
 ): void => {
   const existingIndicators = element.querySelector('[data-component="direction-indicators"]');
 
@@ -623,7 +674,7 @@ export const updateDirectionIndicators = (
   }
 
   // Create new indicators
-  const newIndicators = createDirectionIndicators(attackedFromDirection, attackedTowardDirection);
+  const newIndicators = createDirectionIndicators(attackedFromDirection, attackedTowardDirection, battleTimerLeft);
 
   if (existingIndicators && newIndicators) {
     // Replace existing with new
