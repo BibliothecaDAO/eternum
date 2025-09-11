@@ -3,15 +3,17 @@ import { Position } from "@bibliothecadao/eternum";
 import { getIsBlitz } from "@bibliothecadao/eternum";
 
 import { getCharacterName } from "@/utils/agent";
-import { BuildingType, ResourcesIds, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BuildingType, Direction, ResourcesIds, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { CameraView } from "../../scenes/hexagon-scene";
 import {
   createContentContainer,
+  createDirectionIndicators,
   createGuardArmyDisplay,
   createOwnerDisplayElement,
   createProductionDisplay,
   createStaminaBar,
   createTroopCountDisplay,
+  updateDirectionIndicators,
   updateStaminaBar,
 } from "./label-components";
 import { getOwnershipStyle, LABEL_STYLES, LABEL_TYPE_CONFIGS } from "./label-config";
@@ -55,6 +57,8 @@ export interface ArmyLabelData extends LabelData {
   troopCount: number;
   currentStamina: number;
   maxStamina: number;
+  attackedFromDirection?: Direction; // Direction from which this army has been attacked
+  attackedTowardDirection?: Direction; // Direction in which this army has attacked someone
 }
 
 export interface StructureLabelData extends LabelData {
@@ -220,6 +224,12 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
       textContainer.appendChild(staminaInfo);
     }
 
+    // Add direction indicators
+    const directionIndicators = createDirectionIndicators(data.attackedFromDirection, data.attackedTowardDirection);
+    if (directionIndicators) {
+      textContainer.appendChild(directionIndicators);
+    }
+
     labelDiv.appendChild(textContainer.wrapper);
     return labelDiv;
   },
@@ -258,6 +268,9 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
     if (staminaBar && data.currentStamina !== undefined && data.maxStamina !== undefined) {
       updateStaminaBar(staminaBar as HTMLElement, data.currentStamina, data.maxStamina);
     }
+
+    // Update direction indicators
+    updateDirectionIndicators(element, data.attackedFromDirection, data.attackedTowardDirection);
   },
 };
 
