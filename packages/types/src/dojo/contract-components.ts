@@ -1854,6 +1854,29 @@ const eventsComponents = (world: World) => {
         );
       })(),
 
+      BattleEvent: (() => {
+        return defineComponent(
+          world,
+          {
+            attacker_id: RecsType.Number,
+            defender_id: RecsType.Number,
+            attacker_owner: RecsType.Number,
+            defender_owner: RecsType.Number,
+            winner_id: RecsType.Number,
+            max_reward: RecsType.StringArray,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "s1_eternum",
+              name: "BattleEvent",
+              types: ["u32", "u32", "u32", "u32", "u32", "Span<(u8, u128)>", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+
       SettleRealmData: (() => {
         return defineComponent(
           world,

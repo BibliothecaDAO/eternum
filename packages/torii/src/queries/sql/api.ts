@@ -11,6 +11,7 @@ import {
   Guard,
   GuardData,
   Hyperstructure,
+  HyperstructureRealmCountDataRaw,
   PlayerRelicsData,
   PlayersData,
   PlayerStructure,
@@ -519,24 +520,15 @@ export class SqlApi {
    * Fetch hyperstructures with count of realms within a given radius.
    * SQL queries always return arrays.
    */
-  async fetchHyperstructuresWithRealmCount(radius: number): Promise<
-    Array<{
-      hyperstructure_entity_id: ID;
-      hyperstructure_coord_x: number;
-      hyperstructure_coord_y: number;
-      realm_count_within_radius: number;
-    }>
-  > {
+  async fetchHyperstructuresWithRealmCount(radius: number): Promise<HyperstructureRealmCountDataRaw[]> {
     const query = HYPERSTRUCTURE_QUERIES.HYPERSTRUCTURES_WITH_REALM_COUNT.replace(
       "{radius}",
       (radius * radius).toString(),
     );
     const url = buildApiUrl(this.baseUrl, query);
-    return await fetchWithErrorHandling<{
-      hyperstructure_entity_id: ID;
-      hyperstructure_coord_x: number;
-      hyperstructure_coord_y: number;
-      realm_count_within_radius: number;
-    }>(url, "Failed to fetch hyperstructures with realm count");
+    return await fetchWithErrorHandling<HyperstructureRealmCountDataRaw>(
+      url,
+      "Failed to fetch hyperstructures with realm count",
+    );
   }
 }

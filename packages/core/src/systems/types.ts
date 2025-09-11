@@ -14,7 +14,7 @@ import type { ActiveProduction, GuardArmy } from "../stores/map-data-store";
 import { Position } from "./position";
 
 // data that you can get from the tile + mapdatastore
-export type ArmySystemUpdate = {
+export type ExplorerTroopsTileSystemUpdate = {
   entityId: ID;
   hexCoords: HexPosition;
   troopType: TroopType;
@@ -33,6 +33,15 @@ export type ArmySystemUpdate = {
         updatedTick: number;
       }
     | undefined;
+
+  // Battle data
+  battleData?: {
+    battleCooldownEnd: number;
+    latestAttackerId: number | null;
+    latestAttackTimestamp: string | null; // hex string
+    latestDefenderId: number | null;
+    latestDefenseTimestamp: string | null; // hex string
+  };
 };
 
 // data that you can get only from the explorer troops
@@ -46,9 +55,10 @@ export type ExplorerTroopsSystemUpdate = {
   };
   ownerAddress: bigint;
   ownerName: string;
+  battleCooldownEnd: number;
 };
 
-export type StructureSystemUpdate = {
+export type StructureTileSystemUpdate = {
   entityId: ID;
   hexCoords: HexPosition;
   structureType: StructureType;
@@ -62,6 +72,14 @@ export type StructureSystemUpdate = {
   guardArmies?: GuardArmy[];
   activeProductions?: ActiveProduction[];
   hyperstructureRealmCount?: number;
+};
+
+export type StructureSystemUpdate = {
+  entityId: ID;
+  guardArmies: GuardArmy[];
+  owner: { address: bigint; ownerName: string; guildName: string };
+  hexCoords: HexPosition;
+  battleCooldownEnd: number;
 };
 
 export type TileSystemUpdate = {
@@ -103,7 +121,6 @@ export type RelicEffectSystemUpdate = {
   relicEffects: RelicEffectWithEndTick[];
 };
 
-
 export interface QuestData {
   entityId: ID;
   questType: QuestType;
@@ -121,6 +138,20 @@ export interface SelectableArmy {
   position: HexPosition;
   name: string;
 }
+
+export type BattleEventSystemUpdate = {
+  entityId: ID;
+  battleData: {
+    attackerId: ID;
+    defenderId: ID;
+    attackerOwner: ID;
+    defenderOwner: ID;
+    winnerId: ID;
+    maxReward: Array<{ resourceType: number; amount: number }>;
+    timestamp: number;
+  };
+};
+
 export enum StructureProgress {
   STAGE_1 = 0,
   STAGE_2 = 1,

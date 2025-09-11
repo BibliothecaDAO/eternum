@@ -66,6 +66,13 @@ export interface StructureMapData {
   guardArmies: GuardArmy[];
   activeProductions: ActiveProduction[];
   realmId?: number;
+  battleData?: {
+    battleCooldownEnd: number;
+    latestAttackerId: number | null;
+    latestAttackTimestamp: string | null; // hex string
+    latestDefenderId: number | null;
+    latestDefenseTimestamp: string | null; // hex string
+  };
 }
 
 export interface ArmyMapData {
@@ -81,6 +88,13 @@ export interface ArmyMapData {
   };
   ownerAddress: string;
   ownerName: string;
+  battleData?: {
+    battleCooldownEnd: number;
+    latestAttackerId: number | null;
+    latestAttackTimestamp: string | null; // hex string
+    latestDefenderId: number | null;
+    latestDefenseTimestamp: string | null; // hex string
+  };
 }
 
 export class MapDataStore {
@@ -363,6 +377,20 @@ export class MapDataStore {
         guardArmies,
         activeProductions,
         realmId: structure.realm_id || undefined,
+        battleData: structure.battle_data
+          ? {
+              battleCooldownEnd: Math.max(
+                structure.alpha_battle_cooldown_end || 0,
+                structure.bravo_battle_cooldown_end || 0,
+                structure.charlie_battle_cooldown_end || 0,
+                structure.delta_battle_cooldown_end || 0,
+              ), // TODO: Determine appropriate cooldown logic
+              latestAttackerId: structure.battle_data.latest_attacker_id,
+              latestAttackTimestamp: structure.battle_data.latest_attack_timestamp,
+              latestDefenderId: structure.battle_data.latest_defender_id,
+              latestDefenseTimestamp: structure.battle_data.latest_defense_timestamp,
+            }
+          : undefined,
       };
 
       this.structuresMap.set(structure.entity_id, structureData);

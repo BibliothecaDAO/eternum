@@ -33,12 +33,14 @@ import { MAP_DATA_REFRESH_INTERVAL } from "../utils/constants";
 import { getBlockTimestamp } from "../utils/timestamp";
 import { DataEnhancer } from "./data-enhancer";
 import {
-  type ArmySystemUpdate,
+  type BattleEventSystemUpdate,
   type BuildingSystemUpdate,
   ExplorerMoveSystemUpdate,
   ExplorerTroopsSystemUpdate,
+  type ExplorerTroopsTileSystemUpdate,
   type RelicEffectSystemUpdate,
-  type StructureSystemUpdate,
+  StructureSystemUpdate,
+  type StructureTileSystemUpdate,
   type TileSystemUpdate,
 } from "./types";
 import { getExplorerInfoFromTileOccupier, getStructureInfoFromTileOccupier, getStructureStage } from "./utils";
@@ -87,11 +89,11 @@ export class WorldUpdateListener {
 
   public get Army() {
     return {
-      onTileUpdate: (callback: (value: ArmySystemUpdate) => void) => {
+      onTileUpdate: (callback: (value: ExplorerTroopsTileSystemUpdate) => void) => {
         this.setupSystem(
           this.setup.components.Tile,
           callback,
-          async (update: any): Promise<ArmySystemUpdate | undefined> => {
+          async (update: any): Promise<ExplorerTroopsTileSystemUpdate | undefined> => {
             if (isComponentUpdate(update, this.setup.components.Tile)) {
               const [currentState, _prevState] = update.value;
 
@@ -108,10 +110,9 @@ export class WorldUpdateListener {
                 try {
                   const explorerTroops = getComponentValue(
                     this.setup.components.ExplorerTroops,
-                    getEntityIdFromKeys([BigInt(currentState.occupier_id)])
+                    getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
                   );
                   structureOwnerId = explorerTroops?.owner;
-                  
                 } catch (error) {
                   console.warn(`[DEBUG] Could not get structure owner for army ${currentState.occupier_id}:`, error);
                 }
@@ -123,7 +124,7 @@ export class WorldUpdateListener {
                   currentArmiesTick,
                   structureOwnerId,
                 );
-                
+
                 const maxStamina = StaminaManager.getMaxStamina(explorer.troopType, explorer.troopTier);
 
                 return {
@@ -140,6 +141,7 @@ export class WorldUpdateListener {
                   troopCount: enhancedData.troopCount,
                   currentStamina: enhancedData.currentStamina,
                   onChainStamina: enhancedData.onChainStamina,
+                  battleData: enhancedData.battleData,
                   maxStamina,
                 };
               });
@@ -161,7 +163,6 @@ export class WorldUpdateListener {
 
               if (!currentState) return;
 
-              
               // maybe don't use mapdatastore here since these are all available from the tile listener
               const owner = await this.dataEnhancer.getStructureOwner(currentState.owner);
 
@@ -175,6 +176,7 @@ export class WorldUpdateListener {
                 hexCoords: { col: currentState.coord.x, row: currentState.coord.y },
                 ownerAddress: owner?.address || 0n,
                 ownerName: owner?.ownerName || "",
+                battleCooldownEnd: currentState.troops.battle_cooldown_end,
               };
             }
           },
@@ -228,7 +230,7 @@ export class WorldUpdateListener {
           false,
         );
       },
-      onTileUpdate: (callback: (value: StructureSystemUpdate) => void) => {
+      onTileUpdate: (callback: (value: StructureTileSystemUpdate) => void) => {
         this.setupSystem(
           this.setup.components.Tile,
           callback,
@@ -237,10 +239,8 @@ export class WorldUpdateListener {
               const [currentState, _prevState] = update.value;
 
               const structureInfo = currentState && getStructureInfoFromTileOccupier(currentState?.occupier_type);
-              
-              if (!structureInfo) return;
 
-              
+              if (!structureInfo) return;
 
               const hyperstructure = getComponentValue(
                 this.setup.components.Hyperstructure,
@@ -259,7 +259,7 @@ export class WorldUpdateListener {
               const result = await this.processSequentialUpdate(currentState.occupier_id, async () => {
                 // Use DataEnhancer to fetch all enhanced data
                 const enhancedData = await this.dataEnhancer.enhanceStructureData(currentState.occupier_id);
-                
+
                 return {
                   entityId: currentState.occupier_id,
                   hexCoords: {
@@ -277,6 +277,7 @@ export class WorldUpdateListener {
                   guardArmies: enhancedData.guardArmies,
                   activeProductions: enhancedData.activeProductions,
                   hyperstructureRealmCount,
+                  battleData: enhancedData.battleData,
                 };
               });
 
@@ -287,31 +288,14 @@ export class WorldUpdateListener {
           false,
         );
       },
-      onStructureUpdate: (
-        callback: (value: {
-          entityId: ID;
-          guardArmies: GuardArmy[];
-          owner: { address: bigint; ownerName: string; guildName: string };
-          hexCoords: HexPosition;
-        }) => void,
-      ) => {
+      onStructureUpdate: (callback: (value: StructureSystemUpdate) => void) => {
         this.setupSystem(
           this.setup.components.Structure,
           callback,
-          async (
-            update: any,
-          ): Promise<
-            | {
-                entityId: ID;
-                guardArmies: GuardArmy[];
-                owner: { address: bigint; ownerName: string; guildName: string };
-                hexCoords: HexPosition;
-              }
-            | undefined
-          > => {
+          async (update: any): Promise<StructureSystemUpdate | undefined> => {
             if (isComponentUpdate(update, this.setup.components.Structure)) {
               const [currentState, _prevState] = update.value;
-              
+
               if (!currentState) return;
 
               // Extract guard armies data from the structure
@@ -365,6 +349,12 @@ export class WorldUpdateListener {
                   guildName: "",
                 },
                 hexCoords: { col: currentState.base.coord_x, row: currentState.base.coord_y },
+                battleCooldownEnd: Math.max(
+                  currentState.troop_guards.alpha.battle_cooldown_end,
+                  currentState.troop_guards.bravo.battle_cooldown_end,
+                  currentState.troop_guards.charlie.battle_cooldown_end,
+                  currentState.troop_guards.delta.battle_cooldown_end,
+                ),
               };
             }
           },
@@ -614,8 +604,6 @@ export class WorldUpdateListener {
             if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
               const [currentState, prevState] = update.value;
 
-              
-
               // at least one of the states must have an entity id
               const entityId = currentState?.explorer_id || prevState?.explorer_id || 0;
 
@@ -623,7 +611,6 @@ export class WorldUpdateListener {
               if (currentState) {
                 const { currentArmiesTick } = getBlockTimestamp();
                 const relicEffects = getArmyRelicEffects(currentState.troops, currentArmiesTick);
-
 
                 if (relicEffects.length === 0) {
                   return;
@@ -683,10 +670,61 @@ export class WorldUpdateListener {
                 return;
               }
 
-
               return {
                 entityId: currentState.structure_id,
                 relicEffects,
+              };
+            }
+          },
+          false,
+        );
+      },
+    };
+  }
+
+  public get BattleEvent() {
+    return {
+      onBattleUpdate: (callback: (value: BattleEventSystemUpdate) => void) => {
+        this.setupSystem(
+          this.setup.components.events.BattleEvent,
+          callback,
+          async (update: any): Promise<BattleEventSystemUpdate | undefined> => {
+            if (isComponentUpdate(update, this.setup.components.events.BattleEvent)) {
+              const [currentState, _prevState] = update.value;
+              
+              if (!currentState) return;
+
+              // Parse max_reward from the event
+              const maxReward: Array<{ resourceType: number; amount: number }> = [];
+              if (currentState.max_reward && Array.isArray(currentState.max_reward)) {
+                for (const reward of currentState.max_reward) {
+                  // Assuming reward is [resourceType, amount] tuple
+                  if (Array.isArray(reward) && reward.length === 2) {
+                    maxReward.push({
+                      resourceType: Number(reward[0]),
+                      amount: divideByPrecision(Number(reward[1])),
+                    });
+                  }
+                }
+              }
+
+              // Determine the entityId based on winner
+              // If attacker won, use attacker_id; if defender won, use defender_id
+              const entityId = currentState.winner_id === currentState.attacker_owner 
+                ? currentState.attacker_id 
+                : currentState.defender_id;
+
+              return {
+                entityId,
+                battleData: {
+                  attackerId: currentState.attacker_id,
+                  defenderId: currentState.defender_id,
+                  attackerOwner: currentState.attacker_owner,
+                  defenderOwner: currentState.defender_owner,
+                  winnerId: currentState.winner_id,
+                  maxReward,
+                  timestamp: currentState.timestamp,
+                },
               };
             }
           },
@@ -719,7 +757,6 @@ export class WorldUpdateListener {
       try {
         // Check if this update is still the latest before processing
         if (this.updateSequenceMap.get(entityId) !== currentSequence) {
-
           return null;
         }
 
@@ -727,7 +764,6 @@ export class WorldUpdateListener {
 
         // Double-check sequence number before returning result
         if (this.updateSequenceMap.get(entityId) !== currentSequence) {
-
           return null;
         }
 
@@ -761,6 +797,5 @@ export class WorldUpdateListener {
     this.updateSequenceMap.clear();
 
     this.mapDataStore.destroy();
-    
   }
 }
