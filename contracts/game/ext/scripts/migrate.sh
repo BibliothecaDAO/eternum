@@ -112,7 +112,7 @@ if [[ $BUILD_ONLY -eq 0 ]]; then
 
     echo -e "${YELLOW}► Migrating Game contracts with --profile ${BOLD}${PROFILE}${YELLOW}"\
            "and world contract: ${BOLD}${WORLD_CONTRACT:-(unspecified)}${YELLOW}${NC}"
-    COMMAND="RUST_LOG=starknet=trace sozo migrate --profile $PROFILE $WORLD_CONTRACT"
+    COMMAND="env RUST_LOG=starknet=trace sozo migrate --profile $PROFILE $WORLD_CONTRACT"
     echo -e ""
     echo -e "${BLUE}► Running command: ${BOLD}${COMMAND}${BLUE}${NC}"
     echo -e ""
