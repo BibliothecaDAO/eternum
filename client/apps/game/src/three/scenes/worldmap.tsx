@@ -28,9 +28,9 @@ import {
   ActionPaths,
   ActionType,
   ArmyActionManager,
-  ArmySystemUpdate,
   ChestSystemUpdate,
   ExplorerMoveSystemUpdate,
+  ExplorerTroopsTileSystemUpdate,
   getBlockTimestamp,
   isRelicActive,
   QuestSystemUpdate,
@@ -279,7 +279,7 @@ export default class WorldmapScene extends HexagonScene {
     });
 
     // Store the unsubscribe function for Army updates
-    this.worldUpdateListener.Army.onTileUpdate(async (update: ArmySystemUpdate) => {
+    this.worldUpdateListener.Army.onTileUpdate(async (update: ExplorerTroopsTileSystemUpdate) => {
       this.updateArmyHexes(update);
 
       // Ensure army spawn location is marked as explored for pathfinding
@@ -419,6 +419,27 @@ export default class WorldmapScene extends HexagonScene {
         }
       }, 500);
     });
+
+    // Listen for battle events to update direction indicators
+    this.worldUpdateListener.BattleEvent.onBattleDirectionUpdate(
+      (update: { attackerId: ID; defenderId: ID; timestamp: number }) => {
+        const { attackerId, defenderId, timestamp } = update;
+
+        // Set up cross-entity position getter for structure manager
+        this.structureManager.setArmyPositionGetter((entityId: ID) => {
+          const army = this.armyManager.getArmies().find((a) => a.entityId === entityId);
+          if (army) {
+            const coords = army.hexCoords.getContract();
+            return { x: coords.x, y: coords.y };
+          }
+          return undefined;
+        });
+
+        // Update both army and structure managers
+        this.armyManager.updateArmyFromBattleEvent(attackerId, defenderId);
+        this.structureManager.updateStructureFromBattleEvent(attackerId, defenderId, timestamp);
+      },
+    );
 
     // add particles
     this.selectedHexManager = new SelectedHexManager(this.scene);

@@ -6,12 +6,13 @@ import { isAddressEqualToAccount } from "@/three/utils/utils";
 import { Position } from "@bibliothecadao/eternum";
 
 import { COLORS } from "@/ui/features";
-import { ArmySystemUpdate, ExplorerTroopsSystemUpdate, getBlockTimestamp } from "@bibliothecadao/eternum";
+import { ExplorerTroopsSystemUpdate, ExplorerTroopsTileSystemUpdate, getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import { Biome, configManager, StaminaManager } from "@bibliothecadao/eternum";
 import {
   BiomeType,
   ContractAddress,
+  Direction,
   HexEntityInfo,
   ID,
   RelicEffect,
@@ -22,6 +23,7 @@ import { Color, Euler, Group, Raycaster, Scene, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { ArmyData, RenderChunkSize } from "../types";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
+import { getBattleTimerLeft, getCombatDirections } from "../utils/combat-directions";
 import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
 import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { MemoryMonitor } from "../utils/memory-monitor";
@@ -35,6 +37,10 @@ interface PendingExplorerTroopsUpdate {
   ownerName: string;
   timestamp: number; // When this update was received
   updateTick: number; // Game tick when this update occurred
+  attackedFromDirection?: Direction;
+  attackedTowardDirection?: Direction;
+  battleCooldownEnd?: number;
+  battleTimerLeft?: number;
 }
 
 interface AddArmyParams {
@@ -48,6 +54,10 @@ interface AddArmyParams {
   currentStamina?: number;
   onChainStamina?: { amount: bigint; updatedTick: number };
   maxStamina?: number;
+  attackedFromDirection?: Direction;
+  attackedTowardDirection?: Direction;
+  battleCooldownEnd?: number;
+  battleTimerLeft?: number;
 }
 
 export class ArmyManager {
@@ -246,13 +256,26 @@ export class ArmyManager {
   }
 
   async onTileUpdate(
-    update: ArmySystemUpdate,
+    update: ExplorerTroopsTileSystemUpdate,
     armyHexes: Map<number, Map<number, HexEntityInfo>>,
     structureHexes: Map<number, Map<number, HexEntityInfo>>,
     exploredTiles: Map<number, Map<number, BiomeType>>,
   ) {
     await this.armyModel.loadPromise;
-    const { entityId, hexCoords, ownerAddress, ownerName, guildName, troopType, troopTier } = update;
+    const { entityId, hexCoords, ownerAddress, ownerName, guildName, troopType, troopTier, battleData } = update;
+
+    const { battleCooldownEnd, latestAttackerId, latestDefenderId } = battleData || {};
+
+    // Use utility function to get combat directions
+    const { attackedFromDirection, attackedTowardDirection } = getCombatDirections(
+      hexCoords,
+      latestAttackerId ?? undefined,
+      latestDefenderId ?? undefined,
+      (entityId) => this.armies.get(entityId)?.hexCoords.getContract(),
+    );
+
+    // Calculate battle timer left
+    const battleTimerLeft = getBattleTimerLeft(battleCooldownEnd);
 
     const newPosition = new Position({ x: hexCoords.col, y: hexCoords.row });
 
@@ -274,6 +297,10 @@ export class ArmyManager {
         currentStamina: update.currentStamina,
         onChainStamina: update.onChainStamina,
         maxStamina: update.maxStamina,
+        attackedFromDirection: attackedFromDirection ?? undefined,
+        attackedTowardDirection: attackedTowardDirection ?? undefined,
+        battleCooldownEnd,
+        battleTimerLeft,
       });
     }
     return false;
@@ -425,6 +452,9 @@ export class ArmyManager {
       currentStamina,
       onChainStamina,
       maxStamina,
+      attackedFromDirection,
+      attackedTowardDirection,
+      battleCooldownEnd,
     } = params;
     if (this.armies.has(entityId)) return;
 
@@ -444,6 +474,10 @@ export class ArmyManager {
     let finalOwnerAddress = owner.address;
     let finalOwnerName = owner.ownerName;
     let finalGuildName = owner.guildName;
+    let finalAttackedFromDirection = attackedFromDirection;
+    let finalAttackedTowardDirection = attackedTowardDirection;
+    let finalBattleCooldownEnd = battleCooldownEnd;
+    let finalBattleTimerLeft = getBattleTimerLeft(battleCooldownEnd);
 
     // Check for pending label updates and apply them if they exist
     const pendingUpdate = this.pendingExplorerTroopsUpdate.get(entityId);
@@ -497,6 +531,10 @@ export class ArmyManager {
         finalOwnerAddress = pendingUpdate.ownerAddress;
         finalOnChainStamina = pendingUpdate.onChainStamina;
         finalOwnerName = pendingUpdate.ownerName;
+        finalAttackedFromDirection = pendingUpdate.attackedFromDirection;
+        finalAttackedTowardDirection = pendingUpdate.attackedTowardDirection;
+        finalBattleCooldownEnd = pendingUpdate.battleCooldownEnd;
+        finalBattleTimerLeft = pendingUpdate.battleTimerLeft;
 
         // Clear the pending update
         this.pendingExplorerTroopsUpdate.delete(entityId);
@@ -535,6 +573,10 @@ export class ArmyManager {
       maxStamina: finalMaxStamina,
       // we need to check if there's any pending before we set it because onchain stamina might be 0 from the map data store in the system-manager
       onChainStamina: finalOnChainStamina,
+      attackedFromDirection: finalAttackedFromDirection,
+      attackedTowardDirection: finalAttackedTowardDirection,
+      battleCooldownEnd: finalBattleCooldownEnd,
+      battleTimerLeft: finalBattleTimerLeft,
     });
 
     // Apply any pending relic effects for this army
@@ -916,6 +958,76 @@ ${
   }
 
   /**
+   * Update army directions from battle event
+   */
+  public updateArmyFromBattleEvent(attackerId: ID, defenderId: ID): void {
+    const attacker = this.armies.get(attackerId);
+    const defender = this.armies.get(defenderId);
+
+    if (!attacker || !defender) {
+      console.log(`[BATTLE DIRECTION UPDATE] Cannot update directions - attacker or defender not found`, {
+        attackerId,
+        defenderId,
+        hasAttacker: !!attacker,
+        hasDefender: !!defender,
+      });
+      return;
+    }
+
+    // Get positions
+    const attackerPos = attacker.hexCoords.getContract();
+    const defenderPos = defender.hexCoords.getContract();
+
+    // Calculate directions
+    const { attackedFromDirection } = getCombatDirections(
+      { col: defenderPos.x, row: defenderPos.y },
+      attackerId,
+      undefined, // Defender is not attacking in this context
+      (entityId) => {
+        const army = this.armies.get(entityId);
+        return army ? army.hexCoords.getContract() : undefined;
+      },
+    );
+
+    // Update defender - being attacked from direction
+    defender.attackedFromDirection = attackedFromDirection ?? undefined;
+    defender.battleTimerLeft = getBattleTimerLeft(defender.battleCooldownEnd);
+
+    // Calculate attacker's direction
+    const attackerDirections = getCombatDirections(
+      { col: attackerPos.x, row: attackerPos.y },
+      undefined, // Attacker is not being attacked in this context
+      defenderId,
+      (entityId) => {
+        const army = this.armies.get(entityId);
+        return army ? army.hexCoords.getContract() : undefined;
+      },
+    );
+
+    // Update attacker - attacking toward direction
+    attacker.attackedTowardDirection = attackerDirections.attackedTowardDirection ?? undefined;
+    attacker.battleTimerLeft = getBattleTimerLeft(attacker.battleCooldownEnd);
+
+    // Update labels if they exist
+    const attackerLabel = this.entityIdLabels.get(attackerId);
+    if (attackerLabel) {
+      this.updateArmyLabelData(attackerId, attacker, attackerLabel);
+    }
+
+    const defenderLabel = this.entityIdLabels.get(defenderId);
+    if (defenderLabel) {
+      this.updateArmyLabelData(defenderId, defender, defenderLabel);
+    }
+
+    console.log(`[BATTLE DIRECTION UPDATE] Updated army directions`, {
+      attackerId,
+      defenderId,
+      attackerDirection: attacker.attackedTowardDirection,
+      defenderDirection: defender.attackedFromDirection,
+    });
+  }
+
+  /**
    * Update army label from system update (troop count/stamina changes)
    */
   public updateArmyFromExplorerTroopsUpdate(update: ExplorerTroopsSystemUpdate): void {
@@ -940,6 +1052,12 @@ ${
           ownerName: update.ownerName,
           timestamp: currentTime,
           updateTick: currentTick,
+          // Note: ExplorerTroopsSystemUpdate doesn't have battle direction data
+          // Directions would need to come from tile updates
+          attackedFromDirection: undefined,
+          attackedTowardDirection: undefined,
+          battleCooldownEnd: update.battleCooldownEnd,
+          battleTimerLeft: getBattleTimerLeft(update.battleCooldownEnd),
         });
       } else {
         console.log(
@@ -987,6 +1105,8 @@ ${
     army.isMine = isAddressEqualToAccount(update.ownerAddress);
     army.onChainStamina = update.onChainStamina;
     army.owner.ownerName = update.ownerName;
+    army.battleCooldownEnd = update.battleCooldownEnd;
+    army.battleTimerLeft = getBattleTimerLeft(update.battleCooldownEnd);
 
     // Update the label if it exists
     const label = this.entityIdLabels.get(update.entityId);

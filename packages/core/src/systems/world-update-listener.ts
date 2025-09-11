@@ -731,6 +731,30 @@ export class WorldUpdateListener {
           false,
         );
       },
+      
+      /**
+       * Listen for battle events and return data needed to update army/structure directions
+       */
+      onBattleDirectionUpdate: (callback: (value: { attackerId: ID; defenderId: ID; timestamp: number }) => void) => {
+        this.setupSystem(
+          this.setup.components.events.BattleEvent,
+          callback,
+          async (update: any): Promise<{ attackerId: ID; defenderId: ID; timestamp: number } | undefined> => {
+            if (isComponentUpdate(update, this.setup.components.events.BattleEvent)) {
+              const [currentState, _prevState] = update.value;
+              
+              if (!currentState) return;
+
+              return {
+                attackerId: currentState.attacker_id,
+                defenderId: currentState.defender_id,
+                timestamp: currentState.timestamp,
+              };
+            }
+          },
+          false,
+        );
+      },
     };
   }
 

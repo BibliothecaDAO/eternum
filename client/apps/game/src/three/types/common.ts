@@ -1,6 +1,6 @@
 import { Position } from "@bibliothecadao/eternum";
 
-import { BuildingType, ID, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BuildingType, Direction, ID, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 
 export enum SceneName {
   WorldMap = "map",
@@ -12,7 +12,6 @@ export enum HyperstructureTypesNames {
   STAGE_2 = "hyperstructure_stage1",
   STAGE_3 = "hyperstructure_stage2",
 }
-
 
 export interface StructureInfo {
   entityId: ID;
@@ -29,6 +28,10 @@ export interface StructureInfo {
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
   hyperstructureRealmCount?: number;
+  attackedFromDirection?: Direction; // Direction from which this structure has been attacked
+  attackedTowardDirection?: Direction; // Direction in which this structure has attacked someone
+  battleCooldownEnd?: number; // Unix timestamp when battle cooldown ends
+  battleTimerLeft?: number; // Time left in seconds before battle penalty is over
 }
 
 export interface ArmyData {
@@ -46,8 +49,11 @@ export interface ArmyData {
   currentStamina: number;
   maxStamina: number;
   onChainStamina: { amount: bigint; updatedTick: number };
+  attackedFromDirection?: Direction; // Direction from which this army has been attacked
+  attackedTowardDirection?: Direction; // Direction in which this army has attacked someone
+  battleCooldownEnd?: number; // Unix timestamp when battle cooldown ends
+  battleTimerLeft?: number; // Time left in seconds before battle penalty is over
 }
-
 
 export interface RenderChunkSize {
   width: number;

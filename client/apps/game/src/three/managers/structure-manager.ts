@@ -4,7 +4,7 @@ import InstancedModel from "@/three/managers/instanced-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
-import { getIsBlitz, StructureSystemUpdate } from "@bibliothecadao/eternum";
+import { getIsBlitz, StructureTileSystemUpdate } from "@bibliothecadao/eternum";
 import { BuildingType, ID, RelicEffect, StructureType } from "@bibliothecadao/types";
 import { Group, Object3D, Scene, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
@@ -14,6 +14,7 @@ import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { createStructureLabel, updateStructureLabel } from "../utils/labels/label-factory";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
+import { getCombatDirections, getBattleTimerLeft } from "../utils/combat-directions";
 import { FXManager } from "./fx-manager";
 
 const MAX_INSTANCES = 1000;
@@ -212,7 +213,7 @@ export class StructureManager {
     }
   }
 
-  async onUpdate(update: StructureSystemUpdate) {
+  async onUpdate(update: StructureTileSystemUpdate) {
     console.log("[UPDATE STRUCTURE SYSTEM ON UPDATE]", update);
     await Promise.all(this.modelLoadPromises);
     const { entityId, hexCoords, structureType, stage, level, owner, hasWonder } = update;
@@ -776,6 +777,92 @@ export class StructureManager {
     if (label) {
       this.updateStructureLabelData(update.entityId, structure, label);
     }
+  }
+
+  /**
+   * Update structure directions from battle event
+   */
+  public updateStructureFromBattleEvent(attackerId: ID, defenderId: ID, _timestamp: number): void {
+    // Check if either attacker or defender is a structure
+    const attackingStructure = this.structures.getStructureByEntityId(attackerId);
+    const defendingStructure = this.structures.getStructureByEntityId(defenderId);
+
+    if (!attackingStructure && !defendingStructure) {
+      // Neither is a structure, skip
+      return;
+    }
+
+    if (attackingStructure) {
+      // Structure is attacking
+      const defenderPos = defendingStructure?.hexCoords || this.getArmyPosition?.(defenderId);
+      if (defenderPos) {
+        const { attackedTowardDirection } = getCombatDirections(
+          { col: attackingStructure.hexCoords.col, row: attackingStructure.hexCoords.row },
+          undefined,
+          defenderId,
+          (entityId) => {
+            const structure = this.structures.getStructureByEntityId(entityId);
+            if (structure) {
+              return { x: structure.hexCoords.col, y: structure.hexCoords.row };
+            }
+            // Try to get army position if available
+            return this.getArmyPosition?.(entityId);
+          }
+        );
+
+        attackingStructure.attackedTowardDirection = attackedTowardDirection ?? undefined;
+        attackingStructure.battleTimerLeft = getBattleTimerLeft(attackingStructure.battleCooldownEnd);
+
+        // Update label
+        const label = this.entityIdLabels.get(attackerId);
+        if (label) {
+          this.updateStructureLabelData(attackerId, attackingStructure, label);
+        }
+      }
+    }
+
+    if (defendingStructure) {
+      // Structure is being attacked
+      const attackerPos = attackingStructure?.hexCoords || this.getArmyPosition?.(attackerId);
+      if (attackerPos) {
+        const { attackedFromDirection } = getCombatDirections(
+          { col: defendingStructure.hexCoords.col, row: defendingStructure.hexCoords.row },
+          attackerId,
+          undefined,
+          (entityId) => {
+            const structure = this.structures.getStructureByEntityId(entityId);
+            if (structure) {
+              return { x: structure.hexCoords.col, y: structure.hexCoords.row };
+            }
+            // Try to get army position if available
+            return this.getArmyPosition?.(entityId);
+          }
+        );
+
+        defendingStructure.attackedFromDirection = attackedFromDirection ?? undefined;
+        defendingStructure.battleTimerLeft = getBattleTimerLeft(defendingStructure.battleCooldownEnd);
+
+        // Update label
+        const label = this.entityIdLabels.get(defenderId);
+        if (label) {
+          this.updateStructureLabelData(defenderId, defendingStructure, label);
+        }
+      }
+    }
+
+    console.log(`[BATTLE DIRECTION UPDATE] Updated structure directions`, {
+      attackerId,
+      defenderId,
+      attackingStructure: !!attackingStructure,
+      defendingStructure: !!defendingStructure,
+    });
+  }
+
+  // Optional callback to get army positions for cross-entity battles
+  private getArmyPosition?: (entityId: ID) => { x: number; y: number } | undefined;
+
+  public setArmyPositionGetter(getter: (entityId: ID) => { x: number; y: number } | undefined) {
+    this.getArmyPosition = getter;
   }
 
   /**
