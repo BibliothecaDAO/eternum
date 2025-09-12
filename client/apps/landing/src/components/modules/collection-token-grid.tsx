@@ -42,7 +42,9 @@ export const CollectionTokenGrid = ({
         <Crown className="w-24 h-24 text-primary/70 animate-pulse drop-shadow-lg" />
 
         <div className="relative space-y-6">
-          <h3 className="text-3xl font-bold text-gray-900 tracking-tight">No Season Passes Yet</h3>
+          <h3 className="text-3xl font-bold text-gray-900 tracking-tight">No Realms Yet</h3>
+
+          {/*<h3 className="text-3xl font-bold text-gray-900 tracking-tight">No Season Passes Yet</h3>
 
           <div className="space-y-4">
             <p className="text-gray-600 max-w-lg mx-auto leading-relaxed">
@@ -51,7 +53,7 @@ export const CollectionTokenGrid = ({
             <p className="text-gray-500 max-w-lg mx-auto leading-relaxed">
               Once you burn a pass, it will be removed from this view.
             </p>
-          </div>
+          </div>*/}
         </div>
       </div>
     );
