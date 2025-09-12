@@ -201,6 +201,8 @@ export class ArmyManager {
         this.lastKnownArmiesTick = currentArmiesTick;
         this.recomputeStaminaForAllArmies();
       }
+      // Update battle timers every second
+      this.recomputeBattleTimersForAllArmies();
       // Schedule the next check
       this.scheduleTickCheck();
     }, 1000);
@@ -950,9 +952,32 @@ ${
   }
 
   /**
+   * Recompute battle timers for all armies and update visible labels every second
+   */
+  private recomputeBattleTimersForAllArmies(): void {
+    // Update all army data with active battle timers
+    this.armies.forEach((army, entityId) => {
+      if (army.battleCooldownEnd) {
+        const newBattleTimerLeft = getBattleTimerLeft(army.battleCooldownEnd);
+        
+        // Only update if timer has changed or expired
+        if (army.battleTimerLeft !== newBattleTimerLeft) {
+          army.battleTimerLeft = newBattleTimerLeft;
+          
+          // Update visible label if it exists
+          const label = this.entityIdLabels.get(entityId);
+          if (label) {
+            this.updateArmyLabelData(entityId, army, label);
+          }
+        }
+      }
+    });
+  }
+
+  /**
    * Update an army label with fresh data
    */
-  private updateArmyLabelData(entityId: ID, army: ArmyData, existingLabel: CSS2DObject): void {
+  private updateArmyLabelData(_entityId: ID, army: ArmyData, existingLabel: CSS2DObject): void {
     // Update the existing label content in-place with correct camera view
     updateArmyLabel(existingLabel.element, army, this.currentCameraView);
   }

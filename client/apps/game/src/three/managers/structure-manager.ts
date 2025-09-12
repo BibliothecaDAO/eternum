@@ -65,6 +65,7 @@ export class StructureManager {
   private structureUpdateTimestamps: Map<ID, number> = new Map(); // Track when structures were last updated
   private structureUpdateSources: Map<ID, string> = new Map(); // Track update source to prevent relic clearing during chunk switches
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
+  private battleTimerInterval: NodeJS.Timeout | null = null; // Timer for updating battle countdown
 
   constructor(
     scene: Scene,
@@ -96,6 +97,9 @@ export class StructureManager {
       // Update labels when ownership changes
       this.updateVisibleStructures();
     });
+
+    // Start battle timer updates
+    this.startBattleTimerUpdates();
   }
 
   private handleCameraViewChange = (view: CameraView) => {
@@ -122,6 +126,12 @@ export class StructureManager {
     // Clean up camera view listener
     if (this.hexagonScene) {
       this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
+    }
+
+    // Clean up battle timer interval
+    if (this.battleTimerInterval) {
+      clearInterval(this.battleTimerInterval);
+      this.battleTimerInterval = null;
     }
 
     // Clean up all pending label updates
@@ -948,6 +958,15 @@ export class StructureManager {
   }
 
   /**
+   * Start the battle timer update system
+   */
+  private startBattleTimerUpdates(): void {
+    this.battleTimerInterval = setInterval(() => {
+      this.recomputeBattleTimersForAllStructures();
+    }, 1000);
+  }
+
+  /**
    * Update battle timers for all structures and update visible labels
    */
   private recomputeBattleTimersForAllStructures(): void {
@@ -958,13 +977,18 @@ export class StructureManager {
       structures.forEach((structure, entityId) => {
         // Update battle timer if structure has a battle cooldown
         if (structure.battleCooldownEnd) {
-          structure.battleTimerLeft = getBattleTimerLeft(structure.battleCooldownEnd);
-        }
-
-        // Update visible label if it exists
-        const label = this.entityIdLabels.get(entityId);
-        if (label) {
-          this.updateStructureLabelData(entityId, structure, label);
+          const newBattleTimerLeft = getBattleTimerLeft(structure.battleCooldownEnd);
+          
+          // Only update if timer has changed or expired
+          if (structure.battleTimerLeft !== newBattleTimerLeft) {
+            structure.battleTimerLeft = newBattleTimerLeft;
+            
+            // Update visible label if it exists
+            const label = this.entityIdLabels.get(entityId);
+            if (label) {
+              this.updateStructureLabelData(entityId, structure, label);
+            }
+          }
         }
       });
     });
