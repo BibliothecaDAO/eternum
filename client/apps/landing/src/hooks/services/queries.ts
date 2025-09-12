@@ -325,8 +325,10 @@ WITH limited_active_orders AS (
     LEFT JOIN active_orders ao
       ON ao.token_id_hex = t.token_id
     WHERE t.contract_address = '{contractAddress}'
-    ORDER BY is_listed DESC, 
-             CASE WHEN ao.price_hex IS NOT NULL THEN ao.price_hex END ASC
+    ORDER BY is_listed DESC,
+             CASE WHEN t.metadata IS NULL THEN 1 ELSE 0 END ASC,
+             CASE WHEN ao.price_hex IS NOT NULL THEN ao.price_hex END ASC,
+             CASE WHEN is_listed = 0 THEN CAST(substr(t.token_id, 3) AS INTEGER) END ASC
     LIMIT {limit} OFFSET {offset}
   `,
   COLLECTIBLE_CLAIMED: `
