@@ -283,6 +283,52 @@ WITH limited_active_orders AS (
   AND tb.balance != "0x0000000000000000000000000000000000000000000000000000000000000000"
   AND tb.account_address = '{trimmedAccountAddress}';
   `,
+  ALL_COLLECTION_TOKENS: `
+    /* Fetch all tokens in collection with listing status and sort listed first */
+    WITH active_orders AS (
+      SELECT
+        printf("0x%064x", mo."order.token_id") AS token_id_hex,
+        mo."order.price" AS price_hex,
+        mo."order.expiration" AS expiration,
+        mo."order.owner" AS order_owner,
+        mo.order_id,
+        tb.account_address AS token_owner,
+        tb.balance
+      FROM "marketplace-MarketOrderModel" AS mo
+      JOIN token_balances tb
+        ON tb.contract_address = "{contractAddress}"
+        AND substr(tb.token_id, instr(tb.token_id, ':') + 1) = printf("0x%064x", mo."order.token_id")
+        AND ltrim(lower(replace(mo."order.owner", "0x", "")), "0")
+          = ltrim(lower(replace(tb.account_address, "0x", "")), "0")
+        AND tb.balance != "0x0000000000000000000000000000000000000000000000000000000000000000"
+      WHERE mo."order.active" = 1
+        AND mo."order.expiration" > strftime('%s','now')
+        AND mo."order.collection_id" = {collectionId}
+        AND ('{ownerAddress}' = '' OR mo."order.owner" = '{ownerAddress}')
+      GROUP BY token_id_hex
+    )
+    SELECT
+      t.token_id AS token_id_hex,
+      substr(t.token_id, 3) AS token_id,
+      t.name,
+      t.symbol,
+      t.metadata,
+      t.contract_address,
+      CASE WHEN ao.order_id IS NOT NULL THEN 1 ELSE 0 END AS is_listed,
+      ao.token_owner,
+      ao.price_hex,
+      ao.expiration,
+      ao.order_owner,
+      ao.order_id,
+      ao.balance
+    FROM tokens t
+    LEFT JOIN active_orders ao
+      ON ao.token_id_hex = t.token_id
+    WHERE t.contract_address = '{contractAddress}'
+    ORDER BY is_listed DESC, 
+             CASE WHEN ao.price_hex IS NOT NULL THEN ao.price_hex END ASC
+    LIMIT {limit} OFFSET {offset}
+  `,
   COLLECTIBLE_CLAIMED: `
     SELECT *
     FROM [events]

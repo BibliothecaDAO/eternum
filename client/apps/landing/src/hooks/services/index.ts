@@ -24,6 +24,21 @@ export interface OpenOrderByPrice {
   contract_address: string;
 }
 
+export interface CollectionToken {
+  token_id: number;
+  order_id: number | null;
+  name: string | null;
+  symbol: string | null;
+  metadata: RealmMetadata | null;
+  best_price_hex: bigint | null;
+  expiration: number | null;
+  token_owner: string | null;
+  order_owner: string | null;
+  balance: string | null;
+  contract_address: string;
+  is_listed: boolean;
+}
+
 // Raw type for data fetched by fetchOpenOrdersByPrice
 interface RawOpenOrderByPrice {
   token_id_hex?: string;
@@ -91,6 +106,43 @@ export async function fetchOpenOrdersByPrice(
     order_owner: item.order_owner ?? null,
     metadata: item.metadata ? JSON.parse(item.metadata) : null,
     contract_address: contractAddress,
+  }));
+}
+
+/**
+ * Fetch all tokens in collection (listed and non-listed) with listing priority
+ */
+export async function fetchAllCollectionTokens(
+  contractAddress: string,
+  ownerAddress?: string,
+  limit?: number,
+  offset?: number,
+): Promise<CollectionToken[]> {
+  const collectionId = getCollectionByAddress(contractAddress)?.id;
+  if (!collectionId) {
+    throw new Error(`No collection found for address ${contractAddress}`);
+  }
+  let query = QUERIES.ALL_COLLECTION_TOKENS.replaceAll("{contractAddress}", contractAddress)
+    .replace("{ownerAddress}", ownerAddress ?? "")
+    .replace("{collectionId}", collectionId.toString());
+  
+  // Add pagination only if limit is provided
+  if (limit !== undefined && offset !== undefined) {
+    query = query.replace("LIMIT {limit} OFFSET {offset}", `LIMIT ${limit} OFFSET ${offset}`);
+  } else {
+    query = query.replace("LIMIT {limit} OFFSET {offset}", "");
+  }
+  const rawData = await fetchSQL<any[]>(query);
+  return rawData.map((item) => ({
+    ...item,
+    token_id: parseInt(item.token_id_hex ?? "0", 16),
+    order_id: item.order_id ? parseInt(item.order_id, 16) : null,
+    best_price_hex: item.price_hex ? BigInt(item.price_hex) : null,
+    token_owner: item.token_owner ?? null,
+    order_owner: item.order_owner ?? null,
+    metadata: item.metadata ? JSON.parse(item.metadata) : null,
+    contract_address: contractAddress,
+    is_listed: Boolean(item.is_listed),
   }));
 }
 

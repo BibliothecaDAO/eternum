@@ -15,7 +15,21 @@ interface TraitFilterUIProps {
   clearAllFilters: () => void;
 }
 
-const FILTERABLE_TRAITS = ["Resource", "Epoch", "Epoch Item", "Rarity", "Type"] as const;
+const FILTERABLE_TRAITS = [
+  "Resource",
+  "Epoch",
+  "Epoch Item",
+  "Rarity",
+  "Type",
+  "Beast",
+  "Tier",
+  "Level",
+  "Power",
+  "Rank",
+  "Shiny",
+  "Animated",
+  "Genesis",
+] as const;
 
 const getTraitPlaceholder = (traitType: string): string => {
   const placeholders: Record<string, string> = {
@@ -24,6 +38,14 @@ const getTraitPlaceholder = (traitType: string): string => {
     "Epoch Item": "Filter by Name",
     Rarity: "Filter by Rarity",
     Type: "Filter by Type",
+    Beast: "Filter by Beast",
+    Tier: "Filter by Tier",
+    Level: "Filter by Level",
+    Power: "Filter by Power",
+    Rank: "Filter by Rank",
+    Shiny: "Filter by Shiny",
+    Animated: "Filter by Animated",
+    Genesis: "Filter by Genesis",
   };
   return placeholders[traitType] || `Filter by ${traitType}`;
 };
@@ -50,9 +72,27 @@ const sortRarityValues = (values: string[]): string[] => {
   });
 };
 
+const sortNumericValues = (values: string[]): string[] => {
+  return [...values].sort((a, b) => {
+    const aNum = parseInt(a, 10);
+    const bNum = parseInt(b, 10);
+    if (isNaN(aNum) && isNaN(bNum)) return a.localeCompare(b);
+    if (isNaN(aNum)) return 1;
+    if (isNaN(bNum)) return -1;
+    return aNum - bNum;
+  });
+};
+
 const getItemNameFromId = (id: string): string => {
   const cosmetic = COSMETIC_NAMES.find((c) => c.id === id);
   return cosmetic ? cosmetic.name : id;
+};
+
+const formatDisplayValue = (traitType: string, value: string): string => {
+  if (["Shiny", "Animated", "Genesis"].includes(traitType)) {
+    return value === "1" ? "true" : "false";
+  }
+  return traitType === "Epoch Item" ? getItemNameFromId(value) : value;
 };
 
 const FilterBadge = ({ traitType, value, onRemove }: { traitType: string; value: string; onRemove: () => void }) => {
@@ -70,7 +110,7 @@ const FilterBadge = ({ traitType, value, onRemove }: { traitType: string; value:
     );
   }
 
-  const displayValue = traitType === "Epoch Item" ? getItemNameFromId(value) : value;
+  const displayValue = formatDisplayValue(traitType, value);
 
   return (
     <Badge key={`${traitType}-${value}`} variant="default">
@@ -114,6 +154,8 @@ const TraitSelect = ({
     sortedValues = sortResourceValues(values);
   } else if (traitType === "Rarity") {
     sortedValues = sortRarityValues(values);
+  } else if (["Tier", "Level", "Power", "Rank", "Shiny", "Animated", "Genesis"].includes(traitType)) {
+    sortedValues = sortNumericValues(values);
   }
 
   const placeholder = getTraitPlaceholder(traitType);
@@ -129,7 +171,7 @@ const TraitSelect = ({
             <SelectItem key={value} value={value} className="flex items-center gap-2 text-lg">
               <div className="flex items-center gap-2">
                 {traitType === "Resource" && <ResourceIcon resource={value} size="md" />}
-                <span className="text-xs">{traitType === "Epoch Item" ? getItemNameFromId(value) : value}</span>
+                <span className="text-xs">{formatDisplayValue(traitType, value)}</span>
               </div>
             </SelectItem>
           ))}
