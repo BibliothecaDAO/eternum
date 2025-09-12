@@ -14,7 +14,7 @@ import {
 import { ScrollHeader } from "@/components/ui/scroll-header";
 import { Slider } from "@/components/ui/slider";
 import { marketplaceAddress, marketplaceCollections } from "@/config";
-import { fetchCollectionStatistics, fetchOpenOrdersByPrice, OpenOrderByPrice } from "@/hooks/services";
+import { CollectionToken, fetchAllCollectionTokens, fetchCollectionStatistics } from "@/hooks/services";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
 import { useSelectedPassesStore } from "@/stores/selected-passes";
 import { useDebounce } from "@bibliothecadao/react";
@@ -38,12 +38,11 @@ function CollectionPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 24;
 
-  const [openOrdersByPrice, totals] = useSuspenseQueries({
+  const [allCollectionTokens, totals] = useSuspenseQueries({
     queries: [
       {
-        queryKey: ["openOrdersByPrice", marketplaceAddress, collection],
-        queryFn: () =>
-          fetchOpenOrdersByPrice(collectionAddress, undefined, ITEMS_PER_PAGE, (currentPage - 1) * ITEMS_PER_PAGE),
+        queryKey: ["allCollectionTokens", marketplaceAddress, collection],
+        queryFn: () => fetchAllCollectionTokens(collectionAddress, undefined, undefined, undefined),
         refetchInterval: 8_000,
       },
       {
@@ -54,7 +53,7 @@ function CollectionPage() {
     ],
   });
 
-  const getMetadataString = useCallback((item: OpenOrderByPrice) => {
+  const getMetadataString = useCallback((item: CollectionToken) => {
     if (item?.metadata) {
       return item.metadata;
     }
@@ -67,7 +66,7 @@ function CollectionPage() {
     handleFilterChange: originalHandleFilterChange,
     clearFilter: originalClearFilter,
     clearAllFilters: originalClearAllFilters,
-  } = useTraitFiltering<OpenOrderByPrice>(openOrdersByPrice.data, getMetadataString);
+  } = useTraitFiltering<CollectionToken>(allCollectionTokens.data, getMetadataString);
 
   // --- Pagination Logic ---
   const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
@@ -310,23 +309,29 @@ function CollectionPage() {
                       className={currentPage === 1 ? "pointer-events-none opacity-50" : undefined}
                     />
                   </PaginationItem>
-                  {Array.from({ length: Math.min(MAX_VISIBLE_PAGES, totalPages) }, (_, i) => {
-                    const pageNumber = i + 1;
-                    return (
-                      <PaginationItem key={pageNumber}>
-                        <PaginationLink
-                          href="#"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handlePageChange(pageNumber);
-                          }}
-                          isActive={currentPage === pageNumber}
-                        >
-                          {pageNumber}
-                        </PaginationLink>
-                      </PaginationItem>
-                    );
-                  })}
+                  {(() => {
+                    const startPage = Math.max(1, currentPage - Math.floor(MAX_VISIBLE_PAGES / 2));
+                    const endPage = Math.min(totalPages, startPage + MAX_VISIBLE_PAGES - 1);
+                    const adjustedStartPage = Math.max(1, endPage - MAX_VISIBLE_PAGES + 1);
+
+                    return Array.from({ length: endPage - adjustedStartPage + 1 }, (_, i) => {
+                      const pageNumber = adjustedStartPage + i;
+                      return (
+                        <PaginationItem key={pageNumber}>
+                          <PaginationLink
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handlePageChange(pageNumber);
+                            }}
+                            isActive={currentPage === pageNumber}
+                          >
+                            {pageNumber}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    });
+                  })()}
                   <PaginationItem>
                     <PaginationNext
                       href="#"

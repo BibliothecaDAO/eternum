@@ -10,9 +10,9 @@ export interface ActiveMarketOrdersTotal {
   floor_price_wei: bigint | null;
 }
 
-export interface OpenOrderByPrice {
+export interface CollectionToken {
   token_id: number;
-  order_id: number;
+  order_id: number | null;
   name: string | null;
   symbol: string | null;
   metadata: RealmMetadata | null;
@@ -22,21 +22,7 @@ export interface OpenOrderByPrice {
   order_owner: string | null;
   balance: string | null;
   contract_address: string;
-}
-
-// Raw type for data fetched by fetchOpenOrdersByPrice
-interface RawOpenOrderByPrice {
-  token_id_hex?: string;
-  order_id: string; // Assuming it's a string from SQL that needs parsing
-  price_hex?: string;
-  token_owner?: string;
-  order_owner?: string;
-  metadata?: string; // Raw JSON string
-  name?: string | null;
-  symbol?: string | null;
-  expiration?: number | null;
-  balance?: string | null;
-  // Any other fields spread by ...item that are part of OpenOrderByPrice
+  is_listed: boolean;
 }
 
 export interface SeasonPassRealm {
@@ -64,33 +50,39 @@ export async function fetchCollectionStatistics(contractAddress: string): Promis
 }
 
 /**
- * Fetch open orders by price from the API
+ * Fetch all tokens in collection (listed and non-listed) with listing priority
  */
-export async function fetchOpenOrdersByPrice(
+export async function fetchAllCollectionTokens(
   contractAddress: string,
   ownerAddress?: string,
   limit?: number,
   offset?: number,
-): Promise<OpenOrderByPrice[]> {
+): Promise<CollectionToken[]> {
   const collectionId = getCollectionByAddress(contractAddress)?.id;
   if (!collectionId) {
     throw new Error(`No collection found for address ${contractAddress}`);
   }
-  const query = QUERIES.OPEN_ORDERS_BY_PRICE.replaceAll("{contractAddress}", contractAddress)
-    .replace("{limit}", limit?.toString() ?? "20")
-    .replace("{offset}", offset?.toString() ?? "0")
+  let query = QUERIES.ALL_COLLECTION_TOKENS.replaceAll("{contractAddress}", contractAddress)
     .replace("{ownerAddress}", ownerAddress ?? "")
     .replace("{collectionId}", collectionId.toString());
+
+  // Add pagination only if limit is provided
+  if (limit !== undefined && offset !== undefined) {
+    query = query.replace("LIMIT {limit} OFFSET {offset}", `LIMIT ${limit} OFFSET ${offset}`);
+  } else {
+    query = query.replace("LIMIT {limit} OFFSET {offset}", "");
+  }
   const rawData = await fetchSQL<any[]>(query);
   return rawData.map((item) => ({
     ...item,
     token_id: parseInt(item.token_id_hex ?? "0", 16),
-    order_id: parseInt(item.order_id, 16),
+    order_id: item.order_id ? parseInt(item.order_id, 16) : null,
     best_price_hex: item.price_hex ? BigInt(item.price_hex) : null,
     token_owner: item.token_owner ?? null,
     order_owner: item.order_owner ?? null,
     metadata: item.metadata ? JSON.parse(item.metadata) : null,
     contract_address: contractAddress,
+    is_listed: Boolean(item.is_listed),
   }));
 }
 
