@@ -20,7 +20,6 @@ import { useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Brain, Castle, CirclePlayIcon, UserIcon } from "lucide-react";
-import { useMemo } from "react";
 
 export const Route = createLazyFileRoute("/")({
   component: Index,
@@ -33,10 +32,10 @@ function Index() {
   const { totalPlayers, totalTroops, totalStructures, totalAgents, totalCreatedAgents, isLoading } = useData();
 
   // Fetch marketplace collection statistics
-  const collections = Object.entries(marketplaceCollections);
+  const collections = Object.entries(marketplaceCollections).filter(([key, collection]) => collection.address != "");
   const collectionStatisticsQueries = collections.map(([key, collection]) => ({
     queryKey: ["activeMarketOrdersTotal", key],
-    queryFn: () => fetchCollectionStatistics(collection.address),
+    queryFn: () => (collection.address !== "" ? fetchCollectionStatistics(collection.address) : null),
     refetchInterval: 30_000,
   }));
 
@@ -46,11 +45,11 @@ function Index() {
       queryFn: () => (accountAddress ? fetchTokenBalancesWithMetadata(realmsAddress, accountAddress) : null),
       refetchInterval: 8_000,
     },
-    {
+    /*{
       queryKey: ["seasonPassTokenBalance", accountAddress],
       queryFn: () => (accountAddress ? fetchTokenBalancesWithMetadata(seasonPassAddress, accountAddress) : null),
       refetchInterval: 8_000,
-    },
+    },*/
     {
       queryKey: ["seasonPassMints", trimAddress(accountAddress)],
       queryFn: () =>
@@ -67,16 +66,16 @@ function Index() {
 
   // Properly type and extract the results
   const realms = results[0];
-  const seasonPasses = results[1];
-  const seasonPassMints = results[2];
+  // const seasonPasses = results[1];
+  //const seasonPassMints = results[2];
   const collectionStats = results.slice(3) as { data: ActiveMarketOrdersTotal[] }[];
 
-  const mintedRealmsCount = useMemo(() => {
+  /* const mintedRealmsCount = useMemo(() => {
     return (
       seasonPassMints.data?.filter((realm) => "season_pass_balance" in realm && realm.season_pass_balance == null)
         .length ?? 0
     );
-  }, [seasonPassMints.data]);
+  }, [seasonPassMints.data]);*/
 
   // Framer Motion variants
   const containerVariants = {
@@ -200,7 +199,7 @@ function Index() {
         </div>
       </section>
 
-      {/* Action Toolbar */}
+      {/* Action Toolbar
       <section className="bg-card/50 border-y">
         <div className="container mx-auto px-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-6">
@@ -214,14 +213,14 @@ function Index() {
                   <span className="text-2xl font-bold text-gold">{mintedRealmsCount}</span>
                   <span className="text-muted-foreground">passes remaining</span>
                 </div>
-              )}
+      )}
             </div>
             <Button asChild size="lg" className="w-full sm:w-auto">
               <Link to="/mint">Claim Season Passes</Link>
             </Button>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Marketplace Collections */}
       <section className="py-12 bg-background">
@@ -267,7 +266,7 @@ function Index() {
                 )}
               </div>
 
-              {/* Season Passes Column */}
+              {/* Season Passes Column 
               <div>
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-3xl font-bold">Your Season Passes</h2>
@@ -283,7 +282,7 @@ function Index() {
                   onToggleSelection={togglePass}
                   pageId="home"
                 />
-              </div>
+              </div>*/}
             </div>
           </div>
         </section>
