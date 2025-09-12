@@ -25,6 +25,7 @@ const COLLECTION_IDS = {
     "loot-chests": 3,
     cosmetics: 4, // TODO: Replace with actual collection ID
     "golden-tokens": 5,
+    beasts: 6,
   },
   sepolia: {
     "season-passes": 3,
@@ -32,6 +33,7 @@ const COLLECTION_IDS = {
     "loot-chests": 5,
     cosmetics: 6, // TODO: Replace with actual collection ID
     "golden-tokens": null,
+    beasts: null,
   },
 } as const;
 
@@ -68,6 +70,12 @@ export const marketplaceCollections = {
     id: COLLECTION_IDS[currentNetwork]["golden-tokens"],
     name: "Golden Tokens",
     image: "/collections/golden-tokens.svg",
+  },
+  beasts: {
+    address: "0x280ace0b2171106eaebef91ca9b097a566108e9452c45b94a7924a9f794ae80",
+    id: COLLECTION_IDS[currentNetwork].beasts,
+    name: "Beasts",
+    image: "/collections/beasts.svg",
   },
 } as const;
 
