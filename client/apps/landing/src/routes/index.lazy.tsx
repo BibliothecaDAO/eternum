@@ -32,10 +32,10 @@ function Index() {
   const { totalPlayers, totalTroops, totalStructures, totalAgents, totalCreatedAgents, isLoading } = useData();
 
   // Fetch marketplace collection statistics
-  const collections = Object.entries(marketplaceCollections).filter(([key, collection]) => collection.address != null);
+  const collections = Object.entries(marketplaceCollections).filter(([key, collection]) => collection.address != "");
   const collectionStatisticsQueries = collections.map(([key, collection]) => ({
     queryKey: ["activeMarketOrdersTotal", key],
-    queryFn: () => (collection.address ? fetchCollectionStatistics(collection.address) : null),
+    queryFn: () => (collection.address !== "" ? fetchCollectionStatistics(collection.address) : null),
     refetchInterval: 30_000,
   }));
 
