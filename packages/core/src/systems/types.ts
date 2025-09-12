@@ -72,6 +72,14 @@ export type StructureTileSystemUpdate = {
   guardArmies?: GuardArmy[];
   activeProductions?: ActiveProduction[];
   hyperstructureRealmCount?: number;
+  // Battle data
+  battleData?: {
+    battleCooldownEnd: number;
+    latestAttackerId: number | null;
+    latestAttackTimestamp: string | null; // hex string
+    latestDefenderId: number | null;
+    latestDefenseTimestamp: string | null; // hex string
+  };
 };
 
 export type StructureSystemUpdate = {

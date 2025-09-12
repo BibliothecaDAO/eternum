@@ -5,7 +5,7 @@ import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
 import { getIsBlitz, StructureTileSystemUpdate } from "@bibliothecadao/eternum";
-import { BuildingType, ID, RelicEffect, StructureType } from "@bibliothecadao/types";
+import { BuildingType, Direction, ID, RelicEffect, StructureType } from "@bibliothecadao/types";
 import { Group, Object3D, Scene, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { GuardArmy } from "../../../../../../packages/core/src/stores/map-data-store";
@@ -32,6 +32,10 @@ interface PendingLabelUpdate {
   owner: { address: bigint; ownerName: string; guildName: string };
   timestamp: number; // When this update was received
   updateType: "structure" | "building"; // Type of update for ordering
+  attackedFromDirection?: Direction;
+  attackedTowardDirection?: Direction;
+  battleCooldownEnd?: number;
+  battleTimerLeft?: number;
 }
 
 export class StructureManager {
@@ -255,6 +259,25 @@ export class StructureManager {
     let finalGuardArmies = update.guardArmies;
     let finalActiveProductions = update.activeProductions;
 
+    // Calculate battle directions from battleData if available
+    let { battleCooldownEnd, latestAttackerId, latestDefenderId } = update.battleData || {};
+    let { attackedFromDirection, attackedTowardDirection } = getCombatDirections(
+      normalizedCoord,
+      latestAttackerId ?? undefined,
+      latestDefenderId ?? undefined,
+      (entityId) => {
+        const structure = this.structures.getStructureByEntityId(entityId);
+        if (structure) {
+          return { x: structure.hexCoords.col, y: structure.hexCoords.row };
+        }
+        // Try to get army position if available
+        return this.getArmyPosition?.(entityId);
+      }
+    );
+
+    // Calculate battle timer left
+    let battleTimerLeft = getBattleTimerLeft(battleCooldownEnd);
+
     const pendingUpdate = this.pendingLabelUpdates.get(entityId);
     if (pendingUpdate) {
       // Check if pending update is not too old (max 30 seconds)
@@ -276,6 +299,17 @@ export class StructureManager {
         if (pendingUpdate.activeProductions) {
           finalActiveProductions = pendingUpdate.activeProductions;
         }
+        // Apply any pending battle direction data
+        if (pendingUpdate.attackedFromDirection !== undefined) {
+          attackedFromDirection = pendingUpdate.attackedFromDirection;
+        }
+        if (pendingUpdate.attackedTowardDirection !== undefined) {
+          attackedTowardDirection = pendingUpdate.attackedTowardDirection;
+        }
+        if (pendingUpdate.battleCooldownEnd !== undefined) {
+          battleCooldownEnd = pendingUpdate.battleCooldownEnd;
+          battleTimerLeft = getBattleTimerLeft(pendingUpdate.battleCooldownEnd);
+        }
         // Clear the pending update
         this.pendingLabelUpdates.delete(entityId);
       }
@@ -295,6 +329,10 @@ export class StructureManager {
       finalGuardArmies,
       finalActiveProductions,
       update.hyperstructureRealmCount,
+      attackedFromDirection ?? undefined,
+      attackedTowardDirection ?? undefined,
+      battleCooldownEnd,
+      battleTimerLeft,
     );
 
     // Smart relic effects management - differentiate between genuine updates and chunk reloads
@@ -712,13 +750,6 @@ export class StructureManager {
     return effects ? effects.map((effect) => ({ relicId: effect.relicNumber, effect: effect.effect })) : [];
   }
 
-  /**
-   * Update a structure label with fresh data from MapDataStore
-   */
-  private updateStructureLabelData(_entityId: ID, structure: any, existingLabel: CSS2DObject): void {
-    // Update the existing label content in-place with correct camera view
-    updateStructureLabel(existingLabel.element, structure, this.currentCameraView);
-  }
 
   /**
    * Update structure label from guard update (troop count/stamina changes)
@@ -727,6 +758,7 @@ export class StructureManager {
     entityId: ID;
     guardArmies: GuardArmy[];
     owner: { address: bigint; ownerName: string; guildName: string };
+    battleCooldownEnd: number;
   }): void {
     const structure = this.structures.getStructureByEntityId(update.entityId);
     console.log("[UPDATING STRUCTURE LABEL]", update);
@@ -752,6 +784,8 @@ export class StructureManager {
           owner: update.owner,
           timestamp: currentTime,
           updateType: "structure",
+          battleCooldownEnd: update.battleCooldownEnd,
+          battleTimerLeft: getBattleTimerLeft(update.battleCooldownEnd),
         });
       } else {
         console.log(`[PENDING LABEL UPDATE] Ignoring older pending structure update for ${update.entityId}`);
@@ -769,6 +803,8 @@ export class StructureManager {
     }));
     structure.owner = update.owner;
     structure.isMine = isAddressEqualToAccount(update.owner.address);
+    structure.battleCooldownEnd = update.battleCooldownEnd;
+    structure.battleTimerLeft = getBattleTimerLeft(update.battleCooldownEnd);
 
     this.structures.updateStructure(update.entityId, structure);
 
@@ -782,7 +818,7 @@ export class StructureManager {
   /**
    * Update structure directions from battle event
    */
-  public updateStructureFromBattleEvent(attackerId: ID, defenderId: ID, _timestamp: number): void {
+  public updateStructureFromBattleEvent(attackerId: ID, defenderId: ID): void {
     // Check if either attacker or defender is a structure
     const attackingStructure = this.structures.getStructureByEntityId(attackerId);
     const defendingStructure = this.structures.getStructureByEntityId(defenderId);
@@ -910,6 +946,37 @@ export class StructureManager {
       this.updateStructureLabelData(update.entityId, structure, label);
     }
   }
+
+  /**
+   * Update battle timers for all structures and update visible labels
+   */
+  private recomputeBattleTimersForAllStructures(): void {
+    const allStructures = this.structures.getStructures();
+    
+    // Update all structure data
+    allStructures.forEach((structures) => {
+      structures.forEach((structure, entityId) => {
+        // Update battle timer if structure has a battle cooldown
+        if (structure.battleCooldownEnd) {
+          structure.battleTimerLeft = getBattleTimerLeft(structure.battleCooldownEnd);
+        }
+
+        // Update visible label if it exists
+        const label = this.entityIdLabels.get(entityId);
+        if (label) {
+          this.updateStructureLabelData(entityId, structure, label);
+        }
+      });
+    });
+  }
+
+  /**
+   * Update a structure label with fresh data
+   */
+  private updateStructureLabelData(_entityId: ID, structure: StructureInfo, existingLabel: CSS2DObject): void {
+    // Update the existing label content in-place with correct camera view
+    updateStructureLabel(existingLabel.element, structure, this.currentCameraView);
+  }
 }
 
 class Structures {
@@ -928,6 +995,10 @@ class Structures {
     guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>,
     activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>,
     hyperstructureRealmCount?: number,
+    attackedFromDirection?: Direction,
+    attackedTowardDirection?: Direction,
+    battleCooldownEnd?: number,
+    battleTimerLeft?: number,
   ) {
     if (!this.structures.has(structureType)) {
       this.structures.set(structureType, new Map());
@@ -947,6 +1018,11 @@ class Structures {
       guardArmies,
       activeProductions,
       hyperstructureRealmCount,
+      // Battle data
+      attackedFromDirection,
+      attackedTowardDirection,
+      battleCooldownEnd,
+      battleTimerLeft,
     });
   }
 

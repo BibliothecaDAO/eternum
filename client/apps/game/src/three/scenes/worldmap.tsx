@@ -423,7 +423,7 @@ export default class WorldmapScene extends HexagonScene {
     // Listen for battle events to update direction indicators
     this.worldUpdateListener.BattleEvent.onBattleDirectionUpdate(
       (update: { attackerId: ID; defenderId: ID; timestamp: number }) => {
-        const { attackerId, defenderId, timestamp } = update;
+        const { attackerId, defenderId } = update;
 
         // Set up cross-entity position getter for structure manager
         this.structureManager.setArmyPositionGetter((entityId: ID) => {
@@ -437,7 +437,7 @@ export default class WorldmapScene extends HexagonScene {
 
         // Update both army and structure managers
         this.armyManager.updateArmyFromBattleEvent(attackerId, defenderId);
-        this.structureManager.updateStructureFromBattleEvent(attackerId, defenderId, timestamp);
+        this.structureManager.updateStructureFromBattleEvent(attackerId, defenderId);
       },
     );
 
