@@ -20,7 +20,7 @@ export const cosmeticsClaimAddress = getCosmeticsClaimAddress();
 // Collection IDs for different networks
 const COLLECTION_IDS = {
   mainnet: {
-    "season-passes": 1,
+    //"season-passes": 1,
     realms: 2,
     "loot-chests": 3,
     cosmetics: 4, // TODO: Replace with actual collection ID
@@ -28,7 +28,7 @@ const COLLECTION_IDS = {
     beasts: 6,
   },
   sepolia: {
-    "season-passes": 3,
+    // "season-passes": 3,
     realms: 4,
     "loot-chests": 5,
     cosmetics: 6, // TODO: Replace with actual collection ID
@@ -66,13 +66,13 @@ export const marketplaceCollections = {
     image: "/collections/cosmetics.png", // TODO: Replace with actual cosmetics image
   },
   "golden-tokens": {
-    address: "0x27838dea749f41c6f8a44fcfa791788e6101080c1b3cd646a361f653ad10e2d", // Mainnet support only
+    address: currentNetwork === "mainnet" ? "0x27838dea749f41c6f8a44fcfa791788e6101080c1b3cd646a361f653ad10e2d" : "", // Mainnet support only
     id: COLLECTION_IDS[currentNetwork]["golden-tokens"],
     name: "Golden Tokens",
     image: "/collections/golden-tokens.svg",
   },
   beasts: {
-    address: "0x280ace0b2171106eaebef91ca9b097a566108e9452c45b94a7924a9f794ae80",
+    address: currentNetwork === "mainnet" ? "0x280ace0b2171106eaebef91ca9b097a566108e9452c45b94a7924a9f794ae80" : "",
     id: COLLECTION_IDS[currentNetwork].beasts,
     name: "Beasts",
     image: "/collections/beasts.svg",
