@@ -125,7 +125,7 @@ export async function fetchAllCollectionTokens(
   let query = QUERIES.ALL_COLLECTION_TOKENS.replaceAll("{contractAddress}", contractAddress)
     .replace("{ownerAddress}", ownerAddress ?? "")
     .replace("{collectionId}", collectionId.toString());
-  
+
   // Add pagination only if limit is provided
   if (limit !== undefined && offset !== undefined) {
     query = query.replace("LIMIT {limit} OFFSET {offset}", `LIMIT ${limit} OFFSET ${offset}`);
