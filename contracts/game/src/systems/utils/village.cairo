@@ -22,6 +22,9 @@ use s1_eternum::models::weight::Weight;
 use s1_eternum::systems::utils::structure::iStructureImpl;
 use s1_eternum::systems::utils::troop::iMercenariesImpl;
 use crate::system_libraries::rng_library::{rng_library, IRNGlibraryDispatcherTrait};
+use crate::system_libraries::structure_libraries::structure_creation_library::{
+    structure_creation_library, IStructureCreationlibraryDispatcherTrait,
+};
 use starknet::ContractAddress;
 
 #[generate_trait]
@@ -139,8 +142,9 @@ pub impl iVillageDiscoveryImpl of iVillageDiscoveryTrait {
     ) -> bool {
         // make discoverable village structure
         let structure_id = world.dispatcher.uuid();
-        iStructureImpl::create(
-            ref world,
+        let structure_creation_library = structure_creation_library::get_dispatcher(@world);
+        structure_creation_library.make_structure(
+            world,
             coord,
             Zero::zero(),
             structure_id,

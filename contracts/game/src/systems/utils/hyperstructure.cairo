@@ -15,7 +15,9 @@ use s1_eternum::systems::utils::structure::iStructureImpl;
 use s1_eternum::systems::utils::troop::iMercenariesImpl;
 use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
 use crate::system_libraries::rng_library::{rng_library, IRNGlibraryDispatcherTrait};
-
+use crate::system_libraries::structure_libraries::structure_creation_library::{
+    structure_creation_library, IStructureCreationlibraryDispatcherTrait,
+};
 
 #[generate_trait]
 pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
@@ -96,8 +98,9 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
             hyperstructure_tile_occupier = TileOccupier::HyperstructureLevel3;
         }
         let structure_id = world.dispatcher.uuid();
-        iStructureImpl::create(
-            ref world,
+        let structure_creation_library = structure_creation_library::get_dispatcher(@world);
+        structure_creation_library.make_structure(
+            world,
             coord,
             Zero::zero(),
             structure_id,

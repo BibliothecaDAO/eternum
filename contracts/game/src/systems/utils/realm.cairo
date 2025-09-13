@@ -18,6 +18,9 @@ use s1_eternum::models::structure::{
     StructureOwnerStoreImpl, Wonder,
 };
 use s1_eternum::systems::utils::structure::iStructureImpl;
+use crate::system_libraries::structure_libraries::structure_creation_library::{
+    structure_creation_library, IStructureCreationlibraryDispatcherTrait,
+};
 use starknet::ContractAddress;
 
 #[starknet::interface]
@@ -69,8 +72,9 @@ pub impl iRealmImpl of iRealmTrait {
         }
 
         // create structure
-        iStructureImpl::create(
-            ref world,
+        let structure_creation_library = structure_creation_library::get_dispatcher(@world);
+        structure_creation_library.make_structure(
+            world,
             coord,
             owner,
             structure_id,
@@ -84,7 +88,7 @@ pub impl iRealmImpl of iRealmTrait {
         );
 
         // grant starting resources
-        iStructureImpl::grant_starting_resources(ref world, structure_id, coord);
+        structure_creation_library.grant_starting_resources(world, structure_id, coord);
 
         // place castle building
         BuildingImpl::create(

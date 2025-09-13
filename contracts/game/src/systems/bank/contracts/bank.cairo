@@ -32,6 +32,9 @@ pub mod bank_systems {
     use s1_eternum::systems::config::contracts::config_systems::assert_caller_is_admin;
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::systems::utils::troop::iMercenariesImpl;
+    use crate::system_libraries::structure_libraries::structure_creation_library::{
+    structure_creation_library, IStructureCreationlibraryDispatcherTrait,
+};
 
     const MAX_BANK_COUNT: u8 = 6;
 
@@ -51,11 +54,12 @@ pub mod bank_systems {
                 REGIONAL_BANK_ONE_ID, REGIONAL_BANK_TWO_ID, REGIONAL_BANK_THREE_ID, REGIONAL_BANK_FOUR_ID,
                 REGIONAL_BANK_FIVE_ID, REGIONAL_BANK_SIX_ID,
             ];
+            let structure_creation_library = structure_creation_library::get_dispatcher(@world);
             for bank in banks {
                 // create the bank structure
                 let bank_entity_id = bank_ids.pop_front().unwrap();
-                iStructureImpl::create(
-                    ref world,
+                structure_creation_library.make_structure(
+                    world,
                     *bank.coord,
                     caller,
                     bank_entity_id,
