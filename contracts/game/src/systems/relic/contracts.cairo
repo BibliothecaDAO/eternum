@@ -45,6 +45,7 @@ pub mod relic_systems {
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::systems::utils::troop::{iExplorerImpl, iGuardImpl, iTroopImpl};
     use s1_eternum::utils::random::VRFImpl;
+    use crate::system_libraries::rng_library::{rng_library, IRNGlibraryDispatcherTrait};
     use super::RelicRecipientTypeParam;
 
 
@@ -85,10 +86,8 @@ pub mod relic_systems {
             // grant relics to the army
             let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
             let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
-            let vrf_provider: starknet::ContractAddress = WorldConfigUtilImpl::get_member(
-                world, selector!("vrf_provider_address"),
-            );
-            let vrf_seed: u256 = VRFImpl::seed(starknet::get_caller_address(), vrf_provider);
+            let rng_library_dispatcher = rng_library::get_dispatcher(@world);
+            let vrf_seed: u256 = rng_library_dispatcher.get_random_number(starknet::get_caller_address(), world);
             let relics: Span<u8> = iRelicChestResourceFactoryImpl::grant_relics(
                 ref world, explorer_id, ref explorer_weight, map_config, vrf_seed,
             );

@@ -14,8 +14,7 @@ use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
 use s1_eternum::systems::utils::structure::iStructureImpl;
 use s1_eternum::systems::utils::troop::iMercenariesImpl;
 use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
-use s1_eternum::utils::random;
-use s1_eternum::utils::random::VRFImpl;
+use crate::system_libraries::rng_library::{rng_library, IRNGlibraryDispatcherTrait};
 
 
 #[generate_trait]
@@ -70,14 +69,9 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
 
         // calculate final probabilities
         let hyps_fail_prob = hyps_probs_original_sum - hyps_win_prob;
-        let success: bool = *random::choices(
-            array![true, false].span(),
-            array![hyps_win_prob, hyps_fail_prob].span(),
-            array![].span(),
-            1,
-            true,
-            hyps_vrf_seed,
-        )[0];
+
+        let rng_library_dispatcher = rng_library::get_dispatcher(@world);
+        let success: bool = rng_library_dispatcher.get_weighted_choice_bool_simple(hyps_win_prob, hyps_fail_prob, hyps_vrf_seed);
 
         return success;
     }
