@@ -225,7 +225,7 @@ pub impl PlayerRegisteredPointsImpl of PlayerRegisteredPointsTrait {
 }
 
 
-#[derive(PartialEq, Copy, Drop, Serde, Introspect, Default, DojoStore)]
+#[derive(PartialEq, Copy, Drop, Serde, IntrospectPacked, Default, DojoStore)]
 pub enum ConstructionAccess {
     #[default]
     Public,
