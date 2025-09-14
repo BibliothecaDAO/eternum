@@ -39,7 +39,7 @@ pub mod troop_battle_systems {
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
         StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
     };
-    use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, Troops, TroopsImpl, TroopsTrait};
+    use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, Troops, TroopsImpl};
     use s1_eternum::models::weight::Weight;
     use s1_eternum::systems::utils::resource::iResourceTransferImpl;
     use s1_eternum::systems::utils::structure::iStructureImpl;
@@ -49,6 +49,7 @@ pub mod troop_battle_systems {
     use s1_eternum::utils::random::VRFImpl;
     use super::super::super::super::super::models::troop::GuardTrait;
     use crate::system_libraries::biome_library::{biome_library, IBiomeLibraryDispatcherTrait};
+    use crate::system_libraries::combat_library::{combat_library, ICombatLibraryDispatcherTrait};
 
 
     #[derive(Copy, Drop, Serde)]
@@ -140,15 +141,19 @@ pub mod troop_battle_systems {
             let explorer_aggressor_troop_count_before_attack = explorer_aggressor_troops.count;
             let explorer_defender_troop_count_before_attack = explorer_defender_troops.count;
 
-            explorer_aggressor_troops
-                .attack(
-                    ref explorer_defender_troops,
+            let combat_library = combat_library::get_dispatcher(@world);
+            let (updated_aggressor, updated_defender) = combat_library
+                .troops_attack(
+                    explorer_aggressor_troops,
+                    explorer_defender_troops,
                     defender_biome,
                     troop_stamina_config,
                     troop_damage_config,
                     tick.current(),
                     tick.interval(),
                 );
+            explorer_aggressor_troops = updated_aggressor;
+            explorer_defender_troops = updated_defender;
 
             // update both explorers
             explorer_aggressor.troops = explorer_aggressor_troops;
@@ -419,15 +424,19 @@ pub mod troop_battle_systems {
             let explorer_aggressor_troop_count_before_attack = explorer_aggressor_troops.count;
             let guard_troop_count_before_attack = guard_troops.count;
 
-            explorer_aggressor_troops
-                .attack(
-                    ref guard_troops,
+            let combat_library = combat_library::get_dispatcher(@world);
+            let (updated_aggressor, updated_guard) = combat_library
+                .troops_attack(
+                    explorer_aggressor_troops,
+                    guard_troops,
                     defender_biome,
                     troop_stamina_config,
                     troop_damage_config,
                     tick.current(),
                     tick.interval(),
                 );
+            explorer_aggressor_troops = updated_aggressor;
+            guard_troops = updated_guard;
             // update explorer
             explorer_aggressor.troops = explorer_aggressor_troops;
 
@@ -661,15 +670,19 @@ pub mod troop_battle_systems {
             let explorer_defender_troop_count_before_attack = explorer_defender_troops.count;
             let structure_guard_aggressor_troop_count_before_attack = structure_guard_aggressor_troops.count;
 
-            structure_guard_aggressor_troops
-                .attack(
-                    ref explorer_defender_troops,
+            let combat_library = combat_library::get_dispatcher(@world);
+            let (updated_guard, updated_explorer) = combat_library
+                .troops_attack(
+                    structure_guard_aggressor_troops,
+                    explorer_defender_troops,
                     defender_biome,
                     troop_stamina_config,
                     troop_damage_config,
                     tick.current(),
                     tick.interval(),
                 );
+            structure_guard_aggressor_troops = updated_guard;
+            explorer_defender_troops = updated_explorer;
 
             // update explorer
             explorer_defender.troops = explorer_defender_troops;
