@@ -30,8 +30,9 @@ use s1_eternum::models::troop::{
 };
 use s1_eternum::models::weight::{Weight, WeightImpl};
 use s1_eternum::systems::utils::map::IMapImpl;
-use s1_eternum::utils::map::biomes::{Biome, get_biome};
+use s1_eternum::utils::map::biomes::{Biome};
 use s1_eternum::utils::math::PercentageValueImpl;
+use crate::system_libraries::biome_library::{biome_library, IBiomeLibraryDispatcherTrait};
 use crate::system_libraries::rng_library::{rng_library, IRNGlibraryDispatcherTrait};
 
 
@@ -137,7 +138,8 @@ pub impl iExplorerImpl of iExplorerTrait {
             let mut adjacent_tile: Tile = world.read_model((adjacent_coord.x, adjacent_coord.y));
             if adjacent_tile.not_occupied() {
                 if !adjacent_tile.discovered() {
-                    let adjacent_coord_biome: Biome = get_biome(adjacent_coord.x.into(), adjacent_coord.y.into());
+                    let biome_library = biome_library::get_dispatcher(@world);
+                    let adjacent_coord_biome: Biome = biome_library.get_biome(adjacent_coord.x.into(), adjacent_coord.y.into());
                     IMapImpl::explore(ref world, ref adjacent_tile, adjacent_coord_biome);
                 }
 

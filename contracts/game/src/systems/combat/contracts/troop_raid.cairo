@@ -39,9 +39,10 @@ pub mod troop_raid_systems {
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::systems::utils::troop::{TroopRaidOutcome, iExplorerImpl, iGuardImpl, iTroopImpl};
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
-    use s1_eternum::utils::map::biomes::{Biome, get_biome};
+    use s1_eternum::utils::map::biomes::{Biome};
     use s1_eternum::utils::math::PercentageValueImpl;
     use s1_eternum::utils::random::VRFImpl;
+    use crate::system_libraries::biome_library::{biome_library, IBiomeLibraryDispatcherTrait};
     use crate::system_libraries::rng_library::{rng_library, IRNGlibraryDispatcherTrait};
 
     use super::super::super::super::super::models::structure::StructureBaseTrait;
@@ -127,7 +128,8 @@ pub mod troop_raid_systems {
             // get guard troops
             let mut guard_defender: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, structure_id);
             let mut explorer_aggressor_troops = explorer_aggressor.troops;
-            let defender_biome: Biome = get_biome(
+            let biome_library = biome_library::get_dispatcher(@world);
+            let defender_biome: Biome = biome_library.get_biome(
                 guarded_structure.coord().x.into(), guarded_structure.coord().y.into(),
             );
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);

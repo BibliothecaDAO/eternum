@@ -11,7 +11,8 @@ use s1_eternum::systems::quest::constants::{
 };
 use s1_eternum::systems::utils::map::IMapImpl;
 use s1_eternum::systems::utils::troop::iExplorerImpl;
-use s1_eternum::utils::map::biomes::{Biome, get_biome};
+use s1_eternum::utils::map::biomes::{Biome};
+use crate::system_libraries::biome_library::{biome_library, IBiomeLibraryDispatcherTrait};
 use crate::system_libraries::rng_library::{rng_library, IRNGlibraryDispatcherTrait};
 use starknet::ContractAddress;
 
@@ -404,7 +405,8 @@ pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
 
         // explore the tile if biome is not set
         if tile.biome == Biome::None.into() {
-            let biome: Biome = get_biome(tile.col.into(), tile.row.into());
+            let biome_library = biome_library::get_dispatcher(@world);
+            let biome: Biome = biome_library.get_biome(tile.col.into(), tile.row.into());
             IMapImpl::explore(ref world, ref tile, biome);
         }
 

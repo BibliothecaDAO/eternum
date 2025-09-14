@@ -5,7 +5,8 @@ use s1_eternum::constants::DAYDREAMS_AGENT_ID;
 use s1_eternum::models::map::{Tile, TileOccupier};
 use s1_eternum::models::position::{Coord, CoordTrait};
 use s1_eternum::models::troop::{TroopTier, TroopType};
-use s1_eternum::utils::map::biomes::{Biome, get_biome};
+use s1_eternum::utils::map::biomes::{Biome};
+use crate::system_libraries::biome_library::{biome_library, IBiomeLibraryDispatcherTrait};
 
 #[generate_trait]
 pub impl IMapImpl of IMapTrait {
@@ -143,11 +144,12 @@ pub impl IMapImpl of IMapTrait {
     }
 
     fn explore_ring(ref world: WorldStorage, start_coord: Coord, mut radius: u32) {
+        let biome_library = biome_library::get_dispatcher(@world);
         while radius > 0 {
             let coord_ring: Array<Coord> = start_coord.ring(radius);
             for coord in coord_ring {
                 let mut tile: Tile = world.read_model((coord.x, coord.y));
-                let biome: Biome = get_biome(coord.x.into(), coord.y.into());
+                let biome: Biome = biome_library.get_biome(coord.x.into(), coord.y.into());
                 Self::explore(ref world, ref tile, biome);
             }
             radius -= 1;

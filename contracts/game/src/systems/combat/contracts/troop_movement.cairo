@@ -35,8 +35,9 @@ pub mod troop_movement_systems {
     use s1_eternum::systems::utils::mine::iMineDiscoveryImpl;
     use s1_eternum::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
-    use s1_eternum::utils::map::biomes::{Biome, get_biome};
+    use s1_eternum::utils::map::biomes::{Biome};
     use s1_eternum::utils::random::VRFImpl;
+    use crate::system_libraries::biome_library::{biome_library, IBiomeLibraryDispatcherTrait};
     use crate::system_libraries::rng_library::{rng_library, IRNGlibraryDispatcherTrait};
     use starknet::ContractAddress;
     use super::{ITroopMovementSystems, ITroopMovementUtilSystemsDispatcher, ITroopMovementUtilSystemsDispatcherTrait};
@@ -112,7 +113,8 @@ pub mod troop_movement_systems {
                 assert!(tile.not_occupied(), "one of the tiles in path is occupied");
 
                 // add biome to biomes
-                let biome = get_biome(next.x.into(), next.y.into());
+                let biome_library = biome_library::get_dispatcher(@world);
+                let biome = biome_library.get_biome(next.x.into(), next.y.into());
                 biomes.append(biome);
 
                 let mut occupy_destination: bool = true;

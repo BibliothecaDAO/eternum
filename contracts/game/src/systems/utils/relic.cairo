@@ -16,8 +16,9 @@ use s1_eternum::models::weight::Weight;
 use s1_eternum::systems::utils::map::IMapImpl;
 use s1_eternum::systems::utils::structure::iStructureImpl;
 use s1_eternum::systems::utils::troop::iMercenariesImpl;
-use s1_eternum::utils::map::biomes::{Biome, get_biome};
+use s1_eternum::utils::map::biomes::{Biome};
 use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
+use crate::system_libraries::biome_library::{biome_library, IBiomeLibraryDispatcherTrait};
 use crate::system_libraries::rng_library::{rng_library, IRNGlibraryDispatcherTrait};
 
 #[generate_trait]
@@ -62,7 +63,8 @@ pub impl iRelicChestDiscoveryImpl of iRelicChestDiscoveryTrait {
                 destination_coord = destination_coord.neighbor(Direction::East);
             } else {
                 if tile.not_discovered() {
-                    let biome: Biome = get_biome(destination_coord.x.into(), destination_coord.y.into());
+                    let biome_library = biome_library::get_dispatcher(@world);
+                    let biome: Biome = biome_library.get_biome(destination_coord.x.into(), destination_coord.y.into());
                     IMapImpl::explore(ref world, ref tile, biome);
                 }
                 IMapImpl::occupy(ref world, ref tile, TileOccupier::Chest.into(), world.dispatcher.uuid());
