@@ -4,19 +4,10 @@ version = 1
 [[package]]
 name = "achievement"
 version = "0.0.0"
-source = "git+https://github.com/credence0x/arcade?rev=da9bc4c#da9bc4c6edc623799463affcecac0004939d1398"
+source = "git+https://github.com/credence0x/arcade?rev=917d701#917d701e97fad0cda7bc711ccb374b7d96abc2c4"
 dependencies = [
  "dojo",
  "dojo_macros",
-]
-
-[[package]]
-name = "alexandria_bytes"
-version = "0.5.2"
-source = "git+https://github.com/keep-starknet-strange/alexandria.git?tag=v0.5.2#2fa8b3e12e31f58216b7d890c3d9094da9e6fcff"
-dependencies = [
- "alexandria_data_structures",
- "alexandria_math",
 ]
 
 [[package]]
@@ -25,53 +16,9 @@ version = "0.5.2"
 source = "git+https://github.com/keep-starknet-strange/alexandria.git?tag=v0.5.2#2fa8b3e12e31f58216b7d890c3d9094da9e6fcff"
 
 [[package]]
-name = "alexandria_encoding"
-version = "0.5.2"
-source = "git+https://github.com/keep-starknet-strange/alexandria.git?tag=v0.5.2#2fa8b3e12e31f58216b7d890c3d9094da9e6fcff"
-dependencies = [
- "alexandria_bytes",
- "alexandria_data_structures",
- "alexandria_math",
- "alexandria_numeric",
-]
-
-[[package]]
 name = "alexandria_math"
 version = "0.5.2"
 source = "git+https://github.com/keep-starknet-strange/alexandria.git?tag=v0.5.2#2fa8b3e12e31f58216b7d890c3d9094da9e6fcff"
-
-[[package]]
-name = "alexandria_numeric"
-version = "0.5.2"
-source = "git+https://github.com/keep-starknet-strange/alexandria.git?tag=v0.5.2#2fa8b3e12e31f58216b7d890c3d9094da9e6fcff"
-dependencies = [
- "alexandria_math",
- "alexandria_searching",
-]
-
-[[package]]
-name = "alexandria_searching"
-version = "0.5.2"
-source = "git+https://github.com/keep-starknet-strange/alexandria.git?tag=v0.5.2#2fa8b3e12e31f58216b7d890c3d9094da9e6fcff"
-dependencies = [
- "alexandria_data_structures",
-]
-
-[[package]]
-name = "budokan"
-version = "0.0.1"
-source = "git+https://github.com/credence0x/tournaments.git?rev=0e58edb#0e58edb4bfe364c47e7aa71641275f780835c859"
-dependencies = [
- "dojo",
- "dojo_macros",
- "game_components_metagame",
- "game_components_minigame",
- "game_components_test_starknet",
- "game_components_token",
- "game_components_utils",
- "openzeppelin_introspection",
- "openzeppelin_token",
-]
 
 [[package]]
 name = "cubit"
@@ -81,7 +28,7 @@ source = "git+https://github.com/edisontim/cubit.git?branch=feat%2Fcairo-2.9.2#3
 [[package]]
 name = "dojo"
 version = "1.7.0-alpha.2"
-source = "git+https://github.com/dojoengine/dojo?tag=v1.7.0-alpha.2#a064752fff355f325cf0b00828d236b399333432"
+source = "git+https://github.com/credence0x/dojo?rev=5fcc155#5fcc1554f75b96f9f4ba635a3da63412f09ad179"
 dependencies = [
  "dojo_macros",
 ]
@@ -89,7 +36,7 @@ dependencies = [
 [[package]]
 name = "dojo_cairo_test"
 version = "1.7.0-alpha.2"
-source = "git+https://github.com/dojoengine/dojo?tag=v1.7.0-alpha.2#a064752fff355f325cf0b00828d236b399333432"
+source = "git+https://github.com/credence0x/dojo?rev=5fcc155#5fcc1554f75b96f9f4ba635a3da63412f09ad179"
 dependencies = [
  "dojo",
 ]
@@ -97,74 +44,7 @@ dependencies = [
 [[package]]
 name = "dojo_macros"
 version = "1.7.0-alpha.2"
-source = "git+https://github.com/dojoengine/dojo?tag=v1.7.0-alpha.2#a064752fff355f325cf0b00828d236b399333432"
-
-[[package]]
-name = "game_components_metagame"
-version = "1.5.1"
-source = "git+https://github.com/credence0x/game-components#842ad6134a5fcaa1c6a2136384287f9b090edd59"
-dependencies = [
- "game_components_minigame",
- "game_components_token",
- "game_components_utils",
- "openzeppelin_introspection",
- "openzeppelin_token",
-]
-
-[[package]]
-name = "game_components_minigame"
-version = "1.5.1"
-source = "git+https://github.com/credence0x/game-components#842ad6134a5fcaa1c6a2136384287f9b090edd59"
-dependencies = [
- "game_components_metagame",
- "game_components_token",
- "game_components_utils",
- "openzeppelin_introspection",
- "openzeppelin_token",
-]
-
-[[package]]
-name = "game_components_test_starknet"
-version = "1.5.1"
-source = "git+https://github.com/credence0x/game-components#842ad6134a5fcaa1c6a2136384287f9b090edd59"
-dependencies = [
- "game_components_metagame",
- "game_components_minigame",
- "game_components_token",
- "game_components_utils",
- "openzeppelin_introspection",
- "openzeppelin_token",
-]
-
-[[package]]
-name = "game_components_token"
-version = "1.5.1"
-source = "git+https://github.com/credence0x/game-components#842ad6134a5fcaa1c6a2136384287f9b090edd59"
-dependencies = [
- "game_components_metagame",
- "game_components_minigame",
- "game_components_test_starknet",
- "game_components_utils",
- "openzeppelin_introspection",
- "openzeppelin_token",
-]
-
-[[package]]
-name = "game_components_utils"
-version = "1.5.1"
-source = "git+https://github.com/credence0x/game-components#842ad6134a5fcaa1c6a2136384287f9b090edd59"
-dependencies = [
- "alexandria_encoding",
- "game_components_metagame",
- "game_components_minigame",
- "game_components_token",
- "graffiti",
-]
-
-[[package]]
-name = "graffiti"
-version = "0.1.0"
-source = "git+https://github.com/ponderingdemocritus/graffiti?rev=bc569531791dbc71c6cd8d9bc154c34eedad31fe#bc569531791dbc71c6cd8d9bc154c34eedad31fe"
+source = "git+https://github.com/credence0x/dojo?rev=5fcc155#5fcc1554f75b96f9f4ba635a3da63412f09ad179"
 
 [[package]]
 name = "openzeppelin"
@@ -291,7 +171,6 @@ dependencies = [
  "achievement",
  "alexandria_data_structures",
  "alexandria_math",
- "budokan",
  "cubit",
  "dojo",
  "dojo_cairo_test",

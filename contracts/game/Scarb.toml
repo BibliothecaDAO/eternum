@@ -9,16 +9,16 @@ sierra-replace-ids = true
 
 [dependencies]
 starknet = "2.12.1"
-dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.7.0-alpha.2" }
-dojo_macros = { git = "https://github.com/dojoengine/dojo", tag = "v1.7.0-alpha.2" }
+dojo = { git = "https://github.com/credence0x/dojo", rev = "5fcc155" }
+dojo_macros = { git = "https://github.com/credence0x/dojo", rev = "5fcc155" }
 alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "v0.5.2" }
 alexandria_data_structures = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "v0.5.2" }
-achievement = { git = "https://github.com/credence0x/arcade", rev = "da9bc4c" }
+achievement = { git = "https://github.com/credence0x/arcade", rev = "917d701" }
 cubit = { git = "https://github.com/edisontim/cubit.git", branch = "feat/cairo-2.9.2" }
-budokan = { git = "https://github.com/credence0x/tournaments.git", rev="0e58edb" }
+#budokan = { git = "https://github.com/credence0x/tournaments.git", rev="0e58edb" }
 
 [dev-dependencies]
-dojo_cairo_test = { git = "https://github.com/dojoengine/dojo.git", tag = "v1.7.0-alpha.2" }
+dojo_cairo_test = { git = "https://github.com/credence0x/dojo", rev = "5fcc155" }
 openzeppelin_token = "2.0.0"
 openzeppelin = "2.0.0"
 
@@ -28,14 +28,14 @@ build-external-contracts = [
 	"dojo::world::world_contract::world",
 	"achievement::events::index::e_TrophyCreation",
 	"achievement::events::index::e_TrophyProgression",
-	"budokan::components::tests::mocks::game_mock::game_mock",
-	"budokan::components::models::game::m_GameMetadata",
-	"budokan::components::models::game::m_GameCounter",
-	"budokan::components::models::game::m_TokenMetadata",
-	"budokan::components::models::game::m_Score",
-	"budokan::components::models::game::m_Settings",
-	"budokan::components::models::game::m_SettingsCounter",
-	"budokan::components::models::game::m_SettingsDetails",
+#	"budokan::components::tests::mocks::game_mock::game_mock",
+#	"budokan::components::models::game::m_GameMetadata",
+#	"budokan::components::models::game::m_GameCounter",
+#	"budokan::components::models::game::m_TokenMetadata",
+#	"budokan::components::models::game::m_Score",
+#	"budokan::components::models::game::m_Settings",
+#	"budokan::components::models::game::m_SettingsCounter",
+#	"budokan::components::models::game::m_SettingsDetails",
 
 ]
 
