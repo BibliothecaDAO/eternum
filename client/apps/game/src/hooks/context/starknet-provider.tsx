@@ -1,6 +1,7 @@
 import { ControllerConnector } from "@cartridge/connector";
+import { usePredeployedAccounts } from "@dojoengine/predeployed-connector/react";
 import { Chain, getSlotChain, mainnet, sepolia } from "@starknet-react/chains";
-import { Connector, StarknetConfig, jsonRpcProvider, paymasterRpcProvider, voyager } from "@starknet-react/core";
+import { StarknetConfig, jsonRpcProvider, paymasterRpcProvider, voyager } from "@starknet-react/core";
 import type React from "react";
 import { useCallback } from "react";
 import { constants, shortString } from "starknet";
@@ -104,6 +105,12 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
     return { nodeUrl: env.VITE_PUBLIC_NODE_URL };
   }, []);
 
+  const { connectors } = usePredeployedAccounts({
+    rpc: env.VITE_PUBLIC_NODE_URL as string,
+    id: "katana",
+    name: "Katana",
+  });
+
   const paymasterRpc = useCallback(() => {
     return { nodeUrl: env.VITE_PUBLIC_NODE_URL };
   }, []);
@@ -121,7 +128,7 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
       }
       provider={jsonRpcProvider({ rpc })}
       paymasterProvider={paymasterRpcProvider({ rpc: paymasterRpc })}
-      connectors={[controller as unknown as Connector]}
+      connectors={connectors}
       explorer={voyager}
       autoConnect
     >
