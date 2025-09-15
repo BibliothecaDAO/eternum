@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { marketplaceCollections, seasonPassAddress } from "@/config";
+import { marketplaceCollections, realmsAddress, seasonPassAddress } from "@/config";
 import { fetchActiveMarketOrders } from "@/hooks/services";
 import { useLords } from "@/hooks/use-lords";
 import { useMarketplace } from "@/hooks/use-marketplace";
@@ -422,23 +422,25 @@ export const TokenDetailModal = ({
                   <Badge variant="outline" className="w-fit">
                     <span>TOKEN #{parseInt(tokenData.token_id?.toString())}</span>
                   </Badge>
-                  {/* Display Resources */}
-                  <div>
-                    <Label className="uppercase tracking-wider mb-1 flex justify-between items-center text-muted-foreground text-xs">
-                      Resources
-                    </Label>
-                    <div className="flex flex-wrap gap-2">
-                      {attributes
-                        ?.filter((attribute) => attribute.trait_type === "Resource")
-                        .map((attribute, index) => (
-                          <ResourceIcon
-                            resource={attribute.value as string}
-                            size="lg"
-                            key={`${attribute.trait_type}-${index}`}
-                          />
-                        ))}
+                  {/* Display Resources - Only for Realms collection */}
+                  {tokenData.contract_address === realmsAddress && (
+                    <div>
+                      <Label className="uppercase tracking-wider mb-1 flex justify-between items-center text-muted-foreground text-xs">
+                        Resources
+                      </Label>
+                      <div className="flex flex-wrap gap-2">
+                        {attributes
+                          ?.filter((attribute) => attribute.trait_type === "Resource")
+                          .map((attribute, index) => (
+                            <ResourceIcon
+                              resource={attribute.value as string}
+                              size="lg"
+                              key={`${attribute.trait_type}-${index}`}
+                            />
+                          ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
                   {/* Display Wonder */}
                   {attributes?.find((attribute) => attribute.trait_type === "Wonder")?.value && (
                     <div className="border-t items-center flex uppercase flex-wrap w-full py-2 justify-center text-center text-sm bg-crimson/50 rounded-lg">
