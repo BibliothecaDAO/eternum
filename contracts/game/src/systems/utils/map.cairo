@@ -5,8 +5,8 @@ use s1_eternum::constants::DAYDREAMS_AGENT_ID;
 use s1_eternum::models::map::{Tile, TileOccupier};
 use s1_eternum::models::position::{Coord, CoordTrait};
 use s1_eternum::models::troop::{TroopTier, TroopType};
-use s1_eternum::utils::map::biomes::{Biome};
-use crate::system_libraries::biome_library::{biome_library, IBiomeLibraryDispatcherTrait};
+use s1_eternum::utils::map::biomes::Biome;
+use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
 
 #[generate_trait]
 pub impl IMapImpl of IMapTrait {

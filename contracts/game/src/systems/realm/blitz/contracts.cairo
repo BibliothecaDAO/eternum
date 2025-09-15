@@ -44,10 +44,8 @@ pub mod blitz_realm_systems {
     use s1_eternum::systems::utils::realm::iRealmImpl;
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
-    
-    
-    use crate::system_libraries::rng_library::{rng_library, IRNGlibraryDispatcherTrait};
     use starknet::ContractAddress;
+    use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: false)]
@@ -282,10 +280,7 @@ pub mod blitz_realm_systems {
             let lower_bound: u128 = blitz_registration_config.assigned_positions_count.into();
             let range: u128 = (upper_bound - lower_bound).into();
             let player_position_spot_number: u16 = 1
-                + rng_library_dispatcher
-                    .get_random_in_range(vrf_seed, 98139, range)
-                    .try_into()
-                    .unwrap();
+                + rng_library_dispatcher.get_random_in_range(vrf_seed, 98139, range).try_into().unwrap();
             let player_position_register: BlitzRealmPositionRegister = world.read_model(player_position_spot_number);
 
             // reduce the number of available positions by 1

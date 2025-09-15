@@ -253,8 +253,7 @@ pub mod resource_bridge_systems {
             iBridgeImpl::assert_withdraw_not_paused(world);
 
             // obtain token address from reverse whitelist config
-            let resource_bridge_token_whitelist_reverse: ResourceRevBridgeWtlConfig = world
-                .read_model(resource_type);
+            let resource_bridge_token_whitelist_reverse: ResourceRevBridgeWtlConfig = world.read_model(resource_type);
             let token = resource_bridge_token_whitelist_reverse.token;
 
             // ensure token is still whitelisted (incase we want to disable specific resource withdrawals)

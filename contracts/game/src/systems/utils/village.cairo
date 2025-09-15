@@ -21,11 +21,11 @@ use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
 use s1_eternum::models::weight::Weight;
 use s1_eternum::systems::utils::structure::iStructureImpl;
 use s1_eternum::systems::utils::troop::iMercenariesImpl;
-use crate::system_libraries::rng_library::{rng_library, IRNGlibraryDispatcherTrait};
-use crate::system_libraries::structure_libraries::structure_creation_library::{
-    structure_creation_library, IStructureCreationlibraryDispatcherTrait,
-};
 use starknet::ContractAddress;
+use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
+use crate::system_libraries::structure_libraries::structure_creation_library::{
+    IStructureCreationlibraryDispatcherTrait, structure_creation_library,
+};
 
 #[generate_trait]
 pub impl iVillageImpl of iVillageTrait {
@@ -62,13 +62,9 @@ pub impl iVillageResourceImpl of iVillageResourceTrait {
     fn random(owner: starknet::ContractAddress, world: WorldStorage) -> u8 {
         let rng_library_dispatcher = rng_library::get_dispatcher(@world);
         let vrf_seed: u256 = rng_library_dispatcher.get_random_number(starknet::get_caller_address(), world);
-        let resource: u8 = *rng_library_dispatcher.get_weighted_choice_u8(
-            Self::resources().span(),
-            Self::resource_probabilities().span(),
-            1,
-            true,
-            vrf_seed,
-        ).at(0);
+        let resource: u8 = *rng_library_dispatcher
+            .get_weighted_choice_u8(Self::resources().span(), Self::resource_probabilities().span(), 1, true, vrf_seed)
+            .at(0);
 
         return resource;
     }
@@ -126,9 +122,10 @@ pub impl iVillageDiscoveryImpl of iVillageDiscoveryTrait {
 
         // use RNG library simple boolean lottery
         let rng_library_dispatcher = rng_library::get_dispatcher(@world);
-        let success: bool = rng_library_dispatcher.get_weighted_choice_bool_simple(
-            map_config.village_win_probability.into(), map_config.village_fail_probability.into(), village_vrf_seed,
-        );
+        let success: bool = rng_library_dispatcher
+            .get_weighted_choice_bool_simple(
+                map_config.village_win_probability.into(), map_config.village_fail_probability.into(), village_vrf_seed,
+            );
 
         return success;
     }
@@ -143,17 +140,18 @@ pub impl iVillageDiscoveryImpl of iVillageDiscoveryTrait {
         // make discoverable village structure
         let structure_id = world.dispatcher.uuid();
         let structure_creation_library = structure_creation_library::get_dispatcher(@world);
-        structure_creation_library.make_structure(
-            world,
-            coord,
-            Zero::zero(),
-            structure_id,
-            StructureCategory::Village,
-            blitz_produceable_resources().span(),
-            Default::default(),
-            TileOccupier::Village,
-            false,
-        );
+        structure_creation_library
+            .make_structure(
+                world,
+                coord,
+                Zero::zero(),
+                structure_id,
+                StructureCategory::Village,
+                blitz_produceable_resources().span(),
+                Default::default(),
+                TileOccupier::Village,
+                false,
+            );
 
         // add guards to structure
         // slot must start from delta, to charlie, to beta, to alpha

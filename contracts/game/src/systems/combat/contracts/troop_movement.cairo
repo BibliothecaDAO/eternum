@@ -35,11 +35,11 @@ pub mod troop_movement_systems {
     use s1_eternum::systems::utils::mine::iMineDiscoveryImpl;
     use s1_eternum::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
-    use s1_eternum::utils::map::biomes::{Biome};
+    use s1_eternum::utils::map::biomes::Biome;
     use s1_eternum::utils::random::VRFImpl;
-    use crate::system_libraries::biome_library::{biome_library, IBiomeLibraryDispatcherTrait};
-    use crate::system_libraries::rng_library::{rng_library, IRNGlibraryDispatcherTrait};
     use starknet::ContractAddress;
+    use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
+    use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
     use super::{ITroopMovementSystems, ITroopMovementUtilSystemsDispatcher, ITroopMovementUtilSystemsDispatcherTrait};
 
 
@@ -513,7 +513,9 @@ pub mod troop_movement_util_systems {
                             let feature_toggle: QuestFeatureFlag = world.read_model(VERSION);
                             let quest_game_count = quest_game_registry.games.len();
                             if quest_game_count > 0 && feature_toggle.enabled {
-                                let quest_lottery_won: bool = iQuestDiscoveryImpl::lottery(quest_config, vrf_seed, world);
+                                let quest_lottery_won: bool = iQuestDiscoveryImpl::lottery(
+                                    quest_config, vrf_seed, world,
+                                );
                                 if quest_lottery_won {
                                     let (quest_system_address, _) = world.dns(@"quest_systems").unwrap();
                                     let quest_system = IQuestSystemsDispatcher {

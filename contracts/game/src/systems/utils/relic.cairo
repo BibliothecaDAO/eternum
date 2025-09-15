@@ -16,10 +16,10 @@ use s1_eternum::models::weight::Weight;
 use s1_eternum::systems::utils::map::IMapImpl;
 use s1_eternum::systems::utils::structure::iStructureImpl;
 use s1_eternum::systems::utils::troop::iMercenariesImpl;
-use s1_eternum::utils::map::biomes::{Biome};
+use s1_eternum::utils::map::biomes::Biome;
 use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
-use crate::system_libraries::biome_library::{biome_library, IBiomeLibraryDispatcherTrait};
-use crate::system_libraries::rng_library::{rng_library, IRNGlibraryDispatcherTrait};
+use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
+use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 
 #[generate_trait]
 pub impl iRelicChestDiscoveryImpl of iRelicChestDiscoveryTrait {
@@ -42,10 +42,14 @@ pub impl iRelicChestDiscoveryImpl of iRelicChestDiscoveryTrait {
         // calculate final probabilities
         let num_directions_choices: u32 = 3;
         let rng_library_dispatcher = rng_library::get_dispatcher(@world);
-        let mut directions: Span<Direction> = rng_library_dispatcher.get_weighted_choice_direction(
-            DirectionImpl::all().span(), array![1, 1, 1, 1, 1, 1].span(), num_directions_choices.into(), false,
-            relic_vrf_seed,
-        );
+        let mut directions: Span<Direction> = rng_library_dispatcher
+            .get_weighted_choice_direction(
+                DirectionImpl::all().span(),
+                array![1, 1, 1, 1, 1, 1].span(),
+                num_directions_choices.into(),
+                false,
+                relic_vrf_seed,
+            );
 
         let mut destination_coord: Coord = start_coord;
         let mut i = 1;
@@ -109,8 +113,8 @@ pub impl iRelicChestResourceFactoryImpl of iRelicChestResourceFactoryTrait {
         let mut number_of_relics: u128 = map_config.relic_chest_relics_per_chest.into();
 
         let rng_library_dispatcher = rng_library::get_dispatcher(@world);
-        let mut chosen_relic_ids: Span<u8> =
-            rng_library_dispatcher.get_weighted_choice_u8(relic_ids, chances, number_of_relics, true, vrf_seed);
+        let mut chosen_relic_ids: Span<u8> = rng_library_dispatcher
+            .get_weighted_choice_u8(relic_ids, chances, number_of_relics, true, vrf_seed);
 
         for i in 0..chosen_relic_ids.len() {
             let relic_resource_id: u8 = *chosen_relic_ids.at(i);

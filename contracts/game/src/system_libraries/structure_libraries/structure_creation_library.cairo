@@ -1,10 +1,8 @@
-
-
-use dojo::world::{WorldStorage};
+use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
-use s1_eternum::models::config::{WorldConfigUtilImpl};
-use s1_eternum::models::map::{TileOccupier};
-use s1_eternum::models::position::{Coord};
+use s1_eternum::models::config::WorldConfigUtilImpl;
+use s1_eternum::models::map::TileOccupier;
+use s1_eternum::models::position::Coord;
 use s1_eternum::models::structure::{StructureCategory, StructureMetadata};
 
 #[starknet::interface]
@@ -25,7 +23,7 @@ pub trait IStructureCreationlibrary<T> {
 }
 
 #[dojo::library]
-pub mod structure_creation_library {    
+pub mod structure_creation_library {
     use core::num::traits::Zero;
     use dojo::model::ModelStorage;
     use dojo::world::{WorldStorage, WorldStorageTrait};
@@ -58,10 +56,6 @@ pub mod structure_creation_library {
     use s1_eternum::utils::village::{IVillagePassDispatcher, IVillagePassDispatcherTrait};
 
 
-    /// RNG helpers centralizing VRF seeding and weighted choices.
-    ///
-    /// This is a library (not a system contract). It wraps existing
-    /// utils in a simple, stable API to avoid duplicating RNG patterns.
     #[abi(embed_v0)]
     pub impl StructureCreationLibraryImpl of super::IStructureCreationlibrary<ContractState> {
         fn make_structure(
@@ -117,7 +111,6 @@ pub mod structure_creation_library {
                         );
                     }
                 }
-                
             }
 
             // retrieve tile again and ensure tile is not occupied
@@ -162,7 +155,8 @@ pub mod structure_creation_library {
                         }
 
                         // ensure village tile is only useable if no structure is on it and tile is not a quest tile
-                        if !village_tile.occupier_is_structure && village_tile.occupier_type != TileOccupier::Quest.into() {
+                        if !village_tile.occupier_is_structure
+                            && village_tile.occupier_type != TileOccupier::Quest.into() {
                             // mint village nft
                             IVillagePassDispatcher { contract_address: village_pass_config.token_address }
                                 .mint(village_pass_config.mint_recipient_address);
@@ -214,8 +208,9 @@ pub mod structure_creation_library {
         }
 
 
-        fn grant_starting_resources(self: @ContractState, world: WorldStorage, structure_id: ID, structure_coord: Coord) {
-
+        fn grant_starting_resources(
+            self: @ContractState, world: WorldStorage, structure_id: ID, structure_coord: Coord,
+        ) {
             let mut world = world;
             let biome: Biome = get_biome(structure_coord.x.into(), structure_coord.y.into());
             let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);

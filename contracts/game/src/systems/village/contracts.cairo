@@ -26,10 +26,10 @@ pub mod village_systems {
     use s1_eternum::systems::utils::village::{iVillageImpl, iVillageResourceImpl};
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
     use s1_eternum::utils::village::{IVillagePassDispatcher, IVillagePassDispatcherTrait};
-    use super::super::super::super::models::position::CoordTrait;
     use crate::system_libraries::structure_libraries::structure_creation_library::{
-        structure_creation_library, IStructureCreationlibraryDispatcherTrait,
+        IStructureCreationlibraryDispatcherTrait, structure_creation_library,
     };
+    use super::super::super::super::models::position::CoordTrait;
 
     #[abi(embed_v0)]
     impl VillageSystemsImpl of super::IVillageSystems<ContractState> {
@@ -105,17 +105,18 @@ pub mod village_systems {
 
             // create village
             let structure_creation_library = structure_creation_library::get_dispatcher(@world);
-            structure_creation_library.make_structure(
-                world,
-                village_coord,
-                caller,
-                village_id,
-                StructureCategory::Village,
-                village_resources,
-                villiage_metadata,
-                TileOccupier::Village,
-                false,
-            );
+            structure_creation_library
+                .make_structure(
+                    world,
+                    village_coord,
+                    caller,
+                    village_id,
+                    StructureCategory::Village,
+                    village_resources,
+                    villiage_metadata,
+                    TileOccupier::Village,
+                    false,
+                );
 
             // grant starting resources
             structure_creation_library.grant_starting_resources(world, village_id, village_coord);

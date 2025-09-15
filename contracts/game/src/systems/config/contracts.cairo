@@ -1,8 +1,7 @@
 use s1_eternum::models::config::{
     BattleConfig, CapacityConfig, HyperstrtConstructConfig, MapConfig, QuestConfig, ResourceBridgeConfig,
-    ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, StructureCapacityConfig, TradeConfig,
-    TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig,
-    VillageTokenConfig,
+    ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, StructureCapacityConfig, TradeConfig, TroopDamageConfig,
+    TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig, VillageTokenConfig,
 };
 use s1_eternum::models::resource::production::building::BuildingCategory;
 
@@ -176,9 +175,7 @@ pub trait IBuildingConfig<T> {
 pub trait IResourceBridgeConfig<T> {
     fn set_resource_bridge_config(ref self: T, resource_bridge_config: ResourceBridgeConfig);
     fn set_resource_bridge_fee_split_config(ref self: T, res_bridge_fee_split_config: ResourceBridgeFeeSplitConfig);
-    fn set_resource_bridge_whitelist_config(
-        ref self: T, resource_bridge_whitelist_config: ResourceBridgeWtlConfig,
-    );
+    fn set_resource_bridge_whitelist_config(ref self: T, resource_bridge_whitelist_config: ResourceBridgeWtlConfig);
 }
 
 #[starknet::interface]
@@ -223,14 +220,14 @@ pub mod config_systems {
     use s1_eternum::models::agent::AgentConfig;
     use s1_eternum::models::config::{
         AgentControllerConfig, BankConfig, BattleConfig, BlitzHypersSettlementConfigImpl, BlitzRegistrationConfig,
-        BlitzSettlementConfigImpl, BuildingCategoryConfig, BuildingConfig, CapacityConfig, HyperstructureConfig,
-        HyperstrtConstructConfig, HyperstructureCostConfig, MapConfig, QuestConfig, ResourceBridgeConfig,
-        ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, ResourceFactoryConfig,
-        ResourceRevBridgeWtlConfig, SeasonAddressesConfig, SeasonConfig, SettlementConfig, SpeedConfig,
-        StartingResourcesConfig, StructureCapacityConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig,
-        TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig,
-        VictoryPointsWinConfig, VillageFoundResourcesConfig, VillageTokenConfig, WeightConfig,
-        WonderProductionBonusConfig, WorldConfig, WorldConfigUtilImpl,
+        BlitzSettlementConfigImpl, BuildingCategoryConfig, BuildingConfig, CapacityConfig, HyperstrtConstructConfig,
+        HyperstructureConfig, HyperstructureCostConfig, MapConfig, QuestConfig, ResourceBridgeConfig,
+        ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, ResourceFactoryConfig, ResourceRevBridgeWtlConfig,
+        SeasonAddressesConfig, SeasonConfig, SettlementConfig, SpeedConfig, StartingResourcesConfig,
+        StructureCapacityConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig, TradeConfig,
+        TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig,
+        VillageFoundResourcesConfig, VillageTokenConfig, WeightConfig, WonderProductionBonusConfig, WorldConfig,
+        WorldConfigUtilImpl,
     };
     use s1_eternum::models::name::AddressName;
     use s1_eternum::models::resource::production::building::BuildingCategory;

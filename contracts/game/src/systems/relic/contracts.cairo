@@ -45,7 +45,7 @@ pub mod relic_systems {
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::systems::utils::troop::{iExplorerImpl, iGuardImpl, iTroopImpl};
     use s1_eternum::utils::random::VRFImpl;
-    use crate::system_libraries::rng_library::{rng_library, IRNGlibraryDispatcherTrait};
+    use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
     use super::RelicRecipientTypeParam;
 
 

@@ -30,10 +30,10 @@ use s1_eternum::models::troop::{
 };
 use s1_eternum::models::weight::{Weight, WeightImpl};
 use s1_eternum::systems::utils::map::IMapImpl;
-use s1_eternum::utils::map::biomes::{Biome};
+use s1_eternum::utils::map::biomes::Biome;
 use s1_eternum::utils::math::PercentageValueImpl;
-use crate::system_libraries::biome_library::{biome_library, IBiomeLibraryDispatcherTrait};
-use crate::system_libraries::rng_library::{rng_library, IRNGlibraryDispatcherTrait};
+use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
+use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 
 
 #[generate_trait]
@@ -139,7 +139,8 @@ pub impl iExplorerImpl of iExplorerTrait {
             if adjacent_tile.not_occupied() {
                 if !adjacent_tile.discovered() {
                     let biome_library = biome_library::get_dispatcher(@world);
-                    let adjacent_coord_biome: Biome = biome_library.get_biome(adjacent_coord.x.into(), adjacent_coord.y.into());
+                    let adjacent_coord_biome: Biome = biome_library
+                        .get_biome(adjacent_coord.x.into(), adjacent_coord.y.into());
                     IMapImpl::explore(ref world, ref adjacent_tile, adjacent_coord_biome);
                 }
 
@@ -425,7 +426,9 @@ pub impl iExplorerImpl of iExplorerTrait {
             reward_resource_amount = resource_amount;
         } else {
             let (resource_types, resources_probs) = split_resources_and_probs();
-            let resource_id: u8 = *rng_library.get_weighted_choice_u8(resource_types, resources_probs, 1, true, vrf_seed).at(0);
+            let resource_id: u8 = *rng_library
+                .get_weighted_choice_u8(resource_types, resources_probs, 1, true, vrf_seed)
+                .at(0);
             reward_resource_id = resource_id;
             reward_resource_amount = config.reward_resource_amount.into();
         }
@@ -491,8 +494,8 @@ pub impl iTroopImpl of iTroopTrait {
 
     fn raid(success_weight: u128, failure_weight: u128, vrf_seed: u256, world: WorldStorage) -> bool {
         let rng_library_dispatcher = rng_library::get_dispatcher(@world);
-        let success: bool =
-            rng_library_dispatcher.get_weighted_choice_bool_simple(success_weight, failure_weight, vrf_seed);
+        let success: bool = rng_library_dispatcher
+            .get_weighted_choice_bool_simple(success_weight, failure_weight, vrf_seed);
         return success;
     }
 
@@ -620,9 +623,10 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
             vrf_seed + VRF_OFFSET
         };
 
-        let success: bool = rng_library::get_dispatcher(@world).get_weighted_choice_bool_simple(
-            map_config.agent_discovery_prob.into(), map_config.agent_discovery_fail_prob.into(), agent_vrf_seed,
-        );
+        let success: bool = rng_library::get_dispatcher(@world)
+            .get_weighted_choice_bool_simple(
+                map_config.agent_discovery_prob.into(), map_config.agent_discovery_fail_prob.into(), agent_vrf_seed,
+            );
         return success;
     }
 
@@ -637,16 +641,21 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
     ) -> ExplorerTroops {
         let mut salt: u128 = 124;
         let troop_amount = iTroopImpl::random_amount(
-            seed, salt, troop_limit_config.agents_troop_lower_bound, troop_limit_config.agents_troop_upper_bound, world
+            seed, salt, troop_limit_config.agents_troop_lower_bound, troop_limit_config.agents_troop_upper_bound, world,
         );
 
         // select a troop type with equal probability
         let rng_library_dispatcher = rng_library::get_dispatcher(@world);
         let troop_types: Array<TroopType> = array![TroopType::Knight, TroopType::Crossbowman, TroopType::Paladin];
-        let random_troop_type_index: u128 = rng_library_dispatcher.get_random_in_range(seed, salt, troop_types.len().into());
+        let random_troop_type_index: u128 = rng_library_dispatcher
+            .get_random_in_range(seed, salt, troop_types.len().into());
         let troop_type: TroopType = *troop_types.at(random_troop_type_index.try_into().unwrap());
-        let troop_tier: TroopTier = *rng_library_dispatcher.get_weighted_choice_trooptier(
-                array![TroopTier::T1, TroopTier::T2, TroopTier::T3].span(), array![70, 20, 10].span(), 1, true,
+        let troop_tier: TroopTier = *rng_library_dispatcher
+            .get_weighted_choice_trooptier(
+                array![TroopTier::T1, TroopTier::T2, TroopTier::T3].span(),
+                array![70, 20, 10].span(),
+                1,
+                true,
                 seed + 15,
             )
             .at(0);
@@ -711,17 +720,18 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
     fn names() -> Array<felt252> {
         // array![
         //     'Daydreams Agent Bread', 'Daydreams Agent Doughnut', 'Daydreams Agent Chaos', 'Daydreams Agent Giggles',
-        //     'Daydreams Agent Noodle', 'Daydreams Agent Pickle', 'Daydreams Agent PuffPuff', 'Daydreams Agent Sprinkles',
-        //     'Daydreams Agent Unstable', 'Daydreams Agent Waffle', 'Daydreams Agent Mischief',
+        //     'Daydreams Agent Noodle', 'Daydreams Agent Pickle', 'Daydreams Agent PuffPuff', 'Daydreams Agent
+        //     Sprinkles', 'Daydreams Agent Unstable', 'Daydreams Agent Waffle', 'Daydreams Agent Mischief',
         //     'Daydreams Agent Whiskers', 'Daydreams Agent Poptart', 'Daydreams Agent Bubbles', 'Daydreams Agent Jojo',
         //     'Daydreams Agent Pink', 'Daydreams Agent Biscuit', 'Daydreams Agent Sparkle', 'Daydreams Agent Whimsy',
-        //     'Daydreams Agent Pancake', 'Daydreams Agent Mario', 'Daydreams Agent Scramble', 'Daydreams Agent Jitters',
-        //     'Daydreams Agent Funny', 'Daydreams Agent Waffles', 'Daydreams Agent Doodle', 'Daydreams Agent Katy',
-        //     'Daydreams Agent Bumblebee', 'Daydreams Agent Happy', 'Daydreams Agent Marshmallow',
-        //     'Daydreams Agent Zigzag', 'Daydreams Agent Pebble', 'Daydreams Agent Wiggles', 'Daydreams Agent Cinnamon',
-        //     'Daydreams Agent Noodles', 'Daydreams Agent Popsicle', 'Daydreams Agent Loot', 'Daydreams Agent Mumble',
-        //     'Daydreams Agent French', 'Daydreams Agent Angry', 'Daydreams Agent Dazzle', 'Daydreams Agent Pretzel',
-        //     'Daydreams Agent Bubblegum', 'Daydreams Agent Banana', 'Daydreams Agent Pickle', 'Daydreams Agent Blobert',
+        //     'Daydreams Agent Pancake', 'Daydreams Agent Mario', 'Daydreams Agent Scramble', 'Daydreams Agent
+        //     Jitters', 'Daydreams Agent Funny', 'Daydreams Agent Waffles', 'Daydreams Agent Doodle', 'Daydreams Agent
+        //     Katy', 'Daydreams Agent Bumblebee', 'Daydreams Agent Happy', 'Daydreams Agent Marshmallow',
+        //     'Daydreams Agent Zigzag', 'Daydreams Agent Pebble', 'Daydreams Agent Wiggles', 'Daydreams Agent
+        //     Cinnamon', 'Daydreams Agent Noodles', 'Daydreams Agent Popsicle', 'Daydreams Agent Loot', 'Daydreams
+        //     Agent Mumble', 'Daydreams Agent French', 'Daydreams Agent Angry', 'Daydreams Agent Dazzle', 'Daydreams
+        //     Agent Pretzel', 'Daydreams Agent Bubblegum', 'Daydreams Agent Banana', 'Daydreams Agent Pickle',
+        //     'Daydreams Agent Blobert',
         // ]
         array!['']
     }

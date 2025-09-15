@@ -37,7 +37,15 @@ mod combat_library {
         ) -> (Troops, Troops) {
             let mut attacker_mut = attacker;
             let mut defender_mut = defender;
-            attacker_mut.attack(ref defender_mut, biome, troop_stamina_config, troop_damage_config, current_tick, current_tick_interval);
+            attacker_mut
+                .attack(
+                    ref defender_mut,
+                    biome,
+                    troop_stamina_config,
+                    troop_damage_config,
+                    current_tick,
+                    current_tick_interval,
+                );
             (attacker_mut, defender_mut)
         }
     }

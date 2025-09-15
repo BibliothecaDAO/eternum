@@ -33,8 +33,8 @@ pub mod bank_systems {
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::systems::utils::troop::iMercenariesImpl;
     use crate::system_libraries::structure_libraries::structure_creation_library::{
-    structure_creation_library, IStructureCreationlibraryDispatcherTrait,
-};
+        IStructureCreationlibraryDispatcherTrait, structure_creation_library,
+    };
 
     const MAX_BANK_COUNT: u8 = 6;
 
@@ -58,17 +58,18 @@ pub mod bank_systems {
             for bank in banks {
                 // create the bank structure
                 let bank_entity_id = bank_ids.pop_front().unwrap();
-                structure_creation_library.make_structure(
-                    world,
-                    *bank.coord,
-                    caller,
-                    bank_entity_id,
-                    StructureCategory::Bank,
-                    array![].span(),
-                    Default::default(),
-                    TileOccupier::Bank,
-                    false,
-                );
+                structure_creation_library
+                    .make_structure(
+                        world,
+                        *bank.coord,
+                        caller,
+                        bank_entity_id,
+                        StructureCategory::Bank,
+                        array![].span(),
+                        Default::default(),
+                        TileOccupier::Bank,
+                        false,
+                    );
 
                 // save bank name model
                 world.write_model(@AddressName { address: bank_entity_id.into(), name: *bank.name });

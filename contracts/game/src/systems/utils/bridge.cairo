@@ -75,9 +75,7 @@ pub impl iBridgeImpl of iBridgeTrait {
         assert!(resource_bridge_config.withdraw_paused == false, "resource bridge withdrawal is paused");
     }
 
-    fn assert_resource_whitelisted(
-        world: WorldStorage, resource_bridge_token_whitelist: ResourceBridgeWtlConfig,
-    ) {
+    fn assert_resource_whitelisted(world: WorldStorage, resource_bridge_token_whitelist: ResourceBridgeWtlConfig) {
         assert!(resource_bridge_token_whitelist.resource_type.is_non_zero(), "resource id not whitelisted");
     }
 

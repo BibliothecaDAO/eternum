@@ -26,9 +26,9 @@ use s1_eternum::systems::combat::contracts::troop_management::{
 use s1_eternum::systems::utils::map::IMapImpl;
 use s1_eternum::systems::utils::troop::iExplorerImpl;
 use s1_eternum::systems::utils::village::iVillageImpl;
-use s1_eternum::utils::map::biomes::{Biome};
-use crate::system_libraries::biome_library::{biome_library, IBiomeLibraryDispatcherTrait};
+use s1_eternum::utils::map::biomes::Biome;
 use s1_eternum::utils::village::{IVillagePassDispatcher, IVillagePassDispatcherTrait};
+use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
 
 #[generate_trait]
 pub impl iStructureImpl of IStructureTrait {
@@ -127,7 +127,8 @@ pub impl iStructureImpl of IStructureTrait {
                     let mut village_tile: Tile = world.read_model((village_coord.x, village_coord.y));
                     if !village_tile.discovered() {
                         let biome_library = biome_library::get_dispatcher(@world);
-                        let village_biome: Biome = biome_library.get_biome(village_coord.x.into(), village_coord.y.into());
+                        let village_biome: Biome = biome_library
+                            .get_biome(village_coord.x.into(), village_coord.y.into());
                         IMapImpl::explore(ref world, ref village_tile, village_biome);
                     }
 

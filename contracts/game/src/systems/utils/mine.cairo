@@ -16,9 +16,9 @@ use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
 use s1_eternum::models::weight::Weight;
 use s1_eternum::systems::utils::structure::iStructureImpl;
 use s1_eternum::systems::utils::troop::iMercenariesImpl;
-use crate::system_libraries::rng_library::{rng_library, IRNGlibraryDispatcherTrait};
+use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 use crate::system_libraries::structure_libraries::structure_creation_library::{
-    structure_creation_library, IStructureCreationlibraryDispatcherTrait,
+    IStructureCreationlibraryDispatcherTrait, structure_creation_library,
 };
 
 #[generate_trait]
@@ -33,10 +33,12 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
         };
 
         let rng_library_dispatcher = rng_library::get_dispatcher(@world);
-        let success: bool = rng_library_dispatcher.get_weighted_choice_bool_simple(
-            map_config.shards_mines_win_probability.into(), map_config.shards_mines_fail_probability.into(),
-            mine_vrf_seed,
-        );
+        let success: bool = rng_library_dispatcher
+            .get_weighted_choice_bool_simple(
+                map_config.shards_mines_win_probability.into(),
+                map_config.shards_mines_fail_probability.into(),
+                mine_vrf_seed,
+            );
 
         return success;
     }
@@ -53,17 +55,18 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
         // make fragment mine structure
         let structure_id = world.dispatcher.uuid();
         let structure_creation_library = structure_creation_library::get_dispatcher(@world);
-        structure_creation_library.make_structure(
-            world,
-            coord,
-            Zero::zero(),
-            structure_id,
-            StructureCategory::FragmentMine,
-            array![].span(),
-            Default::default(),
-            TileOccupier::FragmentMine,
-            false,
-        );
+        structure_creation_library
+            .make_structure(
+                world,
+                coord,
+                Zero::zero(),
+                structure_id,
+                StructureCategory::FragmentMine,
+                array![].span(),
+                Default::default(),
+                TileOccupier::FragmentMine,
+                false,
+            );
         // add guards to structure
         // slot must start from delta, to charlie, to beta, to alpha
         let slot_tiers = array![(GuardSlot::Delta, TroopTier::T1, TroopType::Crossbowman)].span();

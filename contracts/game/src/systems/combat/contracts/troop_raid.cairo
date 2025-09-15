@@ -39,12 +39,11 @@ pub mod troop_raid_systems {
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::systems::utils::troop::{TroopRaidOutcome, iExplorerImpl, iGuardImpl, iTroopImpl};
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
-    use s1_eternum::utils::map::biomes::{Biome};
+    use s1_eternum::utils::map::biomes::Biome;
     use s1_eternum::utils::math::PercentageValueImpl;
     use s1_eternum::utils::random::VRFImpl;
-    use crate::system_libraries::biome_library::{biome_library, IBiomeLibraryDispatcherTrait};
-    use crate::system_libraries::rng_library::{rng_library, IRNGlibraryDispatcherTrait};
-
+    use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
+    use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
     use super::super::super::super::super::models::structure::StructureBaseTrait;
     use super::super::super::super::super::models::troop::GuardTrait;
 
@@ -129,9 +128,8 @@ pub mod troop_raid_systems {
             let mut guard_defender: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, structure_id);
             let mut explorer_aggressor_troops = explorer_aggressor.troops;
             let biome_library = biome_library::get_dispatcher(@world);
-            let defender_biome: Biome = biome_library.get_biome(
-                guarded_structure.coord().x.into(), guarded_structure.coord().y.into(),
-            );
+            let defender_biome: Biome = biome_library
+                .get_biome(guarded_structure.coord().x.into(), guarded_structure.coord().y.into());
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let current_tick = tick.current();
@@ -313,7 +311,8 @@ pub mod troop_raid_systems {
                     TroopRaidOutcome::Failure => { raid_success = false },
                     TroopRaidOutcome::Chance => {
                         let rng_library_dispatcher = rng_library::get_dispatcher(@world);
-                        let vrf_seed: u256 = rng_library_dispatcher.get_random_number(starknet::get_caller_address(), world);
+                        let vrf_seed: u256 = rng_library_dispatcher
+                            .get_random_number(starknet::get_caller_address(), world);
                         raid_success = iTroopImpl::raid(sum_damage_to_guards, sum_damage_to_explorer, vrf_seed, world);
                     },
                 }
