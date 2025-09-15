@@ -8,7 +8,7 @@ export const useWallet = () => {
   const connectWallet = async () => {
     try {
       console.log("Attempting to connect wallet...");
-      await connect({ connector: connectors[0] });
+      await connect({ connector: connectors[0].controller });
       console.log("Wallet connected successfully.");
     } catch (error) {
       console.error("Failed to connect wallet:", error);
