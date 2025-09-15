@@ -71,12 +71,12 @@ export const marketplaceCollections = {
     name: "Golden Tokens",
     image: "/collections/golden-tokens.svg",
   },
-  beasts: {
-    address: currentNetwork === "mainnet" ? "0x280ace0b2171106eaebef91ca9b097a566108e9452c45b94a7924a9f794ae80" : "",
-    id: COLLECTION_IDS[currentNetwork].beasts,
-    name: "Beasts",
-    image: "/collections/beasts.svg",
-  },
+  // beasts: {
+  //   address: currentNetwork === "mainnet" ? "0x046da8955829adf2bda310099a0063451923f02e648cf25a1203aac6335cf0e4" : "",
+  //   id: COLLECTION_IDS[currentNetwork].beasts,
+  //   name: "Beasts",
+  //   image: "/collections/beasts.svg",
+  // },
 } as const;
 
 export function getCollectionByAddress(
