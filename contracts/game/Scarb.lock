@@ -4,7 +4,7 @@ version = 1
 [[package]]
 name = "achievement"
 version = "0.0.0"
-source = "git+https://github.com/credence0x/arcade?rev=917d701#917d701e97fad0cda7bc711ccb374b7d96abc2c4"
+source = "git+https://github.com/credence0x/arcade?rev=d7b81b7#d7b81b79ccc548a946ed79176dfd00c496028f9f"
 dependencies = [
  "dojo",
  "dojo_macros",
@@ -28,7 +28,7 @@ source = "git+https://github.com/edisontim/cubit.git?branch=feat%2Fcairo-2.9.2#3
 [[package]]
 name = "dojo"
 version = "1.7.0-alpha.2"
-source = "git+https://github.com/credence0x/dojo?rev=5fcc155#5fcc1554f75b96f9f4ba635a3da63412f09ad179"
+source = "git+https://github.com/credence0x/dojo?rev=13937cc#13937cca6d6093e33de0b060838600e7bf55f879"
 dependencies = [
  "dojo_macros",
 ]
@@ -36,7 +36,7 @@ dependencies = [
 [[package]]
 name = "dojo_cairo_test"
 version = "1.7.0-alpha.2"
-source = "git+https://github.com/credence0x/dojo?rev=5fcc155#5fcc1554f75b96f9f4ba635a3da63412f09ad179"
+source = "git+https://github.com/credence0x/dojo?rev=13937cc#13937cca6d6093e33de0b060838600e7bf55f879"
 dependencies = [
  "dojo",
 ]
@@ -44,7 +44,7 @@ dependencies = [
 [[package]]
 name = "dojo_macros"
 version = "1.7.0-alpha.2"
-source = "git+https://github.com/credence0x/dojo?rev=5fcc155#5fcc1554f75b96f9f4ba635a3da63412f09ad179"
+source = "git+https://github.com/credence0x/dojo?rev=13937cc#13937cca6d6093e33de0b060838600e7bf55f879"
 
 [[package]]
 name = "openzeppelin"
