@@ -1,5 +1,6 @@
 use core::num::traits::zero::Zero;
 use dojo::model::{Model, ModelStorage};
+use dojo::storage::dojo_store::DojoStore;
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::WORLD_CONFIG_ID;
@@ -11,7 +12,7 @@ use starknet::ContractAddress;
 // GLOBAL CONFIGS
 //
 
-#[derive(Introspect, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 #[dojo::model]
 pub struct WorldConfig {
     #[key]
@@ -188,10 +189,10 @@ pub impl SeasonConfigImpl of SeasonConfigTrait {
 
 #[generate_trait]
 pub impl WorldConfigUtilImpl of WorldConfigTrait {
-    fn get_member<T, impl TSerde: Serde<T>>(world: WorldStorage, selector: felt252) -> T {
+    fn get_member<T, impl TSerde: Serde<T>, impl TDojoStore: DojoStore<T>>(world: WorldStorage, selector: felt252) -> T {
         world.read_member(Model::<WorldConfig>::ptr_from_keys(WORLD_CONFIG_ID), selector)
     }
-    fn set_member<T, impl TSerde: Serde<T>, impl TDrop: Drop<T>>(ref world: WorldStorage, selector: felt252, value: T) {
+    fn set_member<T, impl TSerde: Serde<T>, impl TDrop: Drop<T>, impl TDojoStore: DojoStore<T>>(ref world: WorldStorage, selector: felt252, value: T) {
         world.write_member(Model::<WorldConfig>::ptr_from_keys(WORLD_CONFIG_ID), selector, value)
     }
 }

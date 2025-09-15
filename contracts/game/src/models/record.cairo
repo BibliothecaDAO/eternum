@@ -1,5 +1,6 @@
 use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
+use dojo::storage::dojo_store::DojoStore;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::WORLD_CONFIG_ID;
 
@@ -23,10 +24,10 @@ pub struct RelicRecord {
 
 #[generate_trait]
 pub impl WorldRecordImpl of WorldRecordTrait {
-    fn get_member<T, impl TSerde: Serde<T>>(world: WorldStorage, selector: felt252) -> T {
+    fn get_member<T, impl TSerde: Serde<T>, impl TDojoStore: DojoStore<T>>(world: WorldStorage, selector: felt252) -> T {
         world.read_member(Model::<WorldRecord>::ptr_from_keys(WORLD_CONFIG_ID), selector)
     }
-    fn set_member<T, impl TSerde: Serde<T>, impl TDrop: Drop<T>>(ref world: WorldStorage, selector: felt252, value: T) {
+    fn set_member<T, impl TSerde: Serde<T>, impl TDrop: Drop<T>, impl TDojoStore: DojoStore<T>>(ref world: WorldStorage, selector: felt252, value: T) {
         world.write_member(Model::<WorldRecord>::ptr_from_keys(WORLD_CONFIG_ID), selector, value)
     }
 }
