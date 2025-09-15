@@ -87,6 +87,35 @@ export async function fetchAllCollectionTokens(
 }
 
 /**
+ * Fetch a single collection token by ID from the API
+ */
+export async function fetchSingleCollectionToken(
+  contractAddress: string,
+  tokenId: number,
+  collectionId: number,
+): Promise<CollectionToken | null> {
+  const query = QUERIES.SINGLE_COLLECTION_TOKEN.replaceAll("'{contractAddress}'", `'${contractAddress}'`)
+    .replaceAll("{contractAddress}", contractAddress)
+    .replaceAll("{tokenId}", tokenId.toString())
+    .replaceAll("{collectionId}", collectionId.toString());
+
+  const rawData = await fetchSQL<any[]>(query);
+
+  if (rawData.length === 0) {
+    return null;
+  }
+
+  const item = rawData[0];
+  return {
+    ...item,
+    token_id: parseInt(item.token_id),
+    metadata: item.metadata ? JSON.parse(item.metadata) : null,
+    best_price_hex: item.price_hex ? BigInt(item.price_hex) : null,
+    is_listed: Boolean(item.is_listed),
+  };
+}
+
+/**
  * Fetch season pass realms by address from the API
  */
 export async function fetchSeasonPassRealmsByAddress(

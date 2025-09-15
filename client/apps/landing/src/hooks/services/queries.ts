@@ -291,21 +291,21 @@ WITH limited_active_orders AS (
         mo."order.price" AS price_hex,
         mo."order.expiration" AS expiration,
         mo."order.owner" AS order_owner,
-        mo.order_id,
-        tb.account_address AS token_owner,
-        tb.balance
+        mo.order_id
       FROM "marketplace-MarketOrderModel" AS mo
-      JOIN token_balances tb
-        ON tb.contract_address = "{contractAddress}"
-        AND substr(tb.token_id, instr(tb.token_id, ':') + 1) = printf("0x%064x", mo."order.token_id")
-        AND ltrim(lower(replace(mo."order.owner", "0x", "")), "0")
-          = ltrim(lower(replace(tb.account_address, "0x", "")), "0")
-        AND tb.balance != "0x0000000000000000000000000000000000000000000000000000000000000000"
       WHERE mo."order.active" = 1
         AND mo."order.expiration" > strftime('%s','now')
         AND mo."order.collection_id" = {collectionId}
         AND ('{ownerAddress}' = '' OR mo."order.owner" = '{ownerAddress}')
-      GROUP BY token_id_hex
+    ),
+    token_owners AS (
+      SELECT
+        tb.account_address AS token_owner,
+        tb.balance,
+        substr(tb.token_id, instr(tb.token_id, ':') + 1) AS token_id_hex
+      FROM token_balances tb
+      WHERE tb.contract_address = '{contractAddress}'
+        AND tb.balance != "0x0000000000000000000000000000000000000000000000000000000000000000"
     )
     SELECT
       t.token_id AS token_id_hex,
@@ -315,15 +315,17 @@ WITH limited_active_orders AS (
       t.metadata,
       t.contract_address,
       CASE WHEN ao.order_id IS NOT NULL THEN 1 ELSE 0 END AS is_listed,
-      ao.token_owner,
+      owners.token_owner,
       ao.price_hex,
       ao.expiration,
       ao.order_owner,
       ao.order_id,
-      ao.balance
+      owners.balance
     FROM tokens t
     LEFT JOIN active_orders ao
       ON ao.token_id_hex = t.token_id
+    LEFT JOIN token_owners owners
+      ON owners.token_id_hex = t.token_id
     WHERE t.contract_address = '{contractAddress}'
     ORDER BY is_listed DESC,
              CASE WHEN t.metadata IS NULL THEN 1 ELSE 0 END ASC,
@@ -337,6 +339,55 @@ WITH limited_active_orders AS (
     WHERE keys LIKE '0x6d9857ff29ce02c8a34db3a4387b1438bd738b0b4c17679553432d8fc11ecb/{contractAddress}/%{playerAddress}/'
       AND created_at > {minTimestamp}
     ORDER BY created_at DESC
+  `,
+  SINGLE_COLLECTION_TOKEN: `
+    /* Fetch a single token by ID with listing status and current owner */
+    WITH active_orders AS (
+      SELECT
+        printf("0x%064x", mo."order.token_id") AS token_id_hex,
+        mo."order.price" AS price_hex,
+        mo."order.expiration" AS expiration,
+        mo."order.owner" AS order_owner,
+        mo.order_id
+      FROM "marketplace-MarketOrderModel" AS mo
+      WHERE mo."order.active" = 1
+        AND mo."order.expiration" > strftime('%s','now')
+        AND mo."order.collection_id" = {collectionId}
+        AND mo."order.token_id" = {tokenId}
+    ),
+    current_owner AS (
+      SELECT
+        tb.account_address AS token_owner,
+        tb.balance,
+        substr(tb.token_id, instr(tb.token_id, ':') + 1) AS token_id_hex
+      FROM token_balances tb
+      WHERE tb.contract_address = '{contractAddress}'
+        AND substr(tb.token_id, instr(tb.token_id, ':') + 1) = printf("0x%064x", {tokenId})
+        AND tb.balance != "0x0000000000000000000000000000000000000000000000000000000000000000"
+      ORDER BY tb.balance DESC
+      LIMIT 1
+    )
+    SELECT
+      t.token_id AS token_id_hex,
+      substr(t.token_id, 3) AS token_id,
+      t.name,
+      t.symbol,
+      t.metadata,
+      t.contract_address,
+      CASE WHEN ao.order_id IS NOT NULL THEN 1 ELSE 0 END AS is_listed,
+      co.token_owner,
+      ao.price_hex,
+      ao.expiration,
+      ao.order_owner,
+      ao.order_id,
+      co.balance
+    FROM tokens t
+    LEFT JOIN active_orders ao
+      ON ao.token_id_hex = t.token_id
+    LEFT JOIN current_owner co
+      ON co.token_id_hex = t.token_id
+    WHERE t.contract_address = '{contractAddress}'
+      AND t.token_id = printf("0x%064x", {tokenId})
   `,
   DONKEY_BURN: `
     SELECT 
