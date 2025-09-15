@@ -41,7 +41,7 @@ function CollectionPage() {
   // --- State Management ---
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
-  const [sortBy, setSortBy] = useState<FetchAllCollectionTokensOptions["sortBy"]>("price_asc");
+  const [sortBy, setSortBy] = useState<FetchAllCollectionTokensOptions["sortBy"]>("price_desc");
   const [listedOnly, setListedOnly] = useState(false);
   const ITEMS_PER_PAGE = 24;
 
@@ -90,6 +90,7 @@ function CollectionPage() {
   const activeOrders = totals.data?.[0]?.active_order_count ?? 0;
   const allTraits = allTraitsQuery.data ?? {};
   const MAX_VISIBLE_PAGES = 5;
+  const listedTokensOnPage = useMemo(() => tokens.filter(token => token.expiration !== null && token.best_price_hex !== null), [tokens]);
 
   // --- Event Handlers ---
   const handlePageChange = (page: number) => {
@@ -148,7 +149,9 @@ function CollectionPage() {
   // Update effect to use debounced value
   useEffect(() => {
     if (sweepCount > 0 && tokens.length > 0) {
-      const itemsToSelect = tokens.slice(0, sweepCount);
+      // Only select from listed items
+      const listedTokens = tokens.filter(token => token.expiration !== null && token.best_price_hex !== null);
+      const itemsToSelect = listedTokens.slice(0, sweepCount);
       const currentSelectedIds = new Set(selectedPasses.map((pass) => pass.token_id));
 
       itemsToSelect.forEach((item) => {
@@ -249,7 +252,13 @@ function CollectionPage() {
                   <CollectionTokenGrid
                     tokens={tokens}
                     isCompactGrid={isCompactGrid}
-                    onToggleSelection={togglePass}
+                    onToggleSelection={(pass) => {
+                      // Only allow listed items to be selected
+                      const isListed = pass.expiration !== null && pass.best_price_hex !== null;
+                      if (isListed) {
+                        togglePass(pass);
+                      }
+                    }}
                     pageId={`$collection${collection}`}
                   />
                 )}
@@ -299,13 +308,13 @@ function CollectionPage() {
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs font-medium">Sweep Selection</span>
                           <span className="text-xs text-muted-foreground">
-                            {sweepCount} / {Math.min(activeOrders, tokens.length)}
+                            {sweepCount} / {listedTokensOnPage.length}
                           </span>
                         </div>
                         <Slider
                           value={[sweepCount]}
                           onValueChange={([value]: number[]) => setSweepCount(value)}
-                          max={Math.min(activeOrders, tokens.length)}
+                          max={listedTokensOnPage.length}
                           step={1}
                           className="w-full"
                         />
