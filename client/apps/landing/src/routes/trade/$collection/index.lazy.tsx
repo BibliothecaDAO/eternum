@@ -90,7 +90,10 @@ function CollectionPage() {
   const activeOrders = totals.data?.[0]?.active_order_count ?? 0;
   const allTraits = allTraitsQuery.data ?? {};
   const MAX_VISIBLE_PAGES = 5;
-  const listedTokensOnPage = useMemo(() => tokens.filter(token => token.expiration !== null && token.best_price_hex !== null), [tokens]);
+  const listedTokensOnPage = useMemo(
+    () => tokens.filter((token) => token.expiration !== null && token.best_price_hex !== null),
+    [tokens],
+  );
 
   // --- Event Handlers ---
   const handlePageChange = (page: number) => {
@@ -150,7 +153,7 @@ function CollectionPage() {
   useEffect(() => {
     if (sweepCount > 0 && tokens.length > 0) {
       // Only select from listed items
-      const listedTokens = tokens.filter(token => token.expiration !== null && token.best_price_hex !== null);
+      const listedTokens = tokens.filter((token) => token.expiration !== null && token.best_price_hex !== null);
       const itemsToSelect = listedTokens.slice(0, sweepCount);
       const currentSelectedIds = new Set(selectedPasses.map((pass) => pass.token_id));
 
