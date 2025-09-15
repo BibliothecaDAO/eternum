@@ -20,7 +20,7 @@ function TokenDetailPage() {
   const tokenId = params.tokenId as string;
   const collectionConfig = marketplaceCollections[collection as keyof typeof marketplaceCollections];
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-  
+
   if (!collectionConfig) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -36,11 +36,7 @@ function TokenDetailPage() {
 
   const tokenData = useSuspenseQuery({
     queryKey: ["singleToken", collection, tokenId],
-    queryFn: () => fetchSingleCollectionToken(
-      collectionConfig.address,
-      parseInt(tokenId),
-      collectionConfig.id || 0
-    ),
+    queryFn: () => fetchSingleCollectionToken(collectionConfig.address, parseInt(tokenId), collectionConfig.id || 0),
     refetchInterval: 8_000,
   });
 
@@ -81,11 +77,7 @@ function TokenDetailPage() {
         <div className="relative">
           <div className="relative overflow-hidden rounded-lg bg-muted">
             {image ? (
-              <img
-                src={image}
-                alt={metadata?.name || `Token #${token.token_id}`}
-                className="w-full h-auto"
-              />
+              <img src={image} alt={metadata?.name || `Token #${token.token_id}`} className="w-full h-auto" />
             ) : (
               <div className="w-full aspect-square flex items-center justify-center text-muted-foreground">
                 No image available
@@ -97,15 +89,15 @@ function TokenDetailPage() {
         {/* Details Section */}
         <div className="space-y-6">
           <div>
-            <h1 className="text-3xl font-bold mb-2">
-              {metadata?.name || `${collection} #${token.token_id}`}
-            </h1>
+            <h1 className="text-3xl font-bold mb-2">{metadata?.name || `${collection} #${token.token_id}`}</h1>
             {metadata?.description && (
               <div className="relative">
-                <p className={cn(
-                  "text-muted-foreground transition-all duration-300",
-                  !isDescriptionExpanded && metadata.description.length > 200 && "line-clamp-3"
-                )}>
+                <p
+                  className={cn(
+                    "text-muted-foreground transition-all duration-300",
+                    !isDescriptionExpanded && metadata.description.length > 200 && "line-clamp-3",
+                  )}
+                >
                   {metadata.description}
                 </p>
                 {metadata.description.length > 200 && (
@@ -133,17 +125,13 @@ function TokenDetailPage() {
             <div className="space-y-4">
               <div>
                 <span className="text-sm text-muted-foreground">Status</span>
-                <p className="text-lg font-semibold">
-                  {token.is_listed ? "Listed" : "Not Listed"}
-                </p>
+                <p className="text-lg font-semibold">{token.is_listed ? "Listed" : "Not Listed"}</p>
               </div>
-              
+
               {token.is_listed && token.best_price_hex !== null && (
                 <div>
                   <span className="text-sm text-muted-foreground">Current Price</span>
-                  <p className="text-2xl font-bold">
-                    {formatUnits(token.best_price_hex || BigInt(0), 18)} LORDS
-                  </p>
+                  <p className="text-2xl font-bold">{formatUnits(token.best_price_hex || BigInt(0), 18)} LORDS</p>
                 </div>
               )}
 
@@ -176,7 +164,9 @@ function TokenDetailPage() {
                       <p className="text-xs text-muted-foreground uppercase truncate" title={attr.trait_type}>
                         {attr.trait_type}
                       </p>
-                      <p className="font-semibold truncate" title={String(attr.value)}>{attr.value}</p>
+                      <p className="font-semibold truncate" title={String(attr.value)}>
+                        {attr.value}
+                      </p>
                     </div>
                   ))}
                 </div>

@@ -94,14 +94,13 @@ export async function fetchSingleCollectionToken(
   tokenId: number,
   collectionId: number,
 ): Promise<CollectionToken | null> {
-  const query = QUERIES.SINGLE_COLLECTION_TOKEN
-    .replaceAll("'{contractAddress}'", `'${contractAddress}'`)
+  const query = QUERIES.SINGLE_COLLECTION_TOKEN.replaceAll("'{contractAddress}'", `'${contractAddress}'`)
     .replaceAll("{contractAddress}", contractAddress)
     .replaceAll("{tokenId}", tokenId.toString())
     .replaceAll("{collectionId}", collectionId.toString());
-  
+
   const rawData = await fetchSQL<any[]>(query);
-  
+
   if (rawData.length === 0) {
     return null;
   }
