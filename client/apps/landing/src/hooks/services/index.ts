@@ -10,7 +10,7 @@ export interface ActiveMarketOrdersTotal {
   floor_price_wei: bigint | null;
 }
 
-export interface CollectionToken {
+interface CollectionToken {
   token_id: number;
   order_id: number | null;
   name: string | null;
@@ -34,7 +34,7 @@ export interface SeasonPassRealm {
   account_address: string;
 }
 
-export interface CollectionTrait {
+interface CollectionTrait {
   trait_type: string;
   trait_value: string;
 }
@@ -100,7 +100,7 @@ export interface FetchAllCollectionTokensOptions {
   listedOnly?: boolean;
 }
 
-export interface FetchAllCollectionTokensResult {
+interface FetchAllCollectionTokensResult {
   tokens: CollectionToken[];
   totalCount: number;
 }
@@ -213,25 +213,6 @@ export async function fetchAllCollectionTokens(
   const totalCount = countData[0]?.total_count ?? 0;
 
   return { tokens, totalCount };
-}
-
-/**
- * Legacy function signature for backwards compatibility
- * @deprecated Use the new fetchAllCollectionTokens with options parameter
- */
-export async function fetchAllCollectionTokensLegacy(
-  contractAddress: string,
-  ownerAddress?: string,
-  limit?: number,
-  offset?: number,
-): Promise<CollectionToken[]> {
-  const options: FetchAllCollectionTokensOptions = {
-    ownerAddress,
-    limit,
-    offset,
-  };
-  const result = await fetchAllCollectionTokens(contractAddress, options);
-  return result.tokens;
 }
 
 /**
