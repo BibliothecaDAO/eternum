@@ -1,6 +1,6 @@
 import { ControllerConnector } from "@cartridge/connector";
 import { Chain, getSlotChain, mainnet, sepolia } from "@starknet-react/chains";
-import { Connector, StarknetConfig, jsonRpcProvider, voyager } from "@starknet-react/core";
+import { Connector, StarknetConfig, jsonRpcProvider, paymasterRpcProvider, voyager } from "@starknet-react/core";
 import type React from "react";
 import { useCallback } from "react";
 import { constants, shortString } from "starknet";
@@ -104,6 +104,10 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
     return { nodeUrl: env.VITE_PUBLIC_NODE_URL };
   }, []);
 
+  const paymasterRpc = useCallback(() => {
+    return { nodeUrl: env.VITE_PUBLIC_NODE_URL };
+  }, []);
+  
   return (
     <StarknetConfig
       chains={
@@ -116,6 +120,7 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
               : [mainnet, sepolia]
       }
       provider={jsonRpcProvider({ rpc })}
+      paymasterProvider={paymasterRpcProvider({ rpc: paymasterRpc })}
       connectors={[controller as unknown as Connector]}
       explorer={voyager}
       autoConnect
