@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { seasonPassAddress } from "@/config";
+import { marketplaceCollections, seasonPassAddress } from "@/config";
 import { fetchActiveMarketOrders } from "@/hooks/services";
 import { useLords } from "@/hooks/use-lords";
 import { useMarketplace } from "@/hooks/use-marketplace";
@@ -13,7 +13,7 @@ import { MergedNftData } from "@/types";
 import { shortenHex } from "@dojoengine/utils";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Info, Loader2 } from "lucide-react";
+import { AlertTriangle, Copy, Info, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { formatUnits } from "viem";
@@ -386,13 +386,36 @@ export const TokenDetailModal = ({
                 </div>
                 <div className="flex flex-col gap-5">
                   <div className="flex flex-col gap-2">
-                    <h3 className="text-gold font-semibold text-3xl">{displayName}</h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-gold font-semibold text-3xl">{displayName}</h3>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const collectionKey = Object.entries(marketplaceCollections).find(
+                            ([_, config]) => config.address === tokenData.contract_address,
+                          )?.[0];
+
+                          if (collectionKey) {
+                            const shareUrl = `${window.location.origin}/trade/${collectionKey}/${tokenData.token_id}`;
+                            navigator.clipboard.writeText(shareUrl);
+                            toast.success("Link copied to clipboard!");
+                          } else {
+                            toast.error("Unable to create share link");
+                          }
+                        }}
+                        className="flex items-center gap-2 text-sm"
+                      >
+                        <Copy className="h-4 w-4" />
+                        Share Token
+                      </Button>
+                    </div>
                     <div className="flex items-center gap-2  ">
                       <div className="flex items-center gap-2">{tokenData.name}</div>
                       <Separator orientation="vertical" className="h-4" />
                       <div className="flex items-center gap-2">
                         <span className="text-muted-foreground text-sm">Owned By</span>
-                        <span className="text-foreground">{shortenHex(tokenData.account_address ?? "", 10)}</span>
+                        <span className="text-foreground">{shortenHex(tokenData.token_owner ?? "", 10)}</span>
                       </div>
                     </div>
                   </div>

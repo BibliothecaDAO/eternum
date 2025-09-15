@@ -40,6 +40,7 @@ export const TokenCard = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const isOwner = token.account_address === trimAddress(accountAddress);
+  const isListed = token.expiration !== null && token.best_price_hex !== null;
   const collection = getCollectionByAddress(contract_address);
   const collectionName = collection?.name;
 
@@ -199,7 +200,7 @@ export const TokenCard = ({
                 className="w-full"
                 onClick={handleCardClick}
               >
-                {isOwner ? "Manage" : isSelected ? "Selected" : "Buy Now"}
+                {isOwner ? "Manage" : isSelected ? "Selected" : !listingActive ? "Show Details" : "Buy Now"}
               </Button>
             )}
 
