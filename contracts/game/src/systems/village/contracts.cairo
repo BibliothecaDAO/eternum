@@ -26,6 +26,9 @@ pub mod village_systems {
     use s1_eternum::systems::utils::village::{iVillageImpl, iVillageResourceImpl};
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
     use s1_eternum::utils::village::{IVillagePassDispatcher, IVillagePassDispatcherTrait};
+    use crate::system_libraries::structure_libraries::structure_creation_library::{
+        IStructureCreationlibraryDispatcherTrait, structure_creation_library,
+    };
     use super::super::super::super::models::position::CoordTrait;
 
     #[abi(embed_v0)]
@@ -101,20 +104,22 @@ pub mod village_systems {
             villiage_metadata.village_realm = connected_realm_entity_id;
 
             // create village
-            iStructureImpl::create(
-                ref world,
-                village_coord,
-                caller,
-                village_id,
-                StructureCategory::Village,
-                village_resources,
-                villiage_metadata,
-                TileOccupier::Village,
-                false,
-            );
+            let structure_creation_library = structure_creation_library::get_dispatcher(@world);
+            structure_creation_library
+                .make_structure(
+                    world,
+                    village_coord,
+                    caller,
+                    village_id,
+                    StructureCategory::Village,
+                    village_resources,
+                    villiage_metadata,
+                    TileOccupier::Village,
+                    false,
+                );
 
             // grant starting resources
-            iStructureImpl::grant_starting_resources(ref world, village_id, village_coord);
+            structure_creation_library.grant_starting_resources(world, village_id, village_coord);
 
             // place castle building
             BuildingImpl::create(

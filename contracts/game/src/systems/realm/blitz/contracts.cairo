@@ -44,9 +44,8 @@ pub mod blitz_realm_systems {
     use s1_eternum::systems::utils::realm::iRealmImpl;
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
-    use s1_eternum::utils::random;
-    use s1_eternum::utils::random::VRFImpl;
     use starknet::ContractAddress;
+    use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: false)]
@@ -202,10 +201,8 @@ pub mod blitz_realm_systems {
 
             // obtain vrf seed
             let caller: ContractAddress = starknet::get_caller_address();
-            let vrf_provider: ContractAddress = WorldConfigUtilImpl::get_member(
-                world, selector!("vrf_provider_address"),
-            );
-            let vrf_seed: u256 = VRFImpl::seed(caller, vrf_provider);
+            let rng_library_dispatcher = rng_library::get_dispatcher(@world);
+            let vrf_seed: u256 = rng_library_dispatcher.get_random_number(starknet::get_caller_address(), world);
 
             // retrieve relevant configs
             let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
@@ -277,14 +274,13 @@ pub mod blitz_realm_systems {
             let mut blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
                 world, selector!("blitz_registration_config"),
             );
-            let vrf_provider: ContractAddress = WorldConfigUtilImpl::get_member(
-                world, selector!("vrf_provider_address"),
-            );
-            let vrf_seed: u256 = VRFImpl::seed(caller, vrf_provider);
+            let rng_library_dispatcher = rng_library::get_dispatcher(@world);
+            let vrf_seed: u256 = rng_library_dispatcher.get_random_number(starknet::get_caller_address(), world);
             let upper_bound: u128 = blitz_registration_config.registration_count.into();
             let lower_bound: u128 = blitz_registration_config.assigned_positions_count.into();
             let range: u128 = (upper_bound - lower_bound).into();
-            let player_position_spot_number: u16 = 1 + random::random(vrf_seed, 98139, range).try_into().unwrap();
+            let player_position_spot_number: u16 = 1
+                + rng_library_dispatcher.get_random_in_range(vrf_seed, 98139, range).try_into().unwrap();
             let player_position_register: BlitzRealmPositionRegister = world.read_model(player_position_spot_number);
 
             // reduce the number of available positions by 1

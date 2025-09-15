@@ -1,6 +1,13 @@
 [namespace]
 default = "s1_eternum"
 
+[lib_versions]
+"s1_eternum-combat_library" = "0_1_0"
+"s1_eternum-rng_library" = "0_1_0"
+"s1_eternum-biome_library" = "0_1_0"
+"s1_eternum-structure_creation_library" = "0_1_0"
+
+
 [env]
 ## local
 account_address = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
