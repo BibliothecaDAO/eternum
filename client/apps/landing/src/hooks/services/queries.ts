@@ -284,7 +284,59 @@ WITH limited_active_orders AS (
   AND tb.account_address = '{trimmedAccountAddress}';
   `,
   ALL_COLLECTION_TOKENS: `
-    /* Fetch all tokens in collection with listing status and sort listed first */
+    /* Fetch tokens in collection with enhanced filtering, sorting, and pagination */
+    WITH active_orders AS (
+      SELECT
+        printf("0x%064x", mo."order.token_id") AS token_id_hex,
+        mo."order.price" AS price_hex,
+        mo."order.expiration" AS expiration,
+        mo."order.owner" AS order_owner,
+        mo.order_id
+      FROM "marketplace-MarketOrderModel" AS mo
+      WHERE mo."order.active" = 1
+        AND mo."order.expiration" > strftime('%s','now')
+        AND mo."order.collection_id" = {collectionId}
+        AND ('{ownerAddress}' = '' OR mo."order.owner" = '{ownerAddress}')
+    ),
+    token_owners AS (
+      SELECT
+        tb.account_address AS token_owner,
+        tb.balance,
+        substr(tb.token_id, instr(tb.token_id, ':') + 1) AS token_id_hex
+      FROM token_balances tb
+      WHERE tb.contract_address = '{contractAddress}'
+        AND tb.balance != "0x0000000000000000000000000000000000000000000000000000000000000000"
+    ),
+    filtered_tokens AS (
+      SELECT
+        t.token_id AS token_id_hex,
+        substr(t.token_id, 3) AS token_id,
+        t.name,
+        t.symbol,
+        t.metadata,
+        t.contract_address,
+        CASE WHEN ao.order_id IS NOT NULL THEN 1 ELSE 0 END AS is_listed,
+        owners.token_owner,
+        ao.price_hex,
+        ao.expiration,
+        ao.order_owner,
+        ao.order_id,
+        owners.balance,
+        -- Keep hex price as string for simpler sorting
+        ao.price_hex AS price_sort_key
+      FROM tokens t
+      LEFT JOIN active_orders ao ON ao.token_id_hex = t.token_id
+      LEFT JOIN token_owners owners ON owners.token_id_hex = t.token_id
+      WHERE t.contract_address = '{contractAddress}'
+        {traitFilters}
+        {listedOnlyFilter}
+    )
+    SELECT * FROM filtered_tokens
+    {orderByClause}
+    {limitOffsetClause}
+  `,
+  ALL_COLLECTION_TOKENS_COUNT: `
+    /* Count total tokens matching filters for pagination */
     WITH active_orders AS (
       SELECT
         printf("0x%064x", mo."order.token_id") AS token_id_hex,
@@ -307,31 +359,13 @@ WITH limited_active_orders AS (
       WHERE tb.contract_address = '{contractAddress}'
         AND tb.balance != "0x0000000000000000000000000000000000000000000000000000000000000000"
     )
-    SELECT
-      t.token_id AS token_id_hex,
-      substr(t.token_id, 3) AS token_id,
-      t.name,
-      t.symbol,
-      t.metadata,
-      t.contract_address,
-      CASE WHEN ao.order_id IS NOT NULL THEN 1 ELSE 0 END AS is_listed,
-      owners.token_owner,
-      ao.price_hex,
-      ao.expiration,
-      ao.order_owner,
-      ao.order_id,
-      owners.balance
+    SELECT COUNT(*) as total_count
     FROM tokens t
-    LEFT JOIN active_orders ao
-      ON ao.token_id_hex = t.token_id
-    LEFT JOIN token_owners owners
-      ON owners.token_id_hex = t.token_id
+    LEFT JOIN active_orders ao ON ao.token_id_hex = t.token_id
+    LEFT JOIN token_owners owners ON owners.token_id_hex = t.token_id
     WHERE t.contract_address = '{contractAddress}'
-    ORDER BY is_listed DESC,
-             CASE WHEN t.metadata IS NULL THEN 1 ELSE 0 END ASC,
-             CASE WHEN ao.price_hex IS NOT NULL THEN ao.price_hex END ASC,
-             CASE WHEN is_listed = 0 THEN CAST(substr(t.token_id, 3) AS INTEGER) END ASC
-    LIMIT {limit} OFFSET {offset}
+      {traitFilters}
+      {listedOnlyFilter}
   `,
   COLLECTIBLE_CLAIMED: `
     SELECT *
@@ -465,4 +499,24 @@ FROM
 FROM   "s1_eternum-Structure";`,
   TOTAL_TRANSACTIONS: `SELECT COUNT(*) AS total_rows
 FROM transactions;`,
+  COLLECTION_TRAITS: `
+    /* Extract all unique trait types and values from collection metadata efficiently */
+    WITH traits_extracted AS (
+      SELECT 
+        t.metadata,
+        t.contract_address
+      FROM tokens t
+      WHERE t.contract_address = '{contractAddress}'
+        AND t.metadata IS NOT NULL
+        AND t.metadata != ''
+    )
+    SELECT DISTINCT
+      json_extract(attr.value, '$.trait_type') AS trait_type,
+      json_extract(attr.value, '$.value') AS trait_value
+    FROM traits_extracted t,
+         json_each(json_extract(t.metadata, '$.attributes')) AS attr
+    WHERE json_extract(attr.value, '$.trait_type') IS NOT NULL
+      AND json_extract(attr.value, '$.value') IS NOT NULL
+    ORDER BY trait_type, trait_value
+  `,
 };

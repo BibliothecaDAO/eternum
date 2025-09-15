@@ -10,7 +10,7 @@ export interface ActiveMarketOrdersTotal {
   floor_price_wei: bigint | null;
 }
 
-export interface CollectionToken {
+interface CollectionToken {
   token_id: number;
   order_id: number | null;
   name: string | null;
@@ -34,6 +34,48 @@ export interface SeasonPassRealm {
   account_address: string;
 }
 
+interface CollectionTrait {
+  trait_type: string;
+  trait_value: string;
+}
+
+/**
+ * Fetch all unique traits for a collection efficiently without loading full token data
+ */
+export async function fetchCollectionTraits(contractAddress: string): Promise<Record<string, string[]>> {
+  const query = QUERIES.COLLECTION_TRAITS.replace("{contractAddress}", contractAddress);
+  const rawData = await fetchSQL<CollectionTrait[]>(query);
+
+  const traitsMap: Record<string, Set<string>> = {};
+
+  rawData.forEach(({ trait_type, trait_value }) => {
+    const traitType = String(trait_type);
+    const value = String(trait_value);
+
+    if (!traitsMap[traitType]) {
+      traitsMap[traitType] = new Set();
+    }
+    traitsMap[traitType].add(value);
+  });
+
+  // Convert sets to sorted arrays
+  return Object.fromEntries(
+    Object.entries(traitsMap).map(([key, valueSet]) => [
+      key,
+      Array.from(valueSet).sort((a, b) => {
+        // Try numeric sort first
+        const aNum = Number(a);
+        const bNum = Number(b);
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+          return aNum - bNum;
+        }
+        // Fall back to string sort
+        return a.localeCompare(b);
+      }),
+    ]),
+  );
+}
+
 /**
  * Fetch totals for active market orders from the API
  */
@@ -49,31 +91,114 @@ export async function fetchCollectionStatistics(contractAddress: string): Promis
   return await fetchSQL<ActiveMarketOrdersTotal[]>(query);
 }
 
+export interface FetchAllCollectionTokensOptions {
+  ownerAddress?: string;
+  limit?: number;
+  offset?: number;
+  traitFilters?: Record<string, string[]>;
+  sortBy?: "price_asc" | "price_desc" | "token_id_asc" | "token_id_desc" | "listed_first";
+  listedOnly?: boolean;
+}
+
+interface FetchAllCollectionTokensResult {
+  tokens: CollectionToken[];
+  totalCount: number;
+}
+
 /**
- * Fetch all tokens in collection (listed and non-listed) with listing priority
+ * Fetch tokens in collection with enhanced filtering, sorting, and pagination
  */
 export async function fetchAllCollectionTokens(
   contractAddress: string,
-  ownerAddress?: string,
-  limit?: number,
-  offset?: number,
-): Promise<CollectionToken[]> {
+  options: FetchAllCollectionTokensOptions = {},
+): Promise<FetchAllCollectionTokensResult> {
   const collectionId = getCollectionByAddress(contractAddress)?.id;
   if (!collectionId) {
     throw new Error(`No collection found for address ${contractAddress}`);
   }
-  let query = QUERIES.ALL_COLLECTION_TOKENS.replaceAll("{contractAddress}", contractAddress)
-    .replace("{ownerAddress}", ownerAddress ?? "")
-    .replace("{collectionId}", collectionId.toString());
 
-  // Add pagination only if limit is provided
-  if (limit !== undefined && offset !== undefined) {
-    query = query.replace("LIMIT {limit} OFFSET {offset}", `LIMIT ${limit} OFFSET ${offset}`);
-  } else {
-    query = query.replace("LIMIT {limit} OFFSET {offset}", "");
+  const { ownerAddress, limit, offset, traitFilters = {}, sortBy = "listed_first", listedOnly = false } = options;
+
+  // Build trait filter clauses using simple JSON string matching
+  let traitFilterClauses = "";
+  const traitFilterKeys = Object.keys(traitFilters);
+  if (traitFilterKeys.length > 0) {
+    const clauses = traitFilterKeys
+      .map((traitType) => {
+        const values = traitFilters[traitType];
+        if (values.length === 0) return "";
+
+        // Match the complete attribute object to ensure trait_type and value are paired
+        const valueConditions = values
+          .map((value) => {
+            const escapedTraitType = traitType.replace(/'/g, "''");
+            const escapedValue = value.replace(/'/g, "''");
+
+            // Match the pattern {"trait_type":"X","value":"Y"} to ensure they're in the same attribute
+            return `t.metadata LIKE '%{"trait_type":"${escapedTraitType}","value":"${escapedValue}"}%'`;
+          })
+          .join(" OR ");
+
+        return `(${valueConditions})`;
+      })
+      .filter((clause) => clause.length > 0);
+
+    if (clauses.length > 0) {
+      traitFilterClauses = `AND (${clauses.join(" AND ")})`;
+    }
   }
-  const rawData = await fetchSQL<any[]>(query);
-  return rawData.map((item) => ({
+
+  // Build listed only filter
+  const listedOnlyClause = listedOnly ? "AND ao.order_id IS NOT NULL" : "";
+
+  // Build order by clause
+  let orderByClause = "";
+  switch (sortBy) {
+    case "price_asc":
+      orderByClause = "ORDER BY is_listed DESC, price_sort_key ASC NULLS LAST, CAST(token_id AS INTEGER) ASC";
+      break;
+    case "price_desc":
+      orderByClause = "ORDER BY is_listed DESC, price_sort_key DESC NULLS LAST, CAST(token_id AS INTEGER) ASC";
+      break;
+    case "token_id_asc":
+      orderByClause = "ORDER BY CAST(token_id AS INTEGER) ASC";
+      break;
+    case "token_id_desc":
+      orderByClause = "ORDER BY CAST(token_id AS INTEGER) DESC";
+      break;
+    case "listed_first":
+    default:
+      orderByClause =
+        "ORDER BY is_listed DESC, CASE WHEN metadata IS NULL THEN 1 ELSE 0 END ASC, price_sort_key ASC NULLS LAST, CAST(token_id AS INTEGER) ASC";
+      break;
+  }
+
+  // Build limit/offset clause
+  const limitOffsetClause = limit !== undefined && offset !== undefined ? `LIMIT ${limit} OFFSET ${offset}` : "";
+
+  // Build the main query
+  const query = QUERIES.ALL_COLLECTION_TOKENS.replaceAll("{contractAddress}", contractAddress)
+    .replace("{ownerAddress}", ownerAddress ?? "")
+    .replace("{collectionId}", collectionId.toString())
+    .replace("{traitFilters}", traitFilterClauses)
+    .replace("{listedOnlyFilter}", listedOnlyClause)
+    .replace("{orderByClause}", orderByClause)
+    .replace("{limitOffsetClause}", limitOffsetClause);
+
+  // Build the count query
+  const countQuery = QUERIES.ALL_COLLECTION_TOKENS_COUNT.replaceAll("{contractAddress}", contractAddress)
+    .replace("{ownerAddress}", ownerAddress ?? "")
+    .replace("{collectionId}", collectionId.toString())
+    .replace("{traitFilters}", traitFilterClauses)
+    .replace("{listedOnlyFilter}", listedOnlyClause);
+
+  // Execute both queries
+  const [rawData, countData] = await Promise.all([
+    fetchSQL<any[]>(query),
+    fetchSQL<{ total_count: number }[]>(countQuery),
+  ]);
+
+  const tokens = rawData.map((item) => ({
     ...item,
     token_id: parseInt(item.token_id_hex ?? "0", 16),
     order_id: item.order_id ? parseInt(item.order_id, 16) : null,
@@ -84,6 +209,10 @@ export async function fetchAllCollectionTokens(
     contract_address: contractAddress,
     is_listed: Boolean(item.is_listed),
   }));
+
+  const totalCount = countData[0]?.total_count ?? 0;
+
+  return { tokens, totalCount };
 }
 
 /**

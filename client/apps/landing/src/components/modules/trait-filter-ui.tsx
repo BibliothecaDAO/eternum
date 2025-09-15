@@ -115,7 +115,7 @@ const FilterBadge = ({ traitType, value, onRemove }: { traitType: string; value:
   return (
     <Badge key={`${traitType}-${value}`} variant="default">
       {traitType === "Resource" && <ResourceIcon resource={value} size="md" className="mr-1 inline-block" />}
-      {displayValue}
+      <span className="font-medium">{traitType}:</span> {displayValue}
       <button
         onClick={onRemove}
         className="ml-1.5 p-0.5 rounded-full hover:bg-muted focus:outline-none focus:ring-1 focus:ring-ring"
@@ -127,11 +127,11 @@ const FilterBadge = ({ traitType, value, onRemove }: { traitType: string; value:
 };
 
 const WonderFilter = ({ isChecked, onToggle }: { isChecked: boolean; onToggle: (checked: boolean) => void }) => (
-  <div className="flex items-center h-9 px-3 rounded-md border border-input bg-background space-x-2 pb-0">
+  <div className="flex items-center h-9 px-3 rounded-md border border-input bg-background space-x-2 pb-0 flex-shrink-0">
     <Checkbox id="wonder-filter" checked={isChecked} onCheckedChange={onToggle} />
     <Label
       htmlFor="wonder-filter"
-      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+      className="text-xs sm:text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 whitespace-nowrap"
     >
       Filter by Wonder
     </Label>
@@ -161,9 +161,9 @@ const TraitSelect = ({
   const placeholder = getTraitPlaceholder(traitType);
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-1.5 min-w-0 flex-shrink-0">
       <Select value={selectedValue} onValueChange={onValueChange}>
-        <SelectTrigger id={`filter-${traitType}`} className="h-9">
+        <SelectTrigger id={`filter-${traitType}`} className="h-9 min-w-[120px] max-w-[200px] text-xs sm:text-sm">
           <SelectValue placeholder={placeholder}>{selectedValue ? placeholder : undefined}</SelectValue>
         </SelectTrigger>
         <SelectContent>
@@ -186,7 +186,7 @@ export function TraitFilterUI({
   selectedFilters,
   handleFilterChange,
   clearFilter,
-  clearAllFilters,
+  clearAllFilters: _clearAllFilters,
 }: TraitFilterUIProps) {
   const hasActiveFilters = Object.keys(selectedFilters).length > 0;
   const hasTraits = Object.keys(allTraits).length > 0;
@@ -218,7 +218,7 @@ export function TraitFilterUI({
 
   const renderTraitSelects = () => {
     return Object.entries(allTraits)
-      .filter(([traitType]) => FILTERABLE_TRAITS.includes(traitType as any))
+      .filter(([traitType]) => FILTERABLE_TRAITS.includes(traitType as (typeof FILTERABLE_TRAITS)[number]))
       .map(([traitType, values]) => (
         <TraitSelect
           key={traitType}
@@ -238,9 +238,13 @@ export function TraitFilterUI({
         </div>
       )}
 
-      <div className="flex justify-center items-end gap-4">
-        {allTraits["Wonder"] && <WonderFilter isChecked={!!selectedFilters["Wonder"]} onToggle={handleWonderToggle} />}
-        {renderTraitSelects()}
+      <div className="flex flex-col sm:flex-row sm:justify-center items-center sm:items-end gap-2 sm:gap-4 max-w-full">
+        <div className="flex flex-wrap justify-center sm:justify-end items-center gap-2 sm:gap-4 max-w-full overflow-x-auto">
+          {allTraits["Wonder"] && (
+            <WonderFilter isChecked={!!selectedFilters["Wonder"]} onToggle={handleWonderToggle} />
+          )}
+          <div className="flex flex-wrap gap-2 sm:gap-4 max-w-full">{renderTraitSelects()}</div>
+        </div>
       </div>
     </>
   );
