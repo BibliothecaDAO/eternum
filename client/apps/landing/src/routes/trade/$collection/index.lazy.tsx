@@ -11,10 +11,14 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { ScrollHeader } from "@/components/ui/scroll-header";
 import { Slider } from "@/components/ui/slider";
 import { marketplaceAddress, marketplaceCollections } from "@/config";
-import { fetchAllCollectionTokens, FetchAllCollectionTokensOptions, fetchCollectionStatistics, fetchCollectionTraits } from "@/hooks/services";
+import {
+  fetchAllCollectionTokens,
+  FetchAllCollectionTokensOptions,
+  fetchCollectionStatistics,
+  fetchCollectionTraits,
+} from "@/hooks/services";
 import { useSelectedPassesStore } from "@/stores/selected-passes";
 import { useDebounce } from "@bibliothecadao/react";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
@@ -37,7 +41,7 @@ function CollectionPage() {
   // --- State Management ---
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
-  const [sortBy, setSortBy] = useState<FetchAllCollectionTokensOptions["sortBy"]>("listed_first");
+  const [sortBy, setSortBy] = useState<FetchAllCollectionTokensOptions["sortBy"]>("price_asc");
   const [listedOnly, setListedOnly] = useState(false);
   const ITEMS_PER_PAGE = 24;
 
@@ -129,7 +133,6 @@ function CollectionPage() {
     "$collection" + collection,
   );
   const [isPurchaseDialogOpen, setIsPurchaseDialogOpen] = useState(false);
-  const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
   const [sweepCount, setSweepCount] = useState(0);
   const debouncedSweepCount = useDebounce(sweepCount, 200);
 
@@ -183,9 +186,9 @@ function CollectionPage() {
         </div>
       ) : (
         <>
-          <ScrollHeader className="flex flex-row justify-between items-center" onScrollChange={setIsHeaderScrolled}>
-            {isHeaderScrolled ? <h4 className="text-lg sm:text-xl font-bold mb-2 pl-4">{collection}</h4> : <div></div>}
-            <div className="flex justify-end my-2 gap-1 sm:gap-4 px-4 items-center">
+          <div className="flex flex-row justify-between items-center mb-4 px-4">
+            <div></div>
+            <div className="flex justify-end my-2 gap-1 sm:gap-4 items-center">
               {Object.keys(allTraits).length > 0 && (
                 <TraitFilterUI
                   allTraits={allTraits}
@@ -198,10 +201,9 @@ function CollectionPage() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as FetchAllCollectionTokensOptions["sortBy"])}
-                className="px-3 py-1 rounded border text-sm"
+                className="px-3 py-1 rounded border text-sm bg-background"
                 title="Sort by"
               >
-                <option value="listed_first">Listed First</option>
                 <option value="price_asc">Price: Low to High</option>
                 <option value="price_desc">Price: High to Low</option>
                 <option value="token_id_asc">Token ID: Low to High</option>
@@ -226,7 +228,7 @@ function CollectionPage() {
                 {isCompactGrid ? <Grid3X3 className="h-4 w-4" /> : <Grid2X2 className="h-4 w-4" />}
               </Button>
             </div>
-          </ScrollHeader>
+          </div>
 
           <div className="flex-1">
             <div className="flex flex-col gap-2 px-2">

@@ -177,7 +177,7 @@ export async function fetchAllCollectionTokens(
   const limitOffsetClause = limit !== undefined && offset !== undefined ? `LIMIT ${limit} OFFSET ${offset}` : "";
 
   // Build the main query
-  let query = QUERIES.ALL_COLLECTION_TOKENS.replaceAll("{contractAddress}", contractAddress)
+  const query = QUERIES.ALL_COLLECTION_TOKENS.replaceAll("{contractAddress}", contractAddress)
     .replace("{ownerAddress}", ownerAddress ?? "")
     .replace("{collectionId}", collectionId.toString())
     .replace("{traitFilters}", traitFilterClauses)
@@ -186,7 +186,7 @@ export async function fetchAllCollectionTokens(
     .replace("{limitOffsetClause}", limitOffsetClause);
 
   // Build the count query
-  let countQuery = QUERIES.ALL_COLLECTION_TOKENS_COUNT.replaceAll("{contractAddress}", contractAddress)
+  const countQuery = QUERIES.ALL_COLLECTION_TOKENS_COUNT.replaceAll("{contractAddress}", contractAddress)
     .replace("{ownerAddress}", ownerAddress ?? "")
     .replace("{collectionId}", collectionId.toString())
     .replace("{traitFilters}", traitFilterClauses)
