@@ -240,10 +240,10 @@ export function TraitFilterUI({
 
       <div className="flex flex-col sm:flex-row sm:justify-center items-center sm:items-end gap-2 sm:gap-4 max-w-full">
         <div className="flex flex-wrap justify-center sm:justify-end items-center gap-2 sm:gap-4 max-w-full overflow-x-auto">
-          {allTraits["Wonder"] && <WonderFilter isChecked={!!selectedFilters["Wonder"]} onToggle={handleWonderToggle} />}
-          <div className="flex flex-wrap gap-2 sm:gap-4 max-w-full">
-            {renderTraitSelects()}
-          </div>
+          {allTraits["Wonder"] && (
+            <WonderFilter isChecked={!!selectedFilters["Wonder"]} onToggle={handleWonderToggle} />
+          )}
+          <div className="flex flex-wrap gap-2 sm:gap-4 max-w-full">{renderTraitSelects()}</div>
         </div>
       </div>
     </>

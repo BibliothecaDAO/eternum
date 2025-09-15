@@ -45,19 +45,19 @@ export interface CollectionTrait {
 export async function fetchCollectionTraits(contractAddress: string): Promise<Record<string, string[]>> {
   const query = QUERIES.COLLECTION_TRAITS.replace("{contractAddress}", contractAddress);
   const rawData = await fetchSQL<CollectionTrait[]>(query);
-  
+
   const traitsMap: Record<string, Set<string>> = {};
-  
+
   rawData.forEach(({ trait_type, trait_value }) => {
     const traitType = String(trait_type);
     const value = String(trait_value);
-    
+
     if (!traitsMap[traitType]) {
       traitsMap[traitType] = new Set();
     }
     traitsMap[traitType].add(value);
   });
-  
+
   // Convert sets to sorted arrays
   return Object.fromEntries(
     Object.entries(traitsMap).map(([key, valueSet]) => [
@@ -71,8 +71,8 @@ export async function fetchCollectionTraits(contractAddress: string): Promise<Re
         }
         // Fall back to string sort
         return a.localeCompare(b);
-      })
-    ])
+      }),
+    ]),
   );
 }
 
@@ -133,7 +133,7 @@ export async function fetchAllCollectionTokens(
           .map((value) => {
             const escapedTraitType = traitType.replace(/'/g, "''");
             const escapedValue = value.replace(/'/g, "''");
-            
+
             // Match the pattern {"trait_type":"X","value":"Y"} to ensure they're in the same attribute
             return `t.metadata LIKE '%{"trait_type":"${escapedTraitType}","value":"${escapedValue}"}%'`;
           })
