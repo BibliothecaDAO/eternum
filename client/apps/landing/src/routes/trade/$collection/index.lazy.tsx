@@ -14,14 +14,13 @@ import {
 import { ScrollHeader } from "@/components/ui/scroll-header";
 import { Slider } from "@/components/ui/slider";
 import { marketplaceAddress, marketplaceCollections } from "@/config";
-import { CollectionToken, fetchAllCollectionTokens, fetchCollectionStatistics } from "@/hooks/services";
-import { useTraitFiltering } from "@/hooks/useTraitFiltering";
+import { fetchAllCollectionTokens, FetchAllCollectionTokensOptions, fetchCollectionStatistics, fetchCollectionTraits } from "@/hooks/services";
 import { useSelectedPassesStore } from "@/stores/selected-passes";
 import { useDebounce } from "@bibliothecadao/react";
-import { useSuspenseQueries } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createLazyFileRoute, useNavigate } from "@tanstack/react-router";
 import { AlertTriangle, Grid2X2, Grid3X3, Loader2 } from "lucide-react";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { formatUnits } from "viem";
 import { env } from "../../../../env";
 
@@ -34,74 +33,96 @@ function CollectionPage() {
   const { collection } = Route.useParams();
   const navigate = useNavigate();
   const collectionAddress = marketplaceCollections[collection as keyof typeof marketplaceCollections].address;
-  // --- Pagination State ---
+
+  // --- State Management ---
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
+  const [sortBy, setSortBy] = useState<FetchAllCollectionTokensOptions["sortBy"]>("listed_first");
+  const [listedOnly, setListedOnly] = useState(false);
   const ITEMS_PER_PAGE = 24;
 
-  const [allCollectionTokens, totals] = useSuspenseQueries({
-    queries: [
-      {
-        queryKey: ["allCollectionTokens", marketplaceAddress, collection],
-        queryFn: () => fetchAllCollectionTokens(collectionAddress, undefined, undefined, undefined),
-        refetchInterval: 8_000,
-      },
-      {
-        queryKey: ["activeMarketOrdersTotal", collection],
-        queryFn: () => fetchCollectionStatistics(collectionAddress),
-        refetchInterval: 30_000,
-      },
-    ],
+  // Debounce filters to avoid excessive API calls
+  const debouncedFilters = useDebounce(selectedFilters, 300);
+  const debouncedSortBy = useDebounce(sortBy, 300);
+  const debouncedListedOnly = useDebounce(listedOnly, 300);
+
+  // --- API Queries ---
+  const totals = useSuspenseQuery({
+    queryKey: ["activeMarketOrdersTotal", collection],
+    queryFn: () => fetchCollectionStatistics(collectionAddress),
+    refetchInterval: 30_000,
   });
 
-  const getMetadataString = useCallback((item: CollectionToken) => {
-    if (item?.metadata) {
-      return item.metadata;
-    }
-    return null;
-  }, []);
-  const {
-    selectedFilters,
-    allTraits,
-    filteredData: filteredItems,
-    handleFilterChange: originalHandleFilterChange,
-    clearFilter: originalClearFilter,
-    clearAllFilters: originalClearAllFilters,
-  } = useTraitFiltering<CollectionToken>(allCollectionTokens.data, getMetadataString);
+  // Fetch tokens with server-side filtering and pagination
+  const tokenOptions: FetchAllCollectionTokensOptions = useMemo(
+    () => ({
+      limit: ITEMS_PER_PAGE,
+      offset: (currentPage - 1) * ITEMS_PER_PAGE,
+      traitFilters: debouncedFilters,
+      sortBy: debouncedSortBy,
+      listedOnly: debouncedListedOnly,
+    }),
+    [currentPage, debouncedFilters, debouncedSortBy, debouncedListedOnly, ITEMS_PER_PAGE],
+  );
 
-  // --- Pagination Logic ---
-  const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const paginatedItems = filteredItems.slice(startIndex, endIndex);
+  const tokensQuery = useQuery({
+    queryKey: ["allCollectionTokens", marketplaceAddress, collection, tokenOptions],
+    queryFn: () => fetchAllCollectionTokens(collectionAddress, tokenOptions),
+    refetchInterval: 8_000,
+  });
+
+  // Get all traits for filter UI efficiently
+  const allTraitsQuery = useQuery({
+    queryKey: ["collectionTraits", marketplaceAddress, collection],
+    queryFn: () => fetchCollectionTraits(collectionAddress),
+    refetchInterval: 300_000, // Very infrequent updates (5 minutes) since traits don't change often
+    staleTime: 300_000, // Consider data fresh for 5 minutes
+  });
+
+  // --- Derived State ---
+  const tokens = useMemo(() => tokensQuery.data?.tokens ?? [], [tokensQuery.data?.tokens]);
+  const totalItems = tokensQuery.data?.totalCount ?? 0;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  const activeOrders = totals.data?.[0]?.active_order_count ?? 0;
+  const allTraits = allTraitsQuery.data ?? {};
   const MAX_VISIBLE_PAGES = 5;
 
+  // --- Event Handlers ---
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
     }
   };
 
-  // --- Wrappers for filter functions to reset page ---
-  const handleFilterChange = useCallback(
-    (traitType: string, value: string) => {
-      originalHandleFilterChange(traitType, value);
-      setCurrentPage(1);
-    },
-    [originalHandleFilterChange],
-  );
+  const handleFilterChange = useCallback((traitType: string, value: string) => {
+    setSelectedFilters((prev) => {
+      const currentValues = prev[traitType] || [];
+      const newValues = currentValues.includes(value)
+        ? currentValues.filter((v) => v !== value)
+        : [...currentValues, value];
 
-  const clearFilter = useCallback(
-    (traitType: string) => {
-      originalClearFilter(traitType);
-      setCurrentPage(1);
-    },
-    [originalClearFilter],
-  );
+      if (newValues.length === 0) {
+        const { [traitType]: _, ...rest } = prev; // eslint-disable-line @typescript-eslint/no-unused-vars
+        return rest;
+      }
+
+      return { ...prev, [traitType]: newValues };
+    });
+    setCurrentPage(1); // Reset to first page when filters change
+  }, []);
+
+  const clearFilter = useCallback((traitType: string) => {
+    setSelectedFilters((prev) => {
+      const { [traitType]: _, ...rest } = prev;
+      return rest;
+    });
+    setCurrentPage(1);
+  }, []);
 
   const clearAllFilters = useCallback(() => {
-    originalClearAllFilters();
+    setSelectedFilters({});
     setCurrentPage(1);
-  }, [originalClearAllFilters]);
+  }, []);
 
   const [isCompactGrid, setIsCompactGrid] = useState(true);
   const { selectedPasses, togglePass, clearSelection, getTotalPrice } = useSelectedPassesStore(
@@ -123,8 +144,8 @@ function CollectionPage() {
 
   // Update effect to use debounced value
   useEffect(() => {
-    if (sweepCount > 0) {
-      const itemsToSelect = paginatedItems.slice(0, sweepCount);
+    if (sweepCount > 0 && tokens.length > 0) {
+      const itemsToSelect = tokens.slice(0, sweepCount);
       const currentSelectedIds = new Set(selectedPasses.map((pass) => pass.token_id));
 
       itemsToSelect.forEach((item) => {
@@ -139,7 +160,7 @@ function CollectionPage() {
         }
       });
     }
-  }, [sweepCount, paginatedItems, selectedPasses, togglePass]);
+  }, [sweepCount, tokens, selectedPasses, togglePass]);
 
   // Reset sweep count only when manually selecting passes
   useEffect(() => {
@@ -153,9 +174,6 @@ function CollectionPage() {
     }
   }, [selectedPasses.length, sweepCount, debouncedSweepCount]);
 
-  const totalItems = filteredItems.length;
-  const activeOrders = totals.data?.[0]?.active_order_count ?? 0;
-
   return (
     <>
       {isSeasonPassEndSeason ? (
@@ -168,13 +186,36 @@ function CollectionPage() {
           <ScrollHeader className="flex flex-row justify-between items-center" onScrollChange={setIsHeaderScrolled}>
             {isHeaderScrolled ? <h4 className="text-lg sm:text-xl font-bold mb-2 pl-4">{collection}</h4> : <div></div>}
             <div className="flex justify-end my-2 gap-1 sm:gap-4 px-4 items-center">
-              <TraitFilterUI
-                allTraits={allTraits}
-                selectedFilters={selectedFilters}
-                handleFilterChange={handleFilterChange}
-                clearFilter={clearFilter}
-                clearAllFilters={clearAllFilters}
-              />
+              {Object.keys(allTraits).length > 0 && (
+                <TraitFilterUI
+                  allTraits={allTraits}
+                  selectedFilters={selectedFilters}
+                  handleFilterChange={handleFilterChange}
+                  clearFilter={clearFilter}
+                  clearAllFilters={clearAllFilters}
+                />
+              )}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as FetchAllCollectionTokensOptions["sortBy"])}
+                className="px-3 py-1 rounded border text-sm"
+                title="Sort by"
+              >
+                <option value="listed_first">Listed First</option>
+                <option value="price_asc">Price: Low to High</option>
+                <option value="price_desc">Price: High to Low</option>
+                <option value="token_id_asc">Token ID: Low to High</option>
+                <option value="token_id_desc">Token ID: High to Low</option>
+              </select>
+              <Button
+                variant={listedOnly ? "default" : "outline"}
+                size="sm"
+                onClick={() => setListedOnly(!listedOnly)}
+                title="Show only listed items"
+                className="hidden sm:flex"
+              >
+                Listed Only
+              </Button>
               <Button
                 variant="outline"
                 size="icon"
@@ -196,19 +237,27 @@ function CollectionPage() {
                   </div>
                 }
               >
-                {filteredItems.length > 0 && (
+                {tokensQuery.isLoading && (
+                  <div className="flex-grow flex items-center justify-center min-h-[200px]">
+                    <Loader2 className="w-10 h-10 animate-spin" />
+                  </div>
+                )}
+
+                {!tokensQuery.isLoading && tokens.length > 0 && (
                   <CollectionTokenGrid
-                    tokens={paginatedItems}
+                    tokens={tokens}
                     isCompactGrid={isCompactGrid}
                     onToggleSelection={togglePass}
                     pageId={`$collection${collection}`}
                   />
                 )}
 
-                {filteredItems.length === 0 && Object.keys(selectedFilters).length > 0 && (
+                {!tokensQuery.isLoading && tokens.length === 0 && Object.keys(selectedFilters).length > 0 && (
                   <div className="text-center py-6 text-muted-foreground">No items match the selected filters.</div>
                 )}
-                {totalItems === 0 && <div className="text-center py-6 text-muted-foreground">No items available.</div>}
+                {!tokensQuery.isLoading && totalItems === 0 && Object.keys(selectedFilters).length === 0 && (
+                  <div className="text-center py-6 text-muted-foreground">No items available.</div>
+                )}
               </Suspense>
             </div>
           </div>
@@ -248,13 +297,13 @@ function CollectionPage() {
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs font-medium">Sweep Selection</span>
                           <span className="text-xs text-muted-foreground">
-                            {sweepCount} / {Math.min(activeOrders, 24)}
+                            {sweepCount} / {Math.min(activeOrders, tokens.length)}
                           </span>
                         </div>
                         <Slider
                           value={[sweepCount]}
                           onValueChange={([value]: number[]) => setSweepCount(value)}
-                          max={Math.min(activeOrders, 24)}
+                          max={Math.min(activeOrders, tokens.length)}
                           step={1}
                           className="w-full"
                         />
