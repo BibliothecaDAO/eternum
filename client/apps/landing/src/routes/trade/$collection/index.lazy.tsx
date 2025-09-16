@@ -41,7 +41,7 @@ function CollectionPage() {
   // --- State Management ---
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
-  const [sortBy, setSortBy] = useState<FetchAllCollectionTokensOptions["sortBy"]>("price_desc");
+  const [sortBy, setSortBy] = useState<FetchAllCollectionTokensOptions["sortBy"]>("price_asc");
   const [listedOnly, setListedOnly] = useState(false);
   const ITEMS_PER_PAGE = 24;
 
@@ -75,6 +75,8 @@ function CollectionPage() {
     refetchInterval: 8_000,
   });
 
+  console.log({ tokensQuery: tokensQuery.data });
+
   // Get all traits for filter UI efficiently
   const allTraitsQuery = useQuery({
     queryKey: ["collectionTraits", marketplaceAddress, collection],
@@ -84,7 +86,10 @@ function CollectionPage() {
   });
 
   // --- Derived State ---
-  const tokens = useMemo(() => tokensQuery.data?.tokens ?? [], [tokensQuery.data?.tokens]);
+  const tokens = useMemo(
+    () => tokensQuery.data?.tokens.filter((token) => token.token_id !== 0) ?? [],
+    [tokensQuery.data?.tokens],
+  );
   const totalItems = tokensQuery.data?.totalCount ?? 0;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
   const activeOrders = totals.data?.[0]?.active_order_count ?? 0;
