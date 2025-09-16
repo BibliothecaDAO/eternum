@@ -107,7 +107,11 @@
 
 /* Compact Labels Styling */
 #labelrenderer.compact-labels > div {
-  transition: opacity 300ms ease-in-out, scale 300ms ease-in-out, width 300ms ease-in-out, height 300ms ease-in-out;
+  transition:
+    opacity 300ms ease-in-out,
+    scale 300ms ease-in-out,
+    width 300ms ease-in-out,
+    height 300ms ease-in-out;
 }
 
 /* In compact mode, shrink label wrapper to just fit the icon */
@@ -115,7 +119,11 @@
   padding: 0.125rem !important; /* Minimal padding */
   width: auto !important;
   min-width: auto !important;
-  transition: opacity 300ms ease-in-out, scale 300ms ease-in-out, width 300ms ease-in-out, height 300ms ease-in-out;
+  transition:
+    opacity 300ms ease-in-out,
+    scale 300ms ease-in-out,
+    width 300ms ease-in-out,
+    height 300ms ease-in-out;
 }
 
 /* Hide all content except the icon in compact mode */
@@ -140,5 +148,9 @@
 }
 
 #labelrenderer:not(.compact-labels) > div > div {
-  transition: opacity 300ms ease-in-out, scale 300ms ease-in-out, width 300ms ease-in-out, height 300ms ease-in-out;
+  transition:
+    opacity 300ms ease-in-out,
+    scale 300ms ease-in-out,
+    width 300ms ease-in-out,
+    height 300ms ease-in-out;
 }

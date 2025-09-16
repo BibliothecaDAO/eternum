@@ -17,13 +17,13 @@ interface PendingRelicEffect {
 export class RelicEffectsManager {
   // Relic effects storage - holds active relic effects for each entity
   private entityRelicEffects: Map<number, RelicEffectData[]> = new Map();
-  
+
   // Pending relic effects store - holds relic effects for entities that aren't loaded yet
   private pendingRelicEffects: Map<number, Set<PendingRelicEffect>> = new Map();
-  
+
   // Relic effect validation timer
   private relicValidationInterval: NodeJS.Timeout | null = null;
-  
+
   // Dependencies
   private fxManager: any = null;
   private tempVector3 = new THREE.Vector3();
@@ -36,11 +36,14 @@ export class RelicEffectsManager {
   /**
    * Handle relic effect updates from the game system
    */
-  public async handleRelicEffectUpdate(update: RelicEffectSystemUpdate, getEntityPosition: (entityId: number) => { col: number; row: number } | undefined): Promise<void> {
+  public async handleRelicEffectUpdate(
+    update: RelicEffectSystemUpdate,
+    getEntityPosition: (entityId: number) => { col: number; row: number } | undefined,
+  ): Promise<void> {
     const { entityId, relicEffects } = update;
 
     const entityPosition = getEntityPosition(entityId);
-    
+
     if (entityPosition) {
       // Convert RelicEffectWithEndTick to the format expected by updateRelicEffects
       const { currentArmiesTick } = getBlockTimestamp();
@@ -66,7 +69,7 @@ export class RelicEffectsManager {
   public async updateEntityRelicEffects(
     entityId: number,
     newRelicEffects: Array<{ relicNumber: number; effect: RelicEffect }>,
-    entityPosition: { col: number; row: number }
+    entityPosition: { col: number; row: number },
   ): Promise<void> {
     const currentEffects = this.entityRelicEffects.get(entityId) || [];
     const currentRelicNumbers = new Set(currentEffects.map((e) => e.relicNumber));
@@ -218,8 +221,8 @@ export class RelicEffectsManager {
       for (const [entityId, relicEffects] of this.entityRelicEffects) {
         if (relicEffects.length > 0) {
           // Filter out inactive relics
-          const activeRelics = relicEffects.filter((relicEffect) => 
-            isRelicActive(relicEffect.effect, currentArmiesTick)
+          const activeRelics = relicEffects.filter((relicEffect) =>
+            isRelicActive(relicEffect.effect, currentArmiesTick),
           );
 
           // If some relics were removed, update the effects
@@ -228,9 +231,7 @@ export class RelicEffectsManager {
             console.log(`Removing ${removedThisEntity} inactive relic effect(s) from entity: entityId=${entityId}`);
 
             // End the removed effects
-            relicEffects
-              .filter(effect => !activeRelics.includes(effect))
-              .forEach(effect => effect.fx.end());
+            relicEffects.filter((effect) => !activeRelics.includes(effect)).forEach((effect) => effect.fx.end());
 
             // Update stored effects
             if (activeRelics.length === 0) {
@@ -290,10 +291,10 @@ export class RelicEffectsManager {
     const effects = this.entityRelicEffects.get(entityId);
     if (effects) {
       // End all visual effects
-      effects.forEach(effect => effect.fx.end());
+      effects.forEach((effect) => effect.fx.end());
       this.entityRelicEffects.delete(entityId);
     }
-    
+
     // Also clear any pending effects
     this.clearPendingRelicEffects(entityId);
   }

@@ -10,17 +10,17 @@ import { ThreeCanvas, type ThreeCanvasRef } from "./three-canvas";
 export function WorldmapPage() {
   const [currentScene, setCurrentScene] = useState("worldmap");
   const canvasRef = useRef<ThreeCanvasRef>(null);
-  const { 
-    selectedRealm, 
-    selectedHex, 
-    isDoubleClickedObject, 
-    isChestDrawerOpen, 
-    chestDrawerData, 
-    closeChestDrawer, 
+  const {
+    selectedRealm,
+    selectedHex,
+    isDoubleClickedObject,
+    isChestDrawerOpen,
+    chestDrawerData,
+    closeChestDrawer,
     resetDoubleClickState,
     isArmyCreationDrawerOpen,
     armyCreationDrawerData,
-    closeArmyCreationDrawer
+    closeArmyCreationDrawer,
   } = useStore();
   const [isCanvasReady, setIsCanvasReady] = useState(false);
   const [hexDrawerOpen, setHexDrawerOpen] = useState(false);

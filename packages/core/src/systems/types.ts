@@ -103,7 +103,6 @@ export type RelicEffectSystemUpdate = {
   relicEffects: RelicEffectWithEndTick[];
 };
 
-
 export interface QuestData {
   entityId: ID;
   questType: QuestType;

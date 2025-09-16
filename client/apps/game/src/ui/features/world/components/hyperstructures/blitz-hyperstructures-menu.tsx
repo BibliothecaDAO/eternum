@@ -73,9 +73,10 @@ export const BlitzHyperstructuresMenu = () => {
       const structureName = getStructureName(structure, false).name;
 
       // Get hyperstructure realm count
-      const hyperstructureRealmCount = MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).getHyperstructureRealmCount(
-        structure.entity_id,
-      );
+      const hyperstructureRealmCount = MapDataStore.getInstance(
+        MAP_DATA_REFRESH_INTERVAL,
+        sqlApi,
+      ).getHyperstructureRealmCount(structure.entity_id);
 
       return {
         ...hyperstructure,

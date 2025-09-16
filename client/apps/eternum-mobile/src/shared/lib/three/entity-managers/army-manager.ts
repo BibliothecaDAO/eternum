@@ -861,16 +861,16 @@ export class ArmyManager extends EntityManager<ArmyObject> {
   }
 
   public handleHexClick(
-    armyId: number, 
-    col: number, 
-    row: number, 
+    armyId: number,
+    col: number,
+    row: number,
     store: any,
     structureHexes: Map<number, Map<number, HexEntityInfo>>,
     questHexes: Map<number, Map<number, HexEntityInfo>>,
-    chestHexes: Map<number, Map<number, HexEntityInfo>>
+    chestHexes: Map<number, Map<number, HexEntityInfo>>,
   ): { shouldSelect: boolean; actionPaths?: ActionPaths } {
     const isDoubleClick = store.handleObjectClick(armyId, "army", col, row);
-    
+
     if (isDoubleClick) {
       return { shouldSelect: false };
     }

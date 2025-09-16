@@ -106,7 +106,9 @@ export const StructureEntityDetail = memo(
         // Get hyperstructure realm count if this is a hyperstructure
         const hyperstructureRealmCount =
           structure.base.category === StructureType.Hyperstructure
-            ? MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).getHyperstructureRealmCount(structure.entity_id)
+            ? MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).getHyperstructureRealmCount(
+                structure.entity_id,
+              )
             : undefined;
 
         return {

@@ -37,7 +37,7 @@ export class MatrixPool {
   }
 
   public releaseAll(matrices: Matrix4[]): void {
-    matrices.forEach(matrix => this.releaseMatrix(matrix));
+    matrices.forEach((matrix) => this.releaseMatrix(matrix));
   }
 
   /**

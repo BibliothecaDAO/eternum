@@ -248,7 +248,7 @@ export const TransferResourcesContainer = ({
       <Card className="mb-4">
         <CardContent className="p-4">
           <h4 className="text-lg font-semibold mb-3 text-center">Explorer Capacity</h4>
-          
+
           <div className="space-y-3">
             <div className="flex justify-between items-center text-sm">
               <span className="text-muted-foreground">Max Capacity:</span>
@@ -279,7 +279,10 @@ export const TransferResourcesContainer = ({
               {100 - totalAfterSelectionPercentage > 5 && (
                 <div
                   className="absolute top-0 right-0 h-full flex items-center justify-end px-2"
-                  style={{ width: `${100 - totalAfterSelectionPercentage}%`, left: `${totalAfterSelectionPercentage}%` }}
+                  style={{
+                    width: `${100 - totalAfterSelectionPercentage}%`,
+                    left: `${totalAfterSelectionPercentage}%`,
+                  }}
                 >
                   <span className="text-xs text-muted-foreground">Empty</span>
                 </div>
@@ -293,17 +296,13 @@ export const TransferResourcesContainer = ({
               </div>
               <div>
                 <span className="text-green-400">Selected:</span>
-                <span className="font-medium float-right">
-                  {selectedResourcesWeightKg.toLocaleString()} kg
-                </span>
+                <span className="font-medium float-right">{selectedResourcesWeightKg.toLocaleString()} kg</span>
               </div>
               <div>
                 <span className="text-muted-foreground">After Transfer:</span>
                 <span
                   className={`font-medium float-right ${
-                    currentLoadKg + selectedResourcesWeightKg > maxCapacityKg 
-                      ? "text-destructive" 
-                      : ""
+                    currentLoadKg + selectedResourcesWeightKg > maxCapacityKg ? "text-destructive" : ""
                   }`}
                 >
                   {(currentLoadKg + selectedResourcesWeightKg).toLocaleString()} kg
@@ -311,9 +310,7 @@ export const TransferResourcesContainer = ({
               </div>
               <div>
                 <span className="text-green-400">Remaining:</span>
-                <span className="font-medium float-right">
-                  {displayAvailableCapacityKg.toLocaleString()} kg
-                </span>
+                <span className="font-medium float-right">{displayAvailableCapacityKg.toLocaleString()} kg</span>
               </div>
             </div>
           </div>
@@ -344,13 +341,15 @@ export const TransferResourcesContainer = ({
             // Simple select all - just select all available resources with default amounts
             const newSelectedResources: ResourceTransfer[] = [];
             const newResourceAmounts: Record<number, number> = {};
-            
+
             for (const resource of availableResources) {
               let amount = divideByPrecision(resource.amount);
               if (actorTypes?.target === ActorType.Explorer && explorerCapacity) {
                 const resourceWeight = configManager.resourceWeightsKg[resource.resourceId] || 0;
                 if (resourceWeight > 0) {
-                  const maxPossible = Math.floor(explorerCapacity.remainingCapacityKg / resourceWeight / availableResources.length);
+                  const maxPossible = Math.floor(
+                    explorerCapacity.remainingCapacityKg / resourceWeight / availableResources.length,
+                  );
                   amount = Math.min(amount, maxPossible);
                 }
               }
@@ -359,7 +358,7 @@ export const TransferResourcesContainer = ({
                 newResourceAmounts[resource.resourceId] = amount;
               }
             }
-            
+
             setSelectedResources(newSelectedResources);
             setResourceAmounts(newResourceAmounts);
           }}
@@ -390,11 +389,9 @@ export const TransferResourcesContainer = ({
           const displayAmount = divideByPrecision(resource.amount);
 
           return (
-            <Card 
+            <Card
               key={resource.resourceId}
-              className={`transition-colors ${
-                isSelected ? "border-primary bg-primary/5" : ""
-              }`}
+              className={`transition-colors ${isSelected ? "border-primary bg-primary/5" : ""}`}
             >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
@@ -413,9 +410,7 @@ export const TransferResourcesContainer = ({
                 </div>
 
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-muted-foreground text-sm">
-                    Available: {displayAmount.toLocaleString()}
-                  </span>
+                  <span className="text-muted-foreground text-sm">Available: {displayAmount.toLocaleString()}</span>
                 </div>
 
                 {isSelected && (
@@ -423,8 +418,7 @@ export const TransferResourcesContainer = ({
                     <div className="flex justify-between text-sm text-muted-foreground">
                       <label>Amount to Transfer:</label>
                       <span>
-                        {resourceAmounts[resource.resourceId]?.toLocaleString() || 0} /
-                        {displayAmount.toLocaleString()}
+                        {resourceAmounts[resource.resourceId]?.toLocaleString() || 0} /{displayAmount.toLocaleString()}
                       </span>
                     </div>
                     <NumericInput

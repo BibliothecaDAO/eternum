@@ -1,6 +1,12 @@
 import { sqlApi } from "@/services/api";
 import { SortInterface } from "@/ui/design-system/atoms/sort-button";
-import { divideByPrecision, getBlockTimestamp, MAP_DATA_REFRESH_INTERVAL, MapDataStore, toHexString } from "@bibliothecadao/eternum";
+import {
+  divideByPrecision,
+  getBlockTimestamp,
+  MAP_DATA_REFRESH_INTERVAL,
+  MapDataStore,
+  toHexString,
+} from "@bibliothecadao/eternum";
 import { ContractAddress, ResourceCost, ResourcesIds } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 

@@ -17,7 +17,7 @@ export interface Army {
   troopCount: number;
   troopType: TroopType;
   tier: TroopTier;
-  battle_cooldown_end: number
+  battle_cooldown_end: number;
 }
 
 export interface CombatParameters {
@@ -225,7 +225,7 @@ export class CombatSimulator {
 
   // Static method to simulate with default parameters
   public simulateBattleWithParams(
-    now: number, 
+    now: number,
     attacker: Army,
     defender: Army,
     biome: BiomeType,

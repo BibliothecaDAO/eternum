@@ -51,7 +51,7 @@ export interface DrawerSlice {
   openTransferDrawer: (
     selected: { type: ActorType; id: ID; hex: { x: number; y: number } },
     target: { type: ActorType; id: ID; hex: { x: number; y: number } },
-    allowBothDirections?: boolean
+    allowBothDirections?: boolean,
   ) => void;
   closeTransferDrawer: () => void;
   setTransferDrawer: (isOpen: boolean) => void;
@@ -113,12 +113,7 @@ export const createDrawerSlice = (set: any) => ({
   },
 
   // Army creation drawer actions
-  setArmyCreationDrawer: (data: {
-    isOpen: boolean;
-    structureId?: ID;
-    direction?: Direction;
-    isExplorer?: boolean;
-  }) => {
+  setArmyCreationDrawer: (data: { isOpen: boolean; structureId?: ID; direction?: Direction; isExplorer?: boolean }) => {
     set({
       isArmyCreationDrawerOpen: data.isOpen,
       armyCreationDrawerData: {
@@ -144,7 +139,7 @@ export const createDrawerSlice = (set: any) => ({
   openTransferDrawer: (
     selected: { type: ActorType; id: ID; hex: { x: number; y: number } },
     target: { type: ActorType; id: ID; hex: { x: number; y: number } },
-    allowBothDirections: boolean = false
+    allowBothDirections: boolean = false,
   ) => {
     set({
       isTransferDrawerOpen: true,

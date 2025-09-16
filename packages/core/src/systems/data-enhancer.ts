@@ -90,7 +90,7 @@ export class DataEnhancer {
             decr_damage_gotten_percent_num: 0,
             decr_damage_gotten_end_tick: 0,
           },
-          battle_cooldown_end: 0
+          battle_cooldown_end: 0,
         },
         currentArmiesTick,
       ).amount,
@@ -104,13 +104,13 @@ export class DataEnhancer {
     armyMapData: ArmyMapData | null,
   ): Promise<{ address: bigint | undefined; ownerName: string; guildName: string }> {
     console.log(`[DEBUG] getArmyOwnerData called with:`, armyMapData);
-    
+
     const result = {
       address: armyMapData ? BigInt(armyMapData.ownerAddress) : undefined,
       ownerName: armyMapData?.ownerName || "",
       guildName: "",
     };
-    
+
     console.log(`[DEBUG] Army owner data result:`, result);
     return result;
   }
@@ -122,7 +122,7 @@ export class DataEnhancer {
     console.log(`[DEBUG] getStructureOwner called for structure ${structureId}`);
     const structureMapData = await this.mapDataStore.getStructureByIdAsync(structureId);
     console.log(`[DEBUG] Structure map data:`, structureMapData);
-    
+
     if (structureMapData) {
       const result = { address: BigInt(structureMapData.ownerAddress), ownerName: structureMapData.ownerName };
       console.log(`[DEBUG] Returning structure owner:`, result);

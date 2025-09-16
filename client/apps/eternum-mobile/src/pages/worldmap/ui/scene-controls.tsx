@@ -87,7 +87,7 @@ const CompactRealmHeader = () => {
         </Badge>
 
         {selectedRealm && <span className="text-xs text-muted-foreground">{getLevelName(selectedRealm.level)}</span>}
-        
+
         {/* Compact View Toggle */}
         <Button
           variant="outline"
@@ -125,9 +125,9 @@ export function SceneControls({
 
     if (labelRendererElement) {
       if (isCompactView) {
-        labelRendererElement.classList.add('compact-labels');
+        labelRendererElement.classList.add("compact-labels");
       } else {
-        labelRendererElement.classList.remove('compact-labels');
+        labelRendererElement.classList.remove("compact-labels");
       }
     }
   }, [isCompactView, canvasRef]);

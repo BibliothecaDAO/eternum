@@ -22,7 +22,11 @@ logNetwork(VITE_PUBLIC_CHAIN! as NetworkType);
 
 const manifest = await getGameManifest(VITE_PUBLIC_CHAIN! as Chain);
 const provider = new EternumProvider(manifest, VITE_PUBLIC_NODE_URL, VITE_PUBLIC_VRF_PROVIDER_ADDRESS);
-const account = new Account({provider: provider.provider, address: VITE_PUBLIC_MASTER_ADDRESS!, signer: VITE_PUBLIC_MASTER_PRIVATE_KEY!});
+const account = new Account({
+  provider: provider.provider,
+  address: VITE_PUBLIC_MASTER_ADDRESS!,
+  signer: VITE_PUBLIC_MASTER_PRIVATE_KEY!,
+});
 const config: EternumConfig = await nodeReadConfig(VITE_PUBLIC_CHAIN! as Chain);
 
 const quest_games = config.questGames;

@@ -77,7 +77,7 @@ export const createSelectionSlice = (set: any, get: any) => ({
   handleObjectClick: (objectId: number, objectType: string, col: number, row: number) => {
     const state = get();
     const isSameObject = state.selectedObjectId === objectId && state.selectedObjectType === objectType;
-    
+
     if (isSameObject) {
       // Second click on the same object - mark as double clicked
       set({

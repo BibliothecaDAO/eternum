@@ -13,7 +13,6 @@ export enum HyperstructureTypesNames {
   STAGE_3 = "hyperstructure_stage2",
 }
 
-
 export interface StructureInfo {
   entityId: ID;
   hexCoords: { col: number; row: number };
@@ -47,7 +46,6 @@ export interface ArmyData {
   maxStamina: number;
   onChainStamina: { amount: bigint; updatedTick: number };
 }
-
 
 export interface RenderChunkSize {
   width: number;

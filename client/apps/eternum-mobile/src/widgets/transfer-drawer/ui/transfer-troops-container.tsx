@@ -447,12 +447,7 @@ export const TransferTroopsContainer = ({
       </Card>
 
       {/* Transfer Button */}
-      <Button
-        onClick={handleTransfer}
-        disabled={loading || isTroopsTransferDisabled}
-        className="w-full"
-        size="lg"
-      >
+      <Button onClick={handleTransfer} disabled={loading || isTroopsTransferDisabled} className="w-full" size="lg">
         {loading ? "Processing..." : "Transfer Troops"}
       </Button>
 
@@ -461,7 +456,8 @@ export const TransferTroopsContainer = ({
         <div className="text-destructive text-sm text-center">
           {transferDirection === TransferDirection.StructureToExplorer &&
             useStructureBalance &&
-            !isStructureOwnerOfExplorer && "Cannot use structure balance: Explorer is not owned by this structure"}
+            !isStructureOwnerOfExplorer &&
+            "Cannot use structure balance: Explorer is not owned by this structure"}
           {transferDirection === TransferDirection.ExplorerToExplorer &&
             selectedExplorerTroops?.troops.category !== targetExplorerTroops?.troops.category &&
             `Cannot transfer troops: Category mismatch (${selectedExplorerTroops?.troops.category} ≠ ${targetExplorerTroops?.troops.category})`}

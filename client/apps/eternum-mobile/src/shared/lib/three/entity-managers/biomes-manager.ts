@@ -7,7 +7,7 @@ import { BiomeObject } from "./types";
 
 export class BiomesManager extends EntityManager<BiomeObject> {
   protected renderer: BiomeTileRenderer;
-  
+
   // Track explored tiles
   private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
 
