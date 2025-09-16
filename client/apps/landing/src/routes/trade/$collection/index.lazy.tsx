@@ -86,10 +86,7 @@ function CollectionPage() {
   });
 
   // --- Derived State ---
-  const tokens = useMemo(
-    () => tokensQuery.data?.tokens.filter((token) => token.token_id !== 0) ?? [],
-    [tokensQuery.data?.tokens],
-  );
+  const tokens = useMemo(() => tokensQuery.data?.tokens ?? [], [tokensQuery.data?.tokens]);
   const totalItems = tokensQuery.data?.totalCount ?? 0;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
   const activeOrders = totals.data?.[0]?.active_order_count ?? 0;
