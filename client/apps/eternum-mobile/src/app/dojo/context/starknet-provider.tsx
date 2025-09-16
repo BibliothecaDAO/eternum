@@ -82,6 +82,15 @@ const katanaLocalChain = {
     decimals: 18,
   },
 
+  paymasterRpcUrls: {
+    default: {
+      http: [],
+    },
+    public: {
+      http: [],
+    },
+  },
+
   rpcUrls: {
     default: {
       http: [KATANA_RPC_URL],
