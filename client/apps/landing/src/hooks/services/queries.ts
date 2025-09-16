@@ -330,6 +330,7 @@ WITH limited_active_orders AS (
       WHERE t.contract_address = '{contractAddress}'
         {traitFilters}
         {listedOnlyFilter}
+        AND t.token_id != '0x0000000000000000000000000000000000000000000000000000000000000000'
     )
     SELECT * FROM filtered_tokens
     {orderByClause}

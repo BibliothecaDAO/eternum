@@ -155,21 +155,21 @@ export async function fetchAllCollectionTokens(
   let orderByClause = "";
   switch (sortBy) {
     case "price_asc":
-      orderByClause = "ORDER BY is_listed DESC, price_sort_key ASC NULLS LAST, CAST(token_id AS INTEGER) ASC";
+      orderByClause = "ORDER BY is_listed DESC, price_sort_key ASC NULLS LAST, token_id_hex ASC";
       break;
     case "price_desc":
-      orderByClause = "ORDER BY is_listed DESC, price_sort_key DESC NULLS LAST, CAST(token_id AS INTEGER) ASC";
+      orderByClause = "ORDER BY is_listed DESC, price_sort_key DESC NULLS LAST, token_id_hex ASC";
       break;
     case "token_id_asc":
-      orderByClause = "ORDER BY CAST(token_id AS INTEGER) ASC";
+      orderByClause = "ORDER BY token_id_hex ASC";
       break;
     case "token_id_desc":
-      orderByClause = "ORDER BY CAST(token_id AS INTEGER) DESC";
+      orderByClause = "ORDER BY token_id_hex DESC";
       break;
     case "listed_first":
     default:
       orderByClause =
-        "ORDER BY is_listed DESC, CASE WHEN metadata IS NULL THEN 1 ELSE 0 END ASC, price_sort_key ASC NULLS LAST, CAST(token_id AS INTEGER) ASC";
+        "ORDER BY is_listed DESC, CASE WHEN metadata IS NULL THEN 1 ELSE 0 END ASC, price_sort_key ASC NULLS LAST, token_id_hex ASC";
       break;
   }
 

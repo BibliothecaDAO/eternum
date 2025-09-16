@@ -41,7 +41,7 @@ function CollectionPage() {
   // --- State Management ---
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
-  const [sortBy, setSortBy] = useState<FetchAllCollectionTokensOptions["sortBy"]>("price_desc");
+  const [sortBy, setSortBy] = useState<FetchAllCollectionTokensOptions["sortBy"]>("price_asc");
   const [listedOnly, setListedOnly] = useState(false);
   const ITEMS_PER_PAGE = 24;
 

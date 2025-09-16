@@ -77,10 +77,10 @@ export const TokenCard = ({
       const idAttr = attributes.find((attr) => attr.trait_type === "Epoch Item");
       if (epochAttr && idAttr) {
         const cosmetic = COSMETIC_NAMES.find((c) => c.id === idAttr.value && c.epoch === epochAttr.value);
-        return cosmetic ? `${cosmetic.name} #${token_id}` : name || "N/A";
+        return cosmetic ? cosmetic.name : name || "N/A";
       }
     }
-    return name || "N/A";
+    return `${name} #${parseInt(token_id?.toString())}` || "N/A";
   };
 
   const displayName = getDisplayName();
@@ -136,17 +136,16 @@ export const TokenCard = ({
             </div>
           )}
         </div>
-
         <CardHeader className={`p-4 pb-2 ${isSelected ? "bg-gold/5" : ""}`}>
           <CardTitle className="items-center gap-2">
-            <div className="uppercase tracking-wider mb-1 flex justify-between items-center text-muted-foreground text-xs">
-              {collectionName}
+            <div className="flex flex-col gap-2">
+              <div className="text-muted-foreground text-xs">{collectionName}</div>
             </div>
-            <div className="flex justify-between gap-2">
-              <h4 className="text-xl truncate">{displayName || `#${token_id}`}</h4>
+            <div className="flex flex-col gap-1">
+              <h4 className="text-xl truncate">{displayName}</h4>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 mt-2">
               {attributes
                 ?.filter((attribute) => attribute.trait_type === "Resource")
                 .sort((a, b) => {
