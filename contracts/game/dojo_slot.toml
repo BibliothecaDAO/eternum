@@ -14,7 +14,7 @@ rpc_url = "https://api.cartridge.gg/x/eternum-blitz-slot-1/katana/rpc/v0_9"
 "s1_eternum-structure_creation_library" = "0_1_0"
 
 [world]
-seed = "s1_eternum_slot_1758024115"
+seed = "s1_eternum_slot_1758042123"
 name = "Realms: Eternum"
 description = "Rule the Hex"
 cover_uri = "file://assets/bg.webp"
