@@ -75,8 +75,6 @@ function CollectionPage() {
     refetchInterval: 8_000,
   });
 
-  console.log({ tokensQuery: tokensQuery.data });
-
   // Get all traits for filter UI efficiently
   const allTraitsQuery = useQuery({
     queryKey: ["collectionTraits", marketplaceAddress, collection],
