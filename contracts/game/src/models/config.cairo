@@ -1,5 +1,6 @@
 use core::num::traits::zero::Zero;
 use dojo::model::{Model, ModelStorage};
+use dojo::storage::dojo_store::DojoStore;
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::WORLD_CONFIG_ID;
@@ -11,7 +12,7 @@ use starknet::ContractAddress;
 // GLOBAL CONFIGS
 //
 
-#[derive(Introspect, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 #[dojo::model]
 pub struct WorldConfig {
     #[key]
@@ -188,10 +189,14 @@ pub impl SeasonConfigImpl of SeasonConfigTrait {
 
 #[generate_trait]
 pub impl WorldConfigUtilImpl of WorldConfigTrait {
-    fn get_member<T, impl TSerde: Serde<T>>(world: WorldStorage, selector: felt252) -> T {
+    fn get_member<T, impl TSerde: Serde<T>, impl TDojoStore: DojoStore<T>>(
+        world: WorldStorage, selector: felt252,
+    ) -> T {
         world.read_member(Model::<WorldConfig>::ptr_from_keys(WORLD_CONFIG_ID), selector)
     }
-    fn set_member<T, impl TSerde: Serde<T>, impl TDrop: Drop<T>>(ref world: WorldStorage, selector: felt252, value: T) {
+    fn set_member<T, impl TSerde: Serde<T>, impl TDrop: Drop<T>, impl TDojoStore: DojoStore<T>>(
+        ref world: WorldStorage, selector: felt252, value: T,
+    ) {
         world.write_member(Model::<WorldConfig>::ptr_from_keys(WORLD_CONFIG_ID), selector, value)
     }
 }
@@ -211,9 +216,9 @@ pub struct SeasonAddressesConfig {
 }
 
 
-#[derive(Introspect, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-pub struct HyperstructureConstructConfig {
+pub struct HyperstrtConstructConfig {
     #[key]
     pub resource_type: u8,
     pub resource_contribution_points: u64,
@@ -726,7 +731,7 @@ pub impl TickImpl of TickTrait {
 }
 
 // weight
-#[derive(Introspect, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct WeightConfig {
     #[key]
@@ -735,7 +740,7 @@ pub struct WeightConfig {
 }
 
 
-#[derive(Introspect, Copy, Drop, Serde, Default)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
 #[dojo::model]
 pub struct ResourceFactoryConfig {
     #[key]
@@ -837,7 +842,7 @@ pub struct ResourceBridgeFeeSplitConfig {
 
 #[dojo::model]
 #[derive(Copy, Drop, Serde)]
-pub struct ResourceBridgeWhitelistConfig {
+pub struct ResourceBridgeWtlConfig {
     #[key]
     pub token: ContractAddress,
     pub resource_type: u8,
@@ -845,7 +850,7 @@ pub struct ResourceBridgeWhitelistConfig {
 
 #[dojo::model]
 #[derive(Introspect, Copy, Drop, Serde)]
-pub struct ResourceRevBridgeWhtelistConfig {
+pub struct ResourceRevBridgeWtlConfig {
     #[key]
     pub resource_type: u8,
     pub token: ContractAddress,
@@ -858,7 +863,7 @@ pub struct StructureMaxLevelConfig {
     pub village_max: u8,
 }
 
-#[derive(Introspect, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct StructureLevelConfig {
     #[key]

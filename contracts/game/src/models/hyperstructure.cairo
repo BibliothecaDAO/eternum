@@ -3,12 +3,12 @@ use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, WORLD_CONFIG_ID};
-use s1_eternum::models::config::HyperstructureConstructConfig;
+use s1_eternum::models::config::HyperstrtConstructConfig;
 use s1_eternum::models::guild::GuildMember;
 use s1_eternum::models::season::SeasonPrize;
 use starknet::ContractAddress;
 
-#[derive(Introspect, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct HyperstructureGlobals {
     #[key]
@@ -17,7 +17,7 @@ pub struct HyperstructureGlobals {
     pub completed_count: u32,
 }
 
-#[derive(Introspect, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Hyperstructure {
     #[key]
@@ -72,13 +72,13 @@ pub impl HyperstructureRequirementsImpl of HyperstructureRequirementsTrait {
     }
 
     fn get_resource_points(ref world: WorldStorage, resource_type: u8) -> u128 {
-        let construction_cost_config: HyperstructureConstructConfig = world.read_model(resource_type);
+        let construction_cost_config: HyperstrtConstructConfig = world.read_model(resource_type);
         construction_cost_config.resource_contribution_points.into()
     }
 
     // Formula for each resource is = randomness / resource_type % (max - min)
     fn get_amount_needed(ref world: WorldStorage, hyperstructure: Hyperstructure, resource_type: u8) -> u128 {
-        let construction_cost_config: HyperstructureConstructConfig = world.read_model(resource_type);
+        let construction_cost_config: HyperstrtConstructConfig = world.read_model(resource_type);
         let min_amount = construction_cost_config.min_amount;
         let max_amount = construction_cost_config.max_amount;
         let needed_amount = if min_amount == max_amount {
@@ -225,7 +225,7 @@ pub impl PlayerRegisteredPointsImpl of PlayerRegisteredPointsTrait {
 }
 
 
-#[derive(PartialEq, Copy, Drop, Serde, Introspect, Default, DojoStore)]
+#[derive(PartialEq, Copy, Drop, Serde, IntrospectPacked, Default, DojoStore)]
 pub enum ConstructionAccess {
     #[default]
     Public,

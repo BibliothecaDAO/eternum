@@ -27,7 +27,7 @@ pub mod resource_bridge_systems {
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS, ResourceTypes};
     use s1_eternum::models::config::{
-        ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, ResourceRevBridgeWhtelistConfig, SeasonConfigImpl,
+        ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, ResourceRevBridgeWtlConfig, SeasonConfigImpl,
         WorldConfigUtilImpl,
     };
     use s1_eternum::models::owner::OwnerAddressImpl;
@@ -75,7 +75,7 @@ pub mod resource_bridge_systems {
             iBridgeImpl::assert_deposit_not_paused(world);
 
             // ensure token being bridged is whitelisted
-            let resource_bridge_token_whitelist: ResourceBridgeWhitelistConfig = world.read_model(token);
+            let resource_bridge_token_whitelist: ResourceBridgeWtlConfig = world.read_model(token);
             iBridgeImpl::assert_resource_whitelisted(world, resource_bridge_token_whitelist);
 
             // ensure no troops can be bridged into villages
@@ -186,7 +186,7 @@ pub mod resource_bridge_systems {
             );
 
             // ensure token is still whitelisted (incase we want to disable specific resource withdrawals)
-            let resource_bridge_token_whitelist: ResourceBridgeWhitelistConfig = world.read_model(token);
+            let resource_bridge_token_whitelist: ResourceBridgeWtlConfig = world.read_model(token);
             iBridgeImpl::assert_resource_whitelisted(world, resource_bridge_token_whitelist);
 
             // burn the resource from sender's structure balance
@@ -253,12 +253,11 @@ pub mod resource_bridge_systems {
             iBridgeImpl::assert_withdraw_not_paused(world);
 
             // obtain token address from reverse whitelist config
-            let resource_bridge_token_whitelist_reverse: ResourceRevBridgeWhtelistConfig = world
-                .read_model(resource_type);
+            let resource_bridge_token_whitelist_reverse: ResourceRevBridgeWtlConfig = world.read_model(resource_type);
             let token = resource_bridge_token_whitelist_reverse.token;
 
             // ensure token is still whitelisted (incase we want to disable specific resource withdrawals)
-            let resource_bridge_token_whitelist: ResourceBridgeWhitelistConfig = world.read_model(token);
+            let resource_bridge_token_whitelist: ResourceBridgeWtlConfig = world.read_model(token);
             iBridgeImpl::assert_resource_whitelisted(world, resource_bridge_token_whitelist);
 
             // apply inefficiency percentage to the withdrawal amount
@@ -301,7 +300,7 @@ pub mod resource_bridge_systems {
             );
 
             // get lords contract address
-            let lords_whitelist_rev_config: ResourceRevBridgeWhtelistConfig = world.read_model(ResourceTypes::LORDS);
+            let lords_whitelist_rev_config: ResourceRevBridgeWtlConfig = world.read_model(ResourceTypes::LORDS);
             let lords_address = lords_whitelist_rev_config.token;
             let lords_contract = ERC20ABIDispatcher { contract_address: lords_address };
             let this = starknet::get_contract_address();

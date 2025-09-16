@@ -902,7 +902,7 @@ export default class HexceptionScene extends HexagonScene {
       mixer.uncacheRoot(mixer.getRoot());
       this.buildingMixers.delete(key);
     }
-    
+
     const wonderMixer = this.buildingMixers.get(wonderKey);
     if (wonderMixer) {
       wonderMixer.stopAllAction();
@@ -1062,7 +1062,7 @@ export default class HexceptionScene extends HexagonScene {
       mixer.uncacheRoot(mixer.getRoot());
       this.buildingMixers.delete(key);
     }
-    
+
     const wonderMixer = this.buildingMixers.get(wonderKey);
     if (wonderMixer) {
       wonderMixer.stopAllAction();

@@ -1,6 +1,6 @@
 /**
  * BiomeDistributionAnalyzer - Analyzes actual biome usage before allocation
- * 
+ *
  * Prevents waste by determining exactly which biomes are needed and in what quantities
  * before creating any InstancedMesh objects.
  */
@@ -13,7 +13,7 @@ export interface BiomeDistribution {
 
 export interface BiomeAnalysisConfig {
   readonly bufferPercentage: number; // Buffer for dynamic additions (default: 15%)
-  readonly minimumBuffer: number;    // Minimum buffer instances (default: 10)
+  readonly minimumBuffer: number; // Minimum buffer instances (default: 10)
   readonly maxOutlineDistance: number; // Max distance for outline hexes (default: 2)
 }
 
@@ -37,13 +37,13 @@ export class BiomeDistributionAnalyzer {
       width: number;
       height: number;
     },
-    config: Partial<BiomeAnalysisConfig> = {}
+    config: Partial<BiomeAnalysisConfig> = {},
   ): BiomeDistribution {
     const finalConfig = { ...this.DEFAULT_CONFIG, ...config };
     const distribution = new Map<string, number>();
 
     const { startRow, startCol, width, height } = chunkBounds;
-    
+
     // Analyze each hex in the chunk
     for (let rowOffset = -height / 2; rowOffset <= height / 2; rowOffset++) {
       for (let colOffset = -width / 2; colOffset <= width / 2; colOffset++) {
@@ -55,7 +55,7 @@ export class BiomeDistributionAnalyzer {
           globalRow,
           exploredTiles,
           structureHexCoords,
-          questHexCoords
+          questHexCoords,
         );
 
         // Count this biome usage
@@ -76,12 +76,12 @@ export class BiomeDistributionAnalyzer {
     row: number,
     exploredTiles: Map<number, Map<number, BiomeType>>,
     structureHexCoords: Map<number, Set<number>>,
-    questHexCoords: Map<number, Set<number>>
+    questHexCoords: Map<number, Set<number>>,
   ): string {
     // Check if structure or quest hex (these get hidden/scaled to 0)
     const isStructure = structureHexCoords.get(col)?.has(row) || false;
     const isQuest = questHexCoords.get(col)?.has(row) || false;
-    
+
     if (isStructure || isQuest) {
       // These hexes still need biome instances but scaled to 0
       // Use the underlying biome type if explored, otherwise outline
@@ -104,17 +104,14 @@ export class BiomeDistributionAnalyzer {
    */
   private static applyBufferStrategy(
     rawDistribution: Map<string, number>,
-    config: BiomeAnalysisConfig
+    config: BiomeAnalysisConfig,
   ): BiomeDistribution {
     const result: { [key: string]: number } = {};
 
     for (const [biomeType, count] of rawDistribution) {
       // Calculate buffer
-      const bufferAmount = Math.max(
-        Math.ceil(count * config.bufferPercentage),
-        config.minimumBuffer
-      );
-      
+      const bufferAmount = Math.max(Math.ceil(count * config.bufferPercentage), config.minimumBuffer);
+
       result[biomeType] = count + bufferAmount;
     }
 
@@ -127,7 +124,7 @@ export class BiomeDistributionAnalyzer {
   public static estimateMemorySavings(
     distribution: BiomeDistribution,
     fixedAllocationSize: number,
-    totalBiomeTypes: number
+    totalBiomeTypes: number,
   ): {
     actualInstances: number;
     fixedInstances: number;
@@ -137,7 +134,7 @@ export class BiomeDistributionAnalyzer {
     const actualInstances = Object.values(distribution).reduce((sum, count) => sum + count, 0);
     const fixedInstances = fixedAllocationSize * totalBiomeTypes;
     const savedInstances = fixedInstances - actualInstances;
-    
+
     // Rough estimate: 64 bytes per instance (matrix) + overhead
     const savedMemoryMB = (savedInstances * 80) / (1024 * 1024);
 
@@ -152,13 +149,10 @@ export class BiomeDistributionAnalyzer {
   /**
    * Debug logging for distribution analysis
    */
-  public static logDistribution(
-    distribution: BiomeDistribution,
-    chunkKey: string
-  ): void {
+  public static logDistribution(distribution: BiomeDistribution, chunkKey: string): void {
     const totalInstances = Object.values(distribution).reduce((sum, count) => sum + count, 0);
     const biomeCount = Object.keys(distribution).length;
-    
+
     console.log(`
 🔍 BIOME DISTRIBUTION ANALYSIS - Chunk ${chunkKey}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -168,7 +162,7 @@ export class BiomeDistributionAnalyzer {
 
     // Log each biome type and count
     Object.entries(distribution)
-      .sort(([,a], [,b]) => b - a) // Sort by count descending
+      .sort(([, a], [, b]) => b - a) // Sort by count descending
       .forEach(([biome, count]) => {
         const percentage = ((count / totalInstances) * 100).toFixed(1);
         console.log(`  🌍 ${biome.padEnd(20)}: ${count.toString().padStart(4)} (${percentage}%)`);

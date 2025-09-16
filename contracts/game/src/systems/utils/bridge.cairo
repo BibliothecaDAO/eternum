@@ -4,7 +4,7 @@ use dojo::world::{WorldStorage, WorldStorageTrait};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
 use s1_eternum::models::config::{
-    ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, WorldConfigUtilImpl,
+    ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, WorldConfigUtilImpl,
 };
 use s1_eternum::models::hyperstructure::HyperstructureGlobals;
 use s1_eternum::models::resource::arrivals::ResourceArrivalImpl;
@@ -75,9 +75,7 @@ pub impl iBridgeImpl of iBridgeTrait {
         assert!(resource_bridge_config.withdraw_paused == false, "resource bridge withdrawal is paused");
     }
 
-    fn assert_resource_whitelisted(
-        world: WorldStorage, resource_bridge_token_whitelist: ResourceBridgeWhitelistConfig,
-    ) {
+    fn assert_resource_whitelisted(world: WorldStorage, resource_bridge_token_whitelist: ResourceBridgeWtlConfig) {
         assert!(resource_bridge_token_whitelist.resource_type.is_non_zero(), "resource id not whitelisted");
     }
 

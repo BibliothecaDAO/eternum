@@ -41,8 +41,8 @@ import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 import { ActiveRelicEffects } from "../../world/components/entities/active-relic-effects";
 import { AttackTarget, TargetType } from "./attack-container";
-import { BattleStats, CombatLoading, ResourceStealing, TroopDisplay } from "./components";
 import { BattleCooldownTimer } from "./battle-cooldown-timer";
+import { BattleStats, CombatLoading, ResourceStealing, TroopDisplay } from "./components";
 
 enum AttackerType {
   Structure,
@@ -689,17 +689,19 @@ export const CombatContainer = ({
       <div className="mt-2 mb-2 flex flex-col items-center gap-4" role="region" aria-label="Combat actions">
         {/* Battle Cooldown Timer */}
         {isAttackerOnCooldown && attackerArmyData && (
-          <BattleCooldownTimer 
-            cooldownEnd={attackerArmyData.troops.battle_cooldown_end} 
-            className="mb-2"
-          />
+          <BattleCooldownTimer cooldownEnd={attackerArmyData.troops.battle_cooldown_end} className="mb-2" />
         )}
-        
+
         <Button
           variant="primary"
           className="px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-bold text-base sm:text-lg transition-colors w-full sm:w-auto min-w-[200px]"
           isLoading={loading}
-          disabled={attackerStamina < combatConfig.stamina_attack_req || !attackerArmyData || isVillageWithoutTroops || isAttackerOnCooldown}
+          disabled={
+            attackerStamina < combatConfig.stamina_attack_req ||
+            !attackerArmyData ||
+            isVillageWithoutTroops ||
+            isAttackerOnCooldown
+          }
           onClick={onAttack}
           aria-label={`Attack button: ${buttonMessage}`}
           aria-describedby={attackerStamina < combatConfig.stamina_attack_req ? "stamina-warning" : undefined}

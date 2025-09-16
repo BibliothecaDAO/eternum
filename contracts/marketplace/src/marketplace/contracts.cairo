@@ -31,7 +31,7 @@ pub mod marketplace_systems {
 
     // Types
 
-    #[derive(Introspect, Copy, Drop, Serde)]
+    #[derive(IntrospectPacked, Copy, Drop, Serde)]
     pub struct MarketOrder {
         active: bool,
         expiration: u32, // Timestamp
@@ -64,7 +64,7 @@ pub mod marketplace_systems {
 
     // Models
 
-    #[derive(Introspect, Copy, Drop, Serde)]
+    #[derive(IntrospectPacked, Copy, Drop, Serde)]
     #[dojo::model]
     pub struct MarketOrderModel {
         #[key]
@@ -72,7 +72,7 @@ pub mod marketplace_systems {
         order: MarketOrder,
     }
 
-    #[derive(Introspect, Copy, Drop, Serde)]
+    #[derive(IntrospectPacked, Copy, Drop, Serde)]
     #[dojo::model]
     pub struct MarketTokenOrderModel {
         #[key]
@@ -82,7 +82,7 @@ pub mod marketplace_systems {
         order_id: u64,
     }
 
-    #[derive(Introspect, Copy, Drop, Serde)]
+    #[derive(IntrospectPacked, Copy, Drop, Serde)]
     #[dojo::model]
     pub struct MarketWhitelistModel {
         #[key]
@@ -91,7 +91,7 @@ pub mod marketplace_systems {
     }
 
 
-    #[derive(Introspect, Copy, Drop, Serde)]
+    #[derive(IntrospectPacked, Copy, Drop, Serde)]
     #[dojo::model]
     pub struct MarketGlobalModel {
         #[key]
@@ -103,7 +103,7 @@ pub mod marketplace_systems {
     }
 
 
-    #[derive(Introspect, Copy, Drop, Serde)]
+    #[derive(IntrospectPacked, Copy, Drop, Serde)]
     #[dojo::model]
     pub struct MarketFeeModel {
         #[key]

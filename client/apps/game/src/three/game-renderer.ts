@@ -347,12 +347,12 @@ export default class GameRenderer {
     console.log(`[GameRenderer] Setting enableZoom to: ${zoomSetting}`);
     this.controls.enableZoom = zoomSetting;
     this.controls.enablePan = true;
-    this.controls.panSpeed = 1;
+    this.controls.panSpeed = 2;
     this.controls.zoomToCursor = true;
     this.controls.minDistance = 5;
     this.controls.maxDistance = 20;
     this.controls.enableDamping = true;
-    this.controls.dampingFactor = 0.1;
+    this.controls.dampingFactor = 0.05;
     this.controls.target.set(0, 0, 0);
     if (this.graphicsSetting !== GraphicsSettings.HIGH) {
       this.controls.enableDamping = false;

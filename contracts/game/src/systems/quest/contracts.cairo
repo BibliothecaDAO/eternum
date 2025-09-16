@@ -11,9 +11,10 @@ use s1_eternum::systems::quest::constants::{
 };
 use s1_eternum::systems::utils::map::IMapImpl;
 use s1_eternum::systems::utils::troop::iExplorerImpl;
-use s1_eternum::utils::map::biomes::{Biome, get_biome};
-use s1_eternum::utils::random;
+use s1_eternum::utils::map::biomes::Biome;
 use starknet::ContractAddress;
+use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
+use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 
 #[starknet::interface]
 pub trait IQuestSystems<T> {
@@ -404,7 +405,8 @@ pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
 
         // explore the tile if biome is not set
         if tile.biome == Biome::None.into() {
-            let biome: Biome = get_biome(tile.col.into(), tile.row.into());
+            let biome_library = biome_library::get_dispatcher(@world);
+            let biome: Biome = biome_library.get_biome(tile.col.into(), tile.row.into());
             IMapImpl::explore(ref world, ref tile, biome);
         }
 
@@ -413,19 +415,23 @@ pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
         let game_count: u128 = quest_game_registry.games.len().into();
 
         // select random game from game registry
-        let game_selector: u32 = random::random(seed.clone(), GAME_SELECTOR_SALT, game_count).try_into().unwrap();
+        let rng_library_dispatcher = rng_library::get_dispatcher(@world);
+        let game_selector: u32 = rng_library_dispatcher
+            .get_random_in_range(seed, GAME_SELECTOR_SALT, game_count)
+            .try_into()
+            .unwrap();
         let game_address: ContractAddress = *quest_game_registry.games.at(game_selector);
         let quest_levels: QuestLevels = world.read_model(game_address);
 
         // select random level for the selected game
-        let level: u8 = random::random(seed.clone(), LEVEL_SELECTOR_SALT, quest_levels.levels.len().into())
+        let level: u8 = rng_library_dispatcher
+            .get_random_in_range(seed, LEVEL_SELECTOR_SALT, quest_levels.levels.len().into())
             .try_into()
             .unwrap();
 
         // select random capacity for the quest
-        let capacity: u16 = (random::random(
-            seed.clone(), CAPACITY_SELECTOR_SALT, (MAXIMUM_QUEST_CAPACITY - MINIMUM_QUEST_CAPACITY).into(),
-        )
+        let capacity: u16 = (rng_library_dispatcher
+            .get_random_in_range(seed, CAPACITY_SELECTOR_SALT, (MAXIMUM_QUEST_CAPACITY - MINIMUM_QUEST_CAPACITY).into())
             + MINIMUM_QUEST_CAPACITY.into())
             .try_into()
             .unwrap();
@@ -435,7 +441,7 @@ pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
         let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
         let current_tick: u64 = TickImpl::get_tick_interval(ref world).current();
         let (resource_type, base_reward_amount) = iExplorerImpl::exploration_reward(
-            ref world, Option::None, current_tick, map_config, seed.clone(), blitz_mode_on,
+            ref world, Option::None, current_tick, map_config, seed, blitz_mode_on,
         );
 
         // apply quest reward multiplier and level multiplier to base exploration reward
@@ -456,21 +462,18 @@ pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
     }
 
 
-    fn lottery(quest_config: QuestConfig, vrf_seed: u256) -> bool {
+    fn lottery(quest_config: QuestConfig, vrf_seed: u256, world: WorldStorage) -> bool {
         let quest_vrf_seed = if vrf_seed > VRF_OFFSET {
             vrf_seed - VRF_OFFSET
         } else {
             vrf_seed + VRF_OFFSET
         };
 
-        let success: bool = *random::choices(
-            array![true, false].span(),
-            array![quest_config.quest_discovery_prob.into(), quest_config.quest_discovery_fail_prob.into()].span(),
-            array![].span(),
-            1,
-            true,
-            quest_vrf_seed,
-        )[0];
+        let rng_library_dispatcher = rng_library::get_dispatcher(@world);
+        let success: bool = rng_library_dispatcher
+            .get_weighted_choice_bool_simple(
+                quest_config.quest_discovery_prob.into(), quest_config.quest_discovery_fail_prob.into(), quest_vrf_seed,
+            );
         return success;
     }
 }

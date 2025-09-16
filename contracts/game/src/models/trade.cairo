@@ -2,7 +2,7 @@ use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 
-#[derive(Introspect, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Trade {
     #[key]
@@ -18,7 +18,7 @@ pub struct Trade {
 }
 
 
-#[derive(Introspect, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct TradeCount {
     #[key]

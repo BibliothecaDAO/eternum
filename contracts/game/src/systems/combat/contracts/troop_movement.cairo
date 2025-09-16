@@ -35,9 +35,11 @@ pub mod troop_movement_systems {
     use s1_eternum::systems::utils::mine::iMineDiscoveryImpl;
     use s1_eternum::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
-    use s1_eternum::utils::map::biomes::{Biome, get_biome};
+    use s1_eternum::utils::map::biomes::Biome;
     use s1_eternum::utils::random::VRFImpl;
     use starknet::ContractAddress;
+    use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
+    use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
     use super::{ITroopMovementSystems, ITroopMovementUtilSystemsDispatcher, ITroopMovementUtilSystemsDispatcherTrait};
 
 
@@ -111,7 +113,8 @@ pub mod troop_movement_systems {
                 assert!(tile.not_occupied(), "one of the tiles in path is occupied");
 
                 // add biome to biomes
-                let biome = get_biome(next.x.into(), next.y.into());
+                let biome_library = biome_library::get_dispatcher(@world);
+                let biome = biome_library.get_biome(next.x.into(), next.y.into());
                 biomes.append(biome);
 
                 let mut occupy_destination: bool = true;
@@ -135,7 +138,8 @@ pub mod troop_movement_systems {
                     let vrf_provider: ContractAddress = WorldConfigUtilImpl::get_member(
                         world, selector!("vrf_provider_address"),
                     );
-                    let vrf_seed: u256 = VRFImpl::seed(caller, vrf_provider);
+                    let rng_library_dispatcher = rng_library::get_dispatcher(@world);
+                    let vrf_seed: u256 = rng_library_dispatcher.get_random_number(caller, world);
                     let (troop_movement_util_systems_address, _) = world.dns(@"troop_movement_util_systems").unwrap();
                     let troop_movement_util_systems = ITroopMovementUtilSystemsDispatcher {
                         contract_address: troop_movement_util_systems_address,
@@ -509,7 +513,9 @@ pub mod troop_movement_util_systems {
                             let feature_toggle: QuestFeatureFlag = world.read_model(VERSION);
                             let quest_game_count = quest_game_registry.games.len();
                             if quest_game_count > 0 && feature_toggle.enabled {
-                                let quest_lottery_won: bool = iQuestDiscoveryImpl::lottery(quest_config, vrf_seed);
+                                let quest_lottery_won: bool = iQuestDiscoveryImpl::lottery(
+                                    quest_config, vrf_seed, world,
+                                );
                                 if quest_lottery_won {
                                     let (quest_system_address, _) = world.dns(@"quest_systems").unwrap();
                                     let quest_system = IQuestSystemsDispatcher {
@@ -628,7 +634,7 @@ pub mod mine_discovery_systems {
                 "caller must be the troop_movement_util_systems",
             );
 
-            let mine_lottery_won: bool = iMineDiscoveryImpl::lottery(map_config, vrf_seed);
+            let mine_lottery_won: bool = iMineDiscoveryImpl::lottery(map_config, vrf_seed, world);
             if mine_lottery_won {
                 iMineDiscoveryImpl::create(
                     ref world,
@@ -686,7 +692,7 @@ pub mod village_discovery_systems {
                 "caller must be the troop_movement_util_systems",
             );
 
-            let village_lottery_won: bool = iVillageDiscoveryImpl::lottery(map_config, vrf_seed);
+            let village_lottery_won: bool = iVillageDiscoveryImpl::lottery(map_config, vrf_seed, world);
             if village_lottery_won {
                 iVillageDiscoveryImpl::create(
                     ref world, tile.into(), troop_limit_config, troop_stamina_config, vrf_seed,
@@ -742,7 +748,7 @@ pub mod agent_discovery_systems {
                 return (false, ExploreFind::None);
             }
 
-            let agent_lottery_won: bool = iAgentDiscoveryImpl::lottery(map_config, vrf_seed);
+            let agent_lottery_won: bool = iAgentDiscoveryImpl::lottery(map_config, vrf_seed, world);
             if agent_lottery_won {
                 iAgentDiscoveryImpl::create(
                     ref world, ref tile, vrf_seed, troop_limit_config, troop_stamina_config, current_tick,

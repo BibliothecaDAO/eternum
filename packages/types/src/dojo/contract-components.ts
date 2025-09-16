@@ -221,7 +221,7 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    HyperstructureConstructConfig: (() => {
+    HyperstrtConstructConfig: (() => {
       return defineComponent(
         world,
         {
@@ -233,7 +233,7 @@ export function defineContractComponents(world: World) {
         {
           metadata: {
             namespace: "s1_eternum",
-            name: "HyperstructureConstructConfig",
+            name: "HyperstrtConstructConfig",
             types: ["u8", "u64", "u32", "u32"],
             customTypes: [],
           },
@@ -1005,7 +1005,7 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    ResourceBridgeWhitelistConfig: (() => {
+    ResourceBridgeWtlConfig: (() => {
       return defineComponent(
         world,
         {
@@ -1015,7 +1015,7 @@ export function defineContractComponents(world: World) {
         {
           metadata: {
             namespace: "s1_eternum",
-            name: "ResourceBridgeWhitelistConfig",
+            name: "ResourceBridgeWtlConfig",
             types: ["ContractAddress", "u8"],
             customTypes: [],
           },

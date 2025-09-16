@@ -566,7 +566,7 @@ export interface SetVRFConfigProps extends SystemSigner {
   vrf_provider_address: BigNumberish;
 }
 
-export interface SetResourceBridgeWhitelistConfigProps extends SystemSigner {
+export interface SetResourceBridgeWtlConfigProps extends SystemSigner {
   resource_whitelist_configs: ResourceWhitelistConfig[];
 }
 

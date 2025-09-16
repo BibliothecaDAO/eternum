@@ -35,7 +35,7 @@ pub struct AgentLordsMinted {
     pub amount: u32,
 }
 
-#[derive(Introspect, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct AgentConfig {
     #[key]

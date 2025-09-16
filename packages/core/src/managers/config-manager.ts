@@ -154,7 +154,7 @@ export class ClientConfigManager {
 
     for (const resourceType of Object.values(ResourcesIds).filter(Number.isInteger)) {
       const hyperstructureResourceConfig = getComponentValue(
-        this.components.HyperstructureConstructConfig,
+        this.components.HyperstrtConstructConfig,
         getEntityIdFromKeys([BigInt(resourceType)]),
       );
       if (!hyperstructureResourceConfig) continue;

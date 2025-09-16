@@ -81,7 +81,7 @@ export class GameConfigDeployer {
     await SetResourceFactoryConfig(config);
     await this.sleepNonLocal();
 
-    await setResourceBridgeWhitelistConfig(config);
+    await setResourceBridgeWtlConfig(config);
     await this.sleepNonLocal();
 
     await setTradeConfig(config);
@@ -376,7 +376,7 @@ export const SetResourceFactoryConfig = async (config: Config) => {
   );
 };
 
-export const setResourceBridgeWhitelistConfig = async (config: Config) => {
+export const setResourceBridgeWtlConfig = async (config: Config) => {
   console.log(chalk.cyan("\n⚡ BRIDGE WHITELIST CONFIGURATION"));
   console.log(chalk.gray("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"));
 

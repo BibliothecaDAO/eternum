@@ -104,3 +104,53 @@
     animation: collapsible-up 0.2s ease-out;
   }
 }
+
+/* Compact Labels Styling */
+#labelrenderer.compact-labels > div {
+  transition:
+    opacity 300ms ease-in-out,
+    scale 300ms ease-in-out,
+    width 300ms ease-in-out,
+    height 300ms ease-in-out;
+}
+
+/* In compact mode, shrink label wrapper to just fit the icon */
+#labelrenderer.compact-labels > div > div {
+  padding: 0.125rem !important; /* Minimal padding */
+  width: auto !important;
+  min-width: auto !important;
+  transition:
+    opacity 300ms ease-in-out,
+    scale 300ms ease-in-out,
+    width 300ms ease-in-out,
+    height 300ms ease-in-out;
+}
+
+/* Hide all content except the icon in compact mode */
+#labelrenderer.compact-labels [data-component="content-container"] {
+  display: none !important;
+  transition: opacity 300ms ease-in-out;
+}
+
+/* Keep only icons visible in compact mode - no size changes */
+#labelrenderer.compact-labels [data-component="army-icon"],
+#labelrenderer.compact-labels [data-component="structure-icon"],
+#labelrenderer.compact-labels [data-component="chest-icon"],
+#labelrenderer.compact-labels [data-component="quest-icon"] {
+  display: block;
+  transition: opacity 300ms ease-in-out;
+}
+
+/* Expanded mode - ensure smooth transitions back */
+#labelrenderer:not(.compact-labels) [data-component="content-container"] {
+  display: block !important;
+  transition: opacity 300ms ease-in-out;
+}
+
+#labelrenderer:not(.compact-labels) > div > div {
+  transition:
+    opacity 300ms ease-in-out,
+    scale 300ms ease-in-out,
+    width 300ms ease-in-out,
+    height 300ms ease-in-out;
+}

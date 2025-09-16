@@ -34,7 +34,10 @@ type DojoProviderProps = {
 const useMasterAccount = (rpcProvider: RpcProvider) => {
   const masterAddress = env.VITE_PUBLIC_MASTER_ADDRESS;
   const privateKey = env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
-  return useMemo(() => new Account({provider: rpcProvider, address: masterAddress, signer: privateKey}), [rpcProvider, masterAddress, privateKey]);
+  return useMemo(
+    () => new Account({ provider: rpcProvider, address: masterAddress, signer: privateKey }),
+    [rpcProvider, masterAddress, privateKey],
+  );
 };
 
 const useRpcProvider = () => {
@@ -89,6 +92,8 @@ const DojoContextProvider = ({
   masterAccount: Account;
   controllerAccount: AccountInterface | null;
 }) => {
+  // const setAddressName = useStore((state) => state.setAddressName);
+
   const currentValue = useContext(DojoContext);
   if (currentValue) throw new Error("DojoProvider can only be used once");
 
@@ -100,12 +105,22 @@ const DojoContextProvider = ({
   const [retries, setRetries] = useState(0);
 
   const [accountToUse, setAccountToUse] = useState<Account | AccountInterface>(
-    new Account({provider: value.network.provider.provider, address: NULL_ACCOUNT.address, signer: NULL_ACCOUNT.privateKey}),
+    new Account({
+      provider: value.network.provider.provider,
+      address: NULL_ACCOUNT.address,
+      signer: NULL_ACCOUNT.privateKey,
+    }),
   );
 
   useEffect(() => {
     if (!controllerAccount) {
-      setAccountToUse(new Account({provider: value.network.provider.provider, address: NULL_ACCOUNT.address, signer: NULL_ACCOUNT.privateKey}));
+      setAccountToUse(
+        new Account({
+          provider: value.network.provider.provider,
+          address: NULL_ACCOUNT.address,
+          signer: NULL_ACCOUNT.privateKey,
+        }),
+      );
     } else {
       setAccountToUse(controllerAccount);
     }

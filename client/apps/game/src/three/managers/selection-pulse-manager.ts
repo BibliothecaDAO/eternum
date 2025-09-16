@@ -24,14 +24,14 @@ export class SelectionPulseManager {
     // Create hexagon shape and convert to BufferGeometry
     const hexShape = createHexagonShape(HEX_SIZE * 1.1); // Slightly larger than normal hex
     const geometry = new THREE.ShapeGeometry(hexShape);
-    
+
     this.pulseMesh = new THREE.Mesh(geometry, selectionPulseMaterial);
     this.pulseMesh.position.y = 0.5; // Much higher above ground for visibility
     this.pulseMesh.rotation.x = -Math.PI / 2; // Rotate to face ground plane
     this.pulseMesh.renderOrder = 100; // Very high render order to ensure visibility
     this.pulseMesh.raycast = () => {}; // Disable raycasting to prevent interference
     this.pulseMesh.visible = false;
-    
+
     // Add to scene once on creation
     this.scene.add(this.pulseMesh);
   }
@@ -60,7 +60,7 @@ export class SelectionPulseManager {
     // Update position and entity
     this.pulseMesh.position.set(x, 0.5, z);
     this.selectedEntityId = entityId;
-    
+
     if (!this.isVisible) {
       this.pulseMesh.visible = true;
       this.isVisible = true;

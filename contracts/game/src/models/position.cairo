@@ -31,7 +31,7 @@ struct Cube {
     s: i128,
 }
 
-#[derive(Copy, Drop, Serde, Default, Introspect)]
+#[derive(Copy, Drop, Serde, Default, IntrospectPacked)]
 pub struct Travel {
     pub blocked: bool,
     pub round_trip: bool,
@@ -175,7 +175,7 @@ pub impl DirectionDisplay of Display<Direction> {
 }
 
 
-#[derive(Copy, Drop, PartialEq, Serde, Introspect, Debug, Default, DojoStore)]
+#[derive(Copy, Drop, PartialEq, Serde, IntrospectPacked, Debug, Default, DojoStore)]
 pub struct Coord {
     pub x: u32,
     pub y: u32,

@@ -26,8 +26,9 @@ use s1_eternum::systems::combat::contracts::troop_management::{
 use s1_eternum::systems::utils::map::IMapImpl;
 use s1_eternum::systems::utils::troop::iExplorerImpl;
 use s1_eternum::systems::utils::village::iVillageImpl;
-use s1_eternum::utils::map::biomes::{Biome, get_biome};
+use s1_eternum::utils::map::biomes::Biome;
 use s1_eternum::utils::village::{IVillagePassDispatcher, IVillagePassDispatcherTrait};
+use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
 
 #[generate_trait]
 pub impl iStructureImpl of IStructureTrait {
@@ -92,7 +93,8 @@ pub impl iStructureImpl of IStructureTrait {
 
         // explore the tile if biome is not set
         if tile.biome == Biome::None.into() {
-            let biome: Biome = get_biome(coord.x.into(), coord.y.into());
+            let biome_library = biome_library::get_dispatcher(@world);
+            let biome: Biome = biome_library.get_biome(coord.x.into(), coord.y.into());
             IMapImpl::explore(ref world, ref tile, biome);
         }
 
@@ -112,7 +114,8 @@ pub impl iStructureImpl of IStructureTrait {
                 let neighbor_coord: Coord = coord.neighbor(direction);
                 let mut neighbor_tile: Tile = world.read_model((neighbor_coord.x, neighbor_coord.y));
                 if !neighbor_tile.discovered() {
-                    let biome: Biome = get_biome(neighbor_coord.x.into(), neighbor_coord.y.into());
+                    let biome_library = biome_library::get_dispatcher(@world);
+                    let biome: Biome = biome_library.get_biome(neighbor_coord.x.into(), neighbor_coord.y.into());
                     IMapImpl::explore(ref world, ref neighbor_tile, biome);
                 }
 
@@ -123,7 +126,9 @@ pub impl iStructureImpl of IStructureTrait {
                         .neighbor_after_distance(direction, iVillageImpl::village_realm_distance());
                     let mut village_tile: Tile = world.read_model((village_coord.x, village_coord.y));
                     if !village_tile.discovered() {
-                        let village_biome: Biome = get_biome(village_coord.x.into(), village_coord.y.into());
+                        let biome_library = biome_library::get_dispatcher(@world);
+                        let village_biome: Biome = biome_library
+                            .get_biome(village_coord.x.into(), village_coord.y.into());
                         IMapImpl::explore(ref world, ref village_tile, village_biome);
                     }
 
@@ -251,7 +256,8 @@ pub impl iStructureImpl of IStructureTrait {
 
 
     fn grant_starting_resources(ref world: WorldStorage, structure_id: ID, structure_coord: Coord) {
-        let biome: Biome = get_biome(structure_coord.x.into(), structure_coord.y.into());
+        let biome_library = biome_library::get_dispatcher(@world);
+        let biome: Biome = biome_library.get_biome(structure_coord.x.into(), structure_coord.y.into());
         let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
         let structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(ref world, structure_id);
         let starting_resources: StartingResourcesConfig = if structure_metadata.village_realm.is_non_zero() {

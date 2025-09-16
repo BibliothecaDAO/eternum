@@ -241,10 +241,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param transactionDetails - Transaction call data
    * @returns Transaction receipt
    */
-  async executeAndCheckTransaction(
-    signer: Account | AccountInterface,
-    transactionDetails: AllowArray<Call>,
-  ) {
+  async executeAndCheckTransaction(signer: Account | AccountInterface, transactionDetails: AllowArray<Call>) {
     if (typeof window !== "undefined") {
       console.log({ signer, transactionDetails });
     }
@@ -2282,7 +2279,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_resource_bridge_whitlelist_config(props: SystemProps.SetResourceBridgeWhitelistConfigProps) {
+  public async set_resource_bridge_whitlelist_config(props: SystemProps.SetResourceBridgeWtlConfigProps) {
     const { resource_whitelist_configs, signer } = props;
 
     const calldata = resource_whitelist_configs.map(({ token, resource_type }) => ({
@@ -2779,7 +2776,9 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param props.signer - Account executing the transaction
    * @returns Transaction receipt
    */
-  public async create_marketplace_orders(props: SystemProps.CreateMarketplaceOrdersProps): Promise<GetTransactionReceiptResponse> {
+  public async create_marketplace_orders(
+    props: SystemProps.CreateMarketplaceOrdersProps,
+  ): Promise<GetTransactionReceiptResponse> {
     const { tokens, signer, marketplace_address } = props;
 
     const calls = tokens.map((token) => {
@@ -2861,7 +2860,9 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param props.signer - Account executing the transaction
    * @returns Transaction receipt
    */
-  public async edit_marketplace_order(props: SystemProps.EditMarketplaceOrderProps): Promise<GetTransactionReceiptResponse> {
+  public async edit_marketplace_order(
+    props: SystemProps.EditMarketplaceOrderProps,
+  ): Promise<GetTransactionReceiptResponse> {
     const { order_id, new_price, signer } = props;
 
     const call = {
