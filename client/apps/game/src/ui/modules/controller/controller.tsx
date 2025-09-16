@@ -13,7 +13,7 @@ export const Controller = () => {
   const connectWallet = () => {
     try {
       console.log("Attempting to connect wallet...");
-      connect({ connector: (connectors[0] as any).controller });
+      connect({ connector: env.VITE_PUBLIC_CHAIN === "local" ? connectors[0] : (connectors[0] as any).controller });
       console.log("Wallet connected successfully.");
     } catch (error) {
       console.error("Failed to connect wallet:", error);
