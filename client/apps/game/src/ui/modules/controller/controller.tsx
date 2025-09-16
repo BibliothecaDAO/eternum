@@ -3,6 +3,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import Button from "@/ui/design-system/atoms/button";
 import { useConnect } from "@starknet-react/core";
 import { useCallback, useEffect, useState } from "react";
+import { env } from "../../../../env";
 
 export const Controller = () => {
   const [userName, setUserName] = useState<string>();
