@@ -654,6 +654,11 @@ export const BlitzOnboarding = () => {
         }
       } catch (error) {
         console.log("No username found in controller account");
+
+        if ((await connector?.chainId()) === 82743958523457n) {
+          // local
+          setAddressNameFelt("labubu");
+        }
       }
     };
     getUsername();

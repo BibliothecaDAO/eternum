@@ -3,24 +3,24 @@ use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::alias::ID;
-use s1_eternum::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes};
-use s1_eternum::constants::{WORLD_CONFIG_ID, split_blitz_exploration_reward_and_probs, split_resources_and_probs};
-use s1_eternum::models::agent::{AgentConfig, AgentLordsMintedImpl};
-use s1_eternum::models::agent::{AgentCountImpl, AgentOwner};
-use s1_eternum::models::config::{AgentControllerConfig, CombatConfigImpl, WorldConfigUtilImpl};
+use s1_eternum::constants::{
+    DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID, split_blitz_exploration_reward_and_probs,
+    split_resources_and_probs,
+};
+use s1_eternum::models::agent::{AgentConfig, AgentCountImpl, AgentLordsMintedImpl, AgentOwner};
 use s1_eternum::models::config::{
-    CapacityConfig, MapConfig, TickImpl, TickInterval, TroopLimitConfig, TroopStaminaConfig,
+    AgentControllerConfig, CapacityConfig, CombatConfigImpl, MapConfig, TickImpl, TickInterval, TroopLimitConfig,
+    TroopStaminaConfig, WorldConfigUtilImpl,
 };
 use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
 use s1_eternum::models::name::AddressName;
 use s1_eternum::models::owner::OwnerAddressTrait;
 use s1_eternum::models::position::{Coord, CoordImpl, Direction};
-
 use s1_eternum::models::resource::resource::{
     RelicResourceImpl, Resource, ResourceImpl, ResourceWeightImpl, SingleResource, SingleResourceImpl,
     SingleResourceStoreImpl, WeightStoreImpl,
 };
-use s1_eternum::models::stamina::{StaminaImpl};
+use s1_eternum::models::stamina::StaminaImpl;
 use s1_eternum::models::structure::{
     StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureOwnerStoreImpl, StructureTroopExplorerStoreImpl,
     StructureTroopGuardStoreImpl,
@@ -30,10 +30,10 @@ use s1_eternum::models::troop::{
 };
 use s1_eternum::models::weight::{Weight, WeightImpl};
 use s1_eternum::systems::utils::map::IMapImpl;
-use s1_eternum::utils::map::biomes::{Biome, get_biome};
+use s1_eternum::utils::map::biomes::Biome;
 use s1_eternum::utils::math::PercentageValueImpl;
-use s1_eternum::utils::random;
-use s1_eternum::utils::random::VRFImpl;
+use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
+use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 
 
 #[generate_trait]
@@ -129,11 +129,7 @@ pub impl iGuardImpl of iGuardTrait {
 pub impl iExplorerImpl of iExplorerTrait {
     fn attempt_move_to_adjacent_tile(ref world: WorldStorage, ref explorer: ExplorerTroops, ref current_tile: Tile) {
         let adjacent_directions = array![
-            Direction::East,
-            Direction::NorthEast,
-            Direction::NorthWest,
-            Direction::West,
-            Direction::SouthWest,
+            Direction::East, Direction::NorthEast, Direction::NorthWest, Direction::West, Direction::SouthWest,
             Direction::SouthEast,
         ];
         let current_coord: Coord = current_tile.into();
@@ -142,7 +138,9 @@ pub impl iExplorerImpl of iExplorerTrait {
             let mut adjacent_tile: Tile = world.read_model((adjacent_coord.x, adjacent_coord.y));
             if adjacent_tile.not_occupied() {
                 if !adjacent_tile.discovered() {
-                    let adjacent_coord_biome: Biome = get_biome(adjacent_coord.x.into(), adjacent_coord.y.into());
+                    let biome_library = biome_library::get_dispatcher(@world);
+                    let adjacent_coord_biome: Biome = biome_library
+                        .get_biome(adjacent_coord.x.into(), adjacent_coord.y.into());
                     IMapImpl::explore(ref world, ref adjacent_tile, adjacent_coord_biome);
                 }
 
@@ -193,6 +191,7 @@ pub impl iExplorerImpl of iExplorerTrait {
             tier: troop_tier,
             count: troop_amount,
             stamina: Default::default(),
+            battle_cooldown_end: 0,
             boosts: TroopBoosts {
                 incr_damage_dealt_percent_num: 0,
                 incr_damage_dealt_end_tick: 0,
@@ -383,7 +382,7 @@ pub impl iExplorerImpl of iExplorerTrait {
             if explorer_id != explorer.explorer_id {
                 new_explorers.append(explorer_id);
             }
-        };
+        }
         StructureTroopExplorerStoreImpl::store(new_explorers.span(), ref world, structure_id);
 
         // update structure base
@@ -417,17 +416,18 @@ pub impl iExplorerImpl of iExplorerTrait {
     ) -> (u8, u128) {
         let mut reward_resource_id: u8 = 0;
         let mut reward_resource_amount: u128 = 0;
+        let rng_library = rng_library::get_dispatcher(@world);
         if blitz_mode_on {
             let (resources, resources_probs) = split_blitz_exploration_reward_and_probs();
-            let (resource_id, resource_amount): (u8, u128) = *random::choices(
-                resources, resources_probs, array![].span(), 1, true, vrf_seed,
-            )
+            let (resource_id, resource_amount): (u8, u128) = *rng_library
+                .get_weighted_choice_u8_u128_pair(resources, resources_probs, 1, true, vrf_seed)
                 .at(0);
             reward_resource_id = resource_id;
             reward_resource_amount = resource_amount;
         } else {
             let (resource_types, resources_probs) = split_resources_and_probs();
-            let resource_id: u8 = *random::choices(resource_types, resources_probs, array![].span(), 1, true, vrf_seed)
+            let resource_id: u8 = *rng_library
+                .get_weighted_choice_u8(resource_types, resources_probs, 1, true, vrf_seed)
                 .at(0);
             reward_resource_id = resource_id;
             reward_resource_amount = config.reward_resource_amount.into();
@@ -444,7 +444,7 @@ pub impl iExplorerImpl of iExplorerTrait {
                     / PercentageValueImpl::_100().into();
             },
             Option::None => {},
-        };
+        }
 
         return (reward_resource_id, reward_resource_amount * RESOURCE_PRECISION);
     }
@@ -475,9 +475,9 @@ pub enum TroopRaidOutcome {
 
 #[generate_trait]
 pub impl iTroopImpl of iTroopTrait {
-    fn random_amount(seed: u256, salt: u128, lower_bound: u32, upper_bound: u32) -> u128 {
+    fn random_amount(seed: u256, salt: u128, lower_bound: u32, upper_bound: u32, world: WorldStorage) -> u128 {
         let range: u128 = (upper_bound - lower_bound).into();
-        let mut troop_amount: u128 = random::random(seed, salt, range);
+        let mut troop_amount: u128 = rng_library::get_dispatcher(@world).get_random_in_range(seed, salt, range);
         troop_amount += lower_bound.into();
         troop_amount * RESOURCE_PRECISION
     }
@@ -492,15 +492,10 @@ pub impl iTroopImpl of iTroopTrait {
         return TroopRaidOutcome::Chance;
     }
 
-    fn raid(success_weight: u128, failure_weight: u128, vrf_seed: u256) -> bool {
-        let success: bool = *random::choices(
-            array![true, false].span(),
-            array![success_weight, failure_weight].span(),
-            array![].span(),
-            1,
-            true,
-            vrf_seed,
-        )[0];
+    fn raid(success_weight: u128, failure_weight: u128, vrf_seed: u256, world: WorldStorage) -> bool {
+        let rng_library_dispatcher = rng_library::get_dispatcher(@world);
+        let success: bool = rng_library_dispatcher
+            .get_weighted_choice_bool_simple(success_weight, failure_weight, vrf_seed);
         return success;
     }
 
@@ -573,6 +568,7 @@ pub impl iMercenariesImpl of iMercenariesTrait {
                         salt,
                         troop_limit_config.mercenaries_troop_lower_bound,
                         troop_limit_config.mercenaries_troop_upper_bound,
+                        world,
                     );
                     let (mut troops, _): (Troops, u32) = structure_guards.from_slot(*slot);
 
@@ -594,7 +590,7 @@ pub impl iMercenariesImpl of iMercenariesTrait {
                 },
                 Option::None => { break; },
             }
-        };
+        }
 
         // update structure guard store
         StructureTroopGuardStoreImpl::store(ref structure_guards, ref world, structure_id);
@@ -618,7 +614,7 @@ struct AgentCreatedEvent {
 
 #[generate_trait]
 pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
-    fn lottery(map_config: MapConfig, vrf_seed: u256) -> bool {
+    fn lottery(map_config: MapConfig, vrf_seed: u256, world: WorldStorage) -> bool {
         // make sure seed is different for each lottery system to prevent same outcome for same probability
         let VRF_OFFSET: u256 = 3;
         let agent_vrf_seed = if vrf_seed > VRF_OFFSET {
@@ -627,14 +623,10 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
             vrf_seed + VRF_OFFSET
         };
 
-        let success: bool = *random::choices(
-            array![true, false].span(),
-            array![map_config.agent_discovery_prob.into(), map_config.agent_discovery_fail_prob.into()].span(),
-            array![].span(),
-            1,
-            true,
-            agent_vrf_seed,
-        )[0];
+        let success: bool = rng_library::get_dispatcher(@world)
+            .get_weighted_choice_bool_simple(
+                map_config.agent_discovery_prob.into(), map_config.agent_discovery_fail_prob.into(), agent_vrf_seed,
+            );
         return success;
     }
 
@@ -649,21 +641,24 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
     ) -> ExplorerTroops {
         let mut salt: u128 = 124;
         let troop_amount = iTroopImpl::random_amount(
-            seed, salt, troop_limit_config.agents_troop_lower_bound, troop_limit_config.agents_troop_upper_bound,
+            seed, salt, troop_limit_config.agents_troop_lower_bound, troop_limit_config.agents_troop_upper_bound, world,
         );
 
         // select a troop type with equal probability
+        let rng_library_dispatcher = rng_library::get_dispatcher(@world);
         let troop_types: Array<TroopType> = array![TroopType::Knight, TroopType::Crossbowman, TroopType::Paladin];
-        let random_troop_type_index: u128 = random::random(seed, salt, troop_types.len().into());
+        let random_troop_type_index: u128 = rng_library_dispatcher
+            .get_random_in_range(seed, salt, troop_types.len().into());
         let troop_type: TroopType = *troop_types.at(random_troop_type_index.try_into().unwrap());
-        let troop_tier: TroopTier = *random::choices(
-            array![TroopTier::T1, TroopTier::T2, TroopTier::T3].span(),
-            array![70, 20, 10].span(),
-            array![].span(),
-            1,
-            true,
-            seed + 15,
-        )[0];
+        let troop_tier: TroopTier = *rng_library_dispatcher
+            .get_weighted_choice_trooptier(
+                array![TroopTier::T1, TroopTier::T2, TroopTier::T3].span(),
+                array![70, 20, 10].span(),
+                1,
+                true,
+                seed + 15,
+            )
+            .at(0);
 
         // agent discovery
         let explorer_id: ID = world.dispatcher.uuid();
@@ -682,7 +677,7 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
 
         // set name based on id
         let names: Array<felt252> = Self::names();
-        let names_index: u128 = random::random(seed, salt, names.len().into());
+        let names_index: u128 = rng_library_dispatcher.get_random_in_range(seed, salt, names.len().into());
         let name: felt252 = *names.at(names_index.try_into().unwrap());
         let name: AddressName = AddressName { address: explorer_id.try_into().unwrap(), name: name };
         world.write_model(@name);
@@ -699,7 +694,7 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
         // get random lords amount to give to the agent
         let mut agent_config: AgentConfig = world.read_model(WORLD_CONFIG_ID);
         let lords_difference = agent_config.max_spawn_lords_amount - agent_config.min_spawn_lords_amount;
-        let lords_amount = random::random(seed, salt, lords_difference.into() + 1)
+        let lords_amount = rng_library_dispatcher.get_random_in_range(seed, salt, lords_difference.into() + 1)
             + agent_config.min_spawn_lords_amount.into();
         AgentLordsMintedImpl::increase(ref world, lords_amount.try_into().unwrap());
 
@@ -723,53 +718,21 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
     }
 
     fn names() -> Array<felt252> {
-        array![
-            'Daydreams Agent Bread',
-            'Daydreams Agent Doughnut',
-            'Daydreams Agent Chaos',
-            'Daydreams Agent Giggles',
-            'Daydreams Agent Noodle',
-            'Daydreams Agent Pickle',
-            'Daydreams Agent PuffPuff',
-            'Daydreams Agent Sprinkles',
-            'Daydreams Agent Unstable',
-            'Daydreams Agent Waffle',
-            'Daydreams Agent Mischief',
-            'Daydreams Agent Whiskers',
-            'Daydreams Agent Poptart',
-            'Daydreams Agent Bubbles',
-            'Daydreams Agent Jojo',
-            'Daydreams Agent Pink',
-            'Daydreams Agent Biscuit',
-            'Daydreams Agent Sparkle',
-            'Daydreams Agent Whimsy',
-            'Daydreams Agent Pancake',
-            'Daydreams Agent Mario',
-            'Daydreams Agent Scramble',
-            'Daydreams Agent Jitters',
-            'Daydreams Agent Funny',
-            'Daydreams Agent Waffles',
-            'Daydreams Agent Doodle',
-            'Daydreams Agent Katy',
-            'Daydreams Agent Bumblebee',
-            'Daydreams Agent Happy',
-            'Daydreams Agent Marshmallow',
-            'Daydreams Agent Zigzag',
-            'Daydreams Agent Pebble',
-            'Daydreams Agent Wiggles',
-            'Daydreams Agent Cinnamon',
-            'Daydreams Agent Noodles',
-            'Daydreams Agent Popsicle',
-            'Daydreams Agent Loot',
-            'Daydreams Agent Mumble',
-            'Daydreams Agent French',
-            'Daydreams Agent Angry',
-            'Daydreams Agent Dazzle',
-            'Daydreams Agent Pretzel',
-            'Daydreams Agent Bubblegum',
-            'Daydreams Agent Banana',
-            'Daydreams Agent Pickle',
-            'Daydreams Agent Blobert',
-        ]
+        // array![
+        //     'Daydreams Agent Bread', 'Daydreams Agent Doughnut', 'Daydreams Agent Chaos', 'Daydreams Agent Giggles',
+        //     'Daydreams Agent Noodle', 'Daydreams Agent Pickle', 'Daydreams Agent PuffPuff', 'Daydreams Agent
+        //     Sprinkles', 'Daydreams Agent Unstable', 'Daydreams Agent Waffle', 'Daydreams Agent Mischief',
+        //     'Daydreams Agent Whiskers', 'Daydreams Agent Poptart', 'Daydreams Agent Bubbles', 'Daydreams Agent Jojo',
+        //     'Daydreams Agent Pink', 'Daydreams Agent Biscuit', 'Daydreams Agent Sparkle', 'Daydreams Agent Whimsy',
+        //     'Daydreams Agent Pancake', 'Daydreams Agent Mario', 'Daydreams Agent Scramble', 'Daydreams Agent
+        //     Jitters', 'Daydreams Agent Funny', 'Daydreams Agent Waffles', 'Daydreams Agent Doodle', 'Daydreams Agent
+        //     Katy', 'Daydreams Agent Bumblebee', 'Daydreams Agent Happy', 'Daydreams Agent Marshmallow',
+        //     'Daydreams Agent Zigzag', 'Daydreams Agent Pebble', 'Daydreams Agent Wiggles', 'Daydreams Agent
+        //     Cinnamon', 'Daydreams Agent Noodles', 'Daydreams Agent Popsicle', 'Daydreams Agent Loot', 'Daydreams
+        //     Agent Mumble', 'Daydreams Agent French', 'Daydreams Agent Angry', 'Daydreams Agent Dazzle', 'Daydreams
+        //     Agent Pretzel', 'Daydreams Agent Bubblegum', 'Daydreams Agent Banana', 'Daydreams Agent Pickle',
+        //     'Daydreams Agent Blobert',
+        // ]
+        array!['']
     }
 }

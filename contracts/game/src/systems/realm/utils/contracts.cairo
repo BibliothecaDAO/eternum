@@ -27,7 +27,7 @@ pub trait IRealmInternalSystems<T> {
 pub mod realm_internal_systems {
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS};
+    use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::position::Coord;
     use s1_eternum::systems::utils::realm::iRealmImpl;
     use starknet::ContractAddress;

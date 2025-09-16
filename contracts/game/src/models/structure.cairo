@@ -1,12 +1,12 @@
-use alexandria_math::{BitShift};
+use alexandria_math::BitShift;
 use core::num::traits::zero::Zero;
 use core::traits::Into;
-use dojo::{model::{Model, ModelStorage}, world::WorldStorage};
+use dojo::model::{Model, ModelStorage};
+use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::models::config::{
-    BattleConfig, SeasonConfig, StructureMaxLevelConfig, TickInterval, WorldConfigUtilImpl,
+    BattleConfig, SeasonConfig, StructureMaxLevelConfig, TickInterval, TickTrait, WorldConfigUtilImpl,
 };
-use s1_eternum::models::config::{TickTrait};
 use s1_eternum::models::position::{Coord, Direction};
 use s1_eternum::models::stamina::Stamina;
 use s1_eternum::models::troop::{GuardTroops, TroopBoosts, TroopTier, TroopType, Troops};
@@ -103,7 +103,7 @@ pub impl StructureOwnerStoreImpl of StructureOwnerStoreTrait {
 }
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct StructureBase {
     pub troop_guard_count: u8,
     pub troop_explorer_count: u16,
@@ -116,7 +116,7 @@ pub struct StructureBase {
     pub level: u8,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
+#[derive(Introspect, Copy, Drop, Serde, Default, DojoStore)]
 pub struct StructureMetadata {
     // associated with realm
     pub realm_id: u16,
@@ -253,6 +253,7 @@ pub impl StructureDefaultImpl of Default<Structure> {
             tier: TroopTier::T1,
             count: 0,
             stamina: Stamina { amount: 0, updated_tick: 0 },
+            battle_cooldown_end: 0,
             boosts: TroopBoosts {
                 incr_damage_dealt_percent_num: 0,
                 incr_damage_dealt_end_tick: 0,
@@ -413,7 +414,7 @@ pub impl StructureResourcesImpl of StructureResourcesTrait {
 
             // update the packed value
             produced_resources = new_produced_resources;
-        };
+        }
         produced_resources
     }
 
@@ -428,7 +429,7 @@ pub impl StructureResourcesImpl of StructureResourcesTrait {
 
             // shift right by 8 bits
             produced_resources = BitShift::shr(produced_resources, Self::PACKING_MAX_BITS_PER_RESOURCE().into());
-        };
+        }
 
         resource_types.span()
     }
@@ -444,7 +445,7 @@ pub impl StructureResourcesImpl of StructureResourcesTrait {
             }
             // shift right by 8 bits
             packed = BitShift::shr(packed, Self::PACKING_MAX_BITS_PER_RESOURCE().into());
-        };
+        }
         contains_resource
     }
 }

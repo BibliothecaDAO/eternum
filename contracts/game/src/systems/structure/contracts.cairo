@@ -10,24 +10,22 @@ pub mod structure_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
-
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS};
+    use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::config::{SeasonConfigImpl, SettlementConfigImpl, StructureLevelConfig, WorldConfigUtilImpl};
     use s1_eternum::models::events::{Story, StoryEvent, StructureLevelUpStory};
     use s1_eternum::models::map::Tile;
-    use s1_eternum::models::owner::{OwnerAddressTrait};
-    use s1_eternum::models::resource::production::building::{BuildingImpl};
-    use s1_eternum::models::resource::production::production::{ProductionBoostBonus};
-    use s1_eternum::models::resource::resource::{ResourceList};
+    use s1_eternum::models::owner::OwnerAddressTrait;
+    use s1_eternum::models::resource::production::building::BuildingImpl;
+    use s1_eternum::models::resource::production::production::ProductionBoostBonus;
     use s1_eternum::models::resource::resource::{
-        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+        ResourceList, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
         StructureMetadataStoreImpl, StructureOwnerStoreImpl,
     };
-    use s1_eternum::models::weight::{Weight};
+    use s1_eternum::models::weight::Weight;
     use s1_eternum::systems::utils::map::IMapImpl;
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
     use starknet::ContractAddress;
@@ -82,7 +80,7 @@ pub mod structure_systems {
                 structure_resource.store(ref world);
 
                 index += 1;
-            };
+            }
 
             // update structure weight
             structure_weight.store(ref world, structure_id);

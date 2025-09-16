@@ -1,5 +1,5 @@
 use s1_eternum::alias::ID;
-use s1_eternum::models::position::{Direction};
+use s1_eternum::models::position::Direction;
 #[starknet::interface]
 pub trait ITroopRaidSystems<T> {
     fn raid_explorer_vs_guard(
@@ -23,26 +23,27 @@ pub mod troop_raid_systems {
         BattleConfig, CombatConfigImpl, SeasonConfig, SeasonConfigImpl, TickImpl, TroopDamageConfig, TroopStaminaConfig,
         WorldConfigUtilImpl,
     };
-    use s1_eternum::models::owner::{OwnerAddressTrait};
+    use s1_eternum::models::owner::OwnerAddressTrait;
     use s1_eternum::models::position::{CoordTrait, Direction};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::stamina::{StaminaImpl};
+    use s1_eternum::models::stamina::StaminaImpl;
     use s1_eternum::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
         StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
     };
     use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, GuardTroops, TroopsImpl, TroopsTrait};
     use s1_eternum::models::weight::Weight;
-    use s1_eternum::systems::utils::{
-        resource::{iResourceTransferImpl}, structure::iStructureImpl,
-        troop::{TroopRaidOutcome, iExplorerImpl, iGuardImpl, iTroopImpl},
-    };
+    use s1_eternum::systems::utils::resource::iResourceTransferImpl;
+    use s1_eternum::systems::utils::structure::iStructureImpl;
+    use s1_eternum::systems::utils::troop::{TroopRaidOutcome, iExplorerImpl, iGuardImpl, iTroopImpl};
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
-    use s1_eternum::utils::map::biomes::{Biome, get_biome};
-    use s1_eternum::utils::math::{PercentageValueImpl};
-    use s1_eternum::utils::random::{VRFImpl};
+    use s1_eternum::utils::map::biomes::Biome;
+    use s1_eternum::utils::math::PercentageValueImpl;
+    use s1_eternum::utils::random::VRFImpl;
+    use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
+    use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
     use super::super::super::super::super::models::structure::StructureBaseTrait;
     use super::super::super::super::super::models::troop::GuardTrait;
 
@@ -126,12 +127,13 @@ pub mod troop_raid_systems {
             // get guard troops
             let mut guard_defender: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, structure_id);
             let mut explorer_aggressor_troops = explorer_aggressor.troops;
-            let defender_biome: Biome = get_biome(
-                guarded_structure.coord().x.into(), guarded_structure.coord().y.into(),
-            );
+            let biome_library = biome_library::get_dispatcher(@world);
+            let defender_biome: Biome = biome_library
+                .get_biome(guarded_structure.coord().x.into(), guarded_structure.coord().y.into());
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let current_tick = tick.current();
+            let current_tick_interval = tick.interval();
 
             let mut sum_damage_to_explorer = 0;
             let mut sum_damage_to_guards = 0;
@@ -145,7 +147,7 @@ pub mod troop_raid_systems {
                 if guard_defender_troops.count.is_non_zero() {
                     structure_non_zero_guard_slots.append(structure_functional_guard_slot);
                 }
-            };
+            }
 
             if structure_non_zero_guard_slots.len().is_non_zero() {
                 let mut structure_non_zero_guard_slots_damage_dealt = array![];
@@ -163,7 +165,12 @@ pub mod troop_raid_systems {
                     let structure_non_zero_guard_slot = *structure_non_zero_guard_slots.at(i);
                     let (mut guard_defender_troops, guard_defender_troops_destroyed_tick) = guard_defender
                         .from_slot(structure_non_zero_guard_slot);
-                    let (damage_dealt_to_guard, damage_dealt_to_explorer, explorer_stamina_loss) =
+                    let (
+                        damage_dealt_to_guard,
+                        damage_dealt_to_explorer,
+                        explorer_stamina_loss,
+                        _guard_slot_stamina_loss,
+                    ) =
                         individual_explorer_aggressor_troops
                         .damage(
                             ref guard_defender_troops,
@@ -171,6 +178,7 @@ pub mod troop_raid_systems {
                             troop_stamina_config,
                             troop_damage_config,
                             current_tick,
+                            current_tick_interval,
                         );
 
                     if explorer_stamina_loss > max_explorer_stamina_loss {
@@ -185,15 +193,17 @@ pub mod troop_raid_systems {
                     guard_damage_applied += RESOURCE_PRECISION - (guard_damage_applied % RESOURCE_PRECISION);
                     guard_defender_troops.count -= core::cmp::min(guard_defender_troops.count, guard_damage_applied);
 
-                    // // deduct stamina spent
+                    // deduct stamina spent
                     // guard_defender_troops
                     //     .stamina
                     //     .spend(
+                    //         ref guard_defender_troops.boosts,
                     //         guard_defender_troops.category,
+                    //         guard_defender_troops.tier,
                     //         troop_stamina_config,
-                    //         troop_stamina_config.stamina_attack_req.into(),
+                    //         guard_slot_stamina_loss,
                     //         current_tick,
-                    //         false,
+                    //         true,
                     //     );
 
                     // update structure guard
@@ -224,7 +234,7 @@ pub mod troop_raid_systems {
                     sum_damage_to_guards += damage_dealt_to_guard;
 
                     structure_non_zero_guard_slots_damage_dealt.append(damage_dealt_to_explorer);
-                };
+                }
 
                 // apply damage to explorer troops
                 let mut explorer_damage_received = 0;
@@ -232,7 +242,7 @@ pub mod troop_raid_systems {
                     // note: damage received by explorer is limited by number of troops
                     //       used to enter each battle
                     explorer_damage_received += core::cmp::min(damage, individual_explorer_aggressor_troops.count);
-                };
+                }
 
                 let mut explorer_damage_applied = troop_damage_config.damage_raid_percent_num.into()
                     * explorer_damage_received
@@ -300,11 +310,10 @@ pub mod troop_raid_systems {
                     TroopRaidOutcome::Success => { raid_success = true },
                     TroopRaidOutcome::Failure => { raid_success = false },
                     TroopRaidOutcome::Chance => {
-                        let vrf_provider: starknet::ContractAddress = WorldConfigUtilImpl::get_member(
-                            world, selector!("vrf_provider_address"),
-                        );
-                        let vrf_seed: u256 = VRFImpl::seed(starknet::get_caller_address(), vrf_provider);
-                        raid_success = iTroopImpl::raid(sum_damage_to_guards, sum_damage_to_explorer, vrf_seed);
+                        let rng_library_dispatcher = rng_library::get_dispatcher(@world);
+                        let vrf_seed: u256 = rng_library_dispatcher
+                            .get_random_number(starknet::get_caller_address(), world);
+                        raid_success = iTroopImpl::raid(sum_damage_to_guards, sum_damage_to_explorer, vrf_seed, world);
                     },
                 }
             }
@@ -330,7 +339,7 @@ pub mod troop_raid_systems {
                     1,
                     starknet::get_block_timestamp(),
                 );
-            };
+            }
 
             world
                 .emit_event(

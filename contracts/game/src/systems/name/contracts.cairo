@@ -6,7 +6,6 @@ pub trait INameSystems<T> {
 #[dojo::contract]
 pub mod name_systems {
     use dojo::model::ModelStorage;
-
     use dojo::world::WorldStorage;
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::config::SeasonConfigImpl;

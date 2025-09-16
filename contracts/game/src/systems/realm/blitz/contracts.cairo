@@ -11,12 +11,10 @@ pub trait IBlitzRealmSystems<T> {
 
 #[dojo::contract]
 pub mod blitz_realm_systems {
-    use core::num::traits::Bounded;
-    use core::num::traits::Zero;
+    use core::num::traits::{Bounded, Zero};
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{WorldStorage, WorldStorageTrait};
-
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS, ResourceTypes, blitz_produceable_resources};
     use s1_eternum::models::config::{
@@ -26,30 +24,28 @@ pub mod blitz_realm_systems {
         WorldConfigUtilImpl,
     };
     use s1_eternum::models::events::{RealmCreatedStory, Story, StoryEvent};
-    use s1_eternum::models::map::{TileImpl};
-    use s1_eternum::models::name::{AddressName};
-    use s1_eternum::models::position::{Coord};
+    use s1_eternum::models::map::TileImpl;
+    use s1_eternum::models::name::AddressName;
+    use s1_eternum::models::position::Coord;
     use s1_eternum::models::realm::{RealmNameAndAttrsDecodingImpl, RealmReferenceImpl};
-    use s1_eternum::models::resource::production::building::{BuildingImpl};
+    use s1_eternum::models::resource::production::building::BuildingImpl;
     use s1_eternum::models::resource::production::production::{Production, ProductionImpl};
     use s1_eternum::models::resource::resource::{
         ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::structure::StructureOwnerStats;
     use s1_eternum::models::structure::{
-        StructureBaseStoreImpl, StructureImpl, StructureMetadataStoreImpl, StructureOwnerStoreImpl,
+        StructureBaseStoreImpl, StructureImpl, StructureMetadataStoreImpl, StructureOwnerStats, StructureOwnerStoreImpl,
         StructureReservation,
     };
     use s1_eternum::systems::realm::utils::contracts::{
         IERC20Dispatcher, IERC20DispatcherTrait, IRealmInternalSystemsDispatcher, IRealmInternalSystemsDispatcherTrait,
     };
-    use s1_eternum::systems::utils::hyperstructure::{iHyperstructureDiscoveryImpl};
+    use s1_eternum::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
     use s1_eternum::systems::utils::realm::iRealmImpl;
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
-    use s1_eternum::utils::random;
-    use s1_eternum::utils::random::VRFImpl;
     use starknet::ContractAddress;
+    use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: false)]
@@ -138,7 +134,7 @@ pub mod blitz_realm_systems {
             // store structure reservation
             for coord in coords {
                 world.write_model(@StructureReservation { coord: coord, reserved: true });
-            };
+            }
 
             ////////////////////////////////////////////////
             /// Update Hyperstructure Ring Count
@@ -205,10 +201,8 @@ pub mod blitz_realm_systems {
 
             // obtain vrf seed
             let caller: ContractAddress = starknet::get_caller_address();
-            let vrf_provider: ContractAddress = WorldConfigUtilImpl::get_member(
-                world, selector!("vrf_provider_address"),
-            );
-            let vrf_seed: u256 = VRFImpl::seed(caller, vrf_provider);
+            let rng_library_dispatcher = rng_library::get_dispatcher(@world);
+            let vrf_seed: u256 = rng_library_dispatcher.get_random_number(starknet::get_caller_address(), world);
 
             // retrieve relevant configs
             let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
@@ -245,7 +239,7 @@ pub mod blitz_realm_systems {
 
                 // move to the next location and see if we are done
                 blitz_hyperstructure_settlement_config.next();
-            };
+            }
 
             WorldConfigUtilImpl::set_member(
                 ref world, selector!("blitz_hypers_settlement_config"), blitz_hyperstructure_settlement_config,
@@ -280,14 +274,13 @@ pub mod blitz_realm_systems {
             let mut blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
                 world, selector!("blitz_registration_config"),
             );
-            let vrf_provider: ContractAddress = WorldConfigUtilImpl::get_member(
-                world, selector!("vrf_provider_address"),
-            );
-            let vrf_seed: u256 = VRFImpl::seed(caller, vrf_provider);
+            let rng_library_dispatcher = rng_library::get_dispatcher(@world);
+            let vrf_seed: u256 = rng_library_dispatcher.get_random_number(starknet::get_caller_address(), world);
             let upper_bound: u128 = blitz_registration_config.registration_count.into();
             let lower_bound: u128 = blitz_registration_config.assigned_positions_count.into();
             let range: u128 = (upper_bound - lower_bound).into();
-            let player_position_spot_number: u16 = 1 + random::random(vrf_seed, 98139, range).try_into().unwrap();
+            let player_position_spot_number: u16 = 1
+                + rng_library_dispatcher.get_random_in_range(vrf_seed, 98139, range).try_into().unwrap();
             let player_position_register: BlitzRealmPositionRegister = world.read_model(player_position_spot_number);
 
             // reduce the number of available positions by 1
@@ -357,7 +350,7 @@ pub mod blitz_realm_systems {
                 AchievementTrait::progress(world, caller.into(), Tasks::REALM_SETTLEMENT, 1, now.into());
 
                 structure_ids.append(structure_id);
-            };
+            }
 
             // update realm count
             WorldConfigUtilImpl::set_member(ref world, realm_count_selector, realm_count);

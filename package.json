@@ -43,6 +43,8 @@
     "_comment_slot_network3": "and will also use `.env.slot` in client/apps/game for setting game config",
     "_comment_slot_network__": "_______________________________________________",
     "katana:start:slot": "bash contracts/game/ext/scripts/slot.sh katana",
+    "game:migrate:slot:buildonly": "cd ./contracts/game && ./ext/scripts/migrate.sh --profile slot --build-only",
+    "game:migrate:slot:migrateonly": "cd ./contracts/game && ./ext/scripts/migrate.sh --profile slot --migrate-only",
     "game:migrate:slot": "cd ./contracts/game && ./ext/scripts/migrate.sh --profile slot",
     "game:migrate:slottest": "cd ./contracts/game && ./ext/scripts/migrate.sh --profile slottest",
     "seasonpass:deploy:slot": "cd ./contracts/season_pass/ext/scripts && ./deploy.sh slot",

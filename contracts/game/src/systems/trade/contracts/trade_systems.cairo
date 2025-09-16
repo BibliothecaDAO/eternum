@@ -23,15 +23,12 @@ pub mod trade_systems {
     use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-
-    use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcherTrait};
+    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
     use s1_eternum::alias::ID;
-
-    use s1_eternum::constants::{DEFAULT_NS};
+    use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::config::{SeasonConfigImpl, SpeedImpl, TradeConfig, WorldConfigUtilImpl};
-    use s1_eternum::models::owner::{OwnerAddressTrait};
-    use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
+    use s1_eternum::models::owner::OwnerAddressTrait;
+    use s1_eternum::models::resource::arrivals::ResourceArrivalImpl;
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
     };
@@ -40,10 +37,10 @@ pub mod trade_systems {
         StructureMetadataStoreImpl, StructureOwnerStoreImpl,
     };
     use s1_eternum::models::trade::{Trade, TradeCount, TradeCountImpl};
-    use s1_eternum::models::weight::{Weight};
-    use s1_eternum::systems::utils::distance::{iDistanceKmImpl};
-    use s1_eternum::systems::utils::donkey::{iDonkeyImpl};
-    use s1_eternum::systems::utils::village::{iVillageImpl};
+    use s1_eternum::models::weight::Weight;
+    use s1_eternum::systems::utils::distance::iDistanceKmImpl;
+    use s1_eternum::systems::utils::donkey::iDonkeyImpl;
+    use s1_eternum::systems::utils::village::iVillageImpl;
     use starknet::ContractAddress;
 
 

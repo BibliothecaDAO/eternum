@@ -1,20 +1,17 @@
 use core::num::traits::zero::Zero;
 use dojo::model::ModelStorage;
-use dojo::world::{IWorldDispatcherTrait};
-use dojo::world::{WorldStorage};
-
+use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::alias::ID;
 use s1_eternum::models::config::{
     SeasonConfigImpl, SettlementConfigImpl, WonderProductionBonusConfig, WorldConfigUtilImpl,
 };
 use s1_eternum::models::map::{TileImpl, TileOccupier};
-use s1_eternum::models::position::{Coord};
+use s1_eternum::models::position::Coord;
 use s1_eternum::models::realm::{RealmNameAndAttrsDecodingImpl, RealmReferenceImpl};
 use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl};
-use s1_eternum::models::resource::production::production::{ProductionBoostBonus};
-use s1_eternum::models::resource::resource::{ResourceImpl};
+use s1_eternum::models::resource::production::production::ProductionBoostBonus;
 use s1_eternum::models::resource::resource::{
-    ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+    ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
 };
 use s1_eternum::models::structure::{
     StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata, StructureMetadataStoreImpl,
@@ -22,6 +19,9 @@ use s1_eternum::models::structure::{
 };
 use s1_eternum::systems::utils::structure::iStructureImpl;
 use starknet::ContractAddress;
+use crate::system_libraries::structure_libraries::structure_creation_library::{
+    IStructureCreationlibraryDispatcherTrait, structure_creation_library,
+};
 
 #[starknet::interface]
 pub trait ISeasonPass<TState> {
@@ -72,22 +72,24 @@ pub impl iRealmImpl of iRealmTrait {
         }
 
         // create structure
-        iStructureImpl::create(
-            ref world,
-            coord,
-            owner,
-            structure_id,
-            StructureCategory::Realm,
-            resources.span(),
-            StructureMetadata {
-                realm_id: realm_id.try_into().unwrap(), order, has_wonder, villages_count: 0, village_realm: 0,
-            },
-            tile_occupier.into(),
-            explore_village_coord,
-        );
+        let structure_creation_library = structure_creation_library::get_dispatcher(@world);
+        structure_creation_library
+            .make_structure(
+                world,
+                coord,
+                owner,
+                structure_id,
+                StructureCategory::Realm,
+                resources.span(),
+                StructureMetadata {
+                    realm_id: realm_id.try_into().unwrap(), order, has_wonder, villages_count: 0, village_realm: 0,
+                },
+                tile_occupier.into(),
+                explore_village_coord,
+            );
 
         // grant starting resources
-        iStructureImpl::grant_starting_resources(ref world, structure_id, coord);
+        structure_creation_library.grant_starting_resources(world, structure_id, coord);
 
         // place castle building
         BuildingImpl::create(

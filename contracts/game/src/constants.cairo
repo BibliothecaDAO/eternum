@@ -42,64 +42,11 @@ pub fn is_bank(entity_id: ID) -> bool {
 pub fn all_resource_ids() -> Array<u8> {
     array![
         //
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        13,
-        14,
-        15,
-        16,
-        17,
-        18,
-        19,
-        20,
-        21,
-        22,
-        23,
-        24,
-        25,
-        26,
-        27,
-        28,
-        29,
-        30,
-        31,
-        32,
-        33,
-        34,
-        35,
-        36,
-        37,
-        // Essence
-        38,
-        // Relics
-        39,
-        40,
-        41,
-        42,
-        43,
-        44,
-        45,
-        46,
-        47,
-        48,
-        49,
-        50,
-        51,
-        52,
-        53,
-        54,
-        55,
-        56,
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+        31, 32, 33, 34, 35, 36, 37, // Essence
+        38, // Relics
+        39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53,
+        54, 55, 56,
     ]
 }
 
@@ -350,14 +297,8 @@ pub fn relic_essence_cost(resource_type: u8) -> u128 {
 
 pub fn blitz_produceable_resources() -> Array<u8> {
     array![
-        ResourceTypes::WOOD,
-        ResourceTypes::COAL,
-        ResourceTypes::COPPER,
-        ResourceTypes::IRONWOOD,
-        ResourceTypes::COLD_IRON,
-        ResourceTypes::GOLD,
-        ResourceTypes::ADAMANTINE,
-        ResourceTypes::MITHRAL,
+        ResourceTypes::WOOD, ResourceTypes::COAL, ResourceTypes::COPPER, ResourceTypes::IRONWOOD,
+        ResourceTypes::COLD_IRON, ResourceTypes::GOLD, ResourceTypes::ADAMANTINE, ResourceTypes::MITHRAL,
         ResourceTypes::DRAGONHIDE,
     ]
 }
@@ -378,41 +319,15 @@ pub mod ResourceTiers {
 
 pub fn get_resources_without_earthenshards() -> Span<u8> {
     return array![
-        ResourceTypes::WOOD,
-        ResourceTypes::STONE,
-        ResourceTypes::COAL,
-        ResourceTypes::COPPER,
-        ResourceTypes::OBSIDIAN,
-        ResourceTypes::SILVER,
-        ResourceTypes::IRONWOOD,
-        ResourceTypes::COLD_IRON,
-        ResourceTypes::GOLD,
-        ResourceTypes::HARTWOOD,
-        ResourceTypes::DIAMONDS,
-        ResourceTypes::SAPPHIRE,
-        ResourceTypes::RUBY,
-        ResourceTypes::DEEP_CRYSTAL,
-        ResourceTypes::IGNIUM,
-        ResourceTypes::ETHEREAL_SILICA,
-        ResourceTypes::TRUE_ICE,
-        ResourceTypes::TWILIGHT_QUARTZ,
-        ResourceTypes::ALCHEMICAL_SILVER,
-        ResourceTypes::ADAMANTINE,
-        ResourceTypes::MITHRAL,
-        ResourceTypes::DRAGONHIDE,
-        ResourceTypes::LABOR,
-        ResourceTypes::DONKEY,
-        ResourceTypes::KNIGHT_T1,
-        ResourceTypes::KNIGHT_T2,
-        ResourceTypes::KNIGHT_T3,
-        ResourceTypes::CROSSBOWMAN_T1,
-        ResourceTypes::CROSSBOWMAN_T2,
-        ResourceTypes::CROSSBOWMAN_T3,
-        ResourceTypes::PALADIN_T1,
-        ResourceTypes::PALADIN_T2,
-        ResourceTypes::PALADIN_T3,
-        ResourceTypes::LORDS,
-        ResourceTypes::WHEAT,
+        ResourceTypes::WOOD, ResourceTypes::STONE, ResourceTypes::COAL, ResourceTypes::COPPER, ResourceTypes::OBSIDIAN,
+        ResourceTypes::SILVER, ResourceTypes::IRONWOOD, ResourceTypes::COLD_IRON, ResourceTypes::GOLD,
+        ResourceTypes::HARTWOOD, ResourceTypes::DIAMONDS, ResourceTypes::SAPPHIRE, ResourceTypes::RUBY,
+        ResourceTypes::DEEP_CRYSTAL, ResourceTypes::IGNIUM, ResourceTypes::ETHEREAL_SILICA, ResourceTypes::TRUE_ICE,
+        ResourceTypes::TWILIGHT_QUARTZ, ResourceTypes::ALCHEMICAL_SILVER, ResourceTypes::ADAMANTINE,
+        ResourceTypes::MITHRAL, ResourceTypes::DRAGONHIDE, ResourceTypes::LABOR, ResourceTypes::DONKEY,
+        ResourceTypes::KNIGHT_T1, ResourceTypes::KNIGHT_T2, ResourceTypes::KNIGHT_T3, ResourceTypes::CROSSBOWMAN_T1,
+        ResourceTypes::CROSSBOWMAN_T2, ResourceTypes::CROSSBOWMAN_T3, ResourceTypes::PALADIN_T1,
+        ResourceTypes::PALADIN_T2, ResourceTypes::PALADIN_T3, ResourceTypes::LORDS, ResourceTypes::WHEAT,
         ResourceTypes::FISH,
     ]
         .span();
@@ -420,28 +335,12 @@ pub fn get_resources_without_earthenshards() -> Span<u8> {
 
 pub fn get_hyperstructure_construction_resources() -> Span<u8> {
     return array![
-        ResourceTypes::WOOD,
-        ResourceTypes::STONE,
-        ResourceTypes::COAL,
-        ResourceTypes::COPPER,
-        ResourceTypes::OBSIDIAN,
-        ResourceTypes::SILVER,
-        ResourceTypes::IRONWOOD,
-        ResourceTypes::COLD_IRON,
-        ResourceTypes::GOLD,
-        ResourceTypes::HARTWOOD,
-        ResourceTypes::DIAMONDS,
-        ResourceTypes::SAPPHIRE,
-        ResourceTypes::RUBY,
-        ResourceTypes::DEEP_CRYSTAL,
-        ResourceTypes::IGNIUM,
-        ResourceTypes::ETHEREAL_SILICA,
-        ResourceTypes::TRUE_ICE,
-        ResourceTypes::TWILIGHT_QUARTZ,
-        ResourceTypes::ALCHEMICAL_SILVER,
-        ResourceTypes::ADAMANTINE,
-        ResourceTypes::MITHRAL,
-        ResourceTypes::DRAGONHIDE,
+        ResourceTypes::WOOD, ResourceTypes::STONE, ResourceTypes::COAL, ResourceTypes::COPPER, ResourceTypes::OBSIDIAN,
+        ResourceTypes::SILVER, ResourceTypes::IRONWOOD, ResourceTypes::COLD_IRON, ResourceTypes::GOLD,
+        ResourceTypes::HARTWOOD, ResourceTypes::DIAMONDS, ResourceTypes::SAPPHIRE, ResourceTypes::RUBY,
+        ResourceTypes::DEEP_CRYSTAL, ResourceTypes::IGNIUM, ResourceTypes::ETHEREAL_SILICA, ResourceTypes::TRUE_ICE,
+        ResourceTypes::TWILIGHT_QUARTZ, ResourceTypes::ALCHEMICAL_SILVER, ResourceTypes::ADAMANTINE,
+        ResourceTypes::MITHRAL, ResourceTypes::DRAGONHIDE,
     ]
         .span();
 }
@@ -460,28 +359,14 @@ pub fn get_resources_without_earthenshards_probs() -> Span<u128> {
 /// Get resource occurence probabilities
 pub fn get_resource_probabilities() -> Span<(u8, u128)> {
     return array![
-        (ResourceTypes::WOOD, 2018108),
-        (ResourceTypes::STONE, 1585915),
-        (ResourceTypes::COAL, 1542455),
-        (ResourceTypes::COPPER, 1063581),
-        (ResourceTypes::OBSIDIAN, 891750),
-        (ResourceTypes::SILVER, 700604),
-        (ResourceTypes::IRONWOOD, 474447),
-        (ResourceTypes::COLD_IRON, 385111),
-        (ResourceTypes::GOLD, 367807),
-        (ResourceTypes::HARTWOOD, 239034),
-        (ResourceTypes::DIAMONDS, 120724),
-        (ResourceTypes::SAPPHIRE, 99396),
-        (ResourceTypes::RUBY, 96177),
-        (ResourceTypes::DEEP_CRYSTAL, 96177),
-        (ResourceTypes::IGNIUM, 69215),
-        (ResourceTypes::ETHEREAL_SILICA, 65191),
-        (ResourceTypes::TRUE_ICE, 55936),
-        (ResourceTypes::TWILIGHT_QUARTZ, 44668),
-        (ResourceTypes::ALCHEMICAL_SILVER, 37425),
-        (ResourceTypes::ADAMANTINE, 22133),
-        (ResourceTypes::MITHRAL, 14889),
-        (ResourceTypes::DRAGONHIDE, 9256),
+        (ResourceTypes::WOOD, 2018108), (ResourceTypes::STONE, 1585915), (ResourceTypes::COAL, 1542455),
+        (ResourceTypes::COPPER, 1063581), (ResourceTypes::OBSIDIAN, 891750), (ResourceTypes::SILVER, 700604),
+        (ResourceTypes::IRONWOOD, 474447), (ResourceTypes::COLD_IRON, 385111), (ResourceTypes::GOLD, 367807),
+        (ResourceTypes::HARTWOOD, 239034), (ResourceTypes::DIAMONDS, 120724), (ResourceTypes::SAPPHIRE, 99396),
+        (ResourceTypes::RUBY, 96177), (ResourceTypes::DEEP_CRYSTAL, 96177), (ResourceTypes::IGNIUM, 69215),
+        (ResourceTypes::ETHEREAL_SILICA, 65191), (ResourceTypes::TRUE_ICE, 55936),
+        (ResourceTypes::TWILIGHT_QUARTZ, 44668), (ResourceTypes::ALCHEMICAL_SILVER, 37425),
+        (ResourceTypes::ADAMANTINE, 22133), (ResourceTypes::MITHRAL, 14889), (ResourceTypes::DRAGONHIDE, 9256),
         (ResourceTypes::EARTHEN_SHARD, 22133) // SHARDS
     ]
         .span();
@@ -502,7 +387,7 @@ pub fn split_resources_and_probs() -> (Span<u8>, Span<u128>) {
             },
             Option::None => { break; },
         }
-    };
+    }
 
     return (resource_types.span(), resource_probabilities.span());
 }
@@ -510,15 +395,10 @@ pub fn split_resources_and_probs() -> (Span<u8>, Span<u128>) {
 
 pub fn get_blitz_exploration_reward() -> Span<(u8, u128, u128)> {
     return array![
-        (ResourceTypes::ESSENCE, 100, 3_000),
-        (ResourceTypes::ESSENCE, 250, 2_000),
-        (ResourceTypes::ESSENCE, 500, 1_500),
-        (ResourceTypes::LABOR, 250, 1_500),
-        (ResourceTypes::LABOR, 500, 800),
-        (ResourceTypes::DONKEY, 100, 600),
-        (ResourceTypes::KNIGHT_T1, 2_500, 200),
-        (ResourceTypes::CROSSBOWMAN_T1, 2_500, 200),
-        (ResourceTypes::PALADIN_T1, 2_500, 200),
+        (ResourceTypes::ESSENCE, 100, 3_000), (ResourceTypes::ESSENCE, 250, 2_000),
+        (ResourceTypes::ESSENCE, 500, 1_500), (ResourceTypes::LABOR, 250, 1_500), (ResourceTypes::LABOR, 500, 800),
+        (ResourceTypes::DONKEY, 100, 600), (ResourceTypes::KNIGHT_T1, 2_500, 200),
+        (ResourceTypes::CROSSBOWMAN_T1, 2_500, 200), (ResourceTypes::PALADIN_T1, 2_500, 200),
     ]
         .span();
 }
@@ -537,7 +417,7 @@ pub fn split_blitz_exploration_reward_and_probs() -> (Span<(u8, u128)>, Span<u12
             },
             Option::None => { break; },
         }
-    };
+    }
 
     return (resources.span(), resource_probabilities.span());
 }

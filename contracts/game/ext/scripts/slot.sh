@@ -326,7 +326,7 @@ fi
 if [ "$COMMAND" = "torii" ]; then
     echo -e "\n${YELLOW}► Setting up Torii indexer...${NC}"
     slot deployments create --team realms-eternum $PROJECT_NAME torii \
-        --version v1.6.0-alpha.2 \
+        --version v1.7.0-alpha.1 \
         --world $WORLD \
         --rpc $RPC_URL \
         --indexing.pending \

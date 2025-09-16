@@ -221,7 +221,7 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    HyperstructureConstructConfig: (() => {
+    HyperstrtConstructConfig: (() => {
       return defineComponent(
         world,
         {
@@ -233,7 +233,7 @@ export function defineContractComponents(world: World) {
         {
           metadata: {
             namespace: "s1_eternum",
-            name: "HyperstructureConstructConfig",
+            name: "HyperstrtConstructConfig",
             types: ["u8", "u64", "u32", "u32"],
             customTypes: [],
           },
@@ -1005,7 +1005,7 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    ResourceBridgeWhitelistConfig: (() => {
+    ResourceBridgeWtlConfig: (() => {
       return defineComponent(
         world,
         {
@@ -1015,7 +1015,7 @@ export function defineContractComponents(world: World) {
         {
           metadata: {
             namespace: "s1_eternum",
-            name: "ResourceBridgeWhitelistConfig",
+            name: "ResourceBridgeWtlConfig",
             types: ["ContractAddress", "u8"],
             customTypes: [],
           },
@@ -1060,6 +1060,7 @@ export function defineContractComponents(world: World) {
               incr_explore_reward_percent_num: RecsType.Number,
               incr_explore_reward_end_tick: RecsType.Number,
             },
+            battle_cooldown_end: RecsType.Number,
           },
           coord: {
             x: RecsType.Number,
@@ -1085,6 +1086,7 @@ export function defineContractComponents(world: World) {
               "u16",
               "u8",
               "u16",
+              "u32",
               "u32",
               "u32",
               "u32",
@@ -1131,6 +1133,7 @@ export function defineContractComponents(world: World) {
                 incr_explore_reward_percent_num: RecsType.Number,
                 incr_explore_reward_end_tick: RecsType.Number,
               },
+              battle_cooldown_end: RecsType.Number,
             },
             charlie: {
               category: RecsType.String,
@@ -1150,6 +1153,7 @@ export function defineContractComponents(world: World) {
                 incr_explore_reward_percent_num: RecsType.Number,
                 incr_explore_reward_end_tick: RecsType.Number,
               },
+              battle_cooldown_end: RecsType.Number,
             },
             bravo: {
               category: RecsType.String,
@@ -1169,6 +1173,7 @@ export function defineContractComponents(world: World) {
                 incr_explore_reward_percent_num: RecsType.Number,
                 incr_explore_reward_end_tick: RecsType.Number,
               },
+              battle_cooldown_end: RecsType.Number,
             },
             alpha: {
               category: RecsType.String,
@@ -1188,6 +1193,7 @@ export function defineContractComponents(world: World) {
                 incr_explore_reward_percent_num: RecsType.Number,
                 incr_explore_reward_end_tick: RecsType.Number,
               },
+              battle_cooldown_end: RecsType.Number,
             },
             delta_destroyed_tick: RecsType.Number,
             charlie_destroyed_tick: RecsType.Number,
@@ -1235,6 +1241,7 @@ export function defineContractComponents(world: World) {
               "u8",
               "u16",
               "u32",
+              "u32",
               //charlie
               "enum",
               "enum",
@@ -1248,6 +1255,7 @@ export function defineContractComponents(world: World) {
               "u16",
               "u8",
               "u16",
+              "u32",
               "u32",
               //bravo
               "enum",
@@ -1263,6 +1271,7 @@ export function defineContractComponents(world: World) {
               "u8",
               "u16",
               "u32",
+              "u32",
               //alpha
               "enum",
               "enum",
@@ -1276,6 +1285,7 @@ export function defineContractComponents(world: World) {
               "u16",
               "u8",
               "u16",
+              "u32",
               "u32",
               //destroyed_ticks
               "u32",
@@ -1481,7 +1491,7 @@ export function defineContractComponents(world: World) {
             stamina_paladin_max: RecsType.Number,
             stamina_crossbowman_max: RecsType.Number,
             stamina_attack_req: RecsType.Number,
-            stamina_attack_max: RecsType.Number,
+            stamina_defense_req: RecsType.Number,
             stamina_explore_wheat_cost: RecsType.Number,
             stamina_explore_fish_cost: RecsType.Number,
             stamina_explore_stamina_cost: RecsType.Number,
@@ -1653,7 +1663,7 @@ export function defineContractComponents(world: World) {
               "u16", // TroopStaminaConfig stamina_paladin_max
               "u16", // TroopStaminaConfig stamina_crossbowman_max
               "u16", // TroopStaminaConfig stamina_attack_req
-              "u16", // TroopStaminaConfig stamina_attack_max
+              "u16", // TroopStaminaConfig stamina_defense_req
               "u16", // TroopStaminaConfig stamina_explore_wheat_cost
               "u16", // TroopStaminaConfig stamina_explore_fish_cost
               "u16", // TroopStaminaConfig stamina_explore_stamina_cost

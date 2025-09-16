@@ -172,12 +172,14 @@ export const CombatSimulationPanel = () => {
     troopCount: 100,
     troopType: TroopType.Knight,
     tier: TroopTier.T1,
+    battle_cooldown_end: Math.floor(Date.now() / 1000)
   });
   const [defender, setDefender] = useState<Army>({
     stamina: 100,
     troopCount: 100,
     troopType: TroopType.Crossbowman,
     tier: TroopTier.T1,
+    battle_cooldown_end: Math.floor(Date.now() / 1000),
   });
   const [attackerRelics, setAttackerRelics] = useState<ResourcesIds[]>([]);
   const [defenderRelics, setDefenderRelics] = useState<ResourcesIds[]>([]);
@@ -197,7 +199,9 @@ export const CombatSimulationPanel = () => {
 
   const combatSimulator = useMemo(() => new CombatSimulator(parameters), [parameters]);
 
+  const now = Math.floor(Date.now() / 1000);
   const simulationResult = combatSimulator.simulateBattleWithParams(
+    now,
     attacker,
     defender,
     biome,
@@ -213,16 +217,34 @@ export const CombatSimulationPanel = () => {
   const defenderTroopsLeft = defender.troopCount - defenderTroopsLost;
 
   // Calculate stamina changes
-  const staminaCost = 30;
-  let newAttackerStamina = attacker.stamina - staminaCost;
-  let newDefenderStamina = defender.stamina - Math.min(staminaCost, defender.stamina);
+  let attackStaminaCost = 50;
+  attackStaminaCost -= Math.ceil(attackStaminaCost * simulationResult.attackerRefundMultiplier);
 
-  // Add bonus stamina to winner if one side is eliminated
-  if (attackerTroopsLeft <= 0 && defenderTroopsLeft > 0) {
-    newDefenderStamina += 30;
-  } else if (defenderTroopsLeft <= 0 && attackerTroopsLeft > 0) {
-    newAttackerStamina += 30;
+  let defenseStaminaCost = Math.min(defender.stamina, 40);
+  defenseStaminaCost -= Math.ceil(defenseStaminaCost * simulationResult.defenderRefundMultiplier);
+
+  const newAttackerStamina = attacker.stamina - attackStaminaCost;
+  const newDefenderStamina = defender.stamina - defenseStaminaCost;
+
+
+  // Calculate new battle timer cooldown end
+  const tickIntervalSeconds = 60;
+  let attackerCooldownEnd = attacker.battle_cooldown_end;
+  if (attackerCooldownEnd < now) {
+      attackerCooldownEnd = now
   }
+  attackerCooldownEnd 
+    += Math.floor(tickIntervalSeconds * (1 - simulationResult.attackerRefundMultiplier));
+
+  let defenderCooldownEnd = defender.battle_cooldown_end;
+  if (defenderCooldownEnd < now) {
+    defenderCooldownEnd = now;
+  }
+  defenderCooldownEnd += Math.floor(tickIntervalSeconds * (1 - simulationResult.defenderRefundMultiplier));
+
+  
+
+
 
   // Calculate relic bonuses for display
   const getRelicBonuses = (relics: ResourcesIds[]) => {
@@ -326,6 +348,7 @@ export const CombatSimulationPanel = () => {
                     staminaModifier: combatSimulator.calculateStaminaModifier(attacker.stamina, true),
                     biomeBonus: configManager.getBiomeCombatBonus(attacker.troopType, biome),
                     relicBonuses: attackerRelicBonuses,
+                    cooldownEnd: attackerCooldownEnd,
                   },
                 },
                 {
@@ -339,6 +362,7 @@ export const CombatSimulationPanel = () => {
                     staminaModifier: combatSimulator.calculateStaminaModifier(defender.stamina, false),
                     biomeBonus: configManager.getBiomeCombatBonus(defender.troopType, biome),
                     relicBonuses: defenderRelicBonuses,
+                    cooldownEnd: defenderCooldownEnd, 
                   },
                 },
               ].map(({ label, data }) => (
@@ -466,6 +490,17 @@ export const CombatSimulationPanel = () => {
                             />
                           </div>
                         </div>
+                        <div className="p-4 bg-dark-brown/50 border border-gold/20 rounded-lg">
+                          <div className="text-sm font-semibold text-gold/90 mb-2 flex items-center gap-2">
+                            ⏳ Cooldown End
+                          </div>
+                          <div className="text-lg font-bold text-gold flex items-baseline">
+                            {new Date(data.cooldownEnd * 1000).toLocaleTimeString()}{" "}
+                            <span className="text-xs ml-2 text-gold/60">
+                              ({data.cooldownEnd})
+                            </span>
+                          </div>
+                        </div>
                       </div>
 
                       <div className="space-y-2">{getStaminaDisplay(data.army.stamina, data.newStamina, 30)}</div>
@@ -484,7 +519,7 @@ export const CombatSimulationPanel = () => {
                   </p>
                   <div className="text-3xl animate-bounce">🏆</div>
                 </div>
-                <p className="text-green-400/80 text-lg">Victory Bonus: +30 Stamina</p>
+                {/* <p className="text-green-400/80 text-lg">Victory Bonus: +30 Stamina</p> */}
               </div>
             )}
 

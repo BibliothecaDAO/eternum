@@ -188,6 +188,7 @@ export const CombatContainer = ({
             incr_explore_reward_percent_num: 0,
             incr_explore_reward_end_tick: 0,
           },
+          battle_cooldown_end: 0
         },
       };
     } else {
@@ -209,6 +210,7 @@ export const CombatContainer = ({
             incr_explore_reward_percent_num: 0,
             incr_explore_reward_end_tick: 0,
           },
+          battle_cooldown_end: army?.troops.battle_cooldown_end || 0
         },
       };
     }
@@ -233,6 +235,7 @@ export const CombatContainer = ({
           incr_explore_reward_percent_num: 0,
           incr_explore_reward_end_tick: 0,
         },
+        battle_cooldown_end: target.info[0].battle_cooldown_end || 0
       },
     };
   }, [target]);
@@ -258,6 +261,7 @@ export const CombatContainer = ({
       troopCount: Number(attackerArmyData.troops.count) / RESOURCE_PRECISION,
       troopType: attackerArmyData.troops.category as TroopType,
       tier: attackerArmyData.troops.tier as TroopTier,
+      battle_cooldown_end: attackerArmyData.troops.battle_cooldown_end,
     };
 
     const defenderArmy = {
@@ -266,9 +270,12 @@ export const CombatContainer = ({
       troopCount: Number(targetArmyData.troops.count) / RESOURCE_PRECISION,
       troopType: targetArmyData.troops.category as TroopType,
       tier: targetArmyData.troops.tier as TroopTier,
+      battle_cooldown_end: targetArmyData.troops.battle_cooldown_end,
     };
 
+    const now = Math.floor(Date.now() / 1000);
     const result = combatSimulator.simulateBattleWithParams(
+      now,
       attackerArmy,
       defenderArmy,
       biome,
@@ -289,12 +296,30 @@ export const CombatContainer = ({
       winner = attackerArmy.entity_id;
     }
 
-    const newAttackerStamina =
-      Math.max(Number(attackerStamina) - Number(combatConfig.stamina_attack_max), 0) +
-      (winner === attackerArmy.entity_id ? Number(combatConfig.stamina_attack_req) : 0);
-    const newDefenderStamina =
-      Number(targetArmyData.troops.stamina.amount) -
-      (winner === defenderArmy.entity_id ? Number(combatConfig.stamina_attack_req) : 0);
+
+    // Calculate stamina changes
+    let attackStaminaCost = combatConfig.stamina_attack_req;
+    attackStaminaCost -= Math.ceil(attackStaminaCost * result.attackerRefundMultiplier);
+
+    let defenseStaminaCost = Math.min(Number(targetArmyData.troops.stamina.amount), combatConfig.stamina_defense_req);
+    defenseStaminaCost -= Math.ceil(defenseStaminaCost * result.defenderRefundMultiplier);
+    
+    const newAttackerStamina = Number(attackerStamina) - attackStaminaCost;
+    const newDefenderStamina = Number(targetArmyData.troops.stamina.amount) - defenseStaminaCost;
+
+    // Calculate new battle timer cooldown end
+    const tickIntervalSeconds = 60;
+    let attackerCooldownEnd = attackerArmyData.troops.battle_cooldown_end;
+    if (attackerCooldownEnd < now) {
+      attackerCooldownEnd = now;
+    }
+    attackerCooldownEnd += Math.floor(tickIntervalSeconds * (1 - result.attackerRefundMultiplier));
+
+    let defenderCooldownEnd = targetArmyData.troops.battle_cooldown_end;
+    if (defenderCooldownEnd < now) {
+      defenderCooldownEnd = now;
+    }
+    defenderCooldownEnd += Math.floor(tickIntervalSeconds * (1 - result.defenderRefundMultiplier));
 
     return {
       attackerTroopsLeft,
@@ -304,6 +329,8 @@ export const CombatContainer = ({
       newDefenderStamina,
       attackerDamage: result.attackerDamage,
       defenderDamage: result.defenderDamage,
+      attackerCooldownEnd,
+      defenderCooldownEnd,
       getRemainingTroops: () => ({
         attackerTroops: attackerArmy.troopCount - attackerTroopsLost,
         defenderTroops: defenderArmy.troopCount - defenderTroopsLost,
@@ -601,19 +628,22 @@ export const CombatContainer = ({
                   defenderCasualtyPercentage={Math.round(
                     (trueAttackDamage / divideByPrecision(Number(targetArmyData.troops.count))) * 100,
                   )}
-                  staminaChange={battleSimulation.newAttackerStamina - Number(attackerStamina)}
+                  attackerStaminaChange={battleSimulation.newAttackerStamina - Number(attackerStamina)}
+                  defenderStaminaChange={battleSimulation.newDefenderStamina - Number(targetArmyData.troops.stamina.amount)}
+                  attackerCooldownEnd={battleSimulation.attackerCooldownEnd}
+                  defenderCooldownEnd={battleSimulation.defenderCooldownEnd}
                   outcome={winner === attackerEntityId ? "Victory" : winner === null ? "Draw" : "Defeat"}
                 />
-              </div>
 
-              {/* Resources to be stolen section - only show when winner is attacker and target is Army */}
-              {winner === attackerEntityId &&
-                target?.targetType === TargetType.Army &&
-                stealableResources.length > 0 && (
-                  <div className="p-3 sm:p-4 lg:p-6 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood shadow-lg">
-                    <ResourceStealing stealableResources={stealableResources} />
-                  </div>
-                )}
+                {/* Resources to be stolen section - only show when winner is attacker and target is Army */}
+                {winner === attackerEntityId &&
+                  target?.targetType === TargetType.Army &&
+                  stealableResources.length > 0 && (
+                    <div className="p-3 sm:p-4 lg:p-6 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood shadow-lg">
+                      <ResourceStealing stealableResources={stealableResources} />
+                    </div>
+                  )}
+              </div>
             </>
           ) : (
             <div className="p-3 sm:p-4 lg:p-6 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood shadow-lg">

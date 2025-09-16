@@ -85,7 +85,7 @@ const DojoContextProvider = ({
   const privateKey = env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
 
   const masterAccount = useMemo(
-    () => new Account(rpcProvider, masterAddress, privateKey),
+    () => new Account({provider: rpcProvider, address: masterAddress, signer: privateKey}),
     [rpcProvider, masterAddress, privateKey],
   );
 

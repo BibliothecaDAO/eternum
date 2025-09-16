@@ -81,7 +81,7 @@ export class GameConfigDeployer {
     await SetResourceFactoryConfig(config);
     await this.sleepNonLocal();
 
-    await setResourceBridgeWhitelistConfig(config);
+    await setResourceBridgeWtlConfig(config);
     await this.sleepNonLocal();
 
     await setTradeConfig(config);
@@ -376,7 +376,7 @@ export const SetResourceFactoryConfig = async (config: Config) => {
   );
 };
 
-export const setResourceBridgeWhitelistConfig = async (config: Config) => {
+export const setResourceBridgeWtlConfig = async (config: Config) => {
   console.log(chalk.cyan("\n⚡ BRIDGE WHITELIST CONFIGURATION"));
   console.log(chalk.gray("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"));
 
@@ -706,7 +706,7 @@ export const setTroopConfig = async (config: Config) => {
       staminaPaladinMax: stamina_paladin_max,
       staminaCrossbowmanMax: stamina_crossbowman_max,
       staminaAttackReq: stamina_attack_req,
-      staminaAttackMax: stamina_attack_max,
+      staminaDefenseReq: stamina_defense_req,
       staminaExploreWheatCost: stamina_explore_wheat_cost,
       staminaExploreFishCost: stamina_explore_fish_cost,
       staminaExploreStaminaCost: stamina_explore_stamina_cost,
@@ -747,7 +747,7 @@ export const setTroopConfig = async (config: Config) => {
       stamina_paladin_max: stamina_paladin_max,
       stamina_crossbowman_max: stamina_crossbowman_max,
       stamina_attack_req: stamina_attack_req,
-      stamina_attack_max: stamina_attack_max,
+      stamina_defense_req: stamina_defense_req,
       stamina_explore_wheat_cost: stamina_explore_wheat_cost * config.config.resources.resourcePrecision,
       stamina_explore_fish_cost: stamina_explore_fish_cost * config.config.resources.resourcePrecision,
       stamina_explore_stamina_cost: stamina_explore_stamina_cost,
@@ -788,7 +788,7 @@ export const setTroopConfig = async (config: Config) => {
     │  ${chalk.gray("Paladin Max Stamina:")}     ${chalk.white(calldata.stamina_config.stamina_paladin_max)}
     │  ${chalk.gray("Crossbow Max Stamina:")}    ${chalk.white(calldata.stamina_config.stamina_crossbowman_max)}
     │  ${chalk.gray("Attack Requirement:")}       ${chalk.white(calldata.stamina_config.stamina_attack_req)}
-    │  ${chalk.gray("Attack Max:")}              ${chalk.white(calldata.stamina_config.stamina_attack_max)}
+    │  ${chalk.gray("Defense Requirement:")}              ${chalk.white(calldata.stamina_config.stamina_defense_req)}
     │  ${chalk.gray("Explore Wheat Cost:")}     ${chalk.white(calldata.stamina_config.stamina_explore_wheat_cost / config.config.resources.resourcePrecision)}
     │  ${chalk.gray("Explore Fish Cost:")}        ${chalk.white(calldata.stamina_config.stamina_explore_fish_cost / config.config.resources.resourcePrecision)}
     │  ${chalk.gray("Explore Stamina Cost:")}    ${chalk.white(calldata.stamina_config.stamina_explore_stamina_cost)}

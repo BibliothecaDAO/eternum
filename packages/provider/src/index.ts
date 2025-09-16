@@ -7,7 +7,15 @@
 import * as SystemProps from "@bibliothecadao/types";
 import { DojoCall, DojoProvider } from "@dojoengine/core";
 import EventEmitter from "eventemitter3";
-import { Account, AccountInterface, AllowArray, Call, CallData, Result, uint256 } from "starknet";
+import {
+    Account,
+    AccountInterface,
+    AllowArray,
+    Call,
+    CallData,
+    GetTransactionReceiptResponse,
+    uint256,
+} from "starknet";
 import { TransactionType } from "./types";
 export const NAMESPACE = "s1_eternum";
 export { TransactionType };
@@ -236,7 +244,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   async executeAndCheckTransaction(
     signer: Account | AccountInterface,
     transactionDetails: AllowArray<Call>,
-  ): Promise<Result> {
+  ) {
     if (typeof window !== "undefined") {
       console.log({ signer, transactionDetails });
     }
@@ -269,7 +277,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     return transactionResult;
   }
 
-  async callAndReturnResult(signer: Account | AccountInterface, transactionDetails: DojoCall | Call): Promise<Result> {
+  async callAndReturnResult(signer: Account | AccountInterface, transactionDetails: DojoCall | Call) {
     if (typeof window !== "undefined") {
       console.log({ signer, transactionDetails });
     }
@@ -336,7 +344,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @returns Transaction receipt
    * @throws Error if transaction fails or is reverted
    */
-  async waitForTransactionWithCheck(transactionHash: string): Promise<Result> {
+  async waitForTransactionWithCheck(transactionHash: string): Promise<GetTransactionReceiptResponse> {
     let receipt;
     try {
       receipt = await this.provider.waitForTransaction(transactionHash, {
@@ -1006,7 +1014,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * }
    * ```
    */
-  public async create_building(props: SystemProps.CreateBuildingProps): Promise<Result> {
+  public async create_building(props: SystemProps.CreateBuildingProps): Promise<GetTransactionReceiptResponse> {
     const { entity_id, directions, building_category, use_simple, signer } = props;
 
     const call = this.createProviderCall(signer, {
@@ -2274,7 +2282,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_resource_bridge_whitlelist_config(props: SystemProps.SetResourceBridgeWhitelistConfigProps) {
+  public async set_resource_bridge_whitlelist_config(props: SystemProps.SetResourceBridgeWtlConfigProps) {
     const { resource_whitelist_configs, signer } = props;
 
     const calldata = resource_whitelist_configs.map(({ token, resource_type }) => ({
@@ -2313,7 +2321,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         stamina_config.stamina_paladin_max,
         stamina_config.stamina_crossbowman_max,
         stamina_config.stamina_attack_req,
-        stamina_config.stamina_attack_max,
+        stamina_config.stamina_defense_req,
         stamina_config.stamina_explore_stamina_cost,
         stamina_config.stamina_travel_stamina_cost,
         stamina_config.stamina_explore_wheat_cost,
@@ -2771,7 +2779,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param props.signer - Account executing the transaction
    * @returns Transaction receipt
    */
-  public async create_marketplace_orders(props: SystemProps.CreateMarketplaceOrdersProps): Promise<Result> {
+  public async create_marketplace_orders(props: SystemProps.CreateMarketplaceOrdersProps): Promise<GetTransactionReceiptResponse> {
     const { tokens, signer, marketplace_address } = props;
 
     const calls = tokens.map((token) => {
@@ -2853,7 +2861,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param props.signer - Account executing the transaction
    * @returns Transaction receipt
    */
-  public async edit_marketplace_order(props: SystemProps.EditMarketplaceOrderProps): Promise<Result> {
+  public async edit_marketplace_order(props: SystemProps.EditMarketplaceOrderProps): Promise<GetTransactionReceiptResponse> {
     const { order_id, new_price, signer } = props;
 
     const call = {
@@ -2869,7 +2877,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     return result;
   }
 
-  public async set_quest_games(props: SystemProps.SetQuestGamesProps) {
+  public async set_quest_games(props: SystemProps.SetQuestGamesProps): Promise<any> {
     const { signer, quest_games } = props;
     for (const quest_game of quest_games) {
       return await this.executeAndCheckTransaction(signer, {

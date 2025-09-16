@@ -1,6 +1,5 @@
 use s1_eternum::alias::ID;
-use s1_eternum::models::position::Coord;
-use s1_eternum::models::position::Direction;
+use s1_eternum::models::position::{Coord, Direction};
 use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
 use starknet::ContractAddress;
 
@@ -184,7 +183,7 @@ pub struct ResourceTransferStory {
     pub to_entity_owner_address: ContractAddress,
     pub resources: Span<(u8, u128)>,
     pub is_mint: bool,
-    pub travel_time: u64, // 0 for instant transfers
+    pub travel_time: u64,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]

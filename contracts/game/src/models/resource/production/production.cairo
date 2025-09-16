@@ -8,17 +8,14 @@ use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{ResourceFactoryConfig, TickImpl, TickTrait};
 use s1_eternum::models::events::{ProductionStory, Story, StoryEvent};
-
-use s1_eternum::models::resource::resource::{ResourceList};
 use s1_eternum::models::resource::resource::{
-    ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl,
-    TroopResourceImpl, WeightStoreImpl,
+    ResourceList, ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl,
+    StructureSingleResourceFoodImpl, TroopResourceImpl, WeightStoreImpl,
 };
 use s1_eternum::models::structure::{StructureImpl, StructureOwnerStoreImpl};
-use s1_eternum::models::weight::{Weight};
+use s1_eternum::models::weight::Weight;
 use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
-use s1_eternum::utils::math::{PercentageValueImpl};
-use s1_eternum::utils::math::{min};
+use s1_eternum::utils::math::{PercentageValueImpl, min};
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
@@ -101,7 +98,7 @@ pub impl ProductionBoostBonusImpl of ProductionBoostBonusTrait {
     }
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, Default, PartialEq)]
+#[derive(Introspect, Copy, Drop, Serde, Default, PartialEq, DojoStore)]
 pub struct Production {
     // active building count
     pub building_count: u8,
@@ -357,7 +354,7 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
             payment_resource.store(ref world);
 
             paid_costs.append((payment_resource_type, payment_resource_amount * cycles));
-        };
+        }
 
         // add produceable resource amount to factory
         let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, produced_resource_type);
@@ -434,7 +431,7 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
             payment_resource.store(ref world);
 
             paid_costs.append((payment_resource_type, payment_resource_amount * cycles));
-        };
+        }
 
         // add produced resource amount to factory
         let produced_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, produced_resource_type);

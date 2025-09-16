@@ -15,7 +15,7 @@ pub mod dev_resource_systems {
     };
     use s1_eternum::models::structure::{StructureBase, StructureBaseImpl, StructureBaseStoreImpl};
     use s1_eternum::models::weight::{Weight, WeightImpl};
-    use s1_eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
+    use s1_eternum::systems::config::contracts::config_systems::assert_caller_is_admin;
 
 
     #[abi(embed_v0)]

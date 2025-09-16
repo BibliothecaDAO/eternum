@@ -103,7 +103,7 @@ export const getConfigFromTorii = async <S extends Schema>(
     "s1_eternum-WeightConfig",
     "s1_eternum-ResourceFactoryConfig",
     "s1_eternum-BuildingCategoryConfig",
-    "s1_eternum-ResourceBridgeWhitelistConfig",
+    "s1_eternum-ResourceBridgeWtlConfig",
     "s1_eternum-StructureLevelConfig",
     "s1_eternum-SeasonPrize",
     "s1_eternum-SeasonEnded",

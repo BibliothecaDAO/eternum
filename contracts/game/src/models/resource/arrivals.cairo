@@ -1,6 +1,7 @@
 use core::dict::Felt252Dict;
 use core::num::traits::Zero;
-use dojo::{model::{Model, ModelStorage}, world::WorldStorage};
+use dojo::model::{Model, ModelStorage};
+use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::models::config::TickImpl;
 
@@ -232,7 +233,7 @@ pub impl ResourceArrivalImpl of ResourceArrivalTrait {
         let mut add_resource: Felt252Dict<u128> = Default::default();
         for (resource_type, amount) in added_resources {
             add_resource.insert((*resource_type).into(), *amount);
-        };
+        }
 
         let mut new_resources: Array<(u8, u128)> = array![];
         for (resource_type, balance) in existing_resources {
@@ -244,7 +245,7 @@ pub impl ResourceArrivalImpl of ResourceArrivalTrait {
             }
             add_resource.insert((*resource_type).into(), 0);
             new_resources.append((*resource_type, balance));
-        };
+        }
 
         for (resource_type, _) in added_resources {
             let mut amount = add_resource.get((*resource_type).into());
@@ -252,7 +253,7 @@ pub impl ResourceArrivalImpl of ResourceArrivalTrait {
                 new_resources.append((*resource_type, amount));
                 total_amount += amount;
             }
-        };
+        }
         existing_resources = new_resources.span();
     }
 

@@ -13,28 +13,26 @@ mod liquidity_systems {
     use core::num::traits::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::world::WorldStorage;
-    use dojo::world::{WorldStorageTrait};
+    use dojo::world::{WorldStorage, WorldStorageTrait};
     // Eternum imports
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::ResourceTypes;
-    use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION};
-    use s1_eternum::models::bank::liquidity::{Liquidity};
+    use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes};
+    use s1_eternum::models::bank::liquidity::Liquidity;
     use s1_eternum::models::bank::market::{Market, MarketTrait};
-    use s1_eternum::models::config::{SeasonConfigImpl};
-    use s1_eternum::models::owner::{OwnerAddressTrait};
+    use s1_eternum::models::config::SeasonConfigImpl;
+    use s1_eternum::models::owner::OwnerAddressTrait;
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
     };
-    use s1_eternum::models::weight::{Weight};
-    use s1_eternum::systems::config::contracts::config_systems::{check_caller_is_admin};
+    use s1_eternum::models::weight::Weight;
+    use s1_eternum::systems::config::contracts::config_systems::check_caller_is_admin;
     use s1_eternum::systems::resources::contracts::resource_bridge_systems::{
         IResourceBridgeSystemsDispatcher, IResourceBridgeSystemsDispatcherTrait,
     };
-    use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
+    use s1_eternum::systems::utils::resource::iResourceTransferImpl;
     use starknet::ContractAddress;
 
 

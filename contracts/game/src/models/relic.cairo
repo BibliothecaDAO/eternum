@@ -1,8 +1,8 @@
-use s1_eternum::constants::{RELICS_RESOURCE_START_ID};
+use s1_eternum::constants::RELICS_RESOURCE_START_ID;
 use s1_eternum::models::resource::resource::RelicResourceImpl;
 
 pub mod RELIC_EFFECT {
-    use s1_eternum::constants::{RELICS_RESOURCE_START_ID};
+    use s1_eternum::constants::RELICS_RESOURCE_START_ID;
 
     pub const EXPLORER_INCREASE_STAMINA_REGENERATION_50P_3D: u8 = RELICS_RESOURCE_START_ID + 0;
     pub const EXPLORER_INCREASE_STAMINA_REGENERATION_100P_3D: u8 = RELICS_RESOURCE_START_ID + 1;

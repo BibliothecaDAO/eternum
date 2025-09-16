@@ -147,39 +147,35 @@ pub mod hyperstructure_systems {
     use core::num::traits::Bounded;
     use core::num::traits::zero::Zero;
     use dojo::model::ModelStorage;
-
     use dojo::world::WorldStorage;
-    use s1_eternum::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
+    use s1_eternum::alias::ID;
+    use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
+    use s1_eternum::models::config::{
+        HyperstructureConfig, HyperstructureCostConfig, SeasonConfigImpl, VictoryPointsGrantConfig, WorldConfigUtilImpl,
+    };
+    use s1_eternum::models::guild::GuildMember;
+    use s1_eternum::models::hyperstructure::{
+        ConstructionAccess, Hyperstructure, HyperstructureConstructionAccessImpl, HyperstructureGlobals,
+        HyperstructureRequirementsImpl, HyperstructureShareholders, PlayerRegisteredPoints,
+    };
     use s1_eternum::models::map::Tile;
-
-    use s1_eternum::models::owner::OwnerAddressImpl;
+    use s1_eternum::models::owner::{OwnerAddressImpl, OwnerAddressTrait};
     use s1_eternum::models::position::Coord;
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+    };
+    use s1_eternum::models::season::SeasonPrize;
+    use s1_eternum::models::structure::{
+        StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
     };
     use s1_eternum::models::weight::{Weight, WeightImpl};
     use s1_eternum::systems::utils::hyperstructure::iHyperstructureBlitzImpl;
     use s1_eternum::systems::utils::map::IMapImpl;
     use s1_eternum::systems::utils::structure::iStructureImpl;
+    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
+    use s1_eternum::utils::math::PercentageValueImpl;
     use s1_eternum::utils::random::VRFImpl;
-    use s1_eternum::{
-        alias::ID, constants::{RESOURCE_PRECISION, ResourceTypes},
-        models::{
-            config::{
-                HyperstructureConfig, HyperstructureCostConfig, SeasonConfigImpl, VictoryPointsGrantConfig,
-                WorldConfigUtilImpl,
-            },
-            guild::{GuildMember},
-            hyperstructure::{
-                ConstructionAccess, Hyperstructure, HyperstructureConstructionAccessImpl, HyperstructureGlobals,
-                HyperstructureRequirementsImpl, HyperstructureShareholders, PlayerRegisteredPoints,
-            },
-            owner::{OwnerAddressTrait}, resource::resource::{}, season::{SeasonPrize},
-            structure::{StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl},
-        },
-        utils::achievements::index::{AchievementTrait, Tasks}, utils::math::PercentageValueImpl,
-    };
-    use starknet::{ContractAddress};
+    use starknet::ContractAddress;
 
 
     const HYPERSTRUCTURE_POINT_MULTIPLIER: u128 = 1_000_000;
@@ -234,7 +230,7 @@ pub mod hyperstructure_systems {
                 let resource_type = *hyperstructure_cost_config.construction_resources_ids.at(i);
                 construction_total_needed_amount +=
                     HyperstructureRequirementsImpl::get_amount_needed(ref world, hyperstructure, resource_type);
-            };
+            }
             HyperstructureRequirementsImpl::initialize(ref world, hyperstructure_id);
             HyperstructureRequirementsImpl::write_needed_resource_total(
                 ref world, hyperstructure_id, construction_total_needed_amount,
@@ -325,7 +321,7 @@ pub mod hyperstructure_systems {
 
                 world.write_model(@player_points);
                 world.write_model(@season_prize);
-            };
+            }
 
             // update structure weight
             from_structure_weight.store(ref world, from_structure_id);
@@ -450,7 +446,7 @@ pub mod hyperstructure_systems {
                     hyperstructure.points_multiplier = 1;
                     world.write_model(@hyperstructure);
                 },
-            };
+            }
 
             // ensure the allocated percentage does not exceed 100%
             let mut allocated_percentage: u16 = 0;
@@ -467,7 +463,7 @@ pub mod hyperstructure_systems {
                 // if not present
                 let player_points_initializer: PlayerRegisteredPoints = world.read_model(address);
                 world.write_model(@player_points_initializer);
-            };
+            }
             assert!(
                 allocated_percentage.into() == PercentageValueImpl::_100(),
                 "total allocated percentage must be {}",
@@ -549,7 +545,7 @@ pub mod hyperstructure_systems {
                             starknet::get_block_timestamp(),
                         );
                     }
-                };
+                }
 
                 // update global total registered points
                 world.write_model(@season_prize);
@@ -558,7 +554,7 @@ pub mod hyperstructure_systems {
                 let mut start_at = ts;
                 if season_config.has_ended() {
                     start_at = season_config.end_at
-                };
+                }
                 hyperstructure_shareholders.start_at = start_at;
                 world.write_model(@hyperstructure_shareholders);
             }

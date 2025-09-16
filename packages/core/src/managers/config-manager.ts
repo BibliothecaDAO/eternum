@@ -1,18 +1,18 @@
 import {
-  BiomeType,
-  BuildingType,
-  CapacityConfig,
-  Config,
-  ContractComponents,
-  EntityType,
-  getProducedResource,
-  RESOURCE_PRECISION,
-  ResourcesIds,
-  StructureType,
-  TickIds,
-  TroopTier,
-  TroopType,
-  WORLD_CONFIG_ID,
+    BiomeType,
+    BuildingType,
+    CapacityConfig,
+    Config,
+    ContractComponents,
+    EntityType,
+    getProducedResource,
+    RESOURCE_PRECISION,
+    ResourcesIds,
+    StructureType,
+    TickIds,
+    TroopTier,
+    TroopType,
+    WORLD_CONFIG_ID,
 } from "@bibliothecadao/types";
 import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -154,7 +154,7 @@ export class ClientConfigManager {
 
     for (const resourceType of Object.values(ResourcesIds).filter(Number.isInteger)) {
       const hyperstructureResourceConfig = getComponentValue(
-        this.components.HyperstructureConstructConfig,
+        this.components.HyperstrtConstructConfig,
         getEntityIdFromKeys([BigInt(resourceType)]),
       );
       if (!hyperstructureResourceConfig) continue;
@@ -508,7 +508,7 @@ export class ClientConfigManager {
         stamina_paladin_max: 0,
         stamina_crossbowman_max: 0,
         stamina_attack_req: 0,
-        stamina_attack_max: 0,
+        stamina_defense_req: 0,
         stamina_explore_wheat_cost: 0,
         stamina_explore_fish_cost: 0,
         stamina_explore_stamina_cost: 0,
@@ -554,7 +554,7 @@ export class ClientConfigManager {
         return {
           stamina_bonus_value: troopStaminaConfig?.stamina_bonus_value ?? 0,
           stamina_attack_req: troopStaminaConfig?.stamina_attack_req ?? 0,
-          stamina_attack_max: troopStaminaConfig?.stamina_attack_max ?? 0,
+          stamina_defense_req: troopStaminaConfig?.stamina_defense_req ?? 0,
           damage_biome_bonus_num: combatConfig?.damage_biome_bonus_num ?? 0,
           damage_raid_percent_num: combatConfig?.damage_raid_percent_num ?? 0,
           damage_beta_small: combatConfig?.damage_beta_small ?? 0n,
@@ -570,7 +570,7 @@ export class ClientConfigManager {
       {
         stamina_bonus_value: 0,
         stamina_attack_req: 0,
-        stamina_attack_max: 0,
+        stamina_defense_req: 0,
         damage_biome_bonus_num: 0,
         damage_raid_percent_num: 0,
         damage_beta_small: 0n,

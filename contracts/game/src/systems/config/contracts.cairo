@@ -1,8 +1,7 @@
 use s1_eternum::models::config::{
-    BattleConfig, CapacityConfig, HyperstructureConstructConfig, MapConfig, QuestConfig, ResourceBridgeConfig,
-    ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, StructureCapacityConfig, TradeConfig,
-    TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig,
-    VillageTokenConfig,
+    BattleConfig, CapacityConfig, HyperstrtConstructConfig, MapConfig, QuestConfig, ResourceBridgeConfig,
+    ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, StructureCapacityConfig, TradeConfig, TroopDamageConfig,
+    TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig, VillageTokenConfig,
 };
 use s1_eternum::models::resource::production::building::BuildingCategory;
 
@@ -110,7 +109,7 @@ pub trait ITransportConfig<T> {
 #[starknet::interface]
 pub trait IHyperstructureConfig<T> {
     fn set_hyperstructure_config(
-        ref self: T, initialize_shards_amount: u128, construction_resources: Span<HyperstructureConstructConfig>,
+        ref self: T, initialize_shards_amount: u128, construction_resources: Span<HyperstrtConstructConfig>,
     );
 }
 
@@ -176,9 +175,7 @@ pub trait IBuildingConfig<T> {
 pub trait IResourceBridgeConfig<T> {
     fn set_resource_bridge_config(ref self: T, resource_bridge_config: ResourceBridgeConfig);
     fn set_resource_bridge_fee_split_config(ref self: T, res_bridge_fee_split_config: ResourceBridgeFeeSplitConfig);
-    fn set_resource_bridge_whitelist_config(
-        ref self: T, resource_bridge_whitelist_config: ResourceBridgeWhitelistConfig,
-    );
+    fn set_resource_bridge_whitelist_config(ref self: T, resource_bridge_whitelist_config: ResourceBridgeWtlConfig);
 }
 
 #[starknet::interface]
@@ -217,29 +214,23 @@ pub trait IQuestConfig<T> {
 #[dojo::contract]
 pub mod config_systems {
     use core::num::traits::zero::Zero;
-
     use dojo::model::ModelStorage;
-    use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcherTrait};
-
-    use s1_eternum::constants::DEFAULT_NS;
-
-    use s1_eternum::constants::{WORLD_CONFIG_ID};
+    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
+    use s1_eternum::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
     use s1_eternum::models::agent::AgentConfig;
-
     use s1_eternum::models::config::{
         AgentControllerConfig, BankConfig, BattleConfig, BlitzHypersSettlementConfigImpl, BlitzRegistrationConfig,
-        BlitzSettlementConfigImpl, BuildingCategoryConfig, BuildingConfig, CapacityConfig, HyperstructureConfig,
-        HyperstructureConstructConfig, HyperstructureCostConfig, MapConfig, QuestConfig, ResourceBridgeConfig,
-        ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, ResourceFactoryConfig,
-        ResourceRevBridgeWhtelistConfig, SeasonAddressesConfig, SeasonConfig, SettlementConfig, SpeedConfig,
-        StartingResourcesConfig, StructureCapacityConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig,
-        TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig,
-        VictoryPointsWinConfig, VillageFoundResourcesConfig, VillageTokenConfig, WeightConfig,
-        WonderProductionBonusConfig, WorldConfig, WorldConfigUtilImpl,
+        BlitzSettlementConfigImpl, BuildingCategoryConfig, BuildingConfig, CapacityConfig, HyperstrtConstructConfig,
+        HyperstructureConfig, HyperstructureCostConfig, MapConfig, QuestConfig, ResourceBridgeConfig,
+        ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, ResourceFactoryConfig, ResourceRevBridgeWtlConfig,
+        SeasonAddressesConfig, SeasonConfig, SettlementConfig, SpeedConfig, StartingResourcesConfig,
+        StructureCapacityConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig, TradeConfig,
+        TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig,
+        VillageFoundResourcesConfig, VillageTokenConfig, WeightConfig, WonderProductionBonusConfig, WorldConfig,
+        WorldConfigUtilImpl,
     };
     use s1_eternum::models::name::AddressName;
-    use s1_eternum::models::resource::production::building::{BuildingCategory};
+    use s1_eternum::models::resource::production::building::BuildingCategory;
     use s1_eternum::models::resource::resource::{ResourceList, ResourceMinMaxList};
     use s1_eternum::utils::achievements::index::AchievementTrait;
 
@@ -343,7 +334,8 @@ pub mod config_systems {
             assert_caller_is_admin(world);
 
             // assert that name not set
-            let mut address_name: AddressName = world.read_model(starknet::contract_address_const::<0>());
+            let zero_addr: starknet::ContractAddress = Zero::zero();
+            let mut address_name: AddressName = world.read_model(zero_addr);
             address_name.name = name;
             world.write_model(@address_name);
         }
@@ -417,7 +409,7 @@ pub mod config_systems {
                             entity_id: realm_resources_list_id, index: i, resource_type, amount: resource_amount,
                         },
                     );
-            };
+            }
             let realm_starting_resources = StartingResourcesConfig {
                 resources_list_id: realm_resources_list_id,
                 resources_list_count: realm_starting_resources.len().try_into().unwrap(),
@@ -436,7 +428,7 @@ pub mod config_systems {
                             entity_id: village_resources_list_id, index: i, resource_type, amount: resource_amount,
                         },
                     );
-            };
+            }
             let village_starting_resources = StartingResourcesConfig {
                 resources_list_id: village_resources_list_id,
                 resources_list_count: village_starting_resources.len().try_into().unwrap(),
@@ -527,7 +519,7 @@ pub mod config_systems {
                             entity_id: simple_input_list_id, index: i, resource_type, amount: resource_amount,
                         },
                     );
-            };
+            }
 
             // save cost of converting resource into labor
             let complex_input_list_id = world.dispatcher.uuid();
@@ -539,7 +531,7 @@ pub mod config_systems {
                             entity_id: complex_input_list_id, index: i, resource_type, amount: resource_amount,
                         },
                     );
-            };
+            }
             // save production config
             let mut resource_factory_config: ResourceFactoryConfig = Default::default();
             resource_factory_config.resource_type = resource_type;
@@ -586,7 +578,7 @@ pub mod config_systems {
         fn set_hyperstructure_config(
             ref self: ContractState,
             initialize_shards_amount: u128,
-            mut construction_resources: Span<HyperstructureConstructConfig>,
+            mut construction_resources: Span<HyperstrtConstructConfig>,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -599,7 +591,7 @@ pub mod config_systems {
                 assert!(construction_resource.max_amount >= construction_resource.min_amount, "max less than min");
                 construction_resources_ids.append(*construction_resource.resource_type);
                 world.write_model(@(*construction_resource));
-            };
+            }
 
             // save general hyperstructure config
             let hyperstructure_config = HyperstructureConfig { initialize_shards_amount };
@@ -689,7 +681,7 @@ pub mod config_systems {
                     );
 
                 index += 1;
-            };
+            }
 
             // set building cost when using non complex
             let simple_building_cost_id = world.dispatcher.uuid();
@@ -706,7 +698,7 @@ pub mod config_systems {
                         },
                     );
                 index += 1;
-            };
+            }
 
             world
                 .write_model(
@@ -745,7 +737,7 @@ pub mod config_systems {
         }
 
         fn set_resource_bridge_whitelist_config(
-            ref self: ContractState, mut resource_bridge_whitelist_config: ResourceBridgeWhitelistConfig,
+            ref self: ContractState, mut resource_bridge_whitelist_config: ResourceBridgeWtlConfig,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -763,7 +755,7 @@ pub mod config_systems {
             world.write_model(@resource_bridge_whitelist_config);
 
             // reverse whitelist config
-            let mut resource_bridge_whitelist_reverse_config = ResourceRevBridgeWhtelistConfig {
+            let mut resource_bridge_whitelist_reverse_config = ResourceRevBridgeWtlConfig {
                 resource_type: resource_bridge_whitelist_config.resource_type,
                 token: resource_bridge_whitelist_config.token,
             };
@@ -799,7 +791,7 @@ pub mod config_systems {
                     );
 
                 index += 1;
-            };
+            }
 
             world
                 .write_model(
@@ -918,7 +910,7 @@ pub mod config_systems {
                     );
 
                 index += 1;
-            };
+            }
 
             WorldConfigUtilImpl::set_member(
                 ref world,
