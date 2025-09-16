@@ -4,7 +4,8 @@ import {
   getEntityIdFromKeys,
   isTileOccupierChest,
   isTileOccupierQuest,
-  isTileOccupierStructure, Position as PositionInterface
+  isTileOccupierStructure,
+  Position as PositionInterface,
 } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ClientComponents } from "@bibliothecadao/types";

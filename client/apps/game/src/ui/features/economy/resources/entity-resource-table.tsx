@@ -3,7 +3,6 @@ import { getIsBlitz } from "@bibliothecadao/eternum";
 import { ResourceChip } from "@/ui/features/economy/resources";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
-
 import {
   getEntityIdFromKeys,
   getRealmInfo,

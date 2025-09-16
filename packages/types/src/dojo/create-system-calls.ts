@@ -32,7 +32,9 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.uuid();
   };
 
-  const blitz_realm_register = async (props: SystemProps.BlitzRealmRegisterProps): Promise<GetTransactionReceiptResponse> => {
+  const blitz_realm_register = async (
+    props: SystemProps.BlitzRealmRegisterProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.blitz_realm_register(props);
   };
 
@@ -42,7 +44,9 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.blitz_realm_make_hyperstructures(props);
   };
 
-  const blitz_realm_create = async (props: SystemProps.BlitzRealmCreateProps): Promise<GetTransactionReceiptResponse> => {
+  const blitz_realm_create = async (
+    props: SystemProps.BlitzRealmCreateProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.blitz_realm_create(props);
   };
 
@@ -58,7 +62,9 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.cancel_order(props);
   };
 
-  const mint_and_settle_test_realm = async (props: SystemProps.MintAndSettleTestRealmProps): Promise<GetTransactionReceiptResponse> => {
+  const mint_and_settle_test_realm = async (
+    props: SystemProps.MintAndSettleTestRealmProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.mint_and_settle_test_realm(props);
   };
 
@@ -66,7 +72,9 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.mint_test_realm(props);
   };
 
-  const mint_season_passes = async (props: SystemProps.MintSeasonPassesProps): Promise<GetTransactionReceiptResponse> => {
+  const mint_season_passes = async (
+    props: SystemProps.MintSeasonPassesProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.mint_season_passes(props);
   };
 
@@ -82,11 +90,15 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.mint_test_lords(props);
   };
 
-  const bridge_deposit_into_realm = async (props: SystemProps.BridgeDepositIntoRealmProps): Promise<GetTransactionReceiptResponse> => {
+  const bridge_deposit_into_realm = async (
+    props: SystemProps.BridgeDepositIntoRealmProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.bridge_deposit_into_realm(props);
   };
 
-  const bridge_withdraw_from_realm = async (props: SystemProps.BridgeWithdrawFromRealmProps): Promise<GetTransactionReceiptResponse> => {
+  const bridge_withdraw_from_realm = async (
+    props: SystemProps.BridgeWithdrawFromRealmProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.bridge_withdraw_from_realm(props);
   };
 
@@ -94,7 +106,9 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.upgrade_realm(props);
   };
 
-  const create_multiple_realms = async (props: SystemProps.CreateMultipleRealmsProps): Promise<GetTransactionReceiptResponse> => {
+  const create_multiple_realms = async (
+    props: SystemProps.CreateMultipleRealmsProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.create_multiple_realms(props);
   };
 
@@ -102,7 +116,9 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.send_resources(props);
   };
 
-  const send_resources_multiple = async (props: SystemProps.SendResourcesMultipleProps): Promise<GetTransactionReceiptResponse> => {
+  const send_resources_multiple = async (
+    props: SystemProps.SendResourcesMultipleProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.send_resources_multiple(props);
   };
 
@@ -134,11 +150,15 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.pause_production(props);
   };
 
-  const resume_production = async (props: SystemProps.ResumeProductionProps): Promise<GetTransactionReceiptResponse> => {
+  const resume_production = async (
+    props: SystemProps.ResumeProductionProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.resume_production(props);
   };
 
-  const change_bank_owner_fee = async (props: SystemProps.ChangeBankOwnerFeeProps): Promise<GetTransactionReceiptResponse> => {
+  const change_bank_owner_fee = async (
+    props: SystemProps.ChangeBankOwnerFeeProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.change_bank_owner_fee(props);
   };
 
@@ -162,7 +182,9 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.mint_resources(props);
   };
 
-  const initialize_hyperstructure = async (props: SystemProps.InitializeHyperstructureProps): Promise<GetTransactionReceiptResponse> => {
+  const initialize_hyperstructure = async (
+    props: SystemProps.InitializeHyperstructureProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.initialize(props);
   };
 
@@ -170,7 +192,9 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.allocate_shares(props);
   };
 
-  const contribute_to_construction = async (props: SystemProps.ContributeToConstructionProps): Promise<GetTransactionReceiptResponse> => {
+  const contribute_to_construction = async (
+    props: SystemProps.ContributeToConstructionProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.contribute_to_construction(props);
   };
 
@@ -194,15 +218,21 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.update_whitelist(props);
   };
 
-  const claim_construction_points = async (props: SystemProps.ClaimConstructionPointsProps): Promise<GetTransactionReceiptResponse> => {
+  const claim_construction_points = async (
+    props: SystemProps.ClaimConstructionPointsProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.claim_construction_points(props);
   };
 
-  const claim_share_points = async (props: SystemProps.ClaimSharePointsProps): Promise<GetTransactionReceiptResponse> => {
+  const claim_share_points = async (
+    props: SystemProps.ClaimSharePointsProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.claim_share_points(props);
   };
 
-  const season_prize_claim = async (props: SystemProps.ClaimLeaderboardRewardsProps): Promise<GetTransactionReceiptResponse> => {
+  const season_prize_claim = async (
+    props: SystemProps.ClaimLeaderboardRewardsProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.season_prize_claim(props);
   };
 
@@ -261,15 +291,21 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.explorer_delete(props);
   };
 
-  const explorer_explorer_swap = async (props: SystemProps.ExplorerExplorerSwapProps): Promise<GetTransactionReceiptResponse> => {
+  const explorer_explorer_swap = async (
+    props: SystemProps.ExplorerExplorerSwapProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.explorer_explorer_swap(props);
   };
 
-  const explorer_guard_swap = async (props: SystemProps.ExplorerGuardSwapProps): Promise<GetTransactionReceiptResponse> => {
+  const explorer_guard_swap = async (
+    props: SystemProps.ExplorerGuardSwapProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.explorer_guard_swap(props);
   };
 
-  const guard_explorer_swap = async (props: SystemProps.GuardExplorerSwapProps): Promise<GetTransactionReceiptResponse> => {
+  const guard_explorer_swap = async (
+    props: SystemProps.GuardExplorerSwapProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.guard_explorer_swap(props);
   };
 
@@ -277,23 +313,33 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.explorer_move(props);
   };
 
-  const attack_explorer_vs_explorer = async (props: SystemProps.AttackExplorerVsExplorerProps): Promise<GetTransactionReceiptResponse> => {
+  const attack_explorer_vs_explorer = async (
+    props: SystemProps.AttackExplorerVsExplorerProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.attack_explorer_vs_explorer(props);
   };
 
-  const attack_explorer_vs_guard = async (props: SystemProps.AttackExplorerVsGuardProps): Promise<GetTransactionReceiptResponse> => {
+  const attack_explorer_vs_guard = async (
+    props: SystemProps.AttackExplorerVsGuardProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.attack_explorer_vs_guard(props);
   };
 
-  const attack_guard_vs_explorer = async (props: SystemProps.AttackGuardVsExplorerProps): Promise<GetTransactionReceiptResponse> => {
+  const attack_guard_vs_explorer = async (
+    props: SystemProps.AttackGuardVsExplorerProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.attack_guard_vs_explorer(props);
   };
 
-  const raid_explorer_vs_guard = async (props: SystemProps.RaidExplorerVsGuardProps): Promise<GetTransactionReceiptResponse> => {
+  const raid_explorer_vs_guard = async (
+    props: SystemProps.RaidExplorerVsGuardProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.raid_explorer_vs_guard(props);
   };
 
-  const troop_troop_adjacent_transfer = async (props: SystemProps.TroopTroopAdjacentTransferProps): Promise<GetTransactionReceiptResponse> => {
+  const troop_troop_adjacent_transfer = async (
+    props: SystemProps.TroopTroopAdjacentTransferProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.troop_troop_adjacent_transfer(props);
   };
 
@@ -313,7 +359,9 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.create_village(props);
   };
 
-  const create_marketplace_orders = async (props: SystemProps.CreateMarketplaceOrdersProps): Promise<GetTransactionReceiptResponse> => {
+  const create_marketplace_orders = async (
+    props: SystemProps.CreateMarketplaceOrdersProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.create_marketplace_orders(props);
   };
 
@@ -324,11 +372,15 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.accept_marketplace_orders(props, approval);
   };
 
-  const cancel_marketplace_order = async (props: SystemProps.CancelMarketplaceOrderProps): Promise<GetTransactionReceiptResponse> => {
+  const cancel_marketplace_order = async (
+    props: SystemProps.CancelMarketplaceOrderProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.cancel_marketplace_order(props);
   };
 
-  const edit_marketplace_order = async (props: SystemProps.EditMarketplaceOrderProps): Promise<GetTransactionReceiptResponse> => {
+  const edit_marketplace_order = async (
+    props: SystemProps.EditMarketplaceOrderProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.edit_marketplace_order(props);
   };
 
@@ -336,7 +388,9 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.leave_guild(props);
   };
 
-  const claim_wonder_production_bonus = async (props: SystemProps.ClaimWonderProductionBonusProps): Promise<GetTransactionReceiptResponse> => {
+  const claim_wonder_production_bonus = async (
+    props: SystemProps.ClaimWonderProductionBonusProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.claim_wonder_production_bonus(props);
   };
 
@@ -352,11 +406,15 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.get_game_count(props);
   };
 
-  const transfer_structure_ownership = async (props: SystemProps.TransferStructureOwnershipProps): Promise<GetTransactionReceiptResponse> => {
+  const transfer_structure_ownership = async (
+    props: SystemProps.TransferStructureOwnershipProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.transfer_structure_ownership(props);
   };
 
-  const transfer_agent_ownership = async (props: SystemProps.TransferAgentOwnershipProps): Promise<GetTransactionReceiptResponse> => {
+  const transfer_agent_ownership = async (
+    props: SystemProps.TransferAgentOwnershipProps,
+  ): Promise<GetTransactionReceiptResponse> => {
     return await provider.transfer_agent_ownership(props);
   };
 

@@ -8,13 +8,13 @@ import * as SystemProps from "@bibliothecadao/types";
 import { DojoCall, DojoProvider } from "@dojoengine/core";
 import EventEmitter from "eventemitter3";
 import {
-    Account,
-    AccountInterface,
-    AllowArray,
-    Call,
-    CallData,
-    GetTransactionReceiptResponse,
-    uint256,
+  Account,
+  AccountInterface,
+  AllowArray,
+  Call,
+  CallData,
+  GetTransactionReceiptResponse,
+  uint256,
 } from "starknet";
 import { TransactionType } from "./types";
 export const NAMESPACE = "s1_eternum";
@@ -241,10 +241,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param transactionDetails - Transaction call data
    * @returns Transaction receipt
    */
-  async executeAndCheckTransaction(
-    signer: Account | AccountInterface,
-    transactionDetails: AllowArray<Call>,
-  ) {
+  async executeAndCheckTransaction(signer: Account | AccountInterface, transactionDetails: AllowArray<Call>) {
     if (typeof window !== "undefined") {
       console.log({ signer, transactionDetails });
     }
@@ -2779,7 +2776,9 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param props.signer - Account executing the transaction
    * @returns Transaction receipt
    */
-  public async create_marketplace_orders(props: SystemProps.CreateMarketplaceOrdersProps): Promise<GetTransactionReceiptResponse> {
+  public async create_marketplace_orders(
+    props: SystemProps.CreateMarketplaceOrdersProps,
+  ): Promise<GetTransactionReceiptResponse> {
     const { tokens, signer, marketplace_address } = props;
 
     const calls = tokens.map((token) => {
@@ -2861,7 +2860,9 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param props.signer - Account executing the transaction
    * @returns Transaction receipt
    */
-  public async edit_marketplace_order(props: SystemProps.EditMarketplaceOrderProps): Promise<GetTransactionReceiptResponse> {
+  public async edit_marketplace_order(
+    props: SystemProps.EditMarketplaceOrderProps,
+  ): Promise<GetTransactionReceiptResponse> {
     const { order_id, new_price, signer } = props;
 
     const call = {

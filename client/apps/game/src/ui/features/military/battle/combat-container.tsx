@@ -188,7 +188,7 @@ export const CombatContainer = ({
             incr_explore_reward_percent_num: 0,
             incr_explore_reward_end_tick: 0,
           },
-          battle_cooldown_end: 0
+          battle_cooldown_end: 0,
         },
       };
     } else {
@@ -210,7 +210,7 @@ export const CombatContainer = ({
             incr_explore_reward_percent_num: 0,
             incr_explore_reward_end_tick: 0,
           },
-          battle_cooldown_end: army?.troops.battle_cooldown_end || 0
+          battle_cooldown_end: army?.troops.battle_cooldown_end || 0,
         },
       };
     }
@@ -235,7 +235,7 @@ export const CombatContainer = ({
           incr_explore_reward_percent_num: 0,
           incr_explore_reward_end_tick: 0,
         },
-        battle_cooldown_end: target.info[0].battle_cooldown_end || 0
+        battle_cooldown_end: target.info[0].battle_cooldown_end || 0,
       },
     };
   }, [target]);
@@ -296,14 +296,13 @@ export const CombatContainer = ({
       winner = attackerArmy.entity_id;
     }
 
-
     // Calculate stamina changes
     let attackStaminaCost = combatConfig.stamina_attack_req;
     attackStaminaCost -= Math.ceil(attackStaminaCost * result.attackerRefundMultiplier);
 
     let defenseStaminaCost = Math.min(Number(targetArmyData.troops.stamina.amount), combatConfig.stamina_defense_req);
     defenseStaminaCost -= Math.ceil(defenseStaminaCost * result.defenderRefundMultiplier);
-    
+
     const newAttackerStamina = Number(attackerStamina) - attackStaminaCost;
     const newDefenderStamina = Number(targetArmyData.troops.stamina.amount) - defenseStaminaCost;
 
@@ -629,7 +628,9 @@ export const CombatContainer = ({
                     (trueAttackDamage / divideByPrecision(Number(targetArmyData.troops.count))) * 100,
                   )}
                   attackerStaminaChange={battleSimulation.newAttackerStamina - Number(attackerStamina)}
-                  defenderStaminaChange={battleSimulation.newDefenderStamina - Number(targetArmyData.troops.stamina.amount)}
+                  defenderStaminaChange={
+                    battleSimulation.newDefenderStamina - Number(targetArmyData.troops.stamina.amount)
+                  }
                   attackerCooldownEnd={battleSimulation.attackerCooldownEnd}
                   defenderCooldownEnd={battleSimulation.defenderCooldownEnd}
                   outcome={winner === attackerEntityId ? "Victory" : winner === null ? "Draw" : "Defeat"}

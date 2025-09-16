@@ -114,7 +114,7 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
   const paymasterRpc = useCallback(() => {
     return { nodeUrl: env.VITE_PUBLIC_NODE_URL };
   }, []);
-  
+
   return (
     <StarknetConfig
       chains={

@@ -3,7 +3,13 @@ import { BiomeInfoPanel } from "@/ui/features/world";
 import { ArmyEntityDetail } from "@/ui/features/world/components/entities/army-entity-detail";
 import { QuestEntityDetail } from "@/ui/features/world/components/entities/quest-entity-detail";
 import { StructureEntityDetail } from "@/ui/features/world/components/entities/structure-entity-detail";
-import { Biome, getEntityIdFromKeys, isTileOccupierQuest, isTileOccupierStructure, Position as PositionInterface } from "@bibliothecadao/eternum";
+import {
+  Biome,
+  getEntityIdFromKeys,
+  isTileOccupierQuest,
+  isTileOccupierStructure,
+  Position as PositionInterface,
+} from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { FELT_CENTER } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";

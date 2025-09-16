@@ -1,4 +1,4 @@
-# Eternum Mobile Client
+# Eternum/Blitz Mobile Client
 
 A mobile game client built with:
 
