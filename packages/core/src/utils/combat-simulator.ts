@@ -79,17 +79,24 @@ export class CombatSimulator {
     }
   }
 
+  /**
+   * Calculates damage modifier based on current cooldown status.
+   * 
+   * @param battle_cooldown_end - The CURRENT cooldown end time from the troops model
+   * @param time - The current timestamp
+   * @param isAttacker - Whether this is for the attacking army
+   * @returns Damage modifier (0-1)
+   */
   public calculateBattleTimerDamageModifier(battle_cooldown_end: number, time: number, isAttacker: boolean): number {
-    if (battle_cooldown_end < time) {
-      battle_cooldown_end = time;
-    }
-
+    const isOnCooldown = battle_cooldown_end > time;
+    
     if (isAttacker) {
-      if (battle_cooldown_end < time) return 0;
-      return 1;
+      // Attackers must not be on cooldown to initiate attacks
+      // If they are on cooldown, they cannot attack (damage modifier = 0)
+      return isOnCooldown ? 0 : 1;
     } else {
-      if (battle_cooldown_end < time) return 0.85;
-      return 1;
+      // Defenders on cooldown deal 15% less damage when attacked (they fight less effectively)
+      return isOnCooldown ? 0.85 : 1;
     }
   }
 
@@ -124,19 +131,35 @@ export class CombatSimulator {
   }
 
   public calculateNewCooldownEndAttacker(currentCooldownEnd: number, now: number, refundMultiplier: number): number {
-    return this.calculateBattleCooldownEnd(currentCooldownEnd, now, refundMultiplier);
+    return this.calculateNextBattleCooldownEnd(currentCooldownEnd, now, refundMultiplier);
   }
 
   public calculateNewCooldownEndDefender(currentCooldownEnd: number, now: number, refundMultiplier: number): number {
-    return this.calculateBattleCooldownEnd(currentCooldownEnd, now, refundMultiplier);
+    return this.calculateNextBattleCooldownEnd(currentCooldownEnd, now, refundMultiplier);
   }
 
+  /**
+   * Calculates the next battle cooldown end time after a combat.
+   * This represents what the cooldown will be AFTER the battle, not the current cooldown.
+   * 
+   * @param currentCooldownEnd - The current cooldown end time from the troops model
+   * @param now - The current timestamp
+   * @param refundMultiplier - The refund multiplier based on battle outcome (0-1)
+   * @returns The new cooldown end time that will be set after the battle
+   */
+  public calculateNextBattleCooldownEnd(currentCooldownEnd: number, now: number, refundMultiplier: number): number {
+    // If the army is currently on cooldown, add to the existing cooldown
+    // Otherwise, start a new cooldown from now
+    const effectiveCooldownStart = Math.max(currentCooldownEnd, now);
+    const additionalCooldown = Math.floor(this.tickIntervalSeconds * (1 - refundMultiplier));
+    return effectiveCooldownStart + additionalCooldown;
+  }
+
+  /**
+   * @deprecated Use calculateNextBattleCooldownEnd instead
+   */
   public calculateBattleCooldownEnd(currentCooldownEnd: number, now: number, refundMultiplier: number): number {
-    let cooldownEnd = currentCooldownEnd;
-    if (cooldownEnd < now) {
-      cooldownEnd = now;
-    }
-    return cooldownEnd + Math.floor(this.tickIntervalSeconds * (1 - refundMultiplier));
+    return this.calculateNextBattleCooldownEnd(currentCooldownEnd, now, refundMultiplier);
   }
 
   /**

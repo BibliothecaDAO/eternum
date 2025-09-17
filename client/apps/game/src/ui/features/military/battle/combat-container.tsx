@@ -307,12 +307,13 @@ export const CombatContainer = ({
       Number(targetArmyData.troops.stamina.amount),
       result.defenderRefundMultiplier,
     );
-    const attackerCooldownEnd = combatSimulator.calculateBattleCooldownEnd(
+    // Calculate what the cooldown will be AFTER the battle
+    const attackerAfterBattleCooldownEnd = combatSimulator.calculateNextBattleCooldownEnd(
       attackerArmyData.troops.battle_cooldown_end,
       now,
       result.attackerRefundMultiplier,
     );
-    const defenderCooldownEnd = combatSimulator.calculateBattleCooldownEnd(
+    const defenderAfterBattleCooldownEnd = combatSimulator.calculateNextBattleCooldownEnd(
       targetArmyData.troops.battle_cooldown_end,
       now,
       result.defenderRefundMultiplier,
@@ -326,8 +327,10 @@ export const CombatContainer = ({
       newDefenderStamina,
       attackerDamage: result.attackerDamage,
       defenderDamage: result.defenderDamage,
-      attackerCooldownEnd,
-      defenderCooldownEnd,
+      attackerCooldownEnd: attackerArmyData.troops.battle_cooldown_end,
+      defenderCooldownEnd: targetArmyData.troops.battle_cooldown_end,
+      attackerAfterBattleCooldownEnd,
+      defenderAfterBattleCooldownEnd,
       getRemainingTroops: () => ({
         attackerTroops: attackerArmy.troopCount - attackerTroopsLost,
         defenderTroops: defenderArmy.troopCount - defenderTroopsLost,
@@ -347,6 +350,12 @@ export const CombatContainer = ({
     attackerRelicResourceIds,
     targetRelicResourceIds,
   ]);
+
+  console.log({
+    cooldownEnd: battleSimulation?.attackerCooldownEnd,
+    nextCooldownEnd: battleSimulation?.attackerAfterBattleCooldownEnd,
+    currentTime: Math.floor(Date.now() / 1000),
+  });
 
   const remainingTroops = battleSimulation?.getRemainingTroops();
   const winner = battleSimulation?.winner;
@@ -639,6 +648,8 @@ export const CombatContainer = ({
                   }
                   attackerCooldownEnd={battleSimulation.attackerCooldownEnd}
                   defenderCooldownEnd={battleSimulation.defenderCooldownEnd}
+                  attackerAfterBattleCooldownEnd={battleSimulation.attackerAfterBattleCooldownEnd}
+                  defenderAfterBattleCooldownEnd={battleSimulation.defenderAfterBattleCooldownEnd}
                   outcome={winner === attackerEntityId ? "Victory" : winner === null ? "Draw" : "Defeat"}
                 />
 

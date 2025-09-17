@@ -226,17 +226,20 @@ export const CombatSimulationPanel = () => {
     simulationResult.defenderRefundMultiplier,
   );
 
-  // Calculate new battle timer cooldown end
-  const attackerCooldownEnd = combatSimulator.calculateBattleCooldownEnd(
+  // Calculate new battle timer cooldown end (what it will be AFTER the battle)
+  const attackerAfterBattleCooldownEnd = combatSimulator.calculateNextBattleCooldownEnd(
     attacker.battle_cooldown_end,
     now,
     simulationResult.attackerRefundMultiplier,
   );
-  const defenderCooldownEnd = combatSimulator.calculateBattleCooldownEnd(
+  const defenderAfterBattleCooldownEnd = combatSimulator.calculateNextBattleCooldownEnd(
     defender.battle_cooldown_end,
     now,
     simulationResult.defenderRefundMultiplier,
   );
+
+  const attackerCooldownEnd = attacker.battle_cooldown_end;
+  const defenderCooldownEnd = defender.battle_cooldown_end;
 
   // Calculate relic bonuses for display
   const getRelicBonuses = (relics: ResourcesIds[]) => {
@@ -341,6 +344,7 @@ export const CombatSimulationPanel = () => {
                     biomeBonus: configManager.getBiomeCombatBonus(attacker.troopType, biome),
                     relicBonuses: attackerRelicBonuses,
                     cooldownEnd: attackerCooldownEnd,
+                    afterBattleCooldownEnd: attackerAfterBattleCooldownEnd,
                   },
                 },
                 {
@@ -355,6 +359,7 @@ export const CombatSimulationPanel = () => {
                     biomeBonus: configManager.getBiomeCombatBonus(defender.troopType, biome),
                     relicBonuses: defenderRelicBonuses,
                     cooldownEnd: defenderCooldownEnd,
+                    afterBattleCooldownEnd: defenderAfterBattleCooldownEnd,
                   },
                 },
               ].map(({ label, data }) => (
@@ -484,16 +489,31 @@ export const CombatSimulationPanel = () => {
                         </div>
                         <div className="p-4 bg-dark-brown/50 border border-gold/20 rounded-lg">
                           <div className="text-sm font-semibold text-gold/90 mb-2 flex items-center gap-2">
-                            ⏳ Cooldown End
+                            ⏳ {data.troopsLeft <= 0 ? "Status" : "Cooldown End"}
                           </div>
-                          <div className="text-lg font-bold text-gold flex items-baseline">
-                            {new Date(data.cooldownEnd * 1000).toLocaleTimeString()}{" "}
-                            <span className="text-xs ml-2 text-gold/60">({data.cooldownEnd})</span>
-                          </div>
+                          {data.troopsLeft <= 0 ? (
+                            <div className="text-lg font-bold text-red-500 flex items-center justify-center gap-2">
+                              💀 DEAD
+                            </div>
+                          ) : (
+                            <div className="text-lg font-bold text-gold flex items-baseline">
+                              {new Date(data.afterBattleCooldownEnd * 1000).toLocaleTimeString()}{" "}
+                              <span className="text-xs ml-2 text-gold/60">({data.afterBattleCooldownEnd})</span>
+                            </div>
+                          )}
                         </div>
                       </div>
 
-                      <div className="space-y-2">{getStaminaDisplay(data.army.stamina, data.newStamina, 30)}</div>
+                      <div className="space-y-2">
+                        {data.troopsLeft <= 0 ? (
+                          <div className="p-4 bg-red-900/30 border border-red-500/40 rounded-lg text-center">
+                            <div className="text-red-400 font-bold text-lg mb-1">💀 ELIMINATED</div>
+                            <div className="text-red-400/80 text-sm">All stats irrelevant</div>
+                          </div>
+                        ) : (
+                          getStaminaDisplay(data.army.stamina, data.newStamina, 30)
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

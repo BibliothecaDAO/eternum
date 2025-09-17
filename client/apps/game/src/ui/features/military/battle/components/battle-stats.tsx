@@ -10,6 +10,8 @@ interface BattleStatsProps {
   defenderStaminaChange: number;
   attackerCooldownEnd: number;
   defenderCooldownEnd: number;
+  attackerAfterBattleCooldownEnd?: number;
+  defenderAfterBattleCooldownEnd?: number;
   outcome: "Victory" | "Defeat" | "Draw";
   className?: string;
   attackerTroopsLeft?: number;
@@ -25,6 +27,8 @@ export const BattleStats = ({
   defenderStaminaChange,
   attackerCooldownEnd,
   defenderCooldownEnd,
+  attackerAfterBattleCooldownEnd,
+  defenderAfterBattleCooldownEnd,
   outcome,
   className = "",
   attackerTroopsLeft,
@@ -56,82 +60,130 @@ export const BattleStats = ({
     <div className={`flex flex-col gap-4 ${className}`}>
       {/* Cooldown Status Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <CooldownIndicator cooldownEnd={attackerCooldownEnd} isAttacker={true} />
-        <CooldownIndicator cooldownEnd={defenderCooldownEnd} isAttacker={false} />
+        <div className="flex flex-col">
+          <CooldownIndicator cooldownEnd={attackerCooldownEnd} isAttacker={true} />
+          <div className="mt-2 min-h-[32px] flex items-center justify-center">
+            {attackerAfterBattleCooldownEnd && attackerTroopsLeft && attackerTroopsLeft > 0 ? (
+              <div className="text-xs text-gold/60 text-center p-2 bg-dark-brown/50 rounded-md border border-gold/10 w-full">
+                <span className="font-semibold">After Battle:</span> Cooldown until{" "}
+                {new Date(attackerAfterBattleCooldownEnd * 1000).toLocaleTimeString()}
+              </div>
+            ) : (
+              <div className="text-xs text-gold/40 text-center">
+                {attackerTroopsLeft === 0 ? "Army will be eliminated" : "No future cooldown info"}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-col">
+          <CooldownIndicator cooldownEnd={defenderCooldownEnd} isAttacker={false} />
+          <div className="mt-2 min-h-[32px] flex items-center justify-center">
+            {defenderAfterBattleCooldownEnd && defenderTroopsLeft && defenderTroopsLeft > 0 ? (
+              <div className="text-xs text-gold/60 text-center p-2 bg-dark-brown/50 rounded-md border border-gold/10 w-full">
+                <span className="font-semibold">After Battle:</span> Cooldown until{" "}
+                {new Date(defenderAfterBattleCooldownEnd * 1000).toLocaleTimeString()}
+              </div>
+            ) : (
+              <div className="text-xs text-gold/40 text-center">
+                {defenderTroopsLeft === 0 ? "Army will be eliminated" : "No future cooldown info"}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Battle Stats Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-      {/* Attacker Side */}
-      <div className="flex flex-col gap-3 p-3 border border-gold/20 rounded-lg bg-brown-900/50 text-center">
-        <div className="text-gold font-semibold text-sm mb-2 flex items-center justify-center gap-2">
-          <span className="text-lg">⚔️</span>
-          <span>Attacker</span>
-        </div>
-        <div>
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <Skull className="w-4 h-4 text-red-400" />
-            <span className="text-xs text-gold/70">Casualties</span>
+        {/* Attacker Side */}
+        <div className="flex flex-col gap-3 p-3 border border-gold/20 rounded-lg bg-brown-900/50 text-center">
+          <div className="text-gold font-semibold text-sm mb-2 flex items-center justify-center gap-2">
+            <span className="text-lg">⚔️</span>
+            <span>Attacker</span>
           </div>
-          <div className="text-lg font-bold text-red-400">{Math.ceil(attackerCasualties)}</div>
-          <div className="text-xs text-gold/60 mt-1">({attackerCasualtyPercentage}%)</div>
-          {typeof attackerTroopsLeft === "number" && (
-            <div className="text-xs text-gold/80 mt-2">
-              <span className="font-semibold">Troops Left:</span> {Math.max(0, Math.floor(attackerTroopsLeft))}
+          {attackerTroopsLeft === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-4">
+              <Skull className="w-8 h-8 text-red-500" />
+              <span className="text-lg font-bold text-red-500">DEFEATED</span>
+              <span className="text-xs text-red-400">All troops eliminated</span>
             </div>
+          ) : (
+            <>
+              <div>
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <Skull className="w-4 h-4 text-red-400" />
+                  <span className="text-xs text-gold/70">Casualties</span>
+                </div>
+                <div className="text-lg font-bold text-red-400">{Math.ceil(attackerCasualties)}</div>
+                <div className="text-xs text-gold/60 mt-1">({attackerCasualtyPercentage}%)</div>
+                {typeof attackerTroopsLeft === "number" && (
+                  <div className="text-xs text-gold/80 mt-2">
+                    <span className="font-semibold">Troops Left:</span> {Math.max(0, Math.floor(attackerTroopsLeft))}
+                  </div>
+                )}
+              </div>
+              <div>
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <span className="text-lg">⚡</span>
+                  <span className="text-xs text-gold/70">Stamina Change</span>
+                </div>
+                <div className={`text-lg font-bold ${attackerStaminaChange >= 0 ? "text-green-400" : "text-red-400"}`}>
+                  {attackerStaminaChange >= 0 ? "+" : ""}
+                  {attackerStaminaChange}
+                </div>
+              </div>
+            </>
           )}
         </div>
-        <div>
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <span className="text-lg">⚡</span>
-            <span className="text-xs text-gold/70">Stamina Change</span>
-          </div>
-          <div className={`text-lg font-bold ${attackerStaminaChange >= 0 ? "text-green-400" : "text-red-400"}`}>
-            {attackerStaminaChange >= 0 ? "+" : ""}
-            {attackerStaminaChange}
-          </div>
-        </div>
-      </div>
 
-      {/* Outcome */}
-      <div className="flex flex-col items-center justify-center gap-3 p-3 border border-gold/20 rounded-lg bg-brown-900/50 text-center">
-        <div className="flex items-center justify-center gap-2 mb-1">
-          <div className="w-4 h-4">{getOutcomeIcon(outcome)}</div>
-          <span className="text-xs text-gold/70">Outcome</span>
-        </div>
-        <div className={`text-lg font-bold ${getOutcomeColor(outcome)}`}>{outcome}</div>
-      </div>
-
-      {/* Defender Side */}
-      <div className="flex flex-col gap-3 p-3 border border-gold/20 rounded-lg bg-brown-900/50 text-center">
-        <div className="text-gold font-semibold text-sm mb-2 flex items-center justify-center gap-2">
-          <span className="text-lg">🛡️</span>
-          <span>Defender</span>
-        </div>
-        <div>
+        {/* Outcome */}
+        <div className="flex flex-col items-center justify-center gap-3 p-3 border border-gold/20 rounded-lg bg-brown-900/50 text-center">
           <div className="flex items-center justify-center gap-2 mb-1">
-            <Skull className="w-4 h-4 text-orange-400" />
-            <span className="text-xs text-gold/70">Casualties</span>
+            <div className="w-4 h-4">{getOutcomeIcon(outcome)}</div>
+            <span className="text-xs text-gold/70">Outcome</span>
           </div>
-          <div className="text-lg font-bold text-orange-400">{Math.ceil(defenderCasualties)}</div>
-          <div className="text-xs text-gold/60 mt-1">({defenderCasualtyPercentage}%)</div>
-          {typeof defenderTroopsLeft === "number" && (
-            <div className="text-xs text-gold/80 mt-2">
-              <span className="font-semibold">Troops Left:</span> {Math.max(0, Math.floor(defenderTroopsLeft))}
-            </div>
-          )}
+          <div className={`text-lg font-bold ${getOutcomeColor(outcome)}`}>{outcome}</div>
         </div>
-        <div>
-          <div className="flex items-center justify-center gap-2 mb-1">
+
+        {/* Defender Side */}
+        <div className="flex flex-col gap-3 p-3 border border-gold/20 rounded-lg bg-brown-900/50 text-center">
+          <div className="text-gold font-semibold text-sm mb-2 flex items-center justify-center gap-2">
             <span className="text-lg">🛡️</span>
-            <span className="text-xs text-gold/70">Stamina Change</span>
+            <span>Defender</span>
           </div>
-          <div className={`text-lg font-bold ${defenderStaminaChange >= 0 ? "text-green-400" : "text-red-400"}`}>
-            {defenderStaminaChange >= 0 ? "+" : ""}
-            {defenderStaminaChange}
-          </div>
+          {defenderTroopsLeft === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-4">
+              <Skull className="w-8 h-8 text-red-500" />
+              <span className="text-lg font-bold text-red-500">DEFEATED</span>
+              <span className="text-xs text-red-400">All troops eliminated</span>
+            </div>
+          ) : (
+            <>
+              <div>
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <Skull className="w-4 h-4 text-orange-400" />
+                  <span className="text-xs text-gold/70">Casualties</span>
+                </div>
+                <div className="text-lg font-bold text-orange-400">{Math.ceil(defenderCasualties)}</div>
+                <div className="text-xs text-gold/60 mt-1">({defenderCasualtyPercentage}%)</div>
+                {typeof defenderTroopsLeft === "number" && (
+                  <div className="text-xs text-gold/80 mt-2">
+                    <span className="font-semibold">Troops Left:</span> {Math.max(0, Math.floor(defenderTroopsLeft))}
+                  </div>
+                )}
+              </div>
+              <div>
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <span className="text-lg">🛡️</span>
+                  <span className="text-xs text-gold/70">Stamina Change</span>
+                </div>
+                <div className={`text-lg font-bold ${defenderStaminaChange >= 0 ? "text-green-400" : "text-red-400"}`}>
+                  {defenderStaminaChange >= 0 ? "+" : ""}
+                  {defenderStaminaChange}
+                </div>
+              </div>
+            </>
+          )}
         </div>
-      </div>
       </div>
     </div>
   );
