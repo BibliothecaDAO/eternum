@@ -13,6 +13,7 @@ import {
   BiomeType,
   ContractAddress,
   Direction,
+  getDirectionBetweenAdjacentHexes,
   HexEntityInfo,
   ID,
   RelicEffect,
@@ -58,6 +59,12 @@ interface AddArmyParams {
   attackedTowardDirection?: Direction;
   battleCooldownEnd?: number;
   battleTimerLeft?: number;
+  latestAttackerId?: number;
+  latestDefenderId?: number;
+  latestAttackerCoordX?: number;
+  latestAttackerCoordY?: number;
+  latestDefenderCoordX?: number;
+  latestDefenderCoordY?: number;
 }
 
 export class ArmyManager {
@@ -266,16 +273,15 @@ export class ArmyManager {
     await this.armyModel.loadPromise;
     const { entityId, hexCoords, ownerAddress, ownerName, guildName, troopType, troopTier, battleData } = update;
 
-    const { battleCooldownEnd, latestAttackerId, latestDefenderId } = battleData || {};
-
-    // Use utility function to get combat directions
-    const { attackedFromDirection, attackedTowardDirection } = getCombatDirections(
-      hexCoords,
-      latestAttackerId ?? undefined,
-      undefined,
-      latestDefenderId ?? undefined,
-      undefined,
-    );
+    const {
+      battleCooldownEnd,
+      latestAttackerId,
+      latestDefenderId,
+      latestAttackerCoordX,
+      latestAttackerCoordY,
+      latestDefenderCoordX,
+      latestDefenderCoordY,
+    } = battleData || {};
 
     // Calculate battle timer left
     const battleTimerLeft = getBattleTimerLeft(battleCooldownEnd);
@@ -300,8 +306,12 @@ export class ArmyManager {
         currentStamina: update.currentStamina,
         onChainStamina: update.onChainStamina,
         maxStamina: update.maxStamina,
-        attackedFromDirection: attackedFromDirection ?? undefined,
-        attackedTowardDirection: attackedTowardDirection ?? undefined,
+        latestAttackerCoordX: latestAttackerCoordX ?? undefined,
+        latestAttackerCoordY: latestAttackerCoordY ?? undefined,
+        latestDefenderCoordX: latestDefenderCoordX ?? undefined,
+        latestDefenderCoordY: latestDefenderCoordY ?? undefined,
+        latestAttackerId: latestAttackerId ?? undefined,
+        latestDefenderId: latestDefenderId ?? undefined,
         battleCooldownEnd,
         battleTimerLeft,
       });
@@ -420,92 +430,93 @@ export class ArmyManager {
   }
 
   private getVisibleArmiesForChunk(startRow: number, startCol: number): Array<ArmyData> {
-    const visibleArmies = Array.from(this.armies.entries())
-      .filter(([_, army]) => {
-        return this.isArmyVisible(army, startRow, startCol);
-      })
-      .map(([entityId, army], index) => ({
-        entityId,
-        hexCoords: army.hexCoords,
-        isMine: army.isMine,
-        color: army.color,
-        matrixIndex: index,
-        owner: army.owner,
-        category: army.category,
-        tier: army.tier,
-        isDaydreamsAgent: army.isDaydreamsAgent,
-        troopCount: army.troopCount,
-        currentStamina: army.currentStamina,
-        maxStamina: army.maxStamina,
-        onChainStamina: army.onChainStamina,
-      }));
+    const visibleArmies: ArmyData[] = Array.from(this.armies.values()).filter((army) => {
+      return this.isArmyVisible(army, startRow, startCol);
+    });
 
     return visibleArmies;
   }
 
   public async addArmy(params: AddArmyParams) {
-    const {
-      entityId,
-      hexCoords,
-      owner,
-      category,
-      tier,
-      isDaydreamsAgent,
-      troopCount,
-      currentStamina,
-      onChainStamina,
-      maxStamina,
-      attackedFromDirection,
-      attackedTowardDirection,
-      battleCooldownEnd,
-    } = params;
-    if (this.armies.has(entityId)) return;
+    if (this.armies.has(params.entityId)) return;
 
     // Monitor memory usage before adding army
-    this.memoryMonitor.getCurrentStats(`addArmy-${entityId}`);
+    this.memoryMonitor.getCurrentStats(`addArmy-${params.entityId}`);
 
-    const { x, y } = hexCoords.getContract();
+    const { x, y } = params.hexCoords.getContract();
     const biome = Biome.getBiome(x, y);
-    const modelType = this.armyModel.getModelTypeForEntity(entityId, category, tier, biome);
-    this.armyModel.assignModelToEntity(entityId, modelType);
+    const modelType = this.armyModel.getModelTypeForEntity(params.entityId, params.category, params.tier, biome);
+    this.armyModel.assignModelToEntity(params.entityId, modelType);
 
     // Variables to hold the final values
-    let finalTroopCount = troopCount || 0;
-    let finalCurrentStamina = currentStamina || 0;
-    let finalOnChainStamina = onChainStamina || { amount: 0n, updatedTick: 0 };
-    let finalMaxStamina = maxStamina || 0;
-    let finalOwnerAddress = owner.address;
-    let finalOwnerName = owner.ownerName;
-    let finalGuildName = owner.guildName;
-    let finalAttackedFromDirection = attackedFromDirection;
-    let finalAttackedTowardDirection = attackedTowardDirection;
-    let finalBattleCooldownEnd = battleCooldownEnd;
-    let finalBattleTimerLeft = getBattleTimerLeft(battleCooldownEnd);
+    let finalTroopCount = params.troopCount || 0;
+    let finalCurrentStamina = params.currentStamina || 0;
+    let finalOnChainStamina = params.onChainStamina || { amount: 0n, updatedTick: 0 };
+    let finalMaxStamina = params.maxStamina || 0;
+    let finalOwnerAddress = params.owner.address;
+    let finalOwnerName = params.owner.ownerName;
+    let finalGuildName = params.owner.guildName;
+
+    let finalBattleCooldownEnd = params.battleCooldownEnd;
+    let finalBattleTimerLeft = getBattleTimerLeft(params.battleCooldownEnd);
+
+    let { attackedFromDirection: finalAttackedFromDirection, attackTowardDirection: finalAttackTowardDirection } =
+      getCombatDirections(
+        { col: x, row: y },
+        params.latestAttackerId ?? undefined,
+        params.latestAttackerCoordX && params.latestAttackerCoordY
+          ? { x: params.latestAttackerCoordX, y: params.latestAttackerCoordY }
+          : undefined,
+        params.latestDefenderId ?? undefined,
+        params.latestDefenderCoordX && params.latestDefenderCoordY
+          ? { x: params.latestDefenderCoordX, y: params.latestDefenderCoordY }
+          : undefined,
+      );
+
+    console.log("[ADD ARMY] Combat directions:", {
+      attackedFromDirection: finalAttackedFromDirection,
+      attackedTowardDirection: finalAttackTowardDirection,
+      pos: { x, y },
+      latestAttackerId: params.latestAttackerId,
+      latestAttackerCoordX: params.latestAttackerCoordX,
+      latestAttackerCoordY: params.latestAttackerCoordY,
+      latestDefenderId: params.latestDefenderId,
+      latestDefenderCoordX: params.latestDefenderCoordX,
+      latestDefenderCoordY: params.latestDefenderCoordY,
+    });
 
     // Check for pending label updates and apply them if they exist
-    const pendingUpdate = this.pendingExplorerTroopsUpdate.get(entityId);
+    const pendingUpdate = this.pendingExplorerTroopsUpdate.get(params.entityId);
     if (pendingUpdate) {
       // Check if pending update is not too old (max 30 seconds)
       const isPendingStale = Date.now() - pendingUpdate.timestamp > 30000;
 
       if (isPendingStale) {
         console.warn(
-          `[PENDING LABEL UPDATE] Discarding stale pending update for army ${entityId} (age: ${Date.now() - pendingUpdate.timestamp}ms)`,
+          `[PENDING LABEL UPDATE] Discarding stale pending update for army ${params.entityId} (age: ${Date.now() - pendingUpdate.timestamp}ms)`,
         );
-        this.pendingExplorerTroopsUpdate.delete(entityId);
+        this.pendingExplorerTroopsUpdate.delete(params.entityId);
       } else {
         console.log(
-          `[PENDING LABEL UPDATE] Applying pending update for army ${entityId} (tick: ${pendingUpdate.updateTick})`,
+          `[PENDING LABEL UPDATE] Applying pending update for army ${params.entityId} (tick: ${pendingUpdate.updateTick})`,
         );
         finalOnChainStamina = pendingUpdate.onChainStamina;
+
+        // Apply any pending battle direction data
+        if (pendingUpdate.attackedFromDirection !== undefined) {
+          finalAttackedFromDirection = pendingUpdate.attackedFromDirection;
+        }
+        if (pendingUpdate.attackedTowardDirection !== undefined) {
+          finalAttackTowardDirection = pendingUpdate.attackedTowardDirection;
+        }
 
         // Calculate current stamina using the pending update data
         const { currentArmiesTick } = getBlockTimestamp();
         const updatedStamina = Number(
           StaminaManager.getStamina(
             {
-              category,
-              tier,
+              category: params.category,
+              tier: params.tier,
               count: BigInt(pendingUpdate.troopCount),
               stamina: {
                 amount: BigInt(pendingUpdate.onChainStamina.amount),
@@ -534,13 +545,11 @@ export class ArmyManager {
         finalOwnerAddress = pendingUpdate.ownerAddress;
         finalOnChainStamina = pendingUpdate.onChainStamina;
         finalOwnerName = pendingUpdate.ownerName;
-        finalAttackedFromDirection = pendingUpdate.attackedFromDirection;
-        finalAttackedTowardDirection = pendingUpdate.attackedTowardDirection;
         finalBattleCooldownEnd = pendingUpdate.battleCooldownEnd;
         finalBattleTimerLeft = pendingUpdate.battleTimerLeft;
 
         // Clear the pending update
-        this.pendingExplorerTroopsUpdate.delete(entityId);
+        this.pendingExplorerTroopsUpdate.delete(params.entityId);
       }
     }
 
@@ -548,7 +557,7 @@ export class ArmyManager {
 
     // Determine the color based on ownership (consistent with structure labels)
     let color: string;
-    if (isDaydreamsAgent) {
+    if (params.isDaydreamsAgent) {
       color = COLORS.SELECTED;
     } else if (isMine) {
       color = LABEL_STYLES.MINE.textColor || "#d9f99d";
@@ -556,10 +565,10 @@ export class ArmyManager {
       color = LABEL_STYLES.ENEMY.textColor || "#fecdd3";
     }
 
-    this.armies.set(entityId, {
-      entityId,
+    this.armies.set(params.entityId, {
+      entityId: params.entityId,
       matrixIndex: this.armies.size - 1,
-      hexCoords,
+      hexCoords: params.hexCoords,
       isMine,
       owner: {
         address: finalOwnerAddress || 0n,
@@ -567,17 +576,17 @@ export class ArmyManager {
         guildName: finalGuildName,
       },
       color,
-      category,
-      tier,
-      isDaydreamsAgent,
+      category: params.category,
+      tier: params.tier,
+      isDaydreamsAgent: params.isDaydreamsAgent,
       // Enhanced data
       troopCount: finalTroopCount,
       currentStamina: finalCurrentStamina,
       maxStamina: finalMaxStamina,
       // we need to check if there's any pending before we set it because onchain stamina might be 0 from the map data store in the system-manager
       onChainStamina: finalOnChainStamina,
-      attackedFromDirection: finalAttackedFromDirection,
-      attackedTowardDirection: finalAttackedTowardDirection,
+      attackedFromDirection: finalAttackedFromDirection ?? undefined,
+      attackedTowardDirection: finalAttackTowardDirection ?? undefined,
       battleCooldownEnd: finalBattleCooldownEnd,
       battleTimerLeft: finalBattleTimerLeft,
     });
@@ -585,9 +594,9 @@ export class ArmyManager {
     // Apply any pending relic effects for this army
     if (this.applyPendingRelicEffectsCallback) {
       try {
-        await this.applyPendingRelicEffectsCallback(entityId);
+        await this.applyPendingRelicEffectsCallback(params.entityId);
       } catch (error) {
-        console.error(`Failed to apply pending relic effects for army ${entityId}:`, error);
+        console.error(`Failed to apply pending relic effects for army ${params.entityId}:`, error);
       }
     }
 
@@ -986,67 +995,58 @@ ${
   /**
    * Update army directions from battle event
    */
-  public updateArmyFromBattleEvent(attackerId: ID, defenderId: ID): void {
-    const attacker = this.armies.get(attackerId);
-    const defender = this.armies.get(defenderId);
-
-    if (!attacker || !defender) {
-      console.log(`[BATTLE DIRECTION UPDATE] Cannot update directions - attacker or defender not found`, {
-        attackerId,
-        defenderId,
-        hasAttacker: !!attacker,
-        hasDefender: !!defender,
-      });
+  public updateArmyFromBattleEvent(
+    attackerId: ID | undefined,
+    attackerCoords: { col: number; row: number } | undefined,
+    defenderId: ID | undefined,
+    defenderCoords: { col: number; row: number } | undefined,
+  ): void {
+    if (!attackerCoords && !defenderCoords) {
+      // Neither is an army, skip
       return;
     }
 
-    // Get positions
-    const attackerPos = attacker.hexCoords.getContract();
-    const defenderPos = defender.hexCoords.getContract();
+    let attackedFromDirection: Direction | null = null;
+    let attackTowardDirection: Direction | null = null;
 
-    // Calculate directions
-    const { attackedFromDirection } = getCombatDirections(
-      { col: defenderPos.x, row: defenderPos.y },
-      attackerId,
-      undefined, // Defender is not attacking in this context
-      undefined,
-      undefined,
-    );
+    if (attackerCoords && defenderCoords) {
+      attackTowardDirection = getDirectionBetweenAdjacentHexes(attackerCoords, {
+        col: defenderCoords.col,
+        row: defenderCoords.row,
+      });
 
-    // Update defender - being attacked from direction
-    defender.attackedFromDirection = attackedFromDirection ?? undefined;
-    defender.battleTimerLeft = getBattleTimerLeft(defender.battleCooldownEnd);
-
-    // Calculate attacker's direction
-    const attackerDirections = getCombatDirections(
-      { col: attackerPos.x, row: attackerPos.y },
-      undefined, // Attacker is not being attacked in this context
-      undefined,
-      defenderId,
-      undefined,
-    );
-
-    // Update attacker - attacking toward direction
-    attacker.attackedTowardDirection = attackerDirections.attackedTowardDirection ?? undefined;
-    attacker.battleTimerLeft = getBattleTimerLeft(attacker.battleCooldownEnd);
-
-    // Update labels if they exist
-    const attackerLabel = this.entityIdLabels.get(attackerId);
-    if (attackerLabel) {
-      this.updateArmyLabelData(attackerId, attacker, attackerLabel);
+      attackedFromDirection = getDirectionBetweenAdjacentHexes(defenderCoords, {
+        col: attackerCoords.col,
+        row: attackerCoords.row,
+      });
     }
 
-    const defenderLabel = this.entityIdLabels.get(defenderId);
-    if (defenderLabel) {
-      this.updateArmyLabelData(defenderId, defender, defenderLabel);
-    }
+    if (attackerId && defenderId) {
+      const attackingArmy = this.armies.get(attackerId);
+      const defendingArmy = this.armies.get(defenderId);
 
-    console.log(`[BATTLE DIRECTION UPDATE] Updated army directions`, {
-      attackerId,
-      defenderId,
-      attackerDirection: attacker.attackedTowardDirection,
-      defenderDirection: defender.attackedFromDirection,
-    });
+      if (attackingArmy) {
+        attackingArmy.attackedTowardDirection = attackTowardDirection ?? undefined;
+        attackingArmy.battleTimerLeft = getBattleTimerLeft(attackingArmy.battleCooldownEnd);
+
+        // Update label
+        const label = this.entityIdLabels.get(attackerId);
+        if (label) {
+          this.updateArmyLabelData(attackerId, attackingArmy, label);
+        }
+      }
+
+      if (defendingArmy) {
+        defendingArmy.attackedFromDirection = attackedFromDirection ?? undefined;
+        defendingArmy.battleTimerLeft = getBattleTimerLeft(defendingArmy.battleCooldownEnd);
+
+        // Update label
+        const label = this.entityIdLabels.get(defenderId);
+        if (label) {
+          this.updateArmyLabelData(defenderId, defendingArmy, label);
+        }
+      }
+    }
   }
 
   /**

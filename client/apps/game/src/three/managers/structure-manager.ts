@@ -4,7 +4,15 @@ import InstancedModel from "@/three/managers/instanced-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { getIsBlitz, StructureTileSystemUpdate } from "@bibliothecadao/eternum";
-import { BuildingType, Direction, FELT_CENTER, ID, RelicEffect, StructureType } from "@bibliothecadao/types";
+import {
+  BuildingType,
+  Direction,
+  FELT_CENTER,
+  getDirectionBetweenAdjacentHexes,
+  ID,
+  RelicEffect,
+  StructureType,
+} from "@bibliothecadao/types";
 import { Group, Object3D, Scene, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { GuardArmy } from "../../../../../../packages/core/src/stores/map-data-store";
@@ -279,7 +287,7 @@ export class StructureManager {
       latestDefenderCoordY,
     } = update.battleData || {};
 
-    let { attackedFromDirection, attackedTowardDirection } = getCombatDirections(
+    let { attackedFromDirection, attackTowardDirection } = getCombatDirections(
       hexCoords,
       latestAttackerId ?? undefined,
       latestAttackerCoordX && latestAttackerCoordY ? { x: latestAttackerCoordX, y: latestAttackerCoordY } : undefined,
@@ -316,7 +324,7 @@ export class StructureManager {
           attackedFromDirection = pendingUpdate.attackedFromDirection;
         }
         if (pendingUpdate.attackedTowardDirection !== undefined) {
-          attackedTowardDirection = pendingUpdate.attackedTowardDirection;
+          attackTowardDirection = pendingUpdate.attackedTowardDirection;
         }
         if (pendingUpdate.battleCooldownEnd !== undefined) {
           battleCooldownEnd = pendingUpdate.battleCooldownEnd;
@@ -342,7 +350,7 @@ export class StructureManager {
       finalActiveProductions,
       update.hyperstructureRealmCount,
       attackedFromDirection ?? undefined,
-      attackedTowardDirection ?? undefined,
+      attackTowardDirection ?? undefined,
       battleCooldownEnd,
       battleTimerLeft,
     );
@@ -829,32 +837,43 @@ export class StructureManager {
   /**
    * Update structure directions from battle event
    */
-  public updateStructureFromBattleEvent(attackerId: ID, defenderId: ID): void {
-    // Check if either attacker or defender is a structure
-    const attackingStructure = this.structures.getStructureByEntityId(attackerId);
-    const defendingStructure = this.structures.getStructureByEntityId(defenderId);
-
-    if (!attackingStructure && !defendingStructure) {
+  public updateStructureFromBattleEvent(
+    attackerId: ID | undefined,
+    attackerCoords: { col: number; row: number } | undefined,
+    defenderId: ID | undefined,
+    defenderCoords: { col: number; row: number } | undefined,
+  ): void {
+    if (!attackerCoords && !defenderCoords) {
       // Neither is a structure, skip
+      console.log(`[BATTLE EVENT UPDATE] Neither attacker nor defender is a structure`, {
+        attackerId,
+        defenderId,
+        attackingStructure: !!attackerCoords,
+        defendingStructure: !!defenderCoords,
+      });
       return;
     }
 
-    if (attackingStructure) {
-      // Structure is attacking
-      const defenderPos = defendingStructure
-        ? { x: defendingStructure.hexCoords.col, y: defendingStructure.hexCoords.row }
-        : this.getArmyPosition?.(defenderId);
-      if (defenderPos) {
-        const { attackedTowardDirection } = getCombatDirections(
-          { col: attackingStructure.hexCoords.col, row: attackingStructure.hexCoords.row },
-          undefined,
-          undefined,
-          defenderId,
-          defenderPos,
-        );
+    let attackedFromDirection: Direction | null = null;
+    let attackTowardDirection: Direction | null = null;
 
-        attackingStructure.attackedTowardDirection = attackedTowardDirection ?? undefined;
-        attackingStructure.battleTimerLeft = getBattleTimerLeft(attackingStructure.battleCooldownEnd);
+    if (attackerCoords && defenderCoords) {
+      attackTowardDirection = getDirectionBetweenAdjacentHexes(attackerCoords, {
+        col: defenderCoords.col,
+        row: defenderCoords.row,
+      });
+
+      attackedFromDirection = getDirectionBetweenAdjacentHexes(defenderCoords, {
+        col: attackerCoords.col,
+        row: attackerCoords.row,
+      });
+    }
+
+    if (attackerId && defenderId) {
+      const attackingStructure = this.structures.getStructureByEntityId(attackerId);
+      const defendingStructure = this.structures.getStructureByEntityId(defenderId);
+      if (attackingStructure) {
+        attackingStructure.attackedTowardDirection = attackTowardDirection ?? undefined;
 
         // Update label
         const label = this.entityIdLabels.get(attackerId);
@@ -862,39 +881,22 @@ export class StructureManager {
           this.updateStructureLabelData(attackerId, attackingStructure, label);
         }
       }
-    }
-
-    if (defendingStructure) {
-      // Structure is being attacked
-      const attackerPos = attackingStructure
-        ? { x: attackingStructure.hexCoords.col, y: attackingStructure.hexCoords.row }
-        : this.getArmyPosition?.(attackerId);
-      if (attackerPos) {
-        const { attackedFromDirection } = getCombatDirections(
-          { col: defendingStructure.hexCoords.col, row: defendingStructure.hexCoords.row },
-          attackerId,
-          attackerPos,
-          undefined,
-          undefined,
-        );
-
+      if (defendingStructure) {
         defendingStructure.attackedFromDirection = attackedFromDirection ?? undefined;
-        defendingStructure.battleTimerLeft = getBattleTimerLeft(defendingStructure.battleCooldownEnd);
-
         // Update label
         const label = this.entityIdLabels.get(defenderId);
         if (label) {
           this.updateStructureLabelData(defenderId, defendingStructure, label);
         }
       }
-    }
 
-    console.log(`[BATTLE DIRECTION UPDATE] Updated structure directions`, {
-      attackerId,
-      defenderId,
-      attackingStructure: !!attackingStructure,
-      defendingStructure: !!defendingStructure,
-    });
+      console.log(`[BATTLE DIRECTION UPDATE] Updated structure directions`, {
+        attackerId,
+        defenderId,
+        attackingStructure: !!attackingStructure,
+        defendingStructure: !!defendingStructure,
+      });
+    }
   }
 
   // Optional callback to get army positions for cross-entity battles

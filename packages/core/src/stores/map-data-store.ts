@@ -98,6 +98,10 @@ export interface ArmyMapData {
     latestAttackTimestamp: string | null; // hex string
     latestDefenderId: number | null;
     latestDefenseTimestamp: string | null; // hex string
+    latestAttackerCoordX: number | null;
+    latestAttackerCoordY: number | null;
+    latestDefenderCoordX: number | null;
+    latestDefenderCoordY: number | null;
   };
 }
 
@@ -428,6 +432,17 @@ export class MapDataStore {
         },
         ownerAddress: army.owner_address ? BigInt(army.owner_address).toString() : "",
         ownerName,
+        battleData: {
+          battleCooldownEnd: army.battle_cooldown_end || 0,
+          latestAttackerId: army.latest_attacker_id,
+          latestAttackTimestamp: army.latest_attack_timestamp,
+          latestDefenderId: army.latest_defender_id,
+          latestDefenseTimestamp: army.latest_defense_timestamp,
+          latestAttackerCoordX: army.latest_attacker_coord_x,
+          latestAttackerCoordY: army.latest_attacker_coord_y,
+          latestDefenderCoordX: army.latest_defender_coord_x,
+          latestDefenderCoordY: army.latest_defender_coord_y,
+        },
       };
 
       this.armiesMap.set(army.entity_id, armyData);

@@ -41,6 +41,10 @@ export type ExplorerTroopsTileSystemUpdate = {
     latestAttackTimestamp: string | null; // hex string
     latestDefenderId: number | null;
     latestDefenseTimestamp: string | null; // hex string
+    latestAttackerCoordX: number | null;
+    latestAttackerCoordY: number | null;
+    latestDefenderCoordX: number | null;
+    latestDefenderCoordY: number | null;
   };
 };
 

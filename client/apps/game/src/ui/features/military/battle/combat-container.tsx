@@ -196,6 +196,7 @@ export const CombatContainer = ({
     } else {
       // attacker always synced already
       const army = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(attackerEntityId)]));
+
       return {
         troops: {
           count: army?.troops.count || 0n,

@@ -538,11 +538,11 @@ export const updateStaminaBar = (staminaBarElement: HTMLElement, currentStamina:
  */
 const DIRECTION_TO_ARROW: Record<Direction, string> = {
   [Direction.EAST]: "→",
-  [Direction.NORTH_EAST]: "↗",
-  [Direction.NORTH_WEST]: "↖",
+  [Direction.NORTH_EAST]: "↘",
+  [Direction.NORTH_WEST]: "↙",
   [Direction.WEST]: "←",
-  [Direction.SOUTH_WEST]: "↙",
-  [Direction.SOUTH_EAST]: "↘",
+  [Direction.SOUTH_WEST]: "↖",
+  [Direction.SOUTH_EAST]: "↗",
 };
 
 /**
@@ -551,7 +551,7 @@ const DIRECTION_TO_ARROW: Record<Direction, string> = {
 const formatTime = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
-  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  return `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`;
 };
 
 /**
@@ -559,7 +559,17 @@ const formatTime = (seconds: number): string => {
  */
 export const createBattleTimer = (battleTimerLeft: number): HTMLElement => {
   const timerDiv = document.createElement("div");
-  timerDiv.classList.add("flex", "items-center", "gap-0.5", "px-1.5", "py-0.5", "rounded", "bg-red-900/40", "border", "border-red-500/30");
+  timerDiv.classList.add(
+    "flex",
+    "items-center",
+    "gap-0.5",
+    "px-1.5",
+    "py-0.5",
+    "rounded",
+    "bg-red-900/40",
+    "border",
+    "border-red-500/30",
+  );
   timerDiv.setAttribute("data-component", "battle-timer");
 
   // Timer icon

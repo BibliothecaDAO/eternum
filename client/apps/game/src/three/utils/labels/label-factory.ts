@@ -229,7 +229,11 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
     }
 
     // Add direction indicators
-    const directionIndicators = createDirectionIndicators(data.attackedFromDirection, data.attackedTowardDirection, data.battleTimerLeft);
+    const directionIndicators = createDirectionIndicators(
+      data.attackedFromDirection,
+      data.attackedTowardDirection,
+      data.battleTimerLeft,
+    );
     if (directionIndicators) {
       textContainer.appendChild(directionIndicators);
     }
@@ -411,7 +415,11 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
     }
 
     // Add direction indicators
-    const directionIndicators = createDirectionIndicators(data.attackedFromDirection, data.attackedTowardDirection, data.battleTimerLeft);
+    const directionIndicators = createDirectionIndicators(
+      data.attackedFromDirection,
+      data.attackedTowardDirection,
+      data.battleTimerLeft,
+    );
     if (directionIndicators) {
       contentContainer.appendChild(directionIndicators);
     }

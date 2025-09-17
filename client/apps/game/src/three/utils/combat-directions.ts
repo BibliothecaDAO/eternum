@@ -2,7 +2,7 @@ import { Direction, getDirectionBetweenAdjacentHexes, ID } from "@bibliothecadao
 
 export interface CombatDirections {
   attackedFromDirection?: Direction | null;
-  attackedTowardDirection?: Direction | null;
+  attackTowardDirection?: Direction | null;
 }
 
 /**
@@ -36,7 +36,7 @@ export function getCombatDirections(
   // Calculate direction toward which this entity attacked
   if (latestDefenderId) {
     if (defenderPosition) {
-      result.attackedTowardDirection = getDirectionBetweenAdjacentHexes(targetPosition, {
+      result.attackTowardDirection = getDirectionBetweenAdjacentHexes(targetPosition, {
         col: defenderPosition.x,
         row: defenderPosition.y,
       });

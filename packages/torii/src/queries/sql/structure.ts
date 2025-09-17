@@ -160,7 +160,6 @@ export const STRUCTURE_QUERIES = {
                 ORDER BY timestamp DESC
             ) as latest_attack_timestamp
         FROM [s1_eternum-BattleEvent]
-        -- WHERE timestamp > 1757487964
     ),
     latest_defenses AS (
         -- Get latest battles where this structure was the attacker
@@ -175,7 +174,6 @@ export const STRUCTURE_QUERIES = {
                 ORDER BY timestamp DESC
             ) as latest_defense_timestamp
         FROM [s1_eternum-BattleEvent]
-        -- WHERE timestamp > 1757487964
     )
     SELECT 
         s.entity_id,
@@ -257,7 +255,6 @@ export const STRUCTURE_QUERIES = {
               ORDER BY timestamp DESC
           ) as latest_attack_timestamp
       FROM [s1_eternum-BattleEvent]
-      WHERE timestamp > 1757487964
   ),
   latest_defenses AS (
       -- Get latest battles where this army was the attacker
@@ -272,7 +269,6 @@ export const STRUCTURE_QUERIES = {
               ORDER BY timestamp DESC
           ) as latest_defense_timestamp
       FROM [s1_eternum-BattleEvent]
-      WHERE timestamp > 1757487964
   )
   SELECT 
       et.explorer_id as entity_id,
@@ -287,17 +283,31 @@ export const STRUCTURE_QUERIES = {
       s.owner as owner_address,
       sos.name as owner_name,
     
-      -- Battle data
+      -- Battle data with coordinates
       lb.latest_attacker_id,
       lb.latest_attack_timestamp,
+      COALESCE(attacker_struct.\`base.coord_x\`, attacker_explorer.\`coord.x\`) as latest_attacker_coord_x,
+      COALESCE(attacker_struct.\`base.coord_y\`, attacker_explorer.\`coord.y\`) as latest_attacker_coord_y,
+      
       ld.latest_defender_id,
-      ld.latest_defense_timestamp
+      ld.latest_defense_timestamp,
+      COALESCE(defender_struct.\`base.coord_x\`, defender_explorer.\`coord.x\`) as latest_defender_coord_x,
+      COALESCE(defender_struct.\`base.coord_y\`, defender_explorer.\`coord.y\`) as latest_defender_coord_y
     
   FROM [s1_eternum-ExplorerTroops] et
   LEFT JOIN [s1_eternum-Structure] s ON s.entity_id = et.owner
   LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON sos.owner = s.owner
   LEFT JOIN latest_battles lb ON lb.defender_id = et.explorer_id
   LEFT JOIN latest_defenses ld ON ld.attacker_id = et.explorer_id
+  
+  -- Get coordinates for latest attacker (could be structure or explorer troops)
+  LEFT JOIN [s1_eternum-Structure] attacker_struct ON attacker_struct.entity_id = lb.latest_attacker_id
+  LEFT JOIN [s1_eternum-ExplorerTroops] attacker_explorer ON attacker_explorer.explorer_id = lb.latest_attacker_id
+  
+  -- Get coordinates for latest defender (could be structure or explorer troops)
+  LEFT JOIN [s1_eternum-Structure] defender_struct ON defender_struct.entity_id = ld.latest_defender_id
+  LEFT JOIN [s1_eternum-ExplorerTroops] defender_explorer ON defender_explorer.explorer_id = ld.latest_defender_id
+  
   ORDER BY et.explorer_id;
   `,
 } as const;

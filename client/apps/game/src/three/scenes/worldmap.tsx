@@ -28,6 +28,7 @@ import {
   ActionPaths,
   ActionType,
   ArmyActionManager,
+  BattleEventSystemUpdate,
   ChestSystemUpdate,
   ExplorerMoveSystemUpdate,
   ExplorerTroopsTileSystemUpdate,
@@ -102,7 +103,10 @@ export default class WorldmapScene extends HexagonScene {
   // normalized positions and if they are allied or not
   private chestHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
   // store armies positions by ID, to remove previous positions when army moves
+  // normalized coordinates
   private armiesPositions: Map<ID, HexPosition> = new Map();
+  // normalized coordinates
+  private structuresPositions: Map<ID, HexPosition> = new Map();
   private selectedHexManager: SelectedHexManager;
   private selectionPulseManager: SelectionPulseManager;
   private minimap!: Minimap;
@@ -311,6 +315,24 @@ export default class WorldmapScene extends HexagonScene {
       this.updateVisibleChunks().catch((error) => console.error("Failed to update visible chunks:", error));
     });
 
+    // Listen for battle events and update army/structure labels
+    this.worldUpdateListener.BattleEvent.onBattleUpdate((update: BattleEventSystemUpdate) => {
+      console.log("🗺️ WorldMap: Received battle event update:", update);
+
+      // Update both attacker and defender information using the public methods
+      const { attackerId, defenderId } = update.battleData;
+
+      // Update army labels and battle directions
+      // normalized coordinates
+      const attackerCoords = this.armiesPositions.get(attackerId) || this.structuresPositions.get(attackerId);
+      // normalized coordinates
+      const defenderCoords = this.armiesPositions.get(defenderId) || this.structuresPositions.get(defenderId);
+
+      // Update structure labels and battle directions (if any of the entities are structures)
+      this.structureManager.updateStructureFromBattleEvent(attackerId, attackerCoords, defenderId, defenderCoords);
+      this.armyManager.updateArmyFromBattleEvent(attackerId, attackerCoords, defenderId, defenderCoords);
+    });
+
     // Listen for structure guard updates
     this.worldUpdateListener.Structure.onStructureUpdate((update) => {
       this.updateStructureHexes(update);
@@ -419,27 +441,6 @@ export default class WorldmapScene extends HexagonScene {
         }
       }, 500);
     });
-
-    // Listen for battle events to update direction indicators
-    this.worldUpdateListener.BattleEvent.onBattleDirectionUpdate(
-      (update: { attackerId: ID; defenderId: ID; timestamp: number }) => {
-        const { attackerId, defenderId } = update;
-
-        // Set up cross-entity position getter for structure manager
-        this.structureManager.setArmyPositionGetter((entityId: ID) => {
-          const army = this.armyManager.getArmies().find((a) => a.entityId === entityId);
-          if (army) {
-            const coords = army.hexCoords.getContract();
-            return { x: coords.x, y: coords.y };
-          }
-          return undefined;
-        });
-
-        // Update both army and structure managers
-        this.armyManager.updateArmyFromBattleEvent(attackerId, defenderId);
-        this.structureManager.updateStructureFromBattleEvent(attackerId, defenderId);
-      },
-    );
 
     // add particles
     this.selectedHexManager = new SelectedHexManager(this.scene);
@@ -1148,6 +1149,9 @@ export default class WorldmapScene extends HexagonScene {
 
     if (address === undefined) return;
     const normalized = new Position({ x: col, y: row }).getNormalized();
+
+    // Update structure position
+    this.structuresPositions.set(entityId, { col: normalized.x, row: normalized.y });
 
     const newCol = normalized.x;
     const newRow = normalized.y;
