@@ -18,7 +18,7 @@ export const BattleCooldownTimer = ({ cooldownEnd, className = "" }: BattleCoold
     const interval = setInterval(() => {
       const remaining = calculateTimeRemaining();
       setTimeRemaining(remaining);
-      
+
       // Clear interval when cooldown expires
       if (remaining === 0) {
         clearInterval(interval);
@@ -47,9 +47,7 @@ export const BattleCooldownTimer = ({ cooldownEnd, className = "" }: BattleCoold
           d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
         />
       </svg>
-      <span className="text-red-400 font-semibold">
-        Battle Cooldown: {formatTime(timeRemaining)}
-      </span>
+      <span className="text-red-400 font-semibold">Battle Cooldown: {formatTime(timeRemaining)}</span>
     </div>
   );
 };

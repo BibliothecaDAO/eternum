@@ -84,7 +84,7 @@ export const TroopDisplay = ({
           <span className="text-gold/70">Stamina: {Number(stamina)}</span>
           {showLosses && <span className="text-red-400 font-medium">-{Math.ceil(losses)} casualties</span>}
         </div>
-        
+
         {isOnCooldown && (
           <div className="mt-2 flex items-center gap-1 text-xs text-red-400">
             <Timer className="w-3 h-3 animate-pulse" />

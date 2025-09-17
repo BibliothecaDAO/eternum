@@ -7,58 +7,67 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
       body {
-          background: #1a1a2e;
-          color: white;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #1a1a2e;
+        color: white;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       }
 
       .label-container {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 2rem;
-          padding: 2rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2rem;
+        padding: 2rem;
       }
 
       .preview-section {
-          background: rgba(255, 255, 255, 0.05);
-          border-radius: 8px;
-          padding: 1.5rem;
-          border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 1.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
       }
 
       .preview-title {
-          font-size: 1.25rem;
-          font-weight: bold;
-          margin-bottom: 1rem;
-          color: #60a5fa;
+        font-size: 1.25rem;
+        font-weight: bold;
+        margin-bottom: 1rem;
+        color: #60a5fa;
       }
 
       /* Label styles from the actual game */
       .text-xxs {
-          font-size: 10px;
-          line-height: 14px;
+        font-size: 10px;
+        line-height: 14px;
       }
 
       .text-shadow-glow-brilliance-xs {
-          text-shadow: 0 0 4px rgba(251, 191, 36, 0.5);
+        text-shadow: 0 0 4px rgba(251, 191, 36, 0.5);
       }
 
       .animate-fade-in {
-          animation: fadeIn 0.3s ease-in;
+        animation: fadeIn 0.3s ease-in;
       }
 
       @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
       }
 
       .animate-slowPulse {
-          animation: slowPulse 3s ease-in-out infinite;
+        animation: slowPulse 3s ease-in-out infinite;
       }
 
       @keyframes slowPulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.8; }
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.8;
+        }
       }
     </style>
   </head>
@@ -72,12 +81,16 @@
           <div class="preview-title">My Army - No Combat</div>
           <div
             class="rounded-md p-0.5 -translate-x-1/2 text-xxs flex items-center group shadow-md font-semibold transition-[height] duration-700 ease-in-out h-auto inline-flex"
-            style="background-color: rgba(34, 197, 94, 0.3) !important; border: 1px solid rgba(34, 197, 94, 0.5); color: rgb(255, 255, 255) !important;"
+            style="
+              background-color: rgba(34, 197, 94, 0.3) !important;
+              border: 1px solid rgba(34, 197, 94, 0.5);
+              color: rgb(255, 255, 255) !important;
+            "
           >
             <img
               src="/images/labels/army.png"
               class="w-auto h-full inline-block object-contain max-w-[32px]"
-              style="height: 48px;"
+              style="height: 48px"
             />
             <div class="transition-all duration-700 ease-in-out overflow-hidden max-w-[1000px] ml-2 opacity-100">
               <div class="flex flex-col w-max">
@@ -109,12 +122,16 @@
           <div class="preview-title">My Army - Attacking East</div>
           <div
             class="rounded-md p-0.5 -translate-x-1/2 text-xxs flex items-center group shadow-md font-semibold transition-[height] duration-700 ease-in-out h-auto inline-flex"
-            style="background-color: rgba(34, 197, 94, 0.3) !important; border: 1px solid rgba(34, 197, 94, 0.5); color: rgb(255, 255, 255) !important;"
+            style="
+              background-color: rgba(34, 197, 94, 0.3) !important;
+              border: 1px solid rgba(34, 197, 94, 0.5);
+              color: rgb(255, 255, 255) !important;
+            "
           >
             <img
               src="/images/labels/army.png"
               class="w-auto h-full inline-block object-contain max-w-[32px]"
-              style="height: 48px;"
+              style="height: 48px"
             />
             <div class="transition-all duration-700 ease-in-out overflow-hidden max-w-[1000px] ml-2 opacity-100">
               <div class="flex flex-col w-max">
@@ -153,12 +170,16 @@
           <div class="preview-title">Enemy Army - Under Attack from West</div>
           <div
             class="rounded-md p-0.5 -translate-x-1/2 text-xxs flex items-center group shadow-md font-semibold transition-[height] duration-700 ease-in-out h-auto inline-flex"
-            style="background-color: rgba(239, 68, 68, 0.3) !important; border: 1px solid rgba(239, 68, 68, 0.5); color: rgb(255, 255, 255) !important;"
+            style="
+              background-color: rgba(239, 68, 68, 0.3) !important;
+              border: 1px solid rgba(239, 68, 68, 0.5);
+              color: rgb(255, 255, 255) !important;
+            "
           >
             <img
               src="/images/labels/enemy_army.png"
               class="w-auto h-full inline-block object-contain max-w-[32px]"
-              style="height: 48px;"
+              style="height: 48px"
             />
             <div class="transition-all duration-700 ease-in-out overflow-hidden max-w-[1000px] ml-2 opacity-100">
               <div class="flex flex-col w-max">
@@ -197,12 +218,16 @@
           <div class="preview-title">Army in Active Combat (Both Directions)</div>
           <div
             class="rounded-md p-0.5 -translate-x-1/2 text-xxs flex items-center group shadow-md font-semibold transition-[height] duration-700 ease-in-out h-auto inline-flex"
-            style="background-color: rgba(168, 85, 247, 0.3) !important; border: 1px solid rgba(168, 85, 247, 0.5); color: rgb(255, 255, 255) !important;"
+            style="
+              background-color: rgba(168, 85, 247, 0.3) !important;
+              border: 1px solid rgba(168, 85, 247, 0.5);
+              color: rgb(255, 255, 255) !important;
+            "
           >
             <img
               src="/images/labels/enemy_army.png"
               class="w-auto h-full inline-block object-contain max-w-[32px]"
-              style="height: 48px;"
+              style="height: 48px"
             />
             <div class="transition-all duration-700 ease-in-out overflow-hidden max-w-[1000px] ml-2 opacity-100">
               <div class="flex flex-col w-max">
@@ -254,12 +279,16 @@
           <div class="preview-title">Daydreams Agent - Attacking Northwest</div>
           <div
             class="rounded-md p-0.5 -translate-x-1/2 text-xxs flex items-center group shadow-md font-semibold transition-[height] duration-700 ease-in-out h-auto inline-flex"
-            style="background-color: rgba(251, 191, 36, 0.3) !important; border: 1px solid rgba(251, 191, 36, 0.5); color: rgb(255, 255, 255) !important;"
+            style="
+              background-color: rgba(251, 191, 36, 0.3) !important;
+              border: 1px solid rgba(251, 191, 36, 0.5);
+              color: rgb(255, 255, 255) !important;
+            "
           >
             <img
               src="/images/logos/daydreams.png"
               class="w-auto h-full inline-block object-contain max-w-[32px]"
-              style="height: 48px;"
+              style="height: 48px"
             />
             <div class="transition-all duration-700 ease-in-out overflow-hidden max-w-[1000px] ml-2 opacity-100">
               <div class="flex flex-col w-max">
@@ -299,10 +328,14 @@
           <div class="preview-title">My Realm - Under Attack from Northeast</div>
           <div
             class="rounded-md p-0.5 -translate-x-1/2 text-xxs flex items-center group shadow-md font-semibold transition-[height] duration-700 ease-in-out h-auto inline-flex"
-            style="background-color: rgba(34, 197, 94, 0.3) !important; border: 1px solid rgba(34, 197, 94, 0.5); color: rgb(255, 255, 255) !important;"
+            style="
+              background-color: rgba(34, 197, 94, 0.3) !important;
+              border: 1px solid rgba(34, 197, 94, 0.5);
+              color: rgb(255, 255, 255) !important;
+            "
           >
             <div class="w-auto h-full flex-shrink-0">
-              <img src="/images/labels/realm.png" class="w-10 h-10 object-contain" style="height: 40px;">
+              <img src="/images/labels/realm.png" class="w-10 h-10 object-contain" style="height: 40px" />
             </div>
             <div class="transition-all duration-700 ease-in-out overflow-hidden max-w-[1000px] ml-2 opacity-100">
               <div class="flex flex-col w-max">
@@ -335,10 +368,14 @@
           <div class="preview-title">Enemy Village - Attacking South</div>
           <div
             class="rounded-md p-0.5 -translate-x-1/2 text-xxs flex items-center group shadow-md font-semibold transition-[height] duration-700 ease-in-out h-auto inline-flex"
-            style="background-color: rgba(239, 68, 68, 0.3) !important; border: 1px solid rgba(239, 68, 68, 0.5); color: rgb(255, 255, 255) !important;"
+            style="
+              background-color: rgba(239, 68, 68, 0.3) !important;
+              border: 1px solid rgba(239, 68, 68, 0.5);
+              color: rgb(255, 255, 255) !important;
+            "
           >
             <div class="w-auto h-full flex-shrink-0">
-              <img src="/images/labels/enemy_village.png" class="w-10 h-10 object-contain" style="height: 40px;">
+              <img src="/images/labels/enemy_village.png" class="w-10 h-10 object-contain" style="height: 40px" />
             </div>
             <div class="transition-all duration-700 ease-in-out overflow-hidden max-w-[1000px] ml-2 opacity-100">
               <div class="flex flex-col w-max">
@@ -371,10 +408,14 @@
           <div class="preview-title">Hyperstructure - Under Siege</div>
           <div
             class="rounded-md p-0.5 -translate-x-1/2 text-xxs flex items-center group shadow-md font-semibold transition-[height] duration-700 ease-in-out h-auto inline-flex"
-            style="background-color: rgba(168, 85, 247, 0.3) !important; border: 1px solid rgba(168, 85, 247, 0.5); color: rgb(255, 255, 255) !important;"
+            style="
+              background-color: rgba(168, 85, 247, 0.3) !important;
+              border: 1px solid rgba(168, 85, 247, 0.5);
+              color: rgb(255, 255, 255) !important;
+            "
           >
             <div class="w-auto h-full flex-shrink-0">
-              <img src="/images/labels/hyperstructure.png" class="w-10 h-10 object-contain" style="height: 40px;">
+              <img src="/images/labels/hyperstructure.png" class="w-10 h-10 object-contain" style="height: 40px" />
             </div>
             <div class="transition-all duration-700 ease-in-out overflow-hidden max-w-[1000px] ml-2 opacity-100">
               <div class="flex flex-col w-max">
@@ -382,7 +423,9 @@
                 <div class="flex items-center gap-1.5">
                   <span class="font-bold" style="color: #a855f7">AllyHyperstructure</span>
                 </div>
-                <div class="flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded transition-all duration-300 bg-order-brilliance/20 border border-order-brilliance/30 animate-slowPulse">
+                <div
+                  class="flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded transition-all duration-300 bg-order-brilliance/20 border border-order-brilliance/30 animate-slowPulse"
+                >
                   <span class="text-xs text-order-brilliance">⚡</span>
                   <span class="font-bold text-xs text-order-brilliance text-shadow-glow-brilliance-xs">150</span>
                   <span class="text-xxs font-normal text-order-brilliance/80">VP/s</span>

@@ -81,7 +81,7 @@ export class CombatSimulator {
 
   /**
    * Calculates damage modifier based on current cooldown status.
-   * 
+   *
    * @param battle_cooldown_end - The CURRENT cooldown end time from the troops model
    * @param time - The current timestamp
    * @param isAttacker - Whether this is for the attacking army
@@ -89,7 +89,7 @@ export class CombatSimulator {
    */
   public calculateBattleTimerDamageModifier(battle_cooldown_end: number, time: number, isAttacker: boolean): number {
     const isOnCooldown = battle_cooldown_end > time;
-    
+
     if (isAttacker) {
       // Attackers must not be on cooldown to initiate attacks
       // If they are on cooldown, they cannot attack (damage modifier = 0)
@@ -141,7 +141,7 @@ export class CombatSimulator {
   /**
    * Calculates the next battle cooldown end time after a combat.
    * This represents what the cooldown will be AFTER the battle, not the current cooldown.
-   * 
+   *
    * @param currentCooldownEnd - The current cooldown end time from the troops model
    * @param now - The current timestamp
    * @param refundMultiplier - The refund multiplier based on battle outcome (0-1)
