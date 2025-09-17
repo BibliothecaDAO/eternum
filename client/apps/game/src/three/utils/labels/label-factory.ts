@@ -3,15 +3,17 @@ import { Position } from "@bibliothecadao/eternum";
 import { getIsBlitz } from "@bibliothecadao/eternum";
 
 import { getCharacterName } from "@/utils/agent";
-import { BuildingType, ResourcesIds, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BuildingType, Direction, ResourcesIds, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { CameraView } from "../../scenes/hexagon-scene";
 import {
   createContentContainer,
+  createDirectionIndicators,
   createGuardArmyDisplay,
   createOwnerDisplayElement,
   createProductionDisplay,
   createStaminaBar,
   createTroopCountDisplay,
+  updateDirectionIndicators,
   updateStaminaBar,
 } from "./label-components";
 import { getOwnershipStyle, LABEL_STYLES, LABEL_TYPE_CONFIGS } from "./label-config";
@@ -55,6 +57,9 @@ export interface ArmyLabelData extends LabelData {
   troopCount: number;
   currentStamina: number;
   maxStamina: number;
+  attackedFromDirection?: Direction; // Direction from which this army has been attacked
+  attackedTowardDirection?: Direction; // Direction in which this army has attacked someone
+  battleTimerLeft?: number; // Time left in seconds before battle penalty is over
 }
 
 export interface StructureLabelData extends LabelData {
@@ -72,6 +77,9 @@ export interface StructureLabelData extends LabelData {
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
   hyperstructureRealmCount?: number;
+  attackedFromDirection?: Direction; // Direction from which this structure has been attacked
+  attackedTowardDirection?: Direction; // Direction in which this structure has attacked someone
+  battleTimerLeft?: number; // Time left in seconds before battle penalty is over
 }
 
 // For backward compatibility with existing StructureInfo type
@@ -220,6 +228,16 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
       textContainer.appendChild(staminaInfo);
     }
 
+    // Add direction indicators
+    const directionIndicators = createDirectionIndicators(
+      data.attackedFromDirection,
+      data.attackedTowardDirection,
+      data.battleTimerLeft,
+    );
+    if (directionIndicators) {
+      textContainer.appendChild(directionIndicators);
+    }
+
     labelDiv.appendChild(textContainer.wrapper);
     return labelDiv;
   },
@@ -258,6 +276,9 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
     if (staminaBar && data.currentStamina !== undefined && data.maxStamina !== undefined) {
       updateStaminaBar(staminaBar as HTMLElement, data.currentStamina, data.maxStamina);
     }
+
+    // Update direction indicators
+    updateDirectionIndicators(element, data.attackedFromDirection, data.attackedTowardDirection, data.battleTimerLeft);
   },
 };
 
@@ -391,6 +412,16 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
       realmCountDisplay.appendChild(vpLabel);
 
       contentContainer.appendChild(realmCountDisplay);
+    }
+
+    // Add direction indicators
+    const directionIndicators = createDirectionIndicators(
+      data.attackedFromDirection,
+      data.attackedTowardDirection,
+      data.battleTimerLeft,
+    );
+    if (directionIndicators) {
+      contentContainer.appendChild(directionIndicators);
     }
 
     labelDiv.appendChild(contentContainer.wrapper);
@@ -582,6 +613,9 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
       // Remove realm count display if no longer needed
       realmCountDisplay.remove();
     }
+
+    // Update direction indicators
+    updateDirectionIndicators(element, data.attackedFromDirection, data.attackedTowardDirection, data.battleTimerLeft);
   },
 };
 

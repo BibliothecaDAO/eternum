@@ -33,6 +33,7 @@ export interface CombatParameters {
   t3_damage_multiplier: bigint;
   stamina_attack_req: number;
   stamina_defense_req: number;
+  tick_interval_seconds: number;
 }
 
 export class CombatSimulator {
@@ -42,10 +43,7 @@ export class CombatSimulator {
   private readonly staminaAttackThreshold: number;
   private readonly staminaDefenseThreshold: number;
   private readonly baseDamageFactor: number;
-  // private readonly betaSmall: number;
-  // private readonly betaLarge: number;
-  // private readonly c0: number;
-  // private readonly delta: number;
+  private readonly tickIntervalSeconds: number;
 
   static MAX_U64: bigint = BigInt(2) ** BigInt(64);
 
@@ -57,10 +55,7 @@ export class CombatSimulator {
     this.staminaDefenseThreshold = params.stamina_defense_req;
 
     this.baseDamageFactor = divideWithPrecision(params.damage_scaling_factor, CombatSimulator.MAX_U64);
-    // this.betaSmall = divideWithPrecision(params.damage_beta_small, CombatSimulator.MAX_U64);
-    // this.betaLarge = divideWithPrecision(params.damage_beta_large, CombatSimulator.MAX_U64);
-    // this.c0 = divideWithPrecision(params.damage_c0, CombatSimulator.MAX_U64);
-    // this.delta = divideWithPrecision(params.damage_delta, CombatSimulator.MAX_U64);
+    this.tickIntervalSeconds = params.tick_interval_seconds;
   }
 
   private getTierValue(tier: TroopTier): number {
@@ -84,17 +79,24 @@ export class CombatSimulator {
     }
   }
 
+  /**
+   * Calculates damage modifier based on current cooldown status.
+   *
+   * @param battle_cooldown_end - The CURRENT cooldown end time from the troops model
+   * @param time - The current timestamp
+   * @param isAttacker - Whether this is for the attacking army
+   * @returns Damage modifier (0-1)
+   */
   public calculateBattleTimerDamageModifier(battle_cooldown_end: number, time: number, isAttacker: boolean): number {
-    if (battle_cooldown_end < time) {
-      battle_cooldown_end = time;
-    }
+    const isOnCooldown = battle_cooldown_end > time;
 
     if (isAttacker) {
-      if (battle_cooldown_end < time) return 0;
-      return 1;
+      // Attackers must not be on cooldown to initiate attacks
+      // If they are on cooldown, they cannot attack (damage modifier = 0)
+      return isOnCooldown ? 0 : 1;
     } else {
-      if (battle_cooldown_end < time) return 0.85;
-      return 1;
+      // Defenders on cooldown deal 15% less damage when attacked (they fight less effectively)
+      return isOnCooldown ? 0.85 : 1;
     }
   }
 
@@ -112,6 +114,52 @@ export class CombatSimulator {
 
   private calculateEffectiveBeta(): number {
     return 0.2;
+  }
+
+  public calculateStaminaCost(baseStaminaCost: number, refundMultiplier: number): number {
+    return baseStaminaCost - Math.ceil(baseStaminaCost * refundMultiplier);
+  }
+
+  public calculateNewStaminaAttacker(currentStamina: number, refundMultiplier: number): number {
+    const staminaCost = this.calculateStaminaCost(this.staminaAttackThreshold, refundMultiplier);
+    return currentStamina - staminaCost;
+  }
+
+  public calculateNewStaminaDefender(currentStamina: number, refundMultiplier: number): number {
+    const staminaCost = this.calculateStaminaCost(this.staminaDefenseThreshold, refundMultiplier);
+    return currentStamina - staminaCost;
+  }
+
+  public calculateNewCooldownEndAttacker(currentCooldownEnd: number, now: number, refundMultiplier: number): number {
+    return this.calculateNextBattleCooldownEnd(currentCooldownEnd, now, refundMultiplier);
+  }
+
+  public calculateNewCooldownEndDefender(currentCooldownEnd: number, now: number, refundMultiplier: number): number {
+    return this.calculateNextBattleCooldownEnd(currentCooldownEnd, now, refundMultiplier);
+  }
+
+  /**
+   * Calculates the next battle cooldown end time after a combat.
+   * This represents what the cooldown will be AFTER the battle, not the current cooldown.
+   *
+   * @param currentCooldownEnd - The current cooldown end time from the troops model
+   * @param now - The current timestamp
+   * @param refundMultiplier - The refund multiplier based on battle outcome (0-1)
+   * @returns The new cooldown end time that will be set after the battle
+   */
+  public calculateNextBattleCooldownEnd(currentCooldownEnd: number, now: number, refundMultiplier: number): number {
+    // If the army is currently on cooldown, add to the existing cooldown
+    // Otherwise, start a new cooldown from now
+    const effectiveCooldownStart = Math.max(currentCooldownEnd, now);
+    const additionalCooldown = Math.floor(this.tickIntervalSeconds * (1 - refundMultiplier));
+    return effectiveCooldownStart + additionalCooldown;
+  }
+
+  /**
+   * @deprecated Use calculateNextBattleCooldownEnd instead
+   */
+  public calculateBattleCooldownEnd(currentCooldownEnd: number, now: number, refundMultiplier: number): number {
+    return this.calculateNextBattleCooldownEnd(currentCooldownEnd, now, refundMultiplier);
   }
 
   /**
@@ -149,26 +197,26 @@ export class CombatSimulator {
     // Calculate relic effects
     // Attacker damage relics increase damage output
     const attackerDamageRelics = RELICS.filter((r) => attackerRelics.includes(r.id) && r.type === "Damage");
-    const attackerDamageMultiplier =
+    const attackerDamageMultiplierRelics =
       attackerDamageRelics.length > 0 ? Math.max(...attackerDamageRelics.map((r) => r.bonus)) : 1;
 
     // Defender damage reduction relics reduce incoming damage
     const defenderReductionRelics = RELICS.filter(
       (r) => defenderRelics.includes(r.id) && r.type === "Damage Reduction",
     );
-    const defenderReductionMultiplier =
+    const defenderReductionMultiplierRelics =
       defenderReductionRelics.length > 0 ? Math.min(...defenderReductionRelics.map((r) => r.bonus)) : 1;
 
     // Defender damage relics increase damage output
     const defenderDamageRelics = RELICS.filter((r) => defenderRelics.includes(r.id) && r.type === "Damage");
-    const defenderDamageMultiplier =
+    const defenderDamageMultiplierRelics =
       defenderDamageRelics.length > 0 ? Math.max(...defenderDamageRelics.map((r) => r.bonus)) : 1;
 
     // Attacker damage reduction relics reduce incoming damage
     const attackerReductionRelics = RELICS.filter(
       (r) => attackerRelics.includes(r.id) && r.type === "Damage Reduction",
     );
-    const attackerReductionMultiplier =
+    const attackerReductionMultiplierRelics =
       attackerReductionRelics.length > 0 ? Math.min(...attackerReductionRelics.map((r) => r.bonus)) : 1;
 
     // Calculate base damage for attacker
@@ -192,8 +240,8 @@ export class CombatSimulator {
       Math.pow(totalTroops, betaEff);
 
     // Apply relic modifiers
-    const attackerDamage = baseAttackerDamage * attackerDamageMultiplier * defenderReductionMultiplier;
-    const defenderDamage = baseDefenderDamage * defenderDamageMultiplier * attackerReductionMultiplier;
+    const attackerDamage = baseAttackerDamage * attackerDamageMultiplierRelics * defenderReductionMultiplierRelics;
+    const defenderDamage = baseDefenderDamage * defenderDamageMultiplierRelics * attackerReductionMultiplierRelics;
 
     const attackerRefundMultiplier = this.calculateRefundMultiplier(attackerDamage, defenderDamage);
     const defenderRefundMultiplier = this.calculateRefundMultiplier(defenderDamage, attackerDamage);
@@ -220,6 +268,7 @@ export class CombatSimulator {
       t3_damage_multiplier: 129127208515966861312n, // 7
       stamina_attack_req: 50,
       stamina_defense_req: 40,
+      tick_interval_seconds: 60,
     };
   }
 

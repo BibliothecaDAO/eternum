@@ -506,7 +506,7 @@ export interface Config {
       staminaPaladinMax: number;
       staminaCrossbowmanMax: number;
       staminaAttackReq: number;
-      staminaAttackMax: number;
+      staminaDefenseReq: number;
       staminaExploreWheatCost: number;
       staminaExploreFishCost: number;
       staminaExploreStaminaCost: number;

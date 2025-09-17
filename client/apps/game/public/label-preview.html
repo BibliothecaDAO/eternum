@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Army Label Preview with Direction Indicators</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        background: #1a1a2e;
+        color: white;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+
+      .label-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2rem;
+        padding: 2rem;
+      }
+
+      .preview-section {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 1.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .preview-title {
+        font-size: 1.25rem;
+        font-weight: bold;
+        margin-bottom: 1rem;
+        color: #60a5fa;
+      }
+
+      /* Label styles from the actual game */
+      .text-xxs {
+        font-size: 10px;
+        line-height: 14px;
+      }
+
+      .text-shadow-glow-brilliance-xs {
+        text-shadow: 0 0 4px rgba(251, 191, 36, 0.5);
+      }
+
+      .animate-fade-in {
+        animation: fadeIn 0.3s ease-in;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      .animate-slowPulse {
+        animation: slowPulse 3s ease-in-out infinite;
+      }
+
+      @keyframes slowPulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.8;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container mx-auto">
+      <h1 class="text-3xl font-bold text-center py-8 text-blue-400">Army Label Direction Indicators Preview</h1>
+
+      <div class="label-container">
+        <!-- My Army - No Combat -->
+        <div class="preview-section">
+          <div class="preview-title">My Army - No Combat</div>
+          <div
+            class="rounded-md p-0.5 -translate-x-1/2 text-xxs flex items-center group shadow-md font-semibold transition-[height] duration-700 ease-in-out h-auto inline-flex"
+            style="
+              background-color: rgba(34, 197, 94, 0.3) !important;
+              border: 1px solid rgba(34, 197, 94, 0.5);
+              color: rgb(255, 255, 255) !important;
+            "
+          >
+            <img
+              src="/images/labels/army.png"
+              class="w-auto h-full inline-block object-contain max-w-[32px]"
+              style="height: 48px"
+            />
+            <div class="transition-all duration-700 ease-in-out overflow-hidden max-w-[1000px] ml-2 opacity-100">
+              <div class="flex flex-col w-max">
+                <div class="w-2"></div>
+                <div class="flex items-center gap-1.5">
+                  <span class="font-bold" style="color: #22c55e">PlayerName</span>
+                </div>
+                <div class="flex items-center gap-2 rounded px-1.5 py-0.5 bg-black/40 text-xxs">
+                  <span>🗡️</span>
+                  <span data-role="count">150</span>
+                </div>
+                <div class="flex items-center gap-1 text-xxs mt-1">
+                  <span class="text-yellow-400">⚡</span>
+                  <div class="relative bg-gray-700 rounded-full h-2 w-20 overflow-hidden border border-white/20">
+                    <div
+                      class="absolute top-0 left-0 h-full rounded-full transition-all duration-300 bg-green-500"
+                      style="width: 80%"
+                    ></div>
+                  </div>
+                  <span class="text-white font-mono text-xxs">80/100</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- My Army - Attacking East -->
+        <div class="preview-section">
+          <div class="preview-title">My Army - Attacking East</div>
+          <div
+            class="rounded-md p-0.5 -translate-x-1/2 text-xxs flex items-center group shadow-md font-semibold transition-[height] duration-700 ease-in-out h-auto inline-flex"
+            style="
+              background-color: rgba(34, 197, 94, 0.3) !important;
+              border: 1px solid rgba(34, 197, 94, 0.5);
+              color: rgb(255, 255, 255) !important;
+            "
+          >
+            <img
+              src="/images/labels/army.png"
+              class="w-auto h-full inline-block object-contain max-w-[32px]"
+              style="height: 48px"
+            />
+            <div class="transition-all duration-700 ease-in-out overflow-hidden max-w-[1000px] ml-2 opacity-100">
+              <div class="flex flex-col w-max">
+                <div class="w-2"></div>
+                <div class="flex items-center gap-1.5">
+                  <span class="font-bold" style="color: #22c55e">PlayerName</span>
+                </div>
+                <div class="flex items-center gap-2 rounded px-1.5 py-0.5 bg-black/40 text-xxs">
+                  <span>🗡️</span>
+                  <span data-role="count">150</span>
+                </div>
+                <div class="flex items-center gap-1 text-xxs mt-1">
+                  <span class="text-yellow-400">⚡</span>
+                  <div class="relative bg-gray-700 rounded-full h-2 w-20 overflow-hidden border border-white/20">
+                    <div
+                      class="absolute top-0 left-0 h-full rounded-full transition-all duration-300 bg-amber-500"
+                      style="width: 45%"
+                    ></div>
+                  </div>
+                  <span class="text-white font-mono text-xxs">45/100</span>
+                </div>
+                <!-- Direction Indicators -->
+                <div class="flex items-center gap-2 text-xxs mt-1 animate-fade-in">
+                  <div class="flex items-center gap-0.5">
+                    <span class="text-xs">⚔️</span>
+                    <span class="text-orange-500 font-bold text-sm">→</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Enemy Army - Under Attack from West -->
+        <div class="preview-section">
+          <div class="preview-title">Enemy Army - Under Attack from West</div>
+          <div
+            class="rounded-md p-0.5 -translate-x-1/2 text-xxs flex items-center group shadow-md font-semibold transition-[height] duration-700 ease-in-out h-auto inline-flex"
+            style="
+              background-color: rgba(239, 68, 68, 0.3) !important;
+              border: 1px solid rgba(239, 68, 68, 0.5);
+              color: rgb(255, 255, 255) !important;
+            "
+          >
+            <img
+              src="/images/labels/enemy_army.png"
+              class="w-auto h-full inline-block object-contain max-w-[32px]"
+              style="height: 48px"
+            />
+            <div class="transition-all duration-700 ease-in-out overflow-hidden max-w-[1000px] ml-2 opacity-100">
+              <div class="flex flex-col w-max">
+                <div class="w-2"></div>
+                <div class="flex items-center gap-1.5">
+                  <span class="font-bold" style="color: #ef4444">EnemyPlayer</span>
+                </div>
+                <div class="flex items-center gap-2 rounded px-1.5 py-0.5 bg-black/40 text-xxs">
+                  <span>🗡️</span>
+                  <span data-role="count">200</span>
+                </div>
+                <div class="flex items-center gap-1 text-xxs mt-1">
+                  <span class="text-yellow-400">⚡</span>
+                  <div class="relative bg-gray-700 rounded-full h-2 w-20 overflow-hidden border border-white/20">
+                    <div
+                      class="absolute top-0 left-0 h-full rounded-full transition-all duration-300 bg-red-500"
+                      style="width: 25%"
+                    ></div>
+                  </div>
+                  <span class="text-white font-mono text-xxs">25/100</span>
+                </div>
+                <!-- Direction Indicators -->
+                <div class="flex items-center gap-2 text-xxs mt-1 animate-fade-in">
+                  <div class="flex items-center gap-0.5">
+                    <span class="text-xs">🛡️</span>
+                    <span class="text-blue-500 font-bold text-sm">←</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Army in Active Combat - Both Directions -->
+        <div class="preview-section">
+          <div class="preview-title">Army in Active Combat (Both Directions)</div>
+          <div
+            class="rounded-md p-0.5 -translate-x-1/2 text-xxs flex items-center group shadow-md font-semibold transition-[height] duration-700 ease-in-out h-auto inline-flex"
+            style="
+              background-color: rgba(168, 85, 247, 0.3) !important;
+              border: 1px solid rgba(168, 85, 247, 0.5);
+              color: rgb(255, 255, 255) !important;
+            "
+          >
+            <img
+              src="/images/labels/enemy_army.png"
+              class="w-auto h-full inline-block object-contain max-w-[32px]"
+              style="height: 48px"
+            />
+            <div class="transition-all duration-700 ease-in-out overflow-hidden max-w-[1000px] ml-2 opacity-100">
+              <div class="flex flex-col w-max">
+                <div class="w-2"></div>
+                <div class="flex items-center gap-1.5">
+                  <span class="font-bold" style="color: #a855f7">AllyPlayer</span>
+                  <span
+                    class="text-xxs bg-gradient-to-r from-violet-600/60 to-violet-800/60 px-1.5 py-0.5 rounded-sm ml-1.5 inline-block border border-violet-500/30 font-semibold shadow-sm text-white"
+                    >⚔️ Guild Name</span
+                  >
+                </div>
+                <div class="flex items-center gap-2 rounded px-1.5 py-0.5 bg-black/40 text-xxs">
+                  <span>🗡️</span>
+                  <span data-role="count">300</span>
+                </div>
+                <div class="flex items-center gap-1 text-xxs mt-1">
+                  <span class="text-yellow-400">⚡</span>
+                  <div class="relative bg-gray-700 rounded-full h-2 w-20 overflow-hidden border border-white/20">
+                    <div
+                      class="absolute top-0 left-0 h-full rounded-full transition-all duration-300 bg-amber-500"
+                      style="width: 60%"
+                    ></div>
+                  </div>
+                  <span class="text-white font-mono text-xxs">60/100</span>
+                </div>
+                <!-- Direction Indicators -->
+                <div class="flex items-center gap-2 text-xxs mt-1 animate-fade-in">
+                  <div class="flex items-center gap-0.5">
+                    <span class="text-xs">⚔️</span>
+                    <span class="text-orange-500 font-bold text-sm">↗</span>
+                  </div>
+                  <div class="flex items-center gap-0.5">
+                    <span class="text-xs">🛡️</span>
+                    <span class="text-blue-500 font-bold text-sm">↙</span>
+                  </div>
+                  <!-- Battle Timer -->
+                  <div class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-red-900/40 border border-red-500/30">
+                    <span class="text-xs">⏱️</span>
+                    <span class="text-red-300 font-mono text-xxs font-bold">02:45</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Daydreams Agent -->
+        <div class="preview-section">
+          <div class="preview-title">Daydreams Agent - Attacking Northwest</div>
+          <div
+            class="rounded-md p-0.5 -translate-x-1/2 text-xxs flex items-center group shadow-md font-semibold transition-[height] duration-700 ease-in-out h-auto inline-flex"
+            style="
+              background-color: rgba(251, 191, 36, 0.3) !important;
+              border: 1px solid rgba(251, 191, 36, 0.5);
+              color: rgb(255, 255, 255) !important;
+            "
+          >
+            <img
+              src="/images/logos/daydreams.png"
+              class="w-auto h-full inline-block object-contain max-w-[32px]"
+              style="height: 48px"
+            />
+            <div class="transition-all duration-700 ease-in-out overflow-hidden max-w-[1000px] ml-2 opacity-100">
+              <div class="flex flex-col w-max">
+                <div class="w-2"></div>
+                <div class="flex items-center gap-1.5">
+                  <span class="font-bold" style="color: #fbbf24">AgentName</span>
+                </div>
+                <strong>Sir Lancelot</strong>
+                <div class="flex items-center gap-2 rounded px-1.5 py-0.5 bg-black/40 text-xxs">
+                  <span>🗡️</span>
+                  <span data-role="count">250</span>
+                </div>
+                <div class="flex items-center gap-1 text-xxs mt-1">
+                  <span class="text-yellow-400">⚡</span>
+                  <div class="relative bg-gray-700 rounded-full h-2 w-20 overflow-hidden border border-white/20">
+                    <div
+                      class="absolute top-0 left-0 h-full rounded-full transition-all duration-300 bg-green-500"
+                      style="width: 90%"
+                    ></div>
+                  </div>
+                  <span class="text-white font-mono text-xxs">90/100</span>
+                </div>
+                <!-- Direction Indicators -->
+                <div class="flex items-center gap-2 text-xxs mt-1 animate-fade-in">
+                  <div class="flex items-center gap-0.5">
+                    <span class="text-xs">⚔️</span>
+                    <span class="text-orange-500 font-bold text-sm">↖</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- My Realm - Under Attack -->
+        <div class="preview-section">
+          <div class="preview-title">My Realm - Under Attack from Northeast</div>
+          <div
+            class="rounded-md p-0.5 -translate-x-1/2 text-xxs flex items-center group shadow-md font-semibold transition-[height] duration-700 ease-in-out h-auto inline-flex"
+            style="
+              background-color: rgba(34, 197, 94, 0.3) !important;
+              border: 1px solid rgba(34, 197, 94, 0.5);
+              color: rgb(255, 255, 255) !important;
+            "
+          >
+            <div class="w-auto h-full flex-shrink-0">
+              <img src="/images/labels/realm.png" class="w-10 h-10 object-contain" style="height: 40px" />
+            </div>
+            <div class="transition-all duration-700 ease-in-out overflow-hidden max-w-[1000px] ml-2 opacity-100">
+              <div class="flex flex-col w-max">
+                <div class="w-2"></div>
+                <div class="flex items-center gap-1.5">
+                  <span class="font-bold" style="color: #22c55e">MyRealm</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 text-xxs py-1">
+                  <div class="flex items-center gap-1 bg-black/40 rounded px-1.5 py-0.5">
+                    <span class="text-xs">🛡️</span>
+                    <span class="font-semibold">2</span>
+                    <span class="text-blue-400">⭐⭐</span>
+                    <span class="text-xs">80</span>
+                  </div>
+                </div>
+                <!-- Direction Indicators -->
+                <div class="flex items-center gap-2 text-xxs mt-1 animate-fade-in">
+                  <div class="flex items-center gap-0.5">
+                    <span class="text-xs">🛡️</span>
+                    <span class="text-blue-500 font-bold text-sm">↗</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Enemy Village - Attacking South -->
+        <div class="preview-section">
+          <div class="preview-title">Enemy Village - Attacking South</div>
+          <div
+            class="rounded-md p-0.5 -translate-x-1/2 text-xxs flex items-center group shadow-md font-semibold transition-[height] duration-700 ease-in-out h-auto inline-flex"
+            style="
+              background-color: rgba(239, 68, 68, 0.3) !important;
+              border: 1px solid rgba(239, 68, 68, 0.5);
+              color: rgb(255, 255, 255) !important;
+            "
+          >
+            <div class="w-auto h-full flex-shrink-0">
+              <img src="/images/labels/enemy_village.png" class="w-10 h-10 object-contain" style="height: 40px" />
+            </div>
+            <div class="transition-all duration-700 ease-in-out overflow-hidden max-w-[1000px] ml-2 opacity-100">
+              <div class="flex flex-col w-max">
+                <div class="w-2"></div>
+                <div class="flex items-center gap-1.5">
+                  <span class="font-bold" style="color: #ef4444">EnemyVillage</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 text-xxs py-1">
+                  <div class="flex items-center gap-1 bg-black/40 rounded px-1.5 py-0.5">
+                    <span class="text-xs">🛡️</span>
+                    <span class="font-semibold">1</span>
+                    <span class="text-green-400">⭐</span>
+                    <span class="text-xs">45</span>
+                  </div>
+                </div>
+                <!-- Direction Indicators -->
+                <div class="flex items-center gap-2 text-xxs mt-1 animate-fade-in">
+                  <div class="flex items-center gap-0.5">
+                    <span class="text-xs">⚔️</span>
+                    <span class="text-orange-500 font-bold text-sm">↓</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hyperstructure - Active Combat -->
+        <div class="preview-section">
+          <div class="preview-title">Hyperstructure - Under Siege</div>
+          <div
+            class="rounded-md p-0.5 -translate-x-1/2 text-xxs flex items-center group shadow-md font-semibold transition-[height] duration-700 ease-in-out h-auto inline-flex"
+            style="
+              background-color: rgba(168, 85, 247, 0.3) !important;
+              border: 1px solid rgba(168, 85, 247, 0.5);
+              color: rgb(255, 255, 255) !important;
+            "
+          >
+            <div class="w-auto h-full flex-shrink-0">
+              <img src="/images/labels/hyperstructure.png" class="w-10 h-10 object-contain" style="height: 40px" />
+            </div>
+            <div class="transition-all duration-700 ease-in-out overflow-hidden max-w-[1000px] ml-2 opacity-100">
+              <div class="flex flex-col w-max">
+                <div class="w-2"></div>
+                <div class="flex items-center gap-1.5">
+                  <span class="font-bold" style="color: #a855f7">AllyHyperstructure</span>
+                </div>
+                <div
+                  class="flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded transition-all duration-300 bg-order-brilliance/20 border border-order-brilliance/30 animate-slowPulse"
+                >
+                  <span class="text-xs text-order-brilliance">⚡</span>
+                  <span class="font-bold text-xs text-order-brilliance text-shadow-glow-brilliance-xs">150</span>
+                  <span class="text-xxs font-normal text-order-brilliance/80">VP/s</span>
+                </div>
+                <!-- Direction Indicators -->
+                <div class="flex items-center gap-2 text-xxs mt-1 animate-fade-in">
+                  <div class="flex items-center gap-0.5">
+                    <span class="text-xs">⚔️</span>
+                    <span class="text-orange-500 font-bold text-sm">←</span>
+                  </div>
+                  <div class="flex items-center gap-0.5">
+                    <span class="text-xs">🛡️</span>
+                    <span class="text-blue-500 font-bold text-sm">→</span>
+                  </div>
+                  <!-- Battle Timer -->
+                  <div class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-red-900/40 border border-red-500/30">
+                    <span class="text-xs">⏱️</span>
+                    <span class="text-red-300 font-mono text-xxs font-bold">01:23</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- All Directions Demo -->
+        <div class="preview-section">
+          <div class="preview-title">All Direction Arrows Reference</div>
+          <div class="grid grid-cols-3 gap-4 text-center">
+            <div class="flex flex-col items-center">
+              <span class="text-blue-500 font-bold text-2xl">↖</span>
+              <span class="text-xs text-gray-400">NORTH_WEST</span>
+            </div>
+            <div class="flex flex-col items-center">
+              <span class="text-blue-500 font-bold text-2xl">↑</span>
+              <span class="text-xs text-gray-400">(Not in enum)</span>
+            </div>
+            <div class="flex flex-col items-center">
+              <span class="text-blue-500 font-bold text-2xl">↗</span>
+              <span class="text-xs text-gray-400">NORTH_EAST</span>
+            </div>
+            <div class="flex flex-col items-center">
+              <span class="text-blue-500 font-bold text-2xl">←</span>
+              <span class="text-xs text-gray-400">WEST</span>
+            </div>
+            <div class="flex flex-col items-center">
+              <span class="text-gray-500 font-bold text-2xl">•</span>
+              <span class="text-xs text-gray-400">Center</span>
+            </div>
+            <div class="flex flex-col items-center">
+              <span class="text-blue-500 font-bold text-2xl">→</span>
+              <span class="text-xs text-gray-400">EAST</span>
+            </div>
+            <div class="flex flex-col items-center">
+              <span class="text-blue-500 font-bold text-2xl">↙</span>
+              <span class="text-xs text-gray-400">SOUTH_WEST</span>
+            </div>
+            <div class="flex flex-col items-center">
+              <span class="text-blue-500 font-bold text-2xl">↓</span>
+              <span class="text-xs text-gray-400">(Not in enum)</span>
+            </div>
+            <div class="flex flex-col items-center">
+              <span class="text-blue-500 font-bold text-2xl">↘</span>
+              <span class="text-xs text-gray-400">SOUTH_EAST</span>
+            </div>
+          </div>
+          <div class="mt-4 text-xs text-gray-400">
+            <p>⚔️ → = Attacking toward direction (Orange)</p>
+            <p>🛡️ ← = Being attacked from direction (Blue)</p>
+            <p>⏱️ MM:SS = Battle timer (Red background, time until penalty ends)</p>
+            <p>Simple layout: emoji left, arrow right</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-8 text-center text-gray-400">
+        <p>Note: This preview shows how army labels appear with the new direction indicators.</p>
+        <p>The actual game will populate these directions based on combat events.</p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,5 +1,5 @@
 import { COLORS } from "@/ui/features/settlement";
-import { BuildingType, ResourcesIds, TroopTier } from "@bibliothecadao/types";
+import { BuildingType, Direction, ResourcesIds, TroopTier } from "@bibliothecadao/types";
 import { CameraView } from "../../scenes/hexagon-scene";
 
 /**
@@ -529,6 +529,181 @@ export const updateStaminaBar = (staminaBarElement: HTMLElement, currentStamina:
       progressFill.style.backgroundColor = "#f59e0b"; // amber-500
     } else {
       progressFill.style.backgroundColor = "#ef4444"; // red-500
+    }
+  }
+};
+
+/**
+ * Map Direction enum to arrow unicode characters
+ */
+const DIRECTION_TO_ARROW: Record<Direction, string> = {
+  [Direction.EAST]: "→",
+  [Direction.NORTH_EAST]: "↘",
+  [Direction.NORTH_WEST]: "↙",
+  [Direction.WEST]: "←",
+  [Direction.SOUTH_WEST]: "↖",
+  [Direction.SOUTH_EAST]: "↗",
+};
+
+/**
+ * Format time in seconds to MM:SS format
+ */
+const formatTime = (seconds: number): string => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`;
+};
+
+/**
+ * Create battle timer component
+ */
+export const createBattleTimer = (battleTimerLeft: number): HTMLElement => {
+  const timerDiv = document.createElement("div");
+  timerDiv.classList.add(
+    "flex",
+    "items-center",
+    "gap-0.5",
+    "px-1.5",
+    "py-0.5",
+    "rounded",
+    "bg-red-900/40",
+    "border",
+    "border-red-500/30",
+  );
+  timerDiv.setAttribute("data-component", "battle-timer");
+
+  // Timer icon
+  const timerIcon = document.createElement("span");
+  timerIcon.textContent = "⏱️";
+  timerIcon.classList.add("text-xs");
+  timerDiv.appendChild(timerIcon);
+
+  // Timer text
+  const timerText = document.createElement("span");
+  timerText.textContent = formatTime(battleTimerLeft);
+  timerText.classList.add("text-red-300", "font-mono", "text-xxs", "font-bold");
+  timerText.setAttribute("data-role", "timer-text");
+  timerDiv.appendChild(timerText);
+
+  return timerDiv;
+};
+
+/**
+ * Update battle timer
+ */
+export const updateBattleTimer = (timerElement: HTMLElement, battleTimerLeft: number): void => {
+  const textElement = timerElement.querySelector("[data-role='timer-text']") as HTMLElement;
+  if (textElement) {
+    textElement.textContent = formatTime(battleTimerLeft);
+  }
+};
+
+/**
+ * Create direction indicator component with optional battle timer
+ */
+export const createDirectionIndicators = (
+  attackedFromDirection?: Direction,
+  attackedTowardDirection?: Direction,
+  battleTimerLeft?: number,
+): HTMLElement | null => {
+  // Return null if no directions to display
+  if (attackedFromDirection === undefined && attackedTowardDirection === undefined) {
+    return null;
+  }
+
+  const container = document.createElement("div");
+  container.classList.add("flex", "items-center", "gap-2", "text-xxs", "mt-1", "animate-fade-in");
+  container.setAttribute("data-component", "direction-indicators");
+
+  // Attack direction (offensive) - emoji left, arrow right
+  if (attackedTowardDirection !== undefined) {
+    const attackDiv = document.createElement("div");
+    attackDiv.classList.add("flex", "items-center", "gap-0.5");
+
+    // Attack icon (left)
+    const attackIcon = document.createElement("span");
+    attackIcon.textContent = "⚔️";
+    attackIcon.classList.add("text-xs");
+    attackDiv.appendChild(attackIcon);
+
+    // Direction arrow (right)
+    const attackArrow = document.createElement("span");
+    attackArrow.textContent = DIRECTION_TO_ARROW[attackedTowardDirection];
+    attackArrow.classList.add("text-orange-500", "font-bold", "text-sm");
+    attackDiv.appendChild(attackArrow);
+
+    container.appendChild(attackDiv);
+  }
+
+  // Defense direction (defensive) - emoji left, arrow right
+  if (attackedFromDirection !== undefined) {
+    const defenseDiv = document.createElement("div");
+    defenseDiv.classList.add("flex", "items-center", "gap-0.5");
+
+    // Defense icon (left)
+    const defenseIcon = document.createElement("span");
+    defenseIcon.textContent = "🛡️";
+    defenseIcon.classList.add("text-xs");
+    defenseDiv.appendChild(defenseIcon);
+
+    // Direction arrow (right)
+    const defenseArrow = document.createElement("span");
+    defenseArrow.textContent = DIRECTION_TO_ARROW[attackedFromDirection];
+    defenseArrow.classList.add("text-blue-500", "font-bold", "text-sm");
+    defenseDiv.appendChild(defenseArrow);
+
+    container.appendChild(defenseDiv);
+  }
+
+  // Battle timer (if battle is active)
+  if (battleTimerLeft !== undefined && battleTimerLeft > 0) {
+    const battleTimer = createBattleTimer(battleTimerLeft);
+    container.appendChild(battleTimer);
+  }
+
+  return container;
+};
+
+/**
+ * Update direction indicators
+ */
+export const updateDirectionIndicators = (
+  element: HTMLElement,
+  attackedFromDirection?: Direction,
+  attackedTowardDirection?: Direction,
+  battleTimerLeft?: number,
+): void => {
+  const existingIndicators = element.querySelector('[data-component="direction-indicators"]');
+
+  // Remove existing indicators if no directions
+  if (attackedFromDirection === undefined && attackedTowardDirection === undefined) {
+    if (existingIndicators) {
+      existingIndicators.remove();
+    }
+    return;
+  }
+
+  // Create new indicators
+  const newIndicators = createDirectionIndicators(attackedFromDirection, attackedTowardDirection, battleTimerLeft);
+
+  if (existingIndicators && newIndicators) {
+    // Replace existing with new
+    existingIndicators.replaceWith(newIndicators);
+  } else if (newIndicators) {
+    // Add new indicators after stamina bar or last element
+    const staminaBar = element.querySelector('[data-component="stamina-bar"]');
+    const troopCount = element.querySelector('[data-component="troop-count"]');
+    const insertAfter = staminaBar || troopCount;
+
+    if (insertAfter && insertAfter.parentElement) {
+      insertAfter.parentElement.insertBefore(newIndicators, insertAfter.nextSibling);
+    } else {
+      // Fallback: append to content container
+      const contentContainer =
+        element.querySelector('[data-component="content-container"]') || element.querySelector(".flex.flex-col");
+      if (contentContainer) {
+        contentContainer.appendChild(newIndicators);
+      }
     }
   }
 };

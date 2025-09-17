@@ -2,6 +2,41 @@ import { ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { StaminaManager } from "../managers";
 import { ActiveProduction, ArmyMapData, GuardArmy, MapDataStore } from "../stores/map-data-store";
 
+export interface EnhancedArmyData {
+  troopCount: number;
+  currentStamina: number;
+  onChainStamina?: { amount: bigint; updatedTick: number };
+  owner: { address: bigint | undefined; ownerName: string; guildName: string };
+  battleData?: {
+    battleCooldownEnd: number;
+    latestAttackerId: number | null;
+    latestAttackTimestamp: string | null; // hex string
+    latestDefenderId: number | null;
+    latestDefenseTimestamp: string | null; // hex string
+    latestAttackerCoordX: number | null;
+    latestAttackerCoordY: number | null;
+    latestDefenderCoordX: number | null;
+    latestDefenderCoordY: number | null;
+  };
+}
+
+export interface EnhancedStructureData {
+  owner: { address: bigint | undefined; ownerName: string; guildName: string };
+  guardArmies: GuardArmy[];
+  activeProductions: ActiveProduction[];
+  battleData?: {
+    battleCooldownEnd: number;
+    latestAttackerId: number | null;
+    latestAttackTimestamp: string | null; // hex string
+    latestDefenderId: number | null;
+    latestDefenseTimestamp: string | null; // hex string
+    latestAttackerCoordX: number | null;
+    latestAttackerCoordY: number | null;
+    latestDefenderCoordX: number | null;
+    latestDefenderCoordY: number | null;
+  };
+}
+
 /**
  * DataEnhancer - Handles all data fetching and enhancement from MapDataStore
  *
@@ -19,12 +54,7 @@ export class DataEnhancer {
     explorer: { troopType: TroopType; troopTier: TroopTier },
     currentArmiesTick: number,
     structureOwnerId?: ID,
-  ): Promise<{
-    troopCount: number;
-    currentStamina: number;
-    onChainStamina?: { amount: bigint; updatedTick: number };
-    owner: { address: bigint | undefined; ownerName: string; guildName: string };
-  }> {
+  ): Promise<EnhancedArmyData> {
     const armyMapData = await this.mapDataStore.getArmyByIdAsync(occupierId);
 
     const currentStamina = this.calculateCurrentStamina(armyMapData || null, explorer, currentArmiesTick);
@@ -57,6 +87,7 @@ export class DataEnhancer {
           }
         : undefined,
       owner,
+      battleData: armyMapData?.battleData || undefined,
     };
   }
 
@@ -136,11 +167,7 @@ export class DataEnhancer {
   /**
    * Enhance structure data with information from MapDataStore
    */
-  async enhanceStructureData(occupierId: ID): Promise<{
-    owner: { address: bigint | undefined; ownerName: string; guildName: string };
-    guardArmies: GuardArmy[];
-    activeProductions: ActiveProduction[];
-  }> {
+  async enhanceStructureData(occupierId: ID): Promise<EnhancedStructureData> {
     const structureMapData = await this.mapDataStore.getStructureByIdAsync(occupierId);
 
     return {
@@ -151,6 +178,7 @@ export class DataEnhancer {
       },
       guardArmies: structureMapData?.guardArmies || [],
       activeProductions: structureMapData?.activeProductions || [],
+      battleData: structureMapData?.battleData || undefined,
     };
   }
 

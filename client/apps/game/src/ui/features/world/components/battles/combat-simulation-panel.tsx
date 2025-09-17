@@ -217,28 +217,29 @@ export const CombatSimulationPanel = () => {
   const defenderTroopsLeft = defender.troopCount - defenderTroopsLost;
 
   // Calculate stamina changes
-  let attackStaminaCost = 50;
-  attackStaminaCost -= Math.ceil(attackStaminaCost * simulationResult.attackerRefundMultiplier);
+  const newAttackerStamina = combatSimulator.calculateNewStaminaAttacker(
+    attacker.stamina,
+    simulationResult.attackerRefundMultiplier,
+  );
+  const newDefenderStamina = combatSimulator.calculateNewStaminaDefender(
+    defender.stamina,
+    simulationResult.defenderRefundMultiplier,
+  );
 
-  let defenseStaminaCost = Math.min(defender.stamina, 40);
-  defenseStaminaCost -= Math.ceil(defenseStaminaCost * simulationResult.defenderRefundMultiplier);
+  // Calculate new battle timer cooldown end (what it will be AFTER the battle)
+  const attackerAfterBattleCooldownEnd = combatSimulator.calculateNextBattleCooldownEnd(
+    attacker.battle_cooldown_end,
+    now,
+    simulationResult.attackerRefundMultiplier,
+  );
+  const defenderAfterBattleCooldownEnd = combatSimulator.calculateNextBattleCooldownEnd(
+    defender.battle_cooldown_end,
+    now,
+    simulationResult.defenderRefundMultiplier,
+  );
 
-  const newAttackerStamina = attacker.stamina - attackStaminaCost;
-  const newDefenderStamina = defender.stamina - defenseStaminaCost;
-
-  // Calculate new battle timer cooldown end
-  const tickIntervalSeconds = 60;
-  let attackerCooldownEnd = attacker.battle_cooldown_end;
-  if (attackerCooldownEnd < now) {
-    attackerCooldownEnd = now;
-  }
-  attackerCooldownEnd += Math.floor(tickIntervalSeconds * (1 - simulationResult.attackerRefundMultiplier));
-
-  let defenderCooldownEnd = defender.battle_cooldown_end;
-  if (defenderCooldownEnd < now) {
-    defenderCooldownEnd = now;
-  }
-  defenderCooldownEnd += Math.floor(tickIntervalSeconds * (1 - simulationResult.defenderRefundMultiplier));
+  const attackerCooldownEnd = attacker.battle_cooldown_end;
+  const defenderCooldownEnd = defender.battle_cooldown_end;
 
   // Calculate relic bonuses for display
   const getRelicBonuses = (relics: ResourcesIds[]) => {
@@ -343,6 +344,7 @@ export const CombatSimulationPanel = () => {
                     biomeBonus: configManager.getBiomeCombatBonus(attacker.troopType, biome),
                     relicBonuses: attackerRelicBonuses,
                     cooldownEnd: attackerCooldownEnd,
+                    afterBattleCooldownEnd: attackerAfterBattleCooldownEnd,
                   },
                 },
                 {
@@ -357,6 +359,7 @@ export const CombatSimulationPanel = () => {
                     biomeBonus: configManager.getBiomeCombatBonus(defender.troopType, biome),
                     relicBonuses: defenderRelicBonuses,
                     cooldownEnd: defenderCooldownEnd,
+                    afterBattleCooldownEnd: defenderAfterBattleCooldownEnd,
                   },
                 },
               ].map(({ label, data }) => (
@@ -486,16 +489,31 @@ export const CombatSimulationPanel = () => {
                         </div>
                         <div className="p-4 bg-dark-brown/50 border border-gold/20 rounded-lg">
                           <div className="text-sm font-semibold text-gold/90 mb-2 flex items-center gap-2">
-                            ⏳ Cooldown End
+                            ⏳ {data.troopsLeft <= 0 ? "Status" : "Cooldown End"}
                           </div>
-                          <div className="text-lg font-bold text-gold flex items-baseline">
-                            {new Date(data.cooldownEnd * 1000).toLocaleTimeString()}{" "}
-                            <span className="text-xs ml-2 text-gold/60">({data.cooldownEnd})</span>
-                          </div>
+                          {data.troopsLeft <= 0 ? (
+                            <div className="text-lg font-bold text-red-500 flex items-center justify-center gap-2">
+                              💀 DEAD
+                            </div>
+                          ) : (
+                            <div className="text-lg font-bold text-gold flex items-baseline">
+                              {new Date(data.afterBattleCooldownEnd * 1000).toLocaleTimeString()}{" "}
+                              <span className="text-xs ml-2 text-gold/60">({data.afterBattleCooldownEnd})</span>
+                            </div>
+                          )}
                         </div>
                       </div>
 
-                      <div className="space-y-2">{getStaminaDisplay(data.army.stamina, data.newStamina, 30)}</div>
+                      <div className="space-y-2">
+                        {data.troopsLeft <= 0 ? (
+                          <div className="p-4 bg-red-900/30 border border-red-500/40 rounded-lg text-center">
+                            <div className="text-red-400 font-bold text-lg mb-1">💀 ELIMINATED</div>
+                            <div className="text-red-400/80 text-sm">All stats irrelevant</div>
+                          </div>
+                        ) : (
+                          getStaminaDisplay(data.army.stamina, data.newStamina, 30)
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

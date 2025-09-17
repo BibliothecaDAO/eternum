@@ -1,5 +1,11 @@
 export const latestFeatures = [
   {
+    date: "2025-09-17",
+    title: "Combat Directions",
+    description:
+      "Combat directions are now displayed on the worldmap. When an army or structure is attacked, the direction of the attack is displayed on the label. When an army or structure attacks another army or structure, the direction of the attack is displayed on the label.",
+  },
+  {
     date: "2025-08-18",
     title: "Blitz mode gameplay updates",
     description:

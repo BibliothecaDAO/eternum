@@ -41,6 +41,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 import { ActiveRelicEffects } from "../../world/components/entities/active-relic-effects";
 import { AttackTarget, TargetType } from "./attack-container";
+import { BattleCooldownTimer } from "./battle-cooldown-timer";
 import { BattleStats, CombatLoading, ResourceStealing, TroopDisplay } from "./components";
 
 enum AttackerType {
@@ -102,6 +103,7 @@ export const CombatContainer = ({
 
   const [loading, setLoading] = useState(false);
   const [selectedGuardSlot, setSelectedGuardSlot] = useState<number | null>(null);
+
   const accountName = useAccountStore((state) => state.accountName);
 
   const updateSelectedEntityId = useUIStore((state) => state.updateEntityActionSelectedEntityId);
@@ -194,6 +196,7 @@ export const CombatContainer = ({
     } else {
       // attacker always synced already
       const army = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(attackerEntityId)]));
+
       return {
         troops: {
           count: army?.troops.count || 0n,
@@ -297,28 +300,25 @@ export const CombatContainer = ({
     }
 
     // Calculate stamina changes
-    let attackStaminaCost = combatConfig.stamina_attack_req;
-    attackStaminaCost -= Math.ceil(attackStaminaCost * result.attackerRefundMultiplier);
-
-    let defenseStaminaCost = Math.min(Number(targetArmyData.troops.stamina.amount), combatConfig.stamina_defense_req);
-    defenseStaminaCost -= Math.ceil(defenseStaminaCost * result.defenderRefundMultiplier);
-
-    const newAttackerStamina = Number(attackerStamina) - attackStaminaCost;
-    const newDefenderStamina = Number(targetArmyData.troops.stamina.amount) - defenseStaminaCost;
-
-    // Calculate new battle timer cooldown end
-    const tickIntervalSeconds = 60;
-    let attackerCooldownEnd = attackerArmyData.troops.battle_cooldown_end;
-    if (attackerCooldownEnd < now) {
-      attackerCooldownEnd = now;
-    }
-    attackerCooldownEnd += Math.floor(tickIntervalSeconds * (1 - result.attackerRefundMultiplier));
-
-    let defenderCooldownEnd = targetArmyData.troops.battle_cooldown_end;
-    if (defenderCooldownEnd < now) {
-      defenderCooldownEnd = now;
-    }
-    defenderCooldownEnd += Math.floor(tickIntervalSeconds * (1 - result.defenderRefundMultiplier));
+    const newAttackerStamina = combatSimulator.calculateNewStaminaAttacker(
+      Number(attackerStamina),
+      result.attackerRefundMultiplier,
+    );
+    const newDefenderStamina = combatSimulator.calculateNewStaminaDefender(
+      Number(targetArmyData.troops.stamina.amount),
+      result.defenderRefundMultiplier,
+    );
+    // Calculate what the cooldown will be AFTER the battle
+    const attackerAfterBattleCooldownEnd = combatSimulator.calculateNextBattleCooldownEnd(
+      attackerArmyData.troops.battle_cooldown_end,
+      now,
+      result.attackerRefundMultiplier,
+    );
+    const defenderAfterBattleCooldownEnd = combatSimulator.calculateNextBattleCooldownEnd(
+      targetArmyData.troops.battle_cooldown_end,
+      now,
+      result.defenderRefundMultiplier,
+    );
 
     return {
       attackerTroopsLeft,
@@ -328,8 +328,10 @@ export const CombatContainer = ({
       newDefenderStamina,
       attackerDamage: result.attackerDamage,
       defenderDamage: result.defenderDamage,
-      attackerCooldownEnd,
-      defenderCooldownEnd,
+      attackerCooldownEnd: attackerArmyData.troops.battle_cooldown_end,
+      defenderCooldownEnd: targetArmyData.troops.battle_cooldown_end,
+      attackerAfterBattleCooldownEnd,
+      defenderAfterBattleCooldownEnd,
       getRemainingTroops: () => ({
         attackerTroops: attackerArmy.troopCount - attackerTroopsLost,
         defenderTroops: defenderArmy.troopCount - defenderTroopsLost,
@@ -520,13 +522,21 @@ export const CombatContainer = ({
     );
   };
 
+  // Check if attacker is on cooldown
+  const isAttackerOnCooldown = useMemo(() => {
+    if (!attackerArmyData) return false;
+    const currentTime = Math.floor(Date.now() / 1000);
+    return attackerArmyData.troops.battle_cooldown_end > currentTime;
+  }, [attackerArmyData]);
+
   const buttonMessage = useMemo(() => {
     if (isVillageWithoutTroops) return "Villages cannot be claimed";
+    if (isAttackerOnCooldown) return "On Battle Cooldown";
     if (attackerStamina < combatConfig.stamina_attack_req)
       return `Not Enough Stamina (${combatConfig.stamina_attack_req} Required)`;
     if (!attackerArmyData) return "No Troops Present";
     return "Attack!";
-  }, [isVillageWithoutTroops, attackerStamina, attackerArmyData, combatConfig]);
+  }, [isVillageWithoutTroops, isAttackerOnCooldown, attackerStamina, attackerArmyData, combatConfig]);
 
   const trueAttackDamage = useMemo(() => {
     if (!battleSimulation || !targetArmyData) return 0;
@@ -633,6 +643,8 @@ export const CombatContainer = ({
                   }
                   attackerCooldownEnd={battleSimulation.attackerCooldownEnd}
                   defenderCooldownEnd={battleSimulation.defenderCooldownEnd}
+                  attackerAfterBattleCooldownEnd={battleSimulation.attackerAfterBattleCooldownEnd}
+                  defenderAfterBattleCooldownEnd={battleSimulation.defenderAfterBattleCooldownEnd}
                   outcome={winner === attackerEntityId ? "Victory" : winner === null ? "Draw" : "Defeat"}
                 />
 
@@ -681,11 +693,21 @@ export const CombatContainer = ({
 
       {/* Attack Button */}
       <div className="mt-2 mb-2 flex flex-col items-center gap-4" role="region" aria-label="Combat actions">
+        {/* Battle Cooldown Timer */}
+        {isAttackerOnCooldown && attackerArmyData && (
+          <BattleCooldownTimer cooldownEnd={attackerArmyData.troops.battle_cooldown_end} className="mb-2" />
+        )}
+
         <Button
           variant="primary"
           className="px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-bold text-base sm:text-lg transition-colors w-full sm:w-auto min-w-[200px]"
           isLoading={loading}
-          disabled={attackerStamina < combatConfig.stamina_attack_req || !attackerArmyData || isVillageWithoutTroops}
+          disabled={
+            attackerStamina < combatConfig.stamina_attack_req ||
+            !attackerArmyData ||
+            isVillageWithoutTroops ||
+            isAttackerOnCooldown
+          }
           onClick={onAttack}
           aria-label={`Attack button: ${buttonMessage}`}
           aria-describedby={attackerStamina < combatConfig.stamina_attack_req ? "stamina-warning" : undefined}
