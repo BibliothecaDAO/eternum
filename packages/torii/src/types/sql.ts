@@ -241,12 +241,14 @@ export interface StructureMapDataRaw {
   packed_counts_3: string | null; // hex string
 
   // Battle data
-  battle_data: {
-    latest_attacker_id: number | null;
-    latest_attack_timestamp: string | null; // hex string
-    latest_defender_id: number | null;
-    latest_defense_timestamp: string | null; // hex string
-  };
+  latest_attacker_id: number | null;
+  latest_attack_timestamp: string | null; // hex string
+  latest_defender_id: number | null;
+  latest_defense_timestamp: string | null; // hex string
+  latest_attacker_coord_x: number | null;
+  latest_attacker_coord_y: number | null;
+  latest_defender_coord_x: number | null;
+  latest_defender_coord_y: number | null;
 }
 
 export interface ArmyMapDataRaw {

@@ -272,8 +272,9 @@ export class ArmyManager {
     const { attackedFromDirection, attackedTowardDirection } = getCombatDirections(
       hexCoords,
       latestAttackerId ?? undefined,
+      undefined,
       latestDefenderId ?? undefined,
-      (entityId) => this.armies.get(entityId)?.hexCoords.getContract(),
+      undefined,
     );
 
     // Calculate battle timer left
@@ -959,11 +960,11 @@ ${
     this.armies.forEach((army, entityId) => {
       if (army.battleCooldownEnd) {
         const newBattleTimerLeft = getBattleTimerLeft(army.battleCooldownEnd);
-        
+
         // Only update if timer has changed or expired
         if (army.battleTimerLeft !== newBattleTimerLeft) {
           army.battleTimerLeft = newBattleTimerLeft;
-          
+
           // Update visible label if it exists
           const label = this.entityIdLabels.get(entityId);
           if (label) {
@@ -1008,10 +1009,8 @@ ${
       { col: defenderPos.x, row: defenderPos.y },
       attackerId,
       undefined, // Defender is not attacking in this context
-      (entityId) => {
-        const army = this.armies.get(entityId);
-        return army ? army.hexCoords.getContract() : undefined;
-      },
+      undefined,
+      undefined,
     );
 
     // Update defender - being attacked from direction
@@ -1022,11 +1021,9 @@ ${
     const attackerDirections = getCombatDirections(
       { col: attackerPos.x, row: attackerPos.y },
       undefined, // Attacker is not being attacked in this context
+      undefined,
       defenderId,
-      (entityId) => {
-        const army = this.armies.get(entityId);
-        return army ? army.hexCoords.getContract() : undefined;
-      },
+      undefined,
     );
 
     // Update attacker - attacking toward direction

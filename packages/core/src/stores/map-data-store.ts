@@ -70,8 +70,12 @@ export interface StructureMapData {
     battleCooldownEnd: number;
     latestAttackerId: number | null;
     latestAttackTimestamp: string | null; // hex string
+    latestAttackerCoordX: number | null;
+    latestAttackerCoordY: number | null;
     latestDefenderId: number | null;
     latestDefenseTimestamp: string | null; // hex string
+    latestDefenderCoordX: number | null;
+    latestDefenderCoordY: number | null;
   };
 }
 
@@ -346,6 +350,10 @@ export class MapDataStore {
 
     // Transform and store structures
     structuresRaw.forEach((structure: StructureMapDataRaw) => {
+      if (structure.entity_id === 177) {
+        console.log({ structureTest: structure });
+      }
+
       const guardArmies = this.parseGuardArmies(structure);
 
       const activeProductions = this.parseActiveProductions(
@@ -377,20 +385,22 @@ export class MapDataStore {
         guardArmies,
         activeProductions,
         realmId: structure.realm_id || undefined,
-        battleData: structure.battle_data
-          ? {
-              battleCooldownEnd: Math.max(
-                structure.alpha_battle_cooldown_end || 0,
-                structure.bravo_battle_cooldown_end || 0,
-                structure.charlie_battle_cooldown_end || 0,
-                structure.delta_battle_cooldown_end || 0,
-              ), // TODO: Determine appropriate cooldown logic
-              latestAttackerId: structure.battle_data.latest_attacker_id,
-              latestAttackTimestamp: structure.battle_data.latest_attack_timestamp,
-              latestDefenderId: structure.battle_data.latest_defender_id,
-              latestDefenseTimestamp: structure.battle_data.latest_defense_timestamp,
-            }
-          : undefined,
+        battleData: {
+          latestAttackerCoordX: structure.latest_attacker_coord_x,
+          latestAttackerCoordY: structure.latest_attacker_coord_y,
+          latestDefenderCoordX: structure.latest_defender_coord_x,
+          latestDefenderCoordY: structure.latest_defender_coord_y,
+          battleCooldownEnd: Math.max(
+            structure.alpha_battle_cooldown_end || 0,
+            structure.bravo_battle_cooldown_end || 0,
+            structure.charlie_battle_cooldown_end || 0,
+            structure.delta_battle_cooldown_end || 0,
+          ), // TODO: Determine appropriate cooldown logic
+          latestAttackerId: structure.latest_attacker_id,
+          latestAttackTimestamp: structure.latest_attack_timestamp,
+          latestDefenderId: structure.latest_defender_id,
+          latestDefenseTimestamp: structure.latest_defense_timestamp,
+        },
       };
 
       this.structuresMap.set(structure.entity_id, structureData);

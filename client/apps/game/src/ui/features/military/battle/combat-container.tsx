@@ -351,12 +351,6 @@ export const CombatContainer = ({
     targetRelicResourceIds,
   ]);
 
-  console.log({
-    cooldownEnd: battleSimulation?.attackerCooldownEnd,
-    nextCooldownEnd: battleSimulation?.attackerAfterBattleCooldownEnd,
-    currentTime: Math.floor(Date.now() / 1000),
-  });
-
   const remainingTroops = battleSimulation?.getRemainingTroops();
   const winner = battleSimulation?.winner;
 

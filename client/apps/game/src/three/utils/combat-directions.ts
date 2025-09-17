@@ -10,20 +10,21 @@ export interface CombatDirections {
  * @param targetPosition - The position of the entity being analyzed
  * @param latestAttackerId - The ID of the entity that attacked this position
  * @param latestDefenderId - The ID of the entity that this position attacked
- * @param getEntityPosition - Function to get an entity's position by ID
+ * @param defenderPosition - The position of the entity that attacked this position
+ * @param attackerPosition - The position of the entity that this position attacked
  * @returns Object containing attackedFromDirection and attackedTowardDirection
  */
 export function getCombatDirections(
   targetPosition: { col: number; row: number },
   latestAttackerId: ID | undefined,
+  attackerPosition: { x: number; y: number } | undefined,
   latestDefenderId: ID | undefined,
-  getEntityPosition: (entityId: ID) => { x: number; y: number } | undefined,
+  defenderPosition: { x: number; y: number } | undefined,
 ): CombatDirections {
   const result: CombatDirections = {};
 
   // Calculate direction from which this entity was attacked
   if (latestAttackerId) {
-    const attackerPosition = getEntityPosition(latestAttackerId);
     if (attackerPosition) {
       result.attackedFromDirection = getDirectionBetweenAdjacentHexes(targetPosition, {
         col: attackerPosition.x,
@@ -34,7 +35,6 @@ export function getCombatDirections(
 
   // Calculate direction toward which this entity attacked
   if (latestDefenderId) {
-    const defenderPosition = getEntityPosition(latestDefenderId);
     if (defenderPosition) {
       result.attackedTowardDirection = getDirectionBetweenAdjacentHexes(targetPosition, {
         col: defenderPosition.x,

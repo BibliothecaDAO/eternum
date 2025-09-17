@@ -3,18 +3,17 @@ import { getStructureModelPaths } from "@/three/constants";
 import InstancedModel from "@/three/managers/instanced-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
-import { FELT_CENTER } from "@/ui/config";
 import { getIsBlitz, StructureTileSystemUpdate } from "@bibliothecadao/eternum";
-import { BuildingType, Direction, ID, RelicEffect, StructureType } from "@bibliothecadao/types";
+import { BuildingType, Direction, FELT_CENTER, ID, RelicEffect, StructureType } from "@bibliothecadao/types";
 import { Group, Object3D, Scene, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { GuardArmy } from "../../../../../../packages/core/src/stores/map-data-store";
 import { StructureInfo } from "../types";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
+import { getBattleTimerLeft, getCombatDirections } from "../utils/combat-directions";
 import { createStructureLabel, updateStructureLabel } from "../utils/labels/label-factory";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
-import { getCombatDirections, getBattleTimerLeft } from "../utils/combat-directions";
 import { FXManager } from "./fx-manager";
 
 const MAX_INSTANCES = 1000;
@@ -270,19 +269,22 @@ export class StructureManager {
     let finalActiveProductions = update.activeProductions;
 
     // Calculate battle directions from battleData if available
-    let { battleCooldownEnd, latestAttackerId, latestDefenderId } = update.battleData || {};
+    let {
+      battleCooldownEnd,
+      latestAttackerId,
+      latestDefenderId,
+      latestAttackerCoordX,
+      latestAttackerCoordY,
+      latestDefenderCoordX,
+      latestDefenderCoordY,
+    } = update.battleData || {};
+
     let { attackedFromDirection, attackedTowardDirection } = getCombatDirections(
-      normalizedCoord,
+      hexCoords,
       latestAttackerId ?? undefined,
+      latestAttackerCoordX && latestAttackerCoordY ? { x: latestAttackerCoordX, y: latestAttackerCoordY } : undefined,
       latestDefenderId ?? undefined,
-      (entityId) => {
-        const structure = this.structures.getStructureByEntityId(entityId);
-        if (structure) {
-          return { x: structure.hexCoords.col, y: structure.hexCoords.row };
-        }
-        // Try to get army position if available
-        return this.getArmyPosition?.(entityId);
-      }
+      latestDefenderCoordX && latestDefenderCoordY ? { x: latestDefenderCoordX, y: latestDefenderCoordY } : undefined,
     );
 
     // Calculate battle timer left
@@ -760,7 +762,6 @@ export class StructureManager {
     return effects ? effects.map((effect) => ({ relicId: effect.relicNumber, effect: effect.effect })) : [];
   }
 
-
   /**
    * Update structure label from guard update (troop count/stamina changes)
    */
@@ -840,20 +841,16 @@ export class StructureManager {
 
     if (attackingStructure) {
       // Structure is attacking
-      const defenderPos = defendingStructure?.hexCoords || this.getArmyPosition?.(defenderId);
+      const defenderPos = defendingStructure
+        ? { x: defendingStructure.hexCoords.col, y: defendingStructure.hexCoords.row }
+        : this.getArmyPosition?.(defenderId);
       if (defenderPos) {
         const { attackedTowardDirection } = getCombatDirections(
           { col: attackingStructure.hexCoords.col, row: attackingStructure.hexCoords.row },
           undefined,
+          undefined,
           defenderId,
-          (entityId) => {
-            const structure = this.structures.getStructureByEntityId(entityId);
-            if (structure) {
-              return { x: structure.hexCoords.col, y: structure.hexCoords.row };
-            }
-            // Try to get army position if available
-            return this.getArmyPosition?.(entityId);
-          }
+          defenderPos,
         );
 
         attackingStructure.attackedTowardDirection = attackedTowardDirection ?? undefined;
@@ -869,20 +866,16 @@ export class StructureManager {
 
     if (defendingStructure) {
       // Structure is being attacked
-      const attackerPos = attackingStructure?.hexCoords || this.getArmyPosition?.(attackerId);
+      const attackerPos = attackingStructure
+        ? { x: attackingStructure.hexCoords.col, y: attackingStructure.hexCoords.row }
+        : this.getArmyPosition?.(attackerId);
       if (attackerPos) {
         const { attackedFromDirection } = getCombatDirections(
           { col: defendingStructure.hexCoords.col, row: defendingStructure.hexCoords.row },
           attackerId,
+          attackerPos,
           undefined,
-          (entityId) => {
-            const structure = this.structures.getStructureByEntityId(entityId);
-            if (structure) {
-              return { x: structure.hexCoords.col, y: structure.hexCoords.row };
-            }
-            // Try to get army position if available
-            return this.getArmyPosition?.(entityId);
-          }
+          undefined,
         );
 
         defendingStructure.attackedFromDirection = attackedFromDirection ?? undefined;
@@ -971,18 +964,18 @@ export class StructureManager {
    */
   private recomputeBattleTimersForAllStructures(): void {
     const allStructures = this.structures.getStructures();
-    
+
     // Update all structure data
     allStructures.forEach((structures) => {
       structures.forEach((structure, entityId) => {
         // Update battle timer if structure has a battle cooldown
         if (structure.battleCooldownEnd) {
           const newBattleTimerLeft = getBattleTimerLeft(structure.battleCooldownEnd);
-          
+
           // Only update if timer has changed or expired
           if (structure.battleTimerLeft !== newBattleTimerLeft) {
             structure.battleTimerLeft = newBattleTimerLeft;
-            
+
             // Update visible label if it exists
             const label = this.entityIdLabels.get(entityId);
             if (label) {

@@ -691,30 +691,53 @@ export class WorldUpdateListener {
           async (update: any): Promise<BattleEventSystemUpdate | undefined> => {
             if (isComponentUpdate(update, this.setup.components.events.BattleEvent)) {
               const [currentState, _prevState] = update.value;
-              
-              if (!currentState) return;
+
+              console.log("🛡️ BattleEvent received:", {
+                currentState,
+                prevState: _prevState,
+                updateType: "BattleEvent",
+              });
+
+              if (!currentState) {
+                console.log("❌ BattleEvent: No current state, returning undefined");
+                return;
+              }
 
               // Parse max_reward from the event
               const maxReward: Array<{ resourceType: number; amount: number }> = [];
               if (currentState.max_reward && Array.isArray(currentState.max_reward)) {
+                console.log("💰 BattleEvent: Parsing max_reward:", currentState.max_reward);
                 for (const reward of currentState.max_reward) {
                   // Assuming reward is [resourceType, amount] tuple
                   if (Array.isArray(reward) && reward.length === 2) {
-                    maxReward.push({
+                    const parsedReward = {
                       resourceType: Number(reward[0]),
                       amount: divideByPrecision(Number(reward[1])),
-                    });
+                    };
+                    maxReward.push(parsedReward);
+                    console.log("💰 BattleEvent: Added reward:", parsedReward);
                   }
                 }
               }
 
               // Determine the entityId based on winner
               // If attacker won, use attacker_id; if defender won, use defender_id
-              const entityId = currentState.winner_id === currentState.attacker_owner 
-                ? currentState.attacker_id 
-                : currentState.defender_id;
+              const entityId =
+                currentState.winner_id === currentState.attacker_owner
+                  ? currentState.attacker_id
+                  : currentState.defender_id;
 
-              return {
+              console.log("🏆 BattleEvent: Winner determination:", {
+                winnerId: currentState.winner_id,
+                attackerOwner: currentState.attacker_owner,
+                defenderOwner: currentState.defender_owner,
+                attackerId: currentState.attacker_id,
+                defenderId: currentState.defender_id,
+                selectedEntityId: entityId,
+                logic: currentState.winner_id === currentState.attacker_owner ? "attacker won" : "defender won",
+              });
+
+              const result = {
                 entityId,
                 battleData: {
                   attackerId: currentState.attacker_id,
@@ -726,12 +749,15 @@ export class WorldUpdateListener {
                   timestamp: currentState.timestamp,
                 },
               };
+
+              console.log("✅ BattleEvent: Final result:", result);
+              return result;
             }
           },
           false,
         );
       },
-      
+
       /**
        * Listen for battle events and return data needed to update army/structure directions
        */
@@ -742,7 +768,7 @@ export class WorldUpdateListener {
           async (update: any): Promise<{ attackerId: ID; defenderId: ID; timestamp: number } | undefined> => {
             if (isComponentUpdate(update, this.setup.components.events.BattleEvent)) {
               const [currentState, _prevState] = update.value;
-              
+
               if (!currentState) return;
 
               return {
