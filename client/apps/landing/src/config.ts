@@ -25,7 +25,7 @@ const COLLECTION_IDS = {
     "loot-chests": 3,
     cosmetics: 4, // TODO: Replace with actual collection ID
     "golden-tokens": 5,
-    beasts: 6,
+    beasts: 7,
   },
   sepolia: {
     // "season-passes": 3,
