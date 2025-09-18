@@ -9,3 +9,4 @@ ADW/
 unoptimized-*/
 CLAUDE.local.md
 client/apps/eternum-mobile/dist
+.env.local
