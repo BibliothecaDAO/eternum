@@ -4,9 +4,11 @@ import { Alert, AlertDescription } from "@/shared/ui/alert";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Dialog, DialogContent } from "@/shared/ui/dialog";
+import { getIsBlitz } from "@bibliothecadao/eternum";
 import { useNavigate } from "@tanstack/react-router";
 import { AlertCircle } from "lucide-react";
 import { useEffect, useState } from "react";
+import { BlitzOnboarding } from "./blitz-onboarding";
 import { TermsOfService } from "./terms-of-service";
 
 const TOS_ACCEPTED_KEY = "eternum_tos_accepted";
@@ -16,6 +18,7 @@ export function LoginPage() {
   const { connectWallet, isConnecting, isConnected, displayAddress } = useWallet();
   const [hasAcceptedTS, setHasAcceptedToS] = useState(false);
   const [showToS, setShowToS] = useState(false);
+  const isBlitz = getIsBlitz();
 
   useEffect(() => {
     const accepted = localStorage.getItem(TOS_ACCEPTED_KEY) === "true";
@@ -80,6 +83,12 @@ export function LoginPage() {
         </button>
         {hasAcceptedTS && " (Accepted)"}
       </p>
+
+      {isBlitz && isConnected && (
+        <section className="mt-10 w-full max-w-md">
+          <BlitzOnboarding />
+        </section>
+      )}
 
       <Dialog open={showToS} onOpenChange={setShowToS}>
         <DialogContent className="max-w-[95vw] h-[90vh] p-0">
