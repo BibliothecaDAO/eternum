@@ -25,6 +25,21 @@ in desktop and `client/apps/eternum-mobile/src` in mobile. Run `pnpm --dir clien
 patches; fixable issues can be auto-corrected with `lint:fix`. Formatting is enforced through Prettier (`format` /
 `format:check`).
 
+## Mobile Specific Guidelines
+
+- Use `client/apps/eternum-mobile/README.md` for mobile specific guidelines.
+- Tech stack: React.ts, shadcn/ui, tailwind, pnpm, vite.
+- Configured path for installed shadcn components is: `@/shared/ui`.
+- Use kebab-case for file names.
+- Prefer to use shadcn/ui elements when it's possible.
+- UI/UX must be optimized for mobile devices with touch screns.
+- Prefer to use interfaces over types.
+- We are using Feature-Sliced Design architecture in project.
+- When creating new pages/widgets be sure that it has `index.ts` with all the exports.
+- Dont add custom css classes unless they are necessary.
+- Don't create huge components, divide it into smaller parts where it's appropriate. App-level reusable components place
+  into `src/shared` folder.
+
 ## Commit & Pull Request Guidelines
 
 Follow the active history style: concise, present-tense prefixes such as `fix:`, `feat:`, or `chore:` describe intent
