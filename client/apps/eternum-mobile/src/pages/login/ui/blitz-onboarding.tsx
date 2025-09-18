@@ -63,7 +63,7 @@ const CountdownTimer = ({ targetTime, label }: { targetTime: number; label: stri
 const PlayerCount = ({ count }: { count: number }) => (
   <div className="flex items-center justify-center gap-2 text-gold">
     <Users className="h-5 w-5" />
-    <span className="text-base font-semibold">{count} players registered</span>
+    <span className="text-base font-semibold">{count} warriors assembled</span>
   </div>
 );
 
@@ -83,15 +83,15 @@ const NoGameState = ({
       <CountdownTimer targetTime={registrationStartAt} label="Registration starts in" />
 
       <div className="rounded-lg border border-gold/30 bg-gold/10 p-4 space-y-2">
-        <p className="text-xs uppercase tracking-wide text-gold/80">Upcoming Schedule</p>
+        <p className="text-xs uppercase tracking-wide text-gold/80">⚔️ Upcoming Battle Schedule</p>
         <div className="text-sm space-y-2">
           <div>
-            <p className="font-semibold text-gold">Registration Phase</p>
+            <p className="font-semibold text-gold">🛡️ Registration Phase</p>
             <p className="text-xs text-gold/60">Starts: {formatLocalDateTime(registrationStartAt)}</p>
             <p className="text-xs text-gold/60">Duration: {formatTime(registrationDuration)}</p>
           </div>
           <div>
-            <p className="font-semibold text-gold">Game Launch</p>
+            <p className="font-semibold text-gold">⚡ Battle Begins</p>
             <p className="text-xs text-gold/50">{formatLocalDateTime(creationStartAt)}</p>
           </div>
         </div>
@@ -173,7 +173,7 @@ const HyperstructureForgeButton = ({
       >
         {count}
       </motion.span>
-      <span className="text-xs font-semibold uppercase">left</span>
+      <span className="text-xs font-semibold uppercase">to forge</span>
     </div>
     {isLoading && (
       <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/30">
@@ -228,8 +228,8 @@ const MakeHyperstructuresState = ({
   return (
     <div className="flex flex-col items-center space-y-4">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-center">
-        <h3 className="text-sm font-semibold text-gold">Forge Hyperstructures</h3>
-        <p className="text-xs text-muted-foreground">Secure your late-game edge before the match starts.</p>
+        <h3 className="text-sm font-semibold text-gold">🔨 Forge Hyperstructures</h3>
+        <p className="text-xs text-muted-foreground">Secure your late-game dominance before battle begins!</p>
       </motion.div>
 
       <HyperstructureForgeButton count={currentLeft} isLoading={isMakingHyperstructures} onClick={handleMake} />
@@ -265,7 +265,7 @@ const RegistrationState = ({
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
       <div className="space-y-3 text-center">
-        <h3 className="text-lg font-semibold text-gold">Registration Open</h3>
+        <h3 className="text-lg font-semibold text-gold">⚔️ Join the Battle!</h3>
         <PlayerCount count={registrationCount} />
         <CountdownTimer targetTime={registrationEndAt} label="Registration closes in" />
       </div>
@@ -273,8 +273,8 @@ const RegistrationState = ({
       {isRegistered ? (
         <div className="rounded-lg border border-gold/30 bg-gold/10 p-4 text-center">
           <ShieldCheck className="mx-auto mb-2 h-8 w-8 text-gold" />
-          <p className="font-medium text-gold">You are registered!</p>
-          <p className="mt-1 text-sm text-gold/70">Kick back until the match begins.</p>
+          <p className="font-medium text-gold">🛡️ You're ready for battle!</p>
+          <p className="mt-1 text-sm text-gold/70">Prepare yourself, warrior. The fight begins soon.</p>
         </div>
       ) : (
         <Button onClick={handleRegister} disabled={isRegistering} className="w-full">
@@ -286,7 +286,7 @@ const RegistrationState = ({
           ) : (
             <div className="flex items-center justify-center gap-2">
               <Swords className="h-5 w-5" />
-              <span>Register for Blitz</span>
+              <span>⚔️ Enter the Arena</span>
             </div>
           )}
         </Button>
@@ -329,8 +329,13 @@ const GameActiveState = ({
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
       <div className="space-y-2 text-center">
-        <h3 className="text-lg font-semibold text-gold">Game Active</h3>
-        {gameEndAt && <p className="text-xs text-muted-foreground">Ends {formatLocalTime(gameEndAt)}</p>}
+        <h3 className="text-lg font-semibold text-gold">⚡ Battle Rages On!</h3>
+        {gameEndAt && (
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Victory deadline: {formatLocalTime(gameEndAt)}</p>
+            <p className="text-sm font-semibold text-gold">🏆 Conquer everything!</p>
+          </div>
+        )}
       </div>
 
       {isRegistered ? (
@@ -338,8 +343,7 @@ const GameActiveState = ({
           <div className="space-y-3">
             <Button onClick={onPlay} className="w-full">
               <div className="flex items-center justify-center gap-2">
-                <ShieldCheck className="h-5 w-5" />
-                <span>Play Blitz</span>
+                <span>⚡ Play Blitz</span>
               </div>
             </Button>
             <SpectateButton onClick={() => navigate({ to: ROUTES.WORLDMAP })} />
@@ -354,8 +358,7 @@ const GameActiveState = ({
                 </div>
               ) : (
                 <div className="flex items-center justify-center gap-2">
-                  <ShieldCheck className="h-5 w-5" />
-                  <span>Settle Realm</span>
+                  <span>🏰 Settle Your Kingdom</span>
                 </div>
               )}
             </Button>
@@ -365,7 +368,7 @@ const GameActiveState = ({
       ) : (
         <div className="space-y-3">
           <div className="rounded-lg border border-gold/30 bg-brown/10 p-4 text-center">
-            <p className="text-sm text-gold/70">You are not registered for this game.</p>
+            <p className="text-sm text-gold/70">⚠️ You missed the call to arms for this battle.</p>
           </div>
           <SpectateButton onClick={() => navigate({ to: ROUTES.WORLDMAP })} />
         </div>
@@ -540,11 +543,11 @@ export const BlitzOnboarding = () => {
       >
         <AlertCircle className="mx-auto h-10 w-10 text-gold/60" />
         <div className="space-y-1">
-          <h3 className="text-base font-semibold text-gold">Configuration Error</h3>
-          <p className="text-sm text-gold/70">Unable to load Blitz configuration. Please refresh and try again.</p>
+          <h3 className="text-base font-semibold text-gold">⚠️ Battle System Offline</h3>
+          <p className="text-sm text-gold/70">Unable to connect to the arena. Refresh to rejoin the fight!</p>
         </div>
         <Button onClick={() => window.location.reload()} className="bg-gold text-brown hover:bg-gold/90">
-          Refresh
+          ⚡ Reconnect to Arena
         </Button>
       </motion.div>
     );
