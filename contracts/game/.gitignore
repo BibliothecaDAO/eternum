@@ -12,3 +12,5 @@ dojo_prod.local.toml
 .env
 
 dojo_mainnet.toml
+torii-local.toml
+manifest_local.json
