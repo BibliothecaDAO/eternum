@@ -530,6 +530,7 @@ export class HexagonMap {
         break;
       case ActionType.Attack:
         console.log(`Attack action at (${col}, ${row})`);
+        this.handleAttackAction(actionPath, selectedObject.id);
         break;
       case ActionType.Help:
         console.log(`Help action at (${col}, ${row})`);
@@ -657,6 +658,14 @@ export class HexagonMap {
       direction: direction,
       isExplorer: true,
     });
+  }
+
+  private handleAttackAction(actionPath: any[], selectedEntityId: number): void {
+    const selectedPath = actionPath.map((path) => path.hex);
+    const targetHex = selectedPath[selectedPath.length - 1];
+
+    // Trigger mobile attack drawer
+    this.store?.openAttackDrawer(selectedEntityId, { x: targetHex.col, y: targetHex.row });
   }
 
   private handleHelpAction(actionPath: any[], selectedEntityId: number): void {

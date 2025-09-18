@@ -1,5 +1,6 @@
 import { UnifiedArmyCreationDrawer } from "@/features/armies/ui/unified-army-creation-drawer";
 import { useStore } from "@/shared/store";
+import { AttackDrawer } from "@/widgets/attack-drawer";
 import { ChestDrawer } from "@/widgets/chest-drawer/ui/chest-drawer";
 import { HexEntityDetailsDrawer } from "@/widgets/hex-entity-details-drawer";
 import { TransferDrawer } from "@/widgets/transfer-drawer";
@@ -21,6 +22,9 @@ export function WorldmapPage() {
     isArmyCreationDrawerOpen,
     armyCreationDrawerData,
     closeArmyCreationDrawer,
+    isAttackDrawerOpen,
+    attackDrawerData,
+    closeAttackDrawer,
   } = useStore();
   const [isCanvasReady, setIsCanvasReady] = useState(false);
   const [hexDrawerOpen, setHexDrawerOpen] = useState(false);
@@ -130,6 +134,16 @@ export function WorldmapPage() {
 
       {/* Transfer Drawer */}
       <TransferDrawer />
+
+      {/* Attack Drawer */}
+      {isAttackDrawerOpen && attackDrawerData.attackerEntityId && attackDrawerData.targetHex && (
+        <AttackDrawer
+          open={isAttackDrawerOpen}
+          onOpenChange={(open) => !open && closeAttackDrawer()}
+          attackerEntityId={attackDrawerData.attackerEntityId}
+          targetHex={attackDrawerData.targetHex}
+        />
+      )}
     </div>
   );
 }
