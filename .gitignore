@@ -9,7 +9,3 @@ ADW/
 unoptimized-*/
 CLAUDE.local.md
 client/apps/eternum-mobile/dist
-.env.local
-torii-local.toml
-manifest_local.json
-local.json
