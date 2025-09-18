@@ -35,10 +35,10 @@ const indexRoute = createRoute({
   path: ROUTES.LOGIN,
   component: LoginPage,
   beforeLoad: async () => {
-    const { isAuthenticated } = useAuth.getState();
-    if (isAuthenticated) {
-      throw redirect({ to: ROUTES.HOME });
-    }
+    // const { isAuthenticated } = useAuth.getState();
+    // if (isAuthenticated) {
+    //   throw redirect({ to: ROUTES.HOME });
+    // }
   },
 });
 

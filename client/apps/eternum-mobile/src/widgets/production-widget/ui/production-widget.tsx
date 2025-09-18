@@ -105,7 +105,7 @@ export const ProductionWidget = ({ building, resourceManager, realm }: LaborBuil
                   </Button>
                   {timeUntilValueReached !== 0 && (
                     <Badge variant="secondary" className="h-6 text-xs bg-white/10 text-white/90">
-                      {formatTime(timeUntilValueReached)}
+                      {timeUntilValueReached > 1e9 ? "∞" : formatTime(timeUntilValueReached)}
                     </Badge>
                   )}
                 </div>
