@@ -329,7 +329,7 @@ const GameActiveState = ({
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
       <div className="space-y-2 text-center">
-        <h3 className="text-lg font-semibold text-gold">⚡ Battle Rages On!</h3>
+        <h3 className="text-lg font-semibold text-gold">⚡ Game Active!</h3>
         {gameEndAt && (
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">Victory deadline: {formatLocalTime(gameEndAt)}</p>
