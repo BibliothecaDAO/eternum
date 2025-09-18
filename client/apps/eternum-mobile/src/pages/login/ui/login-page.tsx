@@ -1,11 +1,9 @@
-import { ROUTES } from "@/shared/consts/routes";
 import { useWallet } from "@/shared/hooks/use-wallet";
 import { Alert, AlertDescription } from "@/shared/ui/alert";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Dialog, DialogContent } from "@/shared/ui/dialog";
 import { getIsBlitz } from "@bibliothecadao/eternum";
-import { useNavigate } from "@tanstack/react-router";
 import { AlertCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { BlitzOnboarding } from "./blitz-onboarding";
@@ -14,7 +12,6 @@ import { TermsOfService } from "./terms-of-service";
 const TOS_ACCEPTED_KEY = "eternum_tos_accepted";
 
 export function LoginPage() {
-  const navigate = useNavigate();
   const { connectWallet, isConnecting, isConnected, displayAddress } = useWallet();
   const [hasAcceptedTS, setHasAcceptedToS] = useState(false);
   const [showToS, setShowToS] = useState(false);
@@ -57,11 +54,7 @@ export function LoginPage() {
         <CardContent className="flex flex-col gap-4">
           {!isConnected ? (
             <Button onClick={handleConnect} disabled={isConnecting} className="w-full">
-              {isConnecting
-                ? "Connecting..."
-                : hasAcceptedTS
-                  ? "Connect Wallet"
-                  : "Accept Terms of Service"}
+              {isConnecting ? "Connecting..." : hasAcceptedTS ? "Connect Wallet" : "Accept Terms of Service"}
             </Button>
           ) : (
             isBlitz && <BlitzOnboarding />
@@ -108,7 +101,6 @@ export function LoginPage() {
           </p>
         </>
       )}
-
 
       <Dialog open={showToS} onOpenChange={setShowToS}>
         <DialogContent className="max-w-[95vw] h-[90vh] p-0">
