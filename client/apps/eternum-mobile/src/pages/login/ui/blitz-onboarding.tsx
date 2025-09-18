@@ -277,11 +277,7 @@ const RegistrationState = ({
           <p className="mt-1 text-sm text-gold/70">Kick back until the match begins.</p>
         </div>
       ) : (
-        <Button
-          onClick={handleRegister}
-          disabled={isRegistering}
-          className="h-12 w-full bg-gold text-brown hover:bg-gold/90"
-        >
+        <Button onClick={handleRegister} disabled={isRegistering} className="w-full">
           {isRegistering ? (
             <div className="flex items-center justify-center gap-2">
               <img src="/images/logos/eternum-loader.png" className="h-5 w-5 animate-spin" />
@@ -340,21 +336,17 @@ const GameActiveState = ({
       {isRegistered ? (
         hasSettled ? (
           <div className="space-y-3">
-            <Button onClick={onPlay} className="h-12 w-full bg-gold text-brown hover:bg-gold/90">
+            <Button onClick={onPlay} className="w-full">
               <div className="flex items-center justify-center gap-2">
                 <ShieldCheck className="h-5 w-5" />
-                <span>Enter Realm</span>
+                <span>Play Blitz</span>
               </div>
             </Button>
             <SpectateButton onClick={() => navigate({ to: ROUTES.WORLDMAP })} />
           </div>
         ) : (
           <div className="space-y-3">
-            <Button
-              onClick={handleSettle}
-              disabled={isSettling}
-              className="h-12 w-full bg-gold text-brown hover:bg-gold/90"
-            >
+            <Button onClick={handleSettle} disabled={isSettling} className="w-full">
               {isSettling ? (
                 <div className="flex items-center justify-center gap-2">
                   <img src="/images/logos/eternum-loader.png" className="h-5 w-5 animate-spin" />
@@ -436,7 +428,7 @@ const DevOptionsState = ({
 };
 
 const SpectateButton = ({ onClick }: { onClick: () => void }) => (
-  <Button onClick={onClick} className="h-12 w-full" variant="ghost">
+  <Button onClick={onClick} className="w-full" variant="secondary">
     <div className="flex items-center justify-center gap-2">
       <Eye className="h-5 w-5" />
       <span>Spectate</span>

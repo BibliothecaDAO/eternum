@@ -39,7 +39,6 @@ export function LoginPage() {
 
     try {
       await connectWallet();
-      navigate({ to: ROUTES.HOME });
     } catch (error) {
       console.error("Failed to connect:", error);
     }
@@ -56,39 +55,60 @@ export function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <Button onClick={handleConnect} disabled={isConnecting} className="w-full">
-            {isConnecting
-              ? "Connecting..."
-              : isConnected
-                ? "Start Game"
+          {!isConnected ? (
+            <Button onClick={handleConnect} disabled={isConnecting} className="w-full">
+              {isConnecting
+                ? "Connecting..."
                 : hasAcceptedTS
                   ? "Connect Wallet"
                   : "Accept Terms of Service"}
-          </Button>
+            </Button>
+          ) : (
+            isBlitz && <BlitzOnboarding />
+          )}
         </CardContent>
       </Card>
 
-      <Alert className="mt-6">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription className="text-xs">
-          The mobile client is designed as a companion app and does not provide the full game experience. For the
-          complete experience, including all features and content, please use the desktop application.
-        </AlertDescription>
-      </Alert>
+      {isConnected && isBlitz && (
+        <>
+          <Alert className="mt-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="text-xs">
+              The mobile client is designed as a companion app and does not provide the full game experience. For the
+              complete experience, including all features and content, please use the desktop application.
+            </AlertDescription>
+          </Alert>
 
-      <p className="text-sm text-center text-muted-foreground mt-4 max-w-md">
-        By continuing you are agreeing to Eternum's{" "}
-        <button onClick={() => setShowToS(true)} className="underline hover:text-gold transition-colors">
-          Terms of Service
-        </button>
-        {hasAcceptedTS && " (Accepted)"}
-      </p>
-
-      {isBlitz && isConnected && (
-        <section className="mt-10 w-full max-w-md">
-          <BlitzOnboarding />
-        </section>
+          <p className="text-sm text-center text-muted-foreground mt-4 max-w-md">
+            By continuing you are agreeing to Eternum's{" "}
+            <button onClick={() => setShowToS(true)} className="underline hover:text-gold transition-colors">
+              Terms of Service
+            </button>
+            {hasAcceptedTS && " (Accepted)"}
+          </p>
+        </>
       )}
+
+      {!isConnected && (
+        <>
+          <Alert className="mt-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="text-xs">
+              The mobile client is designed as a companion app and does not provide the full game experience. For the
+              complete experience, including all features and content, please use the desktop application.
+            </AlertDescription>
+          </Alert>
+
+          <p className="text-sm text-center text-muted-foreground mt-4 max-w-md">
+            By continuing you are agreeing to Eternum's{" "}
+            <button onClick={() => setShowToS(true)} className="underline hover:text-gold transition-colors">
+              Terms of Service
+            </button>
+            {hasAcceptedTS && " (Accepted)"}
+          </p>
+        </>
+      )}
+
 
       <Dialog open={showToS} onOpenChange={setShowToS}>
         <DialogContent className="max-w-[95vw] h-[90vh] p-0">
