@@ -12,8 +12,10 @@ export interface ThreeCanvasRef {
   switchScene: (sceneId: string) => void;
   getCurrentScene: () => string;
   getAvailableScenes: () => string[];
-  moveCameraToStructure: (structurePosition: { x: number; y: number }) => void;
+  moveCameraToStructure: (structurePosition: { x: number; y: number }) => Promise<void>;
   getGameRenderer: () => GameRenderer | null;
+  isWorldmapReady: () => boolean;
+  waitForWorldmapInitialization: () => Promise<void>;
 }
 
 export const ThreeCanvas = forwardRef<ThreeCanvasRef, ThreeCanvasProps>(
@@ -92,9 +94,19 @@ export const ThreeCanvas = forwardRef<ThreeCanvasRef, ThreeCanvasProps>(
       return rendererRef.current?.getAvailableScenes() || [];
     };
 
-    const moveCameraToStructure = (structurePosition: { x: number; y: number }) => {
+    const moveCameraToStructure = async (structurePosition: { x: number; y: number }) => {
       if (rendererRef.current) {
-        rendererRef.current.moveCameraToStructure(structurePosition);
+        await rendererRef.current.moveCameraToStructure(structurePosition);
+      }
+    };
+
+    const isWorldmapReady = () => {
+      return rendererRef.current?.isWorldmapReady() ?? false;
+    };
+
+    const waitForWorldmapInitialization = async () => {
+      if (rendererRef.current) {
+        await rendererRef.current.waitForWorldmapInitialization();
       }
     };
 
@@ -109,6 +121,8 @@ export const ThreeCanvas = forwardRef<ThreeCanvasRef, ThreeCanvasProps>(
       getAvailableScenes,
       moveCameraToStructure,
       getGameRenderer,
+      isWorldmapReady,
+      waitForWorldmapInitialization,
     }));
 
     if (error) {

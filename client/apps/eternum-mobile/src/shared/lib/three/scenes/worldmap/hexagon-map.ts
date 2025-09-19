@@ -74,6 +74,10 @@ export class HexagonMap {
   private chunkUpdateCount: number = 0;
   private GUIFolder: any;
 
+  // === INITIALIZATION STATE ===
+  private isInitialized: boolean = false;
+  private initializationPromise: Promise<void> | null = null;
+
   // === CONSTRUCTOR & INITIALIZATION ===
   constructor(
     scene: THREE.Scene,
@@ -95,7 +99,7 @@ export class HexagonMap {
     this.initializeGUI();
 
     this.initializeStaticAssets();
-    this.initializeMap();
+    this.initializationPromise = this.initializeMap();
   }
 
   private initializeManagers(): void {
@@ -188,7 +192,8 @@ export class HexagonMap {
 
     await this.waitUntilMaterialsReady();
 
-    this.updateVisibleHexes(centerChunkX, centerChunkZ);
+    await this.updateVisibleHexes(centerChunkX, centerChunkZ);
+    this.isInitialized = true;
   }
 
   private async waitUntilMaterialsReady(): Promise<void> {
@@ -749,6 +754,16 @@ export class HexagonMap {
     const maxRow = Math.max(...hexArray.map((h) => h.row));
 
     return { minCol, maxCol, minRow, maxRow };
+  }
+
+  public isReady(): boolean {
+    return this.isInitialized;
+  }
+
+  public async waitForInitialization(): Promise<void> {
+    if (this.initializationPromise) {
+      await this.initializationPromise;
+    }
   }
 
   public dispose(): void {

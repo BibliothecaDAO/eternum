@@ -29,30 +29,38 @@ export function WorldmapPage() {
   const [isCanvasReady, setIsCanvasReady] = useState(false);
   const [hexDrawerOpen, setHexDrawerOpen] = useState(false);
 
-  const handleSceneChange = (sceneId: string) => {
+  const handleSceneChange = async (sceneId: string) => {
     setCurrentScene(sceneId);
     canvasRef.current?.switchScene(sceneId);
 
     if (sceneId === "worldmap" && selectedRealm) {
-      canvasRef.current?.moveCameraToStructure(selectedRealm.position);
+      // Wait for worldmap to be fully initialized before moving camera
+      await canvasRef.current?.waitForWorldmapInitialization();
+      await canvasRef.current?.moveCameraToStructure(selectedRealm.position);
     }
   };
 
-  const handleCanvasReady = () => {
+  const handleCanvasReady = async () => {
     setIsCanvasReady(true);
 
     // Move camera to selected realm after canvas is ready (hot reload case)
     if (selectedRealm && currentScene === "worldmap") {
-      setTimeout(() => {
-        canvasRef.current?.moveCameraToStructure(selectedRealm.position);
-      }, 100);
+      // Wait for worldmap to be fully initialized before moving camera
+      await canvasRef.current?.waitForWorldmapInitialization();
+      await canvasRef.current?.moveCameraToStructure(selectedRealm.position);
     }
   };
 
   useEffect(() => {
-    if (selectedRealm && canvasRef.current && currentScene === "worldmap" && isCanvasReady) {
-      canvasRef.current.moveCameraToStructure(selectedRealm.position);
-    }
+    const moveCameraToRealm = async () => {
+      if (selectedRealm && canvasRef.current && currentScene === "worldmap" && isCanvasReady) {
+        // Wait for worldmap to be fully initialized before moving camera
+        await canvasRef.current.waitForWorldmapInitialization();
+        await canvasRef.current.moveCameraToStructure(selectedRealm.position);
+      }
+    };
+
+    moveCameraToRealm();
   }, [selectedRealm, currentScene, isCanvasReady]);
 
   // Open hex drawer only when an object is double-clicked
