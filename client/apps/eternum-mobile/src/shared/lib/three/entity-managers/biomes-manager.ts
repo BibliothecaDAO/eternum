@@ -11,9 +11,20 @@ export class BiomesManager extends EntityManager<BiomeObject> {
   // Track explored tiles
   private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
 
+  // Callback to check if a structure exists at given coordinates
+  private structureExistsCallback?: (col: number, row: number) => boolean;
+
   constructor(scene: THREE.Scene) {
     super(scene);
     this.renderer = new BiomeTileRenderer(scene);
+  }
+
+  public setStructureExistsCallback(callback: (col: number, row: number) => boolean): void {
+    this.structureExistsCallback = callback;
+  }
+
+  private hasStructureAtHex(col: number, row: number): boolean {
+    return this.structureExistsCallback ? this.structureExistsCallback(col, row) : false;
   }
 
   public addObject(object: BiomeObject): void {
@@ -23,7 +34,7 @@ export class BiomesManager extends EntityManager<BiomeObject> {
 
     this.objects.set(object.id, object);
 
-    if (this.isHexVisible(object.col, object.row)) {
+    if (this.isHexVisible(object.col, object.row) && !this.hasStructureAtHex(object.col, object.row)) {
       this.renderer.addTile(object.col, object.row, object.biome, object.isExplored);
     }
   }
@@ -43,11 +54,14 @@ export class BiomesManager extends EntityManager<BiomeObject> {
 
       this.objects.set(object.id, object);
 
-      if (this.isHexVisible(object.col, object.row)) {
+      if (this.isHexVisible(object.col, object.row) && !this.hasStructureAtHex(object.col, object.row)) {
         if (needsUpdate) {
           this.renderer.removeTile(object.col, object.row);
         }
         this.renderer.addTile(object.col, object.row, object.biome, object.isExplored);
+      } else if (this.hasStructureAtHex(object.col, object.row)) {
+        // If a structure exists, remove any existing biome tile
+        this.renderer.removeTile(object.col, object.row);
       }
     }
   }
@@ -70,7 +84,7 @@ export class BiomesManager extends EntityManager<BiomeObject> {
       const updatedBiome = { ...oldBiome, col, row };
       this.objects.set(objectId, updatedBiome);
 
-      if (this.isHexVisible(col, row)) {
+      if (this.isHexVisible(col, row) && !this.hasStructureAtHex(col, row)) {
         this.renderer.addTile(col, row, updatedBiome.biome, updatedBiome.isExplored);
       }
     }
@@ -91,7 +105,7 @@ export class BiomesManager extends EntityManager<BiomeObject> {
     const updatedBiome = { ...biome, col: targetCol, row: targetRow };
     this.objects.set(objectId, updatedBiome);
 
-    if (this.isHexVisible(targetCol, targetRow)) {
+    if (this.isHexVisible(targetCol, targetRow) && !this.hasStructureAtHex(targetCol, targetRow)) {
       this.renderer.addTile(targetCol, targetRow, updatedBiome.biome, updatedBiome.isExplored);
     }
   }
@@ -174,7 +188,7 @@ export class BiomesManager extends EntityManager<BiomeObject> {
     const visibleBiomeTiles: BiomeTilePosition[] = [];
 
     this.objects.forEach((biome) => {
-      if (this.isHexVisible(biome.col, biome.row)) {
+      if (this.isHexVisible(biome.col, biome.row) && !this.hasStructureAtHex(biome.col, biome.row)) {
         visibleBiomeTiles.push({
           col: biome.col,
           row: biome.row,
@@ -261,6 +275,10 @@ export class BiomesManager extends EntityManager<BiomeObject> {
 
   public clearExploredTiles(): void {
     this.exploredTiles.clear();
+  }
+
+  public refreshTileVisibility(): void {
+    this.updateTileVisibility();
   }
 
   public dispose(): void {

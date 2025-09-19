@@ -108,7 +108,7 @@ export class StructureManager extends EntityManager<StructureObject> {
 
   private syncBuildingTile(structure: StructureObject): void {
     const tileIndex = this.getTileIndexFromStructure(structure);
-    this.renderer.addTileByIndex(structure.col, structure.row, tileIndex, true, true);
+    this.renderer.addTileByIndex(structure.col, structure.row, tileIndex, true);
   }
 
   private getTileIndexFromStructure(structure: StructureObject): BuildingTileIndex {
@@ -128,7 +128,7 @@ export class StructureManager extends EntityManager<StructureObject> {
 
     Array.from(this.objects.values()).forEach((structure) => {
       const tileIndex = this.getTileIndexFromStructure(structure);
-      this.renderer.addTileByIndex(structure.col, structure.row, tileIndex, true, true);
+      this.renderer.addTileByIndex(structure.col, structure.row, tileIndex, true);
     });
   }
 

@@ -110,6 +110,11 @@ export class HexagonMap {
     this.armyManager.setDependencies(this.dojo, this.fxManager, this.biomesManager.getExploredTiles());
     this.structureManager.setDependencies(this.dojo, this.biomesManager.getExploredTiles());
 
+    // Set up the callback for biomes manager to check for structures
+    this.biomesManager.setStructureExistsCallback((col: number, row: number) => {
+      return this.structureManager.getObjectsAtHex(col, row).length > 0;
+    });
+
     this.selectionManager = new SelectionManager(this.highlightRenderer);
     this.selectionManager.registerObjectRenderer("army", this.armyManager);
     this.selectionManager.registerObjectRenderer("structure", this.structureManager);

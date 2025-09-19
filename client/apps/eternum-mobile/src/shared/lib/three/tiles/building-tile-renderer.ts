@@ -32,7 +32,7 @@ export class BuildingTileRenderer extends BaseTileRenderer<BuildingTileIndex> {
     const yOffset = isOverlay ? 0.25 : 0.2;
     const heightRatio = this.config.tileHeight / 312;
     const zAdjustment = HEX_SIZE * 0.825 * heightRatio;
-    sprite.position.set(0, yOffset, -zAdjustment * 1.075);
+    sprite.position.set(0, yOffset, -zAdjustment * 1.025);
   }
 
   protected async createTileMaterials(tilesPerRow: number, texture: THREE.Texture): Promise<void> {
