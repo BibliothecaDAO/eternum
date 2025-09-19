@@ -36,7 +36,7 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
   protected previousVisibleBounds: { minCol: number; maxCol: number; minRow: number; maxRow: number } | null = null;
 
   protected static textureLoader = new THREE.TextureLoader();
-  protected static readonly BASE_RENDER_ORDER = 100;
+  protected static readonly BASE_RENDER_ORDER = 1000;
 
   protected texture: THREE.Texture | null = null;
   protected config: TilemapConfig;
@@ -137,7 +137,7 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
   ): void {
     void position; // Position is now handled by the group
     void row; // Base implementation doesn't use row for positioning, but subclasses might
-    const yOffset = isOverlay ? 0.25 : 0.2;
+    const yOffset = isOverlay ? 0.2 : 0.2;
     sprite.position.set(0, yOffset, 0);
   }
 
@@ -182,7 +182,7 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
     }
 
     this.configureSpritePosition(sprite, position, row, isOverlay);
-    sprite.renderOrder = Math.max(BaseTileRenderer.BASE_RENDER_ORDER + row, 1) + (isOverlay ? 1000 : 0);
+    sprite.renderOrder = Math.max(BaseTileRenderer.BASE_RENDER_ORDER + row + 10, 1) + (isOverlay ? 1 : 0);
 
     this.sprites.set(spriteKey, sprite);
 
@@ -391,7 +391,7 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
       group = new THREE.Group();
       const cachedPosition = this.getCachedWorldPosition(col, row);
       group.position.set(cachedPosition.x, 0, cachedPosition.z - HEX_SIZE * 0.825);
-      group.renderOrder = Math.max(BaseTileRenderer.BASE_RENDER_ORDER + row, 1) + (isOverlay ? 1000 : 0);
+      group.renderOrder = Math.max(BaseTileRenderer.BASE_RENDER_ORDER + row + 10, 1) + (isOverlay ? 1 : 0);
       this.tileGroups.set(hexKey, group);
 
       if (this.isHexVisible(col, row)) {
