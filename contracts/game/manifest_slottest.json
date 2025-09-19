@@ -13110,7 +13110,1670 @@
       ]
     }
   ],
-  "libraries": [],
+  "libraries": [
+    {
+      "class_hash": "0x69bf2e96c3f8209e76451354ad2e3ad54329d3a2589d423722244c79050bae2",
+      "abi": [
+        {
+          "type": "impl",
+          "name": "biome_library__LibraryImpl",
+          "interface_name": "dojo::contract::interface::ILibrary"
+        },
+        {
+          "type": "interface",
+          "name": "dojo::contract::interface::ILibrary",
+          "items": []
+        },
+        {
+          "type": "impl",
+          "name": "DojoDeployedLibraryImpl",
+          "interface_name": "dojo::meta::interface::IDeployedResource"
+        },
+        {
+          "type": "struct",
+          "name": "core::byte_array::ByteArray",
+          "members": [
+            {
+              "name": "data",
+              "type": "core::array::Array::<core::bytes_31::bytes31>"
+            },
+            {
+              "name": "pending_word",
+              "type": "core::felt252"
+            },
+            {
+              "name": "pending_word_len",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::meta::interface::IDeployedResource",
+          "items": [
+            {
+              "type": "function",
+              "name": "dojo_name",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::byte_array::ByteArray"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "BiomeLibraryImpl",
+          "interface_name": "s1_eternum::system_libraries::biome_library::IBiomeLibrary"
+        },
+        {
+          "type": "enum",
+          "name": "s1_eternum::utils::map::biomes::Biome",
+          "variants": [
+            {
+              "name": "None",
+              "type": "()"
+            },
+            {
+              "name": "DeepOcean",
+              "type": "()"
+            },
+            {
+              "name": "Ocean",
+              "type": "()"
+            },
+            {
+              "name": "Beach",
+              "type": "()"
+            },
+            {
+              "name": "Scorched",
+              "type": "()"
+            },
+            {
+              "name": "Bare",
+              "type": "()"
+            },
+            {
+              "name": "Tundra",
+              "type": "()"
+            },
+            {
+              "name": "Snow",
+              "type": "()"
+            },
+            {
+              "name": "TemperateDesert",
+              "type": "()"
+            },
+            {
+              "name": "Shrubland",
+              "type": "()"
+            },
+            {
+              "name": "Taiga",
+              "type": "()"
+            },
+            {
+              "name": "Grassland",
+              "type": "()"
+            },
+            {
+              "name": "TemperateDeciduousForest",
+              "type": "()"
+            },
+            {
+              "name": "TemperateRainForest",
+              "type": "()"
+            },
+            {
+              "name": "SubtropicalDesert",
+              "type": "()"
+            },
+            {
+              "name": "TropicalSeasonalForest",
+              "type": "()"
+            },
+            {
+              "name": "TropicalRainForest",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "s1_eternum::system_libraries::biome_library::IBiomeLibrary",
+          "items": [
+            {
+              "type": "function",
+              "name": "get_biome",
+              "inputs": [
+                {
+                  "name": "col",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "row",
+                  "type": "core::integer::u128"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "s1_eternum::utils::map::biomes::Biome"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "WorldProviderImpl",
+          "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
+        },
+        {
+          "type": "struct",
+          "name": "dojo::world::iworld::IWorldDispatcher",
+          "members": [
+            {
+              "name": "contract_address",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::contract::components::world_provider::IWorldProvider",
+          "items": [
+            {
+              "type": "function",
+              "name": "world_dispatcher",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "dojo::world::iworld::IWorldDispatcher"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "event",
+          "name": "s1_eternum::system_libraries::biome_library::biome_library::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "WorldProviderEvent",
+              "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+              "kind": "flat"
+            }
+          ]
+        }
+      ],
+      "tag": "s1_eternum-biome_library_v0_1_0",
+      "selector": "0x17ea0292301ae3a0248f996d5cfb3e4ca37cc9bdcd1f88dc7c7977ed24f9c29",
+      "systems": [],
+      "version": "0_1_0"
+    },
+    {
+      "class_hash": "0x2bfd61e672583d0144768f3cddde0f2ce46fe935abb78278b67d38f8fe0a63e",
+      "abi": [
+        {
+          "type": "impl",
+          "name": "combat_library__LibraryImpl",
+          "interface_name": "dojo::contract::interface::ILibrary"
+        },
+        {
+          "type": "interface",
+          "name": "dojo::contract::interface::ILibrary",
+          "items": []
+        },
+        {
+          "type": "impl",
+          "name": "DojoDeployedLibraryImpl",
+          "interface_name": "dojo::meta::interface::IDeployedResource"
+        },
+        {
+          "type": "struct",
+          "name": "core::byte_array::ByteArray",
+          "members": [
+            {
+              "name": "data",
+              "type": "core::array::Array::<core::bytes_31::bytes31>"
+            },
+            {
+              "name": "pending_word",
+              "type": "core::felt252"
+            },
+            {
+              "name": "pending_word_len",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::meta::interface::IDeployedResource",
+          "items": [
+            {
+              "type": "function",
+              "name": "dojo_name",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::byte_array::ByteArray"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "CombatLibraryImpl",
+          "interface_name": "s1_eternum::system_libraries::combat_library::ICombatLibrary"
+        },
+        {
+          "type": "enum",
+          "name": "s1_eternum::models::troop::TroopType",
+          "variants": [
+            {
+              "name": "Knight",
+              "type": "()"
+            },
+            {
+              "name": "Paladin",
+              "type": "()"
+            },
+            {
+              "name": "Crossbowman",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "s1_eternum::models::troop::TroopTier",
+          "variants": [
+            {
+              "name": "T1",
+              "type": "()"
+            },
+            {
+              "name": "T2",
+              "type": "()"
+            },
+            {
+              "name": "T3",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "s1_eternum::models::stamina::Stamina",
+          "members": [
+            {
+              "name": "amount",
+              "type": "core::integer::u64"
+            },
+            {
+              "name": "updated_tick",
+              "type": "core::integer::u64"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "s1_eternum::models::troop::TroopBoosts",
+          "members": [
+            {
+              "name": "incr_damage_dealt_percent_num",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "incr_damage_dealt_end_tick",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "decr_damage_gotten_percent_num",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "decr_damage_gotten_end_tick",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "incr_stamina_regen_percent_num",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "incr_stamina_regen_tick_count",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "incr_explore_reward_percent_num",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "incr_explore_reward_end_tick",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "s1_eternum::models::troop::Troops",
+          "members": [
+            {
+              "name": "category",
+              "type": "s1_eternum::models::troop::TroopType"
+            },
+            {
+              "name": "tier",
+              "type": "s1_eternum::models::troop::TroopTier"
+            },
+            {
+              "name": "count",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "stamina",
+              "type": "s1_eternum::models::stamina::Stamina"
+            },
+            {
+              "name": "boosts",
+              "type": "s1_eternum::models::troop::TroopBoosts"
+            },
+            {
+              "name": "battle_cooldown_end",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "s1_eternum::utils::map::biomes::Biome",
+          "variants": [
+            {
+              "name": "None",
+              "type": "()"
+            },
+            {
+              "name": "DeepOcean",
+              "type": "()"
+            },
+            {
+              "name": "Ocean",
+              "type": "()"
+            },
+            {
+              "name": "Beach",
+              "type": "()"
+            },
+            {
+              "name": "Scorched",
+              "type": "()"
+            },
+            {
+              "name": "Bare",
+              "type": "()"
+            },
+            {
+              "name": "Tundra",
+              "type": "()"
+            },
+            {
+              "name": "Snow",
+              "type": "()"
+            },
+            {
+              "name": "TemperateDesert",
+              "type": "()"
+            },
+            {
+              "name": "Shrubland",
+              "type": "()"
+            },
+            {
+              "name": "Taiga",
+              "type": "()"
+            },
+            {
+              "name": "Grassland",
+              "type": "()"
+            },
+            {
+              "name": "TemperateDeciduousForest",
+              "type": "()"
+            },
+            {
+              "name": "TemperateRainForest",
+              "type": "()"
+            },
+            {
+              "name": "SubtropicalDesert",
+              "type": "()"
+            },
+            {
+              "name": "TropicalSeasonalForest",
+              "type": "()"
+            },
+            {
+              "name": "TropicalRainForest",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "s1_eternum::models::config::TroopStaminaConfig",
+          "members": [
+            {
+              "name": "stamina_gain_per_tick",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "stamina_initial",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "stamina_bonus_value",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "stamina_knight_max",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "stamina_paladin_max",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "stamina_crossbowman_max",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "stamina_attack_req",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "stamina_defense_req",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "stamina_explore_stamina_cost",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "stamina_travel_stamina_cost",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "stamina_explore_wheat_cost",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "stamina_explore_fish_cost",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "stamina_travel_wheat_cost",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "stamina_travel_fish_cost",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "s1_eternum::models::config::TroopDamageConfig",
+          "members": [
+            {
+              "name": "damage_raid_percent_num",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "damage_biome_bonus_num",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "damage_beta_small",
+              "type": "core::integer::u64"
+            },
+            {
+              "name": "damage_beta_large",
+              "type": "core::integer::u64"
+            },
+            {
+              "name": "damage_scaling_factor",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "damage_c0",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "damage_delta",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "t1_damage_value",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "t2_damage_multiplier",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "t3_damage_multiplier",
+              "type": "core::integer::u128"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "s1_eternum::system_libraries::combat_library::ICombatLibrary",
+          "items": [
+            {
+              "type": "function",
+              "name": "troops_attack",
+              "inputs": [
+                {
+                  "name": "attacker",
+                  "type": "s1_eternum::models::troop::Troops"
+                },
+                {
+                  "name": "defender",
+                  "type": "s1_eternum::models::troop::Troops"
+                },
+                {
+                  "name": "biome",
+                  "type": "s1_eternum::utils::map::biomes::Biome"
+                },
+                {
+                  "name": "troop_stamina_config",
+                  "type": "s1_eternum::models::config::TroopStaminaConfig"
+                },
+                {
+                  "name": "troop_damage_config",
+                  "type": "s1_eternum::models::config::TroopDamageConfig"
+                },
+                {
+                  "name": "current_tick",
+                  "type": "core::integer::u64"
+                },
+                {
+                  "name": "current_tick_interval",
+                  "type": "core::integer::u64"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "(s1_eternum::models::troop::Troops, s1_eternum::models::troop::Troops)"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "WorldProviderImpl",
+          "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
+        },
+        {
+          "type": "struct",
+          "name": "dojo::world::iworld::IWorldDispatcher",
+          "members": [
+            {
+              "name": "contract_address",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::contract::components::world_provider::IWorldProvider",
+          "items": [
+            {
+              "type": "function",
+              "name": "world_dispatcher",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "dojo::world::iworld::IWorldDispatcher"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "event",
+          "name": "s1_eternum::system_libraries::combat_library::combat_library::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "WorldProviderEvent",
+              "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+              "kind": "flat"
+            }
+          ]
+        }
+      ],
+      "tag": "s1_eternum-combat_library_v0_1_0",
+      "selector": "0x6a352fe85e5966806dfb50f4723a8e11a29bf0c5383a3f6facc68cdbc40850a",
+      "systems": [],
+      "version": "0_1_0"
+    },
+    {
+      "class_hash": "0x1c81795ac84aa6fd59ae086f11538ba4b708c518317bfade7932abd384646d3",
+      "abi": [
+        {
+          "type": "impl",
+          "name": "rng_library__LibraryImpl",
+          "interface_name": "dojo::contract::interface::ILibrary"
+        },
+        {
+          "type": "interface",
+          "name": "dojo::contract::interface::ILibrary",
+          "items": []
+        },
+        {
+          "type": "impl",
+          "name": "DojoDeployedLibraryImpl",
+          "interface_name": "dojo::meta::interface::IDeployedResource"
+        },
+        {
+          "type": "struct",
+          "name": "core::byte_array::ByteArray",
+          "members": [
+            {
+              "name": "data",
+              "type": "core::array::Array::<core::bytes_31::bytes31>"
+            },
+            {
+              "name": "pending_word",
+              "type": "core::felt252"
+            },
+            {
+              "name": "pending_word_len",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::meta::interface::IDeployedResource",
+          "items": [
+            {
+              "type": "function",
+              "name": "dojo_name",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::byte_array::ByteArray"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "RngLibraryImpl",
+          "interface_name": "s1_eternum::system_libraries::rng_library::IRNGlibrary"
+        },
+        {
+          "type": "struct",
+          "name": "dojo::world::iworld::IWorldDispatcher",
+          "members": [
+            {
+              "name": "contract_address",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::world::storage::WorldStorage",
+          "members": [
+            {
+              "name": "dispatcher",
+              "type": "dojo::world::iworld::IWorldDispatcher"
+            },
+            {
+              "name": "namespace_hash",
+              "type": "core::felt252"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::integer::u256",
+          "members": [
+            {
+              "name": "low",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "high",
+              "type": "core::integer::u128"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "core::bool",
+          "variants": [
+            {
+              "name": "False",
+              "type": "()"
+            },
+            {
+              "name": "True",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::bool>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::bool>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::integer::u128>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::integer::u128>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::integer::u8>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::integer::u8>"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "s1_eternum::models::position::Direction",
+          "variants": [
+            {
+              "name": "East",
+              "type": "()"
+            },
+            {
+              "name": "NorthEast",
+              "type": "()"
+            },
+            {
+              "name": "NorthWest",
+              "type": "()"
+            },
+            {
+              "name": "West",
+              "type": "()"
+            },
+            {
+              "name": "SouthWest",
+              "type": "()"
+            },
+            {
+              "name": "SouthEast",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<s1_eternum::models::position::Direction>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<s1_eternum::models::position::Direction>"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "s1_eternum::models::troop::TroopTier",
+          "variants": [
+            {
+              "name": "T1",
+              "type": "()"
+            },
+            {
+              "name": "T2",
+              "type": "()"
+            },
+            {
+              "name": "T3",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<s1_eternum::models::troop::TroopTier>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<s1_eternum::models::troop::TroopTier>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<(core::integer::u8, core::integer::u128)>"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "s1_eternum::system_libraries::rng_library::IRNGlibrary",
+          "items": [
+            {
+              "type": "function",
+              "name": "get_random_number",
+              "inputs": [
+                {
+                  "name": "player",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                },
+                {
+                  "name": "world",
+                  "type": "dojo::world::storage::WorldStorage"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "core::integer::u256"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "get_random_in_range",
+              "inputs": [
+                {
+                  "name": "random_number_seed",
+                  "type": "core::integer::u256"
+                },
+                {
+                  "name": "salt",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "upper_bound",
+                  "type": "core::integer::u128"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "core::integer::u128"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "get_weighted_choice_bool",
+              "inputs": [
+                {
+                  "name": "population",
+                  "type": "core::array::Span::<core::bool>"
+                },
+                {
+                  "name": "weights",
+                  "type": "core::array::Span::<core::integer::u128>"
+                },
+                {
+                  "name": "k",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "r",
+                  "type": "core::bool"
+                },
+                {
+                  "name": "random_number_seed",
+                  "type": "core::integer::u256"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "core::array::Span::<core::bool>"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "get_weighted_choice_bool_simple",
+              "inputs": [
+                {
+                  "name": "success_weight",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "fail_weight",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "random_number_seed",
+                  "type": "core::integer::u256"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "core::bool"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "get_weighted_choice_u8",
+              "inputs": [
+                {
+                  "name": "population",
+                  "type": "core::array::Span::<core::integer::u8>"
+                },
+                {
+                  "name": "weights",
+                  "type": "core::array::Span::<core::integer::u128>"
+                },
+                {
+                  "name": "k",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "r",
+                  "type": "core::bool"
+                },
+                {
+                  "name": "random_number_seed",
+                  "type": "core::integer::u256"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "core::array::Span::<core::integer::u8>"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "get_weighted_choice_u128",
+              "inputs": [
+                {
+                  "name": "population",
+                  "type": "core::array::Span::<core::integer::u128>"
+                },
+                {
+                  "name": "weights",
+                  "type": "core::array::Span::<core::integer::u128>"
+                },
+                {
+                  "name": "k",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "r",
+                  "type": "core::bool"
+                },
+                {
+                  "name": "random_number_seed",
+                  "type": "core::integer::u256"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "core::array::Span::<core::integer::u128>"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "get_weighted_choice_direction",
+              "inputs": [
+                {
+                  "name": "population",
+                  "type": "core::array::Span::<s1_eternum::models::position::Direction>"
+                },
+                {
+                  "name": "weights",
+                  "type": "core::array::Span::<core::integer::u128>"
+                },
+                {
+                  "name": "k",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "r",
+                  "type": "core::bool"
+                },
+                {
+                  "name": "random_number_seed",
+                  "type": "core::integer::u256"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "core::array::Span::<s1_eternum::models::position::Direction>"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "get_weighted_choice_trooptier",
+              "inputs": [
+                {
+                  "name": "population",
+                  "type": "core::array::Span::<s1_eternum::models::troop::TroopTier>"
+                },
+                {
+                  "name": "weights",
+                  "type": "core::array::Span::<core::integer::u128>"
+                },
+                {
+                  "name": "k",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "r",
+                  "type": "core::bool"
+                },
+                {
+                  "name": "random_number_seed",
+                  "type": "core::integer::u256"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "core::array::Span::<s1_eternum::models::troop::TroopTier>"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "get_weighted_choice_u8_u128_pair",
+              "inputs": [
+                {
+                  "name": "population",
+                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                },
+                {
+                  "name": "weights",
+                  "type": "core::array::Span::<core::integer::u128>"
+                },
+                {
+                  "name": "k",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "r",
+                  "type": "core::bool"
+                },
+                {
+                  "name": "random_number_seed",
+                  "type": "core::integer::u256"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "WorldProviderImpl",
+          "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
+        },
+        {
+          "type": "interface",
+          "name": "dojo::contract::components::world_provider::IWorldProvider",
+          "items": [
+            {
+              "type": "function",
+              "name": "world_dispatcher",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "dojo::world::iworld::IWorldDispatcher"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "event",
+          "name": "s1_eternum::system_libraries::rng_library::rng_library::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "WorldProviderEvent",
+              "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+              "kind": "flat"
+            }
+          ]
+        }
+      ],
+      "tag": "s1_eternum-rng_library_v0_1_0",
+      "selector": "0x706baa7e13795e75b18774b3068f4bfbf16c3c22692cd8ac1e329255380ab03",
+      "systems": [],
+      "version": "0_1_0"
+    },
+    {
+      "class_hash": "0x2a512bf544640216ffefe5d4ccde981d77da0fc47666d024fd8641dbfd2015b",
+      "abi": [
+        {
+          "type": "impl",
+          "name": "structure_creation_library__LibraryImpl",
+          "interface_name": "dojo::contract::interface::ILibrary"
+        },
+        {
+          "type": "interface",
+          "name": "dojo::contract::interface::ILibrary",
+          "items": []
+        },
+        {
+          "type": "impl",
+          "name": "DojoDeployedLibraryImpl",
+          "interface_name": "dojo::meta::interface::IDeployedResource"
+        },
+        {
+          "type": "struct",
+          "name": "core::byte_array::ByteArray",
+          "members": [
+            {
+              "name": "data",
+              "type": "core::array::Array::<core::bytes_31::bytes31>"
+            },
+            {
+              "name": "pending_word",
+              "type": "core::felt252"
+            },
+            {
+              "name": "pending_word_len",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::meta::interface::IDeployedResource",
+          "items": [
+            {
+              "type": "function",
+              "name": "dojo_name",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::byte_array::ByteArray"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "StructureCreationLibraryImpl",
+          "interface_name": "s1_eternum::system_libraries::structure_libraries::structure_creation_library::IStructureCreationlibrary"
+        },
+        {
+          "type": "struct",
+          "name": "dojo::world::iworld::IWorldDispatcher",
+          "members": [
+            {
+              "name": "contract_address",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::world::storage::WorldStorage",
+          "members": [
+            {
+              "name": "dispatcher",
+              "type": "dojo::world::iworld::IWorldDispatcher"
+            },
+            {
+              "name": "namespace_hash",
+              "type": "core::felt252"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "s1_eternum::models::position::Coord",
+          "members": [
+            {
+              "name": "x",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "y",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "s1_eternum::models::structure::StructureCategory",
+          "variants": [
+            {
+              "name": "None",
+              "type": "()"
+            },
+            {
+              "name": "Realm",
+              "type": "()"
+            },
+            {
+              "name": "Hyperstructure",
+              "type": "()"
+            },
+            {
+              "name": "Bank",
+              "type": "()"
+            },
+            {
+              "name": "FragmentMine",
+              "type": "()"
+            },
+            {
+              "name": "Village",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::integer::u8>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::integer::u8>"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "core::bool",
+          "variants": [
+            {
+              "name": "False",
+              "type": "()"
+            },
+            {
+              "name": "True",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "s1_eternum::models::structure::StructureMetadata",
+          "members": [
+            {
+              "name": "realm_id",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "order",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "has_wonder",
+              "type": "core::bool"
+            },
+            {
+              "name": "villages_count",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "village_realm",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "s1_eternum::models::map::TileOccupier",
+          "variants": [
+            {
+              "name": "None",
+              "type": "()"
+            },
+            {
+              "name": "RealmRegularLevel1",
+              "type": "()"
+            },
+            {
+              "name": "RealmWonderLevel1",
+              "type": "()"
+            },
+            {
+              "name": "HyperstructureLevel1",
+              "type": "()"
+            },
+            {
+              "name": "FragmentMine",
+              "type": "()"
+            },
+            {
+              "name": "Village",
+              "type": "()"
+            },
+            {
+              "name": "Bank",
+              "type": "()"
+            },
+            {
+              "name": "ExplorerKnightT1Regular",
+              "type": "()"
+            },
+            {
+              "name": "ExplorerKnightT2Regular",
+              "type": "()"
+            },
+            {
+              "name": "ExplorerKnightT3Regular",
+              "type": "()"
+            },
+            {
+              "name": "ExplorerPaladinT1Regular",
+              "type": "()"
+            },
+            {
+              "name": "ExplorerPaladinT2Regular",
+              "type": "()"
+            },
+            {
+              "name": "ExplorerPaladinT3Regular",
+              "type": "()"
+            },
+            {
+              "name": "ExplorerCrossbowmanT1Regular",
+              "type": "()"
+            },
+            {
+              "name": "ExplorerCrossbowmanT2Regular",
+              "type": "()"
+            },
+            {
+              "name": "ExplorerCrossbowmanT3Regular",
+              "type": "()"
+            },
+            {
+              "name": "ExplorerKnightT1Daydreams",
+              "type": "()"
+            },
+            {
+              "name": "ExplorerKnightT2Daydreams",
+              "type": "()"
+            },
+            {
+              "name": "ExplorerKnightT3Daydreams",
+              "type": "()"
+            },
+            {
+              "name": "ExplorerPaladinT1Daydreams",
+              "type": "()"
+            },
+            {
+              "name": "ExplorerPaladinT2Daydreams",
+              "type": "()"
+            },
+            {
+              "name": "ExplorerPaladinT3Daydreams",
+              "type": "()"
+            },
+            {
+              "name": "ExplorerCrossbowmanT1Daydreams",
+              "type": "()"
+            },
+            {
+              "name": "ExplorerCrossbowmanT2Daydreams",
+              "type": "()"
+            },
+            {
+              "name": "ExplorerCrossbowmanT3Daydreams",
+              "type": "()"
+            },
+            {
+              "name": "RealmRegularLevel2",
+              "type": "()"
+            },
+            {
+              "name": "RealmRegularLevel3",
+              "type": "()"
+            },
+            {
+              "name": "RealmRegularLevel4",
+              "type": "()"
+            },
+            {
+              "name": "RealmWonderLevel2",
+              "type": "()"
+            },
+            {
+              "name": "RealmWonderLevel3",
+              "type": "()"
+            },
+            {
+              "name": "RealmWonderLevel4",
+              "type": "()"
+            },
+            {
+              "name": "HyperstructureLevel2",
+              "type": "()"
+            },
+            {
+              "name": "HyperstructureLevel3",
+              "type": "()"
+            },
+            {
+              "name": "RealmRegularLevel1WonderBonus",
+              "type": "()"
+            },
+            {
+              "name": "RealmRegularLevel2WonderBonus",
+              "type": "()"
+            },
+            {
+              "name": "RealmRegularLevel3WonderBonus",
+              "type": "()"
+            },
+            {
+              "name": "RealmRegularLevel4WonderBonus",
+              "type": "()"
+            },
+            {
+              "name": "VillageWonderBonus",
+              "type": "()"
+            },
+            {
+              "name": "Quest",
+              "type": "()"
+            },
+            {
+              "name": "Chest",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "s1_eternum::system_libraries::structure_libraries::structure_creation_library::IStructureCreationlibrary",
+          "items": [
+            {
+              "type": "function",
+              "name": "make_structure",
+              "inputs": [
+                {
+                  "name": "world",
+                  "type": "dojo::world::storage::WorldStorage"
+                },
+                {
+                  "name": "coord",
+                  "type": "s1_eternum::models::position::Coord"
+                },
+                {
+                  "name": "owner",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                },
+                {
+                  "name": "structure_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "category",
+                  "type": "s1_eternum::models::structure::StructureCategory"
+                },
+                {
+                  "name": "resources",
+                  "type": "core::array::Span::<core::integer::u8>"
+                },
+                {
+                  "name": "metadata",
+                  "type": "s1_eternum::models::structure::StructureMetadata"
+                },
+                {
+                  "name": "tile_occupier",
+                  "type": "s1_eternum::models::map::TileOccupier"
+                },
+                {
+                  "name": "explore_village_coord",
+                  "type": "core::bool"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "grant_starting_resources",
+              "inputs": [
+                {
+                  "name": "world",
+                  "type": "dojo::world::storage::WorldStorage"
+                },
+                {
+                  "name": "structure_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "structure_coord",
+                  "type": "s1_eternum::models::position::Coord"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "WorldProviderImpl",
+          "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
+        },
+        {
+          "type": "interface",
+          "name": "dojo::contract::components::world_provider::IWorldProvider",
+          "items": [
+            {
+              "type": "function",
+              "name": "world_dispatcher",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "dojo::world::iworld::IWorldDispatcher"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "event",
+          "name": "s1_eternum::system_libraries::structure_libraries::structure_creation_library::structure_creation_library::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "WorldProviderEvent",
+              "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+              "kind": "flat"
+            }
+          ]
+        }
+      ],
+      "tag": "s1_eternum-structure_creation_library_v0_1_0",
+      "selector": "0x639c98a812a97151f1cc210d9e844c0c962ca760f2a13f63a6ff3b9b6ca58f3",
+      "systems": [],
+      "version": "0_1_0"
+    }
+  ],
   "models": [
     {
       "members": [],
