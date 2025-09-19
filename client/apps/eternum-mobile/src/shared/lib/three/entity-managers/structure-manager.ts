@@ -21,10 +21,12 @@ export class StructureManager extends EntityManager<StructureObject> {
 
   // Dependencies
   private dojo: DojoResult | null = null;
+  private biomeRefreshCallback?: () => void;
 
-  constructor(scene: THREE.Scene) {
+  constructor(scene: THREE.Scene, biomeRefreshCallback?: () => void) {
     super(scene);
     this.renderer = new BuildingTileRenderer(scene);
+    this.biomeRefreshCallback = biomeRefreshCallback;
   }
 
   public setDependencies(dojo: DojoResult, exploredTiles: Map<number, Map<number, any>>): void {
@@ -380,6 +382,11 @@ export class StructureManager extends EntityManager<StructureObject> {
       hasWonder: update.hasWonder,
     };
     this.updateObject(structure);
+    
+    // Refresh biome tiles to hide any biomes at the structure position
+    if (this.biomeRefreshCallback) {
+      this.biomeRefreshCallback();
+    }
   }
 
   public handleStructureUpdate(update: {

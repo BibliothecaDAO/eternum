@@ -106,7 +106,10 @@ export class HexagonMap {
     this.biomesManager = new BiomesManager(this.scene);
     this.highlightRenderer = new HighlightRenderer(this.scene);
     this.armyManager = new ArmyManager(this.scene);
-    this.structureManager = new StructureManager(this.scene);
+    this.structureManager = new StructureManager(this.scene, () => {
+      // Refresh biome tiles when structures are updated
+      this.biomesManager.refreshTileVisibility();
+    });
     this.questManager = new QuestManager(this.scene);
     this.chestManager = new ChestManager(this.scene);
     this.relicEffectsManager = new RelicEffectsManager(this.fxManager);
