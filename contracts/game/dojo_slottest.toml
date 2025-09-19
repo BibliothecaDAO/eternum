@@ -7,8 +7,15 @@ account_address = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5c
 private_key = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
 rpc_url = "https://api.cartridge.gg/x/eternum-blitz-slot-test/katana"
 
+[lib_versions]
+"s1_eternum-combat_library" = "0_1_0"
+"s1_eternum-rng_library" = "0_1_0"
+"s1_eternum-biome_library" = "0_1_0"
+"s1_eternum-structure_creation_library" = "0_1_0"
+
+
 [world]
-seed = "s1_eternum_slot_test"
+seed = "s1_eternum_slot_t123"
 name = "Realms: Eternum"
 description = "Rule the Hex"
 cover_uri = "file://assets/bg.webp"
