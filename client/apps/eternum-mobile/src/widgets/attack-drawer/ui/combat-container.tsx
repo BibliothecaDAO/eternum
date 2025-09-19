@@ -20,6 +20,7 @@ import { useDojo } from "@bibliothecadao/react";
 import {
   CapacityConfig,
   ContractAddress,
+  FELT_CENTER,
   getDirectionBetweenAdjacentHexes,
   ID,
   RESOURCE_PRECISION,
@@ -355,32 +356,81 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
   }, [targetTile, components, toriiClient]);
 
   const onAttack = async () => {
-    if (!selectedHex) return;
+    console.log("Attack button clicked");
+    console.log("selectedHex:", selectedHex);
+    console.log("attackerType:", attackerType);
+    console.log("selectedGuardSlot:", selectedGuardSlot);
+    console.log("target:", target);
+
+    if (!selectedHex) {
+      console.error("Attack failed: No selected hex");
+      alert("Attack failed: No selected hex. Please select your attacking unit first.");
+      return;
+    }
 
     try {
       setLoading(true);
 
       if (attackerType === AttackerType.Structure) {
-        if (selectedGuardSlot === null) return;
+        if (selectedGuardSlot === null) {
+          console.error("Attack failed: No guard slot selected");
+          alert("Attack failed: No guard slot selected. Please select a guard unit.");
+          return;
+        }
+        console.log("Executing guard vs explorer attack");
         await onGuardVsExplorerAttack();
       } else if (target?.targetType === TargetType.Army) {
+        console.log("Executing explorer vs explorer attack");
         await onExplorerVsExplorerAttack();
       } else {
+        console.log("Executing explorer vs guard attack");
         await onExplorerVsGuardAttack();
       }
 
+      console.log("Attack completed successfully");
       closeAttackDrawer();
     } catch (error) {
       console.error("Attack failed:", error);
+      alert(`Attack failed: ${error.message || error}`);
     } finally {
       setLoading(false);
     }
   };
 
   const onExplorerVsGuardAttack = async () => {
-    if (!selectedHex) return;
-    const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: targetHex.x, row: targetHex.y });
-    if (direction === null) return;
+    if (!selectedHex) {
+      console.error("Explorer vs Guard: No selected hex");
+      return;
+    }
+    console.log("selectedHex:", selectedHex);
+    console.log("targetHex:", targetHex);
+    
+    // Convert selectedHex to match coordinate system of targetHex
+    const normalizedSelectedHex = { 
+      col: selectedHex.col + FELT_CENTER, 
+      row: selectedHex.row + FELT_CENTER 
+    };
+    const normalizedTargetHex = { 
+      col: targetHex.x, 
+      row: targetHex.y 
+    };
+    
+    console.log("normalizedSelectedHex:", normalizedSelectedHex);
+    console.log("normalizedTargetHex:", normalizedTargetHex);
+    
+    const direction = getDirectionBetweenAdjacentHexes(normalizedSelectedHex, normalizedTargetHex);
+    console.log("Explorer vs Guard direction:", direction);
+    if (direction === null) {
+      console.error("Explorer vs Guard: Invalid direction - hexes are not adjacent");
+      console.error("Distance between hexes:", Math.abs(normalizedSelectedHex.col - normalizedTargetHex.col) + Math.abs(normalizedSelectedHex.row - normalizedTargetHex.row));
+      return;
+    }
+
+    console.log("Explorer vs Guard attack params:", {
+      explorer_id: attackerEntityId,
+      structure_id: target?.id || 0,
+      structure_direction: direction,
+    });
 
     await attack_explorer_vs_guard({
       signer: account,
@@ -391,9 +441,34 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
   };
 
   const onExplorerVsExplorerAttack = async () => {
-    if (!selectedHex) return;
-    const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: targetHex.x, row: targetHex.y });
-    if (direction === null) return;
+    if (!selectedHex) {
+      console.error("Explorer vs Explorer: No selected hex");
+      return;
+    }
+    
+    // Convert selectedHex to match coordinate system of targetHex
+    const normalizedSelectedHex = { 
+      col: selectedHex.col + FELT_CENTER, 
+      row: selectedHex.row + FELT_CENTER 
+    };
+    const normalizedTargetHex = { 
+      col: targetHex.x, 
+      row: targetHex.y 
+    };
+    
+    const direction = getDirectionBetweenAdjacentHexes(normalizedSelectedHex, normalizedTargetHex);
+    console.log("Explorer vs Explorer direction:", direction);
+    if (direction === null) {
+      console.error("Explorer vs Explorer: Invalid direction");
+      return;
+    }
+
+    console.log("Explorer vs Explorer attack params:", {
+      aggressor_id: attackerEntityId,
+      defender_id: target?.id || 0,
+      defender_direction: direction,
+      steal_resources: targetResources,
+    });
 
     await attack_explorer_vs_explorer({
       signer: account,
@@ -405,9 +480,34 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
   };
 
   const onGuardVsExplorerAttack = async () => {
-    if (!selectedHex || selectedGuardSlot === null) return;
-    const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: targetHex.x, row: targetHex.y });
-    if (direction === null) return;
+    if (!selectedHex || selectedGuardSlot === null) {
+      console.error("Guard vs Explorer: Missing selectedHex or selectedGuardSlot");
+      return;
+    }
+    
+    // Convert selectedHex to match coordinate system of targetHex
+    const normalizedSelectedHex = { 
+      col: selectedHex.col + FELT_CENTER, 
+      row: selectedHex.row + FELT_CENTER 
+    };
+    const normalizedTargetHex = { 
+      col: targetHex.x, 
+      row: targetHex.y 
+    };
+    
+    const direction = getDirectionBetweenAdjacentHexes(normalizedSelectedHex, normalizedTargetHex);
+    console.log("Guard vs Explorer direction:", direction);
+    if (direction === null) {
+      console.error("Guard vs Explorer: Invalid direction");
+      return;
+    }
+
+    console.log("Guard vs Explorer attack params:", {
+      structure_id: attackerEntityId,
+      structure_guard_slot: selectedGuardSlot,
+      explorer_id: target?.id || 0,
+      explorer_direction: direction,
+    });
 
     await attack_guard_vs_explorer({
       signer: account,
