@@ -12,7 +12,7 @@ export interface UnitTilePosition extends TilePosition {
 
 export class UnitTileRenderer extends BaseTileRenderer<UnitTileIndex> {
   constructor(scene: THREE.Scene) {
-    super(scene, TILEMAP_CONFIGS.units);
+    super(scene, TILEMAP_CONFIGS.units, true); // Units are always overlay
   }
 
   protected async createTileMaterials(tilesPerRow: number, texture: THREE.Texture): Promise<void> {
@@ -61,7 +61,7 @@ export class UnitTileRenderer extends BaseTileRenderer<UnitTileIndex> {
       return;
     }
 
-    this.createSingleTileSprite(hexKey, tileId, this.tempVector3, row, true);
+    this.createSingleTileSprite(hexKey, tileId, this.tempVector3, row);
   }
 
   public addTile(

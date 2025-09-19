@@ -9,7 +9,7 @@ export interface BiomeTilePosition extends TilePosition {
 
 export class BiomeTileRenderer extends BaseTileRenderer<BiomeTileIndex> {
   constructor(scene: THREE.Scene) {
-    super(scene, TILEMAP_CONFIGS.biomes);
+    super(scene, TILEMAP_CONFIGS.biomes, false); // Biomes are base layer
   }
 
   protected async createTileMaterials(tilesPerRow: number, texture: THREE.Texture): Promise<void> {
@@ -49,7 +49,7 @@ export class BiomeTileRenderer extends BaseTileRenderer<BiomeTileIndex> {
       tileId = BiomeTileIndex.Outline;
     }
 
-    this.createSingleTileSprite(hexKey, tileId, cachedPosition, row, false);
+    this.createSingleTileSprite(hexKey, tileId, cachedPosition, row);
   }
 
   public addTile(col: number, row: number, biome?: BiomeType, isExplored: boolean = true): void {

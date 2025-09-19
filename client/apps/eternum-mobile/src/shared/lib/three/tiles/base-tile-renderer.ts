@@ -47,11 +47,13 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
 
   protected movingTiles: Set<string> = new Set();
   protected tileGroups: Map<string, THREE.Group> = new Map();
+  protected isOverlay: boolean;
   protected visibleBounds: { minCol: number; maxCol: number; minRow: number; maxRow: number } | null = null;
 
-  constructor(scene: THREE.Scene, config: TilemapConfig) {
+  constructor(scene: THREE.Scene, config: TilemapConfig, isOverlay: boolean = false) {
     this.scene = scene;
     this.config = config;
+    this.isOverlay = isOverlay;
     this.initializeTileMaterials();
   }
 
@@ -162,7 +164,6 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
     tileId: TTileIndex,
     position: THREE.Vector3,
     row: number,
-    isOverlay: boolean = false,
   ): void {
     void position; // Position is now handled by the group
 
@@ -181,13 +182,13 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
       this.configureSpriteScale(sprite, tileId);
     }
 
-    this.configureSpritePosition(sprite, position, row, isOverlay);
-    sprite.renderOrder = Math.max(BaseTileRenderer.BASE_RENDER_ORDER + row + 10, 1) + (isOverlay ? 1 : 0);
+    this.configureSpritePosition(sprite, position, row, this.isOverlay);
+    sprite.renderOrder = Math.max(BaseTileRenderer.BASE_RENDER_ORDER + row + 10, 1) + (this.isOverlay ? 1 : 0);
 
     this.sprites.set(spriteKey, sprite);
 
     const [col, row_pos] = spriteKey.split(",").map(Number);
-    const group = this.createTileGroup(col, row_pos, isOverlay);
+    const group = this.createTileGroup(col, row_pos);
     group.add(sprite);
   }
 
@@ -383,7 +384,7 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
     }
   }
 
-  public createTileGroup(col: number, row: number, isOverlay: boolean = false): THREE.Group {
+  public createTileGroup(col: number, row: number): THREE.Group {
     const hexKey = `${col},${row}`;
     let group = this.tileGroups.get(hexKey);
 
@@ -391,7 +392,7 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
       group = new THREE.Group();
       const cachedPosition = this.getCachedWorldPosition(col, row);
       group.position.set(cachedPosition.x, 0, cachedPosition.z - HEX_SIZE * 0.825);
-      group.renderOrder = Math.max(BaseTileRenderer.BASE_RENDER_ORDER + row + 10, 1) + (isOverlay ? 1 : 0);
+      group.renderOrder = Math.max(BaseTileRenderer.BASE_RENDER_ORDER + row + 10, 1) + (this.isOverlay ? 1 : 0);
       this.tileGroups.set(hexKey, group);
 
       if (this.isHexVisible(col, row)) {
@@ -401,7 +402,7 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
       }
     } else {
       // Update renderOrder in case it needs to be recalculated for existing group
-      group.renderOrder = Math.max(BaseTileRenderer.BASE_RENDER_ORDER + row + 10, 1) + (isOverlay ? 1 : 0);
+      group.renderOrder = Math.max(BaseTileRenderer.BASE_RENDER_ORDER + row + 10, 1) + (this.isOverlay ? 1 : 0);
     }
 
     return group;
@@ -626,7 +627,7 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
         
         // Update renderOrder based on current position during animation
         const currentRow = row + (targetRow - row) * easeProgress;
-        group.renderOrder = Math.max(BaseTileRenderer.BASE_RENDER_ORDER + Math.round(currentRow) + 10, 1);
+        group.renderOrder = Math.max(BaseTileRenderer.BASE_RENDER_ORDER + Math.round(currentRow) + 10, 1) + (this.isOverlay ? 1 : 0);
 
         if (progress < 1) {
           requestAnimationFrame(animate);
@@ -690,7 +691,7 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
           
           // Update renderOrder based on current position during animation
           const currentRow = (currentStep === 0 ? row : path[currentStep - 1].row) + (targetHex.row - (currentStep === 0 ? row : path[currentStep - 1].row)) * easeProgress;
-          group.renderOrder = Math.max(BaseTileRenderer.BASE_RENDER_ORDER + Math.round(currentRow) + 10, 1);
+          group.renderOrder = Math.max(BaseTileRenderer.BASE_RENDER_ORDER + Math.round(currentRow) + 10, 1) + (this.isOverlay ? 1 : 0);
 
           if (progress < 1) {
             requestAnimationFrame(animate);
