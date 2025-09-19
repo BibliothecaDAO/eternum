@@ -1,4 +1,4 @@
-import { ActionPaths, Position, StructureActionManager, StructureSystemUpdate } from "@bibliothecadao/eternum";
+import { ActionPaths, Position, StructureActionManager, StructureTileSystemUpdate } from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
 import { HexEntityInfo, ID, StructureType } from "@bibliothecadao/types";
 import * as THREE from "three";
@@ -308,14 +308,6 @@ export class StructureManager extends EntityManager<StructureObject> {
       ? (parseInt(structure.structureType) as StructureType)
       : StructureType.Realm;
 
-    console.log(`[StructureManager] Converting structure ${structure.id} to label data:`, {
-      structureType,
-      hyperstructureRealmCount: structure.hyperstructureRealmCount,
-      guardArmies: structure.guardArmies?.length || 0,
-      activeProductions: structure.activeProductions?.length || 0,
-      ownerName: structure.ownerName,
-    });
-
     return {
       entityId: structure.id,
       hexCoords: new Position({ x: structure.col, y: structure.row }),
@@ -355,8 +347,7 @@ export class StructureManager extends EntityManager<StructureObject> {
   }
 
   // Structure-specific methods moved from HexagonMap
-  public handleSystemUpdate(update: StructureSystemUpdate): void {
-    console.log("[StructureManager] Structure tile update:", update);
+  public handleSystemUpdate(update: StructureTileSystemUpdate): void {
     const {
       hexCoords: { col, row },
       owner: { address },
@@ -396,8 +387,6 @@ export class StructureManager extends EntityManager<StructureObject> {
     guardArmies: any[];
     owner: { address: bigint; ownerName: string; guildName: string };
   }): void {
-    console.log("[StructureManager] Structure guard update:", update);
-
     const existingStructure = this.getObject(update.entityId);
     if (existingStructure) {
       const updatedStructure = {
@@ -414,8 +403,6 @@ export class StructureManager extends EntityManager<StructureObject> {
     entityId: ID;
     activeProductions: Array<{ buildingCount: number; buildingType: any }>;
   }): void {
-    console.log("[StructureManager] Structure building update:", update);
-
     const existingStructure = this.getObject(update.entityId);
     if (existingStructure) {
       const updatedStructure = {
@@ -427,8 +414,6 @@ export class StructureManager extends EntityManager<StructureObject> {
   }
 
   public handleContributionUpdate(value: { entityId: ID; structureType: any; stage: any }): void {
-    console.log("[StructureManager] Structure contribution update:", value);
-
     const existingStructure = this.getObject(value.entityId);
     if (existingStructure) {
       const updatedStructure = {

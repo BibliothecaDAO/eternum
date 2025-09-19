@@ -833,10 +833,6 @@ export class HexagonMap {
 
     const start = performance.now();
     try {
-      console.log(
-        `[HexagonMap] Fetching tile entities for chunk ${chunkKey} at (${startCol}, ${startRow}) with range ${range}`,
-      );
-
       await getMapFromTorii(
         this.dojo.network.toriiClient,
         this.dojo.network.contractComponents as any,
@@ -853,7 +849,6 @@ export class HexagonMap {
       }
     } finally {
       const end = performance.now();
-      console.log("[HexagonMap] Tile entities query completed in", end - start, "ms");
       this.currentAbortController = null;
     }
   }
