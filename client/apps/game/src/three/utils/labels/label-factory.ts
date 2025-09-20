@@ -3,7 +3,7 @@ import { Position } from "@bibliothecadao/eternum";
 import { getIsBlitz } from "@bibliothecadao/eternum";
 
 import { getCharacterName } from "@/utils/agent";
-import { BuildingType, Direction, ResourcesIds, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BuildingType, ResourcesIds, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { CameraView } from "../../scenes/hexagon-scene";
 import {
   createContentContainer,
@@ -57,8 +57,8 @@ export interface ArmyLabelData extends LabelData {
   troopCount: number;
   currentStamina: number;
   maxStamina: number;
-  attackedFromDirection?: Direction; // Direction from which this army has been attacked
-  attackedTowardDirection?: Direction; // Direction in which this army has attacked someone
+  attackedFromDegrees?: number; // Degrees from which this army has been attacked
+  attackedTowardDegrees?: number; // Degrees in which this army has attacked someone
   battleTimerLeft?: number; // Time left in seconds before battle penalty is over
 }
 
@@ -77,8 +77,8 @@ export interface StructureLabelData extends LabelData {
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
   hyperstructureRealmCount?: number;
-  attackedFromDirection?: Direction; // Direction from which this structure has been attacked
-  attackedTowardDirection?: Direction; // Direction in which this structure has attacked someone
+  attackedFromDegrees?: number; // Degrees from which this structure has been attacked
+  attackedTowardDegrees?: number; // Degrees in which this structure has attacked someone
   battleTimerLeft?: number; // Time left in seconds before battle penalty is over
 }
 
@@ -228,10 +228,18 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
       textContainer.appendChild(staminaInfo);
     }
 
+    if (data.entityId === 198) {
+      console.log(`[CREATE ARMY LABEL for entityId ${data.entityId}]`, {
+        entityId: data.entityId,
+        attackedFromAngle: data.attackedFromDegrees,
+        attackedTowardAngle: data.attackedTowardDegrees,
+        battleTimerLeft: data.battleTimerLeft,
+      });
+    }
     // Add direction indicators
     const directionIndicators = createDirectionIndicators(
-      data.attackedFromDirection,
-      data.attackedTowardDirection,
+      data.attackedFromDegrees,
+      data.attackedTowardDegrees,
       data.battleTimerLeft,
     );
     if (directionIndicators) {
@@ -278,7 +286,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
     }
 
     // Update direction indicators
-    updateDirectionIndicators(element, data.attackedFromDirection, data.attackedTowardDirection, data.battleTimerLeft);
+    updateDirectionIndicators(element, data.attackedFromDegrees, data.attackedTowardDegrees, data.battleTimerLeft);
   },
 };
 
@@ -416,8 +424,8 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
 
     // Add direction indicators
     const directionIndicators = createDirectionIndicators(
-      data.attackedFromDirection,
-      data.attackedTowardDirection,
+      data.attackedFromDegrees,
+      data.attackedTowardDegrees,
       data.battleTimerLeft,
     );
     if (directionIndicators) {
@@ -615,7 +623,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
     }
 
     // Update direction indicators
-    updateDirectionIndicators(element, data.attackedFromDirection, data.attackedTowardDirection, data.battleTimerLeft);
+    updateDirectionIndicators(element, data.attackedFromDegrees, data.attackedTowardDegrees, data.battleTimerLeft);
   },
 };
 

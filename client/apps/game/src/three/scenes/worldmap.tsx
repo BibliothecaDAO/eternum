@@ -7,6 +7,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { getBiomeVariant, HEX_SIZE } from "@/three/constants";
 import { ArmyManager } from "@/three/managers/army-manager";
+import { BattleDirectionManager } from "@/three/managers/battle-direction-manager";
 import { ChestManager } from "@/three/managers/chest-manager";
 import Minimap from "@/three/managers/minimap";
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
@@ -44,6 +45,7 @@ import {
   ActorType,
   BiomeType,
   ContractAddress,
+  Direction,
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
   findResourceById,
   getDirectionBetweenAdjacentHexes,
@@ -107,6 +109,10 @@ export default class WorldmapScene extends HexagonScene {
   private armiesPositions: Map<ID, HexPosition> = new Map();
   // normalized coordinates
   private structuresPositions: Map<ID, HexPosition> = new Map();
+
+  // Battle direction manager for tracking attacker/defender relationships
+  private battleDirectionManager: BattleDirectionManager;
+
   private selectedHexManager: SelectedHexManager;
   private selectionPulseManager: SelectionPulseManager;
   private minimap!: Minimap;
@@ -265,6 +271,15 @@ export default class WorldmapScene extends HexagonScene {
     // Initialize the chest manager
     this.chestManager = new ChestManager(this.scene, this.renderChunkSize, this.chestLabelsGroup, this);
 
+    // Initialize the battle direction manager
+    this.battleDirectionManager = new BattleDirectionManager(
+      (entityId: ID, direction: Direction | undefined, role: "attacker" | "defender") =>
+        this.armyManager.updateBattleDirection(entityId, direction, role),
+      (entityId: ID, direction: Direction | undefined, role: "attacker" | "defender") =>
+        this.structureManager.updateBattleDirection(entityId, direction, role),
+      (entityId: ID) => this.armiesPositions.get(entityId) || this.structuresPositions.get(entityId),
+    );
+
     // Initialize the hover label manager
     this.hoverLabelManager = new HoverLabelManager(
       {
@@ -286,6 +301,14 @@ export default class WorldmapScene extends HexagonScene {
     this.worldUpdateListener.Army.onTileUpdate(async (update: ExplorerTroopsTileSystemUpdate) => {
       this.updateArmyHexes(update);
 
+      // Add combat relationship
+      if (update.battleData?.latestAttackerId) {
+        this.addCombatRelationship(update.battleData.latestAttackerId, update.entityId);
+      }
+      if (update.battleData?.latestDefenderId) {
+        this.addCombatRelationship(update.entityId, update.battleData.latestDefenderId);
+      }
+
       // Ensure army spawn location is marked as explored for pathfinding
       // This fixes the bug where newly spawned armies can't see movement options
       const normalizedPos = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
@@ -300,6 +323,20 @@ export default class WorldmapScene extends HexagonScene {
       await this.armyManager.onTileUpdate(update, this.armyHexes, this.structureHexes, this.exploredTiles);
 
       this.invalidateAllChunkCachesContainingHex(normalizedPos.x, normalizedPos.y);
+
+      // Update positions for the moved army
+      const armyEntityId = update.entityId;
+      const prevPosition = this.armiesPositions.get(armyEntityId);
+      // this.armiesPositions.set(armyEntityId, normalizedPos);
+
+      // Recalculate arrows for this army when it moves
+      this.recalculateArrowsForEntity(armyEntityId);
+
+      // Check if any other entities had relationships with this army at its previous position
+      // and update their arrows too
+      if (prevPosition) {
+        this.recalculateArrowsForEntitiesRelatedTo(armyEntityId);
+      }
     });
 
     // Listen for troop count and stamina changes
@@ -310,6 +347,9 @@ export default class WorldmapScene extends HexagonScene {
 
     // Listen for dead army updates
     this.worldUpdateListener.Army.onDeadArmy((entityId) => {
+      // Remove from attacker-defender tracking
+      this.removeEntityFromTracking(entityId);
+
       // If the army is marked as deleted, remove it from the map
       this.deleteArmy(entityId);
       this.updateVisibleChunks().catch((error) => console.error("Failed to update visible chunks:", error));
@@ -322,15 +362,12 @@ export default class WorldmapScene extends HexagonScene {
       // Update both attacker and defender information using the public methods
       const { attackerId, defenderId } = update.battleData;
 
-      // Update army labels and battle directions
-      // normalized coordinates
-      const attackerCoords = this.armiesPositions.get(attackerId) || this.structuresPositions.get(attackerId);
-      // normalized coordinates
-      const defenderCoords = this.armiesPositions.get(defenderId) || this.structuresPositions.get(defenderId);
-
-      // Update structure labels and battle directions (if any of the entities are structures)
-      this.structureManager.updateStructureFromBattleEvent(attackerId, attackerCoords, defenderId, defenderCoords);
-      this.armyManager.updateArmyFromBattleEvent(attackerId, attackerCoords, defenderId, defenderCoords);
+      // Add combat relationship
+      if (attackerId && defenderId) {
+        this.addCombatRelationship(attackerId, defenderId);
+        this.recalculateArrowsForEntity(attackerId);
+        this.recalculateArrowsForEntity(defenderId);
+      }
     });
 
     // Listen for structure guard updates
@@ -361,6 +398,7 @@ export default class WorldmapScene extends HexagonScene {
           ?.delete(optimisticStructure.hexCoords.row);
         this.structureManager.updateChunk(this.currentChunk);
       }
+
       await this.structureManager.onUpdate(value);
       if (this.totalStructures !== this.structureManager.getTotalStructures()) {
         this.totalStructures = this.structureManager.getTotalStructures();
@@ -2190,5 +2228,45 @@ export default class WorldmapScene extends HexagonScene {
   protected shouldEnableStormEffects(): boolean {
     // Disable storm effects for worldmap scene
     return true;
+  }
+
+  /**
+   * Add a new combat relationship
+   */
+  private addCombatRelationship(attackerId: ID, defenderId: ID) {
+    this.battleDirectionManager.addCombatRelationship(attackerId, defenderId);
+    console.log(`[ATTACKER-DEFENDER] Added relationship: ${attackerId} attacked ${defenderId}`);
+  }
+
+  /**
+   * Recalculate arrow directions for a specific entity
+   */
+  private recalculateArrowsForEntity(entityId: ID) {
+    console.log(`[RECALCULATE ARROWS FOR ENTITY] Recalculating arrows for entity ${entityId}`);
+    this.battleDirectionManager.recalculateArrowsForEntity(entityId);
+  }
+
+  /**
+   * Recalculate arrows for all entities that have relationships with the given entity
+   */
+  private recalculateArrowsForEntitiesRelatedTo(entityId: ID) {
+    console.log(
+      `[RECALCULATE ARROWS FOR ENTITIES RELATED TO] Recalculating arrows for entities related to ${entityId}`,
+    );
+    this.battleDirectionManager.recalculateArrowsForEntitiesRelatedTo(entityId);
+  }
+
+  /**
+   * Remove entity from tracking when it's destroyed
+   */
+  private removeEntityFromTracking(entityId: ID) {
+    // Remove from position tracking
+    this.armiesPositions.delete(entityId);
+    this.structuresPositions.delete(entityId);
+
+    // Remove from battle direction relationships
+    this.battleDirectionManager.removeEntityFromTracking(entityId);
+
+    console.log(`[ATTACKER-DEFENDER] Removed entity ${entityId} from tracking`);
   }
 }

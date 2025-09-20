@@ -1,5 +1,5 @@
 import { COLORS } from "@/ui/features/settlement";
-import { BuildingType, Direction, ResourcesIds, TroopTier } from "@bibliothecadao/types";
+import { BuildingType, ResourcesIds, TroopTier } from "@bibliothecadao/types";
 import { CameraView } from "../../scenes/hexagon-scene";
 
 /**
@@ -534,15 +534,20 @@ export const updateStaminaBar = (staminaBarElement: HTMLElement, currentStamina:
 };
 
 /**
- * Map Direction enum to arrow unicode characters
+ * Create a rotated arrow element
+ * @param degrees - Degrees (0 is East, positive is clockwise)
+ * @param color - CSS color class for the arrow
+ * @returns HTMLElement with rotated arrow
  */
-const DIRECTION_TO_ARROW: Record<Direction, string> = {
-  [Direction.EAST]: "→",
-  [Direction.NORTH_EAST]: "↘",
-  [Direction.NORTH_WEST]: "↙",
-  [Direction.WEST]: "←",
-  [Direction.SOUTH_WEST]: "↖",
-  [Direction.SOUTH_EAST]: "↗",
+const createRotatedArrow = (degrees: number, colorClass: string): HTMLElement => {
+  const arrowContainer = document.createElement("span");
+  arrowContainer.style.display = "inline-block";
+  arrowContainer.style.transform = `rotate(${degrees}deg)`;
+  arrowContainer.style.transformOrigin = "center";
+  arrowContainer.style.transition = "transform 0.3s ease";
+  arrowContainer.textContent = "→"; // Single right arrow
+  arrowContainer.classList.add(colorClass, "font-bold", "text-sm");
+  return arrowContainer;
 };
 
 /**
@@ -602,21 +607,21 @@ export const updateBattleTimer = (timerElement: HTMLElement, battleTimerLeft: nu
  * Create direction indicator component with optional battle timer
  */
 export const createDirectionIndicators = (
-  attackedFromDirection?: Direction,
-  attackedTowardDirection?: Direction,
+  attackedFromDegrees?: number,
+  attackedTowardDegrees?: number,
   battleTimerLeft?: number,
 ): HTMLElement | null => {
-  // Return null if no directions to display
-  if (attackedFromDirection === undefined && attackedTowardDirection === undefined) {
+  // Return null if no degrees to display
+  if (attackedFromDegrees === undefined && attackedTowardDegrees === undefined) {
     return null;
   }
 
   const container = document.createElement("div");
-  container.classList.add("flex", "items-center", "gap-2", "text-xxs", "mt-1", "animate-fade-in");
+  container.classList.add("flex", "items-center", "justify-center", "gap-2", "text-xxs", "mt-1", "animate-fade-in", "w-full");
   container.setAttribute("data-component", "direction-indicators");
 
   // Attack direction (offensive) - emoji left, arrow right
-  if (attackedTowardDirection !== undefined) {
+  if (attackedTowardDegrees !== undefined) {
     const attackDiv = document.createElement("div");
     attackDiv.classList.add("flex", "items-center", "gap-0.5");
 
@@ -627,16 +632,14 @@ export const createDirectionIndicators = (
     attackDiv.appendChild(attackIcon);
 
     // Direction arrow (right)
-    const attackArrow = document.createElement("span");
-    attackArrow.textContent = DIRECTION_TO_ARROW[attackedTowardDirection];
-    attackArrow.classList.add("text-orange-500", "font-bold", "text-sm");
+    const attackArrow = createRotatedArrow(attackedTowardDegrees, "text-orange-500");
     attackDiv.appendChild(attackArrow);
 
     container.appendChild(attackDiv);
   }
 
   // Defense direction (defensive) - emoji left, arrow right
-  if (attackedFromDirection !== undefined) {
+  if (attackedFromDegrees !== undefined) {
     const defenseDiv = document.createElement("div");
     defenseDiv.classList.add("flex", "items-center", "gap-0.5");
 
@@ -647,9 +650,7 @@ export const createDirectionIndicators = (
     defenseDiv.appendChild(defenseIcon);
 
     // Direction arrow (right)
-    const defenseArrow = document.createElement("span");
-    defenseArrow.textContent = DIRECTION_TO_ARROW[attackedFromDirection];
-    defenseArrow.classList.add("text-blue-500", "font-bold", "text-sm");
+    const defenseArrow = createRotatedArrow(attackedFromDegrees, "text-blue-500");
     defenseDiv.appendChild(defenseArrow);
 
     container.appendChild(defenseDiv);
@@ -669,14 +670,14 @@ export const createDirectionIndicators = (
  */
 export const updateDirectionIndicators = (
   element: HTMLElement,
-  attackedFromDirection?: Direction,
-  attackedTowardDirection?: Direction,
+  attackedFromDegrees?: number,
+  attackedTowardDegrees?: number,
   battleTimerLeft?: number,
 ): void => {
   const existingIndicators = element.querySelector('[data-component="direction-indicators"]');
 
-  // Remove existing indicators if no directions
-  if (attackedFromDirection === undefined && attackedTowardDirection === undefined) {
+  // Remove existing indicators if no degrees
+  if (attackedFromDegrees === undefined && attackedTowardDegrees === undefined) {
     if (existingIndicators) {
       existingIndicators.remove();
     }
@@ -684,7 +685,7 @@ export const updateDirectionIndicators = (
   }
 
   // Create new indicators
-  const newIndicators = createDirectionIndicators(attackedFromDirection, attackedTowardDirection, battleTimerLeft);
+  const newIndicators = createDirectionIndicators(attackedFromDegrees, attackedTowardDegrees, battleTimerLeft);
 
   if (existingIndicators && newIndicators) {
     // Replace existing with new
