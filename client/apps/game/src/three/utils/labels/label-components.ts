@@ -617,7 +617,7 @@ export const createDirectionIndicators = (
   }
 
   const container = document.createElement("div");
-  container.classList.add("flex", "items-center", "justify-center", "gap-2", "text-xxs", "mt-1", "animate-fade-in", "w-full");
+  container.classList.add("flex", "items-center", "justify-center", "gap-2", "text-xxs", "animate-fade-in");
   container.setAttribute("data-component", "direction-indicators");
 
   // Attack direction (offensive) - emoji left, arrow right
