@@ -8,71 +8,85 @@
     <style>
       /* Custom animations */
       @keyframes slowPulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.8; }
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.8;
+        }
       }
 
       @keyframes fade-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
       }
 
       .animate-slowPulse {
-          animation: slowPulse 3s ease-in-out infinite;
+        animation: slowPulse 3s ease-in-out infinite;
       }
 
       .animate-fade-in {
-          animation: fade-in 0.3s ease-in-out;
+        animation: fade-in 0.3s ease-in-out;
       }
 
       /* Custom text sizes */
       .text-xxs {
-          font-size: 0.625rem; /* 10px */
+        font-size: 0.625rem; /* 10px */
       }
 
       /* Transition classes for label expansion */
       .transition-height {
-          transition-property: height;
-          transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-          transition-duration: 700ms;
+        transition-property: height;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        transition-duration: 700ms;
       }
 
       /* Battle timer animation */
       .battle-timer {
-          animation: pulse 1s ease-in-out infinite;
+        animation: pulse 1s ease-in-out infinite;
       }
 
       @keyframes pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
       }
 
       /* Arrow rotation */
       .arrow-rotate {
-          display: inline-block;
-          transform-origin: center;
-          transition: transform 0.3s ease;
+        display: inline-block;
+        transform-origin: center;
+        transition: transform 0.3s ease;
       }
 
       /* Demo container styling */
       .demo-section {
-          background: #111827;
-          padding: 2rem;
-          border-radius: 0.5rem;
-          margin-bottom: 2rem;
+        background: #111827;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        margin-bottom: 2rem;
       }
 
       .label-container {
-          display: flex;
-          align-items: flex-start;
-          gap: 2rem;
-          flex-wrap: wrap;
+        display: flex;
+        align-items: flex-start;
+        gap: 2rem;
+        flex-wrap: wrap;
       }
 
       /* Simulated label wrapper */
       .label-wrapper {
-          position: relative;
-          margin: 2rem;
+        position: relative;
+        margin: 2rem;
       }
     </style>
   </head>
@@ -90,7 +104,7 @@
           <div class="label-wrapper">
             <div
               class="rounded-md p-0.5 text-xxs flex items-center group shadow-md font-semibold h-12"
-              style="background-color: rgba(30, 41, 59, 0.95); border: 1px solid #ef4444; color: #fecdd3;"
+              style="background-color: rgba(30, 41, 59, 0.95); border: 1px solid #ef4444; color: #fecdd3"
             >
               <!-- Army icon -->
               <img
@@ -106,7 +120,7 @@
 
                   <!-- Owner info -->
                   <div class="flex items-center truncate gap-1">
-                    <span class="font-medium" style="color: #fecdd3;">Enemy Player</span>
+                    <span class="font-medium" style="color: #fecdd3">Enemy Player</span>
                     <span
                       class="text-xxs bg-gradient-to-r from-rose-600/60 to-rose-800/60 px-1.5 py-0.5 rounded-sm ml-1.5 inline-block border border-rose-500/30 font-semibold shadow-sm text-white"
                       >⚔️ Red Legion</span
@@ -127,16 +141,32 @@
                   </div>
 
                   <!-- Stamina bar -->
-                  <div style="display: flex; align-items: center; gap: 4px; font-size: 10px;">
-                    <span style="color: #facc15;">⚡</span>
+                  <div style="display: flex; align-items: center; gap: 4px; font-size: 10px">
+                    <span style="color: #facc15">⚡</span>
                     <div
-                      style="position: relative; background-color: #374151; border-radius: 9999px; height: 8px; width: 80px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.2);"
+                      style="
+                        position: relative;
+                        background-color: #374151;
+                        border-radius: 9999px;
+                        height: 8px;
+                        width: 80px;
+                        overflow: hidden;
+                        border: 1px solid rgba(255, 255, 255, 0.2);
+                      "
                     >
                       <div
-                        style="position: absolute; top: 0; left: 0; height: 100%; border-radius: 9999px; width: 75%; background-color: #10b981;"
+                        style="
+                          position: absolute;
+                          top: 0;
+                          left: 0;
+                          height: 100%;
+                          border-radius: 9999px;
+                          width: 75%;
+                          background-color: #10b981;
+                        "
                       ></div>
                     </div>
-                    <span style="color: #ffffff; font-family: monospace; font-size: 10px; font-weight: 500;"
+                    <span style="color: #ffffff; font-family: monospace; font-size: 10px; font-weight: 500"
                       >90/120</span
                     >
                   </div>
@@ -148,15 +178,13 @@
                 <!-- Attack direction -->
                 <div class="flex items-center gap-0.5">
                   <span class="text-xs">⚔️</span>
-                  <span class="arrow-rotate text-orange-500 font-bold text-sm" style="transform: rotate(45deg);"
-                    >→</span
-                  >
+                  <span class="arrow-rotate text-orange-500 font-bold text-sm" style="transform: rotate(45deg)">→</span>
                 </div>
 
                 <!-- Defense direction -->
                 <div class="flex items-center gap-0.5">
                   <span class="text-xs">🛡️</span>
-                  <span class="arrow-rotate text-blue-500 font-bold text-sm" style="transform: rotate(225deg);">→</span>
+                  <span class="arrow-rotate text-blue-500 font-bold text-sm" style="transform: rotate(225deg)">→</span>
                 </div>
 
                 <!-- Battle timer -->
@@ -177,7 +205,7 @@
           <div class="label-wrapper">
             <div
               class="rounded-md p-0.5 text-xxs flex flex-col group shadow-md font-semibold h-auto"
-              style="background-color: rgba(217, 249, 157, 0.15); border: 1px solid #65a30d; color: #d9f99d;"
+              style="background-color: rgba(217, 249, 157, 0.15); border: 1px solid #65a30d; color: #d9f99d"
             >
               <!-- Main content row with icon and expanded content -->
               <div class="flex items-center">
@@ -195,7 +223,7 @@
 
                     <!-- Owner info -->
                     <div class="flex items-center truncate gap-1">
-                      <span class="font-medium" style="color: #d9f99d;">My Army</span>
+                      <span class="font-medium" style="color: #d9f99d">My Army</span>
                       <span
                         class="text-xxs bg-gradient-to-r from-emerald-600/60 to-emerald-800/60 px-1.5 py-0.5 rounded-sm ml-1.5 inline-block border border-emerald-500/30 font-semibold shadow-sm text-white"
                         >⚔️ My Guild</span
@@ -216,16 +244,32 @@
                     </div>
 
                     <!-- Stamina bar -->
-                    <div style="display: flex; align-items: center; gap: 4px; font-size: 10px;">
-                      <span style="color: #facc15;">⚡</span>
+                    <div style="display: flex; align-items: center; gap: 4px; font-size: 10px">
+                      <span style="color: #facc15">⚡</span>
                       <div
-                        style="position: relative; background-color: #374151; border-radius: 9999px; height: 8px; width: 80px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.2);"
+                        style="
+                          position: relative;
+                          background-color: #374151;
+                          border-radius: 9999px;
+                          height: 8px;
+                          width: 80px;
+                          overflow: hidden;
+                          border: 1px solid rgba(255, 255, 255, 0.2);
+                        "
                       >
                         <div
-                          style="position: absolute; top: 0; left: 0; height: 100%; border-radius: 9999px; width: 40%; background-color: #f59e0b;"
+                          style="
+                            position: absolute;
+                            top: 0;
+                            left: 0;
+                            height: 100%;
+                            border-radius: 9999px;
+                            width: 40%;
+                            background-color: #f59e0b;
+                          "
                         ></div>
                       </div>
-                      <span style="color: #ffffff; font-family: monospace; font-size: 10px; font-weight: 500;"
+                      <span style="color: #ffffff; font-family: monospace; font-size: 10px; font-weight: 500"
                         >48/120</span
                       >
                     </div>
@@ -238,15 +282,13 @@
                 <!-- Attack direction -->
                 <div class="flex items-center gap-0.5">
                   <span class="text-xs">⚔️</span>
-                  <span class="arrow-rotate text-orange-500 font-bold text-sm" style="transform: rotate(90deg);"
-                    >→</span
-                  >
+                  <span class="arrow-rotate text-orange-500 font-bold text-sm" style="transform: rotate(90deg)">→</span>
                 </div>
 
                 <!-- Defense direction -->
                 <div class="flex items-center gap-0.5">
                   <span class="text-xs">🛡️</span>
-                  <span class="arrow-rotate text-blue-500 font-bold text-sm" style="transform: rotate(270deg);">→</span>
+                  <span class="arrow-rotate text-blue-500 font-bold text-sm" style="transform: rotate(270deg)">→</span>
                 </div>
               </div>
             </div>
@@ -266,7 +308,7 @@
           <div class="label-wrapper">
             <div
               class="rounded-md p-0.5 text-xxs flex items-center group shadow-md font-semibold h-12"
-              style="background-color: rgba(30, 41, 59, 0.95); border: 1px solid #ef4444; color: #fecdd3;"
+              style="background-color: rgba(30, 41, 59, 0.95); border: 1px solid #ef4444; color: #fecdd3"
             >
               <!-- Structure icon -->
               <div class="w-auto h-full flex-shrink-0">
@@ -280,7 +322,7 @@
 
                   <!-- Owner info -->
                   <div class="flex items-center truncate gap-1">
-                    <span class="font-medium" style="color: #fecdd3;">Enemy Realm</span>
+                    <span class="font-medium" style="color: #fecdd3">Enemy Realm</span>
                     <span
                       class="text-xxs bg-gradient-to-r from-violet-600/60 to-violet-800/60 px-1.5 py-0.5 rounded-sm ml-1.5 inline-block border border-violet-500/30 font-semibold shadow-sm text-white"
                       >⚔️ Purple Empire</span
@@ -309,7 +351,7 @@
                 <!-- Defense direction only for structures -->
                 <div class="flex items-center gap-0.5">
                   <span class="text-xs">🛡️</span>
-                  <span class="arrow-rotate text-blue-500 font-bold text-sm" style="transform: rotate(315deg);">→</span>
+                  <span class="arrow-rotate text-blue-500 font-bold text-sm" style="transform: rotate(315deg)">→</span>
                 </div>
               </div>
             </div>
@@ -322,7 +364,7 @@
           <div class="label-wrapper">
             <div
               class="rounded-md p-0.5 text-xxs flex flex-col group shadow-md font-semibold h-auto"
-              style="background-color: rgba(217, 249, 157, 0.15); border: 1px solid #65a30d; color: #d9f99d;"
+              style="background-color: rgba(217, 249, 157, 0.15); border: 1px solid #65a30d; color: #d9f99d"
             >
               <!-- Main content row with icon and expanded content -->
               <div class="flex items-center">
@@ -338,7 +380,7 @@
 
                     <!-- Owner info -->
                     <div class="flex items-center truncate gap-1">
-                      <span class="font-medium" style="color: #d9f99d;">My Realm</span>
+                      <span class="font-medium" style="color: #d9f99d">My Realm</span>
                       <span
                         class="text-xxs bg-gradient-to-r from-emerald-600/60 to-emerald-800/60 px-1.5 py-0.5 rounded-sm ml-1.5 inline-block border border-emerald-500/30 font-semibold shadow-sm text-white"
                         >⚔️ My Guild</span
@@ -395,7 +437,7 @@
                 <!-- Attack direction -->
                 <div class="flex items-center gap-0.5">
                   <span class="text-xs">⚔️</span>
-                  <span class="arrow-rotate text-orange-500 font-bold text-sm" style="transform: rotate(180deg);"
+                  <span class="arrow-rotate text-orange-500 font-bold text-sm" style="transform: rotate(180deg)"
                     >→</span
                   >
                 </div>
@@ -417,49 +459,49 @@
       <div class="grid grid-cols-4 gap-4">
         <div class="text-center">
           <p class="text-sm text-gray-500 mb-2">0° (East)</p>
-          <span class="arrow-rotate text-orange-500 font-bold text-2xl inline-block" style="transform: rotate(0deg);"
+          <span class="arrow-rotate text-orange-500 font-bold text-2xl inline-block" style="transform: rotate(0deg)"
             >→</span
           >
         </div>
         <div class="text-center">
           <p class="text-sm text-gray-500 mb-2">45° (SE)</p>
-          <span class="arrow-rotate text-orange-500 font-bold text-2xl inline-block" style="transform: rotate(45deg);"
+          <span class="arrow-rotate text-orange-500 font-bold text-2xl inline-block" style="transform: rotate(45deg)"
             >→</span
           >
         </div>
         <div class="text-center">
           <p class="text-sm text-gray-500 mb-2">90° (South)</p>
-          <span class="arrow-rotate text-blue-500 font-bold text-2xl inline-block" style="transform: rotate(90deg);"
+          <span class="arrow-rotate text-blue-500 font-bold text-2xl inline-block" style="transform: rotate(90deg)"
             >→</span
           >
         </div>
         <div class="text-center">
           <p class="text-sm text-gray-500 mb-2">135° (SW)</p>
-          <span class="arrow-rotate text-blue-500 font-bold text-2xl inline-block" style="transform: rotate(135deg);"
+          <span class="arrow-rotate text-blue-500 font-bold text-2xl inline-block" style="transform: rotate(135deg)"
             >→</span
           >
         </div>
         <div class="text-center">
           <p class="text-sm text-gray-500 mb-2">180° (West)</p>
-          <span class="arrow-rotate text-orange-500 font-bold text-2xl inline-block" style="transform: rotate(180deg);"
+          <span class="arrow-rotate text-orange-500 font-bold text-2xl inline-block" style="transform: rotate(180deg)"
             >→</span
           >
         </div>
         <div class="text-center">
           <p class="text-sm text-gray-500 mb-2">225° (NW)</p>
-          <span class="arrow-rotate text-orange-500 font-bold text-2xl inline-block" style="transform: rotate(225deg);"
+          <span class="arrow-rotate text-orange-500 font-bold text-2xl inline-block" style="transform: rotate(225deg)"
             >→</span
           >
         </div>
         <div class="text-center">
           <p class="text-sm text-gray-500 mb-2">270° (North)</p>
-          <span class="arrow-rotate text-blue-500 font-bold text-2xl inline-block" style="transform: rotate(270deg);"
+          <span class="arrow-rotate text-blue-500 font-bold text-2xl inline-block" style="transform: rotate(270deg)"
             >→</span
           >
         </div>
         <div class="text-center">
           <p class="text-sm text-gray-500 mb-2">315° (NE)</p>
-          <span class="arrow-rotate text-blue-500 font-bold text-2xl inline-block" style="transform: rotate(315deg);"
+          <span class="arrow-rotate text-blue-500 font-bold text-2xl inline-block" style="transform: rotate(315deg)"
             >→</span
           >
         </div>

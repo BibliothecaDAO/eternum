@@ -7,11 +7,7 @@ export class BattleDirectionManager {
 
   constructor(
     private updateArmyArrow: (entityId: ID, degrees: number | undefined, role: "attacker" | "defender") => void,
-    private updateStructureArrow: (
-      entityId: ID,
-      degrees: number | undefined,
-      role: "attacker" | "defender",
-    ) => void,
+    private updateStructureArrow: (entityId: ID, degrees: number | undefined, role: "attacker" | "defender") => void,
     private getEntityPosition: (entityId: ID) => HexPosition | undefined,
   ) {}
 

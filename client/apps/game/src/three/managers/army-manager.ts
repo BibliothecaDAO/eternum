@@ -458,18 +458,17 @@ export class ArmyManager {
     let finalBattleCooldownEnd = params.battleCooldownEnd;
     let finalBattleTimerLeft = getBattleTimerLeft(params.battleCooldownEnd);
 
-    let { attackedFromDegrees, attackTowardDegrees } =
-      getCombatAngles(
-        { col: x, row: y },
-        params.latestAttackerId ?? undefined,
-        params.latestAttackerCoordX && params.latestAttackerCoordY
-          ? { x: params.latestAttackerCoordX, y: params.latestAttackerCoordY }
-          : undefined,
-        params.latestDefenderId ?? undefined,
-        params.latestDefenderCoordX && params.latestDefenderCoordY
-          ? { x: params.latestDefenderCoordX, y: params.latestDefenderCoordY }
-          : undefined,
-      );
+    let { attackedFromDegrees, attackTowardDegrees } = getCombatAngles(
+      { col: x, row: y },
+      params.latestAttackerId ?? undefined,
+      params.latestAttackerCoordX && params.latestAttackerCoordY
+        ? { x: params.latestAttackerCoordX, y: params.latestAttackerCoordY }
+        : undefined,
+      params.latestDefenderId ?? undefined,
+      params.latestDefenderCoordX && params.latestDefenderCoordY
+        ? { x: params.latestDefenderCoordX, y: params.latestDefenderCoordY }
+        : undefined,
+    );
 
     console.log("[ADD ARMY] Combat degrees:", {
       attackedFromDegrees: attackedFromDegrees,
