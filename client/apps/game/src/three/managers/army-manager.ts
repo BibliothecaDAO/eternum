@@ -12,8 +12,6 @@ import { Biome, configManager, StaminaManager } from "@bibliothecadao/eternum";
 import {
   BiomeType,
   ContractAddress,
-  Direction,
-  getDirectionBetweenAdjacentHexes,
   HexEntityInfo,
   ID,
   RelicEffect,
@@ -24,7 +22,7 @@ import { Color, Euler, Group, Raycaster, Scene, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { ArmyData, RenderChunkSize } from "../types";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
-import { getBattleTimerLeft, getCombatDirections } from "../utils/combat-directions";
+import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
 import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { MemoryMonitor } from "../utils/memory-monitor";
@@ -38,8 +36,8 @@ interface PendingExplorerTroopsUpdate {
   ownerName: string;
   timestamp: number; // When this update was received
   updateTick: number; // Game tick when this update occurred
-  attackedFromDirection?: Direction;
-  attackedTowardDirection?: Direction;
+  attackedFromDegrees?: number;
+  attackedTowardDegrees?: number;
   battleCooldownEnd?: number;
   battleTimerLeft?: number;
 }
@@ -55,8 +53,8 @@ interface AddArmyParams {
   currentStamina?: number;
   onChainStamina?: { amount: bigint; updatedTick: number };
   maxStamina?: number;
-  attackedFromDirection?: Direction;
-  attackedTowardDirection?: Direction;
+  attackedFromDegrees?: number;
+  attackedTowardDegrees?: number;
   battleCooldownEnd?: number;
   battleTimerLeft?: number;
   latestAttackerId?: number;
@@ -460,22 +458,21 @@ export class ArmyManager {
     let finalBattleCooldownEnd = params.battleCooldownEnd;
     let finalBattleTimerLeft = getBattleTimerLeft(params.battleCooldownEnd);
 
-    let { attackedFromDirection: finalAttackedFromDirection, attackTowardDirection: finalAttackTowardDirection } =
-      getCombatDirections(
-        { col: x, row: y },
-        params.latestAttackerId ?? undefined,
-        params.latestAttackerCoordX && params.latestAttackerCoordY
-          ? { x: params.latestAttackerCoordX, y: params.latestAttackerCoordY }
-          : undefined,
-        params.latestDefenderId ?? undefined,
-        params.latestDefenderCoordX && params.latestDefenderCoordY
-          ? { x: params.latestDefenderCoordX, y: params.latestDefenderCoordY }
-          : undefined,
-      );
+    let { attackedFromDegrees, attackTowardDegrees } = getCombatAngles(
+      { col: x, row: y },
+      params.latestAttackerId ?? undefined,
+      params.latestAttackerCoordX && params.latestAttackerCoordY
+        ? { x: params.latestAttackerCoordX, y: params.latestAttackerCoordY }
+        : undefined,
+      params.latestDefenderId ?? undefined,
+      params.latestDefenderCoordX && params.latestDefenderCoordY
+        ? { x: params.latestDefenderCoordX, y: params.latestDefenderCoordY }
+        : undefined,
+    );
 
-    console.log("[ADD ARMY] Combat directions:", {
-      attackedFromDirection: finalAttackedFromDirection,
-      attackedTowardDirection: finalAttackTowardDirection,
+    console.log("[ADD ARMY] Combat degrees:", {
+      attackedFromDegrees: attackedFromDegrees,
+      attackedTowardDegrees: attackTowardDegrees,
       pos: { x, y },
       latestAttackerId: params.latestAttackerId,
       latestAttackerCoordX: params.latestAttackerCoordX,
@@ -502,12 +499,12 @@ export class ArmyManager {
         );
         finalOnChainStamina = pendingUpdate.onChainStamina;
 
-        // Apply any pending battle direction data
-        if (pendingUpdate.attackedFromDirection !== undefined) {
-          finalAttackedFromDirection = pendingUpdate.attackedFromDirection;
+        // Apply any pending battle degrees data
+        if (pendingUpdate.attackedFromDegrees !== undefined) {
+          attackedFromDegrees = pendingUpdate.attackedFromDegrees;
         }
-        if (pendingUpdate.attackedTowardDirection !== undefined) {
-          finalAttackTowardDirection = pendingUpdate.attackedTowardDirection;
+        if (pendingUpdate.attackedTowardDegrees !== undefined) {
+          attackTowardDegrees = pendingUpdate.attackedTowardDegrees;
         }
 
         // Calculate current stamina using the pending update data
@@ -585,8 +582,8 @@ export class ArmyManager {
       maxStamina: finalMaxStamina,
       // we need to check if there's any pending before we set it because onchain stamina might be 0 from the map data store in the system-manager
       onChainStamina: finalOnChainStamina,
-      attackedFromDirection: finalAttackedFromDirection ?? undefined,
-      attackedTowardDirection: finalAttackTowardDirection ?? undefined,
+      attackedFromDegrees: attackedFromDegrees ?? undefined,
+      attackedTowardDegrees: attackTowardDegrees ?? undefined,
       battleCooldownEnd: finalBattleCooldownEnd,
       battleTimerLeft: finalBattleTimerLeft,
     });
@@ -993,59 +990,23 @@ ${
   }
 
   /**
-   * Update army directions from battle event
+   * Update army battle direction and label
    */
-  public updateArmyFromBattleEvent(
-    attackerId: ID | undefined,
-    attackerCoords: { col: number; row: number } | undefined,
-    defenderId: ID | undefined,
-    defenderCoords: { col: number; row: number } | undefined,
-  ): void {
-    if (!attackerCoords && !defenderCoords) {
-      // Neither is an army, skip
-      return;
+  public updateBattleDirection(entityId: ID, degrees: number | undefined, role: "attacker" | "defender"): void {
+    const army = this.armies.get(entityId);
+    if (!army) return;
+
+    // Update degrees based on role
+    if (role === "attacker") {
+      army.attackedTowardDegrees = degrees;
+    } else {
+      army.attackedFromDegrees = degrees;
     }
 
-    let attackedFromDirection: Direction | null = null;
-    let attackTowardDirection: Direction | null = null;
-
-    if (attackerCoords && defenderCoords) {
-      attackTowardDirection = getDirectionBetweenAdjacentHexes(attackerCoords, {
-        col: defenderCoords.col,
-        row: defenderCoords.row,
-      });
-
-      attackedFromDirection = getDirectionBetweenAdjacentHexes(defenderCoords, {
-        col: attackerCoords.col,
-        row: attackerCoords.row,
-      });
-    }
-
-    if (attackerId && defenderId) {
-      const attackingArmy = this.armies.get(attackerId);
-      const defendingArmy = this.armies.get(defenderId);
-
-      if (attackingArmy) {
-        attackingArmy.attackedTowardDirection = attackTowardDirection ?? undefined;
-        attackingArmy.battleTimerLeft = getBattleTimerLeft(attackingArmy.battleCooldownEnd);
-
-        // Update label
-        const label = this.entityIdLabels.get(attackerId);
-        if (label) {
-          this.updateArmyLabelData(attackerId, attackingArmy, label);
-        }
-      }
-
-      if (defendingArmy) {
-        defendingArmy.attackedFromDirection = attackedFromDirection ?? undefined;
-        defendingArmy.battleTimerLeft = getBattleTimerLeft(defendingArmy.battleCooldownEnd);
-
-        // Update label
-        const label = this.entityIdLabels.get(defenderId);
-        if (label) {
-          this.updateArmyLabelData(defenderId, defendingArmy, label);
-        }
-      }
+    // Update label
+    const label = this.entityIdLabels.get(entityId);
+    if (label) {
+      this.updateArmyLabelData(entityId, army, label);
     }
   }
 
@@ -1074,10 +1035,10 @@ ${
           ownerName: update.ownerName,
           timestamp: currentTime,
           updateTick: currentTick,
-          // Note: ExplorerTroopsSystemUpdate doesn't have battle direction data
-          // Directions would need to come from tile updates
-          attackedFromDirection: undefined,
-          attackedTowardDirection: undefined,
+          // Note: ExplorerTroopsSystemUpdate doesn't have battle degrees data
+          // Degrees would need to come from tile updates
+          attackedFromDegrees: undefined,
+          attackedTowardDegrees: undefined,
           battleCooldownEnd: update.battleCooldownEnd,
           battleTimerLeft: getBattleTimerLeft(update.battleCooldownEnd),
         });

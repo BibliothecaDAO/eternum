@@ -4,22 +4,14 @@ import InstancedModel from "@/three/managers/instanced-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { getIsBlitz, StructureTileSystemUpdate } from "@bibliothecadao/eternum";
-import {
-  BuildingType,
-  Direction,
-  FELT_CENTER,
-  getDirectionBetweenAdjacentHexes,
-  ID,
-  RelicEffect,
-  StructureType,
-} from "@bibliothecadao/types";
+import { BuildingType, FELT_CENTER, ID, RelicEffect, StructureType } from "@bibliothecadao/types";
 import { Group, Object3D, Scene, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { GuardArmy } from "../../../../../../packages/core/src/stores/map-data-store";
 import { StructureInfo } from "../types";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
-import { getBattleTimerLeft, getCombatDirections } from "../utils/combat-directions";
+import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { createStructureLabel, updateStructureLabel } from "../utils/labels/label-factory";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { FXManager } from "./fx-manager";
@@ -39,8 +31,8 @@ interface PendingLabelUpdate {
   owner: { address: bigint; ownerName: string; guildName: string };
   timestamp: number; // When this update was received
   updateType: "structure" | "building"; // Type of update for ordering
-  attackedFromDirection?: Direction;
-  attackedTowardDirection?: Direction;
+  attackedFromDegrees?: number;
+  attackedTowardDegrees?: number;
   battleCooldownEnd?: number;
   battleTimerLeft?: number;
 }
@@ -287,7 +279,7 @@ export class StructureManager {
       latestDefenderCoordY,
     } = update.battleData || {};
 
-    let { attackedFromDirection, attackTowardDirection } = getCombatDirections(
+    let { attackedFromDegrees, attackTowardDegrees } = getCombatAngles(
       hexCoords,
       latestAttackerId ?? undefined,
       latestAttackerCoordX && latestAttackerCoordY ? { x: latestAttackerCoordX, y: latestAttackerCoordY } : undefined,
@@ -320,11 +312,11 @@ export class StructureManager {
           finalActiveProductions = pendingUpdate.activeProductions;
         }
         // Apply any pending battle direction data
-        if (pendingUpdate.attackedFromDirection !== undefined) {
-          attackedFromDirection = pendingUpdate.attackedFromDirection;
+        if (pendingUpdate.attackedFromDegrees !== undefined) {
+          attackedFromDegrees = pendingUpdate.attackedFromDegrees;
         }
-        if (pendingUpdate.attackedTowardDirection !== undefined) {
-          attackTowardDirection = pendingUpdate.attackedTowardDirection;
+        if (pendingUpdate.attackedTowardDegrees !== undefined) {
+          attackTowardDegrees = pendingUpdate.attackedTowardDegrees;
         }
         if (pendingUpdate.battleCooldownEnd !== undefined) {
           battleCooldownEnd = pendingUpdate.battleCooldownEnd;
@@ -349,8 +341,8 @@ export class StructureManager {
       finalGuardArmies,
       finalActiveProductions,
       update.hyperstructureRealmCount,
-      attackedFromDirection ?? undefined,
-      attackTowardDirection ?? undefined,
+      attackedFromDegrees ?? undefined,
+      attackTowardDegrees ?? undefined,
       battleCooldownEnd,
       battleTimerLeft,
     );
@@ -835,75 +827,25 @@ export class StructureManager {
   }
 
   /**
-   * Update structure directions from battle event
+   * Update structure battle direction and label
    */
-  public updateStructureFromBattleEvent(
-    attackerId: ID | undefined,
-    attackerCoords: { col: number; row: number } | undefined,
-    defenderId: ID | undefined,
-    defenderCoords: { col: number; row: number } | undefined,
-  ): void {
-    if (!attackerCoords && !defenderCoords) {
-      // Neither is a structure, skip
-      console.log(`[BATTLE EVENT UPDATE] Neither attacker nor defender is a structure`, {
-        attackerId,
-        defenderId,
-        attackingStructure: !!attackerCoords,
-        defendingStructure: !!defenderCoords,
-      });
-      return;
+  public updateBattleDirection(entityId: ID, degrees: number | undefined, role: "attacker" | "defender"): void {
+    console.log("[UPDATING BATTLE DEGREES FOR STRUCTURE]", { entityId, degrees, role });
+    const structure = this.structures.getStructureByEntityId(entityId);
+    if (!structure) return;
+
+    // Update degrees based on role
+    if (role === "attacker") {
+      structure.attackedTowardDegrees = degrees;
+    } else {
+      structure.attackedFromDegrees = degrees;
     }
 
-    let attackedFromDirection: Direction | null = null;
-    let attackTowardDirection: Direction | null = null;
-
-    if (attackerCoords && defenderCoords) {
-      attackTowardDirection = getDirectionBetweenAdjacentHexes(attackerCoords, {
-        col: defenderCoords.col,
-        row: defenderCoords.row,
-      });
-
-      attackedFromDirection = getDirectionBetweenAdjacentHexes(defenderCoords, {
-        col: attackerCoords.col,
-        row: attackerCoords.row,
-      });
+    // Update label
+    const label = this.entityIdLabels.get(entityId);
+    if (label) {
+      this.updateStructureLabelData(entityId, structure, label);
     }
-
-    if (attackerId && defenderId) {
-      const attackingStructure = this.structures.getStructureByEntityId(attackerId);
-      const defendingStructure = this.structures.getStructureByEntityId(defenderId);
-      if (attackingStructure) {
-        attackingStructure.attackedTowardDirection = attackTowardDirection ?? undefined;
-
-        // Update label
-        const label = this.entityIdLabels.get(attackerId);
-        if (label) {
-          this.updateStructureLabelData(attackerId, attackingStructure, label);
-        }
-      }
-      if (defendingStructure) {
-        defendingStructure.attackedFromDirection = attackedFromDirection ?? undefined;
-        // Update label
-        const label = this.entityIdLabels.get(defenderId);
-        if (label) {
-          this.updateStructureLabelData(defenderId, defendingStructure, label);
-        }
-      }
-
-      console.log(`[BATTLE DIRECTION UPDATE] Updated structure directions`, {
-        attackerId,
-        defenderId,
-        attackingStructure: !!attackingStructure,
-        defendingStructure: !!defendingStructure,
-      });
-    }
-  }
-
-  // Optional callback to get army positions for cross-entity battles
-  private getArmyPosition?: (entityId: ID) => { x: number; y: number } | undefined;
-
-  public setArmyPositionGetter(getter: (entityId: ID) => { x: number; y: number } | undefined) {
-    this.getArmyPosition = getter;
   }
 
   /**
@@ -1014,8 +956,8 @@ class Structures {
     guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>,
     activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>,
     hyperstructureRealmCount?: number,
-    attackedFromDirection?: Direction,
-    attackedTowardDirection?: Direction,
+    attackedFromDegrees?: number,
+    attackedTowardDegrees?: number,
     battleCooldownEnd?: number,
     battleTimerLeft?: number,
   ) {
@@ -1038,8 +980,8 @@ class Structures {
       activeProductions,
       hyperstructureRealmCount,
       // Battle data
-      attackedFromDirection,
-      attackedTowardDirection,
+      attackedFromDegrees,
+      attackedTowardDegrees,
       battleCooldownEnd,
       battleTimerLeft,
     });
