@@ -22,7 +22,7 @@ const COLLECTION_IDS = {
   mainnet: {
     realms: 2,
     "loot-chests": 3,
-    cosmetics: 4, // TODO: Replace with actual collection ID
+    cosmetics: 4,
     "golden-tokens": 5,
     beasts: 7,
     adventurers: 8,
