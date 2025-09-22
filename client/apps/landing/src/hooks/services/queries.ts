@@ -370,6 +370,7 @@ WITH limited_active_orders AS (
       WHERE ct.token_id_hex != '0x0000000000000000000000000000000000000000000000000000000000000000'
         {traitFilters}
         {listedOnlyFilter}
+        AND t.token_id != '0x0000000000000000000000000000000000000000000000000000000000000000'
     )
     SELECT * FROM filtered_tokens
     {orderByClause}
