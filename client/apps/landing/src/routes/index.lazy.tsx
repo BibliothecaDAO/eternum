@@ -2,6 +2,8 @@ import { ReactComponent as EternumWordsLogo } from "@/assets/icons/realms-words-
 import { CollectionCard } from "@/components/modules/collection-card";
 import { CollectionTokenGrid } from "@/components/modules/collection-token-grid";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { marketplaceCollections, realmsAddress, seasonPassAddress } from "@/config";
 import {
   ActiveMarketOrdersTotal,
@@ -17,7 +19,7 @@ import { useAccount } from "@starknet-react/core";
 import { useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { CirclePlayIcon } from "lucide-react";
+import { Brain, Castle, CirclePlayIcon, Sword, UserIcon } from "lucide-react";
 
 export const Route = createLazyFileRoute("/")({
   component: Index,
@@ -66,6 +68,10 @@ function Index() {
   // const seasonPasses = results[1];
   //const seasonPassMints = results[2];
   const collectionStats = results.slice(3) as { data: ActiveMarketOrdersTotal[] }[];
+  const ownedRealms = (realms.data ?? []) as MergedNftData[];
+  const hasRealms = ownedRealms.length > 0;
+  const totalRealmCount = ownedRealms.length;
+  const featuredRealms = ownedRealms.slice(0, 6) as MergedNftData[];
 
   /* const mintedRealmsCount = useMemo(() => {
     return (
@@ -116,6 +122,19 @@ function Index() {
           </p>
           <motion.div
             initial={{ scale: 1 }}
+            animate={{
+              scale: [1, 1.02, 1],
+              boxShadow: [
+                "0 0 0 1px rgba(255, 215, 0, 0.08)",
+                "0 0 0 3px rgba(255, 215, 0, 0.15)",
+                "0 0 0 1px rgba(255, 215, 0, 0.08)",
+              ],
+            }}
+            transition={{
+              duration: 2.5,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
             className="inline-flex flex-col items-center gap-3 rounded-lg"
           >
             <div className="flex flex-col sm:flex-row gap-3">
@@ -162,25 +181,65 @@ function Index() {
       {accountAddress && (
         <section className="py-12 bg-card/50">
           <div className="container mx-auto px-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-              {/* Realms Column */}
-              <div>
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-3xl font-bold">Your Realms</h2>
-                  <Button asChild variant="outline">
+            <div className="grid grid-cols-1 gap-12">
+              <Card className="bg-background/70 border-gold/20 shadow-lg">
+                <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <CardTitle className="text-2xl">Your Realms</CardTitle>
+                    <CardDescription>Keep building your domain by managing the realms you already own.</CardDescription>
+                  </div>
+                  <Button asChild size="sm" variant="outline">
                     <Link to="/$collection" params={{ collection: "realms" }}>
                       Manage All
                     </Link>
                   </Button>
-                </div>
-                {realms.data && (
-                  <CollectionTokenGrid
-                    tokens={realms.data.slice(0, 4) as MergedNftData[]}
-                    isCompactGrid={false}
-                    pageId="home"
-                  />
-                )}
-              </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {hasRealms ? (
+                    <>
+                      <div className="flex items-center justify-between text-sm text-muted-foreground">
+                        <span>Realms in wallet</span>
+                        <Badge variant="secondary" className="bg-gold/15 text-gold border border-gold/30">
+                          {totalRealmCount}
+                        </Badge>
+                      </div>
+                      <CollectionTokenGrid tokens={featuredRealms} isCompactGrid pageId="home" />
+                      {totalRealmCount > featuredRealms.length && (
+                        <p className="text-xs text-muted-foreground text-center">
+                          Showing the first {featuredRealms.length} realms — open "Manage All" to view the rest.
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <div className="py-10 px-4 text-center text-muted-foreground flex flex-col items-center gap-4">
+                      <Castle className="w-10 h-10 text-gold" />
+                      <div>
+                        <p className="text-base font-medium text-foreground">No realms in your wallet yet.</p>
+                        <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+                          Explore the marketplace to acquire a Realm and start expanding your empire.
+                        </p>
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Button asChild size="sm">
+                          <Link to="/trade/$collection" params={{ collection: "realms" }}>
+                            Browse Marketplace
+                          </Link>
+                        </Button>
+                        <Button asChild size="sm" variant="outline">
+                          <Link to="/$collection" params={{ collection: "realms" }}>
+                            Learn About Realms
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Season Passes Column
+              <div>
+                ...
+              </div>*/}
             </div>
           </div>
         </section>
