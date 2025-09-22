@@ -32,19 +32,51 @@ contracts = [
 namespaces = ["marketplace"]
 
 [erc]
-max_metadata_tasks = 10
+max_metadata_tasks = 50  # Increase concurrent metadata tasks for better ERC token processing
 
 world_block = 664160
 
 [sql]
 all_model_indices = false
-model_indices = [
-	{ model_tag = "marketplace-MarketOrderModel", fields = ["order_id"]},
-]
 
 historical = []
-cache_size = -78_125_000 # 10GB of cache size
-page_size = 32_768
+cache_size = -156_250_000 # 20GB of cache size - increased for better query performance
+page_size = 65_536 # 64KB pages - better for large queries
+
+# Model indices for marketplace performance optimization
+[[sql.model_indices]]
+model_tag = "marketplace-MarketOrderModel"
+fields = ["order_id"]
+
+# Composite index for active orders filtering (most selective fields first)
+[[sql.model_indices]]
+model_tag = "marketplace-MarketOrderModel"
+fields = ["order.active", "order.collection_id", "order.owner", "order.expiration"]
+
+# Composite index optimized for price sorting within a collection
+[[sql.model_indices]]
+model_tag = "marketplace-MarketOrderModel"
+fields = ["order.collection_id", "order.active", "order.price"]
+
+# Index for token lookups
+[[sql.model_indices]]
+model_tag = "marketplace-MarketOrderModel"
+fields = ["order.token_id"]
+
+# Index for owner filtering
+[[sql.model_indices]]
+model_tag = "marketplace-MarketOrderModel"
+fields = ["order.owner"]
+
+# Composite index for active orders with token_id (for JOIN optimization)
+[[sql.model_indices]]
+model_tag = "marketplace-MarketOrderModel"
+fields = ["order.active", "order.token_id"]
+
+# Composite index for expiration checks
+[[sql.model_indices]]
+model_tag = "marketplace-MarketOrderModel"
+fields = ["order.expiration", "order.active"]
 
 [server]
 http_cors_origins = ["*"]
