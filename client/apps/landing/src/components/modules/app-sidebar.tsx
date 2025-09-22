@@ -8,52 +8,30 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { marketplaceCollections } from "@/config";
 import { Link } from "@tanstack/react-router";
+import type { LucideIcon } from "lucide-react";
 import { Coins, Crown, Map, Package, PawPrint, ShoppingBag, Sparkles, UserRound, X } from "lucide-react";
 import { TypeH2 } from "../typography/type-h2";
 
-// Menu items.
-const items = [
-  {
-    title: "Home",
-    url: "/",
-    icon: Crown,
-  },
-  {
-    title: "Realms",
-    url: "/realms",
-    icon: Map,
-  },
-  {
-    title: "Loot Chests",
-    url: "/loot-chests",
-    icon: Package,
-  },
-  {
-    title: "Cosmetics",
-    url: "/cosmetics",
-    icon: Sparkles,
-  },
-  {
-    title: "Golden Tokens",
-    url: "/golden-tokens",
-    icon: Coins,
-  },
-  {
-    title: "Beasts",
-    url: "/beasts",
-    icon: PawPrint,
-  },
-  {
-    title: "Adventurers",
-    url: "/adventurers",
-    icon: UserRound,
-  },
-  {
-    title: "Marketplace",
-    url: "/trade",
-    icon: ShoppingBag,
-  },
+type CollectionKey = keyof typeof marketplaceCollections;
+
+const collectionIconMap: Partial<Record<CollectionKey, LucideIcon>> = {
+  realms: Map,
+  "loot-chests": Package,
+  cosmetics: Sparkles,
+  "golden-tokens": Coins,
+  beasts: PawPrint,
+  adventurers: UserRound,
+};
+
+const preferredCollectionOrder: CollectionKey[] = [
+  "realms",
+  "adventurers",
+  "loot-chests",
+  "cosmetics",
+  "golden-tokens",
+  "beasts",
 ];
 
 export function AppSidebar() {
@@ -64,6 +42,73 @@ export function AppSidebar() {
       setOpenMobile(false);
     }
   };
+
+  const sortedCollectionEntries = Object.entries(marketplaceCollections)
+    .filter(([, config]) => config.address !== "")
+    .sort(([keyA, configA], [keyB, configB]) => {
+      const indexA = preferredCollectionOrder.indexOf(keyA as CollectionKey);
+      const indexB = preferredCollectionOrder.indexOf(keyB as CollectionKey);
+
+      if (indexA === -1 && indexB === -1) {
+        return configA.name.localeCompare(configB.name);
+      }
+
+      if (indexA === -1) return 1;
+      if (indexB === -1) return -1;
+
+      return indexA - indexB;
+    });
+
+  const collectionNavItems = sortedCollectionEntries.map(([key, config]) => ({
+    key: key as CollectionKey,
+    title: config.name,
+    icon: collectionIconMap[key as CollectionKey] ?? Sparkles,
+  }));
+
+  const overviewItems = [
+    {
+      title: "Home",
+      url: "/",
+      icon: Crown,
+    },
+  ];
+
+  const walletItems = collectionNavItems.map((item) => ({
+    title: item.title,
+    url: `/${item.key}`,
+    icon: item.icon,
+  }));
+
+  const marketplaceItems = [
+    {
+      title: "All Listings",
+      url: "/trade",
+      icon: ShoppingBag,
+    },
+    ...collectionNavItems.map((item) => ({
+      title: item.title,
+      url: `/trade/${item.key}`,
+      icon: item.icon,
+    })),
+  ];
+
+  const sidebarSections = [
+    {
+      title: "Overview",
+      description: "Jump into Realms at a glance.",
+      items: overviewItems,
+    },
+    {
+      title: "Your Collections",
+      description: "Manage the NFTs currently in your wallet.",
+      items: walletItems,
+    },
+    {
+      title: "Marketplace",
+      description: "Browse live listings for every collection.",
+      items: marketplaceItems,
+    },
+  ].filter((section) => section.items.length > 0);
 
   return (
     <Sidebar className="p-3">
@@ -97,35 +142,28 @@ export function AppSidebar() {
         </a>
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    {item.url.startsWith("https") ? (
-                      <a
-                        href={item.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 py-2 rounded-md hover:bg-secondary font-heading text-xl"
-                        onClick={handleLinkClick}
-                      >
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </a>
-                    ) : (
-                      <Link
-                        className="[&.active]:font-bold [&.active]:bg-secondary font-heading text-xl"
-                        to={item.url}
-                        onClick={handleLinkClick}
-                      >
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </Link>
-                    )}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
+            {sidebarSections.map((section) => (
+              <div key={section.title} className="mt-6 first:mt-4">
+                <TypeH2 className="mb-1 text-xs font-semibold uppercase tracking-widest text-gold">
+                  {section.title}
+                </TypeH2>
+                {section.description && (
+                  <p className="mb-2 text-xs text-muted-foreground">{section.description}</p>
+                )}
+                <SidebarMenu>
+                  {section.items.map((item) => (
+                    <SidebarMenuItem key={item.url}>
+                      <SidebarMenuButton asChild>
+                        <Link to={item.url} onClick={handleLinkClick} className="flex items-center gap-3">
+                          <item.icon className="h-4 w-4" />
+                          <span className="text-sm font-medium">{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </div>
+            ))}
             {/* social links */}
             <div className="flex items-center gap-2 mt-8 justify-center text-gold fill-gold">
               <a
