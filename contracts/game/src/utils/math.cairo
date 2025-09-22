@@ -1,6 +1,4 @@
-use alexandria_math::U256BitShift;
-use alexandria_math::U32BitShift;
-use alexandria_math::U64BitShift;
+use alexandria_math::{U256BitShift, U32BitShift, U64BitShift};
 
 // Raise a number to a power.
 /// * `base` - The number to raise.

@@ -1,6 +1,7 @@
 import { ControllerConnector } from "@cartridge/connector";
+import { usePredeployedAccounts } from "@dojoengine/predeployed-connector/react";
 import { Chain, getSlotChain, mainnet, sepolia } from "@starknet-react/chains";
-import { Connector, StarknetConfig, jsonRpcProvider, voyager } from "@starknet-react/core";
+import { Connector, StarknetConfig, jsonRpcProvider, paymasterRpcProvider, voyager } from "@starknet-react/core";
 import type React from "react";
 import { useCallback } from "react";
 import { constants, shortString } from "starknet";
@@ -81,7 +82,6 @@ const katanaLocalChain = {
     symbol: "ETH",
     decimals: 18,
   },
-
   rpcUrls: {
     default: {
       http: [KATANA_RPC_URL],
@@ -90,10 +90,28 @@ const katanaLocalChain = {
       http: [KATANA_RPC_URL],
     },
   },
+  paymasterRpcUrls: {
+    default: {
+      http: [],
+    },
+    public: {
+      http: [],
+    },
+  },
 } as const satisfies Chain;
 
 export function StarknetProvider({ children }: { children: React.ReactNode }) {
   const rpc = useCallback(() => {
+    return { nodeUrl: env.VITE_PUBLIC_NODE_URL };
+  }, []);
+
+  let { connectors: predeployedConnectors } = usePredeployedAccounts({
+    rpc: env.VITE_PUBLIC_NODE_URL as string,
+    id: "katana",
+    name: "Katana",
+  });
+
+  const paymasterRpc = useCallback(() => {
     return { nodeUrl: env.VITE_PUBLIC_NODE_URL };
   }, []);
 
@@ -109,7 +127,8 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
               : [mainnet, sepolia]
       }
       provider={jsonRpcProvider({ rpc })}
-      connectors={[controller as unknown as Connector]}
+      paymasterProvider={isLocal ? paymasterRpcProvider({ rpc: paymasterRpc }) : undefined}
+      connectors={isLocal ? predeployedConnectors : [controller as unknown as Connector]}
       explorer={voyager}
       autoConnect
     >

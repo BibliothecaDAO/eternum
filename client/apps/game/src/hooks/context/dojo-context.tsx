@@ -43,7 +43,10 @@ type DojoProviderProps = {
 const useMasterAccount = (rpcProvider: RpcProvider) => {
   const masterAddress = env.VITE_PUBLIC_MASTER_ADDRESS;
   const privateKey = env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
-  return useMemo(() => new Account(rpcProvider, masterAddress, privateKey), [rpcProvider, masterAddress, privateKey]);
+  return useMemo(
+    () => new Account({ provider: rpcProvider, address: masterAddress, signer: privateKey }),
+    [rpcProvider, masterAddress, privateKey],
+  );
 };
 
 const useRpcProvider = () => {
@@ -128,7 +131,7 @@ const DojoContextProvider = ({
   const connectWallet = () => {
     try {
       console.log("Attempting to connect wallet...");
-      connect({ connector: connectors[0] });
+      connect({ connector: env.VITE_PUBLIC_CHAIN === "local" ? connectors[0] : (connectors[0] as any).controller });
       console.log("Wallet connected successfully.");
     } catch (error) {
       console.error("Failed to connect wallet:", error);
@@ -136,7 +139,11 @@ const DojoContextProvider = ({
   };
 
   const [accountToUse, setAccountToUse] = useState<Account | AccountInterface>(
-    new Account(value.network.provider.provider, NULL_ACCOUNT.address, NULL_ACCOUNT.privateKey),
+    new Account({
+      provider: value.network.provider.provider,
+      address: NULL_ACCOUNT.address,
+      signer: NULL_ACCOUNT.privateKey,
+    }),
   );
 
   const onSpectatorModeClick = useSpectatorModeClick(value.components);

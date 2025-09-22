@@ -4,7 +4,7 @@ import { ComponentValue } from "@dojoengine/recs";
 export const getExplorerFromToriiEntity = (
   entity: any,
 ): ComponentValue<ClientComponents["ExplorerTroops"]["schema"]> => {
-  console.log({entity})
+  console.log({ entity });
   return {
     explorer_id: entity.explorer_id.value,
     owner: entity.owner.value,

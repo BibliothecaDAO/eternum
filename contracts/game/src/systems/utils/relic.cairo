@@ -1,15 +1,13 @@
-use dojo::model::{ModelStorage};
+use dojo::model::ModelStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{
     RELICS_RESOURCE_END_ID, RELICS_RESOURCE_START_ID, RESOURCE_PRECISION, ResourceTypes, relic_level,
 };
-use s1_eternum::models::config::TickImpl;
-use s1_eternum::models::config::{MapConfig, WorldConfigUtilImpl};
-use s1_eternum::models::map::{Tile, TileImpl};
-use s1_eternum::models::map::{TileOccupier};
+use s1_eternum::models::config::{MapConfig, TickImpl, WorldConfigUtilImpl};
+use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
 use s1_eternum::models::position::{Coord, CoordImpl, Direction, DirectionImpl, TravelImpl};
-use s1_eternum::models::record::{RelicRecord};
+use s1_eternum::models::record::RelicRecord;
 use s1_eternum::models::resource::resource::{
     ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
 };
@@ -18,10 +16,10 @@ use s1_eternum::models::weight::Weight;
 use s1_eternum::systems::utils::map::IMapImpl;
 use s1_eternum::systems::utils::structure::iStructureImpl;
 use s1_eternum::systems::utils::troop::iMercenariesImpl;
-use s1_eternum::utils::map::biomes::{Biome, get_biome};
+use s1_eternum::utils::map::biomes::Biome;
 use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
-use s1_eternum::utils::random;
-use s1_eternum::utils::random::{VRFImpl};
+use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
+use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 
 #[generate_trait]
 pub impl iRelicChestDiscoveryImpl of iRelicChestDiscoveryTrait {
@@ -43,14 +41,15 @@ pub impl iRelicChestDiscoveryImpl of iRelicChestDiscoveryTrait {
 
         // calculate final probabilities
         let num_directions_choices: u32 = 3;
-        let mut directions: Span<Direction> = random::choices(
-            DirectionImpl::all().span(),
-            array![1, 1, 1, 1, 1, 1].span(),
-            array![].span(),
-            num_directions_choices.into(),
-            false,
-            relic_vrf_seed,
-        );
+        let rng_library_dispatcher = rng_library::get_dispatcher(@world);
+        let mut directions: Span<Direction> = rng_library_dispatcher
+            .get_weighted_choice_direction(
+                DirectionImpl::all().span(),
+                array![1, 1, 1, 1, 1, 1].span(),
+                num_directions_choices.into(),
+                false,
+                relic_vrf_seed,
+            );
 
         let mut destination_coord: Coord = start_coord;
         let mut i = 1;
@@ -59,7 +58,7 @@ pub impl iRelicChestDiscoveryImpl of iRelicChestDiscoveryTrait {
             destination_coord = destination_coord
                 .neighbor_after_distance(*direction, map_config.relic_hex_dist_from_center.into() / i);
             i += 1;
-        };
+        }
 
         loop {
             let mut tile: Tile = world.read_model((destination_coord.x, destination_coord.y));
@@ -68,7 +67,8 @@ pub impl iRelicChestDiscoveryImpl of iRelicChestDiscoveryTrait {
                 destination_coord = destination_coord.neighbor(Direction::East);
             } else {
                 if tile.not_discovered() {
-                    let biome: Biome = get_biome(destination_coord.x.into(), destination_coord.y.into());
+                    let biome_library = biome_library::get_dispatcher(@world);
+                    let biome: Biome = biome_library.get_biome(destination_coord.x.into(), destination_coord.y.into());
                     IMapImpl::explore(ref world, ref tile, biome);
                 }
                 IMapImpl::occupy(ref world, ref tile, TileOccupier::Chest.into(), world.dispatcher.uuid());
@@ -97,7 +97,7 @@ pub impl iRelicChestResourceFactoryImpl of iRelicChestResourceFactoryTrait {
             } else {
                 panic!("Eternum: Invalid relic id for chance calculation");
             }
-        };
+        }
         (relic_ids.span(), chances.span())
     }
 
@@ -111,9 +111,10 @@ pub impl iRelicChestResourceFactoryImpl of iRelicChestResourceFactoryTrait {
     ) -> Span<u8> {
         let (relic_ids, chances) = Self::_chances(RELICS_RESOURCE_START_ID, RELICS_RESOURCE_END_ID);
         let mut number_of_relics: u128 = map_config.relic_chest_relics_per_chest.into();
-        let mut chosen_relic_ids: Span<u8> = random::choices(
-            relic_ids, chances, array![].span(), number_of_relics, true, vrf_seed,
-        );
+
+        let rng_library_dispatcher = rng_library::get_dispatcher(@world);
+        let mut chosen_relic_ids: Span<u8> = rng_library_dispatcher
+            .get_weighted_choice_u8(relic_ids, chances, number_of_relics, true, vrf_seed);
 
         for i in 0..chosen_relic_ids.len() {
             let relic_resource_id: u8 = *chosen_relic_ids.at(i);
@@ -123,7 +124,7 @@ pub impl iRelicChestResourceFactoryImpl of iRelicChestResourceFactoryTrait {
             );
             relic_resource.add(1 * RESOURCE_PRECISION, ref to_explorer_weight, relic_resource_weight_grams);
             relic_resource.store(ref world);
-        };
+        }
 
         to_explorer_weight.store(ref world, to_explorer_id);
 

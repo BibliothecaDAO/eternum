@@ -212,6 +212,7 @@ export interface StructureMapDataRaw {
   realm_id: number | null;
   resources_packed: string;
   owner_name: string | null;
+
   // Guard army data
   delta_category: string | null;
   delta_tier: string | null;
@@ -229,10 +230,25 @@ export interface StructureMapDataRaw {
   alpha_tier: string | null;
   alpha_count: string | null; // hex string
   alpha_stamina_amount: string | null; // hex string
+  delta_battle_cooldown_end: number | null;
+  charlie_battle_cooldown_end: number | null;
+  bravo_battle_cooldown_end: number | null;
+  alpha_battle_cooldown_end: number | null;
+
   // Building production data from StructureBuildings
   packed_counts_1: string | null; // hex string
   packed_counts_2: string | null; // hex string
   packed_counts_3: string | null; // hex string
+
+  // Battle data
+  latest_attacker_id: number | null;
+  latest_attack_timestamp: string | null; // hex string
+  latest_defender_id: number | null;
+  latest_defense_timestamp: string | null; // hex string
+  latest_attacker_coord_x: number | null;
+  latest_attacker_coord_y: number | null;
+  latest_defender_coord_x: number | null;
+  latest_defender_coord_y: number | null;
 }
 
 export interface ArmyMapDataRaw {
@@ -246,6 +262,30 @@ export interface ArmyMapDataRaw {
   stamina_updated_tick: string | null; // hex string
   owner_address: string | null;
   owner_name: string | null;
+  battle_cooldown_end: number | null;
+
+  // Battle data
+  latest_attacker_id: number | null;
+  latest_attack_timestamp: string | null; // hex string
+  latest_attacker_coord_x: number | null;
+  latest_attacker_coord_y: number | null;
+  latest_defender_id: number | null;
+  latest_defense_timestamp: string | null; // hex string
+  latest_defender_coord_x: number | null;
+  latest_defender_coord_y: number | null;
+}
+
+export interface HyperstructureRealmCountDataRaw {
+  hyperstructure_entity_id: number;
+  hyperstructure_coord_x: number;
+  hyperstructure_coord_y: number;
+  realm_count_within_radius: number;
+
+  // Battle data
+  latest_attacker_id: number | null;
+  latest_attack_timestamp: string | null; // hex string
+  latest_defender_id: number | null;
+  latest_defense_timestamp: string | null; // hex string
 }
 
 // Raw response types for queries that need transformation

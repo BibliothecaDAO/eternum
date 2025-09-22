@@ -10,15 +10,11 @@ pub trait ISwapSystems<T> {
 pub mod swap_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcherTrait};
-
+    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION};
-    use s1_eternum::constants::{ResourceTypes};
+    use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes};
     use s1_eternum::models::bank::market::{Market, MarketTrait};
-    use s1_eternum::models::config::{BankConfig, SeasonConfigImpl, WorldConfigUtilImpl};
-    use s1_eternum::models::config::{TickImpl};
+    use s1_eternum::models::config::{BankConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl};
     use s1_eternum::models::owner::OwnerAddressTrait;
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
@@ -26,8 +22,8 @@ pub mod swap_systems {
     use s1_eternum::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
     };
-    use s1_eternum::models::weight::{Weight};
-    use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
+    use s1_eternum::models::weight::Weight;
+    use s1_eternum::systems::utils::resource::iResourceTransferImpl;
     use starknet::ContractAddress;
 
 

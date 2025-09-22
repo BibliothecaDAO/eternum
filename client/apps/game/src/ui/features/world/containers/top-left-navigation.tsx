@@ -1,6 +1,6 @@
+import { useUISound } from "@/audio";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
-import { useUISound } from "@/audio";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getBlockTimestamp, getIsBlitz, Position } from "@bibliothecadao/eternum";
 
@@ -478,51 +478,72 @@ const ProgressBar = memo(({ progress }: { progress: number }) => {
 
 ProgressBar.displayName = "ProgressBar";
 
-const TickProgress = memo(() => {
+const DayPhaseProgress = memo(() => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const setCycleProgress = useUIStore((state) => state.setCycleProgress);
   const setCycleTime = useUIStore((state) => state.setCycleTime);
   const { currentBlockTimestamp } = useBlockTimestamp();
 
   const cycleTime = configManager.getTick(TickIds.Armies);
+  const dayDuration = cycleTime * 6;
   const playGong = useUISound(getIsBlitz() ? "event.blitz_gong" : "event.gong");
 
   const lastProgressRef = useRef(0);
 
-  // Calculate progress once and memoize
-  const progress = useMemo(() => {
-    const elapsedTime = currentBlockTimestamp % cycleTime;
-    return (elapsedTime / cycleTime) * 100;
-  }, [currentBlockTimestamp, cycleTime]);
+  const phases = [
+    { name: "Early Hours" },
+    { name: "Dawn" },
+    { name: "Morning" },
+    { name: "Afternoon" },
+    { name: "Dusk" },
+    { name: "Late Evening" },
+  ];
 
-  // Update store with cycle timing for storm effects
+  // Calculate current phase and progress
+  const phaseData = useMemo(() => {
+    const dayElapsed = currentBlockTimestamp % dayDuration;
+    const currentPhase = Math.floor(dayElapsed / cycleTime);
+    const phaseElapsed = dayElapsed % cycleTime;
+    const phaseProgress = (phaseElapsed / cycleTime) * 100;
+
+    return {
+      currentPhase,
+      phaseProgress,
+      phaseName: phases[currentPhase]?.name || "Unknown",
+    };
+  }, [currentBlockTimestamp, cycleTime, dayDuration]);
+
+  // Update store with cycle timing for storm effects (using individual phase progress)
   useEffect(() => {
-    setCycleProgress(progress);
+    setCycleProgress(phaseData.phaseProgress);
     setCycleTime(cycleTime);
-  }, [progress, cycleTime, setCycleProgress, setCycleTime]);
+  }, [phaseData.phaseProgress, cycleTime, setCycleProgress, setCycleTime]);
 
-  // Play sound when progress resets
+  // Play sound when progress resets (when phase changes)
   useEffect(() => {
-    if (lastProgressRef.current > progress) {
+    if (lastProgressRef.current > phaseData.phaseProgress) {
       playGong();
     }
-    lastProgressRef.current = progress;
-  }, [progress, playGong]);
+    lastProgressRef.current = phaseData.phaseProgress;
+  }, [phaseData.phaseProgress, playGong]);
 
   // Memoize tooltip content
   const tooltipContent = useMemo(
     () => (
       <div className="whitespace-nowrap pointer-events-none flex flex-col mt-3 mb-3 text-sm capitalize">
         <div>
-          A day in Realms is <span className="font-bold">{formatTime(cycleTime)}</span>
+          Current phase: <span className="font-bold">{phaseData.phaseName}</span>
         </div>
         <div>
-          Time left until next cycle:{" "}
+          A day in Realms is <span className="font-bold">{formatTime(dayDuration)}</span> (6 phases)
+        </div>
+        <div>
+          Time left in {phaseData.phaseName}:{" "}
           <span className="font-bold">{formatTime(cycleTime - (currentBlockTimestamp % cycleTime))}</span>
         </div>
       </div>
     ),
-    [cycleTime, currentBlockTimestamp],
+    [phaseData.phaseName, dayDuration, cycleTime, currentBlockTimestamp],
   );
 
   // Handle tooltip visibility
@@ -537,19 +558,82 @@ const TickProgress = memo(() => {
     setTooltip(null);
   }, [setTooltip]);
 
+  const size = 32; // 8 * 4 = w-8 h-8
+  const center = size / 2;
+  const radius = 12;
+  const outerRadius = 14;
+
   return (
     <div
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       className="self-center text-center px-1 py-1 flex gap-1 text-xl items-center"
     >
-      <CircularProgress progress={progress} size="sm" color="gold">
-        <ResourceIcon withTooltip={false} resource="Timeglass" size="xs" className="self-center" />
-      </CircularProgress>
-      <span className="text-sm">{progress.toFixed()}%</span>
+      <div className="relative w-8 h-8">
+        <svg width={size} height={size} className="transform -rotate-90">
+          {phases.map((phase, index) => {
+            const angle = 60; // 360 / 6
+            const startAngle = index * angle;
+            const endAngle = startAngle + angle;
+
+            const startAngleRad = (startAngle * Math.PI) / 180;
+            const endAngleRad = (endAngle * Math.PI) / 180;
+
+            const x1 = center + radius * Math.cos(startAngleRad);
+            const y1 = center + radius * Math.sin(startAngleRad);
+            const x2 = center + radius * Math.cos(endAngleRad);
+            const y2 = center + radius * Math.sin(endAngleRad);
+
+            const largeArcFlag = angle > 180 ? 1 : 0;
+
+            const pathData = [
+              `M ${center} ${center}`,
+              `L ${x1} ${y1}`,
+              `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
+              "Z",
+            ].join(" ");
+
+            // Determine fill based on phase status
+            const isCompleted = index < phaseData.currentPhase;
+            const isCurrent = index === phaseData.currentPhase;
+            const fillOpacity = isCompleted ? 1 : isCurrent ? phaseData.phaseProgress / 100 : 0;
+
+            return (
+              <g key={index}>
+                {/* Background segment */}
+                <path d={pathData} fill="#2a2a2a" opacity="0.3" stroke="#2a2a2a" strokeWidth="0.5" />
+                {/* Gold fill overlay */}
+                <path d={pathData} fill="#dfaa54" opacity={fillOpacity} stroke="#2a2a2a" strokeWidth="0.5" />
+              </g>
+            );
+          })}
+
+          {/* Outer progress ring for current phase */}
+          <circle cx={center} cy={center} r={outerRadius} fill="none" stroke="#2a2a2a" strokeWidth="1" opacity="0.3" />
+          <circle
+            cx={center}
+            cy={center}
+            r={outerRadius}
+            fill="none"
+            stroke="#dfaa54"
+            strokeWidth="1"
+            strokeDasharray={`${2 * Math.PI * outerRadius}`}
+            strokeDashoffset={`${2 * Math.PI * outerRadius * (1 - phaseData.phaseProgress / 100)}`}
+            strokeLinecap="round"
+          />
+        </svg>
+
+        {/* Center icon */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <ResourceIcon withTooltip={false} resource="Timeglass" size="xs" className="self-center" />
+        </div>
+      </div>
+      <span className="text-sm">{phaseData.phaseProgress.toFixed(0)}%</span>
     </div>
   );
 });
+
+const TickProgress = DayPhaseProgress;
 
 const GameEndTimer = memo(() => {
   const gameEndAt = useUIStore((state) => state.gameEndAt);

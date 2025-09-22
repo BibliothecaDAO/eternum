@@ -13,7 +13,6 @@ export enum HyperstructureTypesNames {
   STAGE_3 = "hyperstructure_stage2",
 }
 
-
 export interface StructureInfo {
   entityId: ID;
   hexCoords: { col: number; row: number };
@@ -29,6 +28,10 @@ export interface StructureInfo {
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
   hyperstructureRealmCount?: number;
+  attackedFromDegrees?: number; // Degrees from which this structure has been attacked
+  attackedTowardDegrees?: number; // Degrees in which this structure has attacked someone
+  battleCooldownEnd?: number; // Unix timestamp when battle cooldown ends
+  battleTimerLeft?: number; // Time left in seconds before battle penalty is over
 }
 
 export interface ArmyData {
@@ -46,8 +49,11 @@ export interface ArmyData {
   currentStamina: number;
   maxStamina: number;
   onChainStamina: { amount: bigint; updatedTick: number };
+  attackedFromDegrees?: number; // Degrees from which this army has been attacked
+  attackedTowardDegrees?: number; // Degrees in which this army has attacked someone
+  battleCooldownEnd?: number; // Unix timestamp when battle cooldown ends
+  battleTimerLeft?: number; // Time left in seconds before battle penalty is over
 }
-
 
 export interface RenderChunkSize {
   width: number;

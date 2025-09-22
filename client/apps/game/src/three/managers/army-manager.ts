@@ -6,7 +6,7 @@ import { isAddressEqualToAccount } from "@/three/utils/utils";
 import { Position } from "@bibliothecadao/eternum";
 
 import { COLORS } from "@/ui/features";
-import { ArmySystemUpdate, ExplorerTroopsSystemUpdate, getBlockTimestamp } from "@bibliothecadao/eternum";
+import { ExplorerTroopsSystemUpdate, ExplorerTroopsTileSystemUpdate, getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import { Biome, configManager, StaminaManager } from "@bibliothecadao/eternum";
 import {
@@ -22,6 +22,7 @@ import { Color, Euler, Group, Raycaster, Scene, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { ArmyData, RenderChunkSize } from "../types";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
+import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
 import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { MemoryMonitor } from "../utils/memory-monitor";
@@ -35,6 +36,10 @@ interface PendingExplorerTroopsUpdate {
   ownerName: string;
   timestamp: number; // When this update was received
   updateTick: number; // Game tick when this update occurred
+  attackedFromDegrees?: number;
+  attackedTowardDegrees?: number;
+  battleCooldownEnd?: number;
+  battleTimerLeft?: number;
 }
 
 interface AddArmyParams {
@@ -48,6 +53,16 @@ interface AddArmyParams {
   currentStamina?: number;
   onChainStamina?: { amount: bigint; updatedTick: number };
   maxStamina?: number;
+  attackedFromDegrees?: number;
+  attackedTowardDegrees?: number;
+  battleCooldownEnd?: number;
+  battleTimerLeft?: number;
+  latestAttackerId?: number;
+  latestDefenderId?: number;
+  latestAttackerCoordX?: number;
+  latestAttackerCoordY?: number;
+  latestDefenderCoordX?: number;
+  latestDefenderCoordY?: number;
 }
 
 export class ArmyManager {
@@ -191,6 +206,8 @@ export class ArmyManager {
         this.lastKnownArmiesTick = currentArmiesTick;
         this.recomputeStaminaForAllArmies();
       }
+      // Update battle timers every second
+      this.recomputeBattleTimersForAllArmies();
       // Schedule the next check
       this.scheduleTickCheck();
     }, 1000);
@@ -246,13 +263,26 @@ export class ArmyManager {
   }
 
   async onTileUpdate(
-    update: ArmySystemUpdate,
+    update: ExplorerTroopsTileSystemUpdate,
     armyHexes: Map<number, Map<number, HexEntityInfo>>,
     structureHexes: Map<number, Map<number, HexEntityInfo>>,
     exploredTiles: Map<number, Map<number, BiomeType>>,
   ) {
     await this.armyModel.loadPromise;
-    const { entityId, hexCoords, ownerAddress, ownerName, guildName, troopType, troopTier } = update;
+    const { entityId, hexCoords, ownerAddress, ownerName, guildName, troopType, troopTier, battleData } = update;
+
+    const {
+      battleCooldownEnd,
+      latestAttackerId,
+      latestDefenderId,
+      latestAttackerCoordX,
+      latestAttackerCoordY,
+      latestDefenderCoordX,
+      latestDefenderCoordY,
+    } = battleData || {};
+
+    // Calculate battle timer left
+    const battleTimerLeft = getBattleTimerLeft(battleCooldownEnd);
 
     const newPosition = new Position({ x: hexCoords.col, y: hexCoords.row });
 
@@ -274,6 +304,14 @@ export class ArmyManager {
         currentStamina: update.currentStamina,
         onChainStamina: update.onChainStamina,
         maxStamina: update.maxStamina,
+        latestAttackerCoordX: latestAttackerCoordX ?? undefined,
+        latestAttackerCoordY: latestAttackerCoordY ?? undefined,
+        latestDefenderCoordX: latestDefenderCoordX ?? undefined,
+        latestDefenderCoordY: latestDefenderCoordY ?? undefined,
+        latestAttackerId: latestAttackerId ?? undefined,
+        latestDefenderId: latestDefenderId ?? undefined,
+        battleCooldownEnd,
+        battleTimerLeft,
       });
     }
     return false;
@@ -390,85 +428,92 @@ export class ArmyManager {
   }
 
   private getVisibleArmiesForChunk(startRow: number, startCol: number): Array<ArmyData> {
-    const visibleArmies = Array.from(this.armies.entries())
-      .filter(([_, army]) => {
-        return this.isArmyVisible(army, startRow, startCol);
-      })
-      .map(([entityId, army], index) => ({
-        entityId,
-        hexCoords: army.hexCoords,
-        isMine: army.isMine,
-        color: army.color,
-        matrixIndex: index,
-        owner: army.owner,
-        category: army.category,
-        tier: army.tier,
-        isDaydreamsAgent: army.isDaydreamsAgent,
-        troopCount: army.troopCount,
-        currentStamina: army.currentStamina,
-        maxStamina: army.maxStamina,
-        onChainStamina: army.onChainStamina,
-      }));
+    const visibleArmies: ArmyData[] = Array.from(this.armies.values()).filter((army) => {
+      return this.isArmyVisible(army, startRow, startCol);
+    });
 
     return visibleArmies;
   }
 
   public async addArmy(params: AddArmyParams) {
-    const {
-      entityId,
-      hexCoords,
-      owner,
-      category,
-      tier,
-      isDaydreamsAgent,
-      troopCount,
-      currentStamina,
-      onChainStamina,
-      maxStamina,
-    } = params;
-    if (this.armies.has(entityId)) return;
+    if (this.armies.has(params.entityId)) return;
 
     // Monitor memory usage before adding army
-    this.memoryMonitor.getCurrentStats(`addArmy-${entityId}`);
+    this.memoryMonitor.getCurrentStats(`addArmy-${params.entityId}`);
 
-    const { x, y } = hexCoords.getContract();
+    const { x, y } = params.hexCoords.getContract();
     const biome = Biome.getBiome(x, y);
-    const modelType = this.armyModel.getModelTypeForEntity(entityId, category, tier, biome);
-    this.armyModel.assignModelToEntity(entityId, modelType);
+    const modelType = this.armyModel.getModelTypeForEntity(params.entityId, params.category, params.tier, biome);
+    this.armyModel.assignModelToEntity(params.entityId, modelType);
 
     // Variables to hold the final values
-    let finalTroopCount = troopCount || 0;
-    let finalCurrentStamina = currentStamina || 0;
-    let finalOnChainStamina = onChainStamina || { amount: 0n, updatedTick: 0 };
-    let finalMaxStamina = maxStamina || 0;
-    let finalOwnerAddress = owner.address;
-    let finalOwnerName = owner.ownerName;
-    let finalGuildName = owner.guildName;
+    let finalTroopCount = params.troopCount || 0;
+    let finalCurrentStamina = params.currentStamina || 0;
+    let finalOnChainStamina = params.onChainStamina || { amount: 0n, updatedTick: 0 };
+    let finalMaxStamina = params.maxStamina || 0;
+    let finalOwnerAddress = params.owner.address;
+    let finalOwnerName = params.owner.ownerName;
+    let finalGuildName = params.owner.guildName;
+
+    let finalBattleCooldownEnd = params.battleCooldownEnd;
+    let finalBattleTimerLeft = getBattleTimerLeft(params.battleCooldownEnd);
+
+    let { attackedFromDegrees, attackTowardDegrees } = getCombatAngles(
+      { col: x, row: y },
+      params.latestAttackerId ?? undefined,
+      params.latestAttackerCoordX && params.latestAttackerCoordY
+        ? { x: params.latestAttackerCoordX, y: params.latestAttackerCoordY }
+        : undefined,
+      params.latestDefenderId ?? undefined,
+      params.latestDefenderCoordX && params.latestDefenderCoordY
+        ? { x: params.latestDefenderCoordX, y: params.latestDefenderCoordY }
+        : undefined,
+    );
+
+    console.log("[ADD ARMY] Combat degrees:", {
+      attackedFromDegrees: attackedFromDegrees,
+      attackedTowardDegrees: attackTowardDegrees,
+      pos: { x, y },
+      latestAttackerId: params.latestAttackerId,
+      latestAttackerCoordX: params.latestAttackerCoordX,
+      latestAttackerCoordY: params.latestAttackerCoordY,
+      latestDefenderId: params.latestDefenderId,
+      latestDefenderCoordX: params.latestDefenderCoordX,
+      latestDefenderCoordY: params.latestDefenderCoordY,
+    });
 
     // Check for pending label updates and apply them if they exist
-    const pendingUpdate = this.pendingExplorerTroopsUpdate.get(entityId);
+    const pendingUpdate = this.pendingExplorerTroopsUpdate.get(params.entityId);
     if (pendingUpdate) {
       // Check if pending update is not too old (max 30 seconds)
       const isPendingStale = Date.now() - pendingUpdate.timestamp > 30000;
 
       if (isPendingStale) {
         console.warn(
-          `[PENDING LABEL UPDATE] Discarding stale pending update for army ${entityId} (age: ${Date.now() - pendingUpdate.timestamp}ms)`,
+          `[PENDING LABEL UPDATE] Discarding stale pending update for army ${params.entityId} (age: ${Date.now() - pendingUpdate.timestamp}ms)`,
         );
-        this.pendingExplorerTroopsUpdate.delete(entityId);
+        this.pendingExplorerTroopsUpdate.delete(params.entityId);
       } else {
         console.log(
-          `[PENDING LABEL UPDATE] Applying pending update for army ${entityId} (tick: ${pendingUpdate.updateTick})`,
+          `[PENDING LABEL UPDATE] Applying pending update for army ${params.entityId} (tick: ${pendingUpdate.updateTick})`,
         );
         finalOnChainStamina = pendingUpdate.onChainStamina;
+
+        // Apply any pending battle degrees data
+        if (pendingUpdate.attackedFromDegrees !== undefined) {
+          attackedFromDegrees = pendingUpdate.attackedFromDegrees;
+        }
+        if (pendingUpdate.attackedTowardDegrees !== undefined) {
+          attackTowardDegrees = pendingUpdate.attackedTowardDegrees;
+        }
 
         // Calculate current stamina using the pending update data
         const { currentArmiesTick } = getBlockTimestamp();
         const updatedStamina = Number(
           StaminaManager.getStamina(
             {
-              category,
-              tier,
+              category: params.category,
+              tier: params.tier,
               count: BigInt(pendingUpdate.troopCount),
               stamina: {
                 amount: BigInt(pendingUpdate.onChainStamina.amount),
@@ -497,56 +542,62 @@ export class ArmyManager {
         finalOwnerAddress = pendingUpdate.ownerAddress;
         finalOnChainStamina = pendingUpdate.onChainStamina;
         finalOwnerName = pendingUpdate.ownerName;
+        finalBattleCooldownEnd = pendingUpdate.battleCooldownEnd;
+        finalBattleTimerLeft = pendingUpdate.battleTimerLeft;
 
         // Clear the pending update
-        this.pendingExplorerTroopsUpdate.delete(entityId);
+        this.pendingExplorerTroopsUpdate.delete(params.entityId);
       }
-
-      const isMine = finalOwnerAddress ? isAddressEqualToAccount(finalOwnerAddress) : false;
-
-      // Determine the color based on ownership (consistent with structure labels)
-      let color: string;
-      if (isDaydreamsAgent) {
-        color = COLORS.SELECTED;
-      } else if (isMine) {
-        color = LABEL_STYLES.MINE.textColor || "#d9f99d";
-      } else {
-        color = LABEL_STYLES.ENEMY.textColor || "#fecdd3";
-      }
-
-      this.armies.set(entityId, {
-        entityId,
-        matrixIndex: this.armies.size - 1,
-        hexCoords,
-        isMine,
-        owner: {
-          address: finalOwnerAddress || 0n,
-          ownerName: finalOwnerName,
-          guildName: finalGuildName,
-        },
-        color,
-        category,
-        tier,
-        isDaydreamsAgent,
-        // Enhanced data
-        troopCount: finalTroopCount,
-        currentStamina: finalCurrentStamina,
-        maxStamina: finalMaxStamina,
-        // we need to check if there's any pending before we set it because onchain stamina might be 0 from the map data store in the system-manager
-        onChainStamina: finalOnChainStamina,
-      });
-
-      // Apply any pending relic effects for this army
-      if (this.applyPendingRelicEffectsCallback) {
-        try {
-          await this.applyPendingRelicEffectsCallback(entityId);
-        } catch (error) {
-          console.error(`Failed to apply pending relic effects for army ${entityId}:`, error);
-        }
-      }
-
-      await this.renderVisibleArmies(this.currentChunkKey!);
     }
+
+    const isMine = finalOwnerAddress ? isAddressEqualToAccount(finalOwnerAddress) : false;
+
+    // Determine the color based on ownership (consistent with structure labels)
+    let color: string;
+    if (params.isDaydreamsAgent) {
+      color = COLORS.SELECTED;
+    } else if (isMine) {
+      color = LABEL_STYLES.MINE.textColor || "#d9f99d";
+    } else {
+      color = LABEL_STYLES.ENEMY.textColor || "#fecdd3";
+    }
+
+    this.armies.set(params.entityId, {
+      entityId: params.entityId,
+      matrixIndex: this.armies.size - 1,
+      hexCoords: params.hexCoords,
+      isMine,
+      owner: {
+        address: finalOwnerAddress || 0n,
+        ownerName: finalOwnerName,
+        guildName: finalGuildName,
+      },
+      color,
+      category: params.category,
+      tier: params.tier,
+      isDaydreamsAgent: params.isDaydreamsAgent,
+      // Enhanced data
+      troopCount: finalTroopCount,
+      currentStamina: finalCurrentStamina,
+      maxStamina: finalMaxStamina,
+      // we need to check if there's any pending before we set it because onchain stamina might be 0 from the map data store in the system-manager
+      onChainStamina: finalOnChainStamina,
+      attackedFromDegrees: attackedFromDegrees ?? undefined,
+      attackedTowardDegrees: attackTowardDegrees ?? undefined,
+      battleCooldownEnd: finalBattleCooldownEnd,
+      battleTimerLeft: finalBattleTimerLeft,
+    });
+
+    // Apply any pending relic effects for this army
+    if (this.applyPendingRelicEffectsCallback) {
+      try {
+        await this.applyPendingRelicEffectsCallback(params.entityId);
+      } catch (error) {
+        console.error(`Failed to apply pending relic effects for army ${params.entityId}:`, error);
+      }
+    }
+
+    await this.renderVisibleArmies(this.currentChunkKey!);
   }
 
   public async moveArmy(
@@ -908,11 +959,55 @@ ${
   }
 
   /**
+   * Recompute battle timers for all armies and update visible labels every second
+   */
+  private recomputeBattleTimersForAllArmies(): void {
+    // Update all army data with active battle timers
+    this.armies.forEach((army, entityId) => {
+      if (army.battleCooldownEnd) {
+        const newBattleTimerLeft = getBattleTimerLeft(army.battleCooldownEnd);
+
+        // Only update if timer has changed or expired
+        if (army.battleTimerLeft !== newBattleTimerLeft) {
+          army.battleTimerLeft = newBattleTimerLeft;
+
+          // Update visible label if it exists
+          const label = this.entityIdLabels.get(entityId);
+          if (label) {
+            this.updateArmyLabelData(entityId, army, label);
+          }
+        }
+      }
+    });
+  }
+
+  /**
    * Update an army label with fresh data
    */
-  private updateArmyLabelData(entityId: ID, army: ArmyData, existingLabel: CSS2DObject): void {
+  private updateArmyLabelData(_entityId: ID, army: ArmyData, existingLabel: CSS2DObject): void {
     // Update the existing label content in-place with correct camera view
     updateArmyLabel(existingLabel.element, army, this.currentCameraView);
+  }
+
+  /**
+   * Update army battle direction and label
+   */
+  public updateBattleDirection(entityId: ID, degrees: number | undefined, role: "attacker" | "defender"): void {
+    const army = this.armies.get(entityId);
+    if (!army) return;
+
+    // Update degrees based on role
+    if (role === "attacker") {
+      army.attackedTowardDegrees = degrees;
+    } else {
+      army.attackedFromDegrees = degrees;
+    }
+
+    // Update label
+    const label = this.entityIdLabels.get(entityId);
+    if (label) {
+      this.updateArmyLabelData(entityId, army, label);
+    }
   }
 
   /**
@@ -940,6 +1035,12 @@ ${
           ownerName: update.ownerName,
           timestamp: currentTime,
           updateTick: currentTick,
+          // Note: ExplorerTroopsSystemUpdate doesn't have battle degrees data
+          // Degrees would need to come from tile updates
+          attackedFromDegrees: undefined,
+          attackedTowardDegrees: undefined,
+          battleCooldownEnd: update.battleCooldownEnd,
+          battleTimerLeft: getBattleTimerLeft(update.battleCooldownEnd),
         });
       } else {
         console.log(
@@ -987,6 +1088,8 @@ ${
     army.isMine = isAddressEqualToAccount(update.ownerAddress);
     army.onChainStamina = update.onChainStamina;
     army.owner.ownerName = update.ownerName;
+    army.battleCooldownEnd = update.battleCooldownEnd;
+    army.battleTimerLeft = getBattleTimerLeft(update.battleCooldownEnd);
 
     // Update the label if it exists
     const label = this.entityIdLabels.get(update.entityId);

@@ -1,14 +1,14 @@
 import { TroopTier, TroopType } from "@bibliothecadao/types";
-import { 
-  Vector3, 
-  Euler, 
-  Color, 
-  InstancedMesh, 
-  Group, 
-  Mesh, 
-  AnimationMixer, 
-  AnimationClip, 
-  AnimationAction 
+import {
+  Vector3,
+  Euler,
+  Color,
+  InstancedMesh,
+  Group,
+  Mesh,
+  AnimationMixer,
+  AnimationClip,
+  AnimationAction,
 } from "three";
 
 export interface MovementData {

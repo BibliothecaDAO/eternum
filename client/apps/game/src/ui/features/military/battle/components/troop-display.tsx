@@ -1,7 +1,7 @@
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { configManager, divideByPrecision, getTroopResourceId } from "@bibliothecadao/eternum";
 import { BiomeType, resources, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
-import { Shield, Sword, Users } from "lucide-react";
+import { AlertCircle, Shield, ShieldOff, Sword, Timer, Users } from "lucide-react";
 import { formatTypeAndBonuses } from "../combat-utils";
 
 interface TroopDisplayProps {
@@ -37,6 +37,10 @@ export const TroopDisplay = ({
   const troopResource = resources.find(
     (r) => r.id === getTroopResourceId(troops.category as TroopType, troops.tier as TroopTier),
   );
+
+  // Check if on cooldown
+  const currentTime = Math.floor(Date.now() / 1000);
+  const isOnCooldown = troops.battle_cooldown_end > currentTime;
 
   if (isCompact) {
     return (
@@ -80,6 +84,13 @@ export const TroopDisplay = ({
           <span className="text-gold/70">Stamina: {Number(stamina)}</span>
           {showLosses && <span className="text-red-400 font-medium">-{Math.ceil(losses)} casualties</span>}
         </div>
+
+        {isOnCooldown && (
+          <div className="mt-2 flex items-center gap-1 text-xs text-red-400">
+            <Timer className="w-3 h-3 animate-pulse" />
+            <span>Cooldown Active</span>
+          </div>
+        )}
       </div>
     );
   }
@@ -200,6 +211,28 @@ export const TroopDisplay = ({
             <span className="text-lg font-bold text-gold">{Number(stamina)}</span>
           </div>
         </div>
+
+        {/* Cooldown Status */}
+        {isOnCooldown && (
+          <div className="p-3 border border-red-500/30 rounded bg-red-900/20" role="alert" aria-live="polite">
+            <div className="flex items-center gap-2 mb-2">
+              <Timer className="w-4 h-4 text-red-400 animate-pulse" />
+              <span className="text-sm font-medium text-red-400">Battle Cooldown Active</span>
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-1 text-xs text-yellow-400">
+                <AlertCircle className="w-3 h-3" />
+                <span>{isAttacker ? "Cannot initiate attacks" : "Cannot be ordered to attack"}</span>
+              </div>
+              {!isAttacker && (
+                <div className="flex items-center gap-1 text-xs text-orange-400">
+                  <ShieldOff className="w-3 h-3" />
+                  <span>-15% damage modifier if attacked</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Battle Losses */}
         {showLosses && (

@@ -3,10 +3,10 @@ use core::num::traits::zero::Zero;
 use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
-use s1_eternum::constants::{RELICS_RESOURCE_END_ID, RELICS_RESOURCE_START_ID, RESOURCE_PRECISION};
-use s1_eternum::constants::{ResourceTypes, resource_type_name};
-use s1_eternum::models::config::WeightConfig;
-use s1_eternum::models::config::{TickImpl};
+use s1_eternum::constants::{
+    RELICS_RESOURCE_END_ID, RELICS_RESOURCE_START_ID, RESOURCE_PRECISION, ResourceTypes, resource_type_name,
+};
+use s1_eternum::models::config::{TickImpl, WeightConfig};
 use s1_eternum::models::resource::production::production::{Production, ProductionImpl};
 use s1_eternum::models::weight::{Weight, WeightImpl};
 

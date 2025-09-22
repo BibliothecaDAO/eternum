@@ -1,8 +1,7 @@
 use cubit::f128::procgen::simplex3;
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
-use cubit::f128::types::vec3::{Vec3Trait};
-
-use s1_eternum::utils::fixed_constants as fc;
+use cubit::f128::types::vec3::Vec3Trait;
+use s1_eternum::utils::map::constants::fixed_constants as fc;
 #[derive(Copy, Drop, Serde, Introspect, Debug, PartialEq)]
 pub enum Biome {
     None,
@@ -123,8 +122,8 @@ fn bdepth(biome: Biome) -> Fixed {
 }
 
 mod LEVEL {
-    use cubit::f128::types::fixed::{Fixed};
-    use s1_eternum::utils::fixed_constants as fc;
+    use cubit::f128::types::fixed::Fixed;
+    use s1_eternum::utils::map::constants::fixed_constants as fc;
 
     pub fn DEEP_OCEAN() -> Fixed {
         fc::_0_2()
@@ -174,7 +173,7 @@ fn ELEVATION_OCTAVES_SUM() -> Fixed {
             Option::Some(octave) => { sum += octave; },
             Option::None => { break; },
         }
-    };
+    }
     sum
 }
 
@@ -203,7 +202,7 @@ fn _elevation(col: Fixed, row: Fixed) -> Fixed {
             },
             Option::None => { break; },
         }
-    };
+    }
 
     elevation = elevation / ELEVATION_OCTAVES_SUM();
     elevation = elevation / fc::_100();

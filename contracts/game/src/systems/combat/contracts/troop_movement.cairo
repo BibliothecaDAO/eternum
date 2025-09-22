@@ -13,35 +13,34 @@ pub mod troop_movement_systems {
     use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::world::{WorldStorageTrait};
+    use dojo::world::WorldStorageTrait;
     use s1_eternum::alias::ID;
     use s1_eternum::constants::DEFAULT_NS;
+    use s1_eternum::models::config::{
+        CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig,
+        VictoryPointsGrantConfig, WorldConfigUtilImpl,
+    };
     use s1_eternum::models::events::{ExploreFind, ExplorerMoveStory, Story, StoryEvent};
-    use s1_eternum::models::map::BiomeDiscovered;
-    use s1_eternum::models::{
-        config::{
-            CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig,
-            VictoryPointsGrantConfig, WorldConfigUtilImpl,
-        },
-        hyperstructure::PlayerRegisteredPointsImpl, map::{Tile, TileImpl, TileOccupier},
-        position::{CoordTrait, Direction},
-        resource::resource::{ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl},
-        structure::{StructureBaseStoreImpl, StructureOwnerStoreImpl}, troop::{ExplorerTroops, GuardImpl},
-        weight::{Weight},
+    use s1_eternum::models::hyperstructure::PlayerRegisteredPointsImpl;
+    use s1_eternum::models::map::{BiomeDiscovered, Tile, TileImpl, TileOccupier};
+    use s1_eternum::models::position::{CoordTrait, Direction};
+    use s1_eternum::models::resource::resource::{
+        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
+    use s1_eternum::models::structure::{StructureBaseStoreImpl, StructureOwnerStoreImpl};
+    use s1_eternum::models::troop::{ExplorerTroops, GuardImpl};
+    use s1_eternum::models::weight::Weight;
+    use s1_eternum::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
     use s1_eternum::systems::utils::map::IMapImpl;
-    use s1_eternum::systems::utils::{
-        hyperstructure::iHyperstructureDiscoveryImpl, mine::iMineDiscoveryImpl,
-        troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl},
-    };
+    use s1_eternum::systems::utils::mine::iMineDiscoveryImpl;
+    use s1_eternum::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
-    use s1_eternum::utils::map::{biomes::{Biome, get_biome}};
-    use s1_eternum::utils::random::{VRFImpl};
+    use s1_eternum::utils::map::biomes::Biome;
+    use s1_eternum::utils::random::VRFImpl;
     use starknet::ContractAddress;
-
-
-    use super::ITroopMovementSystems;
-    use super::{ITroopMovementUtilSystemsDispatcher, ITroopMovementUtilSystemsDispatcherTrait};
+    use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
+    use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
+    use super::{ITroopMovementSystems, ITroopMovementUtilSystemsDispatcher, ITroopMovementUtilSystemsDispatcherTrait};
 
 
     // to be removed
@@ -114,7 +113,8 @@ pub mod troop_movement_systems {
                 assert!(tile.not_occupied(), "one of the tiles in path is occupied");
 
                 // add biome to biomes
-                let biome = get_biome(next.x.into(), next.y.into());
+                let biome_library = biome_library::get_dispatcher(@world);
+                let biome = biome_library.get_biome(next.x.into(), next.y.into());
                 biomes.append(biome);
 
                 let mut occupy_destination: bool = true;
@@ -138,7 +138,8 @@ pub mod troop_movement_systems {
                     let vrf_provider: ContractAddress = WorldConfigUtilImpl::get_member(
                         world, selector!("vrf_provider_address"),
                     );
-                    let vrf_seed: u256 = VRFImpl::seed(caller, vrf_provider);
+                    let rng_library_dispatcher = rng_library::get_dispatcher(@world);
+                    let vrf_seed: u256 = rng_library_dispatcher.get_random_number(caller, world);
                     let (troop_movement_util_systems_address, _) = world.dns(@"troop_movement_util_systems").unwrap();
                     let troop_movement_util_systems = ITroopMovementUtilSystemsDispatcher {
                         contract_address: troop_movement_util_systems_address,
@@ -271,7 +272,7 @@ pub mod troop_movement_systems {
                 } else {
                     tiles_to_return.append(tile);
                 }
-            };
+            }
 
             // burn stamina cost
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
@@ -328,10 +329,9 @@ pub mod troop_movement_systems {
         }
     }
 }
-use s1_eternum::models::config::{TroopLimitConfig, TroopStaminaConfig};
+use s1_eternum::models::config::{MapConfig, TroopLimitConfig, TroopStaminaConfig};
 use s1_eternum::models::events::ExploreFind;
 use s1_eternum::models::map::Tile;
-use s1_eternum::models::{config::{MapConfig}};
 
 #[starknet::interface]
 pub trait ITroopMovementUtilSystems<T> {
@@ -350,28 +350,28 @@ pub trait ITroopMovementUtilSystems<T> {
 
 #[dojo::contract]
 pub mod troop_movement_util_systems {
-    use dojo::model::{ModelStorage};
-    use dojo::world::{WorldStorageTrait};
+    use dojo::model::ModelStorage;
+    use dojo::world::WorldStorageTrait;
     use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::models::config::{TroopLimitConfig, TroopStaminaConfig};
+    use s1_eternum::models::config::{
+        CombatConfigImpl, MapConfig, QuestConfig, SeasonConfigImpl, TickImpl, TroopLimitConfig, TroopStaminaConfig,
+        WorldConfigUtilImpl,
+    };
     use s1_eternum::models::events::ExploreFind;
     use s1_eternum::models::map::Tile;
     use s1_eternum::models::position::Coord;
     use s1_eternum::models::quest::{QuestFeatureFlag, QuestGameRegistry};
     use s1_eternum::models::structure::StructureReservation;
-    use s1_eternum::models::{
-        config::{CombatConfigImpl, MapConfig, QuestConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl},
-    };
     use s1_eternum::systems::quest::constants::VERSION;
     use s1_eternum::systems::quest::contracts::{
         IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait, iQuestDiscoveryImpl,
     };
-    use s1_eternum::systems::utils::{
-        hyperstructure::iHyperstructureDiscoveryImpl, mine::iMineDiscoveryImpl,
-        troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl},
+    use s1_eternum::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
+    use s1_eternum::systems::utils::mine::iMineDiscoveryImpl;
+    use s1_eternum::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
+    use super::{
+        ITroopMovementUtilSystems, ITroopMovementUtilSystemsDispatcher, ITroopMovementUtilSystemsDispatcherTrait,
     };
-    use super::ITroopMovementUtilSystems;
-    use super::{ITroopMovementUtilSystemsDispatcher, ITroopMovementUtilSystemsDispatcherTrait};
 
     #[abi(embed_v0)]
     impl TroopMovementUtilImpl of ITroopMovementUtilSystems<ContractState> {
@@ -513,7 +513,9 @@ pub mod troop_movement_util_systems {
                             let feature_toggle: QuestFeatureFlag = world.read_model(VERSION);
                             let quest_game_count = quest_game_registry.games.len();
                             if quest_game_count > 0 && feature_toggle.enabled {
-                                let quest_lottery_won: bool = iQuestDiscoveryImpl::lottery(quest_config, vrf_seed);
+                                let quest_lottery_won: bool = iQuestDiscoveryImpl::lottery(
+                                    quest_config, vrf_seed, world,
+                                );
                                 if quest_lottery_won {
                                     let (quest_system_address, _) = world.dns(@"quest_systems").unwrap();
                                     let quest_system = IQuestSystemsDispatcher {
@@ -535,16 +537,17 @@ pub mod troop_movement_util_systems {
 
 #[dojo::contract]
 pub mod hyperstructure_discovery_systems {
-    use dojo::world::{WorldStorageTrait};
+    use dojo::world::WorldStorageTrait;
     use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::models::config::{TroopLimitConfig, TroopStaminaConfig};
+    use s1_eternum::models::config::{
+        CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TroopLimitConfig, TroopStaminaConfig,
+        WorldConfigUtilImpl,
+    };
     use s1_eternum::models::events::ExploreFind;
     use s1_eternum::models::map::Tile;
-    use s1_eternum::models::{config::{CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl}};
-    use s1_eternum::systems::utils::{
-        hyperstructure::iHyperstructureDiscoveryImpl, mine::iMineDiscoveryImpl,
-        troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl},
-    };
+    use s1_eternum::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
+    use s1_eternum::systems::utils::mine::iMineDiscoveryImpl;
+    use s1_eternum::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
     use super::ITroopMovementUtilSystems;
 
     #[abi(embed_v0)]
@@ -595,16 +598,17 @@ pub mod hyperstructure_discovery_systems {
 
 #[dojo::contract]
 pub mod mine_discovery_systems {
-    use dojo::world::{WorldStorageTrait};
+    use dojo::world::WorldStorageTrait;
     use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::models::config::{TroopLimitConfig, TroopStaminaConfig};
+    use s1_eternum::models::config::{
+        CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TroopLimitConfig, TroopStaminaConfig,
+        WorldConfigUtilImpl,
+    };
     use s1_eternum::models::events::ExploreFind;
     use s1_eternum::models::map::Tile;
-    use s1_eternum::models::{config::{CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl}};
-    use s1_eternum::systems::utils::{
-        hyperstructure::iHyperstructureDiscoveryImpl, mine::iMineDiscoveryImpl,
-        troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl},
-    };
+    use s1_eternum::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
+    use s1_eternum::systems::utils::mine::iMineDiscoveryImpl;
+    use s1_eternum::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
     use super::ITroopMovementUtilSystems;
 
     #[abi(embed_v0)]
@@ -630,7 +634,7 @@ pub mod mine_discovery_systems {
                 "caller must be the troop_movement_util_systems",
             );
 
-            let mine_lottery_won: bool = iMineDiscoveryImpl::lottery(map_config, vrf_seed);
+            let mine_lottery_won: bool = iMineDiscoveryImpl::lottery(map_config, vrf_seed, world);
             if mine_lottery_won {
                 iMineDiscoveryImpl::create(
                     ref world,
@@ -651,16 +655,18 @@ pub mod mine_discovery_systems {
 
 #[dojo::contract]
 pub mod village_discovery_systems {
-    use dojo::world::{WorldStorageTrait};
+    use dojo::world::WorldStorageTrait;
     use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::models::config::{TroopLimitConfig, TroopStaminaConfig};
+    use s1_eternum::models::config::{
+        CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TroopLimitConfig, TroopStaminaConfig,
+        WorldConfigUtilImpl,
+    };
     use s1_eternum::models::events::ExploreFind;
     use s1_eternum::models::map::Tile;
-    use s1_eternum::models::{config::{CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl}};
-    use s1_eternum::systems::utils::{
-        hyperstructure::iHyperstructureDiscoveryImpl, mine::iMineDiscoveryImpl,
-        troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl}, village::iVillageDiscoveryImpl,
-    };
+    use s1_eternum::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
+    use s1_eternum::systems::utils::mine::iMineDiscoveryImpl;
+    use s1_eternum::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
+    use s1_eternum::systems::utils::village::iVillageDiscoveryImpl;
     use super::ITroopMovementUtilSystems;
 
     #[abi(embed_v0)]
@@ -686,7 +692,7 @@ pub mod village_discovery_systems {
                 "caller must be the troop_movement_util_systems",
             );
 
-            let village_lottery_won: bool = iVillageDiscoveryImpl::lottery(map_config, vrf_seed);
+            let village_lottery_won: bool = iVillageDiscoveryImpl::lottery(map_config, vrf_seed, world);
             if village_lottery_won {
                 iVillageDiscoveryImpl::create(
                     ref world, tile.into(), troop_limit_config, troop_stamina_config, vrf_seed,
@@ -701,17 +707,18 @@ pub mod village_discovery_systems {
 
 #[dojo::contract]
 pub mod agent_discovery_systems {
-    use dojo::world::{WorldStorageTrait};
+    use dojo::world::WorldStorageTrait;
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::agent::AgentCountImpl;
-    use s1_eternum::models::config::{TroopLimitConfig, TroopStaminaConfig};
+    use s1_eternum::models::config::{
+        CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TroopLimitConfig, TroopStaminaConfig,
+        WorldConfigUtilImpl,
+    };
     use s1_eternum::models::events::ExploreFind;
     use s1_eternum::models::map::Tile;
-    use s1_eternum::models::{config::{CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl}};
-    use s1_eternum::systems::utils::{
-        hyperstructure::iHyperstructureDiscoveryImpl, mine::iMineDiscoveryImpl,
-        troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl},
-    };
+    use s1_eternum::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
+    use s1_eternum::systems::utils::mine::iMineDiscoveryImpl;
+    use s1_eternum::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
     use super::ITroopMovementUtilSystems;
 
     #[abi(embed_v0)]
@@ -741,7 +748,7 @@ pub mod agent_discovery_systems {
                 return (false, ExploreFind::None);
             }
 
-            let agent_lottery_won: bool = iAgentDiscoveryImpl::lottery(map_config, vrf_seed);
+            let agent_lottery_won: bool = iAgentDiscoveryImpl::lottery(map_config, vrf_seed, world);
             if agent_lottery_won {
                 iAgentDiscoveryImpl::create(
                     ref world, ref tile, vrf_seed, troop_limit_config, troop_stamina_config, current_tick,
@@ -755,15 +762,17 @@ pub mod agent_discovery_systems {
 
 #[dojo::contract]
 pub mod relic_chest_discovery_systems {
-    use dojo::world::{WorldStorageTrait};
+    use dojo::world::WorldStorageTrait;
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::agent::AgentCountImpl;
-    use s1_eternum::models::config::{TroopLimitConfig, TroopStaminaConfig};
+    use s1_eternum::models::config::{
+        CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TroopLimitConfig, TroopStaminaConfig,
+        WorldConfigUtilImpl,
+    };
     use s1_eternum::models::events::ExploreFind;
     use s1_eternum::models::map::Tile;
     use s1_eternum::models::record::{RelicRecord, WorldRecordImpl};
-    use s1_eternum::models::{config::{CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl}};
-    use s1_eternum::systems::utils::{relic::iRelicChestDiscoveryImpl};
+    use s1_eternum::systems::utils::relic::iRelicChestDiscoveryImpl;
     use super::ITroopMovementUtilSystems;
 
     #[abi(embed_v0)]

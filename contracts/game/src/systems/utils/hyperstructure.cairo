@@ -1,23 +1,23 @@
 use core::num::traits::zero::Zero;
-use cubit::f128::types::fixed::{FixedTrait};
-use dojo::model::{Model};
-use dojo::model::{ModelStorage};
+use cubit::f128::types::fixed::FixedTrait;
+use dojo::model::{Model, ModelStorage};
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-use s1_eternum::constants::{WORLD_CONFIG_ID};
-use s1_eternum::models::config::TickImpl;
-use s1_eternum::models::config::{MapConfig, TickInterval, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl};
+use s1_eternum::constants::WORLD_CONFIG_ID;
+use s1_eternum::models::config::{
+    MapConfig, TickImpl, TickInterval, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
+};
 use s1_eternum::models::hyperstructure::{ConstructionAccess, Hyperstructure, HyperstructureGlobals};
 use s1_eternum::models::map::{Tile, TileOccupier};
 use s1_eternum::models::position::{Coord, CoordImpl, Direction, TravelImpl};
-
 use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl};
 use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
 use s1_eternum::systems::utils::structure::iStructureImpl;
 use s1_eternum::systems::utils::troop::iMercenariesImpl;
 use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
-use s1_eternum::utils::random;
-use s1_eternum::utils::random::{VRFImpl};
-
+use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
+use crate::system_libraries::structure_libraries::structure_creation_library::{
+    IStructureCreationlibraryDispatcherTrait, structure_creation_library,
+};
 
 #[generate_trait]
 pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
@@ -71,14 +71,10 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
 
         // calculate final probabilities
         let hyps_fail_prob = hyps_probs_original_sum - hyps_win_prob;
-        let success: bool = *random::choices(
-            array![true, false].span(),
-            array![hyps_win_prob, hyps_fail_prob].span(),
-            array![].span(),
-            1,
-            true,
-            hyps_vrf_seed,
-        )[0];
+
+        let rng_library_dispatcher = rng_library::get_dispatcher(@world);
+        let success: bool = rng_library_dispatcher
+            .get_weighted_choice_bool_simple(hyps_win_prob, hyps_fail_prob, hyps_vrf_seed);
 
         return success;
     }
@@ -103,17 +99,19 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
             hyperstructure_tile_occupier = TileOccupier::HyperstructureLevel3;
         }
         let structure_id = world.dispatcher.uuid();
-        iStructureImpl::create(
-            ref world,
-            coord,
-            Zero::zero(),
-            structure_id,
-            StructureCategory::Hyperstructure,
-            array![].span(),
-            Default::default(),
-            hyperstructure_tile_occupier,
-            false,
-        );
+        let structure_creation_library = structure_creation_library::get_dispatcher(@world);
+        structure_creation_library
+            .make_structure(
+                world,
+                coord,
+                Zero::zero(),
+                structure_id,
+                StructureCategory::Hyperstructure,
+                array![].span(),
+                Default::default(),
+                hyperstructure_tile_occupier,
+                false,
+            );
 
         // add guards to structure
         let tick_config: TickInterval = TickImpl::get_tick_interval(ref world);
@@ -131,7 +129,7 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
                 tick_config,
             );
             count += 1;
-        };
+        }
 
         // create hyperstructure model
         world
@@ -165,12 +163,9 @@ pub impl iHyperstructureBlitzImpl of iHyperstructureBlitzTrait {
     fn count_surrounding_realms(ref world: WorldStorage, hyperstructure_coord: Coord) -> u8 {
         let mut start_coord: Coord = hyperstructure_coord;
         let start_directions: Array<(Direction, Direction)> = array![
-            (Direction::East, Direction::NorthWest),
-            (Direction::SouthEast, Direction::NorthEast),
-            (Direction::SouthWest, Direction::East),
-            (Direction::West, Direction::SouthEast),
-            (Direction::NorthWest, Direction::SouthWest),
-            (Direction::NorthEast, Direction::West),
+            (Direction::East, Direction::NorthWest), (Direction::SouthEast, Direction::NorthEast),
+            (Direction::SouthWest, Direction::East), (Direction::West, Direction::SouthEast),
+            (Direction::NorthWest, Direction::SouthWest), (Direction::NorthEast, Direction::West),
         ];
 
         let mut count = 0;
@@ -190,7 +185,7 @@ pub impl iHyperstructureBlitzImpl of iHyperstructureBlitzTrait {
                     count += 1;
                 }
             }
-        };
+        }
         return count;
     }
 }

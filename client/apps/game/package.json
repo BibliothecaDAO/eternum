@@ -27,6 +27,7 @@
     "@dojoengine/state": "catalog:",
     "@dojoengine/torii-client": "catalog:",
     "@dojoengine/torii-wasm": "catalog:",
+    "@dojoengine/predeployed-connector": "catalog:",
     "@opentelemetry/api": "^1.9.0",
     "buffer": "^6.0.3",
     "@opentelemetry/context-zone": "^2.0.1",

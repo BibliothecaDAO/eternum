@@ -1,6 +1,6 @@
-use achievement::types::task::{Task as BushidoTask};
+use achievement::types::task::Task as BushidoTask;
 use s1_eternum::utils::tasks::index::{Task, TaskImpl};
-use s1_eternum::utils::trophies::interface::{TrophyTrait};
+use s1_eternum::utils::trophies::interface::TrophyTrait;
 
 pub impl Breeder of TrophyTrait {
     #[inline]

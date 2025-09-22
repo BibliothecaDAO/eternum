@@ -7,11 +7,13 @@ import { BuildingType, ResourcesIds, StructureType, TroopTier, TroopType } from 
 import { CameraView } from "../../scenes/hexagon-scene";
 import {
   createContentContainer,
+  createDirectionIndicators,
   createGuardArmyDisplay,
   createOwnerDisplayElement,
   createProductionDisplay,
   createStaminaBar,
   createTroopCountDisplay,
+  updateDirectionIndicators,
   updateStaminaBar,
 } from "./label-components";
 import { getOwnershipStyle, LABEL_STYLES, LABEL_TYPE_CONFIGS } from "./label-config";
@@ -55,6 +57,9 @@ export interface ArmyLabelData extends LabelData {
   troopCount: number;
   currentStamina: number;
   maxStamina: number;
+  attackedFromDegrees?: number; // Degrees from which this army has been attacked
+  attackedTowardDegrees?: number; // Degrees in which this army has attacked someone
+  battleTimerLeft?: number; // Time left in seconds before battle penalty is over
 }
 
 export interface StructureLabelData extends LabelData {
@@ -72,6 +77,9 @@ export interface StructureLabelData extends LabelData {
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
   hyperstructureRealmCount?: number;
+  attackedFromDegrees?: number; // Degrees from which this structure has been attacked
+  attackedTowardDegrees?: number; // Degrees in which this structure has attacked someone
+  battleTimerLeft?: number; // Time left in seconds before battle penalty is over
 }
 
 // For backward compatibility with existing StructureInfo type
@@ -108,22 +116,17 @@ export interface QuestLabelData extends LabelData {
 const createLabelBase = (isMine: boolean, isDaydreamsAgent?: boolean): HTMLElement => {
   const labelDiv = document.createElement("div");
 
-  // Add common classes
+  // Add common classes - using inline-flex for compact horizontal layout
   labelDiv.classList.add(
     "rounded-md",
     "p-0.5",
     "-translate-x-1/2",
     "text-xxs",
-    "flex",
+    "inline-flex",
     "items-center",
     "group",
     "shadow-md",
     "font-semibold",
-    "transition-[height]",
-    "duration-700",
-    "ease-in-out",
-    "h-auto",
-    "has-[.opacity-0]:h-12",
   );
 
   // Get appropriate style
@@ -163,6 +166,10 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
     // Create base label
     const labelDiv = createLabelBase(data.isMine, data.isDaydreamsAgent);
 
+    // Check if we have direction indicators and if view is expanded
+    const hasDirections = data.attackedFromDegrees !== undefined || data.attackedTowardDegrees !== undefined;
+    const isExpanded = cameraView !== CameraView.Close;
+
     // Add army icon
     const img = document.createElement("img");
     img.src = data.isDaydreamsAgent
@@ -170,9 +177,8 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
       : `/images/labels/${data.isMine ? "army" : "enemy_army"}.png`;
     img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
     img.setAttribute("data-component", "army-icon");
-    labelDiv.appendChild(img);
 
-    // Create content container
+    // Create text container
     const textContainer = createContentContainer(cameraView);
 
     // Add owner information
@@ -220,11 +226,67 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
       textContainer.appendChild(staminaInfo);
     }
 
-    labelDiv.appendChild(textContainer.wrapper);
+    // Structure based on view and directions
+    if (hasDirections && isExpanded) {
+      // Expanded with directions: flex-col layout
+      labelDiv.classList.remove("inline-flex", "items-center");
+      labelDiv.classList.add("flex", "flex-col");
+
+      // Create content row for icon and text
+      const contentRow = document.createElement("div");
+      contentRow.classList.add("flex", "items-center");
+      contentRow.appendChild(img);
+      contentRow.appendChild(textContainer.wrapper);
+      labelDiv.appendChild(contentRow);
+
+      // Add direction indicators at bottom
+      const directionIndicators = createDirectionIndicators(
+        data.attackedFromDegrees,
+        data.attackedTowardDegrees,
+        data.battleTimerLeft,
+      );
+
+      if (directionIndicators) {
+        directionIndicators.classList.add("w-full", "mt-1", "px-2");
+        labelDiv.appendChild(directionIndicators);
+      }
+    } else {
+      // Contracted or no directions: simple horizontal layout
+      labelDiv.appendChild(img);
+      labelDiv.appendChild(textContainer.wrapper);
+
+      // Add direction indicators to the right
+      if (hasDirections) {
+        const directionIndicators = createDirectionIndicators(
+          data.attackedFromDegrees,
+          data.attackedTowardDegrees,
+          data.battleTimerLeft,
+        );
+
+        if (directionIndicators) {
+          directionIndicators.classList.add("ml-2");
+          labelDiv.appendChild(directionIndicators);
+        }
+      }
+    }
+
     return labelDiv;
   },
 
   updateElement: (element: HTMLElement, data: ArmyLabelData, cameraView: CameraView): void => {
+    // Check if we have direction indicators and if view is expanded
+    const hasDirections = data.attackedFromDegrees !== undefined || data.attackedTowardDegrees !== undefined;
+    const isExpanded = cameraView !== CameraView.Close;
+
+    // Update layout based on view state
+    if (hasDirections && isExpanded) {
+      element.classList.remove("inline-flex", "items-center");
+      element.classList.add("flex", "flex-col");
+    } else {
+      element.classList.remove("flex", "flex-col");
+      element.classList.add("inline-flex", "items-center");
+    }
+
     // Update container colors based on ownership
     const styles = getOwnershipStyle(data.isMine, data.isDaydreamsAgent);
     element.style.setProperty("background-color", styles.default.backgroundColor!, "important");
@@ -258,6 +320,23 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
     if (staminaBar && data.currentStamina !== undefined && data.maxStamina !== undefined) {
       updateStaminaBar(staminaBar as HTMLElement, data.currentStamina, data.maxStamina);
     }
+
+    // Update direction indicators positioning
+    const directionIndicators = element.querySelector('[data-component="direction-indicators"]');
+    if (directionIndicators) {
+      if (hasDirections && isExpanded) {
+        // Expanded: at the bottom, centered
+        directionIndicators.classList.remove("ml-2");
+        directionIndicators.classList.add("w-full", "mt-1", "px-2");
+      } else {
+        // Contracted: to the right
+        directionIndicators.classList.remove("w-full", "mt-1", "px-2");
+        directionIndicators.classList.add("ml-2");
+      }
+    }
+
+    // Update direction indicators
+    updateDirectionIndicators(element, data.attackedFromDegrees, data.attackedTowardDegrees, data.battleTimerLeft);
   },
 };
 
@@ -273,6 +352,10 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
 
     // Create base label
     const labelDiv = createLabelBase(data.isMine);
+
+    // Check if we have direction indicators and if view is expanded
+    const hasDirections = data.attackedFromDegrees !== undefined || data.attackedTowardDegrees !== undefined;
+    const isExpanded = cameraView !== CameraView.Close;
 
     // Create icon container
     const iconContainer = document.createElement("div");
@@ -292,7 +375,6 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
     iconImg.classList.add("w-10", "h-10", "object-contain");
     iconImg.setAttribute("data-component", "structure-icon");
     iconContainer.appendChild(iconImg);
-    labelDiv.appendChild(iconContainer);
 
     // Create content container
     const contentContainer = createContentContainer(cameraView);
@@ -393,12 +475,68 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
       contentContainer.appendChild(realmCountDisplay);
     }
 
-    labelDiv.appendChild(contentContainer.wrapper);
+    // Structure based on view and directions
+    if (hasDirections && isExpanded) {
+      // Expanded with directions: flex-col layout
+      labelDiv.classList.remove("inline-flex", "items-center");
+      labelDiv.classList.add("flex", "flex-col");
+
+      // Create content row for icon and text
+      const contentRow = document.createElement("div");
+      contentRow.classList.add("flex", "items-center");
+      contentRow.appendChild(iconContainer);
+      contentRow.appendChild(contentContainer.wrapper);
+      labelDiv.appendChild(contentRow);
+
+      // Add direction indicators at bottom
+      const directionIndicators = createDirectionIndicators(
+        data.attackedFromDegrees,
+        data.attackedTowardDegrees,
+        data.battleTimerLeft,
+      );
+
+      if (directionIndicators) {
+        directionIndicators.classList.add("w-full", "mt-1", "px-2");
+        labelDiv.appendChild(directionIndicators);
+      }
+    } else {
+      // Contracted or no directions: simple horizontal layout
+      labelDiv.appendChild(iconContainer);
+      labelDiv.appendChild(contentContainer.wrapper);
+
+      // Add direction indicators to the right
+      if (hasDirections) {
+        const directionIndicators = createDirectionIndicators(
+          data.attackedFromDegrees,
+          data.attackedTowardDegrees,
+          data.battleTimerLeft,
+        );
+
+        if (directionIndicators) {
+          directionIndicators.classList.add("ml-2");
+          labelDiv.appendChild(directionIndicators);
+        }
+      }
+    }
+
     return labelDiv;
   },
 
   updateElement: (element: HTMLElement, data: StructureLabelData, cameraView: CameraView): void => {
     const isBlitz = getIsBlitz();
+
+    // Check if we have direction indicators and if view is expanded
+    const hasDirections = data.attackedFromDegrees !== undefined || data.attackedTowardDegrees !== undefined;
+    const isExpanded = cameraView !== CameraView.Close;
+
+    // Update layout based on view state
+    if (hasDirections && isExpanded) {
+      element.classList.remove("inline-flex", "items-center");
+      element.classList.add("flex", "flex-col");
+    } else {
+      element.classList.remove("flex", "flex-col");
+      element.classList.add("inline-flex", "items-center");
+    }
 
     // Update container colors based on ownership
     const styles = getOwnershipStyle(data.isMine);
@@ -582,6 +720,23 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
       // Remove realm count display if no longer needed
       realmCountDisplay.remove();
     }
+
+    // Update direction indicators positioning
+    const directionIndicators = element.querySelector('[data-component="direction-indicators"]');
+    if (directionIndicators) {
+      if (hasDirections && isExpanded) {
+        // Expanded: at the bottom, centered
+        directionIndicators.classList.remove("ml-2");
+        directionIndicators.classList.add("w-full", "mt-1", "px-2");
+      } else {
+        // Contracted: to the right
+        directionIndicators.classList.remove("w-full", "mt-1", "px-2");
+        directionIndicators.classList.add("ml-2");
+      }
+    }
+
+    // Update direction indicators
+    updateDirectionIndicators(element, data.attackedFromDegrees, data.attackedTowardDegrees, data.battleTimerLeft);
   },
 };
 
@@ -613,7 +768,7 @@ export const ChestLabelType: LabelTypeDefinition<ChestLabelData> = {
 
     // Add chest label
     const line1 = document.createElement("span");
-    line1.textContent = "Chest";
+    line1.textContent = "Relic Crate";
     line1.style.color = "inherit";
     contentContainer.appendChild(line1);
 

@@ -147,6 +147,34 @@ export const STRUCTURE_QUERIES = {
   `,
 
   ALL_STRUCTURES_MAP_DATA: `
+       WITH latest_battles AS (
+        -- Get latest battles where this structure was the defender
+        SELECT DISTINCT
+            defender_id,
+            FIRST_VALUE(attacker_id) OVER (
+                PARTITION BY defender_id 
+                ORDER BY timestamp DESC
+            ) as latest_attacker_id,
+            FIRST_VALUE(timestamp) OVER (
+                PARTITION BY defender_id 
+                ORDER BY timestamp DESC
+            ) as latest_attack_timestamp
+        FROM [s1_eternum-BattleEvent]
+    ),
+    latest_defenses AS (
+        -- Get latest battles where this structure was the attacker
+        SELECT DISTINCT
+            attacker_id,
+            FIRST_VALUE(defender_id) OVER (
+                PARTITION BY attacker_id 
+                ORDER BY timestamp DESC
+            ) as latest_defender_id,
+            FIRST_VALUE(timestamp) OVER (
+                PARTITION BY attacker_id 
+                ORDER BY timestamp DESC
+            ) as latest_defense_timestamp
+        FROM [s1_eternum-BattleEvent]
+    )
     SELECT 
         s.entity_id,
         s.\`base.coord_x\` as coord_x,
@@ -157,6 +185,7 @@ export const STRUCTURE_QUERIES = {
         s.\`metadata.realm_id\` as realm_id,
         s.resources_packed,
         sos.name as owner_name,
+    
         -- Guard army data
         s.\`troop_guards.delta.category\` as delta_category,
         s.\`troop_guards.delta.tier\` as delta_tier,
@@ -174,31 +203,111 @@ export const STRUCTURE_QUERIES = {
         s.\`troop_guards.alpha.tier\` as alpha_tier,
         s.\`troop_guards.alpha.count\` as alpha_count,
         s.\`troop_guards.alpha.stamina.amount\` as alpha_stamina_amount,
+        s.\`troop_guards.delta.battle_cooldown_end\` as delta_battle_cooldown_end,
+        s.\`troop_guards.charlie.battle_cooldown_end\` as charlie_battle_cooldown_end,
+        s.\`troop_guards.bravo.battle_cooldown_end\` as bravo_battle_cooldown_end,
+        s.\`troop_guards.alpha.battle_cooldown_end\` as alpha_battle_cooldown_end,
+    
         -- Building production data from StructureBuildings packed counts
         sb.packed_counts_1,
         sb.packed_counts_2,
-        sb.packed_counts_3
-    FROM \`s1_eternum-Structure\` s
-    LEFT JOIN \`s1_eternum-StructureOwnerStats\` sos ON sos.owner = s.owner
-    LEFT JOIN \`s1_eternum-StructureBuildings\` sb ON sb.entity_id = s.entity_id
+        sb.packed_counts_3,
+    
+        -- Battle data with coordinates
+        lb.latest_attacker_id,
+        lb.latest_attack_timestamp,
+        COALESCE(attacker_struct.\`base.coord_x\`, attacker_explorer.\`coord.x\`) as latest_attacker_coord_x,
+        COALESCE(attacker_struct.\`base.coord_y\`, attacker_explorer.\`coord.y\`) as latest_attacker_coord_y,
+    
+        ld.latest_defender_id,
+        ld.latest_defense_timestamp,
+        COALESCE(defender_struct.\`base.coord_x\`, defender_explorer.\`coord.x\`) as latest_defender_coord_x,
+        COALESCE(defender_struct.\`base.coord_y\`, defender_explorer.\`coord.y\`) as latest_defender_coord_y
+
+    FROM [s1_eternum-Structure] s
+    LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON sos.owner = s.owner
+    LEFT JOIN [s1_eternum-StructureBuildings] sb ON sb.entity_id = s.entity_id
+    LEFT JOIN latest_battles lb ON lb.defender_id = s.entity_id
+    LEFT JOIN latest_defenses ld ON ld.attacker_id = s.entity_id
+
+    -- Get coordinates for latest attacker (could be structure or explorer troops)
+    LEFT JOIN [s1_eternum-Structure] attacker_struct ON attacker_struct.entity_id = lb.latest_attacker_id
+    LEFT JOIN [s1_eternum-ExplorerTroops] attacker_explorer ON attacker_explorer.explorer_id = lb.latest_attacker_id
+
+    -- Get coordinates for latest defender (could be structure or explorer troops)
+    LEFT JOIN [s1_eternum-Structure] defender_struct ON defender_struct.entity_id = ld.latest_defender_id
+    LEFT JOIN [s1_eternum-ExplorerTroops] defender_explorer ON defender_explorer.explorer_id = ld.latest_defender_id
+
     ORDER BY s.entity_id;
   `,
 
   ALL_ARMIES_MAP_DATA: `
-    SELECT 
-        et.explorer_id as entity_id,
-        et.\`coord.x\` as coord_x,
-        et.\`coord.y\` as coord_y,
-        et.\`troops.category\` as category,
-        et.\`troops.tier\` as tier,
-        et.\`troops.count\` as count,
-        et.\`troops.stamina.amount\` as stamina_amount,
-        et.\`troops.stamina.updated_tick\` as stamina_updated_tick,
-        s.owner as owner_address,
-        sos.name as owner_name
-    FROM \`s1_eternum-ExplorerTroops\` et
-    LEFT JOIN \`s1_eternum-Structure\` s ON s.entity_id = et.owner
-    LEFT JOIN \`s1_eternum-StructureOwnerStats\` sos ON sos.owner = s.owner
-    ORDER BY et.explorer_id;
+  WITH latest_battles AS (
+      -- Get latest battles where this army was the defender
+      SELECT DISTINCT
+          defender_id,
+          FIRST_VALUE(attacker_id) OVER (
+              PARTITION BY defender_id 
+              ORDER BY timestamp DESC
+          ) as latest_attacker_id,
+          FIRST_VALUE(timestamp) OVER (
+              PARTITION BY defender_id 
+              ORDER BY timestamp DESC
+          ) as latest_attack_timestamp
+      FROM [s1_eternum-BattleEvent]
+  ),
+  latest_defenses AS (
+      -- Get latest battles where this army was the attacker
+      SELECT DISTINCT
+          attacker_id,
+          FIRST_VALUE(defender_id) OVER (
+              PARTITION BY attacker_id 
+              ORDER BY timestamp DESC
+          ) as latest_defender_id,
+          FIRST_VALUE(timestamp) OVER (
+              PARTITION BY attacker_id 
+              ORDER BY timestamp DESC
+          ) as latest_defense_timestamp
+      FROM [s1_eternum-BattleEvent]
+  )
+  SELECT 
+      et.explorer_id as entity_id,
+      et.\`coord.x\` as coord_x,
+      et.\`coord.y\` as coord_y,
+      et.\`troops.category\` as category,
+      et.\`troops.tier\` as tier,
+      et.\`troops.count\` as count,
+      et.\`troops.stamina.amount\` as stamina_amount,
+      et.\`troops.stamina.updated_tick\` as stamina_updated_tick,
+      et.\`troops.battle_cooldown_end\` as battle_cooldown_end,
+      s.owner as owner_address,
+      sos.name as owner_name,
+    
+      -- Battle data with coordinates
+      lb.latest_attacker_id,
+      lb.latest_attack_timestamp,
+      COALESCE(attacker_struct.\`base.coord_x\`, attacker_explorer.\`coord.x\`) as latest_attacker_coord_x,
+      COALESCE(attacker_struct.\`base.coord_y\`, attacker_explorer.\`coord.y\`) as latest_attacker_coord_y,
+      
+      ld.latest_defender_id,
+      ld.latest_defense_timestamp,
+      COALESCE(defender_struct.\`base.coord_x\`, defender_explorer.\`coord.x\`) as latest_defender_coord_x,
+      COALESCE(defender_struct.\`base.coord_y\`, defender_explorer.\`coord.y\`) as latest_defender_coord_y
+    
+  FROM [s1_eternum-ExplorerTroops] et
+  LEFT JOIN [s1_eternum-Structure] s ON s.entity_id = et.owner
+  LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON sos.owner = s.owner
+  LEFT JOIN latest_battles lb ON lb.defender_id = et.explorer_id
+  LEFT JOIN latest_defenses ld ON ld.attacker_id = et.explorer_id
+  
+  -- Get coordinates for latest attacker (could be structure or explorer troops)
+  LEFT JOIN [s1_eternum-Structure] attacker_struct ON attacker_struct.entity_id = lb.latest_attacker_id
+  LEFT JOIN [s1_eternum-ExplorerTroops] attacker_explorer ON attacker_explorer.explorer_id = lb.latest_attacker_id
+  
+  -- Get coordinates for latest defender (could be structure or explorer troops)
+  LEFT JOIN [s1_eternum-Structure] defender_struct ON defender_struct.entity_id = ld.latest_defender_id
+  LEFT JOIN [s1_eternum-ExplorerTroops] defender_explorer ON defender_explorer.explorer_id = ld.latest_defender_id
+  
+  ORDER BY et.explorer_id;
   `,
 } as const;

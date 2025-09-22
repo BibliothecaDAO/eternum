@@ -2,14 +2,13 @@ use core::array::SpanTrait;
 use core::num::traits::zero::Zero;
 use dojo::event::EventStorage;
 use dojo::world::WorldStorage;
-
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{all_resource_ids, is_bank};
 use s1_eternum::models::config::{SpeedImpl, WorldConfigUtilImpl};
 use s1_eternum::models::events::{
     ResourceBurnStory, ResourceReceiveArrivalStory, ResourceTransferStory, Story, StoryEvent, TransferType,
 };
-use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
+use s1_eternum::models::resource::arrivals::ResourceArrivalImpl;
 use s1_eternum::models::resource::resource::{
     ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
 };
@@ -17,11 +16,11 @@ use s1_eternum::models::structure::{
     StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureMetadata,
     StructureMetadataStoreImpl, StructureOwnerStoreImpl,
 };
-use s1_eternum::models::troop::{ExplorerTroops};
+use s1_eternum::models::troop::ExplorerTroops;
 use s1_eternum::models::weight::{Weight, WeightImpl};
-use s1_eternum::systems::utils::distance::{iDistanceKmImpl};
-use s1_eternum::systems::utils::donkey::{iDonkeyImpl};
-use s1_eternum::systems::utils::village::{iVillageImpl};
+use s1_eternum::systems::utils::distance::iDistanceKmImpl;
+use s1_eternum::systems::utils::donkey::iDonkeyImpl;
+use s1_eternum::systems::utils::village::iVillageImpl;
 
 
 #[generate_trait]
@@ -122,7 +121,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
                     ref world, structure_id, resource_type, ref structure_weight, resource_weight_grams, false,
                 );
                 new_total_weight += structure_resource.balance * resource_weight_grams;
-            };
+            }
 
             if new_total_weight <= structure_weight.capacity {
                 structure_weight.weight = new_total_weight;
@@ -225,7 +224,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
                 },
                 Option::None => { break; },
             }
-        };
+        }
 
         if mint == false {
             // update from_resource weight
@@ -237,7 +236,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
 
         // emit story event
         let from_owner = if from_id == 0 {
-            starknet::contract_address_const::<0>()
+            Zero::zero()
         } else {
             StructureOwnerStoreImpl::retrieve(ref world, from_id)
         };
@@ -306,7 +305,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
                 },
                 Option::None => { break; },
             }
-        };
+        }
 
         // update from_resource weight
         from_weight.store(ref world, from_id);
@@ -384,7 +383,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
                 },
                 Option::None => { break; },
             }
-        };
+        }
 
         if mint == false {
             // update from_resource weight
@@ -393,7 +392,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
 
         // emit story event
         let from_owner = if from_id == 0 {
-            starknet::contract_address_const::<0>()
+            Zero::zero()
         } else {
             StructureOwnerStoreImpl::retrieve(ref world, from_id)
         };
@@ -494,7 +493,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
                 from_entity_resource.store(ref world);
             }
             index_count += 1;
-        };
+        }
 
         // add resource to to_structure resource arrivals
         ResourceArrivalImpl::slot_increase_balances(
@@ -585,7 +584,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
                 },
                 Option::None => { break; },
             }
-        };
+        }
 
         // update from entity resource weight
         from_weight.store(ref world, from_id);
@@ -650,7 +649,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
                 },
                 Option::None => { break; },
             }
-        };
+        }
 
         // update to_structure weight
         to_structure_weight.store(ref world, to_structure_id);

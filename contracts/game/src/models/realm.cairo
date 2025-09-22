@@ -1,7 +1,7 @@
 use alexandria_math::{BitShift, pow};
 use core::array::SpanTrait;
 use core::traits::Into;
-use s1_eternum::models::config::{WorldConfigUtilImpl};
+use s1_eternum::models::config::WorldConfigUtilImpl;
 
 #[generate_trait]
 pub impl RealmNameAndAttrsDecodingImpl of RealmNameAndAttrsDecodingTrait {
@@ -38,7 +38,7 @@ pub impl RealmNameAndAttrsDecodingImpl of RealmNameAndAttrsDecodingTrait {
                 Option::Some(resource) => { resources.append(*resource); },
                 Option::None => { break; },
             }
-        };
+        }
 
         // realm name
         let name: felt252 = BitShift::shr(realm_name_and_attrs, Self::BYTE_LEN() * attrs_len).try_into().unwrap();
@@ -53,7 +53,7 @@ pub impl RealmNameAndAttrsDecodingImpl of RealmNameAndAttrsDecodingTrait {
             res.append(byte);
 
             value = BitShift::shr(value, 8);
-        };
+        }
 
         return res.span();
     }

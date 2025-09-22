@@ -1,5 +1,5 @@
 use s1_eternum::alias::ID;
-use s1_eternum::models::position::{Direction};
+use s1_eternum::models::position::Direction;
 use s1_eternum::models::troop::GuardSlot;
 
 
@@ -31,23 +31,24 @@ pub mod troop_battle_systems {
         WorldConfigUtilImpl,
     };
     use s1_eternum::models::events::{BattleStory, BattleType, Story, StoryEvent};
-    use s1_eternum::models::owner::{OwnerAddressTrait};
+    use s1_eternum::models::owner::OwnerAddressTrait;
     use s1_eternum::models::position::{CoordTrait, Direction};
     use s1_eternum::models::resource::resource::{ResourceWeightImpl, SingleResourceStoreImpl, WeightStoreImpl};
-    use s1_eternum::models::stamina::{StaminaImpl};
+    use s1_eternum::models::stamina::StaminaImpl;
     use s1_eternum::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
         StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
     };
-    use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, Troops, TroopsImpl, TroopsTrait};
+    use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, Troops, TroopsImpl};
     use s1_eternum::models::weight::Weight;
-    use s1_eternum::systems::utils::{
-        resource::{iResourceTransferImpl}, structure::iStructureImpl, troop::{iExplorerImpl, iGuardImpl, iTroopImpl},
-    };
+    use s1_eternum::systems::utils::resource::iResourceTransferImpl;
+    use s1_eternum::systems::utils::structure::iStructureImpl;
+    use s1_eternum::systems::utils::troop::{iExplorerImpl, iGuardImpl, iTroopImpl};
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
-    use s1_eternum::utils::map::biomes::{Biome, get_biome};
-    use s1_eternum::utils::random::{VRFImpl};
-
+    use s1_eternum::utils::map::biomes::Biome;
+    use s1_eternum::utils::random::VRFImpl;
+    use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
+    use crate::system_libraries::combat_library::{ICombatLibraryDispatcherTrait, combat_library};
     use super::super::super::super::super::models::troop::GuardTrait;
 
 
@@ -135,19 +136,25 @@ pub mod troop_battle_systems {
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let mut explorer_aggressor_troops: Troops = explorer_aggressor.troops;
             let mut explorer_defender_troops: Troops = explorer_defender.troops;
-            let defender_biome: Biome = get_biome(explorer_defender.coord.x.into(), explorer_defender.coord.y.into());
+            let biome_library = biome_library::get_dispatcher(@world);
+            let defender_biome: Biome = biome_library
+                .get_biome(explorer_defender.coord.x.into(), explorer_defender.coord.y.into());
             let explorer_aggressor_troop_count_before_attack = explorer_aggressor_troops.count;
             let explorer_defender_troop_count_before_attack = explorer_defender_troops.count;
 
-            explorer_aggressor_troops
-                .attack(
-                    ref explorer_defender_troops,
+            let combat_library = combat_library::get_dispatcher(@world);
+            let (updated_aggressor, updated_defender) = combat_library
+                .troops_attack(
+                    explorer_aggressor_troops,
+                    explorer_defender_troops,
                     defender_biome,
                     troop_stamina_config,
                     troop_damage_config,
                     tick.current(),
                     tick.interval(),
                 );
+            explorer_aggressor_troops = updated_aggressor;
+            explorer_defender_troops = updated_defender;
 
             // update both explorers
             explorer_aggressor.troops = explorer_aggressor_troops;
@@ -408,24 +415,28 @@ pub mod troop_battle_systems {
 
             // aggressor attacks defender
             let mut explorer_aggressor_troops: Troops = explorer_aggressor.troops;
-            let defender_biome: Biome = get_biome(
-                guarded_structure.coord().x.into(), guarded_structure.coord().y.into(),
-            );
+            let biome_library = biome_library::get_dispatcher(@world);
+            let defender_biome: Biome = biome_library
+                .get_biome(guarded_structure.coord().x.into(), guarded_structure.coord().y.into());
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let tick = TickImpl::get_tick_interval(ref world);
             let explorer_aggressor_troop_count_before_attack = explorer_aggressor_troops.count;
             let guard_troop_count_before_attack = guard_troops.count;
 
-            explorer_aggressor_troops
-                .attack(
-                    ref guard_troops,
+            let combat_library = combat_library::get_dispatcher(@world);
+            let (updated_aggressor, updated_guard) = combat_library
+                .troops_attack(
+                    explorer_aggressor_troops,
+                    guard_troops,
                     defender_biome,
                     troop_stamina_config,
                     troop_damage_config,
                     tick.current(),
                     tick.interval(),
                 );
+            explorer_aggressor_troops = updated_aggressor;
+            guard_troops = updated_guard;
             // update explorer
             explorer_aggressor.troops = explorer_aggressor_troops;
 
@@ -651,22 +662,28 @@ pub mod troop_battle_systems {
             );
 
             // aggressor attacks defender
-            let defender_biome: Biome = get_biome(explorer_defender.coord.x.into(), explorer_defender.coord.y.into());
+            let biome_library = biome_library::get_dispatcher(@world);
+            let defender_biome: Biome = biome_library
+                .get_biome(explorer_defender.coord.x.into(), explorer_defender.coord.y.into());
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let mut explorer_defender_troops = explorer_defender.troops;
             let explorer_defender_troop_count_before_attack = explorer_defender_troops.count;
             let structure_guard_aggressor_troop_count_before_attack = structure_guard_aggressor_troops.count;
 
-            structure_guard_aggressor_troops
-                .attack(
-                    ref explorer_defender_troops,
+            let combat_library = combat_library::get_dispatcher(@world);
+            let (updated_guard, updated_explorer) = combat_library
+                .troops_attack(
+                    structure_guard_aggressor_troops,
+                    explorer_defender_troops,
                     defender_biome,
                     troop_stamina_config,
                     troop_damage_config,
                     tick.current(),
                     tick.interval(),
                 );
+            structure_guard_aggressor_troops = updated_guard;
+            explorer_defender_troops = updated_explorer;
 
             // update explorer
             explorer_defender.troops = explorer_defender_troops;

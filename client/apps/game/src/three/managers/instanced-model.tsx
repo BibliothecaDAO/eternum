@@ -39,7 +39,7 @@ export default class InstancedModel {
   private animationActions: Map<number, AnimationAction> = new Map();
   private name: string;
   timeOffsets: Float32Array;
-  
+
   // Animation optimization
   private lastAnimationUpdate = 0;
   private animationUpdateInterval = 1000 / 20; // 20 FPS for animations
@@ -219,7 +219,7 @@ export default class InstancedModel {
     }
 
     const now = performance.now();
-    
+
     // Frame limit animation updates to reduce GPU load
     if (now - this.lastAnimationUpdate < this.animationUpdateInterval) {
       return;
@@ -228,7 +228,7 @@ export default class InstancedModel {
     if (this.mixer && this.animation) {
       const time = now * 0.001;
       let needsUpdate = false;
-      
+
       this.instancedMeshes.forEach((mesh, meshIndex) => {
         if (!mesh.animated) return;
         if (!this.animationActions.has(meshIndex)) {
@@ -244,7 +244,7 @@ export default class InstancedModel {
           this.mixer!.setTime(time + this.timeOffsets[i]);
           mesh.setMorphAt(i, this.biomeMeshes[meshIndex]);
         }
-        
+
         // Only set needsUpdate once per mesh instead of every frame
         mesh.morphTexture!.needsUpdate = true;
         needsUpdate = true;
@@ -256,7 +256,7 @@ export default class InstancedModel {
     }
 
     // Wonder rotation with its own frame limiting
-    if (this.name === "wonder" && (now - this.lastWonderUpdate >= this.wonderUpdateInterval)) {
+    if (this.name === "wonder" && now - this.lastWonderUpdate >= this.wonderUpdateInterval) {
       const rotationSpeed = 1; // Adjust speed as needed
 
       this.instancedMeshes.forEach((mesh) => {
@@ -277,7 +277,7 @@ export default class InstancedModel {
         // Update the instance matrix
         mesh.instanceMatrix.needsUpdate = true;
       });
-      
+
       this.lastWonderUpdate = now;
     }
   }

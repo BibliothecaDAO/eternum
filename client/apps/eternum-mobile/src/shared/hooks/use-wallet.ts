@@ -1,5 +1,6 @@
 import { displayAddress } from "@/shared/lib/utils";
 import { useAccount, useConnect } from "@starknet-react/core";
+import { env } from "../../../env";
 
 export const useWallet = () => {
   const { connect, connectors } = useConnect();
@@ -8,7 +9,7 @@ export const useWallet = () => {
   const connectWallet = async () => {
     try {
       console.log("Attempting to connect wallet...");
-      await connect({ connector: connectors[0] });
+      connect({ connector: env.VITE_PUBLIC_CHAIN === "local" ? connectors[0] : (connectors[0] as any).controller });
       console.log("Wallet connected successfully.");
     } catch (error) {
       console.error("Failed to connect wallet:", error);

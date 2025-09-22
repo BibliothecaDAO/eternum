@@ -221,7 +221,7 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    HyperstructureConstructConfig: (() => {
+    HyperstrtConstructConfig: (() => {
       return defineComponent(
         world,
         {
@@ -233,7 +233,7 @@ export function defineContractComponents(world: World) {
         {
           metadata: {
             namespace: "s1_eternum",
-            name: "HyperstructureConstructConfig",
+            name: "HyperstrtConstructConfig",
             types: ["u8", "u64", "u32", "u32"],
             customTypes: [],
           },
@@ -1005,7 +1005,7 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    ResourceBridgeWhitelistConfig: (() => {
+    ResourceBridgeWtlConfig: (() => {
       return defineComponent(
         world,
         {
@@ -1015,7 +1015,7 @@ export function defineContractComponents(world: World) {
         {
           metadata: {
             namespace: "s1_eternum",
-            name: "ResourceBridgeWhitelistConfig",
+            name: "ResourceBridgeWtlConfig",
             types: ["ContractAddress", "u8"],
             customTypes: [],
           },
@@ -1848,6 +1848,29 @@ const eventsComponents = (world: World) => {
               namespace: "s1_eternum",
               name: "SwapEvent",
               types: ["u32", "u32", "u32", "u8", "u128", "u128", "u128", "u128", "u128", "bool", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+
+      BattleEvent: (() => {
+        return defineComponent(
+          world,
+          {
+            attacker_id: RecsType.Number,
+            defender_id: RecsType.Number,
+            attacker_owner: RecsType.Number,
+            defender_owner: RecsType.Number,
+            winner_id: RecsType.Number,
+            max_reward: RecsType.StringArray,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "s1_eternum",
+              name: "BattleEvent",
+              types: ["u32", "u32", "u32", "u32", "u32", "Span<(u8, u128)>", "u64"],
               customTypes: [],
             },
           },

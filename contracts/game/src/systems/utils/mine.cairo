@@ -1,27 +1,29 @@
 use core::num::traits::zero::Zero;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
-use s1_eternum::models::config::TickImpl;
-use s1_eternum::models::config::{MapConfig, TickInterval, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl};
-use s1_eternum::models::map::{TileOccupier};
-use s1_eternum::models::position::{Coord};
+use s1_eternum::models::config::{
+    MapConfig, TickImpl, TickInterval, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
+};
+use s1_eternum::models::map::TileOccupier;
+use s1_eternum::models::position::Coord;
 use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl};
 use s1_eternum::models::resource::production::production::{Production, ProductionImpl};
 use s1_eternum::models::resource::resource::{
     ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
 };
-
 use s1_eternum::models::structure::{StructureCategory, StructureImpl};
 use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
 use s1_eternum::models::weight::Weight;
 use s1_eternum::systems::utils::structure::iStructureImpl;
 use s1_eternum::systems::utils::troop::iMercenariesImpl;
-use s1_eternum::utils::random;
-
+use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
+use crate::system_libraries::structure_libraries::structure_creation_library::{
+    IStructureCreationlibraryDispatcherTrait, structure_creation_library,
+};
 
 #[generate_trait]
 pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
-    fn lottery(map_config: MapConfig, vrf_seed: u256) -> bool {
+    fn lottery(map_config: MapConfig, vrf_seed: u256, world: WorldStorage) -> bool {
         // make sure seed is different for each lottery system to prevent same outcome for same probability
         let VRF_OFFSET: u256 = 2;
         let mine_vrf_seed = if vrf_seed > VRF_OFFSET {
@@ -30,16 +32,13 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
             vrf_seed + VRF_OFFSET
         };
 
-        let success: bool = *random::choices(
-            array![true, false].span(),
-            array![map_config.shards_mines_win_probability.into(), map_config.shards_mines_fail_probability.into()]
-                .span(),
-            array![].span(),
-            1,
-            true,
-            // make sure seed is different for each lottery system to prevent same outcome for same probability
-            mine_vrf_seed,
-        )[0];
+        let rng_library_dispatcher = rng_library::get_dispatcher(@world);
+        let success: bool = rng_library_dispatcher
+            .get_weighted_choice_bool_simple(
+                map_config.shards_mines_win_probability.into(),
+                map_config.shards_mines_fail_probability.into(),
+                mine_vrf_seed,
+            );
 
         return success;
     }
@@ -55,17 +54,19 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
     ) -> bool {
         // make fragment mine structure
         let structure_id = world.dispatcher.uuid();
-        iStructureImpl::create(
-            ref world,
-            coord,
-            Zero::zero(),
-            structure_id,
-            StructureCategory::FragmentMine,
-            array![].span(),
-            Default::default(),
-            TileOccupier::FragmentMine,
-            false,
-        );
+        let structure_creation_library = structure_creation_library::get_dispatcher(@world);
+        structure_creation_library
+            .make_structure(
+                world,
+                coord,
+                Zero::zero(),
+                structure_id,
+                StructureCategory::FragmentMine,
+                array![].span(),
+                Default::default(),
+                TileOccupier::FragmentMine,
+                false,
+            );
         // add guards to structure
         // slot must start from delta, to charlie, to beta, to alpha
         let slot_tiers = array![(GuardSlot::Delta, TroopTier::T1, TroopType::Crossbowman)].span();
@@ -116,7 +117,9 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
 
     fn _season_mode_reward_amount(ref world: WorldStorage, randomness: u256) -> u128 {
         let multipliers: Array<u128> = array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-        let random_index: u128 = random::random(randomness, 124, multipliers.len().into());
+
+        let rng_library_dispatcher = rng_library::get_dispatcher(@world);
+        let random_index: u128 = rng_library_dispatcher.get_random_in_range(randomness, 124, multipliers.len().into());
         let random_multiplier: u128 = *multipliers.at(random_index.try_into().unwrap());
         let minimum_amount: u128 = 300_000 * RESOURCE_PRECISION;
         let actual_amount: u128 = minimum_amount * random_multiplier;

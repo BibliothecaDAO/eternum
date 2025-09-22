@@ -154,7 +154,7 @@ export class ClientConfigManager {
 
     for (const resourceType of Object.values(ResourcesIds).filter(Number.isInteger)) {
       const hyperstructureResourceConfig = getComponentValue(
-        this.components.HyperstructureConstructConfig,
+        this.components.HyperstrtConstructConfig,
         getEntityIdFromKeys([BigInt(resourceType)]),
       );
       if (!hyperstructureResourceConfig) continue;
@@ -565,6 +565,7 @@ export class ClientConfigManager {
           t1_damage_value: combatConfig?.t1_damage_value ?? 0n,
           t2_damage_multiplier: combatConfig?.t2_damage_multiplier ?? 0n,
           t3_damage_multiplier: combatConfig?.t3_damage_multiplier ?? 0n,
+          tick_interval_seconds: 60,
         };
       },
       {
@@ -581,6 +582,7 @@ export class ClientConfigManager {
         t1_damage_value: 0n,
         t2_damage_multiplier: 0n,
         t3_damage_multiplier: 0n,
+        tick_interval_seconds: 60,
       },
     );
   }
