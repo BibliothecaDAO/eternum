@@ -77,10 +77,7 @@ export const marketplaceCollections = {
     defaultTraitFilters: {},
   },
   adventurers: {
-    address:
-      currentNetwork === "mainnet"
-        ? "0x36017e69d21d6d8c13e266eabb73ef1f1d02722d86bdcabe5f168f8e549d3cd"
-        : "",
+    address: currentNetwork === "mainnet" ? "0x36017e69d21d6d8c13e266eabb73ef1f1d02722d86bdcabe5f168f8e549d3cd" : "",
     id: COLLECTION_IDS[currentNetwork].adventurers,
     name: "Adventurers",
     image: "/collections/adventurers.png",

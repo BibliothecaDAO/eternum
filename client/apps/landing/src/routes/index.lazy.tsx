@@ -71,10 +71,7 @@ function Index() {
   const totalRealmCount = ownedRealms.length;
   const featuredRealms = ownedRealms.slice(0, 6) as MergedNftData[];
 
-  const {
-    data: fetchedGameStatus,
-    isLoading: isGameStatusLoading,
-  } = useQuery({
+  const { data: fetchedGameStatus, isLoading: isGameStatusLoading } = useQuery({
     queryKey: ["game-status"],
     queryFn: fetchGameStatus,
     staleTime: 60_000,
@@ -125,8 +122,7 @@ function Index() {
           </p>
           <GamePhaseBanner status={gameStatus} isLoading={isGameStatusLoading} />
         </div>
-        </section>
-
+      </section>
 
       {/* Marketplace Collections */}
       <section className="py-12 bg-background">
@@ -252,9 +248,7 @@ const GamePhaseBanner = memo(function GamePhaseBanner({
       { label: "Game starts", value: status.gameStartAt },
       { label: "Game ends", value: status.gameEndAt },
     ];
-    return items
-      .filter((item) => typeof item.value === "number")
-      .sort((a, b) => (a.value! - b.value!));
+    return items.filter((item) => typeof item.value === "number").sort((a, b) => a.value! - b.value!);
   }, [status.gameEndAt, status.gameStartAt, status.registrationEndAt, status.registrationStartAt]);
 
   const countdownData = useMemo((): { label: string; target?: number } => {
@@ -289,16 +283,15 @@ const GamePhaseBanner = memo(function GamePhaseBanner({
   }, [status]);
 
   return (
-    <motion.div
-      className="inline-flex w-full max-w-3xl flex-col gap-4 rounded-2xl border border-gold/30 bg-background/80 p-6 text-left shadow-xl backdrop-blur mt-6"
-    >
+    <motion.div className="inline-flex w-full max-w-3xl flex-col gap-4 rounded-2xl border border-gold/30 bg-background/80 p-6 text-left shadow-xl backdrop-blur mt-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Current Phase</p>
           <h2 className="mt-1 text-3xl font-serif text-gold">{isLoading ? "Loading…" : currentPhaseLabel}</h2>
           {countdownData.label && countdownSeconds !== null && (
             <p className="mt-2 text-sm text-muted-foreground">
-              {countdownData.label} <span className="font-semibold text-foreground">{formatCountdown(countdownSeconds)}</span>
+              {countdownData.label}{" "}
+              <span className="font-semibold text-foreground">{formatCountdown(countdownSeconds)}</span>
             </p>
           )}
         </div>

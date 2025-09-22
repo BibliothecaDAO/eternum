@@ -133,34 +133,40 @@ function CollectionPage() {
     }
   };
 
-  const handleFilterChange = useCallback((traitType: string, value: string) => {
-    setSelectedFilters((prev) => {
-      const currentValues = prev[traitType] || [];
-      const newValues = currentValues.includes(value)
-        ? currentValues.filter((v) => v !== value)
-        : [...currentValues, value];
+  const handleFilterChange = useCallback(
+    (traitType: string, value: string) => {
+      setSelectedFilters((prev) => {
+        const currentValues = prev[traitType] || [];
+        const newValues = currentValues.includes(value)
+          ? currentValues.filter((v) => v !== value)
+          : [...currentValues, value];
 
-      const nextFilters = { ...prev };
+        const nextFilters = { ...prev };
 
-      if (newValues.length === 0) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { [traitType]: _, ...rest } = nextFilters;
+        if (newValues.length === 0) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { [traitType]: _, ...rest } = nextFilters;
+          return applyEnforcedFilters(rest);
+        }
+
+        nextFilters[traitType] = newValues;
+        return applyEnforcedFilters(nextFilters);
+      });
+      setCurrentPage(1); // Reset to first page when filters change
+    },
+    [applyEnforcedFilters],
+  );
+
+  const clearFilter = useCallback(
+    (traitType: string) => {
+      setSelectedFilters((prev) => {
+        const { [traitType]: _, ...rest } = prev;
         return applyEnforcedFilters(rest);
-      }
-
-      nextFilters[traitType] = newValues;
-      return applyEnforcedFilters(nextFilters);
-    });
-    setCurrentPage(1); // Reset to first page when filters change
-  }, [applyEnforcedFilters]);
-
-  const clearFilter = useCallback((traitType: string) => {
-    setSelectedFilters((prev) => {
-      const { [traitType]: _, ...rest } = prev;
-      return applyEnforcedFilters(rest);
-    });
-    setCurrentPage(1);
-  }, [applyEnforcedFilters]);
+      });
+      setCurrentPage(1);
+    },
+    [applyEnforcedFilters],
+  );
 
   const clearAllFilters = useCallback(() => {
     setSelectedFilters(applyEnforcedFilters({}));

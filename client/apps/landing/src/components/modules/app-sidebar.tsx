@@ -155,9 +155,7 @@ export function AppSidebar() {
                 <TypeH2 className="mb-1 text-xs font-semibold uppercase tracking-widest text-gold">
                   {section.title}
                 </TypeH2>
-                {section.description && (
-                  <p className="mb-2 text-xs text-muted-foreground">{section.description}</p>
-                )}
+                {section.description && <p className="mb-2 text-xs text-muted-foreground">{section.description}</p>}
                 <SidebarMenu>
                   {section.items.map((item) => {
                     const active = isLinkActive(item.url);

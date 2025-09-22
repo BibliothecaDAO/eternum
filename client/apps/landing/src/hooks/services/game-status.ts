@@ -16,7 +16,6 @@ export const DEFAULT_GAME_STATUS: GameStatus = {
   currentPhase: "NO_GAME",
 };
 
-
 export async function fetchGameStatus(): Promise<GameStatus> {
   try {
     const response = await gameClientFetch(QUERIES.GAME_STATUS);
@@ -42,7 +41,7 @@ function normalizeGameStatus(payload: any): GameStatus {
   const gameEndAt = parseTimestamp(data.creation_end_at);
 
   let currentPhase: GamePhaseState = "NO_GAME";
-  
+
   if (registrationStartAt && now >= registrationStartAt) {
     if (registrationEndAt && now < registrationEndAt) {
       currentPhase = "REGISTRATION";
