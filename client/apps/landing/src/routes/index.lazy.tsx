@@ -1,8 +1,10 @@
 import { ReactComponent as EternumWordsLogo } from "@/assets/icons/realms-words-logo-g.svg";
-import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
 import { CollectionCard } from "@/components/modules/collection-card";
 import { CollectionTokenGrid } from "@/components/modules/collection-token-grid";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { marketplaceCollections, realmsAddress, seasonPassAddress } from "@/config";
 import {
   ActiveMarketOrdersTotal,
@@ -10,26 +12,23 @@ import {
   fetchSeasonPassRealmsByAddress,
   fetchTokenBalancesWithMetadata,
 } from "@/hooks/services";
-import { useData } from "@/hooks/use-data";
+import type { GameStatus } from "@/hooks/services/game-status";
+import { DEFAULT_GAME_STATUS, fetchGameStatus } from "@/hooks/services/game-status";
 import { trimAddress } from "@/lib/utils";
-import { useSelectedPassesStore } from "@/stores/selected-passes";
 import { MergedNftData } from "@/types";
-import { divideByPrecision } from "@bibliothecadao/eternum";
 import { useAccount } from "@starknet-react/core";
-import { useSuspenseQueries } from "@tanstack/react-query";
+import { useQuery, useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Brain, Castle, CirclePlayIcon, UserIcon } from "lucide-react";
+import { AlertTriangle, Castle, CirclePlayIcon } from "lucide-react";
+import { memo, useEffect, useMemo, useState } from "react";
 
 export const Route = createLazyFileRoute("/")({
   component: Index,
 });
 
 function Index() {
-  const chain = import.meta.env.VITE_PUBLIC_CHAIN;
   const { address: accountAddress } = useAccount();
-  const { togglePass } = useSelectedPassesStore("home");
-  const { totalPlayers, totalTroops, totalStructures, totalAgents, totalCreatedAgents, isLoading } = useData();
 
   // Fetch marketplace collection statistics
   const collections = Object.entries(marketplaceCollections).filter(([key, collection]) => collection.address != "");
@@ -66,16 +65,20 @@ function Index() {
 
   // Properly type and extract the results
   const realms = results[0];
-  // const seasonPasses = results[1];
-  //const seasonPassMints = results[2];
   const collectionStats = results.slice(3) as { data: ActiveMarketOrdersTotal[] }[];
+  const ownedRealms = (realms.data ?? []) as MergedNftData[];
+  const hasRealms = ownedRealms.length > 0;
+  const totalRealmCount = ownedRealms.length;
+  const featuredRealms = ownedRealms.slice(0, 6) as MergedNftData[];
 
-  /* const mintedRealmsCount = useMemo(() => {
-    return (
-      seasonPassMints.data?.filter((realm) => "season_pass_balance" in realm && realm.season_pass_balance == null)
-        .length ?? 0
-    );
-  }, [seasonPassMints.data]);*/
+  const { data: fetchedGameStatus, isLoading: isGameStatusLoading } = useQuery({
+    queryKey: ["game-status"],
+    queryFn: fetchGameStatus,
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+  });
+
+  const gameStatus = fetchedGameStatus ?? DEFAULT_GAME_STATUS;
 
   // Framer Motion variants
   const containerVariants = {
@@ -103,7 +106,7 @@ function Index() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
-      <section className="relative h-[60vh] min-h-[500px] flex items-center justify-center">
+      <section className="relative h-[60vh] min-h-[500px] flex items-center justify-center pb-16">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: "url('/images/covers/01.png')" }}
@@ -115,112 +118,11 @@ function Index() {
             <EternumWordsLogo className="mx-auto w-60 fill-current stroke-current sm:w-72 lg:w-96 mb-16" />
           </h1>
           <p className="text-xl md:text-2xl mb-8 max-w-2xl mx-auto">
-            Explore, conquer, and build your legacy in the eternal realm.
+            Explore, conquer, and build your legacy in Realms: Blitz
           </p>
-          <motion.div
-            initial={{ scale: 1 }}
-            animate={{
-              scale: [1, 1.04, 1],
-              boxShadow: [
-                "0 0 0 1px rgba(255, 215, 0, 0.08)",
-                "0 0 0 3px rgba(255, 215, 0, 0.15)",
-                "0 0 0 1px rgba(255, 215, 0, 0.08)",
-              ],
-            }}
-            transition={{
-              duration: 2.5,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-            className="inline-block rounded-lg"
-          >
-            <Button
-              size="lg"
-              className="text-lg px-8 py-6 relative overflow-hidden group"
-              onClick={() =>
-                (window.location.href =
-                  chain === "sepolia" ? "https://dev.eternum.realms.world" : "https://eternum.realms.world")
-              }
-            >
-              <motion.div
-                className="absolute inset-0 bg-gold/20"
-                initial={{ x: "-100%" }}
-                animate={{ x: "100%" }}
-                transition={{
-                  duration: 1.5,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-              />
-              <CirclePlayIcon className="!w-6 !h-6 mr-2" />
-              {chain === "sepolia" ? "Play Now [Sepolia]" : "Play Now"}
-            </Button>
-          </motion.div>
-        </div>
-
-        {/* Statistics Overlay */}
-        <div className="absolute bottom-4 right-4 bg-black/80 backdrop-blur-sm rounded-lg p-4 text-sm">
-          <div className="grid grid-cols-2 gap-x-8 gap-y-2">
-            <div className="text-muted-foreground flex items-center gap-2 h-6">
-              <UserIcon className="w-5" /> Players
-            </div>
-            <div className="text-gold font-mono flex items-center h-6">
-              {isLoading ? "..." : totalPlayers?.toLocaleString()}
-            </div>
-
-            <div className="text-muted-foreground flex items-center gap-2 h-6">
-              <Sword className="-ml-1 w-7 fill-muted-foreground -mr-1" />
-              Troops
-            </div>
-            <div className="text-gold font-mono flex items-center h-6">
-              {isLoading
-                ? "..."
-                : divideByPrecision(
-                    totalTroops?.reduce((acc, curr) => acc + curr.total_troops, 0) ?? 0,
-                  ).toLocaleString()}
-            </div>
-
-            <div className="text-muted-foreground flex items-center gap-2 h-6">
-              <Castle className="w-5" /> Structures
-            </div>
-            <div className="text-gold font-mono flex items-center h-6">
-              {isLoading
-                ? "..."
-                : totalStructures?.reduce((acc, curr) => acc + curr.structure_count, 0).toLocaleString()}
-            </div>
-
-            <div className="text-muted-foreground flex items-center gap-2 h-6">
-              <Brain className="w-5" /> Agents
-            </div>
-            <div className="text-gold font-mono flex items-center h-6">
-              {isLoading ? "..." : `${totalAgents?.toLocaleString()}/${totalCreatedAgents?.toLocaleString()}`}
-            </div>
-          </div>
+          <GamePhaseBanner status={gameStatus} isLoading={isGameStatusLoading} />
         </div>
       </section>
-
-      {/* Action Toolbar
-      <section className="bg-card/50 border-y">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-6">
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <div className="text-center sm:text-left">
-                <h3 className="text-xl font-bold text-gold">Season 1 Passes Mintable</h3>
-                <p className="text-muted-foreground">Claim your passes to start your journey</p>
-              </div>
-              {accountAddress && (
-                <div className="flex items-center gap-2 px-4 py-2 bg-gold/10 rounded-lg">
-                  <span className="text-2xl font-bold text-gold">{mintedRealmsCount}</span>
-                  <span className="text-muted-foreground">passes remaining</span>
-                </div>
-      )}
-            </div>
-            <Button asChild size="lg" className="w-full sm:w-auto">
-              <Link to="/mint">Claim Season Passes</Link>
-            </Button>
-          </div>
-        </div>
-      </section> */}
 
       {/* Marketplace Collections */}
       <section className="py-12 bg-background">
@@ -246,42 +148,64 @@ function Index() {
       {accountAddress && (
         <section className="py-12 bg-card/50">
           <div className="container mx-auto px-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-              {/* Realms Column */}
-              <div>
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-3xl font-bold">Your Realms</h2>
-                  <Button asChild variant="outline">
+            <div className="grid grid-cols-1 gap-12">
+              <Card className="bg-background/70 border-gold/20 shadow-lg">
+                <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <CardTitle className="text-2xl">Your Realms</CardTitle>
+                    <CardDescription>Keep building your domain by managing the realms you already own.</CardDescription>
+                  </div>
+                  <Button asChild size="sm" variant="outline">
                     <Link to="/$collection" params={{ collection: "realms" }}>
                       Manage All
                     </Link>
                   </Button>
-                </div>
-                {realms.data && (
-                  <CollectionTokenGrid
-                    tokens={realms.data.slice(0, 4) as MergedNftData[]}
-                    isCompactGrid={false}
-                    pageId="home"
-                  />
-                )}
-              </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {hasRealms ? (
+                    <>
+                      <div className="flex items-center justify-between text-sm text-muted-foreground">
+                        <span>Realms in wallet</span>
+                        <Badge variant="secondary" className="bg-gold/15 text-gold border border-gold/30">
+                          {totalRealmCount}
+                        </Badge>
+                      </div>
+                      <CollectionTokenGrid tokens={featuredRealms} isCompactGrid pageId="home" />
+                      {totalRealmCount > featuredRealms.length && (
+                        <p className="text-xs text-muted-foreground text-center">
+                          Showing the first {featuredRealms.length} realms — open "Manage All" to view the rest.
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <div className="py-10 px-4 text-center text-muted-foreground flex flex-col items-center gap-4">
+                      <Castle className="w-10 h-10 text-gold" />
+                      <div>
+                        <p className="text-base font-medium text-foreground">No realms in your wallet yet.</p>
+                        <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+                          Explore the marketplace to acquire a Realm and start expanding your empire.
+                        </p>
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Button asChild size="sm">
+                          <Link to="/trade/$collection" params={{ collection: "realms" }}>
+                            Browse Marketplace
+                          </Link>
+                        </Button>
+                        <Button asChild size="sm" variant="outline">
+                          <Link to="/$collection" params={{ collection: "realms" }}>
+                            Learn About Realms
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
-              {/* Season Passes Column 
+              {/* Season Passes Column
               <div>
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-3xl font-bold">Your Season Passes</h2>
-                  <Button asChild variant="outline">
-                    <Link to="/$collection" params={{ collection: "season-passes" }}>
-                      Manage All
-                    </Link>
-                  </Button>
-                </div>
-                <CollectionTokenGrid
-                  tokens={(seasonPasses.data?.slice(0, 4) ?? []) as MergedNftData[]}
-                  isCompactGrid={false}
-                  onToggleSelection={togglePass}
-                  pageId="home"
-                />
+                ...
               </div>*/}
             </div>
           </div>
@@ -289,4 +213,165 @@ function Index() {
       )}
     </div>
   );
+}
+
+const GamePhaseBanner = memo(function GamePhaseBanner({
+  status,
+  isLoading,
+}: {
+  status: GameStatus;
+  isLoading: boolean;
+}) {
+  const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
+  const [milestonesOpen, setMilestonesOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const interval = window.setInterval(() => {
+      setNow(Math.floor(Date.now() / 1000));
+    }, 1_000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const phaseLabelMap: Record<GameStatus["currentPhase"], string> = {
+    NO_GAME: "No Game Scheduled",
+    REGISTRATION: "Registration Open",
+    GAME_ACTIVE: "Game In Progress",
+  };
+
+  const currentPhaseLabel = phaseLabelMap[status.currentPhase];
+
+  const phaseDetails = useMemo(() => {
+    const items: Array<{ label: string; value: number | undefined }> = [
+      { label: "Registration opens", value: status.registrationStartAt },
+      { label: "Registration closes", value: status.registrationEndAt },
+      { label: "Game starts", value: status.gameStartAt },
+      { label: "Game ends", value: status.gameEndAt },
+    ];
+    return items.filter((item) => typeof item.value === "number").sort((a, b) => a.value! - b.value!);
+  }, [status.gameEndAt, status.gameStartAt, status.registrationEndAt, status.registrationStartAt]);
+
+  const countdownData = useMemo((): { label: string; target?: number } => {
+    switch (status.currentPhase) {
+      case "NO_GAME":
+        return { label: "Registration opens in", target: status.registrationStartAt };
+      case "REGISTRATION":
+        return { label: "Registration closes in", target: status.registrationEndAt };
+      case "GAME_ACTIVE":
+        return { label: "Game ends in", target: status.gameEndAt };
+      default:
+        return { label: "" };
+    }
+  }, [status]);
+
+  const countdownSeconds = useMemo(() => {
+    if (!countdownData.target) return null;
+    return Math.max(0, Math.floor(countdownData.target - now));
+  }, [countdownData.target, now]);
+
+  const nextPhaseDescription = useMemo(() => {
+    if (status.currentPhase === "NO_GAME" && status.registrationStartAt) {
+      return `Registration opens ${formatDateTime(status.registrationStartAt)}`;
+    }
+    if (status.currentPhase === "REGISTRATION" && status.gameStartAt) {
+      return `Game launches ${formatDateTime(status.gameStartAt)}`;
+    }
+    if (status.currentPhase === "GAME_ACTIVE" && status.gameEndAt) {
+      return `Game ends ${formatDateTime(status.gameEndAt)}`;
+    }
+    return null;
+  }, [status]);
+
+  return (
+    <motion.div className="inline-flex w-full max-w-3xl flex-col gap-4 rounded-2xl border border-gold/30 bg-background/80 p-6 text-left shadow-xl backdrop-blur mt-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Current Phase</p>
+          <h2 className="mt-1 text-3xl font-serif text-gold">{isLoading ? "Loading…" : currentPhaseLabel}</h2>
+          {countdownData.label && countdownSeconds !== null && (
+            <p className="mt-2 text-sm text-muted-foreground">
+              {countdownData.label}{" "}
+              <span className="font-semibold text-foreground">{formatCountdown(countdownSeconds)}</span>
+            </p>
+          )}
+        </div>
+        <div className="flex flex-col items-start gap-2 sm:items-end text-sm text-muted-foreground">
+          {status.registrationCount !== undefined && (
+            <Badge variant="outline" className="border-gold/50 bg-gold/10 text-gold">
+              {status.registrationCount.toLocaleString()} registered
+            </Badge>
+          )}
+          {nextPhaseDescription && <p>{nextPhaseDescription}</p>}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button size="lg" className="text-lg px-8 py-6" asChild>
+            <a href="https://dev.blitz.realms.world/" target="_blank" rel="noopener noreferrer">
+              <CirclePlayIcon className="!w-6 !h-6 mr-2" /> Play Desktop Version
+            </a>
+          </Button>
+          <Button size="lg" variant="outline" className="text-lg px-8 py-6" asChild>
+            <a href="https://dev.m.blitz.realms.world/home" target="_blank" rel="noopener noreferrer">
+              <CirclePlayIcon className="!w-6 !h-6 mr-2" /> Play Mobile Version
+            </a>
+          </Button>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-amber-400 bg-amber-400/10 px-3 py-2 rounded-lg border border-amber-400/20">
+          <AlertTriangle className="w-4 h-4" />
+          <p>Both clients run on the Blitz testnet. Expect rapid iteration.</p>
+        </div>
+      </div>
+
+      {phaseDetails.length > 0 && (
+        <div className="flex justify-end">
+          <Button variant="outline" size="sm" onClick={() => setMilestonesOpen(true)}>
+            Upcoming milestones
+          </Button>
+        </div>
+      )}
+
+      <Dialog open={milestonesOpen} onOpenChange={setMilestonesOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-gold">Upcoming milestones</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {phaseDetails.map((item) => (
+              <div key={item.label} className="rounded-lg border border-border/60 bg-background/80 px-4 py-3 text-sm">
+                <p className="font-semibold text-foreground">{item.label}</p>
+                <p className="text-xs text-muted-foreground">{item.value ? formatDateTime(item.value) : "TBD"}</p>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </motion.div>
+  );
+});
+
+function formatCountdown(seconds: number | null): string {
+  if (seconds === null) return "—";
+  const clamped = Math.max(0, seconds);
+  const hours = Math.floor(clamped / 3_600);
+  const minutes = Math.floor((clamped % 3_600) / 60);
+  const secs = Math.floor(clamped % 60);
+
+  if (hours > 0) {
+    return `${hours}h ${minutes.toString().padStart(2, "0")}m`;
+  }
+
+  return `${minutes.toString().padStart(2, "0")}m ${secs.toString().padStart(2, "0")}s`;
+}
+
+function formatDateTime(timestamp: number): string {
+  const date = new Date(timestamp * 1_000);
+  return date.toLocaleString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }

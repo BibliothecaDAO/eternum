@@ -8,68 +8,114 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Link } from "@tanstack/react-router";
-import { Coins, Crown, Map, Package, PawPrint, ShoppingBag, Sparkles, X } from "lucide-react";
+import { marketplaceCollections } from "@/config";
+import { cn } from "@/lib/utils";
+import { Link, useLocation } from "@tanstack/react-router";
+import type { LucideIcon } from "lucide-react";
+import { Coins, Crown, Map, Package, PawPrint, ShoppingBag, Sparkles, UserRound, X } from "lucide-react";
 import { TypeH2 } from "../typography/type-h2";
 
-// Menu items.
-const items = [
-  {
-    title: "Home",
-    url: "/",
-    icon: Crown,
-  },
-  // { title: "Claim", url: "/claim", icon: Coins },
+type CollectionKey = keyof typeof marketplaceCollections;
 
-  // {
-  //   title: "Claim Passes",
-  //   url: "/mint",
-  //   icon: Ticket,
-  // },
-  {
-    title: "Realms",
-    url: "/realms",
-    icon: Map,
-  },
-  // {
-  //   title: "Season Passes",
-  //   url: "/season-passes",
-  //   icon: Calendar,
-  // },
-  {
-    title: "Loot Chests",
-    url: "/loot-chests",
-    icon: Package,
-  },
-  {
-    title: "Cosmetics",
-    url: "/cosmetics",
-    icon: Sparkles,
-  },
-  {
-    title: "Golden Tokens",
-    url: "/golden-tokens",
-    icon: Coins,
-  },
-  {
-    title: "Beasts",
-    url: "/beasts",
-    icon: PawPrint,
-  },
-  {
-    title: "Marketplace",
-    url: "/trade",
-    icon: ShoppingBag,
-  },
+const collectionIconMap: Partial<Record<CollectionKey, LucideIcon>> = {
+  realms: Map,
+  "loot-chests": Package,
+  cosmetics: Sparkles,
+  "golden-tokens": Coins,
+  beasts: PawPrint,
+  adventurers: UserRound,
+};
+
+const preferredCollectionOrder: CollectionKey[] = [
+  "realms",
+  "adventurers",
+  "loot-chests",
+  "cosmetics",
+  "golden-tokens",
+  "beasts",
 ];
 
 export function AppSidebar() {
   const { setOpenMobile, isMobile } = useSidebar();
+  const { pathname } = useLocation();
 
   const handleLinkClick = () => {
     if (isMobile) {
       setOpenMobile(false);
     }
+  };
+
+  const sortedCollectionEntries = Object.entries(marketplaceCollections)
+    .filter(([, config]) => config.address !== "")
+    .sort(([keyA, configA], [keyB, configB]) => {
+      const indexA = preferredCollectionOrder.indexOf(keyA as CollectionKey);
+      const indexB = preferredCollectionOrder.indexOf(keyB as CollectionKey);
+
+      if (indexA === -1 && indexB === -1) {
+        return configA.name.localeCompare(configB.name);
+      }
+
+      if (indexA === -1) return 1;
+      if (indexB === -1) return -1;
+
+      return indexA - indexB;
+    });
+
+  const collectionNavItems = sortedCollectionEntries.map(([key, config]) => ({
+    key: key as CollectionKey,
+    title: config.name,
+    icon: collectionIconMap[key as CollectionKey] ?? Sparkles,
+  }));
+
+  const overviewItems = [
+    {
+      title: "Home",
+      url: "/",
+      icon: Crown,
+    },
+  ];
+
+  const walletItems = collectionNavItems.map((item) => ({
+    title: item.title,
+    url: `/${item.key}`,
+    icon: item.icon,
+  }));
+
+  const marketplaceItems = [
+    {
+      title: "All Listings",
+      url: "/trade",
+      icon: ShoppingBag,
+    },
+    ...collectionNavItems.map((item) => ({
+      title: item.title,
+      url: `/trade/${item.key}`,
+      icon: item.icon,
+    })),
+  ];
+
+  const sidebarSections = [
+    {
+      title: "Overview",
+      description: "Jump into Eternum at a glance.",
+      items: overviewItems,
+    },
+    {
+      title: "Your Collections",
+      description: "Manage the NFTs currently in your wallet.",
+      items: walletItems,
+    },
+    {
+      title: "Marketplace",
+      description: "Browse live listings for every collection.",
+      items: marketplaceItems,
+    },
+  ].filter((section) => section.items.length > 0);
+
+  const isLinkActive = (url: string) => {
+    if (url === "/") return pathname === "/";
+    if (url === "/trade") return pathname === "/trade";
+    return pathname === url || pathname.startsWith(`${url}/`);
   };
 
   return (
@@ -104,35 +150,39 @@ export function AppSidebar() {
         </a>
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    {item.url.startsWith("https") ? (
-                      <a
-                        href={item.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 py-2 rounded-md hover:bg-secondary font-heading text-xl"
-                        onClick={handleLinkClick}
-                      >
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </a>
-                    ) : (
-                      <Link
-                        className="[&.active]:font-bold [&.active]:bg-secondary font-heading text-xl"
-                        to={item.url}
-                        onClick={handleLinkClick}
-                      >
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </Link>
-                    )}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
+            {sidebarSections.map((section) => (
+              <div key={section.title} className="mt-6 first:mt-4">
+                <TypeH2 className="mb-1 text-xs font-semibold uppercase tracking-widest text-gold">
+                  {section.title}
+                </TypeH2>
+                {section.description && <p className="mb-2 text-xs text-muted-foreground">{section.description}</p>}
+                <SidebarMenu>
+                  {section.items.map((item) => {
+                    const active = isLinkActive(item.url);
+                    return (
+                      <SidebarMenuItem key={item.url}>
+                        <SidebarMenuButton asChild>
+                          <Link
+                            to={item.url}
+                            onClick={handleLinkClick}
+                            className={cn(
+                              "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                              active
+                                ? "bg-gold/15 text-gold shadow-inner"
+                                : "text-muted-foreground hover:bg-secondary/40",
+                            )}
+                            aria-current={active ? "page" : undefined}
+                          >
+                            <item.icon className="h-4 w-4" />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </div>
+            ))}
             {/* social links */}
             <div className="flex items-center gap-2 mt-8 justify-center text-gold fill-gold">
               <a

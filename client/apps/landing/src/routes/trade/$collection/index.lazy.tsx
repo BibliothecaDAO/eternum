@@ -36,11 +36,42 @@ export const Route = createLazyFileRoute("/trade/$collection/")({
 function CollectionPage() {
   const { collection } = Route.useParams();
   const navigate = useNavigate();
-  const collectionAddress = marketplaceCollections[collection as keyof typeof marketplaceCollections].address;
+  const collectionConfig = marketplaceCollections[collection as keyof typeof marketplaceCollections];
+  const collectionAddress = collectionConfig.address;
+
+  const enforcedTraitFilters = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(collectionConfig.defaultTraitFilters ?? {}).map(([trait, values]) => [trait, [...values]]),
+      ),
+    [collectionConfig],
+  );
+
+  const applyEnforcedFilters = useCallback(
+    (filters: Record<string, string[]>) => {
+      const nextFilters: Record<string, string[]> = {};
+
+      Object.entries(filters).forEach(([trait, values]) => {
+        if (values.length > 0) {
+          nextFilters[trait] = [...values];
+        }
+      });
+
+      Object.entries(enforcedTraitFilters).forEach(([trait, values]) => {
+        if (values.length === 0) return;
+        const existing = new Set(nextFilters[trait] ?? []);
+        values.forEach((value) => existing.add(value));
+        nextFilters[trait] = Array.from(existing);
+      });
+
+      return nextFilters;
+    },
+    [enforcedTraitFilters],
+  );
 
   // --- State Management ---
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
+  const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>(() => applyEnforcedFilters({}));
   const [sortBy, setSortBy] = useState<FetchAllCollectionTokensOptions["sortBy"]>("price_asc");
   const [listedOnly, setListedOnly] = useState(false);
   const ITEMS_PER_PAGE = 24;
@@ -102,35 +133,45 @@ function CollectionPage() {
     }
   };
 
-  const handleFilterChange = useCallback((traitType: string, value: string) => {
-    setSelectedFilters((prev) => {
-      const currentValues = prev[traitType] || [];
-      const newValues = currentValues.includes(value)
-        ? currentValues.filter((v) => v !== value)
-        : [...currentValues, value];
+  const handleFilterChange = useCallback(
+    (traitType: string, value: string) => {
+      setSelectedFilters((prev) => {
+        const currentValues = prev[traitType] || [];
+        const newValues = currentValues.includes(value)
+          ? currentValues.filter((v) => v !== value)
+          : [...currentValues, value];
 
-      if (newValues.length === 0) {
-        const { [traitType]: _, ...rest } = prev; // eslint-disable-line @typescript-eslint/no-unused-vars
-        return rest;
-      }
+        const nextFilters = { ...prev };
 
-      return { ...prev, [traitType]: newValues };
-    });
-    setCurrentPage(1); // Reset to first page when filters change
-  }, []);
+        if (newValues.length === 0) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { [traitType]: _, ...rest } = nextFilters;
+          return applyEnforcedFilters(rest);
+        }
 
-  const clearFilter = useCallback((traitType: string) => {
-    setSelectedFilters((prev) => {
-      const { [traitType]: _, ...rest } = prev;
-      return rest;
-    });
-    setCurrentPage(1);
-  }, []);
+        nextFilters[traitType] = newValues;
+        return applyEnforcedFilters(nextFilters);
+      });
+      setCurrentPage(1); // Reset to first page when filters change
+    },
+    [applyEnforcedFilters],
+  );
+
+  const clearFilter = useCallback(
+    (traitType: string) => {
+      setSelectedFilters((prev) => {
+        const { [traitType]: _, ...rest } = prev;
+        return applyEnforcedFilters(rest);
+      });
+      setCurrentPage(1);
+    },
+    [applyEnforcedFilters],
+  );
 
   const clearAllFilters = useCallback(() => {
-    setSelectedFilters({});
+    setSelectedFilters(applyEnforcedFilters({}));
     setCurrentPage(1);
-  }, []);
+  }, [applyEnforcedFilters]);
 
   const [isCompactGrid, setIsCompactGrid] = useState(true);
   const { selectedPasses, togglePass, clearSelection, getTotalPrice } = useSelectedPassesStore(
@@ -148,6 +189,10 @@ function CollectionPage() {
       navigate({ to: `/trade/$collection/activity`, params: { collection } });
     }
   }, [isSeasonPassEndSeason, navigate, collection]);
+
+  useEffect(() => {
+    setSelectedFilters(applyEnforcedFilters({}));
+  }, [applyEnforcedFilters]);
 
   // Update effect to use debounced value
   useEffect(() => {

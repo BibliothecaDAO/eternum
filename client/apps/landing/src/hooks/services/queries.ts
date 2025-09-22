@@ -1,4 +1,12 @@
 export const QUERIES = {
+  GAME_STATUS: `
+    SELECT 
+      "blitz_registration_config.registration_start_at" AS registration_start_at,
+      "season_config.start_main_at" AS registration_end_at,
+      "season_config.start_main_at" AS creation_start_at,
+      "season_config.end_at" AS creation_end_at
+    FROM "s1_eternum-WorldConfig"
+  `,
   REALM_SETTLEMENTS: "SELECT `base.coord_x`, `base.coord_y`, owner FROM [s1_eternum-Structure] WHERE category == 1;",
   REALM_VILLAGE_SLOTS:
     "SELECT `connected_realm_coord.x`, `connected_realm_coord.y`, connected_realm_entity_id, connected_realm_id, directions_left FROM `s1_eternum-StructureVillageSlots`",
@@ -298,36 +306,68 @@ WITH limited_active_orders AS (
         AND mo."order.collection_id" = {collectionId}
         AND ('{ownerAddress}' = '' OR mo."order.owner" = '{ownerAddress}')
     ),
-    token_owners AS (
-      SELECT
+    owned_tokens AS (
+      SELECT DISTINCT
+        substr(tb.token_id, instr(tb.token_id, ':') + 1) AS token_id_hex,
         tb.account_address AS token_owner,
-        tb.balance,
-        substr(tb.token_id, instr(tb.token_id, ':') + 1) AS token_id_hex
+        tb.balance
       FROM token_balances tb
       WHERE tb.contract_address = '{contractAddress}'
         AND tb.balance != "0x0000000000000000000000000000000000000000000000000000000000000000"
     ),
-    filtered_tokens AS (
-      SELECT
-        t.token_id AS token_id_hex,
-        substr(t.token_id, 3) AS token_id,
-        t.name,
-        t.symbol,
-        t.metadata,
-        t.contract_address,
-        CASE WHEN ao.order_id IS NOT NULL THEN 1 ELSE 0 END AS is_listed,
-        owners.token_owner,
+    collection_tokens AS (
+      /* Union of listed tokens and owned tokens to avoid full tokens scan */
+      SELECT 
+        ot.token_id_hex,
+        ot.token_owner,
+        ot.balance,
         ao.price_hex,
         ao.expiration,
         ao.order_owner,
         ao.order_id,
-        owners.balance,
-        -- Keep hex price as string for simpler sorting
-        ao.price_hex AS price_sort_key
-      FROM tokens t
-      LEFT JOIN active_orders ao ON ao.token_id_hex = t.token_id
-      LEFT JOIN token_owners owners ON owners.token_id_hex = t.token_id
-      WHERE t.contract_address = '{contractAddress}'
+        CASE WHEN ao.order_id IS NOT NULL THEN 1 ELSE 0 END AS is_listed
+      FROM owned_tokens ot
+      LEFT JOIN active_orders ao ON ao.token_id_hex = ot.token_id_hex
+      
+      UNION ALL
+      
+      /* Include listed tokens that have no current owner */
+      SELECT 
+        ao.token_id_hex,
+        NULL AS token_owner,
+        NULL AS balance,
+        ao.price_hex,
+        ao.expiration,
+        ao.order_owner,
+        ao.order_id,
+        1 AS is_listed
+      FROM active_orders ao
+      WHERE NOT EXISTS (
+        SELECT 1 FROM owned_tokens ot WHERE ot.token_id_hex = ao.token_id_hex
+      )
+    ),
+    filtered_tokens AS (
+      SELECT
+        ct.token_id_hex,
+        substr(ct.token_id_hex, 3) AS token_id,
+        ct.is_listed,
+        ct.token_owner,
+        ct.price_hex,
+        ct.expiration,
+        ct.order_owner,
+        ct.order_id,
+        ct.balance,
+        ct.price_hex AS price_sort_key,
+        t.name,
+        t.symbol,
+        t.metadata,
+        '{contractAddress}' AS contract_address
+      FROM collection_tokens ct
+      /* Join tokens only for the limited set from collection_tokens */
+      LEFT JOIN tokens t 
+        ON t.token_id = ct.token_id_hex 
+        AND t.contract_address = '{contractAddress}'
+      WHERE ct.token_id_hex != '0x0000000000000000000000000000000000000000000000000000000000000000'
         {traitFilters}
         {listedOnlyFilter}
         AND t.token_id != '0x0000000000000000000000000000000000000000000000000000000000000000'
@@ -351,22 +391,36 @@ WITH limited_active_orders AS (
         AND mo."order.collection_id" = {collectionId}
         AND ('{ownerAddress}' = '' OR mo."order.owner" = '{ownerAddress}')
     ),
-    token_owners AS (
-      SELECT
-        tb.account_address AS token_owner,
-        tb.balance,
+    owned_tokens AS (
+      SELECT DISTINCT
         substr(tb.token_id, instr(tb.token_id, ':') + 1) AS token_id_hex
       FROM token_balances tb
       WHERE tb.contract_address = '{contractAddress}'
         AND tb.balance != "0x0000000000000000000000000000000000000000000000000000000000000000"
+    ),
+    all_tokens AS (
+      /* Combine owned and listed tokens - avoid full tokens table scan */
+      SELECT token_id_hex FROM owned_tokens
+      UNION
+      SELECT token_id_hex FROM active_orders
+    ),
+    token_metadata AS (
+      /* Only get metadata for tokens we care about */
+      SELECT t.token_id AS token_id_hex
+      FROM tokens t
+      INNER JOIN all_tokens at ON at.token_id_hex = t.token_id
+      WHERE t.contract_address = '{contractAddress}'
+        AND t.token_id != '0x0000000000000000000000000000000000000000000000000000000000000000'
+        {traitFilters}
+    ),
+    final_tokens AS (
+      SELECT tm.token_id_hex
+      FROM token_metadata tm
+      INNER JOIN all_tokens at ON at.token_id_hex = tm.token_id_hex
+      WHERE 1=1
+        {listedOnlyFilter}
     )
-    SELECT COUNT(*) as total_count
-    FROM tokens t
-    LEFT JOIN active_orders ao ON ao.token_id_hex = t.token_id
-    LEFT JOIN token_owners owners ON owners.token_id_hex = t.token_id
-    WHERE t.contract_address = '{contractAddress}'
-      {traitFilters}
-      {listedOnlyFilter}
+    SELECT COUNT(*) as total_count FROM final_tokens
   `,
   COLLECTIBLE_CLAIMED: `
     SELECT *

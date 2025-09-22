@@ -53,3 +53,4 @@ try {
 }
 
 export { env };
+export const GAME_API_BASE_URL = env.VITE_PUBLIC_GAME_TORII;
