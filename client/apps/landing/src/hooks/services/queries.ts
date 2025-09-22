@@ -1,4 +1,12 @@
 export const QUERIES = {
+  GAME_STATUS: `
+    SELECT 
+      "blitz_registration_config.registration_start_at" AS registration_start_at,
+      "season_config.start_main_at" AS registration_end_at,
+      "season_config.start_main_at" AS creation_start_at,
+      "season_config.end_at" AS creation_end_at
+    FROM "s1_eternum-WorldConfig"
+  `,
   REALM_SETTLEMENTS: "SELECT `base.coord_x`, `base.coord_y`, owner FROM [s1_eternum-Structure] WHERE category == 1;",
   REALM_VILLAGE_SLOTS:
     "SELECT `connected_realm_coord.x`, `connected_realm_coord.y`, connected_realm_entity_id, connected_realm_id, directions_left FROM `s1_eternum-StructureVillageSlots`",
