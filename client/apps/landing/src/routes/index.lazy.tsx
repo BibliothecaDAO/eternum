@@ -1,8 +1,8 @@
 import { ReactComponent as EternumWordsLogo } from "@/assets/icons/realms-words-logo-g.svg";
 import { CollectionCard } from "@/components/modules/collection-card";
 import { CollectionTokenGrid } from "@/components/modules/collection-token-grid";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { marketplaceCollections, realmsAddress, seasonPassAddress } from "@/config";
 import {
@@ -19,7 +19,7 @@ import { useAccount } from "@starknet-react/core";
 import { useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Brain, Castle, CirclePlayIcon, Sword, UserIcon } from "lucide-react";
+import { AlertTriangle, Castle, CirclePlayIcon } from "lucide-react";
 
 export const Route = createLazyFileRoute("/")({
   component: Index,
@@ -121,20 +121,6 @@ function Index() {
             Explore, conquer, and build your legacy in Realms: Blitz
           </p>
           <motion.div
-            initial={{ scale: 1 }}
-            animate={{
-              scale: [1, 1.02, 1],
-              boxShadow: [
-                "0 0 0 1px rgba(255, 215, 0, 0.08)",
-                "0 0 0 3px rgba(255, 215, 0, 0.15)",
-                "0 0 0 1px rgba(255, 215, 0, 0.08)",
-              ],
-            }}
-            transition={{
-              duration: 2.5,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
             className="inline-flex flex-col items-center gap-3 rounded-lg"
           >
             <div className="flex flex-col sm:flex-row gap-3">
@@ -149,9 +135,10 @@ function Index() {
                 </a>
               </Button>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Both versions currently run on testnet.
-            </p>
+            <div className="flex items-center gap-2 text-sm text-amber-400 bg-amber-400/10 px-3 py-2 rounded-lg border border-amber-400/20">
+              <AlertTriangle className="w-4 h-4" />
+              <p>Both versions currently run on testnet and are in development.</p>
+            </div>
           </motion.div>
         </div>
       </section>
