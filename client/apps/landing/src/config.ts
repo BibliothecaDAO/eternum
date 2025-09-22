@@ -83,7 +83,7 @@ export const marketplaceCollections = {
         : "",
     id: COLLECTION_IDS[currentNetwork].adventurers,
     name: "Adventurers",
-    image: "/collections/realms.png",
+    image: "/collections/adventurers.png",
     defaultTraitFilters: {
       "Minted By": ["0xa67ef20b61a9846e1c82b411175e6ab167ea9f8632bd6c2091823c3629ec42"],
     },
