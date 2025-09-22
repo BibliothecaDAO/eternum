@@ -9,7 +9,8 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { marketplaceCollections } from "@/config";
-import { Link } from "@tanstack/react-router";
+import { cn } from "@/lib/utils";
+import { Link, useLocation } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
 import { Coins, Crown, Map, Package, PawPrint, ShoppingBag, Sparkles, UserRound, X } from "lucide-react";
 import { TypeH2 } from "../typography/type-h2";
@@ -36,6 +37,7 @@ const preferredCollectionOrder: CollectionKey[] = [
 
 export function AppSidebar() {
   const { setOpenMobile, isMobile } = useSidebar();
+  const { pathname } = useLocation();
 
   const handleLinkClick = () => {
     if (isMobile) {
@@ -95,7 +97,7 @@ export function AppSidebar() {
   const sidebarSections = [
     {
       title: "Overview",
-      description: "Jump into Realms at a glance.",
+      description: "Jump into Eternum at a glance.",
       items: overviewItems,
     },
     {
@@ -109,6 +111,12 @@ export function AppSidebar() {
       items: marketplaceItems,
     },
   ].filter((section) => section.items.length > 0);
+
+  const isLinkActive = (url: string) => {
+    if (url === "/") return pathname === "/";
+    if (url === "/trade") return pathname === "/trade";
+    return pathname === url || pathname.startsWith(`${url}/`);
+  };
 
   return (
     <Sidebar className="p-3">
@@ -151,16 +159,29 @@ export function AppSidebar() {
                   <p className="mb-2 text-xs text-muted-foreground">{section.description}</p>
                 )}
                 <SidebarMenu>
-                  {section.items.map((item) => (
-                    <SidebarMenuItem key={item.url}>
-                      <SidebarMenuButton asChild>
-                        <Link to={item.url} onClick={handleLinkClick} className="flex items-center gap-3">
-                          <item.icon className="h-4 w-4" />
-                          <span className="text-sm font-medium">{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
+                  {section.items.map((item) => {
+                    const active = isLinkActive(item.url);
+                    return (
+                      <SidebarMenuItem key={item.url}>
+                        <SidebarMenuButton asChild>
+                          <Link
+                            to={item.url}
+                            onClick={handleLinkClick}
+                            className={cn(
+                              "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                              active
+                                ? "bg-gold/15 text-gold shadow-inner"
+                                : "text-muted-foreground hover:bg-secondary/40",
+                            )}
+                            aria-current={active ? "page" : undefined}
+                          >
+                            <item.icon className="h-4 w-4" />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
                 </SidebarMenu>
               </div>
             ))}
