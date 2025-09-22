@@ -27,6 +27,7 @@ contracts = [
 	  "erc721:0x0117fEcA92E98Eeca862099c0B4567F32c252bF1b736F2946F0df4f42FA8A544",    # Cosmetics Claim
       "erc721:0x027838dea749f41c6f8a44fcfa791788e6101080c1b3cd646a361f653ad10e2d",    # Golden Token
 	  "erc721:0x046da8955829adf2bda310099a0063451923f02e648cf25a1203aac6335cf0e4",    # Beasts V2.1
+	  "erc721:0x036017e69d21d6d8c13e266eabb73ef1f1d02722d86bdcabe5f168f8e549d3cd",    # Adventurers
 ]
 
 namespaces = ["marketplace"]
