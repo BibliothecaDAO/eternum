@@ -62,11 +62,11 @@ export const HexEntityDetails = () => {
   }
 
   return (
-    <div className="h-full flex flex-col overflow-auto p-2">
+    <div className="flex h-full flex-col overflow-auto p-2">
       {/* Header with hex coordinates */}
       {selectedHex && (
-        <div className="mb-2 text-sm font-medium text-center flex-shrink-0">
-          <span className="px-2 py-1 bg-gray-800 rounded-md">
+        <div className="mb-2 flex-shrink-0 text-center text-sm font-medium">
+          <span className="rounded-md bg-slate-800/80 px-2 py-1 text-slate-300 ring-1 ring-slate-600/40">
             Hex coords: ({selectedHex.col - FELT_CENTER}, {selectedHex.row - FELT_CENTER})
           </span>
         </div>
