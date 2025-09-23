@@ -1,5 +1,5 @@
+import { AttackDrawerData } from "@/widgets/attack-drawer/model/types";
 import { ActorType, Direction, ID } from "@bibliothecadao/types";
-import { AttackDrawerData } from "@/widgets/attack-drawer";
 
 export interface DrawerSlice {
   // Chest drawer state

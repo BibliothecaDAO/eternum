@@ -193,7 +193,7 @@ export const RaidContainer = ({ attackerEntityId, targetHex }: RaidContainerProp
 
     const getTarget = async () => {
       setIsTargetLoading(true);
-      const { currentArmiesTick } = getBlockTimestamp();
+      // const { currentArmiesTick } = getBlockTimestamp();
       const isStructure = targetTile?.occupier_is_structure;
 
       try {

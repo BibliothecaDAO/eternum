@@ -105,10 +105,10 @@ export class HexagonMap {
   private initializeManagers(): void {
     this.biomesManager = new BiomesManager(this.scene);
     this.highlightRenderer = new HighlightRenderer(this.scene);
-    
+
     // Connect the highlight renderer to the biomes manager for tile group access
     this.highlightRenderer.setBiomesManager(this.biomesManager);
-    
+
     this.armyManager = new ArmyManager(this.scene);
     this.structureManager = new StructureManager(this.scene, () => {
       // Refresh biome tiles when structures are updated
@@ -858,7 +858,6 @@ export class HexagonMap {
     this.currentAbortController = new AbortController();
     this.fetchedChunks.add(chunkKey);
 
-    const start = performance.now();
     try {
       await getMapFromTorii(
         this.dojo.network.toriiClient,
@@ -875,7 +874,6 @@ export class HexagonMap {
         console.error("Error fetching tile entities:", error);
       }
     } finally {
-      const end = performance.now();
       this.currentAbortController = null;
     }
   }

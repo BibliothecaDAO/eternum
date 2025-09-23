@@ -275,7 +275,7 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
 
     const getTarget = async () => {
       setIsTargetLoading(true);
-      const { currentArmiesTick, currentBlockTimestamp } = getBlockTimestamp();
+      const { currentArmiesTick } = getBlockTimestamp();
       const isStructure = targetTile?.occupier_is_structure;
 
       try {
@@ -391,7 +391,6 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
       closeAttackDrawer();
     } catch (error) {
       console.error("Attack failed:", error);
-      alert(`Attack failed: ${error.message || error}`);
     } finally {
       setLoading(false);
     }
@@ -404,25 +403,29 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
     }
     console.log("selectedHex:", selectedHex);
     console.log("targetHex:", targetHex);
-    
+
     // Convert selectedHex to match coordinate system of targetHex
-    const normalizedSelectedHex = { 
-      col: selectedHex.col + FELT_CENTER, 
-      row: selectedHex.row + FELT_CENTER 
+    const normalizedSelectedHex = {
+      col: selectedHex.col + FELT_CENTER,
+      row: selectedHex.row + FELT_CENTER,
     };
-    const normalizedTargetHex = { 
-      col: targetHex.x, 
-      row: targetHex.y 
+    const normalizedTargetHex = {
+      col: targetHex.x,
+      row: targetHex.y,
     };
-    
+
     console.log("normalizedSelectedHex:", normalizedSelectedHex);
     console.log("normalizedTargetHex:", normalizedTargetHex);
-    
+
     const direction = getDirectionBetweenAdjacentHexes(normalizedSelectedHex, normalizedTargetHex);
     console.log("Explorer vs Guard direction:", direction);
     if (direction === null) {
       console.error("Explorer vs Guard: Invalid direction - hexes are not adjacent");
-      console.error("Distance between hexes:", Math.abs(normalizedSelectedHex.col - normalizedTargetHex.col) + Math.abs(normalizedSelectedHex.row - normalizedTargetHex.row));
+      console.error(
+        "Distance between hexes:",
+        Math.abs(normalizedSelectedHex.col - normalizedTargetHex.col) +
+          Math.abs(normalizedSelectedHex.row - normalizedTargetHex.row),
+      );
       return;
     }
 
@@ -445,17 +448,17 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
       console.error("Explorer vs Explorer: No selected hex");
       return;
     }
-    
+
     // Convert selectedHex to match coordinate system of targetHex
-    const normalizedSelectedHex = { 
-      col: selectedHex.col + FELT_CENTER, 
-      row: selectedHex.row + FELT_CENTER 
+    const normalizedSelectedHex = {
+      col: selectedHex.col + FELT_CENTER,
+      row: selectedHex.row + FELT_CENTER,
     };
-    const normalizedTargetHex = { 
-      col: targetHex.x, 
-      row: targetHex.y 
+    const normalizedTargetHex = {
+      col: targetHex.x,
+      row: targetHex.y,
     };
-    
+
     const direction = getDirectionBetweenAdjacentHexes(normalizedSelectedHex, normalizedTargetHex);
     console.log("Explorer vs Explorer direction:", direction);
     if (direction === null) {
@@ -484,17 +487,17 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
       console.error("Guard vs Explorer: Missing selectedHex or selectedGuardSlot");
       return;
     }
-    
+
     // Convert selectedHex to match coordinate system of targetHex
-    const normalizedSelectedHex = { 
-      col: selectedHex.col + FELT_CENTER, 
-      row: selectedHex.row + FELT_CENTER 
+    const normalizedSelectedHex = {
+      col: selectedHex.col + FELT_CENTER,
+      row: selectedHex.row + FELT_CENTER,
     };
-    const normalizedTargetHex = { 
-      col: targetHex.x, 
-      row: targetHex.y 
+    const normalizedTargetHex = {
+      col: targetHex.x,
+      row: targetHex.y,
     };
-    
+
     const direction = getDirectionBetweenAdjacentHexes(normalizedSelectedHex, normalizedTargetHex);
     console.log("Guard vs Explorer direction:", direction);
     if (direction === null) {
