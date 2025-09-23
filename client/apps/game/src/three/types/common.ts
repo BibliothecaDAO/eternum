@@ -39,6 +39,7 @@ export interface ArmyData {
   matrixIndex: number;
   hexCoords: Position;
   isMine: boolean;
+  owningStructureId: ID | null;
   owner: { address: bigint; ownerName: string; guildName: string };
   color: string;
   category: TroopType;

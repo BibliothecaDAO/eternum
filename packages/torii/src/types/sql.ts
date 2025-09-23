@@ -255,6 +255,7 @@ export interface ArmyMapDataRaw {
   entity_id: number;
   coord_x: number;
   coord_y: number;
+  owner_structure_id: number | null;
   category: string | null;
   tier: string | null;
   count: string; // hex string

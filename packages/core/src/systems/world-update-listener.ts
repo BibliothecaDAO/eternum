@@ -117,12 +117,15 @@ export class WorldUpdateListener {
                   console.warn(`[DEBUG] Could not get structure owner for army ${currentState.occupier_id}:`, error);
                 }
 
+                const normalizedStructureOwnerId =
+                  structureOwnerId && structureOwnerId !== 0 ? structureOwnerId : undefined;
+
                 // Use DataEnhancer to fetch all enhanced data
                 const enhancedData = await this.dataEnhancer.enhanceArmyData(
                   currentState.occupier_id,
                   explorer,
                   currentArmiesTick,
-                  structureOwnerId,
+                  normalizedStructureOwnerId,
                 );
 
                 const maxStamina = StaminaManager.getMaxStamina(explorer.troopType, explorer.troopTier);
@@ -137,6 +140,7 @@ export class WorldUpdateListener {
                   troopType: explorer.troopType as TroopType,
                   troopTier: explorer.troopTier as TroopTier,
                   isDaydreamsAgent: explorer.isDaydreamsAgent,
+                  ownerStructureId: normalizedStructureOwnerId ?? enhancedData.ownerStructureId ?? null,
                   // Enhanced data from DataEnhancer
                   troopCount: enhancedData.troopCount,
                   currentStamina: enhancedData.currentStamina,
@@ -165,6 +169,8 @@ export class WorldUpdateListener {
 
               // maybe don't use mapdatastore here since these are all available from the tile listener
               const owner = await this.dataEnhancer.getStructureOwner(currentState.owner);
+              const normalizedOwnerStructureId =
+                currentState.owner && currentState.owner !== 0 ? currentState.owner : null;
 
               return {
                 entityId: currentState.explorer_id,
@@ -173,6 +179,7 @@ export class WorldUpdateListener {
                   amount: BigInt(currentState.troops.stamina.amount),
                   updatedTick: Number(currentState.troops.stamina.updated_tick),
                 },
+                ownerStructureId: normalizedOwnerStructureId,
                 hexCoords: { col: currentState.coord.x, row: currentState.coord.y },
                 ownerAddress: owner?.address || 0n,
                 ownerName: owner?.ownerName || "",

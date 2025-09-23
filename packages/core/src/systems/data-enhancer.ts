@@ -7,6 +7,7 @@ export interface EnhancedArmyData {
   currentStamina: number;
   onChainStamina?: { amount: bigint; updatedTick: number };
   owner: { address: bigint | undefined; ownerName: string; guildName: string };
+  ownerStructureId?: ID | null;
   battleData?: {
     battleCooldownEnd: number;
     latestAttackerId: number | null;
@@ -59,6 +60,8 @@ export class DataEnhancer {
 
     const currentStamina = this.calculateCurrentStamina(armyMapData || null, explorer, currentArmiesTick);
     let owner = await this.getArmyOwnerData(armyMapData || null);
+    const ownerStructureIdRaw = armyMapData?.ownerStructureId ?? structureOwnerId ?? null;
+    const ownerStructureId = ownerStructureIdRaw && ownerStructureIdRaw !== 0 ? ownerStructureIdRaw : null;
 
     // Fallback: If army owner data is missing but we have structure owner ID, get owner from structure
     if ((!owner.address || owner.address === 0n) && structureOwnerId) {
@@ -87,6 +90,7 @@ export class DataEnhancer {
           }
         : undefined,
       owner,
+      ownerStructureId,
       battleData: armyMapData?.battleData || undefined,
     };
   }
