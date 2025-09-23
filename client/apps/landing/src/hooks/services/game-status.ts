@@ -1,7 +1,7 @@
 import { gameClientFetch } from "./apiClient";
 import { QUERIES } from "./queries";
 
-export type GamePhaseState = "NO_GAME" | "REGISTRATION" | "GAME_ACTIVE";
+type GamePhaseState = "NO_GAME" | "REGISTRATION" | "GAME_ACTIVE";
 
 export interface GameStatus {
   currentPhase: GamePhaseState;
