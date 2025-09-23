@@ -1,0 +1,1329 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Eternum Label Preview</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @keyframes slowPulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.8;
+        }
+      }
+
+      @keyframes fade-in {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      .animate-slowPulse {
+        animation: slowPulse 3s ease-in-out infinite;
+      }
+
+      .animate-fade-in {
+        animation: fade-in 0.3s ease-in-out;
+      }
+
+      .text-xxs {
+        font-size: 0.625rem;
+      }
+
+      .demo-section {
+        background: #111827;
+        padding: 2rem;
+        border-radius: 0.75rem;
+        margin-bottom: 2rem;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .label-wrapper {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+        background: rgba(15, 23, 42, 0.55);
+        border-radius: 0.75rem;
+        border: 1px dashed rgba(148, 163, 184, 0.25);
+        min-height: 8rem;
+      }
+
+      .label-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 2rem;
+        align-items: stretch;
+      }
+
+      .bg-order-brilliance\/20 {
+        background-color: rgba(125, 255, 186, 0.2) !important;
+      }
+
+      .border-order-brilliance\/30 {
+        border-color: rgba(125, 255, 186, 0.3) !important;
+      }
+
+      .text-order-brilliance {
+        color: #7dffba !important;
+      }
+
+      .text-order-brilliance\/80 {
+        color: rgba(125, 255, 186, 0.8) !important;
+      }
+
+      .text-shadow-glow-brilliance-xs {
+        text-shadow: 0 0 5px rgba(125, 255, 186, 0.7);
+      }
+    </style>
+  </head>
+  <body class="bg-gray-900 text-slate-100 min-h-screen">
+    <main class="max-w-6xl mx-auto py-10 px-6 space-y-8">
+      <header class="space-y-3">
+        <h1 class="text-3xl font-bold">Eternum Label Preview</h1>
+        <p class="text-sm text-slate-400">
+          This page renders sample labels using the same DOM structure and styling rules as the in-game label system.
+          Adjust sample data inside the script to experiment with additional states.
+        </p>
+      </header>
+
+      <section id="army-section" class="demo-section">
+        <h2 class="text-2xl font-semibold mb-6 text-green-400">Army Labels</h2>
+        <div class="label-grid" id="army-grid"></div>
+      </section>
+
+      <section id="structure-section" class="demo-section">
+        <h2 class="text-2xl font-semibold mb-6 text-blue-400">Structure Labels</h2>
+        <div class="label-grid" id="structure-grid"></div>
+      </section>
+
+      <section id="misc-section" class="demo-section">
+        <h2 class="text-2xl font-semibold mb-6 text-yellow-400">Chest & Quest Labels</h2>
+        <div class="label-grid" id="misc-grid"></div>
+      </section>
+
+      <section class="demo-section">
+        <h2 class="text-2xl font-semibold mb-4 text-purple-400">Direction Arrow Reference</h2>
+        <p class="text-sm text-slate-400 mb-4">
+          Direction indicators use CSS transforms to rotate a base arrow (→). 0° points East and positive degrees rotate
+          clockwise.
+        </p>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="direction-reference"></div>
+      </section>
+
+      <section class="demo-section">
+        <h2 class="text-2xl font-semibold mb-4 text-slate-200">Notes</h2>
+        <ul class="list-disc list-inside text-slate-400 space-y-2 text-sm">
+          <li>Preview logic mirrors <code>label-factory.ts</code> and related utilities. Keep this file in sync after
+            gameplay updates.</li>
+          <li>Camera view affects content expansion: <code>Far</code> collapses content, <code>Medium</code> and
+            <code>Close</code> expand it.</li>
+          <li>Direction indicators appear when attack/defense headings exist. Battle timers display when combat lock is
+            active.</li>
+          <li>Ownership (mine / daydream / enemy) drives base colors via <code>getOwnershipStyle</code>.</li>
+        </ul>
+      </section>
+    </main>
+
+    <script>
+      const CameraView = {
+        Close: 1,
+        Medium: 2,
+        Far: 3,
+      };
+      const isFileProtocol = window.location.protocol === "file:";
+      const ASSET_BASE_PATH = isFileProtocol ? "../../../../../../public" : "";
+      const getAssetUrl = (path) => {
+        if (!path) return path;
+        if (path.startsWith("http")) {
+          return path;
+        }
+        if (path.startsWith("/")) {
+          return `${ASSET_BASE_PATH}${path}`;
+        }
+        return `${ASSET_BASE_PATH}/${path}`;
+      };
+
+
+      const LABEL_STYLES = {
+        MINE: {
+          backgroundColor: "rgba(30, 95, 55, 0.3)",
+          textColor: "#d9f99d",
+          borderColor: "rgba(22, 163, 74, 0.5)",
+        },
+        ALLY: {
+          backgroundColor: "rgba(40, 70, 150, 0.3)",
+          textColor: "#bae6fd",
+          borderColor: "rgba(37, 99, 235, 0.5)",
+        },
+        ENEMY: {
+          backgroundColor: "rgba(140, 40, 40, 0.3)",
+          textColor: "#fecdd3",
+          borderColor: "rgba(220, 38, 38, 0.5)",
+        },
+        NEUTRAL: {
+          backgroundColor: "rgba(70, 70, 70, 0.3)",
+          textColor: "#e5e7eb",
+          borderColor: "rgba(156, 163, 175, 0.5)",
+        },
+        DAYDREAMS: {
+          backgroundColor: "rgba(70, 70, 70, 0.8)",
+          textColor: "#fbbf24",
+          borderColor: "rgba(220, 220, 220, 0.5)",
+        },
+        CHEST: {
+          backgroundColor: "rgba(251, 191, 36, 0.3)",
+          textColor: "#fbbf24",
+          borderColor: "rgba(245, 158, 11, 0.5)",
+        },
+      };
+
+      const HOVER_STYLES = {
+        MINE: { backgroundColor: "rgba(22, 101, 52, 0.4)" },
+        ALLY: { backgroundColor: "rgba(30, 64, 175, 0.4)" },
+        ENEMY: { backgroundColor: "rgba(153, 27, 27, 0.4)" },
+        NEUTRAL: { backgroundColor: "rgba(90, 90, 90, 0.4)" },
+        DAYDREAMS: { backgroundColor: "rgba(90, 90, 90, 0.85)" },
+        CHEST: { backgroundColor: "rgba(245, 158, 11, 0.4)" },
+      };
+
+      const GUILD_COLOR_SETS = [
+        ["from-emerald-600/60", "to-emerald-800/60", "border-emerald-500/30"],
+        ["from-amber-600/60", "to-amber-800/60", "border-amber-500/30"],
+        ["from-violet-600/60", "to-violet-800/60", "border-violet-500/30"],
+        ["from-cyan-600/60", "to-cyan-800/60", "border-cyan-500/30"],
+        ["from-rose-600/60", "to-rose-800/60", "border-rose-500/30"],
+        ["from-blue-600/60", "to-blue-800/60", "border-blue-500/30"],
+        ["from-orange-600/60", "to-red-700/60", "border-orange-500/30"],
+      ];
+
+      const BuildingType = {
+        ResourceWood: 1,
+        ResourceStone: 2,
+        ResourceCoal: 3,
+        ResourceCopper: 4,
+        ResourceObsidian: 5,
+        ResourceSilver: 6,
+        ResourceIronwood: 7,
+        ResourceColdIron: 8,
+        ResourceGold: 9,
+        ResourceHartwood: 10,
+        ResourceDiamonds: 11,
+        ResourceSapphire: 12,
+        ResourceRuby: 13,
+        ResourceDeepCrystal: 14,
+        ResourceIgnium: 15,
+        ResourceEtherealSilica: 16,
+        ResourceTrueIce: 17,
+        ResourceTwilightQuartz: 18,
+        ResourceAlchemicalSilver: 19,
+        ResourceAdamantine: 20,
+        ResourceMithral: 21,
+        ResourceDragonhide: 22,
+        WorkersHut: 23,
+        Storehouse: 24,
+        ResourceWheat: 25,
+        ResourceFish: 26,
+        ResourceDonkey: 27,
+        ResourceLabor: 28,
+        ResourceCrossbowmanT1: 29,
+        ResourceCrossbowmanT2: 30,
+        ResourceCrossbowmanT3: 31,
+        ResourcePaladinT1: 32,
+        ResourcePaladinT2: 33,
+        ResourcePaladinT3: 34,
+        ResourceKnightT1: 35,
+        ResourceKnightT2: 36,
+        ResourceKnightT3: 37,
+        ResourceEssence: 38,
+      };
+
+      const StructureType = {
+        Village: 0,
+        Realm: 1,
+        Hyperstructure: 2,
+        Bank: 3,
+        FragmentMine: 4,
+      };
+
+      const TroopTier = {
+        T1: 1,
+        T2: 2,
+        T3: 3,
+      };
+
+      const ResourcesIds = {
+        Stone: 1,
+        Coal: 2,
+        Wood: 3,
+        Copper: 4,
+        Ironwood: 5,
+        Obsidian: 6,
+        Gold: 7,
+        Silver: 8,
+        Mithral: 9,
+        AlchemicalSilver: 10,
+        ColdIron: 11,
+        DeepCrystal: 12,
+        Ruby: 13,
+        Diamonds: 14,
+        Hartwood: 15,
+        Ignium: 16,
+        TwilightQuartz: 17,
+        TrueIce: 18,
+        Adamantine: 19,
+        Sapphire: 20,
+        EtherealSilica: 21,
+        Dragonhide: 22,
+        Labor: 23,
+        AncientFragment: 24,
+        Donkey: 25,
+        Knight: 26,
+        KnightT2: 27,
+        KnightT3: 28,
+        Crossbowman: 29,
+        CrossbowmanT2: 30,
+        CrossbowmanT3: 31,
+        Paladin: 32,
+        PaladinT2: 33,
+        PaladinT3: 34,
+        Wheat: 35,
+        Fish: 36,
+        Lords: 37,
+        Essence: 38,
+      };
+
+      const BuildingTypeToIcon = {
+        [BuildingType.ResourceWood]: "Wood",
+        [BuildingType.ResourceStone]: "Stone",
+        [BuildingType.ResourceCoal]: "Coal",
+        [BuildingType.ResourceCopper]: "Copper",
+        [BuildingType.ResourceObsidian]: "Obsidian",
+        [BuildingType.ResourceSilver]: "Silver",
+        [BuildingType.ResourceIronwood]: "Ironwood",
+        [BuildingType.ResourceColdIron]: "ColdIron",
+        [BuildingType.ResourceGold]: "Gold",
+        [BuildingType.ResourceHartwood]: "Hartwood",
+        [BuildingType.ResourceDiamonds]: "Diamonds",
+        [BuildingType.ResourceSapphire]: "Sapphire",
+        [BuildingType.ResourceRuby]: "Ruby",
+        [BuildingType.ResourceDeepCrystal]: "DeepCrystal",
+        [BuildingType.ResourceIgnium]: "Ignium",
+        [BuildingType.ResourceEtherealSilica]: "EtherealSilica",
+        [BuildingType.ResourceTrueIce]: "TrueIce",
+        [BuildingType.ResourceTwilightQuartz]: "TwilightQuartz",
+        [BuildingType.ResourceAlchemicalSilver]: "AlchemicalSilver",
+        [BuildingType.ResourceAdamantine]: "Adamantine",
+        [BuildingType.ResourceMithral]: "Mithral",
+        [BuildingType.ResourceDragonhide]: "Dragonhide",
+        [BuildingType.WorkersHut]: "House",
+        [BuildingType.Storehouse]: "Silo",
+        [BuildingType.ResourceWheat]: "Wheat",
+        [BuildingType.ResourceFish]: "Fish",
+        [BuildingType.ResourceDonkey]: "Donkey",
+        [BuildingType.ResourceLabor]: "Labor",
+        [BuildingType.ResourceCrossbowmanT1]: "Crossbowman",
+        [BuildingType.ResourceCrossbowmanT2]: "Crossbowman",
+        [BuildingType.ResourceCrossbowmanT3]: "Crossbowman",
+        [BuildingType.ResourcePaladinT1]: "Paladin",
+        [BuildingType.ResourcePaladinT2]: "Paladin",
+        [BuildingType.ResourcePaladinT3]: "Paladin",
+        [BuildingType.ResourceKnightT1]: "Knight",
+        [BuildingType.ResourceKnightT2]: "Knight",
+        [BuildingType.ResourceKnightT3]: "Knight",
+        [BuildingType.ResourceEssence]: "Essence",
+      };
+
+      function cleanText(text) {
+        if (!text) return "";
+        return text
+          .toString()
+          .split("")
+          .filter((char) => char.charCodeAt(0) !== 0)
+          .join("")
+          .trim();
+      }
+
+      function getGuildColorSet(guildName) {
+        const cleanedName = cleanText(guildName);
+        const firstChar = cleanedName.length > 0 ? cleanedName.charAt(0).toLowerCase() : "a";
+        const charCode = firstChar.charCodeAt(0);
+        let index = Math.floor((charCode - 97) / 4);
+        if (index < 0 || index >= GUILD_COLOR_SETS.length) {
+          index = GUILD_COLOR_SETS.length - 1;
+        }
+        return {
+          colorSet: GUILD_COLOR_SETS[index],
+          cleanedName,
+        };
+      }
+
+      function getTierStyle(tier) {
+        switch (tier) {
+          case 1:
+            return "bg-gradient-to-b from-blue-500/30 to-blue-500/10 border-blue-400/40 text-blue-300 shadow-blue-500/10";
+          case 2:
+            return "bg-gradient-to-b from-emerald-500/30 to-emerald-500/10 border-emerald-400/40 text-emerald-300 shadow-emerald-500/10";
+          case 3:
+            return "!bg-purple-600 !text-white !border-purple-400 animate-pulse";
+          default:
+            return "bg-gradient-to-b from-gold/30 to-gold/10 border-gold/40 text-gold shadow-gold/10";
+        }
+      }
+
+      function getTroopResourceIdFromCategory(category) {
+        if (!category) return null;
+        const lowered = category.toLowerCase();
+        if (lowered.includes("knight")) return ResourcesIds.Knight;
+        if (lowered.includes("crossbowman")) return ResourcesIds.Crossbowman;
+        if (lowered.includes("paladin")) return ResourcesIds.Paladin;
+        return null;
+      }
+
+      function getOwnershipStyle(isMine, isDaydreamsAgent) {
+        let styleKey = "ENEMY";
+        if (isDaydreamsAgent) {
+          styleKey = "DAYDREAMS";
+        } else if (isMine) {
+          styleKey = "MINE";
+        }
+        return {
+          default: LABEL_STYLES[styleKey],
+          hover: HOVER_STYLES[styleKey],
+        };
+      }
+
+      function createLabelBase(isMine, isDaydreamsAgent) {
+        const labelDiv = document.createElement("div");
+        labelDiv.classList.add(
+          "rounded-md",
+          "p-0.5",
+          "-translate-x-1/2",
+          "text-xxs",
+          "inline-flex",
+          "items-center",
+          "group",
+          "shadow-md",
+          "font-semibold",
+        );
+        const styles = getOwnershipStyle(isMine, isDaydreamsAgent);
+        labelDiv.style.setProperty("background-color", styles.default.backgroundColor, "important");
+        labelDiv.style.setProperty("border", `1px solid ${styles.default.borderColor}`, "important");
+        labelDiv.style.setProperty("color", styles.default.textColor, "important");
+        labelDiv.addEventListener("mouseenter", () => {
+          labelDiv.style.setProperty("background-color", styles.hover.backgroundColor, "important");
+        });
+        labelDiv.addEventListener("mouseleave", () => {
+          labelDiv.style.setProperty("background-color", styles.default.backgroundColor, "important");
+        });
+        labelDiv.addEventListener("contextmenu", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        });
+        return labelDiv;
+      }
+
+      function createContentContainer(cameraView) {
+        const wrapperContainer = document.createElement("div");
+        wrapperContainer.classList.add("transition-all", "duration-700", "ease-in-out", "overflow-hidden");
+        const contentContainer = document.createElement("div");
+        contentContainer.classList.add("flex", "flex-col", "w-max");
+        const spacerDiv = document.createElement("div");
+        spacerDiv.classList.add("w-2");
+        contentContainer.appendChild(spacerDiv);
+        const expandedClasses = ["max-w-[1000px]", "ml-2", "opacity-100"];
+        const collapsedClasses = ["max-w-0", "ml-0", "opacity-0"];
+        if (cameraView === CameraView.Far) {
+          wrapperContainer.classList.add(...collapsedClasses);
+        } else {
+          wrapperContainer.classList.add(...expandedClasses);
+        }
+        wrapperContainer.appendChild(contentContainer);
+        const result = contentContainer;
+        result.wrapper = wrapperContainer;
+        return result;
+      }
+
+      function createStaminaBar(currentStamina, maxStamina) {
+        const container = document.createElement("div");
+        container.style.display = "flex";
+        container.style.alignItems = "center";
+        container.style.gap = "4px";
+        container.style.fontSize = "10px";
+        container.setAttribute("data-component", "stamina-bar");
+
+        const icon = document.createElement("span");
+        icon.textContent = "⚡";
+        icon.style.color = "#facc15";
+        container.appendChild(icon);
+
+        const progressBar = document.createElement("div");
+        progressBar.style.position = "relative";
+        progressBar.style.backgroundColor = "#374151";
+        progressBar.style.borderRadius = "9999px";
+        progressBar.style.height = "8px";
+        progressBar.style.width = "80px";
+        progressBar.style.minWidth = "80px";
+        progressBar.style.maxWidth = "80px";
+        progressBar.style.overflow = "hidden";
+        progressBar.style.border = "1px solid rgba(255, 255, 255, 0.2)";
+        progressBar.setAttribute("data-role", "progress-container");
+
+        const progressFill = document.createElement("div");
+        progressFill.style.position = "absolute";
+        progressFill.style.top = "0";
+        progressFill.style.left = "0";
+        progressFill.style.height = "100%";
+        progressFill.style.borderRadius = "9999px";
+        progressFill.style.transition = "width 0.3s ease-in-out";
+        progressFill.setAttribute("data-role", "progress-fill");
+        const percentage = Math.max(0, Math.min(100, (currentStamina / maxStamina) * 100));
+        progressFill.style.width = `${percentage}%`;
+        if (percentage > 66) {
+          progressFill.style.backgroundColor = "#10b981";
+        } else if (percentage > 33) {
+          progressFill.style.backgroundColor = "#f59e0b";
+        } else {
+          progressFill.style.backgroundColor = "#ef4444";
+        }
+        progressBar.appendChild(progressFill);
+        container.appendChild(progressBar);
+
+        const text = document.createElement("span");
+        text.textContent = `${currentStamina}/${maxStamina}`;
+        text.style.color = "#ffffff";
+        text.style.fontFamily = "monospace";
+        text.style.fontSize = "10px";
+        text.style.fontWeight = "500";
+        text.setAttribute("data-role", "stamina-text");
+        container.appendChild(text);
+
+        return container;
+      }
+
+      function createTroopCountDisplay(count, troopType, tier) {
+        const container = document.createElement("div");
+        container.classList.add("flex", "items-center", "gap-2", "rounded", "px-1.5", "py-0.5", "bg-black/40", "text-xxs");
+        container.setAttribute("data-component", "troop-count");
+
+        const swordIcon = document.createElement("span");
+        swordIcon.textContent = "⚔️";
+        container.appendChild(swordIcon);
+
+        const resourceId = getTroopResourceIdFromCategory(troopType);
+        if (resourceId) {
+          const iconContainer = document.createElement("div");
+          iconContainer.classList.add("w-6", "h-6", "flex-shrink-0");
+          const img = document.createElement("img");
+          img.src = getAssetUrl(`/images/resources/${resourceId}.png`);
+          img.classList.add("w-full", "h-full", "object-contain");
+          iconContainer.appendChild(img);
+          container.appendChild(iconContainer);
+        }
+
+        const countSpan = document.createElement("span");
+        countSpan.textContent = count.toString();
+        countSpan.classList.add("font-semibold", "min-w-[1rem]", "text-center", "text-white");
+        countSpan.setAttribute("data-role", "count");
+        container.appendChild(countSpan);
+
+        const tierNumber = typeof tier === "string" ? parseInt(tier.replace("T", ""), 10) || 1 : tier;
+        const tierBadge = document.createElement("span");
+        tierBadge.textContent = `T${tierNumber}`;
+        tierBadge.classList.add("px-1", "py-0.5", "rounded", "text-[10px]", "font-bold", "border");
+        tierBadge.classList.add(...getTierStyle(tierNumber).split(" "));
+        container.appendChild(tierBadge);
+
+        return container;
+      }
+
+      function createGuardArmyDisplay(guardArmies) {
+        const container = document.createElement("div");
+        container.classList.add("flex", "flex-row", "gap-1", "text-xxs", "overflow-x-auto", "text-gray-400");
+        container.setAttribute("data-component", "guard-armies");
+
+        if (!guardArmies || guardArmies.length === 0) {
+          const noGuards = document.createElement("span");
+          noGuards.textContent = "No Guards";
+          noGuards.classList.add("italic");
+          container.appendChild(noGuards);
+          return container;
+        }
+
+        guardArmies.forEach((guard) => {
+          if (guard.count > 0) {
+            const guardDiv = document.createElement("div");
+            guardDiv.classList.add("flex", "items-center", "gap-2", "rounded", "px-1.5", "py-0.5", "bg-black/40");
+
+            const shieldIcon = document.createElement("span");
+            shieldIcon.textContent = "🛡️";
+            guardDiv.appendChild(shieldIcon);
+
+            const resourceId = getTroopResourceIdFromCategory(guard.category);
+            if (resourceId) {
+              const iconContainer = document.createElement("div");
+              iconContainer.classList.add("w-6", "h-6", "flex-shrink-0");
+              const img = document.createElement("img");
+              img.src = getAssetUrl(`/images/resources/${resourceId}.png`);
+              img.classList.add("w-full", "h-full", "object-contain");
+              iconContainer.appendChild(img);
+              guardDiv.appendChild(iconContainer);
+            }
+
+            const countSpan = document.createElement("span");
+            countSpan.textContent = guard.count.toString();
+            countSpan.classList.add("font-semibold", "min-w-[1rem]", "text-center");
+            guardDiv.appendChild(countSpan);
+
+            const tierBadge = document.createElement("span");
+            tierBadge.textContent = `T${guard.tier}`;
+            tierBadge.classList.add("px-1", "py-0.5", "rounded", "text-[10px]", "font-bold", "border");
+            tierBadge.classList.add(...getTierStyle(guard.tier).split(" "));
+            guardDiv.appendChild(tierBadge);
+
+            container.appendChild(guardDiv);
+          }
+        });
+
+        return container;
+      }
+
+      function createProductionDisplay(activeProductions) {
+        const container = document.createElement("div");
+        container.classList.add("flex", "flex-wrap", "items-center", "gap-2", "text-xxs", "py-1");
+        container.setAttribute("data-component", "productions");
+
+        if (!activeProductions || activeProductions.length === 0) {
+          const noProduction = document.createElement("span");
+          noProduction.textContent = "No Active Production";
+          noProduction.classList.add("text-gray-400", "italic");
+          container.appendChild(noProduction);
+          return container;
+        }
+
+        activeProductions.forEach((production) => {
+          const productionDiv = document.createElement("div");
+          productionDiv.classList.add("flex", "items-center", "gap-1", "bg-black/40", "rounded", "px-1.5", "py-0.5");
+
+          const resourceName = BuildingTypeToIcon[production.buildingType];
+          if (resourceName) {
+            const iconContainer = document.createElement("div");
+            iconContainer.classList.add("w-8", "h-8", "flex-shrink-0");
+            const img = document.createElement("img");
+            if (resourceName === "House") {
+              img.src = getAssetUrl("/images/buildings/thumb/house.png");
+            } else if (resourceName === "Silo") {
+              img.src = getAssetUrl("/images/buildings/thumb/silo.png");
+            } else {
+              const resourceId = ResourcesIds[resourceName];
+              if (resourceId) {
+                img.src = getAssetUrl(`/images/resources/${resourceId}.png`);
+              }
+            }
+            img.classList.add("w-full", "h-full", "object-contain");
+            iconContainer.appendChild(img);
+            productionDiv.appendChild(iconContainer);
+          }
+
+          const countSpan = document.createElement("span");
+          countSpan.textContent = `${production.buildingCount}`;
+          countSpan.classList.add("text-white", "font-semibold");
+          productionDiv.appendChild(countSpan);
+
+          container.appendChild(productionDiv);
+        });
+
+        return container;
+      }
+
+      function formatTime(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`;
+      }
+
+      function createBattleTimer(battleTimerLeft) {
+        const timerDiv = document.createElement("div");
+        timerDiv.classList.add(
+          "flex",
+          "items-center",
+          "gap-0.5",
+          "px-1.5",
+          "py-0.5",
+          "rounded",
+          "bg-red-900/40",
+          "border",
+          "border-red-500/30",
+        );
+        timerDiv.setAttribute("data-component", "battle-timer");
+
+        const timerIcon = document.createElement("span");
+        timerIcon.textContent = "⏱️";
+        timerIcon.classList.add("text-xs");
+        timerDiv.appendChild(timerIcon);
+
+        const timerText = document.createElement("span");
+        timerText.textContent = formatTime(battleTimerLeft);
+        timerText.classList.add("text-red-300", "font-mono", "text-xxs", "font-bold");
+        timerText.setAttribute("data-role", "timer-text");
+        timerDiv.appendChild(timerText);
+
+        return timerDiv;
+      }
+
+      function createRotatedArrow(degrees, colorClass) {
+        const arrowContainer = document.createElement("span");
+        arrowContainer.style.display = "inline-block";
+        arrowContainer.style.transform = `rotate(${degrees}deg)`;
+        arrowContainer.style.transformOrigin = "center";
+        arrowContainer.style.transition = "transform 0.3s ease";
+        arrowContainer.textContent = "→";
+        arrowContainer.classList.add(colorClass, "font-bold", "text-sm");
+        return arrowContainer;
+      }
+
+      function createDirectionIndicators(attackedFromDegrees, attackedTowardDegrees, battleTimerLeft) {
+        if (attackedFromDegrees === undefined && attackedTowardDegrees === undefined) {
+          return null;
+        }
+        const container = document.createElement("div");
+        container.classList.add("flex", "items-center", "justify-center", "gap-2", "text-xxs", "animate-fade-in");
+        container.setAttribute("data-component", "direction-indicators");
+
+        if (attackedTowardDegrees !== undefined) {
+          const attackDiv = document.createElement("div");
+          attackDiv.classList.add("flex", "items-center", "gap-0.5");
+          const attackIcon = document.createElement("span");
+          attackIcon.textContent = "⚔️";
+          attackIcon.classList.add("text-xs");
+          attackDiv.appendChild(attackIcon);
+          const attackArrow = createRotatedArrow(attackedTowardDegrees, "text-orange-500");
+          attackDiv.appendChild(attackArrow);
+          container.appendChild(attackDiv);
+        }
+
+        if (attackedFromDegrees !== undefined) {
+          const defenseDiv = document.createElement("div");
+          defenseDiv.classList.add("flex", "items-center", "gap-0.5");
+          const defenseIcon = document.createElement("span");
+          defenseIcon.textContent = "🛡️";
+          defenseIcon.classList.add("text-xs");
+          defenseDiv.appendChild(defenseIcon);
+          const defenseArrow = createRotatedArrow(attackedFromDegrees, "text-blue-500");
+          defenseDiv.appendChild(defenseArrow);
+          container.appendChild(defenseDiv);
+        }
+
+        if (battleTimerLeft !== undefined && battleTimerLeft > 0) {
+          const battleTimer = createBattleTimer(battleTimerLeft);
+          container.appendChild(battleTimer);
+        }
+
+        return container;
+      }
+
+      function getCharacterName() {
+        return "Agent of Daydreams";
+      }
+
+      function getIsBlitz() {
+        return false;
+      }
+
+      const STRUCTURE_ICONS = (isBlitz) => ({
+        STRUCTURES: {
+          [StructureType.Village]: "/images/labels/enemy_village.png",
+          [StructureType.Realm]: "/images/labels/enemy_realm.png",
+          [StructureType.Hyperstructure]: "/images/labels/hyperstructure.png",
+          [StructureType.Bank]: `/images/resources/${ResourcesIds.Lords}.png`,
+          [StructureType.FragmentMine]: isBlitz ? "/images/labels/essence_rift.png" : "/images/labels/fragment_mine.png",
+        },
+        MY_STRUCTURES: {
+          [StructureType.Village]: "/images/labels/village.png",
+          [StructureType.Realm]: "/images/labels/realm.png",
+        },
+        ALLY_STRUCTURES: {
+          [StructureType.Village]: "/images/labels/allies_village.png",
+          [StructureType.Realm]: "/images/labels/allies_realm.png",
+        },
+      });
+
+      function makePosition(col, row) {
+        return {
+          getNormalized() {
+            return { x: col, y: row };
+          },
+        };
+      }
+
+      function createOwnerDisplayElement(options) {
+        const { owner, isMine, isAlly, color, isDaydreamsAgent } = options;
+        const container = document.createElement("div");
+        container.classList.add("flex", "items-center", "truncate", "gap-1");
+        const displayName = owner.ownerName || "";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = displayName;
+        nameSpan.classList.add("font-medium");
+        let finalTextColor;
+        if (isDaydreamsAgent) {
+          finalTextColor = "#FFF5EA";
+        } else if (color) {
+          finalTextColor = color;
+        } else if (isMine === true) {
+          finalTextColor = "#d9f99d";
+        } else if (isAlly === true) {
+          finalTextColor = "#bae6fd";
+        } else {
+          finalTextColor = "#fecdd3";
+        }
+        nameSpan.style.setProperty("color", finalTextColor, "important");
+        container.appendChild(nameSpan);
+
+        if (owner.guildName) {
+          const { colorSet, cleanedName } = getGuildColorSet(owner.guildName);
+          const [fromColor, toColor, borderColor] = colorSet;
+          const guildBadge = document.createElement("span");
+          guildBadge.textContent = `⚔️ ${cleanedName || "Guild"}`;
+          guildBadge.classList.add(
+            "text-xxs",
+            "bg-gradient-to-r",
+            fromColor,
+            toColor,
+            "px-1.5",
+            "py-0.5",
+            "rounded-sm",
+            "ml-1.5",
+            "inline-block",
+            "border",
+            borderColor,
+            "font-semibold",
+            "shadow-sm",
+            "text-white",
+          );
+          container.appendChild(guildBadge);
+        }
+
+        return container;
+      }
+
+      function createArmyLabel(data, cameraView) {
+        const labelDiv = createLabelBase(data.isMine, data.isDaydreamsAgent);
+        const hasDirections = data.attackedFromDegrees !== undefined || data.attackedTowardDegrees !== undefined;
+        const isExpanded = cameraView !== CameraView.Close;
+
+        const img = document.createElement("img");
+        const armyIconPath = data.isDaydreamsAgent
+          ? "/images/logos/daydreams.png"
+          : `/images/labels/${data.isMine ? "army" : "enemy_army"}.png`;
+        img.src = getAssetUrl(armyIconPath);
+        img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
+        img.setAttribute("data-component", "army-icon");
+
+        const textContainer = createContentContainer(cameraView);
+
+        const ownerDisplay = createOwnerDisplayElement({
+          owner: data.owner,
+          isMine: data.isMine,
+          cameraView,
+          color: data.color,
+          isDaydreamsAgent: data.isDaydreamsAgent,
+        });
+        textContainer.appendChild(ownerDisplay);
+
+        if (data.isDaydreamsAgent) {
+          const line2 = document.createElement("strong");
+          line2.textContent = getCharacterName(data.tier, data.category, data.entityId) || "";
+          textContainer.appendChild(line2);
+        }
+
+        if (data.troopCount !== undefined) {
+          const troopCountDisplay = createTroopCountDisplay(data.troopCount, data.category, data.tier);
+          textContainer.appendChild(troopCountDisplay);
+        }
+
+        if (data.currentStamina !== undefined && data.maxStamina !== undefined && data.maxStamina > 0) {
+          const staminaBar = createStaminaBar(data.currentStamina, data.maxStamina);
+          textContainer.appendChild(staminaBar);
+        } else if (data.currentStamina !== undefined) {
+          const staminaInfo = document.createElement("div");
+          staminaInfo.classList.add("flex", "items-center", "text-xxs", "gap-1");
+          const staminaIcon = document.createElement("span");
+          staminaIcon.textContent = "⚡";
+          staminaIcon.classList.add("text-yellow-400");
+          staminaInfo.appendChild(staminaIcon);
+          const staminaText = document.createElement("span");
+          staminaText.textContent = `${data.currentStamina}`;
+          staminaText.classList.add("text-white", "font-mono");
+          staminaInfo.appendChild(staminaText);
+          textContainer.appendChild(staminaInfo);
+        }
+
+        if (hasDirections && isExpanded) {
+          labelDiv.classList.remove("inline-flex", "items-center");
+          labelDiv.classList.add("flex", "flex-col");
+          const contentRow = document.createElement("div");
+          contentRow.classList.add("flex", "items-center");
+          contentRow.appendChild(img);
+          contentRow.appendChild(textContainer.wrapper);
+          labelDiv.appendChild(contentRow);
+          const directionIndicators = createDirectionIndicators(
+            data.attackedFromDegrees,
+            data.attackedTowardDegrees,
+            data.battleTimerLeft,
+          );
+          if (directionIndicators) {
+            directionIndicators.classList.add("w-full", "mt-1", "px-2");
+            labelDiv.appendChild(directionIndicators);
+          }
+        } else {
+          labelDiv.appendChild(img);
+          labelDiv.appendChild(textContainer.wrapper);
+          if (hasDirections) {
+            const directionIndicators = createDirectionIndicators(
+              data.attackedFromDegrees,
+              data.attackedTowardDegrees,
+              data.battleTimerLeft,
+            );
+            if (directionIndicators) {
+              directionIndicators.classList.add("ml-2");
+              labelDiv.appendChild(directionIndicators);
+            }
+          }
+        }
+
+        return labelDiv;
+      }
+
+      function createStructureLabel(data, cameraView) {
+        const isBlitz = getIsBlitz();
+        const labelDiv = createLabelBase(data.isMine);
+        const hasDirections = data.attackedFromDegrees !== undefined || data.attackedTowardDegrees !== undefined;
+        const isExpanded = cameraView !== CameraView.Close;
+
+        const iconContainer = document.createElement("div");
+        iconContainer.classList.add("w-auto", "h-full", "flex-shrink-0");
+        let iconPath = STRUCTURE_ICONS(isBlitz).STRUCTURES[data.structureType];
+        if (data.structureType === StructureType.Realm || data.structureType === StructureType.Village) {
+          iconPath = data.isMine
+            ? STRUCTURE_ICONS(isBlitz).MY_STRUCTURES[data.structureType]
+            : STRUCTURE_ICONS(isBlitz).STRUCTURES[data.structureType];
+        }
+        const iconImg = document.createElement("img");
+        iconImg.src = getAssetUrl(iconPath);
+        iconImg.classList.add("w-10", "h-10", "object-contain");
+        iconImg.setAttribute("data-component", "structure-icon");
+        iconContainer.appendChild(iconImg);
+
+        const contentContainer = createContentContainer(cameraView);
+        const ownerText = createOwnerDisplayElement({
+          owner: data.owner,
+          isMine: data.isMine,
+          cameraView,
+        });
+        contentContainer.appendChild(ownerText);
+
+        if (data.guardArmies && data.guardArmies.length > 0) {
+          const guardArmiesDisplay = createGuardArmyDisplay(data.guardArmies);
+          contentContainer.appendChild(guardArmiesDisplay);
+        }
+
+        if (data.activeProductions && data.activeProductions.length > 0) {
+          const productionsDisplay = createProductionDisplay(data.activeProductions);
+          contentContainer.appendChild(productionsDisplay);
+        }
+
+        if (
+          data.hyperstructureRealmCount !== undefined &&
+          data.structureType === StructureType.Hyperstructure
+        ) {
+          const isOwned = data.owner && data.owner.address && data.owner.address !== 0n;
+          const realmCountDisplay = document.createElement("div");
+          realmCountDisplay.classList.add(
+            "flex",
+            "items-center",
+            "gap-1.5",
+            "mt-1",
+            "px-2",
+            "py-0.5",
+            "rounded",
+            "transition-all",
+            "duration-300",
+          );
+          if (isOwned) {
+            realmCountDisplay.classList.add(
+              "bg-order-brilliance/20",
+              "border",
+              "border-order-brilliance/30",
+              "animate-slowPulse",
+            );
+          } else {
+            realmCountDisplay.classList.add("bg-gray-700/20", "border", "border-gray-600/30", "border-dashed");
+          }
+          realmCountDisplay.setAttribute("data-component", "realm-count");
+
+          const vpIcon = document.createElement("span");
+          vpIcon.classList.add("text-xs");
+          if (isOwned) {
+            vpIcon.textContent = "⚡";
+            vpIcon.classList.add("text-order-brilliance");
+          } else {
+            vpIcon.textContent = "💤";
+            vpIcon.classList.add("text-gray-300");
+          }
+          realmCountDisplay.appendChild(vpIcon);
+
+          const realmCountText = document.createElement("span");
+          realmCountText.classList.add("font-bold", "text-xs");
+          if (isOwned) {
+            realmCountText.classList.add("text-order-brilliance", "text-shadow-glow-brilliance-xs");
+          } else {
+            realmCountText.classList.add("text-gray-300");
+          }
+          realmCountText.textContent = `${data.hyperstructureRealmCount}`;
+          realmCountDisplay.appendChild(realmCountText);
+
+          const vpLabel = document.createElement("span");
+          vpLabel.classList.add("text-xxs", "font-normal");
+          if (isOwned) {
+            vpLabel.classList.add("text-order-brilliance/80");
+            vpLabel.textContent = "VP/s";
+          } else {
+            vpLabel.classList.add("text-gray-300");
+            vpLabel.textContent = "VP/s (unclaimed)";
+          }
+          realmCountDisplay.appendChild(vpLabel);
+
+          contentContainer.appendChild(realmCountDisplay);
+        }
+
+        if (hasDirections && isExpanded) {
+          labelDiv.classList.remove("inline-flex", "items-center");
+          labelDiv.classList.add("flex", "flex-col");
+          const contentRow = document.createElement("div");
+          contentRow.classList.add("flex", "items-center");
+          contentRow.appendChild(iconContainer);
+          contentRow.appendChild(contentContainer.wrapper);
+          labelDiv.appendChild(contentRow);
+          const directionIndicators = createDirectionIndicators(
+            data.attackedFromDegrees,
+            data.attackedTowardDegrees,
+            data.battleTimerLeft,
+          );
+          if (directionIndicators) {
+            directionIndicators.classList.add("w-full", "mt-1", "px-2");
+            labelDiv.appendChild(directionIndicators);
+          }
+        } else {
+          labelDiv.appendChild(iconContainer);
+          labelDiv.appendChild(contentContainer.wrapper);
+          if (hasDirections) {
+            const directionIndicators = createDirectionIndicators(
+              data.attackedFromDegrees,
+              data.attackedTowardDegrees,
+              data.battleTimerLeft,
+            );
+            if (directionIndicators) {
+              directionIndicators.classList.add("ml-2");
+              labelDiv.appendChild(directionIndicators);
+            }
+          }
+        }
+
+        return labelDiv;
+      }
+
+      function createChestLabel(data, cameraView) {
+        const labelDiv = createLabelBase(false);
+        labelDiv.style.setProperty("color", LABEL_STYLES.CHEST.textColor, "important");
+        labelDiv.style.setProperty("background-color", LABEL_STYLES.CHEST.backgroundColor, "important");
+        labelDiv.style.setProperty("border-color", LABEL_STYLES.CHEST.borderColor, "important");
+        const img = document.createElement("img");
+        img.src = getAssetUrl("/images/labels/chest.png");
+        img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
+        img.setAttribute("data-component", "chest-icon");
+        labelDiv.appendChild(img);
+        const contentContainer = createContentContainer(cameraView);
+        const line1 = document.createElement("span");
+        line1.textContent = "Relic Crate";
+        line1.style.color = "inherit";
+        contentContainer.appendChild(line1);
+        labelDiv.appendChild(contentContainer.wrapper);
+        return labelDiv;
+      }
+
+      function createQuestLabel(data, cameraView) {
+        const labelDiv = createLabelBase(false);
+        labelDiv.style.setProperty("color", "#fbbf24", "important");
+        labelDiv.style.setProperty("background-color", "rgba(251, 191, 36, 0.3)", "important");
+        labelDiv.style.setProperty("border-color", "rgba(245, 158, 11, 0.5)", "important");
+        const img = document.createElement("img");
+        img.src = getAssetUrl("/images/labels/quest.png");
+        img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
+        img.setAttribute("data-component", "quest-icon");
+        labelDiv.appendChild(img);
+        const contentContainer = createContentContainer(cameraView);
+        const line1 = document.createElement("span");
+        line1.textContent = "Quest";
+        line1.style.color = "inherit";
+        contentContainer.appendChild(line1);
+        labelDiv.appendChild(contentContainer.wrapper);
+        return labelDiv;
+      }
+
+      function createSampleWrapper(title, cameraView) {
+        const wrapper = document.createElement("div");
+        wrapper.classList.add("space-y-3");
+        const heading = document.createElement("h3");
+        heading.classList.add("text-base", "font-semibold", "text-slate-300");
+        const viewLabel = Object.keys(CameraView).find((key) => CameraView[key] === cameraView);
+        heading.innerHTML = `${title} <span class="text-xs text-slate-500 uppercase tracking-wide">(${viewLabel} view)</span>`;
+        wrapper.appendChild(heading);
+        const labelContainer = document.createElement("div");
+        labelContainer.classList.add("label-wrapper");
+        wrapper.appendChild(labelContainer);
+        return { wrapper, labelContainer };
+      }
+
+      function renderArmySamples() {
+        const grid = document.getElementById("army-grid");
+        const samples = [
+          {
+            title: "Enemy army with battle timer",
+            cameraView: CameraView.Far,
+            data: {
+              entityId: 101,
+              hexCoords: makePosition(10, 20),
+              isMine: false,
+              isDaydreamsAgent: false,
+              owner: {
+                address: 123n,
+                ownerName: "Enemy Player",
+                guildName: "Red Legion",
+              },
+              category: "Crossbowman",
+              tier: "T3",
+              color: undefined,
+              troopCount: 250,
+              currentStamina: 48,
+              maxStamina: 120,
+              attackedFromDegrees: 315,
+              attackedTowardDegrees: 135,
+              battleTimerLeft: 165,
+            },
+          },
+          {
+            title: "My army (expanded)",
+            cameraView: CameraView.Medium,
+            data: {
+              entityId: 102,
+              hexCoords: makePosition(15, 25),
+              isMine: true,
+              isDaydreamsAgent: false,
+              owner: {
+                address: 456n,
+                ownerName: "My Army",
+                guildName: "Emerald Watch",
+              },
+              category: "Knight",
+              tier: "T2",
+              troopCount: 180,
+              currentStamina: 90,
+              maxStamina: 120,
+              attackedTowardDegrees: 90,
+            },
+          },
+          {
+            title: "Daydreams agent",
+            cameraView: CameraView.Medium,
+            data: {
+              entityId: 103,
+              hexCoords: makePosition(5, 7),
+              isMine: false,
+              isDaydreamsAgent: true,
+              owner: {
+                address: 789n,
+                ownerName: "Daydreams",
+                guildName: "",
+              },
+              category: "Paladin",
+              tier: TroopTier.T3,
+              color: "#fbbf24",
+              troopCount: 60,
+              currentStamina: 30,
+              maxStamina: 60,
+              attackedFromDegrees: 45,
+            },
+          },
+        ];
+
+        samples.forEach((sample) => {
+          const { wrapper, labelContainer } = createSampleWrapper(sample.title, sample.cameraView);
+          const label = createArmyLabel(sample.data, sample.cameraView);
+          labelContainer.appendChild(label);
+          grid.appendChild(wrapper);
+        });
+      }
+
+      function renderStructureSamples() {
+        const grid = document.getElementById("structure-grid");
+        const samples = [
+          {
+            title: "Enemy realm with guards",
+            cameraView: CameraView.Far,
+            data: {
+              entityId: 201,
+              hexCoords: makePosition(30, 18),
+              structureType: StructureType.Realm,
+              stage: 3,
+              initialized: true,
+              level: 5,
+              isMine: false,
+              hasWonder: false,
+              owner: {
+                address: 321n,
+                ownerName: "Enemy Realm",
+                guildName: "Violet Empire",
+              },
+              guardArmies: [
+                { slot: 1, category: "Knight", tier: 1, count: 50, stamina: 80 },
+              ],
+              attackedFromDegrees: 315,
+            },
+          },
+          {
+            title: "My realm with production",
+            cameraView: CameraView.Medium,
+            data: {
+              entityId: 202,
+              hexCoords: makePosition(12, 12),
+              structureType: StructureType.Realm,
+              stage: 4,
+              initialized: true,
+              level: 6,
+              isMine: true,
+              hasWonder: true,
+              owner: {
+                address: 654n,
+                ownerName: "My Realm",
+                guildName: "Emerald Watch",
+              },
+              guardArmies: [
+                { slot: 1, category: "Knight", tier: 2, count: 100, stamina: 90 },
+                { slot: 2, category: "Crossbowman", tier: 3, count: 75, stamina: 88 },
+              ],
+              activeProductions: [
+                { buildingCount: 3, buildingType: BuildingType.ResourceWood },
+                { buildingCount: 2, buildingType: BuildingType.ResourceStone },
+              ],
+              attackedTowardDegrees: 180,
+            },
+          },
+          {
+            title: "Hyperstructure (claimed)",
+            cameraView: CameraView.Medium,
+            data: {
+              entityId: 203,
+              hexCoords: makePosition(40, 40),
+              structureType: StructureType.Hyperstructure,
+              stage: 2,
+              initialized: true,
+              level: 2,
+              isMine: false,
+              hasWonder: false,
+              owner: {
+                address: 999n,
+                ownerName: "Alliance",
+                guildName: "Coalition",
+              },
+              hyperstructureRealmCount: 42,
+              guardArmies: [],
+              activeProductions: [],
+            },
+          },
+        ];
+
+        samples.forEach((sample) => {
+          const { wrapper, labelContainer } = createSampleWrapper(sample.title, sample.cameraView);
+          const label = createStructureLabel(sample.data, sample.cameraView);
+          labelContainer.appendChild(label);
+          grid.appendChild(wrapper);
+        });
+      }
+
+      function renderMiscSamples() {
+        const grid = document.getElementById("misc-grid");
+        const samples = [
+          {
+            title: "Relic chest",
+            cameraView: CameraView.Medium,
+            data: {
+              entityId: 301,
+              hexCoords: makePosition(5, 60),
+            },
+            renderer: createChestLabel,
+          },
+          {
+            title: "Quest objective",
+            cameraView: CameraView.Medium,
+            data: {
+              entityId: 302,
+              hexCoords: makePosition(6, 61),
+              questType: 1,
+              occupierId: 10,
+            },
+            renderer: createQuestLabel,
+          },
+        ];
+
+        samples.forEach((sample) => {
+          const { wrapper, labelContainer } = createSampleWrapper(sample.title, sample.cameraView);
+          const label = sample.renderer(sample.data, sample.cameraView);
+          labelContainer.appendChild(label);
+          grid.appendChild(wrapper);
+        });
+      }
+
+      function renderDirectionReference() {
+        const container = document.getElementById("direction-reference");
+        const entries = [
+          { label: "0° (East)", degrees: 0, color: "text-orange-500" },
+          { label: "45° (SE)", degrees: 45, color: "text-orange-500" },
+          { label: "90° (South)", degrees: 90, color: "text-orange-500" },
+          { label: "135° (SW)", degrees: 135, color: "text-blue-500" },
+          { label: "180° (West)", degrees: 180, color: "text-orange-500" },
+          { label: "225° (NW)", degrees: 225, color: "text-orange-500" },
+          { label: "270° (North)", degrees: 270, color: "text-blue-500" },
+          { label: "315° (NE)", degrees: 315, color: "text-blue-500" },
+        ];
+
+        entries.forEach((entry) => {
+          const card = document.createElement("div");
+          card.classList.add("bg-slate-800/60", "border", "border-slate-700/60", "rounded-lg", "py-4", "px-3", "text-center");
+          const label = document.createElement("p");
+          label.classList.add("text-sm", "text-slate-400", "mb-2");
+          label.textContent = entry.label;
+          const arrow = document.createElement("span");
+          arrow.classList.add("arrow-rotate", entry.color, "font-bold", "text-2xl", "inline-block");
+          arrow.style.transform = `rotate(${entry.degrees}deg)`;
+          arrow.textContent = "→";
+          card.appendChild(label);
+          card.appendChild(arrow);
+          container.appendChild(card);
+        });
+      }
+
+      renderArmySamples();
+      renderStructureSamples();
+      renderMiscSamples();
+      renderDirectionReference();
+    </script>
+  </body>
+</html>
