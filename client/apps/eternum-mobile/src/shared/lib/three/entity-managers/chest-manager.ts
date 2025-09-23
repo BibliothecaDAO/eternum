@@ -19,7 +19,7 @@ export class ChestManager extends EntityManager<ChestObject> {
 
   constructor(scene: THREE.Scene) {
     super(scene);
-    this.renderer = new BuildingTileRenderer(scene);
+    this.renderer = new BuildingTileRenderer(scene, true);
   }
 
   private createLabel(chest: ChestObject): void {
@@ -84,7 +84,7 @@ export class ChestManager extends EntityManager<ChestObject> {
 
     this.objects.set(object.id, object);
     this.createLabel(object);
-    this.renderer.addTileByIndex(object.col, object.row, BuildingTileIndex.Chest, true, true);
+    this.renderer.addTileByIndex(object.col, object.row, BuildingTileIndex.Chest, true);
   }
 
   public updateObject(object: ChestObject): void {
@@ -98,7 +98,7 @@ export class ChestManager extends EntityManager<ChestObject> {
       this.moveObject(object.id, object.col, object.row, 1000);
     } else {
       this.objects.set(object.id, object);
-      this.renderer.addTileByIndex(object.col, object.row, BuildingTileIndex.Chest, true, true);
+      this.renderer.addTileByIndex(object.col, object.row, BuildingTileIndex.Chest, true);
     }
   }
 
@@ -127,7 +127,7 @@ export class ChestManager extends EntityManager<ChestObject> {
       const updatedChest = { ...oldChest, col, row };
       this.objects.set(objectId, updatedChest);
 
-      this.renderer.addTileByIndex(col, row, BuildingTileIndex.Chest, true, true);
+      this.renderer.addTileByIndex(col, row, BuildingTileIndex.Chest, true);
 
       if (label) {
         const shouldBeVisible = this.isHexVisible(col, row);
@@ -159,7 +159,7 @@ export class ChestManager extends EntityManager<ChestObject> {
     const updatedChest = { ...chest, col: targetCol, row: targetRow };
     this.objects.set(objectId, updatedChest);
 
-    this.renderer.addTileByIndex(targetCol, targetRow, BuildingTileIndex.Chest, true, true);
+    this.renderer.addTileByIndex(targetCol, targetRow, BuildingTileIndex.Chest, true);
 
     const label = this.labels.get(objectId);
     if (label) {

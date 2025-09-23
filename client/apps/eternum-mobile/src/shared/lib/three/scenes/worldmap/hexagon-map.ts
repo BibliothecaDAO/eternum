@@ -74,6 +74,10 @@ export class HexagonMap {
   private chunkUpdateCount: number = 0;
   private GUIFolder: any;
 
+  // === INITIALIZATION STATE ===
+  private isInitialized: boolean = false;
+  private initializationPromise: Promise<void> | null = null;
+
   // === CONSTRUCTOR & INITIALIZATION ===
   constructor(
     scene: THREE.Scene,
@@ -95,20 +99,32 @@ export class HexagonMap {
     this.initializeGUI();
 
     this.initializeStaticAssets();
-    this.initializeMap();
+    this.initializationPromise = this.initializeMap();
   }
 
   private initializeManagers(): void {
     this.biomesManager = new BiomesManager(this.scene);
     this.highlightRenderer = new HighlightRenderer(this.scene);
+
+    // Connect the highlight renderer to the biomes manager for tile group access
+    this.highlightRenderer.setBiomesManager(this.biomesManager);
+
     this.armyManager = new ArmyManager(this.scene);
-    this.structureManager = new StructureManager(this.scene);
+    this.structureManager = new StructureManager(this.scene, () => {
+      // Refresh biome tiles when structures are updated
+      this.biomesManager.refreshTileVisibility();
+    });
     this.questManager = new QuestManager(this.scene);
     this.chestManager = new ChestManager(this.scene);
     this.relicEffectsManager = new RelicEffectsManager(this.fxManager);
 
     this.armyManager.setDependencies(this.dojo, this.fxManager, this.biomesManager.getExploredTiles());
     this.structureManager.setDependencies(this.dojo, this.biomesManager.getExploredTiles());
+
+    // Set up the callback for biomes manager to check for structures
+    this.biomesManager.setStructureExistsCallback((col: number, row: number) => {
+      return this.structureManager.getObjectsAtHex(col, row).length > 0;
+    });
 
     this.selectionManager = new SelectionManager(this.highlightRenderer);
     this.selectionManager.registerObjectRenderer("army", this.armyManager);
@@ -183,7 +199,8 @@ export class HexagonMap {
 
     await this.waitUntilMaterialsReady();
 
-    this.updateVisibleHexes(centerChunkX, centerChunkZ);
+    await this.updateVisibleHexes(centerChunkX, centerChunkZ);
+    this.isInitialized = true;
   }
 
   private async waitUntilMaterialsReady(): Promise<void> {
@@ -530,6 +547,7 @@ export class HexagonMap {
         break;
       case ActionType.Attack:
         console.log(`Attack action at (${col}, ${row})`);
+        this.handleAttackAction(actionPath, selectedObject.id);
         break;
       case ActionType.Help:
         console.log(`Help action at (${col}, ${row})`);
@@ -659,6 +677,14 @@ export class HexagonMap {
     });
   }
 
+  private handleAttackAction(actionPath: any[], selectedEntityId: number): void {
+    const selectedPath = actionPath.map((path) => path.hex);
+    const targetHex = selectedPath[selectedPath.length - 1];
+
+    // Trigger mobile attack drawer
+    this.store?.openAttackDrawer(selectedEntityId, { x: targetHex.col, y: targetHex.row });
+  }
+
   private handleHelpAction(actionPath: any[], selectedEntityId: number): void {
     const selectedPath = actionPath.map((path) => path.hex);
     const targetHex = selectedPath[selectedPath.length - 1];
@@ -735,6 +761,16 @@ export class HexagonMap {
     const maxRow = Math.max(...hexArray.map((h) => h.row));
 
     return { minCol, maxCol, minRow, maxRow };
+  }
+
+  public isReady(): boolean {
+    return this.isInitialized;
+  }
+
+  public async waitForInitialization(): Promise<void> {
+    if (this.initializationPromise) {
+      await this.initializationPromise;
+    }
   }
 
   public dispose(): void {
@@ -822,12 +858,7 @@ export class HexagonMap {
     this.currentAbortController = new AbortController();
     this.fetchedChunks.add(chunkKey);
 
-    const start = performance.now();
     try {
-      console.log(
-        `[HexagonMap] Fetching tile entities for chunk ${chunkKey} at (${startCol}, ${startRow}) with range ${range}`,
-      );
-
       await getMapFromTorii(
         this.dojo.network.toriiClient,
         this.dojo.network.contractComponents as any,
@@ -843,8 +874,6 @@ export class HexagonMap {
         console.error("Error fetching tile entities:", error);
       }
     } finally {
-      const end = performance.now();
-      console.log("[HexagonMap] Tile entities query completed in", end - start, "ms");
       this.currentAbortController = null;
     }
   }

@@ -9,8 +9,8 @@ export interface BuildingTilePosition extends TilePosition {
 }
 
 export class BuildingTileRenderer extends BaseTileRenderer<BuildingTileIndex> {
-  constructor(scene: THREE.Scene) {
-    super(scene, TILEMAP_CONFIGS.buildings);
+  constructor(scene: THREE.Scene, isOverlay: boolean = false) {
+    super(scene, TILEMAP_CONFIGS.buildings, isOverlay); // Buildings are base layer
   }
 
   protected configureSpriteScale(sprite: THREE.Sprite, tileId: BuildingTileIndex): void {
@@ -28,11 +28,12 @@ export class BuildingTileRenderer extends BaseTileRenderer<BuildingTileIndex> {
   ): void {
     void position; // Position is now handled by the group
     void row; // Not used in new implementation
+    void isOverlay; // Use class property instead
 
-    const yOffset = isOverlay ? 0.25 : 0.2;
+    const yOffset = this.isOverlay ? 0.25 : 0.2;
     const heightRatio = this.config.tileHeight / 312;
     const zAdjustment = HEX_SIZE * 0.825 * heightRatio;
-    sprite.position.set(0, yOffset, -zAdjustment * 1.075);
+    sprite.position.set(0, yOffset, -zAdjustment * 1.025);
   }
 
   protected async createTileMaterials(tilesPerRow: number, texture: THREE.Texture): Promise<void> {
@@ -56,13 +57,7 @@ export class BuildingTileRenderer extends BaseTileRenderer<BuildingTileIndex> {
     });
   }
 
-  private createTileSprite(
-    col: number,
-    row: number,
-    buildingType?: BuildingType,
-    isExplored: boolean = true,
-    isOverlay: boolean = false,
-  ): void {
+  private createTileSprite(col: number, row: number, buildingType?: BuildingType, isExplored: boolean = true): void {
     if (!isExplored || buildingType === undefined || buildingType === BuildingType.None) {
       return;
     }
@@ -71,7 +66,7 @@ export class BuildingTileRenderer extends BaseTileRenderer<BuildingTileIndex> {
     getWorldPositionForTile({ col, row }, false, this.tempVector3);
 
     const tileId = BuildingTypeToTileIndex[buildingType];
-    this.createSingleTileSprite(hexKey, tileId, this.tempVector3, row, isOverlay);
+    this.createSingleTileSprite(hexKey, tileId, this.tempVector3, row);
   }
 
   public addTile(col: number, row: number, buildingType?: BuildingType, isExplored: boolean = true): void {
@@ -81,16 +76,10 @@ export class BuildingTileRenderer extends BaseTileRenderer<BuildingTileIndex> {
       return;
     }
 
-    this.createTileSprite(col, row, buildingType, isExplored, true);
+    this.createTileSprite(col, row, buildingType, isExplored);
   }
 
-  public addTileByIndex(
-    col: number,
-    row: number,
-    tileIndex: BuildingTileIndex,
-    isExplored: boolean = true,
-    isOverlay: boolean = false,
-  ): void {
+  public addTileByIndex(col: number, row: number, tileIndex: BuildingTileIndex, isExplored: boolean = true): void {
     const hexKey = `${col},${row}`;
 
     if (this.sprites.has(hexKey) || !isExplored) {
@@ -98,7 +87,7 @@ export class BuildingTileRenderer extends BaseTileRenderer<BuildingTileIndex> {
     }
 
     getWorldPositionForTile({ col, row }, false, this.tempVector3);
-    this.createSingleTileSprite(hexKey, tileIndex, this.tempVector3, row, isOverlay);
+    this.createSingleTileSprite(hexKey, tileIndex, this.tempVector3, row);
   }
 
   public updateTilesForHexes(hexes: BuildingTilePosition[]): void {

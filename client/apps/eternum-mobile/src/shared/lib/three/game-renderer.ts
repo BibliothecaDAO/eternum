@@ -259,14 +259,29 @@ export class GameRenderer {
     this.sceneInstances.set(sceneId, sceneInstance);
   }
 
-  public moveCameraToStructure(structurePosition: { x: number; y: number }): void {
+  public async moveCameraToStructure(structurePosition: { x: number; y: number }): Promise<void> {
     const worldmapScene = this.sceneInstances.get("worldmap") as WorldmapScene;
     if (!worldmapScene) return;
+
+    // Wait for worldmap to be fully initialized before moving camera
+    await worldmapScene.waitForInitialization();
 
     const position = new Position(structurePosition);
     const normalized = position.getNormalized();
 
     worldmapScene.getHexagonMap().moveCameraToColRow(normalized.x, normalized.y, this.controls);
+  }
+
+  public isWorldmapReady(): boolean {
+    const worldmapScene = this.sceneInstances.get("worldmap") as WorldmapScene;
+    return worldmapScene?.isReady() ?? false;
+  }
+
+  public async waitForWorldmapInitialization(): Promise<void> {
+    const worldmapScene = this.sceneInstances.get("worldmap") as WorldmapScene;
+    if (worldmapScene) {
+      await worldmapScene.waitForInitialization();
+    }
   }
 
   public switchScene(sceneId: string): void {

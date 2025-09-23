@@ -201,9 +201,9 @@ export function createStaminaBar(currentStamina: number, maxStamina: number): HT
   progressBar.style.backgroundColor = "#374151";
   progressBar.style.borderRadius = "9999px";
   progressBar.style.height = "8px";
-  progressBar.style.width = "80px";
-  progressBar.style.minWidth = "80px";
-  progressBar.style.maxWidth = "80px";
+  progressBar.style.width = "30px";
+  progressBar.style.minWidth = "30px";
+  progressBar.style.maxWidth = "30px";
   progressBar.style.overflow = "hidden";
   progressBar.style.border = "1px solid rgba(255, 255, 255, 0.2)";
   progressBar.setAttribute("data-role", "progress-container");

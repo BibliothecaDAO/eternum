@@ -1,3 +1,4 @@
+import { AttackDrawerData } from "@/widgets/attack-drawer/model/types";
 import { ActorType, Direction, ID } from "@bibliothecadao/types";
 
 export interface DrawerSlice {
@@ -32,6 +33,10 @@ export interface DrawerSlice {
     allowBothDirections: boolean;
   };
 
+  // Attack drawer state
+  isAttackDrawerOpen: boolean;
+  attackDrawerData: AttackDrawerData;
+
   // Chest drawer actions
   toggleChestDrawer: () => void;
   setChestDrawer: (isOpen: boolean) => void;
@@ -55,6 +60,11 @@ export interface DrawerSlice {
   ) => void;
   closeTransferDrawer: () => void;
   setTransferDrawer: (isOpen: boolean) => void;
+
+  // Attack drawer actions
+  openAttackDrawer: (attackerEntityId: ID, targetHex: { x: number; y: number }) => void;
+  closeAttackDrawer: () => void;
+  setAttackDrawer: (isOpen: boolean) => void;
 }
 
 export const createDrawerSlice = (set: any) => ({
@@ -79,6 +89,13 @@ export const createDrawerSlice = (set: any) => ({
     selected: null,
     target: null,
     allowBothDirections: false,
+  },
+
+  // Initial attack drawer state
+  isAttackDrawerOpen: false,
+  attackDrawerData: {
+    attackerEntityId: null,
+    targetHex: null,
   },
 
   // Chest drawer actions
@@ -165,6 +182,33 @@ export const createDrawerSlice = (set: any) => ({
   setTransferDrawer: (isOpen: boolean) => {
     set({
       isTransferDrawerOpen: isOpen,
+    });
+  },
+
+  // Attack drawer actions
+  openAttackDrawer: (attackerEntityId: ID, targetHex: { x: number; y: number }) => {
+    set({
+      isAttackDrawerOpen: true,
+      attackDrawerData: {
+        attackerEntityId,
+        targetHex,
+      },
+    });
+  },
+
+  closeAttackDrawer: () => {
+    set({
+      isAttackDrawerOpen: false,
+      attackDrawerData: {
+        attackerEntityId: null,
+        targetHex: null,
+      },
+    });
+  },
+
+  setAttackDrawer: (isOpen: boolean) => {
+    set({
+      isAttackDrawerOpen: isOpen,
     });
   },
 });

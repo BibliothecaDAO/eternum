@@ -3,9 +3,9 @@ import {
   ActionPaths,
   ActionType,
   ArmyActionManager,
-  ArmySystemUpdate,
   configManager,
   ExplorerTroopsSystemUpdate,
+  ExplorerTroopsTileSystemUpdate,
   getBlockTimestamp,
   Position,
   StaminaManager,
@@ -454,7 +454,7 @@ export class ArmyManager extends EntityManager<ArmyObject> {
   }
 
   // Army-specific methods moved from HexagonMap
-  public async handleSystemUpdate(update: ArmySystemUpdate): Promise<void> {
+  public async handleSystemUpdate(update: ExplorerTroopsTileSystemUpdate): Promise<void> {
     const {
       hexCoords: { col, row },
       ownerAddress,

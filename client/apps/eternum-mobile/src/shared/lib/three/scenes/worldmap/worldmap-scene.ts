@@ -39,6 +39,16 @@ export class WorldmapScene extends BaseScene {
     return this.hexagonMap;
   }
 
+  public isReady(): boolean {
+    return this.hexagonMap?.isReady() ?? false;
+  }
+
+  public async waitForInitialization(): Promise<void> {
+    if (this.hexagonMap) {
+      await this.hexagonMap.waitForInitialization();
+    }
+  }
+
   public update(_camera: THREE.Camera): void {
     // Chunk loading is now handled by controls listener
   }
