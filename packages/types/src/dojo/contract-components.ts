@@ -1432,6 +1432,7 @@ export function defineContractComponents(world: World) {
             fee_amount: RecsType.BigInt,
             fee_token: RecsType.BigInt,
             fee_recipient: RecsType.BigInt,
+            entry_token_address: RecsType.BigInt,
             registration_count: RecsType.Number,
             registration_count_max: RecsType.Number,
             registration_start_at: RecsType.Number,
@@ -1620,6 +1621,7 @@ export function defineContractComponents(world: World) {
               "u128", // BlitzRegistrationConfig fee_amount
               "ContractAddress", // BlitzRegistrationConfig fee_token
               "ContractAddress", // BlitzRegistrationConfig fee_recipient
+              "ContractAddress", // BlitzRegistrationConfig entry_token_address
               "u16", // BlitzRegistrationConfig registration_count
               "u16", // BlitzRegistrationConfig registration_count_max
               "u32", // BlitzRegistrationConfig registration_start_at

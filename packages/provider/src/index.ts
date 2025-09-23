@@ -291,11 +291,11 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @returns Transaction receipt
    */
   public async blitz_realm_register(props: SystemProps.BlitzRealmRegisterProps) {
-    const { owner, signer, name } = props;
+    const {signer, name, tokenId } = props;
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-blitz_realm_systems`),
       entrypoint: "register",
-      calldata: [owner, name],
+      calldata: [name, tokenId],
     });
     return await this.promiseQueue.enqueue(call);
   }
@@ -2560,11 +2560,21 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_blitz_registration_config(props: SystemProps.SetBlitzRegistrationConfigProps) {
-    const { fee_token, fee_recipient, fee_amount, registration_count_max, registration_start_at, signer } = props;
+    const { fee_token, fee_recipient, fee_amount, registration_count_max, registration_start_at, entry_token_class_hash, entry_token_deploy_calldata, signer } = props;
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_blitz_registration_config",
-      calldata: [fee_token, fee_recipient, fee_amount, 0, registration_count_max, registration_start_at],
+      calldata: [
+        fee_token, 
+        fee_recipient, 
+        fee_amount, 
+        0, 
+        registration_count_max, 
+        registration_start_at,
+        entry_token_class_hash,
+        entry_token_deploy_calldata.length,
+        ...entry_token_deploy_calldata,
+      ],
     });
   }
 

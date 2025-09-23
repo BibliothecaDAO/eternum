@@ -26,8 +26,8 @@ export interface MintAndSettleTestRealmProps extends SystemSigner {
 }
 
 export interface BlitzRealmRegisterProps extends SystemSigner {
-  owner: BigNumberish;
   name: BigNumberish;
+  tokenId: BigNumberish;
 }
 
 export interface BlitzRealmMakeHyperstructuresProps extends SystemSigner {
@@ -666,6 +666,8 @@ export interface SetBlitzRegistrationConfigProps extends SystemSigner {
   fee_amount: BigNumberish;
   registration_count_max: BigNumberish;
   registration_start_at: BigNumberish;
+  entry_token_class_hash: BigNumberish;
+  entry_token_deploy_calldata: BigNumberish[];
 }
 export interface MintTestRealmProps extends SystemSigner {
   token_id: BigNumberish;

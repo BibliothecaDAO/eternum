@@ -606,10 +606,11 @@ export interface Config {
     registration: {
       fee_token: string;
       fee_recipient: string;
-      fee_amount: number;
+      fee_amount: bigint;
       registration_count_max: number;
       registration_delay_seconds: number;
       registration_period_seconds: number;
+      entry_token_class_hash: string;
     };
   };
 

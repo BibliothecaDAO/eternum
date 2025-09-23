@@ -667,7 +667,7 @@ export const BlitzOnboarding = () => {
   // Registration handler
   const handleRegister = async () => {
     if (!account?.address) return;
-    await blitz_realm_register({ owner: account.address, signer: account, name: addressNameFelt });
+    await blitz_realm_register({ signer: account, name: addressNameFelt, tokenId: 0 });
   };
 
   const handleMakeHyperstructures = async () => {
