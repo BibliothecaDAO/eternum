@@ -161,17 +161,16 @@ pub mod prize_distribution_systems {
             );
 
             for player in players_list {
-                // ensure that the list is ordered based on points from first to last
+                // ensure that the list is ordered based on points from first to last (descending order)
                 let mut player_points: PlayerRegisteredPoints = world.read_model(player);
                 assert!(player_points.registered_points > 0, "Eternum: Player {:?} has no points", player);
                 assert!(
-                    player_points.registered_points >= trial.last_player_points,
-                    "Eternum: Players list not
-                ordered by points",
+                    trial.last_player_points == 0 || (trial.last_player_points >= player_points.registered_points),
+                    "Eternum: Players list not ordered by points",
                 );
 
                 // accumulate total points and determine rank
-                if player_points.registered_points > trial.last_player_points {
+                if trial.last_player_points == 0 || (trial.last_player_points > player_points.registered_points) {
                     trial.last_rank += 1;
                 }
                 trial.last_player_points = player_points.registered_points;
