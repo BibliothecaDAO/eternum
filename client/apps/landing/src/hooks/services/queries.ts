@@ -566,11 +566,17 @@ FROM transactions;`,
         AND t.metadata != ''
     )
     SELECT DISTINCT
-      json_extract(attr.value, '$.trait_type') AS trait_type,
+      COALESCE(
+        json_extract(attr.value, '$.trait_type'),
+        json_extract(attr.value, '$.trait')
+      ) AS trait_type,
       json_extract(attr.value, '$.value') AS trait_value
     FROM traits_extracted t,
          json_each(json_extract(t.metadata, '$.attributes')) AS attr
-    WHERE json_extract(attr.value, '$.trait_type') IS NOT NULL
+    WHERE COALESCE(
+            json_extract(attr.value, '$.trait_type'),
+            json_extract(attr.value, '$.trait')
+          ) IS NOT NULL
       AND json_extract(attr.value, '$.value') IS NOT NULL
     ORDER BY trait_type, trait_value
   `,

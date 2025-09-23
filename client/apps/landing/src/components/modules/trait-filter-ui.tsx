@@ -16,6 +16,8 @@ interface TraitFilterUIProps {
 }
 
 const FILTERABLE_TRAITS = [
+  "Game Over",
+  "Expired",
   "Resource",
   "Epoch",
   "Epoch Item",
