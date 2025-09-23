@@ -106,20 +106,17 @@ function Index() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
-      <section className="relative h-[60vh] min-h-[500px] flex items-center justify-center pb-16">
+      <section className="relative h-[70vh] min-h-[600px] flex items-center justify-center pb-16 pt-8">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: "url('/images/covers/01.png')" }}
         >
           <div className="absolute inset-0 bg-black/50" />
         </div>
-        <div className="relative z-10 text-center px-4">
+        <div className="relative z-10 text-center px-4 w-full max-w-screen-lg">
           <h1 className="text-gold fill-gold">
-            <EternumWordsLogo className="mx-auto w-60 fill-current stroke-current sm:w-72 lg:w-96 mb-16" />
+            <EternumWordsLogo className="mx-auto w-48 fill-current stroke-current sm:w-60 md:w-72 lg:w-96 mb-8 sm:mb-12 lg:mb-16" />
           </h1>
-          <p className="text-xl md:text-2xl mb-8 max-w-2xl mx-auto">
-            Explore, conquer, and build your legacy in Realms: Blitz
-          </p>
           <GamePhaseBanner status={gameStatus} isLoading={isGameStatusLoading} />
         </div>
       </section>
@@ -234,9 +231,9 @@ const GamePhaseBanner = memo(function GamePhaseBanner({
   }, []);
 
   const phaseLabelMap: Record<GameStatus["currentPhase"], string> = {
-    NO_GAME: "No Game Scheduled",
-    REGISTRATION: "Registration Open",
-    GAME_ACTIVE: "Game In Progress",
+    NO_GAME: "No Realms: Blitz Game Scheduled",
+    REGISTRATION: "Realms: Blitz Registration Open",
+    GAME_ACTIVE: "Realms: Blitz Game In Progress",
   };
 
   const currentPhaseLabel = phaseLabelMap[status.currentPhase];
