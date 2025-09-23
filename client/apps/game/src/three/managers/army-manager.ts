@@ -36,6 +36,7 @@ interface PendingExplorerTroopsUpdate {
   ownerName: string;
   timestamp: number; // When this update was received
   updateTick: number; // Game tick when this update occurred
+  ownerStructureId?: ID | null;
   attackedFromDegrees?: number;
   attackedTowardDegrees?: number;
   battleCooldownEnd?: number;
@@ -46,6 +47,7 @@ interface AddArmyParams {
   entityId: ID;
   hexCoords: Position;
   owner: { address: bigint | undefined; ownerName: string; guildName: string };
+  owningStructureId?: ID | null;
   category: TroopType;
   tier: TroopTier;
   isDaydreamsAgent: boolean;
@@ -297,6 +299,7 @@ export class ArmyManager {
           ownerName,
           guildName,
         },
+        owningStructureId: update.ownerStructureId,
         category: troopType,
         tier: troopTier,
         isDaydreamsAgent: update.isDaydreamsAgent,
@@ -454,6 +457,7 @@ export class ArmyManager {
     let finalOwnerAddress = params.owner.address;
     let finalOwnerName = params.owner.ownerName;
     let finalGuildName = params.owner.guildName;
+    let finalOwningStructureId = params.owningStructureId ?? null;
 
     let finalBattleCooldownEnd = params.battleCooldownEnd;
     let finalBattleTimerLeft = getBattleTimerLeft(params.battleCooldownEnd);
@@ -544,6 +548,9 @@ export class ArmyManager {
         finalOwnerName = pendingUpdate.ownerName;
         finalBattleCooldownEnd = pendingUpdate.battleCooldownEnd;
         finalBattleTimerLeft = pendingUpdate.battleTimerLeft;
+        if (pendingUpdate.ownerStructureId !== undefined && pendingUpdate.ownerStructureId !== null) {
+          finalOwningStructureId = pendingUpdate.ownerStructureId;
+        }
 
         // Clear the pending update
         this.pendingExplorerTroopsUpdate.delete(params.entityId);
@@ -567,6 +574,7 @@ export class ArmyManager {
       matrixIndex: this.armies.size - 1,
       hexCoords: params.hexCoords,
       isMine,
+      owningStructureId: finalOwningStructureId,
       owner: {
         address: finalOwnerAddress || 0n,
         ownerName: finalOwnerName,
@@ -1028,6 +1036,7 @@ ${
       // Only store if this is newer than the existing pending update
       if (!existingPending || currentTick >= existingPending.updateTick) {
         console.log(`[PENDING LABEL UPDATE] Storing pending update for army ${update.entityId} (tick: ${currentTick})`);
+        const ownerStructureId = (update as { ownerStructureId?: ID | null }).ownerStructureId ?? null;
         this.pendingExplorerTroopsUpdate.set(update.entityId, {
           troopCount: update.troopCount,
           onChainStamina: update.onChainStamina,
@@ -1035,6 +1044,7 @@ ${
           ownerName: update.ownerName,
           timestamp: currentTime,
           updateTick: currentTick,
+          ownerStructureId,
           // Note: ExplorerTroopsSystemUpdate doesn't have battle degrees data
           // Degrees would need to come from tile updates
           attackedFromDegrees: undefined,
@@ -1090,6 +1100,10 @@ ${
     army.owner.ownerName = update.ownerName;
     army.battleCooldownEnd = update.battleCooldownEnd;
     army.battleTimerLeft = getBattleTimerLeft(update.battleCooldownEnd);
+    const ownerStructureId = (update as { ownerStructureId?: ID | null }).ownerStructureId ?? null;
+    if (ownerStructureId) {
+      army.owningStructureId = ownerStructureId;
+    }
 
     // Update the label if it exists
     const label = this.entityIdLabels.get(update.entityId);

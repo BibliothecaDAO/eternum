@@ -115,6 +115,8 @@ export default class WorldmapScene extends HexagonScene {
 
   private selectedHexManager: SelectedHexManager;
   private selectionPulseManager: SelectionPulseManager;
+  private structurePulseColorCache: Map<string, { base: Color; pulse: Color }> = new Map();
+  private armyStructureOwners: Map<ID, ID> = new Map();
   private minimap!: Minimap;
   private previouslyHoveredHex: HexPosition | null = null;
   private cachedMatrices: Map<string, Map<string, { matrices: InstancedBufferAttribute; count: number }>> = new Map();
@@ -888,6 +890,12 @@ export default class WorldmapScene extends HexagonScene {
         new Color(1.0, 0.9, 0.4), // Gold pulse
       );
     }
+
+    const extraHexes: HexPosition[] = [];
+    if (hexCoords) {
+      extraHexes.push(hexCoords);
+    }
+    this.updateStructureOwnershipPulses(selectedEntityId, extraHexes);
   }
 
   private onArmySelection(selectedEntityId: ID, playerAddress: ContractAddress) {
@@ -941,6 +949,9 @@ export default class WorldmapScene extends HexagonScene {
     this.highlightHexManager.highlightHexes(highlightedHexes);
 
     // Show selection pulse for the selected army
+    const selectedArmyData = this.armyManager
+      .getArmies()
+      .find((army) => Number(army.entityId) === Number(selectedEntityId));
     const armyPosition = this.armiesPositions.get(selectedEntityId);
     if (armyPosition) {
       const worldPos = getWorldPositionForHex(armyPosition);
@@ -953,6 +964,16 @@ export default class WorldmapScene extends HexagonScene {
     } else {
       console.warn(`[DEBUG] No army position found for ${selectedEntityId} in armiesPositions map`);
     }
+
+    const extraHexes: HexPosition[] = [];
+    if (armyPosition) {
+      extraHexes.push(armyPosition);
+    }
+
+    const owningStructureId =
+      selectedArmyData?.owningStructureId ?? this.armyStructureOwners.get(selectedEntityId) ?? null;
+
+    this.updateStructureOwnershipPulses(owningStructureId ?? undefined, extraHexes);
   }
 
   // handle quest selection
@@ -999,10 +1020,92 @@ export default class WorldmapScene extends HexagonScene {
     this.state.updateEntityActionActionPaths(new Map());
     this.state.updateEntityActionSelectedEntityId(null);
     this.selectionPulseManager.hideSelection(); // Hide selection pulse
+    this.selectionPulseManager.clearOwnershipPulses();
     this.armyManager.addLabelsToScene();
     this.structureManager.showLabels();
     this.questManager.addLabelsToScene();
     this.chestManager.addLabelsToScene();
+  }
+
+  private updateStructureOwnershipPulses(structureId: ID | undefined, extraHexes: HexPosition[] = []) {
+    if (structureId === undefined || structureId === null) {
+      this.selectionPulseManager.clearOwnershipPulses();
+      return;
+    }
+
+    const colors = this.getStructurePulseColors(structureId);
+    const positions: Array<{ x: number; z: number }> = [];
+    const seenHexes = new Set<string>();
+
+    const addHex = (hex: HexPosition | null | undefined) => {
+      if (!hex) return;
+      const key = `${hex.col},${hex.row}`;
+      if (seenHexes.has(key)) {
+        return;
+      }
+      seenHexes.add(key);
+      const worldPos = getWorldPositionForHex(hex);
+      positions.push({ x: worldPos.x, z: worldPos.z });
+    };
+
+    addHex(this.getStructureHexPosition(structureId));
+
+    this.armyManager.getArmies().forEach((army) => {
+      if (army.owningStructureId === structureId) {
+        const normalized = army.hexCoords.getNormalized();
+        addHex({ col: normalized.x, row: normalized.y });
+      }
+    });
+
+    this.armyStructureOwners.forEach((ownerStructureId, armyId) => {
+      if (ownerStructureId === structureId) {
+        addHex(this.armiesPositions.get(armyId));
+      }
+    });
+
+    extraHexes.forEach((hex) => addHex(hex));
+
+    if (positions.length === 0) {
+      this.selectionPulseManager.clearOwnershipPulses();
+      return;
+    }
+
+    this.selectionPulseManager.showOwnershipPulses(positions, colors.base, colors.pulse);
+  }
+
+  private getStructurePulseColors(structureId: ID) {
+    const key = structureId.toString();
+    const cached = this.structurePulseColorCache.get(key);
+    if (cached) {
+      return cached;
+    }
+
+    const numericId = Number(structureId);
+    const hue = ((numericId % 360) + 360) % 360 / 360;
+    const base = new Color().setHSL(hue, 0.65, 0.4);
+    const pulse = new Color().setHSL(hue, 0.65, 0.6);
+    const colors = { base, pulse };
+    this.structurePulseColorCache.set(key, colors);
+    return colors;
+  }
+
+  private getStructureHexPosition(structureId: ID): HexPosition | null {
+    const cached = this.structuresPositions.get(structureId);
+    if (cached) {
+      return cached;
+    }
+
+    for (const [col, rowMap] of this.structureHexes) {
+      for (const [row, info] of rowMap) {
+        if (info.id === structureId) {
+          const hex = { col, row };
+          this.structuresPositions.set(structureId, hex);
+          return hex;
+        }
+      }
+    }
+
+    return null;
   }
 
   setup() {
@@ -1064,6 +1167,8 @@ export default class WorldmapScene extends HexagonScene {
     this.chestManager.removeLabelsFromScene();
     console.debug("[WorldMap] Removing quest labels from scene");
 
+    this.armyStructureOwners.clear();
+
     // Clean up wheel event listener
     if (this.wheelHandler) {
       const canvas = document.getElementById("main-canvas");
@@ -1084,6 +1189,7 @@ export default class WorldmapScene extends HexagonScene {
       this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
       this.armiesPositions.delete(entityId);
     }
+    this.armyStructureOwners.delete(entityId);
   }
 
   public deleteChest(entityId: ID) {
@@ -1099,16 +1205,25 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   // used to track the position of the armies on the map
-  public updateArmyHexes(update: { entityId: ID; hexCoords: HexPosition; ownerAddress?: bigint | undefined }) {
+  public updateArmyHexes(
+    update: { entityId: ID; hexCoords: HexPosition; ownerAddress?: bigint | undefined; ownerStructureId?: ID | null },
+  ) {
     const {
       hexCoords: { col, row },
       ownerAddress,
       entityId,
+      ownerStructureId,
     } = update;
 
     if (ownerAddress === undefined) {
       console.warn(`[DEBUG] Army ${entityId} has undefined owner address, skipping update`);
       return;
+    }
+
+    if (ownerStructureId !== undefined && ownerStructureId !== null && ownerStructureId !== 0) {
+      this.armyStructureOwners.set(entityId, ownerStructureId);
+    } else {
+      this.armyStructureOwners.delete(entityId);
     }
 
     // Handle the case where we receive an update with 0n owner for an existing army

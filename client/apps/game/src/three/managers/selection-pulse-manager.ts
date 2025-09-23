@@ -9,6 +9,7 @@ import { selectionPulseMaterial, updateSelectionPulseMaterial } from "@/three/sh
 export class SelectionPulseManager {
   private scene: THREE.Scene;
   private pulseMesh: THREE.Mesh | null = null;
+  private ownershipPulseMeshes: THREE.Mesh[] = [];
   private isVisible = false;
   private animationId: number | null = null;
   private lastTime = 0;
@@ -41,8 +42,13 @@ export class SelectionPulseManager {
       const deltaTime = (currentTime - this.lastTime) * 0.001; // Convert to seconds
       this.lastTime = currentTime;
 
-      if (this.isVisible && deltaTime > 0) {
+      if (deltaTime > 0) {
         updateSelectionPulseMaterial(deltaTime);
+        this.ownershipPulseMeshes.forEach((mesh) => {
+          if (!mesh.visible) return;
+          const material = mesh.material as THREE.ShaderMaterial;
+          material.uniforms.time.value += deltaTime;
+        });
       }
 
       this.animationId = requestAnimationFrame(animate);
@@ -76,6 +82,55 @@ export class SelectionPulseManager {
     this.pulseMesh.visible = false;
     this.isVisible = false;
     this.selectedEntityId = null;
+  }
+
+  /**
+   * Show ownership pulses for a set of hex coordinates using provided colors
+   */
+  public showOwnershipPulses(
+    positions: Array<{ x: number; z: number }>,
+    baseColor: THREE.Color,
+    pulseColor: THREE.Color,
+  ): void {
+    // Lazy-create ownership meshes up to required count
+    positions.forEach((pos, index) => {
+      let mesh = this.ownershipPulseMeshes[index];
+      if (!mesh) {
+        const hexShape = createHexagonShape(HEX_SIZE * 1.1);
+        const geometry = new THREE.ShapeGeometry(hexShape);
+        mesh = new THREE.Mesh(geometry, selectionPulseMaterial.clone());
+        mesh.position.y = 0.5;
+        mesh.rotation.x = -Math.PI / 2;
+        mesh.renderOrder = 99; // Slightly below primary pulse so focus pulse stays on top
+        mesh.raycast = () => {};
+        this.scene.add(mesh);
+        this.ownershipPulseMeshes[index] = mesh;
+      }
+
+      mesh.visible = true;
+      mesh.position.set(pos.x, 0.5, pos.z);
+      const uniforms = (mesh.material as THREE.ShaderMaterial).uniforms;
+      uniforms.color.value.copy(baseColor);
+      uniforms.pulseColor.value.copy(pulseColor);
+      if (uniforms.time) {
+        uniforms.time.value = 0;
+      }
+    });
+
+    // Hide unused meshes
+    for (let i = positions.length; i < this.ownershipPulseMeshes.length; i++) {
+      const mesh = this.ownershipPulseMeshes[i];
+      mesh.visible = false;
+    }
+  }
+
+  /**
+   * Clear all ownership pulses
+   */
+  public clearOwnershipPulses(): void {
+    this.ownershipPulseMeshes.forEach((mesh) => {
+      mesh.visible = false;
+    });
   }
 
   /**
@@ -129,6 +184,13 @@ export class SelectionPulseManager {
       this.pulseMesh.geometry.dispose();
       this.pulseMesh = null;
     }
+
+    this.ownershipPulseMeshes.forEach((mesh) => {
+      this.scene.remove(mesh);
+      mesh.geometry.dispose();
+      (mesh.material as THREE.ShaderMaterial).dispose();
+    });
+    this.ownershipPulseMeshes = [];
 
     this.isVisible = false;
     this.selectedEntityId = null;
