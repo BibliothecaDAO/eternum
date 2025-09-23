@@ -4,6 +4,10 @@ import { RealmMetadata } from "@/types";
 import { fetchSQL, gameClientFetch } from "./apiClient";
 import { QUERIES } from "./queries";
 
+const LEGACY_TRAIT_KEY_COLLECTIONS = new Set<string>([
+  "0x36017e69d21d6d8c13e266eabb73ef1f1d02722d86bdcabe5f168f8e549d3cd",
+]);
+
 export interface ActiveMarketOrdersTotal {
   active_order_count: number;
   open_orders_total_wei: bigint | null; // SUM can return null if there are no rows
@@ -118,6 +122,10 @@ export async function fetchAllCollectionTokens(
   }
 
   const { ownerAddress, limit, offset, traitFilters = {}, sortBy = "listed_first", listedOnly = false } = options;
+  const normalizedContractAddress = trimAddress(contractAddress)?.toLowerCase();
+  const useLegacyTraitKey = normalizedContractAddress
+    ? LEGACY_TRAIT_KEY_COLLECTIONS.has(normalizedContractAddress)
+    : false;
 
   // Build trait filter clauses using simple JSON string matching
   let traitFilterClauses = "";
@@ -134,8 +142,8 @@ export async function fetchAllCollectionTokens(
             const escapedTraitType = traitType.replace(/'/g, "''");
             const escapedValue = value.replace(/'/g, "''");
 
-            // Match the pattern {"trait_type":"X","value":"Y"} to ensure they're in the same attribute
-            return `t.metadata LIKE '%{"trait_type":"${escapedTraitType}","value":"${escapedValue}"}%'`;
+            const traitKey = useLegacyTraitKey ? "trait" : "trait_type";
+            return `t.metadata LIKE '%{"${traitKey}":"${escapedTraitType}","value":"${escapedValue}"}%'`;
           })
           .join(" OR ");
 
@@ -205,7 +213,7 @@ export async function fetchAllCollectionTokens(
     best_price_hex: item.price_hex ? BigInt(item.price_hex) : null,
     token_owner: item.token_owner ?? null,
     order_owner: item.order_owner ?? null,
-    metadata: item.metadata ? JSON.parse(item.metadata) : null,
+    metadata: normalizeMetadata(item.metadata),
     contract_address: contractAddress,
     is_listed: Boolean(item.is_listed),
   }));
@@ -238,7 +246,7 @@ export async function fetchSingleCollectionToken(
   return {
     ...item,
     token_id: parseInt(item.token_id),
-    metadata: item.metadata ? JSON.parse(item.metadata) : null,
+    metadata: normalizeMetadata(item.metadata),
     best_price_hex: item.price_hex ? BigInt(item.price_hex) : null,
     is_listed: Boolean(item.is_listed),
   };
@@ -258,7 +266,7 @@ export async function fetchSeasonPassRealmsByAddress(
   const rawData = await fetchSQL<any[]>(query);
   return rawData.map((item) => ({
     ...item,
-    metadata: item.metadata ? JSON.parse(item.metadata) : null,
+    metadata: normalizeMetadata(item.metadata),
   }));
 }
 
@@ -284,7 +292,7 @@ interface RawTokenBalanceWithMetadata {
   symbol?: string;
   expiration?: number;
   best_price_hex?: string; // Raw hex string for bigint
-  metadata?: string; // Raw JSON string
+  metadata?: string | RealmMetadata; // Raw JSON string or parsed object
   order_id?: string;
 }
 
@@ -332,7 +340,7 @@ export async function fetchTokenBalancesWithMetadata(
     symbol: item.symbol ?? null,
     expiration: item.expiration ?? null,
     best_price_hex: item.best_price_hex ? BigInt(item.best_price_hex) : null,
-    metadata: item.metadata ? JSON.parse(item.metadata) : null,
+    metadata: normalizeMetadata(item.metadata),
     order_id: item.order_id ?? null,
   }));
 }
@@ -512,4 +520,23 @@ export async function fetchCollectibleClaimed(
     .replace("{minTimestamp}", `'${formattedTimestamp}'`);
 
   return await gameClientFetch<CollectibleClaimed[]>(query);
+}
+function normalizeMetadata(rawMetadata: string | RealmMetadata | null | undefined): RealmMetadata | null {
+  if (!rawMetadata) return null;
+
+  try {
+    const metadataObj = typeof rawMetadata === "string" ? JSON.parse(rawMetadata) : rawMetadata;
+    if (metadataObj && Array.isArray(metadataObj.attributes)) {
+      metadataObj.attributes = metadataObj.attributes.map((attribute: any) => {
+        if (attribute && attribute.trait && !attribute.trait_type) {
+          return { ...attribute, trait_type: attribute.trait };
+        }
+        return attribute;
+      });
+    }
+    return metadataObj;
+  } catch (error) {
+    console.warn("Failed to parse metadata", error);
+    return null;
+  }
 }
