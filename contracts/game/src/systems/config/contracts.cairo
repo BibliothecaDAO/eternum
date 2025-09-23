@@ -188,6 +188,8 @@ pub trait ISettlementConfig<T> {
         fee_amount: u256,
         registration_count_max: u16,
         registration_start_at: u32,
+        entry_token_class_hash: felt252,
+        entry_token_deploy_calldata: Span<felt252>,
     );
 }
 
@@ -213,7 +215,7 @@ pub trait IQuestConfig<T> {
 
 #[dojo::contract]
 pub mod config_systems {
-    use core::num::traits::zero::Zero;
+    use core::num::traits::{Bounded, Zero};
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcherTrait, WorldStorage};
     use s1_eternum::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
@@ -227,7 +229,7 @@ pub mod config_systems {
         StructureCapacityConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig, TradeConfig,
         TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig,
         VillageFoundResourcesConfig, VillageTokenConfig, WeightConfig, WonderProductionBonusConfig, WorldConfig,
-        WorldConfigUtilImpl,
+        WorldConfigUtilImpl, BlitzRegistrationConfigImpl
     };
     use s1_eternum::models::name::AddressName;
     use s1_eternum::models::resource::production::building::BuildingCategory;
@@ -832,6 +834,8 @@ pub mod config_systems {
             fee_amount: u256,
             registration_count_max: u16,
             registration_start_at: u32,
+            entry_token_class_hash: felt252,
+            entry_token_deploy_calldata: Span<felt252>,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -844,6 +848,16 @@ pub mod config_systems {
             blitz_registration_config.fee_token = fee_token;
             blitz_registration_config.fee_recipient = fee_recipient;
             blitz_registration_config.fee_amount = fee_amount;
+
+            if fee_amount > 0 {
+                let entry_token_address = blitz_registration_config.deploy_entry_token(
+                    entry_token_class_hash, entry_token_deploy_calldata
+                );
+                blitz_registration_config.entry_token_address = entry_token_address;
+                blitz_registration_config.update_entry_token_lock(Bounded::MAX);
+            }
+
+
             WorldConfigUtilImpl::set_member(
                 ref world, selector!("blitz_registration_config"), blitz_registration_config,
             );

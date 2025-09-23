@@ -2,9 +2,19 @@ use s1_eternum::alias::ID;
 use starknet::ContractAddress;
 
 
+
+// Note: dont include burn as that would affect the total supply check in `obtain_entry_token` function
+#[starknet::interface]
+pub trait IERC721MintLock<T> {
+    fn safe_mint(ref self: T, recipient: ContractAddress, attributes_raw: u128);
+    fn token_lock_state(self: @T, token_id: u256) -> (felt252, felt252);
+    fn total_supply(self: @T) -> u256;
+}
+
 #[starknet::interface]
 pub trait IBlitzRealmSystems<T> {
-    fn register(ref self: T, owner: ContractAddress, name: felt252);
+    fn obtain_entry_token(ref self: T);
+    fn register(ref self: T, name: felt252, token_id: u128);
     fn make_hyperstructures(ref self: T, count: u8);
     fn create(ref self: T) -> Array<ID>;
 }
@@ -12,13 +22,15 @@ pub trait IBlitzRealmSystems<T> {
 #[dojo::contract]
 pub mod blitz_realm_systems {
     use core::num::traits::{Bounded, Zero};
+    use starknet::ContractAddress;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use s1_eternum::alias::ID;
+    
     use s1_eternum::constants::{DEFAULT_NS, ResourceTypes, blitz_produceable_resources};
     use s1_eternum::models::config::{
-        BlitzHypersSettlementConfig, BlitzHypersSettlementConfigImpl, BlitzRealmPlayerRegister,
+        BlitzHypersSettlementConfig, BlitzHypersSettlementConfigImpl, BlitzRealmPlayerRegister, BlitzEntryTokenRegister,
         BlitzRealmPositionRegister, BlitzRegistrationConfig, BlitzRegistrationConfigImpl, BlitzSettlementConfig,
         BlitzSettlementConfigImpl, MapConfig, RealmCountConfig, SeasonConfigImpl, TroopLimitConfig, TroopStaminaConfig,
         WorldConfigUtilImpl,
@@ -44,7 +56,8 @@ pub mod blitz_realm_systems {
     use s1_eternum::systems::utils::realm::iRealmImpl;
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
-    use starknet::ContractAddress;
+    use crate::systems::prize_distribution::contracts::prize_distribution_systems;
+    use super::{IERC721MintLockDispatcher, IERC721MintLockDispatcherTrait};
     use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 
     #[derive(Copy, Drop, Serde)]
@@ -57,11 +70,54 @@ pub mod blitz_realm_systems {
 
     #[abi(embed_v0)]
     impl BlitzRealmSystemsImpl of super::IBlitzRealmSystems<ContractState> {
+
+        fn obtain_entry_token(ref self: ContractState) {
+
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            let mut blitz_registration_config: BlitzRegistrationConfig 
+                = WorldConfigUtilImpl::get_member(world, selector!("blitz_registration_config"));
+
+            if blitz_registration_config.fee_amount.is_non_zero() {
+                // collect registration erc20 fee
+                let caller: ContractAddress = starknet::get_caller_address();
+                let fee_token_contract: IERC20Dispatcher = IERC20Dispatcher {
+                    contract_address: blitz_registration_config.fee_token,
+                };
+
+                // transfer the fee to the prize distribution systems contract
+                let prize_distribution_systems = prize_distribution_systems::get_dispatcher(@world);
+                assert!(
+                    fee_token_contract.transfer_from(
+                        caller, 
+                        prize_distribution_systems.contract_address, 
+                        blitz_registration_config.fee_amount
+                    )
+                , "Eternum: Fee transfer failed");
+
+
+                // mint entry erc721 token
+                let entry_token_contract = IERC721MintLockDispatcher {
+                    contract_address: blitz_registration_config.entry_token_address,
+                };
+                entry_token_contract.safe_mint(caller, 0x0);
+
+                // Security note: this means we don't allow burning of entry tokens
+                //
+                // ensure the new supply is not greater than registration_count_max
+                assert!(
+                    entry_token_contract.total_supply() 
+                    <= blitz_registration_config.registration_count_max.into()
+                , "Eternum: All entry tokens have been minted");
+            }
+        }
+
+
         // Register for the game and pay the registration fee
         // Owner is the address that is going to own the realm
-        fn register(ref self: ContractState, owner: ContractAddress, name: felt252) {
+        fn register(ref self: ContractState, name: felt252, token_id: u128) {
+
+            // todo ensure owner is a cartridge controller address
             assert!(name.is_non_zero(), "Eternum: Name cannot be empty");
-            assert!(owner.is_non_zero(), "Eternum: Owner cannot be zero address");
 
             // check that season is still active
             let mut world: WorldStorage = self.world(DEFAULT_NS());
@@ -81,19 +137,27 @@ pub mod blitz_realm_systems {
             );
             blitz_registration_config.increase_registration_count();
 
-            // collect registration fee if any
+            // if there is a required fee amount, ensure token is locked  
             if blitz_registration_config.fee_amount.is_non_zero() {
-                let caller: ContractAddress = starknet::get_caller_address();
-                let fee_token_contract: IERC20Dispatcher = IERC20Dispatcher {
-                    contract_address: blitz_registration_config.fee_token,
+
+                let entry_token_contract = IERC721MintLockDispatcher {
+                    contract_address: blitz_registration_config.entry_token_address,
                 };
-                fee_token_contract
-                    .transfer_from(
-                        caller, blitz_registration_config.fee_recipient, blitz_registration_config.fee_amount,
-                    );
+                let (lock_id, _) = entry_token_contract.token_lock_state(token_id.into());
+                assert!(
+                    lock_id.is_non_zero() 
+                    && lock_id == blitz_registration_config.entry_token_lock_id(),
+                    "Eternum: Entry token is not locked",
+                );
+
+                // ensure token cant be reused
+                let entry_token_register: BlitzEntryTokenRegister = world.read_model(token_id);
+                assert!(!entry_token_register.registered, "Eternum: Entry token has already been used");
+                world.write_model(@BlitzEntryTokenRegister { token_id: token_id, registered: true } );
             }
 
             // ensure that the player is not already registered
+            let owner = starknet::get_caller_address();
             let mut blitz_player_register: BlitzRealmPlayerRegister = world.read_model(owner);
             assert!(!blitz_player_register.registered, "Eternum: Player is already registered");
 
@@ -200,7 +264,6 @@ pub mod blitz_realm_systems {
             ////////////////////////////////////////////////
 
             // obtain vrf seed
-            let caller: ContractAddress = starknet::get_caller_address();
             let rng_library_dispatcher = rng_library::get_dispatcher(@world);
             let vrf_seed: u256 = rng_library_dispatcher.get_random_number(starknet::get_caller_address(), world);
 

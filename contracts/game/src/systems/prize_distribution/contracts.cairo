@@ -8,13 +8,16 @@ pub trait IPrizeDistributionSystems<T> {
     );
 }
 
+
+// todo: fee split
+// todo: release entry token
 #[dojo::contract]
 pub mod prize_distribution_systems {
     use core::num::traits::zero::Zero;
     use cubit::f128::types::fixed::{Fixed, FixedTrait};
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::world::WorldStorage;
+    use dojo::world::{WorldStorageTrait, WorldStorage};
     use s1_eternum::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
     use s1_eternum::models::config::{BlitzRegistrationConfig, SeasonConfigImpl, WorldConfigUtilImpl};
     use s1_eternum::models::events::{PrizeDistributedStory, PrizeDistributionFinalStory, Story, StoryEvent};
@@ -238,5 +241,10 @@ pub mod prize_distribution_systems {
             // update the trial with the new last rank and points
             world.write_model(@trial);
         }
+    }
+
+    pub fn get_dispatcher(world: @WorldStorage) -> super::IPrizeDistributionSystemsDispatcher {
+        let (addr, _) = world.dns(@"prize_distribution_systems").unwrap();
+        super::IPrizeDistributionSystemsDispatcher { contract_address: addr}
     }
 }
