@@ -12,6 +12,7 @@ export class InteractiveHexManager {
   private scene: THREE.Scene;
   // Store all interactive hexes
   private allHexes: Set<string> = new Set();
+  private hexBuckets: Map<string, Set<string>> = new Map();
   // Store only currently visible hexes for the current chunk
   private visibleHexes: Set<string> = new Set();
   private instanceMesh: THREE.InstancedMesh | null = null;
@@ -23,6 +24,7 @@ export class InteractiveHexManager {
   private showAura: boolean = true;
   private useRimLighting: boolean = true; // New feature flag
   private hexGeometryPool: HexGeometryPool;
+  private readonly bucketSize = 16;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -145,10 +147,25 @@ export class InteractiveHexManager {
     }
   }
 
+  private getBucketKey(col: number, row: number): string {
+    const bucketCol = Math.floor(col / this.bucketSize);
+    const bucketRow = Math.floor(row / this.bucketSize);
+    return `${bucketCol},${bucketRow}`;
+  }
+
   // Add hex to the global collection of all interactive hexes
   addHex(hex: { col: number; row: number }) {
     const key = `${hex.col},${hex.row}`;
+    if (this.allHexes.has(key)) {
+      return;
+    }
+
     this.allHexes.add(key);
+
+    const bucketKey = this.getBucketKey(hex.col, hex.row);
+    const bucket = this.hexBuckets.get(bucketKey) ?? new Set<string>();
+    bucket.add(key);
+    this.hexBuckets.set(bucketKey, bucket);
   }
 
   // Filter visible hexes for the current chunk
@@ -161,13 +178,25 @@ export class InteractiveHexManager {
     const minRow = startRow - height / 2;
     const maxRow = startRow + height / 2;
 
-    // Filter hexes within current chunk bounds
-    this.allHexes.forEach((hexString) => {
-      const [col, row] = hexString.split(",").map(Number);
-      if (col >= minCol && col <= maxCol && row >= minRow && row <= maxRow) {
-        this.visibleHexes.add(hexString);
+    const minBucketCol = Math.floor(minCol / this.bucketSize);
+    const maxBucketCol = Math.floor(maxCol / this.bucketSize);
+    const minBucketRow = Math.floor(minRow / this.bucketSize);
+    const maxBucketRow = Math.floor(maxRow / this.bucketSize);
+
+    for (let bucketCol = minBucketCol; bucketCol <= maxBucketCol; bucketCol++) {
+      for (let bucketRow = minBucketRow; bucketRow <= maxBucketRow; bucketRow++) {
+        const bucketKey = `${bucketCol},${bucketRow}`;
+        const bucket = this.hexBuckets.get(bucketKey);
+        if (!bucket) continue;
+
+        bucket.forEach((hexString) => {
+          const [col, row] = hexString.split(",").map(Number);
+          if (col >= minCol && col <= maxCol && row >= minRow && row <= maxRow) {
+            this.visibleHexes.add(hexString);
+          }
+        });
       }
-    });
+    }
 
     // Render only the visible hexes
     this.renderHexes();
@@ -177,6 +206,7 @@ export class InteractiveHexManager {
   clearHexes() {
     this.allHexes.clear();
     this.visibleHexes.clear();
+    this.hexBuckets.clear();
   }
 
   // For backward compatibility with Hexception scene
@@ -294,6 +324,7 @@ export class InteractiveHexManager {
     // Clear hex collections
     this.allHexes.clear();
     this.visibleHexes.clear();
+    this.hexBuckets.clear();
 
     console.log("InteractiveHexManager: Destroyed and cleaned up");
   }
