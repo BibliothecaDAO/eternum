@@ -186,6 +186,16 @@ export function AppSidebar() {
             {/* social links */}
             <div className="flex items-center gap-2 mt-8 justify-center text-gold fill-gold">
               <a
+                href="https://discord.gg/realmsworld"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={handleLinkClick}
+                className="text-gold fill-gold"
+                aria-label="Join Discord"
+              >
+                <img src="/images/buildings/thumb/discord.png" alt="Discord" className="h-5 w-5" />
+              </a>
+              <a
                 href="https://twitter.com/realms_gg"
                 target="_blank"
                 rel="noopener noreferrer"

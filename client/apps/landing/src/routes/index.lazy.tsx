@@ -118,6 +118,11 @@ function Index() {
             <EternumWordsLogo className="mx-auto w-48 fill-current stroke-current sm:w-60 md:w-72 lg:w-96 mb-8 sm:mb-12 lg:mb-16" />
           </h1>
           <GamePhaseBanner status={gameStatus} isLoading={isGameStatusLoading} />
+          <div className="mx-auto mt-6 max-w-2xl text-balance text-sm text-muted-foreground sm:text-base">
+            <p className="font-semibold text-foreground">Blitz is the most advanced onchain game ever built, running on Starknet.</p>
+            <p className="mt-2">A fresh game kicks off every six hours forever — rally your realm before the next horn sounds.</p>
+            <p className="mt-4">Need the finer details? <a className="text-gold underline underline-offset-2" href="https://docs.realms.world/" target="_blank" rel="noopener noreferrer">Review the documentation</a>.</p>
+          </div>
         </div>
       </section>
 
@@ -231,9 +236,9 @@ const GamePhaseBanner = memo(function GamePhaseBanner({
   }, []);
 
   const phaseLabelMap: Record<GameStatus["currentPhase"], string> = {
-    NO_GAME: "No Realms: Blitz Game Scheduled",
-    REGISTRATION: "Realms: Blitz Registration Open",
-    GAME_ACTIVE: "Realms: Blitz Game In Progress",
+    NO_GAME: "No Blitz Game Scheduled",
+    REGISTRATION: "Blitz Registration Open",
+    GAME_ACTIVE: "Blitz Game In Progress",
   };
 
   const currentPhaseLabel = phaseLabelMap[status.currentPhase];
