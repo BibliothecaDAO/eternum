@@ -29,6 +29,7 @@ export interface ArmyInstanceData {
   rotation?: Euler;
   color?: Color;
   isMoving: boolean;
+  matrixIndex?: number;
   path?: Vector3[];
   category?: TroopType;
   tier?: TroopTier;

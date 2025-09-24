@@ -1,5 +1,6 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { ArmyModel } from "@/three/managers/army-model";
+import { ModelType } from "@/three/types/army";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { GUIManager, LABEL_STYLES } from "@/three/utils/";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
@@ -362,12 +363,25 @@ export class ArmyManager {
     // Reset all model instances
     this.armyModel.resetInstanceCounts();
 
+    const modelTypesByEntity = new Map<ID, ModelType>();
+    const requiredModelTypes = new Set<ModelType>();
+
+    this.visibleArmies.forEach((army) => {
+      const { x, y } = army.hexCoords.getContract();
+      const biome = Biome.getBiome(x, y);
+      const modelType = this.armyModel.getModelTypeForEntity(army.entityId, army.category, army.tier, biome);
+      modelTypesByEntity.set(army.entityId, modelType);
+      requiredModelTypes.add(modelType);
+    });
+
+    await this.armyModel.preloadModels(requiredModelTypes);
+
     let currentCount = 0;
     this.visibleArmies.forEach((army) => {
       const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
       const { x, y } = army.hexCoords.getContract();
-      const biome = Biome.getBiome(x, y);
-      const modelType = this.armyModel.getModelTypeForEntity(army.entityId, army.category, army.tier, biome);
+      const modelType = modelTypesByEntity.get(army.entityId)!;
+
       this.armyModel.assignModelToEntity(army.entityId, modelType);
 
       if (army.isDaydreamsAgent) {
@@ -400,7 +414,6 @@ export class ArmyManager {
         activeLabel.position.y += 1.5;
       }
     });
-
     // Remove labels for armies that are no longer visible
     this.entityIdLabels.forEach((label, entityId) => {
       if (!this.visibleArmies.find((army) => army.entityId === entityId)) {
@@ -444,6 +457,7 @@ export class ArmyManager {
     const { x, y } = params.hexCoords.getContract();
     const biome = Biome.getBiome(x, y);
     const modelType = this.armyModel.getModelTypeForEntity(params.entityId, params.category, params.tier, biome);
+    await this.armyModel.preloadModels([modelType]);
     this.armyModel.assignModelToEntity(params.entityId, modelType);
 
     // Variables to hold the final values
