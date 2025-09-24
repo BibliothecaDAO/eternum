@@ -36,7 +36,7 @@ function TokenDetailPage() {
 
   const tokenData = useSuspenseQuery({
     queryKey: ["singleToken", collection, tokenId],
-    queryFn: () => fetchSingleCollectionToken(collectionConfig.address, parseInt(tokenId), collectionConfig.id || 0),
+    queryFn: () => fetchSingleCollectionToken(collectionConfig.address, tokenId, collectionConfig.id || 0),
     refetchInterval: 8_000,
   });
 

@@ -15,7 +15,7 @@ export interface ActiveMarketOrdersTotal {
 }
 
 interface CollectionToken {
-  token_id: number;
+  token_id: string;
   order_id: number | null;
   name: string | null;
   symbol: string | null;
@@ -27,6 +27,8 @@ interface CollectionToken {
   balance: string | null;
   contract_address: string;
   is_listed: boolean;
+  token_id_hex?: string | null;
+  token_id_decimal?: string | null;
 }
 
 export interface SeasonPassRealm {
@@ -206,17 +208,24 @@ export async function fetchAllCollectionTokens(
     fetchSQL<{ total_count: number }[]>(countQuery),
   ]);
 
-  const tokens = rawData.map((item) => ({
-    ...item,
-    token_id: parseInt(item.token_id_hex ?? "0", 16),
-    order_id: item.order_id ? parseInt(item.order_id, 16) : null,
-    best_price_hex: item.price_hex ? BigInt(item.price_hex) : null,
-    token_owner: item.token_owner ?? null,
-    order_owner: item.order_owner ?? null,
-    metadata: normalizeMetadata(item.metadata),
-    contract_address: contractAddress,
-    is_listed: Boolean(item.is_listed),
-  }));
+  const tokens = rawData.map((item) => {
+    const tokenIdHex = item.token_id_hex ?? (item.token_id ? `0x${item.token_id}` : null);
+    const tokenIdDecimal = tokenIdHex ? BigInt(tokenIdHex).toString() : (item.token_id ?? "");
+
+    return {
+      ...item,
+      token_id: tokenIdDecimal,
+      token_id_hex: tokenIdHex,
+      token_id_decimal: tokenIdDecimal,
+      order_id: item.order_id ? parseInt(item.order_id, 16) : null,
+      best_price_hex: item.price_hex ? BigInt(item.price_hex) : null,
+      token_owner: item.token_owner ?? null,
+      order_owner: item.order_owner ?? null,
+      metadata: normalizeMetadata(item.metadata),
+      contract_address: contractAddress,
+      is_listed: Boolean(item.is_listed),
+    };
+  });
 
   const totalCount = countData[0]?.total_count ?? 0;
 
@@ -228,12 +237,15 @@ export async function fetchAllCollectionTokens(
  */
 export async function fetchSingleCollectionToken(
   contractAddress: string,
-  tokenId: number,
+  tokenId: string,
   collectionId: number,
 ): Promise<CollectionToken | null> {
+  const tokenIdBigInt = tokenId.startsWith("0x") ? BigInt(tokenId) : BigInt(tokenId);
+  const tokenIdDecimal = tokenIdBigInt.toString();
+
   const query = QUERIES.SINGLE_COLLECTION_TOKEN.replaceAll("'{contractAddress}'", `'${contractAddress}'`)
     .replaceAll("{contractAddress}", contractAddress)
-    .replaceAll("{tokenId}", tokenId.toString())
+    .replaceAll("{tokenId}", tokenIdDecimal)
     .replaceAll("{collectionId}", collectionId.toString());
 
   const rawData = await fetchSQL<any[]>(query);
@@ -243,9 +255,14 @@ export async function fetchSingleCollectionToken(
   }
 
   const item = rawData[0];
+  const tokenIdHex = item.token_id_hex ?? (item.token_id ? `0x${item.token_id}` : null);
+  const tokenIdDecimalResult = tokenIdHex ? BigInt(tokenIdHex).toString() : item.token_id ?? tokenIdDecimal;
+
   return {
     ...item,
-    token_id: parseInt(item.token_id),
+    token_id: tokenIdDecimalResult,
+    token_id_hex: tokenIdHex,
+    token_id_decimal: tokenIdDecimalResult,
     metadata: normalizeMetadata(item.metadata),
     best_price_hex: item.price_hex ? BigInt(item.price_hex) : null,
     is_listed: Boolean(item.is_listed),
