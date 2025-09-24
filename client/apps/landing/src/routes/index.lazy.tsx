@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { marketplaceCollections, realmsAddress, seasonPassAddress } from "@/config";
 import {
   ActiveMarketOrdersTotal,
@@ -20,7 +21,7 @@ import { useAccount } from "@starknet-react/core";
 import { useQuery, useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { AlertTriangle, Castle, CirclePlayIcon } from "lucide-react";
+import { AlertTriangle, Boxes, Castle, CirclePlayIcon, Swords, UserRoundPlus } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 
 export const Route = createLazyFileRoute("/")({
@@ -103,6 +104,37 @@ function Index() {
     },
   };
 
+  const howItWorksSteps = [
+    {
+      value: "register",
+      title: "Register",
+      description: "You have 2 hours every 6 hours to register for the next game before the lobby closes.",
+      icon: UserRoundPlus,
+      highlight: "Registration allows us to place everyone on the map at random locations when the game starts.",
+    },
+    {
+      value: "settle",
+      title: "Settle Your Realms",
+      description: "When you settle, your 3 realms are placed randomly on the map and the game starts.",
+      icon: Castle,
+      highlight: "Everybody starts with the same 3 realms and the same resources. Randomly placed on the map. No one has an advantage.",
+    },
+    {
+      value: "conquer",
+      title: "Conquer for 2 Hours",
+      description: "Once the game starts you have 2 hours to climb the leaderboard where every transaction is onchain.",
+      icon: Swords,
+      highlight: "You can win points by exploring tiles, conquering structures and controlling hyperstructures.",
+    },
+    {
+      value: "loot",
+      title: "Win Loot Chests or tokens",
+      description: "Top performers earn rare chests packed with cosmetics, plus tokens.",
+      icon: Boxes,
+      highlight: "A subset of top players can earn prizes, with prize values increasing depending on whether it's a free-to-play game or if you need to pay to enter.",
+    },
+  ];
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
@@ -123,6 +155,67 @@ function Index() {
             <p className="mt-2">A fresh game kicks off every six hours forever — rally your realm before the next horn sounds.</p>
             <p className="mt-4">Need the finer details? <a className="text-gold underline underline-offset-2" href="https://docs.realms.world/" target="_blank" rel="noopener noreferrer">Review the documentation</a>.</p>
           </div>
+        </div>
+      </section>
+
+      {/* How Blitz Works */}
+      <section className="border-y border-gold/10 bg-background/90 py-12">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto mb-10 max-w-2xl text-center space-y-3">
+            <h2 className="text-3xl font-bold text-foreground sm:text-4xl">How Blitz Works</h2>
+            <p className="text-sm text-muted-foreground sm:text-base">
+              Connect your wallet, settle your realms, battle for two hours, then claim your rewards. Rinse and repeat every six hours until the end of time.
+            </p>
+          </div>
+          <Tabs defaultValue={howItWorksSteps[0].value} className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+            <TabsList className="flex w-full flex-col gap-2 rounded-2xl bg-background/70 p-3 backdrop-blur md:flex-row md:flex-wrap md:justify-between">
+              {howItWorksSteps.map((step, index) => {
+                const Icon = step.icon;
+                return (
+                  <TabsTrigger
+                    key={step.value}
+                    value={step.value}
+                    className="group flex flex-1 items-center justify-between gap-4 rounded-xl border border-transparent px-4 py-3 text-left text-sm font-medium text-muted-foreground transition hover:text-foreground data-[state=active]:border-gold/40 data-[state=active]:bg-gold/10 data-[state=active]:text-foreground"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gold/15 font-semibold text-gold">
+                        {index + 1}
+                      </span>
+                      <span className="text-sm sm:text-base">{step.title}</span>
+                    </div>
+                    <Icon className="h-5 w-5 text-gold/70 transition group-data-[state=active]:text-gold" />
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+            {howItWorksSteps.map((step, index) => {
+              const Icon = step.icon;
+              return (
+                <TabsContent key={step.value} value={step.value} className="mt-0 focus-visible:outline-none">
+                  <Card className="border-gold/20 bg-background/75 shadow-lg shadow-black/10 backdrop-blur">
+                    <CardContent className="flex flex-col gap-5 p-6">
+                      <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.35em] text-gold/80">
+                        <span>Step {index + 1}</span>
+                        <span className="hidden text-muted-foreground sm:inline">{step.title}</span>
+                      </div>
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="flex flex-1 flex-col gap-3">
+                          <h3 className="text-2xl font-semibold text-foreground">{step.title}</h3>
+                          <p className="text-sm text-muted-foreground sm:text-base">{step.description}</p>
+                        </div>
+                        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-gold/30 bg-gold/10 text-gold">
+                          <Icon className="h-6 w-6" />
+                        </div>
+                      </div>
+                      <div className="rounded-lg border border-dashed border-gold/25 bg-gradient-to-br from-background/40 to-background/10 p-4 text-sm text-muted-foreground">
+                        {step.highlight}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              );
+            })}
+          </Tabs>
         </div>
       </section>
 
