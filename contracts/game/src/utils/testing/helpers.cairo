@@ -52,10 +52,13 @@ pub fn MOCK_MAP_CONFIG() -> MapConfig {
         hyps_fail_prob: 5000,
         hyps_fail_prob_increase_p_hex: 5000,
         hyps_fail_prob_increase_p_fnd: 5000,
-        mine_wheat_grant_amount: 0,
-        mine_fish_grant_amount: 1,
         agent_discovery_prob: 5000,
         agent_discovery_fail_prob: 5000,
+        relic_chest_relics_per_chest: 3,
+        relic_hex_dist_from_center: 10,
+        relic_discovery_interval_sec: 60,
+        village_fail_probability: 1,
+        village_win_probability: 0,
     }
 }
 
@@ -217,7 +220,7 @@ pub fn tspawn_simple_realm(
     tstore_production_config(ref world, ResourceTypes::EARTHEN_SHARD);
 
     // create realm
-    let realm_entity_id = iRealmImpl::create_realm(ref world, owner, realm_id, array![], 1, 0, 1, coord.into());
+    let realm_entity_id = iRealmImpl::create_realm(ref world, owner, realm_id, array![], 1, 0, 1, coord.into(), true);
 
     realm_entity_id
 }
@@ -249,7 +252,7 @@ pub fn tspawn_realm(
 ) -> ID {
     // create realm
     let realm_entity_id = iRealmImpl::create_realm(
-        ref world, owner, realm_id, produced_resources, order, level, wonder, coord.into(),
+        ref world, owner, realm_id, produced_resources, order, level, wonder, coord.into(), true,
     );
 
     realm_entity_id
@@ -295,11 +298,26 @@ pub fn tstore_production_config(ref world: WorldStorage, resource_type: u8) {
 pub fn tspawn_explorer(ref world: WorldStorage, owner: ID, coord: Coord) -> ID {
     let current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds;
     let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+    let troop_boosts = TroopBoosts {
+        incr_damage_dealt_percent_num: 0,
+        incr_damage_dealt_end_tick: 0,
+        decr_damage_gotten_percent_num: 0,
+        decr_damage_gotten_end_tick: 0,
+        incr_stamina_regen_percent_num: 0,
+        incr_stamina_regen_tick_count: 0,
+        incr_explore_reward_percent_num: 0,
+        incr_explore_reward_end_tick: 0,
+    };
     let mut troops = Troops {
-        category: TroopType::Crossbowman, tier: TroopTier::T2, count: troop_amount, stamina: Default::default(),
+        category: TroopType::Crossbowman,
+        tier: TroopTier::T2,
+        count: troop_amount,
+        stamina: Default::default(),
+        boosts: troop_boosts,
+        battle_cooldown_end: 0,
     };
     let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
-    troops.stamina.refill(troops.category, troops.tier, troop_stamina_config, current_tick);
+    troops.stamina.refill(ref troops.boosts, troops.category, troops.tier, troop_stamina_config, current_tick);
     let explorer_id = world.dispatcher.uuid();
     let explorer: ExplorerTroops = ExplorerTroops { explorer_id, coord, troops, owner };
     world.write_model_test(@explorer);
@@ -360,10 +378,29 @@ pub fn tspawn_village_explorer(ref world: WorldStorage, village_id: ID, coord: C
     let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
     let current_tick = starknet::get_block_timestamp();
 
-    let mut initial_troops = Troops {
-        category: TroopType::Crossbowman, tier: TroopTier::T2, count: troop_amount, stamina: Default::default(),
+    let troop_boosts = TroopBoosts {
+        incr_damage_dealt_percent_num: 0,
+        incr_damage_dealt_end_tick: 0,
+        decr_damage_gotten_percent_num: 0,
+        decr_damage_gotten_end_tick: 0,
+        incr_stamina_regen_percent_num: 0,
+        incr_stamina_regen_tick_count: 0,
+        incr_explore_reward_percent_num: 0,
+        incr_explore_reward_end_tick: 0,
     };
-    initial_troops.stamina.refill(initial_troops.category, initial_troops.tier, troop_stamina_config, current_tick);
+    let mut initial_troops = Troops {
+        category: TroopType::Crossbowman,
+        tier: TroopTier::T2,
+        count: troop_amount,
+        stamina: Default::default(),
+        boosts: troop_boosts,
+        battle_cooldown_end: 0,
+    };
+    initial_troops
+        .stamina
+        .refill(
+            ref initial_troops.boosts, initial_troops.category, initial_troops.tier, troop_stamina_config, current_tick,
+        );
 
     // Spawn explorer troops model
     let explorer = ExplorerTroops {
@@ -384,11 +421,23 @@ pub fn tspawn_village(ref world: WorldStorage, realm_id: ID, owner: ContractAddr
     let mut uuid = world.dispatcher.uuid();
     let village_id = uuid;
 
+    let troop_boosts = TroopBoosts {
+        incr_damage_dealt_percent_num: 0,
+        incr_damage_dealt_end_tick: 0,
+        decr_damage_gotten_percent_num: 0,
+        decr_damage_gotten_end_tick: 0,
+        incr_stamina_regen_percent_num: 0,
+        incr_stamina_regen_tick_count: 0,
+        incr_explore_reward_percent_num: 0,
+        incr_explore_reward_end_tick: 0,
+    };
     let basic_troops = Troops {
         category: TroopType::Crossbowman,
         tier: TroopTier::T2,
         count: 100 * RESOURCE_PRECISION,
         stamina: Default::default(),
+        boosts: troop_boosts,
+        battle_cooldown_end: 0,
     };
 
     // Spawn the village structure

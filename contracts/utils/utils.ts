@@ -14,6 +14,8 @@ import slottestGameManifest from "../../contracts/game/manifest_slottest.json";
  * @interface SeasonAddresses
  */
 export interface SeasonAddresses {
+  /** Class hash of the collectibles ERC721 contract */
+  collectiblesClassHash?: string;
   /** Address of the village pass contract */
   villagePass: string;
   /** Address of the season pass contract */
@@ -22,6 +24,8 @@ export interface SeasonAddresses {
   realms: string;
   /** Address of the LORDS token contract */
   lords: string;
+  /** Address of the STRK token contract */
+  strk: string;
   /** Address of the loot chest contract */
   lootChests?: string;
   /** Address of the marketplace contract */

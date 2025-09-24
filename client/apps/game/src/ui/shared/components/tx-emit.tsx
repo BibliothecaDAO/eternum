@@ -99,6 +99,10 @@ const getTxMessage = (type: TransactionType) => {
       return "⬆️ Upgraded level";
     case TransactionType.CANCEL_ORDER:
       return "❌ Cancelled order";
+    case TransactionType.BLITZ_PRIZE_PLAYER_RANK:
+      return "🏁 Submitted blitz rankings";
+    case TransactionType.BLITZ_PRIZE_CLAIM:
+      return "🏆 Claimed blitz prize";
     default:
       return "📜 Royal decree has been executed";
   }

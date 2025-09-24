@@ -3,11 +3,11 @@ use dojo::model::{Model, ModelStorage};
 use dojo::storage::dojo_store::DojoStore;
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
-use s1_eternum::constants::WORLD_CONFIG_ID;
+use s1_eternum::constants::{WORLD_CONFIG_ID, UNIVERSAL_DEPLOYER_ADDRESS};
 use s1_eternum::models::position::{Coord, CoordImpl, Direction};
 use s1_eternum::utils::random::VRFImpl;
 use starknet::ContractAddress;
-
+use crate::utils::interfaces::blitz_entry_token::{IBlitzEntryTokenDispatcher, IBlitzEntryTokenDispatcherTrait};
 //
 // GLOBAL CONFIGS
 //
@@ -176,6 +176,15 @@ pub impl SeasonConfigImpl of SeasonConfigTrait {
             );
         }
     }
+
+    fn assert_game_ended_and_points_registration_closed(self: SeasonConfig) {
+        self.assert_started_main();
+        assert!(self.has_ended(), "Season is not over");
+
+        let now = starknet::get_block_timestamp();
+        assert!(now > self.end_at + self.registration_grace_seconds.into(), "The registration grace period is not over");
+    }
+
     fn end_season(ref world: WorldStorage) {
         let season_config_selector = selector!("season_config");
         let mut season_config: SeasonConfig = WorldConfigUtilImpl::get_member(world, season_config_selector);
@@ -552,6 +561,7 @@ pub struct BlitzRegistrationConfig {
     pub fee_amount: u256,
     pub fee_token: ContractAddress,
     pub fee_recipient: ContractAddress,
+    pub entry_token_address: ContractAddress,
     pub registration_count: u16,
     pub registration_count_max: u16,
     pub registration_start_at: u32,
@@ -570,6 +580,55 @@ pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
 
     fn is_registration_open(self: BlitzRegistrationConfig, now: u32) -> bool {
         now >= self.registration_start_at
+    }
+
+    fn deploy_entry_token(self: BlitzRegistrationConfig, entry_token_class_hash: felt252, calldata: Span<felt252>) -> ContractAddress {
+        let deployment_salt: felt252 =  starknet::get_tx_info().unbox().transaction_hash;
+        let deployment_unique: felt252 =  1; // true
+        let mut deployment_calldata: Array<felt252> = array![
+                entry_token_class_hash,
+                deployment_salt,
+                deployment_unique,
+                calldata.len().into(),
+        ];
+        for i in 0..calldata.len() {
+            deployment_calldata.append(*calldata.at(i));
+        }
+        let deploy_result_span = starknet::syscalls::call_contract_syscall(
+            UNIVERSAL_DEPLOYER_ADDRESS.try_into().unwrap(), 
+            0x1987cbd17808b9a23693d4de7e246a443cfe37e6e7fbaeabd7d7e6532b07c3d, // selector!("deployContract")
+            deployment_calldata.span()
+        ).unwrap();
+
+        // @audit could this fail and not panic?
+        (*deploy_result_span.at(0)).try_into().unwrap()
+    }
+
+
+    fn setup_entry_token(self: BlitzRegistrationConfig, ipfs_cid: ByteArray) {
+        let dispatcher = IBlitzEntryTokenDispatcher {contract_address: self.entry_token_address};
+        dispatcher.set_attrs_raw_to_ipfs_cid(
+            self.entry_token_attrs_raw(),
+            ipfs_cid,
+            false
+        );
+    }
+
+    fn entry_token_lock_id(self: BlitzRegistrationConfig) -> felt252 {
+        69
+    }
+
+    fn entry_token_attrs_raw(self: BlitzRegistrationConfig) -> u128 {
+        1
+    }
+
+
+    fn update_entry_token_lock(self: BlitzRegistrationConfig, unlock_at: u64) {
+        let dispatcher = IBlitzEntryTokenDispatcher {contract_address: self.entry_token_address};
+        dispatcher.lock_state_update(
+            self.entry_token_lock_id(),
+            unlock_at
+        );
     }
 }
 
@@ -886,5 +945,13 @@ pub struct BlitzRealmPositionRegister {
 pub struct BlitzRealmPlayerRegister {
     #[key]
     pub player: ContractAddress,
+    pub registered: bool,
+}
+
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
+pub struct BlitzEntryTokenRegister {
+    #[key]
+    pub token_id: u128,
     pub registered: bool,
 }
