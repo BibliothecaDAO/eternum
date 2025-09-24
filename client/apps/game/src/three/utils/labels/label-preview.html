@@ -1157,12 +1157,7 @@
         img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
         img.setAttribute("data-component", "chest-icon");
         labelDiv.appendChild(img);
-        const contentContainer = createContentContainer(cameraView);
-        const line1 = document.createElement("span");
-        line1.textContent = "Relic Crate";
-        line1.style.color = "inherit";
-        contentContainer.appendChild(line1);
-        labelDiv.appendChild(contentContainer.wrapper);
+        // Relic crates remain icon-only; no text label in the preview.
         return labelDiv;
       }
 
@@ -1176,12 +1171,7 @@
         img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
         img.setAttribute("data-component", "quest-icon");
         labelDiv.appendChild(img);
-        const contentContainer = createContentContainer(cameraView);
-        const line1 = document.createElement("span");
-        line1.textContent = "Quest";
-        line1.style.color = "inherit";
-        contentContainer.appendChild(line1);
-        labelDiv.appendChild(contentContainer.wrapper);
+        // Quest markers remain icon-only; no text label in the preview.
         return labelDiv;
       }
 
