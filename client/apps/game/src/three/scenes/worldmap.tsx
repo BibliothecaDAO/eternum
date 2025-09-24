@@ -118,6 +118,8 @@ export default class WorldmapScene extends HexagonScene {
   private minimap!: Minimap;
   private previouslyHoveredHex: HexPosition | null = null;
   private cachedMatrices: Map<string, Map<string, { matrices: InstancedBufferAttribute; count: number }>> = new Map();
+  private cachedMatrixOrder: string[] = [];
+  private readonly maxMatrixCacheSize = 6;
   private updateHexagonGridPromise: Promise<void> | null = null;
   private travelEffects: Map<string, () => void> = new Map();
 
@@ -283,10 +285,26 @@ export default class WorldmapScene extends HexagonScene {
     // Initialize the hover label manager
     this.hoverLabelManager = new HoverLabelManager(
       {
-        army: this.armyLabelsGroup,
-        structure: this.structureLabelsGroup,
-        quest: this.questLabelsGroup,
-        chest: this.chestLabelsGroup,
+        army: {
+          show: (entityId: ID) => this.armyManager.showLabel(entityId),
+          hide: (entityId: ID) => this.armyManager.hideLabel(entityId),
+          hideAll: () => this.armyManager.hideAllLabels(),
+        },
+        structure: {
+          show: (entityId: ID) => this.structureManager.showLabel(entityId),
+          hide: (entityId: ID) => this.structureManager.hideLabel(entityId),
+          hideAll: () => this.structureManager.hideAllLabels(),
+        },
+        quest: {
+          show: (entityId: ID) => this.questManager.showLabel(entityId),
+          hide: (entityId: ID) => this.questManager.hideLabel(entityId),
+          hideAll: () => this.questManager.hideAllLabels(),
+        },
+        chest: {
+          show: (entityId: ID) => this.chestManager.showLabel(entityId),
+          hide: (entityId: ID) => this.chestManager.hideLabel(entityId),
+          hideAll: () => this.chestManager.hideAllLabels(),
+        },
       },
       (hexCoords: HexPosition) => this.getHexagonEntity(hexCoords),
       this.currentCameraView,
@@ -1014,6 +1032,10 @@ export default class WorldmapScene extends HexagonScene {
     this.controls.enableZoom = useUIStore.getState().enableMapZoom;
     this.controls.zoomToCursor = false;
     this.highlightHexManager.setYOffset(0.025);
+
+    // Clear any cached chunk data before moving the camera, so subsequent loads rebuild fresh state
+    this.clearTileEntityCache();
+
     this.moveCameraToURLLocation();
     this.changeCameraView(2);
     this.minimap.moveMinimapCenterToUrlLocation();
@@ -1042,9 +1064,11 @@ export default class WorldmapScene extends HexagonScene {
     this.structureManager.showLabels();
     this.questManager.addLabelsToScene();
     this.chestManager.addLabelsToScene();
-    this.clearTileEntityCache();
 
     this.setupCameraZoomHandler();
+
+    // Ensure interactive hexes/chunks are initialized now that managers exist and caches are reset
+    this.updateVisibleChunks(true).catch((error) => console.error("Failed to update visible chunks:", error));
   }
 
   onSwitchOff() {
@@ -1422,7 +1446,11 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   clearCache() {
+    for (const chunkKey of this.cachedMatrices.keys()) {
+      this.disposeCachedMatrices(chunkKey);
+    }
     this.cachedMatrices.clear();
+    this.cachedMatrixOrder = [];
   }
 
   private computeInteractiveHexes(startRow: number, startCol: number, rows: number, cols: number) {
@@ -1433,6 +1461,9 @@ export default class WorldmapScene extends HexagonScene {
   async updateHexagonGrid(startRow: number, startCol: number, rows: number, cols: number) {
     const memoryMonitor = (window as any).__gameRenderer?.memoryMonitor;
     const preUpdateStats = memoryMonitor?.getCurrentStats(`hex-grid-update-${startRow}-${startCol}`);
+
+    const matrixPoolInstance = MatrixPool.getInstance();
+    matrixPoolInstance.ensureCapacity(rows * cols + 512);
 
     await Promise.all(this.modelLoadPromises);
     if (this.applyCachedMatricesForChunk(startRow, startCol)) {
@@ -1445,6 +1476,7 @@ export default class WorldmapScene extends HexagonScene {
         if (Math.abs(memoryDelta) > 10) {
         }
       }
+      this.updateHexagonGridPromise = null;
       return;
     }
 
@@ -1625,6 +1657,9 @@ export default class WorldmapScene extends HexagonScene {
         requestAnimationFrame(processBatch);
       });
     });
+
+    await this.updateHexagonGridPromise;
+    this.updateHexagonGridPromise = null;
   }
 
   private async computeTileEntities(chunkKey: string): Promise<void> {
@@ -1696,30 +1731,80 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
+  private touchMatrixCache(chunkKey: string) {
+    const existingIndex = this.cachedMatrixOrder.indexOf(chunkKey);
+    if (existingIndex !== -1) {
+      this.cachedMatrixOrder.splice(existingIndex, 1);
+    }
+    this.cachedMatrixOrder.push(chunkKey);
+  }
+
+  private disposeCachedMatrices(chunkKey: string) {
+    const cached = this.cachedMatrices.get(chunkKey);
+    if (!cached) return;
+
+    cached.forEach(({ matrices }) => {
+      this.disposeInstancedAttribute(matrices);
+    });
+  }
+
+  private disposeInstancedAttribute(attribute: InstancedBufferAttribute) {
+    const maybeDisposable = attribute as unknown as { dispose?: () => void };
+    maybeDisposable.dispose?.call(attribute);
+  }
+
+  private ensureMatrixCacheLimit() {
+    while (this.cachedMatrixOrder.length > this.maxMatrixCacheSize) {
+      const oldestKey = this.cachedMatrixOrder.shift();
+      if (!oldestKey) {
+        break;
+      }
+      this.disposeCachedMatrices(oldestKey);
+      this.cachedMatrices.delete(oldestKey);
+    }
+  }
+
   private cacheMatricesForChunk(startRow: number, startCol: number) {
     const chunkKey = `${startRow},${startCol}`;
+    if (!this.cachedMatrices.has(chunkKey)) {
+      this.cachedMatrices.set(chunkKey, new Map());
+    }
+
+    const cachedChunk = this.cachedMatrices.get(chunkKey)!;
+
     for (const [biome, model] of this.biomeModels) {
       const { matrices, count } = model.getMatricesAndCount();
-      if (!this.cachedMatrices.has(chunkKey)) {
-        this.cachedMatrices.set(chunkKey, new Map());
+      const existing = cachedChunk.get(biome);
+      if (existing) {
+        this.disposeInstancedAttribute(existing.matrices);
       }
-      this.cachedMatrices.get(chunkKey)!.set(biome, { matrices: matrices as any, count });
+      cachedChunk.set(biome, { matrices: matrices as any, count });
     }
+
+    this.touchMatrixCache(chunkKey);
+    this.ensureMatrixCacheLimit();
   }
 
   removeCachedMatricesForChunk(startRow: number, startCol: number) {
     const chunkKey = `${startRow},${startCol}`;
+    this.disposeCachedMatrices(chunkKey);
     this.cachedMatrices.delete(chunkKey);
+    const index = this.cachedMatrixOrder.indexOf(chunkKey);
+    if (index !== -1) {
+      this.cachedMatrixOrder.splice(index, 1);
+    }
   }
 
   private applyCachedMatricesForChunk(startRow: number, startCol: number) {
     const chunkKey = `${startRow},${startCol}`;
     const cachedMatrices = this.cachedMatrices.get(chunkKey);
     if (cachedMatrices) {
+      this.touchMatrixCache(chunkKey);
       for (const [biome, { matrices, count }] of cachedMatrices) {
         const hexMesh = this.biomeModels.get(biome as any)!;
         hexMesh.setMatricesAndCount(matrices, count);
       }
+      this.ensureMatrixCacheLimit();
       return true;
     }
     return false;
@@ -1830,6 +1915,7 @@ export default class WorldmapScene extends HexagonScene {
   public clearTileEntityCache() {
     this.fetchedChunks.clear();
     this.pendingChunks.clear();
+    this.clearCache();
     // Also clear the interactive hexes when clearing the entire cache
     this.interactiveHexManager.clearHexes();
   }
@@ -2026,7 +2112,7 @@ export default class WorldmapScene extends HexagonScene {
     this.stopRelicValidationTimer();
 
     // Clean up hover label manager
-    this.hoverLabelManager.destroy();
+    // this.hoverLabelManager.dispose();
 
     // Clean up selection pulse manager
     this.selectionPulseManager.dispose();

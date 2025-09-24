@@ -382,7 +382,7 @@ export class StructureManager extends EntityManager<StructureObject> {
       hasWonder: update.hasWonder,
     };
     this.updateObject(structure);
-    
+
     // Refresh biome tiles to hide any biomes at the structure position
     if (this.biomeRefreshCallback) {
       this.biomeRefreshCallback();

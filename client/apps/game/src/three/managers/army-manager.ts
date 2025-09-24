@@ -1,5 +1,6 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { ArmyModel } from "@/three/managers/army-model";
+import { ModelType } from "@/three/types/army";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { GUIManager, LABEL_STYLES } from "@/three/utils/";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
@@ -24,6 +25,7 @@ import { ArmyData, RenderChunkSize } from "../types";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
+import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { MemoryMonitor } from "../utils/memory-monitor";
 import { findShortestPath } from "../utils/pathfinding";
@@ -75,6 +77,7 @@ export class ArmyManager {
   private visibleArmies: ArmyData[] = [];
   private armyPaths: Map<ID, Position[]> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
+  private labelPool = new LabelPool();
   private labelsGroup: Group;
   private currentCameraView: CameraView;
   private hexagonScene?: HexagonScene;
@@ -360,12 +363,25 @@ export class ArmyManager {
     // Reset all model instances
     this.armyModel.resetInstanceCounts();
 
+    const modelTypesByEntity = new Map<ID, ModelType>();
+    const requiredModelTypes = new Set<ModelType>();
+
+    this.visibleArmies.forEach((army) => {
+      const { x, y } = army.hexCoords.getContract();
+      const biome = Biome.getBiome(x, y);
+      const modelType = this.armyModel.getModelTypeForEntity(army.entityId, army.category, army.tier, biome);
+      modelTypesByEntity.set(army.entityId, modelType);
+      requiredModelTypes.add(modelType);
+    });
+
+    await this.armyModel.preloadModels(requiredModelTypes);
+
     let currentCount = 0;
     this.visibleArmies.forEach((army) => {
       const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
       const { x, y } = army.hexCoords.getContract();
-      const biome = Biome.getBiome(x, y);
-      const modelType = this.armyModel.getModelTypeForEntity(army.entityId, army.category, army.tier, biome);
+      const modelType = modelTypesByEntity.get(army.entityId)!;
+
       this.armyModel.assignModelToEntity(army.entityId, modelType);
 
       if (army.isDaydreamsAgent) {
@@ -391,16 +407,13 @@ export class ArmyManager {
       currentCount++;
       this.armyModel.setVisibleCount(currentCount);
 
-      // Add or update entity ID label
-      if (this.entityIdLabels.has(army.entityId)) {
-        const label = this.entityIdLabels.get(army.entityId)!;
-        label.position.copy(position);
-        label.position.y += 1.5;
-      } else {
-        this.addEntityIdLabel(army, position);
+      // Update the position for any active label (labels are created lazily on hover)
+      const activeLabel = this.entityIdLabels.get(army.entityId);
+      if (activeLabel) {
+        activeLabel.position.copy(position);
+        activeLabel.position.y += 1.5;
       }
     });
-
     // Remove labels for armies that are no longer visible
     this.entityIdLabels.forEach((label, entityId) => {
       if (!this.visibleArmies.find((army) => army.entityId === entityId)) {
@@ -444,6 +457,7 @@ export class ArmyManager {
     const { x, y } = params.hexCoords.getContract();
     const biome = Biome.getBiome(x, y);
     const modelType = this.armyModel.getModelTypeForEntity(params.entityId, params.category, params.tier, biome);
+    await this.armyModel.preloadModels([modelType]);
     this.armyModel.assignModelToEntity(params.entityId, modelType);
 
     // Variables to hold the final values
@@ -620,7 +634,9 @@ export class ArmyManager {
 
     // todo: currently taking max stamina of paladin as max stamina but need to refactor
     const maxTroopStamina = configManager.getTroopStaminaConfig(TroopType.Paladin, TroopTier.T3);
-    const maxHex = Math.floor(Number(maxTroopStamina) / configManager.getMinTravelStaminaCost());
+    const staminaMax = Number(maxTroopStamina?.staminaMax ?? 0);
+    const minTravelCost = configManager.getMinTravelStaminaCost();
+    const maxHex = Math.max(0, Math.floor(staminaMax / Math.max(minTravelCost, 1)));
 
     const path = findShortestPath(armyData.hexCoords, hexCoords, exploredTiles, structureHexes, armyHexes, maxHex);
 
@@ -630,12 +646,23 @@ export class ArmyManager {
       return;
     }
 
+    if (path.length < 2) {
+      this.armies.set(entityId, { ...armyData, hexCoords });
+      this.armyPaths.delete(entityId);
+      this.armyModel.setMovementCompleteCallback(Number(entityId), undefined);
+      return;
+    }
+
     // Convert path to world positions
     const worldPath = path.map((pos) => this.getArmyWorldPosition(entityId, pos));
 
     // Update army position immediately to avoid starting from a "back" position
     this.armies.set(entityId, { ...armyData, hexCoords });
     this.armyPaths.set(entityId, path);
+
+    this.armyModel.setMovementCompleteCallback(entityId, () => {
+      this.armyPaths.delete(entityId);
+    });
 
     // Don't remove relic effects during movement - they will follow the army
     // The updateRelicEffectPositions method will handle smooth positioning
@@ -708,6 +735,9 @@ export class ArmyManager {
     // Monitor memory usage before removing army
     this.memoryMonitor.getCurrentStats(`removeArmy-${entityId}`);
 
+    this.armyPaths.delete(entityId);
+    this.armyModel.setMovementCompleteCallback(Number(entityId), undefined);
+
     // Remove any relic effects
     this.updateRelicEffects(entityId, []);
 
@@ -767,31 +797,49 @@ export class ArmyManager {
   }
 
   private async addEntityIdLabel(army: ArmyData, position: Vector3) {
-    // Create label using centralized function
-    const labelDiv = createArmyLabel(army, this.currentCameraView);
+    const { label, isNew } = this.labelPool.acquire(() => {
+      const element = createArmyLabel(army, this.currentCameraView);
+      const cssLabel = new CSS2DObject(element);
+      cssLabel.userData.baseRenderOrder = cssLabel.renderOrder;
+      return cssLabel;
+    });
 
-    // Create CSS2DObject normally (revert pooling for now)
-    const label = new CSS2DObject(labelDiv);
     label.position.copy(position);
     label.position.y += 2.1;
-    // Store entityId in userData for identification
     label.userData.entityId = army.entityId;
 
-    // Store original renderOrder
-    const originalRenderOrder = label.renderOrder;
-
-    // Set renderOrder to Infinity on hover
-    labelDiv.addEventListener("mouseenter", () => {
-      label.renderOrder = Infinity;
-    });
-
-    // Restore original renderOrder when mouse leaves
-    labelDiv.addEventListener("mouseleave", () => {
-      label.renderOrder = originalRenderOrder;
-    });
+    this.configureArmyLabelInteractions(label);
 
     this.entityIdLabels.set(army.entityId, label);
     this.armyModel.addLabel(army.entityId, label);
+
+    this.updateArmyLabelData(army.entityId, army, label);
+  }
+
+  public showLabel(entityId: ID): void {
+    const army = this.armies.get(entityId);
+    if (!army) {
+      return;
+    }
+
+    const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
+    if (this.entityIdLabels.has(army.entityId)) {
+      const label = this.entityIdLabels.get(army.entityId)!;
+      label.position.copy(position);
+      label.position.y += 1.5;
+      this.updateArmyLabelData(entityId, army, label);
+      return;
+    }
+
+    this.addEntityIdLabel(army, position);
+  }
+
+  public hideLabel(entityId: ID): void {
+    this.removeEntityIdLabel(entityId);
+  }
+
+  public hideAllLabels(): void {
+    Array.from(this.entityIdLabels.keys()).forEach((armyId) => this.removeEntityIdLabel(armyId));
   }
 
   removeLabelsFromScene() {
@@ -807,9 +855,28 @@ export class ArmyManager {
   }
 
   private removeEntityIdLabel(entityId: ID) {
-    // Remove label normally (revert pooling for now)
-    this.armyModel.removeLabel(entityId);
+    const label = this.entityIdLabels.get(entityId);
+    if (!label) {
+      return;
+    }
+
+    this.armyModel.removeLabel(Number(entityId));
+    this.labelPool.release(label);
     this.entityIdLabels.delete(entityId);
+  }
+
+  private configureArmyLabelInteractions(label: CSS2DObject): void {
+    const element = label.element as HTMLElement;
+    const baseRenderOrder = (label.userData.baseRenderOrder as number | undefined) ?? label.renderOrder;
+    label.userData.baseRenderOrder = baseRenderOrder;
+
+    element.onmouseenter = () => {
+      label.renderOrder = Infinity;
+    };
+
+    element.onmouseleave = () => {
+      label.renderOrder = baseRenderOrder;
+    };
   }
 
   private handleCameraViewChange = (view: CameraView) => {
@@ -1129,11 +1196,19 @@ ${
       this.updateRelicEffects(entityId, []);
     }
 
+    this.entityIdLabels.forEach((label, entityId) => {
+      this.armyModel.removeLabel(Number(entityId));
+      this.labelPool.release(label);
+    });
+    this.entityIdLabels.clear();
+
+    this.armyPaths.clear();
+
     // Dispose army model resources including shared materials
     this.armyModel.dispose();
 
-    // Clear entity ID labels
-    this.entityIdLabels.clear();
+    // Clear label pool storage after dispose ensures detached DOM
+    this.labelPool.clear();
 
     // Clean up any other resources...
   }

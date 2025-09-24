@@ -279,7 +279,7 @@ export const StructureEntityDetail = memo(
                     {progress?.percentage ?? 0}%
                   </div>
                 </div>
-                <div className="w-full bg-gray-700/70 rounded-full h-2 overflow-hidden">
+                <div className="w-full /70 rounded-full h-2 overflow-hidden">
                   <div
                     className="bg-gradient-to-r from-gold/80 to-gold h-full rounded-full transition-all duration-500 shadow-glow-sm"
                     style={{ width: `${progress?.percentage ?? 0}%` }}

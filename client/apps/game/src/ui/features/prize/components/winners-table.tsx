@@ -6,7 +6,6 @@ import { Has, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 
-
 type Row = {
   player: bigint;
   rank: number;

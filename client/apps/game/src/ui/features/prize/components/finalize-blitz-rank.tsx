@@ -2,7 +2,7 @@ import Button from "@/ui/design-system/atoms/button";
 import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 
 const chunk = <T,>(arr: T[], size: number) => {
   const out: T[][] = [];
@@ -25,9 +25,7 @@ export const FinalizeBlitzRank = ({ className }: { className?: string }) => {
   const playersList = useMemo(() => {
     const manager = LeaderboardManager.instance(components, getRealmCountPerHyperstructure());
     manager.updatePoints();
-    return manager.playersByRank
-      .filter(([, points]) => points > 0)
-      .map(([address]) => address as unknown as string);
+    return manager.playersByRank.filter(([, points]) => points > 0).map(([address]) => address as unknown as string);
   }, [components]);
 
   const onFinalize = async () => {
@@ -61,11 +59,15 @@ export const FinalizeBlitzRank = ({ className }: { className?: string }) => {
   return (
     <div className={className}>
       <div className="text-xs text-gray-400 mb-2">Permissionless — use with caution.</div>
-      <Button variant={playersList.length > 0 ? "warning" : "outline"} disabled={playersList.length === 0 || isSubmitting} isLoading={isSubmitting} onClick={onFinalize}>
+      <Button
+        variant={playersList.length > 0 ? "primary" : "outline"}
+        disabled={playersList.length === 0 || isSubmitting}
+        isLoading={isSubmitting}
+        onClick={onFinalize}
+      >
         Finalize Blitz Rankings
       </Button>
       {status && <div className="text-xs text-gray-500 mt-2">{status}</div>}
     </div>
   );
 };
-

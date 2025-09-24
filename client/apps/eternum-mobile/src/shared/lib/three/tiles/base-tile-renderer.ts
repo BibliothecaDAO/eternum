@@ -159,12 +159,7 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
     return { offsetX, offsetY, repeatX, repeatY };
   }
 
-  protected createSingleTileSprite(
-    spriteKey: string,
-    tileId: TTileIndex,
-    position: THREE.Vector3,
-    row: number,
-  ): void {
+  protected createSingleTileSprite(spriteKey: string, tileId: TTileIndex, position: THREE.Vector3, row: number): void {
     void position; // Position is now handled by the group
 
     // Try to get a sprite from the pool first
@@ -624,10 +619,11 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
         const easeProgress = 1 - Math.pow(1 - progress, 3);
 
         group.position.lerpVectors(startPosition, endPosition, easeProgress);
-        
+
         // Update renderOrder based on current position during animation
         const currentRow = row + (targetRow - row) * easeProgress;
-        group.renderOrder = Math.max(BaseTileRenderer.BASE_RENDER_ORDER + Math.round(currentRow) + 10, 1) + (this.isOverlay ? 1 : 0);
+        group.renderOrder =
+          Math.max(BaseTileRenderer.BASE_RENDER_ORDER + Math.round(currentRow) + 10, 1) + (this.isOverlay ? 1 : 0);
 
         if (progress < 1) {
           requestAnimationFrame(animate);
@@ -688,10 +684,13 @@ export abstract class BaseTileRenderer<TTileIndex extends number = number> {
 
           group.position.lerpVectors(startPosition, endPosition, easeProgress);
           group.position.y += arcProgress;
-          
+
           // Update renderOrder based on current position during animation
-          const currentRow = (currentStep === 0 ? row : path[currentStep - 1].row) + (targetHex.row - (currentStep === 0 ? row : path[currentStep - 1].row)) * easeProgress;
-          group.renderOrder = Math.max(BaseTileRenderer.BASE_RENDER_ORDER + Math.round(currentRow) + 10, 1) + (this.isOverlay ? 1 : 0);
+          const currentRow =
+            (currentStep === 0 ? row : path[currentStep - 1].row) +
+            (targetHex.row - (currentStep === 0 ? row : path[currentStep - 1].row)) * easeProgress;
+          group.renderOrder =
+            Math.max(BaseTileRenderer.BASE_RENDER_ORDER + Math.round(currentRow) + 10, 1) + (this.isOverlay ? 1 : 0);
 
           if (progress < 1) {
             requestAnimationFrame(animate);

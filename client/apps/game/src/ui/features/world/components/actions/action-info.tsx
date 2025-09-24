@@ -113,7 +113,7 @@ const TooltipContent = memo(
             </div>
           </div>
         )}
-        <div className="text-xs text-center mt-2 text-gray-400 animate-pulse">Right-click to confirm</div>
+        <div className="text-xs text-center mt-2  animate-pulse">Right-click to confirm</div>
       </>
     );
   },
@@ -256,7 +256,7 @@ const AttackInfo = memo(
     const getBonusColorClass = (bonus: number) => {
       if (bonus > 1) return "text-green-500";
       if (bonus < 1) return "text-red-500";
-      return "text-gray-400";
+      return "";
     };
 
     return (
@@ -415,10 +415,8 @@ const ChestInfo = memo(() => {
         <div className="text-lg p-1 pr-3">📦</div>
         <div className="flex flex-col p-1 text-xs">
           <div className="font-semibold text-gold mb-1">Relic Crate</div>
-          <div className="text-gray-300 mb-1">
-            Contains valuable relics that can enhance your structures and armies.
-          </div>
-          <div className="text-xs text-gray-400">Click to open the crate and collect relics.</div>
+          <div className=" mb-1">Contains valuable relics that can enhance your structures and armies.</div>
+          <div className="text-xs ">Click to open the crate and collect relics.</div>
         </div>
       </div>
     </div>
@@ -432,8 +430,8 @@ const HelpInfo = memo(() => {
         <div className="text-lg p-1 pr-3">🛡️</div>
         <div className="flex flex-col p-1 text-xs">
           <div className="font-semibold text-gold mb-1">Help</div>
-          <div className="text-gray-300 mb-1">Help an army that is attacking your structure.</div>
-          <div className="text-xs text-gray-400">Click to help the army.</div>
+          <div className=" mb-1">Help an army that is attacking your structure.</div>
+          <div className="text-xs ">Click to help the army.</div>
         </div>
       </div>
     </div>
@@ -447,7 +445,7 @@ const CreateArmyInfo = memo(() => {
         <div className="text-lg p-1 pr-3">🗡️</div>
         <div className="flex flex-col p-1 text-xs">
           <div className="font-semibold text-gold mb-1">Create Army</div>
-          <div className="text-gray-300 mb-1">Create an army to help you explore the world.</div>
+          <div className=" mb-1">Create an army to help you explore the world.</div>
         </div>
       </div>
     </div>

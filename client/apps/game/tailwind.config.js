@@ -76,7 +76,7 @@ export default {
           },
           gray: {
             bg: "bg-gray-600/20",
-            text: "text-gray-400",
+            text: "",
           },
         },
         brilliance: "#7DFFBA",
@@ -261,7 +261,7 @@ export default {
     "bg-ally",
     "bg-enemy",
     // Stamina bar classes
-    "bg-gray-700",
+    "",
     "bg-green-500",
     "bg-yellow-500",
     "bg-red-500",

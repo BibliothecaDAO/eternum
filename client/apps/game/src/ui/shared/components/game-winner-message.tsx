@@ -83,7 +83,7 @@ export const GameWinnerMessage = () => {
 
         <button
           onClick={() => setIsVisible(false)}
-          className="absolute top-3 right-3 p-1.5 rounded-lg bg-slate-700/80 text-gray-400 hover:text-white hover:bg-slate-600/80 transition-all duration-200 group z-10"
+          className="absolute top-3 right-3 p-1.5 rounded-lg bg-slate-700/80  hover:text-white hover:bg-slate-600/80 transition-all duration-200 group z-10"
           aria-label="Close message"
         >
           <X size={16} className="group-hover:rotate-90 transition-transform duration-200" />
@@ -117,9 +117,7 @@ export const GameWinnerMessage = () => {
               <div className="flex flex-col items-center gap-2">
                 <div className="flex items-center gap-2">
                   <Timer className={`w-5 h-5 ${isBridgeClosed ? "text-red-400" : "text-amber-400 animate-pulse"}`} />
-                  <span className="text-sm font-medium text-slate-300">
-                    {isBridgeClosed ? "Bridge Status" : "Bridge Closing In"}
-                  </span>
+                  <span className="text-sm font-medium ">{isBridgeClosed ? "Bridge Status" : "Bridge Closing In"}</span>
                 </div>
                 <div className={`text-lg font-bold ${isBridgeClosed ? "text-red-400" : "text-amber-300"} tabular-nums`}>
                   {formatTimeRemaining(timeRemaining)}

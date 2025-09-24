@@ -29,6 +29,7 @@ export interface ArmyInstanceData {
   rotation?: Euler;
   color?: Color;
   isMoving: boolean;
+  matrixIndex?: number;
   path?: Vector3[];
   category?: TroopType;
   tier?: TroopTier;
@@ -74,4 +75,6 @@ export interface ModelData {
   activeInstances: Set<number>;
   targetScales: Map<number, Vector3>;
   currentScales: Map<number, Vector3>;
+  lastAnimationUpdate: number;
+  animationUpdateInterval: number;
 }

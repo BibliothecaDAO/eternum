@@ -456,7 +456,6 @@ export default class GameRenderer {
 
     // Initialize WorldMap scene
     this.worldmapScene = new WorldmapScene(this.dojo, this.raycaster, this.controls, this.mouse, this.sceneManager);
-    this.worldmapScene.updateVisibleChunks();
     this.sceneManager.addScene(SceneName.WorldMap, this.worldmapScene);
 
     // Set up render pass

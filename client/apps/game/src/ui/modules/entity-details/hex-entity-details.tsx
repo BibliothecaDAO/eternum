@@ -53,7 +53,7 @@ export const HexEntityDetails = () => {
   if (!selectedHex) {
     return (
       <div className="h-full flex items-center justify-center p-4">
-        <div className="text-center text-gray-400">
+        <div className="text-center ">
           <p className="text-lg font-medium mb-2">No hex selected</p>
           <p className="text-sm">Click on a hex to see details</p>
         </div>
@@ -66,7 +66,7 @@ export const HexEntityDetails = () => {
       {/* Header with hex coordinates */}
       {selectedHex && (
         <div className="mb-2 flex-shrink-0 text-center text-sm font-medium">
-          <span className="rounded-md bg-slate-800/80 px-2 py-1 text-slate-300 ring-1 ring-slate-600/40">
+          <span className="rounded-md bg-slate-800/80 px-2 py-1  ring-1 ring-slate-600/40">
             Hex coords: ({selectedHex.col - FELT_CENTER}, {selectedHex.row - FELT_CENTER})
           </span>
         </div>
@@ -75,15 +75,15 @@ export const HexEntityDetails = () => {
       {/* Show unexplored message if hex is not explored */}
       {!isExplored ? (
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-center text-gray-400">
+          <div className="text-center ">
             <div className="mb-3">
-              <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-700 flex items-center justify-center">
+              <div className="w-16 h-16 mx-auto mb-3 rounded-full  flex items-center justify-center">
                 <span className="text-2xl">🗺️</span>
               </div>
             </div>
-            <p className="text-lg font-medium mb-2 text-gray-300">Unexplored Territory</p>
-            <p className="text-sm text-gray-500">This hex has not been explored yet.</p>
-            <p className="text-xs text-gray-600 mt-2">Send an explorer to discover what lies here.</p>
+            <p className="text-lg font-medium mb-2 ">Unexplored Territory</p>
+            <p className="text-sm ">This hex has not been explored yet.</p>
+            <p className="text-xs  mt-2">Send an explorer to discover what lies here.</p>
           </div>
         </div>
       ) : (

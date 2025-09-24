@@ -226,19 +226,20 @@ export class QuestManager {
           position.y += 0.05;
           const { x, y } = quest.hexCoords.getContract();
 
-          // Create or update quest label using the label manager
-          const questLabelData: QuestLabelData = {
-            entityId: quest.entityId,
-            hexCoords: quest.hexCoords,
-            questType: quest.questType,
-            occupierId: quest.occupierId,
-          };
+          // Update quest label only if it is currently active (labels are created lazily on hover)
+          const activeLabel = this.labelManager.getLabel(Number(quest.entityId));
+          if (activeLabel) {
+            const questLabelData: QuestLabelData = {
+              entityId: quest.entityId,
+              hexCoords: quest.hexCoords,
+              questType: quest.questType,
+              occupierId: quest.occupierId,
+            };
 
-          // Remove existing label if it exists, then create new one
-          this.labelManager.removeLabel(quest.entityId);
-          this.labelManager.createLabel("quest", questLabelData, {
-            cameraView: this.currentCameraView,
-          });
+            this.labelManager.createLabel("quest", questLabelData, {
+              cameraView: this.currentCameraView,
+            });
+          }
 
           this.dummy.position.copy(position);
 
@@ -293,6 +294,32 @@ export class QuestManager {
     // Labels are automatically added when created
   }
 
+  public showLabel(entityId: ID): void {
+    const quest = this.quests.getQuest(entityId);
+    if (!quest) {
+      return;
+    }
+
+    const questLabelData: QuestLabelData = {
+      entityId: quest.entityId,
+      hexCoords: quest.hexCoords,
+      questType: quest.questType,
+      occupierId: quest.occupierId,
+    };
+
+    this.labelManager.createLabel("quest", questLabelData, {
+      cameraView: this.currentCameraView,
+    });
+  }
+
+  public hideLabel(entityId: ID): void {
+    this.labelManager.removeLabel(Number(entityId));
+  }
+
+  public hideAllLabels(): void {
+    this.labelManager.removeAllLabels();
+  }
+
   // Label visibility transitions are now handled automatically by LabelManager
 
   // Getter for compatibility with worldmap hover functionality
@@ -344,6 +371,17 @@ class Quests {
     });
 
     return removedQuest;
+  }
+
+  getQuest(entityId: ID): QuestData | undefined {
+    for (const quests of this.quests.values()) {
+      const quest = quests.get(entityId);
+      if (quest) {
+        return quest;
+      }
+    }
+
+    return undefined;
   }
 
   getQuests(): Map<QuestType, Map<ID, QuestData>> {

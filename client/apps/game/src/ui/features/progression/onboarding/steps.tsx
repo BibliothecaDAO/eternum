@@ -383,7 +383,7 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
       {seasonPassRealms.length === 0 && !loading ? (
         <div className="flex flex-col gap-2">
           <h3 className="text-gold">No Realms</h3>
-          <p className="text-gray-400">You need to have at least one realm to settle a season pass.</p>
+          <p className="">You need to have at least one realm to settle a season pass.</p>
           <Button size="lg" onClick={onPrevious}>
             Go Back
           </Button>

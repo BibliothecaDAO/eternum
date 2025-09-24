@@ -304,11 +304,7 @@ export class EternumProvider extends EnhancedDojoProvider {
           calls.push({
             contractAddress: feeToken,
             entrypoint: "approve",
-            calldata: CallData.compile([
-              blitzRealmSystemsAddress,
-              amountUint256.low,
-              amountUint256.high,
-            ]),
+            calldata: CallData.compile([blitzRealmSystemsAddress, amountUint256.low, amountUint256.high]),
           });
         }
       } catch (error) {
@@ -2641,7 +2637,17 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_blitz_registration_config(props: SystemProps.SetBlitzRegistrationConfigProps) {
-    const { fee_token, fee_recipient, fee_amount, registration_count_max, registration_start_at, entry_token_class_hash, entry_token_deploy_calldata, entry_token_ipfs_cid, signer } = props;
+    const {
+      fee_token,
+      fee_recipient,
+      fee_amount,
+      registration_count_max,
+      registration_start_at,
+      entry_token_class_hash,
+      entry_token_deploy_calldata,
+      entry_token_ipfs_cid,
+      signer,
+    } = props;
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_blitz_registration_config",

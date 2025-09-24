@@ -45,10 +45,10 @@ export const CollectionTokenGrid = ({
           <h3 className="text-3xl font-bold text-gray-900 tracking-tight">No Season Passes Yet</h3>
 
           <div className="space-y-4">
-            <p className="text-gray-600 max-w-lg mx-auto leading-relaxed">
+            <p className=" max-w-lg mx-auto leading-relaxed">
               Your collection of season passes will appear here until you burn them to play the game.
             </p>
-            <p className="text-gray-500 max-w-lg mx-auto leading-relaxed">
+            <p className=" max-w-lg mx-auto leading-relaxed">
               Once you burn a pass, it will be removed from this view.
             </p>
           </div>

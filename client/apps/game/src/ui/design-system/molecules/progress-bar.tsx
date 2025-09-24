@@ -41,7 +41,7 @@ export const ProgressBar = ({
         }}
         className={`flex flex-col text-xs font-bold uppercase self-center ${className}`}
       >
-        <div className="bg-gray-700 rounded-full h-2 w-16 border border-gray-600 overflow-hidden">
+        <div className=" rounded-full h-2 w-16 border border-gray-600 overflow-hidden">
           <div
             className={`${fillColor} h-full rounded-full transition-all duration-300`}
             style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}

@@ -248,9 +248,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.blitz_prize_player_rank(props);
   };
 
-  const blitz_prize_claim = async (
-    props: SystemProps.BlitzPrizeClaimProps,
-  ): Promise<GetTransactionReceiptResponse> => {
+  const blitz_prize_claim = async (props: SystemProps.BlitzPrizeClaimProps): Promise<GetTransactionReceiptResponse> => {
     return await provider.blitz_prize_claim(props);
   };
 

@@ -164,7 +164,7 @@ const RelicCarousel = ({ foundRelics }: { foundRelics: number[] }) => {
                       Level {hoveredRelicInfo.level}
                     </span>
                   </div>
-                  <p className="text-gray-300 text-sm mb-2">{hoveredRelicInfo.effect}</p>
+                  <p className=" text-sm mb-2">{hoveredRelicInfo.effect}</p>
                   {hoveredRelicInfo.duration && (
                     <p className="text-gold/70 text-xs mb-1">Duration: {hoveredRelicInfo.duration}</p>
                   )}
@@ -847,7 +847,7 @@ export const ChestContainer = ({
                             </div>
 
                             {/* Effect Description */}
-                            <p className="text-gray-300 text-sm text-center mb-3 leading-relaxed">{relic.effect}</p>
+                            <p className=" text-sm text-center mb-3 leading-relaxed">{relic.effect}</p>
 
                             {/* Additional Info */}
                             <div className="flex flex-col items-center gap-1 text-xs">

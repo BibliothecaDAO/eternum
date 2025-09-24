@@ -275,15 +275,7 @@ export function createGuardArmyDisplay(
   guardArmies: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>,
 ): HTMLElement {
   const container = document.createElement("div");
-  container.classList.add(
-    "flex",
-    "flex-row",
-    "gap-0.5",
-    "text-xxs",
-    "overflow-x-auto",
-    "text-gray-400",
-    "leading-none",
-  );
+  container.classList.add("flex", "flex-row", "gap-0.5", "text-xxs", "overflow-x-auto", "leading-none");
   container.setAttribute("data-component", "guard-armies");
 
   if (guardArmies.length === 0) {
@@ -350,7 +342,7 @@ export function createProductionDisplay(
   if (activeProductions.length === 0) {
     const noProduction = document.createElement("span");
     noProduction.textContent = "No Active Production";
-    noProduction.classList.add("text-gray-400", "italic");
+    noProduction.classList.add("italic");
     container.appendChild(noProduction);
     return container;
   }
