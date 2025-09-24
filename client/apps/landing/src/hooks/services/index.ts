@@ -256,7 +256,7 @@ export async function fetchSingleCollectionToken(
 
   const item = rawData[0];
   const tokenIdHex = item.token_id_hex ?? (item.token_id ? `0x${item.token_id}` : null);
-  const tokenIdDecimalResult = tokenIdHex ? BigInt(tokenIdHex).toString() : item.token_id ?? tokenIdDecimal;
+  const tokenIdDecimalResult = tokenIdHex ? BigInt(tokenIdHex).toString() : (item.token_id ?? tokenIdDecimal);
 
   return {
     ...item,
