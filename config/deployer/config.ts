@@ -1428,29 +1428,29 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
     registration_start_at = registration_end_at - registration_period_seconds;
   }
 
-    const entryTokenClassHash = config.config.blitz.registration.entry_token_class_hash;
-    const entryTokenIpfsCid = byteArray.byteArrayFromString(config.config.blitz.registration.entry_token_ipfs_cid);
-    const entryTokenDeployCalldata = [
-      "0x0",
-      "0x5265616c6d733a204c6f6f74204368657374",
-      "0x12",
-      "0x0",
-      "0x524c43",
-      "0x3",
-      "0x0",
-      "0x0",
-      "0x0",
-      "0x0",
-      "0x4c6f6f7420436865737420666f72205265616c6d73",
-      "0x15",
-      "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
-      getContractByName(config.provider.manifest, `${NAMESPACE}-blitz_realm_systems`),
-      "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
-      getContractByName(config.provider.manifest, `${NAMESPACE}-config_systems`),
-      getContractByName(config.provider.manifest, `${NAMESPACE}-config_systems`),
-      "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
-      "0x1f4",
-    ];
+  const entryTokenClassHash = config.config.blitz.registration.entry_token_class_hash;
+  const entryTokenIpfsCid = byteArray.byteArrayFromString(config.config.blitz.registration.entry_token_ipfs_cid);
+  const entryTokenDeployCalldata = [
+    "0x0",
+    "0x5265616c6d733a204c6f6f74204368657374",
+    "0x12",
+    "0x0",
+    "0x524c43",
+    "0x3",
+    "0x0",
+    "0x0",
+    "0x0",
+    "0x0",
+    "0x4c6f6f7420436865737420666f72205265616c6d73",
+    "0x15",
+    "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
+    getContractByName(config.provider.manifest, `${NAMESPACE}-blitz_realm_systems`),
+    "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
+    getContractByName(config.provider.manifest, `${NAMESPACE}-config_systems`),
+    getContractByName(config.provider.manifest, `${NAMESPACE}-config_systems`),
+    "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
+    "0x1f4",
+  ];
 
   const registrationCalldata = {
     signer: config.account,

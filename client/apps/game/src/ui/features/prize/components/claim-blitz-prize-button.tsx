@@ -120,9 +120,9 @@ export const ClaimBlitzPrizeButton = ({ className }: { className?: string }) => 
               </span>
               <span className="flex justify-between gap-4">
                 <span>Share:</span>
-              <span className={prizeShare ? "text-yellow-400" : "text-gray-400"}>
+                <span className={prizeShare ? "text-yellow-400" : "text-gray-400"}>
                   {formatTokenAmount(prizeShare)}
-              </span>
+                </span>
               </span>
             </div>
           ),

@@ -296,16 +296,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             namespace: "s1_eternum",
             name: "PlayersRankTrial",
-            types: [
-              "u128",
-              "ContractAddress",
-              "u16",
-              "u128",
-              "u128",
-              "u16",
-              "u16",
-              "u128",
-            ],
+            types: ["u128", "ContractAddress", "u16", "u128", "u128", "u16", "u16", "u128"],
             customTypes: [],
           },
         },

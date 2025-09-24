@@ -208,9 +208,7 @@ export class StructureManager {
       return empty;
     }
 
-    pending = Promise.all(
-      modelPaths.map((modelPath) => this.loadStructureModel(structureType, modelPath)),
-    )
+    pending = Promise.all(modelPaths.map((modelPath) => this.loadStructureModel(structureType, modelPath)))
       .then((models) => {
         this.structureModels.set(structureType, models);
         models.forEach((model) => {

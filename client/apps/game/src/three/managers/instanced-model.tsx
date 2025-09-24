@@ -48,7 +48,12 @@ export default class InstancedModel {
   private lastWonderUpdate = 0;
   private wonderUpdateInterval = 1000 / 30; // 30 FPS for wonder rotation
 
-  constructor(gltf: any, initialCapacity: number = DEFAULT_INITIAL_CAPACITY, enableRaycast: boolean = false, name: string = "") {
+  constructor(
+    gltf: any,
+    initialCapacity: number = DEFAULT_INITIAL_CAPACITY,
+    enableRaycast: boolean = false,
+    name: string = "",
+  ) {
     this.name = name;
     this.group = new Group();
     this.count = 0;

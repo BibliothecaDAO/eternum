@@ -31,7 +31,7 @@ export const deployLordsContract = async () => {
   let projectName = "lords"; // eternum season pass
   let contractName = "TestLords";
   const class_hash = (await declare(getContractPath(TARGET_PATH, projectName, contractName), casualName)).class_hash;
-  
+
   // deploy contract
   let constructorCalldata = [];
   let address = await deploy(casualName, class_hash, constructorCalldata);

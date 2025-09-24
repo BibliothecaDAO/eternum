@@ -705,7 +705,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
           vpLabel.classList.add("text-order-brilliance/80");
           vpLabel.textContent = "VP/s";
         } else {
-        vpLabel.classList.add("text-muted-foreground/80");
+          vpLabel.classList.add("text-muted-foreground/80");
           vpLabel.textContent = "VP/s (unclaimed)";
         }
 

@@ -173,10 +173,7 @@ export class InteractiveHexManager {
     }
 
     const hexagonGeometry = this.hexGeometryPool.getGeometry("interactive");
-    hexGeometryDebugger.trackSharedGeometryUsage(
-      "interactive",
-      "InteractiveHexManager.ensureInstanceMeshCapacity",
-    );
+    hexGeometryDebugger.trackSharedGeometryUsage("interactive", "InteractiveHexManager.ensureInstanceMeshCapacity");
 
     const mesh = new THREE.InstancedMesh(hexagonGeometry, interactiveHexMaterial, requiredCapacity);
     mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);

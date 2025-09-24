@@ -161,14 +161,10 @@ function createPathfindingProfiler(
   const finish = (result: Position[], outcome: PathfindingOutcome): Position[] => {
     const durationMs = performance.now() - startTime;
     const endHeap = hasMemory ? perfAny.memory.usedJSHeapSize : null;
-    const heapDeltaMB =
-      startHeap !== null && endHeap !== null ? (endHeap - startHeap) / (1024 * 1024) : null;
+    const heapDeltaMB = startHeap !== null && endHeap !== null ? (endHeap - startHeap) / (1024 * 1024) : null;
 
     const shouldLog =
-      (heapDeltaMB !== null && heapDeltaMB > 10) ||
-      nodesCreated > 5000 ||
-      nodesExpanded > 5000 ||
-      durationMs > 20;
+      (heapDeltaMB !== null && heapDeltaMB > 10) || nodesCreated > 5000 || nodesExpanded > 5000 || durationMs > 20;
 
     if (shouldLog) {
       console.warn("[PATHFIND] heavy search", {

@@ -1,14 +1,9 @@
-import {
-  deployLordsContract,
-  saveContractAddressToCommonFolder
-} from "./libs/commands.js";
+import { deployLordsContract, saveContractAddressToCommonFolder } from "./libs/commands.js";
 import { confirmMainnetDeployment, exitIfDeclined } from "./utils.js";
 
-
 export const deployLords = async () => {
-
-  const name = "lords"
-  const symbol = "$lords"
+  const name = "lords";
+  const symbol = "$lords";
   // Pretty console header
   console.log("\n\n");
   console.log(`╔══════════════════════════════════════════════════════════╗`.green);
@@ -25,10 +20,9 @@ export const deployLords = async () => {
   // Deploy Test Lords contract
   const lordsAddress = await deployLordsContract();
 
-  await saveContractAddressToCommonFolder("lords", lordsAddress)
+  await saveContractAddressToCommonFolder("lords", lordsAddress);
 
   console.log(`\n\n 🎨 Deployed Test Lords contract: ${toHex(lordsAddress)}`);
-
 
   console.log("\n\n");
   console.log(`╔════════════════════════════════════════════════════════════════════════════════════════════╗`.yellow);
@@ -47,6 +41,5 @@ const toHex = (address) => {
   }
   return "0x" + address.toString(16);
 };
-
 
 await deployLords();

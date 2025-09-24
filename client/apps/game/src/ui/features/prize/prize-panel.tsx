@@ -29,7 +29,7 @@ export const PrizePanel = () => {
     [finalEntities],
   );
 
-  console.log({final, finalEntities})
+  console.log({ final, finalEntities });
   const finalTrialId = final?.trial_id as bigint | undefined;
 
   // All trials to find the one owned by the connected user
@@ -42,9 +42,7 @@ export const PrizePanel = () => {
     [trialEntities, components.PlayersRankTrial],
   );
   const myTrial = useMemo(() => {
-    const mine = trials.filter(
-      (t) => String(t.owner).toLowerCase() === String(account.address).toLowerCase(),
-    );
+    const mine = trials.filter((t) => String(t.owner).toLowerCase() === String(account.address).toLowerCase());
     if (mine.length === 0) return undefined;
     // pick the latest by trial_id
     return mine.sort((a, b) => ((b.trial_id as bigint) > (a.trial_id as bigint) ? 1 : -1))[0];
@@ -149,53 +147,55 @@ export const PrizePanel = () => {
   const statusChipLabel = rankingCompleted
     ? "Complete"
     : seasonTiming.status === "ranking-open"
-    ? "Window Open"
-    : seasonTiming.status === "grace"
-    ? "Grace Window"
-    : seasonTiming.status === "running"
-    ? "In Season"
-    : "Loading";
-  const statusChipClass = rankingCompleted || rankingWindowOpen
-    ? "border-green-400/40 text-green-300 bg-green-900/20"
-    : graceActive
-    ? "border-yellow-400/40 text-yellow-200 bg-yellow-900/20"
-    : seasonRunning
-    ? "border-gray-500/40 text-gray-300 bg-gray-900/30"
-    : "border-gray-500/30 text-gray-300 bg-gray-900/20";
+      ? "Window Open"
+      : seasonTiming.status === "grace"
+        ? "Grace Window"
+        : seasonTiming.status === "running"
+          ? "In Season"
+          : "Loading";
+  const statusChipClass =
+    rankingCompleted || rankingWindowOpen
+      ? "border-green-400/40 text-green-300 bg-green-900/20"
+      : graceActive
+        ? "border-yellow-400/40 text-yellow-200 bg-yellow-900/20"
+        : seasonRunning
+          ? "border-gray-500/40 text-gray-300 bg-gray-900/30"
+          : "border-gray-500/30 text-gray-300 bg-gray-900/20";
 
-  const countdownSeconds = seasonTiming.status === "running"
-    ? seasonTiming.endAt - nowTs
-    : seasonTiming.status === "grace"
-    ? seasonTiming.graceEnds - nowTs
-    : 0;
+  const countdownSeconds =
+    seasonTiming.status === "running"
+      ? seasonTiming.endAt - nowTs
+      : seasonTiming.status === "grace"
+        ? seasonTiming.graceEnds - nowTs
+        : 0;
   const countdownText = countdownSeconds > 0 ? formatDuration(countdownSeconds) : null;
   const statusSubtitle = rankingCompleted
     ? "Ranking complete — rewards are ready to claim."
     : rankingWindowOpen
-    ? "Finalize the list once to enable prize claims for everyone."
-    : graceActive
-    ? `Registration closes in ${countdownText ?? "..."}.`
-    : seasonRunning
-    ? `Season ends in ${countdownText ?? "..."}.`
-    : "Checking season status...";
+      ? "Finalize the list once to enable prize claims for everyone."
+      : graceActive
+        ? `Registration closes in ${countdownText ?? "..."}.`
+        : seasonRunning
+          ? `Season ends in ${countdownText ?? "..."}.`
+          : "Checking season status...";
   const statusPrimaryTitle = rankingCompleted
     ? "Ranking finalized"
     : rankingWindowOpen
-    ? "Ranking window open"
-    : graceActive
-    ? "Grace period in progress"
-    : seasonRunning
-    ? "Season still running"
-    : "Season status loading";
+      ? "Ranking window open"
+      : graceActive
+        ? "Grace period in progress"
+        : seasonRunning
+          ? "Season still running"
+          : "Season status loading";
   const statusPrimaryBody = rankingCompleted
     ? "Another commander already completed the ranking. Players can claim rewards now."
     : rankingWindowOpen
-    ? "Finalize once to unlock prize claims for all ranked players."
-    : graceActive
-    ? `Points registration closes in ${countdownText ?? "..."}.`
-    : seasonRunning
-    ? `Finalization unlocks after the season ends${countdownText ? ` (${countdownText})` : ""}.`
-    : "Waiting on season data.";
+      ? "Finalize once to unlock prize claims for all ranked players."
+      : graceActive
+        ? `Points registration closes in ${countdownText ?? "..."}.`
+        : seasonRunning
+          ? `Finalization unlocks after the season ends${countdownText ? ` (${countdownText})` : ""}.`
+          : "Waiting on season data.";
 
   const handleStartOrContinue = async () => {
     if (registeredPlayers.length === 0) return;
@@ -355,9 +355,7 @@ export const PrizePanel = () => {
                 <span>Current Ranking Progress</span>
                 <div className="flex items-center gap-4">
                   <span className="font-mono text-gray-300">Ref: {String(myTrialId)}</span>
-                  <span className="text-gray-300 font-medium">
-                    Total Pot: {formatTokenAmount(myTotalPot)}
-                  </span>
+                  <span className="text-gray-300 font-medium">Total Pot: {formatTokenAmount(myTotalPot)}</span>
                 </div>
               </div>
               <WinnersTable trialId={myTrialId} />
@@ -369,7 +367,9 @@ export const PrizePanel = () => {
                   <span className="uppercase tracking-[0.3em] text-[10px] text-gold/70">Next Step</span>
                   <span className="text-sm text-gray-200">Submit the next batch to finish the community ranking.</span>
                 </div>
-                <div className={`ml-auto px-3 py-1 rounded-full border text-[10px] uppercase tracking-[0.25em] ${statusChipClass}`}>
+                <div
+                  className={`ml-auto px-3 py-1 rounded-full border text-[10px] uppercase tracking-[0.25em] ${statusChipClass}`}
+                >
                   {statusChipLabel}
                 </div>
               </div>
@@ -428,19 +428,19 @@ export const PrizePanel = () => {
           </>
         ) : (
           <>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div className="rounded-xl border border-gold/20 bg-black/45 p-4 flex items-center gap-3 shadow-inner shadow-black/50">
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-gold/15 text-gold">
-                <Clock3 size={16} />
-              </span>
-              <div>
-                <div className="text-sm text-gray-100 font-medium">{statusPrimaryTitle}</div>
-                <div className="text-xs text-gray-400">{statusPrimaryBody}</div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="rounded-xl border border-gold/20 bg-black/45 p-4 flex items-center gap-3 shadow-inner shadow-black/50">
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-gold/15 text-gold">
+                  <Clock3 size={16} />
+                </span>
+                <div>
+                  <div className="text-sm text-gray-100 font-medium">{statusPrimaryTitle}</div>
+                  <div className="text-xs text-gray-400">{statusPrimaryBody}</div>
+                </div>
               </div>
-            </div>
-            <div className="rounded-xl border border-gold/20 bg-black/45 p-4 flex items-center gap-3 shadow-inner shadow-black/50">
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-gold/15 text-gold">
-                <Users size={16} />
+              <div className="rounded-xl border border-gold/20 bg-black/45 p-4 flex items-center gap-3 shadow-inner shadow-black/50">
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-gold/15 text-gold">
+                  <Users size={16} />
                 </span>
                 <div>
                   <div className="text-sm text-gray-100 font-medium">{totalRegistered} players ready</div>
@@ -459,20 +459,26 @@ export const PrizePanel = () => {
                     One player submits when the window opens. Everyone else just claims.
                   </span>
                 </div>
-                <div className={`ml-auto px-3 py-1 rounded-full border text-[10px] uppercase tracking-[0.25em] ${statusChipClass}`}>
+                <div
+                  className={`ml-auto px-3 py-1 rounded-full border text-[10px] uppercase tracking-[0.25em] ${statusChipClass}`}
+                >
                   {statusChipLabel}
                 </div>
               </div>
               <div className="flex flex-col md:flex-row gap-3">
-              <Button
-                className="md:flex-1"
-                variant="primary"
-                isLoading={isSubmitting}
-                disabled={isSubmitting || !rankingWindowOpen || rankingCompleted}
-                onClick={handleStartOrContinue}
-              >
-                {rankingCompleted ? "Ranking Complete" : rankingWindowOpen ? "Start Ranking Submission" : "Ready When Season Ends"}
-              </Button>
+                <Button
+                  className="md:flex-1"
+                  variant="primary"
+                  isLoading={isSubmitting}
+                  disabled={isSubmitting || !rankingWindowOpen || rankingCompleted}
+                  onClick={handleStartOrContinue}
+                >
+                  {rankingCompleted
+                    ? "Ranking Complete"
+                    : rankingWindowOpen
+                      ? "Start Ranking Submission"
+                      : "Ready When Season Ends"}
+                </Button>
                 <Button className="md:w-auto" variant="outline" onClick={() => setShowAdvanced((v) => !v)}>
                   {showAdvanced ? "Hide Advanced" : "Advanced Controls"}
                 </Button>

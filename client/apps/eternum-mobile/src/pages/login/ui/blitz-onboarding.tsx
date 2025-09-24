@@ -2,7 +2,14 @@ import { ROUTES } from "@/shared/consts/routes";
 import { useSetAddressName } from "@/shared/hooks/use-set-address-name";
 import { useSyncPlayerStructures } from "@/shared/hooks/use-sync-player-structures";
 import { Button } from "@/shared/ui/button";
-import { configManager, formatTime, getEntityIdFromKeys, ENTRY_TOKEN_LOCK_ID, LordsAbi, toHexString } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  formatTime,
+  getEntityIdFromKeys,
+  ENTRY_TOKEN_LOCK_ID,
+  LordsAbi,
+  toHexString,
+} from "@bibliothecadao/eternum";
 import { useDojo, useEntryTokenBalance } from "@bibliothecadao/react";
 import { ControllerConnector } from "@cartridge/connector";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
@@ -297,8 +304,7 @@ const RegistrationState = ({
   const [isRegistering, setIsRegistering] = useState(false);
   const navigate = useNavigate();
 
-  const tokenReady =
-    !requiresEntryToken || (Boolean(availableEntryTokenId) && hasSufficientFeeBalance);
+  const tokenReady = !requiresEntryToken || (Boolean(availableEntryTokenId) && hasSufficientFeeBalance);
 
   const handleRegister = async () => {
     setIsRegistering(true);
@@ -329,7 +335,12 @@ const RegistrationState = ({
         <div className="space-y-3">
           {requiresEntryToken && (
             <div className="space-y-2">
-              <Button onClick={() => onObtainEntryToken?.()} disabled={isObtainingEntryToken} variant="secondary" className="w-full">
+              <Button
+                onClick={() => onObtainEntryToken?.()}
+                disabled={isObtainingEntryToken}
+                variant="secondary"
+                className="w-full"
+              >
                 {isObtainingEntryToken ? (
                   <div className="flex items-center justify-center gap-2">
                     <img src="/images/logos/eternum-loader.png" className="h-5 w-5 animate-spin" />
@@ -354,9 +365,7 @@ const RegistrationState = ({
                         : "Mint an entry token before registering. We'll lock it automatically when you join."}
               </p>
               {requiresEntryToken && !hasSufficientFeeBalance && (
-                <p className="text-center text-[10px] text-red-300">
-                  Top up your balance before registering.
-                </p>
+                <p className="text-center text-[10px] text-red-300">Top up your balance before registering.</p>
               )}
             </div>
           )}
@@ -616,9 +625,8 @@ export const BlitzOnboarding = () => {
       return;
     }
 
-    const maxTokens = entryTokenBalance > BigInt(Number.MAX_SAFE_INTEGER)
-      ? Number.MAX_SAFE_INTEGER
-      : Number(entryTokenBalance);
+    const maxTokens =
+      entryTokenBalance > BigInt(Number.MAX_SAFE_INTEGER) ? Number.MAX_SAFE_INTEGER : Number(entryTokenBalance);
     const randomIndex = maxTokens > 1 ? BigInt(Math.floor(Math.random() * maxTokens)) : 0n;
 
     setHasQueriedEntryToken(true);
@@ -844,13 +852,7 @@ export const BlitzOnboarding = () => {
               </div>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>Your balance</span>
-                <span
-                  className={
-                    hasSufficientFeeBalance
-                      ? "text-gold text-sm"
-                      : "text-red-300 text-sm"
-                  }
-                >
+                <span className={hasSufficientFeeBalance ? "text-gold text-sm" : "text-red-300 text-sm"}>
                   {isFeeBalanceLoading ? "…" : formatTokenAmount(feeTokenBalance)}
                 </span>
               </div>
@@ -860,12 +862,7 @@ export const BlitzOnboarding = () => {
                 </p>
               )}
               {canTopUpBalance && !hasSufficientFeeBalance && (
-                <Button
-                  onClick={handleTopUpFeeBalance}
-                  disabled={isToppingUp}
-                  variant="secondary"
-                  className="w-full"
-                >
+                <Button onClick={handleTopUpFeeBalance} disabled={isToppingUp} variant="secondary" className="w-full">
                   {isToppingUp ? "Topping up…" : "Top up balance"}
                 </Button>
               )}
