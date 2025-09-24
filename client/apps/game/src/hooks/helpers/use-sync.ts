@@ -1,10 +1,12 @@
 import { getGuildsFromTorii, getHyperstructureFromTorii, getMarketFromTorii, getQuestsFromTorii } from "@/dojo/queries";
 import { sqlApi } from "@/services/api";
 import { useDojo } from "@bibliothecadao/react";
-import { useEffect, useState } from "react";
+import { ToriiClient } from "@dojoengine/torii-wasm";
+import { useCallback, useEffect, useState } from "react";
 import { Subscription, useSyncStore } from "../store/use-sync-store";
 import { useUIStore } from "../store/use-ui-store";
 import { LoadingStateKey } from "../store/use-world-loading";
+import { useToriiSync } from "./use-torii-sync";
 
 export const useSyncLeaderboard = () => {
   const {
@@ -87,33 +89,21 @@ export const useSyncHyperstructure = () => {
 };
 
 export const useSyncMarket = () => {
-  const {
-    network: { toriiClient, contractComponents },
-  } = useDojo();
-
-  const [isSyncing, setIsSyncing] = useState(true);
-  const subscriptions = useSyncStore((state) => state.subscriptions);
-  const setSubscription = useSyncStore((state) => state.setSubscription);
-  const setLoading = useUIStore((state) => state.setLoading);
-
-  useEffect(() => {
-    const syncState = async () => {
-      setLoading(LoadingStateKey.Market, true);
-      const marketPromise = subscriptions[Subscription.Market]
-        ? Promise.resolve()
-        : getMarketFromTorii(toriiClient, contractComponents as any);
-
+  const syncMarket = useCallback(
+    async ({ toriiClient, contractComponents }: { toriiClient: ToriiClient; contractComponents: unknown }) => {
       const start = performance.now();
-      await Promise.all([marketPromise]);
+      await getMarketFromTorii(toriiClient, contractComponents as any);
       const end = performance.now();
       console.log("[sync] market query", end - start);
+    },
+    [],
+  );
 
-      setSubscription(Subscription.Market, true);
-      setIsSyncing(false);
-      setLoading(LoadingStateKey.Market, false);
-    };
-    syncState();
-  }, [contractComponents]);
+  const { isSyncing } = useToriiSync({
+    subscriptionKey: Subscription.Market,
+    loadingKey: LoadingStateKey.Market,
+    fetch: syncMarket,
+  });
 
   return { isSyncing };
 };
