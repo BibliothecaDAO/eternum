@@ -645,6 +645,17 @@ export interface ClaimSharePointsProps extends SystemSigner {
   hyperstructure_ids: BigNumberish[];
 }
 
+// Prize distribution (Blitz)
+export interface BlitzPrizePlayerRankProps extends SystemSigner {
+  trial_id: BigNumberish;
+  total_player_count_committed: BigNumberish;
+  players_list: BigNumberish[]; // Array<ContractAddress>
+}
+
+export interface BlitzPrizeClaimProps extends SystemSigner {
+  players: BigNumberish[]; // Array<ContractAddress>
+}
+
 export interface SetStaminaConfigProps extends SystemSigner {
   unit_type: BigNumberish;
   max_stamina: BigNumberish;

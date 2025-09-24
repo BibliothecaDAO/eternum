@@ -2508,6 +2508,31 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  // Prize distribution (Blitz)
+  public async blitz_prize_player_rank(props: SystemProps.BlitzPrizePlayerRankProps) {
+    const { trial_id, total_player_count_committed, players_list, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-prize_distribution_systems`),
+      entrypoint: "blitz_prize_player_rank",
+      calldata: [trial_id, total_player_count_committed, players_list.length, ...players_list],
+    });
+
+    return await this.promiseQueue.enqueue(call);
+  }
+
+  public async blitz_prize_claim(props: SystemProps.BlitzPrizeClaimProps) {
+    const { players, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-prize_distribution_systems`),
+      entrypoint: "blitz_prize_claim",
+      calldata: [players.length, ...players],
+    });
+
+    return await this.promiseQueue.enqueue(call);
+  }
+
   public async claim_construction_points(props: SystemProps.ClaimConstructionPointsProps) {
     const { hyperstructure_ids, player, signer } = props;
 

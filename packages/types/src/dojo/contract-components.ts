@@ -278,6 +278,98 @@ export function defineContractComponents(world: World) {
       );
     })(),
 
+    // Prize distribution models (Blitz)
+    PlayersRankTrial: (() => {
+      return defineComponent(
+        world,
+        {
+          trial_id: RecsType.BigInt,
+          owner: RecsType.BigInt,
+          last_rank: RecsType.Number,
+          last_player_points: RecsType.BigInt,
+          total_player_points: RecsType.BigInt,
+          total_player_count_committed: RecsType.Number,
+          total_player_count_revealed: RecsType.Number,
+          total_prize_amount: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "PlayersRankTrial",
+            types: [
+              "u128",
+              "ContractAddress",
+              "u16",
+              "u128",
+              "u128",
+              "u16",
+              "u16",
+              "u128",
+            ],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
+    PlayersRankFinal: (() => {
+      return defineComponent(
+        world,
+        {
+          world_id: RecsType.BigInt,
+          trial_id: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "PlayersRankFinal",
+            types: ["u128", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
+    PlayerRank: (() => {
+      return defineComponent(
+        world,
+        {
+          trial_id: RecsType.BigInt,
+          player: RecsType.BigInt,
+          rank: RecsType.Number,
+          paid: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "PlayerRank",
+            types: ["u128", "ContractAddress", "u16", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
+    RankPrize: (() => {
+      return defineComponent(
+        world,
+        {
+          trial_id: RecsType.BigInt,
+          rank: RecsType.Number,
+          total_players_same_rank_count: RecsType.Number,
+          total_prize_amount: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "RankPrize",
+            types: ["u128", "u16", "u16", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
     SeasonPrize: (() => {
       return defineComponent(
         world,

@@ -24,6 +24,8 @@ export interface SeasonAddresses {
   realms: string;
   /** Address of the LORDS token contract */
   lords: string;
+  /** Address of the STRK token contract */
+  strk: string;
   /** Address of the loot chest contract */
   lootChests?: string;
   /** Address of the marketplace contract */

@@ -415,7 +415,7 @@ export const EternumGlobalConfig: Config = {
     registration: {
       fee_token: BLITZ_REGISTRATION_FEE_TOKEN,
       fee_recipient: BLITZ_REGISTRATION_FEE_RECIPIENT,
-      fee_amount: BLITZ_REGISTRATION_FEE_AMOUNT,
+      fee_amount: BigInt(BLITZ_REGISTRATION_FEE_AMOUNT),
       registration_count_max: BLITZ_REGISTRATION_COUNT_MAX,
       registration_delay_seconds: BLITZ_REGISTRATION_DELAY_SECONDS,
       registration_period_seconds: BLITZ_REGISTRATION_PERIOD_SECONDS,

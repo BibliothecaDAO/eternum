@@ -59,4 +59,6 @@ export enum TransactionType {
   TRANSFER_AGENT_OWNERSHIP = "transfer_agent_ownership",
   STRUCTURE_BURN = "structure_burn",
   TROOP_BURN = "troop_burn",
+  BLITZ_PRIZE_CLAIM = "blitz_prize_claim",
+  BLITZ_PRIZE_PLAYER_RANK = "blitz_prize_player_rank",
 }
