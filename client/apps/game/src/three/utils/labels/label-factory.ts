@@ -441,7 +441,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
         vpIcon.classList.add("text-order-brilliance");
       } else {
         vpIcon.textContent = "💤"; // Sleeping for inactive
-        vpIcon.classList.add("");
+        vpIcon.classList.add("text-muted-foreground");
       }
       realmCountDisplay.appendChild(vpIcon);
 
@@ -452,7 +452,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
       if (isOwned) {
         realmCountText.classList.add("text-order-brilliance", "text-shadow-glow-brilliance-xs");
       } else {
-        realmCountText.classList.add("");
+        realmCountText.classList.add("text-muted-foreground");
       }
 
       realmCountText.textContent = `${data.hyperstructureRealmCount}`;
@@ -466,7 +466,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
         vpLabel.classList.add("text-order-brilliance/80");
         vpLabel.textContent = "VP/s";
       } else {
-        vpLabel.classList.add("");
+        vpLabel.classList.add("text-muted-foreground/80");
         vpLabel.textContent = "VP/s (unclaimed)";
       }
 
@@ -608,7 +608,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
             vpIcon.className = "text-xs text-order-brilliance";
           } else {
             vpIcon.textContent = "💤";
-            vpIcon.className = "text-xs ";
+            vpIcon.className = "text-xs text-muted-foreground";
           }
 
           // Update count
@@ -617,7 +617,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
           if (isOwned) {
             realmCountText.classList.add("text-order-brilliance", "text-shadow-glow-brilliance-xs");
           } else {
-            realmCountText.classList.add("");
+            realmCountText.classList.add("text-muted-foreground");
           }
 
           // Update label
@@ -626,7 +626,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
             vpLabel.classList.add("text-order-brilliance/80");
             vpLabel.textContent = "VP/s";
           } else {
-            vpLabel.classList.add("");
+            vpLabel.classList.add("text-muted-foreground/80");
             vpLabel.textContent = "VP/s (unclaimed)";
           }
 
@@ -680,7 +680,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
           vpIcon.classList.add("text-order-brilliance");
         } else {
           vpIcon.textContent = "💤";
-          vpIcon.classList.add("");
+          vpIcon.classList.add("text-muted-foreground");
         }
         newRealmCountDisplay.appendChild(vpIcon);
 
@@ -691,7 +691,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
         if (isOwned) {
           realmCountText.classList.add("text-order-brilliance", "text-shadow-glow-brilliance-xs");
         } else {
-          realmCountText.classList.add("");
+          realmCountText.classList.add("text-muted-foreground");
         }
 
         realmCountText.textContent = `${data.hyperstructureRealmCount}`;
@@ -705,7 +705,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
           vpLabel.classList.add("text-order-brilliance/80");
           vpLabel.textContent = "VP/s";
         } else {
-          vpLabel.classList.add("");
+        vpLabel.classList.add("text-muted-foreground/80");
           vpLabel.textContent = "VP/s (unclaimed)";
         }
 

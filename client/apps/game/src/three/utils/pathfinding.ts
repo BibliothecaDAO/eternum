@@ -25,9 +25,10 @@ export function findShortestPath(
   // Check if target is within maximum distance before starting pathfinding
   const oldPos = oldPosition.getNormalized();
   const newPos = newPosition.getNormalized();
+  const profiler = createPathfindingProfiler(oldPos, newPos, maxDistance);
   const initialDistance = getHexDistance({ col: oldPos.x, row: oldPos.y }, { col: newPos.x, row: newPos.y });
   if (initialDistance > maxDistance) {
-    return []; // Return empty path if target is too far
+    return profiler ? profiler.finish([], "initial-distance") : []; // Return empty path if target is too far
   }
 
   const openSet: Node[] = [];
@@ -40,14 +41,18 @@ export function findShortestPath(
   };
 
   openSet.push(startNode);
+  profiler?.trackOpenSetSize(openSet.length);
+  profiler?.nodeCreated();
 
   while (openSet.length > 0) {
     // Find node with lowest f score
     const current = openSet.reduce((min, node) => (node.f < min.f ? node : min), openSet[0]);
+    profiler?.nodeExpanded();
 
     // Reached end
     if (current.col === newPos.x && current.row === newPos.y) {
-      return reconstructPath(current);
+      const path = reconstructPath(current);
+      return profiler ? profiler.finish(path, "success") : path;
     }
 
     // Move current node from open to closed set
@@ -91,11 +96,13 @@ export function findShortestPath(
         g,
         parent: current,
       };
+      profiler?.nodeCreated();
 
       const existingNode = openSet.find((n) => n.col === neighborCol && n.row === neighborRow);
 
       if (!existingNode) {
         openSet.push(neighborNode);
+        profiler?.trackOpenSetSize(openSet.length);
       } else if (g < existingNode.g) {
         existingNode.g = g;
         existingNode.f = f;
@@ -104,7 +111,7 @@ export function findShortestPath(
     }
   }
 
-  return []; // No path found
+  return profiler ? profiler.finish([], "no-path") : []; // No path found
 }
 
 function reconstructPath(endNode: Node): Position[] {
@@ -123,4 +130,76 @@ function getHexDistance(a: HexPosition, b: HexPosition): number {
   const dx = Math.abs(a.col - b.col);
   const dy = Math.abs(a.row - b.row);
   return Math.max(dx, dy);
+}
+
+type PathfindingOutcome = "success" | "initial-distance" | "no-path";
+
+interface PathfindingProfiler {
+  nodeCreated(): void;
+  nodeExpanded(): void;
+  trackOpenSetSize(size: number): void;
+  finish(result: Position[], outcome: PathfindingOutcome): Position[];
+}
+
+function createPathfindingProfiler(
+  start: { x: number; y: number },
+  end: { x: number; y: number },
+  maxDistance: number,
+): PathfindingProfiler | null {
+  if (typeof performance === "undefined") {
+    return null;
+  }
+
+  const perfAny = performance as any;
+  const hasMemory = typeof perfAny.memory !== "undefined";
+  const startTime = performance.now();
+  const startHeap = hasMemory ? perfAny.memory.usedJSHeapSize : null;
+  let nodesCreated = 0;
+  let nodesExpanded = 0;
+  let peakOpenSet = 0;
+
+  const finish = (result: Position[], outcome: PathfindingOutcome): Position[] => {
+    const durationMs = performance.now() - startTime;
+    const endHeap = hasMemory ? perfAny.memory.usedJSHeapSize : null;
+    const heapDeltaMB =
+      startHeap !== null && endHeap !== null ? (endHeap - startHeap) / (1024 * 1024) : null;
+
+    const shouldLog =
+      (heapDeltaMB !== null && heapDeltaMB > 10) ||
+      nodesCreated > 5000 ||
+      nodesExpanded > 5000 ||
+      durationMs > 20;
+
+    if (shouldLog) {
+      console.warn("[PATHFIND] heavy search", {
+        outcome,
+        durationMs: Number(durationMs.toFixed(2)),
+        nodesCreated,
+        nodesExpanded,
+        peakOpenSet,
+        maxDistance,
+        start,
+        end,
+        pathLength: result.length,
+        heapDeltaMB: heapDeltaMB !== null ? Number(heapDeltaMB.toFixed(2)) : "n/a",
+      });
+    }
+
+    return result;
+  };
+
+  return {
+    nodeCreated() {
+      nodesCreated++;
+    },
+    nodeExpanded() {
+      nodesExpanded++;
+    },
+    trackOpenSetSize(size: number) {
+      if (size > peakOpenSet) {
+        peakOpenSet = size;
+      }
+    },
+    finish,
+  };
 }

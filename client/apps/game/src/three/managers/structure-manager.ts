@@ -102,7 +102,6 @@ export class StructureManager {
   }
 
   private handleCameraViewChange = (view: CameraView) => {
-    console.log("StructureManager handleCameraViewChange:", this.currentCameraView, "->", view);
     if (this.currentCameraView === view) return;
 
     // If we're moving away from Medium view, clean up transition state
