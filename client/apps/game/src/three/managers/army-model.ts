@@ -152,7 +152,7 @@ export class ArmyModel {
           }
         },
         undefined,
-        (error) => reject(error as Error),
+        (error) => reject(error),
       );
     }).finally(() => {
       this.pendingModelLoads.delete(modelType);
@@ -237,7 +237,11 @@ export class ArmyModel {
     const sourceMaterial = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
     const overrides = sourceMaterial.name?.includes("stand") ? { opacity: 0.9 } : {};
     const material = ArmyModel.materialPool.getBasicMaterial(sourceMaterial, overrides);
-    const instancedMesh = new InstancedMesh(geometry, material, this.INITIAL_INSTANCE_CAPACITY) as AnimatedInstancedMesh;
+    const instancedMesh = new InstancedMesh(
+      geometry,
+      material,
+      this.INITIAL_INSTANCE_CAPACITY,
+    ) as AnimatedInstancedMesh;
 
     instancedMesh.frustumCulled = true;
     instancedMesh.castShadow = true;
@@ -245,7 +249,10 @@ export class ArmyModel {
     instancedMesh.renderOrder = 10 + meshIndex;
     // @ts-ignore
     if (mesh.material.name.includes("stand")) {
-      instancedMesh.instanceColor = new InstancedBufferAttribute(new Float32Array(this.INITIAL_INSTANCE_CAPACITY * 3), 3);
+      instancedMesh.instanceColor = new InstancedBufferAttribute(
+        new Float32Array(this.INITIAL_INSTANCE_CAPACITY * 3),
+        3,
+      );
     }
 
     if (animations.length > 0) {
