@@ -7,6 +7,7 @@
  */
 
 import type { Config } from "@bibliothecadao/types";
+import { getSeasonAddresses, type Chain } from "@contracts";
 import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
 
 /**
@@ -34,6 +35,7 @@ export const SlotEternumGlobalConfig: Config = {
     startSettlingAfterSeconds: 59, // 1 minute
     startMainAfterSeconds: 60,
     durationSeconds: 60 * 60 * 24 * 90, // 90 days
+    pointRegistrationCloseAfterEndSeconds: 60 * 10, // 10 minutes
   },
   battle: {
     ...CommonEternumGlobalConfig.battle,
@@ -54,6 +56,7 @@ export const SlotEternumGlobalConfig: Config = {
       ...CommonEternumGlobalConfig.blitz.registration,
       registration_delay_seconds: 20,
       registration_period_seconds: 1, // devs can always register by pressing the "H" key from the home page
+      fee_token: getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!.strk!,
     },
   },
 };

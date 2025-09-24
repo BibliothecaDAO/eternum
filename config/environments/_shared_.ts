@@ -208,12 +208,17 @@ export const VILLAGE_TOKEN_MINT_RECIPIENT = "0x03f7f4e5a23a712787f0c100f02934c4a
 export const VILLAGE_TOKEN_NFT_CONTRACT = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!
   .villagePass!;
 
-const BLITZ_REGISTRATION_FEE_TOKEN = "0x0";
-const BLITZ_REGISTRATION_FEE_RECIPIENT = "0x0";
-const BLITZ_REGISTRATION_FEE_AMOUNT = 0;
+const BLITZ_REGISTRATION_FEE_TOKEN = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!
+  .lords!;
+const BLITZ_REGISTRATION_FEE_RECIPIENT = "0x123";
+const BLITZ_REGISTRATION_FEE_AMOUNT = 10n * (10n ** 18n); // 10 LORDS/STRK
 const BLITZ_REGISTRATION_COUNT_MAX = 5_000;
 const BLITZ_REGISTRATION_DELAY_SECONDS = 10;
 const BLITZ_REGISTRATION_PERIOD_SECONDS = 15 * ONE_HOUR_IN_SECONDS;
+
+const BLITZ_ENTRY_TOKEN_IPFS_CID = "Qm123idkmaybe";
+const BLITZ_ENTRY_TOKEN_CLASS_HASH = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!
+  .collectiblesClassHash!;
 
 export const EternumGlobalConfig: Config = {
   agent: {
@@ -411,10 +416,12 @@ export const EternumGlobalConfig: Config = {
     registration: {
       fee_token: BLITZ_REGISTRATION_FEE_TOKEN,
       fee_recipient: BLITZ_REGISTRATION_FEE_RECIPIENT,
-      fee_amount: BLITZ_REGISTRATION_FEE_AMOUNT,
+      fee_amount: BigInt(BLITZ_REGISTRATION_FEE_AMOUNT),
       registration_count_max: BLITZ_REGISTRATION_COUNT_MAX,
       registration_delay_seconds: BLITZ_REGISTRATION_DELAY_SECONDS,
       registration_period_seconds: BLITZ_REGISTRATION_PERIOD_SECONDS,
+      entry_token_class_hash: BLITZ_ENTRY_TOKEN_CLASS_HASH,
+      entry_token_ipfs_cid: BLITZ_ENTRY_TOKEN_IPFS_CID,
     },
   },
   setup: {

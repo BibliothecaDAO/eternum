@@ -278,6 +278,98 @@ export function defineContractComponents(world: World) {
       );
     })(),
 
+    // Prize distribution models (Blitz)
+    PlayersRankTrial: (() => {
+      return defineComponent(
+        world,
+        {
+          trial_id: RecsType.BigInt,
+          owner: RecsType.BigInt,
+          last_rank: RecsType.Number,
+          last_player_points: RecsType.BigInt,
+          total_player_points: RecsType.BigInt,
+          total_player_count_committed: RecsType.Number,
+          total_player_count_revealed: RecsType.Number,
+          total_prize_amount: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "PlayersRankTrial",
+            types: [
+              "u128",
+              "ContractAddress",
+              "u16",
+              "u128",
+              "u128",
+              "u16",
+              "u16",
+              "u128",
+            ],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
+    PlayersRankFinal: (() => {
+      return defineComponent(
+        world,
+        {
+          world_id: RecsType.BigInt,
+          trial_id: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "PlayersRankFinal",
+            types: ["u128", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
+    PlayerRank: (() => {
+      return defineComponent(
+        world,
+        {
+          trial_id: RecsType.BigInt,
+          player: RecsType.BigInt,
+          rank: RecsType.Number,
+          paid: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "PlayerRank",
+            types: ["u128", "ContractAddress", "u16", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
+    RankPrize: (() => {
+      return defineComponent(
+        world,
+        {
+          trial_id: RecsType.BigInt,
+          rank: RecsType.Number,
+          total_players_same_rank_count: RecsType.Number,
+          total_prize_amount: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "RankPrize",
+            types: ["u128", "u16", "u16", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+
     SeasonPrize: (() => {
       return defineComponent(
         world,
@@ -1432,6 +1524,7 @@ export function defineContractComponents(world: World) {
             fee_amount: RecsType.BigInt,
             fee_token: RecsType.BigInt,
             fee_recipient: RecsType.BigInt,
+            entry_token_address: RecsType.BigInt,
             registration_count: RecsType.Number,
             registration_count_max: RecsType.Number,
             registration_start_at: RecsType.Number,
@@ -1620,6 +1713,7 @@ export function defineContractComponents(world: World) {
               "u128", // BlitzRegistrationConfig fee_amount
               "ContractAddress", // BlitzRegistrationConfig fee_token
               "ContractAddress", // BlitzRegistrationConfig fee_recipient
+              "ContractAddress", // BlitzRegistrationConfig entry_token_address
               "u16", // BlitzRegistrationConfig registration_count
               "u16", // BlitzRegistrationConfig registration_count_max
               "u32", // BlitzRegistrationConfig registration_start_at
@@ -1733,6 +1827,23 @@ export function defineContractComponents(world: World) {
             namespace: "s1_eternum",
             name: "BlitzRealmPlayerRegister",
             types: ["ContractAddress", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    BlitzEntryTokenRegister: (() => {
+      return defineComponent(
+        world,
+        {
+          token_id: RecsType.BigInt,
+          registered: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "BlitzEntryTokenRegister",
+            types: ["u128", "bool"],
             customTypes: [],
           },
         },

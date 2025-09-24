@@ -97,6 +97,7 @@ pub mod utils {
     pub mod hyperstructure;
     pub mod map;
     pub mod mine;
+    pub mod prize;
     pub mod realm;
     pub mod relic;
     pub mod resource;
@@ -108,6 +109,12 @@ pub mod utils {
 pub mod quest {
     pub mod constants;
     pub mod contracts;
+}
+
+pub mod prize_distribution {
+    pub mod contracts;
+    #[cfg(test)]
+    pub mod tests;
 }
 
 pub mod relic {
