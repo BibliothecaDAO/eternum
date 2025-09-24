@@ -47,6 +47,7 @@ export class ArmyModel {
   private readonly labels: Map<number, { label: CSS2DObject; entityId: number }> = new Map();
   private readonly labelsGroup: Group;
   private currentCameraView: CameraView = CameraView.Medium;
+  private movementCompleteCallbacks: Map<number, () => void> = new Map();
 
   // Reusable objects for matrix operations and memory optimization
   private readonly dummyMatrix: Matrix4 = new Matrix4();
@@ -647,6 +648,8 @@ export class ArmyModel {
       instanceData.isMoving = false;
       instanceData.path = undefined;
     }
+
+    this.invokeMovementComplete(entityId);
   }
 
   private initializeDescentAnimation(entityId: number, movement: MovementData): void {
@@ -702,6 +705,14 @@ export class ArmyModel {
    */
   public setCurrentCameraView(view: CameraView): void {
     this.currentCameraView = view;
+  }
+
+  public setMovementCompleteCallback(entityId: number, callback?: () => void): void {
+    if (!callback) {
+      this.movementCompleteCallbacks.delete(entityId);
+      return;
+    }
+    this.movementCompleteCallbacks.set(entityId, callback);
   }
 
   /**
@@ -904,8 +915,20 @@ export class ArmyModel {
     this.movingInstances.clear();
     this.instanceData.clear();
     this.labels.clear();
+    this.movementCompleteCallbacks.clear();
 
     console.log("ArmyModel: Disposed all resources");
+  }
+
+  private invokeMovementComplete(entityId: number) {
+    const callback = this.movementCompleteCallbacks.get(entityId);
+    if (callback) {
+      try {
+        callback();
+      } finally {
+        this.movementCompleteCallbacks.delete(entityId);
+      }
+    }
   }
 }
 

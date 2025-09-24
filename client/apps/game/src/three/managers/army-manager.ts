@@ -24,6 +24,7 @@ import { ArmyData, RenderChunkSize } from "../types";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
+import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { MemoryMonitor } from "../utils/memory-monitor";
 import { findShortestPath } from "../utils/pathfinding";
@@ -75,6 +76,7 @@ export class ArmyManager {
   private visibleArmies: ArmyData[] = [];
   private armyPaths: Map<ID, Position[]> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
+  private labelPool = new LabelPool();
   private labelsGroup: Group;
   private currentCameraView: CameraView;
   private hexagonScene?: HexagonScene;
@@ -630,12 +632,23 @@ export class ArmyManager {
       return;
     }
 
+    if (path.length < 2) {
+      this.armies.set(entityId, { ...armyData, hexCoords });
+      this.armyPaths.delete(entityId);
+      this.armyModel.setMovementCompleteCallback(Number(entityId), undefined);
+      return;
+    }
+
     // Convert path to world positions
     const worldPath = path.map((pos) => this.getArmyWorldPosition(entityId, pos));
 
     // Update army position immediately to avoid starting from a "back" position
     this.armies.set(entityId, { ...armyData, hexCoords });
     this.armyPaths.set(entityId, path);
+
+    this.armyModel.setMovementCompleteCallback(entityId, () => {
+      this.armyPaths.delete(entityId);
+    });
 
     // Don't remove relic effects during movement - they will follow the army
     // The updateRelicEffectPositions method will handle smooth positioning
@@ -708,6 +721,9 @@ export class ArmyManager {
     // Monitor memory usage before removing army
     this.memoryMonitor.getCurrentStats(`removeArmy-${entityId}`);
 
+    this.armyPaths.delete(entityId);
+    this.armyModel.setMovementCompleteCallback(Number(entityId), undefined);
+
     // Remove any relic effects
     this.updateRelicEffects(entityId, []);
 
@@ -767,31 +783,23 @@ export class ArmyManager {
   }
 
   private async addEntityIdLabel(army: ArmyData, position: Vector3) {
-    // Create label using centralized function
-    const labelDiv = createArmyLabel(army, this.currentCameraView);
+    const { label, isNew } = this.labelPool.acquire(() => {
+      const element = createArmyLabel(army, this.currentCameraView);
+      const cssLabel = new CSS2DObject(element);
+      cssLabel.userData.baseRenderOrder = cssLabel.renderOrder;
+      return cssLabel;
+    });
 
-    // Create CSS2DObject normally (revert pooling for now)
-    const label = new CSS2DObject(labelDiv);
     label.position.copy(position);
     label.position.y += 2.1;
-    // Store entityId in userData for identification
     label.userData.entityId = army.entityId;
 
-    // Store original renderOrder
-    const originalRenderOrder = label.renderOrder;
-
-    // Set renderOrder to Infinity on hover
-    labelDiv.addEventListener("mouseenter", () => {
-      label.renderOrder = Infinity;
-    });
-
-    // Restore original renderOrder when mouse leaves
-    labelDiv.addEventListener("mouseleave", () => {
-      label.renderOrder = originalRenderOrder;
-    });
+    this.configureArmyLabelInteractions(label);
 
     this.entityIdLabels.set(army.entityId, label);
     this.armyModel.addLabel(army.entityId, label);
+
+    this.updateArmyLabelData(army.entityId, army, label);
   }
 
   public showLabel(entityId: ID): void {
@@ -833,9 +841,28 @@ export class ArmyManager {
   }
 
   private removeEntityIdLabel(entityId: ID) {
-    // Remove label normally (revert pooling for now)
-    this.armyModel.removeLabel(entityId);
+    const label = this.entityIdLabels.get(entityId);
+    if (!label) {
+      return;
+    }
+
+    this.armyModel.removeLabel(Number(entityId));
+    this.labelPool.release(label);
     this.entityIdLabels.delete(entityId);
+  }
+
+  private configureArmyLabelInteractions(label: CSS2DObject): void {
+    const element = label.element as HTMLElement;
+    const baseRenderOrder = (label.userData.baseRenderOrder as number | undefined) ?? label.renderOrder;
+    label.userData.baseRenderOrder = baseRenderOrder;
+
+    element.onmouseenter = () => {
+      label.renderOrder = Infinity;
+    };
+
+    element.onmouseleave = () => {
+      label.renderOrder = baseRenderOrder;
+    };
   }
 
   private handleCameraViewChange = (view: CameraView) => {
@@ -1155,11 +1182,19 @@ ${
       this.updateRelicEffects(entityId, []);
     }
 
+    this.entityIdLabels.forEach((label, entityId) => {
+      this.armyModel.removeLabel(Number(entityId));
+      this.labelPool.release(label);
+    });
+    this.entityIdLabels.clear();
+
+    this.armyPaths.clear();
+
     // Dispose army model resources including shared materials
     this.armyModel.dispose();
 
-    // Clear entity ID labels
-    this.entityIdLabels.clear();
+    // Clear label pool storage after dispose ensures detached DOM
+    this.labelPool.clear();
 
     // Clean up any other resources...
   }

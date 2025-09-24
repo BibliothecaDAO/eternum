@@ -13,6 +13,7 @@ import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { createStructureLabel, updateStructureLabel } from "../utils/labels/label-factory";
+import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { FXManager } from "./fx-manager";
 
@@ -43,6 +44,7 @@ export class StructureManager {
   private entityIdMaps: Map<StructureType, Map<number, ID>> = new Map();
   private wonderEntityIdMaps: Map<number, ID> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
+  private labelPool = new LabelPool();
   private dummy: Object3D = new Object3D();
   modelLoadPromises: Promise<InstancedModel>[] = [];
   structures: Structures = new Structures();
@@ -149,6 +151,14 @@ export class StructureManager {
         this.clearPendingRelicEffectsCallback(entityId);
       }
     });
+
+    this.entityIdLabels.forEach((label) => {
+      this.labelsGroup.remove(label);
+      this.labelPool.release(label);
+    });
+    this.entityIdLabels.clear();
+
+    this.labelPool.clear();
 
     // Dispose of all structure models
     this.structureModels.forEach((models) => {
@@ -587,49 +597,51 @@ export class StructureManager {
   private addEntityIdLabel(structure: StructureInfo, position: Vector3) {
     console.log("[ADD ENTITY ID LABEL]", { ...structure });
     console.log("[ADD ENTITY ID LABEL] isMine:", structure.isMine, "owner.address:", structure.owner.address);
-    const labelDiv = createStructureLabel(structure, this.currentCameraView);
+    const { label } = this.labelPool.acquire(() => {
+      const element = createStructureLabel(structure, this.currentCameraView);
+      const cssLabel = new CSS2DObject(element);
+      cssLabel.userData.baseRenderOrder = cssLabel.renderOrder;
+      return cssLabel;
+    });
 
-    const label = new CSS2DObject(labelDiv);
     label.position.copy(position);
     label.position.y += 2;
-    // Store entityId in userData for identification
     label.userData.entityId = structure.entityId;
 
-    // Store original renderOrder
-    const originalRenderOrder = label.renderOrder;
-
-    // Set renderOrder to Infinity on hover
-    labelDiv.addEventListener("mouseenter", () => {
-      label.renderOrder = Infinity;
-    });
-
-    // Restore original renderOrder when mouse leaves
-    labelDiv.addEventListener("mouseleave", () => {
-      label.renderOrder = originalRenderOrder;
-    });
+    this.configureStructureLabelInteractions(label);
 
     this.entityIdLabels.set(structure.entityId, label);
     this.labelsGroup.add(label);
+    this.updateStructureLabelData(structure.entityId, structure, label);
   }
 
   private removeEntityIdLabel(entityId: ID) {
     const label = this.entityIdLabels.get(entityId);
     if (label) {
       this.labelsGroup.remove(label);
-      if (label.element && label.element.parentNode) {
-        label.element.parentNode.removeChild(label.element);
-      }
+      this.labelPool.release(label);
       this.entityIdLabels.delete(entityId);
     }
+  }
+
+  private configureStructureLabelInteractions(label: CSS2DObject): void {
+    const element = label.element as HTMLElement;
+    const baseRenderOrder = (label.userData.baseRenderOrder as number | undefined) ?? label.renderOrder;
+    label.userData.baseRenderOrder = baseRenderOrder;
+
+    element.onmouseenter = () => {
+      label.renderOrder = Infinity;
+    };
+
+    element.onmouseleave = () => {
+      label.renderOrder = baseRenderOrder;
+    };
   }
 
   public removeLabelsFromScene() {
     this.entityIdLabels.forEach((label, _entityId) => {
       this.labelsGroup.remove(label);
-      // Dispose of the label's DOM element
-      if (label.element && label.element.parentNode) {
-        label.element.parentNode.removeChild(label.element);
-      }
+      this.labelPool.release(label);
     });
     // Clear the labels map after removing all labels
     this.entityIdLabels.clear();
@@ -647,7 +659,6 @@ export class StructureManager {
     this.entityIdLabels.forEach((label, labelEntityId) => {
       if (labelEntityId !== entityId) {
         this.labelsGroup.remove(label);
-        // Dispose of the label's DOM element
         if (label.element && label.element.parentNode) {
           label.element.parentNode.removeChild(label.element);
         }

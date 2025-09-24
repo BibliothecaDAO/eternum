@@ -1462,6 +1462,9 @@ export default class WorldmapScene extends HexagonScene {
     const memoryMonitor = (window as any).__gameRenderer?.memoryMonitor;
     const preUpdateStats = memoryMonitor?.getCurrentStats(`hex-grid-update-${startRow}-${startCol}`);
 
+    const matrixPoolInstance = MatrixPool.getInstance();
+    matrixPoolInstance.ensureCapacity(rows * cols + 512);
+
     await Promise.all(this.modelLoadPromises);
     if (this.applyCachedMatricesForChunk(startRow, startCol)) {
       this.computeInteractiveHexes(startRow, startCol, rows, cols);
