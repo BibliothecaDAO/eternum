@@ -632,7 +632,7 @@ export const BlitzOnboarding = () => {
     setHasQueriedEntryToken(true);
 
     (async () => {
-      const entryTokenAddressHex = toHexString(blitzConfig.entry_token_address);
+      const entryTokenAddressHex = toHexString(blitzConfig?.entry_token_address ?? 0n);
       console.log("[Mobile] Entry token random lookup", {
         owner: account.address,
         entryTokenAddressHex,
@@ -643,7 +643,7 @@ export const BlitzOnboarding = () => {
       const tokenId = await getEntryTokenIdByIndex(
         account.address,
         {
-          entryTokenAddress: entryTokenAddressHex,
+          entryTokenAddress: entryTokenAddressHex as `0x${string}`,
           validate: (candidate) => {
             const registerComponent = components.BlitzEntryTokenRegister;
             if (!registerComponent) return true;
