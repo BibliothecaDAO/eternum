@@ -146,7 +146,7 @@ export const AllAutomationsTable: React.FC = () => {
       </Button>
 
       {/* Display Countdown Timer */}
-      <div className="mb-2 text-xs text-gray-400">
+      <div className="mb-2 text-xs ">
         {isGloballyPaused ? "All automation paused" : `Next automation run in: ${countdown}`}
       </div>
 
@@ -298,7 +298,7 @@ export const AllAutomationsTable: React.FC = () => {
                         {order.producedAmount.toLocaleString()} /{" "}
                         {order.maxAmount === "infinite" ? "∞" : order.maxAmount.toLocaleString()}{" "}
                         {order.maxAmount !== "infinite" && order.maxAmount > 0 && (
-                          <span className="text-xs text-gray-400">
+                          <span className="text-xs ">
                             ({Math.floor((order.producedAmount / order.maxAmount) * 100)}%)
                           </span>
                         )}
@@ -311,7 +311,7 @@ export const AllAutomationsTable: React.FC = () => {
                           <span className="text-xs text-gold/50"> Labor</span>
                         )}
                         {order.bufferPercentage && (
-                          <span className="text-xs text-gray-400"> (Buffer: {order.bufferPercentage}%)</span>
+                          <span className="text-xs "> (Buffer: {order.bufferPercentage}%)</span>
                         )}
                       </div>
                     )}

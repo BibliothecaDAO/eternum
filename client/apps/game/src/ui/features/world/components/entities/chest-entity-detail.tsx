@@ -24,7 +24,7 @@ export const ChestEntityDetail = memo(({ chestEntityId, compact = false }: Chest
       <div className="text-gold font-bold text-lg">{chestName}</div>
       <div className="text-sm text-gray-300">
         <div>Crate ID: #{chestEntityId}</div>
-        <div className="text-xs text-gray-400 mt-1">Click to open the crate and claim rewards</div>
+        <div className="text-xs  mt-1">Click to open the crate and claim rewards</div>
       </div>
     </div>
   );

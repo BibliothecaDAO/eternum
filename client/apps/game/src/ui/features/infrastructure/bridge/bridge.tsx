@@ -142,7 +142,7 @@ const EfficiencyInfo = ({
       </div>
 
       {/* Hyperstructure explanation */}
-      <div className="text-[10px] text-gray-400 mb-2 flex items-center justify-between">
+      <div className="text-[10px]  mb-2 flex items-center justify-between">
         <span>More hyperstructures = higher bridge efficiency</span>
         <button
           onClick={handleMoreInfoClick}
@@ -524,7 +524,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
         >
           {bridgeTitle}
         </h2>
-        <p className="text-sm text-gray-400 max-w-xs">
+        <p className="text-sm  max-w-xs">
           {bridgeDirection === "in" ? (
             <>
               Transfer resources into the game from your{" "}
@@ -686,7 +686,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
 
                 {/* Resource Selection */}
                 <div className="mb-3">
-                  {/* <label className="block text-xs text-gray-400 mb-1">Resource</label> */}
+                  {/* <label className="block text-xs  mb-1">Resource</label> */}
                   <Select
                     value={resource.resourceId?.toString() ?? ""}
                     onValueChange={(value) => handleResourceChange(resource.key, value)}
@@ -741,7 +741,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
       </div>
 
       {/* Bridge Destination Indicator */}
-      <div className="flex flex-col items-center justify-center text-xs text-gray-400 mt-6">
+      <div className="flex flex-col items-center justify-center text-xs  mt-6">
         {selectedStructureId && bridgeDirection === "in" && (
           <>
             <ArrowDown className={cn("h-5 w-5 mb-1 transition-colors duration-300", "text-sky-500")} />

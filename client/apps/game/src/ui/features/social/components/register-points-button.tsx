@@ -81,7 +81,7 @@ export const RegisterPointsButton = ({ className }: RegisterPointsButtonProps) =
               </span>
               <span className="flex justify-between gap-4">
                 <span>Unregistered:</span>
-                <span className={unregisteredShareholderPoints > 0 ? "text-yellow-400" : "text-gray-400"}>
+                <span className={unregisteredShareholderPoints > 0 ? "text-yellow-400" : ""}>
                   {unregisteredShareholderPoints.toLocaleString()}
                 </span>
               </span>
@@ -91,7 +91,7 @@ export const RegisterPointsButton = ({ className }: RegisterPointsButtonProps) =
                   <span className="text-gold">{totalPoints.toLocaleString()}</span>
                 </span>
               </div>
-              {!hasUnregisteredPoints && <span className="text-gray-400 text-xs mt-1">No points to register</span>}
+              {!hasUnregisteredPoints && <span className=" text-xs mt-1">No points to register</span>}
               {hasUnregisteredPoints && (
                 <span className="text-yellow-400 text-xs mt-1">Click to register unregistered points</span>
               )}
@@ -108,12 +108,12 @@ export const RegisterPointsButton = ({ className }: RegisterPointsButtonProps) =
         <span className="text-sm">
           <span className="text-green-400">{registeredPoints.toLocaleString()}</span>
           <span className="text-gray-500 mx-1">|</span>
-          <span className={unregisteredShareholderPoints > 0 ? "text-yellow-400" : "text-gray-400"}>
+          <span className={unregisteredShareholderPoints > 0 ? "text-yellow-400" : ""}>
             {unregisteredShareholderPoints.toLocaleString()}
           </span>
         </span>
         {hasUnregisteredPoints && <span className="text-yellow-400 text-sm animate-pulse">Register</span>}
-        {!hasUnregisteredPoints && <span className="text-gray-400 text-sm">Points</span>}
+        {!hasUnregisteredPoints && <span className=" text-sm">Points</span>}
       </div>
     </Button>
   );

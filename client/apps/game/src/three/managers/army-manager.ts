@@ -391,13 +391,11 @@ export class ArmyManager {
       currentCount++;
       this.armyModel.setVisibleCount(currentCount);
 
-      // Add or update entity ID label
-      if (this.entityIdLabels.has(army.entityId)) {
-        const label = this.entityIdLabels.get(army.entityId)!;
-        label.position.copy(position);
-        label.position.y += 1.5;
-      } else {
-        this.addEntityIdLabel(army, position);
+      // Update the position for any active label (labels are created lazily on hover)
+      const activeLabel = this.entityIdLabels.get(army.entityId);
+      if (activeLabel) {
+        activeLabel.position.copy(position);
+        activeLabel.position.y += 1.5;
       }
     });
 
@@ -792,6 +790,32 @@ export class ArmyManager {
 
     this.entityIdLabels.set(army.entityId, label);
     this.armyModel.addLabel(army.entityId, label);
+  }
+
+  public showLabel(entityId: ID): void {
+    const army = this.armies.get(entityId);
+    if (!army) {
+      return;
+    }
+
+    const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
+    if (this.entityIdLabels.has(army.entityId)) {
+      const label = this.entityIdLabels.get(army.entityId)!;
+      label.position.copy(position);
+      label.position.y += 1.5;
+      this.updateArmyLabelData(entityId, army, label);
+      return;
+    }
+
+    this.addEntityIdLabel(army, position);
+  }
+
+  public hideLabel(entityId: ID): void {
+    this.removeEntityIdLabel(entityId);
+  }
+
+  public hideAllLabels(): void {
+    Array.from(this.entityIdLabels.keys()).forEach((armyId) => this.removeEntityIdLabel(armyId));
   }
 
   removeLabelsFromScene() {

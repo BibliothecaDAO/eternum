@@ -76,7 +76,7 @@ export default {
           },
           gray: {
             bg: "bg-gray-600/20",
-            text: "text-gray-400",
+            text: "",
           },
         },
         brilliance: "#7DFFBA",

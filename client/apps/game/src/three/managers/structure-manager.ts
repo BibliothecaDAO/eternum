@@ -477,9 +477,6 @@ export class StructureManager {
             const newPosition = getWorldPositionForHex(structure.hexCoords);
             newPosition.y += 2;
             existingLabel.position.copy(newPosition);
-          } else {
-            // Create new label if it doesn't exist
-            this.addEntityIdLabel(structure, position);
           }
 
           this.dummy.position.copy(position);
@@ -663,6 +660,35 @@ export class StructureManager {
     // Just update visible structures - this will handle labels appropriately
     // without destroying existing labels and their live data
     this.updateVisibleStructures();
+  }
+
+  public showLabel(entityId: ID): void {
+    const structure = this.structures.getStructureByEntityId(entityId);
+    if (!structure) {
+      return;
+    }
+
+    const position = getWorldPositionForHex(structure.hexCoords);
+    position.y += 0.05;
+
+    const existingLabel = this.entityIdLabels.get(entityId);
+    if (existingLabel) {
+      const newPosition = getWorldPositionForHex(structure.hexCoords);
+      newPosition.y += 2;
+      existingLabel.position.copy(newPosition);
+      this.updateStructureLabelData(entityId, structure, existingLabel);
+      return;
+    }
+
+    this.addEntityIdLabel(structure, position);
+  }
+
+  public hideLabel(entityId: ID): void {
+    this.removeEntityIdLabel(entityId);
+  }
+
+  public hideAllLabels(): void {
+    Array.from(this.entityIdLabels.keys()).forEach((structureId) => this.removeEntityIdLabel(structureId));
   }
 
   // Relic effect management methods

@@ -283,10 +283,26 @@ export default class WorldmapScene extends HexagonScene {
     // Initialize the hover label manager
     this.hoverLabelManager = new HoverLabelManager(
       {
-        army: this.armyLabelsGroup,
-        structure: this.structureLabelsGroup,
-        quest: this.questLabelsGroup,
-        chest: this.chestLabelsGroup,
+        army: {
+          show: (entityId: ID) => this.armyManager.showLabel(entityId),
+          hide: (entityId: ID) => this.armyManager.hideLabel(entityId),
+          hideAll: () => this.armyManager.hideAllLabels(),
+        },
+        structure: {
+          show: (entityId: ID) => this.structureManager.showLabel(entityId),
+          hide: (entityId: ID) => this.structureManager.hideLabel(entityId),
+          hideAll: () => this.structureManager.hideAllLabels(),
+        },
+        quest: {
+          show: (entityId: ID) => this.questManager.showLabel(entityId),
+          hide: (entityId: ID) => this.questManager.hideLabel(entityId),
+          hideAll: () => this.questManager.hideAllLabels(),
+        },
+        chest: {
+          show: (entityId: ID) => this.chestManager.showLabel(entityId),
+          hide: (entityId: ID) => this.chestManager.hideLabel(entityId),
+          hideAll: () => this.chestManager.hideAllLabels(),
+        },
       },
       (hexCoords: HexPosition) => this.getHexagonEntity(hexCoords),
       this.currentCameraView,

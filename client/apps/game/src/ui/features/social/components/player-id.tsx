@@ -217,7 +217,7 @@ export const PlayerId = ({
                           {(breakdown.shareholderPercentage * 100).toFixed(1)}%
                         </strong>
                       </span>
-                      <span className="mx-1.5 text-gray-400">|</span>
+                      <span className="mx-1.5 ">|</span>
                       <span>
                         Yield: <strong className="font-medium text-lime-400">{pointsPerSecond}</strong> pts/sec
                       </span>

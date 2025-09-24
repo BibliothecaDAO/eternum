@@ -54,7 +54,7 @@ export const EntitiesArmyTable = () => {
               className="flex items-center gap-2"
             >
               <PlusIcon className="w-4 h-4" />
-              Create Attack
+              Attack
             </Button>
             <Button
               variant="outline"
@@ -71,7 +71,7 @@ export const EntitiesArmyTable = () => {
               className="flex items-center gap-2"
             >
               <PlusIcon className="w-4 h-4" />
-              Create Defense
+              Defense
             </Button>
           </>
         )}

@@ -515,11 +515,10 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                         )}
                       >
                         <h6 className="font-bold text-xl mb-3 text-center text-gold flex items-center justify-center">
-                          <span className="text-gray-400 text-sm mr-1.5">
+                          <span className=" text-sm mr-1.5">
                             {ResourceTierEmojis[tier.name as keyof typeof ResourceTierEmojis]}
                           </span>
-                          {tier.name}{" "}
-                          <span className="text-gray-400 text-sm ml-1.5">({tier.totalChance.toFixed(2)}% total)</span>
+                          {tier.name} <span className=" text-sm ml-1.5">({tier.totalChance.toFixed(2)}% total)</span>
                         </h6>
                         <ul className="space-y-1.5">
                           {tier.resources.map((resource) => (
@@ -528,7 +527,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                                 <ResourceIcon resource={resource.name} size="sm" />
                                 {resource.name}
                               </span>
-                              <span className="text-gray-400">{resource.chance.toFixed(2)}%</span>
+                              <span className="">{resource.chance.toFixed(2)}%</span>
                             </li>
                           ))}
                         </ul>
@@ -546,11 +545,10 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                         )}
                       >
                         <h6 className="font-bold text-xl mb-3 text-center text-gold flex items-center justify-center">
-                          <span className="text-gray-400 text-sm mr-1.5">
+                          <span className=" text-sm mr-1.5">
                             {ResourceTierEmojis[tier.name as keyof typeof ResourceTierEmojis]}
                           </span>
-                          {tier.name}{" "}
-                          <span className="text-gray-400 text-sm ml-1.5">({tier.totalChance.toFixed(2)}% total)</span>
+                          {tier.name} <span className=" text-sm ml-1.5">({tier.totalChance.toFixed(2)}% total)</span>
                         </h6>
                         <ul className="space-y-1.5">
                           {tier.resources.map((resource) => (
@@ -559,7 +557,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                                 <ResourceIcon resource={resource.name} size="sm" />
                                 {resource.name}
                               </span>
-                              <span className="text-gray-400">{resource.chance.toFixed(2)}%</span>
+                              <span className="">{resource.chance.toFixed(2)}%</span>
                             </li>
                           ))}
                         </ul>
@@ -567,7 +565,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                     ))}
                   </div>
                 </div>
-                <p className="text-center text-gray-400 mt-6 text-xs italic">
+                <p className="text-center  mt-6 text-xs italic">
                   Note: Percentages are approximate and subject to minor variations.
                 </p>
               </div>
