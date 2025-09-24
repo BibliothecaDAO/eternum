@@ -1,3 +1,4 @@
+import { ReactComponent as DiscordLogo } from "@/assets/icons/common/discord.svg";
 import {
   Sidebar,
   SidebarContent,
@@ -193,7 +194,7 @@ export function AppSidebar() {
                 className="text-gold fill-gold"
                 aria-label="Join Discord"
               >
-                <img src="/images/buildings/thumb/discord.png" alt="Discord" className="h-5 w-5" />
+                <DiscordLogo className="h-7 w-7" />
               </a>
               <a
                 href="https://twitter.com/realms_gg"
