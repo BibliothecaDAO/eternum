@@ -25,6 +25,7 @@ export class InteractiveHexManager {
   private useRimLighting: boolean = true; // New feature flag
   private hexGeometryPool: HexGeometryPool;
   private readonly bucketSize = 16;
+  private instanceCapacity = 0;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -153,6 +154,39 @@ export class InteractiveHexManager {
     return `${bucketCol},${bucketRow}`;
   }
 
+  private ensureInstanceMeshCapacity(minCapacity: number) {
+    const requiredCapacity = Math.max(1, Math.floor(minCapacity));
+
+    if (this.instanceMesh && requiredCapacity <= this.instanceCapacity) {
+      return;
+    }
+
+    if (this.instanceMesh) {
+      this.scene.remove(this.instanceMesh);
+
+      if (this.instanceMesh.geometry) {
+        this.hexGeometryPool.releaseGeometry("interactive");
+      }
+
+      this.instanceMesh = null;
+      this.instanceCapacity = 0;
+    }
+
+    const hexagonGeometry = this.hexGeometryPool.getGeometry("interactive");
+    hexGeometryDebugger.trackSharedGeometryUsage(
+      "interactive",
+      "InteractiveHexManager.ensureInstanceMeshCapacity",
+    );
+
+    const mesh = new THREE.InstancedMesh(hexagonGeometry, interactiveHexMaterial, requiredCapacity);
+    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    mesh.count = 0;
+
+    this.instanceMesh = mesh;
+    this.instanceCapacity = requiredCapacity;
+    this.scene.add(mesh);
+  }
+
   // Add hex to the global collection of all interactive hexes
   addHex(hex: { col: number; row: number }) {
     const key = `${hex.col},${hex.row}`;
@@ -198,6 +232,9 @@ export class InteractiveHexManager {
       }
     }
 
+    const capacityHint = Math.max(1, Math.ceil(width) * Math.ceil(height));
+    this.ensureInstanceMeshCapacity(Math.max(capacityHint, this.visibleHexes.size));
+
     // Render only the visible hexes
     this.renderHexes();
   }
@@ -207,35 +244,30 @@ export class InteractiveHexManager {
     this.allHexes.clear();
     this.visibleHexes.clear();
     this.hexBuckets.clear();
+
+    if (this.instanceMesh) {
+      this.instanceMesh.count = 0;
+      this.instanceMesh.instanceMatrix.needsUpdate = true;
+    }
   }
 
   // For backward compatibility with Hexception scene
   // Renders all hexes in the allHexes collection
   renderAllHexes() {
-    if (this.instanceMesh) {
-      this.scene.remove(this.instanceMesh);
-      // Release shared geometry reference instead of disposing
-      if (this.instanceMesh.geometry) {
-        this.hexGeometryPool.releaseGeometry("interactive");
-      }
-      if (this.instanceMesh.material) {
-        if (Array.isArray(this.instanceMesh.material)) {
-          this.instanceMesh.material.forEach((mat) => mat.dispose());
-        } else {
-          this.instanceMesh.material.dispose();
-        }
-      }
-      this.instanceMesh = null;
+    const instanceCount = this.allHexes.size;
+    this.ensureInstanceMeshCapacity(Math.max(instanceCount, 1));
+
+    if (!this.instanceMesh) {
+      return;
     }
 
-    // Use shared geometry instead of creating new one
-    const hexagonGeometry = this.hexGeometryPool.getGeometry("interactive");
-    hexGeometryDebugger.trackSharedGeometryUsage("interactive", "InteractiveHexManager.renderAllHexes");
-    const instanceCount = this.allHexes.size;
+    const mesh = this.instanceMesh;
+    mesh.count = instanceCount;
 
-    if (instanceCount === 0) return;
-
-    this.instanceMesh = new THREE.InstancedMesh(hexagonGeometry, interactiveHexMaterial, instanceCount);
+    if (instanceCount === 0) {
+      mesh.instanceMatrix.needsUpdate = true;
+      return;
+    }
 
     let index = 0;
     this.allHexes.forEach((hexString) => {
@@ -244,38 +276,26 @@ export class InteractiveHexManager {
       this.dummy.position.set(position.x, 0.1, position.z);
       this.dummy.rotation.x = -Math.PI / 2;
       this.dummy.updateMatrix();
-      this.instanceMesh!.setMatrixAt(index, this.dummy.matrix);
+      mesh.setMatrixAt(index, this.dummy.matrix);
       index++;
     });
 
-    this.scene.add(this.instanceMesh);
+    mesh.instanceMatrix.needsUpdate = true;
   }
 
   renderHexes() {
-    if (this.instanceMesh) {
-      this.scene.remove(this.instanceMesh);
-      // Release shared geometry reference instead of disposing
-      if (this.instanceMesh.geometry) {
-        this.hexGeometryPool.releaseGeometry("interactive");
-      }
-      if (this.instanceMesh.material) {
-        if (Array.isArray(this.instanceMesh.material)) {
-          this.instanceMesh.material.forEach((mat) => mat.dispose());
-        } else {
-          this.instanceMesh.material.dispose();
-        }
-      }
-      this.instanceMesh = null;
+    if (!this.instanceMesh) {
+      return;
     }
 
-    // Use shared geometry instead of creating new one
-    const hexagonGeometry = this.hexGeometryPool.getGeometry("interactive");
-    hexGeometryDebugger.trackSharedGeometryUsage("interactive", "InteractiveHexManager.renderHexes");
     const instanceCount = this.visibleHexes.size;
+    const mesh = this.instanceMesh;
+    mesh.count = instanceCount;
 
-    if (instanceCount === 0) return;
-
-    this.instanceMesh = new THREE.InstancedMesh(hexagonGeometry, interactiveHexMaterial, instanceCount);
+    if (instanceCount === 0) {
+      mesh.instanceMatrix.needsUpdate = true;
+      return;
+    }
 
     let index = 0;
     this.visibleHexes.forEach((hexString) => {
@@ -284,11 +304,11 @@ export class InteractiveHexManager {
       this.dummy.position.set(position.x, 0.1, position.z);
       this.dummy.rotation.x = -Math.PI / 2;
       this.dummy.updateMatrix();
-      this.instanceMesh!.setMatrixAt(index, this.dummy.matrix);
+      mesh.setMatrixAt(index, this.dummy.matrix);
       index++;
     });
 
-    this.scene.add(this.instanceMesh);
+    mesh.instanceMatrix.needsUpdate = true;
   }
 
   update() {
@@ -305,14 +325,8 @@ export class InteractiveHexManager {
         this.hexGeometryPool.releaseGeometry("interactive");
       }
 
-      if (this.instanceMesh.material) {
-        if (Array.isArray(this.instanceMesh.material)) {
-          this.instanceMesh.material.forEach((mat) => mat.dispose());
-        } else {
-          this.instanceMesh.material.dispose();
-        }
-      }
       this.instanceMesh = null;
+      this.instanceCapacity = 0;
     }
 
     // Clean up hover effects

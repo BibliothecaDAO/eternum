@@ -618,7 +618,9 @@ export class ArmyManager {
 
     // todo: currently taking max stamina of paladin as max stamina but need to refactor
     const maxTroopStamina = configManager.getTroopStaminaConfig(TroopType.Paladin, TroopTier.T3);
-    const maxHex = Math.floor(Number(maxTroopStamina) / configManager.getMinTravelStaminaCost());
+    const staminaMax = Number(maxTroopStamina?.staminaMax ?? 0);
+    const minTravelCost = configManager.getMinTravelStaminaCost();
+    const maxHex = Math.max(0, Math.floor(staminaMax / Math.max(minTravelCost, 1)));
 
     const path = findShortestPath(armyData.hexCoords, hexCoords, exploredTiles, structureHexes, armyHexes, maxHex);
 

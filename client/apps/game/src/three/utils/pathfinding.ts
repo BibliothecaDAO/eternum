@@ -18,6 +18,10 @@ export function findShortestPath(
   armyHexes: Map<number, Map<number, HexEntityInfo>>,
   maxDistance: number,
 ): Position[] {
+  if (!Number.isFinite(maxDistance) || maxDistance <= 0) {
+    return [];
+  }
+
   // Check if target is within maximum distance before starting pathfinding
   const oldPos = oldPosition.getNormalized();
   const newPos = newPosition.getNormalized();
