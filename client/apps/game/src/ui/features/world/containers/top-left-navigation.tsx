@@ -360,6 +360,7 @@ export const TopLeftNavigation = memo(() => {
               World
             </span>
             <div className="relative flex gap-2">
+              {/* TODO: Add back in later if needed */}
               {/* <button
                 type="button"
                 className={cn(
