@@ -6,6 +6,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { currencyFormat } from "@/ui/utils/utils";
+import { getRelicBonusSummary } from "@/ui/utils/relic-utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import {
@@ -141,6 +142,16 @@ export const CombatContainer = ({
   const targetRelicResourceIds = useMemo(() => {
     return targetActiveRelicEffects.map((effect) => Number(effect.id)) as ResourcesIds[];
   }, [targetActiveRelicEffects]);
+
+  const attackerRelicBonuses = useMemo(
+    () => getRelicBonusSummary(attackerRelicResourceIds),
+    [attackerRelicResourceIds],
+  );
+
+  const defenderRelicBonuses = useMemo(
+    () => getRelicBonusSummary(targetRelicResourceIds),
+    [targetRelicResourceIds],
+  );
 
   const attackerStamina = useMemo(() => {
     const { currentArmiesTick } = getBlockTimestamp();
@@ -286,6 +297,30 @@ export const CombatContainer = ({
       targetRelicResourceIds,
     );
 
+    const attackerBaselineResult =
+      attackerRelicResourceIds.length > 0
+        ? combatSimulator.simulateBattleWithParams(
+            now,
+            attackerArmy,
+            defenderArmy,
+            biome,
+            [],
+            targetRelicResourceIds,
+          )
+        : null;
+
+    const defenderBaselineResult =
+      targetRelicResourceIds.length > 0
+        ? combatSimulator.simulateBattleWithParams(
+            now,
+            attackerArmy,
+            defenderArmy,
+            biome,
+            attackerRelicResourceIds,
+            [],
+          )
+        : null;
+
     const attackerTroopsLost = result.defenderDamage;
     const defenderTroopsLost = result.attackerDamage;
 
@@ -320,6 +355,19 @@ export const CombatContainer = ({
       result.defenderRefundMultiplier,
     );
 
+    const attackerDamageBonusAbsolute = attackerBaselineResult
+      ? Math.max(0, result.attackerDamage - attackerBaselineResult.attackerDamage)
+      : 0;
+    const attackerDamageReductionAbsolute = attackerBaselineResult
+      ? Math.max(0, attackerBaselineResult.defenderDamage - result.defenderDamage)
+      : 0;
+    const defenderDamageBonusAbsolute = defenderBaselineResult
+      ? Math.max(0, result.defenderDamage - defenderBaselineResult.defenderDamage)
+      : 0;
+    const defenderDamageReductionAbsolute = defenderBaselineResult
+      ? Math.max(0, defenderBaselineResult.attackerDamage - result.attackerDamage)
+      : 0;
+
     return {
       attackerTroopsLeft,
       defenderTroopsLeft,
@@ -332,6 +380,10 @@ export const CombatContainer = ({
       defenderCooldownEnd: targetArmyData.troops.battle_cooldown_end,
       attackerAfterBattleCooldownEnd,
       defenderAfterBattleCooldownEnd,
+      attackerDamageBonusAbsolute,
+      attackerDamageReductionAbsolute,
+      defenderDamageBonusAbsolute,
+      defenderDamageReductionAbsolute,
       getRemainingTroops: () => ({
         attackerTroops: attackerArmy.troopCount - attackerTroopsLost,
         defenderTroops: defenderArmy.troopCount - defenderTroopsLost,
@@ -584,6 +636,14 @@ export const CombatContainer = ({
               showLosses={!!battleSimulation}
               remainingTroops={remainingTroops?.attackerTroops}
               showRemaining={!!battleSimulation && !!remainingTroops}
+              relicDamageBonusPercent={attackerRelicBonuses.damageBonusPercent}
+              relicDamageBonusSource={attackerRelicBonuses.damageRelic?.name}
+              relicDamageReductionPercent={attackerRelicBonuses.damageReductionPercent}
+              relicDamageReductionSource={attackerRelicBonuses.damageReductionRelic?.name}
+              relicStaminaPercent={attackerRelicBonuses.staminaBonusPercent}
+              relicStaminaSource={attackerRelicBonuses.staminaRelic?.name}
+              relicDamageBonusAbsolute={battleSimulation?.attackerDamageBonusAbsolute || 0}
+              relicDamageReductionAbsolute={battleSimulation?.attackerDamageReductionAbsolute || 0}
             />
           )}
         </div>
@@ -605,6 +665,14 @@ export const CombatContainer = ({
               showLosses={!!battleSimulation}
               remainingTroops={remainingTroops?.defenderTroops}
               showRemaining={!!battleSimulation && !!remainingTroops}
+              relicDamageBonusPercent={defenderRelicBonuses.damageBonusPercent}
+              relicDamageBonusSource={defenderRelicBonuses.damageRelic?.name}
+              relicDamageReductionPercent={defenderRelicBonuses.damageReductionPercent}
+              relicDamageReductionSource={defenderRelicBonuses.damageReductionRelic?.name}
+              relicStaminaPercent={defenderRelicBonuses.staminaBonusPercent}
+              relicStaminaSource={defenderRelicBonuses.staminaRelic?.name}
+              relicDamageBonusAbsolute={battleSimulation?.defenderDamageBonusAbsolute || 0}
+              relicDamageReductionAbsolute={battleSimulation?.defenderDamageReductionAbsolute || 0}
             />
           ) : (
             <div className="p-4 border border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm">
