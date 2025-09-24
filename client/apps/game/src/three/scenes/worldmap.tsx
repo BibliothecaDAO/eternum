@@ -118,6 +118,7 @@ export default class WorldmapScene extends HexagonScene {
   private structurePulseColorCache: Map<string, { base: Color; pulse: Color }> = new Map();
   private armyStructureOwners: Map<ID, ID> = new Map();
   private minimap!: Minimap;
+  private followCameraTimeout: ReturnType<typeof setTimeout> | null = null;
   private previouslyHoveredHex: HexPosition | null = null;
   private cachedMatrices: Map<string, Map<string, { matrices: InstancedBufferAttribute; count: number }>> = new Map();
   private updateHexagonGridPromise: Promise<void> | null = null;
@@ -370,6 +371,27 @@ export default class WorldmapScene extends HexagonScene {
         this.recalculateArrowsForEntity(attackerId);
         this.recalculateArrowsForEntity(defenderId);
       }
+
+      const uiStore = useUIStore.getState();
+      const followArmyCombats = uiStore.followArmyCombats;
+      const currentScene = this.sceneManager.getCurrentScene();
+
+      if (followArmyCombats && currentScene === SceneName.WorldMap) {
+        const attackerPosition =
+          attackerId !== undefined
+            ? this.armiesPositions.get(attackerId) ?? this.structuresPositions.get(attackerId)
+            : undefined;
+        const defenderPosition =
+          defenderId !== undefined
+            ? this.armiesPositions.get(defenderId) ?? this.structuresPositions.get(defenderId)
+            : undefined;
+
+        const targetPosition = defenderPosition ?? attackerPosition;
+
+        if (targetPosition) {
+          this.focusCameraOnEvent(targetPosition.col, targetPosition.row, "Following Army Combat");
+        }
+      }
     });
 
     // Listen for structure guard updates
@@ -456,17 +478,8 @@ export default class WorldmapScene extends HexagonScene {
           const followArmyMoves = useUIStore.getState().followArmyMoves;
           const currentScene = this.sceneManager.getCurrentScene();
 
-          if (followArmyMoves && currentScene === SceneName.WorldMap && armyPosition) {
-            // Move camera to the reward location when follow is enabled
-            this.moveCameraToColRow(armyPosition.col, armyPosition.row, 2);
-
-            // Set the following state to true temporarily
-            useUIStore.getState().setIsFollowingArmy(true);
-
-            // Clear the following state after camera movement
-            setTimeout(() => {
-              useUIStore.getState().setIsFollowingArmy(false);
-            }, 3000); // Show for 3 seconds
+          if (followArmyMoves && currentScene === SceneName.WorldMap) {
+            this.focusCameraOnEvent(armyPosition.col, armyPosition.row, "Following Army Movement");
           }
           if (resourceId === 0) {
             return;
@@ -588,6 +601,25 @@ export default class WorldmapScene extends HexagonScene {
     if (col !== undefined && row !== undefined) {
       this.moveCameraToColRow(col, row, 0);
     }
+  }
+
+  private focusCameraOnEvent(col: number, row: number, message: string) {
+    this.moveCameraToColRow(col, row, 2);
+
+    const uiStore = useUIStore.getState();
+    uiStore.setFollowingArmyMessage(message);
+    uiStore.setIsFollowingArmy(true);
+
+    if (this.followCameraTimeout) {
+      clearTimeout(this.followCameraTimeout);
+    }
+
+    this.followCameraTimeout = setTimeout(() => {
+      const store = useUIStore.getState();
+      store.setIsFollowingArmy(false);
+      store.setFollowingArmyMessage(null);
+      this.followCameraTimeout = null;
+    }, 3000);
   }
 
   // methods needed to add worldmap specific behavior to the click events

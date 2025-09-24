@@ -79,8 +79,12 @@ interface UIStore {
   // camera follow
   followArmyMoves: boolean;
   setFollowArmyMoves: (follow: boolean) => void;
+  followArmyCombats: boolean;
+  setFollowArmyCombats: (follow: boolean) => void;
   isFollowingArmy: boolean;
   setIsFollowingArmy: (following: boolean) => void;
+  followingArmyMessage: string | null;
+  setFollowingArmyMessage: (message: string | null) => void;
   // shortcut navigation
   selectableArmies: SelectableArmy[];
   setSelectableArmies: (armies: SelectableArmy[]) => void;
@@ -182,9 +186,17 @@ export const useUIStore = create(
     setFollowArmyMoves: (follow: boolean) => {
       set({ followArmyMoves: follow });
     },
+    followArmyCombats: false,
+    setFollowArmyCombats: (follow: boolean) => {
+      set({ followArmyCombats: follow });
+    },
     isFollowingArmy: false,
     setIsFollowingArmy: (following: boolean) => {
       set({ isFollowingArmy: following });
+    },
+    followingArmyMessage: null,
+    setFollowingArmyMessage: (message: string | null) => {
+      set({ followingArmyMessage: message });
     },
     // shortcut navigation - dummy data for now
     selectableArmies: [],
