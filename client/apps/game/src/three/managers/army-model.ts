@@ -72,6 +72,7 @@ export class ArmyModel {
   private readonly normalScale = new Vector3(1, 1, 1);
   private readonly boatScale = new Vector3(1, 1, 1);
   private readonly agentScale = new Vector3(2, 2, 2);
+  private readonly MODEL_ANIMATION_UPDATE_INTERVAL = 1000 / 20; // 20 FPS per model
 
   // agent
   private isAgent: boolean = false;
@@ -166,6 +167,8 @@ export class ArmyModel {
       activeInstances: new Set(),
       targetScales: new Map(),
       currentScales: new Map(),
+      lastAnimationUpdate: 0,
+      animationUpdateInterval: this.MODEL_ANIMATION_UPDATE_INTERVAL,
     };
   }
 
@@ -292,19 +295,29 @@ export class ArmyModel {
   }
 
   // Animation Methods
-  public updateAnimations(deltaTime: number): void {
+  public updateAnimations(_deltaTime: number): void {
     if (GRAPHICS_SETTING === GraphicsSettings.LOW) return;
 
-    const time = performance.now() * 0.001;
+    const now = performance.now();
+    const time = now * 0.001;
 
     this.models.forEach((modelData) => {
-      this.updateModelAnimations(modelData, time);
+      this.updateModelAnimations(modelData, time, now);
     });
   }
 
-  private updateModelAnimations(modelData: ModelData, time: number): void {
+  private updateModelAnimations(modelData: ModelData, time: number, now: number): void {
+    if (now - modelData.lastAnimationUpdate < modelData.animationUpdateInterval) {
+      return;
+    }
+
+    let performedUpdate = false;
+    let hasAnimatedInstances = false;
+
     modelData.instancedMeshes.forEach((mesh, meshIndex) => {
       if (!mesh.animated) return;
+      if (mesh.count === 0) return;
+      hasAnimatedInstances = true;
 
       for (let i = 0; i < mesh.count; i++) {
         this.updateInstanceAnimation(modelData, mesh, meshIndex, i, time);
@@ -312,8 +325,13 @@ export class ArmyModel {
 
       if (mesh.morphTexture) {
         mesh.morphTexture.needsUpdate = true;
+        performedUpdate = true;
       }
     });
+
+    if (performedUpdate || !hasAnimatedInstances) {
+      modelData.lastAnimationUpdate = now;
+    }
   }
 
   private updateInstanceAnimation(

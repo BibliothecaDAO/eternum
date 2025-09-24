@@ -74,4 +74,6 @@ export interface ModelData {
   activeInstances: Set<number>;
   targetScales: Map<number, Vector3>;
   currentScales: Map<number, Vector3>;
+  lastAnimationUpdate: number;
+  animationUpdateInterval: number;
 }

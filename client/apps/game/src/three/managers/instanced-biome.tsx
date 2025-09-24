@@ -14,6 +14,9 @@ export default class InstancedModel {
   private animation: AnimationClip | null = null;
   private animationActions: Map<number, THREE.AnimationAction> = new Map();
   timeOffsets: Float32Array;
+  // Animation throttling to reduce morph texture uploads
+  private lastAnimationUpdate = 0;
+  private animationUpdateInterval = 1000 / 20; // 20 FPS
 
   constructor(gltf: any, count: number, enableRaycast: boolean = false, name: string = "") {
     this.group = new THREE.Group();
@@ -164,13 +167,21 @@ export default class InstancedModel {
     this.group.updateMatrixWorld(true);
   }
 
-  updateAnimations(deltaTime: number) {
+  updateAnimations(_deltaTime: number) {
     if (GRAPHICS_SETTING === GraphicsSettings.LOW) {
       return;
     }
 
     if (this.mixer && this.animation) {
-      const time = performance.now() * 0.001;
+      const now = performance.now();
+
+      if (now - this.lastAnimationUpdate < this.animationUpdateInterval) {
+        return;
+      }
+
+      const time = now * 0.001;
+      let needsUpdate = false;
+
       this.instancedMeshes.forEach((mesh, meshIndex) => {
         // Create a single action for each mesh if it doesn't exist
         if (!this.animationActions.has(meshIndex)) {
@@ -186,7 +197,12 @@ export default class InstancedModel {
           mesh.setMorphAt(i, this.biomeMeshes[meshIndex]);
         }
         mesh.morphTexture!.needsUpdate = true;
+        needsUpdate = true;
       });
+
+      if (needsUpdate) {
+        this.lastAnimationUpdate = now;
+      }
     }
   }
 
