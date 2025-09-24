@@ -476,8 +476,7 @@ const RegistrationState = ({
   const [isRegistering, setIsRegistering] = useState(false);
   const onSpectatorModeClick = useSpectatorModeClick(components);
 
-  const tokenReady =
-    !requiresEntryToken || (Boolean(availableEntryTokenId) && hasSufficientFeeBalance);
+  const tokenReady = !requiresEntryToken || (Boolean(availableEntryTokenId) && hasSufficientFeeBalance);
 
   const handleRegister = async () => {
     setIsRegistering(true);
@@ -538,9 +537,7 @@ const RegistrationState = ({
                           : "Mint an entry token before registering. Tokens are locked automatically during registration."}
                 </p>
                 {requiresEntryToken && !hasSufficientFeeBalance && (
-                  <p className="text-xs text-red-300 text-center">
-                    Top up your balance before registering.
-                  </p>
+                  <p className="text-xs text-red-300 text-center">Top up your balance before registering.</p>
                 )}
               </div>
             )}
@@ -775,15 +772,14 @@ export const BlitzOnboarding = () => {
       return;
     }
 
-    const maxTokens = entryTokenBalance > BigInt(Number.MAX_SAFE_INTEGER)
-      ? Number.MAX_SAFE_INTEGER
-      : Number(entryTokenBalance);
+    const maxTokens =
+      entryTokenBalance > BigInt(Number.MAX_SAFE_INTEGER) ? Number.MAX_SAFE_INTEGER : Number(entryTokenBalance);
     const randomIndex = maxTokens > 1 ? BigInt(Math.floor(Math.random() * maxTokens)) : 0n;
 
     setHasQueriedEntryToken(true);
 
     (async () => {
-      const entryTokenAddressHex = toHexString(blitzConfig.entry_token_address);
+      const entryTokenAddressHex = toHexString(blitzConfig?.entry_token_address!);
       console.log("Entry token random lookup", {
         owner: account.address,
         entryTokenAddressHex,
@@ -794,7 +790,7 @@ export const BlitzOnboarding = () => {
       const tokenId = await getEntryTokenIdByIndex(
         account.address,
         {
-          entryTokenAddress: entryTokenAddressHex,
+          entryTokenAddress: entryTokenAddressHex as `0x${string}`,
           validate: (candidate) => {
             const registerComponent = components.BlitzEntryTokenRegister;
             if (!registerComponent) return true;
@@ -1006,13 +1002,7 @@ export const BlitzOnboarding = () => {
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gold/70">Your balance</span>
-                <span
-                  className={
-                    hasSufficientFeeBalance
-                      ? "text-gold"
-                      : "text-red-300"
-                  }
-                >
+                <span className={hasSufficientFeeBalance ? "text-gold" : "text-red-300"}>
                   {isFeeBalanceLoading ? "…" : formatTokenAmount(feeTokenBalance)}
                 </span>
               </div>
