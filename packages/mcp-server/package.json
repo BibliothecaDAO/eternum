@@ -1,0 +1,38 @@
+{
+  "name": "@bibliothecadao/mcp-server",
+  "version": "0.1.0",
+  "description": "Model Context Protocol server exposing Eternum game data and actions",
+  "license": "MIT",
+  "author": "Bibliotheca DAO",
+  "type": "module",
+  "files": ["dist"],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/server.ts --dts --format esm --clean",
+    "dev": "tsup src/server.ts --dts --format esm --watch",
+    "lint": "eslint .",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@bibliothecadao/provider": "workspace:*",
+    "@bibliothecadao/torii": "workspace:*",
+    "@bibliothecadao/types": "workspace:*",
+    "@modelcontextprotocol/sdk": "^0.5.0",
+    "lru-cache": "^11.0.1",
+    "pino": "^9.3.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.10",
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.4",
+    "vitest": "^2.0.5"
+  }
+}
