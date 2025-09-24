@@ -111,6 +111,11 @@ export abstract class HexagonScene {
     this.createGroundMesh();
   }
 
+  private notifyControlsChanged(): void {
+    this.controls.update();
+    this.controls.dispatchEvent({ type: "change" });
+  }
+
   private initializeScene(): void {
     this.scene = new Scene();
     this.camera = this.controls.object as PerspectiveCamera;
@@ -395,6 +400,10 @@ export abstract class HexagonScene {
 
     const duration = transitionDuration || 2;
 
+    const onUpdate = () => {
+      this.notifyControlsChanged();
+    };
+
     gsap.timeline().to(camera.position, {
       duration,
       repeat: 0,
@@ -402,6 +411,7 @@ export abstract class HexagonScene {
       y: newPosition.y,
       z: newPosition.z,
       ease: "power3.inOut",
+      onUpdate,
       onComplete: () => {
         onFinish?.();
       },
@@ -416,6 +426,7 @@ export abstract class HexagonScene {
         y: newTarget.y,
         z: newTarget.z,
         ease: "power3.inOut",
+        onUpdate,
       },
       "<",
     );
@@ -437,9 +448,8 @@ export abstract class HexagonScene {
     } else {
       target.copy(newTarget);
       pos.copy(newPosition);
+      this.notifyControlsChanged();
     }
-
-    this.controls.update();
   }
 
   public moveCameraToColRow(col: number, row: number, duration: number = 2) {
@@ -463,8 +473,8 @@ export abstract class HexagonScene {
     } else {
       target.copy(newTarget);
       pos.copy(newPosition);
+      this.notifyControlsChanged();
     }
-    this.controls.update();
   }
 
   loadBiomeModels(maxInstances: number) {

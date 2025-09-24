@@ -207,10 +207,12 @@ export class InteractiveHexManager {
     this.visibleHexes.clear();
 
     // Calculate chunk boundaries
-    const minCol = startCol - width / 2;
-    const maxCol = startCol + width / 2;
-    const minRow = startRow - height / 2;
-    const maxRow = startRow + height / 2;
+    const halfWidth = Math.max(0, width) / 2;
+    const halfHeight = Math.max(0, height) / 2;
+    const minCol = startCol - halfWidth;
+    const maxCol = startCol + halfWidth;
+    const minRow = startRow - halfHeight;
+    const maxRow = startRow + halfHeight;
 
     const minBucketCol = Math.floor(minCol / this.bucketSize);
     const maxBucketCol = Math.floor(maxCol / this.bucketSize);
