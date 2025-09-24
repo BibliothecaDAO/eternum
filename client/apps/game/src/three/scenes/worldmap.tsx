@@ -627,6 +627,20 @@ export default class WorldmapScene extends HexagonScene {
     }, 3000);
   }
 
+  private getEntityOwnerAddress(entityId: ID): ContractAddress | undefined {
+    const armyPosition = this.armiesPositions.get(entityId);
+    if (armyPosition) {
+      return this.armyHexes.get(armyPosition.col)?.get(armyPosition.row)?.owner;
+    }
+
+    const structurePosition = this.structuresPositions.get(entityId);
+    if (structurePosition) {
+      return this.structureHexes.get(structurePosition.col)?.get(structurePosition.row)?.owner;
+    }
+
+    return undefined;
+  }
+
   private getEntityLabel(entityId: ID): string {
     if (this.armiesPositions.has(entityId)) {
       return `Army #${entityId}`;
@@ -635,6 +649,16 @@ export default class WorldmapScene extends HexagonScene {
       return `Structure #${entityId}`;
     }
     return `Entity #${entityId}`;
+  }
+
+  private markBattleNotificationHandled(key: string) {
+    this.notifiedBattleEvents.add(key);
+    if (this.notifiedBattleEvents.size > 100) {
+      const iterator = this.notifiedBattleEvents.values().next();
+      if (!iterator.done) {
+        this.notifiedBattleEvents.delete(iterator.value);
+      }
+    }
   }
 
   private openBattleLogsPanel() {
@@ -648,6 +672,20 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
+    const defenderOwner = this.getEntityOwnerAddress(defenderId);
+    if (!defenderOwner || !isAddressEqualToAccount(defenderOwner)) {
+      return;
+    }
+
+    const focusPosition = this.armiesPositions.get(defenderId) ?? this.structuresPositions.get(defenderId);
+
+    const notificationKey = `${update.entityId}-${update.battleData.timestamp}`;
+    if (this.notifiedBattleEvents.has(notificationKey)) {
+      return;
+    }
+
+    this.markBattleNotificationHandled(notificationKey);
+
     const attackerId = update.battleData.attackerId;
     const defenderLabel = this.getEntityLabel(defenderId);
     const attackerLabel = typeof attackerId === "number" ? this.getEntityLabel(attackerId) : "Unknown attacker";
@@ -658,6 +696,12 @@ export default class WorldmapScene extends HexagonScene {
         label: "View logs",
         onClick: () => this.openBattleLogsPanel(),
       },
+      ...(focusPosition && {
+        cancel: {
+          label: "Focus camera",
+          onClick: () => this.focusCameraOnEvent(focusPosition!.col, focusPosition!.row, "Following Combat Alert"),
+        },
+      }),
     });
   }
 
