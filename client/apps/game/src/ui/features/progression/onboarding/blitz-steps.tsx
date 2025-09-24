@@ -439,6 +439,7 @@ const DevOptionsState = ({
 
 // Registration state component
 const RegistrationState = ({
+  entryTokenBalance,
   registrationCount,
   registrationStartAt,
   registrationEndAt,
@@ -454,6 +455,7 @@ const RegistrationState = ({
   hasSufficientFeeBalance,
   isFeeBalanceLoading,
 }: {
+  entryTokenBalance: bigint;
   registrationCount: number;
   registrationStartAt: number;
   registrationEndAt: number;
@@ -476,7 +478,7 @@ const RegistrationState = ({
   const [isRegistering, setIsRegistering] = useState(false);
   const onSpectatorModeClick = useSpectatorModeClick(components);
 
-  const tokenReady = !requiresEntryToken || (Boolean(availableEntryTokenId) && hasSufficientFeeBalance);
+  const tokenReady = !requiresEntryToken || Boolean(availableEntryTokenId);
 
   const handleRegister = async () => {
     setIsRegistering(true);
@@ -536,7 +538,7 @@ const RegistrationState = ({
                           ? "Mint failed. Please try again."
                           : "Mint an entry token before registering. Tokens are locked automatically during registration."}
                 </p>
-                {requiresEntryToken && !hasSufficientFeeBalance && (
+                {requiresEntryToken && (entryTokenBalance < 1 )&& (
                   <p className="text-xs text-red-300 text-center">Top up your balance before registering.</p>
                 )}
               </div>
@@ -929,7 +931,7 @@ export const BlitzOnboarding = () => {
       await blitz_realm_register({
         signer: account,
         name: addressNameFelt,
-        tokenId: availableEntryTokenId,
+        tokenId: Number(availableEntryTokenId),
         entryTokenAddress: toHexString(blitzConfig.entry_token_address),
         lockId: ENTRY_TOKEN_LOCK_ID,
       });
@@ -1008,7 +1010,7 @@ export const BlitzOnboarding = () => {
               </div>
               {!hasSufficientFeeBalance && (
                 <p className="text-xs text-red-300">
-                  You need at least {formatTokenAmount(feeBalanceShortfall)} more tokens to cover the fee.
+                  Top balance to cover entry token fee.
                 </p>
               )}
               {canTopUpBalance && !hasSufficientFeeBalance && (
@@ -1044,6 +1046,7 @@ export const BlitzOnboarding = () => {
       )}
       {gameState === GameState.REGISTRATION && (
         <RegistrationState
+          entryTokenBalance={entryTokenBalance}
           registrationCount={blitzConfig.registration_count}
           registrationStartAt={registration_start_at}
           registrationEndAt={registration_end_at}

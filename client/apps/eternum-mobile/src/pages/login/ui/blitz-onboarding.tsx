@@ -4,9 +4,9 @@ import { useSyncPlayerStructures } from "@/shared/hooks/use-sync-player-structur
 import { Button } from "@/shared/ui/button";
 import {
   configManager,
+  ENTRY_TOKEN_LOCK_ID,
   formatTime,
   getEntityIdFromKeys,
-  ENTRY_TOKEN_LOCK_ID,
   LordsAbi,
   toHexString,
 } from "@bibliothecadao/eternum";
@@ -20,7 +20,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { AlertCircle, Eye, Hammer, ShieldCheck, Swords, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { CallData, Abi, uint256 } from "starknet";
+import { Abi, CallData, uint256 } from "starknet";
 import { env } from "../../../../env";
 
 // Helper functions to format timestamps
@@ -277,6 +277,7 @@ const MakeHyperstructuresState = ({
 };
 
 const RegistrationState = ({
+  entryTokenBalance,
   registrationCount,
   registrationEndAt,
   isRegistered,
@@ -289,6 +290,7 @@ const RegistrationState = ({
   hasSufficientFeeBalance,
   isFeeBalanceLoading,
 }: {
+  entryTokenBalance: bigint;
   registrationCount: number;
   registrationEndAt: number;
   isRegistered: boolean;
@@ -304,7 +306,7 @@ const RegistrationState = ({
   const [isRegistering, setIsRegistering] = useState(false);
   const navigate = useNavigate();
 
-  const tokenReady = !requiresEntryToken || (Boolean(availableEntryTokenId) && hasSufficientFeeBalance);
+  const tokenReady = !requiresEntryToken || Boolean(availableEntryTokenId);
 
   const handleRegister = async () => {
     setIsRegistering(true);
@@ -364,7 +366,7 @@ const RegistrationState = ({
                         ? "Mint failed. Please try again."
                         : "Mint an entry token before registering. We'll lock it automatically when you join."}
               </p>
-              {requiresEntryToken && !hasSufficientFeeBalance && (
+              {requiresEntryToken && (entryTokenBalance < 1) && (
                 <p className="text-center text-[10px] text-red-300">Top up your balance before registering.</p>
               )}
             </div>
@@ -782,7 +784,7 @@ export const BlitzOnboarding = () => {
       await blitz_realm_register({
         signer: account,
         name: addressNameFelt,
-        tokenId: availableEntryTokenId,
+        tokenId: Number(availableEntryTokenId),
         entryTokenAddress: toHexString(blitzConfig.entry_token_address),
         lockId: ENTRY_TOKEN_LOCK_ID,
       });
@@ -856,11 +858,7 @@ export const BlitzOnboarding = () => {
                   {isFeeBalanceLoading ? "…" : formatTokenAmount(feeTokenBalance)}
                 </span>
               </div>
-              {!hasSufficientFeeBalance && (
-                <p className="text-[10px] text-red-300">
-                  You need at least {formatTokenAmount(feeBalanceShortfall)} more tokens to cover the fee.
-                </p>
-              )}
+              {!hasSufficientFeeBalance && <p className="text-[10px] text-red-300">Top balance to cover entry token fee.</p>}
               {canTopUpBalance && !hasSufficientFeeBalance && (
                 <Button onClick={handleTopUpFeeBalance} disabled={isToppingUp} variant="secondary" className="w-full">
                   {isToppingUp ? "Topping up…" : "Top up balance"}
@@ -888,6 +886,7 @@ export const BlitzOnboarding = () => {
 
       {gameState === GameState.REGISTRATION && (
         <RegistrationState
+          entryTokenBalance={entryTokenBalance}
           registrationCount={blitzConfig.registration_count}
           registrationEndAt={registration_end_at}
           isRegistered={playerRegistered?.registered || false}
