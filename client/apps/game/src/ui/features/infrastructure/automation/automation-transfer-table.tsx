@@ -1415,7 +1415,7 @@ export const AutomationTransferTable: React.FC = () => {
                     </div>
                   )}
                   <table className="w-full text-sm text-left table-auto">
-                    <thead className="text-xs uppercase bg-gray-700/50 text-gold">
+                    <thead className="text-xs uppercase /50 text-gold">
                       <tr>
                         <th scope="col" className="px-6 py-1">
                           Destination

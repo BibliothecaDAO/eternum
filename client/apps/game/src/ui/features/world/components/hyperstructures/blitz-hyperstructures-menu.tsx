@@ -268,7 +268,7 @@ const HyperstructureCard = ({ hyperstructure, onNavigate, onChat }: Hyperstructu
             <div
               className={`px-2 py-1 rounded text-xs whitespace-nowrap flex-shrink-0 ${
                 isBanditOwned
-                  ? "bg-enemy border-enemy border text-gray-300"
+                  ? "bg-enemy border-enemy border "
                   : isAlly
                     ? "bg-green/30 border-green/50 border text-green-200"
                     : "bg-yellow/30 border-yellow/50 border text-yellow-200"

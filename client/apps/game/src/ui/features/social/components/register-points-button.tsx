@@ -107,7 +107,7 @@ export const RegisterPointsButton = ({ className }: RegisterPointsButtonProps) =
       <div className="flex items-center gap-2">
         <span className="text-sm">
           <span className="text-green-400">{registeredPoints.toLocaleString()}</span>
-          <span className="text-gray-500 mx-1">|</span>
+          <span className=" mx-1">|</span>
           <span className={unregisteredShareholderPoints > 0 ? "text-yellow-400" : ""}>
             {unregisteredShareholderPoints.toLocaleString()}
           </span>

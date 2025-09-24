@@ -1,5 +1,5 @@
+import { useShortcut, useShortcuts } from "@/utils/shortcuts";
 import React, { useState } from "react";
-import { useShortcuts, useShortcut } from "@/utils/shortcuts";
 
 /**
  * Example component demonstrating how to use the centralized shortcut system
@@ -58,7 +58,7 @@ export const ShortcutExample: React.FC = () => {
         </div>
       </div>
 
-      <div className="text-sm text-gray-600 space-y-1">
+      <div className="text-sm  space-y-1">
         <div>
           <kbd>↑</kbd> - Increment
         </div>
@@ -73,7 +73,7 @@ export const ShortcutExample: React.FC = () => {
         </div>
       </div>
 
-      <div className="mt-4 text-xs text-gray-500">
+      <div className="mt-4 text-xs ">
         <p>
           This component demonstrates both the useShortcuts hook (for multiple shortcuts with a prefix) and the
           useShortcut hook (for single shortcuts). All shortcuts are automatically cleaned up when the component

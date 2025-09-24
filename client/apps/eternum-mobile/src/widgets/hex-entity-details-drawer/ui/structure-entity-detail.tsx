@@ -240,7 +240,7 @@ export const StructureEntityDetail = memo(
                   {progress?.percentage ?? 0}%
                 </div>
               </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div className="w-full bg-gray-200 dark: rounded-full h-2">
                 <div
                   className="bg-amber-500 h-full rounded-full transition-all duration-500"
                   style={{ width: `${progress?.percentage ?? 0}%` }}
@@ -402,7 +402,7 @@ export const StructureEntityDetail = memo(
           {/* Immunity Status */}
           <div className="bg-gray-50 dark:bg-gray-950/20 rounded p-3 border border-gray-200 dark:border-gray-800">
             <div className="text-sm font-medium text-gray-800 dark:text-gray-200">Immunity Status</div>
-            <div className="text-xs text-gray-600 dark: mt-1">Structure immunity information</div>
+            <div className="text-xs  dark: mt-1">Structure immunity information</div>
           </div>
         </CardContent>
       </Card>

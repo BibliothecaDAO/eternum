@@ -1057,10 +1057,10 @@ export function ChatModule() {
               <p className="">Loading messages...</p>
             </div>
           ) : filteredMessages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
+            <div className="flex flex-col items-center justify-center h-full text-center ">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-10 w-10 md:h-12 md:w-12 mb-2 text-gray-600"
+                className="h-10 w-10 md:h-12 md:w-12 mb-2 "
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"

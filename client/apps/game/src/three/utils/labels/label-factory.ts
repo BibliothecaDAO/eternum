@@ -428,7 +428,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
         );
       } else {
         // Inactive/unclaimed style
-        realmCountDisplay.classList.add("bg-gray-700/20", "border", "border-gray-600/30", "border-dashed");
+        realmCountDisplay.classList.add("/20", "border", "border-gray-600/30", "border-dashed");
       }
 
       realmCountDisplay.setAttribute("data-component", "realm-count");
@@ -441,7 +441,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
         vpIcon.classList.add("text-order-brilliance");
       } else {
         vpIcon.textContent = "💤"; // Sleeping for inactive
-        vpIcon.classList.add("text-gray-300");
+        vpIcon.classList.add("");
       }
       realmCountDisplay.appendChild(vpIcon);
 
@@ -452,7 +452,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
       if (isOwned) {
         realmCountText.classList.add("text-order-brilliance", "text-shadow-glow-brilliance-xs");
       } else {
-        realmCountText.classList.add("text-gray-300");
+        realmCountText.classList.add("");
       }
 
       realmCountText.textContent = `${data.hyperstructureRealmCount}`;
@@ -466,7 +466,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
         vpLabel.classList.add("text-order-brilliance/80");
         vpLabel.textContent = "VP/s";
       } else {
-        vpLabel.classList.add("text-gray-300");
+        vpLabel.classList.add("");
         vpLabel.textContent = "VP/s (unclaimed)";
       }
 
@@ -608,7 +608,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
             vpIcon.className = "text-xs text-order-brilliance";
           } else {
             vpIcon.textContent = "💤";
-            vpIcon.className = "text-xs text-gray-300";
+            vpIcon.className = "text-xs ";
           }
 
           // Update count
@@ -617,7 +617,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
           if (isOwned) {
             realmCountText.classList.add("text-order-brilliance", "text-shadow-glow-brilliance-xs");
           } else {
-            realmCountText.classList.add("text-gray-300");
+            realmCountText.classList.add("");
           }
 
           // Update label
@@ -626,7 +626,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
             vpLabel.classList.add("text-order-brilliance/80");
             vpLabel.textContent = "VP/s";
           } else {
-            vpLabel.classList.add("text-gray-300");
+            vpLabel.classList.add("");
             vpLabel.textContent = "VP/s (unclaimed)";
           }
 
@@ -641,7 +641,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
               "animate-slowPulse",
             );
           } else {
-            realmCountDisplay.classList.add("bg-gray-700/20", "border", "border-gray-600/30", "border-dashed");
+            realmCountDisplay.classList.add("/20", "border", "border-gray-600/30", "border-dashed");
           }
         }
       } else {
@@ -667,7 +667,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
             "animate-slowPulse",
           );
         } else {
-          newRealmCountDisplay.classList.add("bg-gray-700/20", "border", "border-gray-600/30", "border-dashed");
+          newRealmCountDisplay.classList.add("/20", "border", "border-gray-600/30", "border-dashed");
         }
 
         newRealmCountDisplay.setAttribute("data-component", "realm-count");
@@ -680,7 +680,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
           vpIcon.classList.add("text-order-brilliance");
         } else {
           vpIcon.textContent = "💤";
-          vpIcon.classList.add("text-gray-300");
+          vpIcon.classList.add("");
         }
         newRealmCountDisplay.appendChild(vpIcon);
 
@@ -691,7 +691,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
         if (isOwned) {
           realmCountText.classList.add("text-order-brilliance", "text-shadow-glow-brilliance-xs");
         } else {
-          realmCountText.classList.add("text-gray-300");
+          realmCountText.classList.add("");
         }
 
         realmCountText.textContent = `${data.hyperstructureRealmCount}`;
@@ -705,7 +705,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
           vpLabel.classList.add("text-order-brilliance/80");
           vpLabel.textContent = "VP/s";
         } else {
-          vpLabel.classList.add("text-gray-300");
+          vpLabel.classList.add("");
           vpLabel.textContent = "VP/s (unclaimed)";
         }
 

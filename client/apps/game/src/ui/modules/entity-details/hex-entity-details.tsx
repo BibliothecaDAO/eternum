@@ -77,13 +77,13 @@ export const HexEntityDetails = () => {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center ">
             <div className="mb-3">
-              <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-700 flex items-center justify-center">
+              <div className="w-16 h-16 mx-auto mb-3 rounded-full  flex items-center justify-center">
                 <span className="text-2xl">🗺️</span>
               </div>
             </div>
-            <p className="text-lg font-medium mb-2 text-gray-300">Unexplored Territory</p>
-            <p className="text-sm text-gray-500">This hex has not been explored yet.</p>
-            <p className="text-xs text-gray-600 mt-2">Send an explorer to discover what lies here.</p>
+            <p className="text-lg font-medium mb-2 ">Unexplored Territory</p>
+            <p className="text-sm ">This hex has not been explored yet.</p>
+            <p className="text-xs  mt-2">Send an explorer to discover what lies here.</p>
           </div>
         </div>
       ) : (

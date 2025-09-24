@@ -129,7 +129,7 @@ const EfficiencyInfo = ({
   };
 
   return (
-    <div className="mt-1 p-2 border border-gray-700 rounded-lg bg-gray-800/40 text-xs">
+    <div className="mt-1 p-2 border  rounded-lg bg-gray-800/40 text-xs">
       {/* Header with info icon and title */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
@@ -155,11 +155,11 @@ const EfficiencyInfo = ({
 
       {/* Efficiency rates table */}
       <div className="grid grid-cols-2 gap-x-2 gap-y-1 mb-2">
-        <div className="flex items-center justify-between bg-gray-700/30 px-2 py-1 rounded">
+        <div className="flex items-center justify-between /30 px-2 py-1 rounded">
           <span className="text-[10px]">Resource Loss:</span>
           <span className="font-medium text-[10px] text-red-400">-{100 - currentEfficiency.resourceEfficiency}%</span>
         </div>
-        <div className="flex items-center justify-between bg-gray-700/30 px-2 py-1 rounded">
+        <div className="flex items-center justify-between /30 px-2 py-1 rounded">
           <span className="text-[10px]">Troop Loss:</span>
           <span className="font-medium text-[10px] text-red-400">-{100 - currentEfficiency.troopEfficiency}%</span>
         </div>
@@ -167,12 +167,12 @@ const EfficiencyInfo = ({
 
       {/* Fees section */}
       <div className="flex flex-col gap-1 mb-2">
-        <div className="flex items-center justify-between bg-gray-700/30 px-2 py-1 rounded">
+        <div className="flex items-center justify-between /30 px-2 py-1 rounded">
           <span className="text-[10px]">Platform Fees:</span>
           <span className="font-medium text-[10px] text-red-400">-{PLATFORM_FEE_PERCENTAGE}%</span>
         </div>
         {isVillage && (
-          <div className="flex items-center justify-between bg-gray-700/30 px-2 py-1 rounded">
+          <div className="flex items-center justify-between /30 px-2 py-1 rounded">
             <span className="text-[10px]">Parent Realm Tax:</span>
             <span className="font-medium text-[10px] text-red-400">-{VILLAGE_PARENT_FEE_PERCENTAGE}%</span>
           </div>
@@ -203,7 +203,7 @@ const EfficiencyInfo = ({
 
       {/* Next tier information if available */}
       {nextTier && (
-        <div className="mt-2 pt-1 border-t border-gray-700 text-[10px] text-amber-400 flex items-center justify-center">
+        <div className="mt-2 pt-1 border-t  text-[10px] text-amber-400 flex items-center justify-center">
           Next tier: {nextTier.hyperstructures} hyperstructures completed (-
           {100 - nextTier.resourceEfficiency}% resource loss, -{100 - nextTier.troopEfficiency}% troop loss)
         </div>
@@ -584,7 +584,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
           >
             <SelectValue placeholder="Select Structure..." />
           </SelectTrigger>
-          <SelectContent className="bg-gray-700 border-gray-600 panel-wood bg-dark-wood">
+          <SelectContent className=" border-gray-600 panel-wood bg-dark-wood">
             {structuresWithFavorites.map((structure) =>
               structure.entityId ? (
                 <div key={structure.entityId} className="flex flex-row items-center pr-2 hover:bg-gray-600">
@@ -630,7 +630,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
               : "";
 
             return (
-              <div key={resource.key} className="border border-gray-700 rounded-lg p-3 relative">
+              <div key={resource.key} className="border  rounded-lg p-3 relative">
                 {/* Resource header with balance badge */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">

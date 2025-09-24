@@ -261,7 +261,7 @@ export default {
     "bg-ally",
     "bg-enemy",
     // Stamina bar classes
-    "bg-gray-700",
+    "",
     "bg-green-500",
     "bg-yellow-500",
     "bg-red-500",

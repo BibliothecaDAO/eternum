@@ -159,7 +159,7 @@ export const EternumHyperstructuresMenu = ({ className }: { className?: string }
     <button
       className={clsx("px-2 py-1 text-xxs rounded-md transition-colors flex items-center gap-1 justify-center", {
         "bg-gold/20 text-gold": activeFilter === value,
-        "hover:bg-gray-700/30": activeFilter !== value,
+        "hover:/30": activeFilter !== value,
       })}
       onClick={() => setActiveFilter(value)}
     >
@@ -292,7 +292,7 @@ export const EternumHyperstructuresMenu = ({ className }: { className?: string }
                     })}
                   </ul>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-40 text-gray-500">
+                  <div className="flex flex-col items-center justify-center h-40 ">
                     <div className="text-sm mb-2">No hyperstructures found</div>
                     <div className="text-xs">Try adjusting your filters or search</div>
                   </div>
