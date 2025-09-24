@@ -53,4 +53,5 @@ website = "https://alpha-eternum.realms.world/"
     "s1_eternum-quest_systems",
     "s1_eternum-relic_systems",
     "s1_eternum-blitz_realm_systems",
+    "s1_eternum-prize_distribution_systems",
 ]

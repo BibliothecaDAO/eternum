@@ -78,7 +78,7 @@ pub mod prize_distribution_systems {
                     .emit_event(
                         @StoryEvent {
                             owner: Option::Some(player),
-                            entity_id: Option::None,
+                            entity_id: Option::Some(0),
                             tx_hash,
                             story: Story::PrizeDistributedStory(
                                 PrizeDistributedStory {
@@ -228,7 +228,7 @@ pub mod prize_distribution_systems {
                     .emit_event(
                         @StoryEvent {
                             owner: Option::Some(caller),
-                            entity_id: Option::None,
+                            entity_id: Option::Some(0),
                             tx_hash: starknet::get_tx_info().unbox().transaction_hash,
                             story: Story::PrizeDistributionFinalStory(
                                 PrizeDistributionFinalStory { trial_id: trial.trial_id },

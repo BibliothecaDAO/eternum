@@ -183,7 +183,7 @@ pub impl SeasonConfigImpl of SeasonConfigTrait {
         assert!(self.has_ended(), "Season is not over");
 
         let now = starknet::get_block_timestamp();
-        assert!(now > self.end_at + self.registration_grace_seconds.into(), "The registration grace period is over");
+        assert!(now > self.end_at + self.registration_grace_seconds.into(), "The registration grace period is not over");
     }
 
     fn end_season(ref world: WorldStorage) {
