@@ -129,6 +129,12 @@ jobs:
           # Verify the change
           grep "^seed = " dojo_slot.toml
 
+      - name: ⚙️ Run Collectibles NFT Declare
+        working-directory: ./contracts
+        run: |
+          echo "🔧 Running Game Build..."
+          pnpm run collectibles:declare:slot
+
       - name: ⚙️ Run Game Build
         working-directory: ./contracts
         run: |
