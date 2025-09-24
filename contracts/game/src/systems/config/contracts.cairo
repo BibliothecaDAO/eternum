@@ -190,6 +190,7 @@ pub trait ISettlementConfig<T> {
         registration_start_at: u32,
         entry_token_class_hash: felt252,
         entry_token_deploy_calldata: Span<felt252>,
+        entry_token_ipfs_cid: ByteArray,
     );
 }
 
@@ -836,6 +837,7 @@ pub mod config_systems {
             registration_start_at: u32,
             entry_token_class_hash: felt252,
             entry_token_deploy_calldata: Span<felt252>,
+            entry_token_ipfs_cid: ByteArray,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -854,6 +856,7 @@ pub mod config_systems {
                     entry_token_class_hash, entry_token_deploy_calldata
                 );
                 blitz_registration_config.entry_token_address = entry_token_address;
+                blitz_registration_config.setup_entry_token(entry_token_ipfs_cid);
                 blitz_registration_config.update_entry_token_lock(Bounded::MAX);
             }
 

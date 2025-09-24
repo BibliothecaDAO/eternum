@@ -2,13 +2,12 @@ use core::num::traits::zero::Zero;
 use dojo::model::{Model, ModelStorage};
 use dojo::storage::dojo_store::DojoStore;
 use dojo::world::WorldStorage;
-use dojo::world::{WorldStorageTrait};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{WORLD_CONFIG_ID, UNIVERSAL_DEPLOYER_ADDRESS};
 use s1_eternum::models::position::{Coord, CoordImpl, Direction};
 use s1_eternum::utils::random::VRFImpl;
 use starknet::ContractAddress;
-
+use crate::utils::interfaces::blitz_entry_token::{IBlitzEntryTokenDispatcher, IBlitzEntryTokenDispatcherTrait};
 //
 // GLOBAL CONFIGS
 //
@@ -605,19 +604,31 @@ pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
         (*deploy_result_span.at(0)).try_into().unwrap()
     }
 
+
+    fn setup_entry_token(self: BlitzRegistrationConfig, ipfs_cid: ByteArray) {
+        let dispatcher = IBlitzEntryTokenDispatcher {contract_address: self.entry_token_address};
+        dispatcher.set_attrs_raw_to_ipfs_cid(
+            self.entry_token_attrs_raw(),
+            ipfs_cid,
+            false
+        );
+    }
+
     fn entry_token_lock_id(self: BlitzRegistrationConfig) -> felt252 {
         69
     }
 
+    fn entry_token_attrs_raw(self: BlitzRegistrationConfig) -> u128 {
+        1
+    }
+
+
     fn update_entry_token_lock(self: BlitzRegistrationConfig, unlock_at: u64) {
-        starknet::syscalls::call_contract_syscall(
-            self.entry_token_address.try_into().unwrap(), 
-            0x14e5b08dbdd2169c7ecfc3437d343d8ca9b7d629335c2ea609c9b9443c1503, // selector!("lock_state_update")
-            array![
-                self.entry_token_lock_id(),
-                unlock_at.into(),
-            ].span()
-        ).unwrap();
+        let dispatcher = IBlitzEntryTokenDispatcher {contract_address: self.entry_token_address};
+        dispatcher.lock_state_update(
+            self.entry_token_lock_id(),
+            unlock_at
+        );
     }
 }
 

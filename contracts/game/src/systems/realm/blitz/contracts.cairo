@@ -1,16 +1,6 @@
 use s1_eternum::alias::ID;
 use starknet::ContractAddress;
 
-
-
-// Note: dont include burn as that would affect the total supply check in `obtain_entry_token` function
-#[starknet::interface]
-pub trait IERC721MintLock<T> {
-    fn safe_mint(ref self: T, recipient: ContractAddress, attributes_raw: u128);
-    fn token_lock_state(self: @T, token_id: u256) -> (felt252, felt252);
-    fn total_supply(self: @T) -> u256;
-}
-
 #[starknet::interface]
 pub trait IBlitzRealmSystems<T> {
     fn obtain_entry_token(ref self: T);
@@ -57,7 +47,7 @@ pub mod blitz_realm_systems {
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
     use crate::systems::prize_distribution::contracts::prize_distribution_systems;
-    use super::{IERC721MintLockDispatcher, IERC721MintLockDispatcherTrait};
+    use crate::utils::interfaces::blitz_entry_token::{IBlitzEntryTokenDispatcher, IBlitzEntryTokenDispatcherTrait};
     use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 
     #[derive(Copy, Drop, Serde)]
@@ -96,10 +86,10 @@ pub mod blitz_realm_systems {
 
 
                 // mint entry erc721 token
-                let entry_token_contract = IERC721MintLockDispatcher {
+                let entry_token_contract = IBlitzEntryTokenDispatcher {
                     contract_address: blitz_registration_config.entry_token_address,
                 };
-                entry_token_contract.safe_mint(caller, 0x0);
+                entry_token_contract.mint(caller, blitz_registration_config.entry_token_attrs_raw());
 
                 // Security note: this means we don't allow burning of entry tokens
                 //
@@ -140,7 +130,7 @@ pub mod blitz_realm_systems {
             // if there is a required fee amount, ensure token is locked  
             if blitz_registration_config.fee_amount.is_non_zero() {
 
-                let entry_token_contract = IERC721MintLockDispatcher {
+                let entry_token_contract = IBlitzEntryTokenDispatcher {
                     contract_address: blitz_registration_config.entry_token_address,
                 };
                 let (lock_id, _) = entry_token_contract.token_lock_state(token_id.into());
