@@ -286,17 +286,73 @@ export class EternumProvider extends EnhancedDojoProvider {
    * Register a player for Blitz Realm
    *
    * @param props - Properties for registration
-   * @param props.owner - Contract address of the player to register
+   * @param props.entryTokenAddress - Optional ERC721 contract address for entry tokens
    * @param props.signer - Account executing the transaction
    * @returns Transaction receipt
    */
+  public async blitz_realm_obtain_entry_token(props: SystemProps.BlitzRealmObtainEntryTokenProps) {
+    const { signer, feeToken, feeAmount } = props;
+    const blitzRealmSystemsAddress = getContractByName(this.manifest, `${NAMESPACE}-blitz_realm_systems`);
+
+    const calls: AllowArray<Call> = [];
+
+    if (feeToken && feeAmount !== undefined) {
+      try {
+        const amountBigInt = typeof feeAmount === "bigint" ? feeAmount : BigInt(feeAmount as any);
+        if (amountBigInt > 0n) {
+          const amountUint256 = uint256.bnToUint256(amountBigInt);
+          calls.push({
+            contractAddress: feeToken,
+            entrypoint: "approve",
+            calldata: CallData.compile([
+              blitzRealmSystemsAddress,
+              amountUint256.low,
+              amountUint256.high,
+            ]),
+          });
+        }
+      } catch (error) {
+        console.error("Failed to prepare approval for entry token fee", error);
+      }
+    }
+
+    calls.push({
+      contractAddress: blitzRealmSystemsAddress,
+      entrypoint: "obtain_entry_token",
+      calldata: [],
+    });
+
+    const call = this.createProviderCall(signer, calls.length === 1 ? calls[0] : calls);
+    return await this.promiseQueue.enqueue(call);
+  }
+
   public async blitz_realm_register(props: SystemProps.BlitzRealmRegisterProps) {
-    const {signer, name, tokenId } = props;
-    const call = this.createProviderCall(signer, {
+    const { signer, name, tokenId, entryTokenAddress, lockId } = props;
+
+    const registerCall: Call = {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-blitz_realm_systems`),
       entrypoint: "register",
       calldata: [name, tokenId],
-    });
+    };
+
+    if (entryTokenAddress) {
+      const tokenIdUint256 = uint256.bnToUint256(tokenId);
+      const entryTokenContractAddress =
+        typeof entryTokenAddress === "string" && entryTokenAddress.startsWith("0x")
+          ? entryTokenAddress
+          : `0x${BigInt(entryTokenAddress as string).toString(16)}`;
+
+      const tokenLockCall: Call = {
+        contractAddress: entryTokenContractAddress,
+        entrypoint: "token_lock",
+        calldata: CallData.compile([tokenIdUint256, lockId ?? 69]),
+      };
+
+      const call = this.createProviderCall(signer, [tokenLockCall, registerCall]);
+      return await this.promiseQueue.enqueue(call);
+    }
+
+    const call = this.createProviderCall(signer, registerCall);
     return await this.promiseQueue.enqueue(call);
   }
 
@@ -2585,20 +2641,21 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_blitz_registration_config(props: SystemProps.SetBlitzRegistrationConfigProps) {
-    const { fee_token, fee_recipient, fee_amount, registration_count_max, registration_start_at, entry_token_class_hash, entry_token_deploy_calldata, signer } = props;
+    const { fee_token, fee_recipient, fee_amount, registration_count_max, registration_start_at, entry_token_class_hash, entry_token_deploy_calldata, entry_token_ipfs_cid, signer } = props;
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_blitz_registration_config",
       calldata: [
-        fee_token, 
-        fee_recipient, 
-        fee_amount, 
-        0, 
-        registration_count_max, 
+        fee_token,
+        fee_recipient,
+        fee_amount,
+        0,
+        registration_count_max,
         registration_start_at,
         entry_token_class_hash,
         entry_token_deploy_calldata.length,
         ...entry_token_deploy_calldata,
+        entry_token_ipfs_cid,
       ],
     });
   }

@@ -1,4 +1,4 @@
-import { Account, AccountInterface, BigNumberish } from "starknet";
+import { Account, AccountInterface, BigNumberish, ByteArray } from "starknet";
 import { ResourcesIds } from "../constants";
 import { BuildingType } from "../constants/structures";
 import { Level, Resource } from "./common";
@@ -28,6 +28,8 @@ export interface MintAndSettleTestRealmProps extends SystemSigner {
 export interface BlitzRealmRegisterProps extends SystemSigner {
   name: BigNumberish;
   tokenId: BigNumberish;
+  entryTokenAddress?: string;
+  lockId?: BigNumberish;
 }
 
 export interface BlitzRealmMakeHyperstructuresProps extends SystemSigner {
@@ -35,6 +37,11 @@ export interface BlitzRealmMakeHyperstructuresProps extends SystemSigner {
 }
 
 export interface BlitzRealmCreateProps extends SystemSigner {}
+
+export interface BlitzRealmObtainEntryTokenProps extends SystemSigner {
+  feeToken?: string;
+  feeAmount?: BigNumberish;
+}
 
 export interface BridgeDepositIntoRealmProps extends SystemSigner {
   resources: {
@@ -679,6 +686,7 @@ export interface SetBlitzRegistrationConfigProps extends SystemSigner {
   registration_start_at: BigNumberish;
   entry_token_class_hash: BigNumberish;
   entry_token_deploy_calldata: BigNumberish[];
+  entry_token_ipfs_cid: ByteArray;
 }
 export interface MintTestRealmProps extends SystemSigner {
   token_id: BigNumberish;

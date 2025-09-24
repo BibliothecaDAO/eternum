@@ -5,16 +5,25 @@ import { useSetAddressName } from "@/hooks/helpers/use-set-address-name";
 import { Position } from "@bibliothecadao/eternum";
 
 import Button from "@/ui/design-system/atoms/button";
-import { configManager, formatTime, getEntityIdFromKeys } from "@bibliothecadao/eternum";
-import { useDojo, usePlayerOwnedRealmEntities } from "@bibliothecadao/react";
+import {
+  configManager,
+  ENTRY_TOKEN_LOCK_ID,
+  formatTime,
+  getEntityIdFromKeys,
+  LordsAbi,
+  toHexString,
+} from "@bibliothecadao/eternum";
+import { useDojo, useEntryTokenBalance, usePlayerOwnedRealmEntities } from "@bibliothecadao/react";
 import { ControllerConnector } from "@cartridge/connector";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, HasValue } from "@dojoengine/recs";
 import { cairoShortStringToFelt } from "@dojoengine/torii-wasm";
-import { useAccount } from "@starknet-react/core";
+import { useAccount, useCall } from "@starknet-react/core";
 import { motion } from "framer-motion";
 import { AlertCircle, Users } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Abi, CallData, uint256 } from "starknet";
+import { env } from "../../../../../env";
 import { SpectateButton } from "./spectate-button";
 
 // Helper function to format timestamp to local time
@@ -34,6 +43,36 @@ const formatLocalDateTime = (timestamp: number): string => {
     hour: "2-digit",
     minute: "2-digit",
   });
+};
+
+const normalizeUint256 = (value: unknown): bigint => {
+  if (!value) return 0n;
+
+  if (typeof value === "bigint") return value;
+
+  if (Array.isArray(value)) {
+    if (value.length === 2) {
+      const [low, high] = value;
+      return BigInt(low ?? 0) + (BigInt(high ?? 0) << 128n);
+    }
+    if (value.length === 1) {
+      return BigInt(value[0] ?? 0);
+    }
+  }
+
+  if (typeof value === "object" && value !== null) {
+    const maybeUint = value as { low?: bigint | number | string; high?: bigint | number | string };
+    if (maybeUint.low !== undefined && maybeUint.high !== undefined) {
+      return BigInt(maybeUint.low) + (BigInt(maybeUint.high) << 128n);
+    }
+  }
+
+  try {
+    return BigInt(value as string);
+  } catch (error) {
+    console.warn("Failed to normalise uint256", value, error);
+    return 0n;
+  }
 };
 
 // Game state enum
@@ -407,6 +446,13 @@ const RegistrationState = ({
   creationEndAt,
   isRegistered,
   onRegister,
+  requiresEntryToken,
+  onObtainEntryToken,
+  isObtainingEntryToken,
+  availableEntryTokenId,
+  entryTokenStatus,
+  hasSufficientFeeBalance,
+  isFeeBalanceLoading,
 }: {
   registrationCount: number;
   registrationStartAt: number;
@@ -415,6 +461,13 @@ const RegistrationState = ({
   creationEndAt: number;
   isRegistered: boolean;
   onRegister: () => Promise<void>;
+  requiresEntryToken: boolean;
+  onObtainEntryToken?: () => Promise<void> | void;
+  isObtainingEntryToken?: boolean;
+  availableEntryTokenId?: bigint | null;
+  entryTokenStatus: "idle" | "minting" | "timeout" | "error";
+  hasSufficientFeeBalance: boolean;
+  isFeeBalanceLoading: boolean;
 }) => {
   const {
     setup: { components },
@@ -423,9 +476,8 @@ const RegistrationState = ({
   const [isRegistering, setIsRegistering] = useState(false);
   const onSpectatorModeClick = useSpectatorModeClick(components);
 
-  // Calculate phase durations
-  const registrationDuration = registrationEndAt - registrationStartAt;
-  const settlementDuration = creationEndAt - creationStartAt;
+  const tokenReady =
+    !requiresEntryToken || (Boolean(availableEntryTokenId) && hasSufficientFeeBalance);
 
   const handleRegister = async () => {
     setIsRegistering(true);
@@ -454,23 +506,66 @@ const RegistrationState = ({
             <p className="text-sm text-gold/70 mt-1">Wait for the game to begin</p>
           </div>
         ) : (
-          <Button
-            onClick={handleRegister}
-            disabled={isRegistering}
-            className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md animate-pulse"
-          >
-            {isRegistering ? (
-              <div className="flex items-center justify-center">
-                <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
-                <span>Registering...</span>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center">
-                <Sword className="w-5 h-5 mr-2 fill-brown" />
-                <span>Register for Blitz</span>
+          <div className="space-y-3">
+            {requiresEntryToken && (
+              <div className="space-y-2">
+                <Button
+                  onClick={() => onObtainEntryToken?.()}
+                  disabled={isObtainingEntryToken}
+                  className="w-full h-12 !text-brown !bg-gold/80 hover:!bg-gold !normal-case rounded-md"
+                >
+                  {isObtainingEntryToken ? (
+                    <div className="flex items-center justify-center">
+                      <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
+                      <span>Minting entry token...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center">
+                      <TreasureChest className="w-5 h-5 mr-2 fill-brown" />
+                      <span>Obtain Entry Token</span>
+                    </div>
+                  )}
+                </Button>
+                <p className="text-xs text-gold/60 text-center">
+                  {availableEntryTokenId
+                    ? `Token #${availableEntryTokenId.toString()} will be used for registration`
+                    : entryTokenStatus === "minting"
+                      ? "Minting your entry token..."
+                      : entryTokenStatus === "timeout"
+                        ? "Minted! Still waiting for the token to appear. If it doesn't show, try again shortly."
+                        : entryTokenStatus === "error"
+                          ? "Mint failed. Please try again."
+                          : "Mint an entry token before registering. Tokens are locked automatically during registration."}
+                </p>
+                {requiresEntryToken && !hasSufficientFeeBalance && (
+                  <p className="text-xs text-red-300 text-center">
+                    Top up your balance before registering.
+                  </p>
+                )}
               </div>
             )}
-          </Button>
+
+            <Button
+              onClick={handleRegister}
+              disabled={isRegistering || !tokenReady}
+              className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md animate-pulse"
+            >
+              {isRegistering ? (
+                <div className="flex items-center justify-center">
+                  <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
+                  <span>Registering...</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center">
+                  <Sword className="w-5 h-5 mr-2 fill-brown" />
+                  <span>Register for Blitz</span>
+                </div>
+              )}
+            </Button>
+            {requiresEntryToken && isFeeBalanceLoading && (
+              <p className="text-xs text-gold/60 text-center">Checking fee balance…</p>
+            )}
+          </div>
         )}
 
         <SpectateButton onClick={onSpectatorModeClick} />
@@ -596,19 +691,33 @@ const GameActiveState = ({
 export const BlitzOnboarding = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.NO_GAME);
   const [addressNameFelt, setAddressNameFelt] = useState<string>("");
+  const { setup, network, masterAccount } = useDojo();
   const {
-    setup,
-    setup: {
-      account: { account },
-      components,
-      systemCalls: { blitz_realm_register, blitz_realm_create, blitz_realm_make_hyperstructures },
+    account: { account },
+    components,
+    systemCalls: {
+      blitz_realm_register,
+      blitz_realm_create,
+      blitz_realm_make_hyperstructures,
+      blitz_realm_obtain_entry_token,
     },
-  } = useDojo();
+  } = setup;
 
   const blitzConfig = configManager.getBlitzConfig()?.blitz_registration_config;
   const blitzNumHyperStructuresLeft = configManager.getBlitzConfig()?.blitz_num_hyperstructures_left;
   const seasonConfig = configManager.getSeasonConfig();
   const devMode = configManager.getDevModeConfig()?.dev_mode_on;
+  const {
+    balance: entryTokenBalance,
+    hasEntryTokenContract,
+    refetch: refetchEntryTokenBalance,
+    getEntryTokenIdByIndex,
+  } = useEntryTokenBalance();
+  const [availableEntryTokenId, setAvailableEntryTokenId] = useState<bigint | null>(null);
+  const [isObtainingEntryToken, setIsObtainingEntryToken] = useState(false);
+  const [entryTokenStatus, setEntryTokenStatus] = useState<"idle" | "minting" | "timeout" | "error">("idle");
+  const [hasQueriedEntryToken, setHasQueriedEntryToken] = useState(false);
+  const [isToppingUp, setIsToppingUp] = useState(false);
   const playerRegistered = useComponentValue(
     components.BlitzRealmPlayerRegister,
     getEntityIdFromKeys([BigInt(account.address)]),
@@ -619,6 +728,107 @@ export const BlitzOnboarding = () => {
   const playerSettled = useEntityQuery([HasValue(components.Structure, { owner: BigInt(account.address) })]).length > 0;
 
   useSetAddressName(setup, playerSettled ? account : null, connector);
+
+  const requiresEntryToken = useMemo(() => {
+    if (!blitzConfig) return false;
+    return hasEntryTokenContract && blitzConfig.fee_amount > 0n;
+  }, [blitzConfig, hasEntryTokenContract]);
+
+  const feeAmount = blitzConfig?.fee_amount ?? 0n;
+  const feeTokenAddressHex = useMemo(
+    () => (blitzConfig && blitzConfig.fee_amount > 0n ? toHexString(blitzConfig.fee_token) : undefined),
+    [blitzConfig],
+  );
+
+  const feeTokenCall = useCall({
+    abi: LordsAbi as Abi,
+    functionName: "balance_of",
+    address: (feeTokenAddressHex ?? "0x0") as `0x${string}`,
+    args: [(account?.address as `0x${string}`) ?? "0x0"],
+    watch: true,
+    refetchInterval: 5_000,
+    enabled: Boolean(account?.address && feeTokenAddressHex),
+  });
+
+  const feeTokenBalance = useMemo(() => normalizeUint256(feeTokenCall.data), [feeTokenCall.data]);
+  const refetchFeeTokenBalance = feeTokenCall.refetch ? () => feeTokenCall.refetch() : undefined;
+  const isFeeBalanceLoading = feeTokenCall.isLoading && Boolean(feeTokenAddressHex);
+  const hasSufficientFeeBalance = !requiresEntryToken || feeAmount === 0n || feeTokenBalance >= feeAmount;
+  const feeBalanceShortfall = feeAmount > feeTokenBalance ? feeAmount - feeTokenBalance : 0n;
+  const isNotMainnet = env.VITE_PUBLIC_CHAIN !== "mainnet";
+  const canTopUpBalance = Boolean(isNotMainnet && feeTokenAddressHex && masterAccount);
+
+  const formatTokenAmount = (value: bigint) => {
+    const decimals = 18n; // Default to 18 decimals
+    return (value / 10n ** decimals).toString();
+  };
+
+  useEffect(() => {
+    if (!requiresEntryToken) {
+      setAvailableEntryTokenId(null);
+      setEntryTokenStatus("idle");
+      setHasQueriedEntryToken(false);
+      return;
+    }
+
+    if (availableEntryTokenId || hasQueriedEntryToken || entryTokenBalance === 0n) {
+      return;
+    }
+
+    const maxTokens = entryTokenBalance > BigInt(Number.MAX_SAFE_INTEGER)
+      ? Number.MAX_SAFE_INTEGER
+      : Number(entryTokenBalance);
+    const randomIndex = maxTokens > 1 ? BigInt(Math.floor(Math.random() * maxTokens)) : 0n;
+
+    setHasQueriedEntryToken(true);
+
+    (async () => {
+      const entryTokenAddressHex = toHexString(blitzConfig.entry_token_address);
+      console.log("Entry token random lookup", {
+        owner: account.address,
+        entryTokenAddressHex,
+        balance: entryTokenBalance.toString(),
+        randomIndex: randomIndex.toString(),
+      });
+
+      const tokenId = await getEntryTokenIdByIndex(
+        account.address,
+        {
+          entryTokenAddress: entryTokenAddressHex,
+          validate: (candidate) => {
+            const registerComponent = components.BlitzEntryTokenRegister;
+            if (!registerComponent) return true;
+            const registerRecord = getComponentValue(registerComponent, getEntityIdFromKeys([candidate]));
+            const available = !registerRecord?.registered;
+            if (!available) {
+              console.log("Entry token already registered", { tokenId: candidate.toString() });
+            }
+            return available;
+          },
+          onDebug: (message, context) => console.debug(`[EntryTokenLookup] ${message}`, context),
+        },
+        randomIndex,
+      );
+
+      console.log("Entry token lookup result", { tokenId: tokenId?.toString() });
+
+      if (tokenId) {
+        setAvailableEntryTokenId(tokenId);
+        setEntryTokenStatus("idle");
+      } else {
+        setEntryTokenStatus("timeout");
+      }
+    })();
+  }, [
+    account.address,
+    availableEntryTokenId,
+    blitzConfig,
+    components.BlitzEntryTokenRegister,
+    entryTokenBalance,
+    getEntryTokenIdByIndex,
+    hasQueriedEntryToken,
+    requiresEntryToken,
+  ]);
 
   // Determine current game state based on time
   useEffect(() => {
@@ -664,9 +874,78 @@ export const BlitzOnboarding = () => {
     getUsername();
   }, [connector]);
 
+  const handleObtainEntryToken = async () => {
+    if (!account?.address || !requiresEntryToken || !blitzConfig) return;
+
+    setIsObtainingEntryToken(true);
+    setEntryTokenStatus("minting");
+    try {
+      const feeTokenAddressHex = toHexString(blitzConfig.fee_token);
+      await blitz_realm_obtain_entry_token({
+        signer: account,
+        feeToken: feeTokenAddressHex,
+        feeAmount: blitzConfig.fee_amount,
+      });
+
+      await refetchEntryTokenBalance?.();
+      setAvailableEntryTokenId(null);
+      setHasQueriedEntryToken(false);
+      setEntryTokenStatus("idle");
+    } catch (error) {
+      console.error("Failed to obtain entry token", error);
+      setEntryTokenStatus("error");
+    } finally {
+      setIsObtainingEntryToken(false);
+    }
+  };
+
+  const handleTopUpFeeBalance = async () => {
+    if (!masterAccount || !network?.provider || !account?.address || !feeTokenAddressHex || feeAmount === 0n) {
+      return;
+    }
+
+    setIsToppingUp(true);
+    try {
+      const amount = uint256.bnToUint256(feeAmount);
+      await network.provider.executeAndCheckTransaction(masterAccount, {
+        contractAddress: feeTokenAddressHex,
+        entrypoint: "transfer",
+        calldata: CallData.compile([account.address, amount.low, amount.high]),
+      });
+
+      await refetchFeeTokenBalance?.();
+    } catch (error) {
+      console.error("Failed to top up registration fee balance", error);
+    } finally {
+      setIsToppingUp(false);
+    }
+  };
+
   // Registration handler
   const handleRegister = async () => {
     if (!account?.address) return;
+
+    if (requiresEntryToken && blitzConfig) {
+      if (!availableEntryTokenId) {
+        throw new Error("No entry token available. Obtain one before registering.");
+      }
+
+      await blitz_realm_register({
+        signer: account,
+        name: addressNameFelt,
+        tokenId: availableEntryTokenId,
+        entryTokenAddress: toHexString(blitzConfig.entry_token_address),
+        lockId: ENTRY_TOKEN_LOCK_ID,
+      });
+
+      await refetchEntryTokenBalance?.();
+      await refetchFeeTokenBalance?.();
+      setAvailableEntryTokenId(null);
+      setHasQueriedEntryToken(false);
+      setEntryTokenStatus("idle");
+      return;
+    }
+
     await blitz_realm_register({ signer: account, name: addressNameFelt, tokenId: 0 });
   };
 
@@ -709,6 +988,52 @@ export const BlitzOnboarding = () => {
 
   return (
     <div className="space-y-6">
+      {hasEntryTokenContract && (
+        <div className="bg-brown/10 border border-brown/30 rounded-lg p-4">
+          <div className="flex items-center justify-between text-gold">
+            <p className="text-sm text-gold/70">Entry tokens in your wallet</p>
+            <span className="text-lg font-semibold">{entryTokenBalance.toString()}</span>
+          </div>
+          <p className="text-xs text-gold/60 mt-2">
+            Obtain an entry token first; it will be locked automatically when you register.
+          </p>
+
+          {feeTokenAddressHex && feeAmount > 0n && (
+            <div className="mt-4 space-y-2 rounded-lg bg-brown/20 p-4">
+              <div className="flex items-center justify-between text-sm text-gold">
+                <span>Registration fee</span>
+                <span className="font-semibold">{formatTokenAmount(feeAmount)}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gold/70">Your balance</span>
+                <span
+                  className={
+                    hasSufficientFeeBalance
+                      ? "text-gold"
+                      : "text-red-300"
+                  }
+                >
+                  {isFeeBalanceLoading ? "…" : formatTokenAmount(feeTokenBalance)}
+                </span>
+              </div>
+              {!hasSufficientFeeBalance && (
+                <p className="text-xs text-red-300">
+                  You need at least {formatTokenAmount(feeBalanceShortfall)} more tokens to cover the fee.
+                </p>
+              )}
+              {canTopUpBalance && !hasSufficientFeeBalance && (
+                <Button
+                  onClick={handleTopUpFeeBalance}
+                  disabled={isToppingUp}
+                  className="w-full h-10 !bg-gold/80 hover:!bg-gold !text-brown !normal-case"
+                >
+                  {isToppingUp ? "Topping up…" : "Top up balance"}
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
       {
         <MakeHyperstructuresState
           numHyperStructuresLeft={blitzNumHyperStructuresLeft || 0}
@@ -736,6 +1061,13 @@ export const BlitzOnboarding = () => {
           creationEndAt={creation_end_at}
           isRegistered={playerRegistered?.registered || false}
           onRegister={handleRegister}
+          requiresEntryToken={requiresEntryToken}
+          onObtainEntryToken={requiresEntryToken ? handleObtainEntryToken : undefined}
+          isObtainingEntryToken={isObtainingEntryToken}
+          availableEntryTokenId={availableEntryTokenId}
+          entryTokenStatus={entryTokenStatus}
+          hasSufficientFeeBalance={hasSufficientFeeBalance}
+          isFeeBalanceLoading={isFeeBalanceLoading}
         />
       )}
       {gameState === GameState.GAME_ACTIVE && (

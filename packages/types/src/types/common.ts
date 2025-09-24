@@ -611,6 +611,7 @@ export interface Config {
       registration_delay_seconds: number;
       registration_period_seconds: number;
       entry_token_class_hash: string;
+      entry_token_ipfs_cid: string;
     };
   };
 

@@ -1832,6 +1832,23 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    BlitzEntryTokenRegister: (() => {
+      return defineComponent(
+        world,
+        {
+          token_id: RecsType.BigInt,
+          registered: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "BlitzEntryTokenRegister",
+            types: ["u128", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     ...eventsComponents(world),
   };
 }

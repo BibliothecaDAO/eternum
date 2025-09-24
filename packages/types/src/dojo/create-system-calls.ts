@@ -32,6 +32,12 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.uuid();
   };
 
+  const blitz_realm_obtain_entry_token = async (
+    props: SystemProps.BlitzRealmObtainEntryTokenProps,
+  ): Promise<GetTransactionReceiptResponse> => {
+    return await provider.blitz_realm_obtain_entry_token(props);
+  };
+
   const blitz_realm_register = async (
     props: SystemProps.BlitzRealmRegisterProps,
   ): Promise<GetTransactionReceiptResponse> => {
@@ -447,6 +453,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
   };
 
   const systemCalls = {
+    blitz_realm_obtain_entry_token: withAuth(blitz_realm_obtain_entry_token),
     blitz_realm_register: withAuth(blitz_realm_register),
     blitz_realm_make_hyperstructures: withAuth(blitz_realm_make_hyperstructures),
     blitz_realm_create: withAuth(blitz_realm_create),

@@ -19,7 +19,7 @@ import chalk from "chalk";
 
 import { getContractByName, NAMESPACE, type EternumProvider } from "@bibliothecadao/provider";
 import fs from "fs";
-import type { Account } from "starknet";
+import { byteArray, type Account } from "starknet";
 import type { NetworkType } from "utils/environment";
 import type { Chain } from "utils/utils";
 import { addCommas, hourMinutesSeconds, inGameAmount, shortHexAddress } from "../utils/formatting";
@@ -1429,6 +1429,7 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
   }
 
     const entryTokenClassHash = config.config.blitz.registration.entry_token_class_hash;
+    const entryTokenIpfsCid = byteArray.byteArrayFromString(config.config.blitz.registration.entry_token_ipfs_cid);
     const entryTokenDeployCalldata = [
       "0x0",
       "0x5265616c6d733a204c6f6f74204368657374",
@@ -1446,7 +1447,7 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
       getContractByName(config.provider.manifest, `${NAMESPACE}-blitz_realm_systems`),
       "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
       getContractByName(config.provider.manifest, `${NAMESPACE}-config_systems`),
-      "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
+      getContractByName(config.provider.manifest, `${NAMESPACE}-config_systems`),
       "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
       "0x1f4",
     ];
@@ -1459,6 +1460,7 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
     registration_count_max: config.config.blitz.registration.registration_count_max,
     registration_start_at: registration_start_at,
     entry_token_class_hash: entryTokenClassHash,
+    entry_token_ipfs_cid: entryTokenIpfsCid,
     entry_token_deploy_calldata: entryTokenDeployCalldata,
   };
 
@@ -1476,6 +1478,7 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
         timeZone: "UTC",
       }),
     )} UTC
+    │  ${chalk.gray("Entry Token IPFS CID:")} ${chalk.white(byteArray.stringFromByteArray(registrationCalldata.entry_token_ipfs_cid))}
     │  ${chalk.gray("Entry Token Class Hash:")} ${chalk.white(registrationCalldata.entry_token_class_hash)}
     │  ${chalk.gray("Entry Token Deploy Calldata:")} ${chalk.white(
       `[${registrationCalldata.entry_token_deploy_calldata.slice(0, 3).join(", ")}, ..., ${registrationCalldata.entry_token_deploy_calldata.slice(-3).join(", ")}]`,
