@@ -70,8 +70,8 @@ export const TopLeftNavigation = memo(() => {
   const { isMapView } = useQuery();
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const followArmyMoves = useUIStore((state) => state.followArmyMoves);
-  const setFollowArmyMoves = useUIStore((state) => state.setFollowArmyMoves);
+  // const followArmyMoves = useUIStore((state) => state.followArmyMoves);
+  // const setFollowArmyMoves = useUIStore((state) => state.setFollowArmyMoves);
   const followArmyCombats = useUIStore((state) => state.followArmyCombats);
   const setFollowArmyCombats = useUIStore((state) => state.setFollowArmyCombats);
   const isFollowingArmy = useUIStore((state) => state.isFollowingArmy);

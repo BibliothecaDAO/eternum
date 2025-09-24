@@ -690,19 +690,33 @@ export default class WorldmapScene extends HexagonScene {
     const defenderLabel = this.getEntityLabel(defenderId);
     const attackerLabel = typeof attackerId === "number" ? this.getEntityLabel(attackerId) : "Unknown attacker";
 
-    toast(`⚠️ ${defenderLabel} under attack`, {
-      description: `Engaged by ${attackerLabel}.`,
-      action: {
-        label: "View logs",
-        onClick: () => this.openBattleLogsPanel(),
-      },
-      ...(focusPosition && {
-        cancel: {
-          label: "Focus camera",
-          onClick: () => this.focusCameraOnEvent(focusPosition!.col, focusPosition!.row, "Following Combat Alert"),
+    toast(
+      <div className="flex flex-col gap-2">
+        <div className="text-gold font-bold">⚠️ {defenderLabel} under attack</div>
+        <div className="text-light-pink">Engaged by {attackerLabel}.</div>
+        <div className="flex gap-2 mt-2">
+          <button
+            className="bg-gold text-brown font-semibold px-3 py-1 rounded"
+            onClick={() => this.openBattleLogsPanel()}
+          >
+            View logs
+          </button>
+          {focusPosition && (
+            <button
+              className="bg-gold text-brown font-semibold px-3 py-1 rounded"
+              onClick={() => this.focusCameraOnEvent(focusPosition.col, focusPosition.row, "Following Combat Alert")}
+            >
+              Focus camera
+            </button>
+          )}
+        </div>
+      </div>,
+      {
+        classNames: {
+          toast: "!bg-dark-brown !border-gold/30",
         },
-      }),
-    });
+      },
+    );
   }
 
   // methods needed to add worldmap specific behavior to the click events
