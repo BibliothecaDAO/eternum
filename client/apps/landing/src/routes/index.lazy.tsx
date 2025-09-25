@@ -443,7 +443,7 @@ const CurrentCycleCard = memo(function CurrentCycleCard({
             <div>
               <CardTitle className="text-xl">Current Blitz Cycle</CardTitle>
               <CardDescription className="text-xs uppercase tracking-[0.3em] text-gold/70">
-                Live on Starknet
+                Live on Starknet Devnet
               </CardDescription>
             </div>
           </div>

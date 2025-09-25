@@ -98,7 +98,7 @@ export function AppSidebar() {
   const sidebarSections = [
     {
       title: "Overview",
-      description: "Jump into Eternum at a glance.",
+      description: "Jump into Realms at a glance.",
       items: overviewItems,
     },
     {
