@@ -277,7 +277,6 @@ export const UnifiedArmyCreationModal = ({
     });
   }, [armyType, selectedGuardCategory, selectedGuardTier]);
 
-
   const handleCreate = async () => {
     if (!armyManager || troopCount <= 0) return;
 
@@ -329,9 +328,7 @@ export const UnifiedArmyCreationModal = ({
   );
 
   const selectedGuardLabel =
-    selectedGuardTier && selectedGuardCategory
-      ? `${selectedGuardTier} ${selectedGuardCategory}`
-      : null;
+    selectedGuardTier && selectedGuardCategory ? `${selectedGuardTier} ${selectedGuardCategory}` : null;
 
   const selectedGuardLabelUpper = selectedGuardLabel?.toUpperCase() ?? null;
 
@@ -651,11 +648,7 @@ export const UnifiedArmyCreationModal = ({
                       <div
                         className={clsx(
                           "text-sm",
-                          hasGuard
-                            ? isSlotCompatible
-                              ? "text-gold/90"
-                              : "text-red/80 font-semibold"
-                            : "text-gold/70",
+                          hasGuard ? (isSlotCompatible ? "text-gold/90" : "text-red/80 font-semibold") : "text-gold/70",
                         )}
                       >
                         {hasGuard ? `${guardTier} ${guardCategory}` : `Slot ${slot + 1}`}
@@ -664,7 +657,9 @@ export const UnifiedArmyCreationModal = ({
                         <div className="mt-1 text-xs text-gold/50">Occupied slots only</div>
                       )}
                       {hasGuard && !isSlotCompatible && (
-                        <div className="mt-1 text-xs text-red/70">Reinforce with {guardTier} {guardCategory}</div>
+                        <div className="mt-1 text-xs text-red/70">
+                          Reinforce with {guardTier} {guardCategory}
+                        </div>
                       )}
                     </Button>
                   );
