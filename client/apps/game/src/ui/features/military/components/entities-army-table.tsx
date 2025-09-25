@@ -10,7 +10,7 @@ import { divideByPrecisionFormatted } from "@/ui/utils/utils";
 import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
 import { ArmyInfo, ClientComponents, ID, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import { HasValue, runQuery } from "@dojoengine/recs";
-import { PlusIcon } from "lucide-react";
+import { CrosshairIcon, ShieldIcon, SwordIcon } from "lucide-react";
 import { ArmyChip } from "./army-chip";
 import { UnifiedArmyCreationModal } from "./unified-army-creation-modal";
 
@@ -36,45 +36,68 @@ export const EntitiesArmyTable = () => {
 
   return (
     <>
-      <div className="w-full flex justify-center mt-4 gap-2">
-        <Button variant="primary" className="mx-auto" size="md" onClick={() => togglePopup(battleSimulation)}>
-          Simulate a battle
-        </Button>
-
-        {playerStructures.length > 0 && (
-          <>
+      <div className="mt-8 flex w-full justify-center px-3">
+        <div className="flex w-full max-w-3xl flex-col gap-4 rounded-xl border border-gold/30 bg-brown/15 px-4 py-4 sm:px-6 sm:py-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-gold/70">Military operations</span>
+              <span className="text-xs text-gold/60 sm:text-sm">
+                Plan your next move: run a simulation or deploy new attack and defense armies.
+              </span>
+            </div>
             <Button
               variant="primary"
               size="md"
-              onClick={() => {
-                toggleModal(
-                  <UnifiedArmyCreationModal structureId={playerStructures[0]?.entityId || 0} isExplorer={true} />,
-                );
-              }}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 whitespace-nowrap"
+              onClick={() => togglePopup(battleSimulation)}
             >
-              <PlusIcon className="w-4 h-4" />
-              Attack
+              <CrosshairIcon className="h-4 w-4" />
+              Simulate battle
             </Button>
-            <Button
-              variant="outline"
-              size="md"
-              onClick={() => {
-                toggleModal(
-                  <UnifiedArmyCreationModal
-                    structureId={playerStructures[0]?.entityId || 0}
-                    isExplorer={false}
-                    maxDefenseSlots={playerStructures[0]?.structure.base.troop_max_guard_count}
-                  />,
-                );
-              }}
-              className="flex items-center gap-2"
-            >
-              <PlusIcon className="w-4 h-4" />
-              Defense
-            </Button>
-          </>
-        )}
+          </div>
+
+          {playerStructures.length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end">
+              <span className="text-xs font-semibold uppercase tracking-wide text-gold/70 sm:text-sm">
+                Create armies
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={() => {
+                    toggleModal(
+                      <UnifiedArmyCreationModal structureId={playerStructures[0]?.entityId || 0} isExplorer={true} />,
+                    );
+                  }}
+                  className="rounded-full"
+                  aria-label="Create attack army"
+                  title="Create attack army"
+                >
+                  <SwordIcon className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="md"
+                  onClick={() => {
+                    toggleModal(
+                      <UnifiedArmyCreationModal
+                        structureId={playerStructures[0]?.entityId || 0}
+                        isExplorer={false}
+                        maxDefenseSlots={playerStructures[0]?.structure.base.troop_max_guard_count}
+                      />,
+                    );
+                  }}
+                  className="rounded-full"
+                  aria-label="Create defense army"
+                  title="Create defense army"
+                >
+                  <ShieldIcon className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
       <CombatSimulation />
       {!hasAnyArmies ? (

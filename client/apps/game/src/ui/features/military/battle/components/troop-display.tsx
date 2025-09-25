@@ -1,7 +1,7 @@
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { configManager, divideByPrecision, getTroopResourceId } from "@bibliothecadao/eternum";
 import { BiomeType, resources, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
-import { AlertCircle, Shield, ShieldOff, Sword, Timer, Users } from "lucide-react";
+import { AlertCircle, Shield, ShieldOff, Sparkles, Sword, Timer, Users } from "lucide-react";
 import { formatTypeAndBonuses } from "../combat-utils";
 
 interface TroopDisplayProps {
@@ -17,6 +17,14 @@ interface TroopDisplayProps {
   showRemaining?: boolean;
   className?: string;
   isCompact?: boolean;
+  relicDamageBonusPercent?: number;
+  relicDamageBonusSource?: string;
+  relicDamageBonusAbsolute?: number;
+  relicDamageReductionPercent?: number;
+  relicDamageReductionSource?: string;
+  relicDamageReductionAbsolute?: number;
+  relicStaminaPercent?: number;
+  relicStaminaSource?: string;
 }
 
 export const TroopDisplay = ({
@@ -32,6 +40,14 @@ export const TroopDisplay = ({
   showRemaining = false,
   className = "",
   isCompact = false,
+  relicDamageBonusPercent = 0,
+  relicDamageBonusSource,
+  relicDamageBonusAbsolute = 0,
+  relicDamageReductionPercent = 0,
+  relicDamageReductionSource,
+  relicDamageReductionAbsolute = 0,
+  relicStaminaPercent = 0,
+  relicStaminaSource,
 }: TroopDisplayProps) => {
   const troopCount = divideByPrecision(Number(troops.count));
   const troopResource = resources.find(
@@ -41,6 +57,118 @@ export const TroopDisplay = ({
   // Check if on cooldown
   const currentTime = Math.floor(Date.now() / 1000);
   const isOnCooldown = troops.battle_cooldown_end > currentTime;
+
+  const formatTroopDelta = (value: number) => {
+    if (value <= 0) return "0";
+    if (value >= 10) return Math.round(value).toLocaleString();
+    if (value >= 1) return value.toFixed(1);
+    return value.toFixed(2);
+  };
+
+  const renderRelicBonusSection = (isCompactView: boolean) => {
+    if (
+      relicDamageBonusPercent <= 0 &&
+      relicDamageReductionPercent <= 0 &&
+      relicStaminaPercent <= 0 &&
+      relicDamageBonusAbsolute <= 0 &&
+      relicDamageReductionAbsolute <= 0
+    ) {
+      return null;
+    }
+
+    const containerClass = isCompactView
+      ? "mt-2 border border-relic-activated/30 bg-relic-activated/10 rounded-md p-2"
+      : "mt-4 border border-relic-activated/30 bg-relic-activated/5 rounded-lg p-3";
+
+    const headingClass = isCompactView
+      ? "flex items-center gap-1 text-[10px] text-gold/70 uppercase font-semibold mb-1"
+      : "flex items-center gap-2 text-xs text-gold/70 uppercase font-semibold mb-2";
+
+    const itemsWrapperClass = isCompactView ? "flex flex-wrap gap-1.5" : "flex flex-wrap gap-2";
+
+    type RelicBonusItem = {
+      key: string;
+      label: string;
+      value: string;
+      valueClass: string;
+      chipClass: string;
+      source: string | undefined;
+      detail?: string;
+    };
+
+    const rawItems: Array<RelicBonusItem | null> = [
+      relicDamageBonusPercent > 0 || relicDamageBonusAbsolute > 0
+        ? {
+            key: "damage-output",
+            label: "Damage Output",
+            value: `+${relicDamageBonusPercent}%`,
+            source: relicDamageBonusSource,
+            valueClass: "text-order-brilliance",
+            chipClass: "bg-gold/10 border border-gold/20",
+            detail:
+              relicDamageBonusAbsolute > 0 ? `(+${formatTroopDelta(relicDamageBonusAbsolute)} troops)` : undefined,
+          }
+        : null,
+      relicDamageReductionPercent > 0 || relicDamageReductionAbsolute > 0
+        ? {
+            key: "damage-taken",
+            label: "Damage Taken",
+            value: `-${relicDamageReductionPercent}%`,
+            source: relicDamageReductionSource,
+            valueClass: "text-order-giants",
+            chipClass: "bg-brown-900/70 border border-gold/20",
+            detail:
+              relicDamageReductionAbsolute > 0
+                ? `(-${formatTroopDelta(relicDamageReductionAbsolute)} troops taken)`
+                : undefined,
+          }
+        : null,
+      relicStaminaPercent > 0
+        ? {
+            key: "stamina-regen",
+            label: "Stamina Regen",
+            value: `+${relicStaminaPercent}%`,
+            source: relicStaminaSource,
+            valueClass: "text-order-brilliance",
+            chipClass: "bg-gold/10 border border-gold/20",
+          }
+        : null,
+    ];
+
+    const items = rawItems.filter((item): item is RelicBonusItem => item !== null);
+
+    if (items.length === 0) return null;
+
+    return (
+      <div className={containerClass}>
+        <div className={headingClass}>
+          <Sparkles className={`${isCompactView ? "w-3 h-3" : "w-4 h-4"} text-relic2`} />
+          Relic Bonuses Applied
+        </div>
+        <div className={itemsWrapperClass}>
+          {items.map((item) => (
+            <div
+              key={item.key}
+              className={`${item.chipClass} ${isCompactView ? "px-1.5 py-1 rounded" : "px-2.5 py-2 rounded-md min-w-[130px]"}`}
+            >
+              <div className={`${isCompactView ? "text-[10px]" : "text-xs"} text-gold/80 font-medium`}>
+                {item.label}
+              </div>
+              <div className={`${isCompactView ? "text-xs" : "text-base"} font-bold ${item.valueClass}`}>
+                {item.value}
+              </div>
+              {item.detail && (
+                <div className={`${isCompactView ? "text-[10px]" : "text-xxs"} text-gold/60 mt-0.5`}>{item.detail}</div>
+              )}
+              {item.source && (
+                <div className={`${isCompactView ? "text-[10px]" : "text-xxs"} text-gold/60 mt-0.5`}>{item.source}</div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   if (isCompact) {
     return (
@@ -91,6 +219,8 @@ export const TroopDisplay = ({
             <span>Cooldown Active</span>
           </div>
         )}
+
+        {renderRelicBonusSection(true)}
       </div>
     );
   }
@@ -198,6 +328,8 @@ export const TroopDisplay = ({
             isAttacker,
             true, // compact mode
           )}
+
+          {renderRelicBonusSection(false)}
         </div>
 
         {/* Stamina Information */}

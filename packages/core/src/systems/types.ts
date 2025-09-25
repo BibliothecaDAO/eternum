@@ -25,6 +25,7 @@ export type ExplorerTroopsTileSystemUpdate = {
   guildName: string;
   troopCount?: number | undefined;
   ownerAddress: bigint;
+  ownerStructureId: ID | null;
   currentStamina?: number | undefined;
   maxStamina?: number | undefined;
   onChainStamina?:
@@ -59,6 +60,7 @@ export type ExplorerTroopsSystemUpdate = {
   };
   ownerAddress: bigint;
   ownerName: string;
+  ownerStructureId: ID | null;
   battleCooldownEnd: number;
 };
 

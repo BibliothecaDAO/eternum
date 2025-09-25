@@ -1,5 +1,11 @@
 export const latestFeatures = [
   {
+    date: "2025-09-24",
+    title: "Realm Ownership Highlights",
+    description:
+      "Selecting a structure or one of its armies now highlights the owning realm across the map. The selected structure and every army it commands pulse in the same color, letting you instantly see a realm's forces at a glance.",
+  },
+  {
     date: "2025-09-17",
     title: "Combat Directions",
     description:

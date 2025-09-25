@@ -22,7 +22,7 @@
  * const army = mapStore.getArmyById(456);
  */
 
-import { SqlApi, StructureMapDataRaw } from "@bibliothecadao/torii";
+import { ArmyMapDataRaw, SqlApi, StructureMapDataRaw } from "@bibliothecadao/torii";
 import { BuildingType, ID, StructureType, TroopTier } from "@bibliothecadao/types";
 import { shortString } from "starknet";
 import realms from "../../../../client/public/jsons/realms.json";
@@ -83,6 +83,7 @@ export interface ArmyMapData {
   entityId: number;
   coordX: number;
   coordY: number;
+  ownerStructureId: number | null;
   category: string | null; // troop type (crossbowman, paladin, knight)
   tier: TroopTier;
   count: number;
@@ -412,7 +413,7 @@ export class MapDataStore {
     });
 
     // Transform and store armies
-    armiesRaw.forEach((army) => {
+    armiesRaw.forEach((army: ArmyMapDataRaw) => {
       const ownerName = army.owner_name
         ? BigInt(army.owner_name) === 0n
           ? ""
@@ -423,6 +424,7 @@ export class MapDataStore {
         entityId: army.entity_id,
         coordX: army.coord_x,
         coordY: army.coord_y,
+        ownerStructureId: army.owner_structure_id,
         category: this.getCategoryName(army.category),
         tier: army.tier as TroopTier,
         count: divideByPrecision(Number(this.hexToBigInt(army.count))),

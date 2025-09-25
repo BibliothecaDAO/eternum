@@ -7,7 +7,7 @@ import InstancedBiome from "@/three/managers/instanced-biome";
 import { InteractiveHexManager } from "@/three/managers/interactive-hex-manager";
 import { ThunderBoltManager } from "@/three/managers/thunderbolt-manager";
 import { type SceneManager } from "@/three/scene-manager";
-import { GUIManager, LocationManager, transitionDB } from "@/three/utils/";
+import { GUIManager, LocationManager } from "@/three/utils/";
 import { MatrixPool } from "@/three/utils/matrix-pool";
 import { gltfLoader } from "@/three/utils/utils";
 import { LeftView, RightView } from "@/types";
@@ -714,36 +714,8 @@ export abstract class HexagonScene {
     return this.currentCameraView;
   }
 
-  // Method to expand labels temporarily during scroll in Medium view
-  public expandLabelsTemporarily(): void {
-    // Only expand labels if we're in Medium view
-    if (this.currentCameraView === CameraView.Medium) {
-      // Generate a global transition ID for the scene
-      const sceneTransitionId = `scene_${this.sceneName}_medium_transition`;
-
-      // Store current timestamp for Medium view transition
-      transitionDB.setMediumViewTransition(sceneTransitionId, "scene", this.sceneName);
-
-      // Notify all listeners to expand the labels
-      this.cameraViewListeners.forEach((listener) => {
-        // Call with Close view first to force expansion, then back to Medium
-        // to start the collapsing timeout
-        listener(CameraView.Close);
-        listener(CameraView.Medium);
-      });
-
-      // Schedule a cleanup for this global scene transition
-      transitionDB.scheduleTimeout(
-        sceneTransitionId,
-        () => {
-          // Do nothing in the timeout, just let it expire naturally
-        },
-        2000,
-      );
-    }
-  }
-
   public addCameraViewListener(listener: (view: CameraView) => void) {
+    console.log("HexagonScene addCameraViewListener:", this.currentCameraView, "->", listener);
     this.cameraViewListeners.add(listener);
     // Immediately notify the listener of the current view
     listener(this.currentCameraView);
@@ -754,6 +726,7 @@ export abstract class HexagonScene {
   }
 
   public changeCameraView(position: CameraView) {
+    console.log("HexagonScene changeCameraView:", this.currentCameraView, "->", position);
     const target = this.controls.target;
     this.currentCameraView = position;
 

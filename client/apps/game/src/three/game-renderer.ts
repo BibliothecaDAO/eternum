@@ -366,9 +366,6 @@ export default class GameRenderer {
       throttle(() => {
         if (this.sceneManager?.getCurrentScene() === SceneName.WorldMap) {
           this.worldmapScene.updateVisibleChunks();
-
-          // Expand labels temporarily when panning in Medium view
-          this.worldmapScene.expandLabelsTemporarily();
         }
       }, 30),
     );

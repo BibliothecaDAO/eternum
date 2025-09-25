@@ -274,6 +274,7 @@ export const STRUCTURE_QUERIES = {
       et.explorer_id as entity_id,
       et.\`coord.x\` as coord_x,
       et.\`coord.y\` as coord_y,
+      et.owner as owner_structure_id,
       et.\`troops.category\` as category,
       et.\`troops.tier\` as tier,
       et.\`troops.count\` as count,
