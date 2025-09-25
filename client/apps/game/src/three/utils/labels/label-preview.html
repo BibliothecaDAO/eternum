@@ -226,6 +226,8 @@
         DAYDREAMS: { backgroundColor: "rgba(90, 90, 90, 0.85)" },
         CHEST: { backgroundColor: "rgba(245, 158, 11, 0.4)" },
       };
+      const SOFT_LABEL_COLOR = "#f6f1e5";
+
       const BuildingType = {
         ResourceWood: 1,
         ResourceStone: 2,
@@ -390,7 +392,7 @@
           case 2:
             return "bg-gradient-to-b from-emerald-500/30 to-emerald-500/10 border-emerald-400/40 text-emerald-300 shadow-emerald-500/10";
           case 3:
-            return "!bg-purple-600 !text-white !border-purple-400 animate-pulse";
+            return "!bg-purple-600 !text-[#f6f1e5] !border-purple-400 animate-pulse";
           default:
             return "bg-gradient-to-b from-gold/30 to-gold/10 border-gold/40 text-gold shadow-gold/10";
         }
@@ -511,7 +513,8 @@
 
           const percent = document.createElement("span");
           percent.textContent = formatStaminaPercent(currentStamina, maxStamina);
-          percent.classList.add("font-semibold", "text-white/90", "tracking-tight");
+          percent.classList.add("font-semibold", "tracking-tight");
+          percent.style.color = SOFT_LABEL_COLOR;
           container.appendChild(percent);
           return container;
         }
@@ -560,7 +563,7 @@
 
         const text = document.createElement("span");
         text.textContent = `${currentStamina}/${maxStamina}`;
-        text.style.color = "#ffffff";
+        text.style.color = SOFT_LABEL_COLOR;
         text.style.fontFamily = "monospace";
         text.style.fontSize = "10px";
         text.style.fontWeight = "500";
@@ -600,7 +603,8 @@
 
         const countSpan = document.createElement("span");
         countSpan.textContent = cameraView === CameraView.Medium ? formatCompactNumber(count) : count.toString();
-        countSpan.classList.add("font-semibold", "min-w-[1rem]", "text-center", "text-white");
+        countSpan.classList.add("font-semibold", "min-w-[1rem]", "text-center");
+        countSpan.style.color = SOFT_LABEL_COLOR;
         if (cameraView === CameraView.Medium) {
           countSpan.classList.add("text-[11px]", "min-w-0");
         }
@@ -625,9 +629,11 @@
         container.setAttribute("data-component", "guard-armies");
 
         if (cameraView === CameraView.Medium) {
-          container.classList.add("flex", "flex-row", "flex-wrap", "gap-1", "text-[11px]", "text-gray-300");
+          container.classList.add("flex", "flex-row", "flex-wrap", "gap-1", "text-[11px]");
+          container.style.color = SOFT_LABEL_COLOR;
         } else {
-          container.classList.add("flex", "flex-row", "gap-1", "text-xxs", "overflow-x-auto", "text-gray-400");
+          container.classList.add("flex", "flex-row", "gap-1", "text-xxs", "overflow-x-auto");
+          container.style.color = SOFT_LABEL_COLOR;
         }
 
         if (!guardArmies || guardArmies.length === 0) {
@@ -666,6 +672,7 @@
           const countSpan = document.createElement("span");
           countSpan.textContent = guard.count.toString();
           countSpan.classList.add("font-semibold", "min-w-[1rem]", "text-center");
+          countSpan.style.color = SOFT_LABEL_COLOR;
           guardDiv.appendChild(countSpan);
 
           const tierBadge = document.createElement("span");
@@ -707,7 +714,8 @@
           }, 0);
 
           const item = document.createElement("span");
-          item.classList.add("px-1", "py-0.5", "rounded", "bg-black/30", "font-semibold", "text-white/90");
+          item.classList.add("px-1", "py-0.5", "rounded", "bg-black/30", "font-semibold");
+          item.style.color = SOFT_LABEL_COLOR;
           const label = totalBuildings === 1 ? "Building" : "Buildings";
           item.textContent = label + " ×" + formatCompactNumber(totalBuildings);
           container.appendChild(item);
@@ -740,7 +748,8 @@
 
           const countSpan = document.createElement("span");
           countSpan.textContent = `${production.buildingCount}`;
-          countSpan.classList.add("text-white", "font-semibold", "text-xs");
+          countSpan.classList.add("font-semibold", "text-xs");
+          countSpan.style.color = SOFT_LABEL_COLOR;
           productionDiv.appendChild(countSpan);
 
           container.appendChild(productionDiv);
@@ -998,7 +1007,8 @@
             staminaInfo.appendChild(staminaIcon);
             const staminaText = document.createElement("span");
             staminaText.textContent = `${data.currentStamina}`;
-            staminaText.classList.add("text-white", "font-mono");
+            staminaText.classList.add("font-mono");
+            staminaText.style.color = SOFT_LABEL_COLOR;
             staminaInfo.appendChild(staminaText);
             textContainer.appendChild(staminaInfo);
           }
