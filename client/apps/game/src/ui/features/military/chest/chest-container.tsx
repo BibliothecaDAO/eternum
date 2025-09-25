@@ -5,9 +5,9 @@ import { Position } from "@bibliothecadao/eternum";
 import { getRecipientTypeColor, getRelicTypeColor } from "@/ui/design-system/molecules/relic-colors";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getCrateName } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
-import { getRelicInfo, ID, RelicInfo, RELICS, ResourcesIds, world } from "@bibliothecadao/types";
-import { defineComponentSystem, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
+import { useComponentSystem, useDojo } from "@bibliothecadao/react";
+import { getRelicInfo, ID, RelicInfo, RELICS, ResourcesIds } from "@bibliothecadao/types";
+import { getComponentValue, isComponentUpdate } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { AnimatePresence, motion, useMotionValue } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -370,48 +370,41 @@ export const ChestContainer = ({
   } = useDojo();
 
   // Event listener for OpenRelicChestEvent
-  useEffect(() => {
-    const handleChestEventUpdate = (update: any) => {
-      if (isComponentUpdate(update, contractComponents.events.OpenRelicChestEvent)) {
-        const [currentState, _prevState] = update.value;
+  useComponentSystem(
+    contractComponents.events.OpenRelicChestEvent,
+    (update: any) => {
+      if (!isComponentUpdate(update, contractComponents.events.OpenRelicChestEvent)) return;
 
-        // Check if this event matches our current chest opening
-        if (
-          currentState?.explorer_id === explorerEntityId &&
-          currentState?.chest_coord?.x === chestHex.x &&
-          currentState?.chest_coord?.y === chestHex.y
-        ) {
-          const relics = currentState.relics.map((relic: any) => relic.value);
-          setChestResult(relics);
+      const [currentState] = update.value;
 
-          // If we're in the opening animation, wait for it to complete
-          if (isOpening) {
-            setTimeout(() => {
-              setShowResult(true);
-              playChestOpenSound();
+      if (
+        currentState?.explorer_id === explorerEntityId &&
+        currentState?.chest_coord?.x === chestHex.x &&
+        currentState?.chest_coord?.y === chestHex.y
+      ) {
+        const relics = currentState.relics.map((relic: any) => relic.value);
+        setChestResult(relics);
 
-              // Sequential card reveal
-              relics.forEach((_, index) => {
-                setTimeout(() => {
-                  setRevealedCards((prev) => [...prev, index]);
-                }, index * 600);
-              });
-            }, 500);
-          } else {
-            // Fallback for direct result display
+        if (isOpening) {
+          setTimeout(() => {
             setShowResult(true);
             playChestOpenSound();
-            setRevealedCards(relics.map((_, i) => i));
-          }
+
+            relics.forEach((_, index) => {
+              setTimeout(() => {
+                setRevealedCards((prev) => [...prev, index]);
+              }, index * 600);
+            });
+          }, 500);
+        } else {
+          setShowResult(true);
+          playChestOpenSound();
+          setRevealedCards(relics.map((_, i) => i));
         }
       }
-    };
-
-    // Register the component system to listen for chest events
-    defineComponentSystem(world, contractComponents.events.OpenRelicChestEvent, handleChestEventUpdate, {
-      runOnInit: false,
-    });
-  }, [contractComponents.events.OpenRelicChestEvent, explorerEntityId, chestHex, playChestOpenSound, isOpening]);
+    },
+    [explorerEntityId, chestHex.x, chestHex.y, isOpening, playChestOpenSound],
+  );
 
   const handleChestClick = async () => {
     if (!account || isOpening || showResult) return;

@@ -18,4 +18,5 @@ export * from "./use-screen-orientation";
 export * from "./use-season-start";
 export * from "./use-stamina";
 export * from "./use-structures";
+export * from "./use-component-system";
 export * from "./use-trade";
