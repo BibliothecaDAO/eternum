@@ -872,12 +872,7 @@ export const BlitzOnboarding = () => {
       return;
     }
 
-    const {
-      registration_start_at,
-      registration_end_at,
-      creation_start_at,
-      creation_end_at,
-    } = blitzConfig;
+    const { registration_start_at, registration_end_at, creation_start_at, creation_end_at } = blitzConfig;
 
     const hasValidSchedule =
       registration_start_at > 0 &&
