@@ -47,7 +47,7 @@ interface PlayerLeaderboardRow {
   registered_points: number | string | null;
 }
 
-export interface PlayerLeaderboardEntry {
+interface PlayerLeaderboardEntry {
   playerAddress: string;
   playerName: string | null;
   prizeClaimed: boolean;
