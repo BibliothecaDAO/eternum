@@ -573,7 +573,10 @@ export default class HexceptionScene extends HexagonScene {
 
     const producedResource = getProducedResource(building?.category as BuildingType);
 
-    const isActive = producedResource ? productionManager?.isActive(producedResource) : false;
+    const productionEndsAt = productionManager?.getProductionEndsAt(producedResource as ResourcesIds);
+
+    const isActive =
+      (productionEndsAt ?? 0) > Date.now() || productionManager?.isFood(producedResource as ResourcesIds);
 
     if (building && producedResource) {
       this.state.setTooltip({
