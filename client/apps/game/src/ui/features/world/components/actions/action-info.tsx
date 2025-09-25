@@ -5,6 +5,7 @@ import { BaseThreeTooltip, Position } from "@/ui/design-system/molecules/base-th
 import { Headline } from "@/ui/design-system/molecules/headline";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { StaminaResourceCost } from "@/ui/design-system/molecules/stamina-resource-cost";
+import { formatBiomeBonus } from "@/ui/features/military";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import {
@@ -246,19 +247,6 @@ const AttackInfo = memo(
       };
     }, [targetBiome]);
 
-    // Format the biome bonus as a percentage string with + or - sign
-    const formatBiomeBonus = (bonus: number) => {
-      const percentage = Math.round((bonus - 1) * 100);
-      return percentage >= 0 ? `+${percentage}%` : `${percentage}%`;
-    };
-
-    // Determine color classes based on advantage/disadvantage
-    const getBonusColorClass = (bonus: number) => {
-      if (bonus > 1) return "text-green-500";
-      if (bonus < 1) return "text-red-500";
-      return "";
-    };
-
     return (
       <div className="flex flex-col p-1 text-xs">
         {/* Stamina Status */}
@@ -292,40 +280,32 @@ const AttackInfo = memo(
               <div className="font-bold text-gold">Knight (Your Army)</div>
             )}
             {targetTroops?.category !== TroopType.Knight && <div>Knight</div>}
-            <div className={getBonusColorClass(biomeAdvantages.knight)}>{formatBiomeBonus(biomeAdvantages.knight)}</div>
+            <div className="text-sm">{formatBiomeBonus(biomeAdvantages.knight)}</div>
 
             {targetTroops?.category === TroopType.Paladin && (
               <div className="font-bold text-gold">Paladin (Your Army)</div>
             )}
             {targetTroops?.category !== TroopType.Paladin && <div>Paladin</div>}
-            <div className={getBonusColorClass(biomeAdvantages.paladin)}>
-              {formatBiomeBonus(biomeAdvantages.paladin)}
-            </div>
+            <div className="text-sm">{formatBiomeBonus(biomeAdvantages.paladin)}</div>
 
             {targetTroops?.category === TroopType.Crossbowman && (
               <div className="font-bold text-gold">Crossbowman (Your Army)</div>
             )}
             {targetTroops?.category !== TroopType.Crossbowman && <div>Crossbowman</div>}
-            <div className={getBonusColorClass(biomeAdvantages.crossbowman)}>
-              {formatBiomeBonus(biomeAdvantages.crossbowman)}
-            </div>
+            <div className="text-sm">{formatBiomeBonus(biomeAdvantages.crossbowman)}</div>
           </div>
 
           {/* Your Army's Biome Bonus Summary */}
           {targetTroops?.category && (
             <div className="mt-3 p-2 bg-dark-brown/50 rounded border border-gold/20">
               <div className="font-semibold text-gold">Your Army's Biome Effect</div>
-              <div className="flex items-center mt-1">
-                <span
-                  className={getBonusColorClass(
-                    biomeAdvantages[targetTroops.category.toLowerCase() as keyof typeof biomeAdvantages],
-                  )}
-                >
+              <div className="flex items-center mt-1 gap-2">
+                <span>
                   {formatBiomeBonus(
                     biomeAdvantages[targetTroops.category.toLowerCase() as keyof typeof biomeAdvantages],
                   )}
                 </span>
-                <span className="ml-2">
+                <span>
                   {biomeAdvantages[targetTroops.category.toLowerCase() as keyof typeof biomeAdvantages] > 1
                     ? "Advantage in this biome"
                     : biomeAdvantages[targetTroops.category.toLowerCase() as keyof typeof biomeAdvantages] < 1

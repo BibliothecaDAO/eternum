@@ -20,6 +20,8 @@ import { useDojo, useHyperstructures, useQuery } from "@bibliothecadao/react";
 import { ContractAddress, MERCENARIES } from "@bibliothecadao/types";
 import { Loader, MapPin, MessageCircle, Shield } from "lucide-react";
 import { useMemo, useState } from "react";
+import { HyperstructureCard } from "./hyperstructure-card";
+import { HyperstructureList } from "./hyperstructure-list";
 import { HyperstructureVPDisplay } from "./hyperstructure-vp-display";
 
 export const BlitzHyperstructuresMenu = () => {
@@ -137,6 +139,113 @@ export const BlitzHyperstructuresMenu = () => {
 
   const banditOwnedCount = processedHyperstructures.filter((h) => h.isBanditOwned).length;
 
+  const listHeader = (
+    <div className="flex items-center gap-2 mb-4">
+      <MapPin className="w-5 h-5 text-gold" />
+      <h3 className="text-lg font-bold text-gold">Hyperstructures</h3>
+      <span className="text-sm text-gold/60">({filteredHyperstructures.length} found)</span>
+    </div>
+  );
+
+  const listDescription = (
+    <div className="text-xs text-gold/50 mb-4">Sorted by distance: closest to furthest</div>
+  );
+
+  const emptyState = (
+    <div className="text-center py-8 text-gold/60">
+      <MapPin className="w-12 h-12 mx-auto mb-2 opacity-50" />
+      <div>No hyperstructures found</div>
+      <div className="text-sm mt-1">Check back later or explore more of the world!</div>
+    </div>
+  );
+
+  const renderHyperstructureCard = (hyperstructure: (typeof processedHyperstructures)[number]) => {
+    const {
+      structureName,
+      addressName,
+      isAlly,
+      isBanditOwned,
+      guards,
+      distance,
+      hyperstructurePosition,
+      playerGuild,
+      owner,
+      hyperstructureRealmCount,
+    } = hyperstructure;
+
+    const displayName = addressName || displayAddress("0x0" + owner.toString(16) || "0x0");
+    const relationTone = isBanditOwned ? "bandits" : isAlly ? "ally" : "enemy";
+    const relationLabel = isBanditOwned ? "Bandits" : isAlly ? "Ally" : "Enemy";
+
+    return (
+      <HyperstructureCard
+        key={hyperstructure.entity_id}
+        title={structureName}
+        relationBadge={{ label: relationLabel, tone: relationTone }}
+        ownerName={displayName}
+        ownerTitle={`Owner: ${displayName}`}
+        guildName={playerGuild?.name}
+        actions={
+          <>
+            <NavigationButton
+              size="sm"
+              showText={true}
+              onClick={() => handleNavigateToHyperstructure(hyperstructure)}
+              title="Navigate to hyperstructure"
+            />
+            {!isBanditOwned && (
+              <button
+                onClick={() => handleChatClick(hyperstructure)}
+                className="p-2 rounded bg-gold/20 hover:bg-gold/30 transition-colors flex items-center justify-center"
+                title="Chat with owner"
+              >
+                <MessageCircle className="w-4 h-4 text-gold" />
+              </button>
+            )}
+          </>
+        }
+      >
+        {hyperstructureRealmCount !== undefined && (
+          <HyperstructureVPDisplay
+            realmCount={hyperstructureRealmCount}
+            isOwned={owner !== undefined && owner !== null && owner !== 0n}
+            className="mb-2"
+          />
+        )}
+
+        <div className="flex items-center justify-between mb-3 text-sm bg-brown/20 rounded p-2">
+          <div className="flex items-center gap-4">
+            <div>
+              <span className="text-gold/70">Position:</span>
+              <span className="text-gold ml-1">
+                ({hyperstructurePosition.getNormalized().x}, {hyperstructurePosition.getNormalized().y})
+              </span>
+            </div>
+            <div>
+              <span className="text-gold/70">Distance:</span>
+              <span className="text-gold ml-1">{distance.toFixed(1)} tiles</span>
+            </div>
+          </div>
+        </div>
+
+        {guards.length > 0 && (
+          <div className="border-t border-gold/20 pt-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Shield className="w-4 h-4 text-gold/70" />
+              <span className="text-sm text-gold/70 font-medium">Defense ({guards.length} armies)</span>
+            </div>
+            <CompactDefenseDisplay
+              troops={guards.map((guard: any) => ({
+                slot: guard.slot,
+                troops: guard.troops,
+              }))}
+            />
+          </div>
+        )}
+      </HyperstructureCard>
+    );
+  };
+
   return (
     <div className="p-4 space-y-4">
       {isSyncing ? (
@@ -179,179 +288,16 @@ export const BlitzHyperstructuresMenu = () => {
                 </div>
               </div>
             ) : (
-              <HyperstructuresList
-                hyperstructures={filteredHyperstructures}
-                onNavigate={handleNavigateToHyperstructure}
-                onChat={handleChatClick}
+              <HyperstructureList
+                items={filteredHyperstructures}
+                header={listHeader}
+                description={listDescription}
+                emptyState={emptyState}
+                renderItem={(hyperstructure) => renderHyperstructureCard(hyperstructure)}
               />
             )}
           </div>
         </>
-      )}
-    </div>
-  );
-};
-
-// HyperstructuresList Component
-interface HyperstructuresListProps {
-  hyperstructures: any[];
-  onNavigate: (hyperstructure: any) => void;
-  onChat: (hyperstructure: any) => void;
-}
-
-const HyperstructuresList = ({ hyperstructures, onNavigate, onChat }: HyperstructuresListProps) => {
-  if (hyperstructures.length === 0) {
-    return (
-      <div className="text-center py-8 text-gold/60">
-        <MapPin className="w-12 h-12 mx-auto mb-2 opacity-50" />
-        <div>No hyperstructures found</div>
-        <div className="text-sm mt-1">Check back later or explore more of the world!</div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2 mb-4">
-        <MapPin className="w-5 h-5 text-gold" />
-        <h3 className="text-lg font-bold text-gold">Hyperstructures</h3>
-        <span className="text-sm text-gold/60">({hyperstructures.length} found)</span>
-      </div>
-      <div className="text-xs text-gold/50 mb-4">Sorted by distance: closest to furthest</div>
-
-      <div className="space-y-2">
-        {hyperstructures.map((hyperstructure) => (
-          <HyperstructureCard
-            key={hyperstructure.entity_id}
-            hyperstructure={hyperstructure}
-            onNavigate={onNavigate}
-            onChat={onChat}
-          />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// HyperstructureCard Component
-interface HyperstructureCardProps {
-  hyperstructure: any;
-  onNavigate: (hyperstructure: any) => void;
-  onChat: (hyperstructure: any) => void;
-}
-
-const HyperstructureCard = ({ hyperstructure, onNavigate, onChat }: HyperstructureCardProps) => {
-  const {
-    structureName,
-    addressName,
-    isAlly,
-    isBanditOwned,
-    guards,
-    distance,
-    hyperstructurePosition,
-    playerGuild,
-    owner,
-    hyperstructureRealmCount,
-  } = hyperstructure;
-
-  const displayName = addressName || displayAddress("0x0" + owner.toString(16) || "0x0");
-
-  return (
-    <div className="bg-gray-800/40 rounded-lg p-4 border border-gold/20 hover:border-gold/40 transition-colors">
-      {/* Header */}
-      <div className="flex items-start justify-between mb-3 gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
-            <h4 className="text-lg font-semibold text-gold truncate" title={structureName}>
-              {structureName}
-            </h4>
-            <div
-              className={`px-2 py-1 rounded text-xs whitespace-nowrap flex-shrink-0 ${
-                isBanditOwned
-                  ? "bg-enemy border-enemy border "
-                  : isAlly
-                    ? "bg-green/30 border-green/50 border text-green-200"
-                    : "bg-yellow/30 border-yellow/50 border text-yellow-200"
-              }`}
-            >
-              {isBanditOwned ? "Bandits" : isAlly ? "Ally" : "Enemy"}
-            </div>
-          </div>
-
-          {/* Owner and Guild Info */}
-          <div className="space-y-1 mb-2">
-            <div className="text-sm text-gold/80 truncate" title={`Owner: ${displayName}`}>
-              Owner: {displayName}
-            </div>
-            {playerGuild && (
-              <div className="text-xs text-gold/60 truncate" title={`< ${playerGuild.name} >`}>
-                {"< "}
-                {playerGuild.name}
-                {" >"}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-col gap-2 flex-shrink-0">
-          <NavigationButton
-            size="sm"
-            showText={true}
-            onClick={() => onNavigate(hyperstructure)}
-            title="Navigate to hyperstructure"
-          />
-          {!isBanditOwned && (
-            <button
-              onClick={() => onChat(hyperstructure)}
-              className="p-2 rounded bg-gold/20 hover:bg-gold/30 transition-colors flex items-center justify-center"
-              title="Chat with owner"
-            >
-              <MessageCircle className="w-4 h-4 text-gold" />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Hyperstructure VP/s display */}
-      {hyperstructureRealmCount !== undefined && (
-        <HyperstructureVPDisplay
-          realmCount={hyperstructureRealmCount}
-          isOwned={owner !== undefined && owner !== null && owner !== 0n}
-          className="mb-2"
-        />
-      )}
-
-      {/* Position and Distance */}
-      <div className="flex items-center justify-between mb-3 text-sm bg-brown/20 rounded p-2">
-        <div className="flex items-center gap-4">
-          <div>
-            <span className="text-gold/70">Position:</span>
-            <span className="text-gold ml-1">
-              ({hyperstructurePosition.getNormalized().x}, {hyperstructurePosition.getNormalized().y})
-            </span>
-          </div>
-          <div>
-            <span className="text-gold/70">Distance:</span>
-            <span className="text-gold ml-1">{distance.toFixed(1)} tiles</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Guards */}
-      {guards.length > 0 && (
-        <div className="border-t border-gold/20 pt-3">
-          <div className="flex items-center gap-2 mb-2">
-            <Shield className="w-4 h-4 text-gold/70" />
-            <span className="text-sm text-gold/70 font-medium">Defense ({guards.length} armies)</span>
-          </div>
-          <CompactDefenseDisplay
-            troops={guards.map((guard: any) => ({
-              slot: guard.slot,
-              troops: guard.troops,
-            }))}
-          />
-        </div>
       )}
     </div>
   );

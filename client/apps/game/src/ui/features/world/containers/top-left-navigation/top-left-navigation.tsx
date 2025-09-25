@@ -19,10 +19,10 @@ import { motion } from "framer-motion";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { memo, useCallback, useMemo, useState } from "react";
 import { CapacityInfo } from "../capacity-info";
-import { GameEndTimer } from "./game-end-timer";
-import { TickProgress } from "./tick-progress";
 import { useFavoriteStructures } from "./favorites";
+import { GameEndTimer } from "./game-end-timer";
 import { StructureSelectPanel, type SelectedStructure } from "./structure-select-panel";
+import { TickProgress } from "./tick-progress";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -88,12 +88,9 @@ export const TopLeftNavigation = memo(() => {
     setStructureNameChange(null);
   }, []);
 
-  const handleRequestNameChange = useCallback(
-    (structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => {
-      setStructureNameChange(structure);
-    },
-    [],
-  );
+  const handleRequestNameChange = useCallback((structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => {
+    setStructureNameChange(structure);
+  }, []);
 
   return (
     <div className="pointer-events-auto w-screen flex justify-between">
@@ -124,7 +121,7 @@ export const TopLeftNavigation = memo(() => {
             <TickProgress />
             <GameEndTimer />
           </div>
-          <div className="map-button-selector flex items-center justify-center md:justify-start gap-2 panel-wood-small px-4">
+          <div className="map-button-selector flex items-center justify-center md:justify-start gap-2 px-4">
             <span
               onClick={() =>
                 goToStructure(
