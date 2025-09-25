@@ -1,5 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
+import { Panel } from "@/ui/design-system/atoms";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { BiomeInfoPanel } from "@/ui/features";
 import { formatStringNumber } from "@/ui/utils/utils";
@@ -271,7 +272,7 @@ export const RaidContainer = ({
     <div className="flex flex-col gap-6 p-4 sm:p-6 mx-auto max-w-full overflow-hidden">
       {/* Unable to Raid Message */}
       {target?.targetType !== TargetType.Structure ? (
-        <div className="mt-2 p-6 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood shadow-lg">
+        <Panel padding="lg" blur shadow="lg" className="mt-2 overflow-hidden">
           <h3 className="text-2xl font-bold mb-6 text-gold border-b border-gold/20 pb-4 flex items-center">
             <span className="mr-2">⚠️</span> Unable to Raid
           </h3>
@@ -282,11 +283,11 @@ export const RaidContainer = ({
               You can only raid structures owned by other players that contain resources.
             </p>
           </div>
-        </div>
+        </Panel>
       ) : (
         <>
           {showRaidResult ? (
-            <div className="p-4 sm:p-6 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood shadow-lg">
+            <Panel padding="md" blur shadow="lg" className="sm:p-6">
               <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gold border-b border-gold/20 pb-4 flex items-center">
                 <span className="mr-2">⚔️</span> Raid in Progress
               </h3>
@@ -296,14 +297,14 @@ export const RaidContainer = ({
                 successRate={raidSimulation?.successChance || 50}
                 stolenResources={stealableResources}
               />
-            </div>
+            </Panel>
           ) : (
             <>
               {/* Biome Info Panel */}
               <BiomeInfoPanel biome={biome} />
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 {/* Attacker Panel */}
-                <div className="flex flex-col gap-3 p-4 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood">
+                <Panel padding="md" blur className="flex flex-col gap-3">
                   <h4 className="text-xl font-semibold text-gold">Raider Forces (You)</h4>
                   {attackerArmyData && (
                     <div className="mt-4 space-y-4">
@@ -402,10 +403,10 @@ export const RaidContainer = ({
                       )}
                     </div>
                   )}
-                </div>
+                </Panel>
 
                 {/* Defender Panel */}
-                <div className="flex flex-col gap-3 p-4 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood">
+                <Panel padding="md" blur className="flex flex-col gap-3">
                   <div className="flex justify-between items-center">
                     <h4 className="text-xl font-semibold text-gold">Defender Forces</h4>
                     {target.info.length > 0 && (
@@ -516,12 +517,12 @@ export const RaidContainer = ({
                       </div>
                     </div>
                   )}
-                </div>
+                </Panel>
               </div>
 
               {/* Raid Results Panel */}
               {target?.targetType === TargetType.Structure && (
-                <div className="mt-2 p-4 sm:p-6 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood shadow-lg overflow-hidden">
+                <Panel padding="md" blur shadow="lg" className="mt-2 sm:p-6 overflow-hidden">
                   <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gold border-b border-gold/20 pb-4 flex items-center">
                     <span className="mr-2">📜</span> Raid Prediction
                   </h3>
@@ -678,7 +679,7 @@ export const RaidContainer = ({
                       </div>
                     </div>
                   </div>
-                </div>
+                </Panel>
               )}
 
               {/* Raid Button */}

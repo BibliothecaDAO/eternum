@@ -1,5 +1,6 @@
 import { KeyboardShortcut } from "@/hooks/store/use-shortcut-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { Divider, KbdKey } from "@/ui/design-system/atoms";
 import { Headline } from "@/ui/design-system/molecules";
 import { SecondaryPopup } from "@/ui/design-system/molecules/secondary-popup";
 import { shortcuts } from "@/ui/features/world";
@@ -41,19 +42,11 @@ export const ShortcutsWindow = () => {
 
   const renderShortcutKey = (shortcut: KeyboardShortcut) => (
     <div className="flex items-center space-x-1">
-      {shortcut.modifiers?.ctrl && (
-        <kbd className="px-2 py-1 bg-brown/20 border border-gold/20 text-gold text-xxs rounded">Ctrl</kbd>
-      )}
-      {shortcut.modifiers?.shift && (
-        <kbd className="px-2 py-1 bg-brown/20 border border-gold/20 text-gold text-xxs rounded">Shift</kbd>
-      )}
-      {shortcut.modifiers?.alt && (
-        <kbd className="px-2 py-1 bg-brown/20 border border-gold/20 text-gold text-xxs rounded">Alt</kbd>
-      )}
-      {shortcut.modifiers?.meta && (
-        <kbd className="px-2 py-1 bg-brown/20 border border-gold/20 text-gold text-xxs rounded">Cmd</kbd>
-      )}
-      <kbd className="px-2 py-1 bg-gold/20 border border-gold text-gold text-xxs rounded font-bold">{shortcut.key}</kbd>
+      {shortcut.modifiers?.ctrl && <KbdKey>Ctrl</KbdKey>}
+      {shortcut.modifiers?.shift && <KbdKey>Shift</KbdKey>}
+      {shortcut.modifiers?.alt && <KbdKey>Alt</KbdKey>}
+      {shortcut.modifiers?.meta && <KbdKey>Cmd</KbdKey>}
+      <KbdKey variant="default">{shortcut.key}</KbdKey>
     </div>
   );
 
@@ -95,11 +88,10 @@ export const ShortcutsWindow = () => {
             </div>
           )}
 
-          <div className="mt-4 pt-4 border-t border-gold/20">
-            <p className="text-gold/60 text-xxs">
-              Shortcuts are automatically registered by active components and scenes.
-            </p>
-          </div>
+          <Divider spacing="sm" className="mt-4" />
+          <p className="text-gold/60 text-xxs">
+            Shortcuts are automatically registered by active components and scenes.
+          </p>
         </div>
       </SecondaryPopup.Body>
     </SecondaryPopup>

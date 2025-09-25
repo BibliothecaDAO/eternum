@@ -6,7 +6,9 @@ import {
   readAutomationBackupFile,
   readAutomationTemplateFile,
 } from "../../../utils/automation-backup";
-import Button from "../../design-system/atoms/button";
+import Button from "@/ui/design-system/atoms/button";
+import { Panel } from "@/ui/design-system/atoms";
+import { FormField } from "@/ui/design-system/molecules";
 
 interface AutomationBackupControlsProps {
   className?: string;
@@ -26,6 +28,8 @@ export const AutomationBackupControls: React.FC<AutomationBackupControlsProps> =
   const { exportAutomation, importAutomation, exportAsTemplate, importTemplate, getAvailableRealms } =
     useAutomationStore();
   const availableRealms = getAvailableRealms();
+  const controlClassName =
+    "w-full px-3 py-2 border border-gold/20 bg-black/20 rounded transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gold/30";
 
   const handleExport = () => {
     const data = exportAutomation();
@@ -177,19 +181,20 @@ export const AutomationBackupControls: React.FC<AutomationBackupControlsProps> =
         {/* Template Export Modal */}
         {showTemplateModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-black border border-gold/20 rounded-md p-6 max-w-md w-full">
+            <Panel tone="glass" radius="md" padding="lg" className="w-full max-w-md bg-black/90">
               <h2 className="text-lg font-bold mb-4">Export as Template</h2>
 
               <div className="space-y-4">
-                <div>
-                  <label htmlFor="realmSelect" className="block text-sm font-medium mb-1">
-                    Realm to Export
-                  </label>
+                <FormField
+                  label="Realm to Export"
+                  htmlFor="realmSelect"
+                  description='Select a specific realm to export only its automation strategy, or choose "All Realms" to export everything.'
+                >
                   <select
                     id="realmSelect"
                     value={selectedRealmId}
                     onChange={(e) => setSelectedRealmId(e.target.value)}
-                    className="w-full px-3 py-2 border border-gold/20 bg-black/20 rounded"
+                    className={controlClassName}
                   >
                     <option value="">All Realms (Legacy)</option>
                     {availableRealms.map((realm) => (
@@ -198,39 +203,29 @@ export const AutomationBackupControls: React.FC<AutomationBackupControlsProps> =
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-gold/60 mt-1">
-                    Select a specific realm to export only its automation strategy, or choose "All Realms" to export
-                    everything.
-                  </p>
-                </div>
+                </FormField>
 
-                <div>
-                  <label htmlFor="templateName" className="block text-sm font-medium mb-1">
-                    Template Name (optional)
-                  </label>
+                <FormField label="Template Name (optional)" htmlFor="templateName">
                   <input
                     id="templateName"
                     type="text"
                     value={templateName}
                     onChange={(e) => setTemplateName(e.target.value)}
                     placeholder="e.g., Wood Production Strategy"
-                    className="w-full px-3 py-2 border border-gold/20 bg-black/20 rounded"
+                    className={controlClassName}
                   />
-                </div>
+                </FormField>
 
-                <div>
-                  <label htmlFor="templateDescription" className="block text-sm font-medium mb-1">
-                    Description (optional)
-                  </label>
+                <FormField label="Description (optional)" htmlFor="templateDescription">
                   <textarea
                     id="templateDescription"
                     value={templateDescription}
                     onChange={(e) => setTemplateDescription(e.target.value)}
                     placeholder="Describe your automation strategy..."
                     rows={3}
-                    className="w-full px-3 py-2 border border-gold/20 bg-black/20 rounded"
+                    className={controlClassName}
                   />
-                </div>
+                </FormField>
               </div>
 
               <div className="flex gap-2 mt-6">
@@ -250,7 +245,7 @@ export const AutomationBackupControls: React.FC<AutomationBackupControlsProps> =
                   Cancel
                 </Button>
               </div>
-            </div>
+            </Panel>
           </div>
         )}
       </div>
