@@ -515,8 +515,12 @@ export default class WorldmapScene extends HexagonScene {
             return;
           }
           const resource = findResourceById(resourceId);
-          // Play the sound for the resource gain
-          playResourceSound(resourceId, this.state.isSoundOn, this.state.effectsLevel);
+          const ownerAddress = this.getEntityOwnerAddress(explorerId);
+          const isOwnArmy = ownerAddress !== undefined && isAddressEqualToAccount(ownerAddress);
+          if (isOwnArmy) {
+            // Play the sound for the resource gain only when it belongs to the local player
+            playResourceSound(resourceId, this.state.isSoundOn, this.state.effectsLevel);
+          }
           // Display the resource gain at the army's position
           this.displayResourceGain(resourceId, amount, armyPosition.col, armyPosition.row, resource?.trait + " found");
         } else {
