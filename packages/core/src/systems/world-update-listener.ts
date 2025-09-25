@@ -44,6 +44,7 @@ import {
   type TileSystemUpdate,
 } from "./types";
 import { getExplorerInfoFromTileOccupier, getStructureInfoFromTileOccupier, getStructureStage } from "./utils";
+import { shortString } from "starknet";
 
 // The WorldUpdateListener class is responsible for updating the Three.js models when there are changes in the game state.
 // It listens for updates from torii and translates them into a format that can be consumed by the Three.js model managers.
@@ -260,6 +261,33 @@ export class WorldUpdateListener {
                 // Use DataEnhancer to fetch all enhanced data
                 const enhancedData = await this.dataEnhancer.enhanceStructureData(currentState.occupier_id);
 
+                const structureComponent = getComponentValue(
+                  this.setup.components.Structure,
+                  getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
+                );
+
+                let ownerAddress = structureComponent?.owner ?? enhancedData.owner.address ?? 0n;
+                let ownerName = enhancedData.owner.ownerName;
+
+                if ((!ownerName || ownerName.length === 0) && ownerAddress && ownerAddress !== 0n) {
+                  try {
+                    const addressName = getComponentValue(
+                      this.setup.components.AddressName,
+                      getEntityIdFromKeys([ownerAddress]),
+                    );
+
+                    if (addressName?.name) {
+                      ownerName = shortString.decodeShortString(addressName.name.toString());
+                    }
+                  } catch (error) {
+                    console.warn(`Failed to decode address name for owner ${ownerAddress}:`, error);
+                  }
+                }
+
+                ownerName = ownerName || "";
+
+                this.dataEnhancer.updateStructureOwner(currentState.occupier_id, ownerAddress, ownerName);
+
                 return {
                   entityId: currentState.occupier_id,
                   hexCoords: {
@@ -270,7 +298,11 @@ export class WorldUpdateListener {
                   initialized,
                   stage: structureInfo.stage,
                   level: structureInfo.level,
-                  owner: enhancedData.owner,
+                  owner: {
+                    address: ownerAddress,
+                    ownerName,
+                    guildName: enhancedData.owner.guildName,
+                  },
                   hasWonder: structureInfo.hasWonder,
                   isAlly: false,
                   // Enhanced data from DataEnhancer
@@ -339,6 +371,8 @@ export class WorldUpdateListener {
 
               // Use DataEnhancer to fetch player name
               const playerName = await this.dataEnhancer.getPlayerName(currentState.owner.toString());
+
+              this.dataEnhancer.updateStructureOwner(currentState.entity_id, currentState.owner, playerName);
 
               return {
                 entityId: currentState.entity_id,

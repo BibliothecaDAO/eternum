@@ -558,6 +558,21 @@ export class MapDataStore {
     return this.addressToNameMap.get(normalizedAddress) || "";
   }
 
+  public updateStructureOwner(entityId: number, ownerAddress: bigint, ownerName: string): void {
+    const normalizedAddress = ownerAddress.toString();
+    const structure = this.structuresMap.get(entityId);
+
+    if (structure) {
+      structure.ownerAddress = normalizedAddress;
+      structure.ownerName = ownerName;
+      this.structuresMap.set(entityId, structure);
+    }
+
+    if (ownerName) {
+      this.addressToNameMap.set(normalizedAddress, ownerName);
+    }
+  }
+
   public clear(): void {
     this.structuresMap.clear();
     this.armiesMap.clear();

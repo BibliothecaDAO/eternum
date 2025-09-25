@@ -154,6 +154,14 @@ export class DataEnhancer {
     }
   }
 
+  updateStructureOwner(structureId: ID, ownerAddress: bigint | undefined, ownerName: string) {
+    if (ownerAddress === undefined) {
+      return;
+    }
+
+    this.mapDataStore.updateStructureOwner(Number(structureId), ownerAddress, ownerName);
+  }
+
   /**
    * Enhance structure data with information from MapDataStore
    */

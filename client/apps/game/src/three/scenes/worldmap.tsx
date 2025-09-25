@@ -1453,9 +1453,9 @@ export default class WorldmapScene extends HexagonScene {
     this.cachedMatrixOrder = [];
   }
 
-  private computeInteractiveHexes(startRow: number, startCol: number, rows: number, cols: number) {
+  private computeInteractiveHexes(startRow: number, startCol: number, width: number, height: number) {
     // Instead of clearing and recomputing all hexes, just update which ones are visible
-    this.interactiveHexManager.updateVisibleHexes(startRow, startCol, rows, cols);
+    this.interactiveHexManager.updateVisibleHexes(startRow, startCol, width, height);
   }
 
   async updateHexagonGrid(startRow: number, startCol: number, rows: number, cols: number) {
@@ -1467,7 +1467,7 @@ export default class WorldmapScene extends HexagonScene {
 
     await Promise.all(this.modelLoadPromises);
     if (this.applyCachedMatricesForChunk(startRow, startCol)) {
-      this.computeInteractiveHexes(startRow, startCol, rows, cols);
+      this.computeInteractiveHexes(startRow, startCol, cols, rows);
 
       // Track memory usage for cached operation
       if (memoryMonitor && preUpdateStats) {
@@ -1610,7 +1610,7 @@ export default class WorldmapScene extends HexagonScene {
           }
 
           this.cacheMatricesForChunk(startRow, startCol);
-          this.interactiveHexManager.updateVisibleHexes(startRow, startCol, rows, cols);
+          this.interactiveHexManager.updateVisibleHexes(startRow, startCol, cols, rows);
 
           // CRITICAL: Release pooled matrices back to pool after processing
           const matrixPool = MatrixPool.getInstance();
