@@ -148,10 +148,7 @@ export const CombatContainer = ({
     [attackerRelicResourceIds],
   );
 
-  const defenderRelicBonuses = useMemo(
-    () => getRelicBonusSummary(targetRelicResourceIds),
-    [targetRelicResourceIds],
-  );
+  const defenderRelicBonuses = useMemo(() => getRelicBonusSummary(targetRelicResourceIds), [targetRelicResourceIds]);
 
   const attackerStamina = useMemo(() => {
     const { currentArmiesTick } = getBlockTimestamp();
@@ -299,26 +296,12 @@ export const CombatContainer = ({
 
     const attackerBaselineResult =
       attackerRelicResourceIds.length > 0
-        ? combatSimulator.simulateBattleWithParams(
-            now,
-            attackerArmy,
-            defenderArmy,
-            biome,
-            [],
-            targetRelicResourceIds,
-          )
+        ? combatSimulator.simulateBattleWithParams(now, attackerArmy, defenderArmy, biome, [], targetRelicResourceIds)
         : null;
 
     const defenderBaselineResult =
       targetRelicResourceIds.length > 0
-        ? combatSimulator.simulateBattleWithParams(
-            now,
-            attackerArmy,
-            defenderArmy,
-            biome,
-            attackerRelicResourceIds,
-            [],
-          )
+        ? combatSimulator.simulateBattleWithParams(now, attackerArmy, defenderArmy, biome, attackerRelicResourceIds, [])
         : null;
 
     const attackerTroopsLost = result.defenderDamage;

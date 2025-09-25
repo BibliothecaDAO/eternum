@@ -54,45 +54,39 @@ export const ActiveRelicEffects = ({ relicEffects, entityId, compact = false, cl
       .filter((effect): effect is NonNullable<typeof effect> => effect !== null);
   }, [relicEffects, currentArmiesTick, armiesTickTimeRemaining]);
 
-  const relicIds = useMemo(
-    () => activeEffects.map((effect) => effect.resourceId as ResourcesIds),
-    [activeEffects],
-  );
+  const relicIds = useMemo(() => activeEffects.map((effect) => effect.resourceId as ResourcesIds), [activeEffects]);
 
   const relicBonusSummary = useMemo(() => getRelicBonusSummary(relicIds), [relicIds]);
 
-  const summaryEntries = useMemo(
-    () => {
-      const entries: Array<{ label: string; value: string; relicName?: string }> = [];
+  const summaryEntries = useMemo(() => {
+    const entries: Array<{ label: string; value: string; relicName?: string }> = [];
 
-      if (relicBonusSummary.damageBonusPercent > 0) {
-        entries.push({
-          label: "Damage Output",
-          value: `+${relicBonusSummary.damageBonusPercent}%`,
-          relicName: relicBonusSummary.damageRelic?.name,
-        });
-      }
+    if (relicBonusSummary.damageBonusPercent > 0) {
+      entries.push({
+        label: "Damage Output",
+        value: `+${relicBonusSummary.damageBonusPercent}%`,
+        relicName: relicBonusSummary.damageRelic?.name,
+      });
+    }
 
-      if (relicBonusSummary.damageReductionPercent > 0) {
-        entries.push({
-          label: "Damage Taken",
-          value: `-${relicBonusSummary.damageReductionPercent}%`,
-          relicName: relicBonusSummary.damageReductionRelic?.name,
-        });
-      }
+    if (relicBonusSummary.damageReductionPercent > 0) {
+      entries.push({
+        label: "Damage Taken",
+        value: `-${relicBonusSummary.damageReductionPercent}%`,
+        relicName: relicBonusSummary.damageReductionRelic?.name,
+      });
+    }
 
-      if (relicBonusSummary.staminaBonusPercent > 0) {
-        entries.push({
-          label: "Stamina Regen",
-          value: `+${relicBonusSummary.staminaBonusPercent}%`,
-          relicName: relicBonusSummary.staminaRelic?.name,
-        });
-      }
+    if (relicBonusSummary.staminaBonusPercent > 0) {
+      entries.push({
+        label: "Stamina Regen",
+        value: `+${relicBonusSummary.staminaBonusPercent}%`,
+        relicName: relicBonusSummary.staminaRelic?.name,
+      });
+    }
 
-      return entries;
-    },
-    [relicBonusSummary],
-  );
+    return entries;
+  }, [relicBonusSummary]);
 
   const smallTextClass = compact ? "text-xxs" : "text-xs";
 
@@ -105,9 +99,7 @@ export const ActiveRelicEffects = ({ relicEffects, entityId, compact = false, cl
     );
   }
 
-  const summaryContainerClass = compact
-    ? "flex flex-wrap gap-1.5 mt-1"
-    : "grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2";
+  const summaryContainerClass = compact ? "flex flex-wrap gap-1.5 mt-1" : "grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2";
 
   const effectsContainerClass = compact
     ? "flex flex-wrap gap-1.5"
@@ -133,9 +125,7 @@ export const ActiveRelicEffects = ({ relicEffects, entityId, compact = false, cl
                 {entry.label}
               </div>
               <div className={`${compact ? "text-xs" : "text-sm"} font-bold text-gold`}>{entry.value}</div>
-              {!compact && entry.relicName && (
-                <div className="text-xxs text-gold/60 mt-0.5">{entry.relicName}</div>
-              )}
+              {!compact && entry.relicName && <div className="text-xxs text-gold/60 mt-0.5">{entry.relicName}</div>}
             </div>
           ))}
         </div>
@@ -149,16 +139,22 @@ export const ActiveRelicEffects = ({ relicEffects, entityId, compact = false, cl
             title={`${effect.relicInfo.name}: ${effect.relicInfo.effect}`}
           >
             <div className="flex items-start gap-2">
-              <ResourceIcon resource={ResourcesIds[effect.resourceId]} size={compact ? "xs" : "sm"} withTooltip={false} />
+              <ResourceIcon
+                resource={ResourcesIds[effect.resourceId]}
+                size={compact ? "xs" : "sm"}
+                withTooltip={false}
+              />
               <div className="flex flex-col gap-0.5">
-                <span className={`${compact ? "text-xs" : "text-sm"} font-semibold text-gold`}>{effect.relicInfo.name}</span>
+                <span className={`${compact ? "text-xs" : "text-sm"} font-semibold text-gold`}>
+                  {effect.relicInfo.name}
+                </span>
                 <span className={`${compact ? "text-[10px]" : "text-xs"} text-gold/70`}>{effect.bonusText}</span>
-                {!compact && (
-                  <span className="text-xxs text-gold/60">{effect.relicInfo.effect}</span>
-                )}
+                {!compact && <span className="text-xxs text-gold/60">{effect.relicInfo.effect}</span>}
               </div>
             </div>
-            <div className={`${compact ? "text-[10px]" : "text-xs"} text-relic2 font-medium mt-1 flex items-center gap-1`}>
+            <div
+              className={`${compact ? "text-[10px]" : "text-xs"} text-relic2 font-medium mt-1 flex items-center gap-1`}
+            >
               <Sparkles className="h-3 w-3 text-relic2" />
               {formatTime(effect.remainingSeconds)} left
             </div>

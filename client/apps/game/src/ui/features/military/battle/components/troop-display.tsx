@@ -106,9 +106,7 @@ export const TroopDisplay = ({
             valueClass: "text-order-brilliance",
             chipClass: "bg-gold/10 border border-gold/20",
             detail:
-              relicDamageBonusAbsolute > 0
-                ? `(+${formatTroopDelta(relicDamageBonusAbsolute)} troops)`
-                : undefined,
+              relicDamageBonusAbsolute > 0 ? `(+${formatTroopDelta(relicDamageBonusAbsolute)} troops)` : undefined,
           }
         : null,
       relicDamageReductionPercent > 0 || relicDamageReductionAbsolute > 0
@@ -153,7 +151,9 @@ export const TroopDisplay = ({
               key={item.key}
               className={`${item.chipClass} ${isCompactView ? "px-1.5 py-1 rounded" : "px-2.5 py-2 rounded-md min-w-[130px]"}`}
             >
-              <div className={`${isCompactView ? "text-[10px]" : "text-xs"} text-gold/80 font-medium`}>{item.label}</div>
+              <div className={`${isCompactView ? "text-[10px]" : "text-xs"} text-gold/80 font-medium`}>
+                {item.label}
+              </div>
               <div className={`${isCompactView ? "text-xs" : "text-base"} font-bold ${item.valueClass}`}>
                 {item.value}
               </div>

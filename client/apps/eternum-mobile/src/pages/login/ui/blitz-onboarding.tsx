@@ -345,8 +345,8 @@ const RegistrationState = ({
               >
                 {isObtainingEntryToken ? (
                   <div className="flex items-center justify-center gap-2">
-        <img src="/images/eternum-logo-white.svg" className="h-5 w-5 animate-spin" />
-        <span>Minting entry token...</span>
+                    <img src="/images/eternum-logo-white.svg" className="h-5 w-5 animate-spin" />
+                    <span>Minting entry token...</span>
                   </div>
                 ) : (
                   <div className="flex items-center justify-center gap-2">
@@ -375,8 +375,8 @@ const RegistrationState = ({
           <Button onClick={handleRegister} disabled={isRegistering || !tokenReady} className="w-full">
             {isRegistering ? (
               <div className="flex items-center justify-center gap-2">
-        <img src="/images/eternum-logo-white.svg" className="h-5 w-5 animate-spin" />
-        <span>Registering...</span>
+                <img src="/images/eternum-logo-white.svg" className="h-5 w-5 animate-spin" />
+                <span>Registering...</span>
               </div>
             ) : (
               <div className="flex items-center justify-center gap-2">

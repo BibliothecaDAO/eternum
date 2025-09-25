@@ -46,8 +46,7 @@ export const getRelicBonusSummary = (relicIds: ResourcesIds[]): RelicBonusSummar
     damageBonusPercent: damageMultiplier !== 1 ? roundPercent((damageMultiplier - 1) * 100) : 0,
     damageRelic,
     damageReductionMultiplier,
-    damageReductionPercent:
-      damageReductionMultiplier !== 1 ? roundPercent((1 - damageReductionMultiplier) * 100) : 0,
+    damageReductionPercent: damageReductionMultiplier !== 1 ? roundPercent((1 - damageReductionMultiplier) * 100) : 0,
     damageReductionRelic,
     staminaMultiplier,
     staminaBonusPercent: staminaMultiplier !== 1 ? roundPercent((staminaMultiplier - 1) * 100) : 0,
