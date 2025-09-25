@@ -40,6 +40,21 @@ export interface SeasonPassRealm {
   account_address: string;
 }
 
+interface PlayerLeaderboardRow {
+  player_address: string | null;
+  player_name: string | null;
+  prize_claimed: number | null;
+  registered_points: number | string | null;
+}
+
+export interface PlayerLeaderboardEntry {
+  playerAddress: string;
+  playerName: string | null;
+  prizeClaimed: boolean;
+  registeredPointsRaw: number;
+  registeredPoints: number;
+}
+
 interface CollectionTrait {
   trait_type: string;
   trait_value: string;
@@ -95,6 +110,62 @@ export async function fetchCollectionStatistics(contractAddress: string): Promis
     contractAddress,
   );
   return await fetchSQL<ActiveMarketOrdersTotal[]>(query);
+}
+
+const REGISTERED_POINTS_PRECISION = 1_000_000;
+
+export async function fetchPlayerLeaderboard(
+  limit: number = 10,
+  offset: number = 0,
+): Promise<PlayerLeaderboardEntry[]> {
+  const query = QUERIES.PLAYER_LEADERBOARD.replace("{limit}", limit.toString()).replace(
+    "{offset}",
+    offset.toString(),
+  );
+
+  const rows = await gameClientFetch<PlayerLeaderboardRow[]>(query);
+
+  return rows
+    .map((row) => {
+      const rawPointsValue =
+        typeof row.registered_points === "number"
+          ? row.registered_points
+          : Number(row.registered_points ?? 0);
+
+      const safeRawPoints = Number.isFinite(rawPointsValue) ? rawPointsValue : 0;
+
+      // Decode hex-encoded player name if it looks like a hex string
+      let decodedPlayerName = row.player_name?.trim() || null;
+      if (decodedPlayerName && decodedPlayerName.startsWith('0x')) {
+        try {
+          // Remove '0x' prefix and convert hex to ASCII
+          const hexString = decodedPlayerName.slice(2);
+          let ascii = '';
+          for (let i = 0; i < hexString.length; i += 2) {
+            const hexByte = hexString.substr(i, 2);
+            const charCode = parseInt(hexByte, 16);
+            if (charCode > 0 && charCode < 127) { // Only printable ASCII
+              ascii += String.fromCharCode(charCode);
+            }
+          }
+          if (ascii.length > 0) {
+            decodedPlayerName = ascii;
+          }
+        } catch (error) {
+          // If decoding fails, keep original value
+          console.warn('Failed to decode player name:', decodedPlayerName);
+        }
+      }
+
+      return {
+        playerAddress: row.player_address ?? "",
+        playerName: decodedPlayerName,
+        prizeClaimed: Boolean(row.prize_claimed),
+        registeredPointsRaw: safeRawPoints,
+        registeredPoints: safeRawPoints / REGISTERED_POINTS_PRECISION,
+      } as PlayerLeaderboardEntry;
+    })
+    .filter((entry) => entry.playerAddress.length > 0);
 }
 
 export interface FetchAllCollectionTokensOptions {
@@ -488,7 +559,6 @@ interface SeasonDay {
  */
 export async function fetchSeasonDay(): Promise<SeasonDay> {
   const rawData = await gameClientFetch<SeasonConfig[]>(QUERIES.SEASON_CONFIG);
-  console.log("rawData", rawData);
 
   if (!rawData || rawData.length === 0) {
     return {
