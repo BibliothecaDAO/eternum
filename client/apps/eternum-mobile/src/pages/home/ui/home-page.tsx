@@ -1,6 +1,7 @@
 import { ROUTES } from "@/shared/consts/routes";
 import { Card } from "@/shared/ui/card";
 import { Link } from "@tanstack/react-router";
+import { useEntryTokenBalance } from "@bibliothecadao/react";
 
 interface AppIcon {
   id: string;
@@ -79,8 +80,21 @@ const appIcons: AppIcon[] = [
 ];
 
 export function HomePage() {
+  const { balance: entryTokenBalance, hasEntryTokenContract } = useEntryTokenBalance();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-6 pt-8">
+      {hasEntryTokenContract && (
+        <Card className="mb-6 p-4 border-border/50 bg-gold/5">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Entry tokens ready</span>
+            <span className="text-xl font-semibold text-gold">{entryTokenBalance.toString()}</span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            Mint an entry token in onboarding before registering; it will be locked for you during signup.
+          </p>
+        </Card>
+      )}
       {/* App Icons Grid */}
       <div className="grid grid-cols-3 gap-4 max-w-sm mx-auto">
         {appIcons.map((app) => (

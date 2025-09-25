@@ -140,7 +140,8 @@ export const LocalStepOne = () => {
               <Button
                 onClick={handleSelectLocationClick}
                 disabled={loading}
-                className="flex-1 h-8 md:h-12 lg:h-10 2xl:h-12 !text-gold !bg-gold/20 !normal-case rounded-md"
+                forceUppercase={false}
+                className="flex-1 h-8 md:h-12 lg:h-10 2xl:h-12 !text-gold !bg-gold/20 rounded-md"
               >
                 <div className="flex items-center">
                   <BackArrow className="!w-5 !h-5 mr-1 md:mr-2 fill-gold text-gold" />
@@ -150,7 +151,8 @@ export const LocalStepOne = () => {
               <Button
                 onClick={handleSettleRealm}
                 disabled={loading}
-                className="flex-1 h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md"
+                forceUppercase={false}
+                className="flex-1 h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold rounded-md"
               >
                 <div className="flex items-center justify-center">
                   {loading ? (
@@ -168,7 +170,8 @@ export const LocalStepOne = () => {
         <Button
           onClick={handleMintAndPrepare}
           disabled={loading}
-          className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${loading ? "" : "animate-pulse"}`}
+          forceUppercase={false}
+          className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold rounded-md hover:scale-105 hover:-translate-y-1 ${loading ? "" : "animate-pulse"}`}
         >
           <div className="flex items-center">
             {loading ? (
@@ -182,7 +185,8 @@ export const LocalStepOne = () => {
       )}
       <Button
         onClick={handleVillagePassClick}
-        className={`${loading ? "" : "animate-pulse"} mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1`}
+        forceUppercase={false}
+        className={`${loading ? "" : "animate-pulse"} mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold rounded-md hover:scale-105 hover:-translate-y-1`}
       >
         <div className="flex items-center gap-2">
           <TreasureChest className="!w-4 !h-4 fill-brown text-brown" />
@@ -383,7 +387,7 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
       {seasonPassRealms.length === 0 && !loading ? (
         <div className="flex flex-col gap-2">
           <h3 className="text-gold">No Realms</h3>
-          <p className="text-gray-400">You need to have at least one realm to settle a season pass.</p>
+          <p className="">You need to have at least one realm to settle a season pass.</p>
           <Button size="lg" onClick={onPrevious}>
             Go Back
           </Button>

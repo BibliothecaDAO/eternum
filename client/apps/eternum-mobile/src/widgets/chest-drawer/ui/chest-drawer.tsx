@@ -1,9 +1,9 @@
 import { Button } from "@/shared/ui/button";
 import { Drawer, DrawerContent, DrawerHeader } from "@/shared/ui/drawer";
-import { useDojo } from "@bibliothecadao/react";
+import { useComponentSystem, useDojo } from "@bibliothecadao/react";
 import { FELT_CENTER } from "@bibliothecadao/types";
-import { defineComponentSystem, isComponentUpdate } from "@dojoengine/recs";
-import { useCallback, useEffect, useState } from "react";
+import { isComponentUpdate } from "@dojoengine/recs";
+import { useCallback, useState } from "react";
 import { ChestDrawerProps, ChestState } from "../model/types";
 import { ChestInteraction } from "./chest-interaction";
 import { RelicCarousel } from "./relic-carousel";
@@ -13,7 +13,7 @@ export const ChestDrawer = ({ explorerEntityId, chestHex, open, onOpenChange }: 
   const {
     account: { account },
     setup: { systemCalls },
-    network: { world, contractComponents },
+    network: { contractComponents },
   } = useDojo();
 
   const [chestState, setChestState] = useState<ChestState>({
@@ -29,47 +29,45 @@ export const ChestDrawer = ({ explorerEntityId, chestHex, open, onOpenChange }: 
   const chestName = `Chest at (${chestHex.x - FELT_CENTER}, ${chestHex.y - FELT_CENTER})`;
 
   // Event listener for OpenRelicChestEvent
-  useEffect(() => {
-    const handleChestEventUpdate = (update: any) => {
-      if (isComponentUpdate(update, contractComponents.events.OpenRelicChestEvent)) {
-        const [currentState, _prevState] = update.value;
+  useComponentSystem(
+    contractComponents.events.OpenRelicChestEvent,
+    (update: any) => {
+      if (!isComponentUpdate(update, contractComponents.events.OpenRelicChestEvent)) return;
 
-        if (
-          currentState?.explorer_id === explorerEntityId &&
-          currentState?.chest_coord?.x === chestHex.x &&
-          currentState?.chest_coord?.y === chestHex.y
-        ) {
-          const relics = currentState.relics.map((relic: any) => relic.value);
-          setChestState((prev) => ({ ...prev, chestResult: relics }));
+      const [currentState] = update.value;
 
-          if (chestState.isOpening) {
-            setTimeout(() => {
-              setChestState((prev) => ({ ...prev, showResult: true }));
+      if (
+        currentState?.explorer_id === explorerEntityId &&
+        currentState?.chest_coord?.x === chestHex.x &&
+        currentState?.chest_coord?.y === chestHex.y
+      ) {
+        const relics = currentState.relics.map((relic: any) => relic.value);
+        setChestState((prev) => ({ ...prev, chestResult: relics }));
 
-              relics.forEach((_: any, index: number) => {
-                setTimeout(() => {
-                  setChestState((prev) => ({
-                    ...prev,
-                    revealedCards: [...prev.revealedCards, index],
-                  }));
-                }, index * 600);
-              });
-            }, 500);
-          } else {
+        if (chestState.isOpening) {
+          setTimeout(() => {
             setChestState((prev) => ({ ...prev, showResult: true }));
-            setChestState((prev) => ({
-              ...prev,
-              revealedCards: relics.map((_: any, index: number) => index),
-            }));
-          }
+
+            relics.forEach((_: any, index: number) => {
+              setTimeout(() => {
+                setChestState((prev) => ({
+                  ...prev,
+                  revealedCards: [...prev.revealedCards, index],
+                }));
+              }, index * 600);
+            });
+          }, 500);
+        } else {
+          setChestState((prev) => ({
+            ...prev,
+            showResult: true,
+            revealedCards: relics.map((_: any, index: number) => index),
+          }));
         }
       }
-    };
-
-    defineComponentSystem(world, contractComponents.events.OpenRelicChestEvent, handleChestEventUpdate, {
-      runOnInit: true,
-    });
-  }, [contractComponents.events.OpenRelicChestEvent, explorerEntityId, chestHex, chestState.isOpening]);
+    },
+    [explorerEntityId, chestHex.x, chestHex.y, chestState.isOpening],
+  );
 
   const handleChestClick = useCallback(async () => {
     if (chestState.showResult || chestState.isOpening) return;

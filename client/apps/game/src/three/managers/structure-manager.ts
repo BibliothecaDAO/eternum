@@ -13,10 +13,11 @@ import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { createStructureLabel, updateStructureLabel } from "../utils/labels/label-factory";
+import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { FXManager } from "./fx-manager";
 
-const MAX_INSTANCES = 1000;
+const INITIAL_STRUCTURE_CAPACITY = 64;
 const WONDER_MODEL_INDEX = 4;
 
 // Enum to track the source of relic effects
@@ -40,11 +41,15 @@ interface PendingLabelUpdate {
 export class StructureManager {
   private scene: Scene;
   private structureModels: Map<StructureType, InstancedModel[]> = new Map();
+  private structureModelPromises: Map<StructureType, Promise<InstancedModel[]>> = new Map();
+  private structureModelPaths: Record<string, string[]>;
+  private isUpdatingVisibleStructures = false;
+  private hasPendingVisibleStructuresUpdate = false;
   private entityIdMaps: Map<StructureType, Map<number, ID>> = new Map();
   private wonderEntityIdMaps: Map<number, ID> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
+  private labelPool = new LabelPool();
   private dummy: Object3D = new Object3D();
-  modelLoadPromises: Promise<InstancedModel>[] = [];
   structures: Structures = new Structures();
   structureHexCoords: Map<number, Set<number>> = new Map();
   private currentChunk: string = "";
@@ -84,7 +89,7 @@ export class StructureManager {
     this.applyPendingRelicEffectsCallback = applyPendingRelicEffectsCallback;
     this.clearPendingRelicEffectsCallback = clearPendingRelicEffectsCallback;
     this.isBlitz = getIsBlitz();
-    this.loadModels();
+    this.structureModelPaths = getStructureModelPaths(this.isBlitz);
 
     // Subscribe to camera view changes if scene is provided
     if (hexagonScene) {
@@ -102,7 +107,6 @@ export class StructureManager {
   }
 
   private handleCameraViewChange = (view: CameraView) => {
-    console.log("StructureManager handleCameraViewChange:", this.currentCameraView, "->", view);
     if (this.currentCameraView === view) return;
 
     // If we're moving away from Medium view, clean up transition state
@@ -151,6 +155,14 @@ export class StructureManager {
       }
     });
 
+    this.entityIdLabels.forEach((label) => {
+      this.labelsGroup.remove(label);
+      this.labelPool.release(label);
+    });
+    this.entityIdLabels.clear();
+
+    this.labelPool.clear();
+
     // Dispose of all structure models
     this.structureModels.forEach((models) => {
       models.forEach((model) => {
@@ -179,57 +191,70 @@ export class StructureManager {
     return Array.from(this.structures.getStructures().values()).reduce((acc, structures) => acc + structures.size, 0);
   }
 
-  public async loadModels() {
-    const loader = gltfLoader;
+  private async ensureStructureModels(structureType: StructureType): Promise<InstancedModel[]> {
+    if (this.structureModels.has(structureType)) {
+      return this.structureModels.get(structureType)!;
+    }
 
-    for (const [key, modelPaths] of Object.entries(getStructureModelPaths(this.isBlitz))) {
-      const structureType = parseInt(key) as StructureType;
+    let pending = this.structureModelPromises.get(structureType);
+    if (pending) {
+      return pending;
+    }
 
-      if (structureType === undefined) continue;
-      if (!modelPaths || modelPaths.length === 0) continue;
+    const modelPaths = this.structureModelPaths[String(structureType)] ?? [];
+    if (modelPaths.length === 0) {
+      const empty: InstancedModel[] = [];
+      this.structureModels.set(structureType, empty);
+      return empty;
+    }
 
-      const loadPromises = modelPaths.map((modelPath) => {
-        return new Promise<InstancedModel>((resolve, reject) => {
-          loader.load(
-            modelPath,
-            (gltf) => {
-              const instancedModel = new InstancedModel(
-                gltf,
-                MAX_INSTANCES,
-                false,
-                modelPath.includes("wonder") ? "wonder" : StructureType[structureType],
-              );
-              resolve(instancedModel);
-            },
-            undefined,
-            (error) => {
-              console.error(modelPath);
-              console.error(`An error occurred while loading the ${structureType} model:`, error);
-              reject(error);
-            },
-          );
+    pending = Promise.all(modelPaths.map((modelPath) => this.loadStructureModel(structureType, modelPath)))
+      .then((models) => {
+        this.structureModels.set(structureType, models);
+        models.forEach((model) => {
+          this.scene.add(model.group);
         });
+        return models;
+      })
+      .finally(() => {
+        this.structureModelPromises.delete(structureType);
       });
 
-      Promise.all(loadPromises)
-        .then((instancedModels) => {
-          this.structureModels.set(structureType, instancedModels);
-          instancedModels.forEach((model) => {
-            this.scene.add(model.group);
-          });
-        })
-        .catch((error) => {
-          console.error(`Failed to load models for ${StructureType[structureType]}:`, error);
-        });
+    this.structureModelPromises.set(structureType, pending);
+    return pending;
+  }
 
-      this.modelLoadPromises.push(...loadPromises);
-    }
+  private loadStructureModel(structureType: StructureType, modelPath: string): Promise<InstancedModel> {
+    return new Promise((resolve, reject) => {
+      gltfLoader.load(
+        modelPath,
+        (gltf) => {
+          try {
+            const instancedModel = new InstancedModel(
+              gltf,
+              INITIAL_STRUCTURE_CAPACITY,
+              false,
+              modelPath.includes("wonder") ? "wonder" : StructureType[structureType],
+            );
+            resolve(instancedModel);
+          } catch (error) {
+            reject(error);
+          }
+        },
+        undefined,
+        (error) => {
+          console.error(modelPath);
+          console.error(`An error occurred while loading the ${StructureType[structureType]} model:`, error);
+          reject(error);
+        },
+      );
+    });
   }
 
   async onUpdate(update: StructureTileSystemUpdate) {
     console.log("[UPDATE STRUCTURE SYSTEM ON UPDATE]", update);
-    await Promise.all(this.modelLoadPromises);
     const { entityId, hexCoords, structureType, stage, level, owner, hasWonder } = update;
+    await this.ensureStructureModels(structureType);
     const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
     const position = getWorldPositionForHex(normalizedCoord);
     position.y += 0.05;
@@ -447,82 +472,116 @@ export class StructureManager {
     return undefined;
   }
 
-  private updateVisibleStructures() {
-    const _structures = this.structures.getStructures();
+  private updateVisibleStructures(): void {
+    if (this.isUpdatingVisibleStructures) {
+      this.hasPendingVisibleStructuresUpdate = true;
+      return;
+    }
+
+    this.isUpdatingVisibleStructures = true;
+    void this.performVisibleStructuresUpdate()
+      .catch((error) => {
+        console.error("Failed to update visible structures", error);
+      })
+      .finally(() => {
+        this.isUpdatingVisibleStructures = false;
+        if (this.hasPendingVisibleStructuresUpdate) {
+          this.hasPendingVisibleStructuresUpdate = false;
+          this.updateVisibleStructures();
+        }
+      });
+  }
+
+  private async performVisibleStructuresUpdate(): Promise<void> {
+    const structuresMap = this.structures.getStructures();
+    const structureEntries = Array.from(structuresMap.entries());
     const visibleStructureIds = new Set<ID>();
 
-    for (const [structureType, structures] of _structures) {
+    const preloadPromises: Promise<unknown>[] = [];
+
+    for (const [structureType, structures] of structureEntries) {
+      if (structures.size === 0) {
+        continue;
+      }
+      if (!this.structureModels.has(structureType)) {
+        preloadPromises.push(this.ensureStructureModels(structureType));
+      }
+    }
+
+    if (preloadPromises.length > 0) {
+      try {
+        await Promise.all(preloadPromises);
+      } catch (error) {
+        console.error("Failed to preload structure models", error);
+      }
+    }
+
+    this.wonderEntityIdMaps.clear();
+
+    for (const [structureType, structures] of structureEntries) {
       const visibleStructures = this.getVisibleStructures(structures);
       const models = this.structureModels.get(structureType);
 
-      if (models && models.length > 0) {
-        models.forEach((model) => {
-          model.setCount(0);
-        });
-
-        this.entityIdMaps.set(structureType, new Map());
-        this.wonderEntityIdMaps.clear();
-
-        visibleStructures.forEach((structure) => {
-          visibleStructureIds.add(structure.entityId);
-          const position = getWorldPositionForHex(structure.hexCoords);
-          position.y += 0.05;
-
-          // Update existing label or create new one to preserve live data
-          const existingLabel = this.entityIdLabels.get(structure.entityId);
-          if (existingLabel) {
-            // Update existing label to preserve any pending updates
-            this.updateStructureLabelData(structure.entityId, structure, existingLabel);
-            // Update position if needed
-            const newPosition = getWorldPositionForHex(structure.hexCoords);
-            newPosition.y += 2;
-            existingLabel.position.copy(newPosition);
-          } else {
-            // Create new label if it doesn't exist
-            this.addEntityIdLabel(structure, position);
-          }
-
-          this.dummy.position.copy(position);
-
-          if (structureType === StructureType.Bank) {
-            this.dummy.rotation.y = (4 * Math.PI) / 6;
-          } else {
-            const rotationSeed = hashCoordinates(structure.hexCoords.col, structure.hexCoords.row);
-            const rotationIndex = Math.floor(rotationSeed * 6);
-            const randomRotation = (rotationIndex * Math.PI) / 3;
-            this.dummy.rotation.y = randomRotation;
-          }
-          this.dummy.updateMatrix();
-          let modelType = models[structure.stage];
-          if (structureType === StructureType.Realm) {
-            modelType = models[structure.level];
-
-            // Add the Realm model
-            const currentCount = modelType.getCount();
-            modelType.setMatrixAt(currentCount, this.dummy.matrix);
-            modelType.setCount(currentCount + 1);
-            this.entityIdMaps.get(structureType)!.set(currentCount, structure.entityId);
-
-            // If the Realm has a wonder, also add the Wonder model at the same location
-            if (structure.hasWonder) {
-              const wonderModel = models[WONDER_MODEL_INDEX];
-              const wonderCount = wonderModel.getCount();
-              wonderModel.setMatrixAt(wonderCount, this.dummy.matrix);
-              wonderModel.setCount(wonderCount + 1);
-
-              // Store the entity ID mapping for the wonder model
-              this.wonderEntityIdMaps.set(wonderCount, structure.entityId);
-            }
-          } else {
-            const currentCount = modelType.getCount();
-            modelType.setMatrixAt(currentCount, this.dummy.matrix);
-            modelType.setCount(currentCount + 1);
-            this.entityIdMaps.get(structureType)!.set(currentCount, structure.entityId);
-          }
-        });
-
-        models.forEach((model) => model.needsUpdate());
+      if (!models || models.length === 0) {
+        continue;
       }
+
+      models.forEach((model) => {
+        model.setCount(0);
+      });
+
+      this.entityIdMaps.set(structureType, new Map());
+
+      visibleStructures.forEach((structure) => {
+        visibleStructureIds.add(structure.entityId);
+        const position = getWorldPositionForHex(structure.hexCoords);
+        position.y += 0.05;
+
+        const existingLabel = this.entityIdLabels.get(structure.entityId);
+        if (existingLabel) {
+          this.updateStructureLabelData(structure.entityId, structure, existingLabel);
+          const newPosition = getWorldPositionForHex(structure.hexCoords);
+          newPosition.y += 2;
+          existingLabel.position.copy(newPosition);
+        }
+
+        this.dummy.position.copy(position);
+
+        if (structureType === StructureType.Bank) {
+          this.dummy.rotation.y = (4 * Math.PI) / 6;
+        } else {
+          const rotationSeed = hashCoordinates(structure.hexCoords.col, structure.hexCoords.row);
+          const rotationIndex = Math.floor(rotationSeed * 6);
+          const randomRotation = (rotationIndex * Math.PI) / 3;
+          this.dummy.rotation.y = randomRotation;
+        }
+        this.dummy.updateMatrix();
+
+        let modelType = models[structure.stage];
+        if (structureType === StructureType.Realm) {
+          modelType = models[structure.level];
+
+          const currentCount = modelType.getCount();
+          modelType.setMatrixAt(currentCount, this.dummy.matrix);
+          modelType.setCount(currentCount + 1);
+          this.entityIdMaps.get(structureType)!.set(currentCount, structure.entityId);
+
+          if (structure.hasWonder) {
+            const wonderModel = models[WONDER_MODEL_INDEX];
+            const wonderCount = wonderModel.getCount();
+            wonderModel.setMatrixAt(wonderCount, this.dummy.matrix);
+            wonderModel.setCount(wonderCount + 1);
+            this.wonderEntityIdMaps.set(wonderCount, structure.entityId);
+          }
+        } else {
+          const currentCount = modelType.getCount();
+          modelType.setMatrixAt(currentCount, this.dummy.matrix);
+          modelType.setCount(currentCount + 1);
+          this.entityIdMaps.get(structureType)!.set(currentCount, structure.entityId);
+        }
+      });
+
+      models.forEach((model) => model.needsUpdate());
     }
 
     const labelsToRemove: ID[] = [];
@@ -591,49 +650,51 @@ export class StructureManager {
   private addEntityIdLabel(structure: StructureInfo, position: Vector3) {
     console.log("[ADD ENTITY ID LABEL]", { ...structure });
     console.log("[ADD ENTITY ID LABEL] isMine:", structure.isMine, "owner.address:", structure.owner.address);
-    const labelDiv = createStructureLabel(structure, this.currentCameraView);
+    const { label } = this.labelPool.acquire(() => {
+      const element = createStructureLabel(structure, this.currentCameraView);
+      const cssLabel = new CSS2DObject(element);
+      cssLabel.userData.baseRenderOrder = cssLabel.renderOrder;
+      return cssLabel;
+    });
 
-    const label = new CSS2DObject(labelDiv);
     label.position.copy(position);
     label.position.y += 2;
-    // Store entityId in userData for identification
     label.userData.entityId = structure.entityId;
 
-    // Store original renderOrder
-    const originalRenderOrder = label.renderOrder;
-
-    // Set renderOrder to Infinity on hover
-    labelDiv.addEventListener("mouseenter", () => {
-      label.renderOrder = Infinity;
-    });
-
-    // Restore original renderOrder when mouse leaves
-    labelDiv.addEventListener("mouseleave", () => {
-      label.renderOrder = originalRenderOrder;
-    });
+    this.configureStructureLabelInteractions(label);
 
     this.entityIdLabels.set(structure.entityId, label);
     this.labelsGroup.add(label);
+    this.updateStructureLabelData(structure.entityId, structure, label);
   }
 
   private removeEntityIdLabel(entityId: ID) {
     const label = this.entityIdLabels.get(entityId);
     if (label) {
       this.labelsGroup.remove(label);
-      if (label.element && label.element.parentNode) {
-        label.element.parentNode.removeChild(label.element);
-      }
+      this.labelPool.release(label);
       this.entityIdLabels.delete(entityId);
     }
+  }
+
+  private configureStructureLabelInteractions(label: CSS2DObject): void {
+    const element = label.element as HTMLElement;
+    const baseRenderOrder = (label.userData.baseRenderOrder as number | undefined) ?? label.renderOrder;
+    label.userData.baseRenderOrder = baseRenderOrder;
+
+    element.onmouseenter = () => {
+      label.renderOrder = Infinity;
+    };
+
+    element.onmouseleave = () => {
+      label.renderOrder = baseRenderOrder;
+    };
   }
 
   public removeLabelsFromScene() {
     this.entityIdLabels.forEach((label, _entityId) => {
       this.labelsGroup.remove(label);
-      // Dispose of the label's DOM element
-      if (label.element && label.element.parentNode) {
-        label.element.parentNode.removeChild(label.element);
-      }
+      this.labelPool.release(label);
     });
     // Clear the labels map after removing all labels
     this.entityIdLabels.clear();
@@ -651,7 +712,6 @@ export class StructureManager {
     this.entityIdLabels.forEach((label, labelEntityId) => {
       if (labelEntityId !== entityId) {
         this.labelsGroup.remove(label);
-        // Dispose of the label's DOM element
         if (label.element && label.element.parentNode) {
           label.element.parentNode.removeChild(label.element);
         }
@@ -663,6 +723,35 @@ export class StructureManager {
     // Just update visible structures - this will handle labels appropriately
     // without destroying existing labels and their live data
     this.updateVisibleStructures();
+  }
+
+  public showLabel(entityId: ID): void {
+    const structure = this.structures.getStructureByEntityId(entityId);
+    if (!structure) {
+      return;
+    }
+
+    const position = getWorldPositionForHex(structure.hexCoords);
+    position.y += 0.05;
+
+    const existingLabel = this.entityIdLabels.get(entityId);
+    if (existingLabel) {
+      const newPosition = getWorldPositionForHex(structure.hexCoords);
+      newPosition.y += 2;
+      existingLabel.position.copy(newPosition);
+      this.updateStructureLabelData(entityId, structure, existingLabel);
+      return;
+    }
+
+    this.addEntityIdLabel(structure, position);
+  }
+
+  public hideLabel(entityId: ID): void {
+    this.removeEntityIdLabel(entityId);
+  }
+
+  public hideAllLabels(): void {
+    Array.from(this.entityIdLabels.keys()).forEach((structureId) => this.removeEntityIdLabel(structureId));
   }
 
   // Relic effect management methods

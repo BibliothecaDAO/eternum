@@ -112,9 +112,18 @@ export const getConfigFromTorii = async <S extends Schema>(
     "s1_eternum-AddressName",
     "s1_eternum-PlayerRegisteredPoints",
     "s1_eternum-BlitzRealmPlayerRegister",
+    "s1_eternum-BlitzEntryTokenRegister",
+    // Blitz prize models (single key)
+    "s1_eternum-PlayersRankTrial",
+    "s1_eternum-PlayersRankFinal",
   ];
 
-  const twoKeyConfigModels = ["s1_eternum-ResourceList"];
+  const twoKeyConfigModels = [
+    "s1_eternum-ResourceList",
+    // Blitz prize models (two keys)
+    "s1_eternum-PlayerRank",
+    "s1_eternum-RankPrize",
+  ];
 
   const configModels = [...oneKeyConfigModels, ...twoKeyConfigModels];
   // todo: only 1 undefined clause variable len

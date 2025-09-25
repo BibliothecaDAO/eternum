@@ -8,6 +8,7 @@ import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { GuildMembers, Guilds, PlayersPanel } from "@/ui/features/social";
 import { ExpandableOSWindow, leaderboard } from "@/ui/features/world";
+import { PrizePanel } from "@/ui/features/prize";
 import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { getIsBlitz, getPlayerInfo, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo, usePlayers } from "@bibliothecadao/react";
@@ -148,6 +149,16 @@ export const Social = () => {
         ) : (
           <GuildMembers players={playerInfo} viewPlayerInfo={viewPlayerInfo} setIsExpanded={setIsExpanded} />
         ),
+      },
+      {
+        key: "Blitz Prize",
+        label: (
+          <div className="flex items-center gap-2">
+            <span>Blitz Prize</span>
+          </div>
+        ),
+        component: <PrizePanel />,
+        expandedContent: null,
       },
     ],
     [

@@ -164,6 +164,7 @@ export const createOwnerDisplayElement = (options: OwnerDisplayOptions): HTMLEle
 
   const container = document.createElement("div");
   container.classList.add("flex", "items-center", "truncate", "gap-1");
+  container.setAttribute("data-component", "owner");
 
   // Create name element
   const displayName = owner.ownerName || "";
@@ -346,7 +347,7 @@ export const createGuardArmyDisplay = (
   guardArmies: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>,
 ): HTMLElement => {
   const container = document.createElement("div");
-  container.classList.add("flex", "flex-row", "gap-1", "text-xxs", "overflow-x-auto", "text-gray-400");
+  container.classList.add("flex", "flex-row", "gap-1", "text-xxs", "overflow-x-auto");
   container.setAttribute("data-component", "guard-armies");
 
   if (guardArmies.length === 0) {
@@ -420,7 +421,7 @@ export const createProductionDisplay = (
   if (activeProductions.length === 0) {
     const noProduction = document.createElement("span");
     noProduction.textContent = "No Active Production";
-    noProduction.classList.add("text-gray-400", "italic");
+    noProduction.classList.add("italic");
     container.appendChild(noProduction);
     return container;
   }

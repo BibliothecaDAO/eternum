@@ -305,7 +305,7 @@ export const UnifiedArmyCreationModal = ({
                             className={clsx(
                               "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 shadow-lg",
                               "transition-all duration-300 bg-brown",
-                              available > 0 ? getTierStyle(`T${tier}`) : "bg-gray/50 text-gray-400 border-gray-400",
+                              available > 0 ? getTierStyle(`T${tier}`) : "bg-gray/50  border-gray-400",
                               isSelected && "scale-110 shadow-gold/50",
                             )}
                           >
@@ -332,7 +332,7 @@ export const UnifiedArmyCreationModal = ({
                           <div
                             className={clsx(
                               "text-center text-base font-bold transition-colors duration-300",
-                              isSelected ? "text-gold" : available > 0 ? "text-gold/90" : "text-gray-400",
+                              isSelected ? "text-gold" : available > 0 ? "text-gold/90" : "",
                             )}
                           >
                             {available > 0

@@ -1,5 +1,6 @@
 import { UnifiedArmyCreationDrawer } from "@/features/armies/ui/unified-army-creation-drawer";
 import { useStore } from "@/shared/store";
+import { AttackDrawer } from "@/widgets/attack-drawer";
 import { ChestDrawer } from "@/widgets/chest-drawer/ui/chest-drawer";
 import { HexEntityDetailsDrawer } from "@/widgets/hex-entity-details-drawer";
 import { TransferDrawer } from "@/widgets/transfer-drawer";
@@ -21,34 +22,45 @@ export function WorldmapPage() {
     isArmyCreationDrawerOpen,
     armyCreationDrawerData,
     closeArmyCreationDrawer,
+    isAttackDrawerOpen,
+    attackDrawerData,
+    closeAttackDrawer,
   } = useStore();
   const [isCanvasReady, setIsCanvasReady] = useState(false);
   const [hexDrawerOpen, setHexDrawerOpen] = useState(false);
 
-  const handleSceneChange = (sceneId: string) => {
+  const handleSceneChange = async (sceneId: string) => {
     setCurrentScene(sceneId);
     canvasRef.current?.switchScene(sceneId);
 
     if (sceneId === "worldmap" && selectedRealm) {
-      canvasRef.current?.moveCameraToStructure(selectedRealm.position);
+      // Wait for worldmap to be fully initialized before moving camera
+      await canvasRef.current?.waitForWorldmapInitialization();
+      await canvasRef.current?.moveCameraToStructure(selectedRealm.position);
     }
   };
 
-  const handleCanvasReady = () => {
+  const handleCanvasReady = async () => {
     setIsCanvasReady(true);
 
     // Move camera to selected realm after canvas is ready (hot reload case)
     if (selectedRealm && currentScene === "worldmap") {
-      setTimeout(() => {
-        canvasRef.current?.moveCameraToStructure(selectedRealm.position);
-      }, 100);
+      // Wait for worldmap to be fully initialized before moving camera
+      await canvasRef.current?.waitForWorldmapInitialization();
+      await canvasRef.current?.moveCameraToStructure(selectedRealm.position);
     }
   };
 
   useEffect(() => {
-    if (selectedRealm && canvasRef.current && currentScene === "worldmap" && isCanvasReady) {
-      canvasRef.current.moveCameraToStructure(selectedRealm.position);
-    }
+    const moveCameraToRealm = async () => {
+      if (selectedRealm && canvasRef.current && currentScene === "worldmap" && isCanvasReady) {
+        // Wait for worldmap to be fully initialized before moving camera
+        await canvasRef.current.waitForWorldmapInitialization();
+        await canvasRef.current.moveCameraToStructure(selectedRealm.position);
+      }
+    };
+
+    moveCameraToRealm();
   }, [selectedRealm, currentScene, isCanvasReady]);
 
   // Open hex drawer only when an object is double-clicked
@@ -130,6 +142,16 @@ export function WorldmapPage() {
 
       {/* Transfer Drawer */}
       <TransferDrawer />
+
+      {/* Attack Drawer */}
+      {isAttackDrawerOpen && attackDrawerData.attackerEntityId && attackDrawerData.targetHex && (
+        <AttackDrawer
+          open={isAttackDrawerOpen}
+          onOpenChange={(open) => !open && closeAttackDrawer()}
+          attackerEntityId={attackDrawerData.attackerEntityId}
+          targetHex={attackDrawerData.targetHex}
+        />
+      )}
     </div>
   );
 }

@@ -66,6 +66,7 @@ import { QuestManager } from "../managers/quest-manager";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { SceneName } from "../types/common";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
+import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
 import { MatrixPool } from "../utils/matrix-pool";
 import { MemoryMonitor } from "../utils/memory-monitor";
 import {
@@ -123,8 +124,16 @@ export default class WorldmapScene extends HexagonScene {
   private followCameraTimeout: ReturnType<typeof setTimeout> | null = null;
   private notifiedBattleEvents = new Set<string>();
   private previouslyHoveredHex: HexPosition | null = null;
-  private cachedMatrices: Map<string, Map<string, { matrices: InstancedBufferAttribute; count: number }>> = new Map();
+  private cachedMatrices: Map<string, Map<string, { matrices: InstancedBufferAttribute | null; count: number }>> =
+    new Map();
+  private cachedMatrixOrder: string[] = [];
+  private readonly maxMatrixCacheSize = 6;
   private updateHexagonGridPromise: Promise<void> | null = null;
+  private hexGridFrameHandle: number | null = null;
+  private currentHexGridTask: symbol | null = null;
+  private readonly hexGridFrameBudgetMs = 6.5;
+  private readonly hexGridMinBatch = 120;
+  private readonly hexGridMaxBatch = 900;
   private travelEffects: Map<string, () => void> = new Map();
 
   // Pending relic effects store - holds relic effects for entities that aren't loaded yet
@@ -289,10 +298,26 @@ export default class WorldmapScene extends HexagonScene {
     // Initialize the hover label manager
     this.hoverLabelManager = new HoverLabelManager(
       {
-        army: this.armyLabelsGroup,
-        structure: this.structureLabelsGroup,
-        quest: this.questLabelsGroup,
-        chest: this.chestLabelsGroup,
+        army: {
+          show: (entityId: ID) => this.armyManager.showLabel(entityId),
+          hide: (entityId: ID) => this.armyManager.hideLabel(entityId),
+          hideAll: () => this.armyManager.hideAllLabels(),
+        },
+        structure: {
+          show: (entityId: ID) => this.structureManager.showLabel(entityId),
+          hide: (entityId: ID) => this.structureManager.hideLabel(entityId),
+          hideAll: () => this.structureManager.hideAllLabels(),
+        },
+        quest: {
+          show: (entityId: ID) => this.questManager.showLabel(entityId),
+          hide: (entityId: ID) => this.questManager.hideLabel(entityId),
+          hideAll: () => this.questManager.hideAllLabels(),
+        },
+        chest: {
+          show: (entityId: ID) => this.chestManager.showLabel(entityId),
+          hide: (entityId: ID) => this.chestManager.hideLabel(entityId),
+          hideAll: () => this.chestManager.hideAllLabels(),
+        },
       },
       (hexCoords: HexPosition) => this.getHexagonEntity(hexCoords),
       this.currentCameraView,
@@ -1234,6 +1259,10 @@ export default class WorldmapScene extends HexagonScene {
     this.controls.enableZoom = useUIStore.getState().enableMapZoom;
     this.controls.zoomToCursor = false;
     this.highlightHexManager.setYOffset(0.025);
+
+    // Clear any cached chunk data before moving the camera, so subsequent loads rebuild fresh state
+    this.clearTileEntityCache();
+
     this.moveCameraToURLLocation();
     // this.changeCameraView(2);
     this.minimap.moveMinimapCenterToUrlLocation();
@@ -1262,9 +1291,11 @@ export default class WorldmapScene extends HexagonScene {
     this.structureManager.showLabels();
     this.questManager.addLabelsToScene();
     this.chestManager.addLabelsToScene();
-    this.clearTileEntityCache();
 
     this.setupCameraZoomHandler();
+
+    // Ensure interactive hexes/chunks are initialized now that managers exist and caches are reset
+    this.updateVisibleChunks(true).catch((error) => console.error("Failed to update visible chunks:", error));
   }
 
   onSwitchOff() {
@@ -1534,8 +1565,10 @@ export default class WorldmapScene extends HexagonScene {
 
     dummy.updateMatrix();
 
-    const renderedChunkCenterRow = parseInt(this.currentChunk.split(",")[0]);
-    const renderedChunkCenterCol = parseInt(this.currentChunk.split(",")[1]);
+    const renderedChunkStartRow = parseInt(this.currentChunk.split(",")[0]);
+    const renderedChunkStartCol = parseInt(this.currentChunk.split(",")[1]);
+    const chunkCenterRow = renderedChunkStartRow + this.chunkSize / 2;
+    const chunkCenterCol = renderedChunkStartCol + this.chunkSize / 2;
 
     this.invalidateAllChunkCachesContainingHex(col, row);
 
@@ -1548,12 +1581,7 @@ export default class WorldmapScene extends HexagonScene {
       // Update which hexes are visible in the current chunk
       const chunkWidth = this.renderChunkSize.width;
       const chunkHeight = this.renderChunkSize.height;
-      this.interactiveHexManager.updateVisibleHexes(
-        renderedChunkCenterRow,
-        renderedChunkCenterCol,
-        chunkWidth,
-        chunkHeight,
-      );
+      this.interactiveHexManager.updateVisibleHexes(chunkCenterRow, chunkCenterCol, chunkWidth, chunkHeight);
 
       await Promise.all(this.modelLoadPromises);
       const biomeVariant = getBiomeVariant(biome, col, row);
@@ -1564,7 +1592,7 @@ export default class WorldmapScene extends HexagonScene {
       hexMesh.needsUpdate();
 
       // Cache the updated matrices for the chunk
-      this.cacheMatricesForChunk(renderedChunkCenterRow, renderedChunkCenterCol);
+      this.cacheMatricesForChunk(renderedChunkStartRow, renderedChunkStartCol);
     }
   }
 
@@ -1657,34 +1685,59 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   clearCache() {
+    for (const chunkKey of this.cachedMatrices.keys()) {
+      this.disposeCachedMatrices(chunkKey);
+    }
     this.cachedMatrices.clear();
+    this.cachedMatrixOrder = [];
+    MatrixPool.getInstance().clear();
+    InstancedMatrixAttributePool.getInstance().clear();
   }
 
-  private computeInteractiveHexes(startRow: number, startCol: number, rows: number, cols: number) {
+  private computeInteractiveHexes(startRow: number, startCol: number, width: number, height: number) {
     // Instead of clearing and recomputing all hexes, just update which ones are visible
-    this.interactiveHexManager.updateVisibleHexes(startRow, startCol, rows, cols);
+    const chunkCenterRow = startRow + this.chunkSize / 2;
+    const chunkCenterCol = startCol + this.chunkSize / 2;
+    this.interactiveHexManager.updateVisibleHexes(chunkCenterRow, chunkCenterCol, width, height);
   }
 
   async updateHexagonGrid(startRow: number, startCol: number, rows: number, cols: number) {
     const memoryMonitor = (window as any).__gameRenderer?.memoryMonitor;
     const preUpdateStats = memoryMonitor?.getCurrentStats(`hex-grid-update-${startRow}-${startCol}`);
 
+    const matrixPoolInstance = MatrixPool.getInstance();
+    const totalHexes = rows * cols;
+    matrixPoolInstance.ensureCapacity(totalHexes + 512);
+
     await Promise.all(this.modelLoadPromises);
     if (this.applyCachedMatricesForChunk(startRow, startCol)) {
-      this.computeInteractiveHexes(startRow, startCol, rows, cols);
+      this.computeInteractiveHexes(startRow, startCol, cols, rows);
 
-      // Track memory usage for cached operation
       if (memoryMonitor && preUpdateStats) {
         const postStats = memoryMonitor.getCurrentStats(`hex-grid-cached-${startRow}-${startCol}`);
         const memoryDelta = postStats.heapUsedMB - preUpdateStats.heapUsedMB;
         if (Math.abs(memoryDelta) > 10) {
+          // Keep hook for future instrumentation
         }
       }
+      this.updateHexagonGridPromise = null;
       return;
     }
 
+    const taskToken = Symbol("hex-grid-task");
+    this.currentHexGridTask = taskToken;
+    if (this.hexGridFrameHandle !== null) {
+      cancelAnimationFrame(this.hexGridFrameHandle);
+      this.hexGridFrameHandle = null;
+    }
+
+    const halfRows = rows / 2;
+    const halfCols = cols / 2;
+    const minBatch = Math.min(this.hexGridMinBatch, totalHexes);
+    const maxBatch = Math.max(minBatch, Math.min(this.hexGridMaxBatch, totalHexes));
+    const frameBudget = this.hexGridFrameBudgetMs;
+
     this.updateHexagonGridPromise = new Promise((resolve) => {
-      // OPTIMIZED: Use arrays but avoid Matrix4.clone() calls
       const biomeHexes: Record<BiomeType | "Outline" | string, Matrix4[]> = {
         None: [],
         Ocean: [],
@@ -1709,157 +1762,214 @@ export default class WorldmapScene extends HexagonScene {
         Outline: [],
       };
 
-      const batchSize = 600;
       let currentIndex = 0;
+      let resolved = false;
 
-      // Reusable objects (zero allocations in loop)
       const tempMatrix = new Matrix4();
       const tempPosition = new Vector3();
       const rotationMatrix = new Matrix4();
+      const matrixPool = matrixPoolInstance;
+      const hexRadius = HEX_SIZE;
+      const hexHeight = hexRadius * 2;
+      const hexWidth = Math.sqrt(3) * hexRadius;
+      const vertDist = hexHeight * 0.75;
+      const horizDist = hexWidth;
 
       this.computeTileEntities(this.currentChunk);
 
-      const processBatch = async () => {
-        const endIndex = Math.min(currentIndex + batchSize, rows * cols);
-
-        for (let i = currentIndex; i < endIndex; i++) {
-          const row = Math.floor(i / cols) - rows / 2;
-          const col = (i % cols) - cols / 2;
-
-          const globalRow = startRow + row;
-          const globalCol = startCol + col;
-
-          // OPTIMIZED: Reuse tempPosition instead of creating new vectors
-          const pos = getWorldPositionForHex({ row: globalRow, col: globalCol });
-          tempPosition.copy(pos);
-
-          const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
-          const isQuest = this.questManager.questHexCoords.get(globalCol)?.has(globalRow) || false;
-          const isExplored = this.exploredTiles.get(globalCol)?.get(globalRow) || false;
-
-          // Set scale
-          if (isStructure || isQuest) {
-            tempMatrix.makeScale(0, 0, 0);
-          } else {
-            tempMatrix.makeScale(HEX_SIZE, HEX_SIZE, HEX_SIZE);
-          }
-
-          // Make hex interactive
-          this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
-
-          // Apply rotation and position
-          const rotationSeed = this.hashCoordinates(startCol + col, startRow + row);
-          const rotationIndex = Math.floor(rotationSeed * 6);
-          const randomRotation = (rotationIndex * Math.PI) / 3;
-
-          if (!IS_FLAT_MODE) {
-            tempPosition.y += 0.05;
-            rotationMatrix.makeRotationY(randomRotation);
-            tempMatrix.multiply(rotationMatrix);
-          } else {
-            tempPosition.y += 0.05;
-          }
-
-          // Determine biome and adjust position if needed
-          if (isExplored) {
-            const biome = isExplored as BiomeType;
-            const biomeVariant = getBiomeVariant(biome, globalCol, globalRow);
-            tempMatrix.setPosition(tempPosition);
-
-            // OPTIMIZED: Use matrix pool instead of allocating
-            const pooledMatrix = MatrixPool.getInstance().getMatrix();
-            pooledMatrix.copy(tempMatrix);
-            biomeHexes[biomeVariant].push(pooledMatrix);
-          } else {
-            tempPosition.y = 0.01;
-            tempMatrix.setPosition(tempPosition);
-
-            // OPTIMIZED: Use matrix pool instead of allocating
-            const pooledMatrix = MatrixPool.getInstance().getMatrix();
-            pooledMatrix.copy(tempMatrix);
-            biomeHexes["Outline"].push(pooledMatrix);
-          }
+      const cleanupTask = () => {
+        if (this.hexGridFrameHandle !== null) {
+          cancelAnimationFrame(this.hexGridFrameHandle);
+          this.hexGridFrameHandle = null;
         }
+        if (this.currentHexGridTask === taskToken) {
+          this.currentHexGridTask = null;
+        }
+      };
 
-        currentIndex = endIndex;
-        if (currentIndex < rows * cols) {
-          requestAnimationFrame(processBatch);
-        } else {
-          // Apply matrices using existing proven API
-          for (const [biome, matrices] of Object.entries(biomeHexes)) {
-            const hexMesh = this.biomeModels.get(biome as any);
+      const releaseAllMatrices = () => {
+        let totalReleased = 0;
+        Object.values(biomeHexes).forEach((matrices) => {
+          matrices.forEach((matrix) => matrixPool.releaseMatrix(matrix));
+          totalReleased += matrices.length;
+        });
+        (Object.keys(biomeHexes) as Array<keyof typeof biomeHexes>).forEach((key) => {
+          biomeHexes[key].length = 0;
+        });
+        return totalReleased;
+      };
 
-            if (!hexMesh) {
-              if (matrices.length > 0) {
-                console.error(`❌ Missing biome model for: ${biome}`);
-                console.log(`Available biome models:`, Array.from(this.biomeModels.keys()));
-              }
-              continue;
-            }
-
-            if (matrices.length === 0) {
-              hexMesh.setCount(0);
-              continue;
-            }
-
-            console.log(`✅ Applied ${matrices.length} ${biome} hexes`);
-
-            // Use existing proven API
-            matrices.forEach((matrix, index) => {
-              hexMesh.setMatrixAt(index, matrix);
-            });
-            hexMesh.setCount(matrices.length);
-            hexMesh.needsUpdate();
-          }
-
-          this.cacheMatricesForChunk(startRow, startCol);
-          this.interactiveHexManager.updateVisibleHexes(startRow, startCol, rows, cols);
-
-          // CRITICAL: Release pooled matrices back to pool after processing
-          const matrixPool = MatrixPool.getInstance();
-          let totalReleasedMatrices = 0;
-          Object.values(biomeHexes).forEach((matrices) => {
-            matrices.forEach((matrix) => matrixPool.releaseMatrix(matrix));
-            totalReleasedMatrices += matrices.length;
-          });
-          console.log(`🔄 Released ${totalReleasedMatrices} matrices back to pool`);
-
-          // Track memory usage
-          if (memoryMonitor && preUpdateStats) {
-            const postStats = memoryMonitor.getCurrentStats(`hex-grid-generated-${startRow}-${startCol}`);
-            const memoryDelta = postStats.heapUsedMB - preUpdateStats.heapUsedMB;
-            // Log matrix pool stats for optimization tracking
-            const poolStats = MatrixPool.getInstance().getStats();
-            console.log(
-              `[HEX GRID] OPTIMIZED generation memory impact: ${memoryDelta.toFixed(1)}MB (${rows}x${cols} hexes)`,
-            );
-            console.log(
-              `📊 Matrix Pool Stats: ${poolStats.available} available, ${poolStats.inUse} in use, ${poolStats.memoryEstimateMB.toFixed(1)}MB pool memory`,
-            );
-
-            const biomeDistribution = Object.fromEntries(
-              Object.entries(biomeHexes)
-                .map(([k, v]) => [k, v.length])
-                .filter(([k, v]) => v > "0"),
-            );
-            console.log(`📊 Biome distribution:`, biomeDistribution);
-
-            if (memoryDelta > 15) {
-              // Adjusted threshold
-              console.warn(`[HEX GRID] Unexpected memory usage: ${memoryDelta.toFixed(1)}MB`);
-            } else {
-              console.log(`✅ [HEX GRID] Memory optimization successful! Saved ~${(82 - memoryDelta).toFixed(1)}MB`);
-            }
-          }
-
+      const resolveOnce = () => {
+        if (!resolved) {
+          resolved = true;
+          cleanupTask();
           resolve();
         }
       };
 
-      Promise.all(this.modelLoadPromises).then(() => {
-        requestAnimationFrame(processBatch);
-      });
+      const abortTask = () => {
+        const released = releaseAllMatrices();
+        if (released > 0) {
+          console.log(`🔄 Released ${released} matrices back to pool (aborted)`);
+        }
+        resolveOnce();
+      };
+
+      const finalizeSuccess = () => {
+        for (const [biome, matrices] of Object.entries(biomeHexes)) {
+          const hexMesh = this.biomeModels.get(biome as any);
+
+          if (!hexMesh) {
+            if (matrices.length > 0) {
+              console.error(`❌ Missing biome model for: ${biome}`);
+              console.log(`Available biome models:`, Array.from(this.biomeModels.keys()));
+            }
+            continue;
+          }
+
+          if (matrices.length === 0) {
+            hexMesh.setCount(0);
+            continue;
+          }
+
+          console.log(`✅ Applied ${matrices.length} ${biome} hexes`);
+
+          matrices.forEach((matrix, index) => {
+            hexMesh.setMatrixAt(index, matrix);
+          });
+          hexMesh.setCount(matrices.length);
+          hexMesh.needsUpdate();
+        }
+
+        this.cacheMatricesForChunk(startRow, startCol);
+        const chunkCenterRow = startRow + this.chunkSize / 2;
+        const chunkCenterCol = startCol + this.chunkSize / 2;
+        this.interactiveHexManager.updateVisibleHexes(chunkCenterRow, chunkCenterCol, cols, rows);
+
+        const biomeCountsSnapshot = Object.fromEntries(
+          Object.entries(biomeHexes)
+            .map(([key, value]) => [key, value.length])
+            .filter(([, count]) => Number(count) > 0),
+        );
+
+        const released = releaseAllMatrices();
+        console.log(`🔄 Released ${released} matrices back to pool`);
+
+        if (memoryMonitor && preUpdateStats) {
+          const postStats = memoryMonitor.getCurrentStats(`hex-grid-generated-${startRow}-${startCol}`);
+          const memoryDelta = postStats.heapUsedMB - preUpdateStats.heapUsedMB;
+          const poolStats = matrixPool.getStats();
+          console.log(
+            `[HEX GRID] OPTIMIZED generation memory impact: ${memoryDelta.toFixed(1)}MB (${rows}x${cols} hexes)`,
+          );
+          console.log(
+            `📊 Matrix Pool Stats: ${poolStats.available} available, ${poolStats.inUse} in use, ${poolStats.memoryEstimateMB.toFixed(1)}MB pool memory`,
+          );
+
+          console.log(`📊 Biome distribution:`, biomeCountsSnapshot);
+
+          if (memoryDelta > 15) {
+            console.warn(`[HEX GRID] Unexpected memory usage: ${memoryDelta.toFixed(1)}MB`);
+          } else {
+            console.log(`✅ [HEX GRID] Memory optimization successful! Saved ~${(82 - memoryDelta).toFixed(1)}MB`);
+          }
+        }
+
+        resolveOnce();
+      };
+
+      const processCell = (index: number) => {
+        const rowOffset = Math.floor(index / cols) - halfRows;
+        const colOffset = (index % cols) - halfCols;
+
+        const globalRow = startRow + rowOffset;
+        const globalCol = startCol + colOffset;
+
+        const rowOffsetValue = ((globalRow % 2) * Math.sign(globalRow) * horizDist) / 2;
+        const baseX = globalCol * horizDist - rowOffsetValue;
+        const baseZ = globalRow * vertDist;
+        tempPosition.set(baseX, 0, baseZ);
+
+        const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
+        const isQuest = this.questManager.questHexCoords.get(globalCol)?.has(globalRow) || false;
+        const isExplored = this.exploredTiles.get(globalCol)?.get(globalRow) || false;
+
+        if (isStructure || isQuest) {
+          tempMatrix.makeScale(0, 0, 0);
+        } else {
+          tempMatrix.makeScale(HEX_SIZE, HEX_SIZE, HEX_SIZE);
+        }
+
+        this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
+
+        const rotationSeed = this.hashCoordinates(startCol + colOffset, startRow + rowOffset);
+        const rotationIndex = Math.floor(rotationSeed * 6);
+        const randomRotation = (rotationIndex * Math.PI) / 3;
+
+        if (!IS_FLAT_MODE) {
+          tempPosition.y += 0.05;
+          rotationMatrix.makeRotationY(randomRotation);
+          tempMatrix.multiply(rotationMatrix);
+        } else {
+          tempPosition.y += 0.05;
+        }
+
+        if (isExplored) {
+          const biome = isExplored as BiomeType;
+          const biomeVariant = getBiomeVariant(biome, globalCol, globalRow);
+          tempMatrix.setPosition(tempPosition);
+
+          const pooledMatrix = matrixPool.getMatrix();
+          pooledMatrix.copy(tempMatrix);
+          biomeHexes[biomeVariant].push(pooledMatrix);
+        } else {
+          tempPosition.y = 0.01;
+          tempMatrix.setPosition(tempPosition);
+
+          const pooledMatrix = matrixPool.getMatrix();
+          pooledMatrix.copy(tempMatrix);
+          biomeHexes.Outline.push(pooledMatrix);
+        }
+      };
+
+      const processFrame = () => {
+        if (this.currentHexGridTask !== taskToken) {
+          abortTask();
+          return;
+        }
+
+        const frameStart = performance.now();
+        let processedThisFrame = 0;
+
+        while (currentIndex < totalHexes) {
+          processCell(currentIndex);
+          currentIndex += 1;
+          processedThisFrame += 1;
+
+          if (currentIndex >= totalHexes) {
+            break;
+          }
+
+          if (processedThisFrame >= minBatch) {
+            const elapsed = performance.now() - frameStart;
+            if (elapsed >= frameBudget || processedThisFrame >= maxBatch) {
+              break;
+            }
+          }
+        }
+
+        if (currentIndex < totalHexes) {
+          this.hexGridFrameHandle = requestAnimationFrame(processFrame);
+        } else {
+          finalizeSuccess();
+        }
+      };
+
+      this.hexGridFrameHandle = requestAnimationFrame(processFrame);
     });
+
+    await this.updateHexagonGridPromise;
+    this.updateHexagonGridPromise = null;
   }
 
   private async computeTileEntities(chunkKey: string): Promise<void> {
@@ -1931,30 +2041,92 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
+  private touchMatrixCache(chunkKey: string) {
+    const existingIndex = this.cachedMatrixOrder.indexOf(chunkKey);
+    if (existingIndex !== -1) {
+      this.cachedMatrixOrder.splice(existingIndex, 1);
+    }
+    this.cachedMatrixOrder.push(chunkKey);
+  }
+
+  private disposeCachedMatrices(chunkKey: string) {
+    const cached = this.cachedMatrices.get(chunkKey);
+    if (!cached) return;
+
+    cached.forEach(({ matrices }) => {
+      if (matrices) {
+        this.releaseInstancedAttribute(matrices);
+      }
+    });
+  }
+
+  private releaseInstancedAttribute(attribute: InstancedBufferAttribute) {
+    InstancedMatrixAttributePool.getInstance().release(attribute);
+  }
+
+  private ensureMatrixCacheLimit() {
+    while (this.cachedMatrixOrder.length > this.maxMatrixCacheSize) {
+      const oldestKey = this.cachedMatrixOrder.shift();
+      if (!oldestKey) {
+        break;
+      }
+      this.disposeCachedMatrices(oldestKey);
+      this.cachedMatrices.delete(oldestKey);
+    }
+  }
+
   private cacheMatricesForChunk(startRow: number, startCol: number) {
     const chunkKey = `${startRow},${startCol}`;
-    for (const [biome, model] of this.biomeModels) {
-      const { matrices, count } = model.getMatricesAndCount();
-      if (!this.cachedMatrices.has(chunkKey)) {
-        this.cachedMatrices.set(chunkKey, new Map());
-      }
-      this.cachedMatrices.get(chunkKey)!.set(biome, { matrices: matrices as any, count });
+    if (!this.cachedMatrices.has(chunkKey)) {
+      this.cachedMatrices.set(chunkKey, new Map());
     }
+
+    const cachedChunk = this.cachedMatrices.get(chunkKey)!;
+
+    for (const [biome, model] of this.biomeModels) {
+      const existing = cachedChunk.get(biome);
+      if (existing) {
+        if (existing.matrices) {
+          this.releaseInstancedAttribute(existing.matrices);
+        }
+      }
+      const { matrices, count } = model.getMatricesAndCount();
+      if (count === 0) {
+        this.releaseInstancedAttribute(matrices);
+        cachedChunk.set(biome, { matrices: null, count });
+        continue;
+      }
+      cachedChunk.set(biome, { matrices, count });
+    }
+
+    this.touchMatrixCache(chunkKey);
+    this.ensureMatrixCacheLimit();
   }
 
   removeCachedMatricesForChunk(startRow: number, startCol: number) {
     const chunkKey = `${startRow},${startCol}`;
+    this.disposeCachedMatrices(chunkKey);
     this.cachedMatrices.delete(chunkKey);
+    const index = this.cachedMatrixOrder.indexOf(chunkKey);
+    if (index !== -1) {
+      this.cachedMatrixOrder.splice(index, 1);
+    }
   }
 
   private applyCachedMatricesForChunk(startRow: number, startCol: number) {
     const chunkKey = `${startRow},${startCol}`;
     const cachedMatrices = this.cachedMatrices.get(chunkKey);
     if (cachedMatrices) {
+      this.touchMatrixCache(chunkKey);
       for (const [biome, { matrices, count }] of cachedMatrices) {
         const hexMesh = this.biomeModels.get(biome as any)!;
-        hexMesh.setMatricesAndCount(matrices, count);
+        if (matrices) {
+          hexMesh.setMatricesAndCount(matrices, count);
+        } else {
+          hexMesh.setCount(count);
+        }
       }
+      this.ensureMatrixCacheLimit();
       return true;
     }
     return false;
@@ -2023,9 +2195,11 @@ export default class WorldmapScene extends HexagonScene {
     await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
 
     // Update which interactive hexes are visible in the new chunk
+    const chunkCenterRow = startRow + this.chunkSize / 2;
+    const chunkCenterCol = startCol + this.chunkSize / 2;
     this.interactiveHexManager.updateVisibleHexes(
-      startRow,
-      startCol,
+      chunkCenterRow,
+      chunkCenterCol,
       this.renderChunkSize.width,
       this.renderChunkSize.height,
     );
@@ -2065,6 +2239,7 @@ export default class WorldmapScene extends HexagonScene {
   public clearTileEntityCache() {
     this.fetchedChunks.clear();
     this.pendingChunks.clear();
+    this.clearCache();
     // Also clear the interactive hexes when clearing the entire cache
     this.interactiveHexManager.clearHexes();
   }
@@ -2257,11 +2432,18 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   destroy() {
+    if (this.hexGridFrameHandle !== null) {
+      cancelAnimationFrame(this.hexGridFrameHandle);
+      this.hexGridFrameHandle = null;
+    }
+    this.currentHexGridTask = null;
+
     this.resourceFXManager.destroy();
     this.stopRelicValidationTimer();
+    this.clearCache();
 
     // Clean up hover label manager
-    this.hoverLabelManager.destroy();
+    // this.hoverLabelManager.dispose();
 
     // Clean up selection pulse manager
     this.selectionPulseManager.dispose();

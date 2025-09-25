@@ -50,13 +50,13 @@ export const LoadingScreen = ({ backgroundImage }: { backgroundImage: string }) 
           {" "}
           <img src="/images/logos/eternum-loader.png" className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8" />
           {`${statements[currentStatement]}`}
-          <div className="w-full bg-gray-700 rounded-full h-2.5 mt-4">
+          <div className="w-full  rounded-full h-2.5 mt-4">
             <div
               className="bg-gold h-2.5 rounded-full transition-all duration-300"
               style={{ width: `${initialSyncProgress}%` }}
             />
           </div>
-          <div className="text-sm mt-2 text-gray-300">{initialSyncProgress === 100 ? 99 : initialSyncProgress}%</div>
+          <div className="text-sm mt-2 ">{initialSyncProgress === 100 ? 99 : initialSyncProgress}%</div>
         </div>
       </div>
     </OnboardingContainer>
@@ -111,7 +111,7 @@ function TimeUnit({ value, label }: TimeUnitProps) {
   return (
     <div className="flex flex-col">
       <span className="text-4xl font-bold">{value.toString().padStart(2, "0")}</span>
-      <span className="text-sm text-gray-500">{label}</span>
+      <span className="text-sm ">{label}</span>
     </div>
   );
 }

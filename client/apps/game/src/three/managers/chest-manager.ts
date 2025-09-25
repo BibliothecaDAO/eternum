@@ -219,11 +219,12 @@ export class ChestManager {
         position.y += 0.05;
         const { x, y } = chest.hexCoords.getContract();
 
-        // Always recreate the label to ensure it matches current camera view
-        if (this.entityIdLabels.has(chest.entityId)) {
-          this.removeEntityIdLabel(chest.entityId);
+        const existingLabel = this.entityIdLabels.get(chest.entityId);
+        if (existingLabel) {
+          const updatedPosition = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
+          updatedPosition.y += 1.5;
+          existingLabel.position.copy(updatedPosition);
         }
-        this.addEntityIdLabel(chest, position);
 
         this.dummy.position.copy(position);
 
@@ -283,6 +284,34 @@ export class ChestManager {
 
     this.labelsGroup.add(label);
     this.entityIdLabels.set(chest.entityId, label);
+  }
+
+  public showLabel(entityId: ID): void {
+    const chest = this.chests.getChest(entityId);
+    if (!chest) {
+      return;
+    }
+
+    const position = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
+    position.y += 0.05;
+
+    const existingLabel = this.entityIdLabels.get(entityId);
+    if (existingLabel) {
+      const updatedPosition = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
+      updatedPosition.y += 1.5;
+      existingLabel.position.copy(updatedPosition);
+      return;
+    }
+
+    this.addEntityIdLabel(chest, position);
+  }
+
+  public hideLabel(entityId: ID): void {
+    this.removeEntityIdLabel(entityId);
+  }
+
+  public hideAllLabels(): void {
+    Array.from(this.entityIdLabels.keys()).forEach((chestId) => this.removeEntityIdLabel(chestId));
   }
 
   public removeLabelsFromScene(): void {

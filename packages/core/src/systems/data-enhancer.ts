@@ -65,16 +65,13 @@ export class DataEnhancer {
 
     // Fallback: If army owner data is missing but we have structure owner ID, get owner from structure
     if ((!owner.address || owner.address === 0n) && structureOwnerId) {
-      console.log(`[DEBUG] Army ${occupierId} missing owner data, falling back to structure ${structureOwnerId} owner`);
       const structureOwner = await this.getStructureOwner(structureOwnerId);
-      console.log(`[DEBUG] Structure owner lookup result:`, structureOwner);
       if (structureOwner && structureOwner.address) {
         owner = {
           address: structureOwner.address,
           ownerName: structureOwner.ownerName,
           guildName: "",
         };
-        console.log(`[DEBUG] Successfully retrieved owner from structure: ${structureOwner.address}`);
       } else {
         console.warn(`[DEBUG] Structure ${structureOwnerId} owner lookup failed or returned no address`);
       }
@@ -138,15 +135,12 @@ export class DataEnhancer {
   private async getArmyOwnerData(
     armyMapData: ArmyMapData | null,
   ): Promise<{ address: bigint | undefined; ownerName: string; guildName: string }> {
-    console.log(`[DEBUG] getArmyOwnerData called with:`, armyMapData);
-
     const result = {
       address: armyMapData ? BigInt(armyMapData.ownerAddress) : undefined,
       ownerName: armyMapData?.ownerName || "",
       guildName: "",
     };
 
-    console.log(`[DEBUG] Army owner data result:`, result);
     return result;
   }
 
@@ -154,18 +148,22 @@ export class DataEnhancer {
    * Get structure owner address
    */
   async getStructureOwner(structureId: ID): Promise<{ address: bigint | undefined; ownerName: string } | undefined> {
-    console.log(`[DEBUG] getStructureOwner called for structure ${structureId}`);
     const structureMapData = await this.mapDataStore.getStructureByIdAsync(structureId);
-    console.log(`[DEBUG] Structure map data:`, structureMapData);
 
     if (structureMapData) {
       const result = { address: BigInt(structureMapData.ownerAddress), ownerName: structureMapData.ownerName };
-      console.log(`[DEBUG] Returning structure owner:`, result);
       return result;
     } else {
-      console.warn(`[DEBUG] No structure map data found for structure ${structureId}`);
       return undefined;
     }
+  }
+
+  updateStructureOwner(structureId: ID, ownerAddress: bigint | undefined, ownerName: string) {
+    if (ownerAddress === undefined) {
+      return;
+    }
+
+    this.mapDataStore.updateStructureOwner(Number(structureId), ownerAddress, ownerName);
   }
 
   /**

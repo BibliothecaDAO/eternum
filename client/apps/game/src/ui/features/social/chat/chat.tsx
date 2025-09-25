@@ -963,7 +963,7 @@ export function ChatModule() {
                   {/* Users with unread messages */}
                   {usersWithUnreadMessages.length > 0 && (
                     <div>
-                      <div className="px-2 py-1 text-xs font-medium text-gray-400">Unread Messages</div>
+                      <div className="px-2 py-1 text-xs font-medium ">Unread Messages</div>
                       {usersWithUnreadMessages.map((user) => (
                         <UserItem
                           key={user?.id}
@@ -990,7 +990,7 @@ export function ChatModule() {
                   {/* Online Users without unread messages */}
                   {onlineUsersWithoutUnread.length > 0 && (
                     <div>
-                      <div className="px-2 py-1 text-xs font-medium text-gray-400">
+                      <div className="px-2 py-1 text-xs font-medium ">
                         Online Lords{" "}
                         <span className="bg-green-600/60 px-2 py-0.5 text-xs font-medium">{onlineUsersCount}</span>
                       </div>
@@ -1020,7 +1020,7 @@ export function ChatModule() {
                   {/* Offline Users without unread messages */}
                   {offlineUsersWithoutUnread.length > 0 && (
                     <div>
-                      <div className="px-2 py-1 text-xs font-medium text-gray-400">Offline</div>
+                      <div className="px-2 py-1 text-xs font-medium ">Offline</div>
                       {offlineUsersWithoutUnread.map((user) => (
                         <UserItem
                           key={user?.id}
@@ -1054,13 +1054,13 @@ export function ChatModule() {
           {isStoreLoadingMessages ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="animate-spin h-8 w-8 border-3 border-orange-500 rounded-full border-t-transparent mb-4"></div>
-              <p className="text-gray-400">Loading messages...</p>
+              <p className="">Loading messages...</p>
             </div>
           ) : filteredMessages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
+            <div className="flex flex-col items-center justify-center h-full text-center ">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-10 w-10 md:h-12 md:w-12 mb-2 text-gray-600"
+                className="h-10 w-10 md:h-12 md:w-12 mb-2 "
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"

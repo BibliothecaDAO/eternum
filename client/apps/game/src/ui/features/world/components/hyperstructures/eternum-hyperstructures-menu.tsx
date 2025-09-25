@@ -23,6 +23,8 @@ import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
 import { ArrowLeft, ArrowRight, Search, Star } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import { HyperstructureCard } from "./hyperstructure-card";
+import { HyperstructureList } from "./hyperstructure-list";
 
 // Define filter options
 type FilterOption = "all" | "mine" | "my-guild" | "public" | "completed" | "in-progress" | "initialized" | "favorites";
@@ -41,8 +43,17 @@ export const EternumHyperstructuresMenu = ({ className }: { className?: string }
 
   // Favorites state with localStorage persistence
   const [favorites, setFavorites] = useState<number[]>(() => {
-    const saved = localStorage.getItem("favoriteHyperstructures");
-    return saved ? JSON.parse(saved) : [];
+    if (typeof window === "undefined") {
+      return [];
+    }
+
+    try {
+      const saved = window.localStorage.getItem("favoriteHyperstructures");
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.warn("Failed to read favorite hyperstructures from storage", error);
+      return [];
+    }
   });
 
   const hyperstructures = useHyperstructures();
@@ -74,7 +85,13 @@ export const EternumHyperstructuresMenu = ({ className }: { className?: string }
     event.stopPropagation(); // Prevent triggering the row click
     setFavorites((prev) => {
       const newFavorites = prev.includes(entityId) ? prev.filter((id) => id !== entityId) : [...prev, entityId];
-      localStorage.setItem("favoriteHyperstructures", JSON.stringify(newFavorites));
+      if (typeof window !== "undefined") {
+        try {
+          window.localStorage.setItem("favoriteHyperstructures", JSON.stringify(newFavorites));
+        } catch (error) {
+          console.warn("Failed to persist favorite hyperstructures", error);
+        }
+      }
       return newFavorites;
     });
   }, []);
@@ -154,12 +171,29 @@ export const EternumHyperstructuresMenu = ({ className }: { className?: string }
     return filtered;
   }, [hyperstructuresList, searchTerm, activeFilter, myHyperstructureIds, components, favorites, myGuild]);
 
+  const visibleHyperstructures = useMemo(() => {
+    return filteredHyperstructures
+      .map((hyperstructure) => ({
+        hyperstructure,
+        progress: getHyperstructureProgress(hyperstructure.entity_id, components),
+      }))
+      .filter(({ progress }) => {
+        if (activeFilter === "completed") {
+          return progress.percentage === 100;
+        }
+        if (activeFilter === "in-progress") {
+          return progress.percentage !== 100;
+        }
+        return true;
+      });
+  }, [filteredHyperstructures, activeFilter, components]);
+
   // Filter button component
   const FilterButton = ({ label, value }: { label: string; value: FilterOption }) => (
     <button
       className={clsx("px-2 py-1 text-xxs rounded-md transition-colors flex items-center gap-1 justify-center", {
         "bg-gold/20 text-gold": activeFilter === value,
-        "hover:bg-gray-700/30": activeFilter !== value,
+        "hover:bg-gold/30": activeFilter !== value,
       })}
       onClick={() => setActiveFilter(value)}
     >
@@ -200,7 +234,7 @@ export const EternumHyperstructuresMenu = ({ className }: { className?: string }
               {/* Search and filter bar */}
               <div className="mb-1 space-y-1">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 t" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2" />
                   <TextInput
                     placeholder="Search hyperstructures..."
                     value={searchTerm}
@@ -223,80 +257,82 @@ export const EternumHyperstructuresMenu = ({ className }: { className?: string }
 
               {/* Hyperstructures list */}
               <div className="overflow-y-auto flex-grow">
-                {filteredHyperstructures.length > 0 ? (
-                  <ul className="space-y-1">
-                    {filteredHyperstructures.map((hyperstructure) => {
-                      // Get progress for display and filtering
-                      const progress = getHyperstructureProgress(hyperstructure.entity_id, components);
+                <HyperstructureList
+                  items={visibleHyperstructures}
+                  emptyState={
+                    <div className="flex flex-col items-center justify-center h-40">
+                      <div className="text-sm mb-2">No hyperstructures found</div>
+                      <div className="text-xs">Try adjusting your filters or search</div>
+                    </div>
+                  }
+                  itemsWrapperClassName="space-y-1"
+                  renderItem={(item) => {
+                    const { hyperstructure, progress } = item;
+                    const position = new Position({
+                      x: hyperstructure.position.x || 0,
+                      y: hyperstructure.position.y || 0,
+                    });
 
-                      // Filter out based on progress if needed
-                      if (
-                        (activeFilter === "completed" && progress.percentage !== 100) ||
-                        (activeFilter === "in-progress" && progress.percentage === 100)
-                      ) {
-                        return null;
-                      }
+                    const titlePrefix = (
+                      <button
+                        className="p-1 hover:scale-110 transition-transform"
+                        type="button"
+                        onClick={(e) => toggleFavorite(Number(hyperstructure.entity_id), e)}
+                      >
+                        <Star
+                          className={
+                            hyperstructure.isFavorite
+                              ? "h-4 w-4 fill-gold text-gold"
+                              : "h-4 w-4 text-gold/50 hover:text-gold"
+                          }
+                        />
+                      </button>
+                    );
 
-                      return (
-                        <li
-                          className={clsx("p-3 hover:bg-crimson/10 rounded border panel-wood cursor-pointer")}
-                          key={hyperstructure.entity_id}
-                          onClick={() => setSelectedEntity(hyperstructure)}
-                        >
-                          <div className="flex flex-col space-y-3">
-                            <div className="flex flex-row justify-between items-center">
-                              <div className="flex flex-row items-center gap-2 flex-wrap">
-                                <button
-                                  className="p-1 hover:scale-110 transition-transform"
-                                  type="button"
-                                  onClick={(e) => toggleFavorite(Number(hyperstructure.entity_id), e)}
-                                >
-                                  <Star
-                                    className={
-                                      hyperstructure.isFavorite
-                                        ? "h-4 w-4 fill-gold text-gold"
-                                        : "h-4 w-4 text-gold/50 hover:text-gold"
-                                    }
-                                  />
-                                </button>
-                                <h5 className="font-semibold text-gold">{hyperstructure.name}</h5>
-                                {hyperstructure?.access && <AccessBadge access={hyperstructure.access} />}
-                                <div className="flex flex-row gap-1 ml-auto sm:ml-0">
-                                  <ViewOnMapIcon
-                                    className="my-auto hover:scale-110 transition-transform"
-                                    position={
-                                      new Position({
-                                        x: hyperstructure.position.x || 0,
-                                        y: hyperstructure.position.y || 0,
-                                      })
-                                    }
-                                  />
-                                  <NavigateToPositionIcon
-                                    className="h-6 w-6 hover:scale-110 transition-transform"
-                                    position={
-                                      new Position({
-                                        x: hyperstructure.position.x || 0,
-                                        y: hyperstructure.position.y || 0,
-                                      })
-                                    }
-                                  />
-                                </div>
-                              </div>
-                              <ArrowRight className="w-6 h-6 fill-current text-gold bg-gold/20 rounded-full p-1 hover:bg-gold/30 hover:text-gold/80 hover:scale-110 transition-all duration-200 cursor-pointer" />
-                            </div>
+                    const titleSuffix = (
+                      <div className="flex items-center gap-1">
+                        {hyperstructure?.access && <AccessBadge access={hyperstructure.access} />}
+                        <div className="flex items-center gap-1 ml-1" onClick={(event) => event.stopPropagation()}>
+                          <ViewOnMapIcon className="my-auto hover:scale-110 transition-transform" position={position} />
+                          <NavigateToPositionIcon
+                            className="h-6 w-6 hover:scale-110 transition-transform"
+                            position={position}
+                          />
+                        </div>
+                      </div>
+                    );
 
-                            <HyperstructureContentRow hyperstructure={hyperstructure} progress={progress} />
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-40 text-gray-500">
-                    <div className="text-sm mb-2">No hyperstructures found</div>
-                    <div className="text-xs">Try adjusting your filters or search</div>
-                  </div>
-                )}
+                    const actions = (
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setSelectedEntity(hyperstructure);
+                        }}
+                        className="w-6 h-6 flex items-center justify-center"
+                        title="Open details"
+                      >
+                        <ArrowRight className="w-6 h-6 fill-current text-gold bg-gold/20 rounded-full p-1 hover:bg-gold/30 hover:text-gold/80 hover:scale-110 transition-all duration-200" />
+                      </button>
+                    );
+
+                    return (
+                      <HyperstructureCard
+                        key={hyperstructure.entity_id}
+                        title={hyperstructure.name}
+                        titlePrefix={titlePrefix}
+                        titleSuffix={titleSuffix}
+                        actions={actions}
+                        className="panel-wood hover:bg-crimson/10"
+                        onClick={() => setSelectedEntity(hyperstructure)}
+                      >
+                        <div className="flex flex-col space-y-3">
+                          <HyperstructureContentRow hyperstructure={hyperstructure} progress={progress} />
+                        </div>
+                      </HyperstructureCard>
+                    );
+                  }}
+                />
               </div>
             </div>
           )}

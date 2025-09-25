@@ -1,6 +1,9 @@
 use core::num::traits::Bounded;
 use s1_eternum::alias::ID;
 
+// take an address of a real network contract
+pub const UNIVERSAL_DEPLOYER_ADDRESS: felt252 =
+    0x041a78e741e5af2fec34b695679bc6891742439f7afb8484ecd7766661ad02bf;
 
 // todo: ensure there are no clashes with other ids
 // Config ID to fetch global configs

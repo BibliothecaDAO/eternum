@@ -1,4 +1,4 @@
-import { ActionPaths, Position, StructureActionManager, StructureSystemUpdate } from "@bibliothecadao/eternum";
+import { ActionPaths, Position, StructureActionManager, StructureTileSystemUpdate } from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
 import { HexEntityInfo, ID, StructureType } from "@bibliothecadao/types";
 import * as THREE from "three";
@@ -21,10 +21,12 @@ export class StructureManager extends EntityManager<StructureObject> {
 
   // Dependencies
   private dojo: DojoResult | null = null;
+  private biomeRefreshCallback?: () => void;
 
-  constructor(scene: THREE.Scene) {
+  constructor(scene: THREE.Scene, biomeRefreshCallback?: () => void) {
     super(scene);
     this.renderer = new BuildingTileRenderer(scene);
+    this.biomeRefreshCallback = biomeRefreshCallback;
   }
 
   public setDependencies(dojo: DojoResult, exploredTiles: Map<number, Map<number, any>>): void {
@@ -108,7 +110,7 @@ export class StructureManager extends EntityManager<StructureObject> {
 
   private syncBuildingTile(structure: StructureObject): void {
     const tileIndex = this.getTileIndexFromStructure(structure);
-    this.renderer.addTileByIndex(structure.col, structure.row, tileIndex, true, true);
+    this.renderer.addTileByIndex(structure.col, structure.row, tileIndex, true);
   }
 
   private getTileIndexFromStructure(structure: StructureObject): BuildingTileIndex {
@@ -128,7 +130,7 @@ export class StructureManager extends EntityManager<StructureObject> {
 
     Array.from(this.objects.values()).forEach((structure) => {
       const tileIndex = this.getTileIndexFromStructure(structure);
-      this.renderer.addTileByIndex(structure.col, structure.row, tileIndex, true, true);
+      this.renderer.addTileByIndex(structure.col, structure.row, tileIndex, true);
     });
   }
 
@@ -308,14 +310,6 @@ export class StructureManager extends EntityManager<StructureObject> {
       ? (parseInt(structure.structureType) as StructureType)
       : StructureType.Realm;
 
-    console.log(`[StructureManager] Converting structure ${structure.id} to label data:`, {
-      structureType,
-      hyperstructureRealmCount: structure.hyperstructureRealmCount,
-      guardArmies: structure.guardArmies?.length || 0,
-      activeProductions: structure.activeProductions?.length || 0,
-      ownerName: structure.ownerName,
-    });
-
     return {
       entityId: structure.id,
       hexCoords: new Position({ x: structure.col, y: structure.row }),
@@ -355,8 +349,7 @@ export class StructureManager extends EntityManager<StructureObject> {
   }
 
   // Structure-specific methods moved from HexagonMap
-  public handleSystemUpdate(update: StructureSystemUpdate): void {
-    console.log("[StructureManager] Structure tile update:", update);
+  public handleSystemUpdate(update: StructureTileSystemUpdate): void {
     const {
       hexCoords: { col, row },
       owner: { address },
@@ -389,6 +382,11 @@ export class StructureManager extends EntityManager<StructureObject> {
       hasWonder: update.hasWonder,
     };
     this.updateObject(structure);
+
+    // Refresh biome tiles to hide any biomes at the structure position
+    if (this.biomeRefreshCallback) {
+      this.biomeRefreshCallback();
+    }
   }
 
   public handleStructureUpdate(update: {
@@ -396,8 +394,6 @@ export class StructureManager extends EntityManager<StructureObject> {
     guardArmies: any[];
     owner: { address: bigint; ownerName: string; guildName: string };
   }): void {
-    console.log("[StructureManager] Structure guard update:", update);
-
     const existingStructure = this.getObject(update.entityId);
     if (existingStructure) {
       const updatedStructure = {
@@ -414,8 +410,6 @@ export class StructureManager extends EntityManager<StructureObject> {
     entityId: ID;
     activeProductions: Array<{ buildingCount: number; buildingType: any }>;
   }): void {
-    console.log("[StructureManager] Structure building update:", update);
-
     const existingStructure = this.getObject(update.entityId);
     if (existingStructure) {
       const updatedStructure = {
@@ -427,8 +421,6 @@ export class StructureManager extends EntityManager<StructureObject> {
   }
 
   public handleContributionUpdate(value: { entityId: ID; structureType: any; stage: any }): void {
-    console.log("[StructureManager] Structure contribution update:", value);
-
     const existingStructure = this.getObject(value.entityId);
     if (existingStructure) {
       const updatedStructure = {

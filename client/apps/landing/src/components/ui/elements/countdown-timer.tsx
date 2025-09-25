@@ -41,7 +41,7 @@ function TimeUnit({ value, label }: TimeUnitProps) {
   return (
     <div className="flex flex-col">
       <span className="text-4xl font-bold">{value.toString().padStart(2, "0")}</span>
-      <span className="text-sm text-gray-500">{label}</span>
+      <span className="text-sm ">{label}</span>
     </div>
   );
 }

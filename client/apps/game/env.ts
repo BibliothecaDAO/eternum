@@ -61,6 +61,11 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("false"),
+  VITE_PUBLIC_ENABLE_TOS: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("false"),
 
   // PostHog
   VITE_PUBLIC_POSTHOG_KEY: z.string().optional(),

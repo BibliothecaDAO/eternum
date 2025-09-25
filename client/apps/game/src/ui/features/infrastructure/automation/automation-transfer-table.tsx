@@ -2,15 +2,15 @@ import { useUISound } from "@/audio";
 import { OrderMode, ProductionType, TransferMode, useAutomationStore } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
-import { getIsBlitz } from "@bibliothecadao/eternum";
+import { getIsBlitz, getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import Button from "@/ui/design-system/atoms/button";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
+import { Panel } from "@/ui/design-system/atoms";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
+import { DropdownList, FormField } from "@/ui/design-system/molecules";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { normalizeDiacriticalMarks } from "@/ui/utils/utils";
-import { ETERNUM_CONFIG } from "@/utils/config";
-import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import {
   computeTravelTime,
@@ -56,8 +56,6 @@ interface SelectedResource {
   amount: number;
 }
 
-const eternumConfig = ETERNUM_CONFIG();
-
 // Helper function to format minutes into a human-readable string
 function formatMinutes(minutes: number): string {
   if (minutes < 60) {
@@ -69,14 +67,6 @@ function formatMinutes(minutes: number): string {
     return `${hours}h`;
   }
   return `${hours}h ${remainingMinutes}m`;
-}
-
-// Helper function to get effective transfer interval (rounds up to next 10-minute mark)
-function getEffectiveInterval(minutes: number): number {
-  if (minutes <= 10) return 10;
-  // For intervals that aren't multiples of 10, the actual behavior is complex
-  // as it depends on when transfers align with the 10-minute automation cycle
-  return minutes;
 }
 
 // Custom debounce hook
@@ -125,14 +115,12 @@ export const AutomationTransferTable: React.FC = () => {
     },
   } = useDojo();
 
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const playDonkeyScreaming = useUISound("resource.burn_donkey");
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
   const addOrder = useAutomationStore((state) => state.addOrder);
   const removeOrder = useAutomationStore((state) => state.removeOrder);
-  const updateTransferTimestamp = useAutomationStore((state) => state.updateTransferTimestamp);
-  const toggleRealmPause = useAutomationStore((state) => state.toggleRealmPause);
 
   // Transfer type selection
   const [transferType, setTransferType] = useState<"automation" | "oneoff">("automation");
@@ -165,6 +153,8 @@ export const AutomationTransferTable: React.FC = () => {
   // Entity type selection state
   const [sourceEntityType, setSourceEntityType] = useState<string>("");
   const [destinationEntityType, setDestinationEntityType] = useState<string>("");
+  const controlClassName =
+    "w-full p-2 transition-all duration-300 focus:outline-none border border-gold/20 rounded-lg bg-black/20 placeholder:text-gold/50 focus:ring-2 focus:ring-gold/30";
 
   // Use startTransition for search updates
   const handleSourceSearchChange = useCallback((value: string) => {
@@ -728,7 +718,7 @@ export const AutomationTransferTable: React.FC = () => {
       </div>
 
       {/* Transfer Type Selection */}
-      <div className="mb-4 p-3 bg-black/20 rounded-md border border-gold/20">
+      <Panel tone="glass" radius="md" padding="sm" className="mb-4 bg-black/20">
         <div className="flex gap-4">
           <label className="flex items-center">
             <input
@@ -755,10 +745,10 @@ export const AutomationTransferTable: React.FC = () => {
             <span className="text-xs text-gold/50 ml-2">(Immediate)</span>
           </label>
         </div>
-      </div>
+      </Panel>
 
       {/* Transfer Rules Info */}
-      <div className="mb-4 p-3 border border-gold/30 rounded-md bg-gold/5">
+      <Panel tone="neutral" radius="md" padding="sm" border="strong" className="mb-4 bg-gold/5">
         <div className="font-bold text-sm mb-2 text-gold">Transfer Rules:</div>
         <div className="text-xs space-y-1">
           <div className="flex items-start gap-1">
@@ -774,49 +764,57 @@ export const AutomationTransferTable: React.FC = () => {
             <span>Troops cannot be transferred from/to non-Realm structures</span>
           </div>
         </div>
-      </div>
+      </Panel>
 
       {!selectedSource ? (
-        <div className="mb-4 border border-gold/20 rounded-md p-3">
+        <Panel tone="glass" radius="md" padding="md" className="mb-4 bg-black/20">
           <h4 className="mb-2">Select Source</h4>
           <p className="text-xs text-gold/70 mb-3">You can only send resources from entities you own.</p>
 
-          <Select value={sourceEntityType} onValueChange={setSourceEntityType}>
-            <SelectTrigger className="w-full mb-2">
-              <SelectValue placeholder="Select type" />
-            </SelectTrigger>
-            <SelectContent>
-              {sourceEntityTypeOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <FormField label="Entity Type">
+            <Select value={sourceEntityType} onValueChange={setSourceEntityType}>
+              <SelectTrigger className="w-full mb-2">
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                {sourceEntityTypeOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
 
           {/* Entity Selection */}
           {sourceEntityType && (
             <>
-              <input
-                type="text"
-                placeholder={`Search ${sourceEntityType.toLowerCase()}...`}
-                value={sourceSearchTerm}
-                onChange={(e) => handleSourceSearchChange(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && filteredSourceEntities.length > 0) {
-                    e.preventDefault();
-                    const firstEntity = filteredSourceEntities[0];
-                    setSelectedSource({
-                      name: firstEntity.name,
-                      entityId: firstEntity.entityId,
-                      category: firstEntity.category,
-                    });
-                    setSourceSearchTerm("");
-                  }
-                }}
-                className="w-full p-2 mb-2 transition-all duration-300 focus:outline-none border border-gold/20 rounded-lg bg-black/20 placeholder:text-gold/50"
-              />
-              <div className="max-h-64 overflow-y-auto border border-gold/20 rounded-md p-1">
+              <FormField
+                label="Search"
+                description={`Look up a ${sourceEntityType.toLowerCase()} by name or ID.`}
+                spacing="tight"
+              >
+                <input
+                  type="text"
+                  placeholder={`Search ${sourceEntityType.toLowerCase()}...`}
+                  value={sourceSearchTerm}
+                  onChange={(e) => handleSourceSearchChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && filteredSourceEntities.length > 0) {
+                      e.preventDefault();
+                      const firstEntity = filteredSourceEntities[0];
+                      setSelectedSource({
+                        name: firstEntity.name,
+                        entityId: firstEntity.entityId,
+                        category: firstEntity.category,
+                      });
+                      setSourceSearchTerm("");
+                    }
+                  }}
+                  className={controlClassName}
+                />
+              </FormField>
+              <DropdownList className="mt-2">
                 <Select
                   onValueChange={(value) => {
                     const entity = sourceEntitiesListWithAccountNames
@@ -855,13 +853,18 @@ export const AutomationTransferTable: React.FC = () => {
                     )}
                   </SelectContent>
                 </Select>
-              </div>
+              </DropdownList>
             </>
           )}
-        </div>
+        </Panel>
       ) : (
         <>
-          <div className="mb-4 flex items-center justify-between border border-gold/20 rounded-md p-3">
+          <Panel
+            tone="glass"
+            radius="md"
+            padding="md"
+            className="mb-4 bg-black/20 flex items-center justify-between gap-4"
+          >
             <div>
               <h4>
                 Source: {selectedSource.name} ({selectedSource.entityId})
@@ -879,66 +882,57 @@ export const AutomationTransferTable: React.FC = () => {
             >
               Change Source
             </Button>
-          </div>
-
-          {/* Pause checkbox
-          <div className="flex items-center gap-2 mb-3 p-2 bg-black/20 rounded">
-            <input
-              type="checkbox"
-              id={`pause-realm-transfers-${selectedSource.entityId}`}
-              checked={isRealmPaused}
-              onChange={() => toggleRealmPause(selectedSource.entityId.toString())}
-              className="w-4 h-4"
-            />
-            <label htmlFor={`pause-realm-transfers-${selectedSource.entityId}`} className="text-sm font-medium">
-              Pause all automation for this entity (includes production & transfers)
-            </label>
-            {isRealmPaused && <span className="text-red ml-2 text-xs">(PAUSED - No automations will run)</span>}
-          </div> */}
+          </Panel>
 
           {/* Destination Selection - shown for both types */}
           {!selectedDestination ? (
-            <div className="mb-4 border border-gold/20 rounded-md p-3">
+            <Panel tone="glass" radius="md" padding="md" className="mb-4 bg-black/20">
               <h4 className="mb-2">Select Destination</h4>
 
-              {/* Entity Type Selection */}
-              <Select value={destinationEntityType} onValueChange={setDestinationEntityType}>
-                <SelectTrigger className="w-full mb-2">
-                  <SelectValue placeholder="Select entity type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {entityTypeOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FormField label="Entity Type">
+                <Select value={destinationEntityType} onValueChange={setDestinationEntityType}>
+                  <SelectTrigger className="w-full mb-2">
+                    <SelectValue placeholder="Select entity type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {entityTypeOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
 
-              {/* Entity Selection */}
               {destinationEntityType && (
                 <>
-                  <label className="block mb-1 text-sm font-medium mt-3">Search {destinationEntityType}:</label>
-                  <input
-                    type="text"
-                    placeholder={`Search ${destinationEntityType.toLowerCase()}...`}
-                    value={destinationSearchTerm}
-                    onChange={(e) => handleDestinationSearchChange(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && filteredDestinationEntities.length > 0) {
-                        e.preventDefault();
-                        const firstEntity = filteredDestinationEntities[0];
-                        setSelectedDestination({
-                          name: firstEntity.name,
-                          entityId: firstEntity.entityId,
-                          category: firstEntity.category,
-                        });
-                        setDestinationSearchTerm("");
-                      }
-                    }}
-                    className="w-full p-2 mb-2 transition-all duration-300 focus:outline-none border border-gold/20 rounded-lg bg-black/20 placeholder:text-gold/50"
-                  />
-                  <div className="max-h-64 overflow-y-auto border border-gold/20 rounded-md p-1">
+                  <FormField
+                    label={`Search ${destinationEntityType}`}
+                    description={`Look up a ${destinationEntityType.toLowerCase()} by name or ID.`}
+                    spacing="tight"
+                  >
+                    <input
+                      type="text"
+                      placeholder={`Search ${destinationEntityType.toLowerCase()}...`}
+                      value={destinationSearchTerm}
+                      onChange={(e) => handleDestinationSearchChange(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && filteredDestinationEntities.length > 0) {
+                          e.preventDefault();
+                          const firstEntity = filteredDestinationEntities[0];
+                          setSelectedDestination({
+                            name: firstEntity.name,
+                            entityId: firstEntity.entityId,
+                            category: firstEntity.category,
+                          });
+                          setDestinationSearchTerm("");
+                        }
+                      }}
+                      className={controlClassName}
+                    />
+                  </FormField>
+
+                  <DropdownList className="mt-2">
                     <Select
                       onValueChange={(value) => {
                         const entity = entitiesListWithAccountNames
@@ -983,12 +977,17 @@ export const AutomationTransferTable: React.FC = () => {
                         )}
                       </SelectContent>
                     </Select>
-                  </div>
+                  </DropdownList>
                 </>
               )}
-            </div>
+            </Panel>
           ) : (
-            <div className="mb-4 flex items-center justify-between border border-gold/20 rounded-md p-3">
+            <Panel
+              tone="glass"
+              radius="md"
+              padding="md"
+              className="mb-4 bg-black/20 flex items-center justify-between gap-4"
+            >
               <div>
                 <h4>
                   Destination: {selectedDestination.name} ({selectedDestination.entityId})
@@ -1008,7 +1007,7 @@ export const AutomationTransferTable: React.FC = () => {
               >
                 Change Destination
               </Button>
-            </div>
+            </Panel>
           )}
 
           {transferType === "automation" ? (
@@ -1023,8 +1022,8 @@ export const AutomationTransferTable: React.FC = () => {
             </>
           ) : (
             <>
-              <div className="mb-4 p-3 bg-blue/10 rounded-md border border-gold/20">
-                <h4 className=" mb-2 h6">One-off Transfer</h4>
+              <Panel tone="glass" radius="md" padding="md" className="mb-4 bg-blue/10 border border-gold/20">
+                <h4 className="mb-2 h6">One-off Transfer</h4>
                 <p className="text-sm text-gold/70">
                   Send resources immediately between entities. Transfer will take time based on distance.
                   {travelTime && (
@@ -1033,90 +1032,93 @@ export const AutomationTransferTable: React.FC = () => {
                     </span>
                   )}
                 </p>
-              </div>
+              </Panel>
 
               {/* One-off Resource Selection */}
-              <div className="mb-4 border border-gold/20 rounded-md p-3">
-                <label className="block mb-2 text-sm font-medium">Select Resources to Transfer:</label>
+              <Panel tone="glass" radius="md" padding="md" className="mb-4 bg-black/20">
+                <FormField
+                  label="Select Resources to Transfer"
+                  description="Choose a resource and amount to include in this one-off transfer."
+                  spacing="tight"
+                >
+                  <div className="gap-2 mb-3 flex">
+                    <Select
+                      value={newResourceId.toString()}
+                      onValueChange={(value) => setNewResourceId(Number(value) as ResourcesIds)}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Select resource" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {orderedResourcesWithBalances.length === 0 ? (
+                          <div className="px-2 py-1 text-xs text-gold/50">
+                            No resources available or source not selected
+                          </div>
+                        ) : (
+                          orderedResourcesWithBalances.map((resource) => {
+                            const isAllowed =
+                              !selectedSource ||
+                              !selectedDestination ||
+                              isTransferAllowed(selectedSource.category, selectedDestination.category, resource.id);
+                            const isMilitary = isMilitaryResource(resource.id);
 
-                {/* Add Resource Form */}
-                <div className=" gap-2 mb-3 flex">
-                  <Select
-                    value={newResourceId.toString()}
-                    onValueChange={(value) => setNewResourceId(Number(value) as ResourcesIds)}
-                  >
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Select resource" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {orderedResourcesWithBalances.length === 0 ? (
-                        <div className="px-2 py-1 text-xs text-gold/50">
-                          No resources available or source not selected
-                        </div>
-                      ) : (
-                        orderedResourcesWithBalances.map((resource) => {
-                          const isAllowed =
-                            !selectedSource ||
-                            !selectedDestination ||
-                            isTransferAllowed(selectedSource.category, selectedDestination.category, resource.id);
-                          const isMilitary = isMilitaryResource(resource.id);
-
-                          return (
-                            <SelectItem key={resource.id} value={resource.id.toString()} disabled={!isAllowed}>
-                              <div className="flex items-center justify-between w-full">
-                                <div className="flex items-center">
-                                  <ResourceIcon resource={resource.trait} size="xs" className="mr-2" />
-                                  <span className={!isAllowed ? "text-red/70" : ""}>{resource.trait}</span>
-                                  {!isAllowed && isMilitary && (
-                                    <span className="text-xs text-red/70 ml-2">(Troops: Realms only)</span>
-                                  )}
+                            return (
+                              <SelectItem key={resource.id} value={resource.id.toString()} disabled={!isAllowed}>
+                                <div className="flex items-center justify-between w-full">
+                                  <div className="flex items-center">
+                                    <ResourceIcon resource={resource.trait} size="xs" className="mr-2" />
+                                    <span className={!isAllowed ? "text-red/70" : ""}>{resource.trait}</span>
+                                    {!isAllowed && isMilitary && (
+                                      <span className="text-xs text-red/70 ml-2">(Troops: Realms only)</span>
+                                    )}
+                                  </div>
+                                  <span className="text-xs text-gold/70 ml-2">{resource.balance.toLocaleString()}</span>
                                 </div>
-                                <span className="text-xs text-gold/70 ml-2">{resource.balance.toLocaleString()}</span>
-                              </div>
-                            </SelectItem>
-                          );
-                        })
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <NumberInput
-                    value={newResourceAmount}
-                    onChange={setNewResourceAmount}
-                    min={1}
-                    max={orderedResourcesWithBalances.find((r) => r.id === newResourceId)?.balance || 1}
-                    className="w-24"
-                  />
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      if (newResourceId !== "") {
-                        const selectedResource = orderedResourcesWithBalances.find((r) => r.id === newResourceId);
-                        if (selectedResource && selectedResource.balance > 0) {
-                          handleAddOneOffResource(
-                            newResourceId as ResourcesIds,
-                            Math.min(newResourceAmount, selectedResource.balance),
-                          );
-                          setNewResourceId("");
-                          setNewResourceAmount(100);
-                        } else {
-                          alert("Selected resource has no available balance.");
+                              </SelectItem>
+                            );
+                          })
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <NumberInput
+                      value={newResourceAmount}
+                      onChange={setNewResourceAmount}
+                      min={1}
+                      max={orderedResourcesWithBalances.find((r) => r.id === newResourceId)?.balance || 1}
+                      className="w-24"
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (newResourceId !== "") {
+                          const selectedResource = orderedResourcesWithBalances.find((r) => r.id === newResourceId);
+                          if (selectedResource && selectedResource.balance > 0) {
+                            handleAddOneOffResource(
+                              newResourceId as ResourcesIds,
+                              Math.min(newResourceAmount, selectedResource.balance),
+                            );
+                            setNewResourceId("");
+                            setNewResourceAmount(100);
+                          } else {
+                            alert("Selected resource has no available balance.");
+                          }
                         }
+                      }}
+                      variant="outline"
+                      size="xs"
+                      disabled={
+                        !newResourceId ||
+                        (orderedResourcesWithBalances.find((r) => r.id === newResourceId)?.balance || 0) === 0 ||
+                        (selectedSource &&
+                          selectedDestination !== null &&
+                          typeof newResourceId === "number" &&
+                          !isTransferAllowed(selectedSource.category, selectedDestination.category, newResourceId))
                       }
-                    }}
-                    variant="outline"
-                    size="xs"
-                    disabled={
-                      !newResourceId ||
-                      (orderedResourcesWithBalances.find((r) => r.id === newResourceId)?.balance || 0) === 0 ||
-                      (selectedSource &&
-                        selectedDestination !== null &&
-                        typeof newResourceId === "number" &&
-                        !isTransferAllowed(selectedSource.category, selectedDestination.category, newResourceId))
-                    }
-                  >
-                    Add
-                  </Button>
-                </div>
+                    >
+                      Add
+                    </Button>
+                  </div>
+                </FormField>
 
                 {/* Selected Resources Display */}
                 <div className="space-y-2">
@@ -1153,15 +1155,19 @@ export const AutomationTransferTable: React.FC = () => {
                     {isOneOffLoading ? "Transferring..." : "Send Resources Now"}
                   </Button>
                 </div>
-              </div>
+              </Panel>
             </>
           )}
 
           {/* Automation Form - only shown when automation type is selected and destination is chosen */}
           {transferType === "automation" && selectedDestination && showAddForm && (
-            <form
+            <Panel
+              as="form"
               onSubmit={handleAddTransferOrder}
-              className="p-4 mb-6 space-y-4 border border-gold/20 rounded-md bg-black/10"
+              tone="glass"
+              radius="md"
+              padding="md"
+              className="mb-6 space-y-4 bg-black/10"
             >
               <h3 className="text-lg font-semibold">Create New Transfer Automation</h3>
 
@@ -1399,7 +1405,7 @@ export const AutomationTransferTable: React.FC = () => {
                   Cancel
                 </Button>
               </div>
-            </form>
+            </Panel>
           )}
 
           {/* Transfer Orders Table - only show for automation type */}
@@ -1415,7 +1421,7 @@ export const AutomationTransferTable: React.FC = () => {
                     </div>
                   )}
                   <table className="w-full text-sm text-left table-auto">
-                    <thead className="text-xs uppercase bg-gray-700/50 text-gold">
+                    <thead className="text-xs uppercase /50 text-gold">
                       <tr>
                         <th scope="col" className="px-6 py-1">
                           Destination

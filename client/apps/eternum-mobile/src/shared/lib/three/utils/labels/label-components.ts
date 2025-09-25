@@ -201,9 +201,9 @@ export function createStaminaBar(currentStamina: number, maxStamina: number): HT
   progressBar.style.backgroundColor = "#374151";
   progressBar.style.borderRadius = "9999px";
   progressBar.style.height = "8px";
-  progressBar.style.width = "80px";
-  progressBar.style.minWidth = "80px";
-  progressBar.style.maxWidth = "80px";
+  progressBar.style.width = "30px";
+  progressBar.style.minWidth = "30px";
+  progressBar.style.maxWidth = "30px";
   progressBar.style.overflow = "hidden";
   progressBar.style.border = "1px solid rgba(255, 255, 255, 0.2)";
   progressBar.setAttribute("data-role", "progress-container");
@@ -275,15 +275,7 @@ export function createGuardArmyDisplay(
   guardArmies: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>,
 ): HTMLElement {
   const container = document.createElement("div");
-  container.classList.add(
-    "flex",
-    "flex-row",
-    "gap-0.5",
-    "text-xxs",
-    "overflow-x-auto",
-    "text-gray-400",
-    "leading-none",
-  );
+  container.classList.add("flex", "flex-row", "gap-0.5", "text-xxs", "overflow-x-auto", "leading-none");
   container.setAttribute("data-component", "guard-armies");
 
   if (guardArmies.length === 0) {
@@ -350,7 +342,7 @@ export function createProductionDisplay(
   if (activeProductions.length === 0) {
     const noProduction = document.createElement("span");
     noProduction.textContent = "No Active Production";
-    noProduction.classList.add("text-gray-400", "italic");
+    noProduction.classList.add("italic");
     container.appendChild(noProduction);
     return container;
   }

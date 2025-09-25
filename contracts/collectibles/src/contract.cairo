@@ -35,6 +35,9 @@ trait ERC721MintBurnTrait<TState> {
     /// * Attribute data remains in storage but becomes inaccessible
     fn burn(ref self: TState, token_id: u256);
 
+    fn mint(ref self: TState, recipient: ContractAddress, attributes_raw: u128);
+    fn mint_many(ref self: TState, recipient: ContractAddress, attributes_and_counts: Span<(u128, u16)>);
+
     /// Creates a new NFT with packed attributes and assigns it to the recipient.
     ///
     /// Token IDs are automatically generated using an internal counter, starting from 1.
@@ -917,6 +920,38 @@ mod RealmsCollectible {
     impl ERC721MintBurnImpl of super::ERC721MintBurnTrait<ContractState> {
         fn burn(ref self: ContractState, token_id: u256) {
             self.erc721.update(Zero::zero(), token_id, starknet::get_caller_address());
+        }
+
+        fn mint(ref self: ContractState, recipient: ContractAddress, attributes_raw: u128) {
+            self.accesscontrol.assert_only_role(MINTER_ROLE);
+
+            // increment counter
+            let token_id = self.counter.read() + 1;
+            self.counter.write(token_id);
+
+            // set attributes raw
+            assert!(attributes_raw != 0, "RealmsCollectible: Attributes raw must be non-zero");
+
+            // ensure ipfs image is already set for those attributes
+            let ipfs_cid = self.attrs_raw_to_ipfs_cid.entry(attributes_raw).read();
+            assert!(ipfs_cid != "", "RealmsCollectible: IPFS CID not set for those attributes");
+
+            self.token_id_to_attrs_raw.entry(token_id.into()).write(attributes_raw);
+
+            // mint token
+            self.erc721.mint(recipient, token_id.into());
+        }
+
+        fn mint_many(
+            ref self: ContractState, recipient: ContractAddress, mut attributes_and_counts: Span<(u128, u16)>,
+        ) {
+            while attributes_and_counts.len() > 0 {
+                let (attributes_raw, count) = attributes_and_counts.pop_front().unwrap();
+                let (attributes_raw, count) = (*attributes_raw, *count);
+                for _ in 0..count {
+                    self.mint(recipient, attributes_raw);
+                }
+            }
         }
 
         fn safe_mint(ref self: ContractState, recipient: ContractAddress, attributes_raw: u128) {

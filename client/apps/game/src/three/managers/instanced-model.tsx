@@ -14,6 +14,7 @@ import {
   MeshStandardMaterial,
   Vector3,
 } from "three";
+import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
 
 const BIG_DETAILS_NAME = "big_details";
 const BUILDING_NAME = "building";
@@ -24,6 +25,7 @@ export const SMALL_DETAILS_NAME = "small_details";
 const instanceMatrix = new Matrix4();
 const rotationMatrix = new Matrix4();
 const zeroMatrix = new Matrix4().makeScale(0, 0, 0);
+const DEFAULT_INITIAL_CAPACITY = 32;
 
 interface AnimatedInstancedMesh extends InstancedMesh {
   animated: boolean;
@@ -34,6 +36,7 @@ export default class InstancedModel {
   public instancedMeshes: AnimatedInstancedMesh[] = [];
   private biomeMeshes: any[] = [];
   private count: number = 0;
+  private capacity: number;
   private mixer: AnimationMixer | null = null;
   private animation: AnimationClip | null = null;
   private animationActions: Map<number, AnimationAction> = new Map();
@@ -46,13 +49,19 @@ export default class InstancedModel {
   private lastWonderUpdate = 0;
   private wonderUpdateInterval = 1000 / 30; // 30 FPS for wonder rotation
 
-  constructor(gltf: any, count: number, enableRaycast: boolean = false, name: string = "") {
+  constructor(
+    gltf: any,
+    initialCapacity: number = DEFAULT_INITIAL_CAPACITY,
+    enableRaycast: boolean = false,
+    name: string = "",
+  ) {
     this.name = name;
     this.group = new Group();
-    this.count = count;
+    this.count = 0;
+    this.capacity = Math.max(initialCapacity, 1);
 
-    this.timeOffsets = new Float32Array(count);
-    for (let i = 0; i < count; i++) {
+    this.timeOffsets = new Float32Array(this.capacity);
+    for (let i = 0; i < this.capacity; i++) {
       this.timeOffsets[i] = Math.random() * 3;
     }
 
@@ -80,7 +89,7 @@ export default class InstancedModel {
         if (name === StructureType[StructureType.FragmentMine] && child.material.name.includes("crystal")) {
           material = new MeshStandardMaterial(MinesMaterialsParams[ResourcesIds.AncientFragment]);
         }
-        const tmp = new InstancedMesh(child.geometry, material, count) as AnimatedInstancedMesh;
+        const tmp = new InstancedMesh(child.geometry, material, this.capacity) as AnimatedInstancedMesh;
         tmp.renderOrder = 10;
         const biomeMesh = child;
         if (gltf.animations.length > 0) {
@@ -91,7 +100,7 @@ export default class InstancedModel {
           ) {
             console.log("animated", gltf.animations[0]);
             tmp.animated = true;
-            for (let i = 0; i < count; i++) {
+            for (let i = 0; i < this.capacity; i++) {
               tmp.setMorphAt(i, biomeMesh as any);
             }
             tmp.morphTexture!.needsUpdate = true;
@@ -146,23 +155,45 @@ export default class InstancedModel {
   }
 
   getMatricesAndCount() {
-    return {
-      matrices: (this.group.children[0] as InstancedMesh).instanceMatrix.clone(),
-      count: (this.group.children[0] as InstancedMesh).count,
-    };
+    const mesh = this.group.children[0] as InstancedMesh;
+    const count = mesh.count;
+    const pool = InstancedMatrixAttributePool.getInstance();
+    const snapshot = pool.acquire(count);
+    const requiredFloats = count * snapshot.itemSize;
+
+    snapshot.array.set((mesh.instanceMatrix.array as Float32Array).subarray(0, requiredFloats));
+
+    return { matrices: snapshot, count };
   }
 
   setMatricesAndCount(matrices: InstancedBufferAttribute, count: number) {
+    const required = Math.max(count, matrices.count);
+    this.ensureCapacity(required);
+    let resolvedCount = count;
     this.group.children.forEach((child) => {
       if (child instanceof InstancedMesh) {
-        child.instanceMatrix.copy(matrices);
-        child.count = count;
+        const targetArray = child.instanceMatrix.array as Float32Array;
+        const sourceArray = matrices.array as Float32Array;
+        const maxInstances = Math.floor(targetArray.length / child.instanceMatrix.itemSize);
+        const finalCount = Math.min(count, maxInstances);
+        const floatsToCopy = Math.min(
+          finalCount * child.instanceMatrix.itemSize,
+          sourceArray.length,
+          targetArray.length,
+        );
+        if (floatsToCopy > 0) {
+          targetArray.set(sourceArray.subarray(0, floatsToCopy));
+        }
+        child.count = finalCount;
         child.instanceMatrix.needsUpdate = true;
+        resolvedCount = Math.min(resolvedCount, finalCount);
       }
     });
+    this.count = resolvedCount;
   }
 
   setMatrixAt(index: number, matrix: Matrix4) {
+    this.ensureCapacity(index + 1);
     this.group.children.forEach((child) => {
       if (child instanceof InstancedMesh) {
         child.setMatrixAt(index, matrix);
@@ -171,6 +202,7 @@ export default class InstancedModel {
   }
 
   setColorAt(index: number, color: Color) {
+    this.ensureCapacity(index + 1);
     this.group.children.forEach((child) => {
       if (child instanceof InstancedMesh) {
         child.setColorAt(index, color);
@@ -179,6 +211,7 @@ export default class InstancedModel {
   }
 
   setCount(count: number) {
+    this.ensureCapacity(count);
     this.count = count;
     this.group.children.forEach((child) => {
       if (child instanceof InstancedMesh) {
@@ -189,7 +222,7 @@ export default class InstancedModel {
   }
 
   removeInstance(index: number) {
-    console.log("remove instance");
+    this.ensureCapacity(index + 1);
     this.setMatrixAt(index, zeroMatrix);
     this.needsUpdate();
   }
@@ -280,6 +313,54 @@ export default class InstancedModel {
 
       this.lastWonderUpdate = now;
     }
+  }
+
+  private ensureCapacity(requiredCount: number) {
+    if (requiredCount <= this.capacity) {
+      return;
+    }
+
+    let newCapacity = this.capacity || 1;
+    while (newCapacity < requiredCount) {
+      newCapacity *= 2;
+    }
+
+    this.instancedMeshes.forEach((mesh, meshIndex) => {
+      const matrixArray = mesh.instanceMatrix.array as Float32Array;
+      const resizedMatrixArray = new Float32Array(newCapacity * 16);
+      resizedMatrixArray.set(matrixArray.subarray(0, this.capacity * 16));
+      mesh.instanceMatrix = new InstancedBufferAttribute(resizedMatrixArray, 16);
+      mesh.instanceMatrix.needsUpdate = true;
+
+      if (mesh.instanceColor) {
+        const colorArray = mesh.instanceColor.array as Float32Array;
+        const resizedColorArray = new Float32Array(newCapacity * 3);
+        resizedColorArray.set(colorArray.subarray(0, this.capacity * 3));
+        mesh.instanceColor = new InstancedBufferAttribute(resizedColorArray, 3);
+        mesh.instanceColor.needsUpdate = true;
+      }
+
+      mesh.count = Math.min(mesh.count, newCapacity);
+
+      for (let i = this.capacity; i < newCapacity; i++) {
+        mesh.setMatrixAt(i, zeroMatrix);
+        if (mesh.morphTexture) {
+          mesh.setMorphAt(i, this.biomeMeshes[meshIndex]);
+        }
+      }
+
+      if (mesh.morphTexture) {
+        mesh.morphTexture.needsUpdate = true;
+      }
+    });
+
+    const updatedOffsets = new Float32Array(newCapacity);
+    updatedOffsets.set(this.timeOffsets);
+    for (let i = this.capacity; i < newCapacity; i++) {
+      updatedOffsets[i] = Math.random() * 3;
+    }
+    this.timeOffsets = updatedOffsets;
+    this.capacity = newCapacity;
   }
 
   public dispose(): void {

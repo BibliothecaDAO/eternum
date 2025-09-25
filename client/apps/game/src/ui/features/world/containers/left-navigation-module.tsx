@@ -12,7 +12,153 @@ import { getEntityInfo } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { motion } from "framer-motion";
+import type { ComponentProps, ReactNode } from "react";
 import { lazy, memo, Suspense, useMemo } from "react";
+
+type CircleButtonProps = ComponentProps<typeof CircleButton>;
+
+type LeftNavigationItem = {
+  id: MenuEnum;
+} & Pick<
+  CircleButtonProps,
+  | "active"
+  | "className"
+  | "disabled"
+  | "image"
+  | "label"
+  | "onClick"
+  | "primaryNotification"
+  | "secondaryNotification"
+  | "size"
+  | "tooltipLocation"
+>;
+
+type LeftNavigationContext = {
+  view: LeftView;
+  setView: (view: LeftView) => void;
+  disableButtons: boolean;
+  isRealmOrVillage: boolean;
+  isMapView: boolean;
+  arrivedArrivalsNumber: number;
+  pendingArrivalsNumber: number;
+  toggleModal: (content: ReactNode | null) => void;
+  isTradeOpen: boolean;
+  isBlitz: boolean;
+};
+
+const DEFAULT_BUTTON_SIZE: CircleButtonProps["size"] = "xl";
+
+const buildLeftNavigationItems = ({
+  view,
+  setView,
+  disableButtons,
+  isRealmOrVillage,
+  isMapView,
+  arrivedArrivalsNumber,
+  pendingArrivalsNumber,
+  toggleModal,
+  isTradeOpen,
+  isBlitz,
+}: LeftNavigationContext): LeftNavigationItem[] => {
+  const toggleView = (targetView: LeftView) => () => setView(view === targetView ? LeftView.None : targetView);
+
+  const items: LeftNavigationItem[] = [
+    {
+      id: MenuEnum.entityDetails,
+      className: "entity-details-selector",
+      image: BuildingThumbs.hex,
+      tooltipLocation: "top",
+      label: "Details",
+      size: DEFAULT_BUTTON_SIZE,
+      active: view === LeftView.EntityView,
+      onClick: toggleView(LeftView.EntityView),
+    },
+    {
+      id: MenuEnum.military,
+      className: "military-selector",
+      image: BuildingThumbs.military,
+      tooltipLocation: "top",
+      label: military,
+      size: DEFAULT_BUTTON_SIZE,
+      disabled: disableButtons,
+      active: view === LeftView.MilitaryView,
+      onClick: toggleView(LeftView.MilitaryView),
+    },
+    {
+      id: MenuEnum.construction,
+      className: "construction-selector",
+      image: BuildingThumbs.construction,
+      tooltipLocation: "top",
+      label: construction,
+      size: DEFAULT_BUTTON_SIZE,
+      disabled: disableButtons || !isRealmOrVillage || isMapView,
+      active: view === LeftView.ConstructionView,
+      onClick: toggleView(LeftView.ConstructionView),
+    },
+    {
+      id: MenuEnum.resourceArrivals,
+      image: BuildingThumbs.trade,
+      tooltipLocation: "top",
+      label: "Resource Arrivals",
+      size: DEFAULT_BUTTON_SIZE,
+      disabled: disableButtons,
+      active: view === LeftView.ResourceArrivals,
+      onClick: toggleView(LeftView.ResourceArrivals),
+
+      primaryNotification:
+        arrivedArrivalsNumber > 0
+          ? { value: arrivedArrivalsNumber, color: "green", location: "topright" as const }
+          : undefined,
+      secondaryNotification:
+        pendingArrivalsNumber > 0
+          ? { value: pendingArrivalsNumber, color: "orange", location: "bottomright" as const }
+          : undefined,
+    },
+    {
+      id: MenuEnum.hyperstructures,
+      image: BuildingThumbs.hyperstructures,
+      tooltipLocation: "top",
+      label: hyperstructures,
+      size: DEFAULT_BUTTON_SIZE,
+      disabled: disableButtons,
+      active: view === LeftView.HyperstructuresView,
+      onClick: toggleView(LeftView.HyperstructuresView),
+    },
+    {
+      id: MenuEnum.trade,
+      className: "trade-selector",
+      image: BuildingThumbs.scale,
+      tooltipLocation: "top",
+      label: trade,
+      size: DEFAULT_BUTTON_SIZE,
+      disabled: disableButtons,
+      active: isTradeOpen,
+      onClick: () => toggleModal(isTradeOpen ? null : <MarketModal />),
+    },
+    {
+      id: MenuEnum.relics,
+      image: BuildingThumbs.relics,
+      tooltipLocation: "top",
+      label: "Relics",
+      size: DEFAULT_BUTTON_SIZE,
+      disabled: disableButtons,
+      active: view === LeftView.RelicsView,
+      onClick: toggleView(LeftView.RelicsView),
+    },
+  ];
+
+  const allowedMenus: MenuEnum[] = [
+    MenuEnum.entityDetails,
+    MenuEnum.military,
+    ...(isMapView ? [] : [MenuEnum.construction]),
+    MenuEnum.hyperstructures,
+    MenuEnum.resourceArrivals,
+    MenuEnum.relics,
+    ...(isBlitz ? [] : [MenuEnum.trade]),
+  ];
+
+  return items.filter((item) => allowedMenus.includes(item.id));
+};
 
 const EntityDetails = lazy(() =>
   import("@/ui/modules/entity-details/entity-details").then((module) => ({ default: module.EntityDetails })),
@@ -51,18 +197,18 @@ export const LeftNavigationModule = memo(() => {
   const view = useUIStore((state) => state.leftNavigationView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
   const disableButtons = useUIStore((state) => state.disableButtons);
-
-  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
-  const openedPopups = useUIStore((state) => state.openedPopups);
+  const isTradeOpen = useUIStore((state) => state.openedPopups.includes(trade));
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const toggleModal = useUIStore((state) => state.toggleModal);
   const { isMapView } = useQuery();
 
+  const isBlitz = getIsBlitz();
+
   const structureInfo = useMemo(
-    () => getEntityInfo(structureEntityId, ContractAddress(account.address), components, getIsBlitz()),
-    [structureEntityId, account.address, components],
+    () => getEntityInfo(structureEntityId, ContractAddress(account.address), components, isBlitz),
+    [structureEntityId, account.address, components, isBlitz],
   );
 
   const isRealmOrVillage = useMemo(
@@ -73,167 +219,33 @@ export const LeftNavigationModule = memo(() => {
     [structureInfo],
   );
 
-  const navigation = useMemo(() => {
-    const baseNavigation = [
-      {
-        name: MenuEnum.entityDetails,
-        button: (
-          <div className="relative">
-            <CircleButton
-              className="entity-details-selector"
-              image={BuildingThumbs.hex}
-              tooltipLocation="top"
-              label="Details"
-              active={view === LeftView.EntityView}
-              size={"xl"}
-              onClick={() => setView(view === LeftView.EntityView ? LeftView.None : LeftView.EntityView)}
-            />
-          </div>
-        ),
-      },
-      {
-        name: MenuEnum.military,
-        button: (
-          <CircleButton
-            disabled={disableButtons}
-            className="military-selector"
-            image={BuildingThumbs.military}
-            tooltipLocation="top"
-            label={military}
-            active={view === LeftView.MilitaryView}
-            size={"xl"}
-            onClick={() => setView(view === LeftView.MilitaryView ? LeftView.None : LeftView.MilitaryView)}
-          />
-        ),
-      },
-      {
-        name: MenuEnum.construction,
-        button: (
-          <CircleButton
-            disabled={disableButtons || !isRealmOrVillage || isMapView}
-            className="construction-selector"
-            image={BuildingThumbs.construction}
-            tooltipLocation="top"
-            label={construction}
-            active={view === LeftView.ConstructionView}
-            size={"xl"}
-            onClick={() => setView(view === LeftView.ConstructionView ? LeftView.None : LeftView.ConstructionView)}
-          />
-        ),
-      },
-      {
-        name: MenuEnum.resourceArrivals,
-        button: (
-          <div className="relative">
-            <CircleButton
-              disabled={disableButtons}
-              image={BuildingThumbs.trade}
-              tooltipLocation="top"
-              label="Resource Arrivals"
-              active={view === LeftView.ResourceArrivals}
-              size={"xl"}
-              onClick={() => setView(view === LeftView.ResourceArrivals ? LeftView.None : LeftView.ResourceArrivals)}
-            />
-            {(arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0) && (
-              <div className="absolute -top-0.5 -right-0.5 flex items-center gap-0.5">
-                {arrivedArrivalsNumber > 0 && (
-                  <div className="bg-emerald-900/70 text-emerald-400 text-[10px] rounded-full w-4 h-4 flex items-center justify-center shadow-sm border border-emerald-700/70 animate-pulse">
-                    {arrivedArrivalsNumber}
-                  </div>
-                )}
-                {pendingArrivalsNumber > 0 && (
-                  <div className="bg-amber-900/70 text-amber-400 text-[10px] rounded-full w-4 h-4 flex items-center justify-center shadow-sm border border-amber-700/70">
-                    {pendingArrivalsNumber}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        ),
-      },
-      {
-        name: MenuEnum.hyperstructures,
-        button: (
-          <CircleButton
-            disabled={disableButtons}
-            image={BuildingThumbs.hyperstructures}
-            tooltipLocation="top"
-            label={hyperstructures}
-            active={view === LeftView.HyperstructuresView}
-            size={"xl"}
-            onClick={() =>
-              setView(view === LeftView.HyperstructuresView ? LeftView.None : LeftView.HyperstructuresView)
-            }
-          />
-        ),
-      },
-      {
-        name: MenuEnum.trade,
-        button: (
-          <CircleButton
-            disabled={disableButtons}
-            className="trade-selector"
-            image={BuildingThumbs.scale}
-            tooltipLocation="top"
-            label={trade}
-            active={isPopupOpen(trade)}
-            size={"xl"}
-            onClick={() => toggleModal(isPopupOpen(trade) ? null : <MarketModal />)}
-          />
-        ),
-      },
-      {
-        name: MenuEnum.relics,
-        button: (
-          <CircleButton
-            disabled={disableButtons}
-            image={BuildingThumbs.relics}
-            tooltipLocation="top"
-            label="Relics"
-            active={view === LeftView.RelicsView}
-            size={"xl"}
-            onClick={() => setView(view === LeftView.RelicsView ? LeftView.None : LeftView.RelicsView)}
-          />
-        ),
-      },
-      {
-        name: MenuEnum.resourceTable,
-        button: (
-          <CircleButton
-            image={BuildingThumbs.resources}
-            size={"xl"}
-            tooltipLocation="top"
-            label="Balance"
-            active={view === LeftView.ResourceTable}
-            onClick={() => setView(view === LeftView.ResourceTable ? LeftView.None : LeftView.ResourceTable)}
-          />
-        ),
-      },
-    ];
-
-    const filteredNavigation = baseNavigation.filter((item) =>
-      [
-        MenuEnum.entityDetails,
-        MenuEnum.military,
-        ...(isMapView ? [] : [MenuEnum.construction]),
-        MenuEnum.hyperstructures,
-        MenuEnum.resourceArrivals,
-        MenuEnum.relics,
-        ...(getIsBlitz() ? [] : [MenuEnum.trade]),
-      ].includes(item.name as MenuEnum),
-    );
-
-    return filteredNavigation;
-  }, [
-    view,
-    openedPopups,
-    structureEntityId,
-    isMapView,
-    disableButtons,
-    isRealmOrVillage,
-    arrivedArrivalsNumber,
-    pendingArrivalsNumber,
-  ]);
+  const navigationItems = useMemo(
+    () =>
+      buildLeftNavigationItems({
+        view,
+        setView,
+        disableButtons,
+        isRealmOrVillage,
+        isMapView,
+        arrivedArrivalsNumber,
+        pendingArrivalsNumber,
+        toggleModal,
+        isTradeOpen,
+        isBlitz,
+      }),
+    [
+      view,
+      setView,
+      disableButtons,
+      isRealmOrVillage,
+      isMapView,
+      arrivedArrivalsNumber,
+      pendingArrivalsNumber,
+      toggleModal,
+      isTradeOpen,
+      isBlitz,
+    ],
+  );
 
   const slideLeft = {
     hidden: { x: "-100%" },
@@ -241,8 +253,6 @@ export const LeftNavigationModule = memo(() => {
   };
 
   const ConnectedAccount = useAccountStore((state) => state.account);
-
-  const isBlitz = getIsBlitz();
 
   return (
     <div className="flex flex-col">
@@ -275,8 +285,10 @@ export const LeftNavigationModule = memo(() => {
               className="flex flex-col justify-center pointer-events-auto"
             >
               <div className="flex flex-col mb-auto">
-                {navigation.map((item, index) => (
-                  <div key={index}>{item.button}</div>
+                {navigationItems.map((item) => (
+                  <div key={item.id}>
+                    <CircleButton {...item} />
+                  </div>
                 ))}
               </div>
             </motion.div>

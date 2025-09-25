@@ -3,23 +3,23 @@ import {
   BRIDGE_FEE_DENOMINATOR,
   BuildingType,
   CapacityConfig,
-  type Config as EternumConfig,
   HexGrid,
   RESOURCE_PRECISION,
-  type ResourceInputs,
-  type ResourceOutputs,
-  type ResourceWhitelistConfig,
   ResourcesIds,
   scaleResourceInputs,
   scaleResourceOutputs,
   scaleResources,
+  type Config as EternumConfig,
+  type ResourceInputs,
+  type ResourceOutputs,
+  type ResourceWhitelistConfig,
 } from "@bibliothecadao/types";
 
 import chalk from "chalk";
 
-import type { EternumProvider } from "@bibliothecadao/provider";
+import { getContractByName, NAMESPACE, type EternumProvider } from "@bibliothecadao/provider";
 import fs from "fs";
-import type { Account } from "starknet";
+import { byteArray, type Account } from "starknet";
 import type { NetworkType } from "utils/environment";
 import type { Chain } from "utils/utils";
 import { addCommas, hourMinutesSeconds, inGameAmount, shortHexAddress } from "../utils/formatting";
@@ -1428,6 +1428,30 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
     registration_start_at = registration_end_at - registration_period_seconds;
   }
 
+  const entryTokenClassHash = config.config.blitz.registration.entry_token_class_hash;
+  const entryTokenIpfsCid = byteArray.byteArrayFromString(config.config.blitz.registration.entry_token_ipfs_cid);
+  const entryTokenDeployCalldata = [
+    "0x0",
+    "0x5265616c6d733a204c6f6f74204368657374",
+    "0x12",
+    "0x0",
+    "0x524c43",
+    "0x3",
+    "0x0",
+    "0x0",
+    "0x0",
+    "0x0",
+    "0x4c6f6f7420436865737420666f72205265616c6d73",
+    "0x15",
+    "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
+    getContractByName(config.provider.manifest, `${NAMESPACE}-blitz_realm_systems`),
+    "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
+    getContractByName(config.provider.manifest, `${NAMESPACE}-config_systems`),
+    getContractByName(config.provider.manifest, `${NAMESPACE}-config_systems`),
+    "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
+    "0x1f4",
+  ];
+
   const registrationCalldata = {
     signer: config.account,
     fee_token: config.config.blitz.registration.fee_token,
@@ -1435,6 +1459,9 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
     fee_amount: config.config.blitz.registration.fee_amount,
     registration_count_max: config.config.blitz.registration.registration_count_max,
     registration_start_at: registration_start_at,
+    entry_token_class_hash: entryTokenClassHash,
+    entry_token_ipfs_cid: entryTokenIpfsCid,
+    entry_token_deploy_calldata: entryTokenDeployCalldata,
   };
 
   console.log(
@@ -1451,6 +1478,11 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
         timeZone: "UTC",
       }),
     )} UTC
+    │  ${chalk.gray("Entry Token IPFS CID:")} ${chalk.white(byteArray.stringFromByteArray(registrationCalldata.entry_token_ipfs_cid))}
+    │  ${chalk.gray("Entry Token Class Hash:")} ${chalk.white(registrationCalldata.entry_token_class_hash)}
+    │  ${chalk.gray("Entry Token Deploy Calldata:")} ${chalk.white(
+      `[${registrationCalldata.entry_token_deploy_calldata.slice(0, 3).join(", ")}, ..., ${registrationCalldata.entry_token_deploy_calldata.slice(-3).join(", ")}]`,
+    )}
     └────────────────────────────────`),
   );
 

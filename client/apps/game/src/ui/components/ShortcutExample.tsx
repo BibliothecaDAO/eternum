@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useShortcuts, useShortcut } from "@/utils/shortcuts";
+import { useShortcut, useShortcuts } from "@/utils/shortcuts";
+import React, { useCallback, useMemo, useState } from "react";
 
 /**
  * Example component demonstrating how to use the centralized shortcut system
@@ -10,39 +10,51 @@ export const ShortcutExample: React.FC = () => {
   const [mode, setMode] = useState<"normal" | "debug">("normal");
 
   // Example 1: Using useShortcuts hook for multiple shortcuts with a prefix
-  useShortcuts({
-    shortcuts: [
+  const increment = useCallback(() => setCount((prev) => prev + 1), []);
+  const decrement = useCallback(() => setCount((prev) => prev - 1), []);
+  const reset = useCallback(() => setCount(0), []);
+  const canReset = useCallback(() => count !== 0, [count]);
+
+  const shortcutsConfig = useMemo(
+    () => [
       {
         id: "increment",
         key: "ArrowUp",
         description: "Increment counter",
-        action: () => setCount((prev) => prev + 1),
+        action: increment,
       },
       {
         id: "decrement",
         key: "ArrowDown",
         description: "Decrement counter",
-        action: () => setCount((prev) => prev - 1),
+        action: decrement,
       },
       {
         id: "reset",
         key: "r",
         modifiers: { ctrl: true },
         description: "Reset counter",
-        action: () => setCount(0),
-        condition: () => count !== 0, // Only available when count is not 0
+        action: reset,
+        condition: canReset, // Only available when count is not 0
       },
     ],
+    [increment, decrement, reset, canReset],
+  );
+
+  useShortcuts({
+    shortcuts: shortcutsConfig,
     prefix: "shortcut-example", // All shortcuts will be prefixed with this
   });
 
   // Example 2: Using useShortcut hook for a single shortcut
+  const toggleMode = useCallback(() => setMode((prev) => (prev === "normal" ? "debug" : "normal")), []);
+
   useShortcut({
     id: "toggle-mode",
     key: "t",
     modifiers: { shift: true },
     description: "Toggle debug mode",
-    action: () => setMode((prev) => (prev === "normal" ? "debug" : "normal")),
+    action: toggleMode,
   });
 
   return (
@@ -58,7 +70,7 @@ export const ShortcutExample: React.FC = () => {
         </div>
       </div>
 
-      <div className="text-sm text-gray-600 space-y-1">
+      <div className="text-sm  space-y-1">
         <div>
           <kbd>↑</kbd> - Increment
         </div>
@@ -73,7 +85,7 @@ export const ShortcutExample: React.FC = () => {
         </div>
       </div>
 
-      <div className="mt-4 text-xs text-gray-500">
+      <div className="mt-4 text-xs ">
         <p>
           This component demonstrates both the useShortcuts hook (for multiple shortcuts with a prefix) and the
           useShortcut hook (for single shortcuts). All shortcuts are automatically cleaned up when the component

@@ -5,6 +5,7 @@ import { BaseThreeTooltip, Position } from "@/ui/design-system/molecules/base-th
 import { Headline } from "@/ui/design-system/molecules/headline";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { StaminaResourceCost } from "@/ui/design-system/molecules/stamina-resource-cost";
+import { formatBiomeBonus } from "@/ui/features/military";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import {
@@ -113,7 +114,7 @@ const TooltipContent = memo(
             </div>
           </div>
         )}
-        <div className="text-xs text-center mt-2 text-gray-400 animate-pulse">Right-click to confirm</div>
+        <div className="text-xs text-center mt-2  animate-pulse">Right-click to confirm</div>
       </>
     );
   },
@@ -149,13 +150,19 @@ export const ActionInfo = memo(() => {
     return actionPath?.[actionPath.length - 1].biomeType !== undefined;
   }, [actionPath]);
 
-  const costs = useMemo(
-    () => ({
-      travelFoodCosts: selectedEntityTroops ? computeTravelFoodCosts(selectedEntityTroops.troops) : 0,
-      exploreFoodCosts: selectedEntityTroops ? computeExploreFoodCosts(selectedEntityTroops.troops) : 0,
-    }),
-    [selectedEntityTroops],
-  );
+  const costs = useMemo(() => {
+    if (!selectedEntityTroops) {
+      return {
+        travelFoodCosts: { wheatPayAmount: 0, fishPayAmount: 0 },
+        exploreFoodCosts: { wheatPayAmount: 0, fishPayAmount: 0 },
+      };
+    }
+
+    return {
+      travelFoodCosts: computeTravelFoodCosts(selectedEntityTroops.troops),
+      exploreFoodCosts: computeExploreFoodCosts(selectedEntityTroops.troops),
+    };
+  }, [selectedEntityTroops]);
 
   if (!showTooltip || !selectedEntityId || !actionPath) return null;
 
@@ -246,19 +253,6 @@ const AttackInfo = memo(
       };
     }, [targetBiome]);
 
-    // Format the biome bonus as a percentage string with + or - sign
-    const formatBiomeBonus = (bonus: number) => {
-      const percentage = Math.round((bonus - 1) * 100);
-      return percentage >= 0 ? `+${percentage}%` : `${percentage}%`;
-    };
-
-    // Determine color classes based on advantage/disadvantage
-    const getBonusColorClass = (bonus: number) => {
-      if (bonus > 1) return "text-green-500";
-      if (bonus < 1) return "text-red-500";
-      return "text-gray-400";
-    };
-
     return (
       <div className="flex flex-col p-1 text-xs">
         {/* Stamina Status */}
@@ -292,40 +286,32 @@ const AttackInfo = memo(
               <div className="font-bold text-gold">Knight (Your Army)</div>
             )}
             {targetTroops?.category !== TroopType.Knight && <div>Knight</div>}
-            <div className={getBonusColorClass(biomeAdvantages.knight)}>{formatBiomeBonus(biomeAdvantages.knight)}</div>
+            <div className="text-sm">{formatBiomeBonus(biomeAdvantages.knight)}</div>
 
             {targetTroops?.category === TroopType.Paladin && (
               <div className="font-bold text-gold">Paladin (Your Army)</div>
             )}
             {targetTroops?.category !== TroopType.Paladin && <div>Paladin</div>}
-            <div className={getBonusColorClass(biomeAdvantages.paladin)}>
-              {formatBiomeBonus(biomeAdvantages.paladin)}
-            </div>
+            <div className="text-sm">{formatBiomeBonus(biomeAdvantages.paladin)}</div>
 
             {targetTroops?.category === TroopType.Crossbowman && (
               <div className="font-bold text-gold">Crossbowman (Your Army)</div>
             )}
             {targetTroops?.category !== TroopType.Crossbowman && <div>Crossbowman</div>}
-            <div className={getBonusColorClass(biomeAdvantages.crossbowman)}>
-              {formatBiomeBonus(biomeAdvantages.crossbowman)}
-            </div>
+            <div className="text-sm">{formatBiomeBonus(biomeAdvantages.crossbowman)}</div>
           </div>
 
           {/* Your Army's Biome Bonus Summary */}
           {targetTroops?.category && (
             <div className="mt-3 p-2 bg-dark-brown/50 rounded border border-gold/20">
               <div className="font-semibold text-gold">Your Army's Biome Effect</div>
-              <div className="flex items-center mt-1">
-                <span
-                  className={getBonusColorClass(
-                    biomeAdvantages[targetTroops.category.toLowerCase() as keyof typeof biomeAdvantages],
-                  )}
-                >
+              <div className="flex items-center mt-1 gap-2">
+                <span>
                   {formatBiomeBonus(
                     biomeAdvantages[targetTroops.category.toLowerCase() as keyof typeof biomeAdvantages],
                   )}
                 </span>
-                <span className="ml-2">
+                <span>
                   {biomeAdvantages[targetTroops.category.toLowerCase() as keyof typeof biomeAdvantages] > 1
                     ? "Advantage in this biome"
                     : biomeAdvantages[targetTroops.category.toLowerCase() as keyof typeof biomeAdvantages] < 1
@@ -415,10 +401,8 @@ const ChestInfo = memo(() => {
         <div className="text-lg p-1 pr-3">📦</div>
         <div className="flex flex-col p-1 text-xs">
           <div className="font-semibold text-gold mb-1">Relic Crate</div>
-          <div className="text-gray-300 mb-1">
-            Contains valuable relics that can enhance your structures and armies.
-          </div>
-          <div className="text-xs text-gray-400">Click to open the crate and collect relics.</div>
+          <div className=" mb-1">Contains valuable relics that can enhance your structures and armies.</div>
+          <div className="text-xs ">Click to open the crate and collect relics.</div>
         </div>
       </div>
     </div>
@@ -432,8 +416,8 @@ const HelpInfo = memo(() => {
         <div className="text-lg p-1 pr-3">🛡️</div>
         <div className="flex flex-col p-1 text-xs">
           <div className="font-semibold text-gold mb-1">Help</div>
-          <div className="text-gray-300 mb-1">Help an army that is attacking your structure.</div>
-          <div className="text-xs text-gray-400">Click to help the army.</div>
+          <div className=" mb-1">Help an army that is attacking your structure.</div>
+          <div className="text-xs ">Click to help the army.</div>
         </div>
       </div>
     </div>
@@ -447,7 +431,7 @@ const CreateArmyInfo = memo(() => {
         <div className="text-lg p-1 pr-3">🗡️</div>
         <div className="flex flex-col p-1 text-xs">
           <div className="font-semibold text-gold mb-1">Create Army</div>
-          <div className="text-gray-300 mb-1">Create an army to help you explore the world.</div>
+          <div className=" mb-1">Create an army to help you explore the world.</div>
         </div>
       </div>
     </div>

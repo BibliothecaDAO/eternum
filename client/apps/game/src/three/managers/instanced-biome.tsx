@@ -3,6 +3,7 @@ import { LAND_NAME } from "@/three/managers/instanced-model";
 import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
 import * as THREE from "three";
 import { AnimationClip, AnimationMixer } from "three";
+import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
 
 const zeroScaledMatrix = new THREE.Matrix4().makeScale(0, 0, 0);
 export default class InstancedModel {
@@ -14,6 +15,9 @@ export default class InstancedModel {
   private animation: AnimationClip | null = null;
   private animationActions: Map<number, THREE.AnimationAction> = new Map();
   timeOffsets: Float32Array;
+  // Animation throttling to reduce morph texture uploads
+  private lastAnimationUpdate = 0;
+  private animationUpdateInterval = 1000 / 20; // 20 FPS
 
   constructor(gltf: any, count: number, enableRaycast: boolean = false, name: string = "") {
     this.group = new THREE.Group();
@@ -98,20 +102,39 @@ export default class InstancedModel {
   }
 
   getMatricesAndCount() {
-    return {
-      matrices: (this.group.children[0] as THREE.InstancedMesh).instanceMatrix.clone(),
-      count: (this.group.children[0] as THREE.InstancedMesh).count,
-    };
+    const mesh = this.group.children[0] as THREE.InstancedMesh;
+    const count = mesh.count;
+    const pool = InstancedMatrixAttributePool.getInstance();
+    const snapshot = pool.acquire(count);
+    const requiredFloats = count * snapshot.itemSize;
+
+    snapshot.array.set((mesh.instanceMatrix.array as Float32Array).subarray(0, requiredFloats));
+
+    return { matrices: snapshot, count };
   }
 
   setMatricesAndCount(matrices: THREE.InstancedBufferAttribute, count: number) {
+    let resolvedCount = count;
     this.group.children.forEach((child) => {
       if (child instanceof THREE.InstancedMesh) {
-        child.instanceMatrix.copy(matrices);
-        child.count = count;
+        const targetArray = child.instanceMatrix.array as Float32Array;
+        const sourceArray = matrices.array as Float32Array;
+        const maxInstances = Math.floor(targetArray.length / child.instanceMatrix.itemSize);
+        const finalCount = Math.min(count, maxInstances);
+        const floatsToCopy = Math.min(
+          finalCount * child.instanceMatrix.itemSize,
+          sourceArray.length,
+          targetArray.length,
+        );
+        if (floatsToCopy > 0) {
+          targetArray.set(sourceArray.subarray(0, floatsToCopy));
+        }
+        child.count = finalCount;
         child.instanceMatrix.needsUpdate = true;
+        resolvedCount = Math.min(resolvedCount, finalCount);
       }
     });
+    this.count = resolvedCount;
   }
 
   setMatrixAt(index: number, matrix: THREE.Matrix4) {
@@ -164,13 +187,21 @@ export default class InstancedModel {
     this.group.updateMatrixWorld(true);
   }
 
-  updateAnimations(deltaTime: number) {
+  updateAnimations(_deltaTime: number) {
     if (GRAPHICS_SETTING === GraphicsSettings.LOW) {
       return;
     }
 
     if (this.mixer && this.animation) {
-      const time = performance.now() * 0.001;
+      const now = performance.now();
+
+      if (now - this.lastAnimationUpdate < this.animationUpdateInterval) {
+        return;
+      }
+
+      const time = now * 0.001;
+      let needsUpdate = false;
+
       this.instancedMeshes.forEach((mesh, meshIndex) => {
         // Create a single action for each mesh if it doesn't exist
         if (!this.animationActions.has(meshIndex)) {
@@ -186,7 +217,12 @@ export default class InstancedModel {
           mesh.setMorphAt(i, this.biomeMeshes[meshIndex]);
         }
         mesh.morphTexture!.needsUpdate = true;
+        needsUpdate = true;
       });
+
+      if (needsUpdate) {
+        this.lastAnimationUpdate = now;
+      }
     }
   }
 

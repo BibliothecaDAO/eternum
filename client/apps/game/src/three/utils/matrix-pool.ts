@@ -3,16 +3,16 @@
  */
 import { Matrix4 } from "three";
 
+const DEFAULT_POOL_SIZE = 4096;
+const GROWTH_STEP = 512;
+
 export class MatrixPool {
   private static instance: MatrixPool;
   private matrices: Matrix4[] = [];
   private inUse: Set<Matrix4> = new Set();
 
-  private constructor() {
-    // Pre-allocate pool
-    for (let i = 0; i < 1000; i++) {
-      this.matrices.push(new Matrix4());
-    }
+  private constructor(initialSize: number = DEFAULT_POOL_SIZE) {
+    this.expandPool(initialSize);
   }
 
   public static getInstance(): MatrixPool {
@@ -23,6 +23,10 @@ export class MatrixPool {
   }
 
   public getMatrix(): Matrix4 {
+    if (this.matrices.length === 0) {
+      this.expandPool(GROWTH_STEP);
+    }
+
     const matrix = this.matrices.pop() || new Matrix4();
     this.inUse.add(matrix);
     return matrix;
@@ -38,6 +42,17 @@ export class MatrixPool {
 
   public releaseAll(matrices: Matrix4[]): void {
     matrices.forEach((matrix) => this.releaseMatrix(matrix));
+  }
+
+  public ensureCapacity(requiredTotal: number): void {
+    const totalAllocated = this.matrices.length + this.inUse.size;
+    if (totalAllocated >= requiredTotal) {
+      return;
+    }
+
+    const deficit = requiredTotal - totalAllocated;
+    const chunks = Math.ceil(deficit / GROWTH_STEP);
+    this.expandPool(chunks * GROWTH_STEP);
   }
 
   /**
@@ -59,5 +74,11 @@ export class MatrixPool {
   public clear(): void {
     this.matrices = [];
     this.inUse.clear();
+  }
+
+  private expandPool(count: number) {
+    for (let i = 0; i < count; i++) {
+      this.matrices.push(new Matrix4());
+    }
   }
 }
