@@ -92,6 +92,7 @@
     "seasonresources:revoke:mainnet": "cd ./contracts/season_resources/ext/scripts/deployment && bun run revoke:mainnet",
     "collectibles:declare:local": "cd ./contracts/collectibles/ext/scripts && ./declare.sh",
     "collectibles:declare:slot": "cd ./contracts/collectibles/ext/scripts && ./declare.sh slot",
+    "collectibles:declare:slottest": "cd ./contracts/collectibles/ext/scripts && ./declare.sh slottest",
     "format": "pnpm prettier --write .",
     "format:check": "pnpm prettier --check .",
     "knip": "npx knip --exclude binaries,dependencies",
