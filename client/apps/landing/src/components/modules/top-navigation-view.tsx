@@ -1,16 +1,7 @@
 import { displayAddress } from "@/lib/utils";
 import ControllerConnector from "@cartridge/connector/controller";
 import { useAccount } from "@starknet-react/core";
-import {
-  ArrowDownUp,
-  ChevronDown,
-  CoinsIcon,
-  LogIn,
-  LogOut,
-  PlayIcon,
-  Sparkles,
-  Wallet,
-} from "lucide-react";
+import { ArrowDownUp, ChevronDown, CoinsIcon, LogIn, LogOut, PlayIcon, Sparkles, Wallet } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   DropdownMenu,
@@ -158,9 +149,7 @@ export const TopNavigationView = ({
                 <DropdownMenuLabel className="text-xs uppercase text-muted-foreground">Connect with</DropdownMenuLabel>
                 {connectors.map((walletConnector, index) => {
                   const icon =
-                    typeof walletConnector.icon === "string"
-                      ? walletConnector.icon
-                      : walletConnector.icon?.dark;
+                    typeof walletConnector.icon === "string" ? walletConnector.icon : walletConnector.icon?.dark;
                   const name = walletConnector.name ?? `Wallet ${index + 1}`;
 
                   return (

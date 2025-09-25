@@ -118,33 +118,29 @@ export async function fetchPlayerLeaderboard(
   limit: number = 10,
   offset: number = 0,
 ): Promise<PlayerLeaderboardEntry[]> {
-  const query = QUERIES.PLAYER_LEADERBOARD.replace("{limit}", limit.toString()).replace(
-    "{offset}",
-    offset.toString(),
-  );
+  const query = QUERIES.PLAYER_LEADERBOARD.replace("{limit}", limit.toString()).replace("{offset}", offset.toString());
 
   const rows = await gameClientFetch<PlayerLeaderboardRow[]>(query);
 
   return rows
     .map((row) => {
       const rawPointsValue =
-        typeof row.registered_points === "number"
-          ? row.registered_points
-          : Number(row.registered_points ?? 0);
+        typeof row.registered_points === "number" ? row.registered_points : Number(row.registered_points ?? 0);
 
       const safeRawPoints = Number.isFinite(rawPointsValue) ? rawPointsValue : 0;
 
       // Decode hex-encoded player name if it looks like a hex string
       let decodedPlayerName = row.player_name?.trim() || null;
-      if (decodedPlayerName && decodedPlayerName.startsWith('0x')) {
+      if (decodedPlayerName && decodedPlayerName.startsWith("0x")) {
         try {
           // Remove '0x' prefix and convert hex to ASCII
           const hexString = decodedPlayerName.slice(2);
-          let ascii = '';
+          let ascii = "";
           for (let i = 0; i < hexString.length; i += 2) {
             const hexByte = hexString.substr(i, 2);
             const charCode = parseInt(hexByte, 16);
-            if (charCode > 0 && charCode < 127) { // Only printable ASCII
+            if (charCode > 0 && charCode < 127) {
+              // Only printable ASCII
               ascii += String.fromCharCode(charCode);
             }
           }
@@ -153,7 +149,7 @@ export async function fetchPlayerLeaderboard(
           }
         } catch (error) {
           // If decoding fails, keep original value
-          console.warn('Failed to decode player name:', decodedPlayerName);
+          console.warn("Failed to decode player name:", decodedPlayerName);
         }
       }
 

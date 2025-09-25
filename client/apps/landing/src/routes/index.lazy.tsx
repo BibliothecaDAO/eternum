@@ -95,10 +95,7 @@ function Index() {
     refetchInterval: 60_000,
   });
 
-  const leaderboardFormatter = useMemo(
-    () => new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }),
-    [],
-  );
+  const leaderboardFormatter = useMemo(() => new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }), []);
 
   const topPlayers = useMemo<LeaderboardCardEntry[]>(() => {
     if (!leaderboardData) return [];
@@ -119,7 +116,7 @@ function Index() {
     });
   }, [leaderboardData, leaderboardFormatter]);
 
-  console.log({topPlayers})
+  console.log({ topPlayers });
 
   const gameStatus = fetchedGameStatus ?? DEFAULT_GAME_STATUS;
 
@@ -159,7 +156,8 @@ function Index() {
       title: "Settle Your Realms",
       description: "When you settle, your 3 realms are placed randomly on the map and the game starts.",
       icon: Castle,
-      highlight: "Everybody starts with the same 3 realms and the same resources. Randomly placed on the map. No one has an advantage.",
+      highlight:
+        "Everybody starts with the same 3 realms and the same resources. Randomly placed on the map. No one has an advantage.",
     },
     {
       value: "conquer",
@@ -173,7 +171,8 @@ function Index() {
       title: "Win Loot Chests or tokens",
       description: "Top performers earn rare chests packed with cosmetics, plus tokens.",
       icon: Boxes,
-      highlight: "A subset of top players can earn prizes, with prize values increasing depending on whether it's a free-to-play game or if you need to pay to enter.",
+      highlight:
+        "A subset of top players can earn prizes, with prize values increasing depending on whether it's a free-to-play game or if you need to pay to enter.",
     },
   ];
 
@@ -199,7 +198,8 @@ function Index() {
           <div className="mx-auto mb-10 max-w-2xl text-center space-y-3">
             <h2 className="text-3xl font-bold text-foreground sm:text-4xl">How Blitz Works</h2>
             <p className="text-sm text-muted-foreground sm:text-base">
-              Connect your wallet, settle your realms, battle for two hours, then claim your rewards. Rinse and repeat every six hours until the end of time.
+              Connect your wallet, settle your realms, battle for two hours, then claim your rewards. Rinse and repeat
+              every six hours until the end of time.
             </p>
           </div>
           <Tabs defaultValue={howItWorksSteps[0].value} className="mx-auto flex w-full max-w-5xl flex-col gap-6">
@@ -453,7 +453,9 @@ const CurrentCycleCard = memo(function CurrentCycleCard({
             {countdownLabel && countdownValue && (
               <div className="flex items-center justify-between gap-2 rounded-full border border-gold/20 bg-black/30 px-3 py-1 whitespace-nowrap">
                 <Clock className="h-3.5 w-3.5 text-gold" />
-                <span className="min-w-[84px] text-center font-mono font-semibold text-foreground">{countdownValue}</span>
+                <span className="min-w-[84px] text-center font-mono font-semibold text-foreground">
+                  {countdownValue}
+                </span>
                 <span className="text-xs text-muted-foreground">{countdownLabel.replace(" in", "")}</span>
               </div>
             )}
@@ -470,10 +472,11 @@ const CurrentCycleCard = memo(function CurrentCycleCard({
           <div className="flex flex-col gap-5">
             <div className="space-y-2 text-sm text-muted-foreground">
               <p className="font-semibold text-foreground">
-                Blitz is the most advanced onchain game ever built. A fresh match starts every six hours—rally your realm before the next horn sounds.
+                Blitz is the most advanced onchain game ever built. A fresh match starts every six hours—rally your
+                realm before the next horn sounds.
               </p>
               <p>
-                Need the finer details?{' '}
+                Need the finer details?{" "}
                 <a
                   className="text-gold underline underline-offset-2"
                   href="https://docs.realms.world/"
@@ -589,7 +592,9 @@ const CurrentCycleCard = memo(function CurrentCycleCard({
                   </div>
                 ))}
               </div>
-              <footer className="pt-3 text-[11px] text-muted-foreground">Data refreshes every 60 seconds via Torii.</footer>
+              <footer className="pt-3 text-[11px] text-muted-foreground">
+                Data refreshes every 60 seconds via Torii.
+              </footer>
             </div>
           )}
         </CardContent>
