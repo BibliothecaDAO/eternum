@@ -368,14 +368,17 @@ const MakeHyperstructuresState = ({
 const DevOptionsState = ({
   onDevModeRegister,
   onDevModeSettle,
+  onDevModeObtainEntryToken,
   devMode,
 }: {
   onDevModeRegister: () => Promise<void>;
   onDevModeSettle: () => Promise<void>;
+  onDevModeObtainEntryToken?: () => Promise<void>;
   devMode: boolean;
 }) => {
   const [isDevModeRegistering, setIsDevModeRegistering] = useState(false);
   const [isDevModeSettling, setIsDevModeSettling] = useState(false);
+  const [isDevModeObtainingToken, setIsDevModeObtainingToken] = useState(false);
 
   const handleDevModeRegister = async () => {
     setIsDevModeRegistering(true);
@@ -399,10 +402,44 @@ const DevOptionsState = ({
     }
   };
 
+  const handleDevModeObtainEntryToken = async () => {
+    if (!onDevModeObtainEntryToken) return;
+
+    setIsDevModeObtainingToken(true);
+    try {
+      await onDevModeObtainEntryToken();
+    } catch (error) {
+      console.error("Obtain entry token failed:", error);
+    } finally {
+      setIsDevModeObtainingToken(false);
+    }
+  };
+
   return (
     <>
       {devMode && (
         <>
+          {onDevModeObtainEntryToken && (
+            <>
+              {isDevModeObtainingToken ? (
+                <div className="flex items-center justify-center">
+                  <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
+                  <span>Obtaining Token...</span>
+                </div>
+              ) : (
+                <Button
+                  onClick={handleDevModeObtainEntryToken}
+                  disabled={isDevModeObtainingToken || !devMode}
+                  className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md animate-pulse"
+                >
+                  <div className="flex items-center justify-center">
+                    <TreasureChest className="w-5 h-5 mr-2 fill-brown" />
+                    <span>Dev Mode Obtain Entry Token</span>
+                  </div>
+                </Button>
+              )}
+            </>
+          )}
           {isDevModeRegistering ? (
             <div className="flex items-center justify-center">
               <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
@@ -1034,7 +1071,12 @@ export const BlitzOnboarding = () => {
         />
       }
       {devMode && (
-        <DevOptionsState onDevModeRegister={handleRegister} onDevModeSettle={handleSettle} devMode={devMode || false} />
+        <DevOptionsState 
+          onDevModeRegister={handleRegister} 
+          onDevModeSettle={handleSettle} 
+          onDevModeObtainEntryToken={requiresEntryToken ? handleObtainEntryToken : undefined}
+          devMode={devMode || false} 
+        />
       )}
       {gameState === GameState.NO_GAME && registration_start_at && (
         <NoGameState
