@@ -110,25 +110,34 @@
       <header class="space-y-3">
         <h1 class="text-3xl font-bold">Eternum Label Preview</h1>
         <p class="text-sm text-slate-400">
-          This page mirrors the in-game label system across camera views. Use it to validate layout changes without booting the client.
+          This page mirrors the in-game label system across camera views. Use it to validate layout changes without
+          booting the client.
         </p>
       </header>
 
       <section id="close-view-section" class="demo-section">
         <h2 class="text-2xl font-semibold mb-6 text-emerald-400">Close View — Full Detail</h2>
-        <p class="text-sm text-slate-400 mb-4">Shows everything available: rich owner info, production queues, stamina bars, and guard loadouts.</p>
+        <p class="text-sm text-slate-400 mb-4">
+          Shows everything available: rich owner info, production queues, stamina bars, and guard loadouts.
+        </p>
         <div class="label-grid" id="close-view-grid"></div>
       </section>
 
       <section id="medium-view-section" class="demo-section">
         <h2 class="text-2xl font-semibold mb-6 text-sky-400">Medium View — Condensed Summary</h2>
-        <p class="text-sm text-slate-400 mb-4">Cull supporting detail while keeping the tactical gist. Counts are compacted and badges slimmed to reduce clutter.</p>
+        <p class="text-sm text-slate-400 mb-4">
+          Cull supporting detail while keeping the tactical gist. Counts are compacted and badges slimmed to reduce
+          clutter.
+        </p>
         <div class="label-grid" id="medium-view-grid"></div>
       </section>
 
       <section id="far-view-section" class="demo-section">
         <h2 class="text-2xl font-semibold mb-6 text-yellow-400">Far View — Icon Overview</h2>
-        <p class="text-sm text-slate-400 mb-4">Stay situationally aware at map scale. Icons, ownership colouring, and attack indicators remain; text collapses.</p>
+        <p class="text-sm text-slate-400 mb-4">
+          Stay situationally aware at map scale. Icons, ownership colouring, and attack indicators remain; text
+          collapses.
+        </p>
         <div class="label-grid" id="far-view-grid"></div>
       </section>
 
@@ -141,10 +150,18 @@
       <section class="demo-section">
         <h2 class="text-2xl font-semibold mb-4 text-slate-200">Notes</h2>
         <ul class="list-disc list-inside text-slate-400 space-y-2 text-sm">
-          <li>Close view matches the previous medium-view experience—use it when the player hovers or zooms in tight.</li>
-          <li>Medium view compacts numbers (e.g. <code>1503 → 1.5k</code>), trims badges, and swaps stamina bars for simple percentage chips.</li>
+          <li>
+            Close view matches the previous medium-view experience—use it when the player hovers or zooms in tight.
+          </li>
+          <li>
+            Medium view compacts numbers (e.g. <code>1503 → 1.5k</code>), trims badges, and swaps stamina bars for
+            simple percentage chips.
+          </li>
           <li>Far view keeps icons centred and collapses supporting text to keep the world map readable.</li>
-          <li>All DOM is produced with the same helper logic as <code>label-factory.ts</code>; update this preview alongside gameplay changes.</li>
+          <li>
+            All DOM is produced with the same helper logic as <code>label-factory.ts</code>; update this preview
+            alongside gameplay changes.
+          </li>
         </ul>
       </section>
     </main>
@@ -418,7 +435,7 @@
           labelDiv.classList.remove("p-0.5");
           labelDiv.classList.add("px-1", "py-0.5", "gap-1", "text-[11px]");
         } else if (cameraView === CameraView.Close) {
-          labelDiv.classList.add("px-1", "py-1", "gap-1.5");
+          labelDiv.classList.add("px-1", "py-1", "gap-1");
         }
         if (cameraView === CameraView.Far) {
           labelDiv.classList.remove("inline-flex", "items-center");
@@ -451,10 +468,10 @@
         const spacerDiv = document.createElement("div");
         if (cameraView === CameraView.Medium) {
           spacerDiv.classList.add("w-1");
-          contentContainer.classList.add("gap-1.5");
+          contentContainer.classList.add("gap-1");
         } else if (cameraView === CameraView.Close) {
           spacerDiv.classList.add("w-2");
-          contentContainer.classList.add("gap-2");
+          contentContainer.classList.add("gap-1");
         } else {
           spacerDiv.classList.add("w-2");
         }
@@ -464,7 +481,9 @@
         }
 
         const expandedClasses =
-          cameraView === CameraView.Medium ? ["max-w-[420px]", "ml-1.5", "opacity-100"] : ["max-w-[1000px]", "ml-2", "opacity-100"];
+          cameraView === CameraView.Medium
+            ? ["max-w-[420px]", "ml-1.5", "opacity-100"]
+            : ["max-w-[1000px]", "ml-2", "opacity-100"];
         const collapsedClasses = ["max-w-0", "max-h-0", "h-0", "ml-0", "opacity-0", "pointer-events-none"];
         if (cameraView === CameraView.Far) {
           wrapperContainer.classList.add(...collapsedClasses);
@@ -478,7 +497,6 @@
         result.wrapper = wrapperContainer;
         return result;
       }
-
 
       function createStaminaBar(currentStamina, maxStamina, cameraView) {
         const container = document.createElement("div");
@@ -555,11 +573,11 @@
       function createTroopCountDisplay(count, troopType, tier, cameraView) {
         const container = document.createElement("div");
         container.setAttribute("data-component", "troop-count");
-        container.classList.add("flex", "items-center", "rounded", "bg-black/40", "text-xxs");
+        container.classList.add("flex", "items-center", "rounded", "bg-black/40", "text-xxs", "w-fit");
         if (cameraView === CameraView.Medium) {
           container.classList.add("gap-1", "px-1", "py-0.5");
         } else {
-          container.classList.add("gap-2", "px-1.5", "py-0.5");
+          container.classList.add("gap-1", "px-1.5", "py-0.5");
         }
 
         const swordIcon = document.createElement("span");
@@ -628,7 +646,7 @@
             return;
           }
           const guardDiv = document.createElement("div");
-          guardDiv.classList.add("flex", "items-center", "gap-2", "rounded", "px-1.5", "py-0.5", "bg-black/40");
+          guardDiv.classList.add("flex", "items-center", "gap-1", "rounded", "px-1.5", "py-0.5", "bg-black/40");
 
           const shieldIcon = document.createElement("span");
           shieldIcon.textContent = "🛡️";
@@ -668,7 +686,7 @@
         if (cameraView === CameraView.Medium) {
           container.classList.add("flex", "flex-wrap", "items-center", "gap-1", "text-[11px]", "text-gray-200");
         } else {
-          container.classList.add("flex", "flex-wrap", "items-center", "gap-2", "text-xxs", "py-1");
+          container.classList.add("flex", "flex-wrap", "items-center", "gap-1", "text-xxs", "py-1");
         }
 
         if (!activeProductions || activeProductions.length === 0) {
@@ -681,7 +699,10 @@
 
         if (cameraView === CameraView.Medium) {
           const totalBuildings = activeProductions.reduce((total, production) => {
-            const count = typeof production.buildingCount === "number" ? production.buildingCount : Number(production.buildingCount ?? 0);
+            const count =
+              typeof production.buildingCount === "number"
+                ? production.buildingCount
+                : Number(production.buildingCount ?? 0);
             return total + (Number.isNaN(count) ? 0 : count);
           }, 0);
 
@@ -779,7 +800,7 @@
           return null;
         }
         const container = document.createElement("div");
-        container.classList.add("flex", "items-center", "justify-center", "gap-2", "text-xxs", "animate-fade-in");
+        container.classList.add("flex", "items-center", "justify-center", "gap-1", "text-xxs", "animate-fade-in");
         container.setAttribute("data-component", "direction-indicators");
 
         if (attackedTowardDegrees !== undefined) {
@@ -818,11 +839,10 @@
           return;
         }
 
-        const paddingBottom = "0.5rem";
         const offsetClass = cameraView === CameraView.Close ? "mt-1.5" : "mt-1";
         const textSizeClass = cameraView === CameraView.Close ? "text-[11px]" : "text-[10px]";
 
-        directionIndicators.classList.remove("gap-2", "text-xxs", "w-full", "px-2", "mt-1");
+        directionIndicators.classList.remove("gap-1", "text-xxs", "w-full", "px-2", "mt-1");
         directionIndicators.classList.add(
           "absolute",
           "left-1/2",
@@ -844,7 +864,6 @@
         );
 
         labelDiv.classList.add("relative", "overflow-visible");
-        labelDiv.style.setProperty("padding-bottom", paddingBottom);
         labelDiv.appendChild(directionIndicators);
       }
 
@@ -862,7 +881,9 @@
           [StructureType.Realm]: "/images/labels/enemy_realm.png",
           [StructureType.Hyperstructure]: "/images/labels/hyperstructure.png",
           [StructureType.Bank]: `/images/resources/${ResourcesIds.Lords}.png`,
-          [StructureType.FragmentMine]: isBlitz ? "/images/labels/essence_rift.png" : "/images/labels/fragment_mine.png",
+          [StructureType.FragmentMine]: isBlitz
+            ? "/images/labels/essence_rift.png"
+            : "/images/labels/fragment_mine.png",
         },
         MY_STRUCTURES: {
           [StructureType.Village]: "/images/labels/village.png",
@@ -1052,10 +1073,7 @@
           contentContainer.appendChild(productionsDisplay);
         }
 
-        if (
-          data.hyperstructureRealmCount !== undefined &&
-          data.structureType === StructureType.Hyperstructure
-        ) {
+        if (data.hyperstructureRealmCount !== undefined && data.structureType === StructureType.Hyperstructure) {
           const isOwned = data.owner && data.owner.address && data.owner.address !== 0n;
           const realmCountDisplay = document.createElement("div");
           realmCountDisplay.classList.add(
@@ -1439,7 +1457,15 @@
 
         entries.forEach((entry) => {
           const card = document.createElement("div");
-          card.classList.add("bg-slate-800/60", "border", "border-slate-700/60", "rounded-lg", "py-4", "px-3", "text-center");
+          card.classList.add(
+            "bg-slate-800/60",
+            "border",
+            "border-slate-700/60",
+            "rounded-lg",
+            "py-4",
+            "px-3",
+            "text-center",
+          );
           const label = document.createElement("p");
           label.classList.add("text-sm", "text-slate-400", "mb-2");
           label.textContent = entry.label;
