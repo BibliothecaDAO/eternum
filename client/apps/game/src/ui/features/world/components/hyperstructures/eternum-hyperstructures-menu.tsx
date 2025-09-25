@@ -43,8 +43,17 @@ export const EternumHyperstructuresMenu = ({ className }: { className?: string }
 
   // Favorites state with localStorage persistence
   const [favorites, setFavorites] = useState<number[]>(() => {
-    const saved = localStorage.getItem("favoriteHyperstructures");
-    return saved ? JSON.parse(saved) : [];
+    if (typeof window === "undefined") {
+      return [];
+    }
+
+    try {
+      const saved = window.localStorage.getItem("favoriteHyperstructures");
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.warn("Failed to read favorite hyperstructures from storage", error);
+      return [];
+    }
   });
 
   const hyperstructures = useHyperstructures();
@@ -76,7 +85,13 @@ export const EternumHyperstructuresMenu = ({ className }: { className?: string }
     event.stopPropagation(); // Prevent triggering the row click
     setFavorites((prev) => {
       const newFavorites = prev.includes(entityId) ? prev.filter((id) => id !== entityId) : [...prev, entityId];
-      localStorage.setItem("favoriteHyperstructures", JSON.stringify(newFavorites));
+      if (typeof window !== "undefined") {
+        try {
+          window.localStorage.setItem("favoriteHyperstructures", JSON.stringify(newFavorites));
+        } catch (error) {
+          console.warn("Failed to persist favorite hyperstructures", error);
+        }
+      }
       return newFavorites;
     });
   }, []);

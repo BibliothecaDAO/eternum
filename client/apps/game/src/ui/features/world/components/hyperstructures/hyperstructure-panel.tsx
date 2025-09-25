@@ -78,8 +78,13 @@ export const HyperstructurePanel = ({ entity }: any) => {
   const hyperstructure = useComponentValue(components.Hyperstructure, getEntityIdFromKeys([BigInt(entity.entity_id)]));
 
   const playerGuild = useMemo(
-    () => getGuildFromPlayerAddress(ContractAddress(account.address), dojo.setup.components),
-    [],
+    () => getGuildFromPlayerAddress(ContractAddress(account.address), components),
+    [account.address, components],
+  );
+
+  const hyperstructureOwnerGuild = useMemo(
+    () => getGuildFromPlayerAddress(ContractAddress(entity?.owner ?? 0n), components),
+    [entity?.owner, components],
   );
 
   // Get the AncientFragment balance of the hyperstructure entity
@@ -147,18 +152,28 @@ export const HyperstructurePanel = ({ entity }: any) => {
   };
 
   const canContribute = useMemo(() => {
-    const hyperstructureOwnerGuild = getGuildFromPlayerAddress(BigInt(entity?.owner || 0), components);
-    return (
-      entity.isOwner ||
-      (hyperstructure?.access === Access[Access.GuildOnly] &&
-        playerGuild?.entityId !== undefined &&
-        playerGuild.entityId !== 0n &&
+    if (!hyperstructure) return false;
+
+    if (entity.isOwner) return true;
+
+    if (hyperstructure.access === Access[Access.Public]) {
+      return true;
+    }
+
+    if (hyperstructure.access === Access[Access.GuildOnly]) {
+      if (!playerGuild?.entityId || playerGuild.entityId === 0n) {
+        return false;
+      }
+
+      return (
         hyperstructureOwnerGuild?.entityId !== undefined &&
         hyperstructureOwnerGuild.entityId !== 0n &&
-        hyperstructureOwnerGuild.entityId === playerGuild.entityId) ||
-      hyperstructure?.access === Access[Access.Public]
-    );
-  }, [newContributions, structureEntityId]);
+        hyperstructureOwnerGuild.entityId === playerGuild.entityId
+      );
+    }
+
+    return false;
+  }, [entity.isOwner, hyperstructure, playerGuild?.entityId, hyperstructureOwnerGuild?.entityId]);
 
   // Function to get the specific reason why user can't contribute
   const getContributionRestrictionMessage = useMemo(() => {
@@ -174,8 +189,6 @@ export const HyperstructurePanel = ({ entity }: any) => {
     }
 
     if (!canContribute) {
-      const hyperstructureOwnerGuild = getGuildFromPlayerAddress(BigInt(entity?.owner || 0), components);
-
       if (hyperstructure?.access === Access[Access.Private]) {
         return {
           type: "error",
@@ -201,7 +214,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
     }
 
     return null;
-  }, [canContribute, hyperstructure, progresses.percentage, entity?.owner, playerGuild, components]);
+  }, [canContribute, hyperstructure, progresses.percentage, playerGuild?.entityId, hyperstructureOwnerGuild?.entityId]);
 
   const resourceElements = useMemo(() => {
     if (progresses.percentage === 100) return;
@@ -247,14 +260,18 @@ export const HyperstructurePanel = ({ entity }: any) => {
     canContribute,
     hyperstructure,
     resetContributions,
+    components,
+    entity.entity_id,
   ]);
 
   const myShares = useMemo(() => {
-    return LeaderboardManager.instance(dojo.setup.components, getRealmCountPerHyperstructure()).getPlayerShares(
-      ContractAddress(account.address),
-      entity.entity_id,
+    return (
+      LeaderboardManager.instance(components, getRealmCountPerHyperstructure()).getPlayerShares(
+        ContractAddress(account.address),
+        entity.entity_id,
+      ) || 0
     );
-  }, [updates, structureEntityId]);
+  }, [components, account.address, entity.entity_id, updates]);
 
   const setAccess = async (access: bigint) => {
     setIsLoading(Loading.SetPrivate);

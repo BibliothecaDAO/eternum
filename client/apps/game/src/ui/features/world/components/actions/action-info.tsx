@@ -150,13 +150,19 @@ export const ActionInfo = memo(() => {
     return actionPath?.[actionPath.length - 1].biomeType !== undefined;
   }, [actionPath]);
 
-  const costs = useMemo(
-    () => ({
-      travelFoodCosts: selectedEntityTroops ? computeTravelFoodCosts(selectedEntityTroops.troops) : 0,
-      exploreFoodCosts: selectedEntityTroops ? computeExploreFoodCosts(selectedEntityTroops.troops) : 0,
-    }),
-    [selectedEntityTroops],
-  );
+  const costs = useMemo(() => {
+    if (!selectedEntityTroops) {
+      return {
+        travelFoodCosts: { wheatPayAmount: 0, fishPayAmount: 0 },
+        exploreFoodCosts: { wheatPayAmount: 0, fishPayAmount: 0 },
+      };
+    }
+
+    return {
+      travelFoodCosts: computeTravelFoodCosts(selectedEntityTroops.troops),
+      exploreFoodCosts: computeExploreFoodCosts(selectedEntityTroops.troops),
+    };
+  }, [selectedEntityTroops]);
 
   if (!showTooltip || !selectedEntityId || !actionPath) return null;
 
