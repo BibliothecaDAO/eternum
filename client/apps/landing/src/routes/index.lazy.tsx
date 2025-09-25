@@ -451,10 +451,10 @@ const CurrentCycleCard = memo(function CurrentCycleCard({
               {currentPhaseLabel}
             </Badge>
             {countdownLabel && countdownValue && (
-              <div className="flex items-center gap-1 rounded-full border border-gold/20 bg-black/30 px-3 py-1">
+              <div className="flex items-center justify-between gap-2 rounded-full border border-gold/20 bg-black/30 px-3 py-1 whitespace-nowrap">
                 <Clock className="h-3.5 w-3.5 text-gold" />
-                <span className="font-medium text-foreground">{countdownValue}</span>
-                <span>{countdownLabel.replace(" in", "")}</span>
+                <span className="min-w-[84px] text-center font-mono font-semibold text-foreground">{countdownValue}</span>
+                <span className="text-xs text-muted-foreground">{countdownLabel.replace(" in", "")}</span>
               </div>
             )}
             <div className="flex items-center gap-1 rounded-full border border-gold/20 bg-black/30 px-3 py-1">
