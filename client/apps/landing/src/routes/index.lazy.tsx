@@ -356,6 +356,7 @@ const CurrentCycleCard = memo(function CurrentCycleCard({
 }) {
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
   const [milestonesOpen, setMilestonesOpen] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -416,18 +417,15 @@ const CurrentCycleCard = memo(function CurrentCycleCard({
 
   const countdownLabel = countdownData.label && countdownSeconds !== null ? countdownData.label : null;
   const countdownValue = countdownSeconds !== null ? formatCountdown(countdownSeconds) : null;
-  const topPlayerSummary = topPlayers[0]?.displayName ?? "Leaderboard updating";
+  const hasLeaderboard = topPlayers.length > 0;
+  const winner = hasLeaderboard ? topPlayers[0] : null;
+  const topPlayerSummary = winner?.displayName ?? "Leaderboard updating";
 
-  const topPlayerItems: LeaderboardCardEntry[] =
-    topPlayers.length > 0
-      ? topPlayers
-      : Array.from({ length: 3 }, (_, index) => ({
-          rank: index + 1,
-          displayName: "Pending player",
-          displayAddress: "—",
-          displayPoints: "—",
-          playerAddress: `${index}-placeholder`,
-        }));
+  useEffect(() => {
+    if (!hasLeaderboard && showLeaderboard) {
+      setShowLeaderboard(false);
+    }
+  }, [hasLeaderboard, showLeaderboard]);
 
   return (
     <motion.div
@@ -466,7 +464,9 @@ const CurrentCycleCard = memo(function CurrentCycleCard({
           </div>
         </CardHeader>
 
-        <CardContent className="grid gap-6 p-6 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+        <CardContent
+          className={`grid gap-6 p-6 ${hasLeaderboard && showLeaderboard ? "md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]" : ""}`}
+        >
           <div className="flex flex-col gap-5">
             <div className="space-y-2 text-sm text-muted-foreground">
               <p className="font-semibold text-foreground">
@@ -519,6 +519,40 @@ const CurrentCycleCard = memo(function CurrentCycleCard({
               Both clients run on the Blitz testnet. Expect rapid iteration.
             </div>
 
+            {hasLeaderboard && winner && (
+              <div className="flex flex-col gap-4 rounded-xl border border-gold/20 bg-black/25 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-gold">
+                    <Trophy className="h-4 w-4" />
+                    Cycle leader
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-gold/30 text-gold hover:bg-gold/10"
+                    onClick={() => setShowLeaderboard((prev) => !prev)}
+                  >
+                    {showLeaderboard ? "Hide top 3" : "View top 3"}
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold/20 text-base font-semibold text-gold">
+                      1
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold text-foreground">{winner.displayName}</span>
+                      <span className="text-[11px] text-muted-foreground">{winner.displayAddress}</span>
+                    </div>
+                  </div>
+                  <span className="text-lg font-semibold text-gold">
+                    {winner.displayPoints}
+                    <span className="ml-1 text-xs font-normal text-muted-foreground">VP</span>
+                  </span>
+                </div>
+              </div>
+            )}
+
             {phaseDetails.length > 0 && (
               <div className="flex justify-end">
                 <Button variant="outline" size="sm" onClick={() => setMilestonesOpen(true)}>
@@ -528,37 +562,36 @@ const CurrentCycleCard = memo(function CurrentCycleCard({
             )}
           </div>
 
-          <div className="flex h-full flex-col rounded-xl border border-gold/15 bg-black/30 p-5">
-            <div className="flex items-center justify-between pb-3">
-              <h3 className="text-sm font-semibold text-foreground">Top 3 Players</h3>
-              <Button variant="ghost" size="sm" className="text-xs text-gold">
-                View Full Leaderboard →
-              </Button>
-            </div>
-            <div className="flex flex-1 flex-col gap-3">
-              {topPlayerItems.map((player) => (
-                <div
-                  key={`${player.rank}-${player.playerAddress}`}
-                  className="flex items-center justify-between rounded-lg border border-gold/10 bg-black/50 px-3 py-2"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gold/20 text-sm font-semibold text-gold">
-                      {player.rank}
+          {hasLeaderboard && showLeaderboard && (
+            <div className="flex h-full flex-col rounded-xl border border-gold/15 bg-black/30 p-5">
+              <div className="flex items-center justify-between pb-3">
+                <h3 className="text-sm font-semibold text-foreground">Top 3 Players</h3>
+              </div>
+              <div className="flex flex-1 flex-col gap-3">
+                {topPlayers.map((player) => (
+                  <div
+                    key={`${player.rank}-${player.playerAddress}`}
+                    className="flex items-center justify-between rounded-lg border border-gold/10 bg-black/50 px-3 py-2"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gold/20 text-sm font-semibold text-gold">
+                        {player.rank}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold text-foreground">{player.displayName}</span>
+                        <span className="text-[11px] text-muted-foreground">{player.displayAddress}</span>
+                      </div>
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-semibold text-foreground">{player.displayName}</span>
-                      <span className="text-[11px] text-muted-foreground">{player.displayAddress}</span>
-                    </div>
+                    <span className="text-sm font-semibold text-gold">
+                      {player.displayPoints}
+                      <span className="ml-1 text-[11px] font-normal text-muted-foreground">VP</span>
+                    </span>
                   </div>
-                  <span className="text-sm font-semibold text-gold">
-                    {player.displayPoints}
-                    <span className="ml-1 text-[11px] font-normal text-muted-foreground">VP</span>
-                  </span>
-                </div>
-              ))}
+                ))}
+              </div>
+              <footer className="pt-3 text-[11px] text-muted-foreground">Data refreshes every 60 seconds via Torii.</footer>
             </div>
-            <footer className="pt-3 text-[11px] text-muted-foreground">Data refreshes every 60 seconds via Torii.</footer>
-          </div>
+          )}
         </CardContent>
       </Card>
 
