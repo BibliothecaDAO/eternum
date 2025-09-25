@@ -128,9 +128,7 @@ export const StructureSelectPanel = memo(
               <>
                 {getStructureIcon(selectedStructure)}
                 <span>
-                  {selectedStructure.structure
-                    ? getStructureName(selectedStructure.structure, getIsBlitz()).name
-                    : ""}
+                  {selectedStructure.structure ? getStructureName(selectedStructure.structure, getIsBlitz()).name : ""}
                 </span>
               </>
             </h5>

@@ -859,7 +859,12 @@ export const AutomationTransferTable: React.FC = () => {
         </Panel>
       ) : (
         <>
-          <Panel tone="glass" radius="md" padding="md" className="mb-4 bg-black/20 flex items-center justify-between gap-4">
+          <Panel
+            tone="glass"
+            radius="md"
+            padding="md"
+            className="mb-4 bg-black/20 flex items-center justify-between gap-4"
+          >
             <div>
               <h4>
                 Source: {selectedSource.name} ({selectedSource.entityId})
@@ -977,7 +982,12 @@ export const AutomationTransferTable: React.FC = () => {
               )}
             </Panel>
           ) : (
-            <Panel tone="glass" radius="md" padding="md" className="mb-4 bg-black/20 flex items-center justify-between gap-4">
+            <Panel
+              tone="glass"
+              radius="md"
+              padding="md"
+              className="mb-4 bg-black/20 flex items-center justify-between gap-4"
+            >
               <div>
                 <h4>
                   Destination: {selectedDestination.name} ({selectedDestination.entityId})

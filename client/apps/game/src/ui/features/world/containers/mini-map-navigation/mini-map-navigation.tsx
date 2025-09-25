@@ -2,12 +2,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getIsBlitz } from "@bibliothecadao/eternum";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  INITIAL_VISIBILITY_STATE,
-  buildToggleConfig,
-  type MiniMapToggleKey,
-  type VisibilityState,
-} from "./config";
+import { INITIAL_VISIBILITY_STATE, buildToggleConfig, type MiniMapToggleKey, type VisibilityState } from "./config";
 import { MiniMapControlPanel } from "./control-panel";
 import { MiniMapCanvas } from "./minimap-canvas";
 import { MiniMapToggleList } from "./toggle-list";

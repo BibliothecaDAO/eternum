@@ -292,14 +292,8 @@ export const EternumHyperstructuresMenu = ({ className }: { className?: string }
                     const titleSuffix = (
                       <div className="flex items-center gap-1">
                         {hyperstructure?.access && <AccessBadge access={hyperstructure.access} />}
-                        <div
-                          className="flex items-center gap-1 ml-1"
-                          onClick={(event) => event.stopPropagation()}
-                        >
-                          <ViewOnMapIcon
-                            className="my-auto hover:scale-110 transition-transform"
-                            position={position}
-                          />
+                        <div className="flex items-center gap-1 ml-1" onClick={(event) => event.stopPropagation()}>
+                          <ViewOnMapIcon className="my-auto hover:scale-110 transition-transform" position={position} />
                           <NavigateToPositionIcon
                             className="h-6 w-6 hover:scale-110 transition-transform"
                             position={position}

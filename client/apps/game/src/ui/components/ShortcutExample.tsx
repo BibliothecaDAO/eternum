@@ -47,10 +47,7 @@ export const ShortcutExample: React.FC = () => {
   });
 
   // Example 2: Using useShortcut hook for a single shortcut
-  const toggleMode = useCallback(
-    () => setMode((prev) => (prev === "normal" ? "debug" : "normal")),
-    [],
-  );
+  const toggleMode = useCallback(() => setMode((prev) => (prev === "normal" ? "debug" : "normal")), []);
 
   useShortcut({
     id: "toggle-mode",

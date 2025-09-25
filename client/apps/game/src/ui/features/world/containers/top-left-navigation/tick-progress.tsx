@@ -86,7 +86,11 @@ export const TickProgress = memo(() => {
   const outerRadius = 14;
 
   return (
-    <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} className="self-center text-center px-1 py-1 flex gap-1 text-xl items-center">
+    <div
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className="self-center text-center px-1 py-1 flex gap-1 text-xl items-center"
+    >
       <div className="relative w-8 h-8">
         <svg width={size} height={size} className="transform -rotate-90">
           {PHASES.map((phase, index) => {

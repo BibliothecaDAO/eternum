@@ -48,9 +48,7 @@ export const saveFavoriteStructures = (favorites: number[]): void => {
 };
 
 export const toggleFavoriteStructure = (favorites: number[], entityId: number): number[] => {
-  return favorites.includes(entityId)
-    ? favorites.filter((id) => id !== entityId)
-    : [...favorites, entityId];
+  return favorites.includes(entityId) ? favorites.filter((id) => id !== entityId) : [...favorites, entityId];
 };
 
 export const useFavoriteStructures = () => {

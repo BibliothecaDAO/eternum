@@ -19,14 +19,7 @@ type RightNavigationItem = {
   id: MenuEnum;
 } & Pick<
   CircleButtonProps,
-  | "active"
-  | "className"
-  | "disabled"
-  | "image"
-  | "label"
-  | "onClick"
-  | "size"
-  | "tooltipLocation"
+  "active" | "className" | "disabled" | "image" | "label" | "onClick" | "size" | "tooltipLocation"
 >;
 
 type RightNavigationContext = {
@@ -46,8 +39,7 @@ const buildRightNavigationItems = ({
   toggleModal,
   isBlitz,
 }: RightNavigationContext): RightNavigationItem[] => {
-  const toggleView = (targetView: RightView) => () =>
-    setView(view === targetView ? RightView.None : targetView);
+  const toggleView = (targetView: RightView) => () => setView(view === targetView ? RightView.None : targetView);
 
   const items: RightNavigationItem[] = [
     {

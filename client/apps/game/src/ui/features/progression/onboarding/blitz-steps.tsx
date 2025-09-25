@@ -578,7 +578,7 @@ const RegistrationState = ({
                           ? "Mint failed. Please try again."
                           : "Mint an entry token before registering. Tokens are locked automatically during registration."}
                 </p>
-                {requiresEntryToken && (entryTokenBalance < 1 )&& (
+                {requiresEntryToken && entryTokenBalance < 1 && (
                   <p className="text-xs text-red-300 text-center">Top up your balance before registering.</p>
                 )}
               </div>
@@ -678,7 +678,11 @@ const GameActiveState = ({
           <>
             {hasSettled ? (
               <>
-                <Button onClick={handlePlay} forceUppercase={false} className="w-full h-12 !text-brown !bg-gold rounded-md ">
+                <Button
+                  onClick={handlePlay}
+                  forceUppercase={false}
+                  className="w-full h-12 !text-brown !bg-gold rounded-md "
+                >
                   <div className="flex items-center justify-center">
                     <Sword className="w-5 h-5 mr-2 fill-brown" />
                     <span>Play Blitz</span>
@@ -1055,9 +1059,7 @@ export const BlitzOnboarding = () => {
                 </span>
               </div>
               {!hasSufficientFeeBalance && (
-                <p className="text-xs text-red-300">
-                  Top balance to cover entry token fee.
-                </p>
+                <p className="text-xs text-red-300">Top balance to cover entry token fee.</p>
               )}
               {canTopUpBalance && !hasSufficientFeeBalance && (
                 <Button
@@ -1081,11 +1083,11 @@ export const BlitzOnboarding = () => {
         />
       }
       {devMode && (
-        <DevOptionsState 
-          onDevModeRegister={handleRegister} 
-          onDevModeSettle={handleSettle} 
+        <DevOptionsState
+          onDevModeRegister={handleRegister}
+          onDevModeSettle={handleSettle}
           onDevModeObtainEntryToken={requiresEntryToken ? handleObtainEntryToken : undefined}
-          devMode={devMode || false} 
+          devMode={devMode || false}
         />
       )}
       {gameState === GameState.NO_GAME && registration_start_at && (

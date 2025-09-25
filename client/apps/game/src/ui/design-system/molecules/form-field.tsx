@@ -41,10 +41,7 @@ export const FormField = ({
   return (
     <div className={clsx("flex flex-col", spacingClassMap[spacing], className)}>
       {label && (
-        <label
-          htmlFor={htmlFor}
-          className="text-sm font-medium text-gold/90 tracking-wide uppercase"
-        >
+        <label htmlFor={htmlFor} className="text-sm font-medium text-gold/90 tracking-wide uppercase">
           {labelContent}
         </label>
       )}

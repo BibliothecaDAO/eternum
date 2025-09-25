@@ -43,7 +43,13 @@ export const CircularProgress = ({
   return (
     <div className={cn("relative inline-flex items-center justify-center", sizeClasses[size], className)}>
       <svg className="w-full h-full -rotate-90">
-        <circle cx="50%" cy="50%" r={radius} className="fill-none stroke-gray-700 opacity-25" strokeWidth={strokeWidth} />
+        <circle
+          cx="50%"
+          cy="50%"
+          r={radius}
+          className="fill-none stroke-gray-700 opacity-25"
+          strokeWidth={strokeWidth}
+        />
         <circle
           cx="50%"
           cy="50%"

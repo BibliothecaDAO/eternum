@@ -147,9 +147,7 @@ export const BlitzHyperstructuresMenu = () => {
     </div>
   );
 
-  const listDescription = (
-    <div className="text-xs text-gold/50 mb-4">Sorted by distance: closest to furthest</div>
-  );
+  const listDescription = <div className="text-xs text-gold/50 mb-4">Sorted by distance: closest to furthest</div>;
 
   const emptyState = (
     <div className="text-center py-8 text-gold/60">
