@@ -37,7 +37,6 @@ export class InstancedMatrixAttributePool {
       };
     }
 
-    pooled.attribute.count = requiredMatrices;
     this.inUse.add(pooled.attribute);
     return pooled.attribute;
   }
@@ -49,7 +48,6 @@ export class InstancedMatrixAttributePool {
 
     this.inUse.delete(attribute);
     const capacity = attribute.array.length / ELEMENTS_PER_MATRIX;
-    attribute.count = 0;
     this.available.push({ attribute, capacity });
   }
 
