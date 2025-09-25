@@ -1,6 +1,8 @@
 import { AudioManager } from "@/audio/core/AudioManager";
 import throttle from "lodash/throttle";
 
+import { toast } from "sonner";
+
 import { getMapFromToriiExact } from "@/dojo/queries";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -16,7 +18,7 @@ import { RelicSource, StructureManager } from "@/three/managers/structure-manage
 import { SceneManager } from "@/three/scene-manager";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playResourceSound } from "@/three/sound/utils";
-import { LeftView } from "@/types";
+import { LeftView, RightView } from "@/types";
 import { Position } from "@bibliothecadao/eternum";
 
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
@@ -118,6 +120,8 @@ export default class WorldmapScene extends HexagonScene {
   private structurePulseColorCache: Map<string, { base: Color; pulse: Color }> = new Map();
   private armyStructureOwners: Map<ID, ID> = new Map();
   private minimap!: Minimap;
+  private followCameraTimeout: ReturnType<typeof setTimeout> | null = null;
+  private notifiedBattleEvents = new Set<string>();
   private previouslyHoveredHex: HexPosition | null = null;
   private cachedMatrices: Map<string, Map<string, { matrices: InstancedBufferAttribute; count: number }>> = new Map();
   private updateHexagonGridPromise: Promise<void> | null = null;
@@ -370,6 +374,29 @@ export default class WorldmapScene extends HexagonScene {
         this.recalculateArrowsForEntity(attackerId);
         this.recalculateArrowsForEntity(defenderId);
       }
+
+      const uiStore = useUIStore.getState();
+      const followArmyCombats = uiStore.followArmyCombats;
+      const currentScene = this.sceneManager.getCurrentScene();
+
+      if (followArmyCombats && currentScene === SceneName.WorldMap) {
+        const attackerPosition =
+          attackerId !== undefined
+            ? (this.armiesPositions.get(attackerId) ?? this.structuresPositions.get(attackerId))
+            : undefined;
+        const defenderPosition =
+          defenderId !== undefined
+            ? (this.armiesPositions.get(defenderId) ?? this.structuresPositions.get(defenderId))
+            : undefined;
+
+        const targetPosition = defenderPosition ?? attackerPosition;
+
+        if (targetPosition) {
+          this.focusCameraOnEvent(targetPosition.col, targetPosition.row, "Following Army Combat");
+        }
+      }
+
+      this.notifyArmyUnderAttack(update);
     });
 
     // Listen for structure guard updates
@@ -456,17 +483,8 @@ export default class WorldmapScene extends HexagonScene {
           const followArmyMoves = useUIStore.getState().followArmyMoves;
           const currentScene = this.sceneManager.getCurrentScene();
 
-          if (followArmyMoves && currentScene === SceneName.WorldMap && armyPosition) {
-            // Move camera to the reward location when follow is enabled
-            this.moveCameraToColRow(armyPosition.col, armyPosition.row, 2);
-
-            // Set the following state to true temporarily
-            useUIStore.getState().setIsFollowingArmy(true);
-
-            // Clear the following state after camera movement
-            setTimeout(() => {
-              useUIStore.getState().setIsFollowingArmy(false);
-            }, 3000); // Show for 3 seconds
+          if (followArmyMoves && currentScene === SceneName.WorldMap) {
+            this.focusCameraOnEvent(armyPosition.col, armyPosition.row, "Following Army Movement");
           }
           if (resourceId === 0) {
             return;
@@ -576,6 +594,117 @@ export default class WorldmapScene extends HexagonScene {
     if (col !== undefined && row !== undefined) {
       this.moveCameraToColRow(col, row, 0);
     }
+  }
+
+  private focusCameraOnEvent(col: number, row: number, message: string) {
+    this.moveCameraToColRow(col, row, 2);
+
+    const uiStore = useUIStore.getState();
+    uiStore.setFollowingArmyMessage(message);
+    uiStore.setIsFollowingArmy(true);
+
+    if (this.followCameraTimeout) {
+      clearTimeout(this.followCameraTimeout);
+    }
+
+    this.followCameraTimeout = setTimeout(() => {
+      const store = useUIStore.getState();
+      store.setIsFollowingArmy(false);
+      store.setFollowingArmyMessage(null);
+      this.followCameraTimeout = null;
+    }, 3000);
+  }
+
+  private getEntityOwnerAddress(entityId: ID): ContractAddress | undefined {
+    const armyPosition = this.armiesPositions.get(entityId);
+    if (armyPosition) {
+      return this.armyHexes.get(armyPosition.col)?.get(armyPosition.row)?.owner;
+    }
+
+    const structurePosition = this.structuresPositions.get(entityId);
+    if (structurePosition) {
+      return this.structureHexes.get(structurePosition.col)?.get(structurePosition.row)?.owner;
+    }
+
+    return undefined;
+  }
+
+  private getEntityLabel(entityId: ID): string {
+    if (this.armiesPositions.has(entityId)) {
+      return `Army #${entityId}`;
+    }
+    if (this.structuresPositions.has(entityId)) {
+      return `Structure #${entityId}`;
+    }
+    return `Entity #${entityId}`;
+  }
+
+  private markBattleNotificationHandled(key: string) {
+    this.notifiedBattleEvents.add(key);
+    if (this.notifiedBattleEvents.size > 100) {
+      const iterator = this.notifiedBattleEvents.values().next();
+      if (!iterator.done) {
+        this.notifiedBattleEvents.delete(iterator.value);
+      }
+    }
+  }
+
+  private openBattleLogsPanel() {
+    const uiStore = useUIStore.getState();
+    uiStore.setRightNavigationView(RightView.Logs);
+  }
+
+  private notifyArmyUnderAttack(update: BattleEventSystemUpdate) {
+    const defenderId = update.battleData.defenderId;
+    if (typeof defenderId !== "number") {
+      return;
+    }
+
+    const defenderOwner = this.getEntityOwnerAddress(defenderId);
+    if (!defenderOwner || !isAddressEqualToAccount(defenderOwner)) {
+      return;
+    }
+
+    const focusPosition = this.armiesPositions.get(defenderId) ?? this.structuresPositions.get(defenderId);
+
+    const notificationKey = `${update.entityId}-${update.battleData.timestamp}`;
+    if (this.notifiedBattleEvents.has(notificationKey)) {
+      return;
+    }
+
+    this.markBattleNotificationHandled(notificationKey);
+
+    const attackerId = update.battleData.attackerId;
+    const defenderLabel = this.getEntityLabel(defenderId);
+    const attackerLabel = typeof attackerId === "number" ? this.getEntityLabel(attackerId) : "Unknown attacker";
+
+    toast(
+      <div className="flex flex-col gap-2">
+        <div className="text-gold font-bold">⚠️ {defenderLabel} under attack</div>
+        <div className="text-light-pink">Engaged by {attackerLabel}.</div>
+        <div className="flex gap-2 mt-2">
+          <button
+            className="bg-gold text-brown font-semibold px-3 py-1 rounded"
+            onClick={() => this.openBattleLogsPanel()}
+          >
+            View logs
+          </button>
+          {focusPosition && (
+            <button
+              className="bg-gold text-brown font-semibold px-3 py-1 rounded"
+              onClick={() => this.focusCameraOnEvent(focusPosition.col, focusPosition.row, "Following Combat Alert")}
+            >
+              Focus camera
+            </button>
+          )}
+        </div>
+      </div>,
+      {
+        classNames: {
+          toast: "!bg-dark-brown !border-gold/30",
+        },
+      },
+    );
   }
 
   // methods needed to add worldmap specific behavior to the click events
@@ -1069,7 +1198,7 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     const numericId = Number(structureId);
-    const hue = ((numericId % 360) + 360) % 360 / 360;
+    const hue = (((numericId % 360) + 360) % 360) / 360;
     const base = new Color().setHSL(hue, 0.65, 0.4);
     const pulse = new Color().setHSL(hue, 0.65, 0.6);
     const colors = { base, pulse };
@@ -1193,9 +1322,12 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   // used to track the position of the armies on the map
-  public updateArmyHexes(
-    update: { entityId: ID; hexCoords: HexPosition; ownerAddress?: bigint | undefined; ownerStructureId?: ID | null },
-  ) {
+  public updateArmyHexes(update: {
+    entityId: ID;
+    hexCoords: HexPosition;
+    ownerAddress?: bigint | undefined;
+    ownerStructureId?: ID | null;
+  }) {
     const {
       hexCoords: { col, row },
       ownerAddress,

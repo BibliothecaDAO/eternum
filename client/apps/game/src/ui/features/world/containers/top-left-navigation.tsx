@@ -28,7 +28,6 @@ import {
   Clock,
   Crown,
   EyeIcon,
-  EyeOffIcon,
   Landmark,
   Pencil,
   Pickaxe,
@@ -36,6 +35,7 @@ import {
   ShieldQuestion,
   Sparkles,
   Star,
+  Swords,
   X,
 } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -70,9 +70,12 @@ export const TopLeftNavigation = memo(() => {
   const { isMapView } = useQuery();
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const followArmyMoves = useUIStore((state) => state.followArmyMoves);
-  const setFollowArmyMoves = useUIStore((state) => state.setFollowArmyMoves);
+  // const followArmyMoves = useUIStore((state) => state.followArmyMoves);
+  // const setFollowArmyMoves = useUIStore((state) => state.setFollowArmyMoves);
+  const followArmyCombats = useUIStore((state) => state.followArmyCombats);
+  const setFollowArmyCombats = useUIStore((state) => state.setFollowArmyCombats);
   const isFollowingArmy = useUIStore((state) => state.isFollowingArmy);
+  const followingArmyMessage = useUIStore((state) => state.followingArmyMessage);
 
   const [favorites, setFavorites] = useState<number[]>(() => {
     const saved = localStorage.getItem("favoriteStructures");
@@ -356,20 +359,39 @@ export const TopLeftNavigation = memo(() => {
             >
               World
             </span>
-            <div className="relative">
-              <button
-                className={`rounded-full p-2 transition-all duration-300 border-2 ${
+            <div className="relative flex gap-2">
+              {/* TODO: Add back in later if needed */}
+              {/* <button
+                type="button"
+                className={cn(
+                  "rounded-full p-2 transition-all duration-300 border-2",
                   followArmyMoves
                     ? "bg-gold/30 hover:bg-gold/40 border-gold shadow-lg shadow-gold/20 animate-pulse"
-                    : "bg-gold/10 hover:bg-gold/20 border-gold/30"
-                }`}
+                    : "bg-gold/10 hover:bg-gold/20 border-gold/30",
+                )}
                 onClick={() => setFollowArmyMoves(!followArmyMoves)}
+                aria-pressed={followArmyMoves}
+                title={followArmyMoves ? "Stop following army movement" : "Follow army movement"}
               >
                 {followArmyMoves ? (
                   <EyeIcon className="w-4 h-4 text-gold animate-pulse" />
                 ) : (
                   <EyeOffIcon className="w-4 h-4 text-gold/60" />
                 )}
+              </button> */}
+              <button
+                type="button"
+                className={cn(
+                  "rounded-full p-2 transition-all duration-300 border-2",
+                  followArmyCombats
+                    ? "bg-gold/30 hover:bg-gold/40 border-gold shadow-lg shadow-gold/20 animate-pulse"
+                    : "bg-gold/10 hover:bg-gold/20 border-gold/30",
+                )}
+                onClick={() => setFollowArmyCombats(!followArmyCombats)}
+                aria-pressed={followArmyCombats}
+                title={followArmyCombats ? "Stop following army combat" : "Follow army combat"}
+              >
+                <Swords className={cn("w-4 h-4", followArmyCombats ? "text-gold animate-pulse" : "text-gold/60")} />
               </button>
             </div>
           </div>
@@ -382,8 +404,12 @@ export const TopLeftNavigation = memo(() => {
           <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-5 z-50">
             <div className="bg-dark-wood text-gold px-4 py-2 rounded-lg shadow-lg border-2 border-gold animate-bounce">
               <div className="flex items-center gap-2">
-                <EyeIcon className="w-4 h-4 animate-pulse text-gold" />
-                <span className="text-sm font-semibold text-gold">Following Army Movement</span>
+                {followingArmyMessage?.toLowerCase().includes("combat") ? (
+                  <Swords className="w-4 h-4 animate-pulse text-gold" />
+                ) : (
+                  <EyeIcon className="w-4 h-4 animate-pulse text-gold" />
+                )}
+                <span className="text-sm font-semibold text-gold">{followingArmyMessage ?? "Following Army"}</span>
               </div>
             </div>
           </div>
