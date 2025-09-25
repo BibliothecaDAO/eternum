@@ -5,6 +5,7 @@ import { memo } from "react";
 
 interface MiniMapControlPanelProps {
   isExpanded: boolean;
+  onCenter: () => void;
   onMinimize: () => void;
   onToggleExpand: () => void;
   onScreenshot: () => void;
@@ -31,9 +32,25 @@ const ControlButton = ({
 };
 
 export const MiniMapControlPanel = memo(
-  ({ isExpanded, onMinimize, onToggleExpand, onScreenshot, onHover, onLeave }: MiniMapControlPanelProps) => {
+  ({ isExpanded, onCenter, onMinimize, onToggleExpand, onScreenshot, onHover, onLeave }: MiniMapControlPanelProps) => {
     return (
       <div className="flex items-center gap-2">
+        <ControlButton onClick={onCenter} onHover={() => onHover("Center minimap")} onLeave={onLeave}>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-4 h-4"
+          >
+            <circle cx="12" cy="12" r="3.5" stroke="currentColor" strokeWidth="2" />
+            <path d="M12 3V5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <path d="M12 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <path d="M21 12L19 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <path d="M5 12L3 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </ControlButton>
         {isExpanded && (
           <ControlButton onClick={onScreenshot} onHover={() => onHover("Save World Map")} onLeave={onLeave}>
             <svg

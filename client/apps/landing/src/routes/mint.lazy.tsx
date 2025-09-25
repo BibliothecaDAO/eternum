@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { realmsAddress, seasonPassAddress } from "@/config";
 import useNftSelection from "@/hooks/use-nft-selection";
+import { OG_IMAGE_META } from "@/lib/seo";
 import { displayAddress, trimAddress } from "@/lib/utils";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useSuspenseQueries } from "@tanstack/react-query";
@@ -32,6 +33,7 @@ import { fetchSeasonPassRealmsByAddress, SeasonPassRealm } from "@/hooks/service
 
 export const Route = createLazyFileRoute("/mint")({
   component: MintSeasonPasses,
+  meta: () => OG_IMAGE_META,
 });
 
 // Define the structure of the augmented realm used internally

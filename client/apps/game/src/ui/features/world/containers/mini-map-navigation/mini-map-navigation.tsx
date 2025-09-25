@@ -17,6 +17,7 @@ interface MiniMapInstance {
   toggleBanks?: (checked: boolean) => void;
   toggleFragmentMines?: (checked: boolean) => void;
   toggleQuests?: (checked: boolean) => void;
+  resetToCameraCenter?: () => void;
 }
 
 const getMinimap = (): MiniMapInstance | undefined => (window as { minimapInstance?: MiniMapInstance }).minimapInstance;
@@ -90,6 +91,12 @@ export const MiniMapNavigation = () => {
     });
     hideTooltip();
   }, [isExpanded, hideTooltip]);
+
+  const handleCenter = useCallback(() => {
+    const minimap = getMinimap();
+    minimap?.resetToCameraCenter?.();
+    hideTooltip();
+  }, [hideTooltip]);
 
   const handleToggle = useCallback((type: MiniMapToggleKey, checked: boolean) => {
     setVisibilityStates((prev) => ({
@@ -184,6 +191,7 @@ export const MiniMapNavigation = () => {
           />
           <MiniMapControlPanel
             isExpanded={isExpanded}
+            onCenter={handleCenter}
             onMinimize={toggleMinimize}
             onToggleExpand={toggleExpand}
             onScreenshot={handleScreenshot}

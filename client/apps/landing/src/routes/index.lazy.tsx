@@ -11,6 +11,7 @@ import {
   fetchTokenBalancesWithMetadata,
 } from "@/hooks/services";
 import { useData } from "@/hooks/use-data";
+import { OG_IMAGE_META } from "@/lib/seo";
 import { trimAddress } from "@/lib/utils";
 import { useSelectedPassesStore } from "@/stores/selected-passes";
 import { MergedNftData } from "@/types";
@@ -24,6 +25,7 @@ import { useMemo } from "react";
 
 export const Route = createLazyFileRoute("/")({
   component: Index,
+  meta: () => OG_IMAGE_META,
 });
 
 function Index() {
