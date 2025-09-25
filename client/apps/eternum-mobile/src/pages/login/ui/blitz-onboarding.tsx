@@ -366,7 +366,7 @@ const RegistrationState = ({
                         ? "Mint failed. Please try again."
                         : "Mint an entry token before registering. We'll lock it automatically when you join."}
               </p>
-              {requiresEntryToken && (entryTokenBalance < 1) && (
+              {requiresEntryToken && entryTokenBalance < 1 && (
                 <p className="text-center text-[10px] text-red-300">Top up your balance before registering.</p>
               )}
             </div>
@@ -858,7 +858,9 @@ export const BlitzOnboarding = () => {
                   {isFeeBalanceLoading ? "…" : formatTokenAmount(feeTokenBalance)}
                 </span>
               </div>
-              {!hasSufficientFeeBalance && <p className="text-[10px] text-red-300">Top balance to cover entry token fee.</p>}
+              {!hasSufficientFeeBalance && (
+                <p className="text-[10px] text-red-300">Top balance to cover entry token fee.</p>
+              )}
               {canTopUpBalance && !hasSufficientFeeBalance && (
                 <Button onClick={handleTopUpFeeBalance} disabled={isToppingUp} variant="secondary" className="w-full">
                   {isToppingUp ? "Topping up…" : "Top up balance"}

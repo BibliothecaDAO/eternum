@@ -9,6 +9,9 @@ export { MaxButton } from "./max-button";
 export { RangeInput } from "./range-input";
 export { Select } from "./select";
 export { default as TextInput } from "./text-input";
+export { default as Panel } from "./panel";
+export { Divider } from "./divider";
+export { default as KbdKey } from "./kbd-key";
 
 // Display Components
 export { default as Avatar } from "./avatar";

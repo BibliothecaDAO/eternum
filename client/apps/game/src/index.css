@@ -3,27 +3,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer components {
-  .btn {
-    @apply px-4 py-2 rounded-md font-bold text-white transition-all duration-200 ease-in-out;
-  }
-  .btn-primary {
-    @apply bg-blue-500 hover:bg-blue-600;
-  }
-  .btn-secondary {
-    @apply bg-gray-500 hover:bg-gray-600;
-  }
-}
-
-@keyframes scroll {
-  0% {
-    transform: translateX(100%);
-  }
-  100% {
-    transform: translateX(-100%);
-  }
-}
-
 .animate-scroll {
   animation: scroll 30s linear infinite;
 }
@@ -337,85 +316,8 @@ canvas {
   pointer-events: none;
 }
 
-/* Tutorial popup styling */
-.shepherd-element {
-  @apply bg-light-pink;
-}
-
-.shepherd-has-title .shepherd-content .shepherd-header {
-  @apply bg-gray-gold;
-}
-.shepherd-element.shepherd-warning .shepherd-header {
-  @apply bg-enemy;
-}
-
-.shepherd-title {
-  @apply text-brown text-2xl;
-}
-
-.shepherd-element.shepherd-warning .shepherd-title {
-  @apply text-gold text-2xl;
-}
-
-.shepherd-text {
-  @apply text-light-brown;
-}
-
-.shepherd-button {
-  @apply cursor-fancy bg-gray-gold text-brown;
-}
-
-.shepherd-button:not(:disabled):hover {
-  @apply bg-gray-gold/50 text-brown;
-}
-
-.shepherd-has-title .shepherd-content .shepherd-cancel-icon {
-  @apply text-brown cursor-fancy;
-}
-
-.shepherd-has-title .shepherd-content .shepherd-cancel-icon:hover {
-  @apply text-brown/50;
-}
-
-/* Arrow styling */
-.shepherd-arrow {
-  @apply bg-transparent !important;
-}
-
-.shepherd-arrow:before {
-  @apply bg-light-pink !important;
-}
-
-.shepherd-element[data-popper-placement^="top"] .shepherd-arrow:before {
-  @apply bg-light-pink !important;
-}
-
-.shepherd-element[data-popper-placement^="bottom"] .shepherd-arrow:before {
-  @apply bg-gray-gold !important;
-}
-
-.shepherd-element[data-popper-placement^="left"] .shepherd-arrow:before,
-.shepherd-element[data-popper-placement^="right"] .shepherd-arrow:before {
-  @apply bg-light-pink !important;
-}
-
-.shepherd-element[data-popper-placement$="-start"] .shepherd-arrow:before {
-  @apply bg-gray-gold !important;
-}
-
-.shepherd-element.shepherd-warning[data-popper-placement$="-start"] .shepherd-arrow:before {
-  @apply bg-enemy !important;
-}
-
-.panel-rope {
-  border: 12px solid transparent;
-  border-image: url("/borders/rope.png") 12 round; /* Seamless rope image */
-  /* background-color: #3b2b18; */
-  border-radius: 20px;
-  /* box-shadow: inset 0 0 5px #00000066; */
-}
 .panel-wood {
-  border: 6px solid transparent;
+  border: 5px solid transparent;
   border-image: url("/borders/straight-wood.png") 12 round; /* Seamless rope image */
   /* background-color: #3b2b18; */
   border-radius: 20px;

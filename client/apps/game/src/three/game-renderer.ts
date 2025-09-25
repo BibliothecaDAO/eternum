@@ -33,6 +33,7 @@ import {
   ReinhardToneMapping,
   Vector2,
   WebGLRenderer,
+  WebGLRenderTarget,
 } from "three";
 import { CSS2DRenderer } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
@@ -77,6 +78,7 @@ export default class GameRenderer {
   private sceneManager!: SceneManager;
   private graphicsSetting: GraphicsSettings;
   private cleanupIntervals: NodeJS.Timeout[] = [];
+  private environmentTarget?: WebGLRenderTarget;
 
   constructor(dojoContext: SetupResult) {
     this.graphicsSetting = GRAPHICS_SETTING;
@@ -197,13 +199,15 @@ export default class GameRenderer {
   }
 
   private initializeRenderer() {
+    const isLowGraphics = this.graphicsSetting === GraphicsSettings.LOW;
     this.renderer = new WebGLRenderer({
       powerPreference: "high-performance",
       antialias: false,
-      stencil: this.graphicsSetting === GraphicsSettings.LOW,
-      depth: this.graphicsSetting === GraphicsSettings.LOW,
+      stencil: !isLowGraphics,
+      depth: true,
     });
-    this.renderer.setPixelRatio(this.graphicsSetting !== GraphicsSettings.HIGH ? 0.75 : window.devicePixelRatio);
+
+    this.renderer.setPixelRatio(this.getTargetPixelRatio());
     this.renderer.shadowMap.enabled = this.graphicsSetting !== GraphicsSettings.LOW;
     this.renderer.shadowMap.type = PCFSoftShadowMap;
     this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -414,6 +418,7 @@ export default class GameRenderer {
     this.hudScene = new HUDScene(this.sceneManager, this.controls);
 
     this.prepareScenes();
+    this.handleURLChange();
     // Init animation
     this.animate();
   }
@@ -426,13 +431,17 @@ export default class GameRenderer {
 
   private handleURLChange = () => {
     const url = new URL(window.location.href);
+    const pathSegments = url.pathname.split("/").filter(Boolean);
+    const sceneSlug = pathSegments.pop();
+    const targetScene =
+      sceneSlug === SceneName.Hexception || sceneSlug === SceneName.WorldMap
+        ? (sceneSlug as SceneName)
+        : SceneName.WorldMap;
 
-    const scene = url.pathname.split("/").pop();
-
-    if (scene === this.sceneManager.getCurrentScene() && this.sceneManager.getCurrentScene() === SceneName.WorldMap) {
+    if (targetScene === this.sceneManager.getCurrentScene() && targetScene === SceneName.WorldMap) {
       this.sceneManager.moveCameraForScene();
     } else {
-      this.sceneManager.switchScene(scene as SceneName);
+      this.sceneManager.switchScene(targetScene);
     }
   };
 
@@ -464,41 +473,59 @@ export default class GameRenderer {
   }
 
   private setupPostProcessingEffects() {
-    if (GRAPHICS_SETTING === GraphicsSettings.LOW) {
+    if (this.graphicsSetting === GraphicsSettings.LOW) {
       return; // Skip post-processing for low graphics settings
     }
 
     // Create effects configuration object
-    const effectsConfig = this.createEffectsConfiguration();
+    const effectsConfig = this.createEffectsConfiguration(this.graphicsSetting);
 
     // Create and configure all effects
-    const effects = [
-      this.createToneMappingEffect(effectsConfig),
-      new FXAAEffect(),
-      this.createBloomEffect(),
-      // this.createHueSaturationEffect(effectsConfig),
-      // this.createBrightnessContrastEffect(effectsConfig),
-      this.createVignetteEffect(effectsConfig),
-    ];
+    const effects: any = [this.createToneMappingEffect(effectsConfig), new FXAAEffect()];
+
+    if (this.graphicsSetting === GraphicsSettings.HIGH) {
+      effects.push(this.createBloomEffect(0.25));
+      effects.push(this.createVignetteEffect(effectsConfig));
+    } else if (this.graphicsSetting === GraphicsSettings.MID) {
+      effects.push(this.createBloomEffect(0.15));
+    }
 
     // Add all effects in a single pass
     this.composer.addPass(new EffectPass(this.camera, ...effects));
   }
 
-  private createEffectsConfiguration() {
+  private createEffectsConfiguration(setting: GraphicsSettings) {
+    if (setting === GraphicsSettings.HIGH) {
+      return {
+        brightness: 0,
+        contrast: 0,
+        hue: 0,
+        saturation: 0.6,
+        toneMapping: {
+          mode: ToneMappingMode.OPTIMIZED_CINEON,
+          exposure: 0.7,
+          whitePoint: 1.2,
+        },
+        vignette: {
+          darkness: 0.9,
+          offset: 0.35,
+        },
+      };
+    }
+
     return {
       brightness: 0,
       contrast: 0,
       hue: 0,
-      saturation: 0.6,
+      saturation: 0.4,
       toneMapping: {
         mode: ToneMappingMode.OPTIMIZED_CINEON,
-        exposure: 0.7,
-        whitePoint: 1.2,
+        exposure: 0.6,
+        whitePoint: 1.1,
       },
       vignette: {
-        darkness: 0.9,
-        offset: 0.35,
+        darkness: 0.65,
+        offset: 0.25,
       },
     };
   }
@@ -610,25 +637,73 @@ export default class GameRenderer {
     return effect;
   }
 
-  private createBloomEffect() {
+  private createBloomEffect(intensity: number) {
     return new BloomEffect({
       luminanceThreshold: 1.1,
       mipmapBlur: true,
-      intensity: 0.25,
+      intensity,
     });
   }
 
   applyEnvironment() {
     const pmremGenerator = new PMREMGenerator(this.renderer);
     pmremGenerator.compileEquirectangularShader();
-    const roomEnvironment = pmremGenerator.fromScene(new RoomEnvironment()).texture;
+
+    const fallbackTarget = pmremGenerator.fromScene(new RoomEnvironment());
+    this.setEnvironmentFromTarget(fallbackTarget, 0.1);
+
     const hdriLoader = new RGBELoader();
-    const hdriTexture = hdriLoader.load("/textures/environment/models_env.hdr", (texture) => {
-      const envMap = pmremGenerator.fromEquirectangular(texture).texture;
-      texture.dispose();
-      this.hexceptionScene.setEnvironment(envMap, 0.1);
-      this.worldmapScene.setEnvironment(envMap, 0.1);
-    });
+    hdriLoader.load(
+      "/textures/environment/models_env.hdr",
+      (texture) => {
+        const envTarget = pmremGenerator.fromEquirectangular(texture);
+        texture.dispose();
+
+        this.setEnvironmentFromTarget(envTarget, 0.1);
+
+        pmremGenerator.dispose();
+      },
+      undefined,
+      () => {
+        pmremGenerator.dispose();
+      },
+    );
+  }
+
+  private setEnvironmentFromTarget(renderTarget: WebGLRenderTarget, intensity: number) {
+    const envMap = renderTarget.texture;
+    this.hexceptionScene.setEnvironment(envMap, intensity);
+    this.worldmapScene.setEnvironment(envMap, intensity);
+
+    if (this.environmentTarget && this.environmentTarget !== renderTarget) {
+      this.environmentTarget.dispose();
+    }
+
+    this.environmentTarget = renderTarget;
+  }
+
+  private getTargetPixelRatio() {
+    const devicePixelRatio = Math.max(window.devicePixelRatio || 1, 1);
+
+    switch (this.graphicsSetting) {
+      case GraphicsSettings.HIGH:
+        return Math.min(devicePixelRatio, 2);
+      case GraphicsSettings.MID:
+        return Math.min(devicePixelRatio, 1.5);
+      default:
+        return 1;
+    }
+  }
+
+  private getTargetFPS(): number | null {
+    switch (this.graphicsSetting) {
+      case GraphicsSettings.LOW:
+        return 30;
+      case GraphicsSettings.MID:
+        return 45;
+      default:
+        return null;
+    }
   }
 
   handleKeyEvent(event: KeyboardEvent): void {
@@ -682,17 +757,20 @@ export default class GameRenderer {
     }
 
     const currentTime = performance.now();
-    const deltaTime = (currentTime - this.lastTime) / 1000; // Convert to seconds
+    if (this.lastTime === 0) {
+      this.lastTime = currentTime;
+    }
 
-    // Skip frame if not enough time has passed (for 30 FPS)
-    if (this.graphicsSetting !== GraphicsSettings.HIGH) {
-      const frameTime = 1000 / 120; // 33.33ms for 30 FPS
+    const targetFPS = this.getTargetFPS();
+    if (targetFPS) {
+      const frameTime = 1000 / targetFPS;
       if (currentTime - this.lastTime < frameTime) {
         requestAnimationFrame(() => this.animate());
         return;
       }
     }
 
+    const deltaTime = (currentTime - this.lastTime) / 1000;
     this.lastTime = currentTime;
 
     if (this.stats) this.stats.update();
@@ -766,6 +844,11 @@ export default class GameRenderer {
       // Clean up controls
       if (this.controls) {
         this.controls.dispose();
+      }
+
+      if (this.environmentTarget) {
+        this.environmentTarget.dispose();
+        this.environmentTarget = undefined;
       }
 
       // Remove event listeners

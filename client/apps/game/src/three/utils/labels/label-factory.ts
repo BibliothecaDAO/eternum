@@ -301,6 +301,20 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
       element.style.setProperty("background-color", styles.default.backgroundColor!, "important");
     };
 
+    // Refresh owner display to avoid stale pooled content
+    const ownerContainer = element.querySelector('[data-component="owner"]');
+    if (ownerContainer) {
+      const updatedOwnerDisplay = createOwnerDisplayElement({
+        owner: data.owner,
+        isMine: data.isMine,
+        cameraView,
+        color: data.color,
+        isDaydreamsAgent: data.isDaydreamsAgent,
+      });
+
+      ownerContainer.replaceWith(updatedOwnerDisplay);
+    }
+
     // Update army icon based on ownership
     const armyIcon = element.querySelector('[data-component="army-icon"]') as HTMLImageElement;
     if (armyIcon) {
@@ -575,9 +589,15 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
       }
     }
 
-    const ownerText = element.querySelector('[data-component="owner"]');
-    if (ownerText) {
-      ownerText.textContent = data.owner.ownerName;
+    const ownerDisplay = element.querySelector('[data-component="owner"]');
+    if (ownerDisplay) {
+      const updatedOwnerDisplay = createOwnerDisplayElement({
+        owner: data.owner,
+        isMine: data.isMine,
+        cameraView,
+      });
+
+      ownerDisplay.replaceWith(updatedOwnerDisplay);
     }
 
     // Update active productions display

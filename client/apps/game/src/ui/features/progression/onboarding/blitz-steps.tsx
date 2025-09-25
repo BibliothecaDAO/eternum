@@ -449,7 +449,8 @@ const DevOptionsState = ({
             <Button
               onClick={handleDevModeRegister}
               disabled={isDevModeRegistering || !devMode}
-              className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md animate-pulse"
+              forceUppercase={false}
+              className="w-full h-12 !text-brown !bg-gold rounded-md animate-pulse"
             >
               <span>Dev Mode Register for Blitz</span>
             </Button>
@@ -463,7 +464,8 @@ const DevOptionsState = ({
             <Button
               onClick={handleDevModeSettle}
               disabled={isDevModeSettling || !devMode}
-              className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md animate-pulse"
+              forceUppercase={false}
+              className="w-full h-12 !text-brown !bg-gold rounded-md animate-pulse"
             >
               <span>Dev Mode Settle Realm</span>
             </Button>
@@ -550,7 +552,8 @@ const RegistrationState = ({
                 <Button
                   onClick={() => onObtainEntryToken?.()}
                   disabled={isObtainingEntryToken}
-                  className="w-full h-12 !text-brown !bg-gold/80 hover:!bg-gold !normal-case rounded-md"
+                  className="w-full h-12 !text-brown !bg-gold/80 hover:!bg-gold rounded-md"
+                  forceUppercase={false}
                 >
                   {isObtainingEntryToken ? (
                     <div className="flex items-center justify-center">
@@ -575,7 +578,7 @@ const RegistrationState = ({
                           ? "Mint failed. Please try again."
                           : "Mint an entry token before registering. Tokens are locked automatically during registration."}
                 </p>
-                {requiresEntryToken && (entryTokenBalance < 1 )&& (
+                {requiresEntryToken && entryTokenBalance < 1 && (
                   <p className="text-xs text-red-300 text-center">Top up your balance before registering.</p>
                 )}
               </div>
@@ -584,7 +587,8 @@ const RegistrationState = ({
             <Button
               onClick={handleRegister}
               disabled={isRegistering || !tokenReady}
-              className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md animate-pulse"
+              className="w-full h-12 !text-brown !bg-gold rounded-md animate-pulse"
+              forceUppercase={false}
             >
               {isRegistering ? (
                 <div className="flex items-center justify-center">
@@ -674,7 +678,11 @@ const GameActiveState = ({
           <>
             {hasSettled ? (
               <>
-                <Button onClick={handlePlay} className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md ">
+                <Button
+                  onClick={handlePlay}
+                  forceUppercase={false}
+                  className="w-full h-12 !text-brown !bg-gold rounded-md "
+                >
                   <div className="flex items-center justify-center">
                     <Sword className="w-5 h-5 mr-2 fill-brown" />
                     <span>Play Blitz</span>
@@ -692,7 +700,8 @@ const GameActiveState = ({
                 <Button
                   onClick={handleSettle}
                   disabled={isSettling}
-                  className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md animate-pulse"
+                  className="w-full h-12 !text-brown !bg-gold rounded-md animate-pulse"
+                  forceUppercase={false}
                 >
                   {isSettling ? (
                     <div className="flex items-center justify-center">
@@ -1008,7 +1017,11 @@ export const BlitzOnboarding = () => {
           <p className="text-gold/70">Unable to load Blitz game configuration.</p>
           <p className="text-gold/70 text-sm mt-2">Please refresh the page or contact support if the issue persists.</p>
         </div>
-        <Button onClick={() => window.location.reload()} className="!bg-gold !text-brown !normal-case rounded-md">
+        <Button
+          onClick={() => window.location.reload()}
+          forceUppercase={false}
+          className="!bg-gold !text-brown rounded-md"
+        >
           Refresh Page
         </Button>
       </motion.div>
@@ -1046,15 +1059,14 @@ export const BlitzOnboarding = () => {
                 </span>
               </div>
               {!hasSufficientFeeBalance && (
-                <p className="text-xs text-red-300">
-                  Top balance to cover entry token fee.
-                </p>
+                <p className="text-xs text-red-300">Top balance to cover entry token fee.</p>
               )}
               {canTopUpBalance && !hasSufficientFeeBalance && (
                 <Button
                   onClick={handleTopUpFeeBalance}
                   disabled={isToppingUp}
-                  className="w-full h-10 !bg-gold/80 hover:!bg-gold !text-brown !normal-case"
+                  className="w-full h-10 !bg-gold/80 hover:!bg-gold !text-brown"
+                  forceUppercase={false}
                 >
                   {isToppingUp ? "Topping up…" : "Top up balance"}
                 </Button>
@@ -1071,11 +1083,11 @@ export const BlitzOnboarding = () => {
         />
       }
       {devMode && (
-        <DevOptionsState 
-          onDevModeRegister={handleRegister} 
-          onDevModeSettle={handleSettle} 
+        <DevOptionsState
+          onDevModeRegister={handleRegister}
+          onDevModeSettle={handleSettle}
           onDevModeObtainEntryToken={requiresEntryToken ? handleObtainEntryToken : undefined}
-          devMode={devMode || false} 
+          devMode={devMode || false}
         />
       )}
       {gameState === GameState.NO_GAME && registration_start_at && (

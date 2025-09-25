@@ -55,28 +55,28 @@ export default {
         "relic-activated": "#a855f7", // purple-500/20
         relics: {
           stamina: {
-            bg: "bg-green-600/20",
-            text: "text-green-400",
+            bg: "rgba(22, 101, 52, 0.2)",
+            text: "#4ade80",
           },
           damage: {
-            bg: "bg-red-600/20",
-            text: "text-red-400",
+            bg: "rgba(220, 38, 38, 0.2)",
+            text: "#f87171",
           },
           damageReduction: {
-            bg: "bg-blue-600/20",
-            text: "text-blue-400",
+            bg: "rgba(37, 99, 235, 0.2)",
+            text: "#60a5fa",
           },
           exploration: {
-            bg: "bg-purple-600/20",
-            text: "text-purple-400",
+            bg: "rgba(147, 51, 234, 0.2)",
+            text: "#c084fc",
           },
           production: {
-            bg: "bg-yellow-600/20",
-            text: "text-yellow-400",
+            bg: "rgba(202, 138, 4, 0.2)",
+            text: "#facc15",
           },
           gray: {
-            bg: "bg-gray-600/20",
-            text: "",
+            bg: "rgba(75, 85, 99, 0.2)",
+            text: "#d1d5db",
           },
         },
         brilliance: "#7DFFBA",
@@ -160,13 +160,25 @@ export default {
       strokeWidth: {
         8: "8px",
       },
+      zIndex: {
+        1: "1",
+        100: "100",
+        250: "250",
+        1000: "1000",
+      },
       animation: {
         slowPulse: "slowPulse 2s ease-in-out infinite",
+        "gradient-bg": "gradientBg 30s ease-in-out infinite",
       },
       keyframes: {
         slowPulse: {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.8" },
+        },
+        gradientBg: {
+          "0%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+          "100%": { backgroundPosition: "0% 50%" },
         },
       },
     },
@@ -261,7 +273,6 @@ export default {
     "bg-ally",
     "bg-enemy",
     // Stamina bar classes
-    "",
     "bg-green-500",
     "bg-yellow-500",
     "bg-red-500",

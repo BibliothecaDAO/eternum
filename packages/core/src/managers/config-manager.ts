@@ -813,7 +813,7 @@ export class ClientConfigManager {
             fee_amount: BigInt(blitzRegistrationConfig.fee_amount),
             fee_token: BigInt(blitzRegistrationConfig.fee_token),
             fee_recipient: BigInt(blitzRegistrationConfig.fee_recipient),
-            entry_token_address: BigInt(blitzRegistrationConfig.entry_token_address),
+            entry_token_address: BigInt(blitzRegistrationConfig.entry_token_address || 0),
             registration_count: Number(blitzRegistrationConfig.registration_count),
             registration_count_max: Number(blitzRegistrationConfig.registration_count_max),
             registration_start_at: Number(blitzRegistrationConfig.registration_start_at),

@@ -4,9 +4,9 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { getAddressName, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
-import { ClientComponents, ContractAddress, ID, resources, world } from "@bibliothecadao/types";
-import { ComponentValue, defineComponentSystem, isComponentUpdate } from "@dojoengine/recs";
+import { useComponentSystem, useDojo } from "@bibliothecadao/react";
+import { ClientComponents, ContractAddress, ID, resources } from "@bibliothecadao/types";
+import { ComponentValue, isComponentUpdate } from "@dojoengine/recs";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AttackTarget } from "./attack-container";
@@ -95,24 +95,19 @@ export const RaidResult = ({
     });
   }, [raidResult, account.address, initialStolenResources, components]);
 
-  useEffect(() => {
-    const handleRaidEventUpdate = (update: any) => {
-      if (isComponentUpdate(update, contractComponents.events.ExplorerRaidEvent)) {
-        const [currentState, _prevState] = update.value;
+  useComponentSystem(
+    contractComponents.events.ExplorerRaidEvent,
+    (update: any) => {
+      if (!isComponentUpdate(update, contractComponents.events.ExplorerRaidEvent)) return;
 
-        // Check if this event matches our current raid
-        if (currentState?.explorer_id === raiderId && currentState?.structure_id === target.id) {
-          setRaidResult(currentState);
-          setIsSlowingDown(true);
-        }
+      const [currentState] = update.value;
+      if (currentState?.explorer_id === raiderId && currentState?.structure_id === target.id) {
+        setRaidResult(currentState);
+        setIsSlowingDown(true);
       }
-    };
-
-    // Register the component system to listen for raid events
-    defineComponentSystem(world, contractComponents.events.ExplorerRaidEvent, handleRaidEventUpdate, {
-      runOnInit: false,
-    });
-  }, [contractComponents.events.ExplorerRaidEvent, raiderId, target]);
+    },
+    [raiderId, target.id],
+  );
 
   // Generate random outcome items for the roulette animation
   const generateOutcomeItems = useCallback(
