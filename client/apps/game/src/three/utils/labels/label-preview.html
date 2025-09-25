@@ -721,7 +721,7 @@
           const resourceName = BuildingTypeToIcon[production.buildingType];
           if (resourceName) {
             const iconContainer = document.createElement("div");
-            iconContainer.classList.add("w-8", "h-8", "flex-shrink-0", "flex", "items-center", "justify-center");
+            iconContainer.classList.add("w-6", "h-6", "flex-shrink-0", "flex", "items-center", "justify-center");
             const img = document.createElement("img");
             if (resourceName === "House") {
               img.src = getAssetUrl("/images/buildings/thumb/house.png");
@@ -740,7 +740,7 @@
 
           const countSpan = document.createElement("span");
           countSpan.textContent = `${production.buildingCount}`;
-          countSpan.classList.add("text-white", "font-semibold");
+          countSpan.classList.add("text-white", "font-semibold", "text-xs");
           productionDiv.appendChild(countSpan);
 
           container.appendChild(productionDiv);
