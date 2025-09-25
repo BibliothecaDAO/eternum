@@ -6,6 +6,7 @@ import { getIsBlitz } from "@bibliothecadao/eternum";
 
 import Button from "@/ui/design-system/atoms/button";
 import { SpectateButton } from "@/ui/features/progression";
+import { ReactComponent as EternumWordsLogo } from "@/assets/icons/blitz-words-logo-g.svg";
 import { mintUrl, OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
 import { displayAddress } from "@/ui/utils/utils";
@@ -174,37 +175,44 @@ const DojoContextProvider = ({
     return (
       <>
         <OnboardingContainer backgroundImage={backgroundImage}>
-          <StepContainer>
-            <div className="flex flex-col justify-wrap space-y-4 mt-2">
-              {!isConnected && (
-                <>
-                  <Button className="w-full" variant="gold" onClick={connectWallet}>
-                    <div className="flex items-center justify-center">
-                      <CartridgeSmall className="w-5 h-5 mr-2 fill-black" />
-                      <span>Login</span>
-                    </div>
-                  </Button>
-                  <SpectateButton onClick={onSpectatorModeClick} />
-
-                  {!getIsBlitz() && (
-                    <a
-                      className="cursor-pointer mt-auto w-full"
-                      href={mintUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Button className="w-full" size="lg">
-                        <div className="flex items-center justify-start w-full">
-                          <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-gold text-gold" />
-                          <span className="flex-grow text-center">Mint Season Pass</span>
+          <div className="flex h-full w-full">
+            <div className="pointer-events-none flex flex-1 items-center pl-16">
+              <EternumWordsLogo className="fill-brown w-56 sm:w-48 lg:w-72 xl:w-[360px]" />
+            </div>
+            <div className="flex flex-1 justify-end">
+              <StepContainer showLogo={false}>
+                <div className="flex flex-col justify-wrap space-y-4 mt-2">
+                  {!isConnected && (
+                    <>
+                      <Button className="w-full" variant="gold" onClick={connectWallet}>
+                        <div className="flex items-center justify-center">
+                          <CartridgeSmall className="w-5 h-5 mr-2 fill-black" />
+                          <span>Login</span>
                         </div>
                       </Button>
-                    </a>
+                      <SpectateButton onClick={onSpectatorModeClick} />
+
+                      {!getIsBlitz() && (
+                        <a
+                          className="cursor-pointer mt-auto w-full"
+                          href={mintUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Button className="w-full" size="lg">
+                            <div className="flex items-center justify-start w-full">
+                              <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-gold text-gold" />
+                              <span className="flex-grow text-center">Mint Season Pass</span>
+                            </div>
+                          </Button>
+                        </a>
+                      )}
+                    </>
                   )}
-                </>
-              )}
+                </div>
+              </StepContainer>
             </div>
-          </StepContainer>
+          </div>
         </OnboardingContainer>
       </>
     );

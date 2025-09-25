@@ -321,8 +321,6 @@ const MakeHyperstructuresState = ({
       if (latestNumHyperStructuresLeft !== undefined) {
         setCurrentNumHyperStructuresLeft(latestNumHyperStructuresLeft);
       }
-
-      console.log("Rerendering MakeHyperstructuresState");
     }, 3000);
 
     return () => clearInterval(interval);
@@ -430,10 +428,10 @@ const DevOptionsState = ({
                 <Button
                   onClick={handleDevModeObtainEntryToken}
                   disabled={isDevModeObtainingToken || !devMode}
-                  className="w-full h-12 !text-brown !bg-gold !normal-case rounded-md animate-pulse"
+                  className="w-full h-10 px-3 !text-brown !bg-gold !normal-case rounded-md animate-pulse"
                 >
-                  <div className="flex items-center justify-center">
-                    <TreasureChest className="w-5 h-5 mr-2 fill-brown" />
+                  <div className="flex items-center justify-center text-sm">
+                    <TreasureChest className="w-4 h-4 mr-2 fill-brown" />
                     <span>Dev Mode Obtain Entry Token</span>
                   </div>
                 </Button>
@@ -450,7 +448,7 @@ const DevOptionsState = ({
               onClick={handleDevModeRegister}
               disabled={isDevModeRegistering || !devMode}
               forceUppercase={false}
-              className="w-full h-12 !text-brown !bg-gold rounded-md animate-pulse"
+              className="w-full h-10 px-3 !text-brown !bg-gold rounded-md animate-pulse text-sm"
             >
               <span>Dev Mode Register for Blitz</span>
             </Button>
@@ -465,7 +463,7 @@ const DevOptionsState = ({
               onClick={handleDevModeSettle}
               disabled={isDevModeSettling || !devMode}
               forceUppercase={false}
-              className="w-full h-12 !text-brown !bg-gold rounded-md animate-pulse"
+              className="w-full h-10 px-3 !text-brown !bg-gold rounded-md animate-pulse text-sm"
             >
               <span>Dev Mode Settle Realm</span>
             </Button>
@@ -1034,8 +1032,19 @@ export const BlitzOnboarding = () => {
   const now = Date.now() / 1000;
   const canMakeHyperstructures = now >= registration_start_at;
 
+  const gameActiveSection =
+    gameState === GameState.GAME_ACTIVE ? (
+      <GameActiveState
+        isRegistered={playerRegistered?.registered || !!playerSettled}
+        onSettle={handleSettle}
+        hasSettled={!!playerSettled}
+        gameEndAt={seasonConfig?.endAt}
+      />
+    ) : null;
+
   return (
     <div className="space-y-6">
+      {gameActiveSection}
       {hasEntryTokenContract && (
         <div className="bg-brown/10 border border-brown/30 rounded-lg p-4">
           <div className="flex items-center justify-between text-gold">
@@ -1115,14 +1124,6 @@ export const BlitzOnboarding = () => {
           entryTokenStatus={entryTokenStatus}
           hasSufficientFeeBalance={hasSufficientFeeBalance}
           isFeeBalanceLoading={isFeeBalanceLoading}
-        />
-      )}
-      {gameState === GameState.GAME_ACTIVE && (
-        <GameActiveState
-          isRegistered={playerRegistered?.registered || !!playerSettled}
-          onSettle={handleSettle}
-          hasSettled={!!playerSettled}
-          gameEndAt={seasonConfig?.endAt}
         />
       )}
     </div>

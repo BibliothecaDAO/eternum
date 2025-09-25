@@ -14,6 +14,7 @@ import {
   MeshStandardMaterial,
   Vector3,
 } from "three";
+import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
 
 const BIG_DETAILS_NAME = "big_details";
 const BUILDING_NAME = "building";
@@ -154,23 +155,41 @@ export default class InstancedModel {
   }
 
   getMatricesAndCount() {
-    return {
-      matrices: (this.group.children[0] as InstancedMesh).instanceMatrix.clone(),
-      count: (this.group.children[0] as InstancedMesh).count,
-    };
+    const mesh = this.group.children[0] as InstancedMesh;
+    const count = mesh.count;
+    const pool = InstancedMatrixAttributePool.getInstance();
+    const snapshot = pool.acquire(count);
+    const requiredFloats = count * snapshot.itemSize;
+
+    snapshot.array.set((mesh.instanceMatrix.array as Float32Array).subarray(0, requiredFloats));
+
+    return { matrices: snapshot, count };
   }
 
   setMatricesAndCount(matrices: InstancedBufferAttribute, count: number) {
     const required = Math.max(count, matrices.count);
     this.ensureCapacity(required);
+    let resolvedCount = count;
     this.group.children.forEach((child) => {
       if (child instanceof InstancedMesh) {
-        child.instanceMatrix.array.set(matrices.array as Float32Array);
-        child.count = count;
+        const targetArray = child.instanceMatrix.array as Float32Array;
+        const sourceArray = matrices.array as Float32Array;
+        const maxInstances = Math.floor(targetArray.length / child.instanceMatrix.itemSize);
+        const finalCount = Math.min(count, maxInstances);
+        const floatsToCopy = Math.min(
+          finalCount * child.instanceMatrix.itemSize,
+          sourceArray.length,
+          targetArray.length,
+        );
+        if (floatsToCopy > 0) {
+          targetArray.set(sourceArray.subarray(0, floatsToCopy));
+        }
+        child.count = finalCount;
         child.instanceMatrix.needsUpdate = true;
+        resolvedCount = Math.min(resolvedCount, finalCount);
       }
     });
-    this.count = count;
+    this.count = resolvedCount;
   }
 
   setMatrixAt(index: number, matrix: Matrix4) {
