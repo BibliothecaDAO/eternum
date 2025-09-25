@@ -317,7 +317,7 @@ canvas {
 }
 
 .panel-wood {
-  border: 6px solid transparent;
+  border: 5px solid transparent;
   border-image: url("/borders/straight-wood.png") 12 round; /* Seamless rope image */
   /* background-color: #3b2b18; */
   border-radius: 20px;

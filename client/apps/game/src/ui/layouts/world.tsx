@@ -62,12 +62,16 @@ const RightNavigationModule = lazy(() =>
   })),
 );
 const TopLeftNavigation = lazy(() =>
-  import("../features/world/containers/top-left-navigation").then((module) => ({ default: module.TopLeftNavigation })),
+  import("../features/world/containers/top-left-navigation/top-left-navigation").then((module) => ({
+    default: module.TopLeftNavigation,
+  })),
 );
 const Onboarding = lazy(() => import("./onboarding").then((module) => ({ default: module.Onboarding })));
 
 const MiniMapNavigation = lazy(() =>
-  import("../features/world/containers/mini-map-navigation").then((module) => ({ default: module.MiniMapNavigation })),
+  import("../features/world/containers/mini-map-navigation/mini-map-navigation").then((module) => ({
+    default: module.MiniMapNavigation,
+  })),
 );
 
 const RealmTransferManager = lazy(() =>

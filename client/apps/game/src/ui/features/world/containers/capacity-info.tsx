@@ -8,7 +8,7 @@ import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
 import { useMemo } from "react";
-import { CircularProgress } from "./top-left-navigation";
+import { CircularProgress } from "./top-left-navigation/circular-progress";
 
 const StorehouseInfo = ({
   storehouseCapacity,

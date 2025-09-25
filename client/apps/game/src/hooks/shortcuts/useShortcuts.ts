@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getShortcutManager, CentralizedShortcutManager } from "@/utils/shortcuts/centralized-shortcut-manager";
 import { KeyboardShortcut, KeyModifiers } from "@/hooks/store/use-shortcut-store";
 
@@ -40,13 +40,64 @@ interface UseShortcutsConfig {
  * };
  * ```
  */
+const MODIFIER_KEYS: Array<keyof KeyModifiers> = ["ctrl", "alt", "shift", "meta"];
+
+const logShortcutDiff = (reason: string, context: Record<string, unknown>) => {
+  if (process.env.NODE_ENV !== "production") {
+    console.debug(`[shortcuts] config changed: ${reason}`, context);
+  }
+};
+
+const areShortcutsEqual = (a: UseShortcutsConfig["shortcuts"], b: UseShortcutsConfig["shortcuts"]) => {
+  if (a === b) return true;
+  if (a.length !== b.length) {
+    logShortcutDiff("array length", { previous: a.length, next: b.length });
+    return false;
+  }
+
+  for (let i = 0; i < a.length; i += 1) {
+    const left = a[i];
+    const right = b[i];
+
+    if (
+      left.id !== right.id ||
+      left.key !== right.key ||
+      left.description !== right.description ||
+      left.action !== right.action ||
+      left.condition !== right.condition
+    ) {
+      logShortcutDiff("core fields", { index: i, previous: left, next: right });
+      return false;
+    }
+
+    const leftModifiers = left.modifiers ?? {};
+    const rightModifiers = right.modifiers ?? {};
+
+    for (const key of MODIFIER_KEYS) {
+      if (!!leftModifiers[key] !== !!rightModifiers[key]) {
+        logShortcutDiff("modifiers", { index: i, modifier: key, previous: leftModifiers, next: rightModifiers });
+        return false;
+      }
+    }
+  }
+
+  return true;
+};
+
 export const useShortcuts = (config: UseShortcutsConfig) => {
   const shortcutManager = getShortcutManager();
   const registeredIds = useRef<string[]>([]);
+  const [stableShortcuts, setStableShortcuts] = useState(config.shortcuts);
+
+  useEffect(() => {
+    if (!areShortcutsEqual(stableShortcuts, config.shortcuts)) {
+      setStableShortcuts(config.shortcuts);
+    }
+  }, [config.shortcuts, stableShortcuts]);
 
   useEffect(() => {
     // Register shortcuts
-    config.shortcuts.forEach((shortcutConfig) => {
+    stableShortcuts.forEach((shortcutConfig) => {
       const fullId = config.prefix ? `${config.prefix}.${shortcutConfig.id}` : shortcutConfig.id;
 
       const shortcut: KeyboardShortcut = CentralizedShortcutManager.createShortcut({
@@ -71,7 +122,7 @@ export const useShortcuts = (config: UseShortcutsConfig) => {
       }
       registeredIds.current = [];
     };
-  }, [config.shortcuts, config.prefix, shortcutManager]);
+  }, [stableShortcuts, config.prefix, shortcutManager]);
 };
 
 /**
@@ -102,15 +153,11 @@ export const useShortcutManager = () => {
  * };
  * ```
  */
-export const useShortcut = (shortcutConfig: {
-  id: string;
-  key: string;
-  modifiers?: KeyModifiers;
-  description: string;
-  action: () => void;
-  condition?: () => boolean;
-}) => {
+type SingleShortcutConfig = UseShortcutsConfig["shortcuts"][number];
+
+export const useShortcut = ({ prefix, ...shortcutConfig }: SingleShortcutConfig & { prefix?: string }) => {
   useShortcuts({
     shortcuts: [shortcutConfig],
+    prefix,
   });
 };

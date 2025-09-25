@@ -10,7 +10,125 @@ import { BattleLogsTable } from "@/ui/features/military";
 import { ProductionModal } from "@/ui/features/settlement";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
 import { motion } from "framer-motion";
+import type { ComponentProps, ReactNode } from "react";
 import { Suspense, lazy, useMemo } from "react";
+
+type CircleButtonProps = ComponentProps<typeof CircleButton>;
+
+type RightNavigationItem = {
+  id: MenuEnum;
+} & Pick<
+  CircleButtonProps,
+  | "active"
+  | "className"
+  | "disabled"
+  | "image"
+  | "label"
+  | "onClick"
+  | "size"
+  | "tooltipLocation"
+>;
+
+type RightNavigationContext = {
+  view: RightView;
+  setView: (view: RightView) => void;
+  disableButtons: boolean;
+  toggleModal: (content: ReactNode | null) => void;
+  isBlitz: boolean;
+};
+
+const DEFAULT_BUTTON_SIZE: CircleButtonProps["size"] = "xl";
+
+const buildRightNavigationItems = ({
+  view,
+  setView,
+  disableButtons,
+  toggleModal,
+  isBlitz,
+}: RightNavigationContext): RightNavigationItem[] => {
+  const toggleView = (targetView: RightView) => () =>
+    setView(view === targetView ? RightView.None : targetView);
+
+  const items: RightNavigationItem[] = [
+    {
+      id: MenuEnum.resourceTable,
+      className: "resource-table-selector",
+      image: BuildingThumbs.resources,
+      tooltipLocation: "top",
+      label: "Balance",
+      size: DEFAULT_BUTTON_SIZE,
+      disabled: disableButtons,
+      active: view === RightView.ResourceTable,
+      onClick: toggleView(RightView.ResourceTable),
+    },
+    {
+      id: MenuEnum.production,
+      className: "production-selector",
+      image: BuildingThumbs.production,
+      tooltipLocation: "top",
+      label: "Production",
+      size: DEFAULT_BUTTON_SIZE,
+      disabled: disableButtons,
+      active: view === RightView.Production,
+      onClick: () => toggleModal(<ProductionModal />),
+    },
+    {
+      id: MenuEnum.transfer,
+      className: "transfer-selector",
+      image: BuildingThumbs.transfer,
+      tooltipLocation: "top",
+      label: "Transfer",
+      size: DEFAULT_BUTTON_SIZE,
+      disabled: disableButtons,
+      active: view === RightView.Transfer,
+      onClick: () => toggleModal(<TransferModal />),
+    },
+    {
+      id: MenuEnum.automation,
+      className: "automation-selector",
+      image: BuildingThumbs.automation,
+      tooltipLocation: "top",
+      label: "Automation",
+      size: DEFAULT_BUTTON_SIZE,
+      disabled: disableButtons,
+      active: view === RightView.Automation,
+      onClick: toggleView(RightView.Automation),
+    },
+    {
+      id: MenuEnum.bridge,
+      className: "bridge-selector",
+      image: BuildingThumbs.bridge,
+      tooltipLocation: "top",
+      label: "Bridge",
+      size: DEFAULT_BUTTON_SIZE,
+      disabled: disableButtons,
+      active: view === RightView.Bridge,
+      onClick: toggleView(RightView.Bridge),
+    },
+    {
+      id: MenuEnum.logs,
+      className: "logs-selector",
+      image: BuildingThumbs.logs,
+      tooltipLocation: "top",
+      label: "Logs",
+      size: DEFAULT_BUTTON_SIZE,
+      disabled: disableButtons,
+      active: view === RightView.Logs,
+      onClick: toggleView(RightView.Logs),
+    },
+  ];
+
+  const allowedMenus: MenuEnum[] = [
+    MenuEnum.resourceTable,
+    MenuEnum.production,
+    MenuEnum.automation,
+    MenuEnum.logs,
+    MenuEnum.transfer,
+    ...(isBlitz ? [] : [MenuEnum.bridge]),
+  ];
+
+  return items.filter((item) => allowedMenus.includes(item.id));
+};
 
 const EntityResourceTable = lazy(() =>
   import("@/ui/features/economy/resources").then((module) => ({
@@ -28,118 +146,21 @@ export const RightNavigationModule = () => {
 
   const ConnectedAccount = useAccountStore((state) => state.account);
 
-  const navigation = useMemo(
-    () => [
-      {
-        name: MenuEnum.resourceTable,
-        button: (
-          <CircleButton
-            className="resource-table-selector"
-            image={BuildingThumbs.resources}
-            disabled={disableButtons}
-            size="xl"
-            tooltipLocation="top"
-            label="Balance"
-            active={view === RightView.ResourceTable}
-            onClick={() => setView(view === RightView.ResourceTable ? RightView.None : RightView.ResourceTable)}
-          />
-        ),
-      },
-      {
-        name: MenuEnum.production,
-        button: (
-          <CircleButton
-            className="production-selector"
-            image={BuildingThumbs.production}
-            size="xl"
-            disabled={disableButtons}
-            tooltipLocation="top"
-            label="Production"
-            active={view === RightView.Production}
-            onClick={() => {
-              toggleModal(<ProductionModal />);
-            }}
-          />
-        ),
-      },
-      {
-        name: MenuEnum.transfer,
-        button: (
-          <CircleButton
-            className="transfer-selector"
-            image={BuildingThumbs.transfer}
-            size="xl"
-            disabled={disableButtons}
-            tooltipLocation="top"
-            label="Transfer"
-            active={view === RightView.Transfer}
-            onClick={() => {
-              toggleModal(<TransferModal />);
-            }}
-          />
-        ),
-      },
-      {
-        name: MenuEnum.automation,
-        button: (
-          <CircleButton
-            className="automation-selector"
-            image={BuildingThumbs.automation}
-            size="xl"
-            disabled={disableButtons}
-            tooltipLocation="top"
-            label="Automation"
-            active={view === RightView.Automation}
-            onClick={() => setView(view === RightView.Automation ? RightView.None : RightView.Automation)}
-          />
-        ),
-      },
-      {
-        name: MenuEnum.bridge,
-        button: (
-          <CircleButton
-            className="bridge-selector"
-            image={BuildingThumbs.bridge}
-            size="xl"
-            disabled={disableButtons}
-            tooltipLocation="top"
-            label="Bridge"
-            active={view === RightView.Bridge}
-            onClick={() => setView(view === RightView.Bridge ? RightView.None : RightView.Bridge)}
-          />
-        ),
-      },
-      {
-        name: MenuEnum.logs,
-        button: (
-          <CircleButton
-            className="logs-selector"
-            image={BuildingThumbs.logs}
-            size="xl"
-            disabled={disableButtons}
-            tooltipLocation="top"
-            label="Logs"
-            active={view === RightView.Logs}
-            onClick={() => setView(view === RightView.Logs ? RightView.None : RightView.Logs)}
-          />
-        ),
-      },
-    ],
-    [view, structureEntityId, disableButtons],
+  const isBlitz = getIsBlitz();
+
+  const navigationItems = useMemo(
+    () =>
+      buildRightNavigationItems({
+        view,
+        setView,
+        disableButtons,
+        toggleModal,
+        isBlitz,
+      }),
+    [view, setView, disableButtons, toggleModal, isBlitz],
   );
 
   const isOffscreen = view === RightView.None;
-
-  const filteredNavigation = navigation.filter((item) =>
-    [
-      MenuEnum.resourceTable,
-      MenuEnum.production,
-      MenuEnum.automation,
-      ...(getIsBlitz() ? [] : [MenuEnum.bridge]),
-      MenuEnum.logs,
-      MenuEnum.transfer,
-    ].includes(item.name as MenuEnum),
-  );
 
   return (
     <div
@@ -159,8 +180,10 @@ export const RightNavigationModule = () => {
             className="flex flex-col justify-start pointer-events-auto h-[60vh]"
           >
             <div className="flex flex-col mb-auto">
-              {filteredNavigation.map((item, index) => (
-                <div key={index}>{item.button}</div>
+              {navigationItems.map((item) => (
+                <div key={item.id}>
+                  <CircleButton {...item} />
+                </div>
               ))}
             </div>
           </motion.div>
