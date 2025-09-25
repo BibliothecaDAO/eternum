@@ -287,7 +287,7 @@ const RegistrationState = ({
   isObtainingEntryToken,
   availableEntryTokenId,
   entryTokenStatus,
-  hasSufficientFeeBalance,
+  // hasSufficientFeeBalance,
   isFeeBalanceLoading,
 }: {
   entryTokenBalance: bigint;
@@ -300,7 +300,7 @@ const RegistrationState = ({
   isObtainingEntryToken?: boolean;
   availableEntryTokenId?: bigint | null;
   entryTokenStatus: "idle" | "minting" | "timeout" | "error";
-  hasSufficientFeeBalance: boolean;
+  // hasSufficientFeeBalance: boolean;
   isFeeBalanceLoading: boolean;
 }) => {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -610,7 +610,7 @@ export const BlitzOnboarding = () => {
   const refetchFeeTokenBalance = feeTokenCall.refetch ? () => feeTokenCall.refetch() : undefined;
   const isFeeBalanceLoading = feeTokenCall.isLoading && Boolean(feeTokenAddressHex);
   const hasSufficientFeeBalance = !requiresEntryToken || feeAmount === 0n || feeTokenBalance >= feeAmount;
-  const feeBalanceShortfall = feeAmount > feeTokenBalance ? feeAmount - feeTokenBalance : 0n;
+  // const feeBalanceShortfall = feeAmount > feeTokenBalance ? feeAmount - feeTokenBalance : 0n;
   const isLocalChain = env.VITE_PUBLIC_CHAIN === "local";
   const canTopUpBalance = Boolean(!isLocalChain && feeTokenAddressHex && masterAccount);
 
@@ -898,7 +898,7 @@ export const BlitzOnboarding = () => {
           isObtainingEntryToken={isObtainingEntryToken}
           availableEntryTokenId={availableEntryTokenId}
           entryTokenStatus={entryTokenStatus}
-          hasSufficientFeeBalance={hasSufficientFeeBalance}
+          // hasSufficientFeeBalance={hasSufficientFeeBalance}
           isFeeBalanceLoading={isFeeBalanceLoading}
         />
       )}
