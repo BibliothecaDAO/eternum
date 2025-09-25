@@ -64,6 +64,7 @@ import { QuestManager } from "../managers/quest-manager";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { SceneName } from "../types/common";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
+import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
 import { MatrixPool } from "../utils/matrix-pool";
 import { MemoryMonitor } from "../utils/memory-monitor";
 import {
@@ -117,7 +118,8 @@ export default class WorldmapScene extends HexagonScene {
   private selectionPulseManager: SelectionPulseManager;
   private minimap!: Minimap;
   private previouslyHoveredHex: HexPosition | null = null;
-  private cachedMatrices: Map<string, Map<string, { matrices: InstancedBufferAttribute; count: number }>> = new Map();
+  private cachedMatrices: Map<string, Map<string, { matrices: InstancedBufferAttribute | null; count: number }>> =
+    new Map();
   private cachedMatrixOrder: string[] = [];
   private readonly maxMatrixCacheSize = 6;
   private updateHexagonGridPromise: Promise<void> | null = null;
@@ -1454,6 +1456,7 @@ export default class WorldmapScene extends HexagonScene {
     this.cachedMatrices.clear();
     this.cachedMatrixOrder = [];
     MatrixPool.getInstance().clear();
+    InstancedMatrixAttributePool.getInstance().clear();
   }
 
   private computeInteractiveHexes(startRow: number, startCol: number, width: number, height: number) {
@@ -1816,13 +1819,14 @@ export default class WorldmapScene extends HexagonScene {
     if (!cached) return;
 
     cached.forEach(({ matrices }) => {
-      this.disposeInstancedAttribute(matrices);
+      if (matrices) {
+        this.releaseInstancedAttribute(matrices);
+      }
     });
   }
 
-  private disposeInstancedAttribute(attribute: InstancedBufferAttribute) {
-    const maybeDisposable = attribute as unknown as { dispose?: () => void };
-    maybeDisposable.dispose?.call(attribute);
+  private releaseInstancedAttribute(attribute: InstancedBufferAttribute) {
+    InstancedMatrixAttributePool.getInstance().release(attribute);
   }
 
   private ensureMatrixCacheLimit() {
@@ -1845,12 +1849,19 @@ export default class WorldmapScene extends HexagonScene {
     const cachedChunk = this.cachedMatrices.get(chunkKey)!;
 
     for (const [biome, model] of this.biomeModels) {
-      const { matrices, count } = model.getMatricesAndCount();
       const existing = cachedChunk.get(biome);
       if (existing) {
-        this.disposeInstancedAttribute(existing.matrices);
+        if (existing.matrices) {
+          this.releaseInstancedAttribute(existing.matrices);
+        }
       }
-      cachedChunk.set(biome, { matrices: matrices as any, count });
+      const { matrices, count } = model.getMatricesAndCount();
+      if (count === 0) {
+        this.releaseInstancedAttribute(matrices);
+        cachedChunk.set(biome, { matrices: null, count });
+        continue;
+      }
+      cachedChunk.set(biome, { matrices, count });
     }
 
     this.touchMatrixCache(chunkKey);
@@ -1874,7 +1885,11 @@ export default class WorldmapScene extends HexagonScene {
       this.touchMatrixCache(chunkKey);
       for (const [biome, { matrices, count }] of cachedMatrices) {
         const hexMesh = this.biomeModels.get(biome as any)!;
-        hexMesh.setMatricesAndCount(matrices, count);
+        if (matrices) {
+          hexMesh.setMatricesAndCount(matrices, count);
+        } else {
+          hexMesh.setCount(count);
+        }
       }
       this.ensureMatrixCacheLimit();
       return true;
