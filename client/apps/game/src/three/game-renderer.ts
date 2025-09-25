@@ -481,7 +481,7 @@ export default class GameRenderer {
     const effectsConfig = this.createEffectsConfiguration(this.graphicsSetting);
 
     // Create and configure all effects
-    const effects = [this.createToneMappingEffect(effectsConfig), new FXAAEffect()];
+    const effects: any = [this.createToneMappingEffect(effectsConfig), new FXAAEffect()];
 
     if (this.graphicsSetting === GraphicsSettings.HIGH) {
       effects.push(this.createBloomEffect(0.25));
