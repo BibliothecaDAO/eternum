@@ -1,4 +1,5 @@
 import { type HexPosition, getNeighborHexes } from "@bibliothecadao/types";
+import { env } from "../../../env";
 import * as THREE from "three";
 import { HEX_SIZE } from "../constants";
 import { getWorldPositionForHex } from "../utils";
@@ -44,7 +45,7 @@ export class ThunderBoltManager {
     count: 5,
     duration: 250,
     persistent: true,
-    debug: true,
+    debug: env.VITE_PUBLIC_GRAPHICS_DEV === true,
   };
 
   constructor(
