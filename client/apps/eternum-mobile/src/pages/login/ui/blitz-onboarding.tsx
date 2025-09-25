@@ -216,7 +216,7 @@ const HyperstructureForgeButton = ({
     </div>
     {isLoading && (
       <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/30">
-        <img src="/images/logos/eternum-loader.png" className="h-5 w-5 animate-spin" />
+        <img src="/images/logos/eternum-loader.apng" className="h-5 w-5" />
       </div>
     )}
   </motion.button>
@@ -345,7 +345,7 @@ const RegistrationState = ({
               >
                 {isObtainingEntryToken ? (
                   <div className="flex items-center justify-center gap-2">
-                    <img src="/images/logos/eternum-loader.png" className="h-5 w-5 animate-spin" />
+                    <img src="/images/logos/eternum-loader.apng" className="h-5 w-5" />
                     <span>Minting entry token...</span>
                   </div>
                 ) : (
@@ -375,7 +375,7 @@ const RegistrationState = ({
           <Button onClick={handleRegister} disabled={isRegistering || !tokenReady} className="w-full">
             {isRegistering ? (
               <div className="flex items-center justify-center gap-2">
-                <img src="/images/logos/eternum-loader.png" className="h-5 w-5 animate-spin" />
+                <img src="/images/logos/eternum-loader.apng" className="h-5 w-5" />
                 <span>Registering...</span>
               </div>
             ) : (
@@ -452,7 +452,7 @@ const GameActiveState = ({
             <Button onClick={handleSettle} disabled={isSettling} className="w-full">
               {isSettling ? (
                 <div className="flex items-center justify-center gap-2">
-                  <img src="/images/logos/eternum-loader.png" className="h-5 w-5 animate-spin" />
+                  <img src="/images/logos/eternum-loader.apng" className="h-5 w-5" />
                   <span>Settling...</span>
                 </div>
               ) : (
