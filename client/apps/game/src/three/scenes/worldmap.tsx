@@ -121,6 +121,11 @@ export default class WorldmapScene extends HexagonScene {
   private cachedMatrixOrder: string[] = [];
   private readonly maxMatrixCacheSize = 6;
   private updateHexagonGridPromise: Promise<void> | null = null;
+  private hexGridFrameHandle: number | null = null;
+  private currentHexGridTask: symbol | null = null;
+  private readonly hexGridFrameBudgetMs = 6.5;
+  private readonly hexGridMinBatch = 120;
+  private readonly hexGridMaxBatch = 900;
   private travelEffects: Map<string, () => void> = new Map();
 
   // Pending relic effects store - holds relic effects for entities that aren't loaded yet
@@ -1463,25 +1468,38 @@ export default class WorldmapScene extends HexagonScene {
     const preUpdateStats = memoryMonitor?.getCurrentStats(`hex-grid-update-${startRow}-${startCol}`);
 
     const matrixPoolInstance = MatrixPool.getInstance();
-    matrixPoolInstance.ensureCapacity(rows * cols + 512);
+    const totalHexes = rows * cols;
+    matrixPoolInstance.ensureCapacity(totalHexes + 512);
 
     await Promise.all(this.modelLoadPromises);
     if (this.applyCachedMatricesForChunk(startRow, startCol)) {
       this.computeInteractiveHexes(startRow, startCol, cols, rows);
 
-      // Track memory usage for cached operation
       if (memoryMonitor && preUpdateStats) {
         const postStats = memoryMonitor.getCurrentStats(`hex-grid-cached-${startRow}-${startCol}`);
         const memoryDelta = postStats.heapUsedMB - preUpdateStats.heapUsedMB;
         if (Math.abs(memoryDelta) > 10) {
+          // Keep hook for future instrumentation
         }
       }
       this.updateHexagonGridPromise = null;
       return;
     }
 
+    const taskToken = Symbol("hex-grid-task");
+    this.currentHexGridTask = taskToken;
+    if (this.hexGridFrameHandle !== null) {
+      cancelAnimationFrame(this.hexGridFrameHandle);
+      this.hexGridFrameHandle = null;
+    }
+
+    const halfRows = rows / 2;
+    const halfCols = cols / 2;
+    const minBatch = Math.min(this.hexGridMinBatch, totalHexes);
+    const maxBatch = Math.max(minBatch, Math.min(this.hexGridMaxBatch, totalHexes));
+    const frameBudget = this.hexGridFrameBudgetMs;
+
     this.updateHexagonGridPromise = new Promise((resolve) => {
-      // OPTIMIZED: Use arrays but avoid Matrix4.clone() calls
       const biomeHexes: Record<BiomeType | "Outline" | string, Matrix4[]> = {
         None: [],
         Ocean: [],
@@ -1506,158 +1524,210 @@ export default class WorldmapScene extends HexagonScene {
         Outline: [],
       };
 
-      const batchSize = 600;
       let currentIndex = 0;
+      let resolved = false;
 
-      // Reusable objects (zero allocations in loop)
       const tempMatrix = new Matrix4();
       const tempPosition = new Vector3();
       const rotationMatrix = new Matrix4();
+      const matrixPool = matrixPoolInstance;
+      const hexRadius = HEX_SIZE;
+      const hexHeight = hexRadius * 2;
+      const hexWidth = Math.sqrt(3) * hexRadius;
+      const vertDist = hexHeight * 0.75;
+      const horizDist = hexWidth;
 
       this.computeTileEntities(this.currentChunk);
 
-      const processBatch = async () => {
-        const endIndex = Math.min(currentIndex + batchSize, rows * cols);
-
-        for (let i = currentIndex; i < endIndex; i++) {
-          const row = Math.floor(i / cols) - rows / 2;
-          const col = (i % cols) - cols / 2;
-
-          const globalRow = startRow + row;
-          const globalCol = startCol + col;
-
-          // OPTIMIZED: Reuse tempPosition instead of creating new vectors
-          const pos = getWorldPositionForHex({ row: globalRow, col: globalCol });
-          tempPosition.copy(pos);
-
-          const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
-          const isQuest = this.questManager.questHexCoords.get(globalCol)?.has(globalRow) || false;
-          const isExplored = this.exploredTiles.get(globalCol)?.get(globalRow) || false;
-
-          // Set scale
-          if (isStructure || isQuest) {
-            tempMatrix.makeScale(0, 0, 0);
-          } else {
-            tempMatrix.makeScale(HEX_SIZE, HEX_SIZE, HEX_SIZE);
-          }
-
-          // Make hex interactive
-          this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
-
-          // Apply rotation and position
-          const rotationSeed = this.hashCoordinates(startCol + col, startRow + row);
-          const rotationIndex = Math.floor(rotationSeed * 6);
-          const randomRotation = (rotationIndex * Math.PI) / 3;
-
-          if (!IS_FLAT_MODE) {
-            tempPosition.y += 0.05;
-            rotationMatrix.makeRotationY(randomRotation);
-            tempMatrix.multiply(rotationMatrix);
-          } else {
-            tempPosition.y += 0.05;
-          }
-
-          // Determine biome and adjust position if needed
-          if (isExplored) {
-            const biome = isExplored as BiomeType;
-            const biomeVariant = getBiomeVariant(biome, globalCol, globalRow);
-            tempMatrix.setPosition(tempPosition);
-
-            // OPTIMIZED: Use matrix pool instead of allocating
-            const pooledMatrix = MatrixPool.getInstance().getMatrix();
-            pooledMatrix.copy(tempMatrix);
-            biomeHexes[biomeVariant].push(pooledMatrix);
-          } else {
-            tempPosition.y = 0.01;
-            tempMatrix.setPosition(tempPosition);
-
-            // OPTIMIZED: Use matrix pool instead of allocating
-            const pooledMatrix = MatrixPool.getInstance().getMatrix();
-            pooledMatrix.copy(tempMatrix);
-            biomeHexes["Outline"].push(pooledMatrix);
-          }
+      const cleanupTask = () => {
+        if (this.hexGridFrameHandle !== null) {
+          cancelAnimationFrame(this.hexGridFrameHandle);
+          this.hexGridFrameHandle = null;
         }
+        if (this.currentHexGridTask === taskToken) {
+          this.currentHexGridTask = null;
+        }
+      };
 
-        currentIndex = endIndex;
-        if (currentIndex < rows * cols) {
-          requestAnimationFrame(processBatch);
-        } else {
-          // Apply matrices using existing proven API
-          for (const [biome, matrices] of Object.entries(biomeHexes)) {
-            const hexMesh = this.biomeModels.get(biome as any);
+      const releaseAllMatrices = () => {
+        let totalReleased = 0;
+        Object.values(biomeHexes).forEach((matrices) => {
+          matrices.forEach((matrix) => matrixPool.releaseMatrix(matrix));
+          totalReleased += matrices.length;
+        });
+        (Object.keys(biomeHexes) as Array<keyof typeof biomeHexes>).forEach((key) => {
+          biomeHexes[key].length = 0;
+        });
+        return totalReleased;
+      };
 
-            if (!hexMesh) {
-              if (matrices.length > 0) {
-                console.error(`❌ Missing biome model for: ${biome}`);
-                console.log(`Available biome models:`, Array.from(this.biomeModels.keys()));
-              }
-              continue;
-            }
-
-            if (matrices.length === 0) {
-              hexMesh.setCount(0);
-              continue;
-            }
-
-            console.log(`✅ Applied ${matrices.length} ${biome} hexes`);
-
-            // Use existing proven API
-            matrices.forEach((matrix, index) => {
-              hexMesh.setMatrixAt(index, matrix);
-            });
-            hexMesh.setCount(matrices.length);
-            hexMesh.needsUpdate();
-          }
-
-          this.cacheMatricesForChunk(startRow, startCol);
-          const chunkCenterRow = startRow + this.chunkSize / 2;
-          const chunkCenterCol = startCol + this.chunkSize / 2;
-          this.interactiveHexManager.updateVisibleHexes(chunkCenterRow, chunkCenterCol, cols, rows);
-
-          // CRITICAL: Release pooled matrices back to pool after processing
-          const matrixPool = MatrixPool.getInstance();
-          let totalReleasedMatrices = 0;
-          Object.values(biomeHexes).forEach((matrices) => {
-            matrices.forEach((matrix) => matrixPool.releaseMatrix(matrix));
-            totalReleasedMatrices += matrices.length;
-          });
-          console.log(`🔄 Released ${totalReleasedMatrices} matrices back to pool`);
-
-          // Track memory usage
-          if (memoryMonitor && preUpdateStats) {
-            const postStats = memoryMonitor.getCurrentStats(`hex-grid-generated-${startRow}-${startCol}`);
-            const memoryDelta = postStats.heapUsedMB - preUpdateStats.heapUsedMB;
-            // Log matrix pool stats for optimization tracking
-            const poolStats = MatrixPool.getInstance().getStats();
-            console.log(
-              `[HEX GRID] OPTIMIZED generation memory impact: ${memoryDelta.toFixed(1)}MB (${rows}x${cols} hexes)`,
-            );
-            console.log(
-              `📊 Matrix Pool Stats: ${poolStats.available} available, ${poolStats.inUse} in use, ${poolStats.memoryEstimateMB.toFixed(1)}MB pool memory`,
-            );
-
-            const biomeDistribution = Object.fromEntries(
-              Object.entries(biomeHexes)
-                .map(([k, v]) => [k, v.length])
-                .filter(([k, v]) => v > "0"),
-            );
-            console.log(`📊 Biome distribution:`, biomeDistribution);
-
-            if (memoryDelta > 15) {
-              // Adjusted threshold
-              console.warn(`[HEX GRID] Unexpected memory usage: ${memoryDelta.toFixed(1)}MB`);
-            } else {
-              console.log(`✅ [HEX GRID] Memory optimization successful! Saved ~${(82 - memoryDelta).toFixed(1)}MB`);
-            }
-          }
-
+      const resolveOnce = () => {
+        if (!resolved) {
+          resolved = true;
+          cleanupTask();
           resolve();
         }
       };
 
-      Promise.all(this.modelLoadPromises).then(() => {
-        requestAnimationFrame(processBatch);
-      });
+      const abortTask = () => {
+        const released = releaseAllMatrices();
+        if (released > 0) {
+          console.log(`🔄 Released ${released} matrices back to pool (aborted)`);
+        }
+        resolveOnce();
+      };
+
+      const finalizeSuccess = () => {
+        for (const [biome, matrices] of Object.entries(biomeHexes)) {
+          const hexMesh = this.biomeModels.get(biome as any);
+
+          if (!hexMesh) {
+            if (matrices.length > 0) {
+              console.error(`❌ Missing biome model for: ${biome}`);
+              console.log(`Available biome models:`, Array.from(this.biomeModels.keys()));
+            }
+            continue;
+          }
+
+          if (matrices.length === 0) {
+            hexMesh.setCount(0);
+            continue;
+          }
+
+          console.log(`✅ Applied ${matrices.length} ${biome} hexes`);
+
+          matrices.forEach((matrix, index) => {
+            hexMesh.setMatrixAt(index, matrix);
+          });
+          hexMesh.setCount(matrices.length);
+          hexMesh.needsUpdate();
+        }
+
+        this.cacheMatricesForChunk(startRow, startCol);
+        const chunkCenterRow = startRow + this.chunkSize / 2;
+        const chunkCenterCol = startCol + this.chunkSize / 2;
+        this.interactiveHexManager.updateVisibleHexes(chunkCenterRow, chunkCenterCol, cols, rows);
+
+        const biomeCountsSnapshot = Object.fromEntries(
+          Object.entries(biomeHexes)
+            .map(([key, value]) => [key, value.length])
+            .filter(([, count]) => Number(count) > 0),
+        );
+
+        const released = releaseAllMatrices();
+        console.log(`🔄 Released ${released} matrices back to pool`);
+
+        if (memoryMonitor && preUpdateStats) {
+          const postStats = memoryMonitor.getCurrentStats(`hex-grid-generated-${startRow}-${startCol}`);
+          const memoryDelta = postStats.heapUsedMB - preUpdateStats.heapUsedMB;
+          const poolStats = matrixPool.getStats();
+          console.log(
+            `[HEX GRID] OPTIMIZED generation memory impact: ${memoryDelta.toFixed(1)}MB (${rows}x${cols} hexes)`,
+          );
+          console.log(
+            `📊 Matrix Pool Stats: ${poolStats.available} available, ${poolStats.inUse} in use, ${poolStats.memoryEstimateMB.toFixed(1)}MB pool memory`,
+          );
+
+          console.log(`📊 Biome distribution:`, biomeCountsSnapshot);
+
+          if (memoryDelta > 15) {
+            console.warn(`[HEX GRID] Unexpected memory usage: ${memoryDelta.toFixed(1)}MB`);
+          } else {
+            console.log(`✅ [HEX GRID] Memory optimization successful! Saved ~${(82 - memoryDelta).toFixed(1)}MB`);
+          }
+        }
+
+        resolveOnce();
+      };
+
+      const processCell = (index: number) => {
+        const rowOffset = Math.floor(index / cols) - halfRows;
+        const colOffset = (index % cols) - halfCols;
+
+        const globalRow = startRow + rowOffset;
+        const globalCol = startCol + colOffset;
+
+        const rowOffsetValue = ((globalRow % 2) * Math.sign(globalRow) * horizDist) / 2;
+        const baseX = globalCol * horizDist - rowOffsetValue;
+        const baseZ = globalRow * vertDist;
+        tempPosition.set(baseX, 0, baseZ);
+
+        const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
+        const isQuest = this.questManager.questHexCoords.get(globalCol)?.has(globalRow) || false;
+        const isExplored = this.exploredTiles.get(globalCol)?.get(globalRow) || false;
+
+        if (isStructure || isQuest) {
+          tempMatrix.makeScale(0, 0, 0);
+        } else {
+          tempMatrix.makeScale(HEX_SIZE, HEX_SIZE, HEX_SIZE);
+        }
+
+        this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
+
+        const rotationSeed = this.hashCoordinates(startCol + colOffset, startRow + rowOffset);
+        const rotationIndex = Math.floor(rotationSeed * 6);
+        const randomRotation = (rotationIndex * Math.PI) / 3;
+
+        if (!IS_FLAT_MODE) {
+          tempPosition.y += 0.05;
+          rotationMatrix.makeRotationY(randomRotation);
+          tempMatrix.multiply(rotationMatrix);
+        } else {
+          tempPosition.y += 0.05;
+        }
+
+        if (isExplored) {
+          const biome = isExplored as BiomeType;
+          const biomeVariant = getBiomeVariant(biome, globalCol, globalRow);
+          tempMatrix.setPosition(tempPosition);
+
+          const pooledMatrix = matrixPool.getMatrix();
+          pooledMatrix.copy(tempMatrix);
+          biomeHexes[biomeVariant].push(pooledMatrix);
+        } else {
+          tempPosition.y = 0.01;
+          tempMatrix.setPosition(tempPosition);
+
+          const pooledMatrix = matrixPool.getMatrix();
+          pooledMatrix.copy(tempMatrix);
+          biomeHexes.Outline.push(pooledMatrix);
+        }
+      };
+
+      const processFrame = () => {
+        if (this.currentHexGridTask !== taskToken) {
+          abortTask();
+          return;
+        }
+
+        const frameStart = performance.now();
+        let processedThisFrame = 0;
+
+        while (currentIndex < totalHexes) {
+          processCell(currentIndex);
+          currentIndex += 1;
+          processedThisFrame += 1;
+
+          if (currentIndex >= totalHexes) {
+            break;
+          }
+
+          if (processedThisFrame >= minBatch) {
+            const elapsed = performance.now() - frameStart;
+            if (elapsed >= frameBudget || processedThisFrame >= maxBatch) {
+              break;
+            }
+          }
+        }
+
+        if (currentIndex < totalHexes) {
+          this.hexGridFrameHandle = requestAnimationFrame(processFrame);
+        } else {
+          finalizeSuccess();
+        }
+      };
+
+      this.hexGridFrameHandle = requestAnimationFrame(processFrame);
     });
 
     await this.updateHexagonGridPromise;
@@ -2112,6 +2182,12 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   destroy() {
+    if (this.hexGridFrameHandle !== null) {
+      cancelAnimationFrame(this.hexGridFrameHandle);
+      this.hexGridFrameHandle = null;
+    }
+    this.currentHexGridTask = null;
+
     this.resourceFXManager.destroy();
     this.stopRelicValidationTimer();
     this.clearCache();
