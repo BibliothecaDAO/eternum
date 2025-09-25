@@ -62,6 +62,11 @@ export const ArmyList = ({ structure }: { structure: ComponentValue<ClientCompon
 
   const isRealmOrVillage = structure.category === StructureType.Realm || structure.category === StructureType.Village;
 
+  const maxGuardSlots = structure.base.troop_max_guard_count;
+  const isDefenseFull = guards.length >= maxGuardSlots;
+  const hasExistingGuards = guards.length > 0;
+  const canOpenDefenseModal = !isDefenseFull || hasExistingGuards;
+
   const name = useMemo(() => getStructureName(structure, getIsBlitz()).name, [structure]);
 
   const toggleModal = useUIStore((state) => state.toggleModal);
@@ -69,8 +74,6 @@ export const ArmyList = ({ structure }: { structure: ComponentValue<ClientCompon
   const handleCreateAttack = () => {
     toggleModal(<UnifiedArmyCreationModal structureId={structure.entity_id || 0} isExplorer={true} />);
   };
-
-  console.log({ structure, maxDefenseSlots: structure.base.troop_max_guard_count });
 
   const handleCreateDefense = () => {
     toggleModal(
@@ -139,9 +142,14 @@ export const ArmyList = ({ structure }: { structure: ComponentValue<ClientCompon
 
           <div
             onMouseEnter={() => {
-              if (guards.length >= structure.base.troop_max_guard_count) {
+              if (!canOpenDefenseModal) {
                 setTooltip({
-                  content: "Maximum number of defenses reached",
+                  content: "This structure does not have available defense slots",
+                  position: "top",
+                });
+              } else if (isDefenseFull) {
+                setTooltip({
+                  content: "All defense slots are filled. Reinforce or remove an existing defense.",
                   position: "top",
                 });
               }
@@ -150,12 +158,12 @@ export const ArmyList = ({ structure }: { structure: ComponentValue<ClientCompon
           >
             <Button
               variant="outline"
-              disabled={guards.length >= structure.base.troop_max_guard_count}
+              disabled={!canOpenDefenseModal}
               className="px-6 py-2 flex items-center gap-2"
               onClick={handleCreateDefense}
             >
               <PlusIcon className="h-4 w-4" />
-              <span>Create Defense</span>
+              <span>{isDefenseFull ? "Manage Defense" : "Create Defense"}</span>
             </Button>
           </div>
         </div>

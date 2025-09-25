@@ -128,6 +128,26 @@ export const UnifiedArmyCreationModal = ({
   // Check if user can create armies
   const canCreateAttackArmy = currentExplorersCount < maxExplorers;
   const canCreateDefenseArmy = currentGuardsCount < maxGuards;
+  const hasDefenseArmies = currentGuardsCount > 0;
+  const canInteractWithDefense = canCreateDefenseArmy || hasDefenseArmies;
+
+  const guardsBySlot = useMemo(() => {
+    const map = new Map<number, NonNullable<typeof guardsData>[number]>();
+    (guardsData ?? []).forEach((guard) => {
+      map.set(Number(guard.slot), guard);
+    });
+    return map;
+  }, [guardsData]);
+
+  const selectedGuard = guardsBySlot.get(guardSlot);
+  const selectedGuardCategory = selectedGuard?.troops?.category as TroopType | undefined;
+  const selectedGuardTier = selectedGuard?.troops?.tier as TroopTier | undefined;
+  const isSelectedSlotOccupied = Boolean(selectedGuard);
+  const isDefenseSlotCompatible =
+    !selectedGuard ||
+    (selectedGuardCategory === selectedTroopCombo.type && selectedGuardTier === selectedTroopCombo.tier);
+  const isDefenseSlotCreationBlocked = !isSelectedSlotOccupied && !canCreateDefenseArmy;
+  const isDefenseTroopLocked = !armyType && isSelectedSlotOccupied;
 
   // Create army manager for the structure
   const armyManager = useMemo(() => {
@@ -202,12 +222,61 @@ export const UnifiedArmyCreationModal = ({
 
   // Auto-switch to available army type if current selection is not allowed
   useEffect(() => {
-    if (armyType && !canCreateAttackArmy && canCreateDefenseArmy) {
+    if (armyType && !canCreateAttackArmy && canInteractWithDefense) {
       setArmyType(false);
-    } else if (!armyType && !canCreateDefenseArmy && canCreateAttackArmy) {
+    } else if (!armyType && !canInteractWithDefense && canCreateAttackArmy) {
       setArmyType(true);
     }
-  }, [armyType, canCreateAttackArmy, canCreateDefenseArmy]);
+  }, [armyType, canCreateAttackArmy, canInteractWithDefense]);
+
+  useEffect(() => {
+    if (armyType) {
+      return;
+    }
+
+    const occupiedSlots = (guardsData ?? [])
+      .map((guard) => Number(guard.slot))
+      .filter((slot) => Number.isInteger(slot) && slot >= 0);
+
+    if (maxDefenseSlots > 0 && guardSlot >= maxDefenseSlots) {
+      const clampedSlot = Math.max(0, maxDefenseSlots - 1);
+      if (guardSlot !== clampedSlot) {
+        setGuardSlot(clampedSlot);
+      }
+      return;
+    }
+
+    if (!canCreateDefenseArmy) {
+      if (occupiedSlots.length === 0) {
+        if (guardSlot !== 0) {
+          setGuardSlot(0);
+        }
+        return;
+      }
+
+      if (!occupiedSlots.includes(guardSlot)) {
+        const fallbackSlot = [...occupiedSlots].sort((a, b) => a - b)[0];
+        if (fallbackSlot !== undefined) {
+          setGuardSlot(fallbackSlot);
+        }
+      }
+    }
+  }, [armyType, guardsData, guardSlot, maxDefenseSlots, canCreateDefenseArmy]);
+
+  useEffect(() => {
+    if (armyType || !selectedGuardCategory || !selectedGuardTier) {
+      return;
+    }
+
+    setSelectedTroopCombo((previous) => {
+      if (previous.type === selectedGuardCategory && previous.tier === selectedGuardTier) {
+        return previous;
+      }
+      setTroopCount(0);
+      return { type: selectedGuardCategory, tier: selectedGuardTier };
+    });
+  }, [armyType, selectedGuardCategory, selectedGuardTier]);
+
 
   const handleCreate = async () => {
     if (!armyManager || troopCount <= 0) return;
@@ -227,6 +296,12 @@ export const UnifiedArmyCreationModal = ({
           selectedDirection,
         );
       } else {
+        if (!isDefenseSlotCompatible) {
+          throw new Error("Selected defense slot requires matching troop type and tier");
+        }
+        if (isDefenseSlotCreationBlocked) {
+          throw new Error("No available defense slot for new troops");
+        }
         await armyManager.addTroopsToGuard(
           account,
           selectedTroopCombo.type,
@@ -252,6 +327,29 @@ export const UnifiedArmyCreationModal = ({
   const troopResource = resources.find(
     (r) => r.id === getTroopResourceId(selectedTroopCombo.type, selectedTroopCombo.tier),
   );
+
+  const selectedGuardLabel =
+    selectedGuardTier && selectedGuardCategory
+      ? `${selectedGuardTier} ${selectedGuardCategory}`
+      : null;
+
+  const selectedGuardLabelUpper = selectedGuardLabel?.toUpperCase() ?? null;
+
+  const defenseSlotErrorMessage = !armyType
+    ? !isDefenseSlotCompatible && selectedGuardLabelUpper
+      ? `Slot ${guardSlot + 1} currently contains ${selectedGuardLabelUpper}. Reinforce it with the same troop type and tier.`
+      : isDefenseSlotCreationBlocked
+        ? "All defense slots are occupied. Select an occupied slot to reinforce or remove one to free space."
+        : null
+    : null;
+
+  const defenseSlotInfoMessage =
+    !armyType && isDefenseTroopLocked && selectedGuardLabel
+      ? `Reinforcing ${selectedGuardLabel}. Other troop types are locked for this slot.`
+      : null;
+
+  const isDefenseActionDisabled =
+    !armyType && (!canInteractWithDefense || isDefenseSlotCreationBlocked || !isDefenseSlotCompatible);
 
   return (
     <ModalContainer title={armyType ? "Create Attack Army" : "Create Defense Army"} size="large">
@@ -283,6 +381,13 @@ export const UnifiedArmyCreationModal = ({
                     const isSelected = selectedTroopCombo.type === type && selectedTroopCombo.tier === tier;
                     const troopResourceForCard = resources.find((r) => r.id === getTroopResourceId(type, tier));
                     const available = Number(divideByPrecision(balance) || 0);
+                    const hasResources = available > 0;
+                    const isLockedOption =
+                      isDefenseTroopLocked &&
+                      selectedGuardCategory !== undefined &&
+                      selectedGuardTier !== undefined &&
+                      (type !== selectedGuardCategory || tier !== selectedGuardTier);
+                    const canSelectCard = hasResources && !isLockedOption;
 
                     return (
                       <div
@@ -292,12 +397,13 @@ export const UnifiedArmyCreationModal = ({
                           "backdrop-blur-sm",
                           isSelected
                             ? "border-gold bg-gradient-to-br from-gold/25 to-gold/15 ring-2 ring-gold/40 shadow-xl shadow-gold/30 scale-105"
-                            : available > 0
+                            : canSelectCard
                               ? "border-brown/40 bg-gradient-to-br from-brown/15 to-brown/5 hover:border-gold/50 hover:bg-gradient-to-br hover:from-gold/20 hover:to-gold/10 hover:shadow-lg hover:scale-102 hover:-translate-y-0.5"
                               : "border-gray/20 bg-gray/5 opacity-50 cursor-not-allowed",
                           "hover:z-10 relative",
+                          isLockedOption && "pointer-events-none",
                         )}
-                        onClick={() => available > 0 && setSelectedTroopCombo({ type, tier })}
+                        onClick={() => canSelectCard && setSelectedTroopCombo({ type, tier })}
                       >
                         {/* Tier Badge */}
                         <div className="absolute -top-2 -right-2 z-10">
@@ -305,7 +411,7 @@ export const UnifiedArmyCreationModal = ({
                             className={clsx(
                               "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 shadow-lg",
                               "transition-all duration-300 bg-brown",
-                              available > 0 ? getTierStyle(`T${tier}`) : "bg-gray/50  border-gray-400",
+                              hasResources ? getTierStyle(`T${tier}`) : "bg-gray/50  border-gray-400",
                               isSelected && "scale-110 shadow-gold/50",
                             )}
                           >
@@ -319,7 +425,7 @@ export const UnifiedArmyCreationModal = ({
                             "flex items-center justify-center p-3 rounded-lg mb-3 transition-all duration-300",
                             isSelected
                               ? "bg-gold/20 shadow-inner"
-                              : available > 0
+                              : hasResources
                                 ? "bg-brown/20 group-hover:bg-gold/15"
                                 : "bg-gray/10",
                           )}
@@ -332,10 +438,10 @@ export const UnifiedArmyCreationModal = ({
                           <div
                             className={clsx(
                               "text-center text-base font-bold transition-colors duration-300",
-                              isSelected ? "text-gold" : available > 0 ? "text-gold/90" : "",
+                              isSelected ? "text-gold" : hasResources ? "text-gold/90" : "",
                             )}
                           >
-                            {available > 0
+                            {hasResources
                               ? available > 999
                                 ? `${Math.floor(available / 1000)}k`
                                 : available.toLocaleString()
@@ -354,6 +460,11 @@ export const UnifiedArmyCreationModal = ({
                         {/* Selection Glow Effect */}
                         {isSelected && (
                           <div className="absolute inset-0 rounded-xl bg-gold/5 animate-pulse pointer-events-none" />
+                        )}
+                        {isLockedOption && (
+                          <div className="absolute inset-0 rounded-xl bg-brown/70 backdrop-blur-sm flex items-center justify-center text-xs font-semibold text-gold/80 uppercase tracking-wide">
+                            Locked
+                          </div>
                         )}
                       </div>
                     );
@@ -461,14 +572,14 @@ export const UnifiedArmyCreationModal = ({
                 variant={!armyType ? "gold" : "outline"}
                 onClick={() => setArmyType(false)}
                 size="lg"
-                disabled={!canCreateDefenseArmy}
+                disabled={!canInteractWithDefense}
                 className={clsx(
                   "flex-1 py-4 font-bold transition-all duration-300 relative rounded-xl",
                   "flex flex-col items-center gap-2",
                   !armyType
                     ? "ring-2 ring-gold/60 shadow-xl shadow-gold/30 scale-105"
                     : "hover:bg-gold/10 hover:scale-102",
-                  !canCreateDefenseArmy && "opacity-50 cursor-not-allowed",
+                  !canInteractWithDefense && "opacity-50 cursor-not-allowed",
                 )}
               >
                 <Shield className="w-5 h-5" />
@@ -491,7 +602,9 @@ export const UnifiedArmyCreationModal = ({
                 <p className="text-sm text-red/90 ml-8">
                   {armyType
                     ? `Maximum attack armies (${maxExplorers}) created. Delete an existing army to create a new one.`
-                    : `Maximum defense armies (${maxGuards}) created. Delete an existing defense to create a new one.`}
+                    : hasDefenseArmies
+                      ? `All defense slots (${maxGuards}) are occupied. Reinforce an existing slot or delete one to free space.`
+                      : `This structure does not have available defense slots.`}
                 </p>
               </div>
             )}
@@ -509,29 +622,69 @@ export const UnifiedArmyCreationModal = ({
                   const slot = parseInt(slotIndex);
                   const isSelected = guardSlot === slot;
                   const isSlotAvailable = slot < maxDefenseSlots;
+                  const guardInfo = guardsBySlot.get(slot);
+                  const guardCategory = guardInfo?.troops?.category;
+                  const guardTier = guardInfo?.troops?.tier;
+                  const hasGuard = Boolean(guardInfo);
+                  const isSlotSelectable = isSlotAvailable && (canCreateDefenseArmy || hasGuard);
+                  const isSlotCompatible =
+                    !guardInfo || (guardCategory === selectedTroopCombo.type && guardTier === selectedTroopCombo.tier);
 
                   return (
                     <Button
                       key={slot}
-                      variant={isSelected ? "gold" : isSlotAvailable ? "outline" : "secondary"}
-                      onClick={() => isSlotAvailable && setGuardSlot(slot)}
-                      disabled={!isSlotAvailable}
+                      variant={isSelected ? "gold" : isSlotSelectable ? "outline" : "secondary"}
+                      onClick={() => isSlotSelectable && setGuardSlot(slot)}
+                      disabled={!isSlotSelectable}
                       size="lg"
                       className={clsx(
                         "p-4 flex flex-col items-center text-center transition-all duration-300 rounded-xl",
                         isSelected
                           ? "ring-2 ring-gold/60 shadow-xl shadow-gold/30 scale-105 bg-gradient-to-br from-gold/25 to-gold/15"
-                          : isSlotAvailable
+                          : isSlotSelectable
                             ? "hover:bg-gold/10 hover:border-gold/50 hover:scale-102 hover:shadow-md"
                             : "opacity-40 cursor-not-allowed",
+                        hasGuard && !isSlotCompatible && "border-red/50 hover:border-red/60",
                       )}
                     >
                       <div className="text-base font-bold mb-1">{slotName}</div>
-                      <div className="text-sm text-gold/70">{isSlotAvailable ? `Slot ${slot + 1}` : "Unavailable"}</div>
+                      <div
+                        className={clsx(
+                          "text-sm",
+                          hasGuard
+                            ? isSlotCompatible
+                              ? "text-gold/90"
+                              : "text-red/80 font-semibold"
+                            : "text-gold/70",
+                        )}
+                      >
+                        {hasGuard ? `${guardTier} ${guardCategory}` : `Slot ${slot + 1}`}
+                      </div>
+                      {!canCreateDefenseArmy && !hasGuard && (
+                        <div className="mt-1 text-xs text-gold/50">Occupied slots only</div>
+                      )}
+                      {hasGuard && !isSlotCompatible && (
+                        <div className="mt-1 text-xs text-red/70">Reinforce with {guardTier} {guardCategory}</div>
+                      )}
                     </Button>
                   );
                 })}
               </div>
+              {defenseSlotInfoMessage && (
+                <div className="mt-4 bg-brown/15 border border-gold/30 rounded-xl p-4 text-sm text-gold/80">
+                  {defenseSlotInfoMessage}
+                </div>
+              )}
+              {defenseSlotErrorMessage && (
+                <div className="mt-4 bg-gradient-to-r from-red/15 to-red/10 border-2 border-red/40 rounded-xl p-4 shadow-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="p-1 rounded-full bg-red/20">
+                      <AlertTriangle className="w-5 h-5 text-red" />
+                    </div>
+                    <span className="text-sm text-red/90">{defenseSlotErrorMessage}</span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -617,9 +770,8 @@ export const UnifiedArmyCreationModal = ({
                 troopCount <= 0 ||
                 troopCount > maxAffordable ||
                 isLoading ||
-                (armyType && selectedDirection === null) ||
-                (armyType && !canCreateAttackArmy) ||
-                (!armyType && !canCreateDefenseArmy)
+                (armyType && (selectedDirection === null || !canCreateAttackArmy)) ||
+                isDefenseActionDisabled
               }
               isLoading={isLoading}
               className={clsx(
