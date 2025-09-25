@@ -691,9 +691,10 @@
         const container = document.createElement("div");
         container.setAttribute("data-component", "productions");
         if (cameraView === CameraView.Medium) {
-          container.classList.add("flex", "flex-wrap", "items-center", "gap-1", "text-[11px]", "text-gray-200");
+          container.classList.add("flex", "flex-wrap", "items-center", "gap-1", "text-[11px]");
+          container.style.color = SOFT_LABEL_COLOR;
         } else {
-          container.classList.add("flex", "flex-wrap", "items-center", "gap-1", "text-xxs", "py-1");
+          container.classList.add("flex", "flex-wrap", "items-center", "gap-1", "text-xxs");
         }
 
         if (!activeProductions || activeProductions.length === 0) {
