@@ -3,6 +3,7 @@ import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.s
 import { useGoToStructure, useSpectatorModeClick } from "@/hooks/helpers/use-navigate";
 import { useSetAddressName } from "@/hooks/helpers/use-set-address-name";
 import { Position } from "@bibliothecadao/eternum";
+import { WORLD_CONFIG_ID } from "@bibliothecadao/types";
 
 import Button from "@/ui/design-system/atoms/button";
 import {
@@ -739,10 +740,23 @@ export const BlitzOnboarding = () => {
     },
   } = setup;
 
+  const worldConfigEntityId = useMemo(() => getEntityIdFromKeys([WORLD_CONFIG_ID]), []);
+  const worldConfigValue = useComponentValue(components.WorldConfig, worldConfigEntityId);
+
   const blitzConfig = configManager.getBlitzConfig()?.blitz_registration_config;
   const blitzNumHyperStructuresLeft = configManager.getBlitzConfig()?.blitz_num_hyperstructures_left;
   const seasonConfig = configManager.getSeasonConfig();
   const devMode = configManager.getDevModeConfig()?.dev_mode_on;
+  const registrationCount = useMemo(() => {
+    const liveCount = worldConfigValue?.blitz_registration_config?.registration_count;
+
+    if (liveCount !== undefined && liveCount !== null) {
+      return Number(liveCount);
+    }
+
+    const fallbackCount = blitzConfig?.registration_count ?? 0;
+    return fallbackCount;
+  }, [blitzConfig?.registration_count, worldConfigValue]);
   const {
     balance: entryTokenBalance,
     hasEntryTokenContract,
@@ -1130,7 +1144,7 @@ export const BlitzOnboarding = () => {
       {gameState === GameState.REGISTRATION && (
         <RegistrationState
           entryTokenBalance={entryTokenBalance}
-          registrationCount={blitzConfig.registration_count}
+          registrationCount={registrationCount}
           registrationStartAt={registration_start_at}
           registrationEndAt={registration_end_at}
           creationStartAt={creation_start_at}

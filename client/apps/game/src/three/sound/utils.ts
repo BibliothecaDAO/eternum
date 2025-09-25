@@ -1,6 +1,74 @@
 import { AudioManager } from "@/audio/core/AudioManager";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
 
+const DEFAULT_RESOURCE_SOUND_ID = "ui.click";
+
+export const RESOURCE_SOUND_MAP: Record<ResourcesIds, string> = {
+  [ResourcesIds.Stone]: "resource.collect.stone",
+  [ResourcesIds.Coal]: "resource.collect.coal",
+  [ResourcesIds.Wood]: "resource.collect.wood",
+  [ResourcesIds.Copper]: "resource.collect.copper",
+  [ResourcesIds.Ironwood]: "resource.collect.ironwood",
+  [ResourcesIds.Obsidian]: "resource.collect.obsidian",
+  [ResourcesIds.Gold]: "resource.collect.gold",
+  [ResourcesIds.Silver]: "resource.collect.silver",
+  [ResourcesIds.Mithral]: "resource.collect.mithral",
+  [ResourcesIds.AlchemicalSilver]: "resource.collect.alchemical_silver",
+  [ResourcesIds.ColdIron]: "resource.collect.cold_iron",
+  [ResourcesIds.DeepCrystal]: "resource.collect.deep_crystal",
+  [ResourcesIds.Ruby]: "resource.collect.ruby",
+  [ResourcesIds.Diamonds]: "resource.collect.diamonds",
+  [ResourcesIds.Hartwood]: "resource.collect.hartwood",
+  [ResourcesIds.Ignium]: "resource.collect.ignium",
+  [ResourcesIds.TwilightQuartz]: "resource.collect.twilight_quartz",
+  [ResourcesIds.TrueIce]: "resource.collect.true_ice",
+  [ResourcesIds.Adamantine]: "resource.collect.adamantine",
+  [ResourcesIds.Sapphire]: "resource.collect.sapphire",
+  [ResourcesIds.EtherealSilica]: "resource.collect.ethereal_silica",
+  [ResourcesIds.Dragonhide]: "resource.collect.dragonhide",
+  [ResourcesIds.Labor]: "resource.collect.stone",
+  [ResourcesIds.AncientFragment]: "resource.collect.diamonds",
+  [ResourcesIds.Donkey]: "resource.collect.wood",
+  [ResourcesIds.Knight]: "resource.collect.stone",
+  [ResourcesIds.KnightT2]: "resource.collect.stone",
+  [ResourcesIds.KnightT3]: "resource.collect.stone",
+  [ResourcesIds.Crossbowman]: "resource.collect.stone",
+  [ResourcesIds.CrossbowmanT2]: "resource.collect.stone",
+  [ResourcesIds.CrossbowmanT3]: "resource.collect.stone",
+  [ResourcesIds.Paladin]: "resource.collect.stone",
+  [ResourcesIds.PaladinT2]: "resource.collect.stone",
+  [ResourcesIds.PaladinT3]: "resource.collect.stone",
+  [ResourcesIds.Wheat]: "resource.collect.wheat",
+  [ResourcesIds.Fish]: "resource.collect.fish",
+  [ResourcesIds.Lords]: "resource.collect.lords",
+  [ResourcesIds.Essence]: "resource.collect.diamonds",
+  [ResourcesIds.StaminaRelic1]: "relic.chest",
+  [ResourcesIds.StaminaRelic2]: "relic.chest",
+  [ResourcesIds.DamageRelic1]: "relic.chest",
+  [ResourcesIds.DamageRelic2]: "relic.chest",
+  [ResourcesIds.DamageReductionRelic1]: "relic.chest",
+  [ResourcesIds.DamageReductionRelic2]: "relic.chest",
+  [ResourcesIds.ExplorationRelic1]: "ui.explore",
+  [ResourcesIds.ExplorationRelic2]: "ui.explore",
+  [ResourcesIds.ExplorationRewardRelic1]: "ui.levelup",
+  [ResourcesIds.ExplorationRewardRelic2]: "ui.levelup",
+  [ResourcesIds.StructureDamageReductionRelic1]: "building.construct.castle",
+  [ResourcesIds.StructureDamageReductionRelic2]: "building.construct.castle",
+  [ResourcesIds.ProductionRelic1]: "ui.summon",
+  [ResourcesIds.ProductionRelic2]: "ui.summon",
+  [ResourcesIds.LaborProductionRelic1]: "ui.shovel",
+  [ResourcesIds.LaborProductionRelic2]: "ui.shovel",
+  [ResourcesIds.TroopProductionRelic1]: "unit.drum",
+  [ResourcesIds.TroopProductionRelic2]: "unit.drum",
+};
+
+export const getResourceSoundId = (resourceId?: ResourcesIds): string => {
+  if (resourceId === undefined) {
+    return DEFAULT_RESOURCE_SOUND_ID;
+  }
+  return RESOURCE_SOUND_MAP[resourceId] ?? DEFAULT_RESOURCE_SOUND_ID;
+};
+
 export const playSound = (sound: string, hasSound: boolean, volume: number) => {
   const audio = new Audio("/sound/" + sound);
   if (!hasSound) {
@@ -66,35 +134,7 @@ export const playBuildingSound = (buildingType: BuildingType | undefined, hasSou
 export const playResourceSound = (resourceId: ResourcesIds | undefined, hasSound: boolean, volume: number) => {
   if (!hasSound) return;
 
-  const resourceSounds: Partial<Record<ResourcesIds, string>> = {
-    [ResourcesIds.Wheat]: "resources.wheat.add",
-    [ResourcesIds.Fish]: "resources.fish.add",
-    [ResourcesIds.Wood]: "resources.wood.add",
-    [ResourcesIds.Stone]: "resources.stone.add",
-    [ResourcesIds.Coal]: "resources.coal.add",
-    [ResourcesIds.Copper]: "resources.copper.add",
-    [ResourcesIds.Obsidian]: "resources.obsidian.add",
-    [ResourcesIds.Silver]: "resources.silver.add",
-    [ResourcesIds.Ironwood]: "resources.ironwood.add",
-    [ResourcesIds.ColdIron]: "resources.coldiron.add",
-    [ResourcesIds.Gold]: "resources.gold.add",
-    [ResourcesIds.Hartwood]: "resources.hartwood.add",
-    [ResourcesIds.Diamonds]: "resources.diamonds.add",
-    [ResourcesIds.Sapphire]: "resources.sapphire.add",
-    [ResourcesIds.Ruby]: "resources.ruby.add",
-    [ResourcesIds.DeepCrystal]: "resources.deepcrystal.add",
-    [ResourcesIds.Ignium]: "resources.ignium.add",
-    [ResourcesIds.EtherealSilica]: "resources.etherealsilica.add",
-    [ResourcesIds.TrueIce]: "resources.trueice.add",
-    [ResourcesIds.TwilightQuartz]: "resources.twilightquartz.add",
-    [ResourcesIds.AlchemicalSilver]: "resources.alchemicalsilver.add",
-    [ResourcesIds.Adamantine]: "resources.adamantine.add",
-    [ResourcesIds.Mithral]: "resources.mithral.add",
-    [ResourcesIds.Dragonhide]: "resources.dragonhide.add",
-    [ResourcesIds.Lords]: "resources.lords.add",
-  };
-
-  const soundId = resourceId === undefined ? "ui.click" : (resourceSounds[resourceId] ?? "ui.click");
+  const soundId = getResourceSoundId(resourceId);
 
   AudioManager.getInstance().play(soundId, { volume: volume / 100 });
 };
