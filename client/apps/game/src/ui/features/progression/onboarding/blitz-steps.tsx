@@ -26,13 +26,6 @@ import { Abi, CallData, uint256 } from "starknet";
 import { env } from "../../../../../env";
 import { SpectateButton } from "./spectate-button";
 
-// Helper function to format timestamp to local time
-const formatLocalTime = (timestamp: number): string => {
-  const date = new Date(timestamp * 1000);
-  // Add weekday to the time string
-  return date.toLocaleTimeString([], { weekday: "short", hour: "2-digit", minute: "2-digit" });
-};
-
 const formatLocalDateTime = (timestamp: number): string => {
   const date = new Date(timestamp * 1000);
   // Add weekday to the date/time string
@@ -874,21 +867,53 @@ export const BlitzOnboarding = () => {
 
   // Determine current game state based on time
   useEffect(() => {
-    if (!blitzConfig) return;
+    if (!blitzConfig) {
+      setGameState(GameState.NO_GAME);
+      return;
+    }
+
+    const {
+      registration_start_at,
+      registration_end_at,
+      creation_start_at,
+      creation_end_at,
+    } = blitzConfig;
+
+    const hasValidSchedule =
+      registration_start_at > 0 &&
+      registration_end_at > registration_start_at &&
+      creation_start_at > registration_end_at &&
+      creation_end_at >= creation_start_at;
+
+    if (!hasValidSchedule) {
+      setGameState(GameState.NO_GAME);
+      return;
+    }
 
     const updateGameState = () => {
       const now = Date.now() / 1000;
 
-      if (now < blitzConfig.registration_start_at) {
-        // Before registration starts
+      if (now >= creation_end_at) {
         setGameState(GameState.NO_GAME);
-      } else if (now >= blitzConfig.registration_start_at && now < blitzConfig.registration_end_at) {
-        // Registration period
-        setGameState(GameState.REGISTRATION);
-      } else if (now >= blitzConfig.creation_start_at) {
-        // Game is active
-        setGameState(GameState.GAME_ACTIVE);
+        return;
       }
+
+      if (now < registration_start_at) {
+        setGameState(GameState.NO_GAME);
+        return;
+      }
+
+      if (now < registration_end_at) {
+        setGameState(GameState.REGISTRATION);
+        return;
+      }
+
+      if (now >= creation_start_at) {
+        setGameState(GameState.GAME_ACTIVE);
+        return;
+      }
+
+      setGameState(GameState.NO_GAME);
     };
 
     updateGameState();
