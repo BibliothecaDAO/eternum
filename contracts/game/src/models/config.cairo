@@ -945,6 +945,7 @@ pub struct BlitzRealmPositionRegister {
 pub struct BlitzRealmPlayerRegister {
     #[key]
     pub player: ContractAddress,
+    pub once_registered: bool,
     pub registered: bool,
 }
 
