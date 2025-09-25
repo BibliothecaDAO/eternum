@@ -164,6 +164,7 @@ export const createOwnerDisplayElement = (options: OwnerDisplayOptions): HTMLEle
 
   const container = document.createElement("div");
   container.classList.add("flex", "items-center", "truncate", "gap-1");
+  container.setAttribute("data-component", "owner");
 
   // Create name element
   const displayName = owner.ownerName || "";
