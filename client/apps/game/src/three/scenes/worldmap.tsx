@@ -1323,8 +1323,10 @@ export default class WorldmapScene extends HexagonScene {
 
     dummy.updateMatrix();
 
-    const renderedChunkCenterRow = parseInt(this.currentChunk.split(",")[0]);
-    const renderedChunkCenterCol = parseInt(this.currentChunk.split(",")[1]);
+    const renderedChunkStartRow = parseInt(this.currentChunk.split(",")[0]);
+    const renderedChunkStartCol = parseInt(this.currentChunk.split(",")[1]);
+    const chunkCenterRow = renderedChunkStartRow + this.chunkSize / 2;
+    const chunkCenterCol = renderedChunkStartCol + this.chunkSize / 2;
 
     this.invalidateAllChunkCachesContainingHex(col, row);
 
@@ -1337,12 +1339,7 @@ export default class WorldmapScene extends HexagonScene {
       // Update which hexes are visible in the current chunk
       const chunkWidth = this.renderChunkSize.width;
       const chunkHeight = this.renderChunkSize.height;
-      this.interactiveHexManager.updateVisibleHexes(
-        renderedChunkCenterRow,
-        renderedChunkCenterCol,
-        chunkWidth,
-        chunkHeight,
-      );
+      this.interactiveHexManager.updateVisibleHexes(chunkCenterRow, chunkCenterCol, chunkWidth, chunkHeight);
 
       await Promise.all(this.modelLoadPromises);
       const biomeVariant = getBiomeVariant(biome, col, row);
@@ -1353,7 +1350,7 @@ export default class WorldmapScene extends HexagonScene {
       hexMesh.needsUpdate();
 
       // Cache the updated matrices for the chunk
-      this.cacheMatricesForChunk(renderedChunkCenterRow, renderedChunkCenterCol);
+      this.cacheMatricesForChunk(renderedChunkStartRow, renderedChunkStartCol);
     }
   }
 
@@ -1451,11 +1448,14 @@ export default class WorldmapScene extends HexagonScene {
     }
     this.cachedMatrices.clear();
     this.cachedMatrixOrder = [];
+    MatrixPool.getInstance().clear();
   }
 
   private computeInteractiveHexes(startRow: number, startCol: number, width: number, height: number) {
     // Instead of clearing and recomputing all hexes, just update which ones are visible
-    this.interactiveHexManager.updateVisibleHexes(startRow, startCol, width, height);
+    const chunkCenterRow = startRow + this.chunkSize / 2;
+    const chunkCenterCol = startCol + this.chunkSize / 2;
+    this.interactiveHexManager.updateVisibleHexes(chunkCenterRow, chunkCenterCol, width, height);
   }
 
   async updateHexagonGrid(startRow: number, startCol: number, rows: number, cols: number) {
@@ -1610,7 +1610,9 @@ export default class WorldmapScene extends HexagonScene {
           }
 
           this.cacheMatricesForChunk(startRow, startCol);
-          this.interactiveHexManager.updateVisibleHexes(startRow, startCol, cols, rows);
+          const chunkCenterRow = startRow + this.chunkSize / 2;
+          const chunkCenterCol = startCol + this.chunkSize / 2;
+          this.interactiveHexManager.updateVisibleHexes(chunkCenterRow, chunkCenterCol, cols, rows);
 
           // CRITICAL: Release pooled matrices back to pool after processing
           const matrixPool = MatrixPool.getInstance();
@@ -1873,9 +1875,11 @@ export default class WorldmapScene extends HexagonScene {
     await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
 
     // Update which interactive hexes are visible in the new chunk
+    const chunkCenterRow = startRow + this.chunkSize / 2;
+    const chunkCenterCol = startCol + this.chunkSize / 2;
     this.interactiveHexManager.updateVisibleHexes(
-      startRow,
-      startCol,
+      chunkCenterRow,
+      chunkCenterCol,
       this.renderChunkSize.width,
       this.renderChunkSize.height,
     );
@@ -2110,6 +2114,7 @@ export default class WorldmapScene extends HexagonScene {
   destroy() {
     this.resourceFXManager.destroy();
     this.stopRelicValidationTimer();
+    this.clearCache();
 
     // Clean up hover label manager
     // this.hoverLabelManager.dispose();

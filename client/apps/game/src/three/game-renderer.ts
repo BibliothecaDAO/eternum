@@ -33,6 +33,7 @@ import {
   ReinhardToneMapping,
   Vector2,
   WebGLRenderer,
+  WebGLRenderTarget,
 } from "three";
 import { CSS2DRenderer } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
@@ -77,6 +78,7 @@ export default class GameRenderer {
   private sceneManager!: SceneManager;
   private graphicsSetting: GraphicsSettings;
   private cleanupIntervals: NodeJS.Timeout[] = [];
+  private environmentTarget?: WebGLRenderTarget;
 
   constructor(dojoContext: SetupResult) {
     this.graphicsSetting = GRAPHICS_SETTING;
@@ -646,14 +648,38 @@ export default class GameRenderer {
   applyEnvironment() {
     const pmremGenerator = new PMREMGenerator(this.renderer);
     pmremGenerator.compileEquirectangularShader();
-    const roomEnvironment = pmremGenerator.fromScene(new RoomEnvironment()).texture;
+
+    const fallbackTarget = pmremGenerator.fromScene(new RoomEnvironment());
+    this.setEnvironmentFromTarget(fallbackTarget, 0.1);
+
     const hdriLoader = new RGBELoader();
-    const hdriTexture = hdriLoader.load("/textures/environment/models_env.hdr", (texture) => {
-      const envMap = pmremGenerator.fromEquirectangular(texture).texture;
-      texture.dispose();
-      this.hexceptionScene.setEnvironment(envMap, 0.1);
-      this.worldmapScene.setEnvironment(envMap, 0.1);
-    });
+    hdriLoader.load(
+      "/textures/environment/models_env.hdr",
+      (texture) => {
+        const envTarget = pmremGenerator.fromEquirectangular(texture);
+        texture.dispose();
+
+        this.setEnvironmentFromTarget(envTarget, 0.1);
+
+        pmremGenerator.dispose();
+      },
+      undefined,
+      () => {
+        pmremGenerator.dispose();
+      },
+    );
+  }
+
+  private setEnvironmentFromTarget(renderTarget: WebGLRenderTarget, intensity: number) {
+    const envMap = renderTarget.texture;
+    this.hexceptionScene.setEnvironment(envMap, intensity);
+    this.worldmapScene.setEnvironment(envMap, intensity);
+
+    if (this.environmentTarget && this.environmentTarget !== renderTarget) {
+      this.environmentTarget.dispose();
+    }
+
+    this.environmentTarget = renderTarget;
   }
 
   private getTargetPixelRatio() {
@@ -818,6 +844,11 @@ export default class GameRenderer {
       // Clean up controls
       if (this.controls) {
         this.controls.dispose();
+      }
+
+      if (this.environmentTarget) {
+        this.environmentTarget.dispose();
+        this.environmentTarget = undefined;
       }
 
       // Remove event listeners
