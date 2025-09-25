@@ -5,23 +5,33 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { marketplaceCollections, realmsAddress, seasonPassAddress } from "@/config";
 import {
   ActiveMarketOrdersTotal,
   fetchCollectionStatistics,
+  fetchPlayerLeaderboard,
   fetchSeasonPassRealmsByAddress,
   fetchTokenBalancesWithMetadata,
 } from "@/hooks/services";
 import type { GameStatus } from "@/hooks/services/game-status";
 import { DEFAULT_GAME_STATUS, fetchGameStatus } from "@/hooks/services/game-status";
-import { trimAddress } from "@/lib/utils";
+import { displayAddress, trimAddress } from "@/lib/utils";
 import { MergedNftData } from "@/types";
 import { useAccount } from "@starknet-react/core";
 import { useQuery, useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { AlertTriangle, Castle, CirclePlayIcon } from "lucide-react";
+import { AlertTriangle, Boxes, Castle, CirclePlayIcon, Clock, Swords, Trophy, UserRoundPlus } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
+
+interface LeaderboardCardEntry {
+  rank: number;
+  displayName: string;
+  displayAddress: string;
+  displayPoints: string;
+  playerAddress: string;
+}
 
 export const Route = createLazyFileRoute("/")({
   component: Index,
@@ -78,6 +88,36 @@ function Index() {
     refetchInterval: 60_000,
   });
 
+  const { data: leaderboardData } = useQuery({
+    queryKey: ["player-leaderboard", 3],
+    queryFn: () => fetchPlayerLeaderboard(3),
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+  });
+
+  const leaderboardFormatter = useMemo(() => new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }), []);
+
+  const topPlayers = useMemo<LeaderboardCardEntry[]>(() => {
+    if (!leaderboardData) return [];
+
+    return leaderboardData.slice(0, 3).map((entry, index) => {
+      const safeAddress = entry.playerAddress && entry.playerAddress.length > 0 ? entry.playerAddress : "";
+      const normalizedAddress = safeAddress ? trimAddress(safeAddress) : "";
+      const shortAddress = normalizedAddress ? displayAddress(normalizedAddress) : "Unknown";
+      const displayName = entry.playerName && entry.playerName.length > 0 ? entry.playerName : shortAddress;
+
+      return {
+        rank: index + 1,
+        displayName,
+        displayAddress: shortAddress,
+        displayPoints: leaderboardFormatter.format(Math.floor(entry.registeredPoints)),
+        playerAddress: safeAddress || `${index}-unknown`,
+      };
+    });
+  }, [leaderboardData, leaderboardFormatter]);
+
+  console.log({ topPlayers });
+
   const gameStatus = fetchedGameStatus ?? DEFAULT_GAME_STATUS;
 
   // Framer Motion variants
@@ -103,21 +143,114 @@ function Index() {
     },
   };
 
+  const howItWorksSteps = [
+    {
+      value: "register",
+      title: "Register",
+      description: "You have 2 hours every 6 hours to register for the next game before the lobby closes.",
+      icon: UserRoundPlus,
+      highlight: "Registration allows us to place everyone on the map at random locations when the game starts.",
+    },
+    {
+      value: "settle",
+      title: "Settle Your Realms",
+      description: "When you settle, your 3 realms are placed randomly on the map and the game starts.",
+      icon: Castle,
+      highlight:
+        "Everybody starts with the same 3 realms and the same resources. Randomly placed on the map. No one has an advantage.",
+    },
+    {
+      value: "conquer",
+      title: "Conquer for 2 Hours",
+      description: "Once the game starts you have 2 hours to climb the leaderboard where every transaction is onchain.",
+      icon: Swords,
+      highlight: "You can win points by exploring tiles, conquering structures and controlling hyperstructures.",
+    },
+    {
+      value: "loot",
+      title: "Win Loot Chests or tokens",
+      description: "Top performers earn rare chests packed with cosmetics, plus tokens.",
+      icon: Boxes,
+      highlight:
+        "A subset of top players can earn prizes, with prize values increasing depending on whether it's a free-to-play game or if you need to pay to enter.",
+    },
+  ];
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
-      <section className="relative h-[70vh] min-h-[600px] flex items-center justify-center pb-16 pt-8">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('/images/covers/01.png')" }}
-        >
-          <div className="absolute inset-0 bg-black/50" />
+      <section
+        className="relative flex min-h-[540px] items-center justify-center bg-cover bg-center pb-16 pt-10"
+        style={{ backgroundImage: "url('/images/covers/01.png')" }}
+      >
+        <div className="absolute inset-0 bg-black/60" />
+        <div className="relative z-10 w-full px-4">
+          <div className="mx-auto flex w-full max-w-5xl flex-col items-center gap-8">
+            <EternumWordsLogo className="w-44 fill-gold drop-shadow-lg sm:w-56 md:w-64" />
+            <CurrentCycleCard status={gameStatus} isLoading={isGameStatusLoading} topPlayers={topPlayers} />
+          </div>
         </div>
-        <div className="relative z-10 text-center px-4 w-full max-w-screen-lg">
-          <h1 className="text-gold fill-gold">
-            <EternumWordsLogo className="mx-auto w-48 fill-current stroke-current sm:w-60 md:w-72 lg:w-96 mb-8 sm:mb-12 lg:mb-16" />
-          </h1>
-          <GamePhaseBanner status={gameStatus} isLoading={isGameStatusLoading} />
+      </section>
+
+      {/* How Blitz Works */}
+      <section className="border-y border-gold/10 bg-background/90 py-12">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto mb-10 max-w-2xl text-center space-y-3">
+            <h2 className="text-3xl font-bold text-foreground sm:text-4xl">How Blitz Works</h2>
+            <p className="text-sm text-muted-foreground sm:text-base">
+              Connect your wallet, settle your realms, battle for two hours, then claim your rewards. Rinse and repeat
+              every six hours until the end of time.
+            </p>
+          </div>
+          <Tabs defaultValue={howItWorksSteps[0].value} className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+            <TabsList className="flex w-full flex-col gap-2 rounded-2xl bg-background/70 p-3 backdrop-blur md:flex-row md:flex-wrap md:justify-between">
+              {howItWorksSteps.map((step, index) => {
+                const Icon = step.icon;
+                return (
+                  <TabsTrigger
+                    key={step.value}
+                    value={step.value}
+                    className="group flex flex-1 items-center justify-between gap-4 rounded-xl border border-transparent px-4 py-3 text-left text-sm font-medium text-muted-foreground transition hover:text-foreground data-[state=active]:border-gold/40 data-[state=active]:bg-gold/10 data-[state=active]:text-foreground"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gold/15 font-semibold text-gold">
+                        {index + 1}
+                      </span>
+                      <span className="text-sm sm:text-base">{step.title}</span>
+                    </div>
+                    <Icon className="h-5 w-5 text-gold/70 transition group-data-[state=active]:text-gold" />
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+            {howItWorksSteps.map((step, index) => {
+              const Icon = step.icon;
+              return (
+                <TabsContent key={step.value} value={step.value} className="mt-0 focus-visible:outline-none">
+                  <Card className="border-gold/20 bg-background/75 shadow-lg shadow-black/10 backdrop-blur">
+                    <CardContent className="flex flex-col gap-5 p-6">
+                      <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.35em] text-gold/80">
+                        <span>Step {index + 1}</span>
+                        <span className="hidden text-muted-foreground sm:inline">{step.title}</span>
+                      </div>
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="flex flex-1 flex-col gap-3">
+                          <h3 className="text-2xl font-semibold text-foreground">{step.title}</h3>
+                          <p className="text-sm text-muted-foreground sm:text-base">{step.description}</p>
+                        </div>
+                        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-gold/30 bg-gold/10 text-gold">
+                          <Icon className="h-6 w-6" />
+                        </div>
+                      </div>
+                      <div className="rounded-lg border border-dashed border-gold/25 bg-gradient-to-br from-background/40 to-background/10 p-4 text-sm text-muted-foreground">
+                        {step.highlight}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              );
+            })}
+          </Tabs>
         </div>
       </section>
 
@@ -212,15 +345,18 @@ function Index() {
   );
 }
 
-const GamePhaseBanner = memo(function GamePhaseBanner({
+const CurrentCycleCard = memo(function CurrentCycleCard({
   status,
   isLoading,
+  topPlayers,
 }: {
   status: GameStatus;
   isLoading: boolean;
+  topPlayers: LeaderboardCardEntry[];
 }) {
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
   const [milestonesOpen, setMilestonesOpen] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -231,12 +367,12 @@ const GamePhaseBanner = memo(function GamePhaseBanner({
   }, []);
 
   const phaseLabelMap: Record<GameStatus["currentPhase"], string> = {
-    NO_GAME: "No Realms: Blitz Game Scheduled",
-    REGISTRATION: "Realms: Blitz Registration Open",
-    GAME_ACTIVE: "Realms: Blitz Game In Progress",
+    NO_GAME: "No Blitz Game Scheduled",
+    REGISTRATION: "Blitz Registration Open",
+    GAME_ACTIVE: "Blitz Game In Progress",
   };
 
-  const currentPhaseLabel = phaseLabelMap[status.currentPhase];
+  const currentPhaseLabel = isLoading ? "Loading…" : phaseLabelMap[status.currentPhase];
 
   const phaseDetails = useMemo(() => {
     const items: Array<{ label: string; value: number | undefined }> = [
@@ -276,63 +412,198 @@ const GamePhaseBanner = memo(function GamePhaseBanner({
     if (status.currentPhase === "GAME_ACTIVE" && status.gameEndAt) {
       return `Game ends ${formatDateTime(status.gameEndAt)}`;
     }
-    return null;
+    return "Next window to be announced";
   }, [status]);
 
+  const countdownLabel = countdownData.label && countdownSeconds !== null ? countdownData.label : null;
+  const countdownValue = countdownSeconds !== null ? formatCountdown(countdownSeconds) : null;
+  const hasLeaderboard = topPlayers.length > 0;
+  const winner = hasLeaderboard ? topPlayers[0] : null;
+  const topPlayerSummary = winner?.displayName ?? "Leaderboard updating";
+
+  useEffect(() => {
+    if (!hasLeaderboard && showLeaderboard) {
+      setShowLeaderboard(false);
+    }
+  }, [hasLeaderboard, showLeaderboard]);
+
   return (
-    <motion.div className="inline-flex w-full max-w-3xl flex-col gap-4 rounded-2xl border border-gold/30 bg-background/80 p-6 text-left shadow-xl backdrop-blur mt-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Current Phase</p>
-          <h2 className="mt-1 text-3xl font-serif text-gold">{isLoading ? "Loading…" : currentPhaseLabel}</h2>
-          {countdownData.label && countdownSeconds !== null && (
-            <p className="mt-2 text-sm text-muted-foreground">
-              {countdownData.label}{" "}
-              <span className="font-semibold text-foreground">{formatCountdown(countdownSeconds)}</span>
-            </p>
-          )}
-        </div>
-        <div className="flex flex-col items-start gap-2 sm:items-end text-sm text-muted-foreground">
-          {status.registrationCount !== undefined && (
-            <Badge variant="outline" className="border-gold/50 bg-gold/10 text-gold">
-              {status.registrationCount.toLocaleString()} registered
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="w-full"
+    >
+      <Card className="w-full border border-gold/20 bg-background/85 shadow-2xl shadow-black/20 backdrop-blur">
+        <CardHeader className="flex flex-col gap-4 border-b border-gold/15 pb-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3 text-gold">
+            <CirclePlayIcon className="h-6 w-6" />
+            <div>
+              <CardTitle className="text-xl">Current Blitz Cycle</CardTitle>
+              <CardDescription className="text-xs uppercase tracking-[0.3em] text-gold/70">
+                Live on Starknet Devnet
+              </CardDescription>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <Badge variant="outline" className="flex items-center gap-1 border-gold/30 bg-black/40 text-gold">
+              <CirclePlayIcon className="h-3.5 w-3.5" />
+              {currentPhaseLabel}
             </Badge>
+            {countdownLabel && countdownValue && (
+              <div className="flex items-center justify-between gap-2 rounded-full border border-gold/20 bg-black/30 px-3 py-1 whitespace-nowrap">
+                <Clock className="h-3.5 w-3.5 text-gold" />
+                <span className="min-w-[84px] text-center font-mono font-semibold text-foreground">
+                  {countdownValue}
+                </span>
+                <span className="text-xs text-muted-foreground">{countdownLabel.replace(" in", "")}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-1 rounded-full border border-gold/20 bg-black/30 px-3 py-1">
+              <Trophy className="h-3.5 w-3.5 text-gold" />
+              <span>{topPlayerSummary}</span>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent
+          className={`grid gap-6 p-6 ${hasLeaderboard && showLeaderboard ? "md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]" : ""}`}
+        >
+          <div className="flex flex-col gap-5">
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <p className="font-semibold text-foreground">
+                Blitz is the most advanced onchain game ever built. A fresh match starts every six hours—rally your
+                realm before the next horn sounds.
+              </p>
+              <p>
+                Need the finer details?{" "}
+                <a
+                  className="text-gold underline underline-offset-2"
+                  href="https://docs.realms.world/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Review the documentation
+                </a>
+                .
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Button size="lg" className="flex-1 sm:flex-initial" asChild>
+                <a href="https://dev.blitz.realms.world/" target="_blank" rel="noopener noreferrer">
+                  <CirclePlayIcon className="mr-2 h-5 w-5" /> Play Desktop Version
+                </a>
+              </Button>
+              <Button size="lg" variant="outline" className="flex-1 border-gold/40 text-gold sm:flex-initial" asChild>
+                <a href="https://dev.m.blitz.realms.world/home" target="_blank" rel="noopener noreferrer">
+                  <CirclePlayIcon className="mr-2 h-5 w-5" /> Play Mobile Version
+                </a>
+              </Button>
+            </div>
+
+            <div className="grid gap-3 rounded-xl border border-gold/15 bg-black/30 p-4 text-xs text-muted-foreground sm:grid-cols-3">
+              <div>
+                <span className="uppercase tracking-[0.25em] text-gold">Phase</span>
+                <p className="mt-1 text-sm text-foreground">{currentPhaseLabel}</p>
+              </div>
+              <div>
+                <span className="uppercase tracking-[0.25em] text-gold">Countdown</span>
+                <p className="mt-1 text-sm text-foreground">{countdownValue ?? "—"}</p>
+              </div>
+              <div>
+                <span className="uppercase tracking-[0.25em] text-gold">Next window</span>
+                <p className="mt-1 text-sm text-foreground">{nextPhaseDescription}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 rounded-lg border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-xs text-amber-300">
+              <AlertTriangle className="h-4 w-4" />
+              Both clients run on the Blitz testnet. Expect rapid iteration.
+            </div>
+
+            {hasLeaderboard && winner && (
+              <div className="flex flex-col gap-4 rounded-xl border border-gold/20 bg-black/25 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-gold">
+                    <Trophy className="h-4 w-4" />
+                    Cycle leader
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-gold/30 text-gold hover:bg-gold/10"
+                    onClick={() => setShowLeaderboard((prev) => !prev)}
+                  >
+                    {showLeaderboard ? "Hide top 3" : "View top 3"}
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold/20 text-base font-semibold text-gold">
+                      1
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold text-foreground">{winner.displayName}</span>
+                      <span className="text-[11px] text-muted-foreground">{winner.displayAddress}</span>
+                    </div>
+                  </div>
+                  <span className="text-lg font-semibold text-gold">
+                    {winner.displayPoints}
+                    <span className="ml-1 text-xs font-normal text-muted-foreground">VP</span>
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {phaseDetails.length > 0 && (
+              <div className="flex justify-end">
+                <Button variant="outline" size="sm" onClick={() => setMilestonesOpen(true)}>
+                  Upcoming phases
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {hasLeaderboard && showLeaderboard && (
+            <div className="flex h-full flex-col rounded-xl border border-gold/15 bg-black/30 p-5">
+              <div className="flex items-center justify-between pb-3">
+                <h3 className="text-sm font-semibold text-foreground">Top 3 Players</h3>
+              </div>
+              <div className="flex flex-1 flex-col gap-3">
+                {topPlayers.map((player) => (
+                  <div
+                    key={`${player.rank}-${player.playerAddress}`}
+                    className="flex items-center justify-between rounded-lg border border-gold/10 bg-black/50 px-3 py-2"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gold/20 text-sm font-semibold text-gold">
+                        {player.rank}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold text-foreground">{player.displayName}</span>
+                        <span className="text-[11px] text-muted-foreground">{player.displayAddress}</span>
+                      </div>
+                    </div>
+                    <span className="text-sm font-semibold text-gold">
+                      {player.displayPoints}
+                      <span className="ml-1 text-[11px] font-normal text-muted-foreground">VP</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <footer className="pt-3 text-[11px] text-muted-foreground">
+                Data refreshes every 60 seconds via Torii.
+              </footer>
+            </div>
           )}
-          {nextPhaseDescription && <p>{nextPhaseDescription}</p>}
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Button size="lg" className="text-lg px-8 py-6" asChild>
-            <a href="https://dev.blitz.realms.world/" target="_blank" rel="noopener noreferrer">
-              <CirclePlayIcon className="!w-6 !h-6 mr-2" /> Play Desktop Version
-            </a>
-          </Button>
-          <Button size="lg" variant="outline" className="text-lg px-8 py-6" asChild>
-            <a href="https://dev.m.blitz.realms.world/home" target="_blank" rel="noopener noreferrer">
-              <CirclePlayIcon className="!w-6 !h-6 mr-2" /> Play Mobile Version
-            </a>
-          </Button>
-        </div>
-        <div className="flex items-center gap-2 text-xs text-amber-400 bg-amber-400/10 px-3 py-2 rounded-lg border border-amber-400/20">
-          <AlertTriangle className="w-4 h-4" />
-          <p>Both clients run on the Blitz testnet. Expect rapid iteration.</p>
-        </div>
-      </div>
-
-      {phaseDetails.length > 0 && (
-        <div className="flex justify-end">
-          <Button variant="outline" size="sm" onClick={() => setMilestonesOpen(true)}>
-            Upcoming milestones
-          </Button>
-        </div>
-      )}
+        </CardContent>
+      </Card>
 
       <Dialog open={milestonesOpen} onOpenChange={setMilestonesOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-gold">Upcoming milestones</DialogTitle>
+            <DialogTitle className="text-gold">Upcoming phases</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             {phaseDetails.map((item) => (

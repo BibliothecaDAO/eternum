@@ -1,3 +1,4 @@
+import { ReactComponent as DiscordLogo } from "@/assets/icons/common/discord.svg";
 import {
   Sidebar,
   SidebarContent,
@@ -97,7 +98,7 @@ export function AppSidebar() {
   const sidebarSections = [
     {
       title: "Overview",
-      description: "Jump into Eternum at a glance.",
+      description: "Jump into Realms at a glance.",
       items: overviewItems,
     },
     {
@@ -185,6 +186,16 @@ export function AppSidebar() {
             ))}
             {/* social links */}
             <div className="flex items-center gap-2 mt-8 justify-center text-gold fill-gold">
+              <a
+                href="https://discord.gg/realmsworld"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={handleLinkClick}
+                className="text-gold fill-gold"
+                aria-label="Join Discord"
+              >
+                <DiscordLogo className="h-7 w-7" />
+              </a>
               <a
                 href="https://twitter.com/realms_gg"
                 target="_blank"

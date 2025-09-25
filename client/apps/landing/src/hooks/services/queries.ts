@@ -499,6 +499,90 @@ GROUP BY
     "base.category"
 ORDER BY
     category;`,
+  PLAYER_LEADERBOARD: `
+    WITH RECURSIVE
+      registered AS (
+        SELECT
+          lower(COALESCE(
+            NULLIF("address", 'address'),
+            NULLIF("player_registered_points.address", 'player_registered_points.address'),
+            ''
+          )) AS player_address,
+          CASE
+            WHEN lower(COALESCE(
+              NULLIF("registered_points", 'registered_points'),
+              NULLIF("player_registered_points.registered_points", 'player_registered_points.registered_points'),
+              '0x0'
+            )) LIKE '0x%'
+            THEN substr(lower(COALESCE(
+              NULLIF("registered_points", 'registered_points'),
+              NULLIF("player_registered_points.registered_points", 'player_registered_points.registered_points'),
+              '0x0'
+            )), 3)
+            ELSE lower(COALESCE(
+              NULLIF("registered_points", 'registered_points'),
+              NULLIF("player_registered_points.registered_points", 'player_registered_points.registered_points'),
+              '0x0'
+            ))
+          END AS hex_points,
+          COALESCE(
+            NULLIF("prize_claimed", 'prize_claimed'),
+            NULLIF("player_registered_points.prize_claimed", 'player_registered_points.prize_claimed'),
+            0
+          ) AS prize_claimed
+        FROM "s1_eternum-PlayerRegisteredPoints"
+      ),
+      decoded AS (
+        SELECT
+          player_address,
+          hex_points,
+          prize_claimed,
+          length(hex_points) AS hex_length,
+          0 AS idx,
+          0 AS points
+        FROM registered
+        UNION ALL
+        SELECT
+          d.player_address,
+          d.hex_points,
+          d.prize_claimed,
+          d.hex_length,
+          d.idx + 1,
+          d.points * 16 + CASE
+            WHEN instr('0123456789abcdef', substr(d.hex_points, d.idx + 1, 1)) = 0 THEN 0
+            ELSE instr('0123456789abcdef', substr(d.hex_points, d.idx + 1, 1)) - 1
+          END
+        FROM decoded AS d
+        WHERE d.idx < d.hex_length
+      ),
+      totals AS (
+        SELECT
+          player_address,
+          prize_claimed,
+          points AS registered_points
+        FROM decoded
+        WHERE idx = hex_length
+      )
+    SELECT
+      totals.player_address,
+      totals.registered_points,
+      totals.prize_claimed,
+      COALESCE(
+        NULLIF("name", 'name'),
+        NULLIF("address_name.name", 'address_name.name'),
+        ''
+      ) AS player_name
+    FROM totals
+    LEFT JOIN "s1_eternum-AddressName"
+      ON lower(COALESCE(
+        NULLIF("address", 'address'),
+        NULLIF("address_name.address", 'address_name.address'),
+        ''
+      )) = totals.player_address
+    ORDER BY registered_points DESC, totals.player_address
+    LIMIT {limit}
+    OFFSET {offset};
+  `,
   TOTAL_TROOPS: `WITH RECURSIVE
   digits(d,v) AS (
     VALUES ('0',0),('1',1),('2',2),('3',3),('4',4),('5',5),('6',6),('7',7),
