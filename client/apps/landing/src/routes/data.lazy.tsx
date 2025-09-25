@@ -1,12 +1,14 @@
 import { TypeH1 } from "@/components/typography/type-h1";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useData } from "@/hooks/use-data";
+import { OG_IMAGE_META } from "@/lib/seo";
 import { divideByPrecision } from "@bibliothecadao/eternum";
 import { StructureType } from "@bibliothecadao/types";
 import { createLazyFileRoute } from "@tanstack/react-router";
 
 export const Route = createLazyFileRoute("/data")({
   component: Index,
+  meta: () => OG_IMAGE_META,
 });
 
 function Index() {

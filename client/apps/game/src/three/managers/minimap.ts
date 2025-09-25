@@ -96,6 +96,7 @@ class Minimap {
     width: MINIMAP_CONFIG.MAP_COLS_WIDTH,
     height: MINIMAP_CONFIG.MAP_ROWS_HEIGHT,
   };
+  private worldBounds: { minCol: number; maxCol: number; minRow: number; maxRow: number } | null = null;
   private scaleX!: number;
   private scaleY!: number;
   private dragSpeed: number = 1;
@@ -656,6 +657,7 @@ class Minimap {
     const col = parseInt(url.searchParams.get("col") || "0");
     const row = parseInt(url.searchParams.get("row") || "0");
     this.mapCenter = { col, row };
+    this.clampMapCenter();
     this.recomputeScales();
   }
 
@@ -666,6 +668,7 @@ class Minimap {
       width: MINIMAP_CONFIG.MAX_ZOOM_RANGE,
       height: MINIMAP_CONFIG.MAP_ROWS_HEIGHT * 3,
     };
+    this.clampMapCenter();
     this.recomputeScales();
     this.draw();
   }
@@ -673,6 +676,7 @@ class Minimap {
   // Center the map at the origin (0,0) for screenshots
   centerAtOrigin() {
     this.mapCenter = { col: 0, row: 0 };
+    this.clampMapCenter();
     this.recomputeScales();
     this.draw();
   }
@@ -718,6 +722,8 @@ class Minimap {
       const rowShift = Math.round((event.clientY - this.lastMousePosition.y) * this.dragSpeed);
       this.mapCenter.col -= colShift;
       this.mapCenter.row -= rowShift;
+
+      this.clampMapCenter();
 
       this.lastMousePosition = {
         x: event.clientX,
@@ -778,6 +784,8 @@ class Minimap {
       this.mapCenter.col += Math.round(colShift * 0.15); // Adjust the factor as needed
       this.mapCenter.row += Math.round(rowShift * 0.15); // Adjust the factor as needed
     }
+
+    this.clampMapCenter();
 
     this.recomputeScales();
     // The recomputeScales method will set needsReclustering if the zoom level changed enough
@@ -919,10 +927,70 @@ class Minimap {
           };
         });
       });
+      this.updateWorldBounds();
+      this.clampMapCenter();
+      this.recomputeScales();
       this.draw(); // Redraw the minimap with new data
     } catch (error) {
       console.error("Failed to fetch tiles:", error);
     }
+  }
+
+  private updateWorldBounds() {
+    if (!this.tiles.length) {
+      this.worldBounds = null;
+      return;
+    }
+
+    let minCol = Infinity;
+    let maxCol = -Infinity;
+    let minRow = Infinity;
+    let maxRow = -Infinity;
+
+    this.tiles.forEach((tile) => {
+      if (tile.col < minCol) minCol = tile.col;
+      if (tile.col > maxCol) maxCol = tile.col;
+      if (tile.row < minRow) minRow = tile.row;
+      if (tile.row > maxRow) maxRow = tile.row;
+    });
+
+    this.worldBounds = { minCol, maxCol, minRow, maxRow };
+  }
+
+  private clampMapCenter() {
+    if (!this.worldBounds) return;
+
+    const halfWidth = Math.floor(this.mapSize.width / 2);
+    const halfHeight = Math.floor(this.mapSize.height / 2);
+    const { minCol, maxCol, minRow, maxRow } = this.worldBounds;
+
+    const minCenterCol = minCol + halfWidth;
+    const maxCenterCol = maxCol - halfWidth;
+    const minCenterRow = minRow + halfHeight;
+    const maxCenterRow = maxRow - halfHeight;
+
+    if (minCenterCol > maxCenterCol) {
+      this.mapCenter.col = Math.round((minCol + maxCol) / 2);
+    } else {
+      this.mapCenter.col = Math.min(Math.max(this.mapCenter.col, minCenterCol), maxCenterCol);
+    }
+
+    if (minCenterRow > maxCenterRow) {
+      this.mapCenter.row = Math.round((minRow + maxRow) / 2);
+    } else {
+      this.mapCenter.row = Math.min(Math.max(this.mapCenter.row, minCenterRow), maxCenterRow);
+    }
+  }
+
+  resetToCameraCenter() {
+    if (!this.context) return;
+
+    const cameraPosition = this.camera.position;
+    const { col, row } = getHexForWorldPosition(cameraPosition);
+    this.mapCenter = { col, row };
+    this.clampMapCenter();
+    this.recomputeScales();
+    this.draw();
   }
 
   // New method to draw the hovered coordinates
