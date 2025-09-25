@@ -321,7 +321,6 @@ const MakeHyperstructuresState = ({
       if (latestNumHyperStructuresLeft !== undefined) {
         setCurrentNumHyperStructuresLeft(latestNumHyperStructuresLeft);
       }
-
     }, 3000);
 
     return () => clearInterval(interval);

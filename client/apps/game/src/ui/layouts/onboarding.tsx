@@ -113,11 +113,7 @@ export const StepContainer = ({
                   <div className="w-full flex justify-center rounded-lg pt-2">
                     <p className="text-xxs align-bottom my-auto ml-2 text-center">
                       By continuing you are agreeing <br /> to Realms'
-                      <button
-                        type="button"
-                        className="ml-1 underline"
-                        onClick={() => setShowToS(true)}
-                      >
+                      <button type="button" className="ml-1 underline" onClick={() => setShowToS(true)}>
                         Terms of Service
                       </button>
                     </p>
@@ -161,10 +157,7 @@ export const Onboarding = ({ backgroundImage }: OnboardingProps) => {
 
   const isBlitz = getIsBlitz();
 
-  const renderStage = (
-    content: React.ReactNode,
-    stepProps?: Partial<Omit<StepContainerProps, "children">>,
-  ) => (
+  const renderStage = (content: React.ReactNode, stepProps?: Partial<Omit<StepContainerProps, "children">>) => (
     <div className="flex h-full w-full">
       <div className="pointer-events-none flex flex-1 items-center pl-16">
         <EternumWordsLogo className="fill-brown w-56 sm:w-48 lg:w-72 xl:w-[360px]" />
@@ -286,7 +279,12 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
       )}
 
       {hasUnsettledSeasonPasses && (
-        <Button size="lg" forceUppercase={false} className="w-full rounded-md shadow-md" onClick={() => setSettleRealm(true)}>
+        <Button
+          size="lg"
+          forceUppercase={false}
+          className="w-full rounded-md shadow-md"
+          onClick={() => setSettleRealm(true)}
+        >
           <div className="flex items-center justify-start w-full">
             <Castle className="!w-5 !h-5 mr-2 fill-gold" />
             <span className="font-medium flex-grow text-center">Settle a Realm</span>
