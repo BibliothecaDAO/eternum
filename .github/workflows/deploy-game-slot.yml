@@ -84,6 +84,22 @@ jobs:
       - name: 📚 Install Dependencies
         run: pnpm install
 
+      - name: 🔧 Setup Scarb 2.9.2 for Collectibles
+        uses: software-mansion/setup-scarb@v1
+        with:
+          scarb-version: "2.9.2"
+
+      - name: ⚙️ Run Collectibles NFT Declare
+        working-directory: ./contracts
+        run: |
+          echo "🔧 Running Collectibles NFT Declare with Scarb 2.9.2..."
+          pnpm run collectibles:declare:slot
+
+      - name: 🔧 Restore Scarb dev-2025-09-05
+        uses: software-mansion/setup-scarb@v1
+        with:
+          scarb-version: "dev-2025-09-05"
+
       - name: ⏰ Calculate Game Start Time
         id: game-timing
         run: |
