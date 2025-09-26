@@ -124,6 +124,11 @@ const NoGameState = ({
 }) => {
   const registrationDuration = registrationEndAt - registrationStartAt;
 
+  const {
+    setup: { components },
+  } = useDojo();
+  const onSpectatorModeClick = useSpectatorModeClick(components);
+
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 text-center">
       <CountdownTimer targetTime={registrationStartAt} label="Registration starts in:" />
@@ -141,6 +146,10 @@ const NoGameState = ({
             <p className="text-gold/50 text-xs">{formatLocalDateTime(creationStartAt)}</p>
           </div>
         </div>
+      </div>
+
+      <div className="pt-2">
+        <SpectateButton onClick={onSpectatorModeClick} />
       </div>
     </motion.div>
   );
