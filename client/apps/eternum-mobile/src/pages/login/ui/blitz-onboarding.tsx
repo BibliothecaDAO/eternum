@@ -573,7 +573,7 @@ export const BlitzOnboarding = () => {
   const [isObtainingEntryToken, setIsObtainingEntryToken] = useState(false);
   const [entryTokenStatus, setEntryTokenStatus] = useState<"idle" | "minting" | "timeout" | "error">("idle");
   const [hasQueriedEntryToken, setHasQueriedEntryToken] = useState(false);
-  const [isToppingUp, setIsToppingUp] = useState(false);
+  const [_, setIsToppingUp] = useState(false);
 
   const accountOwner = account?.address ? BigInt(account.address) : 0n;
 
@@ -614,6 +614,7 @@ export const BlitzOnboarding = () => {
   const hasSufficientFeeBalance = !requiresEntryToken || feeAmount === 0n || feeTokenBalance >= feeAmount;
   // const feeBalanceShortfall = feeAmount > feeTokenBalance ? feeAmount - feeTokenBalance : 0n;
   const isLocalChain = env.VITE_PUBLIC_CHAIN === "local";
+  // @ts-ignore
   const canTopUpBalance = Boolean(!isLocalChain && feeTokenAddressHex && masterAccount);
 
   const formatTokenAmount = (value: bigint) => value.toString();
@@ -772,6 +773,7 @@ export const BlitzOnboarding = () => {
     }
   };
 
+  // @ts-ignore
   const handleTopUpFeeBalance = async () => {
     if (!masterAccount || !network?.provider || !account?.address || !feeTokenAddressHex || feeAmount === 0n) {
       return;
