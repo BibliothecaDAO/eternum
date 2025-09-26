@@ -2,6 +2,7 @@ import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getBlockTimestamp, getIsBlitz, Position } from "@bibliothecadao/eternum";
 
+import { useUISound } from "@/audio/hooks/useUISound";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { SecondaryMenuItems } from "@/ui/features/world";
 import { NameChangePopup } from "@/ui/shared";
@@ -41,6 +42,9 @@ export const TopLeftNavigation = memo(() => {
   const structures = useUIStore((state) => state.playerStructures);
 
   const { isMapView } = useQuery();
+
+  const playClick = useUISound("ui.click");
+  const playHover = useUISound("ui.hover");
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   // const followArmyMoves = useUIStore((state) => state.followArmyMoves);
@@ -126,24 +130,30 @@ export const TopLeftNavigation = memo(() => {
           </div>
           <div className="map-button-selector flex items-center justify-center md:justify-start gap-2 px-4">
             <span
-              onClick={() =>
+              onClick={() => {
+                playClick();
                 goToStructure(
                   structureEntityId,
                   new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
                   false,
-                )
-              }
+                );
+              }}
+              onMouseEnter={() => playHover()}
               className={cn("text-xs", !isMapView && "text-gold font-bold")}
             >
               Local
             </span>
-            <label className="relative inline-flex items-center cursor-pointer">
+            <label
+              className="relative inline-flex items-center cursor-pointer"
+              onMouseEnter={() => playHover()}
+            >
               <input
                 type="checkbox"
                 className="sr-only peer"
                 checked={isMapView}
                 onChange={(e) => {
                   const checked = e.target.checked;
+                  playClick();
                   goToStructure(
                     structureEntityId,
                     new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
@@ -154,13 +164,15 @@ export const TopLeftNavigation = memo(() => {
               <div className="w-9 h-5 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all bg-gold/30"></div>
             </label>
             <span
-              onClick={() =>
+              onClick={() => {
+                playClick();
                 goToStructure(
                   structureEntityId,
                   new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
                   true,
-                )
-              }
+                );
+              }}
+              onMouseEnter={() => playHover()}
               className={cn("text-xs", isMapView && "text-gold font-bold")}
             >
               World
@@ -193,7 +205,11 @@ export const TopLeftNavigation = memo(() => {
                     ? "bg-gold/30 hover:bg-gold/40 border-gold shadow-lg shadow-gold/20 animate-pulse"
                     : "bg-gold/10 hover:bg-gold/20 border-gold/30",
                 )}
-                onClick={() => setFollowArmyCombats(!followArmyCombats)}
+                onClick={() => {
+                  setFollowArmyCombats(!followArmyCombats);
+                  playClick();
+                }}
+                onMouseEnter={() => playHover()}
                 aria-pressed={followArmyCombats}
                 title={followArmyCombats ? "Stop following army combat" : "Follow army combat"}
               >
