@@ -1,0 +1,54 @@
+name: preview-deploy
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+
+    env:
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      PREVIEW_BASE_DOMAIN: ${{ vars.PREVIEW_BASE_DOMAIN }}
+      PREVIEW_DNS_ZONE: ${{ vars.PREVIEW_DNS_ZONE }}
+      PREVIEW_BUCKET_LOCATION: ${{ vars.PREVIEW_BUCKET_LOCATION }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_TERRAFORM_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Write preview env file
+        run: |
+          mkdir -p deploy/artifacts
+          cat <<'ENV' > deploy/artifacts/pr-${{ github.event.number }}.env
+VITE_API_URL=${{ secrets.PREVIEW_VITE_API_URL }}
+ENV
+
+      - name: Deploy preview
+        run: |
+          deploy/scripts/deploy.sh --env preview --pr "${{ github.event.number }}" --auto-approve

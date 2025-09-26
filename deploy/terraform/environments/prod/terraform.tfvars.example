@@ -1,0 +1,21 @@
+project_id       = "my-gcp-project"
+default_region   = "us-central1"
+default_location = "US"
+
+default_labels = {
+  app = "eternum"
+}
+
+environments = {
+  prod = {
+    app_id              = "game-web"
+    domain              = "game.example.com"
+    dns_zone_name       = "example-com"
+    bucket_location     = "US"
+    certificate_domains = ["game.example.com", "www.game.example.com"]
+    env_file_path       = "../../artifacts/prod.env"
+    labels = {
+      tier = "prod"
+    }
+  }
+}

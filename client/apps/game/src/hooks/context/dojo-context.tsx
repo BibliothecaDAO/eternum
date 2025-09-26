@@ -4,9 +4,9 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getIsBlitz } from "@bibliothecadao/eternum";
 
+import { ReactComponent as EternumWordsLogo } from "@/assets/icons/blitz-words-logo-g.svg";
 import Button from "@/ui/design-system/atoms/button";
 import { SpectateButton } from "@/ui/features/progression";
-import { ReactComponent as EternumWordsLogo } from "@/assets/icons/blitz-words-logo-g.svg";
 import { mintUrl, OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
 import { displayAddress } from "@/ui/utils/utils";
@@ -129,10 +129,21 @@ const DojoContextProvider = ({
   const [accountsInitialized, setAccountsInitialized] = useState(false);
   const [retries, setRetries] = useState(0);
 
-  const connectWallet = () => {
+  const connectWallet = async () => {
+    if (isConnected || isConnecting) {
+      return;
+    }
+
+    const primaryConnector = connectors[0];
+
+    if (!primaryConnector) {
+      console.error("Failed to connect wallet: no connector available");
+      return;
+    }
+
     try {
       console.log("Attempting to connect wallet...");
-      connect({ connector: env.VITE_PUBLIC_CHAIN === "local" ? connectors[0] : (connectors[0] as any).controller });
+      connect({ connector: primaryConnector });
       console.log("Wallet connected successfully.");
     } catch (error) {
       console.error("Failed to connect wallet:", error);

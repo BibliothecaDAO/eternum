@@ -21,6 +21,7 @@ import {
 } from "@bibliothecadao/types";
 import { Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { MouseEvent } from "react";
 
 export const ResourceChip = ({
   resourceId,
@@ -128,79 +129,83 @@ export const ResourceChip = ({
     return storageRemaining <= 0;
   }, [storageRemaining]);
 
-  const handleMouseEnter = useCallback(() => {
-    setIsHovered(true);
-    const newDisplayBalance = Number(actualBalance || 0) + Number(amountProduced || 0n);
-    setDisplayBalance(newDisplayBalance);
+  const handleMouseEnter = useCallback(
+    (event: MouseEvent<HTMLDivElement>) => {
+      setIsHovered(true);
+      const newDisplayBalance = Number(actualBalance || 0) + Number(amountProduced || 0n);
+      setDisplayBalance(newDisplayBalance);
 
-    setTooltip({
-      position: "left",
-      content: (
-        <div className="space-y-1 max-w-72">
-          <div>
-            <span className="text-gold font-bold">Total available:</span>{" "}
-            <span className="text-gold">{currencyFormat(newDisplayBalance, 2)}</span>{" "}
-            {findResourceById(resourceId)?.trait}
+      setTooltip({
+        anchorElement: event.currentTarget,
+        position: "left",
+        content: (
+          <div className="space-y-1 max-w-72">
+            <div>
+              <span className="text-gold font-bold">Total available:</span>{" "}
+              <span className="text-gold">{currencyFormat(newDisplayBalance, 2)}</span>{" "}
+              {findResourceById(resourceId)?.trait}
+            </div>
+            {Number(amountProduced || 0n) > 0 && (
+              <>
+                <p>
+                  You have{" "}
+                  <span className={!isStorageFull ? "text-green" : "text-red"}>
+                    {currencyFormat(Number(amountProduced || 0n), 2)}
+                  </span>{" "}
+                  {findResourceById(resourceId)?.trait} waiting to be stored.
+                </p>
+                <p>
+                  Whenever you use this resource (building, trading, pause, production, etc.) the produced amount is first
+                  moved into storage.
+                  <br />
+                  Only the portion that fits within your remaining capacity&nbsp;(
+                  <span className="text-green">
+                    {storageRemaining.toLocaleString(undefined, { maximumFractionDigits: 0 })}kg
+                  </span>
+                  ) will be saved; any excess&nbsp;(
+                  <span className="text-red">
+                    of {divideByPrecision(producedWeight, false).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    kg
+                  </span>
+                  ) will be permanently burned.
+                </p>
+                <p>
+                  {
+                    // Calculate the net result of claiming all produced weight against remaining storage.
+                    storageRemaining - divideByPrecision(producedWeight, false) >= 0 ? (
+                      <span className="text-green">All will fit if used right now.</span>
+                    ) : (
+                      <>
+                        <span className="text-red">
+                          {Math.abs(storageRemaining - divideByPrecision(producedWeight, false)).toLocaleString(
+                            undefined,
+                            { maximumFractionDigits: 0 },
+                          )}
+                          kg&nbsp;
+                        </span>
+                        will be burnt if you claim it all.
+                      </>
+                    )
+                  }
+                </p>
+              </>
+            )}
           </div>
-          {Number(amountProduced || 0n) > 0 && (
-            <>
-              <p>
-                You have{" "}
-                <span className={!isStorageFull ? "text-green" : "text-red"}>
-                  {currencyFormat(Number(amountProduced || 0n), 2)}
-                </span>{" "}
-                {findResourceById(resourceId)?.trait} waiting to be stored.
-              </p>
-              <p>
-                Whenever you use this resource (building, trading, pause, production, etc.) the produced amount is first
-                moved into storage.
-                <br />
-                Only the portion that fits within your remaining capacity&nbsp;(
-                <span className="text-green">
-                  {storageRemaining.toLocaleString(undefined, { maximumFractionDigits: 0 })}kg
-                </span>
-                ) will be saved; any excess&nbsp;(
-                <span className="text-red">
-                  of {divideByPrecision(producedWeight, false).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                  kg
-                </span>
-                ) will be permanently burned.
-              </p>
-              <p>
-                {
-                  // Calculate the net result of claiming all produced weight against remaining storage.
-                  storageRemaining - divideByPrecision(producedWeight, false) >= 0 ? (
-                    <span className="text-green">All will fit if used right now.</span>
-                  ) : (
-                    <>
-                      <span className="text-red">
-                        {Math.abs(storageRemaining - divideByPrecision(producedWeight, false)).toLocaleString(
-                          undefined,
-                          { maximumFractionDigits: 0 },
-                        )}
-                        kg&nbsp;
-                      </span>
-                      will be burnt if you claim it all.
-                    </>
-                  )
-                }
-              </p>
-            </>
-          )}
-        </div>
-      ),
-    });
-  }, [
-    actualBalance,
-    amountProduced,
-    resourceId,
-    setTooltip,
-    isStorageFull,
-    storageRemaining,
-    producedWeight,
-    setIsHovered,
-    setDisplayBalance,
-  ]);
+        ),
+      });
+    },
+    [
+      actualBalance,
+      amountProduced,
+      resourceId,
+      setTooltip,
+      isStorageFull,
+      storageRemaining,
+      producedWeight,
+      setIsHovered,
+      setDisplayBalance,
+    ],
+  );
 
   const handleMouseLeave = useCallback(() => {
     setIsHovered(false);
@@ -252,6 +257,7 @@ export const ResourceChip = ({
   }
   return (
     <div
+      data-tooltip-anchor
       className={`flex relative group items-center ${
         size === "large" ? "text-base px-3 p-2" : "text-sm px-2 p-1.5"
       } hover:bg-gold/5 ${
@@ -279,6 +285,7 @@ export const ResourceChip = ({
                   onMouseEnter={(e) => {
                     e.stopPropagation();
                     setTooltip({
+                      anchorElement: e.currentTarget,
                       position: "top",
                       content: (
                         <span className="text-sm">Relic effect expires in {formatTime(relicTimeRemaining)}</span>
@@ -345,7 +352,11 @@ export const ResourceChip = ({
         </div>
       </div>
       {showTransfer && (
-        <button onClick={() => togglePopup(resourceId.toString())} className="ml-2 p-1 hover:bg-gold/20 rounded">
+        <button
+          data-tooltip-anchor
+          onClick={() => togglePopup(resourceId.toString())}
+          className="ml-2 p-1 hover:bg-gold/20 rounded"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className={`${size === "large" ? "h-6 w-6" : "h-5 w-5"} text-gold`}
@@ -364,6 +375,7 @@ export const ResourceChip = ({
       )}
       {isRelic && balance > 0 && (
         <button
+          data-tooltip-anchor
           onClick={() => {
             import("./relic-activation-popup").then(({ RelicActivationPopup }) => {
               toggleModal(
@@ -379,8 +391,9 @@ export const ResourceChip = ({
             });
           }}
           disabled={relicTimeRemaining > 0}
-          onMouseEnter={() =>
+          onMouseEnter={(event) =>
             setTooltip({
+              anchorElement: event.currentTarget,
               content: "Activate Relic",
               position: "bottom",
             })
