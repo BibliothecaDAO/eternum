@@ -1,5 +1,11 @@
 export const latestFeatures = [
   {
+    date: "2025-09-26",
+    title: "Worldmap Zoom Refinements",
+    description:
+      "Worldmap zooming is now deterministic: scroll gestures no longer randomly invert direction, micro-scrolls are ignored until intent is clear, each flick advances at most one camera tier, and the number keys 1/2/3 instantly snap between close, medium, and far presets for faster navigation.",
+  },
+  {
     date: "2025-09-24",
     title: "Realm Ownership Highlights",
     description:

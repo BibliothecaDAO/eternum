@@ -1,6 +1,4 @@
 import { AudioManager } from "@/audio/core/AudioManager";
-import throttle from "lodash/throttle";
-
 import { toast } from "sonner";
 
 import { getMapFromToriiExact } from "@/dojo/queries";
@@ -82,6 +80,12 @@ const dummyVector = new Vector3();
 export default class WorldmapScene extends HexagonScene {
   private chunkSize = 8; // Size of each chunk
   private wheelHandler: ((event: WheelEvent) => void) | null = null;
+  private wheelAccumulator = 0;
+  private wheelResetTimeout: ReturnType<typeof setTimeout> | null = null;
+  private readonly wheelThreshold = 10;
+  private wheelDirection: -1 | 0 | 1 = 0;
+  private wheelStepsThisGesture = 0;
+  private readonly wheelGestureTimeoutMs = 50;
   private renderChunkSize = {
     width: 60,
     height: 44,
@@ -567,6 +571,30 @@ export default class WorldmapScene extends HexagonScene {
         action: () => toggleMapHexView(),
       });
 
+      this.shortcutManager.registerShortcut({
+        id: "camera-view-close",
+        key: "1",
+        description: "Zoom to close view",
+        sceneRestriction: SceneName.WorldMap,
+        action: () => this.changeCameraView(CameraView.Close),
+      });
+
+      this.shortcutManager.registerShortcut({
+        id: "camera-view-medium",
+        key: "2",
+        description: "Zoom to medium view",
+        sceneRestriction: SceneName.WorldMap,
+        action: () => this.changeCameraView(CameraView.Medium),
+      });
+
+      this.shortcutManager.registerShortcut({
+        id: "camera-view-far",
+        key: "3",
+        description: "Zoom to far view",
+        sceneRestriction: SceneName.WorldMap,
+        action: () => this.changeCameraView(CameraView.Far),
+      });
+
       // Register escape key handler
       this.shortcutManager.registerShortcut({
         id: "escape-handler",
@@ -592,29 +620,108 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private setupCameraZoomHandler() {
-    // Add mouse wheel handler
-    this.wheelHandler = throttle(
-      (event: WheelEvent) => {
-        if (event.deltaY > 0) {
-          // Zoom out
-          const newView = Math.min(CameraView.Far, this.currentCameraView + 1);
-          this.changeCameraView(newView);
-        } else {
-          // Zoom in
-          const newView = Math.max(CameraView.Close, this.currentCameraView - 1);
-          this.changeCameraView(newView);
-        }
-      },
-      1000,
-      { leading: true, trailing: false },
-    );
+    this.resetWheelState();
 
-    // Get the main canvas by its ID
+    this.wheelHandler = (event: WheelEvent) => {
+      const enableSmoothZoom = useUIStore.getState().enableMapZoom;
+
+      if (enableSmoothZoom) {
+        // Let MapControls handle zooming when smooth zoom is enabled.
+        this.resetWheelState();
+        return;
+      }
+
+      const normalizedDelta = this.normalizeWheelDelta(event);
+      const mostlyVertical = Math.abs(normalizedDelta) >= Math.abs(event.deltaX);
+
+      if (!normalizedDelta || !mostlyVertical) {
+        return;
+      }
+
+      const direction = Math.sign(normalizedDelta) as -1 | 0 | 1;
+      if (direction === 0) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (this.wheelDirection !== direction) {
+        this.wheelDirection = direction;
+        this.wheelStepsThisGesture = 0;
+        this.wheelAccumulator = 0;
+      }
+
+      this.wheelAccumulator += normalizedDelta;
+
+      if (Math.abs(this.wheelAccumulator) < this.wheelThreshold) {
+        this.scheduleWheelAccumulatorReset();
+        return;
+      }
+
+      if (this.wheelStepsThisGesture >= 1) {
+        const saturatingDirection = (Math.sign(this.wheelAccumulator) as -1 | 0 | 1) || direction;
+        this.wheelAccumulator = saturatingDirection * this.wheelThreshold;
+        this.scheduleWheelAccumulatorReset();
+        return;
+      }
+
+      this.stepCameraView(direction > 0);
+      this.wheelStepsThisGesture = 1;
+      this.wheelAccumulator = 0;
+      this.scheduleWheelAccumulatorReset();
+    };
+
     const canvas = document.getElementById("main-canvas");
     if (canvas) {
-      // Add the throttled handler for camera view changes
-      canvas.addEventListener("wheel", this.wheelHandler, { passive: true });
+      canvas.addEventListener("wheel", this.wheelHandler, { passive: false });
     }
+  }
+
+  private stepCameraView(zoomOut: boolean) {
+    const nextView = zoomOut
+      ? Math.min(CameraView.Far, this.currentCameraView + 1)
+      : Math.max(CameraView.Close, this.currentCameraView - 1);
+
+    if (nextView === this.currentCameraView) {
+      return;
+    }
+
+    this.changeCameraView(nextView);
+  }
+
+  private normalizeWheelDelta(event: WheelEvent): number {
+    if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) {
+      return event.deltaY * 16;
+    }
+
+    if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) {
+      return event.deltaY * window.innerHeight;
+    }
+
+    return event.deltaY;
+  }
+
+  private scheduleWheelAccumulatorReset() {
+    if (this.wheelResetTimeout) {
+      clearTimeout(this.wheelResetTimeout);
+    }
+
+    this.wheelResetTimeout = setTimeout(() => {
+      this.resetWheelState();
+    }, this.wheelGestureTimeoutMs);
+  }
+
+  private resetWheelState() {
+    const timeoutId = this.wheelResetTimeout;
+    this.wheelResetTimeout = null;
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+
+    this.wheelAccumulator = 0;
+    this.wheelDirection = 0;
+    this.wheelStepsThisGesture = 0;
   }
 
   public moveCameraToURLLocation() {
@@ -1329,6 +1436,7 @@ export default class WorldmapScene extends HexagonScene {
       }
       this.wheelHandler = null;
     }
+    this.resetWheelState();
 
     // Note: Don't clean up shortcuts here - they should persist across scene switches
     // Shortcuts will be cleaned up when the scene is actually destroyed
