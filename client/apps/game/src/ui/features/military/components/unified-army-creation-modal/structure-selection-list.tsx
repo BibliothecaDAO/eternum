@@ -5,7 +5,7 @@ import { useExplorersByStructure } from "@bibliothecadao/react";
 import { RealmInfo, StructureType } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
-import { AlertTriangle, ChevronRight, Shield, Sparkles, Swords } from "lucide-react";
+import { AlertTriangle, ChevronRight, Shield, Swords } from "lucide-react";
 import { useMemo } from "react";
 
 import type { TroopSelectionOption } from "./types";
@@ -105,11 +105,9 @@ const StructureSelectionItem = ({
               Open Defense Slot
             </span>
           )}
-          {isRealm && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gold">
-              <Sparkles className="h-3 w-3" /> Realm Priority
-            </span>
-          )}
+          <span className="inline-flex items-center gap-1 rounded-full bg-brown/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gold/70">
+            {StructureType[realm.structure.base.category]}
+          </span>
         </div>
       )}
 
