@@ -2,10 +2,40 @@ import { getSeasonPassAddress, getVillagePassAddress } from "@/utils/addresses";
 import { toSessionPolicies } from "@cartridge/controller";
 import { getContractByName } from "@dojoengine/core";
 import { dojoConfig } from "../../../dojo-config";
+import { env } from "../../../env";
 import { messages } from "./signing-policy";
+
+const entryTokenPolicies =
+  env.VITE_PUBLIC_ENTRY_TOKEN_ADDRESS && env.VITE_PUBLIC_ENTRY_TOKEN_ADDRESS !== "0x0"
+    ? {
+        [env.VITE_PUBLIC_ENTRY_TOKEN_ADDRESS]: {
+          methods: [
+            {
+              name: "token_lock",
+              entrypoint: "token_lock",
+            },
+          ],
+        },
+      }
+    : {};
+
+const feeTokenPolicies = env.VITE_PUBLIC_FEE_TOKEN_ADDRESS
+  ? {
+      [env.VITE_PUBLIC_FEE_TOKEN_ADDRESS]: {
+        methods: [
+          {
+            name: "approve",
+            entrypoint: "approve",
+          },
+        ],
+      },
+    }
+  : {};
 
 export const policies = toSessionPolicies({
   contracts: {
+    ...entryTokenPolicies,
+    ...feeTokenPolicies,
     [getContractByName(dojoConfig.manifest, "s1_eternum", "blitz_realm_systems").address]: {
       methods: [
         {
@@ -15,6 +45,10 @@ export const policies = toSessionPolicies({
         {
           name: "register",
           entrypoint: "register",
+        },
+        {
+          name: "obtain_entry_token",
+          entrypoint: "obtain_entry_token",
         },
         {
           name: "create",
