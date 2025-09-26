@@ -6,9 +6,9 @@ import {
   getBalance,
   getBlockTimestamp,
   getEntityIdFromKeys,
+  getIsBlitz,
   getStructureName,
   getTroopResourceId,
-  getIsBlitz,
 } from "@bibliothecadao/eternum";
 import {
   useDojo,
@@ -33,7 +33,6 @@ import { ActionFooter } from "./action-footer";
 import { ArmyTypeToggle } from "./army-type-toggle";
 import { DefenseSlotSelection } from "./defense-slot-selection";
 import { DirectionSelection } from "./direction-selection";
-import { StructureArmyOverview } from "./structure-army-overview";
 import { StructureSelectionList } from "./structure-selection-list";
 import { TroopCountSelector } from "./troop-count-selector";
 import { TroopSelectionGrid } from "./troop-selection-grid";
@@ -151,7 +150,12 @@ export const UnifiedArmyCreationModal = ({
     (guardsData ?? []).forEach((guard) => {
       map.set(Number(guard.slot), {
         slot: guard.slot,
-        troops: guard.troops,
+        troops: guard.troops
+          ? {
+              category: guard.troops.category as TroopType | undefined,
+              tier: guard.troops.tier as TroopTier | undefined,
+            }
+          : null,
       });
     });
     return map;
@@ -191,9 +195,7 @@ export const UnifiedArmyCreationModal = ({
       setIsLoadingDirections(true);
       try {
         const coords = getNeighborHexes(structureCoordX, structureCoordY);
-        const tiles = await sqlApi.fetchTilesByCoords(
-          coords.map((coord) => ({ col: coord.col, row: coord.row })),
-        );
+        const tiles = await sqlApi.fetchTilesByCoords(coords.map((coord) => ({ col: coord.col, row: coord.row })));
         if (isCancelled) {
           return;
         }
@@ -418,12 +420,14 @@ export const UnifiedArmyCreationModal = ({
   }, [playerStructures, activeStructureId, components, currentDefaultTick]);
 
   const troopOptions = useMemo<TroopSelectionOption[]>(() => {
-    return structureInventories.get(activeStructureId ?? 0) ??
+    return (
+      structureInventories.get(activeStructureId ?? 0) ??
       TROOP_TYPES.map((type) => ({
         type,
         label: formatTroopTypeLabel(type),
         tiers: TROOP_TIERS.map((tier) => ({ tier, available: 0, resourceTrait: "" })),
-      }));
+      }))
+    );
   }, [structureInventories, activeStructureId]);
 
   const maxAffordable = useMemo(() => {
@@ -482,15 +486,6 @@ export const UnifiedArmyCreationModal = ({
             inventories={structureInventories}
             onSelect={handleStructureSelect}
           />
-
-          <StructureArmyOverview
-            structureName={structureName}
-            attackCount={currentExplorersCount}
-            maxAttack={maxExplorers}
-            defenseCount={currentGuardsCount}
-            maxDefense={resolvedMaxDefenseSlots}
-            troopOptions={troopOptions}
-          />
         </div>
 
         <div className="grid grid-cols-2 gap-6">
@@ -503,7 +498,11 @@ export const UnifiedArmyCreationModal = ({
               selectedGuardTier={selectedGuardTier}
               onSelect={handleTroopSelect}
             />
-            <TroopCountSelector troopCount={troopCount} maxAffordable={maxAffordable} onChange={handleTroopCountChange} />
+            <TroopCountSelector
+              troopCount={troopCount}
+              maxAffordable={maxAffordable}
+              onChange={handleTroopCountChange}
+            />
           </div>
 
           <div className="flex flex-col h-full space-y-6">

@@ -1,6 +1,7 @@
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { Shield, Swords } from "lucide-react";
 
+import { TroopTier } from "@bibliothecadao/types";
 import type { TroopSelectionOption } from "./types";
 
 interface StructureArmyOverviewProps {
@@ -12,7 +13,7 @@ interface StructureArmyOverviewProps {
   troopOptions: TroopSelectionOption[];
 }
 
-const formatTroopLabel = (label: string, tier: number) => `${label} T${tier}`;
+const formatTroopLabel = (label: string, tier: TroopTier) => `${label} T${tier}`;
 
 export const StructureArmyOverview = ({
   structureName,
@@ -41,9 +42,7 @@ export const StructureArmyOverview = ({
   return (
     <div className="panel-wood rounded-xl p-4 border border-brown/40 space-y-4">
       <div>
-        <h3 className="text-gold text-lg font-bold leading-tight">
-          {structureName ?? "Select a structure"}
-        </h3>
+        <h3 className="text-gold text-lg font-bold leading-tight">{structureName ?? "Select a structure"}</h3>
         <p className="text-xs text-gold/60">Active structure summary</p>
       </div>
 
@@ -76,10 +75,7 @@ export const StructureArmyOverview = ({
         {topTroops.length > 0 ? (
           <div className="space-y-2">
             {topTroops.map((troop) => (
-              <div
-                key={troop.key}
-                className="flex items-center justify-between rounded-lg bg-brown/20 px-2 py-1"
-              >
+              <div key={troop.key} className="flex items-center justify-between rounded-lg bg-brown/20 px-2 py-1">
                 <div className="flex items-center gap-2">
                   <ResourceIcon resource={troop.resourceTrait} size="xs" withTooltip={false} />
                   <span className="text-xs font-semibold text-gold/90">{troop.label}</span>
@@ -87,6 +83,11 @@ export const StructureArmyOverview = ({
                 <span className="text-xs text-gold/70 font-medium">{troop.available.toLocaleString()}</span>
               </div>
             ))}
+            {availableTroops.length > topTroops.length && (
+              <p className="text-[10px] text-gold/50">
+                + {availableTroops.length - topTroops.length} more combinations
+              </p>
+            )}
           </div>
         ) : (
           <p className="text-xs text-gold/50">No troops available yet.</p>
