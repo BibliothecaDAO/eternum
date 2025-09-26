@@ -2,6 +2,7 @@ use starknet::ContractAddress;
 
 #[starknet::interface]
 pub trait IPrizeDistributionSystems<T> {
+    fn blitz_prize_claim_no_game(ref self: T, registered_player: ContractAddress);
     fn blitz_prize_claim(ref self: T, players: Array<ContractAddress>);
     fn blitz_prize_player_rank(
         ref self: T, trial_id: u128, total_player_count_committed: u16, players_list: Array<ContractAddress>,
@@ -19,18 +20,104 @@ pub mod prize_distribution_systems {
     use dojo::model::ModelStorage;
     use dojo::world::{WorldStorageTrait, WorldStorage};
     use s1_eternum::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
-    use s1_eternum::models::config::{BlitzRegistrationConfig, SeasonConfigImpl, WorldConfigUtilImpl};
+    use s1_eternum::models::config::{BlitzRegistrationConfig, SeasonConfigImpl, WorldConfigUtilImpl, BlitzRealmPlayerRegister};
     use s1_eternum::models::events::{PrizeDistributedStory, PrizeDistributionFinalStory, Story, StoryEvent};
     use s1_eternum::models::rank::{PlayerRank, PlayersRankFinal, PlayersRankTrial, RankPrize};
     use s1_eternum::models::season::{SeasonPrize};
+    use s1_eternum::models::record::{BlitzFeeSplitRecord, BlitzFeeSplitRecordImpl, WorldRecordImpl};
     use s1_eternum::systems::realm::utils::contracts::{IERC20Dispatcher, IERC20DispatcherTrait};
     use s1_eternum::systems::utils::prize::iPrizeDistributionCalcImpl;
     use s1_eternum::{models::{hyperstructure::{PlayerRegisteredPoints}}};
     use starknet::ContractAddress;
 
 
+    const SYSTEM_TRIAL_ID: u128 = 1000;
+
+
     #[abi(embed_v0)]
     pub impl PrizeDistributionSystemsImpl of super::IPrizeDistributionSystems<ContractState> {
+
+        fn blitz_prize_claim_no_game(ref self: ContractState, registered_player: ContractAddress) {
+            // ensure the main game has started (so registration has closed)
+            // but there is only 1 registered player
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            let mut season_config = SeasonConfigImpl::get(world);
+            season_config.assert_started_main();
+
+            // ensure blitz game mode is on
+            let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
+            assert!(blitz_mode_on == true, "Eternum: Not a blitz game");
+
+            // ensure there is no finalized player rank
+            let mut players_rank_final: PlayersRankFinal = world.read_model(WORLD_CONFIG_ID);
+            assert!(players_rank_final.trial_id.is_zero(), "Eternum: rankings not finalized");
+
+            // ensure there is only 1 registered player
+            let mut blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("blitz_registration_config"),
+            );
+            assert!(blitz_registration_config.registration_count == 1, "Eternum: More than 1 registered player");
+
+            // ensure the registered_player parameter is the registered player
+            let mut blitz_player_register: BlitzRealmPlayerRegister = world.read_model(registered_player);
+            assert!(blitz_player_register.once_registered, "Eternum: Player not registered");
+            
+            
+            // create a trial with the registered player and finalize the rankings
+            let prize_amount = blitz_registration_config.fee_amount.try_into().unwrap();
+            let player_rank_trial: PlayersRankTrial = PlayersRankTrial {
+                trial_id: SYSTEM_TRIAL_ID,
+                owner: starknet::get_contract_address(),
+                last_rank: 1,
+                last_player_points: 0,
+                total_player_points: 0,
+                total_player_count_committed: 1,
+                total_player_count_revealed: 1,
+                total_prize_amount: prize_amount,
+            };
+
+            let player_rank_final = PlayersRankFinal {
+                world_id: WORLD_CONFIG_ID.into(),
+                trial_id: SYSTEM_TRIAL_ID,
+            };
+
+            let player_rank = PlayerRank {
+                trial_id: SYSTEM_TRIAL_ID,
+                player: registered_player,
+                rank: 1,
+                paid: true,
+            };
+
+            world.write_model(@player_rank_trial);
+            world.write_model(@player_rank_final);
+            world.write_model(@player_rank);
+
+
+            // transfer full amount that player paid to register
+            let reward_token = IERC20Dispatcher { contract_address: blitz_registration_config.fee_token };
+            assert!(reward_token.transfer(registered_player, prize_amount.into()), "Eternum: Failed to transfer prize");
+
+            // emit event
+            let now = starknet::get_block_timestamp();
+            let tx_hash = starknet::get_tx_info().unbox().transaction_hash;
+            let reward_token_decimals = reward_token.decimals();
+            world
+                .emit_event(
+                    @StoryEvent {
+                        owner: Option::Some(registered_player),
+                        entity_id: Option::Some(0),
+                        tx_hash,
+                        story: Story::PrizeDistributedStory(
+                            PrizeDistributedStory {
+                                to_player_address: registered_player, amount: prize_amount, decimals: reward_token_decimals,
+                            },
+                        ),
+                        timestamp: now,
+                    },
+                );
+            
+        }
+
         fn blitz_prize_claim(ref self: ContractState, players: Array<ContractAddress>) {
             // ensure game has ended and points registration is closed
             let mut world: WorldStorage = self.world(DEFAULT_NS());
@@ -92,6 +179,7 @@ pub mod prize_distribution_systems {
         }
 
         // Permissionless
+        /// Creator fees get sent after the first successful call to this function
         fn blitz_prize_player_rank(
             ref self: ContractState,
             trial_id: u128,
@@ -102,6 +190,8 @@ pub mod prize_distribution_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             let mut season_config = SeasonConfigImpl::get(world);
             season_config.assert_game_ended_and_points_registration_closed();
+
+            assert!(trial_id != SYSTEM_TRIAL_ID, "Eternum: Invalid trial id");
 
             // ensure blitz game mode is on
             let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
@@ -123,25 +213,35 @@ pub mod prize_distribution_systems {
             let mut blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
                 world, selector!("blitz_registration_config"),
             );
+            assert!(blitz_registration_config.registration_count != 1, "Eternum: use the blitz_prize_claim_no_game function");
+
             if trial.owner.is_non_zero() {
                 assert!(trial.owner == caller, "Eternum: Trial ID already used by someone else");
             } else {
                 assert!(trial.total_player_count_committed == 0, "Eternum: data already exists");
                 assert!(total_player_count_committed > 0, "Eternum: total_player_count_committed must be > 0");
 
-                // fetch total prize amount
-                let this = starknet::get_contract_address();
-                let total_prize_amount: u128 = IERC20Dispatcher {
-                    contract_address: blitz_registration_config.fee_token,
-                }
-                    .balance_of(this)
-                    .try_into()
-                    .unwrap();
-                assert!(total_prize_amount > 0, "Eternum: No prize to distribute");
+                // split fees and send game creator fees
+                let mut blitz_fee_split_record: BlitzFeeSplitRecord = WorldRecordImpl::get_member(world, selector!("blitz_fee_split_record"));
+                if !blitz_fee_split_record.already_split_fees() {
+                    // split the fees
+                    let this = starknet::get_contract_address();
+                    let reward_token = IERC20Dispatcher { contract_address: blitz_registration_config.fee_token };
+                    blitz_fee_split_record.split_fees(reward_token.balance_of(this).try_into().unwrap());
 
+                    // send the creator fees
+                    assert!(
+                        reward_token.transfer(blitz_registration_config.fee_recipient, blitz_fee_split_record.creator_receives_amount.into()), 
+                            "Eternum: Failed to transfer creator fees"
+                    );
+
+                    WorldRecordImpl::set_member(ref world, selector!("blitz_fee_split_record"), blitz_fee_split_record);
+                }
+
+                // update trial data
                 trial.owner = caller;
                 trial.total_player_count_committed = total_player_count_committed;
-                trial.total_prize_amount = total_prize_amount;
+                trial.total_prize_amount = blitz_fee_split_record.players_receive_amount;
             }
 
             // loop through the player list and assign ranks

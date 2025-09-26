@@ -153,6 +153,7 @@ pub mod blitz_realm_systems {
 
             // register the player
             blitz_player_register.registered = true;
+            blitz_player_register.once_registered = true;
             world.write_model(@blitz_player_register);
 
             // save the registration config

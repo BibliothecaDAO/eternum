@@ -252,6 +252,12 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.blitz_prize_claim(props);
   };
 
+  const blitz_prize_claim_no_game = async (
+    props: SystemProps.BlitzPrizeClaimNoGameProps,
+  ): Promise<GetTransactionReceiptResponse> => {
+    return await provider.blitz_prize_claim_no_game(props);
+  };
+
   const remove_guild_member = async (props: SystemProps.RemoveGuildMember): Promise<GetTransactionReceiptResponse> => {
     return await provider.remove_guild_member(props);
   };
@@ -492,6 +498,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     season_prize_claim: withAuth(season_prize_claim),
     blitz_prize_player_rank: withAuth(blitz_prize_player_rank),
     blitz_prize_claim: withAuth(blitz_prize_claim),
+    blitz_prize_claim_no_game: withAuth(blitz_prize_claim_no_game),
 
     mint_resources: withAuth(mint_resources),
 

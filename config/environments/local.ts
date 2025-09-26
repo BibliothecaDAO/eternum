@@ -84,6 +84,7 @@ export const LocalEternumGlobalConfig: Config = {
     startSettlingAfterSeconds: 59, // 1 minute
     startMainAfterSeconds: 60,
     durationSeconds: 60 * 60 * 24 * 30, // 1 month
+    pointRegistrationCloseAfterEndSeconds: 60 * 10, // 10 minutes
   },
   realmUpgradeCosts: {
     ...CommonEternumGlobalConfig.realmUpgradeCosts,
@@ -126,6 +127,7 @@ export const LocalEternumGlobalConfig: Config = {
       ...CommonEternumGlobalConfig.blitz.registration,
       registration_delay_seconds: 20,
       registration_period_seconds: 60 * 2,
+      fee_token: getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!.strk!,
     },
   },
 };

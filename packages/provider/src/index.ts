@@ -2585,6 +2585,19 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.promiseQueue.enqueue(call);
   }
 
+  // Blitz prize: single-registrant no-game claim
+  public async blitz_prize_claim_no_game(props: SystemProps.BlitzPrizeClaimNoGameProps) {
+    const { registered_player, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-prize_distribution_systems`),
+      entrypoint: "blitz_prize_claim_no_game",
+      calldata: [registered_player],
+    });
+
+    return await this.promiseQueue.enqueue(call);
+  }
+
   public async claim_construction_points(props: SystemProps.ClaimConstructionPointsProps) {
     const { hyperstructure_ids, player, signer } = props;
 

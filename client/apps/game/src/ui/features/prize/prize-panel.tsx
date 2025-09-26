@@ -18,7 +18,7 @@ export const PrizePanel = () => {
     account: { account },
     setup: {
       components,
-      systemCalls: { blitz_prize_player_rank, uuid },
+      systemCalls: { blitz_prize_player_rank, blitz_prize_claim_no_game, uuid },
     },
   } = useDojo();
 
@@ -68,6 +68,16 @@ export const PrizePanel = () => {
     () => (worldCfgEntities[0] ? getComponentValue(components.WorldConfig, worldCfgEntities[0]) : undefined),
     [worldCfgEntities, components.WorldConfig],
   );
+
+  // All registered players (by registration status), regardless of points
+  const blitzRegEntities = useEntityQuery([Has(components.BlitzRealmPlayerRegister)]);
+  const registeredAddresses = useMemo(() => {
+    return blitzRegEntities
+      .map((eid) => getComponentValue(components.BlitzRealmPlayerRegister, eid))
+      .filter((v): v is NonNullable<typeof v> => Boolean(v))
+      .filter((v) => Boolean(v.once_registered))
+      .map((v) => v.player as unknown as bigint);
+  }, [blitzRegEntities, components.BlitzRealmPlayerRegister]);
 
   const [nowTs, setNowTs] = useState(() => Math.floor(Date.now() / 1000));
   useEffect(() => {
@@ -198,10 +208,27 @@ export const PrizePanel = () => {
           : "Waiting on season data.";
 
   const handleStartOrContinue = async () => {
-    if (registeredPlayers.length === 0) return;
+    // Allow single-registrant claim even if no points registered
+    const singleReg = Number(worldCfg?.blitz_registration_config?.registration_count ?? 0) === 1;
+    const hasFinalized = Boolean(finalTrialId && (finalTrialId as bigint) > 0n);
+    if (registeredPlayers.length === 0 && !(singleReg && !hasFinalized && registeredAddresses.length === 1)) return;
     setIsSubmitting(true);
     setStatus("Preparing…");
     try {
+      // Special case: exactly one registration and no finalized ranking — claim back entry fee
+      if (singleReg && !hasFinalized) {
+        const onlyRegistered = registeredAddresses.length === 1 ? registeredAddresses[0] : undefined;
+        if (!onlyRegistered) {
+          throw new Error("Could not determine registered player address");
+        }
+        await blitz_prize_claim_no_game({ signer: account, registered_player: onlyRegistered.toString() });
+        setStatus("Done");
+        toast("Submitted single-player prize claim", {
+          description: `Entry fee returned to ${displayAddress(toHexString(onlyRegistered))}.`,
+        });
+        return;
+      }
+
       const manager = LeaderboardManager.instance(components, getRealmCountPerHyperstructure());
       manager.updatePoints();
 
@@ -378,10 +405,22 @@ export const PrizePanel = () => {
                   className="md:flex-1"
                   variant="primary"
                   isLoading={isSubmitting}
-                  disabled={isSubmitting || !rankingWindowOpen || rankingCompleted}
+                  disabled={
+                    isSubmitting ||
+                    (!rankingWindowOpen && !(
+                      Number(worldCfg?.blitz_registration_config?.registration_count ?? 0) === 1 && !hasFinal
+                    )) ||
+                    rankingCompleted
+                  }
                   onClick={handleStartOrContinue}
                 >
-                  {rankingCompleted ? "Ranking Complete" : "Continue Ranking"}
+                  {
+                    Number(worldCfg?.blitz_registration_config?.registration_count ?? 0) === 1 && !hasFinal
+                      ? "Claim Single-Player Prize"
+                      : rankingCompleted
+                        ? "Ranking Complete"
+                        : "Continue Ranking"
+                  }
                 </Button>
                 <Button className="md:w-auto" variant="outline" onClick={() => setShowAdvanced((v) => !v)}>
                   {showAdvanced ? "Hide Advanced" : "Advanced Controls"}
@@ -470,14 +509,24 @@ export const PrizePanel = () => {
                   className="md:flex-1"
                   variant="primary"
                   isLoading={isSubmitting}
-                  disabled={isSubmitting || !rankingWindowOpen || rankingCompleted}
+                  disabled={
+                    isSubmitting ||
+                    (!rankingWindowOpen && !(
+                      Number(worldCfg?.blitz_registration_config?.registration_count ?? 0) === 1 && !hasFinal
+                    )) ||
+                    rankingCompleted
+                  }
                   onClick={handleStartOrContinue}
                 >
-                  {rankingCompleted
-                    ? "Ranking Complete"
-                    : rankingWindowOpen
-                      ? "Start Ranking Submission"
-                      : "Ready When Season Ends"}
+                  {
+                    Number(worldCfg?.blitz_registration_config?.registration_count ?? 0) === 1 && !hasFinal
+                      ? "Claim Single-Player Prize"
+                      : rankingCompleted
+                        ? "Ranking Complete"
+                        : rankingWindowOpen
+                          ? "Start Ranking Submission"
+                          : "Ready When Season Ends"
+                  }
                 </Button>
                 <Button className="md:w-auto" variant="outline" onClick={() => setShowAdvanced((v) => !v)}>
                   {showAdvanced ? "Hide Advanced" : "Advanced Controls"}
