@@ -5,7 +5,7 @@ import { useExplorersByStructure } from "@bibliothecadao/react";
 import { RealmInfo, StructureType } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
-import { AlertTriangle, CheckCircle2, ChevronRight, Shield, Sparkles, Swords } from "lucide-react";
+import { AlertTriangle, ChevronRight, Shield, Sparkles, Swords } from "lucide-react";
 import { useMemo } from "react";
 
 import type { TroopSelectionOption } from "./types";
@@ -77,11 +77,6 @@ const StructureSelectionItem = ({
       <div className="flex items-start justify-between gap-3">
         <div>
           <h4 className="text-gold text-lg font-bold leading-tight">{name}</h4>
-          {isSelected && (
-            <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-gold/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gold">
-              <CheckCircle2 className="h-3 w-3" /> Selected
-            </span>
-          )}
         </div>
         <ChevronRight
           className={clsx("w-5 h-5 transition-transform", isSelected ? "text-gold rotate-90" : "text-gold/60")}
