@@ -68,15 +68,8 @@ const StructureSelectionItem = ({
   const totalTroops = availableTroops.reduce((sum, troop) => sum + troop.available, 0);
 
   const containerClasses = clsx(
-    "w-full text-left panel-wood rounded-xl p-4 transition-all duration-200 border-2",
-    "hover:border-gold/60 hover:shadow-lg hover:-translate-y-0.5",
-    isSelected
-      ? "border-gold ring-2 ring-gold/70 shadow-xl shadow-gold/30 bg-gradient-to-br from-gold/20 to-gold/5"
-      : needsAttention
-        ? isRealm
-          ? "border-amber-400/60 ring-2 ring-amber-300/50 shadow-lg shadow-amber-300/20 bg-gradient-to-br from-amber-300/10 to-amber-500/5"
-          : "border-sky-400/60 ring-2 ring-sky-300/40 shadow-lg shadow-sky-300/15 bg-gradient-to-br from-sky-300/10 to-sky-500/5"
-        : "border-brown/30",
+    "px-4 py-3 rounded-lg panel-wood cursor-pointer transition-all transform hover:scale-[1.02]",
+    isSelected ? "panel-gold shadow-lg border-transparent" : "border-transparent hover:bg-gold/5",
   );
 
   return (
