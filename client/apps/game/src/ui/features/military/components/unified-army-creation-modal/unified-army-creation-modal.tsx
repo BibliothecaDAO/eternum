@@ -6,9 +6,16 @@ import {
   getBalance,
   getBlockTimestamp,
   getEntityIdFromKeys,
+  getStructureName,
   getTroopResourceId,
+  getIsBlitz,
 } from "@bibliothecadao/eternum";
-import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
+import {
+  useDojo,
+  useExplorersByStructure,
+  usePlayerOwnedRealmsInfo,
+  usePlayerOwnedVillagesInfo,
+} from "@bibliothecadao/react";
 import {
   DEFENSE_NAMES,
   Direction,
@@ -26,6 +33,8 @@ import { ActionFooter } from "./action-footer";
 import { ArmyTypeToggle } from "./army-type-toggle";
 import { DefenseSlotSelection } from "./defense-slot-selection";
 import { DirectionSelection } from "./direction-selection";
+import { StructureArmyOverview } from "./structure-army-overview";
+import { StructureSelectionList } from "./structure-selection-list";
 import { TroopCountSelector } from "./troop-count-selector";
 import { TroopSelectionGrid } from "./troop-selection-grid";
 import type { GuardSummary, SelectedTroopCombo, TroopSelectionOption } from "./types";
@@ -40,7 +49,7 @@ interface UnifiedArmyCreationModalProps {
 const TROOP_TYPES: TroopType[] = [TroopType.Crossbowman, TroopType.Knight, TroopType.Paladin];
 const TROOP_TIERS: TroopTier[] = [TroopTier.T1, TroopTier.T2, TroopTier.T3];
 
-const formatTroopLabel = (type: TroopType) => (type === TroopType.Crossbowman ? "CROSSBOW" : type);
+const formatTroopTypeLabel = (type: TroopType) => (type === TroopType.Crossbowman ? "CROSSBOW" : type);
 
 export const UnifiedArmyCreationModal = ({
   structureId,
@@ -48,12 +57,30 @@ export const UnifiedArmyCreationModal = ({
   isExplorer = true,
   direction,
 }: UnifiedArmyCreationModalProps) => {
-  const dojo = useDojo();
   const {
-    setup: { components },
+    setup: { components, systemCalls },
     account: { account },
-  } = dojo;
+  } = useDojo();
 
+  const playerRealms = usePlayerOwnedRealmsInfo();
+  const playerVillages = usePlayerOwnedVillagesInfo();
+  const isBlitz = getIsBlitz();
+
+  const playerStructures = useMemo(() => {
+    return [...playerRealms, ...playerVillages]
+      .filter((realm) => {
+        const maxAttack = realm.structure.base.troop_max_explorer_count || 0;
+        const maxDefense = realm.structure.base.troop_max_guard_count || 0;
+        return maxAttack > 0 || maxDefense > 0;
+      })
+      .sort((a, b) => {
+        const nameA = getStructureName(a.structure, isBlitz).name;
+        const nameB = getStructureName(b.structure, isBlitz).name;
+        return nameA.localeCompare(nameB);
+      });
+  }, [playerRealms, playerVillages, isBlitz]);
+
+  const [selectedStructureId, setSelectedStructureId] = useState<number | null>(structureId ?? null);
   const [isLoading, setIsLoading] = useState(false);
   const [freeDirections, setFreeDirections] = useState<Direction[]>([]);
   const [isLoadingDirections, setIsLoadingDirections] = useState(false);
@@ -70,28 +97,52 @@ export const UnifiedArmyCreationModal = ({
   const [armyType, setArmyType] = useState(isExplorer);
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
-  const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(structureId)]));
+  useEffect(() => {
+    setSelectedStructureId(structureId ?? null);
+  }, [structureId]);
+
+  const fallbackStructureId = playerStructures[0]?.entityId ?? structureId ?? 0;
+  const activeStructureId = selectedStructureId ?? fallbackStructureId;
+
+  const structureComponent = useMemo(() => {
+    if (!activeStructureId) return null;
+    return getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(activeStructureId)]));
+  }, [components, activeStructureId]);
+
+  const activeStructureInfo = useMemo(
+    () => playerStructures.find((realm) => realm.entityId === activeStructureId),
+    [playerStructures, activeStructureId],
+  );
+
+  const structureBase = activeStructureInfo?.structure.base ?? structureComponent?.base;
+  const structureName = activeStructureInfo
+    ? getStructureName(activeStructureInfo.structure, isBlitz).name
+    : structureComponent
+      ? getStructureName(structureComponent, isBlitz).name
+      : undefined;
 
   const explorers = useExplorersByStructure({
-    structureEntityId: structureId,
+    structureEntityId: activeStructureId || 0,
   });
 
   const { data: guardsData } = useQuery({
-    queryKey: ["guards", String(structureId)],
+    queryKey: ["guards", String(activeStructureId)],
     queryFn: async () => {
-      const guards = await sqlApi.fetchGuardsByStructure(structureId);
+      if (!activeStructureId) return [];
+      const guards = await sqlApi.fetchGuardsByStructure(activeStructureId);
       return guards.filter((guard) => guard.troops?.count && guard.troops.count > 0n);
     },
     staleTime: 10000,
+    enabled: activeStructureId > 0,
   });
 
   const currentExplorersCount = explorers.length;
   const currentGuardsCount = guardsData?.length || 0;
-  const maxExplorers = structure?.base.troop_max_explorer_count || 0;
-  const maxGuards = structure?.base.troop_max_guard_count || maxDefenseSlots;
+  const maxExplorers = structureBase?.troop_max_explorer_count || 0;
+  const resolvedMaxDefenseSlots = structureBase?.troop_max_guard_count || maxDefenseSlots;
 
   const canCreateAttackArmy = currentExplorersCount < maxExplorers;
-  const canCreateDefenseArmy = currentGuardsCount < maxGuards;
+  const canCreateDefenseArmy = currentGuardsCount < resolvedMaxDefenseSlots;
   const hasDefenseArmies = currentGuardsCount > 0;
   const canInteractWithDefense = canCreateDefenseArmy || hasDefenseArmies;
 
@@ -114,24 +165,23 @@ export const UnifiedArmyCreationModal = ({
     !selectedGuard ||
     (selectedGuardCategory === selectedTroopCombo.type && selectedGuardTier === selectedTroopCombo.tier);
   const isDefenseSlotCreationBlocked = !isSelectedSlotOccupied && !canCreateDefenseArmy;
-  const structureCoordX = structure?.base.coord_x;
-  const structureCoordY = structure?.base.coord_y;
+  const structureCoordX = structureBase?.coord_x;
+  const structureCoordY = structureBase?.coord_y;
 
   useEffect(() => {
     setLoadedDirectionsStructureId(null);
     setFreeDirections([]);
-  }, [structureId]);
-
-  useEffect(() => {
     setSelectedDirection(direction !== undefined ? direction : null);
-  }, [structureId, direction]);
+    setTroopCount(0);
+    setGuardSlot(0);
+  }, [activeStructureId, direction]);
 
   useEffect(() => {
-    if (structureCoordX === undefined || structureCoordY === undefined) {
+    if (structureCoordX === undefined || structureCoordY === undefined || !activeStructureId) {
       return;
     }
 
-    if (loadedDirectionsStructureId === structureId) {
+    if (loadedDirectionsStructureId === activeStructureId) {
       return;
     }
 
@@ -162,7 +212,7 @@ export const UnifiedArmyCreationModal = ({
         }
 
         setFreeDirections(directions);
-        setLoadedDirectionsStructureId(structureId);
+        setLoadedDirectionsStructureId(activeStructureId);
       } catch (error) {
         if (!isCancelled) {
           console.error("Failed to load available directions:", error);
@@ -181,26 +231,26 @@ export const UnifiedArmyCreationModal = ({
     return () => {
       isCancelled = true;
     };
-  }, [structureCoordX, structureCoordY, structureId, loadedDirectionsStructureId]);
+  }, [structureCoordX, structureCoordY, activeStructureId, loadedDirectionsStructureId]);
 
   const isDefenseTroopLocked = !armyType && isSelectedSlotOccupied;
 
   const armyManager = useMemo(() => {
-    return new ArmyManager(dojo.setup.systemCalls, components, structureId);
-  }, [structureId, components, dojo.setup.systemCalls]);
+    if (!activeStructureId) return null;
+    return new ArmyManager(systemCalls, components, activeStructureId);
+  }, [activeStructureId, components, systemCalls]);
 
   useEffect(() => {
+    if (!activeStructureId) {
+      return;
+    }
+
     let firstTroopWithBalance: SelectedTroopCombo | null = null;
 
     for (const type of TROOP_TYPES) {
       for (const tier of TROOP_TIERS) {
-        const balance = getBalance(
-          structureId,
-          getTroopResourceId(type, tier),
-          getBlockTimestamp().currentDefaultTick,
-          components,
-        ).balance;
-
+        const resourceId = getTroopResourceId(type, tier);
+        const balance = getBalance(activeStructureId, resourceId, currentDefaultTick, components).balance;
         const available = Number(divideByPrecision(balance) || 0);
 
         if (available > 0 && !firstTroopWithBalance) {
@@ -213,8 +263,10 @@ export const UnifiedArmyCreationModal = ({
 
     if (firstTroopWithBalance) {
       setSelectedTroopCombo(firstTroopWithBalance);
+    } else {
+      setSelectedTroopCombo({ type: TroopType.Crossbowman, tier: TroopTier.T1 });
     }
-  }, [structureId, components]);
+  }, [activeStructureId, components, currentDefaultTick]);
 
   useEffect(() => {
     if (freeDirections.length > 0 && selectedDirection === null && direction === undefined) {
@@ -239,8 +291,8 @@ export const UnifiedArmyCreationModal = ({
       .map((guard) => Number(guard.slot))
       .filter((slot) => Number.isInteger(slot) && slot >= 0);
 
-    if (maxDefenseSlots > 0 && guardSlot >= maxDefenseSlots) {
-      const clampedSlot = Math.max(0, maxDefenseSlots - 1);
+    if (resolvedMaxDefenseSlots > 0 && guardSlot >= resolvedMaxDefenseSlots) {
+      const clampedSlot = Math.max(0, resolvedMaxDefenseSlots - 1);
       if (guardSlot !== clampedSlot) {
         setGuardSlot(clampedSlot);
       }
@@ -262,7 +314,7 @@ export const UnifiedArmyCreationModal = ({
         }
       }
     }
-  }, [armyType, guardsData, guardSlot, maxDefenseSlots, canCreateDefenseArmy]);
+  }, [armyType, guardsData, guardSlot, resolvedMaxDefenseSlots, canCreateDefenseArmy]);
 
   useEffect(() => {
     if (armyType || !selectedGuardCategory || !selectedGuardTier) {
@@ -320,10 +372,12 @@ export const UnifiedArmyCreationModal = ({
   const troopOptions = useMemo<TroopSelectionOption[]>(() => {
     return TROOP_TYPES.map((type) => ({
       type,
-      label: formatTroopLabel(type),
+      label: formatTroopTypeLabel(type),
       tiers: TROOP_TIERS.map((tier) => {
         const resourceId = getTroopResourceId(type, tier);
-        const balance = getBalance(structureId, resourceId, currentDefaultTick, components).balance;
+        const balance = activeStructureId
+          ? getBalance(activeStructureId, resourceId, currentDefaultTick, components).balance
+          : 0n;
         const available = Number(divideByPrecision(balance) || 0);
         const resource = resources.find((item) => item.id === resourceId);
 
@@ -334,13 +388,14 @@ export const UnifiedArmyCreationModal = ({
         };
       }),
     }));
-  }, [structureId, components, currentDefaultTick]);
+  }, [activeStructureId, components, currentDefaultTick]);
 
   const maxAffordable = useMemo(() => {
+    if (!activeStructureId) return 0;
     const resourceId = getTroopResourceId(selectedTroopCombo.type, selectedTroopCombo.tier);
-    const balance = getBalance(structureId, resourceId, currentDefaultTick, components).balance;
+    const balance = getBalance(activeStructureId, resourceId, currentDefaultTick, components).balance;
     return Number(divideByPrecision(balance) || 0);
-  }, [structureId, selectedTroopCombo.type, selectedTroopCombo.tier, currentDefaultTick, components]);
+  }, [activeStructureId, selectedTroopCombo.type, selectedTroopCombo.tier, currentDefaultTick, components]);
 
   const selectedGuardLabel =
     selectedGuardTier && selectedGuardCategory ? `${selectedGuardTier} ${selectedGuardCategory}` : null;
@@ -367,6 +422,7 @@ export const UnifiedArmyCreationModal = ({
     : `ADD DEFENSE - ${DEFENSE_NAMES[guardSlot as keyof typeof DEFENSE_NAMES]?.toUpperCase()}`;
 
   const isActionDisabled =
+    activeStructureId <= 0 ||
     troopCount <= 0 ||
     troopCount > maxAffordable ||
     isLoading ||
@@ -378,68 +434,87 @@ export const UnifiedArmyCreationModal = ({
   const handleTroopSelect = (type: TroopType, tier: TroopTier) => setSelectedTroopCombo({ type, tier });
   const handleGuardSlotSelect = (slot: number) => setGuardSlot(slot);
   const handleTroopCountChange = (value: number) => setTroopCount(value);
+  const handleStructureSelect = (newStructureId: number) => setSelectedStructureId(newStructureId);
+
+  const coordinates = structureBase ? { x: structureBase.coord_x, y: structureBase.coord_y } : null;
 
   return (
-    <ModalContainer title={armyType ? "Create Attack Army" : "Create Defense Army"} size="large">
-      <div className="p-6 w-full h-full grid grid-cols-2 gap-6 bg-gradient-to-br from-brown/5 to-brown/10 rounded-lg">
-        <div className="flex flex-col h-full">
-          <TroopSelectionGrid
-            options={troopOptions}
-            selected={selectedTroopCombo}
-            isDefenseTroopLocked={isDefenseTroopLocked}
-            selectedGuardCategory={selectedGuardCategory}
-            selectedGuardTier={selectedGuardTier}
-            onSelect={handleTroopSelect}
+    <ModalContainer title={armyType ? "Create Attack Army" : "Create Defense Army"} size="full">
+      <div className="p-6 w-full h-full grid grid-cols-[320px,1fr] gap-6 bg-gradient-to-br from-brown/5 to-brown/10 rounded-lg">
+        <div className="flex flex-col gap-4 overflow-y-auto pr-2">
+          <StructureSelectionList
+            structures={playerStructures}
+            selectedStructureId={activeStructureId || null}
+            onSelect={handleStructureSelect}
           />
-          <TroopCountSelector
-            troopCount={troopCount}
-            maxAffordable={maxAffordable}
-            onChange={handleTroopCountChange}
+
+          <StructureArmyOverview
+            structureName={structureName}
+            coordinates={coordinates}
+            attackCount={currentExplorersCount}
+            maxAttack={maxExplorers}
+            defenseCount={currentGuardsCount}
+            maxDefense={resolvedMaxDefenseSlots}
+            troopOptions={troopOptions}
           />
         </div>
 
-        <div className="flex flex-col h-full space-y-6">
-          <ArmyTypeToggle
-            armyType={armyType}
-            canCreateAttackArmy={canCreateAttackArmy}
-            canCreateDefenseArmy={canCreateDefenseArmy}
-            canInteractWithDefense={canInteractWithDefense}
-            currentExplorersCount={currentExplorersCount}
-            maxExplorers={maxExplorers}
-            currentGuardsCount={currentGuardsCount}
-            maxGuards={maxGuards}
-            onSelect={handleArmyTypeSelect}
-          />
+        <div className="grid grid-cols-2 gap-6">
+          <div className="flex flex-col h-full">
+            <TroopSelectionGrid
+              options={troopOptions}
+              selected={selectedTroopCombo}
+              isDefenseTroopLocked={isDefenseTroopLocked}
+              selectedGuardCategory={selectedGuardCategory}
+              selectedGuardTier={selectedGuardTier}
+              onSelect={handleTroopSelect}
+            />
+            <TroopCountSelector troopCount={troopCount} maxAffordable={maxAffordable} onChange={handleTroopCountChange} />
+          </div>
 
-          {!armyType && (
-            <DefenseSlotSelection
-              guardSlot={guardSlot}
-              maxDefenseSlots={maxDefenseSlots}
-              guardsBySlot={guardsBySlot}
-              selectedTroopCombo={selectedTroopCombo}
+          <div className="flex flex-col h-full space-y-6">
+            <ArmyTypeToggle
+              armyType={armyType}
+              canCreateAttackArmy={canCreateAttackArmy}
               canCreateDefenseArmy={canCreateDefenseArmy}
-              defenseSlotInfoMessage={defenseSlotInfoMessage}
-              defenseSlotErrorMessage={defenseSlotErrorMessage}
-              onSelect={handleGuardSlotSelect}
+              canInteractWithDefense={canInteractWithDefense}
+              currentExplorersCount={currentExplorersCount}
+              maxExplorers={maxExplorers}
+              currentGuardsCount={currentGuardsCount}
+              maxGuards={resolvedMaxDefenseSlots}
+              onSelect={handleArmyTypeSelect}
             />
-          )}
 
-          {armyType && (
-            <DirectionSelection
-              availableDirections={freeDirections}
-              selectedDirection={selectedDirection}
-              isLoading={isLoadingDirections}
-              onSelect={handleDirectionSelect}
+            {!armyType && (
+              <DefenseSlotSelection
+                guardSlot={guardSlot}
+                maxDefenseSlots={resolvedMaxDefenseSlots}
+                guardsBySlot={guardsBySlot}
+                selectedTroopCombo={selectedTroopCombo}
+                canCreateDefenseArmy={canCreateDefenseArmy}
+                defenseSlotInfoMessage={defenseSlotInfoMessage}
+                defenseSlotErrorMessage={defenseSlotErrorMessage}
+                onSelect={handleGuardSlotSelect}
+              />
+            )}
+
+            {armyType && (
+              <DirectionSelection
+                availableDirections={freeDirections}
+                selectedDirection={selectedDirection}
+                isLoading={isLoadingDirections}
+                onSelect={handleDirectionSelect}
+              />
+            )}
+
+            <ActionFooter
+              armyType={armyType}
+              label={actionLabel}
+              isLoading={isLoading}
+              isDisabled={isActionDisabled}
+              onSubmit={handleCreate}
             />
-          )}
-
-          <ActionFooter
-            armyType={armyType}
-            label={actionLabel}
-            isLoading={isLoading}
-            isDisabled={isActionDisabled}
-            onSubmit={handleCreate}
-          />
+          </div>
         </div>
       </div>
     </ModalContainer>
