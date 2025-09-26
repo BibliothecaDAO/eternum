@@ -17,8 +17,8 @@ catalog:
   starknetkit: ^2.10.4
   "@cartridge/controller": ^0.10.2
   "@cartridge/connector": ^0.10.2
-  "@starknet-react/core": "5.0.1"
-  "@starknet-react/chains": 5.0.1
+  "@starknet-react/core": "5.0.3"
+  "@starknet-react/chains": 5.0.3
   "@metamask/sdk": ^0.32.1
   "@solana/web3.js": ^1.98.0
   open: ^10.1.0
