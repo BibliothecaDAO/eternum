@@ -19,6 +19,7 @@ import {
   RawRealmVillageSlot,
   RealmVillageSlot,
   SeasonEnded,
+  StoryEventData,
   StructureDetails,
   StructureLocation,
   StructureMapDataRaw,
@@ -41,6 +42,7 @@ import { QUEST_QUERIES } from "./quest";
 import { RELICS_QUERIES } from "./relics";
 import { extractRelicsFromResourceData } from "./relics-utils";
 import { SEASON_QUERIES } from "./season";
+import { STORY_QUERIES } from "./story";
 import { STRUCTURE_QUERIES } from "./structure";
 import { TILES_QUERIES } from "./tiles";
 import { TRADING_QUERIES } from "./trading";
@@ -530,5 +532,65 @@ export class SqlApi {
       url,
       "Failed to fetch hyperstructures with realm count",
     );
+  }
+
+  /**
+   * Fetches story events with pagination support.
+   * SQL queries always return arrays.
+   */
+  async fetchStoryEvents(limit: number = 50, offset: number = 0): Promise<StoryEventData[]> {
+    const query = STORY_QUERIES.ALL_STORY_EVENTS
+      .replace("{limit}", limit.toString())
+      .replace("{offset}", offset.toString());
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<StoryEventData>(url, "Failed to fetch story events");
+  }
+
+  /**
+   * Fetches story events since a given timestamp (for auto-refresh).
+   * SQL queries always return arrays.
+   */
+  async fetchStoryEventsSince(timestamp: number): Promise<StoryEventData[]> {
+    const query = STORY_QUERIES.STORY_EVENTS_SINCE.replace("{timestamp}", timestamp.toString());
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<StoryEventData>(url, "Failed to fetch story events since timestamp");
+  }
+
+  /**
+   * Fetches story events by entity ID with pagination.
+   * SQL queries always return arrays.
+   */
+  async fetchStoryEventsByEntity(entityId: ID, limit: number = 50, offset: number = 0): Promise<StoryEventData[]> {
+    const query = STORY_QUERIES.STORY_EVENTS_BY_ENTITY
+      .replace("{entityId}", entityId.toString())
+      .replace("{limit}", limit.toString())
+      .replace("{offset}", offset.toString());
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<StoryEventData>(url, "Failed to fetch story events by entity");
+  }
+
+  /**
+   * Fetches story events by owner address with pagination.
+   * SQL queries always return arrays.
+   */
+  async fetchStoryEventsByOwner(owner: string, limit: number = 50, offset: number = 0): Promise<StoryEventData[]> {
+    const formattedOwner = formatAddressForQuery(owner);
+    const query = STORY_QUERIES.STORY_EVENTS_BY_OWNER
+      .replace("{owner}", formattedOwner)
+      .replace("{limit}", limit.toString())
+      .replace("{offset}", offset.toString());
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<StoryEventData>(url, "Failed to fetch story events by owner");
+  }
+
+  /**
+   * Counts total number of story events for pagination.
+   * SQL queries always return arrays, so we extract the first result.
+   */
+  async fetchStoryEventsCount(): Promise<number> {
+    const url = buildApiUrl(this.baseUrl, STORY_QUERIES.STORY_EVENTS_COUNT);
+    const results = await fetchWithErrorHandling<{ total_count: number }>(url, "Failed to count story events");
+    const firstResult = extractFirstOrNull(results);
+    return firstResult?.total_count ?? 0;
   }
 }

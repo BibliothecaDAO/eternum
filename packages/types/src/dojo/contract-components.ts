@@ -1930,6 +1930,27 @@ const eventsComponents = (world: World) => {
         );
       })(),
 
+      StoryEvent: (() => {
+        return defineComponent(
+          world,
+          {
+            owner: RecsType.OptionalString,
+            entity_id: RecsType.OptionalNumber,
+            tx_hash: RecsType.String,
+            story: RecsType.Schema,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "s1_eternum",
+              name: "StoryEvent",
+              types: ["Option<ContractAddress>", "Option<u32>", "felt252", "Story", "u64"],
+              customTypes: ["Story"],
+            },
+          },
+        );
+      })(),
+
       SwapEvent: (() => {
         return defineComponent(
           world,

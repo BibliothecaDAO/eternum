@@ -978,8 +978,7 @@ export const BlitzOnboarding = () => {
         });
         await refetchFeeTokenBalance?.();
       }
-      
-      
+
       await blitz_realm_obtain_entry_token({
         signer: account,
         feeToken: feeTokenAddressHex,

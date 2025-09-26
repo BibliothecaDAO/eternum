@@ -407,20 +407,17 @@ export const PrizePanel = () => {
                   isLoading={isSubmitting}
                   disabled={
                     isSubmitting ||
-                    (!rankingWindowOpen && !(
-                      Number(worldCfg?.blitz_registration_config?.registration_count ?? 0) === 1 && !hasFinal
-                    )) ||
+                    (!rankingWindowOpen &&
+                      !(Number(worldCfg?.blitz_registration_config?.registration_count ?? 0) === 1 && !hasFinal)) ||
                     rankingCompleted
                   }
                   onClick={handleStartOrContinue}
                 >
-                  {
-                    Number(worldCfg?.blitz_registration_config?.registration_count ?? 0) === 1 && !hasFinal
-                      ? "Claim Single-Player Prize"
-                      : rankingCompleted
-                        ? "Ranking Complete"
-                        : "Continue Ranking"
-                  }
+                  {Number(worldCfg?.blitz_registration_config?.registration_count ?? 0) === 1 && !hasFinal
+                    ? "Claim Single-Player Prize"
+                    : rankingCompleted
+                      ? "Ranking Complete"
+                      : "Continue Ranking"}
                 </Button>
                 <Button className="md:w-auto" variant="outline" onClick={() => setShowAdvanced((v) => !v)}>
                   {showAdvanced ? "Hide Advanced" : "Advanced Controls"}
@@ -511,22 +508,19 @@ export const PrizePanel = () => {
                   isLoading={isSubmitting}
                   disabled={
                     isSubmitting ||
-                    (!rankingWindowOpen && !(
-                      Number(worldCfg?.blitz_registration_config?.registration_count ?? 0) === 1 && !hasFinal
-                    )) ||
+                    (!rankingWindowOpen &&
+                      !(Number(worldCfg?.blitz_registration_config?.registration_count ?? 0) === 1 && !hasFinal)) ||
                     rankingCompleted
                   }
                   onClick={handleStartOrContinue}
                 >
-                  {
-                    Number(worldCfg?.blitz_registration_config?.registration_count ?? 0) === 1 && !hasFinal
-                      ? "Claim Single-Player Prize"
-                      : rankingCompleted
-                        ? "Ranking Complete"
-                        : rankingWindowOpen
-                          ? "Start Ranking Submission"
-                          : "Ready When Season Ends"
-                  }
+                  {Number(worldCfg?.blitz_registration_config?.registration_count ?? 0) === 1 && !hasFinal
+                    ? "Claim Single-Player Prize"
+                    : rankingCompleted
+                      ? "Ranking Complete"
+                      : rankingWindowOpen
+                        ? "Start Ranking Submission"
+                        : "Ready When Season Ends"}
                 </Button>
                 <Button className="md:w-auto" variant="outline" onClick={() => setShowAdvanced((v) => !v)}>
                   {showAdvanced ? "Hide Advanced" : "Advanced Controls"}

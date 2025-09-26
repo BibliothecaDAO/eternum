@@ -3,11 +3,12 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { RightView } from "@/types";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import { getIsBlitz } from "@bibliothecadao/eternum";
+import clsx from "clsx";
 
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { AllAutomationsTable, AutomationTransferTable, Bridge, TransferModal } from "@/ui/features/infrastructure";
-import { BattleLogsTable } from "@/ui/features/military";
 import { ProductionModal } from "@/ui/features/settlement";
+import { StoryEventsChronicles } from "@/ui/features/story-events";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
 import { motion } from "framer-motion";
 import type { ComponentProps, ReactNode } from "react";
@@ -98,15 +99,15 @@ const buildRightNavigationItems = ({
       onClick: toggleView(RightView.Bridge),
     },
     {
-      id: MenuEnum.logs,
-      className: "logs-selector",
-      image: BuildingThumbs.logs,
+      id: MenuEnum.storyEvents,
+      className: "story-events-selector",
+      image: BuildingThumbs.storyEvents,
       tooltipLocation: "top",
-      label: "Logs",
+      label: "Activity Chronicles",
       size: DEFAULT_BUTTON_SIZE,
       disabled: disableButtons,
-      active: view === RightView.Logs,
-      onClick: toggleView(RightView.Logs),
+      active: view === RightView.StoryEvents,
+      onClick: toggleView(RightView.StoryEvents),
     },
   ];
 
@@ -114,7 +115,7 @@ const buildRightNavigationItems = ({
     MenuEnum.resourceTable,
     MenuEnum.production,
     MenuEnum.automation,
-    MenuEnum.logs,
+    MenuEnum.storyEvents,
     MenuEnum.transfer,
     ...(isBlitz ? [] : [MenuEnum.bridge]),
   ];
@@ -154,11 +155,15 @@ export const RightNavigationModule = () => {
 
   const isOffscreen = view === RightView.None;
 
+  const storyChroniclesActive = view === RightView.StoryEvents;
+
   return (
     <div
-      className={`max-h-full transition-all z-0 duration-200 space-x-1 flex w-[500px] right-4 pointer-events-none pt-16 ${
-        isOffscreen ? "translate-x-[86%]" : ""
-      }`}
+      className={clsx(
+        "pointer-events-none right-4 flex max-h-full space-x-1 pt-16 transition-all duration-300",
+        storyChroniclesActive ? "w-[48vw] max-w-[825px]" : "w-[500px]",
+        isOffscreen ? "translate-x-[86%]" : "",
+      )}
     >
       {ConnectedAccount && (
         <>
@@ -169,7 +174,10 @@ export const RightNavigationModule = () => {
             }}
             initial="hidden"
             animate="visible"
-            className="flex flex-col justify-start pointer-events-auto h-[60vh]"
+            className={clsx(
+              "pointer-events-auto flex flex-col justify-start",
+              storyChroniclesActive ? "h-[88vh]" : "h-[60vh]",
+            )}
           >
             <div className="flex flex-col mb-auto">
               {navigationItems.map((item) => (
@@ -181,7 +189,10 @@ export const RightNavigationModule = () => {
           </motion.div>
 
           <BaseContainer
-            className={`w-full panel-wood pointer-events-auto overflow-y-auto h-[60vh] rounded-l-2xl border-l-2 border-y-2 panel-wood-corners border-gold/20 overflow-x-hidden`}
+            className={clsx(
+              "panel-wood panel-wood-corners w-full rounded-l-2xl border-l-2 border-y-2 border-gold/20 pointer-events-auto overflow-x-hidden",
+              storyChroniclesActive ? "h-[88vh] overflow-y-auto" : "h-[60vh] overflow-y-auto",
+            )}
           >
             <Suspense fallback={<div className="p-8">Loading...</div>}>
               {view === RightView.ResourceTable && !!structureEntityId && (
@@ -199,9 +210,9 @@ export const RightNavigationModule = () => {
                   <AllAutomationsTable />
                 </div>
               )}
-              {view === RightView.Logs && (
-                <div className="logs-selector p-2 flex flex-col space-y-1 overflow-y-auto">
-                  <BattleLogsTable />
+              {storyChroniclesActive && (
+                <div className="story-events-selector flex h-full flex-col">
+                  <StoryEventsChronicles />
                 </div>
               )}
               {view === RightView.Transfer && (

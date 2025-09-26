@@ -52,6 +52,143 @@ export interface TokenTransfer {
   symbol: string;
 }
 
+export interface StoryEventData {
+  owner: string | null;
+  entity_id: number | null;
+  tx_hash: string;
+  story: string; // The story type (e.g., "RealmCreatedStory", "ExplorerMoveStory", etc.)
+  timestamp: string;
+  event_id: string;
+
+  // RealmCreatedStory fields
+  realm_coord_x?: number;
+  realm_coord_y?: number;
+
+  // ExplorerMoveStory fields
+  explorer_id?: number;
+  explorer_structure_id?: number;
+  start_coord_x?: number;
+  start_coord_y?: number;
+  end_coord_x?: number;
+  end_coord_y?: number;
+  explorer_directions?: string;
+  explorer_explore?: boolean;
+  explore_find?: string;
+  reward_resource_type?: number;
+  reward_resource_amount?: string;
+
+  // StructureLevelUpStory fields
+  structure_new_level?: number;
+
+  // BattleStory fields
+  battle_attacker_id?: number;
+  battle_defender_id?: number;
+  battle_winner_id?: number;
+  battle_type?: string;
+  battle_attacker_owner_address?: string;
+  battle_defender_owner_address?: string;
+  battle_attacker_owner_id?: number;
+  battle_defender_owner_id?: number;
+  battle_attacker_troops_type?: string;
+  battle_attacker_troops_tier?: string;
+  battle_attacker_troops_before?: string;
+  battle_attacker_troops_lost?: string;
+  battle_defender_troops_type?: string;
+  battle_defender_troops_tier?: string;
+  battle_defender_troops_before?: string;
+  battle_defender_troops_lost?: string;
+  battle_stolen_resources?: string;
+
+  // ProductionStory fields
+  production_resource_type?: number;
+  production_amount?: string;
+  production_cost?: string;
+
+  // BuildingPlacementStory fields
+  building_category?: number;
+  building_coord_x?: number;
+  building_coord_y?: number;
+  building_created?: boolean;
+  building_destroyed?: boolean;
+  building_paused?: boolean;
+  building_unpaused?: boolean;
+
+  // BuildingPaymentStory fields
+  building_payment_category?: number;
+  building_payment_coord_x?: number;
+  building_payment_coord_y?: number;
+  building_payment_cost?: string;
+
+  // ResourceTransferStory fields
+  resource_transfer_type?: string;
+  resource_transfer_from_entity_id?: number;
+  resource_transfer_from_owner_address?: string;
+  resource_transfer_to_entity_id?: number;
+  resource_transfer_to_owner_address?: string;
+  resource_transfer_resources?: string;
+  resource_transfer_is_mint?: boolean;
+  resource_transfer_travel_time?: string;
+
+  // ResourceBurnStory fields
+  resource_burn_resources?: string;
+
+  // ResourceReceiveArrivalStory fields
+  resource_receive_resources?: string;
+
+  // GuardAddStory fields
+  guard_add_structure_id?: number;
+  guard_add_slot?: string;
+  guard_add_category?: string;
+  guard_add_tier?: string;
+  guard_add_amount?: string;
+
+  // GuardDeleteStory fields
+  guard_delete_structure_id?: number;
+  guard_delete_slot?: string;
+
+  // ExplorerCreateStory fields
+  explorer_create_structure_id?: number;
+  explorer_create_explorer_id?: number;
+  explorer_create_category?: string;
+  explorer_create_tier?: string;
+  explorer_create_amount?: string;
+  explorer_create_spawn_direction?: string;
+
+  // ExplorerAddStory fields
+  explorer_add_explorer_id?: number;
+  explorer_add_amount?: string;
+  explorer_add_home_direction?: string;
+
+  // ExplorerDeleteStory fields
+  explorer_delete_explorer_id?: number;
+
+  // ExplorerExplorerSwapStory fields
+  explorer_swap_from_id?: number;
+  explorer_swap_to_id?: number;
+  explorer_swap_to_direction?: string;
+  explorer_swap_count?: string;
+
+  // ExplorerGuardSwapStory fields
+  explorer_guard_swap_from_explorer_id?: number;
+  explorer_guard_swap_to_structure_id?: number;
+  explorer_guard_swap_to_structure_direction?: string;
+  explorer_guard_swap_to_guard_slot?: string;
+  explorer_guard_swap_count?: string;
+
+  // GuardExplorerSwapStory fields
+  guard_explorer_swap_from_structure_id?: number;
+  guard_explorer_swap_from_guard_slot?: string;
+  guard_explorer_swap_to_explorer_id?: number;
+  guard_explorer_swap_to_explorer_direction?: string;
+  guard_explorer_swap_count?: string;
+
+  // PrizeDistribution fields
+  prize_to_player_address?: string;
+  prize_amount?: string;
+  prize_decimals?: number;
+  prize_trial_id?: string;
+}
+
 export interface PlayersData {
   explorer_ids: string | number;
   structure_ids: string;
