@@ -663,6 +663,10 @@ export interface BlitzPrizeClaimProps extends SystemSigner {
   players: BigNumberish[]; // Array<ContractAddress>
 }
 
+export interface BlitzPrizeClaimNoGameProps extends SystemSigner {
+  registered_player: BigNumberish; // ContractAddress of the only registered player
+}
+
 export interface SetStaminaConfigProps extends SystemSigner {
   unit_type: BigNumberish;
   max_stamina: BigNumberish;
