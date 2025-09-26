@@ -155,8 +155,8 @@ export const ResourceChip = ({
                   {findResourceById(resourceId)?.trait} waiting to be stored.
                 </p>
                 <p>
-                  Whenever you use this resource (building, trading, pause, production, etc.) the produced amount is first
-                  moved into storage.
+                  Whenever you use this resource (building, trading, pause, production, etc.) the produced amount is
+                  first moved into storage.
                   <br />
                   Only the portion that fits within your remaining capacity&nbsp;(
                   <span className="text-green">
@@ -164,7 +164,8 @@ export const ResourceChip = ({
                   </span>
                   ) will be saved; any excess&nbsp;(
                   <span className="text-red">
-                    of {divideByPrecision(producedWeight, false).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    of{" "}
+                    {divideByPrecision(producedWeight, false).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                     kg
                   </span>
                   ) will be permanently burned.

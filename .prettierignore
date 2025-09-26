@@ -24,3 +24,5 @@
 
 # ignore json files
 **/*.json
+
+deploy

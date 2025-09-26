@@ -219,8 +219,8 @@ export const Tooltip = ({ className }: TooltipProps) => {
   const style = tooltip?.fixed
     ? { left: tooltip.fixed.x, top: tooltip.fixed.y }
     : coordinates
-    ? { left: `${coordinates.left}px`, top: `${coordinates.top}px` }
-    : undefined;
+      ? { left: `${coordinates.left}px`, top: `${coordinates.top}px` }
+      : undefined;
 
   const hiddenTransform = useMemo(() => getHiddenTransform(placement), [placement]);
 

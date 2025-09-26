@@ -5,7 +5,8 @@ This folder contains a Terraform based deployment flow for serving the Eternum g
 ## Layout
 
 - `terraform/` – reusable Terraform root configuration and modules.
-  - `modules/static_site` – provisions a Cloud Storage bucket, HTTPS load balancer, SSL certificate, and optional Cloud DNS record for a Vite build.
+  - `modules/static_site` – provisions a Cloud Storage bucket, HTTPS load balancer, SSL certificate, and optional Cloud
+    DNS record for a Vite build.
   - `modules/env_secret` – seeds Secret Manager with an environment file so builds can hydrate `.env` content.
   - `modules/project_services` – enables required Google APIs.
   - `environments/` – example and templated `terraform.tfvars` files for production and preview targets.
@@ -33,21 +34,25 @@ gcloud auth application-default login
 ## Configure environments
 
 1. Copy `terraform/backend.tf.example` to `terraform/backend.tf` and fill in the remote state bucket name.
-2. Copy `terraform/environments/prod/terraform.tfvars.example` to `terraform/environments/prod/terraform.tfvars` and update domains, DNS zone, and labels.
-3. Place a populated env file referenced by the tfvars (for the example this is `deploy/artifacts/prod.env`). The `env_secret` module will push the file into Secret Manager.
+2. Copy `terraform/environments/prod/terraform.tfvars.example` to `terraform/environments/prod/terraform.tfvars` and
+   update domains, DNS zone, and labels.
+3. Place a populated env file referenced by the tfvars (for the example this is `deploy/artifacts/prod.env`). The
+   `env_secret` module will push the file into Secret Manager.
 4. (Optional) Adjust `terraform/variables.tf` defaults if you need different API sets or service account naming.
 
 ### Preview domains per PR
 
-Preview deployments rely on the template `terraform/environments/preview/terraform.tfvars.tmpl`. `deploy.sh` injects runtime values such as the PR number, project id, and preview base domain. Provide the following environment variables before invoking the script:
+Preview deployments rely on the template `terraform/environments/preview/terraform.tfvars.tmpl`. `deploy.sh` injects
+runtime values such as the PR number, project id, and preview base domain. Provide the following environment variables
+before invoking the script:
 
 - `GCP_PROJECT_ID`
 - `PREVIEW_BASE_DOMAIN` (e.g. `preview.example.com` when PRs map to `pr-123.preview.example.com`)
 - `PREVIEW_DNS_ZONE` (Cloud DNS managed zone name that owns `PREVIEW_BASE_DOMAIN`)
 - `PREVIEW_BUCKET_LOCATION` (optional, defaults to `DEFAULT_LOCATION`)
 
-The script will create `deploy/artifacts/pr-<pr>.env` from `templates/preview.env.stub` if the env file is missing and exit so you can fill it. Commit your real secrets to Secret Manager or inject via CI secrets before rerunning.
-
+The script will create `deploy/artifacts/pr-<pr>.env` from `templates/preview.env.stub` if the env file is missing and
+exit so you can fill it. Commit your real secrets to Secret Manager or inject via CI secrets before rerunning.
 
 ## Make targets
 
