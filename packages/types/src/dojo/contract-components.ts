@@ -1811,13 +1811,14 @@ export function defineContractComponents(world: World) {
         world,
         {
           player: RecsType.BigInt,
+          once_registered: RecsType.Boolean,
           registered: RecsType.Boolean,
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "BlitzRealmPlayerRegister",
-            types: ["ContractAddress", "bool"],
+            types: ["ContractAddress", "bool", "bool"],
             customTypes: [],
           },
         },
