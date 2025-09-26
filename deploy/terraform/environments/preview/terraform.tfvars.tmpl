@@ -1,0 +1,24 @@
+project_id       = "__PROJECT_ID__"
+default_region   = "__DEFAULT_REGION__"
+default_location = "__DEFAULT_LOCATION__"
+
+default_labels = {
+  app = "eternum"
+}
+
+environments = {
+  preview = {
+    app_id              = "game-pr-__PR_NUMBER__"
+    domain              = "pr-__PR_NUMBER__.__PREVIEW_BASE_DOMAIN__"
+    dns_zone_name       = "__DNS_ZONE_NAME__"
+    bucket_location     = "__BUCKET_LOCATION__"
+    certificate_domains = ["pr-__PR_NUMBER__.__PREVIEW_BASE_DOMAIN__"]
+    force_destroy       = true
+    enable_cdn          = true
+    labels = {
+      tier = "preview"
+      pr   = "__PR_NUMBER__"
+    }
+    env_file_path = "../../artifacts/pr-__PR_NUMBER__.env"
+  }
+}

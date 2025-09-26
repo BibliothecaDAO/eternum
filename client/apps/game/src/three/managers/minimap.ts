@@ -626,12 +626,16 @@ class Minimap {
   }
 
   hideMinimap() {
-    this.canvas.style.display = "none";
+    if (this.canvas) {
+      this.canvas.style.display = "none";
+    }
     useUIStore.getState().setShowMinimap(false);
   }
 
   showMinimap() {
-    this.canvas.style.display = "block";
+    if (this.canvas) {
+      this.canvas.style.display = "block";
+    }
     useUIStore.getState().setShowMinimap(true);
   }
 

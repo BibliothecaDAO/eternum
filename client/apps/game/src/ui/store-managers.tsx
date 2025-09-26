@@ -5,12 +5,12 @@ import { sqlApi } from "@/services/api";
 import {
   getAddressName,
   getAllArrivals,
-  getArmyName,
   getBlockTimestamp,
   getEntityIdFromKeys,
   getEntityInfo,
   getGuildFromPlayerAddress,
   getIsBlitz,
+  formatArmies,
   SelectableArmy,
 } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
@@ -200,27 +200,26 @@ const MinigameStoreManager = () => {
 const SelectableArmiesStoreManager = () => {
   const setSelectableArmies = useUIStore((state) => state.setSelectableArmies);
   const {
+    account: { account },
     setup: { components },
   } = useDojo();
 
   const explorers = useEntityQuery([Has(components.ExplorerTroops)]);
-  const playerStructures = usePlayerStructures();
 
   useEffect(() => {
-    const selectableArmies: SelectableArmy[] = explorers
-      .map((explorer) => {
-        const explorerTroops = getComponentValue(components.ExplorerTroops, explorer);
-        if (!explorerTroops || !playerStructures.find((structure) => structure.entityId === explorerTroops.owner))
-          return null;
-        return {
-          entityId: explorerTroops.explorer_id,
-          position: { col: explorerTroops?.coord.x ?? 0, row: explorerTroops?.coord.y ?? 0 },
-          name: getArmyName(explorerTroops?.explorer_id ?? 0),
-        };
-      })
-      .filter(Boolean) as SelectableArmy[];
+    const playerAddress = ContractAddress(account.address || "0x0");
+    const formattedArmies = formatArmies(explorers, playerAddress, components);
+
+    const selectableArmies: SelectableArmy[] = formattedArmies
+      .filter((army) => army.isMine)
+      .map((army) => ({
+        entityId: army.entityId,
+        position: { col: army.position.x ?? 0, row: army.position.y ?? 0 },
+        name: army.name,
+      }));
+
     setSelectableArmies(selectableArmies);
-  }, [explorers, playerStructures]);
+  }, [account.address, components, explorers, setSelectableArmies]);
 
   return null;
 };

@@ -14,6 +14,10 @@ import {
 } from "./debounced-queries";
 import { EVENT_QUERY_LIMIT } from "./sync";
 
+const isValidId = (id: unknown): id is ID => typeof id === "number" && Number.isFinite(id);
+const hasValidPosition = (position: HexPosition | undefined): position is HexPosition =>
+  !!position && Number.isFinite(position.col) && Number.isFinite(position.row);
+
 export const getTilesForPositionsFromTorii = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
@@ -51,6 +55,23 @@ export const getStructuresDataFromTorii = async (
   components: Component<Schema, Metadata, undefined>[],
   structures: { entityId: ID; position: HexPosition }[],
 ) => {
+  const structuresToSync = structures.filter((structure) => {
+    const valid = isValidId(structure.entityId) && hasValidPosition(structure.position);
+
+    if (!valid && import.meta.env.DEV) {
+      console.warn("[torii] Skipping structure sync for invalid payload", structure);
+    }
+
+    return valid;
+  });
+
+  if (structuresToSync.length === 0) {
+    if (import.meta.env.DEV) {
+      console.warn("[torii] No valid structures to sync", structures);
+    }
+    return;
+  }
+
   const playerStructuresModels = [
     "s1_eternum-Structure",
     "s1_eternum-Resource",
@@ -66,7 +87,7 @@ export const getStructuresDataFromTorii = async (
   const structuresPromise = debouncedGetEntitiesFromTorii(
     client,
     components as any,
-    structures.map((structure) => structure.entityId),
+    structuresToSync.map((structure) => structure.entityId),
     playerStructuresModels,
     () => {},
   );
@@ -74,19 +95,19 @@ export const getStructuresDataFromTorii = async (
   const armiesPromise = debouncedGetOwnedArmiesFromTorii(
     client,
     components as any,
-    structures.map((structure) => structure.entityId),
+    structuresToSync.map((structure) => structure.entityId),
     () => {},
   );
 
   const buildingsPromise = debouncedGetBuildingsFromTorii(
     client,
     components as any,
-    structures.map((structure) => structure.position),
+    structuresToSync.map((structure) => structure.position),
     () => {},
   );
 
   // Query tile components for the structure positions
-  const tilePositions = structures.map((structure) => structure.position);
+  const tilePositions = structuresToSync.map((structure) => structure.position);
   const tilePromise = debouncedGetTilesForPositionsFromTorii(client, components as any, tilePositions, () => {});
 
   // Execute all promises in parallel
@@ -208,10 +229,27 @@ export const getHyperstructureFromTorii = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
 ) => {
+  const validIds = hyperstructureIds.filter((id) => {
+    const valid = isValidId(id);
+
+    if (!valid && import.meta.env.DEV) {
+      console.warn("[torii] Skipping hyperstructure sync for invalid id", id);
+    }
+
+    return valid;
+  });
+
+  if (validIds.length === 0) {
+    if (import.meta.env.DEV) {
+      console.warn("[torii] No valid hyperstructure ids to sync", hyperstructureIds);
+    }
+    return;
+  }
+
   const structureQuery = {
     Composite: {
       operator: "Or" as LogicalOperator,
-      clauses: hyperstructureIds.map((id) => ({
+      clauses: validIds.map((id) => ({
         Keys: {
           keys: [id.toString()],
           pattern_matching: "FixedLen" as PatternMatching,
@@ -287,11 +325,28 @@ export const getEntitiesFromTorii = async <S extends Schema>(
   entityIDs: ID[],
   entityModels: string[],
 ) => {
+  const validEntityIDs = entityIDs.filter((id) => {
+    const valid = isValidId(id);
+
+    if (!valid && import.meta.env.DEV) {
+      console.warn("[torii] Skipping entity sync for invalid id", id);
+    }
+
+    return valid;
+  });
+
+  if (validEntityIDs.length === 0) {
+    if (import.meta.env.DEV) {
+      console.warn("[torii] No valid entity ids to sync", entityIDs);
+    }
+    return;
+  }
+
   const query =
-    entityIDs.length === 1
+    validEntityIDs.length === 1
       ? {
           Keys: {
-            keys: [entityIDs[0].toString()],
+            keys: [validEntityIDs[0].toString()],
             pattern_matching: "VariableLen" as PatternMatching,
             models: [],
           },
@@ -300,7 +355,7 @@ export const getEntitiesFromTorii = async <S extends Schema>(
           Composite: {
             operator: "Or" as LogicalOperator,
             clauses: [
-              ...entityIDs.map((id) => ({
+              ...validEntityIDs.map((id) => ({
                 Keys: {
                   keys: [id.toString()],
                   pattern_matching: "VariableLen" as PatternMatching,
