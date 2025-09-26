@@ -1,11 +1,10 @@
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { Shield, Swords, Package } from "lucide-react";
+import { Shield, Swords } from "lucide-react";
 
 import type { TroopSelectionOption } from "./types";
 
 interface StructureArmyOverviewProps {
   structureName?: string;
-  coordinates?: { x: number; y: number } | null;
   attackCount: number;
   maxAttack: number;
   defenseCount: number;
@@ -13,27 +12,31 @@ interface StructureArmyOverviewProps {
   troopOptions: TroopSelectionOption[];
 }
 
-const formatTroopLabel = (typeLabel: string, tier: number) => `${typeLabel} T${tier}`;
+const formatTroopLabel = (label: string, tier: number) => `${label} T${tier}`;
 
 export const StructureArmyOverview = ({
   structureName,
-  coordinates,
   attackCount,
   maxAttack,
   defenseCount,
   maxDefense,
   troopOptions,
 }: StructureArmyOverviewProps) => {
-  const availableTroops = troopOptions.flatMap((option) =>
-    option.tiers
-      .filter((tier) => tier.available > 0)
-      .map((tier) => ({
-        key: `${option.type}-${tier.tier}`,
-        label: formatTroopLabel(option.label, tier.tier),
-        available: tier.available,
-        resourceTrait: tier.resourceTrait,
-      })),
-  );
+  const availableTroops = troopOptions
+    .flatMap((option) =>
+      option.tiers
+        .filter((tier) => tier.available > 0)
+        .map((tier) => ({
+          key: `${option.type}-${tier.tier}`,
+          label: formatTroopLabel(option.label, tier.tier),
+          available: tier.available,
+          resourceTrait: tier.resourceTrait,
+        })),
+    )
+    .sort((a, b) => b.available - a.available);
+
+  const topTroops = availableTroops.slice(0, 3);
+  const totalTroops = availableTroops.reduce((sum, troop) => sum + troop.available, 0);
 
   return (
     <div className="panel-wood rounded-xl p-4 border border-brown/40 space-y-4">
@@ -41,9 +44,7 @@ export const StructureArmyOverview = ({
         <h3 className="text-gold text-lg font-bold leading-tight">
           {structureName ?? "Select a structure"}
         </h3>
-        {coordinates && (
-          <p className="text-xs text-gold/60">Location: {coordinates.x}, {coordinates.y}</p>
-        )}
+        <p className="text-xs text-gold/60">Active structure summary</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -67,30 +68,28 @@ export const StructureArmyOverview = ({
         </div>
       </div>
 
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <Package className="w-4 h-4 text-gold" />
-          <h4 className="text-sm font-semibold text-gold/80 uppercase tracking-wide">Troops in Inventory</h4>
+      <div className="bg-brown/25 border border-brown/30 rounded-lg px-3 py-3">
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-xs font-semibold text-gold/80 uppercase tracking-wide">Top Troops Ready</h4>
+          <span className="text-xs text-gold/60">Total {totalTroops.toLocaleString()}</span>
         </div>
-        {availableTroops.length > 0 ? (
-          <div className="grid grid-cols-1 gap-2">
-            {availableTroops.map((troop) => (
+        {topTroops.length > 0 ? (
+          <div className="space-y-2">
+            {topTroops.map((troop) => (
               <div
                 key={troop.key}
-                className="flex items-center justify-between bg-brown/25 border border-brown/40 rounded-lg px-3 py-2"
+                className="flex items-center justify-between rounded-lg bg-brown/20 px-2 py-1"
               >
-                <div className="flex items-center gap-3">
-                  <ResourceIcon resource={troop.resourceTrait} size="sm" withTooltip={false} />
-                  <span className="text-sm font-semibold text-gold">{troop.label}</span>
+                <div className="flex items-center gap-2">
+                  <ResourceIcon resource={troop.resourceTrait} size="xs" withTooltip={false} />
+                  <span className="text-xs font-semibold text-gold/90">{troop.label}</span>
                 </div>
-                <span className="text-sm text-gold/80 font-medium">{troop.available.toLocaleString()}</span>
+                <span className="text-xs text-gold/70 font-medium">{troop.available.toLocaleString()}</span>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-xs text-gold/60 bg-brown/20 border border-brown/30 rounded-lg px-3 py-3">
-            No troops available in this structure's inventory.
-          </div>
+          <p className="text-xs text-gold/50">No troops available yet.</p>
         )}
       </div>
     </div>

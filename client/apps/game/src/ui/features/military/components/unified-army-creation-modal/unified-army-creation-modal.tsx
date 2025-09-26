@@ -369,26 +369,62 @@ export const UnifiedArmyCreationModal = ({
     }
   };
 
-  const troopOptions = useMemo<TroopSelectionOption[]>(() => {
-    return TROOP_TYPES.map((type) => ({
-      type,
-      label: formatTroopTypeLabel(type),
-      tiers: TROOP_TIERS.map((tier) => {
-        const resourceId = getTroopResourceId(type, tier);
-        const balance = activeStructureId
-          ? getBalance(activeStructureId, resourceId, currentDefaultTick, components).balance
-          : 0n;
-        const available = Number(divideByPrecision(balance) || 0);
-        const resource = resources.find((item) => item.id === resourceId);
+  const structureInventories = useMemo(() => {
+    const map = new Map<number, TroopSelectionOption[]>();
 
-        return {
-          tier,
-          available,
-          resourceTrait: resource?.trait ?? "",
-        };
-      }),
-    }));
-  }, [activeStructureId, components, currentDefaultTick]);
+    playerStructures.forEach((realm) => {
+      const options = TROOP_TYPES.map((type) => ({
+        type,
+        label: formatTroopTypeLabel(type),
+        tiers: TROOP_TIERS.map((tier) => {
+          const resourceId = getTroopResourceId(type, tier);
+          const balance = getBalance(realm.entityId, resourceId, currentDefaultTick, components).balance;
+          const available = Number(divideByPrecision(balance) || 0);
+          const resource = resources.find((item) => item.id === resourceId);
+
+          return {
+            tier,
+            available,
+            resourceTrait: resource?.trait ?? "",
+          };
+        }),
+      }));
+
+      map.set(realm.entityId, options);
+    });
+
+    if (activeStructureId && !map.has(activeStructureId)) {
+      const options = TROOP_TYPES.map((type) => ({
+        type,
+        label: formatTroopTypeLabel(type),
+        tiers: TROOP_TIERS.map((tier) => {
+          const resourceId = getTroopResourceId(type, tier);
+          const balance = getBalance(activeStructureId, resourceId, currentDefaultTick, components).balance;
+          const available = Number(divideByPrecision(balance) || 0);
+          const resource = resources.find((item) => item.id === resourceId);
+
+          return {
+            tier,
+            available,
+            resourceTrait: resource?.trait ?? "",
+          };
+        }),
+      }));
+
+      map.set(activeStructureId, options);
+    }
+
+    return map;
+  }, [playerStructures, activeStructureId, components, currentDefaultTick]);
+
+  const troopOptions = useMemo<TroopSelectionOption[]>(() => {
+    return structureInventories.get(activeStructureId ?? 0) ??
+      TROOP_TYPES.map((type) => ({
+        type,
+        label: formatTroopTypeLabel(type),
+        tiers: TROOP_TIERS.map((tier) => ({ tier, available: 0, resourceTrait: "" })),
+      }));
+  }, [structureInventories, activeStructureId]);
 
   const maxAffordable = useMemo(() => {
     if (!activeStructureId) return 0;
@@ -436,8 +472,6 @@ export const UnifiedArmyCreationModal = ({
   const handleTroopCountChange = (value: number) => setTroopCount(value);
   const handleStructureSelect = (newStructureId: number) => setSelectedStructureId(newStructureId);
 
-  const coordinates = structureBase ? { x: structureBase.coord_x, y: structureBase.coord_y } : null;
-
   return (
     <ModalContainer title={armyType ? "Create Attack Army" : "Create Defense Army"} size="full">
       <div className="p-6 w-full h-full grid grid-cols-[320px,1fr] gap-6 bg-gradient-to-br from-brown/5 to-brown/10 rounded-lg">
@@ -445,12 +479,12 @@ export const UnifiedArmyCreationModal = ({
           <StructureSelectionList
             structures={playerStructures}
             selectedStructureId={activeStructureId || null}
+            inventories={structureInventories}
             onSelect={handleStructureSelect}
           />
 
           <StructureArmyOverview
             structureName={structureName}
-            coordinates={coordinates}
             attackCount={currentExplorersCount}
             maxAttack={maxExplorers}
             defenseCount={currentGuardsCount}
