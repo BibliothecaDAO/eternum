@@ -279,9 +279,9 @@ const EntityName: React.FC<{
   const getTypeIcon = (type: EntityInfo["type"]) => {
     switch (type) {
       case "structure":
-        return <Home className="w-3.5 h-3.5 text-amber-600/90 mr-1.5 shrink-0" />;
+        return <Home className="w-3.5 h-3.5 text-stone-600/90 mr-1.5 shrink-0" />;
       case "army":
-        return <Users className="w-3.5 h-3.5 text-amber-600/90 mr-1.5 shrink-0" />;
+        return <Users className="w-3.5 h-3.5 text-stone-600/90 mr-1.5 shrink-0" />;
       case "daydream":
         return <Cloud className="w-3.5 h-3.5 text-violet-500/90 mr-1.5 shrink-0" />;
       default:
@@ -304,14 +304,14 @@ const EntityName: React.FC<{
         className="
           hidden group-hover:block 
           absolute left-0 top-full mt-1 z-20 
-          p-2 bg-stone-950 border border-amber-500/60 rounded-lg shadow-2xl 
+          p-2 bg-stone-950 border border-stone-500/60 rounded-lg shadow-2xl 
           text-sm 
           max-w-[280px] 
           whitespace-normal break-words 
           backdrop-blur-sm 
         "
       >
-        <strong className="block text-amber-300 font-semibold mb-0.5">{entity.name}</strong>
+        <strong className="block text-stone-300 font-semibold mb-0.5">{entity.name}</strong>
       </div>
     </span>
   );
@@ -357,8 +357,7 @@ const SmartFilter: React.FC<{
       icon: React.ReactNode;
     }> = [];
 
-    // Gold: text-yellow-400, border-yellow-500. Brown: text-stone-400 (muted), bg-stone-700
-    // Updated: text-amber-400, border-amber-500. Stone: text-stone-400, bg-stone-800
+    // Neutral colors: text-stone-400, border-stone-500, bg-stone-800
 
     if (filterState.entityFilter.type !== "all") {
       suggestions.push({
@@ -376,7 +375,7 @@ const SmartFilter: React.FC<{
           type: "player",
           name: playerName,
           subtitle: "View player activity",
-          icon: <Crown className="w-3.5 h-3.5 text-amber-400" />,
+          icon: <Crown className="w-3.5 h-3.5 text-stone-400" />,
         });
       });
     } else {
@@ -390,9 +389,9 @@ const SmartFilter: React.FC<{
           subtitle: `Entity #${idMatch}`,
           icon:
             entity.type === "structure" ? (
-              <Shield className="w-3.5 h-3.5 text-amber-400" />
+              <Shield className="w-3.5 h-3.5 text-stone-400" />
             ) : (
-              <Sword className="w-3.5 h-3.5 text-amber-500" />
+              <Sword className="w-3.5 h-3.5 text-stone-500" />
             ),
         });
       }
@@ -406,7 +405,7 @@ const SmartFilter: React.FC<{
               type: "player",
               name: playerName,
               subtitle: "View player activity",
-              icon: <Crown className="w-3.5 h-3.5 text-amber-400" />,
+              icon: <Crown className="w-3.5 h-3.5 text-stone-400" />,
             });
           }
         });
@@ -426,9 +425,9 @@ const SmartFilter: React.FC<{
             subtitle: `Entity #${entity.id}`,
             icon:
               entity.type === "structure" ? (
-                <Shield className="w-3.5 h-3.5 text-amber-400" />
+                <Shield className="w-3.5 h-3.5 text-stone-400" />
               ) : (
-                <Sword className="w-3.5 h-3.5 text-amber-500" />
+                <Sword className="w-3.5 h-3.5 text-stone-500" />
               ),
           });
         });
@@ -454,7 +453,7 @@ const SmartFilter: React.FC<{
   };
 
   const eventTypeFilters = [
-    { key: "all", label: "All", icon: Target, activeColor: "amber-400", baseColor: "stone-400" },
+    { key: "all", label: "All", icon: Target, activeColor: "stone-400", baseColor: "stone-400" },
     { key: "battles", label: "Battles", icon: Sword, activeColor: "red-500", baseColor: "stone-400" },
     { key: "raids", label: "Raids", icon: Zap, activeColor: "violet-500", baseColor: "stone-400" },
   ];
@@ -462,23 +461,23 @@ const SmartFilter: React.FC<{
   return (
     <div className="space-y-4">
       {/* Event type filter */}
-      <div className="flex rounded-lg overflow-hidden border border-amber-600/30 shadow-md bg-stone-800/50">
+      <div className="flex rounded-lg overflow-hidden border border-stone-600/30 shadow-md bg-stone-800/50">
         {eventTypeFilters.map(({ key, label, icon: Icon, activeColor, baseColor }) => (
           <button
             key={key}
             className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-medium transition-colors duration-200 relative ${
               filterState.eventType === key
-                ? `text-amber-100 bg-amber-600/50`
-                : `text-stone-300 hover:text-amber-300 hover:bg-amber-600/20`
-            } ${key !== "all" ? "border-l border-amber-600/30" : ""}`}
+                ? `text-stone-100 bg-stone-600/50`
+                : `text-stone-300 hover:text-stone-200 hover:bg-stone-600/20`
+            } ${key !== "all" ? "border-l border-stone-600/30" : ""}`}
             onClick={() => onFilterChange({ ...filterState, eventType: key as any })}
           >
             <Icon
               className={`w-4 h-4 ${
-                filterState.eventType === key ? `text-${activeColor}` : `text-${baseColor} group-hover:text-amber-300`
+                filterState.eventType === key ? `text-${activeColor}` : `text-${baseColor} group-hover:text-stone-300`
               }`}
             />
-            <span className={`${filterState.eventType === key ? "text-amber-200" : "text-stone-300"}`}>{label}</span>
+            <span className={`${filterState.eventType === key ? "text-stone-200" : "text-stone-300"}`}>{label}</span>
             {filterState.eventType === key && <div className={`absolute inset-x-0 bottom-0 h-0.5 bg-${activeColor}`} />}
           </button>
         ))}
@@ -487,7 +486,7 @@ const SmartFilter: React.FC<{
       {/* Smart search input & dropdown */}
       <div className="relative z-40" ref={dropdownRef}>
         <div className="relative flex items-center">
-          <Search className="absolute left-3.5 w-4 h-4 text-amber-500/70 pointer-events-none z-10" />
+          <Search className="absolute left-3.5 w-4 h-4 text-stone-500/70 pointer-events-none z-10" />
           <input
             type="text"
             placeholder="Search by name, player, or entity ID..."
@@ -500,17 +499,17 @@ const SmartFilter: React.FC<{
             onFocus={() => {
               if (filterState.searchTerm || suggestions.length > 0) setIsDropdownOpen(true);
             }}
-            className="w-full bg-stone-950/70 border border-amber-500/40 text-amber-200 rounded-lg pl-10 pr-10 py-2.5 text-sm placeholder-stone-500 focus:border-amber-500/70 focus:outline-none focus:ring-1 focus:ring-amber-500/50 shadow-inner transition-colors duration-200"
+            className="w-full bg-stone-950/70 border border-stone-500/40 text-stone-200 rounded-lg pl-10 pr-10 py-2.5 text-sm placeholder-stone-500 focus:border-stone-500/70 focus:outline-none focus:ring-1 focus:ring-stone-500/50 shadow-inner transition-colors duration-200"
           />
           <div className="absolute right-3 flex items-center gap-2">
-            {isLoading && <RefreshCw className="w-4 h-4 text-amber-400/80 animate-spin" />}
+            {isLoading && <RefreshCw className="w-4 h-4 text-stone-400/80 animate-spin" />}
             {filterState.searchTerm && (
               <button
                 onClick={() => {
                   onFilterChange({ ...filterState, searchTerm: "" });
                   setIsDropdownOpen(false);
                 }}
-                className="p-0.5 text-stone-400 hover:text-amber-300 transition-colors duration-150"
+                className="p-0.5 text-stone-400 hover:text-stone-300 transition-colors duration-150"
                 aria-label="Clear search"
               >
                 <X className="w-4 h-4" />
@@ -520,28 +519,28 @@ const SmartFilter: React.FC<{
         </div>
 
         {isDropdownOpen && suggestions.length > 0 && (
-          <div className="absolute top-full left-0 right-0 mt-1.5 bg-stone-900/95 border border-amber-600/50 rounded-lg shadow-2xl z-50 max-h-72 overflow-hidden backdrop-blur-lg dropdown-enter">
+          <div className="absolute top-full left-0 right-0 mt-1.5 bg-stone-900/95 border border-stone-600/50 rounded-lg shadow-2xl z-50 max-h-72 overflow-hidden backdrop-blur-lg dropdown-enter">
             <div className="p-1.5 space-y-0.5 overflow-y-auto max-h-[calc(18rem-0.75rem)]">
               {suggestions.map((suggestion) => (
                 <button
                   key={`${suggestion.type}-${suggestion.id || suggestion.name}`}
                   onClick={() => handleSuggestionClick(suggestion)}
-                  className="w-full text-left px-3 py-2.5 rounded-md flex items-center gap-3 text-stone-300 hover:bg-amber-700/30 hover:text-amber-200 transition-colors duration-150 group"
+                  className="w-full text-left px-3 py-2.5 rounded-md flex items-center gap-3 text-stone-300 hover:bg-stone-700/30 hover:text-stone-200 transition-colors duration-150 group"
                 >
                   <div className="flex-shrink-0 w-4 h-4 flex items-center justify-center">{suggestion.icon}</div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm truncate text-amber-300 group-hover:text-amber-100">
+                    <div className="font-medium text-sm truncate text-stone-300 group-hover:text-stone-100">
                       {suggestion.name}
                     </div>
                     {suggestion.subtitle && (
-                      <div className="text-xs text-stone-400 group-hover:text-amber-500 truncate">
+                      <div className="text-xs text-stone-400 group-hover:text-stone-500 truncate">
                         {suggestion.subtitle}
                       </div>
                     )}
                   </div>
                   {(suggestion.type === "player" || suggestion.type === "entity") && (
                     <span
-                      className={`px-2 py-0.5 text-[10px] rounded-sm font-semibold ${suggestion.type === "player" ? "bg-amber-500/20 text-amber-200" : "bg-stone-700/50 text-stone-300"}`}
+                      className={`px-2 py-0.5 text-[10px] rounded-sm font-semibold ${suggestion.type === "player" ? "bg-stone-500/20 text-stone-200" : "bg-stone-700/50 text-stone-300"}`}
                     >
                       {suggestion.type.charAt(0).toUpperCase() + suggestion.type.slice(1)}
                     </span>
@@ -554,19 +553,19 @@ const SmartFilter: React.FC<{
 
         {filterState.entityFilter.type !== "all" && (
           <div className="mt-3 flex items-center gap-2">
-            <span className="text-xs text-amber-500/90">Filtered by:</span>
-            <div className="inline-flex items-center gap-2 pl-2.5 pr-1.5 py-1 bg-amber-900/40 border border-amber-500/50 rounded-full shadow-sm">
+            <span className="text-xs text-stone-500/90">Filtered by:</span>
+            <div className="inline-flex items-center gap-2 pl-2.5 pr-1.5 py-1 bg-stone-900/40 border border-stone-500/50 rounded-full shadow-sm">
               <span
-                className={`text-xs font-medium ${filterState.entityFilter.type === "player" ? "text-amber-300" : "text-amber-400"}`}
+                className={`text-xs font-medium ${filterState.entityFilter.type === "player" ? "text-stone-300" : "text-stone-400"}`}
               >
                 {filterState.entityFilter.type === "player" ? "Player" : "Entity"}
               </span>
-              <span className="text-sm text-amber-200 max-w-[180px] truncate">
+              <span className="text-sm text-stone-200 max-w-[180px] truncate">
                 {filterState.entityFilter.name || `#${filterState.entityFilter.id}`}
               </span>
               <button
                 onClick={() => onFilterChange({ ...filterState, entityFilter: { type: "all" } })}
-                className="p-0.5 text-stone-400 hover:text-amber-300 rounded-full hover:bg-amber-600/20 transition-colors duration-150"
+                className="p-0.5 text-stone-400 hover:text-stone-300 rounded-full hover:bg-stone-600/20 transition-colors duration-150"
                 aria-label="Clear entity filter"
               >
                 <X className="w-3.5 h-3.5" />
@@ -619,29 +618,27 @@ const BattleCard: React.FC<{
   const isDraw = !isWin && !isLoss;
   const timeInfo = formatTime(event.timestampMs);
 
-  // Gold: text-yellow-400, border-yellow-500. Brown: bg-stone-800, text-amber-600
-  // Consider a richer brown e.g. bg-yellow-900 or bg-amber-800
-  // Updated: text-amber-400, border-amber-500/600. Dark: bg-stone-900 or bg-black/opacity
+  // Neutral colors: text-stone-400, border-stone-500/600. Dark: bg-stone-900 or bg-black/opacity
 
   return (
     <div
-      className={`battle-card bg-stone-900/80 border border-amber-600/40 rounded-lg shadow-xl backdrop-blur-md p-4 transition-all duration-300 hover:shadow-[0_0_25px_rgba(212,175,55,0.3)] hover:border-amber-400/60 hover:bg-black/30 ${
+      className={`battle-card bg-stone-900/80 border border-stone-600/40 rounded-lg shadow-xl backdrop-blur-md p-4 transition-all duration-300 hover:shadow-[0_0_25px_rgba(120,120,120,0.3)] hover:border-stone-400/60 hover:bg-black/30 ${
         isWin ? "green-border-pulse" : isLoss ? "red-border-pulse" : ""
       }`}
     >
       {/* Header: Type, Title, Time */}
-      <div className="flex items-center justify-between mb-3.5 pb-2 border-b border-amber-600/20">
+      <div className="flex items-center justify-between mb-3.5 pb-2 border-b border-stone-600/20">
         <div className="flex items-center gap-2.5">
           {isRaid ? <Zap className="w-4 h-4 text-violet-400" /> : <Sword className="w-4 h-4 text-red-500" />}
-          <h3 className="text-sm font-semibold text-amber-300">{isRaid ? "Raid Report" : "Battle Report"}</h3>
+          <h3 className="text-sm font-semibold text-stone-300">{isRaid ? "Raid Report" : "Battle Report"}</h3>
         </div>
-        <div className="text-xs text-amber-500/90 group relative cursor-help">
-          <Clock className="w-3 h-3 inline mr-1 text-amber-500/80" />
+        <div className="text-xs text-stone-500/90 group relative cursor-help">
+          <Clock className="w-3 h-3 inline mr-1 text-stone-500/80" />
           {timeInfo.relativeTime}
           {/* Custom CSS Tooltip for actual date/time */}
           <span
             className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 
-                       bg-stone-950 text-amber-200 text-xs rounded-md shadow-lg whitespace-nowrap 
+                       bg-stone-950 text-stone-200 text-xs rounded-md shadow-lg whitespace-nowrap 
                        opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50"
           >
             {timeInfo.actualDateTime}
@@ -653,29 +650,29 @@ const BattleCard: React.FC<{
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 mb-3.5">
         {/* Attacker */}
         <div className="text-left space-y-0.5 min-w-0">
-          <div className="text-xs text-amber-500/90 flex items-center gap-1.5">
-            <Sword className="w-3.5 h-3.5 text-amber-400/90" /> Attacker
+          <div className="text-xs text-stone-500/90 flex items-center gap-1.5">
+            <Sword className="w-3.5 h-3.5 text-stone-400/90" /> Attacker
           </div>
-          <EntityName entityId={event.attacker_id} entities={entities} className="text-sm text-amber-200 font-medium" />
+          <EntityName entityId={event.attacker_id} entities={entities} className="text-sm text-stone-200 font-medium" />
         </div>
 
         {/* VS Separator */}
         <div className="text-center">
-          <span className="text-xs font-bold text-amber-500/60">VS</span>
+          <span className="text-xs font-bold text-stone-500/60">VS</span>
         </div>
 
         {/* Defender */}
         <div className="text-right space-y-0.5 min-w-0">
-          <div className="text-xs text-amber-500/90 flex items-center justify-end gap-1.5">
-            <Shield className="w-3.5 h-3.5 text-amber-400/90" /> Defender
+          <div className="text-xs text-stone-500/90 flex items-center justify-end gap-1.5">
+            <Shield className="w-3.5 h-3.5 text-stone-400/90" /> Defender
           </div>
-          <EntityName entityId={event.defender_id} entities={entities} className="text-sm text-amber-200 font-medium" />
+          <EntityName entityId={event.defender_id} entities={entities} className="text-sm text-stone-200 font-medium" />
         </div>
       </div>
 
       {/* Rewards Section */}
       {isWin && event.parsedRewards && event.parsedRewards.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-amber-600/20">
+        <div className="mt-3 pt-3 border-t border-stone-600/20">
           {/* <div className="text-xs text-amber-500/90 mb-2 flex items-center gap-1.5">
             <span className="font-medium">Max Rewards:</span>
           </div> */}
@@ -697,10 +694,10 @@ const BattleCard: React.FC<{
               return (
                 <div
                   key={`${reward.resourceId}-${index}`}
-                  className="resource-item bg-amber-900/20 border border-amber-600/30 rounded-md px-2.5 py-1 flex items-center gap-2 text-xs"
+                  className="resource-item bg-stone-900/20 border border-stone-600/30 rounded-md px-2.5 py-1 flex items-center gap-2 text-xs"
                 >
                   <ResourceIcon resource={resourceName} size="xs" withTooltip={true} className="opacity-90" />
-                  <span className="text-amber-200">{formattedAmount}</span>
+                  <span className="text-stone-200">{formattedAmount}</span>
                 </div>
               );
             })}
@@ -709,7 +706,7 @@ const BattleCard: React.FC<{
       )}
 
       {/* Outcome */}
-      <div className="flex items-center justify-center mt-3 pt-3 border-t border-amber-600/20">
+      <div className="flex items-center justify-center mt-3 pt-3 border-t border-stone-600/20">
         <div
           className={`px-3.5 py-1.5 rounded-md text-xs font-semibold flex items-center gap-2 shadow-inner ${
             isWin
@@ -779,17 +776,15 @@ export const BattleLogsTable: React.FC = () => {
     setCurrentPage((prev) => Math.max(prev - 1, 1));
   };
 
-  // Define a gold and brown color palette (Tailwind JIT will pick these up)
-  // Gold shades: text-yellow-400, text-amber-500, border-yellow-500, bg-yellow-500
-  // Brown shades: text-stone-700, bg-stone-800, border-stone-600, bg-yellow-900 (for a rich brown)
-  // Updated: text-amber-300, text-amber-400, border-amber-500/600, bg-black or stone-950 for base
+  // Define a neutral color palette (Tailwind JIT will pick these up)
+  // Neutral shades: text-stone-400, text-stone-500, border-stone-500, bg-stone-800
 
   if (isLoading && battleLogs.length === 0) {
     return (
       <div className="min-h-[400px] flex flex-col items-center justify-center p-6 bg-black text-gray-200">
         <LoadingAnimation />
-        <h3 className="text-lg font-semibold text-amber-300 mt-4">Loading Chronicles...</h3>
-        <p className="text-amber-500/80 text-sm max-w-xs mt-1 text-center">
+        <h3 className="text-lg font-semibold text-stone-300 mt-4">Loading Chronicles...</h3>
+        <p className="text-stone-500/80 text-sm max-w-xs mt-1 text-center">
           Gathering latest reports from the battlefield.
         </p>
       </div>
@@ -799,17 +794,17 @@ export const BattleLogsTable: React.FC = () => {
   if (error) {
     return (
       <div className="min-h-[400px] flex flex-col items-center justify-center p-6 text-center bg-black text-gray-200">
-        <div className="bg-stone-900/80 p-8 rounded-lg shadow-2xl backdrop-blur-md max-w-md w-full border border-amber-600/40">
+        <div className="bg-stone-900/80 p-8 rounded-lg shadow-2xl backdrop-blur-md max-w-md w-full border border-stone-600/40">
           <Shield className="w-12 h-12 text-red-500 mx-auto mb-4" />{" "}
           {/* Error icon, can be amber-themed if preferred */}
-          <h2 className="text-xl font-semibold text-amber-400 mb-2">Chronicles Unavailable</h2>
+          <h2 className="text-xl font-semibold text-stone-400 mb-2">Chronicles Unavailable</h2>
           <p className="text-stone-400 text-sm mb-6">
             {error || "There was an issue fetching the battle logs. Please try again."}
           </p>
           <Button
             onClick={handleRefresh}
             variant="outline"
-            className="bg-amber-500/20 border-amber-500/50 text-amber-300 hover:bg-amber-500/30 px-5 py-2.5 text-sm font-medium rounded-md transition-colors duration-200 flex items-center justify-center gap-2 mx-auto shadow-md hover:shadow-lg"
+            className="bg-stone-500/20 border-stone-500/50 text-stone-300 hover:bg-stone-500/30 px-5 py-2.5 text-sm font-medium rounded-md transition-colors duration-200 flex items-center justify-center gap-2 mx-auto shadow-md hover:shadow-lg"
           >
             <RefreshCw className="w-4 h-4" />
             Try Again
@@ -822,32 +817,32 @@ export const BattleLogsTable: React.FC = () => {
   return (
     <div className="w-full max-w-3xl mx-auto p-4 space-y-6 bg-black text-gray-200 font-sans">
       {/* Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-amber-600/30">
+      <div className="flex items-center justify-between pb-4 border-b border-stone-600/30">
         <div>
-          <h1 className="text-2xl font-semibold text-amber-300">Battle Chronicles</h1>
-          <p className="text-sm text-amber-500/90">Review epic conflicts and raids across the realms.</p>
+          <h1 className="text-2xl font-semibold text-stone-300">Battle Chronicles</h1>
+          <p className="text-sm text-stone-500/90">Review epic conflicts and raids across the realms.</p>
         </div>
         <Button
           onClick={handleRefresh}
           variant="outline"
           disabled={isLoading}
-          className="bg-amber-600/20 border-amber-500/60 text-amber-300 hover:bg-amber-600/30 px-4 py-2 text-xs font-medium rounded-md transition-colors duration-200 flex items-center gap-1.5 shadow-sm hover:shadow-md"
+          className="bg-stone-600/20 border-stone-500/60 text-stone-300 hover:bg-stone-600/30 px-4 py-2 text-xs font-medium rounded-md transition-colors duration-200 flex items-center gap-1.5 shadow-sm hover:shadow-md"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
         </Button>
       </div>
 
       {/* Filters & Count Container */}
-      <div className="relative z-30 bg-stone-900/70 p-4 rounded-lg shadow-xl backdrop-blur-md border border-amber-500/40">
+      <div className="relative z-30 bg-stone-900/70 p-4 rounded-lg shadow-xl backdrop-blur-md border border-stone-500/40">
         <div className="flex items-center justify-between mb-3.5">
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-amber-400" />
-            <h3 className="text-amber-400 font-medium text-base">Filter Events</h3>
+            <Filter className="w-4 h-4 text-stone-400" />
+            <h3 className="text-stone-400 font-medium text-base">Filter Events</h3>
           </div>
           {!isEntityLoading && battleLogs.length > 0 && (
-            <div className="text-xs text-amber-500/90 bg-black/20 px-2.5 py-1 rounded-md border border-amber-600/20">
-              <span className="font-semibold text-amber-300">{filteredLogs.length}</span> of{" "}
-              <span className="font-semibold text-amber-300">{battleLogs.length}</span>{" "}
+            <div className="text-xs text-stone-500/90 bg-black/20 px-2.5 py-1 rounded-md border border-stone-600/20">
+              <span className="font-semibold text-stone-300">{filteredLogs.length}</span> of{" "}
+              <span className="font-semibold text-stone-300">{battleLogs.length}</span>{" "}
             </div>
           )}
         </div>
@@ -867,20 +862,20 @@ export const BattleLogsTable: React.FC = () => {
         {
           /* {isLoading && battleLogs.length === 0 ? ( 
           <div className="min-h-[300px] flex flex-col items-center justify-center p-5 text-center">
-            <div className="bg-stone-900/80 p-10 rounded-lg shadow-2xl backdrop-blur-md border border-amber-600/40">
-              <RefreshCw className="w-8 h-8 text-amber-400 animate-spin mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-amber-300">Loading Chronicles...</h3>
-              <p className="text-amber-500/80 text-sm max-w-xs mt-1">
+            <div className="bg-stone-900/80 p-10 rounded-lg shadow-2xl backdrop-blur-md border border-stone-600/40">
+              <RefreshCw className="w-8 h-8 text-stone-400 animate-spin mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-stone-300">Loading Chronicles...</h3>
+              <p className="text-stone-500/80 text-sm max-w-xs mt-1">
                 Gathering latest reports from the battlefield.
               </p>
             </div>
           </div>
         ) : */ filteredLogs.length === 0 ? (
             <div className="min-h-[300px] flex flex-col items-center justify-center p-5 text-center">
-              <div className="bg-stone-900/80 p-10 rounded-lg shadow-2xl backdrop-blur-md border border-amber-600/40">
-                <Search className="w-8 h-8 text-amber-500/70 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-amber-300 mb-1">No Chronicles Found</h3>
-                <p className="text-amber-500/80 text-sm max-w-xs mx-auto">
+              <div className="bg-stone-900/80 p-10 rounded-lg shadow-2xl backdrop-blur-md border border-stone-600/40">
+                <Search className="w-8 h-8 text-stone-500/70 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-stone-300 mb-1">No Chronicles Found</h3>
+                <p className="text-stone-500/80 text-sm max-w-xs mx-auto">
                   {battleLogs.length === 0
                     ? "The realm is currently peaceful. No battles to report."
                     : "No battles match your current filter selection. Try adjusting your filters."}
@@ -896,7 +891,7 @@ export const BattleLogsTable: React.FC = () => {
                         searchTerm: "",
                       })
                     }
-                    className="mt-5 bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 px-4 py-2 text-xs font-medium rounded-md transition-colors duration-200 shadow-md hover:shadow-lg"
+                    className="mt-5 bg-stone-600/20 hover:bg-stone-600/30 text-stone-300 px-4 py-2 text-xs font-medium rounded-md transition-colors duration-200 shadow-md hover:shadow-lg"
                   >
                     Clear All Filters
                   </button>
@@ -915,17 +910,17 @@ export const BattleLogsTable: React.FC = () => {
 
       {/* Pagination Controls */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-6 border-t border-amber-600/20 mt-6">
+        <div className="flex items-center justify-between pt-6 border-t border-stone-600/20 mt-6">
           <Button
             onClick={goToPreviousPage}
             disabled={currentPage === 1}
             variant="outline"
-            className="bg-amber-600/20 border-amber-500/60 text-amber-300 hover:bg-amber-600/30 px-4 py-2 text-xs font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+            className="bg-stone-600/20 border-stone-500/60 text-stone-300 hover:bg-stone-600/30 px-4 py-2 text-xs font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
           >
             <ChevronLeft className="w-4 h-4" />
             Previous
           </Button>
-          <span className="text-sm text-amber-400">
+          <span className="text-sm text-stone-400">
             Page <span className="font-semibold">{currentPage}</span> of{" "}
             <span className="font-semibold">{totalPages}</span>
           </span>
@@ -933,7 +928,7 @@ export const BattleLogsTable: React.FC = () => {
             onClick={goToNextPage}
             disabled={currentPage === totalPages}
             variant="outline"
-            className="bg-amber-600/20 border-amber-500/60 text-amber-300 hover:bg-amber-600/30 px-4 py-2 text-xs font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+            className="bg-stone-600/20 border-stone-500/60 text-stone-300 hover:bg-stone-600/30 px-4 py-2 text-xs font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
           >
             Next
             <ChevronRight className="w-4 h-4" />
@@ -944,7 +939,7 @@ export const BattleLogsTable: React.FC = () => {
       {/* Footer/Loading indicator for refresh */}
       {isLoading && battleLogs.length > 0 && (
         <div className="flex justify-center pt-4 pb-2">
-          <div className="bg-stone-900/80 border border-amber-600/40 px-4 py-2 rounded-md text-xs font-medium text-amber-300 flex items-center gap-2 shadow-lg backdrop-blur-md">
+          <div className="bg-stone-900/80 border border-stone-600/40 px-4 py-2 rounded-md text-xs font-medium text-stone-300 flex items-center gap-2 shadow-lg backdrop-blur-md">
             <RefreshCw className="w-3.5 h-3.5 animate-spin" />
             <span>Updating Chronicles...</span>
           </div>
