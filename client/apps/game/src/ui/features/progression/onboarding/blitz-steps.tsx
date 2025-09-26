@@ -571,7 +571,9 @@ const RegistrationState = ({
                           : "Mint an entry token before registering. Tokens are locked automatically during registration."}
                 </p>
                 {requiresEntryToken && entryTokenBalance < 1 && (
-                  <p className="text-xs text-red-300 text-center">Top up your balance before registering.</p>
+                  <p className="text-xs text-red-300 text-center">
+                    Insufficient fee balance — auto top-up occurs when obtaining an entry token (non‑mainnet).
+                  </p>
                 )}
               </div>
             )}
@@ -956,7 +958,28 @@ export const BlitzOnboarding = () => {
     setIsObtainingEntryToken(true);
     setEntryTokenStatus("minting");
     try {
+      // Auto top-up on non-mainnet if fee balance is insufficient
+      const isNonMainnet = env.VITE_PUBLIC_CHAIN !== "mainnet";
       const feeTokenAddressHex = toHexString(blitzConfig.fee_token);
+      if (
+        isNonMainnet &&
+        network?.provider &&
+        masterAccount &&
+        feeTokenAddressHex &&
+        feeAmount > 0n &&
+        feeTokenBalance < feeAmount
+      ) {
+        const shortfall = feeAmount - feeTokenBalance;
+        const amount = uint256.bnToUint256(shortfall);
+        await network.provider.executeAndCheckTransaction(masterAccount, {
+          contractAddress: feeTokenAddressHex,
+          entrypoint: "transfer",
+          calldata: CallData.compile([account.address, amount.low, amount.high]),
+        });
+        await refetchFeeTokenBalance?.();
+      }
+      
+      
       await blitz_realm_obtain_entry_token({
         signer: account,
         feeToken: feeTokenAddressHex,
@@ -1102,9 +1125,11 @@ export const BlitzOnboarding = () => {
                 </span>
               </div>
               {!hasSufficientFeeBalance && (
-                <p className="text-xs text-red-300">Top balance to cover entry token fee.</p>
+                <p className="text-xs text-red-300">
+                  your balance will be auto-topped up when you attempt to obtain entry token.
+                </p>
               )}
-              {canTopUpBalance && !hasSufficientFeeBalance && (
+              {/* {false && canTopUpBalance && !hasSufficientFeeBalance && (
                 <Button
                   onClick={handleTopUpFeeBalance}
                   disabled={isToppingUp}
@@ -1113,7 +1138,7 @@ export const BlitzOnboarding = () => {
                 >
                   {isToppingUp ? "Topping up…" : "Top up balance"}
                 </Button>
-              )}
+              )} */}
             </div>
           )}
         </div>
