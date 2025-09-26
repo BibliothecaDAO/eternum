@@ -1,5 +1,11 @@
 export const latestFeatures = [
   {
+    date: "2025-09-27",
+    title: "Hex Double-Click Production",
+    description:
+      "Double-clicking any building in hex view now opens the production modal on the right with that structure selected and its produced resource pre-filled, speeding up production management.",
+  },
+  {
     date: "2025-09-26",
     title: "Worldmap Zoom Refinements",
     description:
