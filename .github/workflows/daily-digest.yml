@@ -1,0 +1,34 @@
+name: daily-digest
+
+on:
+  schedule:
+    - cron: "0 17 * * *"
+  workflow_dispatch:
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r .github/commit_digest/requirements.txt
+      - name: Generate digest
+        run: python .github/commit_digest/__main__.py --branch main
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_CHANNEL_ID: ${{ secrets.DISCORD_CHANNEL_ID }}
+          DIGEST_GITHUB_TOKEN: ${{ secrets.DIGEST_GITHUB_TOKEN }}
+          DIGEST_REPOSITORY: ${{ github.repository }}
+          DIGEST_DM_ASSIGNEES: "true"
