@@ -36,12 +36,11 @@ export class StaminaManager {
     }
 
     const staminaPerTick = configManager.getRefillPerTick();
-    let boostStaminaPerTick = (staminaPerTick * troops.boosts.incr_stamina_regen_percent_num) / 10_000;
-    let boostNumTicksPassed = Math.min(
-      currentArmiesTick - Number(lastRefillTick),
-      troops.boosts.incr_stamina_regen_tick_count,
-    );
-    let additionalStaminaBoost = boostNumTicksPassed * boostStaminaPerTick;
+    const boostPercent = troops.boosts.incr_stamina_regen_percent_num;
+    const boostStaminaPerTick = Math.floor((staminaPerTick * boostPercent) / 10_000);
+    const ticksSinceLastRefill = currentArmiesTick - Number(lastRefillTick);
+    const boostNumTicksPassed = Math.min(ticksSinceLastRefill, troops.boosts.incr_stamina_regen_tick_count);
+    const additionalStaminaBoost = boostNumTicksPassed * boostStaminaPerTick;
 
     const newStamina = this.refill(
       currentArmiesTick,
