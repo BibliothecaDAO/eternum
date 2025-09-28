@@ -138,12 +138,13 @@ const DojoContextProvider = ({
     }
   }, [connect, connectors, isConnected, isConnecting]);
 
-  const [accountToUse, setAccountToUse] = useState<Account | AccountInterface>(() =>
-    new Account({
-      provider: value.network.provider.provider,
-      address: NULL_ACCOUNT.address,
-      signer: NULL_ACCOUNT.privateKey,
-    }),
+  const [accountToUse, setAccountToUse] = useState<Account | AccountInterface>(
+    () =>
+      new Account({
+        provider: value.network.provider.provider,
+        address: NULL_ACCOUNT.address,
+        signer: NULL_ACCOUNT.privateKey,
+      }),
   );
 
   const onSpectatorModeClick = useSpectatorModeClick(value.components);

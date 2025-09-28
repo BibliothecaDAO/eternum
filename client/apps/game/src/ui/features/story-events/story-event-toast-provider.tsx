@@ -1,12 +1,4 @@
-import {
-  createContext,
-  type ReactNode,
-  useCallback,
-  useContext,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { createContext, type ReactNode, useCallback, useContext, useMemo, useRef, useState } from "react";
 
 import type { StoryEventPresentation } from "@bibliothecadao/eternum";
 
@@ -31,7 +23,6 @@ interface StoryEventToastContextValue {
 }
 
 const StoryEventToastContext = createContext<StoryEventToastContextValue | undefined>(undefined);
-
 
 export function StoryEventToastProvider({
   children,
@@ -70,16 +61,19 @@ export function StoryEventToastProvider({
     });
   }, [maxVisible, autoDismissMs]);
 
-  const removeToast = useCallback((id: string) => {
-    setToasts((current) => current.filter((toast) => toast.id !== id));
-    const timeout = timeoutMap.current.get(id);
-    if (timeout) {
-      clearTimeout(timeout);
-      timeoutMap.current.delete(id);
-    }
-    // Process queue after removal
-    setTimeout(() => processQueue(), 50);
-  }, [processQueue]);
+  const removeToast = useCallback(
+    (id: string) => {
+      setToasts((current) => current.filter((toast) => toast.id !== id));
+      const timeout = timeoutMap.current.get(id);
+      if (timeout) {
+        clearTimeout(timeout);
+        timeoutMap.current.delete(id);
+      }
+      // Process queue after removal
+      setTimeout(() => processQueue(), 50);
+    },
+    [processQueue],
+  );
 
   const pushToast = useCallback(
     (event: StoryEventPresentation) => {
@@ -118,11 +112,7 @@ export function StoryEventToastProvider({
     [clearAll, pushToast, toasts],
   );
 
-  return (
-    <StoryEventToastContext.Provider value={value}>
-      {children}
-    </StoryEventToastContext.Provider>
-  );
+  return <StoryEventToastContext.Provider value={value}>{children}</StoryEventToastContext.Provider>;
 }
 
 export function useStoryEventToasts() {

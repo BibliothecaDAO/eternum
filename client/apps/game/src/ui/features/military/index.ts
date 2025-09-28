@@ -13,7 +13,6 @@ export { ChestModal } from "./chest/chest-modal";
 // Transfer & Support
 export { HelpModal } from "./components/help-modal";
 
-
 // Main Military Module - Used across the application
 export { Military } from "./military";
 

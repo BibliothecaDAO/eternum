@@ -33,7 +33,11 @@ export interface StoryEventPresentation {
   owner?: string | null;
 }
 
-type StoryFormatter = (event: StoryEventSystemUpdate, payload: Record<string, unknown>, components?: ClientComponents) => StoryEventPresentation;
+type StoryFormatter = (
+  event: StoryEventSystemUpdate,
+  payload: Record<string, unknown>,
+  components?: ClientComponents,
+) => StoryEventPresentation;
 
 const resourceNameMap = resources.reduce<Record<number, string>>((acc, resource) => {
   acc[resource.id] = resource.trait;
@@ -49,11 +53,12 @@ const formatters: Record<string, StoryFormatter> = {
     const entityRef = formatEntityRef(event.entityId);
     return {
       title: "Realm founded",
-      description: joinPieces([
-        ownerLabel ? `Settled by ${ownerLabel}` : undefined,
-        coord ? `Coordinates ${coord}` : undefined,
-        entityRef ? `Registry: ${entityRef}` : undefined,
-      ]) ?? "New realm established on the map.",
+      description:
+        joinPieces([
+          ownerLabel ? `Settled by ${ownerLabel}` : undefined,
+          coord ? `Coordinates ${coord}` : undefined,
+          entityRef ? `Registry: ${entityRef}` : undefined,
+        ]) ?? "New realm established on the map.",
       icon: "realm",
     };
   },
@@ -63,18 +68,15 @@ const formatters: Record<string, StoryFormatter> = {
     const categoryLabel = formatBuildingCategory(payload.category) ?? "Structure";
     const coord = formatCoord(payload.inner_coord);
     const statusDetail = status && status !== "Updated" ? status : undefined;
-    const title = status === "Constructed"
-      ? `Constructed: ${categoryLabel}`
-      : status === "Demolished"
-        ? `Demolished: ${categoryLabel}`
-        : `${categoryLabel} ${status.toLowerCase()}`;
+    const title =
+      status === "Constructed"
+        ? `Constructed: ${categoryLabel}`
+        : status === "Demolished"
+          ? `Demolished: ${categoryLabel}`
+          : `${categoryLabel} ${status.toLowerCase()}`;
     return {
       title,
-      description: joinPieces([
-        structureDetails,
-        statusDetail,
-        coord ? `Position ${coord}` : undefined,
-      ]),
+      description: joinPieces([structureDetails, statusDetail, coord ? `Position ${coord}` : undefined]),
       icon: "building",
     };
   },
@@ -84,10 +86,7 @@ const formatters: Record<string, StoryFormatter> = {
     const cost = formatResourceList(payload.cost);
     return {
       title: `Building Constructed: ${categoryLabel}`,
-      description: joinPieces([
-        structureDetails,
-        cost ? `Cost: ${cost}` : undefined,
-      ]),
+      description: joinPieces([structureDetails, cost ? `Cost: ${cost}` : undefined]),
       icon: "building",
     };
   },
@@ -104,7 +103,7 @@ const formatters: Record<string, StoryFormatter> = {
         : undefined;
     const inputsLine = cost ? `Inputs consumed: ${cost}` : undefined;
     return {
-      title:`Production started: ${resourceName}`,
+      title: `Production started: ${resourceName}`,
       description: joinPieces([structureSummary, outputLine, inputsLine]),
       icon: "production",
     };
@@ -116,10 +115,13 @@ const formatters: Record<string, StoryFormatter> = {
     const levelLabel = newLevelNumeric !== null ? newLevelNumeric.toLocaleString() : undefined;
     return {
       title: levelLabel ? `Structure reached level ${levelLabel}` : "Structure leveled up",
-      description: joinPieces([
-        structureSummary,
-        previousLevel !== null && levelLabel ? `Progression: ${previousLevel.toLocaleString()} → ${levelLabel}` : undefined,
-      ]) ?? "Structure advanced to a higher tier.",
+      description:
+        joinPieces([
+          structureSummary,
+          previousLevel !== null && levelLabel
+            ? `Progression: ${previousLevel.toLocaleString()} → ${levelLabel}`
+            : undefined,
+        ]) ?? "Structure advanced to a higher tier.",
       icon: "building",
     };
   },
@@ -167,11 +169,11 @@ const formatters: Record<string, StoryFormatter> = {
     const attackerLosses = formatResourceAmount(payload.attacker_troops_lost);
     const defenderLosses = formatResourceAmount(payload.defender_troops_lost);
     const attackerLeft = formatResourceAmount(
-          payload.attacker_troops_before as unknown as number
-       - (payload.attacker_troops_lost as unknown as number));
+      (payload.attacker_troops_before as unknown as number) - (payload.attacker_troops_lost as unknown as number),
+    );
     const defenderLeft = formatResourceAmount(
-          payload.defender_troops_before as unknown as number
-       - (payload.defender_troops_lost as unknown as number));
+      (payload.defender_troops_before as unknown as number) - (payload.defender_troops_lost as unknown as number),
+    );
     const stolen = formatResourceList(payload.stolen_resources ?? []);
     let victor;
 
@@ -184,7 +186,6 @@ const formatters: Record<string, StoryFormatter> = {
     } else {
       victor = `Draw`;
     }
-
 
     return {
       title: `${battleType} resolved`,
@@ -274,10 +275,7 @@ const formatters: Record<string, StoryFormatter> = {
     const slotLabel = formatSlotLabel(payload.slot);
     return {
       title: "Guard dismissed",
-      description: joinPieces([
-        structureSummary,
-        slotLabel ? `Removed from ${slotLabel}` : undefined,
-      ]),
+      description: joinPieces([structureSummary, slotLabel ? `Removed from ${slotLabel}` : undefined]),
       icon: "troop",
     };
   },
@@ -358,7 +356,13 @@ const formatters: Record<string, StoryFormatter> = {
     };
   },
   GuardExplorerSwapStory: (event, payload, components) => {
-    const sourceStructure = describeStructureDetails(event, components, undefined, undefined, payload.from_structure_id);
+    const sourceStructure = describeStructureDetails(
+      event,
+      components,
+      undefined,
+      undefined,
+      payload.from_structure_id,
+    );
     const slotLabel = formatSlotLabel(payload.from_guard_slot);
     const explorerRef = formatEntityRef(payload.to_explorer_id);
     const count = formatResourceAmount(payload.count) ?? formatNumber(payload.count ?? null) ?? undefined;
@@ -380,10 +384,7 @@ const formatters: Record<string, StoryFormatter> = {
     const amount = formatTokenAmount(payload.amount, payload.decimals);
     return {
       title: "Prize distributed",
-      description: joinPieces([
-        recipient ? `To ${recipient}` : undefined,
-        amount ? amount : undefined,
-      ]),
+      description: joinPieces([recipient ? `To ${recipient}` : undefined, amount ? amount : undefined]),
       icon: "prize",
     };
   },
@@ -399,7 +400,7 @@ const formatters: Record<string, StoryFormatter> = {
 
 export function buildStoryEventPresentation(
   event: StoryEventSystemUpdate,
-  components?: ClientComponents
+  components?: ClientComponents,
 ): StoryEventPresentation {
   const payload = event.storyPayload ?? {};
   const formatter = payload && formatters[event.storyType];
@@ -477,18 +478,15 @@ function describeStructureDetails(
 
     const isBlitz = getIsBlitz();
     const categoryValue = toNumber(structure.base?.category ?? structure.category);
-    const typeLabel = categoryValue !== null ? getStructureTypeName(categoryValue as StructureType, isBlitz) : "Structure";
+    const typeLabel =
+      categoryValue !== null ? getStructureTypeName(categoryValue as StructureType, isBlitz) : "Structure";
     const name = `${typeLabel} #${structure.entity_id?.toString?.() ?? structure.entity_id}`;
     const level = toNumber(structure.base?.level);
     const coordX = toNumber(structure.base?.coord_x);
     const coordY = toNumber(structure.base?.coord_y);
     const coord = coordX !== null && coordY !== null ? `(${coordX}, ${coordY})` : undefined;
 
-    return joinPieces([
-      name,
-      level !== null ? `Level ${level}` : undefined,
-      coord ? `at ${coord}` : undefined,
-    ]);
+    return joinPieces([name, level !== null ? `Level ${level}` : undefined, coord ? `at ${coord}` : undefined]);
   } catch (error) {
     return describeFallbackStructure(event, fallbackCategory, fallbackCoord, structureOverride);
   }
@@ -715,7 +713,10 @@ function formatAmountWithPrecision(amount: unknown, precision: number): string {
   }
 
   // Format with decimal places, removing trailing zeros
-  const decimals = remainder.toString().padStart(precision.toString().length - 1, "0").replace(/0+$/, "");
+  const decimals = remainder
+    .toString()
+    .padStart(precision.toString().length - 1, "0")
+    .replace(/0+$/, "");
   return decimals.length > 0 ? `${whole.toString()}.${decimals}` : whole.toString();
 }
 

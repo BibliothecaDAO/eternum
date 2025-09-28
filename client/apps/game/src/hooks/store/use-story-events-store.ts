@@ -167,17 +167,17 @@ const buildCoord = (x?: number | null, y?: number | null) => {
 // Helper function to build story payload from the flattened database event
 function buildStoryPayloadFromEvent(event: StoryEventData): Record<string, unknown> | null {
   switch (event.story) {
-    case 'RealmCreatedStory':
+    case "RealmCreatedStory":
       return {
         coord: buildCoord(event.realm_coord_x ?? null, event.realm_coord_y ?? null),
       };
 
-    case 'StructureLevelUpStory':
+    case "StructureLevelUpStory":
       return {
         new_level: event.structure_new_level,
       };
 
-    case 'ExplorerMoveStory':
+    case "ExplorerMoveStory":
       return {
         explorer_id: event.explorer_id,
         explorer_structure_id: event.explorer_structure_id,
@@ -190,7 +190,7 @@ function buildStoryPayloadFromEvent(event: StoryEventData): Record<string, unkno
         reward_resource_amount: event.reward_resource_amount,
       };
 
-    case 'BattleStory':
+    case "BattleStory":
       return {
         attacker_id: event.battle_attacker_id,
         defender_id: event.battle_defender_id,
@@ -211,14 +211,14 @@ function buildStoryPayloadFromEvent(event: StoryEventData): Record<string, unkno
         stolen_resources: parseMaybeJson(event.battle_stolen_resources),
       };
 
-    case 'ProductionStory':
+    case "ProductionStory":
       return {
         received_resource_type: event.production_resource_type,
         received_amount: event.production_amount,
         cost: parseMaybeJson(event.production_cost),
       };
 
-    case 'BuildingPlacementStory':
+    case "BuildingPlacementStory":
       return {
         category: event.building_category,
         inner_coord: buildCoord(event.building_coord_x ?? null, event.building_coord_y ?? null),
@@ -228,14 +228,14 @@ function buildStoryPayloadFromEvent(event: StoryEventData): Record<string, unkno
         unpaused: event.building_unpaused,
       };
 
-    case 'BuildingPaymentStory':
+    case "BuildingPaymentStory":
       return {
         category: event.building_payment_category ?? event.building_category,
         inner_coord: buildCoord(event.building_payment_coord_x ?? null, event.building_payment_coord_y ?? null),
         cost: parseMaybeJson(event.building_payment_cost),
       };
 
-    case 'ResourceTransferStory':
+    case "ResourceTransferStory":
       return {
         transfer_type: parseMaybeJson(event.resource_transfer_type),
         from_entity_id: event.resource_transfer_from_entity_id,
@@ -247,17 +247,17 @@ function buildStoryPayloadFromEvent(event: StoryEventData): Record<string, unkno
         travel_time: event.resource_transfer_travel_time,
       };
 
-    case 'ResourceBurnStory':
+    case "ResourceBurnStory":
       return {
         resources: parseMaybeJson(event.resource_burn_resources),
       };
 
-    case 'ResourceReceiveArrivalStory':
+    case "ResourceReceiveArrivalStory":
       return {
         resources: parseMaybeJson(event.resource_receive_resources),
       };
 
-    case 'GuardAddStory':
+    case "GuardAddStory":
       return {
         structure_id: event.guard_add_structure_id,
         slot: parseMaybeJson(event.guard_add_slot),
@@ -266,13 +266,13 @@ function buildStoryPayloadFromEvent(event: StoryEventData): Record<string, unkno
         amount: event.guard_add_amount,
       };
 
-    case 'GuardDeleteStory':
+    case "GuardDeleteStory":
       return {
         structure_id: event.guard_delete_structure_id,
         slot: parseMaybeJson(event.guard_delete_slot),
       };
 
-    case 'ExplorerCreateStory':
+    case "ExplorerCreateStory":
       return {
         structure_id: event.explorer_create_structure_id,
         explorer_id: event.explorer_create_explorer_id,
@@ -282,19 +282,19 @@ function buildStoryPayloadFromEvent(event: StoryEventData): Record<string, unkno
         spawn_direction: parseMaybeJson(event.explorer_create_spawn_direction),
       };
 
-    case 'ExplorerAddStory':
+    case "ExplorerAddStory":
       return {
         explorer_id: event.explorer_add_explorer_id,
         amount: event.explorer_add_amount,
         home_direction: parseMaybeJson(event.explorer_add_home_direction),
       };
 
-    case 'ExplorerDeleteStory':
+    case "ExplorerDeleteStory":
       return {
         explorer_id: event.explorer_delete_explorer_id,
       };
 
-    case 'ExplorerExplorerSwapStory':
+    case "ExplorerExplorerSwapStory":
       return {
         from_explorer_id: event.explorer_swap_from_id,
         to_explorer_id: event.explorer_swap_to_id,
@@ -302,7 +302,7 @@ function buildStoryPayloadFromEvent(event: StoryEventData): Record<string, unkno
         count: event.explorer_swap_count,
       };
 
-    case 'ExplorerGuardSwapStory':
+    case "ExplorerGuardSwapStory":
       return {
         from_explorer_id: event.explorer_guard_swap_from_explorer_id,
         to_structure_id: event.explorer_guard_swap_to_structure_id,
@@ -311,7 +311,7 @@ function buildStoryPayloadFromEvent(event: StoryEventData): Record<string, unkno
         count: event.explorer_guard_swap_count,
       };
 
-    case 'GuardExplorerSwapStory':
+    case "GuardExplorerSwapStory":
       return {
         from_structure_id: event.guard_explorer_swap_from_structure_id,
         from_guard_slot: parseMaybeJson(event.guard_explorer_swap_from_guard_slot),
@@ -320,14 +320,14 @@ function buildStoryPayloadFromEvent(event: StoryEventData): Record<string, unkno
         count: event.guard_explorer_swap_count,
       };
 
-    case 'PrizeDistributedStory':
+    case "PrizeDistributedStory":
       return {
         to_player_address: event.prize_to_player_address,
         amount: event.prize_amount,
         decimals: event.prize_decimals,
       };
 
-    case 'PrizeDistributionFinalStory':
+    case "PrizeDistributionFinalStory":
       return {
         trial_id: event.prize_trial_id,
       };

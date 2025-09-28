@@ -539,9 +539,10 @@ export class SqlApi {
    * SQL queries always return arrays.
    */
   async fetchStoryEvents(limit: number = 50, offset: number = 0): Promise<StoryEventData[]> {
-    const query = STORY_QUERIES.ALL_STORY_EVENTS
-      .replace("{limit}", limit.toString())
-      .replace("{offset}", offset.toString());
+    const query = STORY_QUERIES.ALL_STORY_EVENTS.replace("{limit}", limit.toString()).replace(
+      "{offset}",
+      offset.toString(),
+    );
     const url = buildApiUrl(this.baseUrl, query);
     return await fetchWithErrorHandling<StoryEventData>(url, "Failed to fetch story events");
   }
@@ -561,8 +562,7 @@ export class SqlApi {
    * SQL queries always return arrays.
    */
   async fetchStoryEventsByEntity(entityId: ID, limit: number = 50, offset: number = 0): Promise<StoryEventData[]> {
-    const query = STORY_QUERIES.STORY_EVENTS_BY_ENTITY
-      .replace("{entityId}", entityId.toString())
+    const query = STORY_QUERIES.STORY_EVENTS_BY_ENTITY.replace("{entityId}", entityId.toString())
       .replace("{limit}", limit.toString())
       .replace("{offset}", offset.toString());
     const url = buildApiUrl(this.baseUrl, query);
@@ -575,8 +575,7 @@ export class SqlApi {
    */
   async fetchStoryEventsByOwner(owner: string, limit: number = 50, offset: number = 0): Promise<StoryEventData[]> {
     const formattedOwner = formatAddressForQuery(owner);
-    const query = STORY_QUERIES.STORY_EVENTS_BY_OWNER
-      .replace("{owner}", formattedOwner)
+    const query = STORY_QUERIES.STORY_EVENTS_BY_OWNER.replace("{owner}", formattedOwner)
       .replace("{limit}", limit.toString())
       .replace("{offset}", offset.toString());
     const url = buildApiUrl(this.baseUrl, query);
