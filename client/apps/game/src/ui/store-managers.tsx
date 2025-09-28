@@ -1,4 +1,3 @@
-import { useBattleLogsStore } from "@/hooks/store/use-battle-logs-store";
 import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -6,12 +5,12 @@ import { sqlApi } from "@/services/api";
 import {
   getAddressName,
   getAllArrivals,
-  getArmyName,
   getBlockTimestamp,
   getEntityIdFromKeys,
   getEntityInfo,
   getGuildFromPlayerAddress,
   getIsBlitz,
+  formatArmies,
   SelectableArmy,
 } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
@@ -117,66 +116,6 @@ const PlayerDataStoreManager = () => {
   return null;
 };
 
-const BattleLogsStoreManager = () => {
-  const fetchInitialBattleLogs = useBattleLogsStore((state) => state.fetchInitialBattleLogs);
-  const fetchNewBattleLogs = useBattleLogsStore((state) => state.fetchNewBattleLogs);
-  const battleLogs = useBattleLogsStore((state) => state.battleLogs);
-  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Initialize battle logs on mount
-  useEffect(() => {
-    // Fetch initial data only if we don't have any logs
-    if (battleLogs.length === 0) {
-      fetchInitialBattleLogs();
-    }
-  }, [fetchInitialBattleLogs, battleLogs.length]);
-
-  // Set up periodic refresh for new battle logs
-  useEffect(() => {
-    const startPeriodicRefresh = () => {
-      // Clear any existing interval
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-      }
-
-      // Set up new interval to fetch new logs every minute
-      refreshIntervalRef.current = setInterval(() => {
-        fetchNewBattleLogs();
-      }, 60 * 1000);
-    };
-
-    // Start periodic refresh after initial load
-    if (battleLogs.length > 0) {
-      startPeriodicRefresh();
-    }
-
-    // Clean up interval on unmount
-    return () => {
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-      }
-    };
-  }, [fetchNewBattleLogs, battleLogs.length]);
-
-  // Handle page visibility change to refresh when page becomes visible
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden && battleLogs.length > 0) {
-        // Fetch new logs when page becomes visible
-        fetchNewBattleLogs();
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [fetchNewBattleLogs, battleLogs.length]);
-
-  return null;
-};
-
 const SeasonWinnerStoreManager = () => {
   const {
     setup: { components },
@@ -260,27 +199,26 @@ const MinigameStoreManager = () => {
 const SelectableArmiesStoreManager = () => {
   const setSelectableArmies = useUIStore((state) => state.setSelectableArmies);
   const {
+    account: { account },
     setup: { components },
   } = useDojo();
 
   const explorers = useEntityQuery([Has(components.ExplorerTroops)]);
-  const playerStructures = usePlayerStructures();
 
   useEffect(() => {
-    const selectableArmies: SelectableArmy[] = explorers
-      .map((explorer) => {
-        const explorerTroops = getComponentValue(components.ExplorerTroops, explorer);
-        if (!explorerTroops || !playerStructures.find((structure) => structure.entityId === explorerTroops.owner))
-          return null;
-        return {
-          entityId: explorerTroops.explorer_id,
-          position: { col: explorerTroops?.coord.x ?? 0, row: explorerTroops?.coord.y ?? 0 },
-          name: getArmyName(explorerTroops?.explorer_id ?? 0),
-        };
-      })
-      .filter(Boolean) as SelectableArmy[];
+    const playerAddress = ContractAddress(account.address || "0x0");
+    const formattedArmies = formatArmies(explorers, playerAddress, components);
+
+    const selectableArmies: SelectableArmy[] = formattedArmies
+      .filter((army) => army.isMine)
+      .map((army) => ({
+        entityId: army.entityId,
+        position: { col: army.position.x ?? 0, row: army.position.y ?? 0 },
+        name: army.name,
+      }));
+
     setSelectableArmies(selectableArmies);
-  }, [explorers, playerStructures]);
+  }, [account.address, components, explorers, setSelectableArmies]);
 
   return null;
 };
@@ -293,7 +231,6 @@ export const StoreManagers = () => {
       <PlayerStructuresStoreManager />
       <ButtonStateStoreManager />
       <PlayerDataStoreManager />
-      <BattleLogsStoreManager />
       <SeasonWinnerStoreManager />
       <SeasonTimerStoreManager />
       <SelectableArmiesStoreManager />

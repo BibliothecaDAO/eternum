@@ -126,10 +126,10 @@ export const BuildingThumbs = {
   leave: `${prefix}leave.png`,
   bridge: `${prefix}portal.png`,
   automation: `${prefix}robot.png`,
-  logs: `${prefix}hourglass.png`,
   transfer: `${prefix}transfer.png`,
   relics: `${prefix}relics.png`,
   latestUpdates: `${prefix}latest-updates.png`,
+  storyEvents: `${prefix}chronicles.png`,
 };
 
 export enum MenuEnum {
@@ -143,7 +143,7 @@ export enum MenuEnum {
   production = "production",
   bridge = "bridge",
   automation = "automation",
-  logs = "logs",
   transfer = "transfer",
   relics = "relics",
+  storyEvents = "storyEvents",
 }

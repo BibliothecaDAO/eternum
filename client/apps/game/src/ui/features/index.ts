@@ -6,3 +6,4 @@ export * from "./settlement";
 export * from "./world";
 
 export * from "./infrastructure";
+export * from "./story-events";

@@ -117,6 +117,9 @@ export type ExplorerMoveSystemUpdate = {
   explorerId: ID;
   resourceId: ResourcesIds | 0;
   amount: number;
+  rawAmount: bigint | number | string;
+  timestamp: number;
+  exploreFind: string | null;
 };
 export type RealmSystemUpdate = {
   level: number;
@@ -168,6 +171,17 @@ export type BattleEventSystemUpdate = {
     maxReward: Array<{ resourceType: number; amount: number }>;
     timestamp: number;
   };
+};
+
+export type StoryEventSystemUpdate = {
+  ownerAddress: string | null;
+  ownerName: string | null;
+  entityId: ID | null;
+  txHash: string;
+  timestamp: number;
+  storyType: string;
+  storyPayload: Record<string, unknown> | null;
+  rawStory: unknown;
 };
 
 export enum StructureProgress {

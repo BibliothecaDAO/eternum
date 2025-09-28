@@ -1,0 +1,21 @@
+project_id       = "my-gcp-project"
+default_region   = "us-central1"
+default_location = "US"
+
+default_labels = {
+  app = "eternum"
+}
+
+environments = {
+  preview = {
+    app_id          = "game-pr-<pr-number>"
+    domain          = "pr-<pr-number>.preview.example.com"
+    dns_zone_name   = "preview-example-com"
+    bucket_location = "US"
+    force_destroy   = true
+    labels = {
+      tier = "preview"
+    }
+    env_file_path = "../../artifacts/pr-<pr-number>.env"
+  }
+}

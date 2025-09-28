@@ -15,6 +15,7 @@ export default defineConfig({
       "@config": path.resolve(__dirname, "../../../config/utils/utils"),
       "@contracts": path.resolve(__dirname, "../../../contracts/utils/utils"),
     },
+    dedupe: ["@starknet-react/core"],
   },
   build: {
     target: "esnext",

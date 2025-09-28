@@ -1,20 +1,15 @@
-import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small.svg";
-import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getIsBlitz } from "@bibliothecadao/eternum";
+import { useControllerAccount } from "@/hooks/context/use-controller-account";
+import { OnboardingBlankOverlay } from "@/ui/layouts/onboarding-blank-overlay";
 
-import Button from "@/ui/design-system/atoms/button";
-import { SpectateButton } from "@/ui/features/progression";
-import { ReactComponent as EternumWordsLogo } from "@/assets/icons/blitz-words-logo-g.svg";
-import { mintUrl, OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
 import { displayAddress } from "@/ui/utils/utils";
 import { SetupResult } from "@bibliothecadao/dojo";
 import { DojoContext } from "@bibliothecadao/react";
 import ControllerConnector from "@cartridge/connector/controller";
 import { useAccount, useConnect } from "@starknet-react/core";
-import { ReactNode, useContext, useEffect, useMemo, useState } from "react";
+import { ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
 import { Env, env } from "../../../env";
 import { useSpectatorModeClick } from "../helpers/use-navigate";
@@ -36,10 +31,14 @@ for (const _env of requiredEnvs) {
   }
 }
 
-type DojoProviderProps = {
+interface DojoProviderProps {
   children: ReactNode;
   value: SetupResult;
-};
+  backgroundImage: string;
+}
+
+const MAX_ACCOUNT_INITIALIZATION_RETRIES = 10;
+const RETRY_INTERVAL_MS = 100;
 
 const useMasterAccount = (rpcProvider: RpcProvider) => {
   const masterAddress = env.VITE_PUBLIC_MASTER_ADDRESS;
@@ -60,25 +59,7 @@ const useRpcProvider = () => {
   );
 };
 
-const useControllerAccount = () => {
-  const { account, connector, isConnected } = useAccount();
-
-  useEffect(() => {
-    if (account) {
-      useAccountStore.getState().setAccount(account);
-    }
-  }, [account, isConnected]);
-
-  useEffect(() => {
-    if (connector) {
-      useAccountStore.getState().setConnector(connector as unknown as ControllerConnector);
-    }
-  }, [connector, isConnected]);
-
-  return account;
-};
-
-export const DojoProvider = ({ children, value, backgroundImage }: DojoProviderProps & { backgroundImage: string }) => {
+export const DojoProvider = ({ children, value, backgroundImage }: DojoProviderProps) => {
   const currentValue = useContext(DojoContext);
   if (currentValue) throw new Error("DojoProvider can only be used once");
 
@@ -104,7 +85,7 @@ const DojoContextProvider = ({
   masterAccount,
   controllerAccount,
   backgroundImage,
-}: DojoProviderProps & {
+}: Omit<DojoProviderProps, "backgroundImage"> & {
   masterAccount: Account;
   controllerAccount: AccountInterface | null;
   backgroundImage: string;
@@ -119,32 +100,51 @@ const DojoContextProvider = ({
   const setAccountName = useAccountStore((state) => state.setAccountName);
 
   useEffect(() => {
-    const getUsername = async () => {
-      let username = await (connector as unknown as ControllerConnector)?.username();
-      username && setAccountName(username);
+    const fetchUsername = async () => {
+      if (!connector) {
+        return;
+      }
+
+      const username = await (connector as unknown as ControllerConnector)?.username();
+      if (username) {
+        setAccountName(username);
+      }
     };
-    getUsername();
-  }, [connector]);
+
+    fetchUsername();
+  }, [connector, setAccountName]);
 
   const [accountsInitialized, setAccountsInitialized] = useState(false);
   const [retries, setRetries] = useState(0);
 
-  const connectWallet = () => {
+  const connectWallet = useCallback(async () => {
+    if (isConnected || isConnecting) {
+      return;
+    }
+
+    const primaryConnector = connectors[0];
+
+    if (!primaryConnector) {
+      console.error("Failed to connect wallet: no connector available");
+      return;
+    }
+
     try {
       console.log("Attempting to connect wallet...");
-      connect({ connector: env.VITE_PUBLIC_CHAIN === "local" ? connectors[0] : (connectors[0] as any).controller });
+      await connect({ connector: primaryConnector });
       console.log("Wallet connected successfully.");
     } catch (error) {
       console.error("Failed to connect wallet:", error);
     }
-  };
+  }, [connect, connectors, isConnected, isConnecting]);
 
   const [accountToUse, setAccountToUse] = useState<Account | AccountInterface>(
-    new Account({
-      provider: value.network.provider.provider,
-      address: NULL_ACCOUNT.address,
-      signer: NULL_ACCOUNT.privateKey,
-    }),
+    () =>
+      new Account({
+        provider: value.network.provider.provider,
+        address: NULL_ACCOUNT.address,
+        signer: NULL_ACCOUNT.privateKey,
+      }),
   );
 
   const onSpectatorModeClick = useSpectatorModeClick(value.components);
@@ -153,18 +153,19 @@ const DojoContextProvider = ({
     if (controllerAccount) {
       setAccountToUse(controllerAccount);
       setAccountsInitialized(true);
-    } else {
-      setTimeout(() => {
-        setRetries((prevRetries) => {
-          if (prevRetries < 10) {
-            return prevRetries + 1;
-          } else {
-            setAccountsInitialized(true);
-            return prevRetries;
-          }
-        });
-      }, 100);
+      return;
     }
+
+    if (retries >= MAX_ACCOUNT_INITIALIZATION_RETRIES) {
+      setAccountsInitialized(true);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setRetries((prevRetries) => prevRetries + 1);
+    }, RETRY_INTERVAL_MS);
+
+    return () => window.clearTimeout(timeoutId);
   }, [controllerAccount, retries]);
 
   if (!accountsInitialized) {
@@ -173,48 +174,11 @@ const DojoContextProvider = ({
 
   if (!isConnected && !isConnecting && showBlankOverlay) {
     return (
-      <>
-        <OnboardingContainer backgroundImage={backgroundImage}>
-          <div className="flex h-full w-full">
-            <div className="pointer-events-none flex flex-1 items-center pl-16">
-              <EternumWordsLogo className="fill-brown w-56 sm:w-48 lg:w-72 xl:w-[360px]" />
-            </div>
-            <div className="flex flex-1 justify-end">
-              <StepContainer showLogo={false}>
-                <div className="flex flex-col justify-wrap space-y-4 mt-2">
-                  {!isConnected && (
-                    <>
-                      <Button className="w-full" variant="gold" onClick={connectWallet}>
-                        <div className="flex items-center justify-center">
-                          <CartridgeSmall className="w-5 h-5 mr-2 fill-black" />
-                          <span>Login</span>
-                        </div>
-                      </Button>
-                      <SpectateButton onClick={onSpectatorModeClick} />
-
-                      {!getIsBlitz() && (
-                        <a
-                          className="cursor-pointer mt-auto w-full"
-                          href={mintUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <Button className="w-full" size="lg">
-                            <div className="flex items-center justify-start w-full">
-                              <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-gold text-gold" />
-                              <span className="flex-grow text-center">Mint Season Pass</span>
-                            </div>
-                          </Button>
-                        </a>
-                      )}
-                    </>
-                  )}
-                </div>
-              </StepContainer>
-            </div>
-          </div>
-        </OnboardingContainer>
-      </>
+      <OnboardingBlankOverlay
+        backgroundImage={backgroundImage}
+        onConnect={connectWallet}
+        onSpectate={onSpectatorModeClick}
+      />
     );
   }
 

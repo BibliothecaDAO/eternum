@@ -787,7 +787,7 @@ export default class WorldmapScene extends HexagonScene {
 
   private openBattleLogsPanel() {
     const uiStore = useUIStore.getState();
-    uiStore.setRightNavigationView(RightView.Logs);
+    uiStore.setRightNavigationView(RightView.StoryEvents);
   }
 
   private notifyArmyUnderAttack(update: BattleEventSystemUpdate) {
@@ -1679,8 +1679,10 @@ export default class WorldmapScene extends HexagonScene {
 
     const renderedChunkStartRow = parseInt(this.currentChunk.split(",")[0]);
     const renderedChunkStartCol = parseInt(this.currentChunk.split(",")[1]);
-    const chunkCenterRow = renderedChunkStartRow + this.chunkSize / 2;
-    const chunkCenterCol = renderedChunkStartCol + this.chunkSize / 2;
+    const { row: chunkCenterRow, col: chunkCenterCol } = this.getChunkCenter(
+      renderedChunkStartRow,
+      renderedChunkStartCol,
+    );
 
     this.invalidateAllChunkCachesContainingHex(col, row);
 
@@ -1709,15 +1711,15 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   isColRowInVisibleChunk(col: number, row: number) {
-    const renderedChunkCenterRow = parseInt(this.currentChunk.split(",")[0]);
-    const renderedChunkCenterCol = parseInt(this.currentChunk.split(",")[1]);
+    const startRow = parseInt(this.currentChunk.split(",")[0]);
+    const startCol = parseInt(this.currentChunk.split(",")[1]);
+    const { row: chunkCenterRow, col: chunkCenterCol } = this.getChunkCenter(startRow, startCol);
 
-    // if the hex is within the chunk, add it to the interactive hex manager and to the biome
     if (
-      col >= renderedChunkCenterCol - this.renderChunkSize.width / 2 &&
-      col <= renderedChunkCenterCol + this.renderChunkSize.width / 2 &&
-      row >= renderedChunkCenterRow - this.renderChunkSize.height / 2 &&
-      row <= renderedChunkCenterRow + this.renderChunkSize.height / 2
+      col >= chunkCenterCol - this.renderChunkSize.width / 2 &&
+      col <= chunkCenterCol + this.renderChunkSize.width / 2 &&
+      row >= chunkCenterRow - this.renderChunkSize.height / 2 &&
+      row <= chunkCenterRow + this.renderChunkSize.height / 2
     ) {
       return true;
     }
@@ -1808,8 +1810,7 @@ export default class WorldmapScene extends HexagonScene {
 
   private computeInteractiveHexes(startRow: number, startCol: number, width: number, height: number) {
     // Instead of clearing and recomputing all hexes, just update which ones are visible
-    const chunkCenterRow = startRow + this.chunkSize / 2;
-    const chunkCenterCol = startCol + this.chunkSize / 2;
+    const { row: chunkCenterRow, col: chunkCenterCol } = this.getChunkCenter(startRow, startCol);
     this.interactiveHexManager.updateVisibleHexes(chunkCenterRow, chunkCenterCol, width, height);
   }
 
@@ -1886,6 +1887,7 @@ export default class WorldmapScene extends HexagonScene {
       const hexWidth = Math.sqrt(3) * hexRadius;
       const vertDist = hexHeight * 0.75;
       const horizDist = hexWidth;
+      const { row: chunkCenterRow, col: chunkCenterCol } = this.getChunkCenter(startRow, startCol);
 
       this.computeTileEntities(this.currentChunk);
 
@@ -1954,8 +1956,6 @@ export default class WorldmapScene extends HexagonScene {
         }
 
         this.cacheMatricesForChunk(startRow, startCol);
-        const chunkCenterRow = startRow + this.chunkSize / 2;
-        const chunkCenterCol = startCol + this.chunkSize / 2;
         this.interactiveHexManager.updateVisibleHexes(chunkCenterRow, chunkCenterCol, cols, rows);
 
         const biomeCountsSnapshot = Object.fromEntries(
@@ -1994,8 +1994,8 @@ export default class WorldmapScene extends HexagonScene {
         const rowOffset = Math.floor(index / cols) - halfRows;
         const colOffset = (index % cols) - halfCols;
 
-        const globalRow = startRow + rowOffset;
-        const globalCol = startCol + colOffset;
+        const globalRow = chunkCenterRow + rowOffset;
+        const globalCol = chunkCenterCol + colOffset;
 
         const rowOffsetValue = ((globalRow % 2) * Math.sign(globalRow) * horizDist) / 2;
         const baseX = globalCol * horizDist - rowOffsetValue;
@@ -2014,7 +2014,7 @@ export default class WorldmapScene extends HexagonScene {
 
         this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
 
-        const rotationSeed = this.hashCoordinates(startCol + colOffset, startRow + rowOffset);
+        const rotationSeed = this.hashCoordinates(globalCol, globalRow);
         const rotationIndex = Math.floor(rotationSeed * 6);
         const randomRotation = (rotationIndex * Math.PI) / 3;
 
@@ -2250,6 +2250,14 @@ export default class WorldmapScene extends HexagonScene {
     return { chunkX, chunkZ };
   }
 
+  private getChunkCenter(startRow: number, startCol: number): { row: number; col: number } {
+    const halfChunk = this.chunkSize / 2;
+    return {
+      row: Math.round(startRow + halfChunk),
+      col: Math.round(startCol + halfChunk),
+    };
+  }
+
   async updateVisibleChunks(force: boolean = false) {
     // Wait for any ongoing global chunk switch to complete first
     if (this.globalChunkSwitchPromise) {
@@ -2307,8 +2315,7 @@ export default class WorldmapScene extends HexagonScene {
     await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
 
     // Update which interactive hexes are visible in the new chunk
-    const chunkCenterRow = startRow + this.chunkSize / 2;
-    const chunkCenterCol = startCol + this.chunkSize / 2;
+    const { row: chunkCenterRow, col: chunkCenterCol } = this.getChunkCenter(startRow, startCol);
     this.interactiveHexManager.updateVisibleHexes(
       chunkCenterRow,
       chunkCenterCol,
