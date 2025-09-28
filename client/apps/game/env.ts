@@ -7,6 +7,11 @@ const envSchema = z.object({
 
   VITE_PUBLIC_ACCOUNT_CLASS_HASH: z.string().startsWith("0x"),
   VITE_PUBLIC_FEE_TOKEN_ADDRESS: z.string().startsWith("0x"),
+  VITE_PUBLIC_ENTRY_TOKEN_ADDRESS: z
+    .string()
+    .startsWith("0x")
+    .optional()
+    .default("0x1e41641859757cd7c00c58456b367aeeb5c11a2e73049e303035969be7a6b0b"),
 
   VITE_PUBLIC_CLIENT_FEE_RECIPIENT: z.string().startsWith("0x"),
 

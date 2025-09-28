@@ -1,12 +1,13 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
-import { Search, Star, Pencil, X, ShieldQuestion, Crown, Landmark, Sparkles, Pickaxe, EyeIcon } from "lucide-react";
-import type { ComponentValue } from "@dojoengine/recs";
+import { getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 import type { ClientComponents, ID, Structure } from "@bibliothecadao/types";
 import { ID as toEntityId } from "@bibliothecadao/types";
+import type { ComponentValue } from "@dojoengine/recs";
+import { Crown, EyeIcon, Landmark, Pencil, Pickaxe, Search, ShieldQuestion, Sparkles, Star, X } from "lucide-react";
 
+import { useUISound } from "@/audio/hooks/useUISound";
 import type { getEntityInfo } from "@bibliothecadao/eternum";
 
 export type SelectedStructure = ReturnType<typeof getEntityInfo> & { isFavorite: boolean };
@@ -67,6 +68,9 @@ export const StructureSelectPanel = memo(
     const [searchTerm, setSearchTerm] = useState("");
     const searchInputRef = useRef<HTMLInputElement>(null);
 
+    const playHover = useUISound("ui.hover");
+    const playClick = useUISound("ui.click");
+
     const structuresWithFavorites = useMemo(() => {
       return structures
         .map((structure) => {
@@ -100,11 +104,12 @@ export const StructureSelectPanel = memo(
 
     const handleSelectStructure = useCallback(
       (entityId: ID) => {
+        playClick();
         onSelectStructure(entityId);
         setSelectOpen(false);
         setSearchTerm("");
       },
-      [onSelectStructure],
+      [onSelectStructure, playClick],
     );
 
     // Auto-focus search input when select opens (after content renders)
@@ -146,13 +151,14 @@ export const StructureSelectPanel = memo(
           }}
           open={selectOpen}
           onOpenChange={(open) => {
+            playClick();
             setSelectOpen(open);
             if (!open) {
               setSearchTerm("");
             }
           }}
         >
-          <SelectTrigger className="truncate">
+          <SelectTrigger className="truncate" onMouseEnter={() => playHover()}>
             <SelectValue placeholder="Select Structure" />
           </SelectTrigger>
           <SelectContent className="panel-wood bg-dark-wood -ml-2">
@@ -186,10 +192,12 @@ export const StructureSelectPanel = memo(
                     type="button"
                     onClick={(event) => {
                       event.stopPropagation();
+                      playClick();
                       setSearchTerm("");
                       searchInputRef.current?.focus();
                     }}
                     className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gold/60 hover:text-gold"
+                    onMouseEnter={() => playHover()}
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -202,14 +210,16 @@ export const StructureSelectPanel = memo(
               </div>
             ) : (
               filteredStructures.map((structure) => (
-                <div key={structure.entityId} className="flex flex-row items-center">
+                <div key={structure.entityId} className="flex flex-row items-center" onMouseEnter={() => playHover()}>
                   <button
                     className="p-1"
                     type="button"
                     onClick={(event) => {
                       event.stopPropagation();
+                      playClick();
                       onToggleFavorite(structure.entityId);
                     }}
+                    onMouseEnter={() => playHover()}
                   >
                     <Star className={structure.isFavorite ? "h-4 w-4 fill-current" : "h-4 w-4"} />
                   </button>
@@ -218,9 +228,11 @@ export const StructureSelectPanel = memo(
                     type="button"
                     onClick={(event) => {
                       event.stopPropagation();
+                      playClick();
                       setSelectOpen(false);
                       onRequestNameChange(structure.structure);
                     }}
+                    onMouseEnter={() => playHover()}
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
