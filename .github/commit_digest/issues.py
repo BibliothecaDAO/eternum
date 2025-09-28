@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 from typing import Dict, Iterable, List, Optional
 
 import requests
@@ -22,6 +23,9 @@ class IssueAlert:
     def summary_line(self) -> str:
         issue_snippets = ", ".join(f"#{issue.number}" for issue in self.issues[:5])
         return f"{self.discord_mention} has {len(self.issues)} open issue(s): {issue_snippets}" if issue_snippets else f"{self.discord_mention} has {len(self.issues)} open issue(s)."
+
+
+logger = logging.getLogger(__name__)
 
 
 class GitHubIssueError(RuntimeError):
@@ -49,6 +53,7 @@ def fetch_open_issues(
 
     assignments: Dict[str, List[Issue]] = {}
     for assignee in assignees:
+        logger.debug("Fetching open issues for %s from %s", assignee, endpoint)
         login = assignee.lower()
         params = {"state": "open", "assignee": login, "per_page": "100"}
         response = requests.get(endpoint, headers=headers, params=params, timeout=30)
@@ -62,8 +67,10 @@ def fetch_open_issues(
             for item in data
             if item.get("assignee") and item["assignee"].get("login", "").lower() == login
         ]
+        logger.debug("Found %d open issue(s) for %s", len(user_issues), assignee)
         if user_issues:
             assignments[login] = user_issues
+    logger.info("Collected assignments for %d assignee(s)", len(assignments))
     return assignments
 
 

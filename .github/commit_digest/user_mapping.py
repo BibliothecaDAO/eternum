@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -14,6 +15,9 @@ DISCORD_ID_PATTERN = re.compile(r"\d+")
 class MappingEntry:
     mention: str
     user_id: str
+
+
+logger = logging.getLogger(__name__)
 
 
 class MappingLoadError(RuntimeError):
@@ -32,6 +36,7 @@ def load_mapping(path: Path) -> Dict[str, MappingEntry]:
     - {"octocat": "<@123>"}
     - {"octocat": {"discord": "<@123>", "id": "123"}}
     """
+    logger.info("Loading user mapping from %s", path)
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
     except OSError as exc:  # pragma: no cover - surface IO issues
@@ -59,7 +64,18 @@ def load_mapping(path: Path) -> Dict[str, MappingEntry]:
 
         if mention and user_id:
             mapping[key.lower()] = MappingEntry(mention=mention, user_id=user_id)
+            logger.debug(
+                "Mapped GitHub user %s to Discord mention %s (id %s)", key.lower(), mention, user_id
+            )
+        else:
+            logger.warning(
+                "Mapping entry for %s missing mention or Discord id; mention=%s id=%s",
+                key,
+                mention,
+                user_id,
+            )
 
+    logger.info("Loaded %d mapping entries", len(mapping))
     return mapping
 
 

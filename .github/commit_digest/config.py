@@ -1,17 +1,22 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import os
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
 
-DEFAULT_MODEL = "gpt-5.0-mini"
+DEFAULT_MODEL = "gpt-5"
 DEFAULT_MAX_COMMITS = 20
 DEFAULT_MAPPING_PATH = ".github/commit_digest/user_mapping.json"
 DEFAULT_GITHUB_API = "https://api.github.com"
 DEFAULT_DISCORD_API = "https://discord.com/api/v10"
+
+
+logger = logging.getLogger(__name__)
 
 
 def _env_int(name: str, default: int) -> int:
@@ -132,6 +137,42 @@ def resolve_mapping_path(repository_root: Path, mapping_file: Optional[str]) -> 
     return candidate if candidate.exists() else None
 
 
+def infer_repo_slug(repository_root: Path) -> Optional[str]:
+    try:
+        result = subprocess.run(
+            ["git", "config", "--get", "remote.origin.url"],
+            cwd=repository_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError) as exc:
+        logger.debug("Unable to infer repo slug from git: %s", exc)
+        return None
+
+    url = result.stdout.strip()
+    if not url:
+        return None
+
+    # Handle SSH and HTTPS remotes.
+    if ":" in url and url.startswith("git@"):
+        _, remainder = url.split(":", 1)
+    else:
+        remainder = url.split("//")[-1]
+        if "/" in remainder:
+            remainder = remainder.split("/", 1)[1]
+
+    slug = remainder
+    if slug.endswith(".git"):
+        slug = slug[:-4]
+    slug = slug.strip("/")
+    if slug.count("/") != 1:
+        logger.debug("Derived slug %s is not in owner/name format", slug)
+        return None
+    logger.info("Inferred repository slug %s from git remote", slug)
+    return slug
+
+
 def load_config(namespace: Optional[argparse.Namespace] = None) -> DigestConfig:
     parser = build_parser()
     args = namespace or parser.parse_args()
@@ -156,6 +197,10 @@ def load_config(namespace: Optional[argparse.Namespace] = None) -> DigestConfig:
     if args.no_dm_assignees:
         dm_assignees = False
 
+    repo_slug = args.repo_slug or os.environ.get("DIGEST_REPOSITORY") or os.environ.get("GITHUB_REPOSITORY")
+    if not repo_slug:
+        repo_slug = infer_repo_slug(repository_root)
+
     config = DigestConfig(
         branch=args.branch,
         max_commits=args.max_commits,
@@ -170,7 +215,7 @@ def load_config(namespace: Optional[argparse.Namespace] = None) -> DigestConfig:
         dry_run=args.dry_run,
         mapping_file=mapping_path,
         github_token=github_token,
-        repository_slug=args.repo_slug,
+        repository_slug=repo_slug,
         github_api_base=args.github_api,
         dm_assignees=dm_assignees,
     )

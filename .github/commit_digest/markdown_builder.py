@@ -32,6 +32,7 @@ def build_markdown(
     commits: Sequence[Commit],
     *,
     issue_alerts: Sequence[IssueAlert] | None = None,
+    author_mentions: dict[str, str] | None = None,
 ) -> str:
     generated_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
     lines: list[str] = []
@@ -53,7 +54,10 @@ def build_markdown(
         for author in digest.authors:
             commits_joined = "<br>".join(author.commits) if author.commits else "—"
             summary = author.summary or "—"
-            lines.append(f"| {author.name} | {summary} | {commits_joined} |")
+            display_name = author.name
+            if author_mentions and author.name in author_mentions:
+                display_name = f"{author.name} ({author_mentions[author.name]})"
+            lines.append(f"| {display_name} | {summary} | {commits_joined} |")
         lines.append("")
 
     if issue_alerts:

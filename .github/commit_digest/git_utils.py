@@ -50,7 +50,10 @@ def list_commit_shas(branch: str, max_commits: int, *, repo: Path) -> List[str]:
 
 
 def _parse_commit_meta(raw: str) -> Commit:
-    sha, author, email, authored_at_raw, title, body = raw.split("\x1f", 5)
+    parts = raw.split("\x1f", 5)
+    if len(parts) < 6:
+        parts += [""] * (6 - len(parts))
+    sha, author, email, authored_at_raw, title, body = parts
     authored_at = datetime.fromisoformat(authored_at_raw.strip())
     return Commit(
         sha=sha,

@@ -70,8 +70,6 @@ class GPTDigestor:
         commit_payload = self._serialize_commits(commits)
         response = self._client.responses.create(
             model=self._model,
-            temperature=0.2,
-            top_p=0.9,
             input=[
                 {
                     "role": "system",
