@@ -24,12 +24,13 @@ import { toggleMapHexView, selectNextStructure as utilSelectNextStructure } from
 import { SceneShortcutManager } from "@/three/utils/shortcuts";
 import { createPausedLabel, gltfLoader } from "@/three/utils/utils";
 import { LeftView } from "@/types";
-import { BuildingSystemUpdate, Position, StructureProgress } from "@bibliothecadao/eternum";
+import { BuildingSystemUpdate, Position, StructureProgress, getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import { IS_FLAT_MODE } from "@/ui/config";
 import { getIsBlitz } from "@bibliothecadao/eternum";
 
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { ProductionModal } from "@/ui/features/settlement";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
   ActionType,
@@ -575,8 +576,12 @@ export default class HexceptionScene extends HexagonScene {
 
     const productionEndsAt = productionManager?.getProductionEndsAt(producedResource as ResourcesIds);
 
+    const currentTick = getBlockTimestamp().currentDefaultTick;
+
     const isActive =
-      (productionEndsAt ?? 0) > Date.now() || productionManager?.isFood(producedResource as ResourcesIds);
+      (productionEndsAt ?? 0) > currentTick || productionManager?.isFood(producedResource as ResourcesIds);
+
+    console.log({ productionEndsAt, dateNow: Date.now(), producedResource, isActive });
 
     if (building && producedResource) {
       this.state.setTooltip({
@@ -595,7 +600,57 @@ export default class HexceptionScene extends HexagonScene {
     }
   }
   protected onHexagonRightClick(): void {}
-  protected onHexagonDoubleClick(): void {}
+  protected onHexagonDoubleClick(hexCoords: HexPosition): void {
+    const overlay = document.querySelector(".shepherd-modal-is-visible");
+    const overlayClick = document.querySelector(".allow-modal-click");
+    if (overlay && !overlayClick) {
+      return;
+    }
+
+    if (!hexCoords) {
+      return;
+    }
+
+    const buildingType = this.buildingPreview?.getPreviewBuilding();
+    if (buildingType) {
+      return;
+    }
+
+    const normalizedCoords = { col: hexCoords.col, row: hexCoords.row };
+    const isCentralHex = normalizedCoords.col === BUILDINGS_CENTER[0] && normalizedCoords.row === BUILDINGS_CENTER[1];
+    if (!this.tileManager.isHexOccupied(normalizedCoords) && !isCentralHex) {
+      return;
+    }
+
+    const { col: outerCol, row: outerRow } = this.tileManager.getHexCoords();
+    const structureEntityId = this.state.structureEntityId;
+    if (!structureEntityId) {
+      return;
+    }
+
+    const building = getComponentValue(
+      this.dojo.components.Building,
+      getEntityIdFromKeys([
+        BigInt(outerCol),
+        BigInt(outerRow),
+        BigInt(normalizedCoords.col),
+        BigInt(normalizedCoords.row),
+      ]),
+    );
+    if (!building || building.category === BuildingType.None) {
+      return;
+    }
+
+    this.state.setSelectedBuildingHex({
+      outerCol,
+      outerRow,
+      innerCol: normalizedCoords.col,
+      innerRow: normalizedCoords.row,
+    });
+
+    const producedResource = getProducedResource(building.category as BuildingType);
+    this.state.toggleModal(<ProductionModal preSelectedResource={producedResource} />);
+  }
 
   public moveCameraToURLLocation() {
     this.moveCameraToColRow(10, 10, 0);
