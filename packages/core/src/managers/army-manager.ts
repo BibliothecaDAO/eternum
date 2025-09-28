@@ -1,16 +1,16 @@
+import {
+  ClientComponents,
+  Direction,
+  ID,
+  ResourcesIds,
+  SystemCalls,
+  TroopTier,
+  TroopType,
+} from "@bibliothecadao/types";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { Account, AccountInterface } from "starknet";
-import {
-  ClientComponents,
-  SystemCalls,
-  ID,
-  TroopTier,
-  TroopType,
-  Direction,
-  ResourcesIds,
-} from "@bibliothecadao/types";
 import { multiplyByPrecision } from "../utils";
 import { ResourceManager } from "./resource-manager";
 
@@ -50,13 +50,13 @@ export class ArmyManager {
   private _getGuardSlot(guardSlot: number, structure: ComponentValue<ClientComponents["Structure"]["schema"]>) {
     switch (guardSlot) {
       case 0:
-        return structure.troop_guards.alpha;
-      case 1:
-        return structure.troop_guards.bravo;
-      case 2:
-        return structure.troop_guards.charlie;
-      case 3:
         return structure.troop_guards.delta;
+      case 1:
+        return structure.troop_guards.charlie;
+      case 2:
+        return structure.troop_guards.bravo;
+      case 3:
+        return structure.troop_guards.alpha;
       default:
         throw new Error(`Invalid guard slot: ${guardSlot}`);
     }
@@ -71,7 +71,7 @@ export class ArmyManager {
     const guard = this._getGuardSlot(guardSlot, structure);
 
     if (guard) {
-      const guardKey = ["alpha", "bravo", "charlie", "delta"][guardSlot];
+      const guardKey = ["delta", "charlie", "bravo", "alpha"][guardSlot];
       this.components.Structure.addOverride(overrideId, {
         entity: structureEntity,
         value: {
