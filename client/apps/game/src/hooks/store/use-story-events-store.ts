@@ -31,7 +31,7 @@ export const useStoryEvents = (limit: number = 100) => {
     queryFn: async (): Promise<ProcessedStoryEvent[]> => {
       const rawEvents = await sqlApi.fetchStoryEvents(limit, 0);
 
-      return rawEvents.map((event): ProcessedStoryEvent => {
+      return rawEvents.map((event, index): ProcessedStoryEvent => {
         // Convert hex timestamp to milliseconds
         const timestampMs = parseInt(event.timestamp, 16) * 1000;
 
@@ -49,9 +49,11 @@ export const useStoryEvents = (limit: number = 100) => {
 
         const presentation = buildStoryEventPresentation(storyEventUpdate, components);
 
+        const id = event.event_id ?? `${event.tx_hash}-${event.timestamp}-${event.entity_id ?? "unknown"}-${index}`;
+
         return {
           ...event,
-          id: `${event.tx_hash}-${event.timestamp}`,
+          id,
           timestampMs,
           presentation,
         };
@@ -72,7 +74,7 @@ export const useStoryEventsLoading = () => {
     queryFn: async (): Promise<ProcessedStoryEvent[]> => {
       const rawEvents = await sqlApi.fetchStoryEvents(100, 0);
 
-      return rawEvents.map((event): ProcessedStoryEvent => {
+      return rawEvents.map((event, index): ProcessedStoryEvent => {
         const timestampMs = parseInt(event.timestamp, 16) * 1000;
 
         const storyEventUpdate = {
@@ -88,9 +90,11 @@ export const useStoryEventsLoading = () => {
 
         const presentation = buildStoryEventPresentation(storyEventUpdate, components);
 
+        const id = event.event_id ?? `${event.tx_hash}-${event.timestamp}-${event.entity_id ?? "unknown"}-${index}`;
+
         return {
           ...event,
-          id: `${event.tx_hash}-${event.timestamp}`,
+          id,
           timestampMs,
           presentation,
         };
@@ -109,7 +113,7 @@ export const useStoryEventsError = () => {
     queryFn: async (): Promise<ProcessedStoryEvent[]> => {
       const rawEvents = await sqlApi.fetchStoryEvents(100, 0);
 
-      return rawEvents.map((event): ProcessedStoryEvent => {
+      return rawEvents.map((event, index): ProcessedStoryEvent => {
         const timestampMs = parseInt(event.timestamp, 16) * 1000;
 
         const storyEventUpdate = {
@@ -125,9 +129,11 @@ export const useStoryEventsError = () => {
 
         const presentation = buildStoryEventPresentation(storyEventUpdate, components);
 
+        const id = event.event_id ?? `${event.tx_hash}-${event.timestamp}-${event.entity_id ?? "unknown"}-${index}`;
+
         return {
           ...event,
-          id: `${event.tx_hash}-${event.timestamp}`,
+          id,
           timestampMs,
           presentation,
         };
