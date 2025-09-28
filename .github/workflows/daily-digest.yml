@@ -23,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r .github/commit_digest/requirements.txt
       - name: Generate digest
-        run: python .github/commit_digest/__main__.py --branch main
+        run: python .github/commit_digest/__main__.py --branch blitz
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
