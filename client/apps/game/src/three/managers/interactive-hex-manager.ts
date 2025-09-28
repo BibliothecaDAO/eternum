@@ -265,6 +265,8 @@ export class InteractiveHexManager {
 
     if (instanceCount === 0) {
       mesh.instanceMatrix.needsUpdate = true;
+      mesh.boundingBox = null;
+      mesh.boundingSphere = null;
       return;
     }
 
@@ -280,6 +282,8 @@ export class InteractiveHexManager {
     });
 
     mesh.instanceMatrix.needsUpdate = true;
+    mesh.computeBoundingBox();
+    mesh.computeBoundingSphere();
   }
 
   renderHexes() {
@@ -293,6 +297,8 @@ export class InteractiveHexManager {
 
     if (instanceCount === 0) {
       mesh.instanceMatrix.needsUpdate = true;
+      mesh.boundingBox = null;
+      mesh.boundingSphere = null;
       return;
     }
 
@@ -308,6 +314,8 @@ export class InteractiveHexManager {
     });
 
     mesh.instanceMatrix.needsUpdate = true;
+    mesh.computeBoundingBox();
+    mesh.computeBoundingSphere();
   }
 
   update() {
