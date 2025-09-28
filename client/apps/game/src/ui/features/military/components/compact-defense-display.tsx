@@ -18,9 +18,7 @@ export const CompactDefenseDisplay = ({ troops, className = "" }: CompactDefense
       {totalTroopCount > 0 && (
         <div className="flex items-center bg-brown-900/90 border border-gold/30 rounded-md px-2 py-0.5 gap-1">
           <span className="text-[10px] uppercase tracking-wide text-gold/70 font-semibold">Total</span>
-          <span className="text-[11px] text-gold font-bold">
-            {currencyFormat(totalTroopCount, 0)}
-          </span>
+          <span className="text-[11px] text-gold font-bold">{currencyFormat(totalTroopCount, 0)}</span>
         </div>
       )}
       {troops.map((defense) => (
