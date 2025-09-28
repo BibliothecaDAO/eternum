@@ -69,8 +69,18 @@ export class ClientConfigManager {
     return ClientConfigManager._instance;
   }
 
-  private getValueOrDefault<T>(callback: () => T, defaultValue: T): T {
-    return callback();
+  private getValueOrDefault<T>(callback: () => T | undefined | null, defaultValue: T): T {
+    if (!this.components || !this.config) {
+      return defaultValue;
+    }
+
+    try {
+      const value = callback();
+      return value ?? defaultValue;
+    } catch (error) {
+      console.warn("ClientConfigManager fallback due to error", error);
+      return defaultValue;
+    }
   }
 
   private initializeResourceWeights() {

@@ -171,6 +171,13 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
     };
   }, [target]);
 
+  const totalDefenderTroopsRaw = useMemo(() => {
+    if (!target?.info || target.info.length === 0) return 0;
+    return target.info.reduce((total, troop) => total + Number(troop.count || 0n), 0);
+  }, [target]);
+
+  const totalDefenderTroops = useMemo(() => divideByPrecision(totalDefenderTroopsRaw), [totalDefenderTroopsRaw]);
+
   const isVillageWithoutTroops = useMemo(() => {
     return target?.structureCategory === StructureType.Village && !target?.info.length;
   }, [target]);
@@ -634,6 +641,12 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
           <CardContent>
             {target && targetArmyData ? (
               <div className="space-y-3">
+                {totalDefenderTroopsRaw > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span>Total Defenders:</span>
+                    <Badge variant="default">{totalDefenderTroops.toLocaleString()}</Badge>
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
                   <span>Troops:</span>
                   <Badge variant="secondary">

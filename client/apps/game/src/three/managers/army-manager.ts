@@ -760,19 +760,50 @@ export class ArmyManager {
       this.pendingExplorerTroopsUpdate.delete(entityId);
     }
 
-    const { promise } = this.fxManager.playFxAtCoords(
+    console.debug(`[ArmyManager] removeArmy invoked for entity ${entityId}`);
+
+    const army = this.armies.get(entityId);
+    if (!army) {
+      console.warn(`[ArmyManager] removeArmy called for missing entity ${entityId}`);
+      return;
+    }
+
+    const worldPosition = this.getArmyWorldPosition(entityId, army.hexCoords);
+
+    this.armies.delete(entityId);
+    this.armyModel.removeLabel(entityId);
+    this.entityIdLabels.delete(entityId);
+
+    if (this.currentChunkKey) {
+      void this.renderVisibleArmies(this.currentChunkKey)
+        .then(() => {
+          console.debug(`[ArmyManager] Removal finalized for entity ${entityId}`);
+        })
+        .catch((error) => {
+          console.error(`[ArmyManager] Failed to finalize removal for army ${entityId}:`, error);
+        });
+    } else {
+      console.warn(`[ArmyManager] Removal invoked with no active chunk for entity ${entityId}`);
+    }
+
+    const { promise, instance } = this.fxManager.playFxAtCoords(
       "skull",
-      this.getArmyWorldPosition(entityId, this.armies.get(entityId)!.hexCoords).x,
-      this.getArmyWorldPosition(entityId, this.armies.get(entityId)!.hexCoords).y + 2,
-      this.getArmyWorldPosition(entityId, this.armies.get(entityId)!.hexCoords).z,
+      worldPosition.x,
+      worldPosition.y + 2,
+      worldPosition.z,
       1,
       "Defeated!",
     );
-    promise.then(async () => {
-      this.armies.delete(entityId);
-      this.armyModel.removeLabel(entityId);
-      this.entityIdLabels.delete(entityId);
-      await this.renderVisibleArmies(this.currentChunkKey!);
+
+    if (!instance) {
+      promise.catch((error) => {
+        console.warn(`[ArmyManager] Defeat FX rejected for army ${entityId}:`, error);
+      });
+      return;
+    }
+
+    promise.catch((error) => {
+      console.warn(`[ArmyManager] Failed to play defeat FX for army ${entityId}:`, error);
     });
   }
 

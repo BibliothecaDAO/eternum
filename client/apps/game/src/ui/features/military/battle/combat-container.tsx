@@ -44,6 +44,7 @@ import { ActiveRelicEffects } from "../../world/components/entities/active-relic
 import { AttackTarget, TargetType } from "./attack-container";
 import { BattleCooldownTimer } from "./battle-cooldown-timer";
 import { BattleStats, CombatLoading, ResourceStealing, TroopDisplay } from "./components";
+import { Users } from "lucide-react";
 
 enum AttackerType {
   Structure,
@@ -390,6 +391,16 @@ export const CombatContainer = ({
   const remainingTroops = battleSimulation?.getRemainingTroops();
   const winner = battleSimulation?.winner;
 
+  const totalDefenderTroopsRaw = useMemo(() => {
+    if (!target?.info || target.info.length === 0) return 0;
+    return target.info.reduce((total, troop) => total + Number(troop.count || 0n), 0);
+  }, [target]);
+
+  const totalDefenderTroopsFormatted = useMemo(() => {
+    if (totalDefenderTroopsRaw <= 0) return "0";
+    return currencyFormat(totalDefenderTroopsRaw, 0);
+  }, [totalDefenderTroopsRaw]);
+
   const formattedTweet = useMemo(() => {
     return getFormattedCombatTweet({
       attackerArmyData,
@@ -633,6 +644,15 @@ export const CombatContainer = ({
 
         {/* Defender Panel */}
         <div className="space-y-3 sm:space-y-4" role="region" aria-label="Defender forces information">
+          {totalDefenderTroopsRaw > 0 && (
+            <div className="flex items-center justify-between bg-dark-brown/70 border border-gold/20 rounded-md px-3 py-2">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase text-gold/70">
+                <Users className="w-4 h-4" />
+                Total Defenders
+              </div>
+              <div className="text-base font-bold text-gold">{totalDefenderTroopsFormatted}</div>
+            </div>
+          )}
           {targetArmyData ? (
             <TroopDisplay
               troops={targetArmyData.troops}

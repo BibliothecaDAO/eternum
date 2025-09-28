@@ -358,6 +358,42 @@ export const createGuardArmyDisplay = (
     return container;
   }
 
+  const totalCount = guardArmies.reduce((total, guard) => total + (guard.count ?? 0), 0);
+
+  if (totalCount > 0) {
+    const totalContainer = document.createElement("div");
+    totalContainer.classList.add(
+      "flex",
+      "items-center",
+      "gap-2",
+      "rounded",
+      "px-2",
+      "py-1",
+      "bg-black/60",
+      "border",
+      "border-gold/30",
+    );
+    totalContainer.setAttribute("data-role", "total-guards");
+
+    const totalIcon = document.createElement("span");
+    totalIcon.textContent = "Σ";
+    totalIcon.classList.add("text-gold", "font-semibold");
+    totalContainer.appendChild(totalIcon);
+
+    const totalLabel = document.createElement("span");
+    totalLabel.textContent = "Total";
+    totalLabel.classList.add("uppercase", "tracking-wide", "text-[10px]", "text-gold/70", "font-semibold");
+    totalContainer.appendChild(totalLabel);
+
+    const totalValue = document.createElement("span");
+    totalValue.textContent = totalCount.toLocaleString();
+    totalValue.classList.add("font-bold", "text-gold");
+    totalValue.setAttribute("data-role", "count");
+    totalContainer.appendChild(totalValue);
+
+    container.appendChild(totalContainer);
+  }
+
   guardArmies.forEach((guard) => {
     if (guard.count > 0) {
       const guardDiv = document.createElement("div");
