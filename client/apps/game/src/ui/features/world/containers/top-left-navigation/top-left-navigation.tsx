@@ -143,10 +143,7 @@ export const TopLeftNavigation = memo(() => {
             >
               Local
             </span>
-            <label
-              className="relative inline-flex items-center cursor-pointer"
-              onMouseEnter={() => playHover()}
-            >
+            <label className="relative inline-flex items-center cursor-pointer" onMouseEnter={() => playHover()}>
               <input
                 type="checkbox"
                 className="sr-only peer"

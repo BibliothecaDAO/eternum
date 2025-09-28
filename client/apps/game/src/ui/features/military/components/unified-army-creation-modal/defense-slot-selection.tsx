@@ -43,8 +43,7 @@ export const DefenseSlotSelection = ({
           const isSlotAvailable = slot < maxDefenseSlots;
           const isSlotSelectable = isSlotAvailable && (canCreateDefenseArmy || hasGuard);
           const isSlotCompatible =
-            !guardInfo ||
-            (guardCategory === selectedTroopCombo.type && guardTier === selectedTroopCombo.tier);
+            !guardInfo || (guardCategory === selectedTroopCombo.type && guardTier === selectedTroopCombo.tier);
 
           return (
             <Button

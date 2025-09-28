@@ -66,7 +66,7 @@ export const TroopCountSelector = ({ troopCount, maxAffordable, onChange }: Troo
             <span className="text-red font-bold text-base">Insufficient Resources</span>
           </div>
           <p className="text-sm text-red/90 ml-8">
-            You need <span className="font-bold">{troopCount.toLocaleString()}</span> troops but only have {" "}
+            You need <span className="font-bold">{troopCount.toLocaleString()}</span> troops but only have{" "}
             <span className="font-bold">{maxAffordable.toLocaleString()}</span> available
           </p>
         </div>
