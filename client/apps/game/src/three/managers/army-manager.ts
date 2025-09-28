@@ -743,6 +743,8 @@ export class ArmyManager {
     // Monitor memory usage before removing army
     this.memoryMonitor.getCurrentStats(`removeArmy-${entityId}`);
 
+    console.debug(`[ArmyManager] removeArmy invoked for entity ${entityId}`);
+
     this.armyPaths.delete(entityId);
     this.armyModel.setMovementCompleteCallback(Number(entityId), undefined);
 
@@ -760,24 +762,25 @@ export class ArmyManager {
       this.pendingExplorerTroopsUpdate.delete(entityId);
     }
 
-    console.debug(`[ArmyManager] removeArmy invoked for entity ${entityId}`);
-
     const army = this.armies.get(entityId);
     if (!army) {
       console.warn(`[ArmyManager] removeArmy called for missing entity ${entityId}`);
       return;
     }
 
+    console.debug(`[ArmyManager] Preparing world cleanup for entity ${entityId}`);
     const worldPosition = this.getArmyWorldPosition(entityId, army.hexCoords);
 
     this.armies.delete(entityId);
     this.armyModel.removeLabel(entityId);
     this.entityIdLabels.delete(entityId);
+    console.debug(`[ArmyManager] Removed entity ${entityId} from caches and labels`);
 
     if (this.currentChunkKey) {
+      console.debug(`[ArmyManager] Rendering visible armies after removing entity ${entityId}`);
       void this.renderVisibleArmies(this.currentChunkKey)
         .then(() => {
-          console.debug(`[ArmyManager] Removal finalized for entity ${entityId}`);
+          console.debug(`[ArmyManager] Render complete after removing entity ${entityId}`);
         })
         .catch((error) => {
           console.error(`[ArmyManager] Failed to finalize removal for army ${entityId}:`, error);
@@ -786,6 +789,7 @@ export class ArmyManager {
       console.warn(`[ArmyManager] Removal invoked with no active chunk for entity ${entityId}`);
     }
 
+    console.debug(`[ArmyManager] Playing defeat FX for entity ${entityId}`);
     const { promise, instance } = this.fxManager.playFxAtCoords(
       "skull",
       worldPosition.x,

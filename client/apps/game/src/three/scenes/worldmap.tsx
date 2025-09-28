@@ -334,6 +334,7 @@ export default class WorldmapScene extends HexagonScene {
 
     // Store the unsubscribe function for Army updates
     this.worldUpdateListener.Army.onTileUpdate(async (update: ExplorerTroopsTileSystemUpdate) => {
+      console.debug(`[WorldMap] Army tile update received for entity ${update.entityId}`);
       this.updateArmyHexes(update);
 
       // Add combat relationship
@@ -376,12 +377,14 @@ export default class WorldmapScene extends HexagonScene {
 
     // Listen for troop count and stamina changes
     this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {
+      console.debug(`[WorldMap] ExplorerTroops update received for entity ${update.entityId}`);
       this.updateArmyHexes(update);
       this.armyManager.updateArmyFromExplorerTroopsUpdate(update);
     });
 
     // Listen for dead army updates
     this.worldUpdateListener.Army.onDeadArmy((entityId) => {
+      console.debug(`[WorldMap] onDeadArmy received for entity ${entityId}`);
       // Remove from attacker-defender tracking
       this.removeEntityFromTracking(entityId);
 
@@ -392,6 +395,7 @@ export default class WorldmapScene extends HexagonScene {
 
     // Listen for battle events and update army/structure labels
     this.worldUpdateListener.BattleEvent.onBattleUpdate((update: BattleEventSystemUpdate) => {
+      console.debug(`[WorldMap] BattleEvent update received for battle entity ${update.entityId}`);
       console.log("🗺️ WorldMap: Received battle event update:", update);
 
       // Update both attacker and defender information using the public methods
@@ -1443,6 +1447,7 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   public deleteArmy(entityId: ID) {
+    console.debug(`[WorldMap] deleteArmy invoked for entity ${entityId}`);
     this.armyManager.removeArmy(entityId);
     const oldPos = this.armiesPositions.get(entityId);
     if (oldPos) {

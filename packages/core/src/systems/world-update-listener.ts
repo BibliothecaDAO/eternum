@@ -209,6 +209,7 @@ export class WorldUpdateListener {
         );
       },
       onDeadArmy: (callback: (value: ID) => void) => {
+        console.debug(`[WorldUpdateListener] Subscribing to dead army updates`);
         this.setupSystem(
           this.setup.components.ExplorerTroops,
           callback,
@@ -218,6 +219,7 @@ export class WorldUpdateListener {
               const explorer = getComponentValue(this.setup.components.ExplorerTroops, update.entity);
               if (!explorer && !prevState) return;
               if (!explorer && undefined === currentState && prevState) {
+                console.debug(`[WorldUpdateListener] ExplorerTroops removed for entity ${prevState.explorer_id}`);
                 return prevState.explorer_id;
               }
             }
