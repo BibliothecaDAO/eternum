@@ -1,4 +1,9 @@
-import { ProcessedStoryEvent, useStoryEvents, useStoryEventsError, useStoryEventsLoading } from "@/hooks/store/use-story-events-store";
+import {
+  ProcessedStoryEvent,
+  useStoryEvents,
+  useStoryEventsError,
+  useStoryEventsLoading,
+} from "@/hooks/store/use-story-events-store";
 import Button from "@/ui/design-system/atoms/button";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import clsx from "clsx";
@@ -22,7 +27,7 @@ import {
   Shield,
   Sparkles,
   Sword,
-  Trophy
+  Trophy,
 } from "lucide-react";
 import React, { type ComponentType, useCallback, useEffect, useMemo, useState } from "react";
 type SortOrder = "newest" | "oldest";
@@ -254,21 +259,14 @@ const DetailGrid: React.FC<{ details: DetailSegment[]; columns?: number }> = ({ 
   const gridCols = columns === 1 ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2";
 
   return (
-    <dl
-      className={clsx(
-        "grid gap-1.5 rounded-md border border-amber-400/15 bg-black/25 p-2",
-        gridCols,
-      )}
-    >
+    <dl className={clsx("grid gap-1.5 rounded-md border border-amber-400/15 bg-black/25 p-2", gridCols)}>
       {details.map((detail, index) => (
         <div
           key={`${detail.value}-${index}`}
           className={clsx("flex flex-col gap-0.5", !detail.label && columns !== 1 ? "sm:col-span-2" : undefined)}
         >
           {detail.label && (
-            <dt className="text-[10px] font-medium uppercase tracking-wide text-amber-500/70">
-              {detail.label}
-            </dt>
+            <dt className="text-[10px] font-medium uppercase tracking-wide text-amber-500/70">{detail.label}</dt>
           )}
           <dd className="text-[11px] font-medium text-amber-100/90 leading-snug">{detail.value}</dd>
         </div>
@@ -421,9 +419,7 @@ const ChroniclesFilterPanel: React.FC<ChroniclesFilterPanelProps> = ({
   const setSortOrder = (sortOrder: SortOrder) => onChange({ ...state, sortOrder });
 
   const activeFilters =
-    (state.storyType !== "all" ? 1 : 0) +
-    (state.searchTerm ? 1 : 0) +
-    (state.sortOrder !== "newest" ? 1 : 0);
+    (state.storyType !== "all" ? 1 : 0) + (state.searchTerm ? 1 : 0) + (state.sortOrder !== "newest" ? 1 : 0);
 
   if (collapsed) {
     // Compact horizontal-collapsed rail
@@ -431,7 +427,7 @@ const ChroniclesFilterPanel: React.FC<ChroniclesFilterPanelProps> = ({
       <aside
         className={clsx(
           "flex flex-col items-center gap-3 rounded-md border border-amber-400/20 bg-black/35 p-2",
-          "w-14 md:sticky md:top-4"
+          "w-14 md:sticky md:top-4",
         )}
       >
         <button
@@ -452,28 +448,25 @@ const ChroniclesFilterPanel: React.FC<ChroniclesFilterPanelProps> = ({
           <div
             className="flex h-10 w-10 items-center justify-center rounded-md border border-amber-400/25 bg-black/45 text-amber-200"
             title={
-              state.storyType === "all"
-                ? "All story types"
-                : STORY_TYPE_CONFIG[state.storyType as StoryTypeKey]?.label
+              state.storyType === "all" ? "All story types" : STORY_TYPE_CONFIG[state.storyType as StoryTypeKey]?.label
             }
           >
             {state.storyType === "all" ? (
               <Sparkles className="h-4 w-4 text-amber-300" />
             ) : (
-              React.createElement(
-                STORY_TYPE_CONFIG[state.storyType as StoryTypeKey].icon,
-                { className: clsx("h-4 w-4", STORY_TYPE_CONFIG[state.storyType as StoryTypeKey].accent) }
-              )
+              React.createElement(STORY_TYPE_CONFIG[state.storyType as StoryTypeKey].icon, {
+                className: clsx("h-4 w-4", STORY_TYPE_CONFIG[state.storyType as StoryTypeKey].accent),
+              })
             )}
           </div>
 
           {/* Sort order indicator */}
-            <div
-              className="flex h-10 w-10 items-center justify-center rounded-md border border-amber-400/25 bg-black/45 text-amber-200"
-              title={`Sort: ${SORT_OPTIONS.find(s => s.value === state.sortOrder)?.label}`}
-            >
-              <Clock className="h-4 w-4" />
-            </div>
+          <div
+            className="flex h-10 w-10 items-center justify-center rounded-md border border-amber-400/25 bg-black/45 text-amber-200"
+            title={`Sort: ${SORT_OPTIONS.find((s) => s.value === state.sortOrder)?.label}`}
+          >
+            <Clock className="h-4 w-4" />
+          </div>
         </div>
 
         <div className="mt-auto flex flex-col items-center gap-2 pb-1">
@@ -535,9 +528,7 @@ const ChroniclesFilterPanel: React.FC<ChroniclesFilterPanelProps> = ({
 
       {/* Search */}
       <div className="space-y-1.5">
-        <label className="text-[10px] font-semibold uppercase tracking-wide text-amber-500/70">
-          Search
-        </label>
+        <label className="text-[10px] font-semibold uppercase tracking-wide text-amber-500/70">Search</label>
         <div className="relative">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-amber-500/60" />
           <input
@@ -551,9 +542,7 @@ const ChroniclesFilterPanel: React.FC<ChroniclesFilterPanelProps> = ({
 
       {/* Story Type */}
       <div className="space-y-2">
-        <label className="text-[10px] font-semibold uppercase tracking-wide text-amber-500/70">
-          Story Type
-        </label>
+        <label className="text-[10px] font-semibold uppercase tracking-wide text-amber-500/70">Story Type</label>
         <div className="grid grid-cols-1 gap-1.5">
           {STORY_FILTER_VALUES.map((key) => {
             const isAll = key === "all";
@@ -577,9 +566,7 @@ const ChroniclesFilterPanel: React.FC<ChroniclesFilterPanelProps> = ({
                 </div>
                 <div className="flex flex-1 items-center justify-between gap-2">
                   <span className="text-[11px] font-medium">{config.label}</span>
-                  <span className="text-[10px] tabular-nums text-amber-400/60">
-                    {storyCounts[key] ?? 0}
-                  </span>
+                  <span className="text-[10px] tabular-nums text-amber-400/60">{storyCounts[key] ?? 0}</span>
                 </div>
               </button>
             );
@@ -589,9 +576,7 @@ const ChroniclesFilterPanel: React.FC<ChroniclesFilterPanelProps> = ({
 
       {/* Sort */}
       <div className="space-y-2">
-        <label className="text-[10px] font-semibold uppercase tracking-wide text-amber-500/70">
-          Sort
-        </label>
+        <label className="text-[10px] font-semibold uppercase tracking-wide text-amber-500/70">Sort</label>
         <div className="flex gap-2">
           {SORT_OPTIONS.map((option) => (
             <button
@@ -659,9 +644,7 @@ const TimelineEventCard: React.FC<{
             <div className="min-w-0">
               <h3 className="truncate text-sm font-medium text-amber-50">{event.presentation.title}</h3>
               {event.presentation.owner && (
-                <p className="truncate text-[11px] text-amber-400/70">
-                  by {event.presentation.owner}
-                </p>
+                <p className="truncate text-[11px] text-amber-400/70">by {event.presentation.owner}</p>
               )}
             </div>
           </div>
@@ -791,10 +774,7 @@ export const StoryEventsChronicles: React.FC = () => {
     }
   }, [storyFilteredEvents, selectedEventId]);
 
-  const visibleEvents = useMemo(
-    () => storyFilteredEvents.slice(0, visibleCount),
-    [storyFilteredEvents, visibleCount],
-  );
+  const visibleEvents = useMemo(() => storyFilteredEvents.slice(0, visibleCount), [storyFilteredEvents, visibleCount]);
 
   const groupedEvents = useMemo(() => groupEventsByDate(visibleEvents), [visibleEvents]);
 
@@ -819,9 +799,7 @@ export const StoryEventsChronicles: React.FC = () => {
         <LoadingAnimation />
         <div className="text-center">
           <h3 className="text-sm font-semibold text-amber-50">Loading…</h3>
-          <p className="mt-1 max-w-sm text-xs text-amber-400/70">
-            Gathering chronicles from the realm…
-          </p>
+          <p className="mt-1 max-w-sm text-xs text-amber-400/70">Gathering chronicles from the realm…</p>
         </div>
       </div>
     );
@@ -832,9 +810,7 @@ export const StoryEventsChronicles: React.FC = () => {
       <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-md border border-rose-500/40 bg-black/55 p-6 text-center">
         <ScrollText className="h-6 w-6 text-rose-400" />
         <h3 className="text-sm font-semibold text-amber-50">Error loading</h3>
-        <p className="max-w-sm text-xs text-amber-400/75">
-          Connection to the chronicle archive failed. Try again.
-        </p>
+        <p className="max-w-sm text-xs text-amber-400/75">Connection to the chronicle archive failed. Try again.</p>
         <Button
           onClick={handleRefresh}
           variant="outline"
@@ -855,7 +831,7 @@ export const StoryEventsChronicles: React.FC = () => {
           "grid gap-5",
           filtersCollapsed
             ? "md:grid-cols-[56px_minmax(0,1fr)]"
-            : "md:grid-cols-[240px_minmax(0,1fr)] lg:grid-cols-[260px_minmax(0,1fr)]"
+            : "md:grid-cols-[240px_minmax(0,1fr)] lg:grid-cols-[260px_minmax(0,1fr)]",
         )}
       >
         <ChroniclesFilterPanel
@@ -881,9 +857,7 @@ export const StoryEventsChronicles: React.FC = () => {
                   <BookOpen className="h-6 w-6 text-amber-400/60" />
                   <div>
                     <h3 className="text-sm font-semibold text-amber-50">No matches</h3>
-                    <p className="mt-1 text-xs text-amber-400/70">
-                      Adjust or clear filters to continue exploring.
-                    </p>
+                    <p className="mt-1 text-xs text-amber-400/70">Adjust or clear filters to continue exploring.</p>
                   </div>
                 </div>
               ) : (

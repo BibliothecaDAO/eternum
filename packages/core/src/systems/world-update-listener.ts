@@ -922,7 +922,10 @@ export class WorldUpdateListener {
     }
   }
 
-  private getCachedExplorerMoveEvent(explorerId: ID | null, timestamp: number | null): ExplorerMoveSystemUpdate | undefined {
+  private getCachedExplorerMoveEvent(
+    explorerId: ID | null,
+    timestamp: number | null,
+  ): ExplorerMoveSystemUpdate | undefined {
     const key = this.getExplorerMoveCacheKey(explorerId, timestamp);
     if (!key) {
       return undefined;
@@ -944,8 +947,7 @@ export class WorldUpdateListener {
 
     const ownerAddress = owner === null ? null : this.stringifyValue(owner);
     const numericEntityId = entityId === null ? null : Number(entityId);
-    const safeEntityId =
-      numericEntityId === null || Number.isNaN(numericEntityId) ? null : numericEntityId;
+    const safeEntityId = numericEntityId === null || Number.isNaN(numericEntityId) ? null : numericEntityId;
 
     const txHash = currentState.tx_hash ? this.stringifyValue(currentState.tx_hash) : "";
     const timestamp = this.toNumber(currentState?.timestamp) ?? 0;
@@ -974,7 +976,9 @@ export class WorldUpdateListener {
       }
     }
 
-    const ownerName = ownerAddress ? getAddressName(ownerAddress as unknown as ContractAddress, this.setup.components) || null : null;
+    const ownerName = ownerAddress
+      ? getAddressName(ownerAddress as unknown as ContractAddress, this.setup.components) || null
+      : null;
 
     return {
       ownerAddress,
@@ -1071,9 +1075,7 @@ export class WorldUpdateListener {
     return String(value ?? "");
   }
 
-  private extractStoryVariant(
-    story: unknown,
-  ): { storyType: string; storyPayload: Record<string, unknown> | null } {
+  private extractStoryVariant(story: unknown): { storyType: string; storyPayload: Record<string, unknown> | null } {
     const variant = this.unwrapSchemaEnum(story);
     if (!variant) {
       return { storyType: "Unknown", storyPayload: null };

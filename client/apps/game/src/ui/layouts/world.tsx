@@ -8,6 +8,7 @@ import { lazy, Suspense } from "react";
 import { env } from "../../../env";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
 import { BlitzSetHyperstructureShareholdersTo100 } from "../features/world/components/hyperstructures/blitz-hyperstructure-shareholder";
+import { StoryEventStream } from "../features/story-events";
 import { StoreManagers } from "../store-managers";
 
 // Lazy load components
@@ -181,6 +182,8 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
           </div>
 
           <LoadingOroborus loading={isLoadingScreenEnabled} />
+
+          <StoryEventStream />
 
           {/* todo: put this somewhere else maybe ? */}
           {/* <Redirect to="/" /> */}

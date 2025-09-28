@@ -116,7 +116,6 @@ const PlayerDataStoreManager = () => {
   return null;
 };
 
-
 const SeasonWinnerStoreManager = () => {
   const {
     setup: { components },
