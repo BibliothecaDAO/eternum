@@ -41,7 +41,7 @@ export function Header() {
   }
 
   return (
-    <header className="border-b px-4">
+    <header className="border-b px-4 absolute">
       <div className="flex h-14 items-center justify-between relative">
         <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center space-x-2">
           <ArrowLeft size={16} />
