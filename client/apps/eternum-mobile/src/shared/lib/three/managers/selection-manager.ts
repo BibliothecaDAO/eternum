@@ -101,9 +101,8 @@ export class SelectionManager {
   }
 
   private highlightActionPaths(highlightedHexes: ActionPath[]): void {
-    this.highlightRenderer.clearHighlights();
-
     const processedHexes = new Set<string>();
+    const highlightsToRender = [];
 
     for (const hexAction of highlightedHexes) {
       const { col, row } = hexAction.hex;
@@ -114,8 +113,16 @@ export class SelectionManager {
       processedHexes.add(hexKey);
 
       const color = this.HIGHLIGHT_COLORS[hexAction.actionType] || this.HIGHLIGHT_COLORS[ActionType.Move];
-      this.highlightRenderer.addHighlight(col, row, color, 2.0, 0.4);
+      highlightsToRender.push({
+        col,
+        row,
+        color,
+        pulseSpeed: 2.0,
+        pulseIntensity: 0.4,
+      });
     }
+
+    this.highlightRenderer.highlightHexes(highlightsToRender);
   }
 
   public addHighlight(
@@ -134,6 +141,10 @@ export class SelectionManager {
 
   public clearHighlights(): void {
     this.highlightRenderer.clearHighlights();
+  }
+
+  public highlightHexes(highlights: { col: number; row: number; color: THREE.Color; pulseSpeed?: number; pulseIntensity?: number; }[]): void {
+    this.highlightRenderer.highlightHexes(highlights);
   }
 
   public dispose(): void {
