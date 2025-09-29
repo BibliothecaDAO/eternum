@@ -1093,28 +1093,28 @@ export default class WorldmapScene extends HexagonScene {
         "Wheat Farm",
         "/image-icons/resources.png",
         BuildingType.ResourceWheat,
-        LeftView.Production,
+        LeftView.ConstructionView,
       ),
       makeBuildingAction(
         "fish",
         "Fishing Wharf",
         "/image-icons/world.png",
         BuildingType.ResourceFish,
-        LeftView.Production,
+        LeftView.ConstructionView,
       ),
       makeBuildingAction(
         "stone",
         "Stone Quarry",
         "/image-icons/building.png",
         BuildingType.ResourceStone,
-        LeftView.Production,
+        LeftView.ConstructionView,
       ),
       makeBuildingAction(
         "ironwood",
         "Ironwood Mill",
         "/image-icons/hyperstructure.png",
         BuildingType.ResourceIronwood,
-        LeftView.Production,
+        LeftView.ConstructionView,
       ),
     ];
 

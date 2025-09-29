@@ -113,6 +113,8 @@ export const WorldContextMenu = () => {
       }
 
       if (action.children && action.children.length > 0) {
+        const maxChildActions = contextMenu.radialOptions?.maxActions ?? RADIAL_DEFAULTS.maxActions ?? 8;
+        const childLayout = action.children.length > maxChildActions ? "list" : contextMenu.layout;
         const childMenu: ContextMenuState = {
           id: `${contextMenu.id}::${action.id}`,
           title: action.childTitle ?? action.label,
@@ -120,12 +122,13 @@ export const WorldContextMenu = () => {
           position: contextMenu.position,
           scene: contextMenu.scene,
           actions: action.children,
-          layout: contextMenu.layout,
+          layout: childLayout,
           radialOptions: contextMenu.radialOptions,
           metadata: contextMenu.metadata,
         };
         pushContextMenu(childMenu);
         setHoveredActionId(null);
+        hoveredActionRef.current = null;
         return;
       }
 
@@ -267,6 +270,7 @@ export const WorldContextMenu = () => {
         if (hoveredActionRef.current !== null) {
           setHoveredActionId(null);
         }
+        hoveredActionRef.current = null;
         return;
       }
 
@@ -280,11 +284,13 @@ export const WorldContextMenu = () => {
 
       if (!segment) {
         setHoveredActionId(null);
+        hoveredActionRef.current = null;
         return;
       }
 
       if (hoveredActionRef.current !== segment.action.id) {
         setHoveredActionId(segment.action.id);
+        hoveredActionRef.current = segment.action.id;
       }
     };
 
@@ -321,8 +327,13 @@ export const WorldContextMenu = () => {
       event.preventDefault();
       event.stopPropagation();
 
-      const hoveredId = hoveredActionRef.current;
-      const segment = radialSegments.find((item) => item.action.id === hoveredId);
+      const baseAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
+      const normalized = (baseAngle + 360) % 360;
+      const angleFromTop = (normalized + 90) % 360;
+
+      const segment = radialSegments.find(
+        (item) => angleFromTop >= item.rawStart && angleFromTop < item.rawEnd,
+      );
 
       if (!segment) {
         closeContextMenu();
