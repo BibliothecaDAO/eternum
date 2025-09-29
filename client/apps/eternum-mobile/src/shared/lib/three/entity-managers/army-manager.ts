@@ -455,6 +455,11 @@ export class ArmyManager extends EntityManager<ArmyObject> {
 
   // Army-specific methods moved from HexagonMap
   public async handleSystemUpdate(update: ExplorerTroopsTileSystemUpdate): Promise<void> {
+    if (update.removed) {
+      this.deleteArmy(update.entityId);
+      return;
+    }
+
     const {
       hexCoords: { col, row },
       ownerAddress,

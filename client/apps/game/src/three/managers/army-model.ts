@@ -791,8 +791,26 @@ export class ArmyModel {
       }
     }
 
-    // For land biomes, return the appropriate model based on troop type and tier
-    return TROOP_TO_MODEL[troopType][troopTier];
+    const troopModels = TROOP_TO_MODEL[troopType];
+    if (!troopModels) {
+      console.warn(
+        `[ArmyModel] Unknown troop type "${troopType}" for entity ${entityId}; falling back to ${ModelType.Knight1}.`,
+      );
+      return ModelType.Knight1;
+    }
+
+    const modelForTier = troopModels[troopTier];
+    if (modelForTier) {
+      return modelForTier;
+    }
+
+    const fallbackModel =
+      troopModels[TroopTier.T1] ?? troopModels[TroopTier.T2] ?? troopModels[TroopTier.T3] ?? ModelType.Knight1;
+
+    console.warn(
+      `[ArmyModel] Unknown troop tier "${troopTier}" for type ${troopType} on entity ${entityId}; using ${fallbackModel}.`,
+    );
+    return fallbackModel;
   }
 
   private stopMovement(entityId: number): void {

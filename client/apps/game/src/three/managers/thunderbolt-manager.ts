@@ -1,6 +1,6 @@
 import { type HexPosition, getNeighborHexes } from "@bibliothecadao/types";
-import { env } from "../../../env";
 import * as THREE from "three";
+import { env } from "../../../env";
 import { HEX_SIZE } from "../constants";
 import { getWorldPositionForHex } from "../utils";
 
@@ -12,12 +12,19 @@ interface ThunderBoltConfig {
   debug: boolean;
 }
 
-interface ActiveThunderBolt {
+interface LightningSegment {
   mesh: THREE.Mesh;
   material: THREE.MeshBasicMaterial;
+}
+
+interface ActiveThunderBolt {
+  group: THREE.Group;
+  segments: LightningSegment[];
+  glow?: THREE.Mesh;
   startTime: number;
   duration: number;
   hexPosition: HexPosition;
+  flickerSpeed: number;
 }
 
 /**
@@ -41,7 +48,7 @@ export class ThunderBoltManager {
   private thunderBolts: THREE.Group = new THREE.Group();
   private activeThunderBolts: ActiveThunderBolt[] = [];
   private config: ThunderBoltConfig = {
-    radius: 4,
+    radius: 2,
     count: 5,
     duration: 250,
     persistent: true,
@@ -72,6 +79,129 @@ export class ThunderBoltManager {
     return { ...this.config };
   }
 
+  private generateLightningPath(height: number, subdivisions: number): THREE.Vector3[] {
+    const points: THREE.Vector3[] = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, height, 0)];
+    let sway = 1.4;
+
+    for (let i = 0; i < subdivisions; i++) {
+      const refined: THREE.Vector3[] = [points[0]];
+
+      for (let j = 0; j < points.length - 1; j++) {
+        const start = points[j];
+        const end = points[j + 1];
+        const mid = start.clone().add(end).multiplyScalar(0.5);
+        const progress = mid.y / height;
+        const jitter = sway * (1 - progress * 0.8);
+        mid.x += (Math.random() - 0.5) * jitter;
+        mid.z += (Math.random() - 0.5) * jitter;
+        refined.push(mid, end);
+      }
+
+      points.splice(0, points.length, ...refined);
+      sway *= 0.55;
+    }
+
+    return points;
+  }
+
+  private generateBranchPaths(mainPath: THREE.Vector3[], height: number): THREE.Vector3[][] {
+    const branches: THREE.Vector3[][] = [];
+    const branchCount = Math.random() < 0.5 ? 1 : 2;
+    const minIndex = Math.floor(mainPath.length * 0.35);
+    const maxIndex = Math.floor(mainPath.length * 0.85);
+
+    if (maxIndex <= minIndex) {
+      return branches;
+    }
+
+    for (let i = 0; i < branchCount; i++) {
+      const anchorIndex = THREE.MathUtils.randInt(minIndex, maxIndex);
+      const anchor = mainPath[anchorIndex];
+      const branchLength = height * (0.25 + Math.random() * 0.2);
+      const segmentCount = 3 + Math.floor(Math.random() * 3);
+      const direction = new THREE.Vector3(
+        Math.random() - 0.5,
+        0.6 + Math.random() * 0.6,
+        Math.random() - 0.5,
+      ).normalize();
+
+      const branch: THREE.Vector3[] = [anchor.clone()];
+      const step = branchLength / segmentCount;
+
+      for (let j = 1; j <= segmentCount; j++) {
+        const stepPoint = anchor
+          .clone()
+          .add(direction.clone().multiplyScalar(step * j))
+          .add(
+            new THREE.Vector3(
+              (Math.random() - 0.5) * step,
+              (Math.random() - 0.5) * step * 0.5,
+              (Math.random() - 0.5) * step,
+            ),
+          );
+        branch.push(stepPoint);
+      }
+
+      branches.push(branch);
+    }
+
+    return branches;
+  }
+
+  private createLightningSegment(points: THREE.Vector3[], radius: number): LightningSegment {
+    const curve = new THREE.CatmullRomCurve3(points);
+    const tubularSegments = Math.max(12, points.length * 2);
+    const tube = new THREE.TubeGeometry(curve, tubularSegments, radius, 6, false);
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xbedbff,
+      transparent: true,
+      opacity: 0.85,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+
+    const mesh = new THREE.Mesh(tube, material);
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
+
+    return { mesh, material };
+  }
+
+  private createImpactGlow(radius: number): THREE.Mesh {
+    const geometry = new THREE.CircleGeometry(radius, 16);
+    const material = new THREE.MeshBasicMaterial({
+      color: 0x97c2ff,
+      transparent: true,
+      opacity: 0.6,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    });
+    const glow = new THREE.Mesh(geometry, material);
+    glow.rotation.x = -Math.PI / 2;
+    glow.castShadow = false;
+    glow.receiveShadow = false;
+    glow.position.y = 0.02;
+    return glow;
+  }
+
+  private disposeThunderBolt(bolt: ActiveThunderBolt): void {
+    bolt.segments.forEach((segment) => {
+      bolt.group.remove(segment.mesh);
+      segment.material.dispose();
+      segment.mesh.geometry.dispose();
+    });
+
+    if (bolt.glow) {
+      bolt.group.remove(bolt.glow);
+      (bolt.glow.material as THREE.Material).dispose();
+      bolt.glow.geometry.dispose();
+    }
+
+    this.thunderBolts.remove(bolt.group);
+    bolt.group.clear();
+  }
+
   private getCenterHexFromCamera(): HexPosition {
     const cameraTarget = new THREE.Vector3();
 
@@ -100,46 +230,44 @@ export class ThunderBoltManager {
 
   private createThunderBolt(hexPosition: HexPosition): void {
     const worldPos = getWorldPositionForHex(hexPosition);
+    const height = 13 + Math.random() * 4;
+    const mainPath = this.generateLightningPath(height, 5 + Math.floor(Math.random() * 2));
+    const branches = this.generateBranchPaths(mainPath, height);
+    const boltGroup = new THREE.Group();
+    const segments: LightningSegment[] = [];
 
-    const material = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 1.0,
+    const mainSegment = this.createLightningSegment(mainPath, 0.12);
+    segments.push(mainSegment);
+    boltGroup.add(mainSegment.mesh);
+
+    branches.forEach((branch) => {
+      const branchSegment = this.createLightningSegment(branch, 0.08);
+      segments.push(branchSegment);
+      boltGroup.add(branchSegment.mesh);
     });
 
-    const curve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0.2, 3, 0),
-      new THREE.Vector3(-0.1, 6, 0),
-      new THREE.Vector3(0.3, 9, 0),
-      new THREE.Vector3(-0.2, 12, 0),
-      new THREE.Vector3(0.1, 15, 0),
-    ]);
+    const glow = this.createImpactGlow(0.55 + Math.random() * 0.25);
+    boltGroup.add(glow);
 
-    const tubeGeometry = new THREE.TubeGeometry(curve, 20, 0.1, 8, false);
-    const mesh = new THREE.Mesh(tubeGeometry, material);
-
-    mesh.position.copy(worldPos);
-    mesh.position.y += 0.1;
+    boltGroup.position.copy(worldPos);
+    boltGroup.position.y += 0.05;
 
     const randomRotation = Math.random() * Math.PI * 2;
-    mesh.rotation.y = randomRotation;
-
-    const scale = 1.0 + Math.random() * 0.5;
-    mesh.scale.set(scale, scale, scale);
-
-    this.thunderBolts.add(mesh);
+    boltGroup.rotation.y = randomRotation;
 
     const duration = this.config.persistent ? 30000 : this.config.duration + Math.random() * 300;
 
     const thunderBolt: ActiveThunderBolt = {
-      mesh,
-      material,
+      group: boltGroup,
+      segments,
+      glow,
       startTime: performance.now(),
       duration,
       hexPosition,
+      flickerSpeed: 3 + Math.random() * 4,
     };
 
+    this.thunderBolts.add(boltGroup);
     this.activeThunderBolts.push(thunderBolt);
 
     if (this.config.debug) {
@@ -214,25 +342,42 @@ export class ThunderBoltManager {
       const progress = elapsed / thunderBolt.duration;
 
       if (progress >= 1 && !this.config.persistent) {
-        this.thunderBolts.remove(thunderBolt.mesh);
-        thunderBolt.material.dispose();
-        thunderBolt.mesh.geometry.dispose();
+        this.disposeThunderBolt(thunderBolt);
         this.activeThunderBolts.splice(i, 1);
 
         if (this.config.debug) {
           console.log(`Removed thunder bolt at hex (${thunderBolt.hexPosition.col}, ${thunderBolt.hexPosition.row})`);
         }
       } else if (!this.config.persistent) {
-        const fadeProgress = progress < 0.3 ? progress / 0.3 : (1 - progress) / 0.7;
-        thunderBolt.material.opacity = Math.max(0.1, fadeProgress);
+        const fadeIn = Math.min(1, progress / 0.15);
+        const fadeOut = progress > 0.35 ? 1 - (progress - 0.35) / 0.65 : 1;
+        const flicker = 0.65 + Math.sin(elapsed * thunderBolt.flickerSpeed * 0.015) * 0.35;
+        const opacity = THREE.MathUtils.clamp(fadeIn * fadeOut * (0.7 + flicker * 0.3), 0.05, 1);
+        const intensity = THREE.MathUtils.lerp(0.8, 1.35, flicker);
 
-        const intensity = Math.sin(elapsed * 0.01) * 0.5 + 0.8;
-        thunderBolt.material.color.setRGB(intensity, intensity * 0.9, 1.0);
+        thunderBolt.segments.forEach(({ material }) => {
+          material.opacity = opacity;
+          material.color.setRGB(intensity, intensity * 0.86, 1.0);
+        });
+
+        if (thunderBolt.glow) {
+          const glowMaterial = thunderBolt.glow.material as THREE.MeshBasicMaterial;
+          glowMaterial.opacity = opacity * 0.6;
+        }
       } else {
         // For persistent bolts, just keep them flickering
-        const intensity = Math.sin(elapsed * 0.01) * 0.5 + 0.8;
-        thunderBolt.material.color.setRGB(intensity, intensity * 0.9, 1.0);
-        thunderBolt.material.opacity = 0.8 + Math.sin(elapsed * 0.002) * 0.2;
+        const intensity = Math.sin(elapsed * thunderBolt.flickerSpeed * 0.015) * 0.4 + 1.0;
+        const opacity = 0.75 + Math.sin(elapsed * thunderBolt.flickerSpeed * 0.006) * 0.2;
+
+        thunderBolt.segments.forEach(({ material }) => {
+          material.opacity = opacity;
+          material.color.setRGB(intensity, intensity * 0.88, 1.05);
+        });
+
+        if (thunderBolt.glow) {
+          const glowMaterial = thunderBolt.glow.material as THREE.MeshBasicMaterial;
+          glowMaterial.opacity = opacity * 0.55;
+        }
       }
     }
 
@@ -243,9 +388,7 @@ export class ThunderBoltManager {
 
   public cleanup(): void {
     this.activeThunderBolts.forEach((thunderBolt) => {
-      this.thunderBolts.remove(thunderBolt.mesh);
-      thunderBolt.material.dispose();
-      thunderBolt.mesh.geometry.dispose();
+      this.disposeThunderBolt(thunderBolt);
     });
     this.activeThunderBolts.length = 0;
 

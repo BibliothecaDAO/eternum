@@ -688,6 +688,7 @@ function amountToBigInt(value: unknown): bigint | null {
   if (value === undefined || value === null) return null;
   if (typeof value === "bigint") return value;
   if (typeof value === "number") {
+    if (!Number.isFinite(value)) return null;
     return BigInt(Math.trunc(value));
   }
   if (typeof value === "string") {

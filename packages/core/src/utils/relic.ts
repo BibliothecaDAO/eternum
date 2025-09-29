@@ -126,7 +126,7 @@ export const getStructureArmyRelicEffects = (
   structure: ComponentValue<ClientComponents["Structure"]["schema"]>,
   currentTick: number,
 ): RelicEffectWithEndTick[] => {
-  const troopBoosts = structure.troop_guards.alpha.boosts;
+  const troopBoosts = structure.troop_guards?.alpha?.boosts;
 
   const relicEffects: RelicEffectWithEndTick[] = [];
 
