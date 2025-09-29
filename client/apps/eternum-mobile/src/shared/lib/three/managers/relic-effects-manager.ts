@@ -1,13 +1,10 @@
 import { getBlockTimestamp, isRelicActive, RelicEffectSystemUpdate } from "@bibliothecadao/eternum";
 import { RelicEffect } from "@bibliothecadao/types";
-import * as THREE from "three";
-import { getWorldPositionForHex } from "../utils/utils";
 
 interface RelicEffectData {
   relicNumber: number;
   effect: RelicEffect;
   fx: { end: () => void; instance?: any };
-  entityPosition: { col: number; row: number }; // Store position for tile group management
 }
 
 interface PendingRelicEffect {
@@ -27,8 +24,7 @@ export class RelicEffectsManager {
 
   // Dependencies
   private fxManager: any = null;
-  private unitTileRenderer: any = null; // Will be set via setter method
-  private tempVector3 = new THREE.Vector3();
+  private unitTileRenderer: any = null;
 
   constructor(fxManager: any) {
     this.fxManager = fxManager;
@@ -81,19 +77,13 @@ export class RelicEffectsManager {
     const currentRelicNumbers = new Set(currentEffects.map((e) => e.relicNumber));
     const newRelicNumbers = new Set(newRelicEffects.map((e) => e.relicNumber));
 
-    // Remove effects that are no longer in the new list
-    for (const currentEffect of currentEffects) {
-      if (!newRelicNumbers.has(currentEffect.relicNumber)) {
-        // Remove the effect from tile group if it exists
-        if (currentEffect.fx.instance && currentEffect.fx.instance.group && this.unitTileRenderer) {
-          this.unitTileRenderer.removeObjectFromTileGroup(
-            currentEffect.entityPosition.col,
-            currentEffect.entityPosition.row,
-            currentEffect.fx.instance.group,
-          );
-        }
-        currentEffect.fx.end();
-      }
+    // Batch process effects to remove - collect first, then execute
+    const effectsToRemove = currentEffects.filter(effect => !newRelicNumbers.has(effect.relicNumber));
+    
+    if (effectsToRemove.length > 0) {
+      effectsToRemove.forEach(effect => {
+        effect.fx.end();
+      });
     }
 
     // Add new effects that weren't previously active
@@ -123,8 +113,7 @@ export class RelicEffectsManager {
           effectsToAdd.push({ 
             relicNumber: newEffect.relicNumber, 
             effect: newEffect.effect, 
-            fx,
-            entityPosition: { col: entityPosition.col, row: entityPosition.row }
+            fx
           });
         } catch (error) {
           console.error(`Failed to add relic effect ${newEffect.relicNumber} for entity ${entityId}:`, error);
@@ -147,7 +136,9 @@ export class RelicEffectsManager {
    */
   public getEntityRelicEffects(entityId: number): { relicId: number; effect: RelicEffect }[] {
     const effects = this.entityRelicEffects.get(entityId);
-    return effects ? effects.map((effect) => ({ relicId: effect.relicNumber, effect: effect.effect })) : [];
+    if (!effects || effects.length === 0) return [];
+    
+    return effects.map((effect) => ({ relicId: effect.relicNumber, effect: effect.effect }));
   }
 
   /**
@@ -185,47 +176,19 @@ export class RelicEffectsManager {
     }
   }
 
-  /**
-   * Update relic effect positions when entity moves to a new tile
-   * This handles moving the effects to the new tile group
-   */
-  public updateRelicEffectPositions(entityId: number, entityPosition: { col: number; row: number }): void {
-    const relicEffects = this.entityRelicEffects.get(entityId);
-    if (!relicEffects || relicEffects.length === 0 || !this.unitTileRenderer) return;
-
-    // Update each relic effect to follow the entity to the new tile
-    relicEffects.forEach((relicEffect) => {
-      if (relicEffect.fx && relicEffect.fx.instance && relicEffect.fx.instance.group) {
-        // Remove from old tile group
-        this.unitTileRenderer.removeObjectFromTileGroup(
-          relicEffect.entityPosition.col,
-          relicEffect.entityPosition.row,
-          relicEffect.fx.instance.group,
-        );
-
-        // Add to new tile group
-        this.unitTileRenderer.addObjectToTileGroup(
-          entityPosition.col,
-          entityPosition.row,
-          relicEffect.fx.instance.group,
-        );
-
-        // Update stored position
-        relicEffect.entityPosition = { col: entityPosition.col, row: entityPosition.row };
-      }
-    });
-  }
 
   /**
    * Start the periodic relic effect validation timer
    */
   private startRelicValidationTimer(): void {
-    // Clear any existing timer
+    // Clear any existing timer first
     this.stopRelicValidationTimer();
 
     // Set up new timer to run every 5 seconds
     this.relicValidationInterval = setInterval(() => {
-      this.validateActiveRelicEffects();
+      if (this.entityRelicEffects.size > 0) {
+        this.validateActiveRelicEffects();
+      }
     }, 5000);
   }
 
@@ -243,37 +206,54 @@ export class RelicEffectsManager {
    * Validate all currently displayed relic effects and remove inactive ones
    */
   private async validateActiveRelicEffects(): Promise<void> {
+    // Skip validation if no entities have relic effects
+    if (this.entityRelicEffects.size === 0) return;
+
     try {
       const { currentArmiesTick } = getBlockTimestamp();
       let removedCount = 0;
+      const entitiesToDelete: number[] = [];
 
       // Validate entity relic effects
       for (const [entityId, relicEffects] of this.entityRelicEffects) {
-        if (relicEffects.length > 0) {
-          // Filter out inactive relics
-          const activeRelics = relicEffects.filter((relicEffect) =>
-            isRelicActive(relicEffect.effect, currentArmiesTick),
-          );
+        if (relicEffects.length === 0) {
+          entitiesToDelete.push(entityId);
+          continue;
+        }
 
-          // If some relics were removed, update the effects
-          if (activeRelics.length < relicEffects.length) {
-            const removedThisEntity = relicEffects.length - activeRelics.length;
-            console.log(`Removing ${removedThisEntity} inactive relic effect(s) from entity: entityId=${entityId}`);
+        // Separate active from inactive effects in a single pass
+        const activeRelics: RelicEffectData[] = [];
+        const inactiveRelics: RelicEffectData[] = [];
 
-            // End the removed effects
-            relicEffects.filter((effect) => !activeRelics.includes(effect)).forEach((effect) => effect.fx.end());
-
-            // Update stored effects
-            if (activeRelics.length === 0) {
-              this.entityRelicEffects.delete(entityId);
-            } else {
-              this.entityRelicEffects.set(entityId, activeRelics);
-            }
-
-            removedCount += removedThisEntity;
+        relicEffects.forEach((relicEffect) => {
+          if (isRelicActive(relicEffect.effect, currentArmiesTick)) {
+            activeRelics.push(relicEffect);
+          } else {
+            inactiveRelics.push(relicEffect);
           }
+        });
+
+        // Process inactive effects if any
+        if (inactiveRelics.length > 0) {
+          console.log(`Removing ${inactiveRelics.length} inactive relic effect(s) from entity: entityId=${entityId}`);
+
+          inactiveRelics.forEach((effect) => {
+            effect.fx.end();
+          });
+
+          // Update stored effects
+          if (activeRelics.length === 0) {
+            entitiesToDelete.push(entityId);
+          } else {
+            this.entityRelicEffects.set(entityId, activeRelics);
+          }
+
+          removedCount += inactiveRelics.length;
         }
       }
+
+      // Batch delete entities with no active effects
+      entitiesToDelete.forEach(entityId => this.entityRelicEffects.delete(entityId));
 
       if (removedCount > 0) {
         console.log(`Removed ${removedCount} total inactive relic effects`);
@@ -309,27 +289,10 @@ export class RelicEffectsManager {
     }
   }
 
-  /**
-   * Get world position for an entity
-   */
-  private getEntityWorldPosition(entityPosition: { col: number; row: number }): THREE.Vector3 {
-    getWorldPositionForHex({ col: entityPosition.col, row: entityPosition.row }, true, this.tempVector3);
-    return this.tempVector3.clone();
-  }
-
   public clearEntityRelicEffects(entityId: number): void {
     const effects = this.entityRelicEffects.get(entityId);
     if (effects) {
-      // Remove all effects from tile groups and end visual effects
       effects.forEach((effect) => {
-        // Remove from tile group if it exists
-        if (effect.fx.instance && effect.fx.instance.group && this.unitTileRenderer) {
-          this.unitTileRenderer.removeObjectFromTileGroup(
-            effect.entityPosition.col,
-            effect.entityPosition.row,
-            effect.fx.instance.group,
-          );
-        }
         effect.fx.end();
       });
       this.entityRelicEffects.delete(entityId);
