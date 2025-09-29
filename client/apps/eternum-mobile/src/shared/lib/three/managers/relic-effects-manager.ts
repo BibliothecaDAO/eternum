@@ -7,6 +7,7 @@ interface RelicEffectData {
   relicNumber: number;
   effect: RelicEffect;
   fx: { end: () => void; instance?: any };
+  entityPosition: { col: number; row: number }; // Store position for tile group management
 }
 
 interface PendingRelicEffect {
@@ -26,11 +27,16 @@ export class RelicEffectsManager {
 
   // Dependencies
   private fxManager: any = null;
+  private unitTileRenderer: any = null; // Will be set via setter method
   private tempVector3 = new THREE.Vector3();
 
   constructor(fxManager: any) {
     this.fxManager = fxManager;
     this.startRelicValidationTimer();
+  }
+
+  public setUnitTileRenderer(renderer: any): void {
+    this.unitTileRenderer = renderer;
   }
 
   /**
@@ -78,6 +84,14 @@ export class RelicEffectsManager {
     // Remove effects that are no longer in the new list
     for (const currentEffect of currentEffects) {
       if (!newRelicNumbers.has(currentEffect.relicNumber)) {
+        // Remove the effect from tile group if it exists
+        if (currentEffect.fx.instance && currentEffect.fx.instance.group && this.unitTileRenderer) {
+          this.unitTileRenderer.removeObjectFromTileGroup(
+            currentEffect.entityPosition.col,
+            currentEffect.entityPosition.row,
+            currentEffect.fx.instance.group,
+          );
+        }
         currentEffect.fx.end();
       }
     }
@@ -87,24 +101,31 @@ export class RelicEffectsManager {
     for (const newEffect of newRelicEffects) {
       if (!currentRelicNumbers.has(newEffect.relicNumber)) {
         try {
-          const position = this.getEntityWorldPosition(entityPosition);
-          position.y += 1.5;
-
           // Register the relic FX if not already registered (wait for texture to load)
           await this.fxManager.registerRelicFX(newEffect.relicNumber);
 
-          // Play the relic effect
+          // Create the relic effect at relative coordinates (0, 1.5, 0) within the tile group
           const fx = this.fxManager.playFxAtCoords(
             `relic_${newEffect.relicNumber}`,
-            position.x,
-            position.y,
-            position.z,
+            0, // x relative to tile group
+            1.5, // y relative to tile group (height above the tile)
+            0, // z relative to tile group
             0.8,
             undefined,
             true,
           );
 
-          effectsToAdd.push({ relicNumber: newEffect.relicNumber, effect: newEffect.effect, fx });
+          // Add the effect's Three.js group to the army's tile group if we have the renderer
+          if (fx.instance && fx.instance.group && this.unitTileRenderer) {
+            this.unitTileRenderer.addObjectToTileGroup(entityPosition.col, entityPosition.row, fx.instance.group);
+          }
+
+          effectsToAdd.push({ 
+            relicNumber: newEffect.relicNumber, 
+            effect: newEffect.effect, 
+            fx,
+            entityPosition: { col: entityPosition.col, row: entityPosition.row }
+          });
         } catch (error) {
           console.error(`Failed to add relic effect ${newEffect.relicNumber} for entity ${entityId}:`, error);
         }
@@ -165,23 +186,32 @@ export class RelicEffectsManager {
   }
 
   /**
-   * Update relic effect positions to follow moving entities
+   * Update relic effect positions when entity moves to a new tile
+   * This handles moving the effects to the new tile group
    */
   public updateRelicEffectPositions(entityId: number, entityPosition: { col: number; row: number }): void {
     const relicEffects = this.entityRelicEffects.get(entityId);
-    if (!relicEffects || relicEffects.length === 0) return;
+    if (!relicEffects || relicEffects.length === 0 || !this.unitTileRenderer) return;
 
-    // Get the current world position of the entity
-    const worldPosition = this.getEntityWorldPosition(entityPosition);
-    worldPosition.y += 1.5; // Relic effects are positioned 1.5 units above the entity
-
-    // Update each relic effect to follow the entity
+    // Update each relic effect to follow the entity to the new tile
     relicEffects.forEach((relicEffect) => {
-      if (relicEffect.fx && relicEffect.fx.instance) {
-        // Update the base position that the orbital animation uses
-        relicEffect.fx.instance.initialX = worldPosition.x;
-        relicEffect.fx.instance.initialY = worldPosition.y;
-        relicEffect.fx.instance.initialZ = worldPosition.z;
+      if (relicEffect.fx && relicEffect.fx.instance && relicEffect.fx.instance.group) {
+        // Remove from old tile group
+        this.unitTileRenderer.removeObjectFromTileGroup(
+          relicEffect.entityPosition.col,
+          relicEffect.entityPosition.row,
+          relicEffect.fx.instance.group,
+        );
+
+        // Add to new tile group
+        this.unitTileRenderer.addObjectToTileGroup(
+          entityPosition.col,
+          entityPosition.row,
+          relicEffect.fx.instance.group,
+        );
+
+        // Update stored position
+        relicEffect.entityPosition = { col: entityPosition.col, row: entityPosition.row };
       }
     });
   }
@@ -290,8 +320,18 @@ export class RelicEffectsManager {
   public clearEntityRelicEffects(entityId: number): void {
     const effects = this.entityRelicEffects.get(entityId);
     if (effects) {
-      // End all visual effects
-      effects.forEach((effect) => effect.fx.end());
+      // Remove all effects from tile groups and end visual effects
+      effects.forEach((effect) => {
+        // Remove from tile group if it exists
+        if (effect.fx.instance && effect.fx.instance.group && this.unitTileRenderer) {
+          this.unitTileRenderer.removeObjectFromTileGroup(
+            effect.entityPosition.col,
+            effect.entityPosition.row,
+            effect.fx.instance.group,
+          );
+        }
+        effect.fx.end();
+      });
       this.entityRelicEffects.delete(entityId);
     }
 

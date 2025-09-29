@@ -119,6 +119,8 @@ export class HexagonMap {
     this.relicEffectsManager = new RelicEffectsManager(this.fxManager);
 
     this.armyManager.setDependencies(this.dojo, this.fxManager, this.biomesManager.getExploredTiles());
+    this.armyManager.setRelicEffectsManager(this.relicEffectsManager);
+    this.relicEffectsManager.setUnitTileRenderer(this.armyManager.getUnitTileRenderer());
     this.structureManager.setDependencies(this.dojo, this.biomesManager.getExploredTiles());
 
     // Set up the callback for biomes manager to check for structures

@@ -20,6 +20,7 @@ import { findShortestPath } from "../utils/pathfinding";
 import { getWorldPositionForHex, HEX_SIZE, loggedInAccount } from "../utils/utils";
 import { EntityManager } from "./entity-manager";
 import { ArmyObject } from "./types";
+import { RelicEffectsManager } from "../managers/relic-effects-manager";
 
 export class ArmyManager extends EntityManager<ArmyObject> {
   private labels: Map<number, CSS2DObject> = new Map();
@@ -43,6 +44,7 @@ export class ArmyManager extends EntityManager<ArmyObject> {
   // Dependencies
   private dojo: DojoResult | null = null;
   private fxManager: any = null;
+  private relicEffectsManager: RelicEffectsManager | null = null;
 
   constructor(scene: THREE.Scene) {
     super(scene);
@@ -53,6 +55,10 @@ export class ArmyManager extends EntityManager<ArmyObject> {
     this.dojo = dojo;
     this.fxManager = fxManager;
     this.exploredTiles = exploredTiles;
+  }
+
+  public setRelicEffectsManager(relicEffectsManager: RelicEffectsManager): void {
+    this.relicEffectsManager = relicEffectsManager;
   }
 
   public addObject(object: ArmyObject): void {
@@ -81,6 +87,12 @@ export class ArmyManager extends EntityManager<ArmyObject> {
       this.objects.set(object.id, object);
       this.updateLabelContent(object);
       this.syncUnitTile(object);
+
+      // Update army position tracking and relic effects even for property-only updates
+      this.armiesPositions.set(object.id, { col: object.col, row: object.row });
+      if (this.relicEffectsManager) {
+        this.relicEffectsManager.updateRelicEffectPositions(object.id, { col: object.col, row: object.row });
+      }
     }
   }
 
@@ -258,6 +270,14 @@ export class ArmyManager extends EntityManager<ArmyObject> {
           this.labelAttachmentState.set(objectId, false);
         }
       }
+
+      // Update army position tracking
+      this.armiesPositions.set(objectId, { col, row });
+
+      // Update relic effect positions to follow the army
+      if (this.relicEffectsManager) {
+        this.relicEffectsManager.updateRelicEffectPositions(objectId, { col, row });
+      }
     }
   }
 
@@ -322,6 +342,14 @@ export class ArmyManager extends EntityManager<ArmyObject> {
       army.col = targetCol;
       army.row = targetRow;
 
+      // Update army position tracking
+      this.armiesPositions.set(objectId, { col: targetCol, row: targetRow });
+
+      // Update relic effect positions to follow the army
+      if (this.relicEffectsManager) {
+        this.relicEffectsManager.updateRelicEffectPositions(objectId, { col: targetCol, row: targetRow });
+      }
+
       // Note: Don't update label content here - wait for system update with fresh stamina data
 
       // Update label attachment for new position
@@ -365,6 +393,14 @@ export class ArmyManager extends EntityManager<ArmyObject> {
       // Update army position after movement completes
       army.col = finalHex.col;
       army.row = finalHex.row;
+
+      // Update army position tracking
+      this.armiesPositions.set(objectId, { col: finalHex.col, row: finalHex.row });
+
+      // Update relic effect positions to follow the army
+      if (this.relicEffectsManager) {
+        this.relicEffectsManager.updateRelicEffectPositions(objectId, { col: finalHex.col, row: finalHex.row });
+      }
 
       // Note: Don't update label content here - wait for system update with fresh stamina data
 
