@@ -119,7 +119,10 @@ interface UIStore {
   tooltip: TooltipType;
   setTooltip: (tooltip: TooltipType) => void;
   contextMenu: ContextMenuState | null;
+  contextMenuStack: ContextMenuState[];
   openContextMenu: (menu: ContextMenuState) => void;
+  pushContextMenu: (menu: ContextMenuState) => void;
+  popContextMenu: () => void;
   closeContextMenu: () => void;
   showRealmsFlags: boolean;
   setShowRealmsFlags: (show: boolean) => void;
@@ -225,8 +228,20 @@ export const useUIStore = create(
             : tooltip,
       }),
     contextMenu: null,
-    openContextMenu: (menu: ContextMenuState) => set({ contextMenu: menu }),
-    closeContextMenu: () => set({ contextMenu: null }),
+    contextMenuStack: [],
+    openContextMenu: (menu: ContextMenuState) => set({ contextMenu: menu, contextMenuStack: [] }),
+    pushContextMenu: (menu: ContextMenuState) =>
+      set((state) => {
+        const stack = state.contextMenu ? [...state.contextMenuStack, state.contextMenu] : state.contextMenuStack;
+        return { contextMenu: menu, contextMenuStack: stack };
+      }),
+    popContextMenu: () =>
+      set((state) => {
+        const stack = [...state.contextMenuStack];
+        const previous = stack.pop() ?? null;
+        return { contextMenu: previous, contextMenuStack: stack };
+      }),
+    closeContextMenu: () => set({ contextMenu: null, contextMenuStack: [] }),
     showRealmsFlags: true,
     setShowRealmsFlags: (show) => set({ showRealmsFlags: show }),
     isLoadingScreenEnabled: true,

@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { CONTEXT_MENU_CONFIG } from "@/ui/config";
-import { ContextMenuAction } from "@/types/context-menu";
+import { ContextMenuAction, ContextMenuState } from "@/types/context-menu";
 
 const RADIAL_DEFAULTS = CONTEXT_MENU_CONFIG.radial;
 const CLAMP_PADDING = CONTEXT_MENU_CONFIG.clampPadding ?? 12;
@@ -85,6 +85,9 @@ const buildRadialSegments = (
 
 export const WorldContextMenu = () => {
   const contextMenu = useUIStore((state) => state.contextMenu);
+  const contextMenuStack = useUIStore((state) => state.contextMenuStack);
+  const pushContextMenu = useUIStore((state) => state.pushContextMenu);
+  const popContextMenu = useUIStore((state) => state.popContextMenu);
   const closeContextMenu = useUIStore((state) => state.closeContextMenu);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const positionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -102,6 +105,35 @@ export const WorldContextMenu = () => {
   useEffect(() => {
     hoveredActionRef.current = hoveredActionId;
   }, [hoveredActionId]);
+
+  const triggerAction = useCallback(
+    (action: ContextMenuAction) => {
+      if (!contextMenu || action.disabled) {
+        return;
+      }
+
+      if (action.children && action.children.length > 0) {
+        const childMenu: ContextMenuState = {
+          id: `${contextMenu.id}::${action.id}`,
+          title: action.childTitle ?? action.label,
+          subtitle: action.childSubtitle ?? contextMenu.subtitle,
+          position: contextMenu.position,
+          scene: contextMenu.scene,
+          actions: action.children,
+          layout: contextMenu.layout,
+          radialOptions: contextMenu.radialOptions,
+          metadata: contextMenu.metadata,
+        };
+        pushContextMenu(childMenu);
+        setHoveredActionId(null);
+        return;
+      }
+
+      action.onSelect();
+      closeContextMenu();
+    },
+    [contextMenu, pushContextMenu, closeContextMenu],
+  );
 
   const radialConfig = useMemo(() => {
     const radius = contextMenu?.radialOptions?.radius ?? RADIAL_DEFAULTS.radius;
@@ -178,7 +210,11 @@ export const WorldContextMenu = () => {
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        closeContextMenu();
+        if (contextMenuStack.length > 0) {
+          popContextMenu();
+        } else {
+          closeContextMenu();
+        }
       }
     };
 
@@ -198,7 +234,7 @@ export const WorldContextMenu = () => {
       document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("mousedown", handlePointerDown);
     };
-  }, [contextMenu, closeContextMenu]);
+  }, [contextMenu, contextMenuStack.length, closeContextMenu, popContextMenu]);
 
   useEffect(() => {
     if (!contextMenu || !menuRef.current) {
@@ -257,6 +293,27 @@ export const WorldContextMenu = () => {
       if (!shouldUseRadial) {
         return;
       }
+      if (event.button !== 0 && event.button !== 2) {
+        return;
+      }
+
+      const center = positionRef.current;
+      const dx = event.clientX - center.x;
+      const dy = event.clientY - center.y;
+      const distance = Math.hypot(dx, dy);
+
+      if (distance < radialConfig.innerRadius) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (contextMenuStack.length > 0) {
+          popContextMenu();
+        } else {
+          closeContextMenu();
+        }
+        return;
+      }
+
       if (event.button !== 0) {
         return;
       }
@@ -267,11 +324,12 @@ export const WorldContextMenu = () => {
       const hoveredId = hoveredActionRef.current;
       const segment = radialSegments.find((item) => item.action.id === hoveredId);
 
-      if (segment && !segment.action.disabled) {
-        segment.action.onSelect();
+      if (!segment) {
+        closeContextMenu();
+        return;
       }
 
-      closeContextMenu();
+      triggerAction(segment.action);
     };
 
     document.addEventListener("mousedown", handleMouseDown, true);
@@ -280,7 +338,7 @@ export const WorldContextMenu = () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mousedown", handleMouseDown, true);
     };
-  }, [contextMenu, shouldUseRadial, radialSegments, radialConfig.innerRadius, closeContextMenu]);
+  }, [contextMenu, shouldUseRadial, radialSegments, radialConfig.innerRadius, contextMenuStack.length, popContextMenu, closeContextMenu, triggerAction]);
 
   useEffect(() => {
     return () => {
@@ -294,14 +352,6 @@ export const WorldContextMenu = () => {
   if (!contextMenu) {
     return null;
   }
-
-  const handleSelect = (handler: () => void, disabled?: boolean) => () => {
-    if (disabled) {
-      return;
-    }
-    handler();
-    closeContextMenu();
-  };
 
   const containerStyle: CSSProperties = shouldUseRadial
     ? {
@@ -351,6 +401,14 @@ export const WorldContextMenu = () => {
               );
             })}
           </svg>
+
+          {contextMenuStack.length > 0 && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div className="rounded-full border border-white/15 bg-black/45 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-white/60">
+                Back
+              </div>
+            </div>
+          )}
 
           {radialSegments.map((segment) => {
             const isActive = segment.action.id === hoveredActionId;
@@ -412,7 +470,7 @@ export const WorldContextMenu = () => {
                 <button
                   type="button"
                   className="flex w-full items-center justify-between gap-3 px-4 py-2 text-left text-sm transition hover:bg-white/10 disabled:cursor-not-allowed disabled:text-white/40"
-                  onClick={handleSelect(action.onSelect, action.disabled)}
+                  onClick={() => triggerAction(action)}
                   disabled={action.disabled}
                 >
                   <span className="flex items-center gap-2">
@@ -421,7 +479,11 @@ export const WorldContextMenu = () => {
                     )}
                     {action.label}
                   </span>
-                  {action.hint && <span className="text-xs text-white/40">{action.hint}</span>}
+                  {action.children && action.children.length > 0 ? (
+                    <span className="text-xs text-white/40">›</span>
+                  ) : action.hint ? (
+                    <span className="text-xs text-white/40">{action.hint}</span>
+                  ) : null}
                 </button>
               </li>
             ))}

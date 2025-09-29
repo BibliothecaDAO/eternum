@@ -17,6 +17,9 @@ export interface ContextMenuAction {
   hint?: string;
   icon?: string;
   onSelect: () => void;
+  children?: ContextMenuAction[];
+  childTitle?: string;
+  childSubtitle?: string;
 }
 
 export interface ContextMenuMetadata {

@@ -17,6 +17,7 @@ import { SceneManager } from "@/three/scene-manager";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView, RightView } from "@/types";
+import { ContextMenuAction } from "@/types/context-menu";
 import { Position } from "@bibliothecadao/eternum";
 
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
@@ -44,6 +45,7 @@ import {
 import {
   ActorType,
   BiomeType,
+  BuildingType,
   ContractAddress,
   Direction,
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
@@ -922,9 +924,9 @@ export default class WorldmapScene extends HexagonScene {
     }
     if (!hexCoords) return;
 
-    const { structure } = this.getHexagonEntity(hexCoords);
     const account = ContractAddress(useAccountStore.getState().account?.address || "");
 
+    const { army, structure, quest, chest } = this.getHexagonEntity(hexCoords);
     const isMine = isAddressEqualToAccount(army?.owner || structure?.owner || 0n);
     this.handleHexSelection(hexCoords, isMine);
 
@@ -1028,13 +1030,93 @@ export default class WorldmapScene extends HexagonScene {
     const openArmyCreationModal = (isExplorer: boolean) => {
       const store = useUIStore.getState();
       store.setStructureEntityId(structure.id);
-      store.toggleModal(
-        <UnifiedArmyCreationModal
-          structureId={Number(structure.id)}
-          isExplorer={isExplorer}
-        />,
-      );
+      store.toggleModal(<UnifiedArmyCreationModal structureId={Number(structure.id)} isExplorer={isExplorer} />);
     };
+
+    const selectConstructionBuilding = (building: BuildingType, view: LeftView) => {
+      const store = useUIStore.getState();
+      store.setStructureEntityId(structure.id);
+      store.setSelectedBuilding(building);
+      store.setLeftNavigationView(view);
+      store.setRightNavigationView(RightView.None);
+    };
+
+    const makeBuildingAction = (
+      suffix: string,
+      label: string,
+      icon: string,
+      building: BuildingType,
+      view: LeftView,
+    ): ContextMenuAction => ({
+      id: `structure-${idString}-${suffix}`,
+      label,
+      icon,
+      onSelect: () => {
+        selectConstructionBuilding(building, view);
+      },
+    });
+
+    const constructionChildren: ContextMenuAction[] = [
+      makeBuildingAction(
+        "workers-hut",
+        "Workers Hut",
+        "/image-icons/house.png",
+        BuildingType.WorkersHut,
+        LeftView.ConstructionView,
+      ),
+      makeBuildingAction(
+        "storehouse",
+        "Storehouse",
+        "/image-icons/building.png",
+        BuildingType.Storehouse,
+        LeftView.ConstructionView,
+      ),
+      makeBuildingAction(
+        "labor",
+        "Labor Camp",
+        "/image-icons/production.png",
+        BuildingType.ResourceLabor,
+        LeftView.ConstructionView,
+      ),
+      makeBuildingAction(
+        "market",
+        "Market",
+        "/image-icons/trade.png",
+        BuildingType.ResourceDonkey,
+        LeftView.ConstructionView,
+      ),
+    ];
+
+    const productionChildren: ContextMenuAction[] = [
+      makeBuildingAction(
+        "wheat",
+        "Wheat Farm",
+        "/image-icons/resources.png",
+        BuildingType.ResourceWheat,
+        LeftView.Production,
+      ),
+      makeBuildingAction(
+        "fish",
+        "Fishing Wharf",
+        "/image-icons/world.png",
+        BuildingType.ResourceFish,
+        LeftView.Production,
+      ),
+      makeBuildingAction(
+        "stone",
+        "Stone Quarry",
+        "/image-icons/building.png",
+        BuildingType.ResourceStone,
+        LeftView.Production,
+      ),
+      makeBuildingAction(
+        "ironwood",
+        "Ironwood Mill",
+        "/image-icons/hyperstructure.png",
+        BuildingType.ResourceIronwood,
+        LeftView.Production,
+      ),
+    ];
 
     uiStore.openContextMenu({
       id: `structure-${idString}`,
@@ -1058,7 +1140,6 @@ export default class WorldmapScene extends HexagonScene {
             store.setStructureEntityId(structure.id);
             store.setLeftNavigationView(LeftView.EntityView);
             store.setRightNavigationView(RightView.None);
-            store.closeContextMenu();
           },
         },
         {
@@ -1067,7 +1148,6 @@ export default class WorldmapScene extends HexagonScene {
           icon: "/image-icons/military.png",
           onSelect: () => {
             openArmyCreationModal(true);
-            useUIStore.getState().closeContextMenu();
           },
         },
         {
@@ -1076,32 +1156,25 @@ export default class WorldmapScene extends HexagonScene {
           icon: "/image-icons/shield.png",
           onSelect: () => {
             openArmyCreationModal(false);
-            useUIStore.getState().closeContextMenu();
           },
         },
         {
           id: `structure-${idString}-buildings`,
           label: "Build Structures",
           icon: "/image-icons/building.png",
-          onSelect: () => {
-            const store = useUIStore.getState();
-            store.setStructureEntityId(structure.id);
-            store.setLeftNavigationView(LeftView.ConstructionView);
-            store.setRightNavigationView(RightView.None);
-            store.closeContextMenu();
-          },
+          childTitle: "Choose Structure",
+          childSubtitle: `Realm ${idString}`,
+          children: constructionChildren,
+          onSelect: () => {},
         },
         {
           id: `structure-${idString}-production`,
           label: "Build Production",
           icon: "/image-icons/production.png",
-          onSelect: () => {
-            const store = useUIStore.getState();
-            store.setStructureEntityId(structure.id);
-            store.setLeftNavigationView(LeftView.Production);
-            store.setRightNavigationView(RightView.None);
-            store.closeContextMenu();
-          },
+          childTitle: "Choose Production",
+          childSubtitle: `Realm ${idString}`,
+          children: productionChildren,
+          onSelect: () => {},
         },
       ],
     });
