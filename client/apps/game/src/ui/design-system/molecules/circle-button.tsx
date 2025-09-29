@@ -39,6 +39,60 @@ const notificationPositions = {
   bottomright: "-bottom-1 -right-1",
 };
 
+type NotificationColor = Exclude<
+  NonNullable<CircleButtonProps["primaryNotification"]>["color"],
+  undefined
+>;
+
+const notificationToneStyles: Record<NotificationColor, {
+  background: string;
+  border: string;
+  text: string;
+  shadow: string;
+}> = {
+  green: {
+    background: "bg-progress-bar-good/90",
+    border: "border-progress-bar-good/80",
+    text: "text-dark",
+    shadow: "shadow-[0_0_10px_rgba(16,185,129,0.45)]",
+  },
+  red: {
+    background: "bg-progress-bar-danger/90",
+    border: "border-progress-bar-danger/80",
+    text: "text-lightest",
+    shadow: "shadow-[0_0_10px_rgba(239,68,68,0.4)]",
+  },
+  blue: {
+    background: "bg-blueish/90",
+    border: "border-blueish/80",
+    text: "text-lightest",
+    shadow: "shadow-[0_0_10px_rgba(107,127,215,0.4)]",
+  },
+  yellow: {
+    background: "bg-yellow/90",
+    border: "border-yellow/80",
+    text: "text-dark",
+    shadow: "shadow-[0_0_10px_rgba(250,255,0,0.45)]",
+  },
+  gold: {
+    background: "bg-gold/90",
+    border: "border-gold/80",
+    text: "text-dark",
+    shadow: "shadow-[0_0_10px_rgba(223,170,84,0.45)]",
+  },
+  orange: {
+    background: "bg-orange/90",
+    border: "border-orange/80",
+    text: "text-dark",
+    shadow: "shadow-[0_0_10px_rgba(254,153,60,0.45)]",
+  },
+};
+
+const getToneClasses = (color: NotificationColor | undefined, fallback: NotificationColor) => {
+  const tone = notificationToneStyles[color ?? fallback];
+  return clsx(tone.background, tone.border, tone.text, tone.shadow);
+};
+
 const CircleButton = ({
   onClick,
   children,
@@ -101,11 +155,9 @@ const CircleButton = ({
       {primaryNotification && primaryNotification.value > 0 && !disabled && (
         <div
           className={clsx(
-            "absolute animate-bounce rounded-full border",
-            `border-${primaryNotification.color || "green"}`,
-            `bg-${primaryNotification.color || "green"}`,
-            "text-brown px-1.5 md:px-2 text-[0.6rem] md:text-xxs z-[100] font-bold",
+            "absolute animate-bounce rounded-full border px-1.5 md:px-2 text-[0.6rem] md:text-xxs z-[100] font-bold transition-shadow duration-200",
             notificationPositions[primaryNotification.location || "topleft"],
+            getToneClasses(primaryNotification.color, "green"),
           )}
         >
           {primaryNotification.value}
@@ -114,11 +166,9 @@ const CircleButton = ({
       {secondaryNotification && secondaryNotification.value > 0 && !disabled && (
         <div
           className={clsx(
-            "absolute animate-bounce rounded-full border",
-            `border-${secondaryNotification.color || "blue"}`,
-            `bg-${secondaryNotification.color || "blue"}`,
-            "text-brown px-1.5 md:px-2 text-[0.6rem] md:text-xxs z-[100] font-bold",
+            "absolute animate-bounce rounded-full border px-1.5 md:px-2 text-[0.6rem] md:text-xxs z-[100] font-bold transition-shadow duration-200",
             notificationPositions[secondaryNotification.location || "topright"],
+            getToneClasses(secondaryNotification.color, "blue"),
           )}
         >
           {secondaryNotification.value}
