@@ -34,7 +34,7 @@ export const BlitzSetHyperstructureShareholdersTo100 = React.memo(() => {
         const currentCoOwners = leaderboardManager.getCurrentCoOwners(hyperstructure);
 
         if (
-          currentCoOwners?.coOwners[0]?.percentage !== 10000 &&
+          currentCoOwners?.coOwners[0]?.percentage !== 10000 ||
           currentCoOwners?.coOwners[0]?.address !== ContractAddress(account.address)
         ) {
           try {
