@@ -5,7 +5,7 @@ import { AttackDrawer } from "@/widgets/attack-drawer";
 import { ChestDrawer } from "@/widgets/chest-drawer/ui/chest-drawer";
 import { HexEntityDetailsDrawer } from "@/widgets/hex-entity-details-drawer";
 import { TransferDrawer } from "@/widgets/transfer-drawer";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { SceneControls } from "./scene-controls";
 
 export function WorldmapPage() {
@@ -27,18 +27,18 @@ export function WorldmapPage() {
   } = useStore();
   const [hexDrawerOpen, setHexDrawerOpen] = useState(false);
 
-  const handleSceneChange = async (sceneId: string) => {
+  const handleSceneChange = useCallback(async (sceneId: string) => {
     setCurrentScene(sceneId);
     canvasRef.current?.switchScene(sceneId);
-  };
+  }, [canvasRef]);
 
-  // Ensure worldmap scene is active when component mounts
+  // Ensure worldmap scene is active when component mounts (only once)
   useEffect(() => {
-    if (isCanvasReady && canvasRef.current) {
+    if (isCanvasReady && canvasRef.current && currentScene !== "worldmap") {
       canvasRef.current.switchScene("worldmap");
       setCurrentScene("worldmap");
     }
-  }, [isCanvasReady]);
+  }, [isCanvasReady, currentScene, canvasRef]);
 
   // Open hex drawer only when an object is double-clicked
   useEffect(() => {
@@ -47,25 +47,25 @@ export function WorldmapPage() {
     }
   }, [selectedHex, isDoubleClickedObject]);
 
-  const handleCameraReset = () => {
+  const handleCameraReset = useCallback(() => {
     console.log("Reset camera");
-  };
+  }, []);
 
-  const handleZoomIn = () => {
+  const handleZoomIn = useCallback(() => {
     console.log("Zoom in");
-  };
+  }, []);
 
-  const handleZoomOut = () => {
+  const handleZoomOut = useCallback(() => {
     console.log("Zoom out");
-  };
+  }, []);
 
-  const handleHexDrawerClose = (open: boolean) => {
+  const handleHexDrawerClose = useCallback((open: boolean) => {
     setHexDrawerOpen(open);
     if (!open) {
       // Reset only the double-click state when drawer is closed, keep the selection
       resetDoubleClickState();
     }
-  };
+  }, [resetDoubleClickState]);
 
   return (
     <>

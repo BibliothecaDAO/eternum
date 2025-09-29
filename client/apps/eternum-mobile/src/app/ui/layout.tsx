@@ -5,13 +5,14 @@ import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
 import { usePlayerStructures } from "@bibliothecadao/react";
 import { Outlet, useMatches } from "@tanstack/react-router";
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { ThreeCanvas, type ThreeCanvasRef } from "@/pages/worldmap/ui/three-canvas";
 
 // Context for sharing the persistent ThreeCanvas across routes
 export const PersistentCanvasContext = createContext<{
   canvasRef: React.RefObject<ThreeCanvasRef>;
   isCanvasReady: boolean;
+  isWorldmapVisible: boolean;
 } | null>(null);
 
 export const usePersistentCanvas = () => {
@@ -37,12 +38,22 @@ export function Layout() {
     console.log("playerStructures", playerStructures);
   }, [playerStructures]);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (canvasRef.current) {
+        const renderer = canvasRef.current.getGameRenderer();
+        renderer?.dispose();
+      }
+    };
+  }, []);
+
   const isHomePage = currentPath === ROUTES.HOME;
   const isWorldmapPage = currentPath === ROUTES.WORLDMAP;
 
-  const handleCanvasReady = () => {
+  const handleCanvasReady = useCallback(() => {
     setIsCanvasReady(true);
-  };
+  }, []);
 
   // Move camera to selected realm when canvas is ready and we're on worldmap
   useEffect(() => {
@@ -56,19 +67,28 @@ export function Layout() {
     moveCameraToRealm();
   }, [selectedRealm, isWorldmapPage, isCanvasReady]);
 
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({
+    canvasRef,
+    isCanvasReady,
+    isWorldmapVisible: isWorldmapPage
+  }), [isCanvasReady, isWorldmapPage]);
+
   return (
-    <PersistentCanvasContext.Provider value={{ canvasRef, isCanvasReady }}>
+    <PersistentCanvasContext.Provider value={contextValue}>
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className={`flex-1 pb-20 ${!isHomePage ? "pt-0" : ""} relative`}>
-          {/* Persistent Three.js Canvas - always rendered but only visible on worldmap */}
+          {/* Persistent Three.js Canvas - always rendered but optimized for visibility */}
           <div 
             className={`absolute inset-0 ${isWorldmapPage ? 'z-0' : 'z-[-1] pointer-events-none opacity-0'}`}
+            style={{ display: isWorldmapPage ? 'block' : 'none' }}
           >
             <ThreeCanvas
               ref={canvasRef}
               onReady={handleCanvasReady}
               className="w-full h-full"
+              isPaused={!isWorldmapPage}
             />
           </div>
           
