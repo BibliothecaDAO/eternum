@@ -89,9 +89,11 @@ export const WorldContextMenu = () => {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const positionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const hoveredActionRef = useRef<string | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [hoveredActionId, setHoveredActionId] = useState<string | null>(null);
+  const [isRadialActive, setIsRadialActive] = useState(false);
 
   useEffect(() => {
     positionRef.current = position;
@@ -154,7 +156,20 @@ export const WorldContextMenu = () => {
     setPosition({ x, y });
     positionRef.current = { x, y };
     setHoveredActionId(null);
-  }, [contextMenu]);
+
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    if (shouldUseRadial) {
+      setIsRadialActive(false);
+      animationFrameRef.current = requestAnimationFrame(() => {
+        setIsRadialActive(true);
+      });
+    } else {
+      setIsRadialActive(false);
+    }
+  }, [contextMenu, shouldUseRadial]);
 
   useEffect(() => {
     if (!contextMenu) {
@@ -267,6 +282,15 @@ export const WorldContextMenu = () => {
     };
   }, [contextMenu, shouldUseRadial, radialSegments, radialConfig.innerRadius, closeContextMenu]);
 
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+  }, []);
+
   if (!contextMenu) {
     return null;
   }
@@ -285,7 +309,9 @@ export const WorldContextMenu = () => {
         left: position.x,
         width: radialConfig.radius * 2,
         height: radialConfig.radius * 2,
-        transform: "translate(-50%, -50%)",
+        transform: `translate(-50%, -50%) scale(${isRadialActive ? 1 : 0.9})`,
+        opacity: isRadialActive ? 1 : 0,
+        transition: "transform 160ms ease-out, opacity 160ms ease-out",
       }
     : { top: position.y, left: position.x };
 
@@ -314,9 +340,13 @@ export const WorldContextMenu = () => {
                 <path
                   key={segment.action.id}
                   d={segment.path}
-                  fill={isActive ? "rgba(255,255,255,0.24)" : "rgba(255,255,255,0.12)"}
+                  fill={isActive ? "rgba(255,255,255,0.28)" : "rgba(255,255,255,0.14)"}
                   stroke="rgba(255,255,255,0.18)"
                   strokeWidth={isActive ? 2 : 1}
+                  style={{
+                    transition: "fill 140ms ease, stroke-width 140ms ease",
+                    filter: isActive ? "drop-shadow(0 0 6px rgba(255,255,255,0.35))" : "none",
+                  }}
                 />
               );
             })}
@@ -333,6 +363,8 @@ export const WorldContextMenu = () => {
                 style={{
                   left: segment.labelPosition.x,
                   top: segment.labelPosition.y,
+                  transform: `translate(-50%, -50%) scale(${isActive ? 1.05 : 1})`,
+                  transition: "transform 140ms ease, background-color 160ms ease, opacity 160ms ease",
                 }}
               >
                 {segment.action.icon ? (
@@ -341,12 +373,17 @@ export const WorldContextMenu = () => {
                     alt={segment.action.label}
                     title={segment.action.label}
                     className={`h-8 w-8 ${isActive ? "opacity-100" : "opacity-80"}`}
+                    style={{
+                      transition: "opacity 160ms ease, transform 160ms ease",
+                      transform: isActive ? "scale(1.05)" : "scale(1)",
+                    }}
                   />
                 ) : (
                   <span
                     className={`whitespace-nowrap text-xs font-semibold ${
                       isActive ? "text-white" : "text-white/70"
                     }`}
+                    style={{ transition: "color 160ms ease" }}
                   >
                     {segment.action.label}
                   </span>
