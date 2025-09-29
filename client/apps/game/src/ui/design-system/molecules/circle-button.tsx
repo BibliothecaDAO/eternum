@@ -34,9 +34,9 @@ const sizes = {
 
 const notificationPositions = {
   topleft: "-top-1 -left-1",
-  topright: "-top-1 -right-1",
+  topright: "-top-1 right-0 -translate-x-1",
   bottomleft: "-bottom-1 -left-1",
-  bottomright: "-bottom-1 -right-1",
+  bottomright: "-bottom-1 right-0 -translate-x-1",
 };
 
 type NotificationColor = Exclude<
