@@ -113,6 +113,10 @@ export const TransferResourcesContainer = ({
   const availableResources = availableResourcesData || [];
   const availableCapacityKg = explorerCapacity ? explorerCapacity.remainingCapacityKg - selectedResourcesWeightKg : 0;
   const hasSelectedResources = selectedResources.length > 0;
+  const showExplorerCapacity = actorTypes?.target === ActorType.Explorer && Boolean(explorerCapacity);
+  const resourcesMidpoint = Math.ceil(availableResources.length / 2);
+  const leftResources = availableResources.slice(0, resourcesMidpoint);
+  const rightResources = availableResources.slice(resourcesMidpoint);
 
   useEffect(() => {
     if (
@@ -437,6 +441,101 @@ export const TransferResourcesContainer = ({
     );
   };
 
+  const renderResourceCard = (resource: (typeof availableResources)[number]) => {
+    const isSelected = selectedResources.some((r) => r.resourceId === resource.resourceId);
+    const resourceWeight = configManager.resourceWeightsKg[resource.resourceId] || 0;
+    const displayAmount = divideByPrecision(resource.amount);
+
+    return (
+      <div
+        key={resource.resourceId}
+        className={`p-3 rounded-md border ${isSelected ? "bg-gold/20 border-gold" : "bg-dark-brown border-gold/30"}`}
+      >
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center">
+            <ResourceIcon resource={ResourcesIds[resource.resourceId]} size="sm" withTooltip={false} />
+            <span className="ml-2 font-medium">{ResourcesIds[resource.resourceId]}</span>
+          </div>
+          <div className="text-sm text-gold/80">{resourceWeight} kg per unit</div>
+          <button
+            className={`px-3 py-1 rounded-md text-sm ${
+              isSelected ? "bg-red/50 hover:bg-red/70 text-red-300" : "bg-gold/10 hover:bg-gold/20 text-gold"
+            }`}
+            onClick={() => toggleResourceSelection(resource)}
+          >
+            {isSelected ? "Remove" : "Select"}
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-gold/80">Available: {displayAmount.toLocaleString()}</span>
+        </div>
+
+        {isSelected && (
+          <div className="mt-3">
+            <div className="flex justify-between text-sm text-gold/80 mb-1">
+              <label>Amount to Transfer:</label>
+              <span>
+                {resourceAmounts[resource.resourceId]?.toLocaleString() || 0} /{displayAmount.toLocaleString()}
+              </span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="range"
+                min="0"
+                max={displayAmount}
+                value={resourceAmounts[resource.resourceId] || 0}
+                onChange={(e) => handleResourceAmountChange(resource.resourceId, parseInt(e.target.value))}
+                className="w-full accent-gold"
+              />
+              <input
+                type="number"
+                min="0"
+                max={displayAmount}
+                value={resourceAmounts[resource.resourceId] || 0}
+                onChange={(e) => handleResourceAmountChange(resource.resourceId, parseInt(e.target.value))}
+                className="w-20 px-2 py-1 bg-dark-brown border border-gold/30 rounded-md text-gold"
+              />
+            </div>
+
+            <div className="flex justify-between mt-2">
+              <button
+                className="px-2 py-1 text-xs bg-gold/10 hover:bg-gold/20 rounded-md"
+                onClick={() => handleResourceAmountChange(resource.resourceId, 0)}
+              >
+                None
+              </button>
+
+              <MaxButton
+                max={() => {
+                  // Cap selection by explorer capacity when applicable
+                  if (actorTypes?.target === ActorType.Explorer && explorerCapacity) {
+                    const otherResourcesWeight = Object.entries(resourceAmounts)
+                      .filter(([id]) => parseInt(id) !== resource.resourceId)
+                      .reduce((total, [id, amt]) => {
+                        const weight = configManager.resourceWeightsKg[parseInt(id)] || 0;
+                        return total + amt * weight;
+                      }, 0);
+                    const availableForThisResource =
+                      explorerCapacity.maxCapacityKg - explorerCapacity.currentLoadKg - otherResourcesWeight;
+                    const maxPossibleAmount =
+                      resourceWeight > 0 ? Math.floor(availableForThisResource / resourceWeight) : displayAmount;
+                    const safeMax = Math.max(0, maxPossibleAmount);
+                    return Math.min(displayAmount, safeMax);
+                  }
+                  return displayAmount;
+                }}
+                onChange={(value) => handleResourceAmountChange(resource.resourceId, parseInt(value))}
+                className="px-2 py-1 text-xs"
+                size="xs"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   if (availableResources.length === 0) {
     return <p className="text-gold/60">No resources available to transfer.</p>;
   }
@@ -472,114 +571,19 @@ export const TransferResourcesContainer = ({
           </div>
 
           {/* Scrollable resources section */}
-          <div className=" h-full grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="sticky top-0 z-10">
-              {actorTypes?.target === ActorType.Explorer && explorerCapacity && renderExplorerCapacity()}
+          {showExplorerCapacity ? (
+            <div className="h-full grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="sticky top-0 z-10">{renderExplorerCapacity()}</div>
+              <div className="overflow-y-auto space-y-3">{availableResources.map(renderResourceCard)}</div>
             </div>
-
-            <div className="grid grid-cols-1 gap-3 overflow-y-auto">
-              {availableResources.map((resource) => {
-                const isSelected = selectedResources.some((r) => r.resourceId === resource.resourceId);
-                const resourceWeight = configManager.resourceWeightsKg[resource.resourceId] || 0;
-                const displayAmount = divideByPrecision(resource.amount);
-
-                return (
-                  <div
-                    key={resource.resourceId}
-                    className={`p-3 rounded-md border ${
-                      isSelected ? "bg-gold/20 border-gold" : "bg-dark-brown border-gold/30"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center">
-                        <ResourceIcon resource={ResourcesIds[resource.resourceId]} size="sm" withTooltip={false} />
-                        <span className="ml-2 font-medium">{ResourcesIds[resource.resourceId]}</span>
-                      </div>
-                      <div className="text-sm text-gold/80">{resourceWeight} kg per unit</div>
-                      <button
-                        className={`px-3 py-1 rounded-md text-sm ${
-                          isSelected
-                            ? "bg-red/50 hover:bg-red/70 text-red-300"
-                            : "bg-gold/10 hover:bg-gold/20 text-gold"
-                        }`}
-                        onClick={() => toggleResourceSelection(resource)}
-                      >
-                        {isSelected ? "Remove" : "Select"}
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-gold/80">Available: {displayAmount.toLocaleString()}</span>
-                    </div>
-
-                    {isSelected && (
-                      <div className="mt-3">
-                        <div className="flex justify-between text-sm text-gold/80 mb-1">
-                          <label>Amount to Transfer:</label>
-                          <span>
-                            {resourceAmounts[resource.resourceId]?.toLocaleString() || 0} /
-                            {displayAmount.toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="range"
-                            min="0"
-                            max={displayAmount}
-                            value={resourceAmounts[resource.resourceId] || 0}
-                            onChange={(e) => handleResourceAmountChange(resource.resourceId, parseInt(e.target.value))}
-                            className="w-full accent-gold"
-                          />
-                          <input
-                            type="number"
-                            min="0"
-                            max={displayAmount}
-                            value={resourceAmounts[resource.resourceId] || 0}
-                            onChange={(e) => handleResourceAmountChange(resource.resourceId, parseInt(e.target.value))}
-                            className="w-20 px-2 py-1 bg-dark-brown border border-gold/30 rounded-md text-gold"
-                          />
-                        </div>
-
-                        <div className="flex justify-between mt-2">
-                          <button
-                            className="px-2 py-1 text-xs bg-gold/10 hover:bg-gold/20 rounded-md"
-                            onClick={() => handleResourceAmountChange(resource.resourceId, 0)}
-                          >
-                            None
-                          </button>
-
-                          <MaxButton
-                            max={() => {
-                              // Calculate max based on explorer capacity if applicable
-                              if (actorTypes?.target === ActorType.Explorer && explorerCapacity) {
-                                const resourceWeight = configManager.resourceWeightsKg[resource.resourceId] || 0;
-                                const otherResourcesWeight = Object.entries(resourceAmounts)
-                                  .filter(([id]) => parseInt(id) !== resource.resourceId)
-                                  .reduce((total, [id, amt]) => {
-                                    const weight = configManager.resourceWeightsKg[parseInt(id)] || 0;
-                                    return total + amt * weight;
-                                  }, 0);
-                                const availableForThisResource =
-                                  explorerCapacity.maxCapacityKg -
-                                  explorerCapacity.currentLoadKg -
-                                  otherResourcesWeight;
-                                const maxPossibleAmount = Math.floor(availableForThisResource / resourceWeight);
-                                return Math.min(displayAmount, maxPossibleAmount);
-                              }
-                              return displayAmount;
-                            }}
-                            onChange={(value) => handleResourceAmountChange(resource.resourceId, parseInt(value))}
-                            className="px-2 py-1 text-xs"
-                            size="xs"
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+          ) : (
+            <div className="overflow-y-auto">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+                <div className="space-y-3">{leftResources.map(renderResourceCard)}</div>
+                <div className="space-y-3">{rightResources.map(renderResourceCard)}</div>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Fixed position transfer button at the bottom */}
           <div className="mt-10 mx-auto">
