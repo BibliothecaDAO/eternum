@@ -334,6 +334,12 @@ export default class WorldmapScene extends HexagonScene {
 
     // Store the unsubscribe function for Army updates
     this.worldUpdateListener.Army.onTileUpdate(async (update: ExplorerTroopsTileSystemUpdate) => {
+      if (update.removed) {
+        console.debug(`[WorldMap] Tile update indicates removal for entity ${update.entityId}`);
+        this.deleteArmy(update.entityId);
+        return;
+      }
+
       console.debug(`[WorldMap] Army tile update received for entity ${update.entityId}`);
       this.updateArmyHexes(update);
 
@@ -377,7 +383,10 @@ export default class WorldmapScene extends HexagonScene {
 
     // Listen for troop count and stamina changes
     this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {
-      console.debug(`[WorldMap] ExplorerTroops update received for entity ${update.entityId}`);
+      console.debug(`[WorldMap] ExplorerTroops update received for entity ${update.entityId}`, {
+        troopCount: update.troopCount,
+        owner: update.ownerAddress,
+      });
       this.updateArmyHexes(update);
       this.armyManager.updateArmyFromExplorerTroopsUpdate(update);
     });

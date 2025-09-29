@@ -20,6 +20,7 @@ export type ExplorerTroopsTileSystemUpdate = {
   troopType: TroopType;
   troopTier: TroopTier;
   isDaydreamsAgent: boolean;
+  removed?: boolean;
   // Enhanced data from MapDataStore
   ownerName: string;
   guildName: string;

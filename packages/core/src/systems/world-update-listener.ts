@@ -22,6 +22,7 @@ import {
   isComponentUpdate,
 } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { shortString } from "starknet";
 import { StaminaManager } from "../managers";
 import { ActiveProduction, GuardArmy, MapDataStore, TROOP_TIERS } from "../stores/map-data-store";
 import { storyEventBus } from "../stores/story-event-bus";
@@ -33,23 +34,22 @@ import {
   unpackBuildingCounts,
 } from "../utils";
 import { MAP_DATA_REFRESH_INTERVAL } from "../utils/constants";
+import { getAddressName } from "../utils/entities";
 import { getBlockTimestamp } from "../utils/timestamp";
 import { DataEnhancer } from "./data-enhancer";
-import { getAddressName } from "../utils/entities";
 import {
   type BattleEventSystemUpdate,
   type BuildingSystemUpdate,
   ExplorerMoveSystemUpdate,
   ExplorerTroopsSystemUpdate,
   type ExplorerTroopsTileSystemUpdate,
-  type StoryEventSystemUpdate,
   type RelicEffectSystemUpdate,
+  type StoryEventSystemUpdate,
   StructureSystemUpdate,
   type StructureTileSystemUpdate,
   type TileSystemUpdate,
 } from "./types";
 import { getExplorerInfoFromTileOccupier, getStructureInfoFromTileOccupier, getStructureStage } from "./utils";
-import { shortString } from "starknet";
 
 // The WorldUpdateListener class is responsible for updating the Three.js models when there are changes in the game state.
 // It listens for updates from torii and translates them into a format that can be consumed by the Three.js model managers.
@@ -116,8 +116,38 @@ export class WorldUpdateListener {
               const [currentState, _prevState] = update.value;
 
               const explorer = currentState && getExplorerInfoFromTileOccupier(currentState?.occupier_type);
+              const previousExplorer = _prevState && getExplorerInfoFromTileOccupier(_prevState.occupier_type);
 
-              if (!explorer) return;
+              if (!explorer) {
+                if (currentState) {
+                  console.debug(`[WorldUpdateListener] Tile update without explorer`, {
+                    entity: update.entity,
+                    occupierType: currentState.occupier_type,
+                    occupierId: currentState.occupier_id,
+                    prevOccupierId: _prevState?.occupier_id,
+                    prevOccupierType: _prevState?.occupier_type,
+                  });
+                }
+
+                if (previousExplorer && _prevState) {
+                  const coordsSource = currentState ?? _prevState;
+                  return {
+                    entityId: _prevState.occupier_id,
+                    hexCoords: { col: coordsSource.col, row: coordsSource.row },
+                    troopType: previousExplorer.troopType as TroopType,
+                    troopTier: previousExplorer.troopTier as TroopTier,
+                    isDaydreamsAgent: previousExplorer.isDaydreamsAgent,
+                    troopCount: 0,
+                    ownerName: "",
+                    guildName: "",
+                    ownerAddress: 0n,
+                    ownerStructureId: null,
+                    removed: true,
+                  };
+                }
+
+                return;
+              }
 
               const { currentArmiesTick } = getBlockTimestamp();
 
@@ -216,6 +246,11 @@ export class WorldUpdateListener {
           async (update: any): Promise<ID | undefined> => {
             if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
               const [currentState, prevState] = update.value;
+              console.debug(`[WorldUpdateListener] ExplorerTroops component update received`, {
+                entity: update.entity,
+                hasCurrentState: currentState !== undefined,
+                hasPrevState: prevState !== undefined,
+              });
               const explorer = getComponentValue(this.setup.components.ExplorerTroops, update.entity);
               if (!explorer && !prevState) return;
               if (!explorer && undefined === currentState && prevState) {
@@ -356,49 +391,36 @@ export class WorldUpdateListener {
 
               if (!currentState) return;
 
-              // Extract guard armies data from the structure
+              // Extract guard armies data from the structure (guard object may be undefined on fresh structures)
+              const troopGuards = currentState.troop_guards ?? {};
               const guardArmies: GuardArmy[] = [];
-              if (currentState.troop_guards.delta) {
+
+              const pushGuard = (slot: number, guard?: any) => {
+                if (!guard) return;
                 guardArmies.push({
-                  slot: 0,
-                  category: currentState.troop_guards.delta.category,
-                  tier: TROOP_TIERS[currentState.troop_guards.delta.tier],
-                  count: divideByPrecision(Number(currentState.troop_guards.delta.count)),
-                  stamina: Number(currentState.troop_guards.delta.stamina.amount),
+                  slot,
+                  category: guard.category,
+                  tier: TROOP_TIERS[guard.tier],
+                  count: divideByPrecision(Number(guard.count ?? 0)),
+                  stamina: Number(guard.stamina?.amount ?? 0),
                 });
-              }
-              if (currentState.troop_guards.charlie) {
-                guardArmies.push({
-                  slot: 1,
-                  category: currentState.troop_guards.charlie.category,
-                  tier: TROOP_TIERS[currentState.troop_guards.charlie.tier],
-                  count: divideByPrecision(Number(currentState.troop_guards.charlie.count)),
-                  stamina: Number(currentState.troop_guards.charlie.stamina.amount),
-                });
-              }
-              if (currentState.troop_guards.bravo) {
-                guardArmies.push({
-                  slot: 2,
-                  category: currentState.troop_guards.bravo.category,
-                  tier: TROOP_TIERS[currentState.troop_guards.bravo.tier],
-                  count: divideByPrecision(Number(currentState.troop_guards.bravo.count)),
-                  stamina: Number(currentState.troop_guards.bravo.stamina.amount),
-                });
-              }
-              if (currentState.troop_guards.alpha) {
-                guardArmies.push({
-                  slot: 3,
-                  category: currentState.troop_guards.alpha.category,
-                  tier: TROOP_TIERS[currentState.troop_guards.alpha.tier],
-                  count: divideByPrecision(Number(currentState.troop_guards.alpha.count)),
-                  stamina: Number(currentState.troop_guards.alpha.stamina.amount),
-                });
-              }
+              };
+
+              pushGuard(0, troopGuards?.delta);
+              pushGuard(1, troopGuards?.charlie);
+              pushGuard(2, troopGuards?.bravo);
+              pushGuard(3, troopGuards?.alpha);
 
               // Use DataEnhancer to fetch player name
-              const playerName = await this.dataEnhancer.getPlayerName(currentState.owner.toString());
+              const ownerValue = currentState.owner ?? 0n;
+              const ownerString =
+                typeof ownerValue === "bigint" || typeof ownerValue === "number" || typeof ownerValue === "string"
+                  ? ownerValue.toString()
+                  : (ownerValue ?? "0");
 
-              this.dataEnhancer.updateStructureOwner(currentState.entity_id, currentState.owner, playerName);
+              const playerName = await this.dataEnhancer.getPlayerName(ownerString);
+
+              this.dataEnhancer.updateStructureOwner(currentState.entity_id, ownerValue, playerName);
 
               return {
                 entityId: currentState.entity_id,
@@ -410,10 +432,10 @@ export class WorldUpdateListener {
                 },
                 hexCoords: { col: currentState.base.coord_x, row: currentState.base.coord_y },
                 battleCooldownEnd: Math.max(
-                  currentState.troop_guards.alpha.battle_cooldown_end,
-                  currentState.troop_guards.bravo.battle_cooldown_end,
-                  currentState.troop_guards.charlie.battle_cooldown_end,
-                  currentState.troop_guards.delta.battle_cooldown_end,
+                  troopGuards?.alpha?.battle_cooldown_end ?? 0,
+                  troopGuards?.bravo?.battle_cooldown_end ?? 0,
+                  troopGuards?.charlie?.battle_cooldown_end ?? 0,
+                  troopGuards?.delta?.battle_cooldown_end ?? 0,
                 ),
               };
             }

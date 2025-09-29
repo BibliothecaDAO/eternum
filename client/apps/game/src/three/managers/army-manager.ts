@@ -1124,6 +1124,12 @@ ${
    * Update army label from system update (troop count/stamina changes)
    */
   public updateArmyFromExplorerTroopsUpdate(update: ExplorerTroopsSystemUpdate): void {
+    if (update.troopCount <= 0) {
+      console.debug(`[ArmyManager] ExplorerTroops update indicates zero troops for entity ${update.entityId}, removing`);
+      this.removeArmy(update.entityId);
+      return;
+    }
+
     const army = this.armies.get(update.entityId);
     console.log("[UPDATING ARMY LABEL FROM SYSTEM UPDATE]", { army });
 
