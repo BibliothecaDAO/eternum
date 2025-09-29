@@ -39,17 +39,17 @@ const notificationPositions = {
   bottomright: "-bottom-1 right-0 -translate-x-1",
 };
 
-type NotificationColor = Exclude<
-  NonNullable<CircleButtonProps["primaryNotification"]>["color"],
-  undefined
->;
+type NotificationColor = Exclude<NonNullable<CircleButtonProps["primaryNotification"]>["color"], undefined>;
 
-const notificationToneStyles: Record<NotificationColor, {
-  background: string;
-  border: string;
-  text: string;
-  shadow: string;
-}> = {
+const notificationToneStyles: Record<
+  NotificationColor,
+  {
+    background: string;
+    border: string;
+    text: string;
+    shadow: string;
+  }
+> = {
   green: {
     background: "bg-progress-bar-good/90",
     border: "border-progress-bar-good/80",

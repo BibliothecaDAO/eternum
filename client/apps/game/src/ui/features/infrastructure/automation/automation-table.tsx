@@ -351,9 +351,7 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
                   )}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-gold/50 mt-1">
-                Select the resource you want this automation to produce.
-              </p>
+              <p className="text-xs text-gold/50 mt-1">Select the resource you want this automation to produce.</p>
             </div>
 
             <div>
