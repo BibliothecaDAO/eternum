@@ -16,7 +16,7 @@ import { AutomationBackupControls } from "@/ui/features/automation/automation-ba
 import { TemplateAssignmentModal } from "@/ui/features/automation/template-assignment-modal";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { getStructureName } from "@bibliothecadao/eternum";
-import { RealmInfo, resources, ResourcesIds } from "@bibliothecadao/types";
+import { RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { LucideArrowRight } from "lucide-react";
 import React, { useMemo, useState } from "react";
 
@@ -87,15 +87,6 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
     return availableResourcesForRealm.filter((res) => res.id !== ResourcesIds.Labor);
   }, [availableResourcesForRealm]);
 
-  const filteredResourcesForLaborInput = useMemo(() => {
-    return resources
-      .filter((res) => res.id <= ResourcesIds.Dragonhide)
-      .map((res) => ({
-        id: res.id,
-        name: res.trait,
-      }));
-  }, []);
-
   // Effect to update default resource if realmInfo (and thus availableResourcesForRealm) changes
   React.useEffect(() => {
     setNewOrder({
@@ -130,10 +121,7 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
   };
 
   const handleProductionTypeChange = (value: ProductionType) => {
-    const newResourceToUse =
-      value === ProductionType.ResourceToLabor
-        ? filteredResourcesForLaborInput[0]?.id
-        : filteredResourcesForSelect[0]?.id;
+    const newResourceToUse = filteredResourcesForSelect[0]?.id;
 
     setNewOrder((prev) => ({
       ...prev,
@@ -313,7 +301,6 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
                 <SelectContent>
                   <SelectItem value={ProductionType.ResourceToResource}>Standard (Resource-based)</SelectItem>
                   <SelectItem value={ProductionType.LaborToResource}>Simple (Labor-based)</SelectItem>
-                  <SelectItem value={ProductionType.ResourceToLabor}>Resource to Labor</SelectItem>
                 </SelectContent>
               </Select>
               <div className="text-xs text-gold/50 mb-1">Choose how automation will convert resources.</div>
@@ -336,25 +323,14 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
             </div>
             <div>
               <label htmlFor="resourceToUse" className="block mb-1 text-sm font-medium">
-                {newOrder.productionType === ProductionType.ResourceToLabor
-                  ? "Resource Input For Labor:"
-                  : "Resource to Produce:"}
+                Resource to Produce:
               </label>
               <Select value={String(newOrder.resourceToUse)} onValueChange={handleResourceChange}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select resource" />
                 </SelectTrigger>
                 <SelectContent>
-                  {newOrder.productionType === ProductionType.ResourceToLabor ? (
-                    filteredResourcesForLaborInput.map((res) => (
-                      <SelectItem key={res.id} value={String(res.id)}>
-                        <div className="flex items-center">
-                          <ResourceIcon resource={res.name} size="xs" className="mr-2" />
-                          {res.name}
-                        </div>
-                      </SelectItem>
-                    ))
-                  ) : filteredResourcesForSelect.length > 0 ? (
+                  {filteredResourcesForSelect.length > 0 ? (
                     filteredResourcesForSelect.map((res) => (
                       <SelectItem key={res.id} value={String(res.id)}>
                         <div className="flex items-center">
@@ -376,19 +352,13 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
                 </SelectContent>
               </Select>
               <p className="text-xs text-gold/50 mt-1">
-                Select the resource you want this automation to produce (or use as input for labor).
+                Select the resource you want this automation to produce.
               </p>
             </div>
 
             <div>
               <label htmlFor="maxAmount" className="block mb-1 text-sm font-medium">
-                {newOrder.mode === OrderMode.MaintainBalance
-                  ? newOrder.productionType === ProductionType.ResourceToLabor
-                    ? "Target Labor Balance:"
-                    : "Target Balance:"
-                  : newOrder.productionType === ProductionType.ResourceToLabor
-                    ? "Target Labor Amount:"
-                    : "Target Amount:"}
+                {newOrder.mode === OrderMode.MaintainBalance ? "Target Balance:" : "Target Amount:"}
                 {!isInfinite && parseInt(maxAmountInput, 10) < 1000 && (
                   <span className="text-red ml-1">(min 1000)</span>
                 )}
@@ -417,9 +387,7 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
               </div>
               <p className="text-xs text-gold/50 mt-1">
                 {newOrder.mode === OrderMode.MaintainBalance
-                  ? newOrder.productionType === ProductionType.ResourceToLabor
-                    ? "Set the target labor balance to maintain. Production will trigger when labor drops below this minus buffer."
-                    : "Set the target balance to maintain. Production will trigger when balance drops below this minus buffer."
+                  ? "Set the target balance to maintain. Production will trigger when balance drops below this minus buffer."
                   : 'Set the target amount to produce. Check "Infinite" to keep producing without a limit.'}
               </p>
             </div>
