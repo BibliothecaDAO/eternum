@@ -88,7 +88,6 @@ export const WorldContextMenu = () => {
   const closeContextMenu = useUIStore((state) => state.closeContextMenu);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const positionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const pointerStateRef = useRef<{ distance: number }>({ distance: 0 });
   const hoveredActionRef = useRef<string | null>(null);
 
   const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -155,7 +154,6 @@ export const WorldContextMenu = () => {
     setPosition({ x, y });
     positionRef.current = { x, y };
     setHoveredActionId(null);
-    pointerStateRef.current.distance = 0;
   }, [contextMenu]);
 
   useEffect(() => {
@@ -213,7 +211,6 @@ export const WorldContextMenu = () => {
       const dx = event.clientX - center.x;
       const dy = event.clientY - center.y;
       const distance = Math.hypot(dx, dy);
-      pointerStateRef.current.distance = distance;
 
       if (distance < radialConfig.innerRadius) {
         if (hoveredActionRef.current !== null) {
@@ -240,33 +237,35 @@ export const WorldContextMenu = () => {
       }
     };
 
-    const handleMouseUp = (event: MouseEvent) => {
+    document.addEventListener("mousemove", handleMouseMove);
+    const handleMouseDown = (event: MouseEvent) => {
+      if (!shouldUseRadial) {
+        return;
+      }
       if (event.button !== 0) {
         return;
       }
 
+      event.preventDefault();
+      event.stopPropagation();
+
       const hoveredId = hoveredActionRef.current;
       const segment = radialSegments.find((item) => item.action.id === hoveredId);
 
-      if (
-        segment &&
-        !segment.action.disabled &&
-        pointerStateRef.current.distance >= radialConfig.selectRadius
-      ) {
+      if (segment && !segment.action.disabled) {
         segment.action.onSelect();
       }
 
       closeContextMenu();
     };
 
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
+    document.addEventListener("mousedown", handleMouseDown, true);
 
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
+      document.removeEventListener("mousedown", handleMouseDown, true);
     };
-  }, [contextMenu, shouldUseRadial, radialSegments, radialConfig.innerRadius, radialConfig.selectRadius, closeContextMenu]);
+  }, [contextMenu, shouldUseRadial, radialSegments, radialConfig.innerRadius, closeContextMenu]);
 
   if (!contextMenu) {
     return null;
