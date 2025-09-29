@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { CONTEXT_MENU_CONFIG } from "@/ui/config";
 import { ContextMenuAction, ContextMenuState } from "@/types/context-menu";
+import { CONTEXT_MENU_CONFIG } from "@/ui/config";
 
 const RADIAL_DEFAULTS = CONTEXT_MENU_CONFIG.radial;
 const CLAMP_PADDING = CONTEXT_MENU_CONFIG.clampPadding ?? 12;
@@ -61,7 +61,7 @@ const buildRadialSegments = (
   const safeGap = Math.min(Math.max(gapDegrees, 0), Math.max(step - 6, 0));
   const halfGap = safeGap / 2;
   const center = outerRadius;
-  const labelRadius = innerRadius + (outerRadius - innerRadius) * 0.65;
+  const labelRadius = innerRadius + (outerRadius - innerRadius) * 0.5;
 
   return actions.map((action, index) => {
     const rawStart = index * step;
@@ -97,6 +97,8 @@ export const WorldContextMenu = () => {
   const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [hoveredActionId, setHoveredActionId] = useState<string | null>(null);
   const [isRadialActive, setIsRadialActive] = useState(false);
+  const [segmentAnimationTrigger, setSegmentAnimationTrigger] = useState(0);
+  const [menuRotation, setMenuRotation] = useState(0);
 
   useEffect(() => {
     positionRef.current = position;
@@ -104,6 +106,12 @@ export const WorldContextMenu = () => {
 
   useEffect(() => {
     hoveredActionRef.current = hoveredActionId;
+    // Change cursor when hovering over a segment
+    if (hoveredActionId) {
+      document.body.style.cursor = "pointer";
+    } else {
+      document.body.style.cursor = "";
+    }
   }, [hoveredActionId]);
 
   const triggerAction = useCallback(
@@ -142,8 +150,7 @@ export const WorldContextMenu = () => {
     const radius = contextMenu?.radialOptions?.radius ?? RADIAL_DEFAULTS.radius;
     const requestedInner = contextMenu?.radialOptions?.innerRadius ?? RADIAL_DEFAULTS.innerRadius;
     const innerRadius = Math.min(Math.max(requestedInner, 12), radius - 6);
-    const selectRadius =
-      contextMenu?.radialOptions?.selectRadius ?? Math.max(radius * 0.6, innerRadius + 16);
+    const selectRadius = contextMenu?.radialOptions?.selectRadius ?? Math.max(radius * 0.6, innerRadius + 16);
 
     return {
       radius,
@@ -198,8 +205,14 @@ export const WorldContextMenu = () => {
     }
     if (shouldUseRadial) {
       setIsRadialActive(false);
+      setSegmentAnimationTrigger((prev) => prev + 1);
+      // Add rotation wobble on open
+      const wobbleAmount = 8;
+      setMenuRotation(wobbleAmount);
       animationFrameRef.current = requestAnimationFrame(() => {
         setIsRadialActive(true);
+        // Settle rotation back to 0
+        setTimeout(() => setMenuRotation(0), 100);
       });
     } else {
       setIsRadialActive(false);
@@ -244,6 +257,19 @@ export const WorldContextMenu = () => {
       return;
     }
 
+    // For radial menus, position represents the visual center (due to translate(-50%, -50%))
+    // So positionRef should always store the visual center for accurate hover calculations
+    if (shouldUseRadial) {
+      const rect = menuRef.current.getBoundingClientRect();
+      // Get the actual visual center from the DOM
+      const visualCenterX = rect.left + rect.width / 2;
+      const visualCenterY = rect.top + rect.height / 2;
+
+      // Update ref with the actual rendered center position
+      positionRef.current = { x: visualCenterX, y: visualCenterY };
+      return;
+    }
+
     const rect = menuRef.current.getBoundingClientRect();
     const maxX = window.innerWidth - rect.width - CLAMP_PADDING;
     const maxY = window.innerHeight - rect.height - CLAMP_PADDING;
@@ -252,49 +278,14 @@ export const WorldContextMenu = () => {
 
     if (clampedX !== position.x || clampedY !== position.y) {
       setPosition({ x: clampedX, y: clampedY });
+      positionRef.current = { x: clampedX, y: clampedY };
     }
-  }, [contextMenu, position]);
+  }, [contextMenu, position, shouldUseRadial]);
 
   useEffect(() => {
     if (!contextMenu || !shouldUseRadial || radialSegments.length === 0) {
       return;
     }
-
-    const handleMouseMove = (event: MouseEvent) => {
-      const center = positionRef.current;
-      const dx = event.clientX - center.x;
-      const dy = event.clientY - center.y;
-      const distance = Math.hypot(dx, dy);
-
-      if (distance < radialConfig.innerRadius) {
-        if (hoveredActionRef.current !== null) {
-          setHoveredActionId(null);
-        }
-        hoveredActionRef.current = null;
-        return;
-      }
-
-      const baseAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
-      const normalized = (baseAngle + 360) % 360;
-      const angleFromTop = (normalized + 90) % 360;
-
-      const segment = radialSegments.find(
-        (item) => angleFromTop >= item.rawStart && angleFromTop < item.rawEnd,
-      );
-
-      if (!segment) {
-        setHoveredActionId(null);
-        hoveredActionRef.current = null;
-        return;
-      }
-
-      if (hoveredActionRef.current !== segment.action.id) {
-        setHoveredActionId(segment.action.id);
-        hoveredActionRef.current = segment.action.id;
-      }
-    };
-
-    document.addEventListener("mousemove", handleMouseMove);
     const handleMouseDown = (event: MouseEvent) => {
       if (!shouldUseRadial) {
         return;
@@ -331,9 +322,7 @@ export const WorldContextMenu = () => {
       const normalized = (baseAngle + 360) % 360;
       const angleFromTop = (normalized + 90) % 360;
 
-      const segment = radialSegments.find(
-        (item) => angleFromTop >= item.rawStart && angleFromTop < item.rawEnd,
-      );
+      const segment = radialSegments.find((item) => angleFromTop >= item.rawStart && angleFromTop < item.rawEnd);
 
       if (!segment) {
         closeContextMenu();
@@ -346,10 +335,59 @@ export const WorldContextMenu = () => {
     document.addEventListener("mousedown", handleMouseDown, true);
 
     return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mousedown", handleMouseDown, true);
     };
-  }, [contextMenu, shouldUseRadial, radialSegments, radialConfig.innerRadius, contextMenuStack.length, popContextMenu, closeContextMenu, triggerAction]);
+  }, [
+    contextMenu,
+    shouldUseRadial,
+    radialSegments,
+    radialConfig.innerRadius,
+    contextMenuStack.length,
+    popContextMenu,
+    closeContextMenu,
+    triggerAction,
+  ]);
+
+  const handleContainerMouseMove = useCallback(
+    (event: React.MouseEvent) => {
+      if (!shouldUseRadial || radialSegments.length === 0) return;
+
+      const center = positionRef.current;
+      const dx = event.clientX - center.x;
+      const dy = event.clientY - center.y;
+      const distance = Math.hypot(dx, dy);
+
+      console.log("Distance:", distance, "Inner:", radialConfig.innerRadius, "Outer:", radialConfig.radius);
+
+      if (distance < radialConfig.innerRadius || distance > radialConfig.radius) {
+        if (hoveredActionRef.current !== null) {
+          setHoveredActionId(null);
+        }
+        hoveredActionRef.current = null;
+        return;
+      }
+
+      const baseAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
+      const normalized = (baseAngle + 360) % 360;
+      const angleFromTop = (normalized + 90) % 360;
+
+      const segment = radialSegments.find((item) => angleFromTop >= item.rawStart && angleFromTop < item.rawEnd);
+
+      console.log("Angle:", angleFromTop, "Found segment:", !!segment);
+
+      if (!segment) {
+        setHoveredActionId(null);
+        hoveredActionRef.current = null;
+        return;
+      }
+
+      if (hoveredActionRef.current !== segment.action.id) {
+        setHoveredActionId(segment.action.id);
+        hoveredActionRef.current = segment.action.id;
+      }
+    },
+    [shouldUseRadial, radialSegments, radialConfig.innerRadius, radialConfig.radius],
+  );
 
   useEffect(() => {
     return () => {
@@ -357,6 +395,8 @@ export const WorldContextMenu = () => {
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
       }
+      // Reset cursor when component unmounts
+      document.body.style.cursor = "";
     };
   }, []);
 
@@ -382,97 +422,191 @@ export const WorldContextMenu = () => {
       className="fixed z-40 pointer-events-auto"
       style={containerStyle}
       onContextMenu={(event) => event.preventDefault()}
+      onMouseMove={handleContainerMouseMove}
       role="menu"
       aria-label={contextMenu.title ?? "Context menu"}
     >
       {shouldUseRadial && radialSegments.length > 0 ? (
         <div
-          className="relative flex items-center justify-center text-white"
-          style={{ width: radialConfig.radius * 2, height: radialConfig.radius * 2 }}
+          className="relative flex items-center justify-center  pointer-events-none"
+          style={{
+            width: radialConfig.radius * 2,
+            height: radialConfig.radius * 2,
+            transform: `rotate(${menuRotation}deg)`,
+            transition: "transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+          }}
         >
+          {/* Ripple effect rings */}
+          {isRadialActive && (
+            <>
+              <div
+                className="absolute rounded-full border border-gold/30"
+                style={{
+                  width: radialConfig.innerRadius * 2,
+                  height: radialConfig.innerRadius * 2,
+                  animation: "ripple 1.2s ease-out forwards",
+                }}
+              />
+              <div
+                className="absolute rounded-full border border-gold/20"
+                style={{
+                  width: radialConfig.innerRadius * 2,
+                  height: radialConfig.innerRadius * 2,
+                  animation: "ripple 1.2s ease-out 0.15s forwards",
+                }}
+              />
+              <div
+                className="absolute rounded-full border border-gold/10"
+                style={{
+                  width: radialConfig.innerRadius * 2,
+                  height: radialConfig.innerRadius * 2,
+                  animation: "ripple 1.2s ease-out 0.3s forwards",
+                }}
+              />
+            </>
+          )}
+
           <svg
             width={radialConfig.radius * 2}
             height={radialConfig.radius * 2}
-            className="absolute inset-0"
+            className="absolute inset-0 pointer-events-none"
           >
-            {radialSegments.map((segment) => {
+            {/* Outer ring border */}
+            <circle
+              cx={radialConfig.radius}
+              cy={radialConfig.radius}
+              r={radialConfig.radius - 1}
+              fill="none"
+              stroke="rgba(255,212,170,0.3)"
+              strokeWidth={1}
+              style={{
+                opacity: 0,
+                animation: "segmentFadeIn 300ms ease-out forwards",
+              }}
+            />
+
+            {/* Inner circle border */}
+            <circle
+              cx={radialConfig.radius}
+              cy={radialConfig.radius}
+              r={radialConfig.innerRadius}
+              fill="rgba(0,0,0,0.5)"
+              stroke="rgba(255,212,170,0.25)"
+              strokeWidth={1.5}
+              style={{
+                opacity: 0,
+                animation: "segmentFadeIn 300ms ease-out forwards",
+              }}
+            />
+
+            {radialSegments.map((segment, index) => {
               const isActive = segment.action.id === hoveredActionId;
+              const delayMs = index * 40; // Stagger delay per segment
               return (
-                <path
-                  key={segment.action.id}
-                  d={segment.path}
-                  fill={isActive ? "rgba(255,255,255,0.28)" : "rgba(255,255,255,0.14)"}
-                  stroke="rgba(255,255,255,0.18)"
-                  strokeWidth={isActive ? 2 : 1}
-                  style={{
-                    transition: "fill 140ms ease, stroke-width 140ms ease",
-                    filter: isActive ? "drop-shadow(0 0 6px rgba(255,255,255,0.35))" : "none",
-                  }}
-                />
+                <g key={`${segment.action.id}-${segmentAnimationTrigger}`}>
+                  {/* Base segment with darker background */}
+                  <path
+                    d={segment.path}
+                    fill={isActive ? "rgba(255,212,170,0.35)" : "rgba(255,212,170,0.18)"}
+                    stroke="rgba(255,255,255,0.25)"
+                    strokeWidth={isActive ? 2.5 : 1.5}
+                    style={{
+                      transition: "fill 140ms ease, stroke-width 140ms ease, stroke 140ms ease",
+                      filter: isActive ? "drop-shadow(0 0 8px rgba(255,212,170,0.4))" : "none",
+                      opacity: 0,
+                      animation: `segmentFadeIn 300ms ease-out ${delayMs}ms forwards`,
+                    }}
+                  />
+                  {/* Inner glow line for active segment */}
+                  {isActive && (
+                    <path
+                      d={segment.path}
+                      fill="none"
+                      stroke="rgba(255,212,170,0.6)"
+                      strokeWidth={1}
+                      style={{
+                        filter: "blur(2px)",
+                        opacity: 0.7,
+                      }}
+                    />
+                  )}
+                </g>
               );
             })}
           </svg>
 
           {contextMenuStack.length > 0 && (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <div className="rounded-full border border-white/15 bg-black/45 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-white/60">
+              <div className="rounded-full border border-gold/15 bg-black/45 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-gold/60">
                 Back
               </div>
             </div>
           )}
 
-          {radialSegments.map((segment) => {
+          {radialSegments.map((segment, index) => {
             const isActive = segment.action.id === hoveredActionId;
+            const delayMs = index * 40; // Match segment stagger
+            const sharedTransition =
+              "transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), background-color 160ms ease, opacity 160ms ease, box-shadow 160ms ease";
+
             return (
               <div
-                key={segment.action.id}
-                className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full px-3 py-1 backdrop-blur ${
-                  isActive ? "bg-white/25" : "bg-black/60"
-                }`}
+                key={`${segment.action.id}-label-${segmentAnimationTrigger}`}
+                className="absolute pointer-events-none"
                 style={{
                   left: segment.labelPosition.x,
                   top: segment.labelPosition.y,
-                  transform: `translate(-50%, -50%) scale(${isActive ? 1.05 : 1})`,
-                  transition: "transform 140ms ease, background-color 160ms ease, opacity 160ms ease",
+                  transform: "translate(-50%, -50%)",
+                  opacity: 0,
+                  animation: `radialLabelFadeIn 280ms ease-out ${delayMs}ms forwards`,
                 }}
               >
-                {segment.action.icon ? (
-                  <img
-                    src={segment.action.icon}
-                    alt={segment.action.label}
-                    title={segment.action.label}
-                    className={`h-8 w-8 ${isActive ? "opacity-100" : "opacity-80"}`}
-                    style={{
-                      transition: "opacity 160ms ease, transform 160ms ease",
-                      transform: isActive ? "scale(1.05)" : "scale(1)",
-                    }}
-                  />
-                ) : (
-                  <span
-                    className={`whitespace-nowrap text-xs font-semibold ${
-                      isActive ? "text-white" : "text-white/70"
-                    }`}
-                    style={{ transition: "color 160ms ease" }}
-                  >
-                    {segment.action.label}
-                  </span>
-                )}
+                <div
+                  className={`flex items-center justify-center rounded-full px-2 py-1 backdrop-blur-sm pointer-events-none ${
+                    isActive ? "bg-black/75" : "bg-black/75"
+                  }`}
+                  style={{
+                    transform: `rotate(${-menuRotation}deg) scale(${isActive ? 1.05 : 1})`,
+                    transition: sharedTransition,
+                    border: isActive ? "1px solid rgba(255,212,170,0.4)" : "1px solid rgba(255,212,170,0.15)",
+                  }}
+                >
+                  {segment.action.icon ? (
+                    <img
+                      src={segment.action.icon}
+                      alt={segment.action.label}
+                      title={segment.action.label}
+                      className={`h-10 w-10 ${isActive ? "opacity-100" : "opacity-90"}`}
+                      style={{
+                        transition: "opacity 160ms ease, transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+                        transform: isActive ? "scale(1.12)" : "scale(1)",
+                      }}
+                    />
+                  ) : (
+                    <span
+                      className={`whitespace-nowrap text-xs font-semibold ${isActive ? "text-gold" : "text-gold/85"}`}
+                      style={{
+                        transition: "color 160ms ease, transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+                        display: "inline-block",
+                        transform: isActive ? "scale(1.12)" : "scale(1)",
+                      }}
+                    >
+                      {segment.action.label}
+                    </span>
+                  )}
+                </div>
               </div>
             );
           })}
         </div>
       ) : (
-        <div className="min-w-[200px] overflow-hidden rounded-xl border border-white/10 bg-black/85 text-sm text-white shadow-2xl backdrop-blur-md">
+        <div className="min-w-[200px] overflow-hidden rounded-xl border border-gold/10 bg-black/85 text-sm text-gold shadow-2xl backdrop-blur-md">
           {(contextMenu.title || contextMenu.subtitle) && (
             <div className="border-b border-white/10 px-4 py-3">
               {contextMenu.title && (
-                <div className="text-xs font-semibold uppercase tracking-wide text-white/70">
-                  {contextMenu.title}
-                </div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-gold/70">{contextMenu.title}</div>
               )}
-              {contextMenu.subtitle && (
-                <div className="text-[11px] text-white/50">{contextMenu.subtitle}</div>
-              )}
+              {contextMenu.subtitle && <div className="text-[11px] text-gold/50">{contextMenu.subtitle}</div>}
             </div>
           )}
           <ul className="py-1">
@@ -480,20 +614,18 @@ export const WorldContextMenu = () => {
               <li key={action.id}>
                 <button
                   type="button"
-                  className="flex w-full items-center justify-between gap-3 px-4 py-2 text-left text-sm transition hover:bg-white/10 disabled:cursor-not-allowed disabled:text-white/40"
+                  className="flex w-full items-center justify-between gap-3 px-4 py-2 text-left text-sm transition hover:bg-gold/10 disabled:cursor-not-allowed disabled:text-gold/40"
                   onClick={() => triggerAction(action)}
                   disabled={action.disabled}
                 >
                   <span className="flex items-center gap-2">
-                    {action.icon && (
-                      <img src={action.icon} alt="" className="h-4 w-4 opacity-70" />
-                    )}
+                    {action.icon && <img src={action.icon} alt="" className="h-4 w-4 opacity-70" />}
                     {action.label}
                   </span>
                   {action.children && action.children.length > 0 ? (
-                    <span className="text-xs text-white/40">›</span>
+                    <span className="text-xs text-gold/40">›</span>
                   ) : action.hint ? (
-                    <span className="text-xs text-white/40">{action.hint}</span>
+                    <span className="text-xs text-gold/40">{action.hint}</span>
                   ) : null}
                 </button>
               </li>
