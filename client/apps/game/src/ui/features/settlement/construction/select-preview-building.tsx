@@ -1,29 +1,32 @@
 import { usePlayResourceSound } from "@/audio";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
-import { getIsBlitz } from "@bibliothecadao/eternum";
 
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { Headline } from "@/ui/design-system/molecules/headline";
 import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { formatBiomeBonus } from "@/ui/features/military";
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { adjustWonderLordsCost, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import {
+  Biome,
   configManager,
   divideByPrecision,
   getBalance,
+  getBlockTimestamp,
   getBuildingCosts,
   getConsumedBy,
+  getIsBlitz,
   getRealmInfo,
   hasEnoughPopulationForBuilding,
   ResourceIdToMiningType,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import {
+  BiomeType,
   BuildingType,
   BuildingTypeToString,
   CapacityConfig,
@@ -33,12 +36,28 @@ import {
   isEconomyBuilding,
   ResourceMiningTypes,
   ResourcesIds,
+  TroopType,
 } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import { ChevronDown, ChevronUp, InfoIcon } from "lucide-react";
 import React, { useMemo, useState } from "react";
+
+const ARMY_TYPES = ["Archery", "Stable", "Barracks"] as const;
+type ArmyTypeLabel = (typeof ARMY_TYPES)[number];
+
+const formatBiomeLabel = (biome: BiomeType | string | null | undefined) => {
+  if (!biome) return "";
+
+  const label = biome.toString();
+  return label
+    .replace(/_/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z])([A-Z][a-z])/g, "$1 $2")
+    .replace(/\s+/g, " ")
+    .trim();
+};
 
 export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?: string; entityId: number }) => {
   const dojo = useDojo();
@@ -51,6 +70,61 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const setUseSimpleCost = useUIStore((state) => state.setUseSimpleCost);
 
   const realm = getRealmInfo(getEntityIdFromKeys([BigInt(entityId)]), dojo.setup.components);
+
+  const realmBiome = useMemo<BiomeType | null>(() => {
+    if (!realm?.position) return null;
+
+    return Biome.getBiome(Number(realm.position.x), Number(realm.position.y)) as BiomeType;
+  }, [realm?.position?.x, realm?.position?.y]);
+
+  const biomeRecommendation = useMemo(() => {
+    if (!realmBiome) return null;
+
+    const armyOptions: Array<{
+      armyType: ArmyTypeLabel;
+      troopType: TroopType;
+      troopLabel: string;
+      resourceName: string;
+    }> = [
+      {
+        armyType: "Archery",
+        troopType: TroopType.Crossbowman,
+        troopLabel: "Crossbowmen",
+        resourceName: "Crossbowman",
+      },
+      {
+        armyType: "Stable",
+        troopType: TroopType.Paladin,
+        troopLabel: "Paladins",
+        resourceName: "Paladin",
+      },
+      {
+        armyType: "Barracks",
+        troopType: TroopType.Knight,
+        troopLabel: "Knights",
+        resourceName: "Knight",
+      },
+    ];
+
+    const options = armyOptions.map((option) => ({
+      ...option,
+      bonus: configManager.getBiomeCombatBonus(option.troopType, realmBiome),
+    }));
+
+    const bonuses = options.map((option) => option.bonus);
+    const maxBonus = Math.max(...bonuses);
+    const minBonus = Math.min(...bonuses);
+    const best = options.filter((option) => option.bonus === maxBonus);
+
+    return {
+      biome: realmBiome,
+      options,
+      best,
+      maxBonus,
+      minBonus,
+      hasDistinctBest: maxBonus !== minBonus,
+    };
+  }, [realmBiome]);
 
   const { playResourceSound } = usePlayResourceSound();
 
@@ -246,7 +320,37 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         ),
         component: (
           <div className="p-2 space-y-2">
-            {["Archery", "Stable", "Barracks"].map((armyType) => {
+            {biomeRecommendation && (
+              <div className="border border-gold/20 rounded-md bg-gold/10 p-3">
+                <div className="text-[11px] uppercase tracking-wider text-gold/60 font-semibold">Biome Advantage</div>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gold/80">
+                  {biomeRecommendation.hasDistinctBest ? (
+                    <>
+                      <span>
+                        {biomeRecommendation.best.length > 1
+                          ? `Best choices for ${formatBiomeLabel(biomeRecommendation.biome)} biome:`
+                          : `Best choice for ${formatBiomeLabel(biomeRecommendation.biome)} biome:`}
+                      </span>
+                      {biomeRecommendation.best.map((option) => (
+                        <div
+                          key={option.armyType}
+                          className="flex items-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-900/20 px-2 py-1"
+                        >
+                          <ResourceIcon resource={option.resourceName} size="xs" />
+                          <span className="text-emerald-200 font-semibold">{option.armyType}</span>
+                          <span className="text-[11px] text-emerald-200">{formatBiomeBonus(option.bonus)}</span>
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    <span className="text-gold/60">
+                      All army types fight equally well in the {formatBiomeLabel(biomeRecommendation.biome)} biome.
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+            {ARMY_TYPES.map((armyType) => {
               const militaryBuildings = buildingTypes.filter((a) => {
                 const building = BuildingType[a as keyof typeof BuildingType];
                 const info = getMilitaryBuildingInfo(building);
@@ -255,32 +359,59 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
               if (militaryBuildings.length === 0) return null;
 
+              const match = biomeRecommendation?.options.find((option) => option.armyType === armyType);
+              const isRecommended = Boolean(
+                biomeRecommendation?.hasDistinctBest &&
+                  biomeRecommendation.best.some((option) => option.armyType === armyType),
+              );
+
               return (
-                <div key={armyType} className="border border-gold/20 rounded-md">
+                <div
+                  key={armyType}
+                  className={clsx(
+                    "border border-gold/20 rounded-md",
+                    isRecommended && "border-emerald-500/40 shadow-emerald-500/10",
+                  )}
+                >
                   <button
-                    className="flex w-full justify-between items-center p-2 bg-gold/5 cursor-pointer hover:bg-gold/20 transition-colors"
+                    className={clsx(
+                      "flex w-full justify-between items-center p-2 bg-gold/5 cursor-pointer hover:bg-gold/20 transition-colors",
+                      isRecommended && "bg-emerald-900/20 hover:bg-emerald-900/30",
+                    )}
                     onClick={() => toggleArmyType(armyType)}
                   >
-                    <div className="flex items-center">
+                    <div className="flex items-center gap-2">
                       <h4 className="font-medium">{armyType}</h4>
+                      {isRecommended && (
+                        <span className="text-[10px] uppercase tracking-wider text-emerald-200 border border-emerald-500/40 bg-emerald-900/40 rounded px-2 py-0.5">
+                          Recommended
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
+                      {match && (
+                        <span
+                          className={clsx("text-xs font-semibold", isRecommended ? "text-emerald-200" : "text-gold/60")}
+                        >
+                          {formatBiomeBonus(match.bonus)}
+                        </span>
+                      )}
                       <div className="flex items-center text-xs text-gold/70 bg-gold/5 rounded-md px-2 py-0.5">
-                        {militaryBuildings.map((buildingType, idx) => {
-                          const building = BuildingType[buildingType as keyof typeof BuildingType];
-                          const info = getMilitaryBuildingInfo(building);
-                          if (info?.resourceId) {
-                            return (
-                              <ResourceIcon
-                                key={idx}
-                                resource={findResourceById(info.resourceId)?.trait || ""}
-                                size="xs"
-                                className="mr-1"
-                              />
-                            );
-                          }
-                          return null;
-                        })}
+                        {militaryBuildings[0] &&
+                          (() => {
+                            const building = BuildingType[militaryBuildings[0] as keyof typeof BuildingType];
+                            const info = getMilitaryBuildingInfo(building);
+                            if (info?.resourceId) {
+                              return (
+                                <ResourceIcon
+                                  resource={findResourceById(info.resourceId)?.trait || ""}
+                                  size="xs"
+                                  className="mr-1"
+                                />
+                              );
+                            }
+                            return null;
+                          })()}
                         {militaryBuildings.length} buildings
                       </div>
                       <div className="ml-2">
@@ -320,6 +451,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                               className={clsx("border border-gold/10", {
                                 "bg-emerald-900/5": canBuild,
                                 "border-emerald-700/5": canBuild,
+                                "ring-1 ring-emerald-500/30": isRecommended,
                               })}
                               key={index}
                               buildingId={building}
@@ -355,7 +487,16 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         ),
       },
     ],
-    [realm, entityId, selectedTab, previewBuilding, playResourceSound, useSimpleCost],
+    [
+      realm,
+      entityId,
+      selectedTab,
+      previewBuilding,
+      playResourceSound,
+      useSimpleCost,
+      expandedTypes,
+      biomeRecommendation,
+    ],
   );
 
   return (

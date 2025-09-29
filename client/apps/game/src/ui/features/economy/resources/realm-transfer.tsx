@@ -26,8 +26,8 @@ import {
   StructureType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { ArrowBigDown, ArrowBigUp, Search, X } from "lucide-react";
-import { Dispatch, memo, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
+import { ChevronDown, Flame, Search, ShieldCheck, X } from "lucide-react";
+import { Dispatch, memo, ReactNode, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
 import { BigNumberish } from "starknet";
 
 type transferCall = {
@@ -89,7 +89,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
 
     // Non-military resources can be transferred between ALL structures
     return playerStructuresWithName;
-  }, [playerStructures, selectedStructureEntityId, resource, selectedStructure]);
+  }, [playerStructures, resource, selectedStructure]);
 
   const structureDistances = useMemo(() => {
     const distances: Record<number, number> = {};
@@ -109,6 +109,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
   const [type, setType] = useState<"send" | "receive">("send");
   const [totalTransferResourceWeightKg, setTotalTransferResourceWeightKg] = useState(0);
   const [showBurnSection, setShowBurnSection] = useState(false);
+  const [showTransferRules, setShowTransferRules] = useState(false);
   const [sortByDistance, setSortByDistance] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -116,6 +117,85 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     () => calculateDonkeysNeeded(totalTransferResourceWeightKg),
     [totalTransferResourceWeightKg],
   );
+
+  const resourceData = useMemo(() => findResourceById(resource), [resource]);
+  const resourceLabel = (resourceData?.trait as string) || "";
+  const donkeyTrait = useMemo(() => findResourceById(ResourcesIds.Donkey)?.trait as string, []);
+  const availableBalance = balance ? Number(balance) : 0;
+  const burnSliderMax = availableBalance / RESOURCE_PRECISION;
+  const normalizedSearchTerm = useMemo(() => {
+    if (!searchTerm) {
+      return "";
+    }
+    return searchTerm
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/\u0300-\u036f/g, "")
+      .replace(/[^a-z0-9]/g, "");
+  }, [searchTerm]);
+  const structuresForTransfer = useMemo(() => {
+    return [...playerStructuresFiltered]
+      .sort((a, b) => {
+        if (!sortByDistance) {
+          return a.name.localeCompare(b.name);
+        }
+        const distanceA = structureDistances[a.structure.entity_id] ?? 0;
+        const distanceB = structureDistances[b.structure.entity_id] ?? 0;
+        return distanceA - distanceB;
+      })
+      .filter((structure) => {
+        if (structure.structure.entity_id === selectedStructureEntityId) {
+          return false;
+        }
+
+        if (normalizedSearchTerm) {
+          const structureNameNormalized = structure.name
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/\u0300-\u036f/g, "")
+            .replace(/[^a-z0-9]/g, "");
+
+          if (!structureNameNormalized.includes(normalizedSearchTerm)) {
+            return false;
+          }
+        }
+
+        let relevantBalanceValue: number | undefined;
+
+        if (type === "send") {
+          relevantBalanceValue = availableBalance;
+        } else {
+          const otherStructureManager = new ResourceManager(components, structure.structure.entity_id);
+          const receivedBalance = otherStructureManager.balanceWithProduction(tick, resource).balance;
+          relevantBalanceValue = receivedBalance ? Number(receivedBalance) : 0;
+        }
+
+        if (relevantBalanceValue === undefined || relevantBalanceValue === null) {
+          return false;
+        }
+
+        const calculatedMaxAmountForFilter = relevantBalanceValue / RESOURCE_PRECISION;
+
+        return calculatedMaxAmountForFilter > 0;
+      });
+  }, [
+    playerStructuresFiltered,
+    sortByDistance,
+    structureDistances,
+    selectedStructureEntityId,
+    normalizedSearchTerm,
+    type,
+    availableBalance,
+    components,
+    tick,
+    resource,
+  ]);
+  const noValidMilitaryDestinations =
+    isMilitaryResource(resource) &&
+    selectedStructure &&
+    selectedStructure.category !== StructureType.Realm &&
+    playerStructuresFiltered.length === 0;
+  const hasQueue = calls.length > 0;
 
   useEffect(() => {
     const resourcesForWeightCalc = calls.map((call) => {
@@ -165,7 +245,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     }
 
     setCalls([]);
-  }, [calls]);
+  }, [account, calls, send_resources_multiple]);
 
   const handleBurnAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setBurnAmount(Number(event.target.value));
@@ -182,284 +262,271 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
   }, [calls]);
 
   return (
-    <>
-      <div className="p-1">
-        <div className="map-button-selector flex items-center justify-center md:justify-start gap-2 px-2">
-          <span onClick={() => setType("send")} className={cn("text-xs", type === "send" && "text-gold font-bold")}>
-            Send
-          </span>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              className="sr-only peer"
-              checked={type === "receive"}
-              onChange={(e) => {
-                const checked = e.target.checked;
-                setType(checked ? "receive" : "send");
-              }}
+    <div className="flex h-full min-h-[75vh] flex-col gap-3 p-3 md:p-5">
+      <header className="rounded-lg border border-gold/30 bg-black/40 p-3 md:p-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3 md:gap-4">
+            <ResourceIcon
+              withTooltip={false}
+              resource={resourceLabel || (findResourceById(resource)?.trait as string)}
+              size="xl"
+              className="shrink-0"
             />
-            <div className="w-9 h-5 bg-brown/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gold/30"></div>
-          </label>
-          <span
-            onClick={() => setType("receive")}
-            className={cn("text-xs", type === "receive" && "text-gold font-bold")}
-          >
-            Receive
-          </span>
-        </div>
-      </div>
-
-      <div className="p-4 flex flex-col h-[70vh]">
-        <div className="flex flex-row gap-2">
-          <ResourceIcon
-            withTooltip={false}
-            resource={findResourceById(resource)?.trait as string}
-            size="xxl"
-            className="mr-3 self-center"
-          />
-          <div className="py-3 text-center text-3xl">{currencyFormat(balance ? Number(balance) : 0, 2)}</div>
-        </div>
-
-        {/* Dedicated Burn Section */}
-        <div className=" px-2 my-4 border border-gold/40 rounded-md bg-red-500/10">
-          <div
-            className="font-bold text-lg text-red-300 cursor-pointer flex justify-between items-center"
-            onClick={() => setShowBurnSection(!showBurnSection)}
-          >
-            <span>Burn Resources</span>
-            <span>{showBurnSection ? <ArrowBigUp /> : <ArrowBigDown />}</span>
+            <div className="flex flex-col">
+              <span className="text-xxs uppercase tracking-wide text-gold/60">Available</span>
+              <span className="text-2xl font-semibold leading-tight text-gold">
+                {currencyFormat(availableBalance, 2)}
+              </span>
+              <span className="text-xs uppercase text-gold/60">{resourceLabel}</span>
+            </div>
           </div>
-          {showBurnSection && (
-            <>
-              <div className="text-sm mb-2">
-                Permanently destroy {findResourceById(resource)?.trait as string} from this location. This action is
-                irreversible.
-              </div>
-              <div className="flex flex-col gap-2 py-2">
-                <input
-                  id="burnAmountInput"
-                  type="range"
-                  min="0"
-                  max={balance ? Number(balance) / RESOURCE_PRECISION : 0}
-                  step="0.01"
-                  value={burnAmount}
-                  onChange={handleBurnAmountChange}
-                  className="w-full accent-gold"
-                />
-                <div className="text-xs text-center font-bold uppercase">
-                  burn: {burnAmount.toLocaleString()} {findResourceById(resource)?.trait}
-                </div>
-                <Button size="xs" variant="danger" onClick={handleBurn} disabled={burnAmount === 0 || isLoading}>
-                  Burn {findResourceById(resource)?.trait as string}{" "}
-                </Button>
-              </div>
-            </>
-          )}
+          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+            <div className="flex items-center gap-2 rounded-full border border-gold/40 bg-brown/40 px-2 py-1 text-xxs font-semibold uppercase tracking-widest">
+              <button
+                type="button"
+                onClick={() => setType("send")}
+                className={cn(
+                  "rounded-full px-3 py-1 transition-colors",
+                  type === "send" ? "bg-gold text-brown shadow" : "text-gold/70 hover:text-gold",
+                )}
+              >
+                Send
+              </button>
+              <button
+                type="button"
+                onClick={() => setType("receive")}
+                className={cn(
+                  "rounded-full px-3 py-1 transition-colors",
+                  type === "receive" ? "bg-gold text-brown shadow" : "text-gold/70 hover:text-gold",
+                )}
+              >
+                Receive
+              </button>
+            </div>
+            {isMilitaryResource(resource) && (
+              <span className="inline-flex items-center justify-center rounded-full border border-light-red/40 bg-light-red/10 px-2 py-1 text-xxs font-semibold uppercase tracking-widest text-light-red/80">
+                Troop rules apply
+              </span>
+            )}
+          </div>
         </div>
-        {/* End Dedicated Burn Section */}
+      </header>
 
-        {/* Transfer Constraints Info */}
+      <div className="flex flex-col gap-2">
+        <InfoPanel
+          icon={<Flame className="h-4 w-4 text-red/70" />}
+          isOpen={showBurnSection}
+          onToggle={() => setShowBurnSection(!showBurnSection)}
+          title="Burn Resources"
+          hint="irreversible"
+        >
+          <div className="space-y-3 text-sm text-gold/80">
+            <p>Permanently destroy {resourceLabel} from this location. This action cannot be undone.</p>
+            <input
+              id="burnAmountInput"
+              type="range"
+              min="0"
+              max={burnSliderMax}
+              step="0.01"
+              value={burnAmount}
+              onChange={handleBurnAmountChange}
+              className="w-full accent-gold"
+            />
+            <div className="flex items-center justify-between text-xs uppercase text-gold/60">
+              <span>Burn amount</span>
+              <span className="font-semibold text-gold">
+                {burnAmount.toLocaleString()} {resourceLabel}
+              </span>
+            </div>
+            <Button size="xs" variant="danger" onClick={handleBurn} disabled={burnAmount === 0 || isLoading}>
+              Burn {resourceLabel}
+            </Button>
+          </div>
+        </InfoPanel>
         {isMilitaryResource(resource) && (
-          <div className="mb-4 p-3 border border-gold/30 rounded-md bg-gold/5">
-            <div className="font-bold text-sm mb-1 text-gold">Transfer Rules for Troops:</div>
-            <div className="text-xs space-y-1">
-              <div className="flex items-start gap-1">
+          <InfoPanel
+            icon={<ShieldCheck className="h-4 w-4 text-gold/70" />}
+            isOpen={showTransferRules}
+            onToggle={() => setShowTransferRules(!showTransferRules)}
+            title="Transfer Rules"
+            hint="troops only"
+          >
+            <div className="space-y-2 text-xs text-gold/80">
+              <div className="flex items-start gap-2">
                 <span className="text-green">✓</span>
                 <span>Realm → Realm transfers allowed</span>
               </div>
-              <div className="flex items-start gap-1">
+              <div className="flex items-start gap-2">
                 <span className="text-red">✗</span>
                 <span>Camps, Essence Rifts, and Hyperstructures cannot transfer troops</span>
               </div>
             </div>
-          </div>
+          </InfoPanel>
         )}
+      </div>
 
-        {/* Scrollable content area */}
-        <div className="flex-grow overflow-y-auto pr-2">
-          <div className="flex items-center gap-2 mb-2">
-            <input
-              type="checkbox"
-              id="sortByDistance"
-              checked={sortByDistance}
-              onChange={(e) => setSortByDistance(e.target.checked)}
-              className="accent-gold"
-            />
-            <label htmlFor="sortByDistance" className="text-xs text-gold cursor-pointer">
-              order structures by distance
-            </label>
-          </div>
-          <div className="relative mb-2">
-            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gold/60" />
-            <input
-              type="text"
-              placeholder="Search structures..."
-              value={searchTerm}
-              onKeyDown={(e) => e.stopPropagation()}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-8 pr-8 py-1 bg-brown/20 border border-gold/30 rounded text-sm text-gold placeholder-gold/60 focus:outline-none focus:border-gold/60"
-            />
-            {searchTerm && (
-              <button
-                type="button"
-                onClick={() => setSearchTerm("")}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gold/60 hover:text-gold"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            )}
-          </div>
-          <div className="text-xs text-gold/60 mb-2 italic">
-            {sortByDistance
-              ? "Structures are sorted by distance (closest to furthest)"
-              : "Structures are sorted by name"}
-          </div>
-          {playerStructuresFiltered.length === 0 &&
-            isMilitaryResource(resource) &&
-            selectedStructure &&
-            selectedStructure.category !== StructureType.Realm && (
-              <div className="text-center py-8 text-gold/60">
-                <div className="text-lg mb-2">No Valid Destinations</div>
-                <div className="text-sm">
-                  {getStructureName(selectedStructure, getIsBlitz()).name} cannot transfer troops.
-                  <br />
-                  Only Realms can transfer military units.
-                </div>
+      <div className="flex flex-1 min-h-0 flex-col gap-3">
+        <div className="flex-1 min-h-0 overflow-hidden rounded-lg border border-gold/20 bg-black/30">
+          <div className="flex h-full flex-col">
+            <div className="space-y-2 border-b border-gold/20 bg-black/40 px-3 py-3 md:px-4">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="sortByDistance"
+                  checked={sortByDistance}
+                  onChange={(e) => setSortByDistance(e.target.checked)}
+                  className="accent-gold"
+                />
+                <label htmlFor="sortByDistance" className="text-xs text-gold cursor-pointer">
+                  Order structures by distance
+                </label>
               </div>
-            )}
-          {playerStructuresFiltered
-            .sort((a, b) => {
-              if (!sortByDistance) {
-                // sort by name
-                return a.name.localeCompare(b.name);
-              }
-              const distanceA = structureDistances[a.structure.entity_id] ?? 0;
-              const distanceB = structureDistances[b.structure.entity_id] ?? 0;
-              return distanceA - distanceB;
-            })
-            .filter((structure) => {
-              // First, skip if it's the structure itself, as no transfer row should be rendered.
-              if (structure.structure.entity_id === selectedStructureEntityId) {
-                return false;
-              }
-
-              // Filter by search term if provided
-              if (
-                searchTerm &&
-                !structure.name
-                  .toLowerCase()
-                  .normalize("NFD")
-                  .replace(/\u0300-\u036f/g, "")
-                  .replace(/[^a-z0-9]/g, "")
-                  .includes(
-                    searchTerm
-                      .toLowerCase()
-                      .normalize("NFD")
-                      .replace(/\u0300-\u036f/g, "")
-                      .replace(/[^a-z0-9]/g, ""),
-                  )
-              ) {
-                return false;
-              }
-
-              let relevantBalanceValue: number | undefined = undefined;
-
-              if (type === "send") {
-                // Assuming 'balance' (from component scope) is number | undefined based on linter error context
-                relevantBalanceValue = balance as number | undefined; // Explicit cast if needed, or direct assignment if type matches
-              } else {
-                // type === "receive"
-                const otherStructureManager = new ResourceManager(components, structure.structure.entity_id);
-                // Assuming this .balance is number | undefined based on linter error context
-                const receivedBalance = otherStructureManager.balanceWithProduction(tick, resource).balance;
-                relevantBalanceValue = receivedBalance as number | undefined; // Explicit cast if needed
-              }
-
-              if (relevantBalanceValue === undefined || relevantBalanceValue === null) {
-                return false; // If balance is not available, filter out.
-              }
-
-              // relevantBalanceValue is now confirmed to be 'number'
-              const calculatedMaxAmountForFilter = relevantBalanceValue / RESOURCE_PRECISION;
-
-              // Only include the structure if there's a positive amount of resource that can be transferred.
-              return calculatedMaxAmountForFilter > 0;
-            })
-            .map((structure) => (
-              <RealmTransferBalance
-                key={structure.structure.entity_id}
-                structure={structure}
-                selectedStructureEntityId={selectedStructureEntityId}
-                resource={resource}
-                tick={tick}
-                add={setCalls}
-                type={type}
-              />
-            ))}
-
-          <div className="py-4 border-t border-gold/20">
-            <div className="uppercase font-bold text h6 flex gap-3 items-center">
-              Transfers Queue ({calls.length}) |
-              <ResourceIcon resource={findResourceById(ResourcesIds.Donkey)?.trait as string} size="sm" />{" "}
-              {totalNeededDonkeys.toString()}
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gold/60" />
+                <input
+                  type="text"
+                  placeholder="Search structures..."
+                  value={searchTerm}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full rounded border border-gold/30 bg-brown/20 py-1 pl-8 pr-8 text-sm text-gold placeholder-gold/60 focus:outline-none focus:border-gold/60"
+                />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gold/60 transition hover:text-gold"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+              <p className="text-xxs uppercase text-gold/50">
+                {sortByDistance ? "Structures are sorted by proximity" : "Structures are sorted alphabetically"}
+              </p>
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex-1 overflow-y-auto px-3 pb-4 md:px-4">
+              {noValidMilitaryDestinations ? (
+                <div className="py-8 text-center text-sm text-gold/60">
+                  <div className="mb-2 text-lg">No valid destinations</div>
+                  <p>
+                    {getStructureName(selectedStructure, getIsBlitz()).name} cannot transfer troops. Only Realms can
+                    transfer military units.
+                  </p>
+                </div>
+              ) : structuresForTransfer.length === 0 ? (
+                <div className="py-8 text-center text-sm text-gold/60">No structures match the current filters.</div>
+              ) : (
+                structuresForTransfer.map((structure) => (
+                  <RealmTransferBalance
+                    key={structure.structure.entity_id}
+                    structure={structure}
+                    selectedStructureEntityId={selectedStructureEntityId}
+                    resource={resource}
+                    tick={tick}
+                    add={setCalls}
+                    type={type}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        {hasQueue && (
+          <div className="rounded-lg border border-gold/20 bg-black/30 p-3 md:p-4">
+            <div className="flex flex-wrap items-center gap-2 text-sm font-semibold uppercase tracking-wide text-gold">
+              Transfers Queue ({calls.length})
+              <span className="inline-flex items-center gap-2 rounded-full bg-brown/40 px-2 py-1 text-xs font-normal normal-case text-gold/80">
+                <ResourceIcon
+                  resource={donkeyTrait || (findResourceById(ResourcesIds.Donkey)?.trait as string)}
+                  size="sm"
+                  withTooltip={false}
+                />
+                {totalNeededDonkeys.toString()} 🐴
+              </span>
+            </div>
+            <div className="mt-3 flex flex-col gap-2">
               {calls.map((call, index) => (
                 <div
-                  className="flex flex-row w-full justify-between p-2 gap-2 border-gold/20 bg-gold/10 border-2 rounded-md"
+                  className="flex flex-row items-center justify-between gap-2 rounded-md border-2 border-gold/20 bg-gold/10 p-2"
                   key={index}
                 >
-                  <div className="uppercase font-bold text-sm self-center">{call.realmName}</div>
-                  <div className="self-center">{call.resources[1].toLocaleString()}</div>
+                  <div className="text-sm font-bold uppercase">{call.realmName}</div>
+                  <div className="text-sm">{call.resources[1].toLocaleString()}</div>
                   <Button size="xs" onClick={() => setCalls((prev) => prev.filter((c) => c !== call))}>
                     Remove
                   </Button>
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-        {/* End scrollable content area */}
-
-        {/* Enhanced Pre-Transfer Summary */}
-        {calls.length > 0 && (
-          <div className="py-3 my-3 border-t border-b border-gold/20 bg-black/20 p-3 rounded-md">
-            <div className="font-bold text-lg mb-2">Transfer Summary</div>
-            <div className="text-sm grid grid-cols-2 gap-1">
-              <div>Resource:</div>
-              <div>{findResourceById(resource)?.trait}</div>
-              <div>Total to {type === "send" ? "Send" : "Receive"}:</div>
-              <div>{currencyFormat(totalResourceTransferred, 2)}</div>
-              <div>Locations Involved:</div>
-              <div>{uniqueStructuresInvolved}</div>
-              <div>Total Donkeys Needed:</div>
-              <div>{totalNeededDonkeys}</div>
+            <div className="mt-3 grid grid-cols-2 gap-y-1 text-xs text-gold/70 md:text-sm">
+              <span>Resource:</span>
+              <span>{resourceLabel}</span>
+              <span>Total to {type === "send" ? "Send" : "Receive"}:</span>
+              <span>{currencyFormat(totalResourceTransferred, 2)}</span>
+              <span>Locations involved:</span>
+              <span>{uniqueStructuresInvolved}</span>
+              <span>Donkeys needed:</span>
+              <span>{totalNeededDonkeys}</span>
             </div>
-            <div className="mt-2 text-xs">
-              You will be{" "}
+            <p className="mt-3 text-xxs uppercase text-gold/50">
               {type === "send"
-                ? "sending these resources to their locations."
-                : "receiving all these resources into this location."}{" "}
-            </div>
+                ? "Resources will leave this location when you confirm."
+                : "Resources will arrive at this location when you confirm."}
+            </p>
           </div>
         )}
-        {/* End Enhanced Pre-Transfer Summary */}
-
-        <div className="pt-2 border-t border-gold/20 flex flex-row justify-end">
-          <Button
-            disabled={calls.length === 0}
-            isLoading={isLoading}
-            variant="primary"
-            size="md"
-            onClick={handleTransfer}
-          >
-            {type === "send" ? "Send All" : "Receive All"}
-          </Button>
-        </div>
       </div>
-    </>
+
+      <div className="flex justify-end border-t border-gold/20 pt-2">
+        <Button
+          disabled={calls.length === 0}
+          isLoading={isLoading}
+          variant="primary"
+          size="md"
+          onClick={handleTransfer}
+        >
+          {type === "send" ? "Send All" : "Receive All"}
+        </Button>
+      </div>
+    </div>
   );
 });
+
+const InfoPanel = ({
+  title,
+  icon,
+  hint,
+  isOpen,
+  onToggle,
+  children,
+}: {
+  title: string;
+  icon: ReactNode;
+  hint?: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) => {
+  return (
+    <div className="rounded-lg border border-gold/30 bg-black/30">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gold transition hover:bg-black/40"
+      >
+        <span className="flex items-center gap-2">
+          <span className="shrink-0">{icon}</span>
+          <span>{title}</span>
+          {hint && <span className="text-xxs uppercase text-gold/60">{hint}</span>}
+        </span>
+        <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
+      </button>
+      {isOpen && <div className="border-t border-gold/20 px-3 py-3">{children}</div>}
+    </div>
+  );
+};
 
 const RealmTransferBalance = memo(
   ({

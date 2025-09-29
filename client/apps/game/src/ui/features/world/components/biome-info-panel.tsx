@@ -31,6 +31,16 @@ const getBiomeImage = (biome: BiomeType) => {
   return `/images/biomes/${BiomeFilenames[biomeKey]}`;
 };
 
+const formatBiomeLabel = (biome: BiomeType | string) => {
+  const label = biome.toString();
+  return label
+    .replace(/_/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z])([A-Z][a-z])/g, "$1 $2")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
 // Troop type configuration with resource names for ResourceIcon
 const troopConfig = {
   [TroopType.Knight]: {
@@ -88,7 +98,7 @@ export const BiomeInfoPanel = ({ biome }: { biome: BiomeType }) => {
         {/* Biome Header */}
         <div className="flex-shrink-0">
           <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-lg font-bold text-gold font-cinzel">{biome}</h2>
+            <h2 className="text-lg font-bold text-gold font-cinzel">{formatBiomeLabel(biome)}</h2>
             <div className="group relative">
               <Info className="w-4 h-4 text-gold/60 hover:text-gold transition-colors" />
               <div className="absolute left-6 top-0 hidden group-hover:block z-50">
