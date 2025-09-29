@@ -422,6 +422,8 @@ export class WorldUpdateListener {
 
               this.dataEnhancer.updateStructureOwner(currentState.entity_id, ownerValue, playerName);
 
+              const baseCoords = currentState.base ?? { coord_x: 0, coord_y: 0 };
+
               return {
                 entityId: currentState.entity_id,
                 guardArmies,
@@ -430,7 +432,7 @@ export class WorldUpdateListener {
                   ownerName: playerName,
                   guildName: "",
                 },
-                hexCoords: { col: currentState.base.coord_x, row: currentState.base.coord_y },
+                hexCoords: { col: baseCoords.coord_x ?? 0, row: baseCoords.coord_y ?? 0 },
                 battleCooldownEnd: Math.max(
                   troopGuards?.alpha?.battle_cooldown_end ?? 0,
                   troopGuards?.bravo?.battle_cooldown_end ?? 0,
