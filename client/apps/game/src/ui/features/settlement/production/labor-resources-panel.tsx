@@ -28,14 +28,22 @@ export const LaborResourcesPanel = ({
   };
 
   const calculateMaxProduction = () => {
-    if (!laborInputResources || !resourceBalances) return 1;
+    if (!laborInputResources.length || !resourceBalances || resourceOutputPerInputResources <= 0) return 0;
 
-    const maxAmounts = laborInputResources.map((input) => {
-      const balance = Math.max((resourceBalances[input.resource] || 0) - 1000, 0);
-      return Math.floor((balance / input.amount) * resourceOutputPerInputResources);
+    let maxCycles = Number.MAX_SAFE_INTEGER;
+
+    laborInputResources.forEach((input) => {
+      if (input.amount <= 0) return;
+      const balance = resourceBalances[input.resource] || 0;
+      const cyclesForResource = Math.floor(balance / input.amount);
+      if (cyclesForResource < maxCycles) {
+        maxCycles = cyclesForResource;
+      }
     });
 
-    return Math.max(1, Math.min(...maxAmounts));
+    if (!Number.isFinite(maxCycles) || maxCycles <= 0) return 0;
+
+    return Math.floor(maxCycles * resourceOutputPerInputResources);
   };
 
   const handleMaxClick = () => {

@@ -6,7 +6,8 @@
  * @see {@link CommonEternumGlobalConfig} for base configuration
  */
 
-import { type Config, RealmLevels, ResourcesIds } from "@bibliothecadao/types";
+import { RealmLevels, ResourcesIds, type Config } from "@bibliothecadao/types";
+import { getSeasonAddresses, type Chain } from "@contracts";
 import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
 
 /**

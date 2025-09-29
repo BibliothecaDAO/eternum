@@ -27,7 +27,7 @@ import {
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ActionFooter } from "./action-footer";
 import { ArmyTypeToggle } from "./army-type-toggle";
@@ -47,6 +47,10 @@ interface UnifiedArmyCreationModalProps {
 
 const TROOP_TYPES: TroopType[] = [TroopType.Crossbowman, TroopType.Knight, TroopType.Paladin];
 const TROOP_TIERS: TroopTier[] = [TroopTier.T1, TroopTier.T2, TroopTier.T3];
+const DEFAULT_TROOP_COMBO: SelectedTroopCombo = {
+  type: TroopType.Crossbowman,
+  tier: TroopTier.T1,
+};
 
 const formatTroopTypeLabel = (type: TroopType) => (type === TroopType.Crossbowman ? "CROSSBOW" : type);
 
@@ -87,14 +91,14 @@ export const UnifiedArmyCreationModal = ({
     direction !== undefined ? direction : null,
   );
   const [loadedDirectionsStructureId, setLoadedDirectionsStructureId] = useState<number | null>(null);
-  const [selectedTroopCombo, setSelectedTroopCombo] = useState<SelectedTroopCombo>({
-    type: TroopType.Crossbowman,
-    tier: TroopTier.T1,
-  });
+  const [selectedTroopCombo, setSelectedTroopCombo] = useState<SelectedTroopCombo>(() => ({
+    ...DEFAULT_TROOP_COMBO,
+  }));
   const [troopCount, setTroopCount] = useState(0);
   const [guardSlot, setGuardSlot] = useState(0);
   const [armyType, setArmyType] = useState(isExplorer);
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
+  const previousStructureIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     setSelectedStructureId(structureId ?? null);
@@ -243,7 +247,18 @@ export const UnifiedArmyCreationModal = ({
   }, [activeStructureId, components, systemCalls]);
 
   useEffect(() => {
-    if (!activeStructureId) {
+    const activeId = activeStructureId ?? 0;
+    const previousStructureId = previousStructureIdRef.current;
+    const structureChanged = previousStructureId !== activeId;
+    previousStructureIdRef.current = activeId;
+
+    if (!activeId) {
+      setSelectedTroopCombo((previous) => {
+        if (previous.type === DEFAULT_TROOP_COMBO.type && previous.tier === DEFAULT_TROOP_COMBO.tier) {
+          return previous;
+        }
+        return { ...DEFAULT_TROOP_COMBO };
+      });
       return;
     }
 
@@ -252,22 +267,43 @@ export const UnifiedArmyCreationModal = ({
     for (const type of TROOP_TYPES) {
       for (const tier of TROOP_TIERS) {
         const resourceId = getTroopResourceId(type, tier);
-        const balance = getBalance(activeStructureId, resourceId, currentDefaultTick, components).balance;
+        const balance = getBalance(activeId, resourceId, currentDefaultTick, components).balance;
         const available = Number(divideByPrecision(balance) || 0);
 
-        if (available > 0 && !firstTroopWithBalance) {
+        if (available > 0) {
           firstTroopWithBalance = { type, tier };
           break;
         }
       }
-      if (firstTroopWithBalance) break;
+      if (firstTroopWithBalance) {
+        break;
+      }
     }
 
-    if (firstTroopWithBalance) {
-      setSelectedTroopCombo(firstTroopWithBalance);
-    } else {
-      setSelectedTroopCombo({ type: TroopType.Crossbowman, tier: TroopTier.T1 });
-    }
+    setSelectedTroopCombo((previous) => {
+      if (!structureChanged) {
+        const previousResourceId = getTroopResourceId(previous.type, previous.tier);
+        const previousBalance = getBalance(activeId, previousResourceId, currentDefaultTick, components).balance;
+        const previousAvailable = Number(divideByPrecision(previousBalance) || 0);
+
+        if (previousAvailable > 0) {
+          return previous;
+        }
+      }
+
+      if (firstTroopWithBalance) {
+        if (previous.type === firstTroopWithBalance.type && previous.tier === firstTroopWithBalance.tier) {
+          return previous;
+        }
+        return firstTroopWithBalance;
+      }
+
+      if (previous.type === DEFAULT_TROOP_COMBO.type && previous.tier === DEFAULT_TROOP_COMBO.tier) {
+        return previous;
+      }
+
+      return { ...DEFAULT_TROOP_COMBO };
+    });
   }, [activeStructureId, components, currentDefaultTick]);
 
   useEffect(() => {

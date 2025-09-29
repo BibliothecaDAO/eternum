@@ -541,6 +541,8 @@ export default class HexceptionScene extends HexagonScene {
           innerRow: normalizedCoords.row,
         });
         this.state.setLeftNavigationView(LeftView.EntityView);
+      } else {
+        this.state.setLeftNavigationView(LeftView.ConstructionView);
       }
     }
   }
