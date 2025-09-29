@@ -160,6 +160,7 @@ export default class WorldmapScene extends HexagonScene {
 
   private fetchedChunks: Set<string> = new Set();
   private pendingChunks: Map<string, Promise<void>> = new Map();
+  private pendingArmyRemovals: Map<ID, NodeJS.Timeout> = new Map();
 
   private fxManager: FXManager;
   private resourceFXManager: ResourceFXManager;
@@ -334,9 +335,11 @@ export default class WorldmapScene extends HexagonScene {
 
     // Store the unsubscribe function for Army updates
     this.worldUpdateListener.Army.onTileUpdate(async (update: ExplorerTroopsTileSystemUpdate) => {
+      this.cancelPendingArmyRemoval(update.entityId);
+
       if (update.removed) {
         console.debug(`[WorldMap] Tile update indicates removal for entity ${update.entityId}`);
-        this.deleteArmy(update.entityId);
+        this.scheduleArmyRemoval(update.entityId, "tile");
         return;
       }
 
@@ -383,10 +386,17 @@ export default class WorldmapScene extends HexagonScene {
 
     // Listen for troop count and stamina changes
     this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {
+      this.cancelPendingArmyRemoval(update.entityId);
       console.debug(`[WorldMap] ExplorerTroops update received for entity ${update.entityId}`, {
         troopCount: update.troopCount,
         owner: update.ownerAddress,
       });
+
+      if (update.troopCount <= 0) {
+        console.debug(`[WorldMap] ExplorerTroops update indicates removal for entity ${update.entityId}`);
+        this.scheduleArmyRemoval(update.entityId, "zero");
+        return;
+      }
       this.updateArmyHexes(update);
       this.armyManager.updateArmyFromExplorerTroopsUpdate(update);
     });
@@ -1439,6 +1449,10 @@ export default class WorldmapScene extends HexagonScene {
     this.chestManager.removeLabelsFromScene();
     console.debug("[WorldMap] Removing quest labels from scene");
 
+    // Clear any pending army removals
+    this.pendingArmyRemovals.forEach((timeout) => clearTimeout(timeout));
+    this.pendingArmyRemovals.clear();
+
     this.armyStructureOwners.clear();
 
     // Clean up wheel event listener
@@ -1456,6 +1470,7 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   public deleteArmy(entityId: ID) {
+    this.cancelPendingArmyRemoval(entityId);
     console.debug(`[WorldMap] deleteArmy invoked for entity ${entityId}`);
     this.armyManager.removeArmy(entityId);
     const oldPos = this.armiesPositions.get(entityId);
@@ -1464,6 +1479,32 @@ export default class WorldmapScene extends HexagonScene {
       this.armiesPositions.delete(entityId);
     }
     this.armyStructureOwners.delete(entityId);
+  }
+
+  private scheduleArmyRemoval(entityId: ID, reason: "tile" | "zero" = "tile") {
+    const existing = this.pendingArmyRemovals.get(entityId);
+    if (existing) {
+      clearTimeout(existing);
+    }
+
+    const delay = reason === "tile" ? 600 : 0;
+
+    const timeout = setTimeout(() => {
+      this.pendingArmyRemovals.delete(entityId);
+      console.debug(`[WorldMap] Finalizing pending removal for entity ${entityId} (reason: ${reason})`);
+      this.deleteArmy(entityId);
+    }, delay);
+
+    this.pendingArmyRemovals.set(entityId, timeout);
+  }
+
+  private cancelPendingArmyRemoval(entityId: ID) {
+    const timeout = this.pendingArmyRemovals.get(entityId);
+    if (!timeout) return;
+
+    clearTimeout(timeout);
+    this.pendingArmyRemovals.delete(entityId);
+    console.debug(`[WorldMap] Cancelled pending removal for entity ${entityId}`);
   }
 
   public deleteChest(entityId: ID) {
