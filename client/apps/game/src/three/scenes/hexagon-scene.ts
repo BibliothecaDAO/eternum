@@ -206,24 +206,42 @@ export abstract class HexagonScene {
     this.inputManager.addListener("contextmenu", this.handleRightClick.bind(this));
   }
 
-  private handleMouseMove(raycaster: Raycaster): void {
+  private handleMouseMove(_event: MouseEvent, raycaster: Raycaster): void {
     const hoveredHex = this.interactiveHexManager.onMouseMove(raycaster);
-    hoveredHex ? this.onHexagonMouseMove(hoveredHex) : this.onHexagonMouseMove(null);
+    if (hoveredHex) {
+      this.onHexagonMouseMove(hoveredHex);
+    } else {
+      this.onHexagonMouseMove(null);
+    }
   }
 
-  private handleDoubleClick(raycaster: Raycaster): void {
+  private handleDoubleClick(_event: MouseEvent, raycaster: Raycaster): void {
+    useUIStore.getState().closeContextMenu();
     const clickedHex = this.interactiveHexManager.onClick(raycaster);
-    clickedHex && this.onHexagonDoubleClick(clickedHex.hexCoords);
+    if (clickedHex) {
+      this.onHexagonDoubleClick(clickedHex.hexCoords);
+    }
   }
 
-  private handleClick(raycaster: Raycaster): void {
+  private handleClick(_event: MouseEvent, raycaster: Raycaster): void {
+    useUIStore.getState().closeContextMenu();
     const clickedHex = this.interactiveHexManager.onClick(raycaster);
-    clickedHex ? this.onHexagonClick(clickedHex.hexCoords) : this.onHexagonClick(null);
+    if (clickedHex) {
+      this.onHexagonClick(clickedHex.hexCoords);
+    } else {
+      this.onHexagonClick(null);
+    }
   }
 
-  private handleRightClick(raycaster: Raycaster): void {
+  private handleRightClick(event: MouseEvent, raycaster: Raycaster): void {
+    const store = useUIStore.getState();
+    store.closeContextMenu();
     const clickedHex = this.interactiveHexManager.onClick(raycaster);
-    clickedHex && this.onHexagonRightClick(clickedHex.hexCoords);
+    if (clickedHex) {
+      this.onHexagonRightClick(event, clickedHex.hexCoords);
+    } else {
+      this.onHexagonRightClick(event, null);
+    }
   }
 
   private setupGUI(): void {
@@ -705,7 +723,7 @@ export abstract class HexagonScene {
   ): void;
   protected abstract onHexagonDoubleClick(hexCoords: HexPosition): void;
   protected abstract onHexagonClick(hexCoords: HexPosition | null): void;
-  protected abstract onHexagonRightClick(hexCoords: HexPosition): void;
+  protected abstract onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void;
   public abstract setup(): void;
   public abstract moveCameraToURLLocation(): void;
   public abstract onSwitchOff(): void;

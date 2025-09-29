@@ -28,6 +28,10 @@ const ActionInstructions = lazy(() =>
   })),
 );
 
+const WorldContextMenu = lazy(() =>
+  import("../features/world/components/context-menu").then((module) => ({ default: module.WorldContextMenu })),
+);
+
 const BlankOverlayContainer = lazy(() =>
   import("../shared/containers/blank-overlay-container").then((module) => ({ default: module.BlankOverlayContainer })),
 );
@@ -153,6 +157,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
           <ActionInstructions />
           <ActionInfo />
+          <WorldContextMenu />
           {/* <EntitiesInfoLabel /> */}
 
           <div>

@@ -922,7 +922,7 @@ export default class WorldmapScene extends HexagonScene {
     }
     if (!hexCoords) return;
 
-    const { army, structure, quest, chest } = this.getHexagonEntity(hexCoords);
+    const { structure } = this.getHexagonEntity(hexCoords);
     const account = ContractAddress(useAccountStore.getState().account?.address || "");
 
     const isMine = isAddressEqualToAccount(army?.owner || structure?.owner || 0n);
@@ -965,7 +965,7 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
-  protected onHexagonRightClick(hexCoords: HexPosition | null): void {
+  protected onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void {
     const overlay = document.querySelector(".shepherd-modal-overlay-container");
     const overlayClick = document.querySelector(".allow-modal-click");
     if (overlay && !overlayClick) {
@@ -975,7 +975,21 @@ export default class WorldmapScene extends HexagonScene {
     // Check if account exists before allowing actions
     const account = useAccountStore.getState().account;
 
+    if (!hexCoords) {
+      return;
+    }
+
+    const { structure } = this.getHexagonEntity(hexCoords);
     const { selectedEntityId, actionPaths } = this.state.entityActions;
+    const hasActiveEntityAction = Boolean(selectedEntityId && actionPaths.size > 0);
+
+    const isMineStructure = structure?.owner !== undefined ? isAddressEqualToAccount(structure.owner) : false;
+
+    if (structure && isMineStructure && !hasActiveEntityAction) {
+      this.openStructureContextMenu(event, structure, hexCoords);
+      return;
+    }
+
     if (selectedEntityId && actionPaths.size > 0 && hexCoords) {
       const actionPath = actionPaths.get(ActionPaths.posKey(hexCoords, true));
       if (actionPath && account) {
@@ -1006,6 +1020,91 @@ export default class WorldmapScene extends HexagonScene {
         }
       }
     }
+  }
+
+  private openStructureContextMenu(event: MouseEvent, structure: HexEntityInfo, hexCoords: HexPosition): void {
+    const uiStore = useUIStore.getState();
+    const idString = structure.id.toString();
+    const openArmyCreationModal = (isExplorer: boolean) => {
+      const store = useUIStore.getState();
+      store.setStructureEntityId(structure.id);
+      store.toggleModal(
+        <UnifiedArmyCreationModal
+          structureId={Number(structure.id)}
+          isExplorer={isExplorer}
+        />,
+      );
+    };
+
+    uiStore.openContextMenu({
+      id: `structure-${idString}`,
+      title: `Realm ${idString}`,
+      subtitle: `(${hexCoords.col}, ${hexCoords.row})`,
+      position: { x: event.clientX, y: event.clientY },
+      scene: SceneName.WorldMap,
+      layout: "radial",
+      metadata: {
+        entityId: structure.id,
+        entityType: "structure",
+        hex: hexCoords,
+      },
+      actions: [
+        {
+          id: `structure-${idString}-overview`,
+          label: "Realm Overview",
+          icon: "/image-icons/world.png",
+          onSelect: () => {
+            const store = useUIStore.getState();
+            store.setStructureEntityId(structure.id);
+            store.setLeftNavigationView(LeftView.EntityView);
+            store.setRightNavigationView(RightView.None);
+            store.closeContextMenu();
+          },
+        },
+        {
+          id: `structure-${idString}-attack`,
+          label: "Create Attack Army",
+          icon: "/image-icons/military.png",
+          onSelect: () => {
+            openArmyCreationModal(true);
+            useUIStore.getState().closeContextMenu();
+          },
+        },
+        {
+          id: `structure-${idString}-defense`,
+          label: "Create Defense Army",
+          icon: "/image-icons/shield.png",
+          onSelect: () => {
+            openArmyCreationModal(false);
+            useUIStore.getState().closeContextMenu();
+          },
+        },
+        {
+          id: `structure-${idString}-buildings`,
+          label: "Build Structures",
+          icon: "/image-icons/building.png",
+          onSelect: () => {
+            const store = useUIStore.getState();
+            store.setStructureEntityId(structure.id);
+            store.setLeftNavigationView(LeftView.ConstructionView);
+            store.setRightNavigationView(RightView.None);
+            store.closeContextMenu();
+          },
+        },
+        {
+          id: `structure-${idString}-production`,
+          label: "Build Production",
+          icon: "/image-icons/production.png",
+          onSelect: () => {
+            const store = useUIStore.getState();
+            store.setStructureEntityId(structure.id);
+            store.setLeftNavigationView(LeftView.Production);
+            store.setRightNavigationView(RightView.None);
+            store.closeContextMenu();
+          },
+        },
+      ],
+    });
   }
 
   private onArmyMovement(account: Account | AccountInterface, actionPath: ActionPath[], selectedEntityId: ID) {

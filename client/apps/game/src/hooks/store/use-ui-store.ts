@@ -1,4 +1,5 @@
 import { BattleViewInfo, LeftView, RightView } from "@/types";
+import { ContextMenuState } from "@/types/context-menu";
 import { SelectableArmy } from "@bibliothecadao/eternum";
 import { ContractAddress, ID } from "@bibliothecadao/types";
 import { create } from "zustand";
@@ -117,6 +118,9 @@ interface UIStore {
   setCompassDirection: (direction: number) => void;
   tooltip: TooltipType;
   setTooltip: (tooltip: TooltipType) => void;
+  contextMenu: ContextMenuState | null;
+  openContextMenu: (menu: ContextMenuState) => void;
+  closeContextMenu: () => void;
   showRealmsFlags: boolean;
   setShowRealmsFlags: (show: boolean) => void;
   isLoadingScreenEnabled: boolean;
@@ -220,6 +224,9 @@ export const useUIStore = create(
               }
             : tooltip,
       }),
+    contextMenu: null,
+    openContextMenu: (menu: ContextMenuState) => set({ contextMenu: menu }),
+    closeContextMenu: () => set({ contextMenu: null }),
     showRealmsFlags: true,
     setShowRealmsFlags: (show) => set({ showRealmsFlags: show }),
     isLoadingScreenEnabled: true,
