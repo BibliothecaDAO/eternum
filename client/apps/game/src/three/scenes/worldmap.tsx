@@ -76,6 +76,7 @@ import { SceneShortcutManager } from "../utils/shortcuts";
 
 //const dummyObject = new Object3D();
 const dummyVector = new Vector3();
+const dummy = new Object3D();
 
 export default class WorldmapScene extends HexagonScene {
   private chunkSize = 8; // Size of each chunk
@@ -1705,32 +1706,11 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
-    const dummy = new Object3D();
     const pos = getWorldPositionForHex({ row, col });
-
-    dummy.position.copy(pos);
 
     const isStructure = this.structureManager.structureHexCoords.get(col)?.has(row) || false;
     const isQuest = this.questManager.questHexCoords.get(col)?.has(row) || false;
-
-    if (isStructure || isQuest) {
-      dummy.scale.set(0, 0, 0);
-    } else {
-      dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
-    }
-
-    if (!IS_FLAT_MODE) {
-      const rotationSeed = this.hashCoordinates(col, row);
-      const rotationIndex = Math.floor(rotationSeed * 6);
-      const randomRotation = (rotationIndex * Math.PI) / 3;
-      dummy.rotation.y = randomRotation;
-      dummy.position.y += 0.05;
-    } else {
-      dummy.position.y += 0.1;
-      dummy.rotation.y = 0;
-    }
-
-    dummy.updateMatrix();
+    const shouldHideTile = isStructure || isQuest;
 
     const renderedChunkStartRow = parseInt(this.currentChunk.split(",")[0]);
     const renderedChunkStartCol = parseInt(this.currentChunk.split(",")[1]);
@@ -1744,15 +1724,36 @@ export default class WorldmapScene extends HexagonScene {
     // if the hex is within the chunk, add it to the interactive hex manager and to the biome
     if (this.isColRowInVisibleChunk(col, row)) {
       await this.updateHexagonGridPromise;
+      const chunkWidth = this.renderChunkSize.width;
+      const chunkHeight = this.renderChunkSize.height;
+      if (shouldHideTile) {
+        await this.updateHexagonGrid(renderedChunkStartRow, renderedChunkStartCol, chunkHeight, chunkWidth);
+        return;
+      }
+
       // Add hex to all interactive hexes
       this.interactiveHexManager.addHex({ col, row });
 
       // Update which hexes are visible in the current chunk
-      const chunkWidth = this.renderChunkSize.width;
-      const chunkHeight = this.renderChunkSize.height;
       this.interactiveHexManager.updateVisibleHexes(chunkCenterRow, chunkCenterCol, chunkWidth, chunkHeight);
 
       await Promise.all(this.modelLoadPromises);
+      dummy.position.copy(pos);
+      dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
+
+      if (!IS_FLAT_MODE) {
+        const rotationSeed = this.hashCoordinates(col, row);
+        const rotationIndex = Math.floor(rotationSeed * 6);
+        const randomRotation = (rotationIndex * Math.PI) / 3;
+        dummy.rotation.y = randomRotation;
+        dummy.position.y += 0.05;
+      } else {
+        dummy.position.y += 0.1;
+        dummy.rotation.y = 0;
+      }
+
+      dummy.updateMatrix();
+
       const biomeVariant = getBiomeVariant(biome, col, row);
       const hexMesh = this.biomeModels.get(biomeVariant as any)!;
       const currentCount = hexMesh.getCount();
@@ -2059,15 +2060,16 @@ export default class WorldmapScene extends HexagonScene {
 
         const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
         const isQuest = this.questManager.questHexCoords.get(globalCol)?.has(globalRow) || false;
+        const shouldHideTile = isStructure || isQuest;
         const isExplored = this.exploredTiles.get(globalCol)?.get(globalRow) || false;
 
-        if (isStructure || isQuest) {
-          tempMatrix.makeScale(0, 0, 0);
-        } else {
-          tempMatrix.makeScale(HEX_SIZE, HEX_SIZE, HEX_SIZE);
+        this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
+
+        if (shouldHideTile) {
+          return;
         }
 
-        this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
+        tempMatrix.makeScale(HEX_SIZE, HEX_SIZE, HEX_SIZE);
 
         const rotationSeed = this.hashCoordinates(globalCol, globalRow);
         const rotationIndex = Math.floor(rotationSeed * 6);
