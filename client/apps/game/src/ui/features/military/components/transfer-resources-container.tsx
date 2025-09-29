@@ -52,6 +52,7 @@ export const TransferResourcesContainer = ({
   const [loading, setLoading] = useState(false);
   const [selectedResources, setSelectedResources] = useState<ResourceTransfer[]>([]);
   const [resourceAmounts, setResourceAmounts] = useState<Record<number, number>>({});
+  const [hasAutoSelected, setHasAutoSelected] = useState(false);
   const [selectedResourcesWeightKg, setSelectedResourcesWeightKg] = useState<number>(0);
   const [actorTypes, setActorTypes] = useState<{
     selected: ActorType;
@@ -59,10 +60,11 @@ export const TransferResourcesContainer = ({
   } | null>(null);
 
   useEffect(() => {
-    // when transfer direction changes, reset the selected resources
+    // when transfer context changes, reset the selected resources
     setSelectedResources([]);
     setResourceAmounts({});
-  }, [transferDirection]);
+    setHasAutoSelected(false);
+  }, [transferDirection, selectedEntityId, targetEntityId]);
 
   useEffect(() => {
     const { selected, target } = getActorTypes(transferDirection);
@@ -110,6 +112,37 @@ export const TransferResourcesContainer = ({
 
   const availableResources = availableResourcesData || [];
   const availableCapacityKg = explorerCapacity ? explorerCapacity.remainingCapacityKg - selectedResourcesWeightKg : 0;
+  const hasSelectedResources = selectedResources.length > 0;
+
+  useEffect(() => {
+    if (
+      transferDirection !== TransferDirection.ExplorerToStructure ||
+      actorTypes?.selected !== ActorType.Explorer ||
+      actorTypes?.target !== ActorType.Structure ||
+      hasAutoSelected ||
+      availableResources.length === 0 ||
+      hasSelectedResources
+    ) {
+      return;
+    }
+
+    const newSelectedResources = availableResources.map((resource) => {
+      const amount = divideByPrecision(resource.amount);
+      return { ...resource, amount };
+    });
+
+    const newResourceAmounts = newSelectedResources.reduce(
+      (acc, { resourceId, amount }) => {
+        acc[resourceId] = amount;
+        return acc;
+      },
+      {} as Record<number, number>,
+    );
+
+    setSelectedResources(newSelectedResources);
+    setResourceAmounts(newResourceAmounts);
+    setHasAutoSelected(true);
+  }, [actorTypes, availableResources, hasAutoSelected, hasSelectedResources, transferDirection]);
 
   useEffect(() => {
     // Calculate weight of selected resources
