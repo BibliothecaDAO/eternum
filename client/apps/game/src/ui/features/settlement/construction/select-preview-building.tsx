@@ -47,6 +47,18 @@ import React, { useMemo, useState } from "react";
 const ARMY_TYPES = ["Archery", "Stable", "Barracks"] as const;
 type ArmyTypeLabel = (typeof ARMY_TYPES)[number];
 
+const formatBiomeLabel = (biome: BiomeType | string | null | undefined) => {
+  if (!biome) return "";
+
+  const label = biome.toString();
+  return label
+    .replace(/_/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z])([A-Z][a-z])/g, "$1 $2")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
 export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?: string; entityId: number }) => {
   const dojo = useDojo();
 
@@ -316,8 +328,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     <>
                       <span>
                         {biomeRecommendation.best.length > 1
-                          ? `Best choices for ${biomeRecommendation.biome} biome:`
-                          : `Best choice for ${biomeRecommendation.biome} biome:`}
+                          ? `Best choices for ${formatBiomeLabel(biomeRecommendation.biome)} biome:`
+                          : `Best choice for ${formatBiomeLabel(biomeRecommendation.biome)} biome:`}
                       </span>
                       {biomeRecommendation.best.map((option) => (
                         <div
@@ -332,7 +344,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     </>
                   ) : (
                     <span className="text-gold/60">
-                      All army types fight equally well in the {biomeRecommendation.biome} biome.
+                      All army types fight equally well in the {formatBiomeLabel(biomeRecommendation.biome)} biome.
                     </span>
                   )}
                 </div>
