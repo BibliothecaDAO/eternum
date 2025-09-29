@@ -50,13 +50,17 @@ export class HighlightRenderer {
     }
   }
 
+  private generateMaterialKey(color: THREE.Color, pulseSpeed: number, pulseIntensity: number): string {
+    return `${color.getHex()}_${pulseSpeed}_${pulseIntensity}`;
+  }
+
   private getOrCreateMaterial(color: THREE.Color, pulseSpeed: number, pulseIntensity: number): THREE.MeshBasicMaterial {
-    const colorKey = `${color.getHex()}_${pulseSpeed}_${pulseIntensity}`;
+    const colorKey = this.generateMaterialKey(color, pulseSpeed, pulseIntensity);
 
     let material = this.materialPool.get(colorKey);
     if (!material) {
       material = new THREE.MeshBasicMaterial({
-        color: color.clone(),
+        color: color,
         transparent: true,
         opacity: 0.6,
         depthWrite: false,
@@ -146,7 +150,7 @@ export class HighlightRenderer {
   }
 
   private releaseMaterial(highlight: HighlightHex, hexKey: string): void {
-    const colorKey = `${highlight.color.getHex()}_${highlight.pulseSpeed}_${highlight.pulseIntensity}`;
+    const colorKey = this.generateMaterialKey(highlight.color, highlight.pulseSpeed!, highlight.pulseIntensity!);
     const users = this.materialUsers.get(colorKey);
     if (users) {
       users.delete(hexKey);
@@ -203,7 +207,7 @@ export class HighlightRenderer {
       highlight.color = color;
 
       const material = this.getOrCreateMaterial(color, highlight.pulseSpeed!, highlight.pulseIntensity!);
-      const colorKey = `${color.getHex()}_${highlight.pulseSpeed}_${highlight.pulseIntensity}`;
+      const colorKey = this.generateMaterialKey(color, highlight.pulseSpeed!, highlight.pulseIntensity!);
       this.materialUsers.get(colorKey)!.add(key);
 
       const mesh = this.highlightMeshes.get(key);
@@ -213,9 +217,9 @@ export class HighlightRenderer {
     }
   }
 
-  private addHighlightMesh(highlight: HighlightHex): void {
+  private createHighlightMesh(highlight: HighlightHex, isRollout: boolean = false): THREE.Mesh {
     const material = this.getOrCreateMaterial(highlight.color, highlight.pulseSpeed!, highlight.pulseIntensity!);
-    const colorKey = `${highlight.color.getHex()}_${highlight.pulseSpeed}_${highlight.pulseIntensity}`;
+    const colorKey = this.generateMaterialKey(highlight.color, highlight.pulseSpeed!, highlight.pulseIntensity!);
     const hexKey = `${highlight.col},${highlight.row}`;
 
     // Track this hex as using this material
@@ -226,9 +230,13 @@ export class HighlightRenderer {
     // Position the mesh relative to the tile group (local coordinates)
     mesh.position.set(0, 0.35, 0.785);
     mesh.rotation.x = -Math.PI / 2;
-
-    // Set render order higher than sprites but lower than the previous 3000
     mesh.renderOrder = 1500;
+
+    if (isRollout) {
+      mesh.visible = false;
+      mesh.scale.setScalar(this.rolloutConfig.initialScale);
+      mesh.raycast = () => {};
+    }
 
     // Store reference to the mesh for animation and cleanup
     mesh.userData.hexKey = hexKey;
@@ -248,50 +256,16 @@ export class HighlightRenderer {
       mesh.position.y = 0.35;
       this.scene.add(mesh);
     }
+
+    return mesh;
   }
 
-  private addHighlightMeshForRollout(highlight: HighlightHex): THREE.Mesh | null {
-    const material = this.getOrCreateMaterial(highlight.color, highlight.pulseSpeed!, highlight.pulseIntensity!);
-    const colorKey = `${highlight.color.getHex()}_${highlight.pulseSpeed}_${highlight.pulseIntensity}`;
-    const hexKey = `${highlight.col},${highlight.row}`;
+  private addHighlightMesh(highlight: HighlightHex): void {
+    this.createHighlightMesh(highlight, false);
+  }
 
-    // Track this hex as using this material
-    this.materialUsers.get(colorKey)!.add(hexKey);
-
-    const mesh = new THREE.Mesh(HighlightRenderer.highlightGeometry!, material);
-
-    // Position the mesh relative to the tile group (local coordinates)
-    mesh.position.set(0, 0.35, 0.785);
-    mesh.rotation.x = -Math.PI / 2;
-    mesh.visible = false;
-    mesh.scale.setScalar(this.rolloutConfig.initialScale);
-
-    // Disable raycasting for this mesh
-    mesh.raycast = () => {};
-
-    // Set render order higher than sprites but lower than the previous 3000
-    mesh.renderOrder = 1500;
-
-    // Store reference to the mesh for animation and cleanup
-    mesh.userData.hexKey = hexKey;
-    mesh.userData.highlight = highlight;
-
-    // Store mesh reference for direct access
-    this.highlightMeshes.set(hexKey, mesh);
-
-    // Add to the tile group via biomes manager if available
-    if (this.biomesManager && this.biomesManager.renderer && this.biomesManager.renderer.addObjectToTileGroup) {
-      this.biomesManager.renderer.addObjectToTileGroup(highlight.col, highlight.row, mesh);
-      return mesh;
-    } else {
-      // Fallback to old method if biomesManager is not available
-      console.warn("BiomesManager not available, falling back to scene-level rendering");
-      getWorldPositionForHex({ col: highlight.col, row: highlight.row }, true, this.tempVector3);
-      mesh.position.copy(this.tempVector3);
-      mesh.position.y = 0.35;
-      this.scene.add(mesh);
-      return mesh;
-    }
+  private addHighlightMeshForRollout(highlight: HighlightHex): THREE.Mesh {
+    return this.createHighlightMesh(highlight, true);
   }
 
   private removeHighlightMesh(highlight: HighlightHex): void {
@@ -332,6 +306,20 @@ export class HighlightRenderer {
       return;
     }
 
+    // Check if any highlights need pulsing animation
+    let needsPulsing = false;
+    for (const highlight of this.highlightedHexes.values()) {
+      if (highlight.pulseIntensity && highlight.pulseIntensity > 0) {
+        needsPulsing = true;
+        break;
+      }
+    }
+
+    if (!needsPulsing) {
+      this.animationId = requestAnimationFrame(this.animate);
+      return;
+    }
+
     const currentTime = performance.now();
     const elapsed = (currentTime - this.startTime) / 1000;
 
@@ -342,7 +330,9 @@ export class HighlightRenderer {
     >();
 
     this.highlightedHexes.forEach((highlight) => {
-      const colorKey = `${highlight.color.getHex()}_${highlight.pulseSpeed}_${highlight.pulseIntensity}`;
+      if (!highlight.pulseIntensity || highlight.pulseIntensity <= 0) return;
+      
+      const colorKey = this.generateMaterialKey(highlight.color, highlight.pulseSpeed!, highlight.pulseIntensity!);
       if (!materialAnimations.has(colorKey)) {
         const material = this.materialPool.get(colorKey);
         if (material) {
@@ -367,7 +357,7 @@ export class HighlightRenderer {
 
   private triggerLaunchGlow(highlight: HighlightHex, timeline: gsap.core.Timeline, startTime: number): void {
     const glowMaterial = new THREE.MeshBasicMaterial({
-      color: new THREE.Color(highlight.color.r, highlight.color.g, highlight.color.b),
+      color: highlight.color,
       transparent: true,
       opacity: 0,
       depthWrite: false,

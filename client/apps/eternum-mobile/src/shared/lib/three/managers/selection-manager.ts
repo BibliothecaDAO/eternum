@@ -8,6 +8,12 @@ export class SelectionManager {
   private highlightRenderer: HighlightRenderer;
   private objectRenderers: Map<string, EntityManager<any>> = new Map();
 
+  // Cache commonly used values to avoid repeated object creation
+  private readonly DEFAULT_PULSE_CONFIG = {
+    pulseSpeed: 2.0,
+    pulseIntensity: 0.4,
+  } as const;
+
   private readonly HIGHLIGHT_COLORS = {
     [ActionType.Move]: new THREE.Color().setRGB(0.5, 2.0, 0.0), // Emerald green
     [ActionType.Attack]: new THREE.Color().setRGB(2.5, 0.5, 0.0), // Fiery orange-red
@@ -101,10 +107,25 @@ export class SelectionManager {
   }
 
   private highlightActionPaths(highlightedHexes: ActionPath[]): void {
-    const processedHexes = new Set<string>();
-    const highlightsToRender = [];
+    if (highlightedHexes.length === 0) {
+      this.highlightRenderer.clearHighlights();
+      return;
+    }
 
-    for (const hexAction of highlightedHexes) {
+    const processedHexes = new Set<string>();
+    const highlightsToRender: Array<{
+      col: number;
+      row: number;
+      color: THREE.Color;
+      pulseSpeed: number;
+      pulseIntensity: number;
+    }> = [];
+    
+    // Pre-allocate array size for better performance
+    highlightsToRender.length = 0;
+
+    for (let i = 0; i < highlightedHexes.length; i++) {
+      const hexAction = highlightedHexes[i];
       const { col, row } = hexAction.hex;
 
       const hexKey = `${col},${row}`;
@@ -117,8 +138,7 @@ export class SelectionManager {
         col,
         row,
         color,
-        pulseSpeed: 2.0,
-        pulseIntensity: 0.4,
+        ...this.DEFAULT_PULSE_CONFIG,
       });
     }
 
