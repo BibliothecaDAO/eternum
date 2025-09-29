@@ -19,6 +19,8 @@ export interface ThreeCanvasRef {
   waitForWorldmapInitialization: () => Promise<void>;
   pauseRendering: () => void;
   resumeRendering: () => void;
+  showLabels: () => void;
+  hideLabels: () => void;
 }
 
 export const ThreeCanvas = forwardRef<ThreeCanvasRef, ThreeCanvasProps>(
@@ -120,12 +122,26 @@ export const ThreeCanvas = forwardRef<ThreeCanvasRef, ThreeCanvasProps>(
     const pauseRendering = () => {
       if (rendererRef.current) {
         rendererRef.current.stopRenderLoop();
+        rendererRef.current.hideLabels();
       }
     };
 
     const resumeRendering = () => {
       if (rendererRef.current) {
         rendererRef.current.startRenderLoop();
+        rendererRef.current.showLabels();
+      }
+    };
+
+    const showLabels = () => {
+      if (rendererRef.current) {
+        rendererRef.current.showLabels();
+      }
+    };
+
+    const hideLabels = () => {
+      if (rendererRef.current) {
+        rendererRef.current.hideLabels();
       }
     };
 
@@ -151,6 +167,8 @@ export const ThreeCanvas = forwardRef<ThreeCanvasRef, ThreeCanvasProps>(
       waitForWorldmapInitialization,
       pauseRendering,
       resumeRendering,
+      showLabels,
+      hideLabels,
     }));
 
     if (error) {

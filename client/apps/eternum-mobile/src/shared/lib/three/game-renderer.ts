@@ -372,6 +372,18 @@ export class GameRenderer {
     return this.labelRenderer;
   }
 
+  public showLabels(): void {
+    if (this.labelRendererElement) {
+      this.labelRendererElement.style.display = 'block';
+    }
+  }
+
+  public hideLabels(): void {
+    if (this.labelRendererElement) {
+      this.labelRendererElement.style.display = 'none';
+    }
+  }
+
   public dispose(): void {
     this.isDisposed = true;
     this.stopRenderLoop();
