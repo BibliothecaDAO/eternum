@@ -10,9 +10,7 @@ describe("StaminaManager", () => {
 
   it("applies stamina regen boost using integer math", () => {
     vi.spyOn(configManager, "getRefillPerTick").mockReturnValue(7);
-    vi
-      .spyOn(configManager, "getTroopStaminaConfig")
-      .mockReturnValue({ staminaInitial: 0, staminaMax: 200 });
+    vi.spyOn(configManager, "getTroopStaminaConfig").mockReturnValue({ staminaInitial: 0, staminaMax: 200 });
 
     const troops: Troops = {
       category: TroopType.Knight,
@@ -45,4 +43,3 @@ describe("StaminaManager", () => {
     expect(result.updated_tick).toBe(BigInt(4));
   });
 });
-
