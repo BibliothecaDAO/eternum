@@ -168,18 +168,20 @@ const SidebarRealm = ({
   );
 };
 
-export const ProductionSidebar = memo(({ realms, selectedRealmEntityId, onSelectRealm, onSelectResource }: ProductionSidebarProps) => {
-  return (
-    <div className="space-y-4">
-      {realms.map((realm) => (
-        <SidebarRealm
-          key={realm.entityId}
-          realm={realm}
-          isSelected={realm.entityId === selectedRealmEntityId}
-          onSelect={() => onSelectRealm(realm.entityId)}
-          onSelectResource={onSelectResource}
-        />
-      ))}
-    </div>
-  );
-});
+export const ProductionSidebar = memo(
+  ({ realms, selectedRealmEntityId, onSelectRealm, onSelectResource }: ProductionSidebarProps) => {
+    return (
+      <div className="space-y-4">
+        {realms.map((realm) => (
+          <SidebarRealm
+            key={realm.entityId}
+            realm={realm}
+            isSelected={realm.entityId === selectedRealmEntityId}
+            onSelect={() => onSelectRealm(realm.entityId)}
+            onSelectResource={onSelectResource}
+          />
+        ))}
+      </div>
+    );
+  },
+);

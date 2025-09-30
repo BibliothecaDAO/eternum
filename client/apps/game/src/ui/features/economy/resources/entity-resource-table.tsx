@@ -14,10 +14,18 @@ import {
   getTotalResourceWeightKg,
   isMilitaryResource,
   Position,
-  ResourceManager
+  ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { ClientComponents, findResourceById, getResourceTiers, ID, RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import {
+  ClientComponents,
+  findResourceById,
+  getResourceTiers,
+  ID,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  StructureType,
+} from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { ComponentValue, getComponentValue, Has } from "@dojoengine/recs";
 import clsx from "clsx";
@@ -111,11 +119,9 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
   const [dragState, setDragState] = useState<DragState>({ isDragging: false });
   const [dragDropDialog, setDragDropDialog] = useState<DragDropAmountDialog>({ isOpen: false });
   const [transferAnimations, setTransferAnimations] = useState<Set<string>>(new Set());
-  const [showHelpBanner, setShowHelpBanner] = useState(() =>
-    localStorage.getItem("hideResourceTableHelp") !== "true"
-  );
-  const [pinSelectedColumn, setPinSelectedColumn] = useState(() =>
-    localStorage.getItem("pinSelectedColumn") === "true"
+  const [showHelpBanner, setShowHelpBanner] = useState(() => localStorage.getItem("hideResourceTableHelp") !== "true");
+  const [pinSelectedColumn, setPinSelectedColumn] = useState(
+    () => localStorage.getItem("pinSelectedColumn") === "true",
   );
 
   const playerStructures = useUIStore((state) => state.playerStructures);
@@ -203,7 +209,8 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
         );
 
         const productionPerSecond = divideByPrecision(Number(productionInfo.production.production_rate || 0), false);
-        const isProducing = productionInfo.production.building_count > 0 && productionInfo.production.production_rate !== 0n;
+        const isProducing =
+          productionInfo.production.building_count > 0 && productionInfo.production.production_rate !== 0n;
 
         const existing = summaries.get(resourceId);
         if (!existing) {
@@ -296,45 +303,52 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
 
       if (!fromStructure || !toStructure) return false;
 
-      return !isMilitaryResource(resourceId) ||
-        (fromStructure.category === StructureType.Realm && toStructure.category === StructureType.Realm);
+      return (
+        !isMilitaryResource(resourceId) ||
+        (fromStructure.category === StructureType.Realm && toStructure.category === StructureType.Realm)
+      );
     },
     [components],
   );
 
-  const matchesTransfer = useCallback((t: TransferDraft, transfer: TransferDraft) =>
-    t.fromStructureId === transfer.fromStructureId &&
-    t.toStructureId === transfer.toStructureId &&
-    t.resourceId === transfer.resourceId,
-    []
+  const matchesTransfer = useCallback(
+    (t: TransferDraft, transfer: TransferDraft) =>
+      t.fromStructureId === transfer.fromStructureId &&
+      t.toStructureId === transfer.toStructureId &&
+      t.resourceId === transfer.resourceId,
+    [],
   );
 
   const executeTransfer = useCallback(
     async (transfer: TransferDraft) => {
       if (!account) return;
 
-      setTransferDrafts(prev => prev.map(t => matchesTransfer(t, transfer) ? { ...t, isProcessing: true } : t));
+      setTransferDrafts((prev) => prev.map((t) => (matchesTransfer(t, transfer) ? { ...t, isProcessing: true } : t)));
 
       const animationKey = `${transfer.fromStructureId}-${transfer.toStructureId}-${transfer.resourceId}`;
-      setTransferAnimations(prev => new Set([...prev, animationKey]));
+      setTransferAnimations((prev) => new Set([...prev, animationKey]));
 
       try {
         await send_resources_multiple({
           signer: account,
-          calls: [{
-            sender_entity_id: transfer.fromStructureId,
-            recipient_entity_id: transfer.toStructureId,
-            resources: [transfer.resourceId, BigInt(Math.round(transfer.amount * RESOURCE_PRECISION))],
-          }],
+          calls: [
+            {
+              sender_entity_id: transfer.fromStructureId,
+              recipient_entity_id: transfer.toStructureId,
+              resources: [transfer.resourceId, BigInt(Math.round(transfer.amount * RESOURCE_PRECISION))],
+            },
+          ],
         });
 
-        setTransferDrafts(prev => prev.filter(t => !matchesTransfer(t, transfer)));
+        setTransferDrafts((prev) => prev.filter((t) => !matchesTransfer(t, transfer)));
       } catch (error) {
-        console.error('Transfer failed:', error);
-        setTransferDrafts(prev => prev.map(t => matchesTransfer(t, transfer) ? { ...t, isProcessing: false } : t));
+        console.error("Transfer failed:", error);
+        setTransferDrafts((prev) =>
+          prev.map((t) => (matchesTransfer(t, transfer) ? { ...t, isProcessing: false } : t)),
+        );
       } finally {
         setTimeout(() => {
-          setTransferAnimations(prev => {
+          setTransferAnimations((prev) => {
             const newSet = new Set(prev);
             newSet.delete(animationKey);
             return newSet;
@@ -362,7 +376,7 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
         const canTransfer = canTransferResource(
           currentDragData.structureId,
           targetStructureId,
-          currentDragData.resourceId
+          currentDragData.resourceId,
         );
 
         if (canTransfer) {
@@ -393,16 +407,16 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
     (e: React.DragEvent, targetStructureId: number) => {
       e.preventDefault();
       e.stopPropagation();
-      e.dataTransfer.dropEffect = 'move';
+      e.dataTransfer.dropEffect = "move";
 
       if (dragState.isDragging && dragState.dragData) {
         const canTransfer = canTransferResource(
           dragState.dragData.structureId,
           targetStructureId,
-          dragState.dragData.resourceId
+          dragState.dragData.resourceId,
         );
         if (canTransfer) {
-          setDragState(prev => ({ ...prev, dragOverStructureId: targetStructureId }));
+          setDragState((prev) => ({ ...prev, dragOverStructureId: targetStructureId }));
         }
       }
     },
@@ -425,7 +439,7 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
       const canTransfer = canTransferResource(
         currentDragData.structureId,
         targetStructureId,
-        currentDragData.resourceId
+        currentDragData.resourceId,
       );
 
       if (canTransfer) {
@@ -485,9 +499,8 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
 
   const getPendingTransfers = useCallback(
     (structureId: number, resourceId: ResourcesIds) => {
-      return transferDrafts.filter(t =>
-        (t.fromStructureId === structureId || t.toStructureId === structureId) &&
-        t.resourceId === resourceId
+      return transferDrafts.filter(
+        (t) => (t.fromStructureId === structureId || t.toStructureId === structureId) && t.resourceId === resourceId,
       );
     },
     [transferDrafts],
@@ -509,7 +522,7 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
         await executeTransfer(transfer);
       } else {
         // Add to queue
-        setTransferDrafts(prev => [...prev, transfer]);
+        setTransferDrafts((prev) => [...prev, transfer]);
       }
 
       setDragDropDialog({ isOpen: false });
@@ -537,11 +550,16 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
               <ul className="space-y-1 text-xs text-blue/90">
                 <li className="flex items-start gap-2">
                   <span className="text-blue/70">•</span>
-                  <span><strong>Drag & Drop:</strong> Drag resources between columns to transfer them across realms</span>
+                  <span>
+                    <strong>Drag & Drop:</strong> Drag resources between columns to transfer them across realms
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-blue/70">•</span>
-                  <span><strong>Cycle Realms:</strong> Click column headers to navigate between realms in {isMapView ? "world" : "local"} view</span>
+                  <span>
+                    <strong>Cycle Realms:</strong> Click column headers to navigate between realms in{" "}
+                    {isMapView ? "world" : "local"} view
+                  </span>
                 </li>
               </ul>
             </div>
@@ -621,7 +639,7 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
                     key={structure.entityId}
                     className={clsx(
                       "px-3 py-2 cursor-pointer border-r border-gold/[0.07] last:border-r-0 transition-colors hover:bg-gold/5",
-                      structure.isSelected && "bg-gold/10"
+                      structure.isSelected && "bg-gold/10",
                     )}
                     role="button"
                     tabIndex={0}
@@ -636,7 +654,12 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
                     <div className="flex items-center gap-1.5">
                       {structure.isSelected && <Target className="h-3 w-3 text-gold" />}
                       <div className="flex flex-col gap-0.5">
-                        <span className={clsx("font-semibold leading-tight text-[11px]", structure.isSelected && "text-gold")}>
+                        <span
+                          className={clsx(
+                            "font-semibold leading-tight text-[11px]",
+                            structure.isSelected && "text-gold",
+                          )}
+                        >
                           {structure.label}
                         </span>
                         <span className="text-[9px] text-gold/50 font-normal">Level {structure.level}</span>
@@ -668,7 +691,10 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
                       const resourceKey = ResourcesIds[resourceId];
 
                       return (
-                        <tr key={resourceId} className="border-b border-gold/10 last:border-b-0 hover:bg-gold/[0.02] transition-colors">
+                        <tr
+                          key={resourceId}
+                          className="border-b border-gold/10 last:border-b-0 hover:bg-gold/[0.02] transition-colors"
+                        >
                           <td className="px-3 py-2 border-r border-gold/[0.07] sticky left-0 bg-dark-wood/95 backdrop-blur z-10 shadow-sm">
                             <div className="flex items-center gap-2">
                               <ResourceIcon resource={resourceKey} size="md" />
@@ -681,10 +707,12 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
                                 <span className="text-[11px] font-bold text-gold">
                                   {formatResourceAmount(summary.totalAmount)}
                                 </span>
-                                <span className={clsx(
-                                  "text-[10px]",
-                                  summary.totalProductionPerSecond > 0 ? "text-green/70" : "text-gold/40"
-                                )}>
+                                <span
+                                  className={clsx(
+                                    "text-[10px]",
+                                    summary.totalProductionPerSecond > 0 ? "text-green/70" : "text-gold/40",
+                                  )}
+                                >
                                   {formatProductionPerHour(summary.totalProductionPerSecond)}
                                 </span>
                               </div>
@@ -746,11 +774,16 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
                                   <div
                                     className={clsx(
                                       "min-h-[40px] flex items-center justify-center rounded-md transition-all",
-                                      dragState.isDragging && dragState.dragOverStructureId === structure.entityId &&
-                                      dragState.dragData?.resourceId === resourceId &&
-                                      canTransferResource(dragState.dragData.structureId, structure.entityId, resourceId)
+                                      dragState.isDragging &&
+                                        dragState.dragOverStructureId === structure.entityId &&
+                                        dragState.dragData?.resourceId === resourceId &&
+                                        canTransferResource(
+                                          dragState.dragData.structureId,
+                                          structure.entityId,
+                                          resourceId,
+                                        )
                                         ? "bg-gold/20 border-2 border-dashed border-gold/60"
-                                        : "border border-transparent"
+                                        : "border border-transparent",
                                     )}
                                     onDragOver={(e) => handleDragOver(e, structure.entityId)}
                                     onDrop={(e) => handleDrop(e, structure.entityId)}
@@ -793,21 +826,21 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
                 draft={draft}
                 structureColumns={structureColumns}
                 onExecute={() => executeTransfer(draft)}
-                onRemove={() => setTransferDrafts(prev => prev.filter((_, i) => i !== index))}
+                onRemove={() => setTransferDrafts((prev) => prev.filter((_, i) => i !== index))}
               />
             ))}
           </div>
           <div className="mt-3 pt-2 border-t border-gold/10">
             <div className="flex gap-2">
               <button
-                onClick={() => transferDrafts.filter(d => !d.isProcessing).forEach(executeTransfer)}
-                disabled={transferDrafts.every(d => d.isProcessing)}
+                onClick={() => transferDrafts.filter((d) => !d.isProcessing).forEach(executeTransfer)}
+                disabled={transferDrafts.every((d) => d.isProcessing)}
                 className="px-3 py-1 text-xs bg-gold/20 text-gold rounded hover:bg-gold/30 transition-colors disabled:opacity-50"
               >
                 Send All
               </button>
               <span className="text-xs text-gold/60 flex items-center">
-                {transferDrafts.filter(d => !d.isProcessing).length} pending
+                {transferDrafts.filter((d) => !d.isProcessing).length} pending
               </span>
             </div>
           </div>
@@ -828,8 +861,8 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
 });
 
 // Enhanced Transfer Cell Component
-const TransferCell = React.memo((
-  {
+const TransferCell = React.memo(
+  ({
     structureId,
     resourceId,
     cell,
@@ -869,428 +902,423 @@ const TransferCell = React.memo((
     onInlineEditChange: (state: InlineEditState | null) => void;
     onInlineDestinationSelect: (destinationId: number) => void;
     structureColumns: Array<{ entityId: number; label: string }>;
-  }
-) => {
-  const [isHovered, setIsHovered] = useState(false);
-  const pendingOutgoing = useMemo(() => pendingTransfers.filter(t => t.fromStructureId === structureId), [pendingTransfers, structureId]);
-  const pendingIncoming = useMemo(() => pendingTransfers.filter(t => t.toStructureId === structureId), [pendingTransfers, structureId]);
-  const totalOutgoing = useMemo(() => pendingOutgoing.reduce((sum, t) => sum + t.amount, 0), [pendingOutgoing]);
-  const totalIncoming = useMemo(() => pendingIncoming.reduce((sum, t) => sum + t.amount, 0), [pendingIncoming]);
-  const isInlineEditing = inlineEditState?.structureId === structureId && inlineEditState?.resourceId === resourceId;
-  const animationKey = transferAnimations.has(`${structureId}-*-${resourceId}`) || transferAnimations.has(`*-${structureId}-${resourceId}`);
+  }) => {
+    const [isHovered, setIsHovered] = useState(false);
+    const pendingOutgoing = useMemo(
+      () => pendingTransfers.filter((t) => t.fromStructureId === structureId),
+      [pendingTransfers, structureId],
+    );
+    const pendingIncoming = useMemo(
+      () => pendingTransfers.filter((t) => t.toStructureId === structureId),
+      [pendingTransfers, structureId],
+    );
+    const totalOutgoing = useMemo(() => pendingOutgoing.reduce((sum, t) => sum + t.amount, 0), [pendingOutgoing]);
+    const totalIncoming = useMemo(() => pendingIncoming.reduce((sum, t) => sum + t.amount, 0), [pendingIncoming]);
+    const isInlineEditing = inlineEditState?.structureId === structureId && inlineEditState?.resourceId === resourceId;
+    const animationKey =
+      transferAnimations.has(`${structureId}-*-${resourceId}`) ||
+      transferAnimations.has(`*-${structureId}-${resourceId}`);
 
-  // Removed expensive suggestions for performance
+    // Removed expensive suggestions for performance
 
-  const isDragTarget = dragState.isDragging &&
-    dragState.dragOverStructureId === structureId &&
-    dragState.dragData?.resourceId === resourceId &&
-    dragState.dragData?.structureId !== structureId;
+    const isDragTarget =
+      dragState.isDragging &&
+      dragState.dragOverStructureId === structureId &&
+      dragState.dragData?.resourceId === resourceId &&
+      dragState.dragData?.structureId !== structureId;
 
-  const handleCellDoubleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!isSelectedStructure || cell.amount <= 0) return;
-    onDoubleClick(structureId, resourceId);
-  };
+    const handleCellDoubleClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!isSelectedStructure || cell.amount <= 0) return;
+      onDoubleClick(structureId, resourceId);
+    };
 
-  // Removed timeout cleanup for performance
+    // Removed timeout cleanup for performance
 
-  return (
-    <div
-      className={clsx(
-        "min-h-[40px] p-1.5 rounded-md transition-all duration-200 relative group",
-        isSelectedStructure && "bg-gold/5",
-        isDragTarget && "bg-gold/20 border-2 border-dashed border-gold/60 scale-105",
-        isHovered && !isDragTarget && "bg-gold/10",
-        animationKey && "animate-pulse"
-      )}
-      draggable={cell.amount > 0}
-      onDragStart={() => cell.amount > 0 && onDragStart(structureId, resourceId, cell.amount)}
-      onDragEnd={onDragEnd}
-      onDragOver={(e) => onDragOver(e, structureId)}
-      onDrop={(e) => onDrop(e, structureId)}
-      onDoubleClick={handleCellDoubleClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      title={`Double-click to transfer • Drag to another structure`}
-    >
-      {/* Main Content */}
-      <div className="flex flex-col gap-0.5">
-        <div className="flex items-center justify-between gap-1">
-          <div className="flex flex-col gap-0.5">
-            <div className="flex items-center gap-1">
-              <span className="text-[11px] font-medium text-gold/90">
-                {formatResourceAmount(cell.amount)}
+    return (
+      <div
+        className={clsx(
+          "min-h-[40px] p-1.5 rounded-md transition-all duration-200 relative group",
+          isSelectedStructure && "bg-gold/5",
+          isDragTarget && "bg-gold/20 border-2 border-dashed border-gold/60 scale-105",
+          isHovered && !isDragTarget && "bg-gold/10",
+          animationKey && "animate-pulse",
+        )}
+        draggable={cell.amount > 0}
+        onDragStart={() => cell.amount > 0 && onDragStart(structureId, resourceId, cell.amount)}
+        onDragEnd={onDragEnd}
+        onDragOver={(e) => onDragOver(e, structureId)}
+        onDrop={(e) => onDrop(e, structureId)}
+        onDoubleClick={handleCellDoubleClick}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        title={`Double-click to transfer • Drag to another structure`}
+      >
+        {/* Main Content */}
+        <div className="flex flex-col gap-0.5">
+          <div className="flex items-center justify-between gap-1">
+            <div className="flex flex-col gap-0.5">
+              <div className="flex items-center gap-1">
+                <span className="text-[11px] font-medium text-gold/90">{formatResourceAmount(cell.amount)}</span>
+                {(pendingOutgoing.length > 0 || pendingIncoming.length > 0) && (
+                  <div className="flex items-center gap-0.5">
+                    {pendingOutgoing.length > 0 && (
+                      <span className="text-[10px] text-red/70 flex items-center gap-0.5">
+                        <ArrowDown className="h-2.5 w-2.5" />-{totalOutgoing}
+                      </span>
+                    )}
+                    {pendingIncoming.length > 0 && (
+                      <span className="text-[10px] text-green/70 flex items-center gap-0.5">
+                        <ArrowUp className="h-2.5 w-2.5" />+{totalIncoming}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+              <span className={clsx("text-[10px]", cell.isProducing ? "text-gold/60" : "text-gold/30")}>
+                {formatProductionPerHour(cell.productionPerSecond)}
               </span>
-              {(pendingOutgoing.length > 0 || pendingIncoming.length > 0) && (
-                <div className="flex items-center gap-0.5">
-                  {pendingOutgoing.length > 0 && (
-                    <span className="text-[10px] text-red/70 flex items-center gap-0.5">
-                      <ArrowDown className="h-2.5 w-2.5" />
-                      -{totalOutgoing}
-                    </span>
-                  )}
-                  {pendingIncoming.length > 0 && (
-                    <span className="text-[10px] text-green/70 flex items-center gap-0.5">
-                      <ArrowUp className="h-2.5 w-2.5" />
-                      +{totalIncoming}
-                    </span>
-                  )}
-                </div>
-              )}
+              {cell.isStorageCapped && <span className="text-[10px] text-red/70">Storage full</span>}
             </div>
-            <span
-              className={clsx(
-                "text-[10px]",
-                cell.isProducing ? "text-gold/60" : "text-gold/30",
-              )}
-            >
-              {formatProductionPerHour(cell.productionPerSecond)}
-            </span>
-            {cell.isStorageCapped && (
-              <span className="text-[10px] text-red/70">Storage full</span>
-            )}
-          </div>
 
-          {/* Action Buttons */}
-          {isSelectedStructure && !isInlineEditing && (
-            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  if (!canManageInCell) return;
-                  onManageProduction();
-                }}
-                className="rounded border border-gold/20 bg-gold/10 p-0.5 text-gold transition hover:bg-gold/20 disabled:cursor-not-allowed disabled:border-gold/10 disabled:bg-transparent disabled:text-gold/30"
-                disabled={!canManageInCell}
-                title={canManageInCell ? "Manage production" : "Cannot manage production"}
-              >
-                <Factory className="h-2.5 w-2.5" />
-              </button>
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onOpenTransfer();
-                }}
-                className="rounded border border-gold/20 bg-gold/10 p-0.5 text-gold transition hover:bg-gold/20"
-                title="Open transfer modal"
-              >
-                <ArrowLeftRight className="h-2.5 w-2.5" />
-              </button>
-              {cell.amount > 0 && (
+            {/* Action Buttons */}
+            {isSelectedStructure && !isInlineEditing && (
+              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
                   type="button"
                   onClick={(event) => {
                     event.stopPropagation();
-                    onDoubleClick(structureId, resourceId);
+                    if (!canManageInCell) return;
+                    onManageProduction();
+                  }}
+                  className="rounded border border-gold/20 bg-gold/10 p-0.5 text-gold transition hover:bg-gold/20 disabled:cursor-not-allowed disabled:border-gold/10 disabled:bg-transparent disabled:text-gold/30"
+                  disabled={!canManageInCell}
+                  title={canManageInCell ? "Manage production" : "Cannot manage production"}
+                >
+                  <Factory className="h-2.5 w-2.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onOpenTransfer();
                   }}
                   className="rounded border border-gold/20 bg-gold/10 p-0.5 text-gold transition hover:bg-gold/20"
-                  title="Quick transfer"
+                  title="Open transfer modal"
                 >
-                  <Zap className="h-2.5 w-2.5" />
+                  <ArrowLeftRight className="h-2.5 w-2.5" />
                 </button>
-              )}
+                {cell.amount > 0 && (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onDoubleClick(structureId, resourceId);
+                    }}
+                    className="rounded border border-gold/20 bg-gold/10 p-0.5 text-gold transition hover:bg-gold/20"
+                    title="Quick transfer"
+                  >
+                    <Zap className="h-2.5 w-2.5" />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Inline Edit Mode - Just destination selector */}
+          {isInlineEditing && (
+            <div className="mt-1.5 space-y-1.5 bg-gold/10 p-1.5 rounded border border-gold/30">
+              <select
+                value=""
+                onChange={(e) => {
+                  e.stopPropagation();
+                  e.target.value && onInlineDestinationSelect(Number(e.target.value));
+                }}
+                className="w-full px-2 py-1 text-[11px] bg-brown/20 border border-gold/30 rounded text-gold"
+                autoFocus
+              >
+                <option value="">Select destination...</option>
+                {structureColumns
+                  .filter((col) => col.entityId !== structureId)
+                  .map((col) => (
+                    <option key={col.entityId} value={col.entityId}>
+                      {col.label}
+                    </option>
+                  ))}
+              </select>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onInlineEditChange(null);
+                }}
+                className="w-full flex items-center justify-center gap-1 px-2 py-1 text-[10px] bg-red/20 text-red rounded hover:bg-red/30"
+              >
+                <X className="h-2.5 w-2.5" />
+                Cancel
+              </button>
             </div>
           )}
         </div>
 
-        {/* Inline Edit Mode - Just destination selector */}
-        {isInlineEditing && (
-          <div className="mt-1.5 space-y-1.5 bg-gold/10 p-1.5 rounded border border-gold/30">
-            <select
-              value=""
-              onChange={(e) => {
-                e.stopPropagation();
-                e.target.value && onInlineDestinationSelect(Number(e.target.value));
-              }}
-              className="w-full px-2 py-1 text-[11px] bg-brown/20 border border-gold/30 rounded text-gold"
-              autoFocus
-            >
-              <option value="">Select destination...</option>
-              {structureColumns
-                .filter(col => col.entityId !== structureId)
-                .map(col => (
-                  <option key={col.entityId} value={col.entityId}>
-                    {col.label}
-                  </option>
-                ))}
-            </select>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onInlineEditChange(null);
-              }}
-              className="w-full flex items-center justify-center gap-1 px-2 py-1 text-[10px] bg-red/20 text-red rounded hover:bg-red/30"
-            >
-              <X className="h-2.5 w-2.5" />
-              Cancel
-            </button>
+        {/* Drag Feedback */}
+        {isDragTarget && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gold/20 rounded-md">
+            <Target className="h-6 w-6 text-gold animate-bounce" />
           </div>
         )}
       </div>
-
-      {/* Drag Feedback */}
-      {isDragTarget && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gold/20 rounded-md">
-          <Target className="h-6 w-6 text-gold animate-bounce" />
-        </div>
-      )}
-    </div>
-  );
-});
+    );
+  },
+);
 
 const formatProductionPerHour = (perSecond: number) =>
   perSecond <= 0 ? "-" : `+${currencyIntlFormat(perSecond * 3600, 2)}/h`;
 
 const formatResourceAmount = (amount: number) => currencyFormat(amount, 2);
 
-const TransferQueueItem = React.memo(({
-  draft,
-  structureColumns,
-  onExecute,
-  onRemove
-}: {
-  draft: TransferDraft;
-  structureColumns: StructureColumn[];
-  onExecute: () => void;
-  onRemove: () => void;
-}) => {
-  const fromStructure = structureColumns.find(s => s.entityId === draft.fromStructureId);
-  const toStructure = structureColumns.find(s => s.entityId === draft.toStructureId);
-  const resourceKey = ResourcesIds[draft.resourceId];
+const TransferQueueItem = React.memo(
+  ({
+    draft,
+    structureColumns,
+    onExecute,
+    onRemove,
+  }: {
+    draft: TransferDraft;
+    structureColumns: StructureColumn[];
+    onExecute: () => void;
+    onRemove: () => void;
+  }) => {
+    const fromStructure = structureColumns.find((s) => s.entityId === draft.fromStructureId);
+    const toStructure = structureColumns.find((s) => s.entityId === draft.toStructureId);
+    const resourceKey = ResourcesIds[draft.resourceId];
 
-  return (
-    <div
-      className={clsx(
-        "flex items-center justify-between gap-3 p-2 rounded border",
-        draft.isProcessing ? "border-blue/30 bg-blue/10 animate-pulse" : "border-gold/20 bg-gold/5"
-      )}
-    >
-      <div className="flex items-center gap-2 min-w-0">
-        <ResourceIcon resource={resourceKey} size="sm" />
-        <span className="text-xs text-gold/90 truncate">
-          {draft.amount} {resourceKey}
-        </span>
-        <span className="text-xs text-gold/60">
-          {fromStructure?.label} → {toStructure?.label}
-        </span>
-      </div>
-      <div className="flex items-center gap-1">
-        {draft.isProcessing ? (
-          <span className="text-xs text-blue/80">Processing...</span>
-        ) : (
-          <>
-            <button
-              onClick={onExecute}
-              className="px-2 py-1 text-xs bg-gold/20 text-gold rounded hover:bg-gold/30 transition-colors"
-            >
-              Send
-            </button>
-            <button
-              onClick={onRemove}
-              className="px-2 py-1 text-xs bg-red/20 text-red rounded hover:bg-red/30 transition-colors"
-            >
-              ×
-            </button>
-          </>
+    return (
+      <div
+        className={clsx(
+          "flex items-center justify-between gap-3 p-2 rounded border",
+          draft.isProcessing ? "border-blue/30 bg-blue/10 animate-pulse" : "border-gold/20 bg-gold/5",
         )}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <ResourceIcon resource={resourceKey} size="sm" />
+          <span className="text-xs text-gold/90 truncate">
+            {draft.amount} {resourceKey}
+          </span>
+          <span className="text-xs text-gold/60">
+            {fromStructure?.label} → {toStructure?.label}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          {draft.isProcessing ? (
+            <span className="text-xs text-blue/80">Processing...</span>
+          ) : (
+            <>
+              <button
+                onClick={onExecute}
+                className="px-2 py-1 text-xs bg-gold/20 text-gold rounded hover:bg-gold/30 transition-colors"
+              >
+                Send
+              </button>
+              <button
+                onClick={onRemove}
+                className="px-2 py-1 text-xs bg-red/20 text-red rounded hover:bg-red/30 transition-colors"
+              >
+                ×
+              </button>
+            </>
+          )}
+        </div>
       </div>
-    </div>
-  );
-});
+    );
+  },
+);
 
 // Drag & Drop Amount Selection Dialog
-const DragDropAmountDialog = React.memo(({
-  dragData,
-  onConfirm,
-  onCancel,
-  structureColumns,
-}: {
-  dragData: {
-    fromStructureId: number;
-    toStructureId: number;
-    resourceId: ResourcesIds;
-    maxAmount: number;
-  };
-  onConfirm: (amount: number, sendNow?: boolean) => void;
-  onCancel: () => void;
-  structureColumns: Array<{ entityId: number; label: string }>;
-}) => {
-  const [amount, setAmount] = useState(() => {
-    const defaultAmount = Math.min(dragData.maxAmount * 0.1, 100);
-    return Number(defaultAmount.toFixed(2));
-  });
-  const { setup: { components } } = useDojo();
+const DragDropAmountDialog = React.memo(
+  ({
+    dragData,
+    onConfirm,
+    onCancel,
+    structureColumns,
+  }: {
+    dragData: {
+      fromStructureId: number;
+      toStructureId: number;
+      resourceId: ResourcesIds;
+      maxAmount: number;
+    };
+    onConfirm: (amount: number, sendNow?: boolean) => void;
+    onCancel: () => void;
+    structureColumns: Array<{ entityId: number; label: string }>;
+  }) => {
+    const [amount, setAmount] = useState(() => {
+      const defaultAmount = Math.min(dragData.maxAmount * 0.1, 100);
+      return Number(defaultAmount.toFixed(2));
+    });
+    const {
+      setup: { components },
+    } = useDojo();
 
-  const resourceKey = ResourcesIds[dragData.resourceId];
-  const fromStructure = structureColumns.find(s => s.entityId === dragData.fromStructureId);
-  const toStructure = structureColumns.find(s => s.entityId === dragData.toStructureId);
+    const resourceKey = ResourcesIds[dragData.resourceId];
+    const fromStructure = structureColumns.find((s) => s.entityId === dragData.fromStructureId);
+    const toStructure = structureColumns.find((s) => s.entityId === dragData.toStructureId);
 
-  const resourceWeight = useMemo(() =>
-    getTotalResourceWeightKg([{ resourceId: dragData.resourceId, amount }]),
-    [dragData.resourceId, amount]
-  );
+    const resourceWeight = useMemo(
+      () => getTotalResourceWeightKg([{ resourceId: dragData.resourceId, amount }]),
+      [dragData.resourceId, amount],
+    );
 
-  const neededDonkeys = useMemo(() => calculateDonkeysNeeded(resourceWeight), [resourceWeight]);
+    const neededDonkeys = useMemo(() => calculateDonkeysNeeded(resourceWeight), [resourceWeight]);
 
-  const availableDonkeys = useMemo(() => {
-    const resourceManager = new ResourceManager(components, dragData.fromStructureId);
-    const donkeyBalance = resourceManager.balance(ResourcesIds.Donkey);
-    return donkeyBalance ? Number(donkeyBalance) / RESOURCE_PRECISION : 0;
-  }, [components, dragData.fromStructureId]);
+    const availableDonkeys = useMemo(() => {
+      const resourceManager = new ResourceManager(components, dragData.fromStructureId);
+      const donkeyBalance = resourceManager.balance(ResourcesIds.Donkey);
+      return donkeyBalance ? Number(donkeyBalance) / RESOURCE_PRECISION : 0;
+    }, [components, dragData.fromStructureId]);
 
-  const recipientBalance = useMemo(() => {
-    const resourceManager = new ResourceManager(components, dragData.toStructureId);
-    const balance = resourceManager.balance(dragData.resourceId);
-    return balance ? Number(balance) / RESOURCE_PRECISION : 0;
-  }, [components, dragData.toStructureId, dragData.resourceId]);
+    const recipientBalance = useMemo(() => {
+      const resourceManager = new ResourceManager(components, dragData.toStructureId);
+      const balance = resourceManager.balance(dragData.resourceId);
+      return balance ? Number(balance) / RESOURCE_PRECISION : 0;
+    }, [components, dragData.toStructureId, dragData.resourceId]);
 
-  const canCarry = availableDonkeys >= neededDonkeys;
-  const donkeyTrait = findResourceById(ResourcesIds.Donkey)?.trait as string;
+    const canCarry = availableDonkeys >= neededDonkeys;
+    const donkeyTrait = findResourceById(ResourcesIds.Donkey)?.trait as string;
 
-  const isValidTransfer = amount > 0 && amount <= dragData.maxAmount && canCarry;
+    const isValidTransfer = amount > 0 && amount <= dragData.maxAmount && canCarry;
 
-  const handleQueue = (e: React.FormEvent) => {
-    e.preventDefault();
-    isValidTransfer && onConfirm(amount);
-  };
+    const handleQueue = (e: React.FormEvent) => {
+      e.preventDefault();
+      isValidTransfer && onConfirm(amount);
+    };
 
-  const handleSendNow = () => isValidTransfer && onConfirm(amount, true);
+    const handleSendNow = () => isValidTransfer && onConfirm(amount, true);
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-dark-wood border border-gold/30 rounded-lg p-6 shadow-xl min-w-[400px]">
-        <div className="flex items-center gap-3 mb-4">
-          <ResourceIcon resource={resourceKey} size="lg" />
-          <div>
-            <h3 className="text-gold font-semibold">Transfer {resourceKey}</h3>
-            <p className="text-xs text-gold/60">
-              {fromStructure?.label} → {toStructure?.label}
-            </p>
-          </div>
-        </div>
-
-        <form onSubmit={handleQueue} className="space-y-4">
-          <div>
-            <label className="block text-sm text-gold/80 mb-2">
-              Amount to transfer (max: {dragData.maxAmount})
-            </label>
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(Number(e.target.value))}
-              max={dragData.maxAmount}
-              min={0.01}
-              step="any"
-              className="w-full px-3 py-2 bg-brown/20 border border-gold/30 rounded text-gold focus:border-gold/60 focus:outline-none"
-              autoFocus
-            />
-          </div>
-
-          {/* Balance Preview */}
-          {amount > 0 && (
-            <div className="bg-brown/10 rounded p-2 border border-gold/20">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <ResourceIcon resource={resourceKey} size="sm" withTooltip={false} />
-                <span className="text-xs font-medium text-gold/90">Balance Preview</span>
-              </div>
-              <div className="space-y-1 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-gold/70">{fromStructure?.label}:</span>
-                  <span className="text-gold">
-                    {dragData.maxAmount} → {dragData.maxAmount - amount}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gold/70">{toStructure?.label}:</span>
-                  <span className="text-green">
-                    {recipientBalance} → {recipientBalance + amount}
-                  </span>
-                </div>
-              </div>
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-dark-wood border border-gold/30 rounded-lg p-6 shadow-xl min-w-[400px]">
+          <div className="flex items-center gap-3 mb-4">
+            <ResourceIcon resource={resourceKey} size="lg" />
+            <div>
+              <h3 className="text-gold font-semibold">Transfer {resourceKey}</h3>
+              <p className="text-xs text-gold/60">
+                {fromStructure?.label} → {toStructure?.label}
+              </p>
             </div>
-          )}
+          </div>
 
-          {/* Donkey Requirements */}
-          <div className="bg-brown/10 rounded p-3 border border-gold/20">
-            <div className="flex items-center gap-2 mb-2">
-              <ResourceIcon
-                resource={donkeyTrait}
-                size="sm"
-                withTooltip={false}
+          <form onSubmit={handleQueue} className="space-y-4">
+            <div>
+              <label className="block text-sm text-gold/80 mb-2">Amount to transfer (max: {dragData.maxAmount})</label>
+              <input
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(Number(e.target.value))}
+                max={dragData.maxAmount}
+                min={0.01}
+                step="any"
+                className="w-full px-3 py-2 bg-brown/20 border border-gold/30 rounded text-gold focus:border-gold/60 focus:outline-none"
+                autoFocus
               />
-              <span className="text-sm font-medium text-gold/90">Transport</span>
             </div>
 
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gold/70">Available:</span>
-                <span className="text-gold font-medium">{availableDonkeys.toLocaleString()} 🐴</span>
+            {/* Balance Preview */}
+            {amount > 0 && (
+              <div className="bg-brown/10 rounded p-2 border border-gold/20">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <ResourceIcon resource={resourceKey} size="sm" withTooltip={false} />
+                  <span className="text-xs font-medium text-gold/90">Balance Preview</span>
+                </div>
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-gold/70">{fromStructure?.label}:</span>
+                    <span className="text-gold">
+                      {dragData.maxAmount} → {dragData.maxAmount - amount}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gold/70">{toStructure?.label}:</span>
+                    <span className="text-green">
+                      {recipientBalance} → {recipientBalance + amount}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gold/70">Required:</span>
-                <span className={clsx(
-                  "font-medium",
-                  canCarry ? "text-green" : "text-red"
-                )}>
-                  {neededDonkeys.toLocaleString()} 🐴
-                </span>
+            )}
+
+            {/* Donkey Requirements */}
+            <div className="bg-brown/10 rounded p-3 border border-gold/20">
+              <div className="flex items-center gap-2 mb-2">
+                <ResourceIcon resource={donkeyTrait} size="sm" withTooltip={false} />
+                <span className="text-sm font-medium text-gold/90">Transport</span>
               </div>
+
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gold/70">Available:</span>
+                  <span className="text-gold font-medium">{availableDonkeys.toLocaleString()} 🐴</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gold/70">Required:</span>
+                  <span className={clsx("font-medium", canCarry ? "text-green" : "text-red")}>
+                    {neededDonkeys.toLocaleString()} 🐴
+                  </span>
+                </div>
+              </div>
+
+              {!canCarry && (
+                <div className="mt-3 p-2 bg-red/10 border border-red/20 rounded text-xs text-red">
+                  ❌ Need {(neededDonkeys - availableDonkeys).toLocaleString()} more donkeys
+                </div>
+              )}
+              {canCarry && neededDonkeys > 0 && (
+                <div className="mt-3 p-2 bg-green/10 border border-green/20 rounded text-xs text-green">
+                  Sufficient Donkey Capacity
+                </div>
+              )}
             </div>
 
-            {!canCarry && (
-              <div className="mt-3 p-2 bg-red/10 border border-red/20 rounded text-xs text-red">
-                ❌ Need {(neededDonkeys - availableDonkeys).toLocaleString()} more donkeys
-              </div>
-            )}
-            {canCarry && neededDonkeys > 0 && (
-              <div className="mt-3 p-2 bg-green/10 border border-green/20 rounded text-xs text-green">
-                 Sufficient Donkey Capacity
-              </div>
-            )}
-          </div>
+            {/* Quick Amount Buttons */}
+            <div className="flex gap-2">
+              {[0.25, 0.5, 0.75, 1].map((percentage) => (
+                <button
+                  key={percentage}
+                  type="button"
+                  onClick={() => setAmount(Number((dragData.maxAmount * percentage).toFixed(2)))}
+                  className="px-3 py-1 text-xs bg-gold/20 text-gold rounded hover:bg-gold/30 transition-colors"
+                >
+                  {percentage === 1 ? "All" : `${percentage * 100}%`}
+                </button>
+              ))}
+            </div>
 
-          {/* Quick Amount Buttons */}
-          <div className="flex gap-2">
-            {[0.25, 0.5, 0.75, 1].map(percentage => (
+            <div className="flex gap-3 pt-2">
               <button
-                key={percentage}
-                type="button"
-                onClick={() => setAmount(Number((dragData.maxAmount * percentage).toFixed(2)))}
-                className="px-3 py-1 text-xs bg-gold/20 text-gold rounded hover:bg-gold/30 transition-colors"
+                type="submit"
+                disabled={!isValidTransfer}
+                className="flex-1 px-4 py-2 bg-blue/20 text-blue rounded hover:bg-blue/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {percentage === 1 ? 'All' : `${percentage * 100}%`}
+                {!canCarry ? "Insufficient Donkeys" : "Queue"}
               </button>
-            ))}
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <button
-              type="submit"
-              disabled={!isValidTransfer}
-              className="flex-1 px-4 py-2 bg-blue/20 text-blue rounded hover:bg-blue/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {!canCarry ? 'Insufficient Donkeys' : 'Queue'}
-            </button>
-            <button
-              type="button"
-              onClick={handleSendNow}
-              disabled={!isValidTransfer}
-              className="flex-1 px-4 py-2 bg-gold/20 text-gold rounded hover:bg-gold/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Send
-            </button>
-            <button
-              type="button"
-              onClick={onCancel}
-              className="px-4 py-2 bg-red/20 text-red rounded hover:bg-red/30 transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
+              <button
+                type="button"
+                onClick={handleSendNow}
+                disabled={!isValidTransfer}
+                className="flex-1 px-4 py-2 bg-gold/20 text-gold rounded hover:bg-gold/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Send
+              </button>
+              <button
+                type="button"
+                onClick={onCancel}
+                className="px-4 py-2 bg-red/20 text-red rounded hover:bg-red/30 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
-  );
-});
+    );
+  },
+);

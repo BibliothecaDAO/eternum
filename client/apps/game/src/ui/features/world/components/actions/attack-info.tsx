@@ -15,10 +15,7 @@ interface AttackInfoProps {
 export const AttackInfo = memo(({ selectedEntityId }: AttackInfoProps) => {
   const { currentArmiesTick } = getBlockTimestamp();
   const staminaManager = useStaminaManager(selectedEntityId);
-  const stamina = useMemo(
-    () => staminaManager.getStamina(currentArmiesTick),
-    [currentArmiesTick, staminaManager],
-  );
+  const stamina = useMemo(() => staminaManager.getStamina(currentArmiesTick), [currentArmiesTick, staminaManager]);
 
   const combatParams = useMemo(() => configManager.getCombatConfig(), []);
   const requiredStamina = combatParams.stamina_attack_req;

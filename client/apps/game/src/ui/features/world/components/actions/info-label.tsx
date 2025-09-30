@@ -68,7 +68,7 @@ export const InfoLabel = ({ variant = "default", className, children }: InfoLabe
     <div
       className={clsx(INFO_LABEL_BASE_CLASSES, className)}
       style={{
-        backgroundColor: isHovered ? hoverBackground ?? defaultBackground : defaultBackground,
+        backgroundColor: isHovered ? (hoverBackground ?? defaultBackground) : defaultBackground,
         borderColor,
         color: styleSet.default.textColor ?? "inherit",
       }}

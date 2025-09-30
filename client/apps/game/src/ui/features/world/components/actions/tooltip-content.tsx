@@ -3,12 +3,7 @@ import type { ReactNode } from "react";
 import { memo } from "react";
 
 import { ID, ResourcesIds } from "@bibliothecadao/types";
-import {
-  ActionPath,
-  ActionPaths,
-  ActionType,
-  divideByPrecision,
-} from "@bibliothecadao/eternum";
+import { ActionPath, ActionPaths, ActionType, divideByPrecision } from "@bibliothecadao/eternum";
 
 import { InfoLabel } from "./info-label";
 import { CreateArmyInfo } from "./create-army-info";
@@ -29,7 +24,10 @@ export interface ActionFoodCosts {
   exploreFoodCosts: FoodCosts;
 }
 
-type BalanceGetter = (entityId: ID, resourceId: ResourcesIds) => {
+type BalanceGetter = (
+  entityId: ID,
+  resourceId: ResourcesIds,
+) => {
   balance: number;
   resourceId: ResourcesIds;
 };
@@ -54,14 +52,7 @@ const TooltipTitle = ({ children }: { children: ReactNode }) => {
 };
 
 export const TooltipContent = memo(
-  ({
-    isExplored,
-    actionPath,
-    costsPerStep,
-    selectedEntityId,
-    structureEntityId,
-    getBalance,
-  }: TooltipContentProps) => {
+  ({ isExplored, actionPath, costsPerStep, selectedEntityId, structureEntityId, getBalance }: TooltipContentProps) => {
     const actionType = ActionPaths.getActionType(actionPath);
     const isTravelAction = actionType === ActionType.Explore || actionType === ActionType.Move;
 

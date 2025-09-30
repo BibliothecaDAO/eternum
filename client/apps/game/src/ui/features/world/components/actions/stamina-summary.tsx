@@ -17,10 +17,7 @@ export interface StaminaSummaryProps {
 export const StaminaSummary = ({ selectedEntityId, isExplored, path }: StaminaSummaryProps) => {
   const { currentArmiesTick } = useBlockTimestamp();
   const staminaManager = useStaminaManager(selectedEntityId || 0);
-  const stamina = useMemo(
-    () => staminaManager.getStamina(currentArmiesTick),
-    [currentArmiesTick, staminaManager],
-  );
+  const stamina = useMemo(() => staminaManager.getStamina(currentArmiesTick), [currentArmiesTick, staminaManager]);
 
   const totalCost = useMemo(() => {
     return path.reduce((acc, tile) => acc + (tile.staminaCost ?? 0), 0);

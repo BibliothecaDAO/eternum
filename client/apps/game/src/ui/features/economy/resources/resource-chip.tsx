@@ -13,13 +13,7 @@ import {
   relicsArmiesTicksLeft,
   ResourceManager,
 } from "@bibliothecadao/eternum";
-import {
-  ID,
-  RelicEffectWithEndTick,
-  RelicRecipientType,
-  ResourcesIds,
-  TickIds
-} from "@bibliothecadao/types";
+import { ID, RelicEffectWithEndTick, RelicRecipientType, ResourcesIds, TickIds } from "@bibliothecadao/types";
 import { Factory, Sparkles } from "lucide-react";
 import type { MouseEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -242,14 +236,7 @@ export const ResourceChip = ({
     if (!resourceManager?.entityId) return;
     setStructureEntityId(resourceManager.entityId);
     toggleModal(<ProductionModal preSelectedResource={resourceId as ResourcesIds} />);
-  }, [
-    canShowProductionShortcut,
-    onManageProduction,
-    resourceManager,
-    resourceId,
-    setStructureEntityId,
-    toggleModal,
-  ]);
+  }, [canShowProductionShortcut, onManageProduction, resourceManager, resourceId, setStructureEntityId, toggleModal]);
 
   // Check if this resource is a relic
   const isRelic = useMemo(() => {
