@@ -97,7 +97,7 @@ importers:
         version: 1.7.0-preview.3(@tanstack/react-query@5.90.2(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.24))(@types/react@18.3.24)(bufferutil@4.0.9)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@8.5.4)(typescript@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@dojoengine/state':
         specifier: 'catalog:'
-        version: 1.7.0-preview.3(@types/node@20.19.17)(@vitest/ui@2.1.9(vitest@2.1.9))(bufferutil@4.0.9)(starknet@8.5.4)(terser@5.44.0)(typescript@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
+        version: 1.7.0-preview.3(@types/node@20.19.17)(@vitest/ui@2.1.9)(bufferutil@4.0.9)(starknet@8.5.4)(terser@5.44.0)(typescript@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@dojoengine/torii-client':
         specifier: 'catalog:'
         version: 1.7.0-preview.3
@@ -352,6 +352,9 @@ importers:
       clsx:
         specifier: ^1.2.1
         version: 1.2.1
+      gsap:
+        specifier: ^3.12.5
+        version: 3.13.0
       lodash:
         specifier: ^4.17.21
         version: 4.17.21
@@ -475,7 +478,7 @@ importers:
         version: 1.7.0-preview.3(@tanstack/react-query@5.90.2(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.24))(@types/react@18.3.24)(bufferutil@4.0.9)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@8.5.4)(typescript@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@dojoengine/state':
         specifier: 'catalog:'
-        version: 1.7.0-preview.3(@types/node@20.19.17)(@vitest/ui@2.1.9(vitest@2.1.9))(bufferutil@4.0.9)(starknet@8.5.4)(terser@5.44.0)(typescript@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
+        version: 1.7.0-preview.3(@types/node@20.19.17)(@vitest/ui@2.1.9)(bufferutil@4.0.9)(starknet@8.5.4)(terser@5.44.0)(typescript@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@dojoengine/torii-client':
         specifier: 'catalog:'
         version: 1.7.0-preview.3
@@ -602,7 +605,7 @@ importers:
         version: 7.18.0(@typescript-eslint/parser@8.44.1(eslint@9.36.0(jiti@2.6.0))(typescript@5.9.2))(eslint@9.36.0(jiti@2.6.0))(typescript@5.9.2)
       '@vitest/coverage-v8':
         specifier: ^2.0.5
-        version: 2.1.9(vitest@2.1.9(@types/node@20.19.17)(@vitest/ui@2.1.9)(terser@5.44.0))
+        version: 2.1.9(vitest@2.1.9)
       '@vitest/ui':
         specifier: ^2.0.1
         version: 2.1.9(vitest@2.1.9)
@@ -678,7 +681,7 @@ importers:
     devDependencies:
       '@types/bun':
         specifier: latest
-        version: 1.2.22(@types/react@18.3.24)
+        version: 1.2.23(@types/react@18.3.24)
       eslint:
         specifier: ^9.20.1
         version: 9.36.0(jiti@2.6.0)
@@ -893,7 +896,7 @@ importers:
     devDependencies:
       '@types/bun':
         specifier: latest
-        version: 1.2.22(@types/react@18.3.24)
+        version: 1.2.23(@types/react@18.3.24)
 
   packages/core:
     dependencies:
@@ -5738,8 +5741,8 @@ packages:
   '@types/babel__traverse@7.28.0':
     resolution: {integrity: sha512-8PvcXf70gTDZBgt9ptxJ8elBeBjcLOAcOtoO/mPJjtji1+CdGbHgm77om1GrsPxsiE+uXIpNSK64UYaIwQXd4Q==}
 
-  '@types/bun@1.2.22':
-    resolution: {integrity: sha512-5A/KrKos2ZcN0c6ljRSOa1fYIyCKhZfIVYeuyb4snnvomnpFqC0tTsEkdqNxbAgExV384OETQ//WAjl3XbYqQA==}
+  '@types/bun@1.2.23':
+    resolution: {integrity: sha512-le8ueOY5b6VKYf19xT3McVbXqLqmxzPXHsQT/q9JHgikJ2X22wyTW3g3ohz2ZMnp7dod6aduIiq8A14Xyimm0A==}
 
   '@types/connect@3.4.38':
     resolution: {integrity: sha512-K6uROf1LD88uDQqJCktA4yzL1YYAK6NgfsI0v/mTgyPKWsX1CnJ0XPSDhViejru1GcRkLWb8RlzFYJRqGUbaug==}
@@ -6802,8 +6805,8 @@ packages:
     resolution: {integrity: sha512-WDtdLmJvAuNNPzByAYpRo2rF1Mmradw6gvWsQKf63476DDXmomT9zUiGypLcG4ibIM67vhAj8jJRdbmEws2Aqw==}
     engines: {node: '>=6.14.2'}
 
-  bun-types@1.2.22:
-    resolution: {integrity: sha512-hwaAu8tct/Zn6Zft4U9BsZcXkYomzpHJX28ofvx7k0Zz2HNz54n1n+tDgxoWFGB4PcFvJXJQloPhaV2eP3Q6EA==}
+  bun-types@1.2.23:
+    resolution: {integrity: sha512-R9f0hKAZXgFU3mlrA0YpE/fiDvwV0FT9rORApt2aQVWSuJDzZOyB5QLc0N/4HF57CS8IXJ6+L5E4W1bW6NS2Aw==}
     peerDependencies:
       '@types/react': ^19
 
@@ -12905,7 +12908,7 @@ snapshots:
     dependencies:
       '@ark-project/core': 3.0.0-beta.1(encoding@0.1.13)(typescript@5.9.2)(viem@2.37.8(bufferutil@4.0.9)(typescript@5.9.2)(utf-8-validate@5.0.10)(zod@4.1.11))
       '@starknet-react/chains': 0.1.7
-      '@starknet-react/core': 2.9.0(get-starknet-core@3.3.5(starknet@6.24.1(encoding@0.1.13)))(react@18.3.1)(starknet@6.24.1(encoding@0.1.13))
+      '@starknet-react/core': 2.9.0(get-starknet-core@3.3.5(starknet@8.5.4))(react@18.3.1)(starknet@6.24.1(encoding@0.1.13))
       '@tanstack/react-query': 5.90.2(react@18.3.1)
       get-starknet-core: 3.3.5(starknet@6.24.1(encoding@0.1.13))
       react: 18.3.1
@@ -14165,12 +14168,12 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@dojoengine/state@1.7.0-preview.3(@types/node@20.19.17)(@vitest/ui@2.1.9(vitest@2.1.9))(bufferutil@4.0.9)(starknet@8.5.4)(terser@5.44.0)(typescript@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)':
+  '@dojoengine/state@1.7.0-preview.3(@types/node@20.19.17)(@vitest/ui@2.1.9)(bufferutil@4.0.9)(starknet@8.5.4)(terser@5.44.0)(typescript@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
       '@dojoengine/recs': 2.0.13(bufferutil@4.0.9)(typescript@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@dojoengine/torii-client': 1.7.0-preview.3
       starknet: 8.5.4
-      vitest: 1.6.1(@types/node@20.19.17)(@vitest/ui@2.1.9(vitest@2.1.9))(terser@5.44.0)
+      vitest: 1.6.1(@types/node@20.19.17)(@vitest/ui@2.1.9)(terser@5.44.0)
     transitivePeerDependencies:
       - '@edge-runtime/vm'
       - '@types/node'
@@ -14196,7 +14199,7 @@ snapshots:
       '@dojoengine/recs': 2.0.13(bufferutil@4.0.9)(typescript@5.6.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@dojoengine/torii-client': 1.7.0-preview.3
       starknet: 8.5.4
-      vitest: 1.6.1(@types/node@20.19.17)(@vitest/ui@2.1.9(vitest@2.1.9))(terser@5.44.0)
+      vitest: 1.6.1(@types/node@20.19.17)(@vitest/ui@2.1.9)(terser@5.44.0)
     transitivePeerDependencies:
       - '@edge-runtime/vm'
       - '@types/node'
@@ -14222,7 +14225,7 @@ snapshots:
       '@dojoengine/recs': 2.0.13(bufferutil@4.0.9)(typescript@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@dojoengine/torii-client': 1.7.0-preview.3
       starknet: 8.5.4
-      vitest: 1.6.1(@types/node@20.19.17)(@vitest/ui@2.1.9(vitest@2.1.9))(terser@5.44.0)
+      vitest: 1.6.1(@types/node@20.19.17)(@vitest/ui@2.1.9)(terser@5.44.0)
     transitivePeerDependencies:
       - '@edge-runtime/vm'
       - '@types/node'
@@ -18089,7 +18092,7 @@ snapshots:
 
   '@starknet-react/chains@5.0.3': {}
 
-  '@starknet-react/core@2.9.0(get-starknet-core@3.3.5(starknet@6.24.1(encoding@0.1.13)))(react@18.3.1)(starknet@6.24.1(encoding@0.1.13))':
+  '@starknet-react/core@2.9.0(get-starknet-core@3.3.5(starknet@8.5.4))(react@18.3.1)(starknet@6.24.1(encoding@0.1.13))':
     dependencies:
       '@starknet-react/chains': 0.1.7
       '@tanstack/react-query': 5.90.2(react@18.3.1)
@@ -18926,9 +18929,9 @@ snapshots:
     dependencies:
       '@babel/types': 7.28.4
 
-  '@types/bun@1.2.22(@types/react@18.3.24)':
+  '@types/bun@1.2.23(@types/react@18.3.24)':
     dependencies:
-      bun-types: 1.2.22(@types/react@18.3.24)
+      bun-types: 1.2.23(@types/react@18.3.24)
     transitivePeerDependencies:
       - '@types/react'
 
@@ -19529,7 +19532,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@vitest/coverage-v8@2.1.9(vitest@2.1.9(@types/node@20.19.17)(@vitest/ui@2.1.9)(terser@5.44.0))':
+  '@vitest/coverage-v8@2.1.9(vitest@2.1.9)':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@bcoe/v8-coverage': 0.2.3
@@ -21192,7 +21195,7 @@ snapshots:
     dependencies:
       node-gyp-build: 4.8.4
 
-  bun-types@1.2.22(@types/react@18.3.24):
+  bun-types@1.2.23(@types/react@18.3.24):
     dependencies:
       '@types/node': 20.19.17
       '@types/react': 18.3.24
@@ -28133,7 +28136,7 @@ snapshots:
       tsx: 4.20.6
       yaml: 2.8.1
 
-  vitest@1.6.1(@types/node@20.19.17)(@vitest/ui@2.1.9(vitest@2.1.9))(terser@5.44.0):
+  vitest@1.6.1(@types/node@20.19.17)(@vitest/ui@2.1.9)(terser@5.44.0):
     dependencies:
       '@vitest/expect': 1.6.1
       '@vitest/runner': 1.6.1

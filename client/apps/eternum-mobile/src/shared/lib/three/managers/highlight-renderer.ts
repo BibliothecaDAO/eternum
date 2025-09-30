@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import gsap from "gsap";
 import { createRoundedHexagonShape } from "../utils/hexagon-geometry";
 import { getWorldPositionForHex, HEX_SIZE } from "../utils/utils";
 
@@ -18,6 +19,14 @@ export class HighlightRenderer {
   private materialUsers: Map<string, Set<string>> = new Map();
   private animationId: number | null = null;
   private biomesManager: any = null; // Will be set by HexagonMap
+  private highlightTimeline: gsap.core.Timeline | null = null;
+  private activeLaunchGlows: Array<{ mesh: THREE.Mesh; material: THREE.MeshBasicMaterial }> = [];
+  private readonly rolloutConfig = {
+    stepDelay: 0.02,
+    entryDuration: 0.18,
+    initialScale: 0.01,
+    ease: "power2.out",
+  };
 
   private static highlightGeometry: THREE.ShapeGeometry | null = null;
 
@@ -41,13 +50,17 @@ export class HighlightRenderer {
     }
   }
 
+  private generateMaterialKey(color: THREE.Color, pulseSpeed: number, pulseIntensity: number): string {
+    return `${color.getHex()}_${pulseSpeed}_${pulseIntensity}`;
+  }
+
   private getOrCreateMaterial(color: THREE.Color, pulseSpeed: number, pulseIntensity: number): THREE.MeshBasicMaterial {
-    const colorKey = `${color.getHex()}_${pulseSpeed}_${pulseIntensity}`;
+    const colorKey = this.generateMaterialKey(color, pulseSpeed, pulseIntensity);
 
     let material = this.materialPool.get(colorKey);
     if (!material) {
       material = new THREE.MeshBasicMaterial({
-        color: color.clone(),
+        color: color,
         transparent: true,
         opacity: 0.6,
         depthWrite: false,
@@ -88,8 +101,56 @@ export class HighlightRenderer {
     this.startAnimation();
   }
 
+  public highlightHexes(highlights: HighlightHex[]): void {
+    this.highlightTimeline?.kill();
+    this.highlightTimeline = null;
+    this.cleanupLaunchGlows();
+
+    // Remove existing highlights
+    this.clearHighlights();
+
+    if (highlights.length === 0) return;
+
+    const timeline = gsap.timeline();
+
+    highlights.forEach((highlight, index) => {
+      const key = `${highlight.col},${highlight.row}`;
+
+      // Create highlight with initial hidden state
+      this.highlightedHexes.set(key, highlight);
+      const mesh = this.addHighlightMeshForRollout(highlight);
+
+      if (!mesh) return;
+
+      const startTime = index * this.rolloutConfig.stepDelay;
+
+      timeline.add(() => {
+        mesh.visible = true;
+      }, startTime);
+
+      timeline.to(
+        mesh.scale,
+        {
+          x: 1,
+          y: 1,
+          z: 1,
+          duration: this.rolloutConfig.entryDuration,
+          ease: this.rolloutConfig.ease,
+        },
+        startTime,
+      );
+
+      if (index === 0) {
+        this.triggerLaunchGlow(highlight, timeline, startTime);
+      }
+    });
+
+    this.highlightTimeline = timeline;
+    this.startAnimation();
+  }
+
   private releaseMaterial(highlight: HighlightHex, hexKey: string): void {
-    const colorKey = `${highlight.color.getHex()}_${highlight.pulseSpeed}_${highlight.pulseIntensity}`;
+    const colorKey = this.generateMaterialKey(highlight.color, highlight.pulseSpeed!, highlight.pulseIntensity!);
     const users = this.materialUsers.get(colorKey);
     if (users) {
       users.delete(hexKey);
@@ -146,7 +207,7 @@ export class HighlightRenderer {
       highlight.color = color;
 
       const material = this.getOrCreateMaterial(color, highlight.pulseSpeed!, highlight.pulseIntensity!);
-      const colorKey = `${color.getHex()}_${highlight.pulseSpeed}_${highlight.pulseIntensity}`;
+      const colorKey = this.generateMaterialKey(color, highlight.pulseSpeed!, highlight.pulseIntensity!);
       this.materialUsers.get(colorKey)!.add(key);
 
       const mesh = this.highlightMeshes.get(key);
@@ -156,9 +217,9 @@ export class HighlightRenderer {
     }
   }
 
-  private addHighlightMesh(highlight: HighlightHex): void {
+  private createHighlightMesh(highlight: HighlightHex, isRollout: boolean = false): THREE.Mesh {
     const material = this.getOrCreateMaterial(highlight.color, highlight.pulseSpeed!, highlight.pulseIntensity!);
-    const colorKey = `${highlight.color.getHex()}_${highlight.pulseSpeed}_${highlight.pulseIntensity}`;
+    const colorKey = this.generateMaterialKey(highlight.color, highlight.pulseSpeed!, highlight.pulseIntensity!);
     const hexKey = `${highlight.col},${highlight.row}`;
 
     // Track this hex as using this material
@@ -169,9 +230,13 @@ export class HighlightRenderer {
     // Position the mesh relative to the tile group (local coordinates)
     mesh.position.set(0, 0.35, 0.785);
     mesh.rotation.x = -Math.PI / 2;
-
-    // Set render order higher than sprites but lower than the previous 3000
     mesh.renderOrder = 1500;
+
+    if (isRollout) {
+      mesh.visible = false;
+      mesh.scale.setScalar(this.rolloutConfig.initialScale);
+      mesh.raycast = () => {};
+    }
 
     // Store reference to the mesh for animation and cleanup
     mesh.userData.hexKey = hexKey;
@@ -191,6 +256,16 @@ export class HighlightRenderer {
       mesh.position.y = 0.35;
       this.scene.add(mesh);
     }
+
+    return mesh;
+  }
+
+  private addHighlightMesh(highlight: HighlightHex): void {
+    this.createHighlightMesh(highlight, false);
+  }
+
+  private addHighlightMeshForRollout(highlight: HighlightHex): THREE.Mesh {
+    return this.createHighlightMesh(highlight, true);
   }
 
   private removeHighlightMesh(highlight: HighlightHex): void {
@@ -231,6 +306,20 @@ export class HighlightRenderer {
       return;
     }
 
+    // Check if any highlights need pulsing animation
+    let needsPulsing = false;
+    for (const highlight of this.highlightedHexes.values()) {
+      if (highlight.pulseIntensity && highlight.pulseIntensity > 0) {
+        needsPulsing = true;
+        break;
+      }
+    }
+
+    if (!needsPulsing) {
+      this.animationId = requestAnimationFrame(this.animate);
+      return;
+    }
+
     const currentTime = performance.now();
     const elapsed = (currentTime - this.startTime) / 1000;
 
@@ -241,7 +330,9 @@ export class HighlightRenderer {
     >();
 
     this.highlightedHexes.forEach((highlight) => {
-      const colorKey = `${highlight.color.getHex()}_${highlight.pulseSpeed}_${highlight.pulseIntensity}`;
+      if (!highlight.pulseIntensity || highlight.pulseIntensity <= 0) return;
+
+      const colorKey = this.generateMaterialKey(highlight.color, highlight.pulseSpeed!, highlight.pulseIntensity!);
       if (!materialAnimations.has(colorKey)) {
         const material = this.materialPool.get(colorKey);
         if (material) {
@@ -264,7 +355,102 @@ export class HighlightRenderer {
     this.animationId = requestAnimationFrame(this.animate);
   };
 
+  private triggerLaunchGlow(highlight: HighlightHex, timeline: gsap.core.Timeline, startTime: number): void {
+    const glowMaterial = new THREE.MeshBasicMaterial({
+      color: highlight.color,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      toneMapped: false,
+    });
+
+    const glowMesh = new THREE.Mesh(HighlightRenderer.highlightGeometry!, glowMaterial);
+
+    // Position the glow mesh
+    if (this.biomesManager && this.biomesManager.renderer && this.biomesManager.renderer.addObjectToTileGroup) {
+      glowMesh.position.set(0, 0.35, 0.785);
+      glowMesh.rotation.x = -Math.PI / 2;
+      glowMesh.scale.setScalar(0.45);
+      glowMesh.raycast = () => {};
+      this.biomesManager.renderer.addObjectToTileGroup(highlight.col, highlight.row, glowMesh);
+    } else {
+      getWorldPositionForHex({ col: highlight.col, row: highlight.row }, true, this.tempVector3);
+      glowMesh.position.copy(this.tempVector3);
+      glowMesh.position.y = 0.35;
+      glowMesh.rotation.x = -Math.PI / 2;
+      glowMesh.scale.setScalar(0.45);
+      glowMesh.raycast = () => {};
+      this.scene.add(glowMesh);
+    }
+
+    const glowEntry = { mesh: glowMesh, material: glowMaterial };
+    this.activeLaunchGlows.push(glowEntry);
+
+    timeline.to(
+      glowMaterial,
+      {
+        opacity: 0.85,
+        duration: 0.12,
+        ease: "power2.out",
+      },
+      startTime,
+    );
+
+    timeline.to(
+      glowMaterial,
+      {
+        opacity: 0,
+        duration: 0.24,
+        ease: "power1.out",
+      },
+      startTime + 0.12,
+    );
+
+    timeline.to(
+      glowMesh.scale,
+      {
+        x: 1.55,
+        y: 1.55,
+        z: 1.55,
+        duration: 0.3,
+        ease: "power2.out",
+      },
+      startTime,
+    );
+
+    timeline.add(() => this.removeLaunchGlow(glowEntry), startTime + 0.36);
+  }
+
+  private removeLaunchGlow(entry: { mesh: THREE.Mesh; material: THREE.MeshBasicMaterial }): void {
+    const index = this.activeLaunchGlows.indexOf(entry);
+    if (index >= 0) {
+      this.activeLaunchGlows.splice(index, 1);
+    }
+
+    if (entry.mesh.parent) {
+      entry.mesh.parent.remove(entry.mesh);
+    }
+
+    entry.material.dispose();
+  }
+
+  private cleanupLaunchGlows(): void {
+    this.activeLaunchGlows.forEach((entry) => {
+      if (entry.mesh.parent) {
+        entry.mesh.parent.remove(entry.mesh);
+      }
+
+      entry.material.dispose();
+    });
+
+    this.activeLaunchGlows = [];
+  }
+
   public dispose(): void {
+    this.highlightTimeline?.kill();
+    this.highlightTimeline = null;
+    this.cleanupLaunchGlows();
     this.stopAnimation();
     this.clearHighlights();
   }

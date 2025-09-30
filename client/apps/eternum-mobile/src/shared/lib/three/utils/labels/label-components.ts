@@ -359,9 +359,9 @@ export function createProductionDisplay(
       const img = document.createElement("img");
 
       if (resourceName === "House") {
-        img.src = "/images/buildings/thumb/house.png";
+        img.src = "/images/buildings/workers_hut.png";
       } else if (resourceName === "Silo") {
-        img.src = "/images/buildings/thumb/silo.png";
+        img.src = "/images/buildings/storehouse.png";
       } else {
         const resourceId = ResourcesIds[resourceName as keyof typeof ResourcesIds];
         if (resourceId) {

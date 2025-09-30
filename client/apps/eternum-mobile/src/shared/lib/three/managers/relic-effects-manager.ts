@@ -1,7 +1,5 @@
 import { getBlockTimestamp, isRelicActive, RelicEffectSystemUpdate } from "@bibliothecadao/eternum";
 import { RelicEffect } from "@bibliothecadao/types";
-import * as THREE from "three";
-import { getWorldPositionForHex } from "../utils/utils";
 
 interface RelicEffectData {
   relicNumber: number;
@@ -26,11 +24,15 @@ export class RelicEffectsManager {
 
   // Dependencies
   private fxManager: any = null;
-  private tempVector3 = new THREE.Vector3();
+  private unitTileRenderer: any = null;
 
   constructor(fxManager: any) {
     this.fxManager = fxManager;
     this.startRelicValidationTimer();
+  }
+
+  public setUnitTileRenderer(renderer: any): void {
+    this.unitTileRenderer = renderer;
   }
 
   /**
@@ -75,11 +77,13 @@ export class RelicEffectsManager {
     const currentRelicNumbers = new Set(currentEffects.map((e) => e.relicNumber));
     const newRelicNumbers = new Set(newRelicEffects.map((e) => e.relicNumber));
 
-    // Remove effects that are no longer in the new list
-    for (const currentEffect of currentEffects) {
-      if (!newRelicNumbers.has(currentEffect.relicNumber)) {
-        currentEffect.fx.end();
-      }
+    // Batch process effects to remove - collect first, then execute
+    const effectsToRemove = currentEffects.filter((effect) => !newRelicNumbers.has(effect.relicNumber));
+
+    if (effectsToRemove.length > 0) {
+      effectsToRemove.forEach((effect) => {
+        effect.fx.end();
+      });
     }
 
     // Add new effects that weren't previously active
@@ -87,24 +91,30 @@ export class RelicEffectsManager {
     for (const newEffect of newRelicEffects) {
       if (!currentRelicNumbers.has(newEffect.relicNumber)) {
         try {
-          const position = this.getEntityWorldPosition(entityPosition);
-          position.y += 1.5;
-
           // Register the relic FX if not already registered (wait for texture to load)
           await this.fxManager.registerRelicFX(newEffect.relicNumber);
 
-          // Play the relic effect
+          // Create the relic effect at relative coordinates (0, 1.5, 0) within the tile group
           const fx = this.fxManager.playFxAtCoords(
             `relic_${newEffect.relicNumber}`,
-            position.x,
-            position.y,
-            position.z,
+            0, // x relative to tile group
+            1.5, // y relative to tile group (height above the tile)
+            0, // z relative to tile group
             0.8,
             undefined,
             true,
           );
 
-          effectsToAdd.push({ relicNumber: newEffect.relicNumber, effect: newEffect.effect, fx });
+          // Add the effect's Three.js group to the army's tile group if we have the renderer
+          if (fx.instance && fx.instance.group && this.unitTileRenderer) {
+            this.unitTileRenderer.addObjectToTileGroup(entityPosition.col, entityPosition.row, fx.instance.group);
+          }
+
+          effectsToAdd.push({
+            relicNumber: newEffect.relicNumber,
+            effect: newEffect.effect,
+            fx,
+          });
         } catch (error) {
           console.error(`Failed to add relic effect ${newEffect.relicNumber} for entity ${entityId}:`, error);
         }
@@ -126,7 +136,9 @@ export class RelicEffectsManager {
    */
   public getEntityRelicEffects(entityId: number): { relicId: number; effect: RelicEffect }[] {
     const effects = this.entityRelicEffects.get(entityId);
-    return effects ? effects.map((effect) => ({ relicId: effect.relicNumber, effect: effect.effect })) : [];
+    if (!effects || effects.length === 0) return [];
+
+    return effects.map((effect) => ({ relicId: effect.relicNumber, effect: effect.effect }));
   }
 
   /**
@@ -165,37 +177,17 @@ export class RelicEffectsManager {
   }
 
   /**
-   * Update relic effect positions to follow moving entities
-   */
-  public updateRelicEffectPositions(entityId: number, entityPosition: { col: number; row: number }): void {
-    const relicEffects = this.entityRelicEffects.get(entityId);
-    if (!relicEffects || relicEffects.length === 0) return;
-
-    // Get the current world position of the entity
-    const worldPosition = this.getEntityWorldPosition(entityPosition);
-    worldPosition.y += 1.5; // Relic effects are positioned 1.5 units above the entity
-
-    // Update each relic effect to follow the entity
-    relicEffects.forEach((relicEffect) => {
-      if (relicEffect.fx && relicEffect.fx.instance) {
-        // Update the base position that the orbital animation uses
-        relicEffect.fx.instance.initialX = worldPosition.x;
-        relicEffect.fx.instance.initialY = worldPosition.y;
-        relicEffect.fx.instance.initialZ = worldPosition.z;
-      }
-    });
-  }
-
-  /**
    * Start the periodic relic effect validation timer
    */
   private startRelicValidationTimer(): void {
-    // Clear any existing timer
+    // Clear any existing timer first
     this.stopRelicValidationTimer();
 
     // Set up new timer to run every 5 seconds
     this.relicValidationInterval = setInterval(() => {
-      this.validateActiveRelicEffects();
+      if (this.entityRelicEffects.size > 0) {
+        this.validateActiveRelicEffects();
+      }
     }, 5000);
   }
 
@@ -213,37 +205,54 @@ export class RelicEffectsManager {
    * Validate all currently displayed relic effects and remove inactive ones
    */
   private async validateActiveRelicEffects(): Promise<void> {
+    // Skip validation if no entities have relic effects
+    if (this.entityRelicEffects.size === 0) return;
+
     try {
       const { currentArmiesTick } = getBlockTimestamp();
       let removedCount = 0;
+      const entitiesToDelete: number[] = [];
 
       // Validate entity relic effects
       for (const [entityId, relicEffects] of this.entityRelicEffects) {
-        if (relicEffects.length > 0) {
-          // Filter out inactive relics
-          const activeRelics = relicEffects.filter((relicEffect) =>
-            isRelicActive(relicEffect.effect, currentArmiesTick),
-          );
+        if (relicEffects.length === 0) {
+          entitiesToDelete.push(entityId);
+          continue;
+        }
 
-          // If some relics were removed, update the effects
-          if (activeRelics.length < relicEffects.length) {
-            const removedThisEntity = relicEffects.length - activeRelics.length;
-            console.log(`Removing ${removedThisEntity} inactive relic effect(s) from entity: entityId=${entityId}`);
+        // Separate active from inactive effects in a single pass
+        const activeRelics: RelicEffectData[] = [];
+        const inactiveRelics: RelicEffectData[] = [];
 
-            // End the removed effects
-            relicEffects.filter((effect) => !activeRelics.includes(effect)).forEach((effect) => effect.fx.end());
-
-            // Update stored effects
-            if (activeRelics.length === 0) {
-              this.entityRelicEffects.delete(entityId);
-            } else {
-              this.entityRelicEffects.set(entityId, activeRelics);
-            }
-
-            removedCount += removedThisEntity;
+        relicEffects.forEach((relicEffect) => {
+          if (isRelicActive(relicEffect.effect, currentArmiesTick)) {
+            activeRelics.push(relicEffect);
+          } else {
+            inactiveRelics.push(relicEffect);
           }
+        });
+
+        // Process inactive effects if any
+        if (inactiveRelics.length > 0) {
+          console.log(`Removing ${inactiveRelics.length} inactive relic effect(s) from entity: entityId=${entityId}`);
+
+          inactiveRelics.forEach((effect) => {
+            effect.fx.end();
+          });
+
+          // Update stored effects
+          if (activeRelics.length === 0) {
+            entitiesToDelete.push(entityId);
+          } else {
+            this.entityRelicEffects.set(entityId, activeRelics);
+          }
+
+          removedCount += inactiveRelics.length;
         }
       }
+
+      // Batch delete entities with no active effects
+      entitiesToDelete.forEach((entityId) => this.entityRelicEffects.delete(entityId));
 
       if (removedCount > 0) {
         console.log(`Removed ${removedCount} total inactive relic effects`);
@@ -279,19 +288,12 @@ export class RelicEffectsManager {
     }
   }
 
-  /**
-   * Get world position for an entity
-   */
-  private getEntityWorldPosition(entityPosition: { col: number; row: number }): THREE.Vector3 {
-    getWorldPositionForHex({ col: entityPosition.col, row: entityPosition.row }, true, this.tempVector3);
-    return this.tempVector3.clone();
-  }
-
   public clearEntityRelicEffects(entityId: number): void {
     const effects = this.entityRelicEffects.get(entityId);
     if (effects) {
-      // End all visual effects
-      effects.forEach((effect) => effect.fx.end());
+      effects.forEach((effect) => {
+        effect.fx.end();
+      });
       this.entityRelicEffects.delete(entityId);
     }
 
