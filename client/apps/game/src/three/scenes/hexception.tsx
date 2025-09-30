@@ -29,7 +29,6 @@ import { BuildingSystemUpdate, Position, StructureProgress, getBlockTimestamp } 
 import { IS_FLAT_MODE } from "@/ui/config";
 import { getIsBlitz } from "@bibliothecadao/eternum";
 
-import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ProductionModal } from "@/ui/features/settlement";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
@@ -45,6 +44,7 @@ import {
   BUILDINGS_CENTER,
   BiomeType,
   BuildingType,
+  BuildingTypeToString,
   HexPosition,
   RealmLevels,
   ResourceMiningTypes,
@@ -56,7 +56,6 @@ import {
   getProducedResource,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import clsx from "clsx";
 import gsap from "gsap";
 import {
   AnimationClip,
@@ -77,6 +76,7 @@ import { CSS2DObject } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { SceneName } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
+import { HexHoverLabel } from "../utils/labels/hex-hover-label";
 
 const loader = gltfLoader;
 
@@ -142,6 +142,7 @@ export default class HexceptionScene extends HexagonScene {
     row: number;
     label: CSS2DObject;
   }[] = [];
+  private hoverLabelManager: HexHoverLabel;
   private structureStage: RealmLevels | StructureProgress = RealmLevels.Settlement;
   private minesMaterials: Map<number, MeshStandardMaterial> = new Map();
   private structureIndex: number = 0;
@@ -160,6 +161,7 @@ export default class HexceptionScene extends HexagonScene {
 
     this.isBlitz = getIsBlitz();
     this.buildingPreview = new BuildingPreview(this.scene);
+    this.hoverLabelManager = new HexHoverLabel(this.scene);
 
     const pillarGeometry = new ExtrudeGeometry(createHexagonShape(1), { depth: 2, bevelEnabled: false });
     pillarGeometry.rotateX(Math.PI / 2);
@@ -421,6 +423,8 @@ export default class HexceptionScene extends HexagonScene {
       this.scene.remove(label.label);
     });
 
+    this.clearHoverLabel();
+
     // Note: Don't clean up shortcuts here - they should persist across scene switches
     // Shortcuts will be cleaned up when the scene is actually destroyed
   }
@@ -430,6 +434,8 @@ export default class HexceptionScene extends HexagonScene {
     if (this.shortcutManager instanceof SceneShortcutManager) {
       this.shortcutManager.cleanup();
     }
+
+    this.clearHoverLabel();
 
     // Clean up structure update subscription
     if (this.structureUpdateSubscription) {
@@ -551,6 +557,7 @@ export default class HexceptionScene extends HexagonScene {
     this.state.setTooltip(null);
 
     if (hex === null) {
+      this.clearHoverLabel();
       return;
     }
 
@@ -568,38 +575,88 @@ export default class HexceptionScene extends HexagonScene {
     } else {
       this.buildingPreview?.resetBuildingColor();
     }
-    const building = this.tileManager.getBuilding(normalizedCoords);
+    const building = this.tileManager.getBuilding(normalizedCoords) as
+      | { category: BuildingType; structureType?: StructureType }
+      | undefined;
 
-    const productionManager = building
-      ? new ResourceManager(this.dojo.components, this.state.structureEntityId)
-      : undefined;
-
-    const producedResource = getProducedResource(building?.category as BuildingType);
-
-    const productionEndsAt = productionManager?.getProductionEndsAt(producedResource as ResourcesIds);
-
-    const currentTick = getBlockTimestamp().currentDefaultTick;
-
-    const isActive =
-      (productionEndsAt ?? 0) > currentTick || productionManager?.isFood(producedResource as ResourcesIds);
-
-    console.log({ productionEndsAt, dateNow: Date.now(), producedResource, isActive });
-
-    if (building && producedResource) {
-      this.state.setTooltip({
-        content: (
-          <div className="flex items-center text-lg space-x-1">
-            <ResourceIcon size="lg" resource={findResourceById(producedResource as ResourcesIds)?.trait ?? ""} />
-            <div>Producing {findResourceById(producedResource as ResourcesIds)?.trait}</div>
-            <div>—</div>
-            <div className={clsx(!isActive ? "text-order-giants" : "text-order-brilliance")}>
-              {!isActive ? "Paused" : "Active"}
-            </div>
-          </div>
-        ),
-        position: "bottom",
-      });
+    if (!building || building.category === BuildingType.None) {
+      this.clearHoverLabel();
+      return;
     }
+
+    const buildingName = this.getBuildingDisplayName(building);
+    const producedResource = getProducedResource(building.category as BuildingType);
+
+    if (producedResource) {
+      const productionManager = this.state.structureEntityId
+        ? new ResourceManager(this.dojo.components, this.state.structureEntityId)
+        : undefined;
+      const productionEndsAt = productionManager?.getProductionEndsAt(producedResource as ResourcesIds);
+      const currentTick = getBlockTimestamp().currentDefaultTick;
+      const isActive =
+        (productionEndsAt ?? 0) > currentTick || productionManager?.isFood(producedResource as ResourcesIds);
+      const resourceInfo = findResourceById(producedResource as ResourcesIds);
+      const resourceName = resourceInfo?.trait ?? "Unknown resource";
+
+      this.hoverLabelManager.update(position, {
+        kind: "resource",
+        buildingName,
+        resourceId: producedResource as ResourcesIds,
+        resourceName,
+        isActive: !!isActive,
+      });
+      return;
+    }
+
+    this.hoverLabelManager.update(position, {
+      kind: "building",
+      buildingName,
+    });
+  }
+
+  private getBuildingDisplayName(building: { category: BuildingType; structureType?: StructureType }): string {
+    const buildingType = building.category as BuildingType;
+
+    if (buildingType === BuildingType.None) {
+      return "Empty";
+    }
+
+    if (buildingType === BuildingType.ResourceAncientFragment) {
+      return this.isBlitz ? "Essence Rift" : "Fragment Mine";
+    }
+
+    if (buildingType === BuildingType.ResourceLabor) {
+      switch (building.structureType) {
+        case StructureType.Realm: {
+          const stage = this.structureStage as RealmLevels;
+          const castleName = castleLevelToRealmCastle[stage];
+          return castleName ?? "Castle";
+        }
+        case StructureType.Bank:
+          return "Bank";
+        case StructureType.Hyperstructure:
+          return "Hyperstructure";
+        case StructureType.Village:
+          return this.isBlitz ? "Camp" : "Village";
+        default:
+          return "Castle";
+      }
+    }
+
+    const baseName = BuildingTypeToString[buildingType];
+    if (!baseName) {
+      return "Building";
+    }
+
+    if (baseName.endsWith(" Resource")) {
+      return baseName.replace(" Resource", "");
+    }
+
+    return baseName;
+  }
+
+  private clearHoverLabel(): void {
+    this.hoverLabelManager.clear();
   }
   protected onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void {
     void event;
