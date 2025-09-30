@@ -72,7 +72,16 @@ const INFO_LABEL_VARIANT_STYLES: Record<
 };
 
 const INFO_LABEL_BASE_CLASSES =
-  "relative flex flex-col gap-1 rounded-md border px-2 py-1 text-[11px] font-semibold leading-tight transition-colors duration-200";
+  "relative flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-semibold leading-tight transition-colors duration-200 backdrop-blur-[2px]";
+
+const amplifyOpacity = (color?: string) => {
+  if (!color) return color;
+  const match = color.match(/^rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([0-9]*\.?[0-9]+)\s*\)$/i);
+  if (!match) return color;
+  const [, r, g, b, a] = match;
+  const alpha = Math.min(parseFloat(a) * 1.8, 1);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
 
 const InfoLabel = ({
   variant = "default",
@@ -86,21 +95,32 @@ const InfoLabel = ({
   const [isHovered, setIsHovered] = useState(false);
 
   const styleSet = INFO_LABEL_VARIANT_STYLES[variant] ?? INFO_LABEL_VARIANT_STYLES.default;
-  const backgroundColor =
-    (isHovered ? styleSet.hover.backgroundColor : undefined) ?? styleSet.default.backgroundColor ?? "transparent";
+  const defaultBackground = amplifyOpacity(styleSet.default.backgroundColor);
+  const hoverBackground = amplifyOpacity(styleSet.hover.backgroundColor) ?? defaultBackground;
+  const borderColor = amplifyOpacity(styleSet.default.borderColor) ?? styleSet.default.borderColor ?? "transparent";
 
   return (
     <div
       className={clsx(INFO_LABEL_BASE_CLASSES, className)}
       style={{
-        backgroundColor,
-        borderColor: styleSet.default.borderColor ?? "transparent",
+        backgroundColor: isHovered ? (hoverBackground ?? defaultBackground) : defaultBackground,
+        borderColor,
         color: styleSet.default.textColor ?? "inherit",
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {children}
+    </div>
+  );
+};
+
+const TooltipTitle = ({ children }: { children: ReactNode }) => {
+  return (
+    <div className="mt-0.5 flex items-center gap-2 text-[10px] uppercase tracking-[0.35em] text-gold/90">
+      <span className="h-px flex-1 bg-gold/30" />
+      <span className="px-1">{children}</span>
+      <span className="h-px flex-1 bg-gold/30" />
     </div>
   );
 };
@@ -164,21 +184,23 @@ const TooltipContent = memo(
     const wheatRatio = wheatCost === 0 ? Number.POSITIVE_INFINITY : wheatAvailable / wheatCost;
     const wheatStatusColor =
       wheatRatio >= 1 ? "text-order-brilliance" : wheatRatio >= 0.5 ? "text-gold" : "text-order-giants";
-    const displayWheatCost = wheatCost === 0 ? "0" : `-${formatAmount(wheatCost)}`;
+    const roundedWheatCost = Math.round(wheatCost);
+    const displayWheatCost = roundedWheatCost === 0 ? "0" : `-${formatAmount(roundedWheatCost)}`;
 
     return (
       <>
-        {isTravelAction && (
-          <InfoLabel variant="default" className="mt-1 flex-row items-center justify-between">
-            <span className="uppercase tracking-wide opacity-80">Wheat</span>
-            <span className={clsx("text-xs font-semibold", wheatStatusColor)}>{displayWheatCost}</span>
-          </InfoLabel>
-        )}
+        <TooltipTitle>{actionType?.toUpperCase()}</TooltipTitle>
         {isTravelAction ? (
-          <InfoLabel variant="mine" className="mt-1 flex-row items-center justify-between">
-            <span className="uppercase tracking-wide opacity-80">Stamina</span>
-            <StaminaSummary selectedEntityId={selectedEntityId} isExplored={isExplored} path={actionPath.slice(1)} />
-          </InfoLabel>
+          <div className="mt-1 flex items-center gap-2">
+            <InfoLabel variant="default" className="flex-1 items-center justify-between gap-2">
+              <img src={`/images/resources/${ResourcesIds.Wheat}.png`} alt="Wheat" className="h-5 w-5 object-contain" />
+              <span className={clsx("text-xs font-semibold", wheatStatusColor)}>{displayWheatCost}</span>
+            </InfoLabel>
+            <InfoLabel variant="mine" className="flex-1 items-center justify-between gap-2">
+              <span className="text-base leading-none">⚡</span>
+              <StaminaSummary selectedEntityId={selectedEntityId} isExplored={isExplored} path={actionPath.slice(1)} />
+            </InfoLabel>
+          </div>
         ) : actionType === ActionType.Quest ? (
           <QuestInfo selectedEntityId={Number(selectedEntityId)} path={actionPath} components={components} />
         ) : actionType === ActionType.Chest ? (
@@ -251,11 +273,7 @@ export const ActionInfo = memo(() => {
   if (!showTooltip || !selectedEntityId || !actionPath) return null;
 
   return (
-    <BaseThreeTooltip
-      position={Position.CLEAN}
-      className="w-[220px] !bg-transparent bg-none p-0 shadow-none"
-      visible={showTooltip}
-    >
+    <BaseThreeTooltip position={Position.CLEAN} className="w-[220px]  p-0 shadow-none" visible={showTooltip}>
       <TooltipContent
         isExplored={isExplored}
         actionPath={actionPath}
@@ -360,7 +378,7 @@ const AttackInfo = memo(
           </div>
         </InfoLabel>
 
-        <InfoLabel variant="default" className="flex-col gap-3 text-left normal-case">
+        <InfoLabel variant="default" className="flex-col items-start gap-3 text-left normal-case">
           <div className="flex items-center gap-3">
             <span className="text-2xl leading-none">🌍</span>
             <div className="flex flex-col">
@@ -393,7 +411,7 @@ const AttackInfo = memo(
           </div>
 
           {targetTroops?.category && (
-            <InfoLabel variant="mine" className="flex-col gap-1 text-left normal-case">
+            <InfoLabel variant="mine" className="flex-col items-start gap-1 text-left normal-case">
               <span className="text-xxs uppercase tracking-wide opacity-80">Your Army's Biome Effect</span>
               <div className="flex items-center gap-2 text-xs font-medium">
                 <span>
