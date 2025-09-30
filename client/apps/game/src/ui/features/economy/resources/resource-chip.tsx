@@ -12,16 +12,15 @@ import {
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import {
-  findResourceById,
   ID,
   RelicEffectWithEndTick,
   RelicRecipientType,
   ResourcesIds,
-  TickIds,
+  TickIds
 } from "@bibliothecadao/types";
 import { Sparkles } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
 import type { MouseEvent } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const ResourceChip = ({
   resourceId,
@@ -58,9 +57,10 @@ export const ResourceChip = ({
     return resourceManager.balance(resourceId);
   }, [resourceManager, currentTick]);
 
+  // Always show actual + produced (was previously only on hover)
   useEffect(() => {
-    setDisplayBalance(actualBalance ? Number(actualBalance) : 0);
-  }, [actualBalance]);
+    setDisplayBalance(Number(actualBalance || 0) + Number(amountProduced || 0n));
+  }, [actualBalance, amountProduced]);
 
   const production = useMemo(() => {
     if (currentTick === 0) return null;
@@ -132,68 +132,68 @@ export const ResourceChip = ({
   const handleMouseEnter = useCallback(
     (event: MouseEvent<HTMLDivElement>) => {
       setIsHovered(true);
-      const newDisplayBalance = Number(actualBalance || 0) + Number(amountProduced || 0n);
-      setDisplayBalance(newDisplayBalance);
+      // const newDisplayBalance = Number(actualBalance || 0) + Number(amountProduced || 0n);
+      // setDisplayBalance(newDisplayBalance);
 
-      setTooltip({
-        anchorElement: event.currentTarget,
-        position: "left",
-        content: (
-          <div className="space-y-1 max-w-72">
-            <div>
-              <span className="text-gold font-bold">Total available:</span>{" "}
-              <span className="text-gold">{currencyFormat(newDisplayBalance, 2)}</span>{" "}
-              {findResourceById(resourceId)?.trait}
-            </div>
-            {Number(amountProduced || 0n) > 0 && (
-              <>
-                <p>
-                  You have{" "}
-                  <span className={!isStorageFull ? "text-green" : "text-red"}>
-                    {currencyFormat(Number(amountProduced || 0n), 2)}
-                  </span>{" "}
-                  {findResourceById(resourceId)?.trait} waiting to be stored.
-                </p>
-                <p>
-                  Whenever you use this resource (building, trading, pause, production, etc.) the produced amount is
-                  first moved into storage.
-                  <br />
-                  Only the portion that fits within your remaining capacity&nbsp;(
-                  <span className="text-green">
-                    {storageRemaining.toLocaleString(undefined, { maximumFractionDigits: 0 })}kg
-                  </span>
-                  ) will be saved; any excess&nbsp;(
-                  <span className="text-red">
-                    of{" "}
-                    {divideByPrecision(producedWeight, false).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                    kg
-                  </span>
-                  ) will be permanently burned.
-                </p>
-                <p>
-                  {
-                    // Calculate the net result of claiming all produced weight against remaining storage.
-                    storageRemaining - divideByPrecision(producedWeight, false) >= 0 ? (
-                      <span className="text-green">All will fit if used right now.</span>
-                    ) : (
-                      <>
-                        <span className="text-red">
-                          {Math.abs(storageRemaining - divideByPrecision(producedWeight, false)).toLocaleString(
-                            undefined,
-                            { maximumFractionDigits: 0 },
-                          )}
-                          kg&nbsp;
-                        </span>
-                        will be burnt if you claim it all.
-                      </>
-                    )
-                  }
-                </p>
-              </>
-            )}
-          </div>
-        ),
-      });
+      // setTooltip({
+      //   anchorElement: event.currentTarget,
+      //   position: "left",
+      //   content: (
+      //     <div className="space-y-1 max-w-72">
+      //       <div>
+      //         <span className="text-gold font-bold">Total available:</span>{" "}
+      //         <span className="text-gold">{currencyFormat(newDisplayBalance, 2)}</span>{" "}
+      //         {findResourceById(resourceId)?.trait}
+      //       </div>
+      //       {Number(amountProduced || 0n) > 0 && (
+      //         <>
+      //           <p>
+      //             You have{" "}
+      //             <span className={!isStorageFull ? "text-green" : "text-red"}>
+      //               {currencyFormat(Number(amountProduced || 0n), 2)}
+      //             </span>{" "}
+      //             {findResourceById(resourceId)?.trait} waiting to be stored.
+      //           </p>
+      //           <p>
+      //             Whenever you use this resource (building, trading, pause, production, etc.) the produced amount is
+      //             first moved into storage.
+      //             <br />
+      //             Only the portion that fits within your remaining capacity&nbsp;(
+      //             <span className="text-green">
+      //               {storageRemaining.toLocaleString(undefined, { maximumFractionDigits: 0 })}kg
+      //             </span>
+      //             ) will be saved; any excess&nbsp;(
+      //             <span className="text-red">
+      //               of{" "}
+      //               {divideByPrecision(producedWeight, false).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+      //               kg
+      //             </span>
+      //             ) will be permanently burned.
+      //           </p>
+      //           <p>
+      //             {
+      //               // Calculate the net result of claiming all produced weight against remaining storage.
+      //               storageRemaining - divideByPrecision(producedWeight, false) >= 0 ? (
+      //                 <span className="text-green">All will fit if used right now.</span>
+      //               ) : (
+      //                 <>
+      //                   <span className="text-red">
+      //                     {Math.abs(storageRemaining - divideByPrecision(producedWeight, false)).toLocaleString(
+      //                       undefined,
+      //                       { maximumFractionDigits: 0 },
+      //                     )}
+      //                     kg&nbsp;
+      //                   </span>
+      //                   will be burnt if you claim it all.
+      //                 </>
+      //               )
+      //             }
+      //           </p>
+      //         </>
+      //       )}
+      //     </div>
+      //   ),
+      // });
     },
     [
       actualBalance,
@@ -212,7 +212,7 @@ export const ResourceChip = ({
     setIsHovered(false);
     setTooltip(null);
     setShowPerHour(true);
-    setDisplayBalance(actualBalance ? Number(actualBalance) : 0);
+    // setDisplayBalance(actualBalance ? Number(actualBalance) : 0);
   }, [setTooltip, actualBalance, setShowPerHour, setIsHovered, setDisplayBalance]);
 
   const togglePopup = useUIStore((state) => state.togglePopup);
@@ -307,9 +307,9 @@ export const ResourceChip = ({
           {amountProduced > 0n && (
             <div className={` flex  gap-2 self-start text-xs text-gold/50`}>
               [
-              <span className={!isStorageFull ? "text-green" : "text-red"}>
+              {/* <span className={!isStorageFull ? "text-green" : "text-red"}>
                 {currencyFormat(Number(amountProduced || 0n), 2)}
-              </span>
+              </span> */}
               <div className="flex  gap-4 w-full col-span-12">
                 {isActive &&
                 !hasReachedMaxCap &&
@@ -335,14 +335,14 @@ export const ResourceChip = ({
           )}
         </div>
 
-        {producedWeight > 0 && (
+        {/* {producedWeight > 0 && (
           <div className="text-xs text-gold/40 col-span-12 flex items-center">
             {divideByPrecision(Number(producedWeight || 0n), false).toLocaleString(undefined, {
               maximumFractionDigits: 0,
             })}{" "}
             kg produced
           </div>
-        )}
+        )} */}
 
         <div className={`ml-2 text-xs text-gold/40  ${size === "large" ? "" : ""}`}>
           {timeUntilValueReached > 1000000000

@@ -109,7 +109,7 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
         </label>
       </div>
 
-      <div className=" text-gold font-medium border-b pt-2 border-gold/10 pb-3 sticky -top-2 left-0 w-full bg-dark-wood z-10 flex justify-between">
+      {/* <div className=" text-gold font-medium border-b pt-2 border-gold/10 pb-3 sticky -top-2 left-0 w-full bg-dark-wood z-10 flex justify-between">
         <div className="flex items-center gap-2">
           <div className="text-gold h6">Remaining Storage:</div>
           <div className="text-gold/80">
@@ -122,7 +122,7 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
             )}
           </div>
         </div>
-      </div>
+      </div> */}
 
       <div className="space-y-4">
         {Object.entries(getResourceTiers(getIsBlitz())).map(([tier, resourceIds]) => {
