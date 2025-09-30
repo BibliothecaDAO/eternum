@@ -68,7 +68,7 @@ export const calculateResourceProductionData = (
   const isProducing =
     productionInfo.production.building_count > 0 &&
     productionInfo.production.production_rate !== 0n &&
-    remainingOutput > 0n;
+    (isFoodResource || remainingOutput > 0n);
 
   const outputRemainingNumber = Number(remainingOutput) / RESOURCE_PRECISION;
   const timeRemainingSeconds = productionPerSecond > 0 ? outputRemainingNumber / productionPerSecond : 0;
