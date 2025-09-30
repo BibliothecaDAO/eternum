@@ -11,8 +11,9 @@ import { ProductionModal } from "@/ui/features/settlement";
 import { StoryEventsChronicles } from "@/ui/features/story-events";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
 import { motion } from "framer-motion";
-import type { ComponentProps, ReactNode } from "react";
-import { Suspense, lazy, useMemo } from "react";
+import { GripVertical, X } from "lucide-react";
+import type { ComponentProps, ReactNode, PointerEvent as ReactPointerEvent } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type CircleButtonProps = ComponentProps<typeof CircleButton>;
 
@@ -32,6 +33,15 @@ type RightNavigationContext = {
 };
 
 const DEFAULT_BUTTON_SIZE: CircleButtonProps["size"] = "xl";
+
+const MIN_PANEL_WIDTH = 460;
+const MAX_PANEL_WIDTH = 1200;
+const STORY_MIN_PANEL_WIDTH = 820;
+const OFFSCREEN_TRANSLATION_RATIO = 0.86;
+const RESIZE_STORAGE_KEY = "right-navigation-width";
+const RESIZE_HINT_STORAGE_KEY = "hide-resize-hint";
+
+const clampWidth = (value: number) => Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, value));
 
 const buildRightNavigationItems = ({
   view,
@@ -141,6 +151,21 @@ export const RightNavigationModule = () => {
 
   const isBlitz = getIsBlitz();
 
+  const [panelWidth, setPanelWidth] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const stored = Number(window.localStorage.getItem(RESIZE_STORAGE_KEY));
+      if (!Number.isNaN(stored) && stored > 0) {
+        return clampWidth(stored);
+      }
+    }
+    return clampWidth(STORY_MIN_PANEL_WIDTH);
+  });
+  const [isResizing, setIsResizing] = useState(false);
+  const [showResizeHint, setShowResizeHint] = useState(() =>
+    typeof window !== "undefined" ? localStorage.getItem(RESIZE_HINT_STORAGE_KEY) !== "true" : true
+  );
+  const resizeState = useRef({ startX: 0, startWidth: panelWidth });
+
   const navigationItems = useMemo(
     () =>
       buildRightNavigationItems({
@@ -153,17 +178,79 @@ export const RightNavigationModule = () => {
     [view, setView, disableButtons, toggleModal, isBlitz],
   );
 
+  const storyChroniclesActive = view === RightView.StoryEvents;
+  const resourceTableActive = view === RightView.ResourceTable;
   const isOffscreen = view === RightView.None;
 
-  const storyChroniclesActive = view === RightView.StoryEvents;
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(RESIZE_STORAGE_KEY, String(panelWidth));
+  }, [panelWidth]);
+
+  useEffect(() => {
+    if (!isResizing) {
+      document.body.style.removeProperty("cursor");
+      document.body.style.removeProperty("user-select");
+      return;
+    }
+
+    document.body.style.cursor = "ew-resize";
+    document.body.style.userSelect = "none";
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const delta = resizeState.current.startX - event.clientX;
+      const nextWidth = clampWidth(resizeState.current.startWidth + delta);
+      setPanelWidth(nextWidth);
+    };
+
+    const handlePointerUp = () => {
+      setIsResizing(false);
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp, { once: true });
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      document.body.style.removeProperty("cursor");
+      document.body.style.removeProperty("user-select");
+    };
+  }, [isResizing]);
+
+  const handleResizeStart = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      resizeState.current = { startX: event.clientX, startWidth: panelWidth };
+      setIsResizing(true);
+
+      if (showResizeHint) {
+        setShowResizeHint(false);
+        localStorage.setItem(RESIZE_HINT_STORAGE_KEY, "true");
+      }
+    },
+    [panelWidth, showResizeHint],
+  );
+
+  const handleDismissHint = useCallback(() => {
+    setShowResizeHint(false);
+    localStorage.setItem(RESIZE_HINT_STORAGE_KEY, "true");
+  }, []);
+
+  const containerStyle = useMemo(() => {
+    // Move 89% of the panel width offscreen to the right (matching left nav behavior)
+    const translateX = isOffscreen ? panelWidth * OFFSCREEN_TRANSLATION_RATIO : 0;
+    return {
+      width: `${panelWidth}px`,
+      transform: `translateX(${translateX}px)`,
+    } as const;
+  }, [panelWidth, isOffscreen]);
 
   return (
     <div
-      className={clsx(
-        "pointer-events-none right-4 flex max-h-full space-x-1 pt-16 transition-all duration-300",
-        storyChroniclesActive ? "w-[48vw] max-w-[825px]" : "w-[500px]",
-        isOffscreen ? "translate-x-[86%]" : "",
-      )}
+      className={clsx("pointer-events-none right-0 flex max-h-full space-x-1 pt-16 transition-all duration-300")}
+      style={containerStyle}
     >
       {ConnectedAccount && (
         <>
@@ -176,7 +263,7 @@ export const RightNavigationModule = () => {
             animate="visible"
             className={clsx(
               "pointer-events-auto flex flex-col justify-start",
-              storyChroniclesActive ? "h-[88vh]" : "h-[60vh]",
+              storyChroniclesActive || resourceTableActive ? "h-[88vh]" : "h-[60vh]",
             )}
           >
             <div className="flex flex-col mb-auto">
@@ -188,40 +275,89 @@ export const RightNavigationModule = () => {
             </div>
           </motion.div>
 
-          <BaseContainer
-            className={clsx(
-              "panel-wood panel-wood-corners w-full rounded-l-2xl border-l-2 border-y-2 border-gold/20 pointer-events-auto overflow-x-hidden",
-              storyChroniclesActive ? "h-[88vh] overflow-y-auto" : "h-[60vh] overflow-y-auto",
-            )}
-          >
-            <Suspense fallback={<div className="p-8">Loading...</div>}>
-              {view === RightView.ResourceTable && !!structureEntityId && (
-                <div className="entity-resource-table-selector p-2 flex flex-col space-y-1 overflow-y-auto">
-                  <EntityResourceTable entityId={structureEntityId} />
+          <div className="relative flex h-full flex-1 overflow-hidden">
+            <div className="relative group">
+              <div
+                aria-label="Resize panel"
+                role="separator"
+                aria-orientation="vertical"
+                className={clsx(
+                  "pointer-events-auto h-full w-3 cursor-ew-resize select-none transition-colors relative flex items-center justify-center",
+                  isResizing ? "bg-gold/40" : "bg-transparent hover:bg-gold/30",
+                  showResizeHint && !isOffscreen && "animate-[pulse_1s_ease-in-out_2]",
+                )}
+                onPointerDown={handleResizeStart}
+              >
+                {showResizeHint && !isOffscreen && (
+                  <GripVertical className="h-4 w-4 text-gold/70 pointer-events-none" />
+                )}
+              </div>
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                <div className="rounded-lg border border-gold/30 bg-brown backdrop-blur-sm px-3 py-1.5 shadow-xl">
+                  <p className="text-xs text-gold font-medium">Drag to resize</p>
                 </div>
+              </div>
+              {showResizeHint && !isOffscreen && (
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 z-50 pointer-events-auto"
+                >
+                  <div className="rounded-lg border border-gold/30 bg-brown/95 backdrop-blur-sm px-3 py-2 shadow-lg max-w-[200px]">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-[11px] text-gold/90 leading-tight">
+                        Drag this handle to resize the panel
+                      </p>
+                      <button
+                        onClick={handleDismissHint}
+                        className="flex-shrink-0 text-gold/60 hover:text-gold transition-colors"
+                        aria-label="Dismiss hint"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
               )}
-              {view === RightView.Bridge && (
-                <div className="bridge-selector p-2 flex flex-col space-y-1 overflow-y-auto">
-                  <Bridge structures={structures} />
-                </div>
+            </div>
+            <BaseContainer
+              className={clsx(
+                "panel-wood panel-wood-corners w-full flex-1 rounded-l-2xl border-l-2 border-y-2 border-gold/20 pointer-events-auto overflow-x-auto",
+                storyChroniclesActive || resourceTableActive
+                  ? "h-[88vh] overflow-y-auto"
+                  : "h-[60vh] overflow-y-auto",
               )}
-              {view === RightView.Automation && (
-                <div className="automation-selector p-2 flex flex-col space-y-1 overflow-y-auto">
-                  <AllAutomationsTable />
-                </div>
-              )}
-              {storyChroniclesActive && (
-                <div className="story-events-selector flex h-full flex-col">
-                  <StoryEventsChronicles />
-                </div>
-              )}
-              {view === RightView.Transfer && (
-                <div className="transfer-selector p-2 flex flex-col space-y-1 overflow-y-auto">
-                  <AutomationTransferTable />
-                </div>
-              )}
-            </Suspense>
-          </BaseContainer>
+            >
+              <Suspense fallback={<div className="p-8">Loading...</div>}>
+                {view === RightView.ResourceTable && !!structureEntityId && (
+                  <div className="entity-resource-table-selector p-2 flex flex-col space-y-1 overflow-y-auto">
+                    <EntityResourceTable entityId={structureEntityId} />
+                  </div>
+                )}
+                {view === RightView.Bridge && (
+                  <div className="bridge-selector p-2 flex flex-col space-y-1 overflow-y-auto">
+                    <Bridge structures={structures} />
+                  </div>
+                )}
+                {view === RightView.Automation && (
+                  <div className="automation-selector p-2 flex flex-col space-y-1 overflow-y-auto">
+                    <AllAutomationsTable />
+                  </div>
+                )}
+                {storyChroniclesActive && (
+                  <div className="story-events-selector flex h-full flex-col">
+                    <StoryEventsChronicles />
+                  </div>
+                )}
+                {view === RightView.Transfer && (
+                  <div className="transfer-selector p-2 flex flex-col space-y-1 overflow-y-auto">
+                    <AutomationTransferTable />
+                  </div>
+                )}
+              </Suspense>
+            </BaseContainer>
+          </div>
         </>
       )}
     </div>
