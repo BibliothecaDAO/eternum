@@ -7,6 +7,7 @@ import { currencyFormat, currencyIntlFormat } from "@/ui/utils/utils";
 import {
   calculateDonkeysNeeded,
   divideByPrecision,
+  getBuildingQuantity,
   getEntityIdFromKeys,
   getIsBlitz,
   getRealmNameById,
@@ -17,37 +18,22 @@ import {
   ResourceManager
 } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { ClientComponents, findResourceById, getResourceTiers, ID, RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { ClientComponents, findResourceById, getBuildingFromResource, getResourceTiers, ID, RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import {
+  ALWAYS_SHOW_RESOURCES,
+  BLITZ_UNMANAGEABLE_RESOURCES,
+  calculateResourceProductionData,
+  formatProductionPerHour,
+  formatResourceAmount,
+  formatTimeRemaining,
+  HIDE_TIME_REMAINING_FOR,
+  TIER_DISPLAY_NAMES,
+} from "./utils";
 import { useEntityQuery } from "@dojoengine/react";
 import { ComponentValue, getComponentValue, Has } from "@dojoengine/recs";
 import clsx from "clsx";
 import { ArrowDown, ArrowLeftRight, ArrowUp, Factory, Target, X, Zap } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
-
-const TIER_DISPLAY_NAMES: Record<string, string> = {
-  lords: "Lords & Fragments",
-  relics: "Relics",
-  essence: "Essence",
-  labor: "Labor",
-  military: "Military",
-  transport: "Transport",
-  food: "Food",
-  common: "Common",
-  uncommon: "Uncommon",
-  rare: "Rare",
-  unique: "Unique",
-  mythic: "Mythic",
-  materials: "Materials",
-};
-
-const ALWAYS_SHOW_RESOURCES = [
-  ResourcesIds.Lords,
-  ResourcesIds.Labor,
-  ResourcesIds.Essence,
-  ResourcesIds.Donkey,
-  ResourcesIds.Fish,
-  ResourcesIds.Wheat,
-];
 
 interface StructureColumn {
   entityId: number;
@@ -61,7 +47,8 @@ interface ResourceCellData {
   productionPerSecond: number;
   isProducing: boolean;
   isStorageCapped: boolean;
-  buildingCount: number;
+  outputRemaining: number;
+  timeRemainingSeconds: number;
 }
 
 interface ResourceSummary {
@@ -104,7 +91,11 @@ interface DragDropAmountDialog {
   };
 }
 
-export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | undefined }) => {
+interface EntityResourceTableNewProps {
+  entityId: ID | undefined;
+}
+
+export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTableNewProps) => {
   const [showAllResources, setShowAllResources] = useState(false);
   const [transferDrafts, setTransferDrafts] = useState<TransferDraft[]>([]);
   const [inlineEditState, setInlineEditState] = useState<InlineEditState | null>(null);
@@ -202,34 +193,39 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
           resourceId,
         );
 
-        const productionPerSecond = divideByPrecision(Number(productionInfo.production.production_rate || 0), false);
-        const isProducing = productionInfo.production.building_count > 0 && productionInfo.production.production_rate !== 0n;
+        const { productionPerSecond, isProducing, outputRemaining, timeRemainingSeconds } =
+          calculateResourceProductionData(resourceId, productionInfo, currentDefaultTick || 0);
+
+        // Only count production rate if actually producing
+        const activeProductionRate = isProducing ? productionPerSecond : 0;
 
         const existing = summaries.get(resourceId);
         if (!existing) {
           summaries.set(resourceId, {
             resourceId,
             totalAmount: balance,
-            totalProductionPerSecond: productionPerSecond,
+            totalProductionPerSecond: activeProductionRate,
             perStructure: {
               [structure]: {
                 amount,
                 productionPerSecond,
                 isProducing,
                 isStorageCapped: hasReachedMaxCapacity,
-                buildingCount: Number(productionInfo.production.building_count || 0),
+                outputRemaining,
+                timeRemainingSeconds,
               },
             },
           });
         } else {
           existing.totalAmount += balance;
-          existing.totalProductionPerSecond += productionPerSecond;
+          existing.totalProductionPerSecond += activeProductionRate;
           existing.perStructure[structure] = {
             amount,
             productionPerSecond,
             isProducing,
             isStorageCapped: hasReachedMaxCapacity,
-            buildingCount: Number(productionInfo.production.building_count || 0),
+            outputRemaining,
+            timeRemainingSeconds,
           };
         }
       });
@@ -264,12 +260,12 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
   );
 
   const handleManageProduction = useCallback(
-    (resourceId: ResourcesIds) => {
-      if (!selectedStructureId) return;
-      setStructureEntityId(selectedStructureId);
+    (structureId: number, resourceId: ResourcesIds) => {
+      // Select the structure first by setting entity ID, then open modal
+      setStructureEntityId(structureId);
       toggleModal(<ProductionModal preSelectedResource={resourceId} />);
     },
-    [selectedStructureId, setStructureEntityId, toggleModal],
+    [setStructureEntityId, toggleModal],
   );
 
   const handleOpenTransfer = useCallback(
@@ -737,11 +733,16 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
                           {structureColumns.map((structure) => {
                             const cell = summary?.perStructure[structure.entityId];
                             const isSelectedStructure = selectedStructureId === structure.entityId;
-                            const canManageInCell = Boolean(
-                              isSelectedStructure &&
-                                cell &&
-                                cell.buildingCount > 0 &&
-                                (!isBlitz || (resourceId !== ResourcesIds.Labor && resourceId !== ResourcesIds.Wheat)),
+
+                            // Check for actual building existence (not just production.building_count)
+                            const actualBuildingCount = getBuildingQuantity(
+                              structure.entityId,
+                              getBuildingFromResource(resourceId),
+                              components
+                            );
+                            const hasProductionBuilding = Boolean(
+                              actualBuildingCount > 0 &&
+                                (!isBlitz || !BLITZ_UNMANAGEABLE_RESOURCES.includes(resourceId)),
                             );
 
                             return (
@@ -768,8 +769,8 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
                                     resourceId={resourceId}
                                     cell={cell}
                                     isSelectedStructure={isSelectedStructure}
-                                    canManageInCell={canManageInCell}
-                                    onManageProduction={() => handleManageProduction(resourceId)}
+                                    hasProductionBuilding={hasProductionBuilding}
+                                    onManageProduction={() => handleManageProduction(structure.entityId, resourceId)}
                                     onOpenTransfer={() => handleOpenTransfer(resourceId)}
                                     onDragStart={handleDragStart}
                                     onDragEnd={handleDragEnd}
@@ -828,13 +829,35 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
 });
 
 // Enhanced Transfer Cell Component
-const TransferCell = React.memo((
-  {
+interface TransferCellProps {
+  structureId: number;
+  resourceId: ResourcesIds;
+  cell: ResourceCellData;
+  isSelectedStructure: boolean;
+  hasProductionBuilding: boolean;
+  onManageProduction: () => void;
+  onOpenTransfer: () => void;
+  onDragStart: (structureId: number, resourceId: ResourcesIds, amount: number) => void;
+  onDragEnd: () => void;
+  onDoubleClick: (structureId: number, resourceId: ResourcesIds) => void;
+  dragState: DragState;
+  onDragOver: (e: React.DragEvent, targetStructureId: number) => void;
+  onDrop: (e: React.DragEvent, targetStructureId: number) => void;
+  pendingTransfers: TransferDraft[];
+  transferAnimations: Set<string>;
+  inlineEditState: InlineEditState | null;
+  onInlineEditChange: (state: InlineEditState | null) => void;
+  onInlineDestinationSelect: (destinationId: number) => void;
+  structureColumns: Array<{ entityId: number; label: string }>;
+}
+
+const TransferCell = React.memo((props: TransferCellProps) => {
+  const {
     structureId,
     resourceId,
     cell,
     isSelectedStructure,
-    canManageInCell,
+    hasProductionBuilding,
     onManageProduction,
     onOpenTransfer,
     onDragStart,
@@ -849,28 +872,7 @@ const TransferCell = React.memo((
     onInlineEditChange,
     onInlineDestinationSelect,
     structureColumns,
-  }: {
-    structureId: number;
-    resourceId: ResourcesIds;
-    cell: ResourceCellData;
-    isSelectedStructure: boolean;
-    canManageInCell: boolean;
-    onManageProduction: () => void;
-    onOpenTransfer: () => void;
-    onDragStart: (structureId: number, resourceId: ResourcesIds, amount: number) => void;
-    onDragEnd: () => void;
-    onDoubleClick: (structureId: number, resourceId: ResourcesIds) => void;
-    dragState: DragState;
-    onDragOver: (e: React.DragEvent, targetStructureId: number) => void;
-    onDrop: (e: React.DragEvent, targetStructureId: number) => void;
-    pendingTransfers: TransferDraft[];
-    transferAnimations: Set<string>;
-    inlineEditState: InlineEditState | null;
-    onInlineEditChange: (state: InlineEditState | null) => void;
-    onInlineDestinationSelect: (destinationId: number) => void;
-    structureColumns: Array<{ entityId: number; label: string }>;
-  }
-) => {
+  } = props;
   const [isHovered, setIsHovered] = useState(false);
   const pendingOutgoing = useMemo(() => pendingTransfers.filter(t => t.fromStructureId === structureId), [pendingTransfers, structureId]);
   const pendingIncoming = useMemo(() => pendingTransfers.filter(t => t.toStructureId === structureId), [pendingTransfers, structureId]);
@@ -914,86 +916,93 @@ const TransferCell = React.memo((
       title={`Double-click to transfer • Drag to another structure`}
     >
       {/* Main Content */}
-      <div className="flex flex-col gap-0.5">
-        <div className="flex items-center justify-between gap-1">
-          <div className="flex flex-col gap-0.5">
-            <div className="flex items-center gap-1">
-              <span className="text-[11px] font-medium text-gold/90">
-                {formatResourceAmount(cell.amount)}
-              </span>
-              {(pendingOutgoing.length > 0 || pendingIncoming.length > 0) && (
-                <div className="flex items-center gap-0.5">
-                  {pendingOutgoing.length > 0 && (
-                    <span className="text-[10px] text-red/70 flex items-center gap-0.5">
-                      <ArrowDown className="h-2.5 w-2.5" />
-                      -{totalOutgoing}
-                    </span>
-                  )}
-                  {pendingIncoming.length > 0 && (
-                    <span className="text-[10px] text-green/70 flex items-center gap-0.5">
-                      <ArrowUp className="h-2.5 w-2.5" />
-                      +{totalIncoming}
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-            <span
-              className={clsx(
-                "text-[10px]",
-                cell.isProducing ? "text-gold/60" : "text-gold/30",
-              )}
-            >
-              {formatProductionPerHour(cell.productionPerSecond)}
+      <div className="flex items-start justify-between gap-2">
+        {/* Left: Resource info */}
+        <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+          <div className="flex items-center gap-1 flex-wrap">
+            <span className="text-[11px] font-medium text-gold/90">
+              {formatResourceAmount(cell.amount)}
             </span>
-            {cell.isStorageCapped && (
-              <span className="text-[10px] text-red/70">Storage full</span>
+            {(pendingOutgoing.length > 0 || pendingIncoming.length > 0) && (
+              <div className="flex items-center gap-0.5">
+                {pendingOutgoing.length > 0 && (
+                  <span className="text-[10px] text-red/70 flex items-center gap-0.5">
+                    <ArrowDown className="h-2.5 w-2.5" />
+                    -{totalOutgoing}
+                  </span>
+                )}
+                {pendingIncoming.length > 0 && (
+                  <span className="text-[10px] text-green/70 flex items-center gap-0.5">
+                    <ArrowUp className="h-2.5 w-2.5" />
+                    +{totalIncoming}
+                  </span>
+                )}
+              </div>
             )}
           </div>
+          {cell.isProducing && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-gold/60">
+                {formatProductionPerHour(cell.productionPerSecond)}
+              </span>
+              {cell.outputRemaining > 0 && !cell.isStorageCapped && !HIDE_TIME_REMAINING_FOR.includes(resourceId) && (
+                <span className="text-[10px] text-blue/60" title="Time until production runs out">
+                  ({formatTimeRemaining(cell.timeRemainingSeconds)})
+                </span>
+              )}
+            </div>
+          )}
+          {cell.isStorageCapped && (
+            <span className="text-[10px] text-red/70">Storage full</span>
+          )}
+        </div>
 
-          {/* Action Buttons */}
-          {isSelectedStructure && !isInlineEditing && (
-            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        {/* Right: Action Buttons */}
+        {!isInlineEditing && (
+          <div className="flex items-center gap-0.5 flex-shrink-0">
+            {hasProductionBuilding && (
               <button
                 type="button"
                 onClick={(event) => {
                   event.stopPropagation();
-                  if (!canManageInCell) return;
                   onManageProduction();
                 }}
-                className="rounded border border-gold/20 bg-gold/10 p-0.5 text-gold transition hover:bg-gold/20 disabled:cursor-not-allowed disabled:border-gold/10 disabled:bg-transparent disabled:text-gold/30"
-                disabled={!canManageInCell}
-                title={canManageInCell ? "Manage production" : "Cannot manage production"}
+                className="rounded border border-gold/20 bg-gold/10 p-0.5 text-gold transition hover:bg-gold/20"
+                title="Manage production"
               >
                 <Factory className="h-2.5 w-2.5" />
               </button>
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onOpenTransfer();
-                }}
-                className="rounded border border-gold/20 bg-gold/10 p-0.5 text-gold transition hover:bg-gold/20"
-                title="Open transfer modal"
-              >
-                <ArrowLeftRight className="h-2.5 w-2.5" />
-              </button>
-              {cell.amount > 0 && (
+            )}
+            {isSelectedStructure && (
+              <>
                 <button
                   type="button"
                   onClick={(event) => {
                     event.stopPropagation();
-                    onDoubleClick(structureId, resourceId);
+                    onOpenTransfer();
                   }}
-                  className="rounded border border-gold/20 bg-gold/10 p-0.5 text-gold transition hover:bg-gold/20"
-                  title="Quick transfer"
+                  className="rounded border border-gold/20 bg-gold/10 p-0.5 text-gold transition hover:bg-gold/20 opacity-0 group-hover:opacity-100"
+                  title="Open transfer modal"
                 >
-                  <Zap className="h-2.5 w-2.5" />
+                  <ArrowLeftRight className="h-2.5 w-2.5" />
                 </button>
-              )}
-            </div>
-          )}
-        </div>
+                {cell.amount > 0 && (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onDoubleClick(structureId, resourceId);
+                    }}
+                    className="rounded border border-gold/20 bg-gold/10 p-0.5 text-gold transition hover:bg-gold/20 opacity-0 group-hover:opacity-100"
+                    title="Quick transfer"
+                  >
+                    <Zap className="h-2.5 w-2.5" />
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        )}
 
         {/* Inline Edit Mode - Just destination selector */}
         {isInlineEditing && (
@@ -1039,11 +1048,6 @@ const TransferCell = React.memo((
     </div>
   );
 });
-
-const formatProductionPerHour = (perSecond: number) =>
-  perSecond <= 0 ? "-" : `+${currencyIntlFormat(perSecond * 3600, 2)}/h`;
-
-const formatResourceAmount = (amount: number) => currencyFormat(amount, 2);
 
 const TransferQueueItem = React.memo(({
   draft,
