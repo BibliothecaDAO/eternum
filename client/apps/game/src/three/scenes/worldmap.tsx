@@ -1487,15 +1487,41 @@ export default class WorldmapScene extends HexagonScene {
       clearTimeout(existing);
     }
 
-    const delay = reason === "tile" ? 600 : 0;
+    const hasPendingMovement = reason === "tile" && this.pendingArmyMovements.has(entityId);
+    const baseDelay = reason === "tile" ? 600 : 0;
+    const initialDelay = hasPendingMovement ? 2500 : baseDelay;
+    const retryDelay = 500;
+    const maxPendingWaitMs = 8000;
 
-    const timeout = setTimeout(() => {
-      this.pendingArmyRemovals.delete(entityId);
-      console.debug(`[WorldMap] Finalizing pending removal for entity ${entityId} (reason: ${reason})`);
-      this.deleteArmy(entityId);
-    }, delay);
+    const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
+    const start = now();
 
-    this.pendingArmyRemovals.set(entityId, timeout);
+    const schedule = (delay: number) => {
+      const timeout = setTimeout(() => {
+        if (reason === "tile" && this.pendingArmyMovements.has(entityId)) {
+          const elapsed = now() - start;
+          if (elapsed < maxPendingWaitMs) {
+            schedule(retryDelay);
+            return;
+          }
+
+          console.warn(
+            `[WorldMap] Pending movement timeout while removing entity ${entityId}, forcing cleanup after ${elapsed.toFixed(
+              0,
+            )}ms`,
+          );
+          this.pendingArmyMovements.delete(entityId);
+        }
+
+        this.pendingArmyRemovals.delete(entityId);
+        console.debug(`[WorldMap] Finalizing pending removal for entity ${entityId} (reason: ${reason})`);
+        this.deleteArmy(entityId);
+      }, delay);
+
+      this.pendingArmyRemovals.set(entityId, timeout);
+    };
+
+    schedule(initialDelay);
   }
 
   private cancelPendingArmyRemoval(entityId: ID) {
