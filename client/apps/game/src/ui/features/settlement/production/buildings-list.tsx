@@ -24,8 +24,8 @@ export const BuildingsList = ({
   productionBuildings,
 }: {
   realm: RealmInfo;
-  onSelectProduction: (resource: number | null) => void;
-  selectedResource: number | null;
+  onSelectProduction: (resource: ResourcesIds | null) => void;
+  selectedResource: ResourcesIds | null;
   producedResources: ResourcesIds[];
   productionBuildings: Building[];
 }) => {
@@ -112,21 +112,16 @@ export const BuildingsList = ({
           const selectedProduction = productions.find((p) => p.resource === selectedResource);
 
           if (!selectedProduction) {
-            onSelectProduction(null);
-
             return (
               <motion.div
-                key="error-production"
+                key="loading-production"
                 initial={motionConfig.initial}
                 animate={{ ...motionConfig.animateBase, height: "112px" }}
                 exit={motionConfig.exit}
                 transition={motionConfig.transition}
                 className="p-3"
               >
-                <p>Error: Selected production not found.</p>
-                <button onClick={() => onSelectProduction(null)} className="px-3 py-2 mt-2 text-sm button">
-                  Clear Selection
-                </button>
+                <p className="text-sm text-gold/70">Loading production data…</p>
               </motion.div>
             );
           }
@@ -242,6 +237,8 @@ export const BuildingsList = ({
                           storageCapacity={realmInfo?.storehouses?.capacityKg}
                           storageCapacityUsed={realmInfo?.storehouses?.capacityUsedKg}
                           activeRelicEffects={activeRelicEffects}
+                          canOpenProduction={production.buildings.length > 0}
+                          onManageProduction={(resource) => onSelectProduction(resource)}
                         />
                       </div>
                     </div>

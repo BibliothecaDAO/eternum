@@ -1,11 +1,13 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { ProductionModal } from "@/ui/features/settlement";
 import { currencyFormat, currencyIntlFormat } from "@/ui/utils/utils";
 import {
   configManager,
   divideByPrecision,
   formatTime,
+  getIsBlitz,
   getTotalResourceWeightKg,
   isRelic as isResourceRelic,
   relicsArmiesTicksLeft,
@@ -18,7 +20,7 @@ import {
   ResourcesIds,
   TickIds
 } from "@bibliothecadao/types";
-import { Sparkles } from "lucide-react";
+import { Factory, Sparkles } from "lucide-react";
 import type { MouseEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -31,6 +33,8 @@ export const ResourceChip = ({
   storageCapacity = 0,
   storageCapacityUsed = 0,
   activeRelicEffects,
+  canOpenProduction = false,
+  onManageProduction,
 }: {
   resourceId: ID;
   resourceManager: ResourceManager;
@@ -40,9 +44,12 @@ export const ResourceChip = ({
   storageCapacity?: number;
   storageCapacityUsed?: number;
   activeRelicEffects: RelicEffectWithEndTick[];
+  canOpenProduction?: boolean;
+  onManageProduction?: (resourceId: ResourcesIds) => void;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const toggleModal = useUIStore((state) => state.toggleModal);
+  const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
   const [showPerHour, setShowPerHour] = useState(true);
   const [balance, setBalance] = useState(0);
   const [amountProduced, setAmountProduced] = useState(0n);
@@ -217,6 +224,33 @@ export const ResourceChip = ({
 
   const togglePopup = useUIStore((state) => state.togglePopup);
 
+  const canShowProductionShortcut = useMemo(() => {
+    if (!canOpenProduction) return false;
+    if (!resourceId && resourceId !== 0) return false;
+    if (!getIsBlitz()) return true;
+    return resourceId !== ResourcesIds.Labor && resourceId !== ResourcesIds.Wheat;
+  }, [canOpenProduction, resourceId]);
+
+  const handleOpenProduction = useCallback(() => {
+    if (!canShowProductionShortcut) return;
+
+    if (onManageProduction) {
+      onManageProduction(resourceId as ResourcesIds);
+      return;
+    }
+
+    if (!resourceManager?.entityId) return;
+    setStructureEntityId(resourceManager.entityId);
+    toggleModal(<ProductionModal preSelectedResource={resourceId as ResourcesIds} />);
+  }, [
+    canShowProductionShortcut,
+    onManageProduction,
+    resourceManager,
+    resourceId,
+    setStructureEntityId,
+    toggleModal,
+  ]);
+
   // Check if this resource is a relic
   const isRelic = useMemo(() => {
     // Using type assertion until the build system picks up the new method
@@ -352,10 +386,33 @@ export const ResourceChip = ({
               : ""}
         </div>
       </div>
+      {canShowProductionShortcut && (
+        <button
+          data-tooltip-anchor
+          onClick={(event) => {
+            event.stopPropagation();
+            handleOpenProduction();
+          }}
+          onMouseEnter={(event) =>
+            setTooltip({
+              anchorElement: event.currentTarget,
+              content: "Manage Production",
+              position: "bottom",
+            })
+          }
+          onMouseLeave={() => setTooltip(null)}
+          className="ml-2 p-1 hover:bg-gold/20 rounded"
+        >
+          <Factory className={`${size === "large" ? "h-6 w-6" : "h-5 w-5"} text-gold`} />
+        </button>
+      )}
       {showTransfer && (
         <button
           data-tooltip-anchor
-          onClick={() => togglePopup(resourceId.toString())}
+          onClick={(event) => {
+            event.stopPropagation();
+            togglePopup(resourceId.toString());
+          }}
           className="ml-2 p-1 hover:bg-gold/20 rounded"
         >
           <svg
@@ -377,7 +434,8 @@ export const ResourceChip = ({
       {isRelic && balance > 0 && (
         <button
           data-tooltip-anchor
-          onClick={() => {
+          onClick={(event) => {
+            event.stopPropagation();
             import("./relic-activation-popup").then(({ RelicActivationPopup }) => {
               toggleModal(
                 <RelicActivationPopup

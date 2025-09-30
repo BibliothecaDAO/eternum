@@ -1,16 +1,15 @@
-import { getIsBlitz } from "@bibliothecadao/eternum";
-
 import { ResourceChip } from "@/ui/features/economy/resources";
-import { getBlockTimestamp } from "@bibliothecadao/eternum";
-
 import {
+  getBlockTimestamp,
+  getBuildingCount,
   getEntityIdFromKeys,
+  getIsBlitz,
   getRealmInfo,
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
-import { getResourceTiers, ID, ResourcesIds } from "@bibliothecadao/types";
+import { getResourceTiers, ID, ResourcesIds, BuildingType, getBuildingFromResource } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import React, { useMemo, useState } from "react";
 
@@ -59,8 +58,6 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
     () => getRealmInfo(getEntityIdFromKeys([BigInt(entityId)]), setup.components),
     [entityId, structureBuildings, resources],
   );
-
-  console.log({ realmInfo });
 
   const productionBoostBonus = useComponentValue(
     setup.components.ProductionBoostBonus,
@@ -132,18 +129,31 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
                 {TIER_DISPLAY_NAMES[tier]}
               </h4>
               <div className="grid grid-cols-1 flex-wrap">
-                {resourceIds.map((resourceId: any) => (
-                  <ResourceChip
-                    key={resourceId}
-                    size="large"
-                    resourceId={resourceId}
-                    resourceManager={resourceManager}
-                    hideZeroBalance={!showAllResources && !alwaysShowResources.includes(resourceId)}
-                    storageCapacity={realmInfo?.storehouses.capacityKg}
-                    storageCapacityUsed={realmInfo?.storehouses.capacityUsedKg}
-                    activeRelicEffects={activeRelicEffects}
-                  />
-                ))}
+                {resourceIds.map((resourceId: any) => {
+                  const buildingType = getBuildingFromResource(resourceId as ResourcesIds);
+                  const hasProductionBuilding =
+                    !!structureBuildings &&
+                    buildingType !== BuildingType.None &&
+                    (getBuildingCount(buildingType, [
+                      structureBuildings.packed_counts_1 || 0n,
+                      structureBuildings.packed_counts_2 || 0n,
+                      structureBuildings.packed_counts_3 || 0n,
+                    ]) || 0) > 0;
+
+                  return (
+                    <ResourceChip
+                      key={resourceId}
+                      size="large"
+                      resourceId={resourceId}
+                      resourceManager={resourceManager}
+                      hideZeroBalance={!showAllResources && !alwaysShowResources.includes(resourceId)}
+                      storageCapacity={realmInfo?.storehouses.capacityKg}
+                      storageCapacityUsed={realmInfo?.storehouses.capacityUsedKg}
+                      activeRelicEffects={activeRelicEffects}
+                      canOpenProduction={hasProductionBuilding}
+                    />
+                  );
+                })}
               </div>
             </div>
           );

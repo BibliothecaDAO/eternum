@@ -6,7 +6,7 @@ import { useBuildings, useDojo } from "@bibliothecadao/react";
 import { getProducedResource, RealmInfo as RealmInfoType, RELICS, ResourcesIds } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { SparklesIcon } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { ActiveRelicEffects } from "../../world/components/entities/active-relic-effects";
 import { BuildingsList } from "./buildings-list";
 import { ProductionControls } from "./production-controls";
@@ -14,12 +14,13 @@ import { RealmInfo } from "./realm-info";
 
 export const ProductionBody = ({
   realm,
-  preSelectedResource,
+  selectedResource,
+  onSelectResource,
 }: {
   realm: RealmInfoType;
-  preSelectedResource?: ResourcesIds | null;
+  selectedResource: ResourcesIds | null;
+  onSelectResource: (resource: ResourcesIds | null) => void;
 }) => {
-  const [selectedResource, setSelectedResource] = useState<ResourcesIds | null>(preSelectedResource || null);
 
   const {
     setup: {
@@ -116,7 +117,7 @@ export const ProductionBody = ({
 
         <BuildingsList
           realm={realm}
-          onSelectProduction={setSelectedResource}
+          onSelectProduction={onSelectResource}
           selectedResource={selectedResource}
           producedResources={producedResources}
           productionBuildings={productionBuildings}

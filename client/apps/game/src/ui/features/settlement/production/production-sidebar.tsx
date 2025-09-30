@@ -21,16 +21,19 @@ interface ProductionSidebarProps {
   realms: RealmInfo[];
   selectedRealmEntityId: ID;
   onSelectRealm: (id: ID) => void;
+  onSelectResource: (realmId: ID, resource: ResourcesIds) => void;
 }
 
 const SidebarRealm = ({
   realm,
   isSelected,
   onSelect,
+  onSelectResource,
 }: {
   realm: RealmInfo;
   isSelected: boolean;
   onSelect: () => void;
+  onSelectResource: (realmId: ID, resource: ResourcesIds) => void;
 }) => {
   const {
     setup: {
@@ -135,6 +138,8 @@ const SidebarRealm = ({
                       storageCapacity={0}
                       storageCapacityUsed={0}
                       activeRelicEffects={activeRelics}
+                      canOpenProduction={buildingCount > 0}
+                      onManageProduction={(resource) => onSelectResource(realm.entityId, resource)}
                     />
                   </div>
                 </div>
@@ -163,7 +168,7 @@ const SidebarRealm = ({
   );
 };
 
-export const ProductionSidebar = memo(({ realms, selectedRealmEntityId, onSelectRealm }: ProductionSidebarProps) => {
+export const ProductionSidebar = memo(({ realms, selectedRealmEntityId, onSelectRealm, onSelectResource }: ProductionSidebarProps) => {
   return (
     <div className="space-y-4">
       {realms.map((realm) => (
@@ -172,6 +177,7 @@ export const ProductionSidebar = memo(({ realms, selectedRealmEntityId, onSelect
           realm={realm}
           isSelected={realm.entityId === selectedRealmEntityId}
           onSelect={() => onSelectRealm(realm.entityId)}
+          onSelectResource={onSelectResource}
         />
       ))}
     </div>
