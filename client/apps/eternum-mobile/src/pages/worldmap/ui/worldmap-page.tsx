@@ -1,18 +1,17 @@
+import { usePersistentCanvas } from "@/app/ui/layout";
 import { UnifiedArmyCreationDrawer } from "@/features/armies/ui/unified-army-creation-drawer";
 import { useStore } from "@/shared/store";
 import { AttackDrawer } from "@/widgets/attack-drawer";
 import { ChestDrawer } from "@/widgets/chest-drawer/ui/chest-drawer";
 import { HexEntityDetailsDrawer } from "@/widgets/hex-entity-details-drawer";
 import { TransferDrawer } from "@/widgets/transfer-drawer";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { SceneControls } from "./scene-controls";
-import { ThreeCanvas, type ThreeCanvasRef } from "./three-canvas";
 
 export function WorldmapPage() {
   const [currentScene, setCurrentScene] = useState("worldmap");
-  const canvasRef = useRef<ThreeCanvasRef>(null);
+  const { canvasRef, isCanvasReady } = usePersistentCanvas();
   const {
-    selectedRealm,
     selectedHex,
     isDoubleClickedObject,
     isChestDrawerOpen,
@@ -26,42 +25,23 @@ export function WorldmapPage() {
     attackDrawerData,
     closeAttackDrawer,
   } = useStore();
-  const [isCanvasReady, setIsCanvasReady] = useState(false);
   const [hexDrawerOpen, setHexDrawerOpen] = useState(false);
 
-  const handleSceneChange = async (sceneId: string) => {
-    setCurrentScene(sceneId);
-    canvasRef.current?.switchScene(sceneId);
+  const handleSceneChange = useCallback(
+    async (sceneId: string) => {
+      setCurrentScene(sceneId);
+      canvasRef.current?.switchScene(sceneId);
+    },
+    [canvasRef],
+  );
 
-    if (sceneId === "worldmap" && selectedRealm) {
-      // Wait for worldmap to be fully initialized before moving camera
-      await canvasRef.current?.waitForWorldmapInitialization();
-      await canvasRef.current?.moveCameraToStructure(selectedRealm.position);
-    }
-  };
-
-  const handleCanvasReady = async () => {
-    setIsCanvasReady(true);
-
-    // Move camera to selected realm after canvas is ready (hot reload case)
-    if (selectedRealm && currentScene === "worldmap") {
-      // Wait for worldmap to be fully initialized before moving camera
-      await canvasRef.current?.waitForWorldmapInitialization();
-      await canvasRef.current?.moveCameraToStructure(selectedRealm.position);
-    }
-  };
-
+  // Ensure worldmap scene is active when component mounts (only once)
   useEffect(() => {
-    const moveCameraToRealm = async () => {
-      if (selectedRealm && canvasRef.current && currentScene === "worldmap" && isCanvasReady) {
-        // Wait for worldmap to be fully initialized before moving camera
-        await canvasRef.current.waitForWorldmapInitialization();
-        await canvasRef.current.moveCameraToStructure(selectedRealm.position);
-      }
-    };
-
-    moveCameraToRealm();
-  }, [selectedRealm, currentScene, isCanvasReady]);
+    if (isCanvasReady && canvasRef.current && currentScene !== "worldmap") {
+      canvasRef.current.switchScene("worldmap");
+      setCurrentScene("worldmap");
+    }
+  }, [isCanvasReady, currentScene, canvasRef]);
 
   // Open hex drawer only when an object is double-clicked
   useEffect(() => {
@@ -70,38 +50,31 @@ export function WorldmapPage() {
     }
   }, [selectedHex, isDoubleClickedObject]);
 
-  const handleCameraReset = () => {
+  const handleCameraReset = useCallback(() => {
     console.log("Reset camera");
-  };
+  }, []);
 
-  const handleZoomIn = () => {
+  const handleZoomIn = useCallback(() => {
     console.log("Zoom in");
-  };
+  }, []);
 
-  const handleZoomOut = () => {
+  const handleZoomOut = useCallback(() => {
     console.log("Zoom out");
-  };
+  }, []);
 
-  const handleHexDrawerClose = (open: boolean) => {
-    setHexDrawerOpen(open);
-    if (!open) {
-      // Reset only the double-click state when drawer is closed, keep the selection
-      resetDoubleClickState();
-    }
-  };
+  const handleHexDrawerClose = useCallback(
+    (open: boolean) => {
+      setHexDrawerOpen(open);
+      if (!open) {
+        // Reset only the double-click state when drawer is closed, keep the selection
+        resetDoubleClickState();
+      }
+    },
+    [resetDoubleClickState],
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
-      {/* Three.js Canvas */}
-      <div className="absolute inset-0">
-        <ThreeCanvas
-          ref={canvasRef}
-          onSceneChange={setCurrentScene}
-          onReady={handleCanvasReady}
-          className="w-full h-full"
-        />
-      </div>
-
+    <>
       {/* Scene Controls */}
       <SceneControls
         currentScene={currentScene}
@@ -152,6 +125,6 @@ export function WorldmapPage() {
           targetHex={attackDrawerData.targetHex}
         />
       )}
-    </div>
+    </>
   );
 }
