@@ -601,6 +601,48 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
           </div>
         </div>
 
+        {/* Transfer Queue */}
+        {transferDrafts.length > 0 && (
+          <div className="mt-4 rounded-2xl border border-gold/25 bg-dark-wood/80 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.4)]">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-base font-semibold uppercase tracking-wide text-gold">
+                Transfer Queue ({transferDrafts.length})
+              </h4>
+              <button
+                onClick={() => setTransferDrafts([])}
+                className="text-xs text-gold/60 hover:text-gold transition-colors"
+              >
+                Clear all
+              </button>
+            </div>
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {transferDrafts.map((draft, index) => (
+                <TransferQueueItem
+                  key={`${draft.fromStructureId}-${draft.toStructureId}-${draft.resourceId}`}
+                  draft={draft}
+                  structureColumns={structureColumns}
+                  onExecute={() => executeTransfer(draft)}
+                  onRemove={() => setTransferDrafts(prev => prev.filter((_, i) => i !== index))}
+                />
+              ))}
+            </div>
+            <div className="mt-3 pt-2 border-t border-gold/10">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => transferDrafts.filter(d => !d.isProcessing).forEach(executeTransfer)}
+                  disabled={transferDrafts.every(d => d.isProcessing)}
+                  className="px-3 py-1 text-xs bg-gold/20 text-gold rounded hover:bg-gold/30 transition-colors disabled:opacity-50"
+                >
+                  Send All
+                </button>
+                <span className="text-xs text-gold/60 flex items-center">
+                  {transferDrafts.filter(d => !d.isProcessing).length} pending
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="mt-4 overflow-x-auto rounded-xl border border-gold/15 bg-dark-wood/60">
           <table className="min-w-full text-left text-xxs">
             <thead className="sticky top-0 bg-dark-wood/80 backdrop-blur">
@@ -771,48 +813,6 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
           </table>
         </div>
       </div>
-
-      {/* Transfer Queue */}
-      {transferDrafts.length > 0 && (
-        <div className="rounded-2xl border border-gold/25 bg-dark-wood/80 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.4)]">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-base font-semibold uppercase tracking-wide text-gold">
-              Transfer Queue ({transferDrafts.length})
-            </h4>
-            <button
-              onClick={() => setTransferDrafts([])}
-              className="text-xs text-gold/60 hover:text-gold transition-colors"
-            >
-              Clear all
-            </button>
-          </div>
-          <div className="space-y-2 max-h-32 overflow-y-auto">
-            {transferDrafts.map((draft, index) => (
-              <TransferQueueItem
-                key={`${draft.fromStructureId}-${draft.toStructureId}-${draft.resourceId}`}
-                draft={draft}
-                structureColumns={structureColumns}
-                onExecute={() => executeTransfer(draft)}
-                onRemove={() => setTransferDrafts(prev => prev.filter((_, i) => i !== index))}
-              />
-            ))}
-          </div>
-          <div className="mt-3 pt-2 border-t border-gold/10">
-            <div className="flex gap-2">
-              <button
-                onClick={() => transferDrafts.filter(d => !d.isProcessing).forEach(executeTransfer)}
-                disabled={transferDrafts.every(d => d.isProcessing)}
-                className="px-3 py-1 text-xs bg-gold/20 text-gold rounded hover:bg-gold/30 transition-colors disabled:opacity-50"
-              >
-                Send All
-              </button>
-              <span className="text-xs text-gold/60 flex items-center">
-                {transferDrafts.filter(d => !d.isProcessing).length} pending
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Drag & Drop Amount Dialog */}
       {dragDropDialog.isOpen && dragDropDialog.dragData && (
