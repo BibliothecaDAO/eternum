@@ -105,7 +105,7 @@ const buildRightNavigationItems = ({
       tooltipLocation: "top",
       label: "Activity Chronicles",
       size: DEFAULT_BUTTON_SIZE,
-      disabled: disableButtons,
+      disabled: false,
       active: view === RightView.StoryEvents,
       onClick: toggleView(RightView.StoryEvents),
     },
