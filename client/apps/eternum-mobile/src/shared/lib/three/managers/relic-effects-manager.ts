@@ -78,10 +78,10 @@ export class RelicEffectsManager {
     const newRelicNumbers = new Set(newRelicEffects.map((e) => e.relicNumber));
 
     // Batch process effects to remove - collect first, then execute
-    const effectsToRemove = currentEffects.filter(effect => !newRelicNumbers.has(effect.relicNumber));
-    
+    const effectsToRemove = currentEffects.filter((effect) => !newRelicNumbers.has(effect.relicNumber));
+
     if (effectsToRemove.length > 0) {
-      effectsToRemove.forEach(effect => {
+      effectsToRemove.forEach((effect) => {
         effect.fx.end();
       });
     }
@@ -110,10 +110,10 @@ export class RelicEffectsManager {
             this.unitTileRenderer.addObjectToTileGroup(entityPosition.col, entityPosition.row, fx.instance.group);
           }
 
-          effectsToAdd.push({ 
-            relicNumber: newEffect.relicNumber, 
-            effect: newEffect.effect, 
-            fx
+          effectsToAdd.push({
+            relicNumber: newEffect.relicNumber,
+            effect: newEffect.effect,
+            fx,
           });
         } catch (error) {
           console.error(`Failed to add relic effect ${newEffect.relicNumber} for entity ${entityId}:`, error);
@@ -137,7 +137,7 @@ export class RelicEffectsManager {
   public getEntityRelicEffects(entityId: number): { relicId: number; effect: RelicEffect }[] {
     const effects = this.entityRelicEffects.get(entityId);
     if (!effects || effects.length === 0) return [];
-    
+
     return effects.map((effect) => ({ relicId: effect.relicNumber, effect: effect.effect }));
   }
 
@@ -175,7 +175,6 @@ export class RelicEffectsManager {
       this.pendingRelicEffects.delete(entityId);
     }
   }
-
 
   /**
    * Start the periodic relic effect validation timer
@@ -253,7 +252,7 @@ export class RelicEffectsManager {
       }
 
       // Batch delete entities with no active effects
-      entitiesToDelete.forEach(entityId => this.entityRelicEffects.delete(entityId));
+      entitiesToDelete.forEach((entityId) => this.entityRelicEffects.delete(entityId));
 
       if (removedCount > 0) {
         console.log(`Removed ${removedCount} total inactive relic effects`);

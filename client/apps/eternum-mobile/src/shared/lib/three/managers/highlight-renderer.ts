@@ -115,11 +115,11 @@ export class HighlightRenderer {
 
     highlights.forEach((highlight, index) => {
       const key = `${highlight.col},${highlight.row}`;
-      
+
       // Create highlight with initial hidden state
       this.highlightedHexes.set(key, highlight);
       const mesh = this.addHighlightMeshForRollout(highlight);
-      
+
       if (!mesh) return;
 
       const startTime = index * this.rolloutConfig.stepDelay;
@@ -331,7 +331,7 @@ export class HighlightRenderer {
 
     this.highlightedHexes.forEach((highlight) => {
       if (!highlight.pulseIntensity || highlight.pulseIntensity <= 0) return;
-      
+
       const colorKey = this.generateMaterialKey(highlight.color, highlight.pulseSpeed!, highlight.pulseIntensity!);
       if (!materialAnimations.has(colorKey)) {
         const material = this.materialPool.get(colorKey);
@@ -366,7 +366,7 @@ export class HighlightRenderer {
     });
 
     const glowMesh = new THREE.Mesh(HighlightRenderer.highlightGeometry!, glowMaterial);
-    
+
     // Position the glow mesh
     if (this.biomesManager && this.biomesManager.renderer && this.biomesManager.renderer.addObjectToTileGroup) {
       glowMesh.position.set(0, 0.35, 0.785);

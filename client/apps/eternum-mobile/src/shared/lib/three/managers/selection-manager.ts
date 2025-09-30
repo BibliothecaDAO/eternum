@@ -120,7 +120,7 @@ export class SelectionManager {
       pulseSpeed: number;
       pulseIntensity: number;
     }> = [];
-    
+
     // Pre-allocate array size for better performance
     highlightsToRender.length = 0;
 
@@ -163,7 +163,9 @@ export class SelectionManager {
     this.highlightRenderer.clearHighlights();
   }
 
-  public highlightHexes(highlights: { col: number; row: number; color: THREE.Color; pulseSpeed?: number; pulseIntensity?: number; }[]): void {
+  public highlightHexes(
+    highlights: { col: number; row: number; color: THREE.Color; pulseSpeed?: number; pulseIntensity?: number }[],
+  ): void {
     this.highlightRenderer.highlightHexes(highlights);
   }
 
