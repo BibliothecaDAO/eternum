@@ -23,10 +23,14 @@ export class InputManager {
     window.addEventListener("mousedown", this.mouseDownHandler);
   }
 
-  addListener(event: ListenerTypes, callback: (raycaster: THREE.Raycaster) => void): void {
+  addListener(event: ListenerTypes, callback: (event: MouseEvent, raycaster: THREE.Raycaster) => void): void {
     const handler = (e: MouseEvent) => {
       if (this.sceneManager.getCurrentScene() !== this.sceneName) {
         return;
+      }
+
+      if (event === "contextmenu") {
+        e.preventDefault();
       }
 
       this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -39,9 +43,9 @@ export class InputManager {
           return;
         }
         // Check if a double-click occurred
-        callback(this.raycaster);
+        callback(e, this.raycaster);
       } else {
-        callback(this.raycaster);
+        callback(e, this.raycaster);
       }
     };
     this.listeners.push({ event, handler });
