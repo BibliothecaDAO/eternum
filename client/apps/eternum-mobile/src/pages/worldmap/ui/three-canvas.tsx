@@ -6,6 +6,7 @@ interface ThreeCanvasProps {
   onSceneChange?: (sceneId: string) => void;
   onReady?: () => void;
   className?: string;
+  isPaused?: boolean;
 }
 
 export interface ThreeCanvasRef {
@@ -16,10 +17,14 @@ export interface ThreeCanvasRef {
   getGameRenderer: () => GameRenderer | null;
   isWorldmapReady: () => boolean;
   waitForWorldmapInitialization: () => Promise<void>;
+  pauseRendering: () => void;
+  resumeRendering: () => void;
+  showLabels: () => void;
+  hideLabels: () => void;
 }
 
 export const ThreeCanvas = forwardRef<ThreeCanvasRef, ThreeCanvasProps>(
-  ({ onSceneChange, onReady, className }, ref) => {
+  ({ onSceneChange, onReady, className, isPaused = false }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const rendererRef = useRef<GameRenderer | null>(null);
     const isInitializedRef = useRef(false);
@@ -114,6 +119,43 @@ export const ThreeCanvas = forwardRef<ThreeCanvasRef, ThreeCanvasProps>(
       return rendererRef.current;
     };
 
+    const pauseRendering = () => {
+      if (rendererRef.current) {
+        rendererRef.current.stopRenderLoop();
+        rendererRef.current.hideLabels();
+      }
+    };
+
+    const resumeRendering = () => {
+      if (rendererRef.current) {
+        rendererRef.current.startRenderLoop();
+        rendererRef.current.showLabels();
+      }
+    };
+
+    const showLabels = () => {
+      if (rendererRef.current) {
+        rendererRef.current.showLabels();
+      }
+    };
+
+    const hideLabels = () => {
+      if (rendererRef.current) {
+        rendererRef.current.hideLabels();
+      }
+    };
+
+    // Handle pausing/resuming rendering based on visibility
+    useEffect(() => {
+      if (rendererRef.current) {
+        if (isPaused) {
+          pauseRendering();
+        } else {
+          resumeRendering();
+        }
+      }
+    }, [isPaused]);
+
     // Expose methods via ref
     useImperativeHandle(ref, () => ({
       switchScene,
@@ -123,6 +165,10 @@ export const ThreeCanvas = forwardRef<ThreeCanvasRef, ThreeCanvasProps>(
       getGameRenderer,
       isWorldmapReady,
       waitForWorldmapInitialization,
+      pauseRendering,
+      resumeRendering,
+      showLabels,
+      hideLabels,
     }));
 
     if (error) {

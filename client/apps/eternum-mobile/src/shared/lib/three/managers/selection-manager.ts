@@ -8,6 +8,12 @@ export class SelectionManager {
   private highlightRenderer: HighlightRenderer;
   private objectRenderers: Map<string, EntityManager<any>> = new Map();
 
+  // Cache commonly used values to avoid repeated object creation
+  private readonly DEFAULT_PULSE_CONFIG = {
+    pulseSpeed: 2.0,
+    pulseIntensity: 0.4,
+  } as const;
+
   private readonly HIGHLIGHT_COLORS = {
     [ActionType.Move]: new THREE.Color().setRGB(0.5, 2.0, 0.0), // Emerald green
     [ActionType.Attack]: new THREE.Color().setRGB(2.5, 0.5, 0.0), // Fiery orange-red
@@ -101,11 +107,25 @@ export class SelectionManager {
   }
 
   private highlightActionPaths(highlightedHexes: ActionPath[]): void {
-    this.highlightRenderer.clearHighlights();
+    if (highlightedHexes.length === 0) {
+      this.highlightRenderer.clearHighlights();
+      return;
+    }
 
     const processedHexes = new Set<string>();
+    const highlightsToRender: Array<{
+      col: number;
+      row: number;
+      color: THREE.Color;
+      pulseSpeed: number;
+      pulseIntensity: number;
+    }> = [];
 
-    for (const hexAction of highlightedHexes) {
+    // Pre-allocate array size for better performance
+    highlightsToRender.length = 0;
+
+    for (let i = 0; i < highlightedHexes.length; i++) {
+      const hexAction = highlightedHexes[i];
       const { col, row } = hexAction.hex;
 
       const hexKey = `${col},${row}`;
@@ -114,8 +134,15 @@ export class SelectionManager {
       processedHexes.add(hexKey);
 
       const color = this.HIGHLIGHT_COLORS[hexAction.actionType] || this.HIGHLIGHT_COLORS[ActionType.Move];
-      this.highlightRenderer.addHighlight(col, row, color, 2.0, 0.4);
+      highlightsToRender.push({
+        col,
+        row,
+        color,
+        ...this.DEFAULT_PULSE_CONFIG,
+      });
     }
+
+    this.highlightRenderer.highlightHexes(highlightsToRender);
   }
 
   public addHighlight(
@@ -134,6 +161,12 @@ export class SelectionManager {
 
   public clearHighlights(): void {
     this.highlightRenderer.clearHighlights();
+  }
+
+  public highlightHexes(
+    highlights: { col: number; row: number; color: THREE.Color; pulseSpeed?: number; pulseIntensity?: number }[],
+  ): void {
+    this.highlightRenderer.highlightHexes(highlights);
   }
 
   public dispose(): void {

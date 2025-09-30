@@ -81,6 +81,14 @@ export class ArmyManager extends EntityManager<ArmyObject> {
       this.objects.set(object.id, object);
       this.updateLabelContent(object);
       this.syncUnitTile(object);
+
+      // Update army position tracking only if position changed
+      const oldPosition = this.armiesPositions.get(object.id);
+      const newPosition = { col: object.col, row: object.row };
+
+      if (!oldPosition || oldPosition.col !== newPosition.col || oldPosition.row !== newPosition.row) {
+        this.armiesPositions.set(object.id, newPosition);
+      }
     }
   }
 
@@ -258,6 +266,9 @@ export class ArmyManager extends EntityManager<ArmyObject> {
           this.labelAttachmentState.set(objectId, false);
         }
       }
+
+      // Update army position tracking
+      this.armiesPositions.set(objectId, { col, row });
     }
   }
 
@@ -322,6 +333,9 @@ export class ArmyManager extends EntityManager<ArmyObject> {
       army.col = targetCol;
       army.row = targetRow;
 
+      // Update army position tracking
+      this.armiesPositions.set(objectId, { col: targetCol, row: targetRow });
+
       // Note: Don't update label content here - wait for system update with fresh stamina data
 
       // Update label attachment for new position
@@ -365,6 +379,9 @@ export class ArmyManager extends EntityManager<ArmyObject> {
       // Update army position after movement completes
       army.col = finalHex.col;
       army.row = finalHex.row;
+
+      // Update army position tracking
+      this.armiesPositions.set(objectId, { col: finalHex.col, row: finalHex.row });
 
       // Note: Don't update label content here - wait for system update with fresh stamina data
 
@@ -455,11 +472,6 @@ export class ArmyManager extends EntityManager<ArmyObject> {
 
   // Army-specific methods moved from HexagonMap
   public async handleSystemUpdate(update: ExplorerTroopsTileSystemUpdate): Promise<void> {
-    if (update.removed) {
-      this.deleteArmy(update.entityId);
-      return;
-    }
-
     const {
       hexCoords: { col, row },
       ownerAddress,
