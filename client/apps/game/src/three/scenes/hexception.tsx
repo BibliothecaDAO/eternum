@@ -601,7 +601,10 @@ export default class HexceptionScene extends HexagonScene {
       });
     }
   }
-  protected onHexagonRightClick(): void {}
+  protected onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void {
+    void event;
+    void hexCoords;
+  }
   protected onHexagonDoubleClick(hexCoords: HexPosition): void {
     const overlay = document.querySelector(".shepherd-modal-is-visible");
     const overlayClick = document.querySelector(".allow-modal-click");

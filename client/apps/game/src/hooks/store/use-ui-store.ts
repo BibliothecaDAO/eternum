@@ -1,4 +1,5 @@
 import { BattleViewInfo, LeftView, RightView } from "@/types";
+import { ContextMenuState } from "@/types/context-menu";
 import { SelectableArmy } from "@bibliothecadao/eternum";
 import { ContractAddress, ID } from "@bibliothecadao/types";
 import { create } from "zustand";
@@ -117,6 +118,12 @@ interface UIStore {
   setCompassDirection: (direction: number) => void;
   tooltip: TooltipType;
   setTooltip: (tooltip: TooltipType) => void;
+  contextMenu: ContextMenuState | null;
+  contextMenuStack: ContextMenuState[];
+  openContextMenu: (menu: ContextMenuState) => void;
+  pushContextMenu: (menu: ContextMenuState) => void;
+  popContextMenu: () => void;
+  closeContextMenu: () => void;
   showRealmsFlags: boolean;
   setShowRealmsFlags: (show: boolean) => void;
   isLoadingScreenEnabled: boolean;
@@ -220,6 +227,21 @@ export const useUIStore = create(
               }
             : tooltip,
       }),
+    contextMenu: null,
+    contextMenuStack: [],
+    openContextMenu: (menu: ContextMenuState) => set({ contextMenu: menu, contextMenuStack: [] }),
+    pushContextMenu: (menu: ContextMenuState) =>
+      set((state) => {
+        const stack = state.contextMenu ? [...state.contextMenuStack, state.contextMenu] : state.contextMenuStack;
+        return { contextMenu: menu, contextMenuStack: stack };
+      }),
+    popContextMenu: () =>
+      set((state) => {
+        const stack = [...state.contextMenuStack];
+        const previous = stack.pop() ?? null;
+        return { contextMenu: previous, contextMenuStack: stack };
+      }),
+    closeContextMenu: () => set({ contextMenu: null, contextMenuStack: [] }),
     showRealmsFlags: true,
     setShowRealmsFlags: (show) => set({ showRealmsFlags: show }),
     isLoadingScreenEnabled: true,
