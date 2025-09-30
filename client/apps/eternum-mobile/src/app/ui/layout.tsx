@@ -68,11 +68,14 @@ export function Layout() {
   }, [selectedRealm, isWorldmapPage, isCanvasReady]);
 
   // Memoize context value to prevent unnecessary re-renders
-  const contextValue = useMemo(() => ({
-    canvasRef,
-    isCanvasReady,
-    isWorldmapVisible: isWorldmapPage
-  }), [isCanvasReady, isWorldmapPage]);
+  const contextValue = useMemo(
+    () => ({
+      canvasRef,
+      isCanvasReady,
+      isWorldmapVisible: isWorldmapPage,
+    }),
+    [isCanvasReady, isWorldmapPage],
+  );
 
   return (
     <PersistentCanvasContext.Provider value={contextValue}>
@@ -80,9 +83,9 @@ export function Layout() {
         <Header />
         <main className={`flex-1 pb-20 ${!isHomePage ? "pt-0" : ""} relative`}>
           {/* Persistent Three.js Canvas - always rendered but optimized for visibility */}
-          <div 
-            className={`absolute inset-0 ${isWorldmapPage ? 'z-0' : 'z-[-1] pointer-events-none opacity-0'}`}
-            style={{ display: isWorldmapPage ? 'block' : 'none' }}
+          <div
+            className={`absolute inset-0 ${isWorldmapPage ? "z-0" : "z-[-1] pointer-events-none opacity-0"}`}
+            style={{ display: isWorldmapPage ? "block" : "none" }}
           >
             <ThreeCanvas
               ref={canvasRef}
@@ -91,9 +94,9 @@ export function Layout() {
               isPaused={!isWorldmapPage}
             />
           </div>
-          
+
           {/* Page content */}
-          <div className={`relative ${isWorldmapPage ? 'z-10' : 'z-0'}`}>
+          <div className={`relative ${isWorldmapPage ? "z-10" : "z-0"}`}>
             <Outlet />
           </div>
         </main>

@@ -27,10 +27,13 @@ export function WorldmapPage() {
   } = useStore();
   const [hexDrawerOpen, setHexDrawerOpen] = useState(false);
 
-  const handleSceneChange = useCallback(async (sceneId: string) => {
-    setCurrentScene(sceneId);
-    canvasRef.current?.switchScene(sceneId);
-  }, [canvasRef]);
+  const handleSceneChange = useCallback(
+    async (sceneId: string) => {
+      setCurrentScene(sceneId);
+      canvasRef.current?.switchScene(sceneId);
+    },
+    [canvasRef],
+  );
 
   // Ensure worldmap scene is active when component mounts (only once)
   useEffect(() => {
@@ -59,13 +62,16 @@ export function WorldmapPage() {
     console.log("Zoom out");
   }, []);
 
-  const handleHexDrawerClose = useCallback((open: boolean) => {
-    setHexDrawerOpen(open);
-    if (!open) {
-      // Reset only the double-click state when drawer is closed, keep the selection
-      resetDoubleClickState();
-    }
-  }, [resetDoubleClickState]);
+  const handleHexDrawerClose = useCallback(
+    (open: boolean) => {
+      setHexDrawerOpen(open);
+      if (!open) {
+        // Reset only the double-click state when drawer is closed, keep the selection
+        resetDoubleClickState();
+      }
+    },
+    [resetDoubleClickState],
+  );
 
   return (
     <>
