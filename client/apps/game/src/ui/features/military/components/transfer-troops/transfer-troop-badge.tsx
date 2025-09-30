@@ -31,7 +31,7 @@ export const TroopBadge = ({ category, tier, label, className, emphasize = false
       ) : null}
       {label ? <span className="text-xs capitalize">{label}</span> : null}
       {tier !== undefined ? (
-        <span className="rounded border border-gold/40 bg-gold/10 px-1 text-[10px] font-semibold text-gold">{`T${tier}`}</span>
+        <span className="rounded border border-gold/40 bg-gold/10 px-1 text-[10px] font-semibold text-gold">{`${tier}`}</span>
       ) : null}
     </span>
   );
