@@ -1,10 +1,9 @@
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
+import { HOVER_STYLES, LABEL_STYLES } from "@/three/utils/labels/label-config";
 import { BuildingThumbs, FELT_CENTER } from "@/ui/config";
 import { BaseThreeTooltip, Position } from "@/ui/design-system/molecules/base-three-tooltip";
-import { Headline } from "@/ui/design-system/molecules/headline";
-import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
-import { StaminaResourceCost } from "@/ui/design-system/molecules/stamina-resource-cost";
 import { formatBiomeBonus } from "@/ui/features/military";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
@@ -15,6 +14,7 @@ import {
   computeExploreFoodCosts,
   computeTravelFoodCosts,
   configManager,
+  divideByPrecision,
   getBalance,
   getGuardsByStructure,
   getRemainingCapacityInKg,
@@ -26,6 +26,7 @@ import { useComponentValue } from "@dojoengine/react";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
+import type { ReactNode } from "react";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
 const formatAmount = (amount: number) => {
@@ -33,6 +34,102 @@ const formatAmount = (amount: number) => {
     notation: amount < 0.01 ? "standard" : "compact",
     maximumFractionDigits: amount < 0.01 ? 6 : 2,
   }).format(amount);
+};
+
+type InfoLabelVariant = "ally" | "attack" | "chest" | "default" | "mine" | "quest";
+
+const INFO_LABEL_VARIANT_STYLES: Record<
+  InfoLabelVariant,
+  {
+    default: (typeof LABEL_STYLES)[keyof typeof LABEL_STYLES];
+    hover: (typeof HOVER_STYLES)[keyof typeof HOVER_STYLES];
+  }
+> = {
+  ally: {
+    default: LABEL_STYLES.ALLY,
+    hover: HOVER_STYLES.ALLY,
+  },
+  attack: {
+    default: LABEL_STYLES.ENEMY,
+    hover: HOVER_STYLES.ENEMY,
+  },
+  chest: {
+    default: LABEL_STYLES.CHEST,
+    hover: HOVER_STYLES.CHEST,
+  },
+  default: {
+    default: LABEL_STYLES.NEUTRAL,
+    hover: HOVER_STYLES.NEUTRAL,
+  },
+  mine: {
+    default: LABEL_STYLES.MINE,
+    hover: HOVER_STYLES.MINE,
+  },
+  quest: {
+    default: LABEL_STYLES.CHEST,
+    hover: HOVER_STYLES.CHEST,
+  },
+};
+
+const INFO_LABEL_BASE_CLASSES =
+  "relative flex flex-col gap-1 rounded-md border px-2 py-1 text-[11px] font-semibold leading-tight transition-colors duration-200";
+
+const InfoLabel = ({
+  variant = "default",
+  className,
+  children,
+}: {
+  variant?: InfoLabelVariant;
+  className?: string;
+  children: ReactNode;
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  const styleSet = INFO_LABEL_VARIANT_STYLES[variant] ?? INFO_LABEL_VARIANT_STYLES.default;
+  const backgroundColor =
+    (isHovered ? styleSet.hover.backgroundColor : undefined) ?? styleSet.default.backgroundColor ?? "transparent";
+
+  return (
+    <div
+      className={clsx(INFO_LABEL_BASE_CLASSES, className)}
+      style={{
+        backgroundColor,
+        borderColor: styleSet.default.borderColor ?? "transparent",
+        color: styleSet.default.textColor ?? "inherit",
+      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {children}
+    </div>
+  );
+};
+
+const StaminaSummary = ({
+  selectedEntityId,
+  isExplored,
+  path,
+}: {
+  selectedEntityId: ID | undefined;
+  isExplored: boolean;
+  path: ActionPath[];
+}) => {
+  const { currentArmiesTick } = useBlockTimestamp();
+  const staminaManager = useStaminaManager(selectedEntityId || 0);
+  const stamina = useMemo(() => staminaManager.getStamina(currentArmiesTick), [currentArmiesTick, staminaManager]);
+
+  const totalCost = useMemo(() => {
+    return path.reduce((acc, tile) => acc + (tile.staminaCost ?? 0), 0);
+  }, [path]);
+
+  const requiredStamina = Math.max(0, isExplored ? totalCost : configManager.getExploreStaminaCost());
+  const currentStamina = Number(stamina.amount ?? 0n);
+  const staminaRatio = requiredStamina === 0 ? Number.POSITIVE_INFINITY : currentStamina / requiredStamina;
+  const statusColor =
+    staminaRatio >= 1 ? "text-order-brilliance" : staminaRatio >= 0.5 ? "text-gold" : "text-order-giants";
+  const displayRequired = requiredStamina === 0 ? "0" : `-${formatAmount(requiredStamina)}`;
+
+  return <span className={clsx(statusColor, "text-xs font-semibold")}>{displayRequired}</span>;
 };
 
 const TooltipContent = memo(
@@ -54,43 +151,34 @@ const TooltipContent = memo(
     components: ClientComponents;
   }) => {
     const actionType = ActionPaths.getActionType(actionPath);
+    const isTravelAction = actionType === ActionType.Explore || actionType === ActionType.Move;
+
+    const wheatCost = isTravelAction
+      ? actionType === ActionType.Explore
+        ? Math.abs(costsPerStep.exploreFoodCosts.wheatPayAmount)
+        : Math.abs(costsPerStep.travelFoodCosts.wheatPayAmount * (actionPath.length - 1))
+      : 0;
+
+    const wheatRawBalance = getBalance(structureEntityId, ResourcesIds.Wheat)?.balance ?? 0;
+    const wheatAvailable = divideByPrecision(Number(wheatRawBalance));
+    const wheatRatio = wheatCost === 0 ? Number.POSITIVE_INFINITY : wheatAvailable / wheatCost;
+    const wheatStatusColor =
+      wheatRatio >= 1 ? "text-order-brilliance" : wheatRatio >= 0.5 ? "text-gold" : "text-order-giants";
+    const displayWheatCost = wheatCost === 0 ? "0" : `-${formatAmount(wheatCost)}`;
 
     return (
       <>
-        <Headline>{actionType?.toUpperCase()}</Headline>
-        {actionType === ActionType.Explore ? (
-          <div>
-            <ResourceCost
-              amount={-costsPerStep.exploreFoodCosts.wheatPayAmount}
-              resourceId={ResourcesIds.Wheat}
-              balance={getBalance(structureEntityId, ResourcesIds.Wheat).balance}
-            />
-            <ResourceCost
-              amount={-costsPerStep.exploreFoodCosts.fishPayAmount}
-              resourceId={ResourcesIds.Fish}
-              balance={getBalance(structureEntityId, ResourcesIds.Fish).balance}
-            />
-          </div>
-        ) : actionType === ActionType.Move ? (
-          <div>
-            <ResourceCost
-              amount={-costsPerStep.travelFoodCosts.wheatPayAmount * (actionPath.length - 1)}
-              resourceId={ResourcesIds.Wheat}
-              balance={getBalance(structureEntityId, ResourcesIds.Wheat).balance}
-            />
-            <ResourceCost
-              amount={-costsPerStep.travelFoodCosts.fishPayAmount * (actionPath.length - 1)}
-              resourceId={ResourcesIds.Fish}
-              balance={getBalance(structureEntityId, ResourcesIds.Fish).balance}
-            />
-          </div>
-        ) : null}
-        {actionType === ActionType.Explore || actionType === ActionType.Move ? (
-          <StaminaResourceCost
-            selectedEntityId={Number(selectedEntityId)}
-            isExplored={isExplored}
-            path={actionPath.slice(1)}
-          />
+        {isTravelAction && (
+          <InfoLabel variant="default" className="mt-1 flex-row items-center justify-between">
+            <span className="uppercase tracking-wide opacity-80">Wheat</span>
+            <span className={clsx("text-xs font-semibold", wheatStatusColor)}>{displayWheatCost}</span>
+          </InfoLabel>
+        )}
+        {isTravelAction ? (
+          <InfoLabel variant="mine" className="mt-1 flex-row items-center justify-between">
+            <span className="uppercase tracking-wide opacity-80">Stamina</span>
+            <StaminaSummary selectedEntityId={selectedEntityId} isExplored={isExplored} path={actionPath.slice(1)} />
+          </InfoLabel>
         ) : actionType === ActionType.Quest ? (
           <QuestInfo selectedEntityId={Number(selectedEntityId)} path={actionPath} components={components} />
         ) : actionType === ActionType.Chest ? (
@@ -106,20 +194,16 @@ const TooltipContent = memo(
             path={actionPath}
           />
         )}
-        {!isExplored && (
-          <div className="flex flex-row text-xs ml-1">
-            <img src={BuildingThumbs.resources} className="w-6 h-6 self-center" />
-            <div className="flex flex-col p-1 text-xs">
-              <div>+{configManager.getExploreReward().resource_amount} Random resource</div>
-            </div>
-          </div>
-        )}
-        <div className="text-xs text-center mt-2  animate-pulse">Right-click to confirm</div>
+        <InfoLabel
+          variant="default"
+          className="mt-2 w-full items-center justify-center text-center uppercase tracking-[0.25em] animate-pulse"
+        >
+          <span className="text-[10px]">Right-click to confirm</span>
+        </InfoLabel>
       </>
     );
   },
 );
-
 TooltipContent.displayName = "TooltipContent";
 
 export const ActionInfo = memo(() => {
@@ -167,7 +251,11 @@ export const ActionInfo = memo(() => {
   if (!showTooltip || !selectedEntityId || !actionPath) return null;
 
   return (
-    <BaseThreeTooltip position={Position.CLEAN} className="w-[250px]" visible={showTooltip}>
+    <BaseThreeTooltip
+      position={Position.CLEAN}
+      className="w-[220px] !bg-transparent bg-none p-0 shadow-none"
+      visible={showTooltip}
+    >
       <TooltipContent
         isExplored={isExplored}
         actionPath={actionPath}
@@ -254,58 +342,60 @@ const AttackInfo = memo(
     }, [targetBiome]);
 
     return (
-      <div className="flex flex-col p-1 text-xs">
-        {/* Stamina Status */}
-        <div className="flex flex-row items-center mb-2">
-          <div className="text-lg p-1 pr-3">⚡️</div>
-          <div className="flex flex-col">
-            <div className="flex items-center">
-              <span className={clsx(hasEnoughStamina ? "text-green-500" : "text-red-500", "font-normal")}>
+      <div className="mt-2 flex flex-col gap-3 text-xs">
+        <InfoLabel variant="attack" className="items-center gap-3">
+          <span className="text-2xl leading-none">⚡️</span>
+          <div className="flex flex-col gap-1 text-left normal-case">
+            <span className="text-xxs uppercase tracking-wide opacity-80">Stamina Check</span>
+            <div className="flex items-center gap-2 text-xs font-normal">
+              <span className={clsx(hasEnoughStamina ? "text-green-400" : "text-red-400", "text-sm font-bold")}>
                 ({Number(stamina.amount)})
               </span>
-              <span className="ml-2">
+              <span>
                 {hasEnoughStamina
                   ? "Enough stamina to attack"
                   : `Need ${combatParams.stamina_attack_req} stamina to attack`}
               </span>
             </div>
           </div>
-        </div>
+        </InfoLabel>
 
-        {/* Biome Info */}
-        <div className="flex flex-col mt-2">
-          <div className="font-semibold mb-1">Biome: {targetBiome}</div>
-
-          {/* Troop Type Advantages */}
-          <div className="grid grid-cols-2 gap-x-2 gap-y-1">
-            <div className="font-medium">Troop Type</div>
-            <div className="font-medium">Biome Bonus</div>
-
-            {/* Highlight current army's troop type */}
-            {targetTroops?.category === TroopType.Knight && (
-              <div className="font-bold text-gold">Knight (Your Army)</div>
-            )}
-            {targetTroops?.category !== TroopType.Knight && <div>Knight</div>}
-            <div className="text-sm">{formatBiomeBonus(biomeAdvantages.knight)}</div>
-
-            {targetTroops?.category === TroopType.Paladin && (
-              <div className="font-bold text-gold">Paladin (Your Army)</div>
-            )}
-            {targetTroops?.category !== TroopType.Paladin && <div>Paladin</div>}
-            <div className="text-sm">{formatBiomeBonus(biomeAdvantages.paladin)}</div>
-
-            {targetTroops?.category === TroopType.Crossbowman && (
-              <div className="font-bold text-gold">Crossbowman (Your Army)</div>
-            )}
-            {targetTroops?.category !== TroopType.Crossbowman && <div>Crossbowman</div>}
-            <div className="text-sm">{formatBiomeBonus(biomeAdvantages.crossbowman)}</div>
+        <InfoLabel variant="default" className="flex-col gap-3 text-left normal-case">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl leading-none">🌍</span>
+            <div className="flex flex-col">
+              <span className="text-xxs uppercase tracking-wide opacity-80">Target Biome</span>
+              <span className="text-xs font-semibold normal-case">{targetBiome}</span>
+            </div>
           </div>
 
-          {/* Your Army's Biome Bonus Summary */}
+          <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs font-medium">
+            <span className="text-xxs uppercase tracking-wide opacity-80">Troop Type</span>
+            <span className="text-xxs uppercase tracking-wide opacity-80">Biome Bonus</span>
+
+            {targetTroops?.category === TroopType.Knight && (
+              <span className="font-bold text-gold">Knight (Your Army)</span>
+            )}
+            {targetTroops?.category !== TroopType.Knight && <span>Knight</span>}
+            <span className="text-sm">{formatBiomeBonus(biomeAdvantages.knight)}</span>
+
+            {targetTroops?.category === TroopType.Paladin && (
+              <span className="font-bold text-gold">Paladin (Your Army)</span>
+            )}
+            {targetTroops?.category !== TroopType.Paladin && <span>Paladin</span>}
+            <span className="text-sm">{formatBiomeBonus(biomeAdvantages.paladin)}</span>
+
+            {targetTroops?.category === TroopType.Crossbowman && (
+              <span className="font-bold text-gold">Crossbowman (Your Army)</span>
+            )}
+            {targetTroops?.category !== TroopType.Crossbowman && <span>Crossbowman</span>}
+            <span className="text-sm">{formatBiomeBonus(biomeAdvantages.crossbowman)}</span>
+          </div>
+
           {targetTroops?.category && (
-            <div className="mt-3 p-2 bg-dark-brown/50 rounded border border-gold/20">
-              <div className="font-semibold text-gold">Your Army's Biome Effect</div>
-              <div className="flex items-center mt-1 gap-2">
+            <InfoLabel variant="mine" className="flex-col gap-1 text-left normal-case">
+              <span className="text-xxs uppercase tracking-wide opacity-80">Your Army's Biome Effect</span>
+              <div className="flex items-center gap-2 text-xs font-medium">
                 <span>
                   {formatBiomeBonus(
                     biomeAdvantages[targetTroops.category.toLowerCase() as keyof typeof biomeAdvantages],
@@ -319,9 +409,9 @@ const AttackInfo = memo(
                       : "Neutral in this biome"}
                 </span>
               </div>
-            </div>
+            </InfoLabel>
           )}
-        </div>
+        </InfoLabel>
       </div>
     );
   },
@@ -373,22 +463,25 @@ const QuestInfo = memo(
     if (!questTileEntity) return null;
 
     return (
-      <div className="flex flex-col p-1 text-xs">
-        {/* Reward */}
+      <div className="mt-1 flex flex-col gap-1">
         {!hasEnoughCapacity && (
-          <div className="text-xxs font-semibold text-center bg-red/50 rounded px-1 py-0.5">
-            <div className="flex">
-              <span className="w-5">⚠️</span>
-              <span>Too heavy to claim reward</span>
+          <InfoLabel variant="attack" className="items-center gap-2 text-left normal-case">
+            <span className="text-xl leading-none">⚠️</span>
+            <div className="flex flex-col gap-0.5 text-xs font-medium">
+              <span className="text-xxs uppercase tracking-wide opacity-80">Capacity Warning</span>
+              <span className="text-xs font-normal">Too heavy to claim reward</span>
             </div>
-          </div>
+          </InfoLabel>
         )}
-        <div className="flex flex-row text-xs ml-1">
-          <img src={BuildingThumbs.resources} className="w-6 h-6 self-center" />
-          <div className="flex flex-col p-1 text-xs">
-            <div>+{formatAmount(Number(rewardAmount) / 10 ** 9)} Random resource</div>
+        <InfoLabel variant="quest" className="items-center gap-2">
+          <img src={BuildingThumbs.resources} className="h-7 w-7 object-contain" />
+          <div className="flex flex-col gap-0.5 text-left text-xs font-medium normal-case">
+            <span className="text-xxs uppercase tracking-wide opacity-80">Quest Reward</span>
+            <span className="text-xs font-semibold normal-case">
+              +{formatAmount(Number(rewardAmount) / 10 ** 9)} Random resource
+            </span>
           </div>
-        </div>
+        </InfoLabel>
       </div>
     );
   },
@@ -396,44 +489,38 @@ const QuestInfo = memo(
 
 const ChestInfo = memo(() => {
   return (
-    <div className="flex flex-col p-1 text-xs">
-      <div className="flex flex-row text-xs ml-1">
-        <div className="text-lg p-1 pr-3">📦</div>
-        <div className="flex flex-col p-1 text-xs">
-          <div className="font-semibold text-gold mb-1">Relic Crate</div>
-          <div className=" mb-1">Contains valuable relics that can enhance your structures and armies.</div>
-          <div className="text-xs ">Click to open the crate and collect relics.</div>
-        </div>
+    <InfoLabel variant="chest" className="mt-1 items-center gap-2 text-left normal-case">
+      <span className="text-2xl leading-none">📦</span>
+      <div className="flex flex-col gap-1 text-xs font-medium">
+        <span className="text-xxs uppercase tracking-wide opacity-80">Relic Crate</span>
+        <span>Contains valuable relics that can enhance your structures and armies.</span>
+        <span className="text-xxs uppercase tracking-wide">Click to open the crate and collect relics.</span>
       </div>
-    </div>
+    </InfoLabel>
   );
 });
 
 const HelpInfo = memo(() => {
   return (
-    <div className="flex flex-col p-1 text-xs">
-      <div className="flex flex-row text-xs ml-1">
-        <div className="text-lg p-1 pr-3">🛡️</div>
-        <div className="flex flex-col p-1 text-xs">
-          <div className="font-semibold text-gold mb-1">Help</div>
-          <div className=" mb-1">Help an army that is attacking your structure.</div>
-          <div className="text-xs ">Click to help the army.</div>
-        </div>
+    <InfoLabel variant="ally" className="mt-1 items-center gap-2 text-left normal-case">
+      <span className="text-2xl leading-none">🛡️</span>
+      <div className="flex flex-col gap-1 text-xs font-medium">
+        <span className="text-xxs uppercase tracking-wide opacity-80">Help</span>
+        <span>Help an army that is attacking your structure.</span>
+        <span className="text-xxs uppercase tracking-wide">Click to help the army.</span>
       </div>
-    </div>
+    </InfoLabel>
   );
 });
 
 const CreateArmyInfo = memo(() => {
   return (
-    <div className="flex flex-col p-1 text-xs">
-      <div className="flex flex-row text-xs ml-1">
-        <div className="text-lg p-1 pr-3">🗡️</div>
-        <div className="flex flex-col p-1 text-xs">
-          <div className="font-semibold text-gold mb-1">Create Army</div>
-          <div className=" mb-1">Create an army to help you explore the world.</div>
-        </div>
+    <InfoLabel variant="mine" className="mt-1 items-center gap-2 text-left normal-case">
+      <span className="text-2xl leading-none">🗡️</span>
+      <div className="flex flex-col gap-1 text-xs font-medium">
+        <span className="text-xxs uppercase tracking-wide opacity-80">Create Army</span>
+        <span>Create an army to help you explore the world.</span>
       </div>
-    </div>
+    </InfoLabel>
   );
 });
