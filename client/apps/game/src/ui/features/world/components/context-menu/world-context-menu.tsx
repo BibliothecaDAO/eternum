@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ContextMenuAction, ContextMenuState } from "@/types/context-menu";
 import { CONTEXT_MENU_CONFIG } from "@/ui/config";
+import { useUISound } from "@/audio";
 
 const RADIAL_DEFAULTS = CONTEXT_MENU_CONFIG.radial;
 const CLAMP_PADDING = CONTEXT_MENU_CONFIG.clampPadding ?? 12;
@@ -94,6 +95,10 @@ export const WorldContextMenu = () => {
   const hoveredActionRef = useRef<string | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
+  const playClickSound = useUISound("ui.click");
+  const playHoverSound = useUISound("ui.hover");
+  const playOpenSound = useUISound("ui.whoosh");
+
   const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [hoveredActionId, setHoveredActionId] = useState<string | null>(null);
   const [isRadialActive, setIsRadialActive] = useState(false);
@@ -120,6 +125,8 @@ export const WorldContextMenu = () => {
         return;
       }
 
+      playClickSound();
+
       if (action.children && action.children.length > 0) {
         const maxChildActions = contextMenu.radialOptions?.maxActions ?? RADIAL_DEFAULTS.maxActions ?? 8;
         const childLayout = action.children.length > maxChildActions ? "list" : contextMenu.layout;
@@ -143,7 +150,7 @@ export const WorldContextMenu = () => {
       action.onSelect();
       closeContextMenu();
     },
-    [contextMenu, pushContextMenu, closeContextMenu],
+    [contextMenu, pushContextMenu, closeContextMenu, playClickSound],
   );
 
   const radialConfig = useMemo(() => {
@@ -203,6 +210,8 @@ export const WorldContextMenu = () => {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     }
+    playOpenSound();
+
     if (shouldUseRadial) {
       setIsRadialActive(false);
       setSegmentAnimationTrigger((prev) => prev + 1);
@@ -217,7 +226,7 @@ export const WorldContextMenu = () => {
     } else {
       setIsRadialActive(false);
     }
-  }, [contextMenu, shouldUseRadial]);
+  }, [contextMenu, shouldUseRadial, playOpenSound]);
 
   useEffect(() => {
     if (!contextMenu) {
@@ -303,6 +312,8 @@ export const WorldContextMenu = () => {
         event.preventDefault();
         event.stopPropagation();
 
+        playClickSound();
+
         if (contextMenuStack.length > 0) {
           popContextMenu();
         } else {
@@ -346,6 +357,7 @@ export const WorldContextMenu = () => {
     popContextMenu,
     closeContextMenu,
     triggerAction,
+    playClickSound,
   ]);
 
   const handleContainerMouseMove = useCallback(
@@ -356,8 +368,6 @@ export const WorldContextMenu = () => {
       const dx = event.clientX - center.x;
       const dy = event.clientY - center.y;
       const distance = Math.hypot(dx, dy);
-
-      console.log("Distance:", distance, "Inner:", radialConfig.innerRadius, "Outer:", radialConfig.radius);
 
       if (distance < radialConfig.innerRadius || distance > radialConfig.radius) {
         if (hoveredActionRef.current !== null) {
@@ -373,8 +383,6 @@ export const WorldContextMenu = () => {
 
       const segment = radialSegments.find((item) => angleFromTop >= item.rawStart && angleFromTop < item.rawEnd);
 
-      console.log("Angle:", angleFromTop, "Found segment:", !!segment);
-
       if (!segment) {
         setHoveredActionId(null);
         hoveredActionRef.current = null;
@@ -384,9 +392,10 @@ export const WorldContextMenu = () => {
       if (hoveredActionRef.current !== segment.action.id) {
         setHoveredActionId(segment.action.id);
         hoveredActionRef.current = segment.action.id;
+        playHoverSound();
       }
     },
-    [shouldUseRadial, radialSegments, radialConfig.innerRadius, radialConfig.radius],
+    [shouldUseRadial, radialSegments, radialConfig.innerRadius, radialConfig.radius, playHoverSound],
   );
 
   useEffect(() => {
@@ -616,6 +625,8 @@ export const WorldContextMenu = () => {
                   type="button"
                   className="flex w-full items-center justify-between gap-3 px-4 py-2 text-left text-sm transition hover:bg-gold/10 disabled:cursor-not-allowed disabled:text-gold/40"
                   onClick={() => triggerAction(action)}
+                  onMouseEnter={playHoverSound}
+                  onFocus={playHoverSound}
                   disabled={action.disabled}
                 >
                   <span className="flex items-center gap-2">
