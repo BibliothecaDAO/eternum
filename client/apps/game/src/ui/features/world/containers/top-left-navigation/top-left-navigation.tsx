@@ -21,6 +21,7 @@ import { EyeIcon, Swords } from "lucide-react";
 import { memo, useCallback, useMemo, useState } from "react";
 import { CapacityInfo } from "../capacity-info";
 import { useFavoriteStructures } from "./favorites";
+import { useStructureGroups } from "./structure-groups";
 import { GameEndTimer } from "./game-end-timer";
 import { StructureSelectPanel } from "./structure-select-panel";
 import { TickProgress } from "./tick-progress";
@@ -55,6 +56,7 @@ export const TopLeftNavigation = memo(() => {
   const followingArmyMessage = useUIStore((state) => state.followingArmyMessage);
 
   const { favorites, toggleFavorite } = useFavoriteStructures();
+  const { structureGroups, updateStructureGroup } = useStructureGroups();
 
   const entityInfo = useMemo(
     () => getEntityInfo(structureEntityId, ContractAddress(account.address), setup.components, getIsBlitz()),
@@ -113,9 +115,11 @@ export const TopLeftNavigation = memo(() => {
             selectedStructure={selectedStructure}
             structures={structures}
             favorites={favorites}
+            structureGroups={structureGroups}
             onToggleFavorite={toggleFavorite}
             onSelectStructure={onSelectStructure}
             onRequestNameChange={handleRequestNameChange}
+            onUpdateStructureGroup={updateStructureGroup}
           />
         </div>
 
