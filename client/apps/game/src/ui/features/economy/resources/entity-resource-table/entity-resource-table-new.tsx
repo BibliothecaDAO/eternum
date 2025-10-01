@@ -104,6 +104,20 @@ interface EntityResourceTableNewProps {
 
 export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTableNewProps) => {
   const [showAllResources, setShowAllResources] = useState(false);
+  const [showProductionOnly, setShowProductionOnly] = useState(
+    () => localStorage.getItem("entityResourceTableShowProductionOnly") === "true",
+  );
+  const [showMilitaryOnly, setShowMilitaryOnly] = useState(
+    () => localStorage.getItem("entityResourceTableShowMilitaryOnly") === "true",
+  );
+  const [collapsedTiers, setCollapsedTiers] = useState<Record<string, boolean>>(() => {
+    try {
+      const stored = localStorage.getItem("entityResourceTableCollapsedTiers");
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
   const [transferDrafts, setTransferDrafts] = useState<TransferDraft[]>([]);
   const [inlineEditState, setInlineEditState] = useState<InlineEditState | null>(null);
   const [dragState, setDragState] = useState<DragState>({ isDragging: false });
@@ -239,6 +253,44 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
     return summaries;
   }, [resourcesByStructure, currentDefaultTick]);
 
+  const storageOverview = useMemo(() => {
+    if (structureColumns.length === 0) return null;
+
+    let capacityKg = 0;
+    let capacityUsedKg = 0;
+    let storehouseCount = 0;
+
+    structureColumns.forEach((structure) => {
+      if (!resourcesByStructure.has(structure.entityId)) {
+        return;
+      }
+
+      try {
+        const { capacityKg: capacity, capacityUsedKg: used, quantity } = new ResourceManager(
+          components,
+          structure.entityId as ID,
+        ).getStoreCapacityKg();
+
+        capacityKg += capacity;
+        capacityUsedKg += used;
+        storehouseCount += quantity;
+      } catch {
+        // Ignore structures without resource data
+      }
+    });
+
+    if (capacityKg === 0 && capacityUsedKg === 0 && storehouseCount === 0) {
+      return null;
+    }
+
+    return {
+      capacityKg,
+      capacityUsedKg,
+      remainingKg: Math.max(0, capacityKg - capacityUsedKg),
+      storehouseCount,
+    };
+  }, [components, resourcesByStructure, structureColumns]);
+
   const tiers = useMemo(() => Object.entries(getResourceTiers(getIsBlitz())), []);
 
   if (structureColumns.length === 0) {
@@ -247,6 +299,19 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
 
   const highlightedStructure = structureColumns.find((structure) => structure.isSelected)?.label;
   const isBlitz = getIsBlitz();
+
+  const storageWarning =
+    storageOverview && storageOverview.capacityKg > 0
+      ? storageOverview.remainingKg / storageOverview.capacityKg <= 0.15
+      : false;
+
+  const handleToggleTierVisibility = useCallback((tierKey: string) => {
+    setCollapsedTiers((prev) => {
+      const next = { ...prev, [tierKey]: !prev[tierKey] };
+      localStorage.setItem("entityResourceTableCollapsedTiers", JSON.stringify(next));
+      return next;
+    });
+  }, []);
 
   const handleSelectStructure = useCallback(
     (structureId: number) => {
@@ -569,48 +634,114 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
       )}
 
       <div className="rounded-2xl border border-gold/25 bg-dark-wood/80 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.4)]">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-1">
-            <h4 className="text-sm font-semibold uppercase tracking-wide text-gold">Resource overview</h4>
-            <p className="text-[11px] text-gold/60">
-              {structureColumns.length} structures synced
-              {highlightedStructure ? ` • ${highlightedStructure} highlighted` : " • select a structure to manage"}
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <label className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1 text-[11px] text-gold/70">
-              <span className={clsx(pinSelectedColumn && "text-gold")}>Pin Selected Realm</span>
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  className="peer sr-only"
-                  checked={pinSelectedColumn}
-                  onChange={() => {
-                    const newValue = !pinSelectedColumn;
-                    setPinSelectedColumn(newValue);
-                    localStorage.setItem("pinSelectedColumn", String(newValue));
-                  }}
-                />
-                <div className="h-5 w-9 rounded-full bg-brown/50 transition peer-checked:bg-gold/30">
-                  <div className="absolute top-[2px] left-[2px] h-4 w-4 rounded-full bg-gold transition peer-checked:translate-x-4" />
+        <div className="sticky top-0 z-20 -mx-4 -mt-4 px-4 pt-4 pb-3 bg-dark-wood/95 backdrop-blur border-b border-gold/15">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1">
+              <h4 className="text-sm font-semibold uppercase tracking-wide text-gold">Resource overview</h4>
+              <p className="text-[11px] text-gold/60">
+                {structureColumns.length} structures synced
+                {highlightedStructure ? ` • ${highlightedStructure} highlighted` : " • select a structure to manage"}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <label className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1 text-[11px] text-gold/70">
+                <span className={clsx(pinSelectedColumn && "text-gold")}>Pin Selected Realm</span>
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    className="peer sr-only"
+                    checked={pinSelectedColumn}
+                    onChange={() => {
+                      const newValue = !pinSelectedColumn;
+                      setPinSelectedColumn(newValue);
+                      localStorage.setItem("pinSelectedColumn", String(newValue));
+                    }}
+                  />
+                  <div className="h-5 w-9 rounded-full bg-brown/50 transition peer-checked:bg-gold/30">
+                    <div className="absolute top-[2px] left-[2px] h-4 w-4 rounded-full bg-gold transition peer-checked:translate-x-4" />
+                  </div>
                 </div>
-              </div>
-            </label>
-            <label className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1 text-[11px] text-gold/70">
-              <span className={clsx(!showAllResources && "text-gold")}>Hide empty</span>
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  className="peer sr-only"
-                  checked={!showAllResources}
-                  onChange={() => setShowAllResources((prev) => !prev)}
-                />
-                <div className="h-5 w-9 rounded-full bg-brown/50 transition peer-checked:bg-gold/30">
-                  <div className="absolute top-[2px] left-[2px] h-4 w-4 rounded-full bg-gold transition peer-checked:translate-x-4" />
+              </label>
+              <label className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1 text-[11px] text-gold/70">
+                <span className={clsx(!showAllResources && "text-gold")}>Hide empty</span>
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    className="peer sr-only"
+                    checked={!showAllResources}
+                    onChange={() => setShowAllResources((prev) => !prev)}
+                  />
+                  <div className="h-5 w-9 rounded-full bg-brown/50 transition peer-checked:bg-gold/30">
+                    <div className="absolute top-[2px] left-[2px] h-4 w-4 rounded-full bg-gold transition peer-checked:translate-x-4" />
+                  </div>
                 </div>
-              </div>
-            </label>
+              </label>
+              <label className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1 text-[11px] text-gold/70">
+                <span className={clsx(showProductionOnly && "text-gold")}>Production only</span>
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    className="peer sr-only"
+                    checked={showProductionOnly}
+                    onChange={() => {
+                      const nextValue = !showProductionOnly;
+                      setShowProductionOnly(nextValue);
+                      localStorage.setItem("entityResourceTableShowProductionOnly", String(nextValue));
+                    }}
+                  />
+                  <div className="h-5 w-9 rounded-full bg-brown/50 transition peer-checked:bg-gold/30">
+                    <div className="absolute top-[2px] left-[2px] h-4 w-4 rounded-full bg-gold transition peer-checked:translate-x-4" />
+                  </div>
+                </div>
+              </label>
+              <label className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1 text-[11px] text-gold/70">
+                <span className={clsx(showMilitaryOnly && "text-gold")}>Military only</span>
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    className="peer sr-only"
+                    checked={showMilitaryOnly}
+                    onChange={() => {
+                      const nextValue = !showMilitaryOnly;
+                      setShowMilitaryOnly(nextValue);
+                      localStorage.setItem("entityResourceTableShowMilitaryOnly", String(nextValue));
+                    }}
+                  />
+                  <div className="h-5 w-9 rounded-full bg-brown/50 transition peer-checked:bg-gold/30">
+                    <div className="absolute top-[2px] left-[2px] h-4 w-4 rounded-full bg-gold transition peer-checked:translate-x-4" />
+                  </div>
+                </div>
+              </label>
+            </div>
           </div>
+          {storageOverview && (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-[11px] text-gold/70">
+              <div className="flex items-center gap-2">
+                <span className="uppercase font-semibold text-gold/80">Remaining Storage</span>
+                <span className={clsx("font-semibold", storageWarning ? "text-red" : "text-green")}>
+                  {storageOverview.remainingKg.toLocaleString(undefined, { maximumFractionDigits: 0 })} kg
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="flex items-center gap-1">
+                  <span className="text-gold/50">Used</span>
+                  <span className="text-gold">
+                    {storageOverview.capacityUsedKg.toLocaleString(undefined, { maximumFractionDigits: 0 })} kg
+                  </span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="text-gold/50">Total</span>
+                  <span className="text-gold">
+                    {storageOverview.capacityKg.toLocaleString(undefined, { maximumFractionDigits: 0 })} kg
+                  </span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="text-gold/50">Storehouses</span>
+                  <span className="text-gold">{storageOverview.storehouseCount}</span>
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Transfer Queue */}
@@ -709,85 +840,106 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
               {tiers.map(([tier, resourceIds]) => {
                 const rows = resourceIds.filter((resourceId: ResourcesIds) => {
                   const summary = resourceSummaries.get(resourceId);
-                  if (!summary) return showAllResources || ALWAYS_SHOW_RESOURCES.includes(resourceId);
-                  return showAllResources || summary.totalAmount > 0 || ALWAYS_SHOW_RESOURCES.includes(resourceId);
+                  const hasAmount = summary ? summary.totalAmount > 0 : false;
+                  const shouldShow = showAllResources || hasAmount || ALWAYS_SHOW_RESOURCES.includes(resourceId);
+                  const passesProduction = !showProductionOnly || (summary?.totalProductionPerSecond ?? 0) > 0;
+                  const passesMilitary = !showMilitaryOnly || isMilitaryResource(resourceId);
+
+                  return shouldShow && passesProduction && passesMilitary;
                 });
 
                 if (rows.length === 0) return null;
+
+                const isCollapsed = collapsedTiers[tier] ?? false;
 
                 return (
                   <React.Fragment key={tier}>
                     <tr className="bg-gold/5 text-[10px] uppercase tracking-wide text-gold/70">
                       <td className="px-2 py-1" colSpan={structureColumns.length + 2}>
-                        {TIER_DISPLAY_NAMES[tier] || tier}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleTierVisibility(tier)}
+                          className="flex w-full items-center justify-between text-left"
+                        >
+                          <span>{TIER_DISPLAY_NAMES[tier] || tier}</span>
+                          <span className="flex items-center gap-2 text-[9px] font-medium text-gold/60">
+                            {rows.length}
+                            {isCollapsed ? (
+                              <ArrowDown className="h-3 w-3" />
+                            ) : (
+                              <ArrowUp className="h-3 w-3" />
+                            )}
+                          </span>
+                        </button>
                       </td>
                     </tr>
-                    {rows.map((resourceId: ResourcesIds) => {
-                      const summary = resourceSummaries.get(resourceId);
-                      const resourceKey = ResourcesIds[resourceId];
+                    {!isCollapsed &&
+                      rows.map((resourceId: ResourcesIds) => {
+                        const summary = resourceSummaries.get(resourceId);
+                        const resourceKey = ResourcesIds[resourceId];
 
-                      return (
-                        <tr
-                          key={resourceId}
-                          className="border-b border-gold/10 last:border-b-0 hover:bg-gold/[0.02] transition-colors"
-                        >
-                          <td className="px-3 py-2 border-r border-gold/[0.07] sticky left-0 bg-dark-wood/95 backdrop-blur z-10 shadow-sm">
-                            <div className="flex items-center gap-2">
-                              <ResourceIcon resource={resourceKey} size="md" />
-                              <span className="text-[11px] font-semibold text-gold/90">{resourceKey}</span>
-                            </div>
-                          </td>
-                          <td className="px-3 py-2 border-r border-gold/[0.07]">
-                            {summary ? (
-                              <div className="flex items-baseline gap-1.5">
-                                <span className="text-[11px] font-bold text-gold">
-                                  {formatResourceAmount(summary.totalAmount)}
-                                </span>
-                                <span
-                                  className={clsx(
-                                    "text-[10px]",
-                                    summary.totalProductionPerSecond > 0 ? "text-green/70" : "text-gold/40",
-                                  )}
-                                >
-                                  {formatProductionPerHour(summary.totalProductionPerSecond)}
-                                </span>
+                        return (
+                          <tr
+                            key={resourceId}
+                            className="border-b border-gold/10 last:border-b-0 hover:bg-gold/[0.02] transition-colors"
+                          >
+                            <td className="px-3 py-2 border-r border-gold/[0.07] sticky left-0 bg-dark-wood/95 backdrop-blur z-10 shadow-sm">
+                              <div className="flex items-center gap-2">
+                                <ResourceIcon resource={resourceKey} size="md" />
+                                <span className="text-[11px] font-semibold text-gold/90">{resourceKey}</span>
                               </div>
-                            ) : (
-                              <span className="text-[11px] text-gold/30">—</span>
-                            )}
-                          </td>
-                          {structureColumns.map((structure) => {
-                            const cell = summary?.perStructure[structure.entityId];
-                            const isSelectedStructure = selectedStructureId === structure.entityId;
+                            </td>
+                            <td className="px-3 py-2 border-r border-gold/[0.07]">
+                              {summary ? (
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className="text-[11px] font-bold text-gold">
+                                    {formatResourceAmount(summary.totalAmount)}
+                                  </span>
+                                  <span
+                                    className={clsx(
+                                      "text-[10px]",
+                                      summary.totalProductionPerSecond > 0 ? "text-green/70" : "text-gold/40",
+                                    )}
+                                  >
+                                    {formatProductionPerHour(summary.totalProductionPerSecond)}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-[11px] text-gold/30">—</span>
+                              )}
+                            </td>
+                            {structureColumns.map((structure) => {
+                              const cell = summary?.perStructure[structure.entityId];
+                              const isSelectedStructure = selectedStructureId === structure.entityId;
 
-                            // Check for actual building existence (not just production.building_count)
-                            const actualBuildingCount = getBuildingQuantity(
-                              structure.entityId,
-                              getBuildingFromResource(resourceId),
-                              components,
-                            );
-                            const hasProductionBuilding = Boolean(
-                              actualBuildingCount > 0 &&
-                                (!isBlitz || !BLITZ_UNMANAGEABLE_RESOURCES.includes(resourceId)),
-                            );
+                              // Check for actual building existence (not just production.building_count)
+                              const actualBuildingCount = getBuildingQuantity(
+                                structure.entityId,
+                                getBuildingFromResource(resourceId),
+                                components,
+                              );
+                              const hasProductionBuilding = Boolean(
+                                actualBuildingCount > 0 &&
+                                  (!isBlitz || !BLITZ_UNMANAGEABLE_RESOURCES.includes(resourceId)),
+                              );
 
-                            return (
-                              <td
-                                key={structure.entityId}
-                                className={clsx(
+                              return (
+                                <td
+                                  key={structure.entityId}
+                                  className={clsx(
                                   "px-2 py-1.5 align-top cursor-pointer border-r border-gold/[0.07] last:border-r-0",
                                   structure.isSelected && "bg-gold/10",
-                                )}
-                                role="button"
-                                tabIndex={0}
-                                onClick={() => handleSelectStructure(structure.entityId)}
-                                onKeyDown={(event) => {
-                                  if (event.key === "Enter" || event.key === " ") {
-                                    event.preventDefault();
-                                    handleSelectStructure(structure.entityId);
-                                  }
-                                }}
-                              >
+                                  )}
+                                  role="button"
+                                  tabIndex={0}
+                                  onClick={() => handleSelectStructure(structure.entityId)}
+                                  onKeyDown={(event) => {
+                                    if (event.key === "Enter" || event.key === " ") {
+                                      event.preventDefault();
+                                      handleSelectStructure(structure.entityId);
+                                    }
+                                  }}
+                                >
                                 {cell ? (
                                   <TransferCell
                                     key={`${structure.entityId}-${resourceId}`}

@@ -1,17 +1,20 @@
 import { ResourceChip } from "@/ui/features/economy/resources";
 import {
-    getBlockTimestamp,
-    getBuildingCount,
-    getEntityIdFromKeys,
-    getIsBlitz,
-    getRealmInfo,
-    getStructureArmyRelicEffects,
-    getStructureRelicEffects,
+  getBlockTimestamp,
+  getBuildingCount,
+  getEntityIdFromKeys,
+  getIsBlitz,
+  getRealmInfo,
+  getStructureArmyRelicEffects,
+  getStructureRelicEffects,
+  isMilitaryResource,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { BuildingType, getBuildingFromResource, getResourceTiers, ID, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
-import React, { useMemo, useState } from "react";
+import clsx from "clsx";
+import { ArrowDown, ArrowUp } from "lucide-react";
+import React, { useCallback, useMemo, useState } from "react";
 import { ALWAYS_SHOW_RESOURCES, TIER_DISPLAY_NAMES } from "./utils";
 
 interface EntityResourceTableOldProps {
@@ -20,6 +23,20 @@ interface EntityResourceTableOldProps {
 
 export const EntityResourceTableOld = React.memo(({ entityId }: EntityResourceTableOldProps) => {
   const [showAllResources, setShowAllResources] = useState(false);
+  const [showProductionOnly, setShowProductionOnly] = useState(
+    () => localStorage.getItem("entityResourceTableShowProductionOnly") === "true",
+  );
+  const [showMilitaryOnly, setShowMilitaryOnly] = useState(
+    () => localStorage.getItem("entityResourceTableShowMilitaryOnly") === "true",
+  );
+  const [collapsedTiers, setCollapsedTiers] = useState<Record<string, boolean>>(() => {
+    try {
+      const stored = localStorage.getItem("entityResourceTableCollapsedTiers");
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
 
   const { setup } = useDojo();
 
@@ -36,7 +53,7 @@ export const EntityResourceTableOld = React.memo(({ entityId }: EntityResourceTa
 
   const realmInfo = useMemo(
     () => getRealmInfo(getEntityIdFromKeys([BigInt(entityId)]), setup.components),
-    [entityId, structureBuildings, resources],
+    [entityId, structureBuildings, resources, setup.components],
   );
 
   const productionBoostBonus = useComponentValue(
@@ -46,87 +63,211 @@ export const EntityResourceTableOld = React.memo(({ entityId }: EntityResourceTa
 
   const structure = useComponentValue(setup.components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
 
+  const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
+
   const activeRelicEffects = useMemo(() => {
-    const currentTick = getBlockTimestamp().currentArmiesTick;
-    const structureArmyRelicEffects = structure ? getStructureArmyRelicEffects(structure, currentTick) : [];
+    const structureArmyRelicEffects = structure ? getStructureArmyRelicEffects(structure, currentArmiesTick) : [];
     const structureRelicEffects = productionBoostBonus
-      ? getStructureRelicEffects(productionBoostBonus, currentTick)
+      ? getStructureRelicEffects(productionBoostBonus, currentArmiesTick)
       : [];
     return [...structureRelicEffects, ...structureArmyRelicEffects];
-  }, [productionBoostBonus, structure]);
+  }, [currentArmiesTick, productionBoostBonus, structure]);
 
   const resourceManager = useResourceManager(entityId);
 
+  const storageOverview = useMemo(() => {
+    if (!realmInfo?.storehouses) return null;
+
+    const capacityKg = realmInfo.storehouses.capacityKg || 0;
+    const capacityUsedKg = realmInfo.storehouses.capacityUsedKg || 0;
+    const storehouseCount = realmInfo.storehouses.quantity || 0;
+
+    if (capacityKg === 0 && capacityUsedKg === 0 && storehouseCount === 0) {
+      return null;
+    }
+
+    return {
+      capacityKg,
+      capacityUsedKg,
+      remainingKg: Math.max(0, capacityKg - capacityUsedKg),
+      storehouseCount,
+    };
+  }, [realmInfo?.storehouses]);
+
+  const storageWarning =
+    storageOverview && storageOverview.capacityKg > 0
+      ? storageOverview.remainingKg / storageOverview.capacityKg <= 0.15
+      : false;
+
+  const handleToggleTierVisibility = useCallback((tierKey: string) => {
+    setCollapsedTiers((prev) => {
+      const next = { ...prev, [tierKey]: !prev[tierKey] };
+      localStorage.setItem("entityResourceTableCollapsedTiers", JSON.stringify(next));
+      return next;
+    });
+  }, []);
 
   return (
-    <div>
-      <div className="flex justify-between items-center pb-2 border-b border-gold/20 p-1">
-        <h4>Resources</h4>
-        <div className="flex gap-2 items-center">
-          <label className="inline-flex items-center cursor-pointer">
-            <span className={`mr-2 text-xxs ${showAllResources ? "text-gold/50" : ""}`}>Hide Empty</span>
-            <div className="relative">
-              <input
-                type="checkbox"
-                className="sr-only peer"
-                checked={!showAllResources}
-                onChange={() => setShowAllResources(!showAllResources)}
-              />
-              <div className="w-9 h-5 bg-brown/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gold/30"></div>
-            </div>
-          </label>
-        </div>
-      </div>
-
-      {/* <div className=" text-gold font-medium border-b pt-2 border-gold/10 pb-3 sticky -top-2 left-0 w-full bg-dark-wood z-10 flex justify-between">
-        <div className="flex items-center gap-2">
-          <div className="text-gold h6">Remaining Storage:</div>
-          <div className="text-gold/80">
-            {isStorageFull ? (
-              <div className="text-red/80">Out of Storage!</div>
-            ) : (
-              <div className="text-green/80 text-xl">
-                {storageRemaining.toLocaleString(undefined, { maximumFractionDigits: 0 })}kg
+    <div className="flex flex-col gap-4">
+      <div className="sticky top-0 z-20 -mx-2 -mt-2 px-2 pt-3 pb-2 border-b border-gold/20 bg-dark-wood/95 backdrop-blur">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="space-y-1">
+            <h4 className="text-sm font-semibold uppercase tracking-wide text-gold">Resources</h4>
+            <p className="text-[11px] text-gold/60">Entity #{entityId}</p>
+          </div>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <label className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1 text-[11px] text-gold/70">
+              <span className={clsx(!showAllResources && "text-gold")}>Hide empty</span>
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  className="peer sr-only"
+                  checked={!showAllResources}
+                  onChange={() => setShowAllResources((prev) => !prev)}
+                />
+                <div className="h-5 w-9 rounded-full bg-brown/50 transition peer-checked:bg-gold/30">
+                  <div className="absolute top-[2px] left-[2px] h-4 w-4 rounded-full bg-gold transition peer-checked:translate-x-4" />
+                </div>
               </div>
-            )}
+            </label>
+            <label className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1 text-[11px] text-gold/70">
+              <span className={clsx(showProductionOnly && "text-gold")}>Production only</span>
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  className="peer sr-only"
+                  checked={showProductionOnly}
+                  onChange={() => {
+                    const nextValue = !showProductionOnly;
+                    setShowProductionOnly(nextValue);
+                    localStorage.setItem("entityResourceTableShowProductionOnly", String(nextValue));
+                  }}
+                />
+                <div className="h-5 w-9 rounded-full bg-brown/50 transition peer-checked:bg-gold/30">
+                  <div className="absolute top-[2px] left-[2px] h-4 w-4 rounded-full bg-gold transition peer-checked:translate-x-4" />
+                </div>
+              </div>
+            </label>
+            <label className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1 text-[11px] text-gold/70">
+              <span className={clsx(showMilitaryOnly && "text-gold")}>Military only</span>
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  className="peer sr-only"
+                  checked={showMilitaryOnly}
+                  onChange={() => {
+                    const nextValue = !showMilitaryOnly;
+                    setShowMilitaryOnly(nextValue);
+                    localStorage.setItem("entityResourceTableShowMilitaryOnly", String(nextValue));
+                  }}
+                />
+                <div className="h-5 w-9 rounded-full bg-brown/50 transition peer-checked:bg-gold/30">
+                  <div className="absolute top-[2px] left-[2px] h-4 w-4 rounded-full bg-gold transition peer-checked:translate-x-4" />
+                </div>
+              </div>
+            </label>
           </div>
         </div>
-      </div> */}
+        {storageOverview && (
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-[11px] text-gold/70">
+            <div className="flex items-center gap-2">
+              <span className="uppercase font-semibold text-gold/80">Remaining Storage</span>
+              <span className={clsx("font-semibold", storageWarning ? "text-red" : "text-green")}>
+                {storageOverview.remainingKg.toLocaleString(undefined, { maximumFractionDigits: 0 })} kg
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="flex items-center gap-1">
+                <span className="text-gold/50">Used</span>
+                <span className="text-gold">
+                  {storageOverview.capacityUsedKg.toLocaleString(undefined, { maximumFractionDigits: 0 })} kg
+                </span>
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="text-gold/50">Total</span>
+                <span className="text-gold">
+                  {storageOverview.capacityKg.toLocaleString(undefined, { maximumFractionDigits: 0 })} kg
+                </span>
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="text-gold/50">Storehouses</span>
+                <span className="text-gold">{storageOverview.storehouseCount}</span>
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
 
-      <div className="space-y-4">
+      <div className="space-y-4 pt-2">
         {Object.entries(getResourceTiers(getIsBlitz())).map(([tier, resourceIds]) => {
+          const resourcesForTier = (resourceIds as ResourcesIds[]).filter((resourceId: ResourcesIds) => {
+            const alwaysShow = ALWAYS_SHOW_RESOURCES.includes(resourceId);
+            const { balance } = resourceManager.balanceWithProduction(currentDefaultTick, resourceId);
+
+            if (!showAllResources && !alwaysShow && balance <= 0) {
+              return false;
+            }
+
+            if (showProductionOnly && !resourceManager.isActive(resourceId)) {
+              return false;
+            }
+
+            if (showMilitaryOnly && !isMilitaryResource(resourceId)) {
+              return false;
+            }
+
+            return true;
+          });
+
+          if (resourcesForTier.length === 0) {
+            return null;
+          }
+
+          const isCollapsed = collapsedTiers[tier] ?? false;
+
           return (
             <div key={tier} className="pb-3">
-              <h4 className="text-sm text-gold/80 font-medium mb-2 border-b border-gold/10 pb-1">
-                {TIER_DISPLAY_NAMES[tier]}
-              </h4>
-              <div className="grid grid-cols-1 flex-wrap">
-                {resourceIds.map((resourceId: any) => {
-                  const buildingType = getBuildingFromResource(resourceId as ResourcesIds);
-                  const hasProductionBuilding =
-                    !!structureBuildings &&
-                    buildingType !== BuildingType.None &&
-                    (getBuildingCount(buildingType, [
-                      structureBuildings.packed_counts_1 || 0n,
-                      structureBuildings.packed_counts_2 || 0n,
-                      structureBuildings.packed_counts_3 || 0n,
-                    ]) || 0) > 0;
+              <button
+                type="button"
+                onClick={() => handleToggleTierVisibility(tier)}
+                className="flex w-full items-center justify-between border-b border-gold/10 pb-1 text-left text-sm font-medium text-gold/80"
+              >
+                <span>{TIER_DISPLAY_NAMES[tier]}</span>
+                <span className="flex items-center gap-2 text-[11px] text-gold/60">
+                  {resourcesForTier.length}
+                  {isCollapsed ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />}
+                </span>
+              </button>
 
-                  return (
-                    <ResourceChip
-                      key={resourceId}
-                      size="large"
-                      resourceId={resourceId}
-                      resourceManager={resourceManager}
-                      hideZeroBalance={!showAllResources && !ALWAYS_SHOW_RESOURCES.includes(resourceId)}
-                      storageCapacity={realmInfo?.storehouses.capacityKg}
-                      storageCapacityUsed={realmInfo?.storehouses.capacityUsedKg}
-                      activeRelicEffects={activeRelicEffects}
-                      canOpenProduction={hasProductionBuilding}
-                    />
-                  );
-                })}
-              </div>
+              {!isCollapsed && (
+                <div className="mt-3 grid grid-cols-1 gap-2">
+                  {resourcesForTier.map((resourceId) => {
+                    const buildingType = getBuildingFromResource(resourceId);
+                    const hasProductionBuilding =
+                      !!structureBuildings &&
+                      buildingType !== BuildingType.None &&
+                      (getBuildingCount(buildingType, [
+                        structureBuildings.packed_counts_1 || 0n,
+                        structureBuildings.packed_counts_2 || 0n,
+                        structureBuildings.packed_counts_3 || 0n,
+                      ]) || 0) > 0;
+
+                    return (
+                      <ResourceChip
+                        key={resourceId}
+                        size="large"
+                        resourceId={resourceId}
+                        resourceManager={resourceManager}
+                        hideZeroBalance={!showAllResources && !ALWAYS_SHOW_RESOURCES.includes(resourceId)}
+                        storageCapacity={realmInfo?.storehouses.capacityKg}
+                        storageCapacityUsed={realmInfo?.storehouses.capacityUsedKg}
+                        activeRelicEffects={activeRelicEffects}
+                        canOpenProduction={hasProductionBuilding}
+                      />
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
         })}
