@@ -1,10 +1,11 @@
-import { COLORS } from "@/ui/features/settlement";
 import { BuildingType, ResourcesIds, TroopTier } from "@bibliothecadao/types";
 import { CameraView } from "../../scenes/hexagon-scene";
 
 /**
  * Component factory for creating reusable label UI elements
  */
+
+const SOFT_LABEL_COLOR = "#f6f1e5";
 
 /**
  * Clean text by removing null characters and trimming whitespace
@@ -62,7 +63,7 @@ export const getTierStyle = (tier: number): string => {
     case 2:
       return "bg-gradient-to-b from-emerald-500/30 to-emerald-500/10 border-emerald-400/40 text-emerald-300 shadow-emerald-500/10";
     case 3:
-      return "!bg-purple-600 !text-white !border-purple-400 animate-pulse";
+      return "!bg-purple-600 !text-[#f6f1e5] !border-purple-400 animate-pulse";
     default:
       return "bg-gradient-to-b from-gold/30 to-gold/10 border-gold/40 text-gold shadow-gold/10";
   }
@@ -75,6 +76,35 @@ export const TIERS_TO_STARS: Record<TroopTier, string> = {
   [TroopTier.T1]: "⭐",
   [TroopTier.T2]: "⭐⭐",
   [TroopTier.T3]: "⭐⭐⭐",
+};
+
+export const formatCompactNumber = (value?: number | null): string => {
+  if (value === undefined || value === null) {
+    return "";
+  }
+
+  const absValue = Math.abs(value);
+
+  if (absValue >= 1_000_000) {
+    const formatted = (value / 1_000_000).toFixed(absValue >= 10_000_000 ? 0 : 1);
+    return `${formatted.replace(/\.0$/, "")}M`;
+  }
+
+  if (absValue >= 1_000) {
+    const formatted = (value / 1_000).toFixed(absValue >= 10_000 ? 0 : 1);
+    return `${formatted.replace(/\.0$/, "")}k`;
+  }
+
+  return value.toString();
+};
+
+const formatStaminaPercent = (current: number, max: number): string => {
+  if (!max || max <= 0) {
+    return "0%";
+  }
+
+  const pct = Math.round((current / max) * 100);
+  return `${pct}%`;
 };
 
 /**
@@ -127,16 +157,21 @@ export const BuildingTypeToIcon: Partial<Record<BuildingType, string>> = {
 export const getTroopResourceIdFromCategory = (category: string | null): number | null => {
   if (!category) return null;
 
-  switch (category.toLowerCase()) {
-    case "knight":
-      return ResourcesIds.Knight;
-    case "crossbowman":
-      return ResourcesIds.Crossbowman;
-    case "paladin":
-      return ResourcesIds.Paladin;
-    default:
-      return null;
+  const lowered = cleanText(category).toLowerCase();
+
+  if (lowered.includes("knight")) {
+    return ResourcesIds.Knight;
   }
+
+  if (lowered.includes("crossbowman")) {
+    return ResourcesIds.Crossbowman;
+  }
+
+  if (lowered.includes("paladin")) {
+    return ResourcesIds.Paladin;
+  }
+
+  return null;
 };
 
 /**
@@ -160,22 +195,30 @@ export interface OwnerDisplayOptions {
 }
 
 export const createOwnerDisplayElement = (options: OwnerDisplayOptions): HTMLElement => {
-  const { owner, isMine, isAlly, color, isDaydreamsAgent } = options;
+  const { owner, isMine, isAlly, color, isDaydreamsAgent, cameraView } = options;
 
   const container = document.createElement("div");
   container.classList.add("flex", "items-center", "truncate", "gap-1");
+  if (cameraView === CameraView.Medium) {
+    container.classList.add("gap-0.5", "text-[11px]");
+  }
   container.setAttribute("data-component", "owner");
 
   // Create name element
-  const displayName = owner.ownerName || "";
+  const displayName = cleanText(owner.ownerName);
   const nameSpan = document.createElement("span");
-  nameSpan.textContent = displayName;
+  if (cameraView === CameraView.Medium && displayName.length > 14) {
+    nameSpan.textContent = `${displayName.slice(0, 12)}…`;
+    nameSpan.title = displayName;
+  } else {
+    nameSpan.textContent = displayName;
+  }
   nameSpan.classList.add("font-medium");
 
   // Determine text color
   let finalTextColor: string;
   if (isDaydreamsAgent) {
-    finalTextColor = COLORS.SELECTED;
+    finalTextColor = "#FFF5EA";
   } else if (color) {
     finalTextColor = color;
   } else {
@@ -225,24 +268,45 @@ export const createOwnerDisplayElement = (options: OwnerDisplayOptions): HTMLEle
 /**
  * Create stamina bar component
  */
-export const createStaminaBar = (currentStamina: number, maxStamina: number): HTMLElement => {
+export const createStaminaBar = (
+  currentStamina: number,
+  maxStamina: number,
+  cameraView: CameraView,
+): HTMLElement => {
   const container = document.createElement("div");
+  container.setAttribute("data-component", "stamina-bar");
+
+  if (cameraView === CameraView.Medium) {
+    container.classList.add("flex", "items-center", "gap-1", "text-[11px]");
+
+    const icon = document.createElement("span");
+    icon.textContent = "⚡";
+    icon.classList.add("text-yellow-400");
+    container.appendChild(icon);
+
+    const percent = document.createElement("span");
+    percent.textContent = formatStaminaPercent(currentStamina, maxStamina);
+    percent.classList.add("font-semibold", "tracking-tight");
+    percent.style.color = SOFT_LABEL_COLOR;
+    percent.setAttribute("data-role", "stamina-percent");
+    container.appendChild(percent);
+
+    return container;
+  }
+
   container.style.display = "flex";
   container.style.alignItems = "center";
   container.style.gap = "4px";
   container.style.fontSize = "10px";
-  container.setAttribute("data-component", "stamina-bar");
 
-  // Stamina icon
   const icon = document.createElement("span");
   icon.textContent = "⚡";
-  icon.style.color = "#facc15"; // yellow-400
+  icon.style.color = "#facc15";
   container.appendChild(icon);
 
-  // Progress bar container
   const progressBar = document.createElement("div");
   progressBar.style.position = "relative";
-  progressBar.style.backgroundColor = "#374151"; // gray-700
+  progressBar.style.backgroundColor = "#374151";
   progressBar.style.borderRadius = "9999px";
   progressBar.style.height = "8px";
   progressBar.style.width = "80px";
@@ -264,19 +328,17 @@ export const createStaminaBar = (currentStamina: number, maxStamina: number): HT
   const percentage = Math.max(0, Math.min(100, (currentStamina / maxStamina) * 100));
   progressFill.style.width = `${percentage}%`;
 
-  // Color based on stamina level
   if (percentage > 66) {
-    progressFill.style.backgroundColor = "#10b981"; // green-500
+    progressFill.style.backgroundColor = "#10b981";
   } else if (percentage > 33) {
-    progressFill.style.backgroundColor = "#f59e0b"; // amber-500
+    progressFill.style.backgroundColor = "#f59e0b";
   } else {
-    progressFill.style.backgroundColor = "#ef4444"; // red-500
+    progressFill.style.backgroundColor = "#ef4444";
   }
 
   progressBar.appendChild(progressFill);
   container.appendChild(progressBar);
 
-  // Text display
   const text = document.createElement("span");
   text.textContent = `${currentStamina}/${maxStamina}`;
   text.style.color = "#ffffff";
@@ -292,21 +354,33 @@ export const createStaminaBar = (currentStamina: number, maxStamina: number): HT
 /**
  * Create troop count display
  */
-export const createTroopCountDisplay = (count: number, troopType: string, tier: string): HTMLElement => {
+export const createTroopCountDisplay = (
+  count: number,
+  troopType: string,
+  tier: TroopTier | string,
+  cameraView: CameraView,
+): HTMLElement => {
   const container = document.createElement("div");
-  container.classList.add("flex", "items-center", "gap-2", "rounded", "px-1.5", "py-0.5", "bg-black/40", "text-xxs");
   container.setAttribute("data-component", "troop-count");
+  container.classList.add("flex", "items-center", "rounded", "bg-black/40", "text-xxs", "w-fit");
 
-  // Sword icon (like shield for guards)
+  if (cameraView === CameraView.Medium) {
+    container.classList.add("gap-1", "px-1", "py-0.5");
+  } else {
+    container.classList.add("gap-1", "px-1.5", "py-0.5");
+  }
+
   const swordIcon = document.createElement("span");
   swordIcon.textContent = "⚔️";
+  if (cameraView === CameraView.Medium) {
+    swordIcon.classList.add("text-[11px]");
+  }
   container.appendChild(swordIcon);
 
-  // Troop resource icon
   const resourceId = getTroopResourceIdFromCategory(troopType);
-  if (resourceId) {
+  if (resourceId && cameraView !== CameraView.Medium) {
     const iconContainer = document.createElement("div");
-    iconContainer.classList.add("w-6", "h-6", "flex-shrink-0");
+    iconContainer.classList.add("w-6", "h-6", "flex-shrink-0", "flex", "items-center", "justify-center");
 
     const img = document.createElement("img");
     img.src = `/images/resources/${resourceId}.png`;
@@ -315,26 +389,26 @@ export const createTroopCountDisplay = (count: number, troopType: string, tier: 
     container.appendChild(iconContainer);
   }
 
-  // Count
   const countSpan = document.createElement("span");
-  countSpan.textContent = count.toString();
-  countSpan.classList.add("font-semibold", "min-w-[1rem]", "text-center", "text-white");
+  const tierValue = typeof tier === "string" ? parseInt(tier.replace("T", ""), 10) || 1 : tier;
+  countSpan.textContent = cameraView === CameraView.Medium ? formatCompactNumber(count) : count.toString();
+  countSpan.classList.add("font-semibold", "min-w-[1rem]", "text-center");
+  countSpan.style.color = SOFT_LABEL_COLOR;
+  if (cameraView === CameraView.Medium) {
+    countSpan.classList.add("text-[11px]", "min-w-0");
+  } else {
+    countSpan.classList.add("text-white");
+  }
   countSpan.setAttribute("data-role", "count");
   container.appendChild(countSpan);
 
-  // Tier badge
-  const tierNumber = parseInt(tier.replace("T", "")) || 1;
   const tierBadge = document.createElement("span");
-  tierBadge.textContent = `T${tierNumber}`;
-  tierBadge.classList.add(
-    "px-1",
-    "py-0.5",
-    "rounded",
-    "text-[10px]",
-    "font-bold",
-    "border",
-    ...getTierStyle(tierNumber).split(" "),
-  );
+  tierBadge.textContent = `T${tierValue}`;
+  tierBadge.classList.add("px-1", "py-0.5", "rounded", "text-[10px]", "font-bold", "border");
+  tierBadge.classList.add(...getTierStyle(tierValue).split(" "));
+  if (cameraView === CameraView.Medium) {
+    tierBadge.classList.add("leading-none");
+  }
   container.appendChild(tierBadge);
 
   return container;
@@ -344,17 +418,43 @@ export const createTroopCountDisplay = (count: number, troopType: string, tier: 
  * Create guard army display
  */
 export const createGuardArmyDisplay = (
-  guardArmies: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>,
+  guardArmies: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }> | undefined,
+  cameraView: CameraView,
 ): HTMLElement => {
   const container = document.createElement("div");
-  container.classList.add("flex", "flex-row", "gap-1", "text-xxs", "overflow-x-auto");
   container.setAttribute("data-component", "guard-armies");
 
-  if (guardArmies.length === 0) {
+  if (cameraView === CameraView.Medium) {
+    container.classList.add("flex", "flex-row", "flex-wrap", "gap-1", "text-[11px]");
+    container.style.color = SOFT_LABEL_COLOR;
+  } else {
+    container.classList.add("flex", "flex-row", "gap-1", "text-xxs", "overflow-x-auto");
+    container.style.color = SOFT_LABEL_COLOR;
+  }
+
+  if (!guardArmies || guardArmies.length === 0) {
     const noGuards = document.createElement("span");
     noGuards.textContent = "No Guards";
     noGuards.classList.add("italic");
     container.appendChild(noGuards);
+    return container;
+  }
+
+  if (cameraView === CameraView.Medium) {
+    guardArmies.forEach((guard) => {
+      if (guard.count <= 0) {
+        return;
+      }
+
+      const troopDisplay = createTroopCountDisplay(
+        guard.count,
+        guard.category ?? "",
+        guard.tier,
+        cameraView,
+      );
+      container.appendChild(troopDisplay);
+    });
+
     return container;
   }
 
@@ -395,50 +495,42 @@ export const createGuardArmyDisplay = (
   }
 
   guardArmies.forEach((guard) => {
-    if (guard.count > 0) {
-      const guardDiv = document.createElement("div");
-      guardDiv.classList.add("flex", "items-center", "gap-2", "rounded", "px-1.5", "py-0.5", "bg-black/40");
-
-      // Shield icon
-      const shieldIcon = document.createElement("span");
-      shieldIcon.textContent = "🛡️";
-      guardDiv.appendChild(shieldIcon);
-
-      // Troop resource icon
-      const resourceId = getTroopResourceIdFromCategory(guard.category);
-      if (resourceId) {
-        const iconContainer = document.createElement("div");
-        iconContainer.classList.add("w-6", "h-6", "flex-shrink-0");
-
-        const img = document.createElement("img");
-        img.src = `/images/resources/${resourceId}.png`;
-        img.classList.add("w-full", "h-full", "object-contain");
-        iconContainer.appendChild(img);
-        guardDiv.appendChild(iconContainer);
-      }
-
-      // Count
-      const countSpan = document.createElement("span");
-      countSpan.textContent = guard.count.toString();
-      countSpan.classList.add("font-semibold", "min-w-[1rem]", "text-center");
-      guardDiv.appendChild(countSpan);
-
-      // Tier badge
-      const tierBadge = document.createElement("span");
-      tierBadge.textContent = `T${guard.tier}`;
-      tierBadge.classList.add(
-        "px-1",
-        "py-0.5",
-        "rounded",
-        "text-[10px]",
-        "font-bold",
-        "border",
-        ...getTierStyle(guard.tier).split(" "),
-      );
-      guardDiv.appendChild(tierBadge);
-
-      container.appendChild(guardDiv);
+    if (guard.count <= 0) {
+      return;
     }
+
+    const guardDiv = document.createElement("div");
+    guardDiv.classList.add("flex", "items-center", "gap-1", "rounded", "px-1.5", "py-0.5", "bg-black/40");
+
+    const shieldIcon = document.createElement("span");
+    shieldIcon.textContent = "🛡️";
+    guardDiv.appendChild(shieldIcon);
+
+    const resourceId = getTroopResourceIdFromCategory(guard.category);
+    if (resourceId) {
+      const iconContainer = document.createElement("div");
+      iconContainer.classList.add("w-6", "h-6", "flex-shrink-0", "flex", "items-center", "justify-center");
+
+      const img = document.createElement("img");
+      img.src = `/images/resources/${resourceId}.png`;
+      img.classList.add("w-full", "h-full", "object-contain");
+      iconContainer.appendChild(img);
+      guardDiv.appendChild(iconContainer);
+    }
+
+    const countSpan = document.createElement("span");
+    countSpan.textContent = guard.count.toString();
+    countSpan.classList.add("font-semibold", "min-w-[1rem]", "text-center");
+    countSpan.style.color = SOFT_LABEL_COLOR;
+    guardDiv.appendChild(countSpan);
+
+    const tierBadge = document.createElement("span");
+    tierBadge.textContent = `T${guard.tier}`;
+    tierBadge.classList.add("px-1", "py-0.5", "rounded", "text-[10px]", "font-bold", "border");
+    tierBadge.classList.add(...getTierStyle(guard.tier).split(" "));
+    guardDiv.appendChild(tierBadge);
+
+    container.appendChild(guardDiv);
   });
 
   return container;
@@ -448,17 +540,40 @@ export const createGuardArmyDisplay = (
  * Create production display
  */
 export const createProductionDisplay = (
-  activeProductions: Array<{ buildingCount: number; buildingType: BuildingType }>,
+  activeProductions: Array<{ buildingCount: number; buildingType: BuildingType }> | undefined,
+  cameraView: CameraView,
 ): HTMLElement => {
   const container = document.createElement("div");
-  container.classList.add("flex", "flex-wrap", "items-center", "gap-2", "text-xxs", "py-1");
   container.setAttribute("data-component", "productions");
 
-  if (activeProductions.length === 0) {
+  if (cameraView === CameraView.Medium) {
+    container.classList.add("flex", "flex-wrap", "items-center", "gap-1", "text-[11px]");
+    container.style.color = SOFT_LABEL_COLOR;
+  } else {
+    container.classList.add("flex", "flex-wrap", "items-center", "gap-1", "text-xxs");
+  }
+
+  if (!activeProductions || activeProductions.length === 0) {
     const noProduction = document.createElement("span");
     noProduction.textContent = "No Active Production";
-    noProduction.classList.add("italic");
+    noProduction.classList.add("text-gray-400", "italic");
     container.appendChild(noProduction);
+    return container;
+  }
+
+  if (cameraView === CameraView.Medium) {
+    const totalBuildings = activeProductions.reduce((total, production) => {
+      const current = Number(production.buildingCount ?? 0);
+      return total + (Number.isNaN(current) ? 0 : current);
+    }, 0);
+
+    const item = document.createElement("span");
+    item.classList.add("px-1", "py-0.5", "rounded", "bg-black/30", "font-semibold");
+    item.style.color = SOFT_LABEL_COLOR;
+    const label = totalBuildings === 1 ? "Building" : "Buildings";
+    item.textContent = `${label} ×${formatCompactNumber(totalBuildings)}`;
+    container.appendChild(item);
+
     return container;
   }
 
@@ -466,21 +581,17 @@ export const createProductionDisplay = (
     const productionDiv = document.createElement("div");
     productionDiv.classList.add("flex", "items-center", "gap-1", "bg-black/40", "rounded", "px-1.5", "py-0.5");
 
-    // Create resource icon based on building type
     const resourceName = BuildingTypeToIcon[production.buildingType];
     if (resourceName) {
       const iconContainer = document.createElement("div");
-      iconContainer.classList.add("w-8", "h-8", "flex-shrink-0");
+      iconContainer.classList.add("w-6", "h-6", "flex-shrink-0", "flex", "items-center", "justify-center");
 
       const img = document.createElement("img");
-
-      // Special handling for buildings that use different images
       if (resourceName === "House") {
         img.src = "/images/buildings/thumb/house.png";
       } else if (resourceName === "Silo") {
         img.src = "/images/buildings/thumb/silo.png";
       } else {
-        // Use ResourcesIds enum to get the correct ID
         const resourceId = ResourcesIds[resourceName as keyof typeof ResourcesIds];
         if (resourceId) {
           img.src = `/images/resources/${resourceId}.png`;
@@ -492,10 +603,10 @@ export const createProductionDisplay = (
       productionDiv.appendChild(iconContainer);
     }
 
-    // Production count
     const countSpan = document.createElement("span");
     countSpan.textContent = `${production.buildingCount}`;
-    countSpan.classList.add("text-white", "font-semibold");
+    countSpan.classList.add("font-semibold", "text-xs");
+    countSpan.style.color = SOFT_LABEL_COLOR;
     productionDiv.appendChild(countSpan);
 
     container.appendChild(productionDiv);
@@ -508,37 +619,44 @@ export const createProductionDisplay = (
  * Create content container with transition wrapper
  */
 export const createContentContainer = (cameraView: CameraView): HTMLElement & { wrapper: HTMLElement } => {
-  // Create wrapper for width transition
   const wrapperContainer = document.createElement("div");
   wrapperContainer.classList.add("transition-all", "duration-700", "ease-in-out", "overflow-hidden");
+  wrapperContainer.setAttribute("data-component", "content-container-wrapper");
 
-  // Create inner container for content
   const contentContainer = document.createElement("div");
   contentContainer.classList.add("flex", "flex-col", "w-max");
+  contentContainer.setAttribute("data-component", "content-container");
 
-  // Add empty div with w-2 for spacing
   const spacerDiv = document.createElement("div");
-  spacerDiv.classList.add("w-2");
-  contentContainer.appendChild(spacerDiv);
+  if (cameraView === CameraView.Medium) {
+    spacerDiv.classList.add("w-1");
+    contentContainer.classList.add("gap-1");
+  } else if (cameraView === CameraView.Close) {
+    spacerDiv.classList.add("w-2");
+    contentContainer.classList.add("gap-1");
+  } else {
+    spacerDiv.classList.add("w-2");
+  }
 
-  // Generate a unique ID for this container
-  const containerId = `container_${Math.random().toString(36).substring(2, 9)}`;
-  wrapperContainer.dataset.containerId = containerId;
+  if (cameraView !== CameraView.Far) {
+    contentContainer.appendChild(spacerDiv);
+  }
 
-  // Put content inside wrapper
   wrapperContainer.appendChild(contentContainer);
 
-  // Initial state based on camera view
-  const expandedClasses = ["max-w-[1000px]", "ml-2", "opacity-100"];
-  const collapsedClasses = ["max-w-0", "ml-0", "opacity-0"];
+  const expandedClasses =
+    cameraView === CameraView.Medium
+      ? ["max-w-[420px]", "ml-1.5", "opacity-100"]
+      : ["max-w-[1000px]", "ml-2", "opacity-100"];
+  const collapsedClasses = ["max-w-0", "max-h-0", "h-0", "ml-0", "opacity-0", "pointer-events-none"];
 
   if (cameraView === CameraView.Far) {
     wrapperContainer.classList.add(...collapsedClasses);
+    wrapperContainer.style.setProperty("display", "none");
   } else {
     wrapperContainer.classList.add(...expandedClasses);
   }
 
-  // Return contentContainer with wrapper reference
   const result = contentContainer as unknown as HTMLElement & { wrapper: HTMLElement };
   result.wrapper = wrapperContainer;
   return result;
@@ -548,8 +666,13 @@ export const createContentContainer = (cameraView: CameraView): HTMLElement & { 
  * Update an existing stamina bar with new values
  */
 export const updateStaminaBar = (staminaBarElement: HTMLElement, currentStamina: number, maxStamina: number): void => {
+  const percentElement = staminaBarElement.querySelector("[data-role='stamina-percent']") as HTMLElement | null;
   const progressFill = staminaBarElement.querySelector("[data-role='progress-fill']") as HTMLElement;
   const textElement = staminaBarElement.querySelector("[data-role='stamina-text']") as HTMLElement;
+
+  if (percentElement) {
+    percentElement.textContent = formatStaminaPercent(currentStamina, maxStamina);
+  }
 
   if (textElement) {
     textElement.textContent = `${currentStamina}/${maxStamina}`;
@@ -654,7 +777,7 @@ export const createDirectionIndicators = (
   }
 
   const container = document.createElement("div");
-  container.classList.add("flex", "items-center", "justify-center", "gap-2", "text-xxs", "animate-fade-in");
+  container.classList.add("flex", "items-center", "justify-center", "gap-1", "text-xxs", "animate-fade-in");
   container.setAttribute("data-component", "direction-indicators");
 
   // Attack direction (offensive) - emoji left, arrow right
@@ -710,38 +833,21 @@ export const updateDirectionIndicators = (
   attackedFromDegrees?: number,
   attackedTowardDegrees?: number,
   battleTimerLeft?: number,
-): void => {
+): HTMLElement | null => {
   const existingIndicators = element.querySelector('[data-component="direction-indicators"]');
 
-  // Remove existing indicators if no degrees
   if (attackedFromDegrees === undefined && attackedTowardDegrees === undefined) {
-    if (existingIndicators) {
-      existingIndicators.remove();
-    }
-    return;
+    existingIndicators?.remove();
+    return null;
   }
 
-  // Create new indicators
   const newIndicators = createDirectionIndicators(attackedFromDegrees, attackedTowardDegrees, battleTimerLeft);
 
-  if (existingIndicators && newIndicators) {
-    // Replace existing with new
-    existingIndicators.replaceWith(newIndicators);
-  } else if (newIndicators) {
-    // Add new indicators after stamina bar or last element
-    const staminaBar = element.querySelector('[data-component="stamina-bar"]');
-    const troopCount = element.querySelector('[data-component="troop-count"]');
-    const insertAfter = staminaBar || troopCount;
-
-    if (insertAfter && insertAfter.parentElement) {
-      insertAfter.parentElement.insertBefore(newIndicators, insertAfter.nextSibling);
-    } else {
-      // Fallback: append to content container
-      const contentContainer =
-        element.querySelector('[data-component="content-container"]') || element.querySelector(".flex.flex-col");
-      if (contentContainer) {
-        contentContainer.appendChild(newIndicators);
-      }
-    }
+  if (!newIndicators) {
+    existingIndicators?.remove();
+    return null;
   }
+
+  existingIndicators?.remove();
+  return newIndicators;
 };

@@ -1047,13 +1047,18 @@
         return labelDiv;
       }
       function createStructureLabel(data, cameraView) {
-        const isBlitz = getIsBlitz();
+        const previewIsBlitz =
+          Object.prototype.hasOwnProperty.call(data, "previewIsBlitz") && typeof data.previewIsBlitz === "boolean"
+            ? data.previewIsBlitz
+            : undefined;
+        const isBlitz = previewIsBlitz ?? getIsBlitz();
         const labelDiv = createLabelBase(data.isMine, cameraView);
         const hasDirections = data.attackedFromDegrees !== undefined || data.attackedTowardDegrees !== undefined;
         const isExpanded = cameraView !== CameraView.Far;
 
         const iconContainer = document.createElement("div");
         iconContainer.classList.add("w-auto", "h-full", "flex-shrink-0", "flex", "items-center", "justify-center");
+        iconContainer.setAttribute("data-component", "structure-icon-container");
         let iconPath = STRUCTURE_ICONS(isBlitz).STRUCTURES[data.structureType];
         if (data.structureType === StructureType.Realm || data.structureType === StructureType.Village) {
           iconPath = data.isMine
@@ -1074,7 +1079,7 @@
         });
         contentContainer.appendChild(ownerText);
 
-        if (data.guardArmies && data.guardArmies.length > 0) {
+        if (Array.isArray(data.guardArmies)) {
           const guardArmiesDisplay = createGuardArmyDisplay(data.guardArmies, cameraView);
           contentContainer.appendChild(guardArmiesDisplay);
         }
@@ -1150,6 +1155,7 @@
           labelDiv.classList.add("flex", "flex-col");
           const contentRow = document.createElement("div");
           contentRow.classList.add("flex", "items-center");
+          contentRow.setAttribute("data-component", "structure-content-row");
           contentRow.appendChild(iconContainer);
           contentRow.appendChild(contentContainer.wrapper);
           labelDiv.appendChild(contentRow);
@@ -1310,6 +1316,27 @@
               },
             },
             {
+              title: "Realm (unguarded)",
+              note: "Demonstrates the compact layout when a realm has no stationed guards.",
+              data: {
+                entityId: 206,
+                hexCoords: makePosition(18, 16),
+                structureType: StructureType.Realm,
+                stage: 2,
+                initialized: true,
+                level: 3,
+                isMine: true,
+                hasWonder: false,
+                owner: {
+                  address: 777n,
+                  ownerName: "Lowlands",
+                  guildName: "Green Banner",
+                },
+                guardArmies: [],
+                activeProductions: [{ buildingCount: 2, buildingType: BuildingType.ResourceStone }],
+              },
+            },
+            {
               title: "Enemy realm",
               note: "Condensed view trims guard details for scouting at range.",
               data: {
@@ -1351,6 +1378,99 @@
                   guildName: "Coalition",
                 },
                 hyperstructureRealmCount: 42,
+                guardArmies: [],
+                activeProductions: [],
+              },
+            },
+            {
+              title: "Bandit camp (Blitz)",
+              note: "Capturable camps use the Blitz palette and neutral ownership cues.",
+              data: {
+                entityId: 204,
+                hexCoords: makePosition(22, 28),
+                structureType: StructureType.Village,
+                stage: 1,
+                initialized: true,
+                level: 1,
+                isMine: false,
+                hasWonder: false,
+                previewIsBlitz: true,
+                owner: {
+                  address: 0n,
+                  ownerName: "Bandit Encampment",
+                  guildName: "",
+                },
+                guardArmies: [
+                  { slot: 1, category: "Crossbowman", tier: 1, count: 210, stamina: 58 },
+                  { slot: 2, category: "Knight", tier: 1, count: 120, stamina: 46 },
+                ],
+                attackedFromDegrees: 60,
+                battleTimerLeft: 420,
+              },
+            },
+            {
+              title: "Camp (cleared)",
+              note: "Once liberated, camps drop their guard roster but retain Blitz styling.",
+              data: {
+                entityId: 207,
+                hexCoords: makePosition(24, 32),
+                structureType: StructureType.Village,
+                stage: 1,
+                initialized: true,
+                level: 1,
+                isMine: true,
+                hasWonder: false,
+                previewIsBlitz: true,
+                owner: {
+                  address: 512n,
+                  ownerName: "Stormpost",
+                  guildName: "Veil Wardens",
+                },
+                guardArmies: [],
+                activeProductions: [],
+              },
+            },
+            {
+              title: "Essence rift (captured)",
+              note: "Blitz rifts highlight essence output with the dedicated icon.",
+              data: {
+                entityId: 205,
+                hexCoords: makePosition(48, 36),
+                structureType: StructureType.FragmentMine,
+                stage: 1,
+                initialized: true,
+                level: 1,
+                isMine: true,
+                hasWonder: false,
+                previewIsBlitz: true,
+                owner: {
+                  address: 888n,
+                  ownerName: "Azure Sigil",
+                  guildName: "Veil Wardens",
+                },
+                guardArmies: [{ slot: 1, category: "Paladin", tier: 2, count: 64, stamina: 92 }],
+                activeProductions: [{ buildingCount: 2, buildingType: BuildingType.ResourceEssence }],
+                attackedTowardDegrees: 210,
+              },
+            },
+            {
+              title: "Essence rift (unguarded)",
+              note: "Shows the condensed production strip when no defenders are posted.",
+              data: {
+                entityId: 208,
+                hexCoords: makePosition(50, 34),
+                structureType: StructureType.FragmentMine,
+                stage: 1,
+                initialized: true,
+                level: 1,
+                isMine: false,
+                hasWonder: false,
+                previewIsBlitz: true,
+                owner: {
+                  address: 0n,
+                  ownerName: "Vacant Rift",
+                  guildName: "",
+                },
                 guardArmies: [],
                 activeProductions: [],
               },
