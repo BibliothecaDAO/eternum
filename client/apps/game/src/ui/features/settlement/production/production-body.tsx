@@ -21,7 +21,6 @@ export const ProductionBody = ({
   selectedResource: ResourcesIds | null;
   onSelectResource: (resource: ResourcesIds | null) => void;
 }) => {
-
   const {
     setup: {
       components: { ProductionBoostBonus },
