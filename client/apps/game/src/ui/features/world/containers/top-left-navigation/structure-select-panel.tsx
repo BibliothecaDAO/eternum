@@ -10,10 +10,17 @@ import {
   StructureType,
 } from "@bibliothecadao/types";
 import type { ComponentValue } from "@dojoengine/recs";
-import { Crown, EyeIcon, Landmark, Pencil, Pickaxe, Search, ShieldQuestion, Sparkles, Star, X } from "lucide-react";
+import { Crown, EyeIcon, Landmark, Palette, Pencil, Pickaxe, Search, ShieldQuestion, Sparkles, Star, X } from "lucide-react";
 
 import { useUISound } from "@/audio/hooks/useUISound";
 import type { getEntityInfo } from "@bibliothecadao/eternum";
+import {
+  STRUCTURE_GROUP_COLORS,
+  STRUCTURE_GROUP_CONFIG,
+  StructureGroupColor,
+  StructureGroupsMap,
+  getNextStructureGroupColor,
+} from "./structure-groups";
 
 export type SelectedStructure = ReturnType<typeof getEntityInfo> & { isFavorite: boolean };
 
@@ -22,9 +29,11 @@ interface StructureSelectPanelProps {
   selectedStructure: SelectedStructure;
   structures: Structure[];
   favorites: number[];
+  structureGroups: StructureGroupsMap;
   onToggleFavorite: (entityId: number) => void;
   onSelectStructure: (entityId: ID) => void;
   onRequestNameChange: (structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => void;
+  onUpdateStructureGroup: (entityId: number, color: StructureGroupColor | null) => void;
 }
 
 const structureIcons: Record<string, JSX.Element> = {
@@ -43,6 +52,7 @@ const SORT_OPTIONS = [
 
 type SortOptionValue = (typeof SORT_OPTIONS)[number]["value"];
 type CategoryFilterValue = "all" | `${StructureType}`;
+type GroupFilterValue = "all" | "none" | StructureGroupColor;
 
 const normalizeSearchValue = (value: string) =>
   value
@@ -73,14 +83,17 @@ export const StructureSelectPanel = memo(
     selectedStructure,
     structures,
     favorites,
+    structureGroups,
     onToggleFavorite,
     onSelectStructure,
     onRequestNameChange,
+    onUpdateStructureGroup,
   }: StructureSelectPanelProps) => {
     const [selectOpen, setSelectOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [sortOption, setSortOption] = useState<SortOptionValue>("name");
     const [categoryFilter, setCategoryFilter] = useState<CategoryFilterValue>("all");
+    const [groupFilter, setGroupFilter] = useState<GroupFilterValue>("all");
     const searchInputRef = useRef<HTMLInputElement>(null);
 
     const playHover = useUISound("ui.hover");
@@ -91,6 +104,9 @@ export const StructureSelectPanel = memo(
       () => (isBlitz ? BlitzStructureTypeToNameMapping : EternumStructureTypeToNameMapping),
       [isBlitz],
     );
+
+    const selectedGroupColor = structureGroups[Number(structureEntityId)] ?? null;
+    const selectedGroupConfig = selectedGroupColor ? STRUCTURE_GROUP_CONFIG[selectedGroupColor] : null;
 
     const structuresWithMetadata = useMemo(() => {
       return structures.map((structure) => {
@@ -105,9 +121,10 @@ export const StructureSelectPanel = memo(
           originalName,
           realmLevel,
           categoryName: structureTypeNameMapping[structure.category] ?? "Unknown",
+          groupColor: structureGroups[structure.entityId] ?? null,
         };
       });
-    }, [favorites, structures, isBlitz, structureTypeNameMapping]);
+    }, [favorites, structures, isBlitz, structureTypeNameMapping, structureGroups]);
 
     const categoryOptions = useMemo(() => {
       const uniqueCategories = new Set<StructureType>();
@@ -133,6 +150,24 @@ export const StructureSelectPanel = memo(
       ];
     }, [structureTypeNameMapping, structures]);
 
+    const groupOptions = useMemo(
+      () =>
+        [
+          { value: "all" as GroupFilterValue, label: "All groups", type: "meta" as const },
+          { value: "none" as GroupFilterValue, label: "No color", type: "meta" as const },
+          ...STRUCTURE_GROUP_COLORS.map((option) => ({
+            value: option.value as GroupFilterValue,
+            label: option.label,
+            type: "color" as const,
+            color: option.value,
+          })),
+        ] satisfies Array<
+          | { value: GroupFilterValue; label: string; type: "meta" }
+          | { value: GroupFilterValue; label: string; type: "color"; color: StructureGroupColor }
+        >,
+      [],
+    );
+
     const filteredStructures = useMemo(() => {
       const normalizedSearch = searchTerm ? normalizeSearchValue(searchTerm) : "";
 
@@ -141,13 +176,23 @@ export const StructureSelectPanel = memo(
           return false;
         }
 
+        if (groupFilter !== "all") {
+          if (groupFilter === "none" && structure.groupColor !== null) {
+            return false;
+          }
+
+          if (groupFilter !== "none" && structure.groupColor !== groupFilter) {
+            return false;
+          }
+        }
+
         if (!normalizedSearch) {
           return true;
         }
 
         return normalizeSearchValue(structure.name).includes(normalizedSearch);
       });
-    }, [structuresWithMetadata, categoryFilter, searchTerm]);
+    }, [structuresWithMetadata, categoryFilter, groupFilter, searchTerm]);
 
     const sortedStructures = useMemo(() => {
       return [...filteredStructures].sort((a, b) => {
@@ -181,6 +226,20 @@ export const StructureSelectPanel = memo(
       }
     }, [categoryFilter, structuresWithMetadata]);
 
+    useEffect(() => {
+      if (groupFilter === "all" || groupFilter === "none") {
+        return;
+      }
+
+      const groupStillExists = structuresWithMetadata.some(
+        (structure) => structure.groupColor === groupFilter,
+      );
+
+      if (!groupStillExists) {
+        setGroupFilter("all");
+      }
+    }, [groupFilter, structuresWithMetadata]);
+
     const handleSelectStructure = useCallback(
       (entityId: ID) => {
         playClick();
@@ -211,8 +270,11 @@ export const StructureSelectPanel = memo(
             <h5 className="flex items-center gap-4 truncate">
               <>
                 {getStructureIcon(selectedStructure)}
-                <span>
-                  {selectedStructure.structure ? getStructureName(selectedStructure.structure, getIsBlitz()).name : ""}
+                {selectedGroupConfig && (
+                  <span className={`h-2 w-2 rounded-full ${selectedGroupConfig.dotClass}`} />
+                )}
+                <span className={selectedGroupConfig ? selectedGroupConfig.textClass : ""}>
+                  {selectedStructure.structure ? getStructureName(selectedStructure.structure, isBlitz).name : ""}
                 </span>
                 <span className="text-sm text-gold/70">
                   Lvl {Number(selectedStructure.structure?.base?.level ?? 0)}
@@ -286,7 +348,7 @@ export const StructureSelectPanel = memo(
                 )}
               </div>
               <div
-                className="flex flex-col gap-2 sm:flex-row"
+                className="flex flex-col gap-2 sm:flex-row sm:flex-wrap"
                 onPointerDown={(event) => event.stopPropagation()}
                 onClick={(event) => event.stopPropagation()}
                 onKeyDown={(event) => event.stopPropagation()}
@@ -316,11 +378,36 @@ export const StructureSelectPanel = memo(
                     ))}
                   </SelectContent>
                 </Select>
+                <Select value={groupFilter} onValueChange={(value) => setGroupFilter(value as GroupFilterValue)}>
+                  <SelectTrigger className="h-8 bg-brown/20 border border-gold/30 rounded text-xs text-gold px-3 py-1">
+                    <SelectValue placeholder="Group" />
+                  </SelectTrigger>
+                  <SelectContent className="panel-wood bg-dark-wood max-h-60 overflow-y-auto">
+                    {groupOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value} className="text-xs">
+                        {option.type === "color" ? (
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`h-3 w-3 rounded-full ${
+                                STRUCTURE_GROUP_CONFIG[option.color].dotClass
+                              }`}
+                            />
+                            <span className="sr-only">{option.label}</span>
+                          </div>
+                        ) : (
+                          option.label
+                        )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             {sortedStructures.length === 0 ? (
               <div className="p-4 text-center text-gold/60 text-sm">
-                {searchTerm || categoryFilter !== "all" ? "No structures found" : "No structures available"}
+                {searchTerm || categoryFilter !== "all" || groupFilter !== "all"
+                  ? "No structures found"
+                  : "No structures available"}
               </div>
             ) : (
               sortedStructures.map((structure) => (
@@ -343,6 +430,28 @@ export const StructureSelectPanel = memo(
                     onClick={(event) => {
                       event.stopPropagation();
                       playClick();
+                      const nextColor = getNextStructureGroupColor(structure.groupColor ?? null);
+                      onUpdateStructureGroup(structure.entityId, nextColor);
+                    }}
+                    onMouseEnter={() => playHover()}
+                    title={
+                      structure.groupColor
+                        ? `Group: ${STRUCTURE_GROUP_CONFIG[structure.groupColor].label}`
+                        : "Assign group color"
+                    }
+                  >
+                    <Palette
+                      className={`h-4 w-4 ${
+                        structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor].textClass : ""
+                      }`}
+                    />
+                  </button>
+                  <button
+                    className="p-1"
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      playClick();
                       setSelectOpen(false);
                       onRequestNameChange(structure.structure);
                     }}
@@ -352,7 +461,20 @@ export const StructureSelectPanel = memo(
                   </button>
                   <SelectItem className="flex justify-between" value={structure.entityId?.toString() || ""}>
                     <div className="self-center flex items-baseline gap-2 text-xl">
-                      <span>{structure.name}</span>
+                      <span className="flex items-center gap-2">
+                        {structure.groupColor && (
+                          <span
+                            className={`h-2 w-2 rounded-full ${
+                              STRUCTURE_GROUP_CONFIG[structure.groupColor].dotClass
+                            }`}
+                          />
+                        )}
+                        <span
+                          className={structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor].textClass : ""}
+                        >
+                          {structure.name}
+                        </span>
+                      </span>
                       <span className="text-sm text-gold/70">Lvl {structure.realmLevel}</span>
                     </div>
                   </SelectItem>
