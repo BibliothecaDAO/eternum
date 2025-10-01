@@ -407,11 +407,12 @@ export default class WorldmapScene extends HexagonScene {
     // Listen for dead army updates
     this.worldUpdateListener.Army.onDeadArmy((entityId) => {
       console.debug(`[WorldMap] onDeadArmy received for entity ${entityId}`);
+
+      // Remove the army visuals/hex before dropping tracking data so we can clean up the correct tile
+      this.deleteArmy(entityId);
+
       // Remove from attacker-defender tracking
       this.removeEntityFromTracking(entityId);
-
-      // If the army is marked as deleted, remove it from the map
-      this.deleteArmy(entityId);
       this.updateVisibleChunks().catch((error) => console.error("Failed to update visible chunks:", error));
     });
 
@@ -1642,16 +1643,27 @@ export default class WorldmapScene extends HexagonScene {
     // Shortcuts will be cleaned up when the scene is actually destroyed
   }
 
-  public deleteArmy(entityId: ID) {
+  public deleteArmy(entityId: ID, options: { playDefeatFx?: boolean } = {}) {
+    const { playDefeatFx = true } = options;
     this.cancelPendingArmyRemoval(entityId);
     console.debug(`[WorldMap] deleteArmy invoked for entity ${entityId}`);
-    this.armyManager.removeArmy(entityId);
+    this.armyManager.removeArmy(entityId, { playDefeatFx });
     const oldPos = this.armiesPositions.get(entityId);
     if (oldPos) {
       this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
-      this.armiesPositions.delete(entityId);
+    } else {
+      // Fallback: scan hex cache in case tracking was cleared before cleanup
+      for (const rowMap of this.armyHexes.values()) {
+        const entry = Array.from(rowMap.entries()).find(([, data]) => data.id === entityId);
+        if (entry) {
+          rowMap.delete(entry[0]);
+          break;
+        }
+      }
     }
+    this.armiesPositions.delete(entityId);
     this.armyStructureOwners.delete(entityId);
+    this.pendingArmyMovements.delete(entityId);
   }
 
   private scheduleArmyRemoval(entityId: ID, reason: "tile" | "zero" = "tile") {
@@ -1698,7 +1710,8 @@ export default class WorldmapScene extends HexagonScene {
 
         this.pendingArmyRemovals.delete(entityId);
         console.debug(`[WorldMap] Finalizing pending removal for entity ${entityId} (reason: ${reason})`);
-        this.deleteArmy(entityId);
+        const playDefeatFx = reason !== "tile";
+        this.deleteArmy(entityId, { playDefeatFx });
       }, delay);
 
       this.pendingArmyRemovals.set(entityId, timeout);

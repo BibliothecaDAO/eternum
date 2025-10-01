@@ -77,6 +77,9 @@ export class ArmyManager {
   private currentChunkKey: string | null = "190,170";
   private renderChunkSize: RenderChunkSize;
   private visibleArmies: ArmyData[] = [];
+  private renderQueuePromise: Promise<void> | null = null;
+  private renderQueueActive = false;
+  private pendingRenderChunkKey: string | null = null;
   private armyPaths: Map<ID, Position[]> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
   private labelPool = new LabelPool();
@@ -359,17 +362,52 @@ export class ArmyManager {
     }
   }
 
-  private async renderVisibleArmies(chunkKey: string) {
-    const [startRow, startCol] = chunkKey.split(",").map(Number);
-    this.visibleArmies = this.getVisibleArmiesForChunk(startRow, startCol);
+  private renderVisibleArmies(chunkKey: string): Promise<void> {
+    if (!chunkKey) {
+      return Promise.resolve();
+    }
 
-    // Reset all model instances
-    this.armyModel.resetInstanceCounts();
+    this.pendingRenderChunkKey = chunkKey;
+    return this.processRenderQueue();
+  }
 
+  private processRenderQueue(): Promise<void> {
+    if (this.renderQueueActive) {
+      return this.renderQueuePromise ?? Promise.resolve();
+    }
+
+    this.renderQueueActive = true;
+    this.renderQueuePromise = (async () => {
+      try {
+        while (this.pendingRenderChunkKey) {
+          const chunkKey = this.pendingRenderChunkKey;
+          this.pendingRenderChunkKey = null;
+          if (chunkKey) {
+            await this.executeRenderForChunk(chunkKey);
+          }
+        }
+      } finally {
+        this.renderQueueActive = false;
+        this.renderQueuePromise = null;
+      }
+
+      // If new work was queued while we were resetting state, process it now
+      if (this.pendingRenderChunkKey) {
+        return this.processRenderQueue();
+      }
+    })();
+
+    return this.renderQueuePromise;
+  }
+
+  private collectModelInfo(armies: ArmyData[]): {
+    modelTypesByEntity: Map<ID, ModelType>;
+    requiredModelTypes: Set<ModelType>;
+  } {
     const modelTypesByEntity = new Map<ID, ModelType>();
     const requiredModelTypes = new Set<ModelType>();
 
-    this.visibleArmies.forEach((army) => {
+    armies.forEach((army) => {
       const { x, y } = army.hexCoords.getContract();
       const biome = Biome.getBiome(x, y);
       const modelType = this.armyModel.getModelTypeForEntity(army.entityId, army.category, army.tier, biome);
@@ -377,13 +415,42 @@ export class ArmyManager {
       requiredModelTypes.add(modelType);
     });
 
-    await this.armyModel.preloadModels(requiredModelTypes);
+    return { modelTypesByEntity, requiredModelTypes };
+  }
 
+  private async executeRenderForChunk(chunkKey: string): Promise<void> {
+    const [startRow, startCol] = chunkKey.split(",").map(Number);
+    const computeVisibleArmies = () => this.getVisibleArmiesForChunk(startRow, startCol);
+
+    let visibleArmies = computeVisibleArmies();
+    let { modelTypesByEntity, requiredModelTypes } = this.collectModelInfo(visibleArmies);
+
+    if (requiredModelTypes.size > 0) {
+      await this.armyModel.preloadModels(requiredModelTypes);
+    }
+
+    // Recompute after any async work to capture the latest data
+    visibleArmies = computeVisibleArmies();
+    ({ modelTypesByEntity, requiredModelTypes } = this.collectModelInfo(visibleArmies));
+
+    if (requiredModelTypes.size > 0) {
+      await this.armyModel.preloadModels(requiredModelTypes);
+    }
+
+    // Reset all model instances before applying the latest snapshot
+    this.armyModel.resetInstanceCounts();
+
+    const updatedVisibleArmies: ArmyData[] = [];
     let currentCount = 0;
-    this.visibleArmies.forEach((army) => {
+
+    visibleArmies.forEach((army) => {
       const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
       const { x, y } = army.hexCoords.getContract();
-      const modelType = modelTypesByEntity.get(army.entityId)!;
+      const modelType = modelTypesByEntity.get(army.entityId);
+
+      if (!modelType) {
+        return;
+      }
 
       this.armyModel.assignModelToEntity(army.entityId, modelType);
 
@@ -394,7 +461,7 @@ export class ArmyManager {
       const rotationSeed = hashCoordinates(x, y);
       const rotationIndex = Math.floor(rotationSeed * 6);
       const randomRotation = (rotationIndex * Math.PI) / 3;
-      // Update the specific model instance for this entity
+
       this.armyModel.updateInstance(
         army.entityId,
         currentCount,
@@ -404,25 +471,28 @@ export class ArmyManager {
         new Color(army.color),
       );
 
-      this.armies.set(army.entityId, { ...army, matrixIndex: currentCount });
+      const updatedArmy = { ...army, matrixIndex: currentCount };
+      updatedVisibleArmies.push(updatedArmy);
+      this.armies.set(army.entityId, updatedArmy);
 
-      // Increment count and update all meshes
-      currentCount++;
-      this.armyModel.setVisibleCount(currentCount);
-
-      // Update the position for any active label (labels are created lazily on hover)
       const activeLabel = this.entityIdLabels.get(army.entityId);
       if (activeLabel) {
         activeLabel.position.copy(position);
         activeLabel.position.y += 1.5;
       }
+
+      currentCount++;
     });
-    // Remove labels for armies that are no longer visible
+
+    this.armyModel.setVisibleCount(currentCount);
+
     this.entityIdLabels.forEach((label, entityId) => {
-      if (!this.visibleArmies.find((army) => army.entityId === entityId)) {
+      if (!updatedVisibleArmies.some((army) => army.entityId === entityId)) {
         this.removeEntityIdLabel(entityId);
       }
     });
+
+    this.visibleArmies = updatedVisibleArmies;
 
     // Update all model instances
     this.armyModel.updateAllInstances();
@@ -737,7 +807,9 @@ export class ArmyManager {
     }
   }
 
-  public removeArmy(entityId: ID) {
+  public removeArmy(entityId: ID, options: { playDefeatFx?: boolean } = {}) {
+    const { playDefeatFx = true } = options;
+
     if (!this.armies.has(entityId)) return;
 
     // Monitor memory usage before removing army
@@ -787,6 +859,10 @@ export class ArmyManager {
         });
     } else {
       console.warn(`[ArmyManager] Removal invoked with no active chunk for entity ${entityId}`);
+    }
+
+    if (!playDefeatFx) {
+      return;
     }
 
     console.debug(`[ArmyManager] Playing defeat FX for entity ${entityId}`);
