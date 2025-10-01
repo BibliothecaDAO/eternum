@@ -1,12 +1,11 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { Headline } from "@/ui/design-system/molecules/headline";
-import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { battleSimulation } from "@/ui/features";
-import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { CombatSimulation } from "@/ui/modules/simulation/combat-simulation";
 import { divideByPrecisionFormatted } from "@/ui/utils/utils";
+import { getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
 import { ArmyInfo, ClientComponents, ID, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import { HasValue, runQuery } from "@dojoengine/recs";
@@ -119,20 +118,20 @@ export const EntitiesArmyTable = () => {
 const StructureWithArmy = ({ entity, showHint }: { entity: any; showHint: boolean }) => {
   const explorers = useExplorersByStructure({ structureEntityId: entity.entityId });
 
-  // Always show structure if it has armies
-  const shouldShow = explorers.length > 0;
-
-  if (!shouldShow) {
+  if (explorers.length === 0) {
     return null;
   }
+
+  const structureComponent = entity.structure;
+  const isBlitz = getIsBlitz();
+  const structureName = structureComponent ? getStructureName(structureComponent, isBlitz).name : undefined;
+  const displayName = structureName || entity.name || `Structure ${entity.entityId}`;
 
   return (
     <div className="p-2 rounded-lg">
       <Headline>
-        <div className="flex gap-2 items-center">
-          <div className="self-center">{entity.name}</div>
-
-          {showHint && <HintModalButton section={HintSection.Buildings} />}
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <span className="text-sm font-semibold text-gold">{displayName}</span>
         </div>
       </Headline>
 
