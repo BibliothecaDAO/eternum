@@ -109,7 +109,7 @@ export default class HUDScene {
 
   update(deltaTime: number) {
     this.navigator.update();
-    this.rainEffect.update(deltaTime);
+    this.rainEffect.update(deltaTime, this.camera.position);
   }
 
   onWindowResize(width: number, height: number) {
