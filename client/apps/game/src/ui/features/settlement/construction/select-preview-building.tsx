@@ -432,19 +432,19 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                         })
                         .map((buildingType, index) => {
                           const building = BuildingType[buildingType as keyof typeof BuildingType];
-                          const buildingCost = getBuildingCosts(
-                            entityId,
-                            dojo.setup.components,
-                            building,
-                            useSimpleCost,
-                          );
+                          const buildingCost =
+                            getBuildingCosts(entityId, dojo.setup.components, building, useSimpleCost) ?? [];
                           const info = getMilitaryBuildingInfo(building);
 
                           const hasBalance = checkBalance(buildingCost);
                           const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
-                          const canBuild = hasBalance && realm?.hasCapacity && hasEnoughPopulation;
-
-                          if (!buildingCost || buildingCost?.length === 0) return null;
+                          const isTierLockedInSimpleMode = useSimpleCost && (info?.tier ?? 0) > 1;
+                          const canBuild =
+                            !isTierLockedInSimpleMode && hasBalance && realm?.hasCapacity && hasEnoughPopulation;
+                          const disabledReason =
+                            isTierLockedInSimpleMode && info?.tier
+                              ? `Switch to Standard mode to build Tier ${info.tier} military buildings.`
+                              : undefined;
 
                           return (
                             <BuildingCard
@@ -464,7 +464,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                                 }
                               }}
                               active={previewBuilding?.type === building}
-                              buildingName={`${BuildingTypeToString[building]} (T${info?.tier})`}
+                              buildingName={`${BuildingTypeToString[building]}`}
                               resourceName={
                                 ResourcesIds[
                                   configManager.getResourceBuildingProduced(building)
@@ -475,6 +475,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                               }
                               hasFunds={hasBalance}
                               hasPopulation={hasEnoughPopulation}
+                              disabled={isTierLockedInSimpleMode}
+                              disabledReason={disabledReason}
                             />
                           );
                         })}
@@ -551,10 +553,12 @@ const BuildingCard = ({
   buildingName,
   resourceName,
   toolTip,
-  hasFunds,
-  hasPopulation,
+  hasFunds = true,
+  hasPopulation = true,
   resourceId,
   className,
+  disabled = false,
+  disabledReason,
 }: {
   buildingId: BuildingType;
   onClick: () => void;
@@ -566,15 +570,27 @@ const BuildingCard = ({
   hasPopulation?: boolean;
   resourceId?: ResourcesIds;
   className?: string;
+  disabled?: boolean;
+  disabledReason?: string;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
+  const isDisabled = disabled;
+  const lacksRequirements = !hasFunds || !hasPopulation;
+  const showDisabledMessage = isDisabled && disabledReason;
+
+  const handleClick = () => {
+    if (isDisabled) return;
+    onClick();
+  };
+
   return (
     <div
-      onClick={onClick}
+      onClick={handleClick}
       className={clsx(
-        " overflow-hidden  text-ellipsis cursor-pointer relative h-36 min-w-20 hover:bg-gold/20 rounded",
+        "overflow-hidden text-ellipsis cursor-pointer relative h-36 min-w-20 hover:bg-gold/20 rounded",
         {
           "!border-lightest": active,
+          "cursor-not-allowed hover:bg-gold/10": isDisabled,
         },
         className,
       )}
@@ -588,12 +604,16 @@ const BuildingCard = ({
         alt={buildingName}
         className="absolute inset-0 w-full h-full object-contain"
       />
-      {(!hasFunds || !hasPopulation) && (
-        <div className="absolute w-full h-full bg-brown/50 p-4 text-xs flex justify-center">
-          <div className="self-center flex items-center space-x-2">
-            {!hasFunds && <ResourceIcon tooltipText="Need More Resources" resource="Silo" size="lg" />}
-            {!hasPopulation && <ResourceIcon tooltipText="Need More Housing" resource="House" size="lg" />}
-          </div>
+      {(lacksRequirements || showDisabledMessage) && (
+        <div className="absolute inset-0 bg-brown/60 p-4 text-xs flex justify-center text-center">
+          {showDisabledMessage ? (
+            <div className="self-center text-gold/90 leading-tight">{disabledReason}</div>
+          ) : (
+            <div className="self-center flex items-center space-x-2">
+              {!hasFunds && <ResourceIcon tooltipText="Need More Resources" resource="Silo" size="lg" />}
+              {!hasPopulation && <ResourceIcon tooltipText="Need More Housing" resource="House" size="lg" />}
+            </div>
+          )}
         </div>
       )}
       <div className="absolute bottom-0 left-0 right-0 p-2">
