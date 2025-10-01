@@ -1768,7 +1768,7 @@ export default class WorldmapScene extends HexagonScene {
 
     let actualOwnerAddress = ownerAddress;
     if (ownerAddress === 0n) {
-      console.warn(`[DEBUG] Army ${entityId} has zero owner address (0n) - this may cause selection issues!`);
+      console.warn(`[DEBUG] Army ${entityId} has zero owner address (0n) - army defeated/deleted`);
 
       // Check if we already have this army with a valid owner
       const existingArmy = this.armiesPositions.has(entityId);
@@ -1784,9 +1784,16 @@ export default class WorldmapScene extends HexagonScene {
           if (actualOwnerAddress !== 0n) break;
         }
 
-        // If we still have 0n owner and this is an existing army, skip the update to preserve existing data
+        // If we still have 0n owner, the army was defeated/deleted - clean up the cache
         if (actualOwnerAddress === 0n) {
-          console.warn(`[DEBUG] Skipping army ${entityId} update with 0n owner to preserve existing valid data`);
+          console.warn(`[DEBUG] Removing army ${entityId} from cache (0n owner indicates defeat/deletion)`);
+          const oldPos = this.armiesPositions.get(entityId);
+          if (oldPos) {
+            this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
+            this.invalidateAllChunkCachesContainingHex(oldPos.col, oldPos.row);
+          }
+          this.armiesPositions.delete(entityId);
+          this.armyStructureOwners.delete(entityId);
           return;
         }
       }
