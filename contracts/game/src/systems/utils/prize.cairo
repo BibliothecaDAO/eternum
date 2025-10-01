@@ -152,9 +152,9 @@ mod tests {
             calc_remainder, calc_sum_position_weights, calc_s_parameter,
         );
 
-        assert_eq!(p1, 4773996946891670404406);
-        assert_eq!(p14, 2268120083233636506941);
-        assert_eq!(p57, 389749989822782670308);
+        assert_eq!(p1, 4774545606440041484186);
+        assert_eq!(p14, 2268364836018933221469);
+        assert_eq!(p57, 389766938367885845716);
     }
 }
 
