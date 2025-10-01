@@ -1753,29 +1753,31 @@ export default class WorldmapScene extends HexagonScene {
       this.armyStructureOwners.delete(entityId);
     }
 
-    // Handle the case where we receive an update with 0n owner for an existing army
+    let actualOwnerAddress = ownerAddress;
     if (ownerAddress === 0n) {
-      console.warn(`Army ${entityId} has zero owner address (0n)`);
+      console.warn(`[DEBUG] Army ${entityId} has zero owner address (0n) - this may cause selection issues!`);
 
-      // Clear from old position if it exists
-      const existingArmy = this.armyManager.getArmyByEntityId(entityId);
+      // Check if we already have this army with a valid owner
+      const existingArmy = this.armiesPositions.has(entityId);
       if (existingArmy) {
-        const oldKey = `${existingArmy.hexCoords.col},${existingArmy.hexCoords.row}`;
-        const oldArmies = this.armyHexes.get(oldKey);
-        if (oldArmies) {
-          const filtered = oldArmies.filter((id) => id !== entityId);
-          if (filtered.length > 0) {
-            this.armyHexes.set(oldKey, filtered);
-          } else {
-            this.armyHexes.delete(oldKey);
+        // Try to find existing army data in armyHexes to preserve owner
+        for (const [col, rowMap] of this.armyHexes) {
+          for (const [row, armyData] of rowMap) {
+            if (armyData.id === entityId && armyData.owner !== 0n) {
+              actualOwnerAddress = armyData.owner;
+              break;
+            }
           }
+          if (actualOwnerAddress !== 0n) break;
+        }
+
+        // If we still have 0n owner and this is an existing army, skip the update to preserve existing data
+        if (actualOwnerAddress === 0n) {
+          console.warn(`[DEBUG] Skipping army ${entityId} update with 0n owner to preserve existing valid data`);
+          return;
         }
       }
-
-      return; // Still don't add with 0n owner
     }
-
-    const actualOwnerAddress = ownerAddress;
 
     const normalized = new Position({ x: col, y: row }).getNormalized();
     const newPos = { col: normalized.x, row: normalized.y };
