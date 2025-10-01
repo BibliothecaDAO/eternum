@@ -406,11 +406,12 @@ export default class WorldmapScene extends HexagonScene {
     // Listen for dead army updates
     this.worldUpdateListener.Army.onDeadArmy((entityId) => {
       console.debug(`[WorldMap] onDeadArmy received for entity ${entityId}`);
+
+      // Remove the army visuals/hex before dropping tracking data so we can clean up the correct tile
+      this.deleteArmy(entityId);
+
       // Remove from attacker-defender tracking
       this.removeEntityFromTracking(entityId);
-
-      // If the army is marked as deleted, remove it from the map
-      this.deleteArmy(entityId);
       this.updateVisibleChunks().catch((error) => console.error("Failed to update visible chunks:", error));
     });
 
@@ -1492,16 +1493,27 @@ export default class WorldmapScene extends HexagonScene {
     // Shortcuts will be cleaned up when the scene is actually destroyed
   }
 
-  public deleteArmy(entityId: ID) {
+  public deleteArmy(entityId: ID, options: { playDefeatFx?: boolean } = {}) {
+    const { playDefeatFx = true } = options;
     this.cancelPendingArmyRemoval(entityId);
     console.debug(`[WorldMap] deleteArmy invoked for entity ${entityId}`);
-    this.armyManager.removeArmy(entityId);
+    this.armyManager.removeArmy(entityId, { playDefeatFx });
     const oldPos = this.armiesPositions.get(entityId);
     if (oldPos) {
       this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
-      this.armiesPositions.delete(entityId);
+    } else {
+      // Fallback: scan hex cache in case tracking was cleared before cleanup
+      for (const rowMap of this.armyHexes.values()) {
+        const entry = Array.from(rowMap.entries()).find(([, data]) => data.id === entityId);
+        if (entry) {
+          rowMap.delete(entry[0]);
+          break;
+        }
+      }
     }
+    this.armiesPositions.delete(entityId);
     this.armyStructureOwners.delete(entityId);
+    this.pendingArmyMovements.delete(entityId);
   }
 
   private scheduleArmyRemoval(entityId: ID, reason: "tile" | "zero" = "tile") {
@@ -1511,10 +1523,17 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     const hasPendingMovement = reason === "tile" && this.pendingArmyMovements.has(entityId);
-    const baseDelay = reason === "tile" ? 600 : 0;
-    const initialDelay = hasPendingMovement ? 2500 : baseDelay;
+    // Increased delays to allow tile updates to propagate properly
+    // - tile removals now wait longer (1500ms instead of 600ms) to ensure movement updates arrive
+    // - zero troop removals are immediate (0ms) since they're confirmed deaths
+    const baseDelay = reason === "tile" ? 1500 : 0;
+    const initialDelay = hasPendingMovement ? 3000 : baseDelay;
     const retryDelay = 500;
-    const maxPendingWaitMs = 8000;
+    const maxPendingWaitMs = 10000; // Increased from 8000ms to 10000ms
+
+    console.debug(
+      `[WorldMap] Scheduling army removal for entity ${entityId} (reason: ${reason}, delay: ${initialDelay}ms, hasPendingMovement: ${hasPendingMovement})`,
+    );
 
     const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
     const start = now();
@@ -1524,6 +1543,9 @@ export default class WorldmapScene extends HexagonScene {
         if (reason === "tile" && this.pendingArmyMovements.has(entityId)) {
           const elapsed = now() - start;
           if (elapsed < maxPendingWaitMs) {
+            console.debug(
+              `[WorldMap] Army ${entityId} still has pending movement, retrying removal in ${retryDelay}ms (elapsed: ${elapsed.toFixed(0)}ms)`,
+            );
             schedule(retryDelay);
             return;
           }
@@ -1538,7 +1560,8 @@ export default class WorldmapScene extends HexagonScene {
 
         this.pendingArmyRemovals.delete(entityId);
         console.debug(`[WorldMap] Finalizing pending removal for entity ${entityId} (reason: ${reason})`);
-        this.deleteArmy(entityId);
+        const playDefeatFx = reason !== "tile";
+        this.deleteArmy(entityId, { playDefeatFx });
       }, delay);
 
       this.pendingArmyRemovals.set(entityId, timeout);
@@ -1593,10 +1616,9 @@ export default class WorldmapScene extends HexagonScene {
       this.armyStructureOwners.delete(entityId);
     }
 
-    // Handle the case where we receive an update with 0n owner for an existing army
     let actualOwnerAddress = ownerAddress;
     if (ownerAddress === 0n) {
-      console.warn(`[DEBUG] Army ${entityId} has zero owner address (0n) - this may cause selection issues!`);
+      console.warn(`[DEBUG] Army ${entityId} has zero owner address (0n) - army defeated/deleted`);
 
       // Check if we already have this army with a valid owner
       const existingArmy = this.armiesPositions.has(entityId);
@@ -1612,9 +1634,16 @@ export default class WorldmapScene extends HexagonScene {
           if (actualOwnerAddress !== 0n) break;
         }
 
-        // If we still have 0n owner and this is an existing army, skip the update to preserve existing data
+        // If we still have 0n owner, the army was defeated/deleted - clean up the cache
         if (actualOwnerAddress === 0n) {
-          console.warn(`[DEBUG] Skipping army ${entityId} update with 0n owner to preserve existing valid data`);
+          console.warn(`[DEBUG] Removing army ${entityId} from cache (0n owner indicates defeat/deletion)`);
+          const oldPos = this.armiesPositions.get(entityId);
+          if (oldPos) {
+            this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
+            this.invalidateAllChunkCachesContainingHex(oldPos.col, oldPos.row);
+          }
+          this.armiesPositions.delete(entityId);
+          this.armyStructureOwners.delete(entityId);
           return;
         }
       }

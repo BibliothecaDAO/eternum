@@ -897,6 +897,42 @@ export class ArmyModel {
     this.movementCompleteCallbacks.set(entityId, callback);
   }
 
+  public rebindMovementMatrixIndex(entityId: number, newMatrixIndex: number): void {
+    const movement = this.movingInstances.get(entityId);
+    if (!movement) return;
+
+    const previousIndex = movement.matrixIndex;
+    if (previousIndex === newMatrixIndex) {
+      return;
+    }
+
+    // Reset animation state for the old slot so it no longer appears active
+    this.setAnimationState(previousIndex, false);
+
+    movement.matrixIndex = newMatrixIndex;
+
+    const instanceData = this.instanceData.get(entityId);
+    if (instanceData) {
+      instanceData.matrixIndex = newMatrixIndex;
+    }
+
+    const isMoving = movement.currentPathIndex !== -1 || movement.floatingHeight > 0;
+    this.setAnimationState(newMatrixIndex, isMoving);
+  }
+
+  public isEntityMoving(entityId: number): boolean {
+    return this.movingInstances.has(entityId);
+  }
+
+  public getEntityWorldPosition(entityId: number): Vector3 | undefined {
+    const instanceData = this.instanceData.get(entityId);
+    if (!instanceData) {
+      return undefined;
+    }
+
+    return instanceData.position.clone();
+  }
+
   /**
    * Gets the appropriate easing type for an army's movement
    * @param entityId - The entity ID
