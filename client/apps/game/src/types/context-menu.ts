@@ -1,6 +1,12 @@
 import { SceneName } from "@/three/types";
+import type { ReactNode } from "react";
 
 export type ContextMenuLayout = "auto" | "list" | "radial";
+
+export interface ContextMenuIcon {
+  radial: ReactNode;
+  list?: ReactNode;
+}
 
 export interface ContextMenuRadialOptions {
   radius?: number;
@@ -16,6 +22,7 @@ export interface ContextMenuAction {
   disabled?: boolean;
   hint?: string;
   icon?: string;
+  iconComponent?: ContextMenuIcon;
   onSelect: () => void;
   children?: ContextMenuAction[];
   childTitle?: string;
