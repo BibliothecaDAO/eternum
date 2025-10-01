@@ -7,12 +7,10 @@ type TableComponent = React.ComponentType<{
 }>;
 
 export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | undefined }) => {
-  const [useNewVersion, setUseNewVersion] = useState(() =>
-    localStorage.getItem("useNewResourceTable") === "true"
-  );
+  const [useNewVersion, setUseNewVersion] = useState(() => localStorage.getItem("useNewResourceTable") === "true");
 
-  const [hasInteractedWithToggle, setHasInteractedWithToggle] = useState(() =>
-    localStorage.getItem("hasUsedResourceTableToggle") === "true"
+  const [hasInteractedWithToggle, setHasInteractedWithToggle] = useState(
+    () => localStorage.getItem("hasUsedResourceTableToggle") === "true",
   );
 
   const [OldTable, setOldTable] = useState<TableComponent | null>(null);
@@ -30,15 +28,18 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
     }
   }, [useNewVersion, OldTable, NewTable]);
 
-  const handleToggle = useCallback((newValue: boolean) => {
-    setUseNewVersion(newValue);
-    localStorage.setItem("useNewResourceTable", String(newValue));
+  const handleToggle = useCallback(
+    (newValue: boolean) => {
+      setUseNewVersion(newValue);
+      localStorage.setItem("useNewResourceTable", String(newValue));
 
-    if (!hasInteractedWithToggle) {
-      setHasInteractedWithToggle(true);
-      localStorage.setItem("hasUsedResourceTableToggle", "true");
-    }
-  }, [hasInteractedWithToggle]);
+      if (!hasInteractedWithToggle) {
+        setHasInteractedWithToggle(true);
+        localStorage.setItem("hasUsedResourceTableToggle", "true");
+      }
+    },
+    [hasInteractedWithToggle],
+  );
 
   const TableComponent = useNewVersion ? NewTable : OldTable;
 

@@ -2,7 +2,9 @@
 
 ## Executive Summary
 
-This document outlines a comprehensive strategy to migrate the Eternum blockchain gaming client from its current architecture to TanStack DB, achieving significant performance improvements through reactive collections, live queries, and optimistic mutations.
+This document outlines a comprehensive strategy to migrate the Eternum blockchain gaming client from its current
+architecture to TanStack DB, achieving significant performance improvements through reactive collections, live queries,
+and optimistic mutations.
 
 ---
 
@@ -13,12 +15,16 @@ This document outlines a comprehensive strategy to migrate the Eternum blockchai
 #### 1. **WorldUpdateListener Anti-Patterns** (`world-update-listener.ts:1-1294`)
 
 **Problems:**
-- **Sequential update bottleneck**: `processSequentialUpdate()` (lines 1233-1281) creates artificial serialization of parallel blockchain events
-- **Race condition management overhead**: Map-based sequence tracking (`updateSequenceMap`, `pendingUpdates`) adds complexity without addressing root cause
+
+- **Sequential update bottleneck**: `processSequentialUpdate()` (lines 1233-1281) creates artificial serialization of
+  parallel blockchain events
+- **Race condition management overhead**: Map-based sequence tracking (`updateSequenceMap`, `pendingUpdates`) adds
+  complexity without addressing root cause
 - **Async waterfall chains**: Each update waits for MapDataStore queries, creating cascading delays
 - **No incremental updates**: Full entity reconstruction on every change
 
 **Impact:**
+
 - Delayed UI updates during high-frequency blockchain events (battles, movements)
 - Memory overhead from promise tracking and sequence maps
 - Potential for dropped updates during rapid state changes
@@ -26,13 +32,16 @@ This document outlines a comprehensive strategy to migrate the Eternum blockchai
 #### 2. **MapDataStore Inefficiencies** (`map-data-store.ts:1-641`)
 
 **Problems:**
+
 - **Singleton polling architecture**: 5-minute refresh interval (line 36) causes stale data windows
-- **All-or-nothing fetches**: `fetchAllStructuresMapData()` and `fetchAllArmiesMapData()` (lines 350-354) load entire world state
+- **All-or-nothing fetches**: `fetchAllStructuresMapData()` and `fetchAllArmiesMapData()` (lines 350-354) load entire
+  world state
 - **Manual cache invalidation**: `_checkRefresh()` (lines 469-477) scattered throughout getters
 - **No granular subscriptions**: Components can't subscribe to specific entities
 - **Callback hell**: `refreshCallbacks` array (line 121) for manual change propagation
 
 **Impact:**
+
 - Poor scalability as world size grows (all structures + armies loaded on every refresh)
 - Wasted bandwidth fetching unchanged data
 - Stale data between refresh intervals
@@ -41,11 +50,13 @@ This document outlines a comprehensive strategy to migrate the Eternum blockchai
 #### 3. **DataEnhancer Layer Redundancy** (`data-enhancer.ts:1-220`)
 
 **Problems:**
+
 - **Wrapper around wrapper**: Adds abstraction layer without solving fundamental issues
 - **Async data enrichment**: Every component update triggers additional async lookups
 - **Duplicate data transformation**: Same parsing logic scattered across multiple methods
 
 **Impact:**
+
 - Additional latency on every entity update
 - Harder to reason about data flow
 - Maintenance burden from duplicated logic
@@ -53,6 +64,7 @@ This document outlines a comprehensive strategy to migrate the Eternum blockchai
 #### 4. **Hook Patterns**
 
 **Current State:**
+
 - `use-data.tsx`: Good use of TanStack Query for simple REST endpoints
 - `use-lords.tsx`: Uses `@starknet-react/core`'s `useCall` with 1-second polling (anti-pattern)
 - No centralized query invalidation or cross-component state synchronization
@@ -73,9 +85,9 @@ This document outlines a comprehensive strategy to migrate the Eternum blockchai
 ```typescript
 // packages/core/src/collections/index.ts
 
-import { createCollection } from '@tanstack/react-db'
-import { queryCollectionOptions } from '@tanstack/query-db-collection'
-import { z } from 'zod'
+import { createCollection } from "@tanstack/react-db";
+import { queryCollectionOptions } from "@tanstack/query-db-collection";
+import { z } from "zod";
 
 // === SCHEMAS ===
 
@@ -122,7 +134,7 @@ const StructureSchema = z.object({
   latest_defense_timestamp: z.string().nullable(),
   latest_defender_coord_x: z.number().nullable(),
   latest_defender_coord_y: z.number().nullable(),
-})
+});
 
 const ArmySchema = z.object({
   entity_id: z.number(),
@@ -145,7 +157,7 @@ const ArmySchema = z.object({
   latest_defense_timestamp: z.string().nullable(),
   latest_defender_coord_x: z.number().nullable(),
   latest_defender_coord_y: z.number().nullable(),
-})
+});
 
 const TileSchema = z.object({
   col: z.number(),
@@ -153,74 +165,74 @@ const TileSchema = z.object({
   biome: z.number(),
   occupier_type: z.number(),
   occupier_id: z.number(),
-})
+});
 
 const PlayerSchema = z.object({
   address: z.string(),
   name: z.string(),
   guild_name: z.string().optional(),
-})
+});
 
 // === COLLECTIONS ===
 
 export const structureCollection = createCollection(
   queryCollectionOptions({
-    queryKey: ['structures'],
+    queryKey: ["structures"],
     queryFn: async () => {
-      const sqlApi = getSqlApi() // Singleton accessor
-      return sqlApi.fetchAllStructuresMapData()
+      const sqlApi = getSqlApi(); // Singleton accessor
+      return sqlApi.fetchAllStructuresMapData();
     },
     getKey: (item) => item.entity_id,
     schema: StructureSchema,
     refetchInterval: 60000, // 1 minute instead of 5
     onUpdate: async ({ transaction }) => {
       // Handle optimistic structure updates
-      const { modified } = transaction.mutations[0]
-      await api.structures.update(modified)
+      const { modified } = transaction.mutations[0];
+      await api.structures.update(modified);
     },
-  })
-)
+  }),
+);
 
 export const armyCollection = createCollection(
   queryCollectionOptions({
-    queryKey: ['armies'],
+    queryKey: ["armies"],
     queryFn: async () => {
-      const sqlApi = getSqlApi()
-      return sqlApi.fetchAllArmiesMapData()
+      const sqlApi = getSqlApi();
+      return sqlApi.fetchAllArmiesMapData();
     },
     getKey: (item) => item.entity_id,
     schema: ArmySchema,
     refetchInterval: 60000,
     onUpdate: async ({ transaction }) => {
-      const { modified } = transaction.mutations[0]
-      await api.armies.update(modified)
+      const { modified } = transaction.mutations[0];
+      await api.armies.update(modified);
     },
-  })
-)
+  }),
+);
 
 export const tileCollection = createCollection(
   queryCollectionOptions({
-    queryKey: ['tiles'],
+    queryKey: ["tiles"],
     queryFn: async () => {
-      const sqlApi = getSqlApi()
-      return sqlApi.fetchAllTiles()
+      const sqlApi = getSqlApi();
+      return sqlApi.fetchAllTiles();
     },
     getKey: (item) => `${item.col}-${item.row}`,
     schema: TileSchema,
-  })
-)
+  }),
+);
 
 export const playerCollection = createCollection(
   queryCollectionOptions({
-    queryKey: ['players'],
+    queryKey: ["players"],
     queryFn: async () => {
-      const sqlApi = getSqlApi()
-      return sqlApi.fetchAllPlayers()
+      const sqlApi = getSqlApi();
+      return sqlApi.fetchAllPlayers();
     },
     getKey: (item) => item.address,
     schema: PlayerSchema,
-  })
-)
+  }),
+);
 ```
 
 ### Live Query Examples
@@ -228,6 +240,7 @@ export const playerCollection = createCollection(
 #### 1. Replace DataEnhancer with Live Queries
 
 **Before (DataEnhancer pattern):**
+
 ```typescript
 // data-enhancer.ts:53-93
 async enhanceArmyData(occupierId: ID, ...args): Promise<EnhancedArmyData> {
@@ -239,24 +252,21 @@ async enhanceArmyData(occupierId: ID, ...args): Promise<EnhancedArmyData> {
 ```
 
 **After (Live Query):**
+
 ```typescript
 // hooks/use-enhanced-army.ts
-import { useLiveQuery, eq } from '@tanstack/react-db'
-import { armyCollection, structureCollection, playerCollection } from '@/collections'
+import { useLiveQuery, eq } from "@tanstack/react-db";
+import { armyCollection, structureCollection, playerCollection } from "@/collections";
 
 export const useEnhancedArmy = (armyId: number) => {
   return useLiveQuery((q) =>
     q
       .from({ army: armyCollection })
-      .join(
-        { player: playerCollection },
-        ({ army, player }) => eq(player.address, army.owner_address),
-        'left'
-      )
+      .join({ player: playerCollection }, ({ army, player }) => eq(player.address, army.owner_address), "left")
       .join(
         { structure: structureCollection },
         ({ army, structure }) => eq(structure.entity_id, army.owner_structure_id),
-        'left'
+        "left",
       )
       .where(({ army }) => eq(army.entity_id, armyId))
       .select(({ army, player, structure }) => ({
@@ -271,19 +281,22 @@ export const useEnhancedArmy = (armyId: number) => {
           name: player.name,
           guildName: player.guild_name,
         },
-        ownerStructure: structure ? {
-          id: structure.entity_id,
-          name: structure.owner_name,
-          coords: { x: structure.coord_x, y: structure.coord_y },
-        } : null,
-      }))
-  )
-}
+        ownerStructure: structure
+          ? {
+              id: structure.entity_id,
+              name: structure.owner_name,
+              coords: { x: structure.coord_x, y: structure.coord_y },
+            }
+          : null,
+      })),
+  );
+};
 ```
 
 #### 2. Structures by Owner (Replaces MapDataStore method)
 
 **Before:**
+
 ```typescript
 // map-data-store.ts:517-521
 public getStructuresByOwner(ownerAddress: string): StructureMapData[] {
@@ -296,6 +309,7 @@ public getStructuresByOwner(ownerAddress: string): StructureMapData[] {
 ```
 
 **After:**
+
 ```typescript
 // hooks/use-player-structures.ts
 export const usePlayerStructures = (ownerAddress: string) => {
@@ -310,14 +324,15 @@ export const usePlayerStructures = (ownerAddress: string) => {
         level: structure.level,
         guardArmies: parseGuardArmies(structure),
         activeProductions: parseActiveProductions(structure),
-      }))
-  )
-}
+      })),
+  );
+};
 ```
 
 #### 3. Entities in Radius with Derived Collection
 
 **Before:**
+
 ```typescript
 // map-data-store.ts:529-550
 public getEntitiesInRadius(centerX: number, centerY: number, radius: number) {
@@ -330,16 +345,13 @@ public getEntitiesInRadius(centerX: number, centerY: number, radius: number) {
 ```
 
 **After:**
+
 ```typescript
 // collections/derived/entities-in-radius.ts
-import { createLiveQueryCollection } from '@tanstack/db'
+import { createLiveQueryCollection } from "@tanstack/db";
 
-export const createEntitiesInRadiusCollection = (
-  centerX: number,
-  centerY: number,
-  radius: number
-) => {
-  const radiusSquared = radius * radius
+export const createEntitiesInRadiusCollection = (centerX: number, centerY: number, radius: number) => {
+  const radiusSquared = radius * radius;
 
   return createLiveQueryCollection({
     startSync: true,
@@ -347,12 +359,12 @@ export const createEntitiesInRadiusCollection = (
       q
         .from({ structure: structureCollection })
         .where(({ structure }) => {
-          const dx = structure.coord_x - centerX
-          const dy = structure.coord_y - centerY
-          return dx * dx + dy * dy <= radiusSquared
+          const dx = structure.coord_x - centerX;
+          const dy = structure.coord_y - centerY;
+          return dx * dx + dy * dy <= radiusSquared;
         })
         .select(({ structure }) => ({
-          type: 'structure' as const,
+          type: "structure" as const,
           entityId: structure.entity_id,
           coords: { x: structure.coord_x, y: structure.coord_y },
           ownerName: structure.owner_name,
@@ -361,24 +373,22 @@ export const createEntitiesInRadiusCollection = (
           q
             .from({ army: armyCollection })
             .where(({ army }) => {
-              const dx = army.coord_x - centerX
-              const dy = army.coord_y - centerY
-              return dx * dx + dy * dy <= radiusSquared
+              const dx = army.coord_x - centerX;
+              const dy = army.coord_y - centerY;
+              return dx * dx + dy * dy <= radiusSquared;
             })
             .select(({ army }) => ({
-              type: 'army' as const,
+              type: "army" as const,
               entityId: army.entity_id,
               coords: { x: army.coord_x, y: army.coord_y },
               ownerName: army.owner_name,
-            }))
+            })),
         ),
-  })
-}
+  });
+};
 
 // Usage in component
-const { data: nearbyEntities } = useLiveQuery(
-  createEntitiesInRadiusCollection(playerX, playerY, 50)
-)
+const { data: nearbyEntities } = useLiveQuery(createEntitiesInRadiusCollection(playerX, playerY, 50));
 ```
 
 ### Optimistic Mutation Patterns
@@ -443,7 +453,9 @@ const MoveArmyButton = ({ army }) => {
 **Goal**: Set up TanStack DB infrastructure without breaking existing code
 
 #### Tasks:
+
 1. **Install dependencies**
+
    ```bash
    pnpm add @tanstack/db @tanstack/react-db @tanstack/query-db-collection zod
    ```
@@ -456,6 +468,7 @@ const MoveArmyButton = ({ army }) => {
    - `index.ts` - Export all collections
 
 3. **Set up providers** (`client/apps/landing/src/providers/collections-provider.tsx`)
+
    ```typescript
    import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
@@ -484,21 +497,23 @@ const MoveArmyButton = ({ army }) => {
    ```
 
 4. **Create migration helpers** (`packages/core/src/collections/migrate.ts`)
+
    ```typescript
    // Bridge between old MapDataStore and new collections
    export class CollectionBridge {
      static async syncFromMapDataStore(mapDataStore: MapDataStore) {
-       const structures = mapDataStore.getAllStructures()
-       const armies = mapDataStore.getAllArmies()
+       const structures = mapDataStore.getAllStructures();
+       const armies = mapDataStore.getAllArmies();
 
        // Bulk insert into collections
-       structures.forEach(s => structureCollection.insert(s, { optimistic: false }))
-       armies.forEach(a => armyCollection.insert(a, { optimistic: false }))
+       structures.forEach((s) => structureCollection.insert(s, { optimistic: false }));
+       armies.forEach((a) => armyCollection.insert(a, { optimistic: false }));
      }
    }
    ```
 
 **Success Criteria:**
+
 - Collections can be queried alongside existing MapDataStore
 - No production code changes yet, only new infrastructure
 - Unit tests pass for collection schemas
@@ -526,6 +541,7 @@ const MoveArmyButton = ({ army }) => {
 3. **Update WorldUpdateListener** (High impact)
    - Remove `DataEnhancer` calls from update handlers
    - Replace with direct collection updates:
+
      ```typescript
      // OLD: world-update-listener.ts:183-227
      const enhancedData = await this.dataEnhancer.enhanceArmyData(...)
@@ -538,6 +554,7 @@ const MoveArmyButton = ({ army }) => {
        // ... direct updates, no async
      })
      ```
+
    - **Remove `processSequentialUpdate()` entirely** - no longer needed with reactive collections
 
 4. **Deprecate MapDataStore reads**
@@ -546,6 +563,7 @@ const MoveArmyButton = ({ army }) => {
    - Monitor logs for any remaining usage
 
 **Success Criteria:**
+
 - All components use `useLiveQuery` hooks instead of MapDataStore getters
 - MapDataStore logs show zero read operations
 - UI updates are instant (no async lookup delays)
@@ -572,35 +590,33 @@ const MoveArmyButton = ({ army }) => {
    - `use-transfer-resources.ts` - Resource management
 
 3. **Implement mutation handlers**
+
    ```typescript
    // Example: use-attack-structure.ts
    export const useAttackStructure = () => {
      return createOptimisticAction<{
-       attackerId: number
-       defenderId: number
+       attackerId: number;
+       defenderId: number;
      }>({
        onMutate: ({ attackerId, defenderId }) => {
          // Instant UI feedback
          armyCollection.update(attackerId, (draft) => {
-           draft.battle_cooldown_end = currentTick() + COOLDOWN
-         })
+           draft.battle_cooldown_end = currentTick() + COOLDOWN;
+         });
          structureCollection.update(defenderId, (draft) => {
-           draft.latest_attacker_id = attackerId
-           draft.latest_attack_timestamp = Date.now()
-         })
+           draft.latest_attacker_id = attackerId;
+           draft.latest_attack_timestamp = Date.now();
+         });
        },
        mutationFn: async ({ attackerId, defenderId }) => {
-         const tx = await dojoSystem.attack(attackerId, defenderId)
-         await tx.wait()
+         const tx = await dojoSystem.attack(attackerId, defenderId);
+         await tx.wait();
 
          // Sync battle results from chain
-         await Promise.all([
-           armyCollection.utils.refetch(),
-           structureCollection.utils.refetch(),
-         ])
+         await Promise.all([armyCollection.utils.refetch(), structureCollection.utils.refetch()]);
        },
-     })
-   }
+     });
+   };
    ```
 
 4. **Remove manual state management**
@@ -609,6 +625,7 @@ const MoveArmyButton = ({ army }) => {
    - Simplify update handlers to direct collection mutations
 
 **Success Criteria:**
+
 - All user actions show instant UI feedback
 - Failed transactions automatically rollback UI state
 - No race conditions or stale state issues
@@ -629,6 +646,7 @@ const MoveArmyButton = ({ army }) => {
    - `leaderboards.ts` - Top players by various metrics
 
 2. **Spatial indexing**
+
    ```typescript
    // collections/derived/spatial-index.ts
    export const createSpatialGrid = (gridSize = 100) => {
@@ -642,9 +660,9 @@ const MoveArmyButton = ({ army }) => {
              gridY: Math.floor(structure.coord_y / gridSize),
              entities: [structure],
            }))
-           .groupBy(({ gridX, gridY }) => `${gridX},${gridY}`)
-     })
-   }
+           .groupBy(({ gridX, gridY }) => `${gridX},${gridY}`),
+     });
+   };
    ```
 
 3. **Performance benchmarking**
@@ -658,6 +676,7 @@ const MoveArmyButton = ({ army }) => {
    - Remove polling from render loop
 
 **Success Criteria:**
+
 - Spatial queries complete in <1ms for incremental updates
 - Three.js renders update only changed entities
 - Memory usage reduced by 30%+ (no duplicate data structures)
@@ -692,6 +711,7 @@ const MoveArmyButton = ({ army }) => {
    - Best practices for live queries
 
 **Success Criteria:**
+
 - MapDataStore and DataEnhancer deleted
 - WorldUpdateListener reduced by 50%+
 - All tests passing
@@ -703,14 +723,14 @@ const MoveArmyButton = ({ army }) => {
 
 ### Metrics
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| **Army move UI latency** | 50-200ms (async lookup) | <5ms (optimistic) | **10-40x faster** |
-| **Structure update latency** | 100-300ms (sequential processing) | <5ms (reactive) | **20-60x faster** |
-| **Query filtering (1000 entities)** | 5-10ms (full scan) | <1ms (incremental) | **5-10x faster** |
-| **Memory overhead** | High (duplicate Maps) | Low (single source) | **30-50% reduction** |
-| **Code complexity** | 2155 lines (3 files) | ~600 lines (1 file) | **72% reduction** |
-| **Stale data window** | 0-300 seconds (polling) | 0ms (reactive) | **Infinite improvement** |
+| Metric                              | Before                            | After               | Improvement              |
+| ----------------------------------- | --------------------------------- | ------------------- | ------------------------ |
+| **Army move UI latency**            | 50-200ms (async lookup)           | <5ms (optimistic)   | **10-40x faster**        |
+| **Structure update latency**        | 100-300ms (sequential processing) | <5ms (reactive)     | **20-60x faster**        |
+| **Query filtering (1000 entities)** | 5-10ms (full scan)                | <1ms (incremental)  | **5-10x faster**         |
+| **Memory overhead**                 | High (duplicate Maps)             | Low (single source) | **30-50% reduction**     |
+| **Code complexity**                 | 2155 lines (3 files)              | ~600 lines (1 file) | **72% reduction**        |
+| **Stale data window**               | 0-300 seconds (polling)           | 0ms (reactive)      | **Infinite improvement** |
 
 ### Developer Experience
 
@@ -757,24 +777,25 @@ For even better performance, consider migrating from REST API queries to Electri
 
 ```typescript
 // Instead of queryCollectionOptions (REST)
-import { electricCollectionOptions } from '@tanstack/electric-db-collection'
+import { electricCollectionOptions } from "@tanstack/electric-db-collection";
 
 export const structureCollection = createCollection(
   electricCollectionOptions({
-    id: 'structures',
+    id: "structures",
     shapeOptions: {
-      url: 'https://electric.eternum.com/v1/shape',
+      url: "https://electric.eternum.com/v1/shape",
       params: {
-        table: 'structures',
+        table: "structures",
       },
     },
     getKey: (item) => item.entity_id,
     schema: StructureSchema,
-  })
-)
+  }),
+);
 ```
 
 **Benefits:**
+
 - Real-time sync with automatic conflict resolution
 - Offline-first support
 - Reduced server load (clients sync incrementally)
@@ -805,15 +826,16 @@ export const structureCollection = createCollection(
 
 ## Conclusion
 
-This migration represents a fundamental architectural shift from imperative, polling-based state management to reactive, declarative data flow. The benefits extend far beyond raw performance:
+This migration represents a fundamental architectural shift from imperative, polling-based state management to reactive,
+declarative data flow. The benefits extend far beyond raw performance:
 
 1. **Instant UI updates** via optimistic mutations
 2. **Simplified codebase** with 70%+ less state management code
 3. **Better scalability** as the game world grows
 4. **Improved developer experience** with declarative queries
 
-The phased approach minimizes risk while delivering incremental value. Phase 2 alone will provide significant UX improvements, making the full migration worthwhile even if later phases are deferred.
+The phased approach minimizes risk while delivering incremental value. Phase 2 alone will provide significant UX
+improvements, making the full migration worthwhile even if later phases are deferred.
 
-**Recommended Start Date**: Immediately
-**Estimated Completion**: 10 weeks (2.5 months)
-**Team Size**: 2 engineers (1 lead, 1 support)
+**Recommended Start Date**: Immediately **Estimated Completion**: 10 weeks (2.5 months) **Team Size**: 2 engineers (1
+lead, 1 support)

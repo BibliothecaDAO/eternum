@@ -1,12 +1,12 @@
 import { ResourceChip } from "@/ui/features/economy/resources";
 import {
-    getBlockTimestamp,
-    getBuildingCount,
-    getEntityIdFromKeys,
-    getIsBlitz,
-    getRealmInfo,
-    getStructureArmyRelicEffects,
-    getStructureRelicEffects,
+  getBlockTimestamp,
+  getBuildingCount,
+  getEntityIdFromKeys,
+  getIsBlitz,
+  getRealmInfo,
+  getStructureArmyRelicEffects,
+  getStructureRelicEffects,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { BuildingType, getBuildingFromResource, getResourceTiers, ID, ResourcesIds } from "@bibliothecadao/types";
@@ -56,7 +56,6 @@ export const EntityResourceTableOld = React.memo(({ entityId }: EntityResourceTa
   }, [productionBoostBonus, structure]);
 
   const resourceManager = useResourceManager(entityId);
-
 
   return (
     <div>

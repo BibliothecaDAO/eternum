@@ -1,13 +1,4 @@
-import {
-  Scene,
-  DirectionalLight,
-  HemisphereLight,
-  AmbientLight,
-  Color,
-  Fog,
-  Vector3,
-  MathUtils,
-} from "three";
+import { Scene, DirectionalLight, HemisphereLight, AmbientLight, Color, Fog, Vector3, MathUtils } from "three";
 
 interface TimeOfDayColors {
   skyColor: number;
@@ -403,17 +394,18 @@ export class DayNightCycleManager {
   addGUIControls(guiFolder: any): void {
     const dayNightFolder = guiFolder.addFolder("Day/Night Cycle");
 
-    dayNightFolder.add(this.params, "enabled").name("Enable Day/Night").onChange((value: boolean) => {
-      this.setEnabled(value);
-    });
+    dayNightFolder
+      .add(this.params, "enabled")
+      .name("Enable Day/Night")
+      .onChange((value: boolean) => {
+        this.setEnabled(value);
+      });
 
     dayNightFolder.add(this.params, "cycleSpeed", 0.1, 10, 0.1).name("Cycle Speed");
 
     dayNightFolder.add(this.params, "transitionSmoothness", 0, 1, 0.05).name("Transition Smoothness");
 
-    dayNightFolder
-      .add(this.params, "colorTransitionSpeed", 0.01, 1.0, 0.01)
-      .name("Color Transition Speed");
+    dayNightFolder.add(this.params, "colorTransitionSpeed", 0.01, 1.0, 0.01).name("Color Transition Speed");
 
     dayNightFolder.add(this.params, "sunHeight", 5, 20, 0.5).name("Sun Height");
 
