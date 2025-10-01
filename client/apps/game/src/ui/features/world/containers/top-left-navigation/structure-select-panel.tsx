@@ -3,7 +3,12 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import { getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 import type { ClientComponents, ID, Structure } from "@bibliothecadao/types";
-import { ID as toEntityId } from "@bibliothecadao/types";
+import {
+  BlitzStructureTypeToNameMapping,
+  EternumStructureTypeToNameMapping,
+  ID as toEntityId,
+  StructureType,
+} from "@bibliothecadao/types";
 import type { ComponentValue } from "@dojoengine/recs";
 import { Crown, EyeIcon, Landmark, Pencil, Pickaxe, Search, ShieldQuestion, Sparkles, Star, X } from "lucide-react";
 
@@ -30,6 +35,14 @@ const structureIcons: Record<string, JSX.Element> = {
   FragmentMine: <Pickaxe />,
   ReadOnly: <EyeIcon />,
 };
+
+const SORT_OPTIONS = [
+  { value: "name" as const, label: "Name (A-Z)" },
+  { value: "realmLevel" as const, label: "Realm Level (High-Low)" },
+] as const;
+
+type SortOptionValue = (typeof SORT_OPTIONS)[number]["value"];
+type CategoryFilterValue = "all" | `${StructureType}`;
 
 const normalizeSearchValue = (value: string) =>
   value
@@ -66,41 +79,107 @@ export const StructureSelectPanel = memo(
   }: StructureSelectPanelProps) => {
     const [selectOpen, setSelectOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
+    const [sortOption, setSortOption] = useState<SortOptionValue>("name");
+    const [categoryFilter, setCategoryFilter] = useState<CategoryFilterValue>("all");
     const searchInputRef = useRef<HTMLInputElement>(null);
 
     const playHover = useUISound("ui.hover");
     const playClick = useUISound("ui.click");
 
-    const structuresWithFavorites = useMemo(() => {
-      return structures
-        .map((structure) => {
-          const { name, originalName } = getStructureName(structure.structure, getIsBlitz());
+    const isBlitz = useMemo(() => getIsBlitz(), []);
+    const structureTypeNameMapping = useMemo(
+      () => (isBlitz ? BlitzStructureTypeToNameMapping : EternumStructureTypeToNameMapping),
+      [isBlitz],
+    );
 
-          return {
-            ...structure,
-            isFavorite: favorites.includes(structure.entityId),
-            name,
-            originalName,
-          };
-        })
-        .sort((a, b) => {
-          const favoriteCompare = Number(b.isFavorite) - Number(a.isFavorite);
-          if (favoriteCompare !== 0) return favoriteCompare;
-          return a.name.localeCompare(b.name);
-        });
-    }, [favorites, structures]);
+    const structuresWithMetadata = useMemo(() => {
+      return structures.map((structure) => {
+        const { name, originalName } = getStructureName(structure.structure, isBlitz);
+        const rawLevel = structure.structure.base?.level;
+        const realmLevel = Number(rawLevel ?? 0);
+
+        return {
+          ...structure,
+          isFavorite: favorites.includes(structure.entityId),
+          name,
+          originalName,
+          realmLevel,
+          categoryName: structureTypeNameMapping[structure.category] ?? "Unknown",
+        };
+      });
+    }, [favorites, structures, isBlitz, structureTypeNameMapping]);
+
+    const categoryOptions = useMemo(() => {
+      const uniqueCategories = new Set<StructureType>();
+
+      structures.forEach((structure) => {
+        if (structure.category) {
+          uniqueCategories.add(structure.category);
+        }
+      });
+
+      return [
+        { value: "all" as CategoryFilterValue, label: "All categories" },
+        ...Array.from(uniqueCategories)
+          .sort((a, b) => {
+            const nameA = structureTypeNameMapping[a] ?? "";
+            const nameB = structureTypeNameMapping[b] ?? "";
+            return nameA.localeCompare(nameB);
+          })
+          .map((category) => ({
+            value: category.toString() as CategoryFilterValue,
+            label: structureTypeNameMapping[category] ?? "Unknown",
+          })),
+      ];
+    }, [structureTypeNameMapping, structures]);
 
     const filteredStructures = useMemo(() => {
-      if (!searchTerm) {
-        return structuresWithFavorites;
+      const normalizedSearch = searchTerm ? normalizeSearchValue(searchTerm) : "";
+
+      return structuresWithMetadata.filter((structure) => {
+        if (categoryFilter !== "all" && structure.category.toString() !== categoryFilter) {
+          return false;
+        }
+
+        if (!normalizedSearch) {
+          return true;
+        }
+
+        return normalizeSearchValue(structure.name).includes(normalizedSearch);
+      });
+    }, [structuresWithMetadata, categoryFilter, searchTerm]);
+
+    const sortedStructures = useMemo(() => {
+      return [...filteredStructures].sort((a, b) => {
+        const favoriteCompare = Number(b.isFavorite) - Number(a.isFavorite);
+        if (favoriteCompare !== 0) {
+          return favoriteCompare;
+        }
+
+        if (sortOption === "realmLevel") {
+          const levelDifference = b.realmLevel - a.realmLevel;
+          if (levelDifference !== 0) {
+            return levelDifference;
+          }
+        }
+
+        return a.name.localeCompare(b.name);
+      });
+    }, [filteredStructures, sortOption]);
+
+    useEffect(() => {
+      if (categoryFilter === "all") {
+        return;
       }
 
-      const normalizedSearch = normalizeSearchValue(searchTerm);
-
-      return structuresWithFavorites.filter((structure) =>
-        normalizeSearchValue(structure.name).includes(normalizedSearch),
+      const categoryStillExists = structuresWithMetadata.some(
+        (structure) => structure.category.toString() === categoryFilter,
       );
-    }, [structuresWithFavorites, searchTerm]);
+
+      if (!categoryStillExists) {
+        setCategoryFilter("all");
+      }
+    }, [categoryFilter, structuresWithMetadata]);
 
     const handleSelectStructure = useCallback(
       (entityId: ID) => {
@@ -162,7 +241,7 @@ export const StructureSelectPanel = memo(
             <SelectValue placeholder="Select Structure" />
           </SelectTrigger>
           <SelectContent className="panel-wood bg-dark-wood -ml-2">
-            <div className="sticky top-0 p-2 bg-dark-wood border-b border-gold/20 z-50">
+            <div className="sticky top-0 p-2 bg-dark-wood border-b border-gold/20 z-50 space-y-2">
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gold/60" />
                 <input
@@ -179,8 +258,8 @@ export const StructureSelectPanel = memo(
                   autoFocus
                   onKeyDown={(event) => {
                     event.stopPropagation();
-                    if (event.key === "Enter" && filteredStructures.length > 0) {
-                      handleSelectStructure(toEntityId(filteredStructures[0].entityId));
+                    if (event.key === "Enter" && sortedStructures.length > 0) {
+                      handleSelectStructure(toEntityId(sortedStructures[0].entityId));
                     }
                   }}
                   className="w-full pl-8 pr-3 py-1 bg-brown/20 border border-gold/30 rounded text-sm text-gold placeholder-gold/60 focus:outline-none focus:border-gold/60"
@@ -203,13 +282,45 @@ export const StructureSelectPanel = memo(
                   </button>
                 )}
               </div>
+              <div
+                className="flex flex-col gap-2 sm:flex-row"
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={(event) => event.stopPropagation()}
+                onKeyDown={(event) => event.stopPropagation()}
+              >
+                {/* Prevent nested select interactions from collapsing the main selector */}
+                <Select value={sortOption} onValueChange={(value) => setSortOption(value as SortOptionValue)}>
+                  <SelectTrigger className="h-8 bg-brown/20 border border-gold/30 rounded text-xs text-gold px-3 py-1">
+                    <SelectValue placeholder="Order by" />
+                  </SelectTrigger>
+                  <SelectContent className="panel-wood bg-dark-wood">
+                    {SORT_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value} className="text-xs">
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as CategoryFilterValue)}>
+                  <SelectTrigger className="h-8 bg-brown/20 border border-gold/30 rounded text-xs text-gold px-3 py-1">
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent className="panel-wood bg-dark-wood max-h-60 overflow-y-auto">
+                    {categoryOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value} className="text-xs">
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            {filteredStructures.length === 0 ? (
+            {sortedStructures.length === 0 ? (
               <div className="p-4 text-center text-gold/60 text-sm">
-                {searchTerm ? "No structures found" : "No structures available"}
+                {searchTerm || categoryFilter !== "all" ? "No structures found" : "No structures available"}
               </div>
             ) : (
-              filteredStructures.map((structure) => (
+              sortedStructures.map((structure) => (
                 <div key={structure.entityId} className="flex flex-row items-center" onMouseEnter={() => playHover()}>
                   <button
                     className="p-1"
