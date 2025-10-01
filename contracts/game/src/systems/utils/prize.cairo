@@ -5,17 +5,24 @@ use s1_eternum::utils::fixed_constants as fc;
 #[generate_trait]
 pub impl iPrizeDistributionCalcImpl of iPrizeDistributionCalcTrait {
     fn _sum_of_powers(x: Fixed, y: u128) -> Fixed {
+        if y == 0 {
+            return FixedTrait::ZERO();
+        }
+
         if x == FixedTrait::ONE() {
-            // Special case: 1^0 + 1^1 + 1^2 + ... + 1^y = y + 1
-            FixedTrait::new_unscaled(y + 1, false)
+            // Special case: 1^1 + 1^2 + ... + 1^(y-1) = y
+            FixedTrait::new_unscaled(y, false)
         } else {
-            // General case: (x^(y+1) - 1)/(x - 1)
-            let x_pow_y_plus_1 = x.pow(FixedTrait::new_unscaled(y + 1, false));
-            (x_pow_y_plus_1 - FixedTrait::ONE()) / (x - FixedTrait::ONE())
+            // General case: (x^y - 1)/(x - 1)
+            let x_pow_y = x.pow(FixedTrait::new_unscaled(y, false));
+            (x_pow_y - FixedTrait::ONE()) / (x - FixedTrait::ONE())
         }
     }
 
-    // Should be very nearly equivalent to _sum_of_powers
+    // Should be very nearly equivalent to _sum_of_powers. 
+    // the _sum_of_powers may be slightly higher than this one e.g _sum_of_powers(0.95, 50)
+    // but it means _norm_weight will be slightly lower which will make calculations round downwards
+    // and thus be more conservative in prize distribution.
     fn _sum_of_powers_using_loop(x: Fixed, y: u128) -> Fixed {
         let mut sum = FixedTrait::ZERO();
         let mut current_power = FixedTrait::ONE(); // x^0 is 1
