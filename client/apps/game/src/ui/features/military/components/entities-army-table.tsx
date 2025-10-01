@@ -2,15 +2,16 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { Headline } from "@/ui/design-system/molecules/headline";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
 import { battleSimulation } from "@/ui/features";
 import { CombatSimulation } from "@/ui/modules/simulation/combat-simulation";
 import { divideByPrecisionFormatted } from "@/ui/utils/utils";
-import { getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
+import { Position, getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
 import { ArmyInfo, ClientComponents, ID, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import { HasValue, runQuery } from "@dojoengine/recs";
 import { CrosshairIcon, ShieldIcon, SwordIcon } from "lucide-react";
-import { ArmyChip } from "./army-chip";
+import { ArmyChip, NavigateToPositionIcon } from "./army-chip";
 import { UnifiedArmyCreationModal } from "./unified-army-creation-modal";
 
 const getArmiesCountByStructure = (structureEntityId: ID, components: ClientComponents) => {
@@ -107,15 +108,15 @@ export const EntitiesArmyTable = () => {
           </p>
         </div>
       ) : (
-        playerStructures.map((entity: any, index: number) => {
-          return <StructureWithArmy key={entity.entityId} entity={entity} showHint={index === 0} />;
+        playerStructures.map((entity: any) => {
+          return <StructureWithArmy key={entity.entityId} entity={entity} />;
         })
       )}
     </>
   );
 };
 
-const StructureWithArmy = ({ entity, showHint }: { entity: any; showHint: boolean }) => {
+const StructureWithArmy = ({ entity }: { entity: any }) => {
   const explorers = useExplorersByStructure({ structureEntityId: entity.entityId });
 
   if (explorers.length === 0) {
@@ -126,12 +127,29 @@ const StructureWithArmy = ({ entity, showHint }: { entity: any; showHint: boolea
   const isBlitz = getIsBlitz();
   const structureName = structureComponent ? getStructureName(structureComponent, isBlitz).name : undefined;
   const displayName = structureName || entity.name || `Structure ${entity.entityId}`;
+  const structurePosition = structureComponent?.base
+    ? new Position({
+        x: Number(structureComponent.base.coord_x ?? 0),
+        y: Number(structureComponent.base.coord_y ?? 0),
+      })
+    : null;
+  const showActions = Boolean(structurePosition);
 
   return (
     <div className="p-2 rounded-lg">
       <Headline>
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <span className="text-sm font-semibold text-gold">{displayName}</span>
+          {showActions && (
+            <div className="flex items-center gap-2">
+              {structurePosition && (
+                <>
+                  <ViewOnMapIcon position={structurePosition} />
+                  <NavigateToPositionIcon position={structurePosition} tooltipContent="Point compass" />
+                </>
+              )}
+            </div>
+          )}
         </div>
       </Headline>
 
