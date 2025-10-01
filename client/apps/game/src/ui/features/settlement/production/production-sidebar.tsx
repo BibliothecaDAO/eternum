@@ -283,9 +283,11 @@ const SidebarRealm = ({
   return (
     <div
       className={clsx(
-        "rounded-lg panel-wood transition-all cursor-pointer",
+        "rounded-lg panel-wood transition-all cursor-pointer border border-transparent",
         "px-3 py-2",
-        isSelected ? "ring-1 ring-gold/60 shadow-lg" : "hover:bg-gold/5",
+        isSelected
+          ? "border-gold/70 bg-gold/5 shadow-[0_0_18px_rgba(255,204,102,0.45)]"
+          : "hover:bg-gold/5",
       )}
       onClick={onSelect}
     >
