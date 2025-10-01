@@ -1,6 +1,6 @@
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
-import { AlertTriangle } from "lucide-react";
 import { Direction } from "@bibliothecadao/types";
+import { AlertTriangle } from "lucide-react";
 
 import { DirectionButton } from "./direction-button";
 
@@ -78,12 +78,12 @@ export const DirectionSelection = ({
           />
         </div>
       ) : (
-        <div className="text-center p-4 bg-gradient-to-r from-red/15 to-red/10 border-2 border-red/40 rounded-xl shadow-lg">
-          <div className="p-2 rounded-full bg-red/20 w-fit mx-auto mb-2">
-            <AlertTriangle className="w-6 h-6 text-red" />
+        <div className="text-center p-4 bg-gradient-to-r from-danger/15 to-danger/10 border-2 border-danger/40 rounded-xl shadow-lg">
+          <div className="p-2 rounded-full bg-danger/20 w-fit mx-auto mb-2">
+            <AlertTriangle className="w-6 h-6 text-danger" />
           </div>
-          <p className="text-red font-semibold">No adjacent tiles available</p>
-          <p className="text-red/80 text-sm mt-1">All surrounding tiles are occupied</p>
+          <p className="text-danger font-semibold">No adjacent tiles available</p>
+          <p className="text-danger/80 text-sm mt-1">All surrounding tiles are occupied</p>
         </div>
       )}
     </div>

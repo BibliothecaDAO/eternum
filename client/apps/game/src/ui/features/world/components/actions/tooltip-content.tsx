@@ -2,16 +2,16 @@ import clsx from "clsx";
 import type { ReactNode } from "react";
 import { memo } from "react";
 
-import { ID, ResourcesIds } from "@bibliothecadao/types";
 import { ActionPath, ActionPaths, ActionType, divideByPrecision } from "@bibliothecadao/eternum";
+import { ID, ResourcesIds } from "@bibliothecadao/types";
 
-import { InfoLabel } from "./info-label";
-import { CreateArmyInfo } from "./create-army-info";
-import { HelpInfo } from "./help-info";
 import { AttackInfo } from "./attack-info";
-import { formatAmount } from "./format-amount";
-import { QuestInfo } from "./quest-info";
 import { ChestInfo } from "./chest-info";
+import { CreateArmyInfo } from "./create-army-info";
+import { formatAmount } from "./format-amount";
+import { HelpInfo } from "./help-info";
+import { InfoLabel } from "./info-label";
+import { QuestInfo } from "./quest-info";
 import { StaminaSummary } from "./stamina-summary";
 
 interface FoodCosts {
@@ -40,6 +40,17 @@ interface TooltipContentProps {
   structureEntityId: ID;
   getBalance: BalanceGetter;
 }
+
+const ACTION_STATE_LABELS: Record<ActionType, string> = {
+  [ActionType.Move]: "Move",
+  [ActionType.Attack]: "Attack",
+  [ActionType.Build]: "Construct",
+  [ActionType.Help]: "Transfer",
+  [ActionType.Explore]: "Explore",
+  [ActionType.Quest]: "Quest",
+  [ActionType.Chest]: "Treasure",
+  [ActionType.CreateArmy]: "Create Army",
+};
 
 const TooltipTitle = ({ children }: { children: ReactNode }) => {
   return (
@@ -70,9 +81,15 @@ export const TooltipContent = memo(
     const roundedWheatCost = Math.round(wheatCost);
     const displayWheatCost = roundedWheatCost === 0 ? "0" : `-${formatAmount(roundedWheatCost)}`;
 
+    // Use the renamed action state label if available, fallback to the original type
+    const actionLabel =
+      actionType && ACTION_STATE_LABELS[actionType as ActionType]
+        ? ACTION_STATE_LABELS[actionType as ActionType]
+        : actionType?.toUpperCase();
+
     return (
       <>
-        <TooltipTitle>{actionType?.toUpperCase()}</TooltipTitle>
+        <TooltipTitle>{actionLabel}</TooltipTitle>
         {isTravelAction ? (
           <div className="mt-1 flex items-center gap-2">
             <InfoLabel variant="default" className="flex-1 items-center justify-between gap-2">

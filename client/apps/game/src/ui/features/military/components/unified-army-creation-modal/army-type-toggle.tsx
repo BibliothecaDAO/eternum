@@ -82,14 +82,14 @@ export const ArmyTypeToggle = ({
       </div>
 
       {shouldShowLimitWarning && (
-        <div className="bg-gradient-to-r from-light-red/15 to-light-red/10 border-2 border-gold/40 rounded-xl p-4 mt-4 shadow-lg">
+        <div className="bg-gradient-to-r from-light-danger/15 to-light-danger/10 border-2 border-gold/40 rounded-xl p-4 mt-4 shadow-lg">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-1 rounded-full bg-red/20">
-              <AlertTriangle className="w-5 h-5 text-red" />
+            <div className="p-1 rounded-full bg-danger/20">
+              <AlertTriangle className="w-5 h-5 text-danger" />
             </div>
-            <span className="text-red font-bold text-base">Army Limit Reached</span>
+            <span className="text-danger font-bold text-base">Army Limit Reached</span>
           </div>
-          <p className="text-sm text-red/90 ml-8">{limitMessage}</p>
+          <p className="text-sm text-danger/90 ml-8">{limitMessage}</p>
         </div>
       )}
     </div>
