@@ -214,6 +214,9 @@ export const StructureSelectPanel = memo(
                 <span>
                   {selectedStructure.structure ? getStructureName(selectedStructure.structure, getIsBlitz()).name : ""}
                 </span>
+                <span className="text-sm text-gold/70">
+                  Lvl {Number(selectedStructure.structure?.base?.level ?? 0)}
+                </span>
               </>
             </h5>
           </div>
@@ -348,7 +351,10 @@ export const StructureSelectPanel = memo(
                     <Pencil className="h-4 w-4" />
                   </button>
                   <SelectItem className="flex justify-between" value={structure.entityId?.toString() || ""}>
-                    <div className="self-center flex gap-4 text-xl">{structure.name}</div>
+                    <div className="self-center flex items-baseline gap-2 text-xl">
+                      <span>{structure.name}</span>
+                      <span className="text-sm text-gold/70">Lvl {structure.realmLevel}</span>
+                    </div>
                   </SelectItem>
                 </div>
               ))
