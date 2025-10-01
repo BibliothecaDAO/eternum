@@ -17,7 +17,6 @@ import { SceneManager } from "@/three/scene-manager";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView, RightView } from "@/types";
-import { ContextMenuAction } from "@/types/context-menu";
 import { Position } from "@bibliothecadao/eternum";
 
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
@@ -45,7 +44,6 @@ import {
 import {
   ActorType,
   BiomeType,
-  BuildingType,
   ContractAddress,
   Direction,
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
@@ -75,6 +73,7 @@ import {
   selectNextStructure as utilSelectNextStructure,
 } from "../utils/navigation";
 import { SceneShortcutManager } from "../utils/shortcuts";
+import { openStructureContextMenu } from "./context-menu/structure-context-menu";
 
 //const dummyObject = new Object3D();
 const dummyVector = new Vector3();
@@ -990,7 +989,14 @@ export default class WorldmapScene extends HexagonScene {
     const isMineStructure = structure?.owner !== undefined ? isAddressEqualToAccount(structure.owner) : false;
 
     if (structure && isMineStructure && !hasActiveEntityAction) {
-      this.openStructureContextMenu(event, structure, hexCoords);
+      openStructureContextMenu({
+        event,
+        structure,
+        hexCoords,
+        components: this.dojo.components,
+        isSoundOn: this.state.isSoundOn,
+        effectsLevel: this.state.effectsLevel,
+      });
       return;
     }
 
@@ -1024,162 +1030,6 @@ export default class WorldmapScene extends HexagonScene {
         }
       }
     }
-  }
-
-  private openStructureContextMenu(event: MouseEvent, structure: HexEntityInfo, hexCoords: HexPosition): void {
-    const uiStore = useUIStore.getState();
-    const idString = structure.id.toString();
-    const openArmyCreationModal = (isExplorer: boolean) => {
-      const store = useUIStore.getState();
-      store.setStructureEntityId(structure.id);
-      store.toggleModal(<UnifiedArmyCreationModal structureId={Number(structure.id)} isExplorer={isExplorer} />);
-    };
-
-    const selectConstructionBuilding = (building: BuildingType, view: LeftView) => {
-      const store = useUIStore.getState();
-      store.setStructureEntityId(structure.id);
-      store.setSelectedBuilding(building);
-      store.setLeftNavigationView(view);
-      store.setRightNavigationView(RightView.None);
-    };
-
-    const makeBuildingAction = (
-      suffix: string,
-      label: string,
-      icon: string,
-      building: BuildingType,
-      view: LeftView,
-    ): ContextMenuAction => ({
-      id: `structure-${idString}-${suffix}`,
-      label,
-      icon,
-      onSelect: () => {
-        selectConstructionBuilding(building, view);
-      },
-    });
-
-    const constructionChildren: ContextMenuAction[] = [
-      makeBuildingAction(
-        "workers-hut",
-        "Workers Hut",
-        "/image-icons/house.png",
-        BuildingType.WorkersHut,
-        LeftView.ConstructionView,
-      ),
-      makeBuildingAction(
-        "storehouse",
-        "Storehouse",
-        "/image-icons/building.png",
-        BuildingType.Storehouse,
-        LeftView.ConstructionView,
-      ),
-      makeBuildingAction(
-        "labor",
-        "Labor Camp",
-        "/image-icons/production.png",
-        BuildingType.ResourceLabor,
-        LeftView.ConstructionView,
-      ),
-      makeBuildingAction(
-        "market",
-        "Market",
-        "/image-icons/trade.png",
-        BuildingType.ResourceDonkey,
-        LeftView.ConstructionView,
-      ),
-    ];
-
-    const productionChildren: ContextMenuAction[] = [
-      makeBuildingAction(
-        "wheat",
-        "Wheat Farm",
-        "/image-icons/resources.png",
-        BuildingType.ResourceWheat,
-        LeftView.ConstructionView,
-      ),
-      makeBuildingAction(
-        "fish",
-        "Fishing Wharf",
-        "/image-icons/world.png",
-        BuildingType.ResourceFish,
-        LeftView.ConstructionView,
-      ),
-      makeBuildingAction(
-        "stone",
-        "Stone Quarry",
-        "/image-icons/building.png",
-        BuildingType.ResourceStone,
-        LeftView.ConstructionView,
-      ),
-      makeBuildingAction(
-        "ironwood",
-        "Ironwood Mill",
-        "/image-icons/hyperstructure.png",
-        BuildingType.ResourceIronwood,
-        LeftView.ConstructionView,
-      ),
-    ];
-
-    uiStore.openContextMenu({
-      id: `structure-${idString}`,
-      title: `Realm ${idString}`,
-      subtitle: `(${hexCoords.col}, ${hexCoords.row})`,
-      position: { x: event.clientX, y: event.clientY },
-      scene: SceneName.WorldMap,
-      layout: "radial",
-      metadata: {
-        entityId: structure.id,
-        entityType: "structure",
-        hex: hexCoords,
-      },
-      actions: [
-        {
-          id: `structure-${idString}-overview`,
-          label: "Realm Overview",
-          icon: "/image-icons/world.png",
-          onSelect: () => {
-            const store = useUIStore.getState();
-            store.setStructureEntityId(structure.id);
-            store.setLeftNavigationView(LeftView.EntityView);
-            store.setRightNavigationView(RightView.None);
-          },
-        },
-        {
-          id: `structure-${idString}-attack`,
-          label: "Create Attack Army",
-          icon: "/image-icons/military.png",
-          onSelect: () => {
-            openArmyCreationModal(true);
-          },
-        },
-        {
-          id: `structure-${idString}-defense`,
-          label: "Create Defense Army",
-          icon: "/image-icons/shield.png",
-          onSelect: () => {
-            openArmyCreationModal(false);
-          },
-        },
-        {
-          id: `structure-${idString}-buildings`,
-          label: "Build Structures",
-          icon: "/image-icons/building.png",
-          childTitle: "Choose Structure",
-          childSubtitle: `Realm ${idString}`,
-          children: constructionChildren,
-          onSelect: () => {},
-        },
-        {
-          id: `structure-${idString}-production`,
-          label: "Build Production",
-          icon: "/image-icons/production.png",
-          childTitle: "Choose Production",
-          childSubtitle: `Realm ${idString}`,
-          children: productionChildren,
-          onSelect: () => {},
-        },
-      ],
-    });
   }
 
   private onArmyMovement(account: Account | AccountInterface, actionPath: ActionPath[], selectedEntityId: ID) {

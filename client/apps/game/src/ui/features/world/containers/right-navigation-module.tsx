@@ -162,7 +162,7 @@ export const RightNavigationModule = () => {
   });
   const [isResizing, setIsResizing] = useState(false);
   const [showResizeHint, setShowResizeHint] = useState(() =>
-    typeof window !== "undefined" ? localStorage.getItem(RESIZE_HINT_STORAGE_KEY) !== "true" : true
+    typeof window !== "undefined" ? localStorage.getItem(RESIZE_HINT_STORAGE_KEY) !== "true" : true,
   );
   const resizeState = useRef({ startX: 0, startWidth: panelWidth });
 
@@ -306,9 +306,7 @@ export const RightNavigationModule = () => {
                 >
                   <div className="rounded-lg border border-gold/30 bg-brown/95 backdrop-blur-sm px-3 py-2 shadow-lg max-w-[200px]">
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-[11px] text-gold/90 leading-tight">
-                        Drag this handle to resize the panel
-                      </p>
+                      <p className="text-[11px] text-gold/90 leading-tight">Drag this handle to resize the panel</p>
                       <button
                         onClick={handleDismissHint}
                         className="flex-shrink-0 text-gold/60 hover:text-gold transition-colors"
@@ -324,9 +322,7 @@ export const RightNavigationModule = () => {
             <BaseContainer
               className={clsx(
                 "panel-wood panel-wood-corners w-full flex-1 rounded-l-2xl border-l-2 border-y-2 border-gold/20 pointer-events-auto overflow-x-auto",
-                storyChroniclesActive || resourceTableActive
-                  ? "h-[88vh] overflow-y-auto"
-                  : "h-[60vh] overflow-y-auto",
+                storyChroniclesActive || resourceTableActive ? "h-[88vh] overflow-y-auto" : "h-[60vh] overflow-y-auto",
               )}
             >
               <Suspense fallback={<div className="p-8">Loading...</div>}>

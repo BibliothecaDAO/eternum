@@ -557,6 +557,7 @@ export const WorldContextMenu = () => {
             const delayMs = index * 40; // Match segment stagger
             const sharedTransition =
               "transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), background-color 160ms ease, opacity 160ms ease, box-shadow 160ms ease";
+            const radialIconNode = segment.action.iconComponent?.radial ?? segment.action.iconComponent?.list;
 
             return (
               <div
@@ -580,7 +581,19 @@ export const WorldContextMenu = () => {
                     border: isActive ? "1px solid rgba(255,212,170,0.4)" : "1px solid rgba(255,212,170,0.15)",
                   }}
                 >
-                  {segment.action.icon ? (
+                  {radialIconNode ? (
+                    <span
+                      className={`pointer-events-none ${isActive ? "opacity-100" : "opacity-90"}`}
+                      style={{
+                        transition: "opacity 160ms ease, transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+                        display: "inline-block",
+                        transform: isActive ? "scale(1.12)" : "scale(1)",
+                      }}
+                      title={segment.action.label}
+                    >
+                      {radialIconNode}
+                    </span>
+                  ) : segment.action.icon ? (
                     <img
                       src={segment.action.icon}
                       alt={segment.action.label}
@@ -619,28 +632,37 @@ export const WorldContextMenu = () => {
             </div>
           )}
           <ul className="py-1">
-            {contextMenu.actions.map((action) => (
-              <li key={action.id}>
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-between gap-3 px-4 py-2 text-left text-sm transition hover:bg-gold/10 disabled:cursor-not-allowed disabled:text-gold/40"
-                  onClick={() => triggerAction(action)}
-                  onMouseEnter={playHoverSound}
-                  onFocus={playHoverSound}
-                  disabled={action.disabled}
-                >
-                  <span className="flex items-center gap-2">
-                    {action.icon && <img src={action.icon} alt="" className="h-4 w-4 opacity-70" />}
-                    {action.label}
-                  </span>
-                  {action.children && action.children.length > 0 ? (
-                    <span className="text-xs text-gold/40">›</span>
-                  ) : action.hint ? (
-                    <span className="text-xs text-gold/40">{action.hint}</span>
-                  ) : null}
-                </button>
-              </li>
-            ))}
+            {contextMenu.actions.map((action) => {
+              const listIconNode = action.iconComponent?.list ?? action.iconComponent?.radial;
+              return (
+                <li key={action.id}>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between gap-3 px-4 py-2 text-left text-sm transition hover:bg-gold/10 disabled:cursor-not-allowed disabled:text-gold/40"
+                    onClick={() => triggerAction(action)}
+                    onMouseEnter={playHoverSound}
+                    onFocus={playHoverSound}
+                    disabled={action.disabled}
+                  >
+                    <span className="flex items-center gap-2">
+                      {listIconNode ? (
+                        <span className="flex h-5 w-5 items-center justify-center pointer-events-none">
+                          {listIconNode}
+                        </span>
+                      ) : action.icon ? (
+                        <img src={action.icon} alt="" className="h-4 w-4 opacity-70" />
+                      ) : null}
+                      {action.label}
+                    </span>
+                    {action.children && action.children.length > 0 ? (
+                      <span className="text-xs text-gold/40">›</span>
+                    ) : action.hint ? (
+                      <span className="text-xs text-gold/40">{action.hint}</span>
+                    ) : null}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
