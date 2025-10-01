@@ -1044,6 +1044,7 @@ class Minimap {
       this.canvas.removeEventListener("mouseup", this.handleMouseUp);
       this.canvas.removeEventListener("wheel", this.handleWheel);
       this.canvas.removeEventListener("mouseleave", this.handleMouseLeave);
+      this.canvas.removeEventListener("canvasResized", this.handleResize);
     }
 
     // Clear all cached data
@@ -1067,6 +1068,10 @@ class Minimap {
     this.canvas = null as any;
     this.context = null as any;
     this.hoveredHexCoords = null;
+
+    if ((window as any).minimapInstance === this) {
+      (window as any).minimapInstance = undefined;
+    }
 
     console.log(`🧹 Minimap: Disposed ${imagesDisposed} images and cleaned up canvas`);
   }

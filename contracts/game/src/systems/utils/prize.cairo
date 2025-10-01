@@ -98,8 +98,13 @@ pub impl iPrizeDistributionCalcImpl of iPrizeDistributionCalcTrait {
 
 
     fn get_position_prize_amount(
-        entry_cost_amount: Fixed, position: u16, remainder: Fixed, sum_position_weights: Fixed, s_parameter: Fixed,
+        entry_cost_amount: Fixed, position: u16, remainder: Fixed, sum_position_weights: Fixed, s_parameter: Fixed, winner_count: u16
     ) -> u128 {
+
+        if position > winner_count {
+            return 0;
+        }
+
         let norm_weight = Self::_norm_weight(Self::_rank_weight(position, s_parameter), sum_position_weights);
 
         let amount: u128 = Self::_prize_amount(entry_cost_amount, norm_weight, remainder).mag;

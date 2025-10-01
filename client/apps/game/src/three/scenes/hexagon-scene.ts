@@ -1,6 +1,7 @@
 import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
 import { HEX_SIZE, biomeModelPaths } from "@/three/constants";
+import { DayNightCycleManager } from "@/three/effects/day-night-cycle";
 import { HighlightHexManager } from "@/three/managers/highlight-hex-manager";
 import { InputManager } from "@/three/managers/input-manager";
 import InstancedBiome from "@/three/managers/instanced-biome";
@@ -64,6 +65,7 @@ export abstract class HexagonScene {
   protected highlightHexManager!: HighlightHexManager;
   protected locationManager!: LocationManager;
   protected thunderBoltManager!: ThunderBoltManager;
+  protected dayNightCycleManager!: DayNightCycleManager;
   protected GUIFolder!: any;
   protected biomeModels = new Map<BiomeType, InstancedBiome>();
   protected modelLoadPromises: Array<Promise<void>> = [];
@@ -156,6 +158,7 @@ export abstract class HexagonScene {
     this.setupDirectionalLight();
     this.setupStormLighting();
     this.setupLightHelper();
+    this.setupDayNightCycle();
   }
 
   private setupHemisphereLight(): void {
@@ -197,6 +200,16 @@ export abstract class HexagonScene {
   private setupLightHelper(): void {
     this.lightHelper = new DirectionalLightHelper(this.mainDirectionalLight, 1);
     if (env.VITE_PUBLIC_GRAPHICS_DEV == true) this.scene.add(this.lightHelper);
+  }
+
+  private setupDayNightCycle(): void {
+    this.dayNightCycleManager = new DayNightCycleManager(
+      this.scene,
+      this.mainDirectionalLight,
+      this.hemisphereLight,
+      this.ambientPurpleLight,
+      this.fog,
+    );
   }
 
   private setupInputHandlers(): void {
@@ -254,6 +267,7 @@ export abstract class HexagonScene {
     this.setupShadowGUI();
     this.setupFogGUI();
     this.thunderBoltManager.setupGUI(this.GUIFolder);
+    this.dayNightCycleManager.addGUIControls(this.GUIFolder);
   }
 
   private setupSceneGUI(): void {
@@ -575,7 +589,8 @@ export abstract class HexagonScene {
   }
 
   private updateLights = throttle(() => {
-    if (this.mainDirectionalLight) {
+    // Only manually update lights if day/night cycle is not managing them
+    if (this.mainDirectionalLight && !this.dayNightCycleManager?.params?.enabled) {
       const { x, y, z } = this.controls.target;
       this.mainDirectionalLight.position.set(x - 15, y + 13, z + 8);
       this.mainDirectionalLight.target.position.set(x, y, z - 5.2);
@@ -602,6 +617,10 @@ export abstract class HexagonScene {
     // Check for lightning trigger based on cycle timing instead of random
     const cycleProgress = this.state.cycleProgress || 0;
     this.shouldTriggerLightningAtCycleProgress(cycleProgress);
+
+    // Update day/night cycle with camera target for proper light positioning
+    const cameraTarget = this.controls.target;
+    this.dayNightCycleManager.update(cycleProgress, cameraTarget);
 
     // Only update normal storm effects if lightning is not active
     if (this.lightningEndTime === 0) {

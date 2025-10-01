@@ -18,7 +18,6 @@ export class SelectionPulseManager {
   constructor(scene: THREE.Scene) {
     this.scene = scene;
     this.createPulseMesh();
-    this.startAnimation();
   }
 
   private createPulseMesh(): void {
@@ -37,25 +36,64 @@ export class SelectionPulseManager {
     this.scene.add(this.pulseMesh);
   }
 
-  private startAnimation(): void {
-    const animate = (currentTime: number) => {
-      const deltaTime = (currentTime - this.lastTime) * 0.001; // Convert to seconds
-      this.lastTime = currentTime;
+  private shouldAnimate(): boolean {
+    if (this.isVisible) {
+      return true;
+    }
 
-      if (deltaTime > 0) {
-        updateSelectionPulseMaterial(deltaTime);
-        this.ownershipPulseMeshes.forEach((mesh) => {
-          if (!mesh.visible) return;
-          const material = mesh.material as THREE.ShaderMaterial;
-          material.uniforms.time.value += deltaTime;
-        });
-      }
-
-      this.animationId = requestAnimationFrame(animate);
-    };
-
-    this.animationId = requestAnimationFrame(animate);
+    return this.ownershipPulseMeshes.some((mesh) => mesh.visible);
   }
+
+  private ensureAnimationRunning(): void {
+    if (this.animationId !== null) {
+      return;
+    }
+
+    if (!this.shouldAnimate()) {
+      return;
+    }
+
+    this.lastTime = performance.now();
+    this.animationId = requestAnimationFrame(this.animate);
+  }
+
+  private stopAnimationIfIdle(): void {
+    if (this.animationId === null) {
+      return;
+    }
+
+    if (this.shouldAnimate()) {
+      return;
+    }
+
+    cancelAnimationFrame(this.animationId);
+    this.animationId = null;
+    this.lastTime = 0;
+  }
+
+  private animate = (currentTime: number) => {
+    if (!this.shouldAnimate()) {
+      this.animationId = null;
+      this.lastTime = 0;
+      return;
+    }
+
+    const deltaTime = this.lastTime ? (currentTime - this.lastTime) * 0.001 : 0;
+    this.lastTime = currentTime;
+
+    if (deltaTime > 0) {
+      updateSelectionPulseMaterial(deltaTime);
+      this.ownershipPulseMeshes.forEach((mesh) => {
+        if (!mesh.visible) return;
+        const material = mesh.material as THREE.ShaderMaterial;
+        if (material.uniforms.time) {
+          material.uniforms.time.value += deltaTime;
+        }
+      });
+    }
+
+    this.animationId = requestAnimationFrame(this.animate);
+  };
 
   /**
    * Show selection pulse at the specified position for an entity
@@ -71,6 +109,8 @@ export class SelectionPulseManager {
       this.pulseMesh.visible = true;
       this.isVisible = true;
     }
+
+    this.ensureAnimationRunning();
   }
 
   /**
@@ -82,6 +122,8 @@ export class SelectionPulseManager {
     this.pulseMesh.visible = false;
     this.isVisible = false;
     this.selectedEntityId = null;
+
+    this.stopAnimationIfIdle();
   }
 
   /**
@@ -122,6 +164,8 @@ export class SelectionPulseManager {
       const mesh = this.ownershipPulseMeshes[i];
       mesh.visible = false;
     }
+
+    this.ensureAnimationRunning();
   }
 
   /**
@@ -131,6 +175,8 @@ export class SelectionPulseManager {
     this.ownershipPulseMeshes.forEach((mesh) => {
       mesh.visible = false;
     });
+
+    this.stopAnimationIfIdle();
   }
 
   /**
@@ -178,6 +224,7 @@ export class SelectionPulseManager {
       cancelAnimationFrame(this.animationId);
       this.animationId = null;
     }
+    this.lastTime = 0;
 
     if (this.pulseMesh) {
       this.scene.remove(this.pulseMesh);
