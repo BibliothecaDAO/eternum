@@ -1753,7 +1753,6 @@ export default class WorldmapScene extends HexagonScene {
       this.armyStructureOwners.delete(entityId);
     }
 
-    // Handle the case where we receive an update with 0n owner for an existing army
     let actualOwnerAddress = ownerAddress;
     if (ownerAddress === 0n) {
       console.warn(`[DEBUG] Army ${entityId} has zero owner address (0n) - this may cause selection issues!`);
