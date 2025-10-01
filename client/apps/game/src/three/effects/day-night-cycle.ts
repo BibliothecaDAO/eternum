@@ -20,6 +20,7 @@ interface DayNightParams {
   sunDistance: number;
   transitionSmoothness: number; // 0-1, higher = smoother
   colorTransitionSpeed: number; // How fast colors transition (0.01-1.0)
+  sunPositionEasing: number; // How fast sun follows camera (0.01-1.0)
 }
 
 export class DayNightCycleManager {
@@ -28,13 +29,14 @@ export class DayNightCycleManager {
   private hemisphereLight: HemisphereLight;
   private ambientLight: AmbientLight;
   private fog: Fog;
-  private params: DayNightParams = {
+  public params: DayNightParams = {
     enabled: true,
     cycleSpeed: 1.0,
     sunHeight: 9,
     sunDistance: 15,
     transitionSmoothness: 0.5,
     colorTransitionSpeed: 0.05, // Smooth color transitions
+    sunPositionEasing: 0.1, // Smooth sun movement when camera pans
   };
 
   // Current color state (for smooth transitions)
@@ -50,6 +52,10 @@ export class DayNightCycleManager {
     fogNear: 15,
     fogFar: 35,
   };
+
+  // Current sun position state (for smooth camera tracking)
+  private currentSunPosition: Vector3 = new Vector3(0, 9, 0);
+  private currentSunTarget: Vector3 = new Vector3(0, 0, 5.2);
 
   // Store original lighting values to restore when disabled
   private originalLightingState: {
@@ -169,8 +175,10 @@ export class DayNightCycleManager {
 
   /**
    * Update the day/night cycle based on game cycle progress (0-100)
+   * @param cycleProgress - Game cycle progress (0-100)
+   * @param cameraTarget - Optional camera target position to offset sun position
    */
-  update(cycleProgress: number): void {
+  update(cycleProgress: number, cameraTarget?: Vector3): void {
     if (!this.params.enabled) return;
 
     // Apply cycle speed multiplier for testing
@@ -185,8 +193,8 @@ export class DayNightCycleManager {
     // Update lighting with smoothed colors
     this.updateLighting(this.currentColors);
 
-    // Update sun position
-    this.updateSunPosition(adjustedProgress);
+    // Update sun position (relative to camera target if provided)
+    this.updateSunPosition(adjustedProgress, cameraTarget);
   }
 
   /**
@@ -313,8 +321,10 @@ export class DayNightCycleManager {
   /**
    * Update sun position based on cycle progress
    * Sun rises from east, peaks at noon, sets in west
+   * @param progress - Cycle progress (0-100)
+   * @param cameraTarget - Optional camera target to offset sun position
    */
-  private updateSunPosition(progress: number): void {
+  private updateSunPosition(progress: number, cameraTarget?: Vector3): void {
     // Convert progress to angle (0-360 degrees)
     // 0 = midnight (below horizon)
     // 25 = sunrise (eastern horizon)
@@ -324,13 +334,35 @@ export class DayNightCycleManager {
 
     const angle = (progress / 100) * Math.PI * 2;
 
-    // Calculate sun position in an arc
-    const x = Math.sin(angle) * this.params.sunDistance;
-    const y = Math.cos(angle) * this.params.sunHeight;
-    const z = Math.cos(angle) * this.params.sunDistance * 0.3; // Slight depth variation
+    // Calculate sun position offset in an arc
+    const offsetX = Math.sin(angle) * this.params.sunDistance;
+    const offsetY = Math.cos(angle) * this.params.sunHeight;
+    const offsetZ = Math.cos(angle) * this.params.sunDistance * 0.3; // Slight depth variation
 
-    this.directionalLight.position.set(x, Math.max(y, 0.5), z);
-    this.directionalLight.target.position.set(0, 0, 5.2);
+    // Calculate target sun position and target
+    let targetSunPosition: Vector3;
+    let targetSunTarget: Vector3;
+
+    if (cameraTarget) {
+      targetSunPosition = new Vector3(
+        cameraTarget.x + offsetX,
+        cameraTarget.y + Math.max(offsetY, 0.5),
+        cameraTarget.z + offsetZ,
+      );
+      targetSunTarget = new Vector3(cameraTarget.x, cameraTarget.y, cameraTarget.z + 5.2);
+    } else {
+      // Default behavior - sun at world origin
+      targetSunPosition = new Vector3(offsetX, Math.max(offsetY, 0.5), offsetZ);
+      targetSunTarget = new Vector3(0, 0, 5.2);
+    }
+
+    // Smoothly lerp current sun position toward target
+    this.currentSunPosition.lerp(targetSunPosition, this.params.sunPositionEasing);
+    this.currentSunTarget.lerp(targetSunTarget, this.params.sunPositionEasing);
+
+    // Apply smoothed position to light
+    this.directionalLight.position.copy(this.currentSunPosition);
+    this.directionalLight.target.position.copy(this.currentSunTarget);
     this.directionalLight.target.updateMatrixWorld();
   }
 
@@ -406,6 +438,8 @@ export class DayNightCycleManager {
     dayNightFolder.add(this.params, "transitionSmoothness", 0, 1, 0.05).name("Transition Smoothness");
 
     dayNightFolder.add(this.params, "colorTransitionSpeed", 0.01, 1.0, 0.01).name("Color Transition Speed");
+
+    dayNightFolder.add(this.params, "sunPositionEasing", 0.01, 1.0, 0.01).name("Sun Position Easing");
 
     dayNightFolder.add(this.params, "sunHeight", 5, 20, 0.5).name("Sun Height");
 

@@ -589,7 +589,8 @@ export abstract class HexagonScene {
   }
 
   private updateLights = throttle(() => {
-    if (this.mainDirectionalLight) {
+    // Only manually update lights if day/night cycle is not managing them
+    if (this.mainDirectionalLight && !this.dayNightCycleManager?.params?.enabled) {
       const { x, y, z } = this.controls.target;
       this.mainDirectionalLight.position.set(x - 15, y + 13, z + 8);
       this.mainDirectionalLight.target.position.set(x, y, z - 5.2);
@@ -617,8 +618,9 @@ export abstract class HexagonScene {
     const cycleProgress = this.state.cycleProgress || 0;
     this.shouldTriggerLightningAtCycleProgress(cycleProgress);
 
-    // Update day/night cycle
-    this.dayNightCycleManager.update(cycleProgress);
+    // Update day/night cycle with camera target for proper light positioning
+    const cameraTarget = this.controls.target;
+    this.dayNightCycleManager.update(cycleProgress, cameraTarget);
 
     // Only update normal storm effects if lightning is not active
     if (this.lightningEndTime === 0) {
