@@ -3,6 +3,7 @@ import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ProductionModal } from "@/ui/features/settlement";
+import { formatStorageValue } from "@/ui/utils/storage-utils";
 import {
   calculateDonkeysNeeded,
   getBuildingQuantity,
@@ -304,6 +305,12 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
     storageOverview && storageOverview.capacityKg > 0
       ? storageOverview.remainingKg / storageOverview.capacityKg <= 0.15
       : false;
+  const formattedStorageCapacity = storageOverview ? formatStorageValue(storageOverview.capacityKg) : null;
+  const formattedStorageUsed = storageOverview ? formatStorageValue(storageOverview.capacityUsedKg) : null;
+  const formattedStorageRemaining =
+    storageOverview && formattedStorageCapacity
+      ? formatStorageValue(storageOverview.remainingKg, { forceInfinite: formattedStorageCapacity.isInfinite })
+      : null;
 
   const handleToggleTierVisibility = useCallback((tierKey: string) => {
     setCollapsedTiers((prev) => {
@@ -719,20 +726,26 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
               <div className="flex items-center gap-2">
                 <span className="uppercase font-semibold text-gold/80">Remaining Storage</span>
                 <span className={clsx("font-semibold", storageWarning ? "text-red" : "text-green")}>
-                  {storageOverview.remainingKg.toLocaleString(undefined, { maximumFractionDigits: 0 })} kg
+                  {formattedStorageRemaining?.isInfinite
+                    ? formattedStorageRemaining.display
+                    : `${formattedStorageRemaining?.display ?? "0"} kg`}
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 <span className="flex items-center gap-1">
                   <span className="text-gold/50">Used</span>
                   <span className="text-gold">
-                    {storageOverview.capacityUsedKg.toLocaleString(undefined, { maximumFractionDigits: 0 })} kg
+                    {formattedStorageUsed?.isInfinite
+                      ? formattedStorageUsed.display
+                      : `${formattedStorageUsed?.display ?? "0"} kg`}
                   </span>
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="text-gold/50">Total</span>
                   <span className="text-gold">
-                    {storageOverview.capacityKg.toLocaleString(undefined, { maximumFractionDigits: 0 })} kg
+                    {formattedStorageCapacity?.isInfinite
+                      ? formattedStorageCapacity.display
+                      : `${formattedStorageCapacity?.display ?? "0"} kg`}
                   </span>
                 </span>
                 <span className="flex items-center gap-1">
