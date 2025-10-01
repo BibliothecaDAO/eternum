@@ -22,7 +22,7 @@ import {
 import { Color, Euler, Group, Raycaster, Scene, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { ArmyData, RenderChunkSize } from "../types";
-import { getWorldPositionForHex, hashCoordinates } from "../utils";
+import { getHexForWorldPosition, getWorldPositionForHex, hashCoordinates } from "../utils";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
 import { LabelPool } from "../utils/labels/label-pool";
@@ -444,7 +444,14 @@ export class ArmyManager {
     let currentCount = 0;
 
     visibleArmies.forEach((army) => {
-      const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
+      const numericId = Number(army.entityId);
+      let position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
+      if (this.armyModel.isEntityMoving(numericId)) {
+        const worldPos = this.armyModel.getEntityWorldPosition(numericId);
+        if (worldPos) {
+          position = worldPos;
+        }
+      }
       const { x, y } = army.hexCoords.getContract();
       const modelType = modelTypesByEntity.get(army.entityId);
 
@@ -474,6 +481,7 @@ export class ArmyManager {
       const updatedArmy = { ...army, matrixIndex: currentCount };
       updatedVisibleArmies.push(updatedArmy);
       this.armies.set(army.entityId, updatedArmy);
+      this.armyModel.rebindMovementMatrixIndex(army.entityId, currentCount);
 
       const activeLabel = this.entityIdLabels.get(army.entityId);
       if (activeLabel) {
@@ -504,7 +512,18 @@ export class ArmyManager {
     startRow: number,
     startCol: number,
   ) {
-    const { x, y } = army.hexCoords.getNormalized();
+    const entityIdNumber = Number(army.entityId);
+    let normalizedPosition = army.hexCoords.getNormalized();
+
+    if (this.armyModel.isEntityMoving(entityIdNumber)) {
+      const worldPos = this.armyModel.getEntityWorldPosition(entityIdNumber);
+      if (worldPos) {
+        const { col, row } = getHexForWorldPosition(worldPos);
+        normalizedPosition = { x: col, y: row };
+      }
+    }
+
+    const { x, y } = normalizedPosition;
     const isVisible =
       x >= startCol - this.renderChunkSize.width / 2 &&
       x <= startCol + this.renderChunkSize.width / 2 &&
