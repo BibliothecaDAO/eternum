@@ -1661,10 +1661,17 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     const hasPendingMovement = reason === "tile" && this.pendingArmyMovements.has(entityId);
-    const baseDelay = reason === "tile" ? 600 : 0;
-    const initialDelay = hasPendingMovement ? 2500 : baseDelay;
+    // Increased delays to allow tile updates to propagate properly
+    // - tile removals now wait longer (1500ms instead of 600ms) to ensure movement updates arrive
+    // - zero troop removals are immediate (0ms) since they're confirmed deaths
+    const baseDelay = reason === "tile" ? 1500 : 0;
+    const initialDelay = hasPendingMovement ? 3000 : baseDelay;
     const retryDelay = 500;
-    const maxPendingWaitMs = 8000;
+    const maxPendingWaitMs = 10000; // Increased from 8000ms to 10000ms
+
+    console.debug(
+      `[WorldMap] Scheduling army removal for entity ${entityId} (reason: ${reason}, delay: ${initialDelay}ms, hasPendingMovement: ${hasPendingMovement})`,
+    );
 
     const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
     const start = now();
@@ -1674,6 +1681,9 @@ export default class WorldmapScene extends HexagonScene {
         if (reason === "tile" && this.pendingArmyMovements.has(entityId)) {
           const elapsed = now() - start;
           if (elapsed < maxPendingWaitMs) {
+            console.debug(
+              `[WorldMap] Army ${entityId} still has pending movement, retrying removal in ${retryDelay}ms (elapsed: ${elapsed.toFixed(0)}ms)`,
+            );
             schedule(retryDelay);
             return;
           }
