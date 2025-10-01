@@ -114,11 +114,7 @@ export interface QuestLabelData extends LabelData {
 /**
  * Create base label element with common properties
  */
-const createLabelBase = (
-  isMine: boolean,
-  inputView: CameraView,
-  isDaydreamsAgent?: boolean,
-): HTMLElement => {
+const createLabelBase = (isMine: boolean, inputView: CameraView, isDaydreamsAgent?: boolean): HTMLElement => {
   const cameraView = resolveCameraView(inputView);
   const labelDiv = document.createElement("div");
 

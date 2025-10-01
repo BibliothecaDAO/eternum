@@ -62,10 +62,7 @@ const ProductionStatusBadge = ({
 }) => {
   const isProducing = summary.isProducing;
   const remainingSeconds = timeRemainingSeconds ?? null;
-  const effectiveRemaining =
-    remainingSeconds === null
-      ? null
-      : Math.max(remainingSeconds, 0);
+  const effectiveRemaining = remainingSeconds === null ? null : Math.max(remainingSeconds, 0);
   const progressPercent = !isProducing
     ? 0
     : effectiveRemaining === null || effectiveRemaining >= PRODUCTION_DEPLETION_WINDOW_SECONDS
@@ -92,20 +89,12 @@ const ProductionStatusBadge = ({
 
   return (
     <div
-      className={clsx(
-        "relative inline-flex items-center justify-center",
-        wrapperSize,
-        onClick ? "cursor-pointer" : "",
-      )}
+      className={clsx("relative inline-flex items-center justify-center", wrapperSize, onClick ? "cursor-pointer" : "")}
       onClick={onClick}
     >
       {shouldPulse && (
         <span
-          className={clsx(
-            "absolute pointer-events-none rounded-full bg-emerald-400/20",
-            ringOffset,
-            "animate-ping",
-          )}
+          className={clsx("absolute pointer-events-none rounded-full bg-emerald-400/20", ringOffset, "animate-ping")}
         />
       )}
       <span
@@ -117,10 +106,7 @@ const ProductionStatusBadge = ({
         )}
       />
       {isProducing && (
-        <span
-          className={clsx("absolute pointer-events-none rounded-full", progressOffset)}
-          style={progressStyle}
-        />
+        <span className={clsx("absolute pointer-events-none rounded-full", progressOffset)} style={progressStyle} />
       )}
       <div
         className={clsx(
@@ -132,9 +118,7 @@ const ProductionStatusBadge = ({
         <ResourceIcon resource={resourceLabel} size={size === "sm" ? "sm" : "xs"} tooltipText={tooltipText} />
       </div>
       {summary.totalBuildings > 0 && (
-        <span
-          className="absolute -top-1 -right-1 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[9px] font-semibold text-[#2a1f14] shadow-md"
-        >
+        <span className="absolute -top-1 -right-1 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[9px] font-semibold text-[#2a1f14] shadow-md">
           {summary.totalBuildings}
         </span>
       )}
@@ -285,9 +269,7 @@ const SidebarRealm = ({
       className={clsx(
         "rounded-lg panel-wood transition-all cursor-pointer border border-transparent",
         "px-3 py-2",
-        isSelected
-          ? "border-gold/70 bg-gold/5 shadow-[0_0_18px_rgba(255,204,102,0.45)]"
-          : "hover:bg-gold/5",
+        isSelected ? "border-gold/70 bg-gold/5 shadow-[0_0_18px_rgba(255,204,102,0.45)]" : "hover:bg-gold/5",
       )}
       onClick={onSelect}
     >

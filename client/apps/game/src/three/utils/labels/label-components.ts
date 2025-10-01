@@ -270,11 +270,7 @@ export const createOwnerDisplayElement = (options: OwnerDisplayOptions): HTMLEle
 /**
  * Create stamina bar component
  */
-export const createStaminaBar = (
-  currentStamina: number,
-  maxStamina: number,
-  inputView: CameraView,
-): HTMLElement => {
+export const createStaminaBar = (currentStamina: number, maxStamina: number, inputView: CameraView): HTMLElement => {
   const cameraView = resolveCameraView(inputView);
   const container = document.createElement("div");
   container.setAttribute("data-component", "stamina-bar");
@@ -621,9 +617,7 @@ export const createProductionDisplay = (
 /**
  * Create content container with transition wrapper
  */
-export const createContentContainer = (
-  inputView: CameraView,
-): HTMLElement & { wrapper: HTMLElement } => {
+export const createContentContainer = (inputView: CameraView): HTMLElement & { wrapper: HTMLElement } => {
   const cameraView = resolveCameraView(inputView);
   const wrapperContainer = document.createElement("div");
   wrapperContainer.classList.add("transition-all", "duration-700", "ease-in-out", "overflow-hidden");

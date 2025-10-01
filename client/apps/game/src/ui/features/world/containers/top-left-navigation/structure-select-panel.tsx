@@ -10,7 +10,19 @@ import {
   StructureType,
 } from "@bibliothecadao/types";
 import type { ComponentValue } from "@dojoengine/recs";
-import { Crown, EyeIcon, Landmark, Palette, Pencil, Pickaxe, Search, ShieldQuestion, Sparkles, Star, X } from "lucide-react";
+import {
+  Crown,
+  EyeIcon,
+  Landmark,
+  Palette,
+  Pencil,
+  Pickaxe,
+  Search,
+  ShieldQuestion,
+  Sparkles,
+  Star,
+  X,
+} from "lucide-react";
 
 import { useUISound } from "@/audio/hooks/useUISound";
 import type { getEntityInfo } from "@bibliothecadao/eternum";
@@ -231,9 +243,7 @@ export const StructureSelectPanel = memo(
         return;
       }
 
-      const groupStillExists = structuresWithMetadata.some(
-        (structure) => structure.groupColor === groupFilter,
-      );
+      const groupStillExists = structuresWithMetadata.some((structure) => structure.groupColor === groupFilter);
 
       if (!groupStillExists) {
         setGroupFilter("all");
@@ -270,9 +280,7 @@ export const StructureSelectPanel = memo(
             <h5 className="flex items-center gap-4 truncate">
               <>
                 {getStructureIcon(selectedStructure)}
-                {selectedGroupConfig && (
-                  <span className={`h-2 w-2 rounded-full ${selectedGroupConfig.dotClass}`} />
-                )}
+                {selectedGroupConfig && <span className={`h-2 w-2 rounded-full ${selectedGroupConfig.dotClass}`} />}
                 <span className={selectedGroupConfig ? selectedGroupConfig.textClass : ""}>
                   {selectedStructure.structure ? getStructureName(selectedStructure.structure, isBlitz).name : ""}
                 </span>
@@ -366,7 +374,10 @@ export const StructureSelectPanel = memo(
                     ))}
                   </SelectContent>
                 </Select>
-                <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as CategoryFilterValue)}>
+                <Select
+                  value={categoryFilter}
+                  onValueChange={(value) => setCategoryFilter(value as CategoryFilterValue)}
+                >
                   <SelectTrigger className="h-8 bg-brown/20 border border-gold/30 rounded text-xs text-gold px-3 py-1">
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
@@ -387,11 +398,7 @@ export const StructureSelectPanel = memo(
                       <SelectItem key={option.value} value={option.value} className="text-xs">
                         {option.type === "color" ? (
                           <div className="flex items-center gap-2">
-                            <span
-                              className={`h-3 w-3 rounded-full ${
-                                STRUCTURE_GROUP_CONFIG[option.color].dotClass
-                              }`}
-                            />
+                            <span className={`h-3 w-3 rounded-full ${STRUCTURE_GROUP_CONFIG[option.color].dotClass}`} />
                             <span className="sr-only">{option.label}</span>
                           </div>
                         ) : (
@@ -464,9 +471,7 @@ export const StructureSelectPanel = memo(
                       <span className="flex items-center gap-2">
                         {structure.groupColor && (
                           <span
-                            className={`h-2 w-2 rounded-full ${
-                              STRUCTURE_GROUP_CONFIG[structure.groupColor].dotClass
-                            }`}
+                            className={`h-2 w-2 rounded-full ${STRUCTURE_GROUP_CONFIG[structure.groupColor].dotClass}`}
                           />
                         )}
                         <span

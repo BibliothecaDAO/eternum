@@ -267,10 +267,11 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
       }
 
       try {
-        const { capacityKg: capacity, capacityUsedKg: used, quantity } = new ResourceManager(
-          components,
-          structure.entityId as ID,
-        ).getStoreCapacityKg();
+        const {
+          capacityKg: capacity,
+          capacityUsedKg: used,
+          quantity,
+        } = new ResourceManager(components, structure.entityId as ID).getStoreCapacityKg();
 
         capacityKg += capacity;
         capacityUsedKg += used;
@@ -877,11 +878,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                           <span>{TIER_DISPLAY_NAMES[tier] || tier}</span>
                           <span className="flex items-center gap-2 text-[9px] font-medium text-gold/60">
                             {rows.length}
-                            {isCollapsed ? (
-                              <ArrowDown className="h-3 w-3" />
-                            ) : (
-                              <ArrowUp className="h-3 w-3" />
-                            )}
+                            {isCollapsed ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />}
                           </span>
                         </button>
                       </td>
@@ -940,8 +937,8 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                                 <td
                                   key={structure.entityId}
                                   className={clsx(
-                                  "px-2 py-1.5 align-top cursor-pointer border-r border-gold/[0.07] last:border-r-0",
-                                  structure.isSelected && "bg-gold/10",
+                                    "px-2 py-1.5 align-top cursor-pointer border-r border-gold/[0.07] last:border-r-0",
+                                    structure.isSelected && "bg-gold/10",
                                   )}
                                   role="button"
                                   tabIndex={0}
@@ -953,56 +950,56 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                                     }
                                   }}
                                 >
-                                {cell ? (
-                                  <TransferCell
-                                    key={`${structure.entityId}-${resourceId}`}
-                                    structureId={structure.entityId}
-                                    resourceId={resourceId}
-                                    cell={cell}
-                                    isSelectedStructure={isSelectedStructure}
-                                    hasProductionBuilding={hasProductionBuilding}
-                                    onManageProduction={() => handleManageProduction(structure.entityId, resourceId)}
-                                    onOpenTransfer={() => handleOpenTransfer(resourceId)}
-                                    onDragStart={handleDragStart}
-                                    onDragEnd={handleDragEnd}
-                                    onDoubleClick={handleDoubleClick}
-                                    dragState={dragState}
-                                    onDragOver={handleDragOver}
-                                    onDrop={handleDrop}
-                                    pendingTransfers={getPendingTransfers(structure.entityId, resourceId)}
-                                    transferAnimations={transferAnimations}
-                                    inlineEditState={inlineEditState}
-                                    onInlineEditChange={setInlineEditState}
-                                    onInlineDestinationSelect={handleInlineDestinationSelect}
-                                    structureColumns={structureColumns}
-                                  />
-                                ) : (
-                                  <div
-                                    className={clsx(
-                                      "min-h-[40px] flex items-center justify-center rounded-md transition-all",
-                                      dragState.isDragging &&
-                                        dragState.dragOverStructureId === structure.entityId &&
-                                        dragState.dragData?.resourceId === resourceId &&
-                                        canTransferResource(
-                                          dragState.dragData.structureId,
-                                          structure.entityId,
-                                          resourceId,
-                                        )
-                                        ? "bg-gold/20 border-2 border-dashed border-gold/60"
-                                        : "border border-transparent",
-                                    )}
-                                    onDragOver={(e) => handleDragOver(e, structure.entityId)}
-                                    onDrop={(e) => handleDrop(e, structure.entityId)}
-                                  >
-                                    <span className="text-[11px] text-gold/30">-</span>
-                                  </div>
-                                )}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      );
-                    })}
+                                  {cell ? (
+                                    <TransferCell
+                                      key={`${structure.entityId}-${resourceId}`}
+                                      structureId={structure.entityId}
+                                      resourceId={resourceId}
+                                      cell={cell}
+                                      isSelectedStructure={isSelectedStructure}
+                                      hasProductionBuilding={hasProductionBuilding}
+                                      onManageProduction={() => handleManageProduction(structure.entityId, resourceId)}
+                                      onOpenTransfer={() => handleOpenTransfer(resourceId)}
+                                      onDragStart={handleDragStart}
+                                      onDragEnd={handleDragEnd}
+                                      onDoubleClick={handleDoubleClick}
+                                      dragState={dragState}
+                                      onDragOver={handleDragOver}
+                                      onDrop={handleDrop}
+                                      pendingTransfers={getPendingTransfers(structure.entityId, resourceId)}
+                                      transferAnimations={transferAnimations}
+                                      inlineEditState={inlineEditState}
+                                      onInlineEditChange={setInlineEditState}
+                                      onInlineDestinationSelect={handleInlineDestinationSelect}
+                                      structureColumns={structureColumns}
+                                    />
+                                  ) : (
+                                    <div
+                                      className={clsx(
+                                        "min-h-[40px] flex items-center justify-center rounded-md transition-all",
+                                        dragState.isDragging &&
+                                          dragState.dragOverStructureId === structure.entityId &&
+                                          dragState.dragData?.resourceId === resourceId &&
+                                          canTransferResource(
+                                            dragState.dragData.structureId,
+                                            structure.entityId,
+                                            resourceId,
+                                          )
+                                          ? "bg-gold/20 border-2 border-dashed border-gold/60"
+                                          : "border border-transparent",
+                                      )}
+                                      onDragOver={(e) => handleDragOver(e, structure.entityId)}
+                                      onDrop={(e) => handleDrop(e, structure.entityId)}
+                                    >
+                                      <span className="text-[11px] text-gold/30">-</span>
+                                    </div>
+                                  )}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        );
+                      })}
                   </React.Fragment>
                 );
               })}
