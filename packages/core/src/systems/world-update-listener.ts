@@ -129,7 +129,35 @@ export class WorldUpdateListener {
                   });
                 }
 
+                // When an army leaves a tile, verify it's actually dead before marking as removed
                 if (previousExplorer && _prevState) {
+                  // Check if the army still exists in ExplorerTroops component
+                  // If it exists, it's just moving to a new tile and shouldn't be marked as removed
+                  try {
+                    const explorerTroops = getComponentValue(
+                      this.setup.components.ExplorerTroops,
+                      getEntityIdFromKeys([BigInt(_prevState.occupier_id)]),
+                    );
+
+                    // If ExplorerTroops still exists and has non-zero troops, the army is alive (just moving)
+                    if (explorerTroops && explorerTroops.troops.count > 0n) {
+                      console.debug(
+                        `[WorldUpdateListener] Army ${_prevState.occupier_id} left tile but still exists (count: ${explorerTroops.troops.count}) - likely moving`,
+                      );
+                      // Don't send removal update - army is just moving
+                      return;
+                    }
+
+                    console.debug(
+                      `[WorldUpdateListener] Army ${_prevState.occupier_id} left tile and ExplorerTroops is gone or count=0 - marking as removed`,
+                    );
+                  } catch (error) {
+                    console.debug(
+                      `[WorldUpdateListener] Could not verify army ${_prevState.occupier_id} existence - assuming removed`,
+                    );
+                  }
+
+                  // Army is confirmed dead or doesn't exist - mark as removed
                   const coordsSource = currentState ?? _prevState;
                   return {
                     entityId: _prevState.occupier_id,
