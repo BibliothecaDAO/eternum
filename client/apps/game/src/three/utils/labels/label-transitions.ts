@@ -1,5 +1,6 @@
 import { CameraView } from "../../scenes/hexagon-scene";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
+import { resolveCameraView } from "./label-view";
 
 /**
  * Label transition management system.
@@ -188,7 +189,8 @@ export const transitionManager = {
 
 // Centralized camera view transition handling for existing labels
 // This is kept for backward compatibility with existing managers
-export const applyLabelTransitions = (labelsMap: Map<any, CSS2DObject>, cameraView: CameraView) => {
+export const applyLabelTransitions = (labelsMap: Map<any, CSS2DObject>, inputView: CameraView) => {
+  const cameraView = resolveCameraView(inputView);
   const styleExtended = ["max-w-[1000px]", "ml-2", "opacity-100"];
   const styleCollapsed = ["max-w-0", "ml-0", "opacity-0"];
 

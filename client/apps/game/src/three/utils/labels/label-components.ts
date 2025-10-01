@@ -1,5 +1,6 @@
 import { BuildingType, ResourcesIds, TroopTier } from "@bibliothecadao/types";
 import { CameraView } from "../../scenes/hexagon-scene";
+import { resolveCameraView } from "./label-view";
 
 /**
  * Component factory for creating reusable label UI elements
@@ -195,7 +196,8 @@ export interface OwnerDisplayOptions {
 }
 
 export const createOwnerDisplayElement = (options: OwnerDisplayOptions): HTMLElement => {
-  const { owner, isMine, isAlly, color, isDaydreamsAgent, cameraView } = options;
+  const { owner, isMine, isAlly, color, isDaydreamsAgent, cameraView: inputView } = options;
+  const cameraView = resolveCameraView(inputView);
 
   const container = document.createElement("div");
   container.classList.add("flex", "items-center", "truncate", "gap-1");
@@ -271,8 +273,9 @@ export const createOwnerDisplayElement = (options: OwnerDisplayOptions): HTMLEle
 export const createStaminaBar = (
   currentStamina: number,
   maxStamina: number,
-  cameraView: CameraView,
+  inputView: CameraView,
 ): HTMLElement => {
+  const cameraView = resolveCameraView(inputView);
   const container = document.createElement("div");
   container.setAttribute("data-component", "stamina-bar");
 
@@ -357,9 +360,10 @@ export const createStaminaBar = (
 export const createTroopCountDisplay = (
   count: number,
   troopType: string,
-  tier: TroopTier | string,
-  cameraView: CameraView,
+  tier: TroopTier | string | number,
+  inputView: CameraView,
 ): HTMLElement => {
+  const cameraView = resolveCameraView(inputView);
   const container = document.createElement("div");
   container.setAttribute("data-component", "troop-count");
   container.classList.add("flex", "items-center", "rounded", "bg-black/40", "text-xxs", "w-fit");
@@ -418,9 +422,12 @@ export const createTroopCountDisplay = (
  * Create guard army display
  */
 export const createGuardArmyDisplay = (
-  guardArmies: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }> | undefined,
-  cameraView: CameraView,
+  guardArmies:
+    | Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>
+    | undefined,
+  inputView: CameraView,
 ): HTMLElement => {
+  const cameraView = resolveCameraView(inputView);
   const container = document.createElement("div");
   container.setAttribute("data-component", "guard-armies");
 
@@ -446,12 +453,7 @@ export const createGuardArmyDisplay = (
         return;
       }
 
-      const troopDisplay = createTroopCountDisplay(
-        guard.count,
-        guard.category ?? "",
-        guard.tier,
-        cameraView,
-      );
+      const troopDisplay = createTroopCountDisplay(guard.count, guard.category ?? "", guard.tier, cameraView);
       container.appendChild(troopDisplay);
     });
 
@@ -541,8 +543,9 @@ export const createGuardArmyDisplay = (
  */
 export const createProductionDisplay = (
   activeProductions: Array<{ buildingCount: number; buildingType: BuildingType }> | undefined,
-  cameraView: CameraView,
+  inputView: CameraView,
 ): HTMLElement => {
+  const cameraView = resolveCameraView(inputView);
   const container = document.createElement("div");
   container.setAttribute("data-component", "productions");
 
@@ -618,7 +621,10 @@ export const createProductionDisplay = (
 /**
  * Create content container with transition wrapper
  */
-export const createContentContainer = (cameraView: CameraView): HTMLElement & { wrapper: HTMLElement } => {
+export const createContentContainer = (
+  inputView: CameraView,
+): HTMLElement & { wrapper: HTMLElement } => {
+  const cameraView = resolveCameraView(inputView);
   const wrapperContainer = document.createElement("div");
   wrapperContainer.classList.add("transition-all", "duration-700", "ease-in-out", "overflow-hidden");
   wrapperContainer.setAttribute("data-component", "content-container-wrapper");

@@ -5,6 +5,7 @@ import { getIsBlitz } from "@bibliothecadao/eternum";
 import { getCharacterName } from "@/utils/agent";
 import { BuildingType, ResourcesIds, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { CameraView } from "../../scenes/hexagon-scene";
+import { resolveCameraView } from "./label-view";
 import {
   createContentContainer,
   createDirectionIndicators,
@@ -113,7 +114,12 @@ export interface QuestLabelData extends LabelData {
 /**
  * Create base label element with common properties
  */
-const createLabelBase = (isMine: boolean, cameraView: CameraView, isDaydreamsAgent?: boolean): HTMLElement => {
+const createLabelBase = (
+  isMine: boolean,
+  inputView: CameraView,
+  isDaydreamsAgent?: boolean,
+): HTMLElement => {
+  const cameraView = resolveCameraView(inputView);
   const labelDiv = document.createElement("div");
 
   // Add common classes - using inline-flex for compact horizontal layout
@@ -216,7 +222,8 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
   type: "army",
   defaultConfig: LABEL_TYPE_CONFIGS.ARMY,
 
-  createElement: (data: ArmyLabelData, cameraView: CameraView): HTMLElement => {
+  createElement: (data: ArmyLabelData, inputView: CameraView): HTMLElement => {
+    const cameraView = resolveCameraView(inputView);
     // Create base label
     const labelDiv = createLabelBase(data.isMine, cameraView, data.isDaydreamsAgent);
 
@@ -335,7 +342,8 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
     return labelDiv;
   },
 
-  updateElement: (element: HTMLElement, data: ArmyLabelData, cameraView: CameraView): void => {
+  updateElement: (element: HTMLElement, data: ArmyLabelData, inputView: CameraView): void => {
+    const cameraView = resolveCameraView(inputView);
     // Check if we have direction indicators and if view is expanded
     const hasDirections = data.attackedFromDegrees !== undefined || data.attackedTowardDegrees !== undefined;
     const isExpanded = cameraView !== CameraView.Far;
@@ -470,7 +478,8 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
   type: "structure",
   defaultConfig: LABEL_TYPE_CONFIGS.STRUCTURE,
 
-  createElement: (data: StructureLabelData, cameraView: CameraView): HTMLElement => {
+  createElement: (data: StructureLabelData, inputView: CameraView): HTMLElement => {
+    const cameraView = resolveCameraView(inputView);
     const isBlitz = getIsBlitz();
 
     // Create base label
@@ -639,7 +648,8 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
     return labelDiv;
   },
 
-  updateElement: (element: HTMLElement, data: StructureLabelData, cameraView: CameraView): void => {
+  updateElement: (element: HTMLElement, data: StructureLabelData, inputView: CameraView): void => {
+    const cameraView = resolveCameraView(inputView);
     const isBlitz = getIsBlitz();
 
     // Check if we have direction indicators and if view is expanded
@@ -919,7 +929,8 @@ export const ChestLabelType: LabelTypeDefinition<ChestLabelData> = {
   type: "chest",
   defaultConfig: LABEL_TYPE_CONFIGS.CHEST,
 
-  createElement: (data: ChestLabelData, cameraView: CameraView): HTMLElement => {
+  createElement: (data: ChestLabelData, inputView: CameraView): HTMLElement => {
+    const cameraView = resolveCameraView(inputView);
     // Create base label with chest styling
     const labelDiv = createLabelBase(false, cameraView); // Chests don't have ownership
 
@@ -962,7 +973,8 @@ export const QuestLabelType: LabelTypeDefinition<QuestLabelData> = {
     positionOffset: { x: 0, y: 1.5, z: 0 },
   },
 
-  createElement: (data: QuestLabelData, cameraView: CameraView): HTMLElement => {
+  createElement: (data: QuestLabelData, inputView: CameraView): HTMLElement => {
+    const cameraView = resolveCameraView(inputView);
     // Create base label with quest styling
     const labelDiv = createLabelBase(false, cameraView); // Quests don't have ownership
 

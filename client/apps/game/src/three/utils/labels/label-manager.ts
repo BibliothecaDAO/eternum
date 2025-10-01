@@ -3,6 +3,7 @@ import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { CameraView } from "../../scenes/hexagon-scene";
 import { getWorldPositionForHex } from "../utils";
 import { getCameraViewConfig, mergeConfigs, TRANSITION_CLASSES } from "./label-config";
+import { resolveCameraView } from "./label-view";
 import {
   CreateLabelOptions,
   LabelConfig,
@@ -32,7 +33,8 @@ export class LabelManager {
 
   constructor(config: LabelManagerConfig) {
     this.labelsGroup = config.labelsGroup;
-    this.currentCameraView = config.initialCameraView || CameraView.Medium;
+    const initialView = config.initialCameraView || CameraView.Medium;
+    this.currentCameraView = resolveCameraView(initialView);
     this.globalEventHandlers = config.globalEventHandlers || {};
     this.maxLabels = config.maxLabels || Infinity;
     this.autoCleanup = config.autoCleanup !== false;
@@ -75,7 +77,8 @@ export class LabelManager {
     }
 
     // Merge configurations
-    const cameraView = options.cameraView || this.currentCameraView;
+    const requestedView = options.cameraView || this.currentCameraView;
+    const cameraView = resolveCameraView(requestedView);
     const cameraConfig = getCameraViewConfig(cameraView);
     const config = mergeConfigs(typeDefinition.defaultConfig, cameraConfig, options.config || {});
 
@@ -228,14 +231,14 @@ export class LabelManager {
    * Update camera view for all labels
    */
   updateCameraView(newView: CameraView): void {
-    if (this.currentCameraView === newView) return;
+    const effectiveView = resolveCameraView(newView);
+    if (this.currentCameraView === effectiveView) return;
 
-    const oldView = this.currentCameraView;
-    this.currentCameraView = newView;
+    this.currentCameraView = effectiveView;
 
     // Update all label visibility states
     this.labels.forEach((labelInstance) => {
-      this.applyVisibilityState(labelInstance, newView);
+      this.applyVisibilityState(labelInstance, effectiveView);
     });
   }
 
