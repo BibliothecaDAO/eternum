@@ -48,7 +48,16 @@ export class HoverHexManager {
           child.raycast = () => {};
         }
       });
-      this.outlineModel.visible = false;
+
+      if (this.isVisible) {
+        // Hover is already active – attach the outline immediately.
+        this.outlineModel.visible = true;
+        if (!this.outlineModel.parent) {
+          this.scene.add(this.outlineModel);
+        }
+      } else {
+        this.outlineModel.visible = false;
+      }
     } catch (error) {
       console.warn("Failed to load outline model:", error);
     }

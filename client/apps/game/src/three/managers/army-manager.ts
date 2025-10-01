@@ -81,6 +81,7 @@ export class ArmyManager {
   private renderQueueActive = false;
   private pendingRenderChunkKey: string | null = null;
   private armyPaths: Map<ID, Position[]> = new Map();
+  private lastKnownVisibleHexes: Map<ID, { col: number; row: number }> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
   private labelPool = new LabelPool();
   private labelsGroup: Group;
@@ -445,13 +446,20 @@ export class ArmyManager {
 
     visibleArmies.forEach((army) => {
       const numericId = Number(army.entityId);
-      let position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
-      if (this.armyModel.isEntityMoving(numericId)) {
-        const worldPos = this.armyModel.getEntityWorldPosition(numericId);
-        if (worldPos) {
-          position = worldPos;
-        }
+
+      const path = this.armyPaths.get(army.entityId);
+
+      let sourceHex = army.hexCoords;
+      if (path && path.length > 0) {
+        sourceHex = path[0];
       }
+
+      let position = this.armyModel.getEntityWorldPosition(numericId);
+
+      if (!position) {
+        position = this.getArmyWorldPosition(army.entityId, sourceHex);
+      }
+
       const { x, y } = army.hexCoords.getContract();
       const modelType = modelTypesByEntity.get(army.entityId);
 
@@ -477,6 +485,8 @@ export class ArmyManager {
         new Euler(0, randomRotation, 0),
         new Color(army.color),
       );
+
+      this.recordLastKnownHexFromWorld(army.entityId, position);
 
       const updatedArmy = { ...army, matrixIndex: currentCount };
       updatedVisibleArmies.push(updatedArmy);
@@ -513,17 +523,35 @@ export class ArmyManager {
     startCol: number,
   ) {
     const entityIdNumber = Number(army.entityId);
-    let normalizedPosition = army.hexCoords.getNormalized();
+    const worldPos = this.armyModel.getEntityWorldPosition(entityIdNumber);
 
-    if (this.armyModel.isEntityMoving(entityIdNumber)) {
-      const worldPos = this.armyModel.getEntityWorldPosition(entityIdNumber);
-      if (worldPos) {
-        const { col, row } = getHexForWorldPosition(worldPos);
-        normalizedPosition = { x: col, y: row };
+    let x: number;
+    let y: number;
+
+    if (worldPos) {
+      this.recordLastKnownHexFromWorld(army.entityId, worldPos);
+      const lastKnown = this.lastKnownVisibleHexes.get(army.entityId)!;
+      x = lastKnown.col;
+      y = lastKnown.row;
+    } else {
+      const lastKnown = this.lastKnownVisibleHexes.get(army.entityId);
+      if (lastKnown) {
+        x = lastKnown.col;
+        y = lastKnown.row;
+      } else {
+        const path = this.armyPaths.get(army.entityId);
+        const fallback = path && path.length > 0 ? path[0] : army.hexCoords;
+        const normalized = fallback.getNormalized();
+        x = normalized.x;
+        y = normalized.y;
+        this.lastKnownVisibleHexes.set(army.entityId, { col: normalized.x, row: normalized.y });
+        console.debug(
+          `[ArmyManager] Using fallback hex for visibility of entity ${army.entityId} (pathFallback=${
+            path && path.length > 0
+          })`,
+        );
       }
     }
-
-    const { x, y } = normalizedPosition;
     const isVisible =
       x >= startCol - this.renderChunkSize.width / 2 &&
       x <= startCol + this.renderChunkSize.width / 2 &&
@@ -838,6 +866,7 @@ export class ArmyManager {
 
     this.armyPaths.delete(entityId);
     this.armyModel.setMovementCompleteCallback(Number(entityId), undefined);
+    this.lastKnownVisibleHexes.delete(entityId);
 
     // Remove any relic effects
     this.updateRelicEffects(entityId, []);
@@ -927,6 +956,12 @@ export class ArmyManager {
 
     return basePosition;
   };
+
+  private recordLastKnownHexFromWorld(entityId: ID, worldPosition: Vector3) {
+    const { col, row } = getHexForWorldPosition(worldPosition);
+    const normalized = new Position({ x: col, y: row }).getNormalized();
+    this.lastKnownVisibleHexes.set(entityId, { col: normalized.x, row: normalized.y });
+  }
 
   recheckOwnership() {
     this.armies.forEach((army) => {
@@ -1350,6 +1385,9 @@ ${
 
     // Dispose army model resources including shared materials
     this.armyModel.dispose();
+
+    // Tear down FX to avoid lingering RAF loops and textures
+    this.fxManager.destroy();
 
     // Clear label pool storage after dispose ensures detached DOM
     this.labelPool.clear();

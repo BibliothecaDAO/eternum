@@ -117,6 +117,7 @@ export default class WorldmapScene extends HexagonScene {
   // store armies positions by ID, to remove previous positions when army moves
   // normalized coordinates
   private armiesPositions: Map<ID, HexPosition> = new Map();
+  private armyLastUpdateAt: Map<ID, number> = new Map();
   // normalized coordinates
   private structuresPositions: Map<ID, HexPosition> = new Map();
 
@@ -164,6 +165,8 @@ export default class WorldmapScene extends HexagonScene {
   private fetchedChunks: Set<string> = new Set();
   private pendingChunks: Map<string, Promise<void>> = new Map();
   private pendingArmyRemovals: Map<ID, NodeJS.Timeout> = new Map();
+  private pendingArmyRemovalMeta: Map<ID, { scheduledAt: number; chunkKey: string; reason: "tile" | "zero" }> =
+    new Map();
 
   private fxManager: FXManager;
   private resourceFXManager: ResourceFXManager;
@@ -1626,6 +1629,8 @@ export default class WorldmapScene extends HexagonScene {
     // Clear any pending army removals
     this.pendingArmyRemovals.forEach((timeout) => clearTimeout(timeout));
     this.pendingArmyRemovals.clear();
+    this.pendingArmyRemovalMeta.clear();
+    this.armyLastUpdateAt.clear();
 
     this.armyStructureOwners.clear();
 
@@ -1662,6 +1667,8 @@ export default class WorldmapScene extends HexagonScene {
       }
     }
     this.armiesPositions.delete(entityId);
+    this.armyLastUpdateAt.delete(entityId);
+    this.pendingArmyRemovalMeta.delete(entityId);
     this.armyStructureOwners.delete(entityId);
     this.pendingArmyMovements.delete(entityId);
   }
@@ -1685,30 +1692,64 @@ export default class WorldmapScene extends HexagonScene {
       `[WorldMap] Scheduling army removal for entity ${entityId} (reason: ${reason}, delay: ${initialDelay}ms, hasPendingMovement: ${hasPendingMovement})`,
     );
 
-    const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
-    const start = now();
+    const scheduledAt = Date.now();
+    this.pendingArmyRemovalMeta.set(entityId, {
+      scheduledAt,
+      chunkKey: this.currentChunk,
+      reason,
+    });
 
     const schedule = (delay: number) => {
       const timeout = setTimeout(() => {
-        if (reason === "tile" && this.pendingArmyMovements.has(entityId)) {
-          const elapsed = now() - start;
-          if (elapsed < maxPendingWaitMs) {
+        const meta = this.pendingArmyRemovalMeta.get(entityId);
+        if (!meta) {
+          this.pendingArmyRemovals.delete(entityId);
+          return;
+        }
+
+        if (reason === "tile") {
+          const lastUpdate = this.armyLastUpdateAt.get(entityId) ?? 0;
+          if (lastUpdate > meta.scheduledAt) {
             console.debug(
-              `[WorldMap] Army ${entityId} still has pending movement, retrying removal in ${retryDelay}ms (elapsed: ${elapsed.toFixed(0)}ms)`,
+              `[WorldMap] Skipping removal for entity ${entityId} - newer tile data detected (${lastUpdate - meta.scheduledAt}ms delta)`,
             );
-            schedule(retryDelay);
+            this.pendingArmyRemovalMeta.delete(entityId);
+            this.pendingArmyRemovals.delete(entityId);
             return;
           }
 
-          console.warn(
-            `[WorldMap] Pending movement timeout while removing entity ${entityId}, forcing cleanup after ${elapsed.toFixed(
-              0,
-            )}ms`,
-          );
-          this.pendingArmyMovements.delete(entityId);
+          if (this.currentChunk !== meta.chunkKey) {
+            console.debug(
+              `[WorldMap] Aborting tile-based removal for entity ${entityId} due to chunk switch (${meta.chunkKey} -> ${this.currentChunk})`,
+            );
+            this.pendingArmyRemovalMeta.delete(entityId);
+            this.pendingArmyRemovals.delete(entityId);
+            return;
+          }
+
+          if (this.pendingArmyMovements.has(entityId)) {
+            const elapsed = Date.now() - meta.scheduledAt;
+            if (elapsed < maxPendingWaitMs) {
+              console.debug(
+                `[WorldMap] Army ${entityId} still has pending movement, retrying removal in ${retryDelay}ms (elapsed: ${elapsed.toFixed(
+                  0,
+                )}ms)`,
+              );
+              schedule(retryDelay);
+              return;
+            }
+
+            console.warn(
+              `[WorldMap] Pending movement timeout while removing entity ${entityId}, forcing cleanup after ${elapsed.toFixed(
+                0,
+              )}ms`,
+            );
+            this.pendingArmyMovements.delete(entityId);
+          }
         }
 
         this.pendingArmyRemovals.delete(entityId);
+        this.pendingArmyRemovalMeta.delete(entityId);
         console.debug(`[WorldMap] Finalizing pending removal for entity ${entityId} (reason: ${reason})`);
         const playDefeatFx = reason !== "tile";
         this.deleteArmy(entityId, { playDefeatFx });
@@ -1726,6 +1767,7 @@ export default class WorldmapScene extends HexagonScene {
 
     clearTimeout(timeout);
     this.pendingArmyRemovals.delete(entityId);
+    this.pendingArmyRemovalMeta.delete(entityId);
     console.debug(`[WorldMap] Cancelled pending removal for entity ${entityId}`);
   }
 
@@ -1798,6 +1840,7 @@ export default class WorldmapScene extends HexagonScene {
 
     // Update army position
     this.armiesPositions.set(entityId, newPos);
+    this.armyLastUpdateAt.set(entityId, Date.now());
 
     // Remove from old position if it changed
     if (
@@ -2636,6 +2679,7 @@ export default class WorldmapScene extends HexagonScene {
     this.fetchedChunks.clear();
     this.pendingChunks.clear();
     this.clearCache();
+    this.armyLastUpdateAt.clear();
     // Also clear the interactive hexes when clearing the entire cache
     this.interactiveHexManager.clearHexes();
   }
