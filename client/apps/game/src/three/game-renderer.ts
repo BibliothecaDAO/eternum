@@ -791,7 +791,8 @@ export default class GameRenderer {
     }
     this.composer.render();
     // Render the HUD scene without clearing the buffer
-    this.hudScene.update(deltaTime);
+    const cycleProgress = useUIStore.getState().cycleProgress || 0;
+    this.hudScene.update(deltaTime, cycleProgress);
     this.renderer.clearDepth(); // Clear only the depth buffer
     this.renderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
     this.labelRenderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
