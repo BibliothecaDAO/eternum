@@ -7,7 +7,7 @@ use s1_eternum::constants::{WORLD_CONFIG_ID, UNIVERSAL_DEPLOYER_ADDRESS};
 use s1_eternum::models::position::{Coord, CoordImpl, Direction};
 use s1_eternum::utils::random::VRFImpl;
 use starknet::ContractAddress;
-use crate::utils::interfaces::blitz_entry_token::{IBlitzEntryTokenDispatcher, IBlitzEntryTokenDispatcherTrait};
+use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
 //
 // GLOBAL CONFIGS
 //
@@ -562,6 +562,9 @@ pub struct BlitzRegistrationConfig {
     pub fee_token: ContractAddress,
     pub fee_recipient: ContractAddress,
     pub entry_token_address: ContractAddress,
+    pub collectibles_cosmetics_max: u8,
+    pub collectibles_cosmetics_address: ContractAddress,
+    pub collectibles_timelock_address: ContractAddress,
     pub registration_count: u16,
     pub registration_count_max: u16,
     pub registration_start_at: u32,
@@ -606,7 +609,7 @@ pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
 
 
     fn setup_entry_token(self: BlitzRegistrationConfig, ipfs_cid: ByteArray) {
-        let dispatcher = IBlitzEntryTokenDispatcher {contract_address: self.entry_token_address};
+        let dispatcher = ICollectibleDispatcher {contract_address: self.entry_token_address};
         dispatcher.set_attrs_raw_to_ipfs_cid(
             self.entry_token_attrs_raw(),
             ipfs_cid,
@@ -624,7 +627,7 @@ pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
 
 
     fn update_entry_token_lock(self: BlitzRegistrationConfig, unlock_at: u64) {
-        let dispatcher = IBlitzEntryTokenDispatcher {contract_address: self.entry_token_address};
+        let dispatcher = ICollectibleDispatcher {contract_address: self.entry_token_address};
         dispatcher.lock_state_update(
             self.entry_token_lock_id(),
             unlock_at
@@ -955,4 +958,12 @@ pub struct BlitzEntryTokenRegister {
     #[key]
     pub token_id: u128,
     pub registered: bool,
+}
+
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
+pub struct BlitzCosmeticAttrsRegister {
+    #[key]
+    pub player: ContractAddress,
+    pub attrs: Span<u128>,
 }
