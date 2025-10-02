@@ -148,9 +148,7 @@ export class WeatherManager {
    * Check if it's raining
    */
   isRaining(): boolean {
-    return (
-      this.params.currentWeather === WeatherType.RAIN || this.params.currentWeather === WeatherType.STORM
-    );
+    return this.params.currentWeather === WeatherType.RAIN || this.params.currentWeather === WeatherType.STORM;
   }
 
   /**

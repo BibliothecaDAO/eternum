@@ -181,7 +181,9 @@ export class AmbienceManager {
 
     // On first update, always trigger sound layer update
     if (this.isFirstUpdate) {
-      console.log(`AmbienceManager: First update - starting ambience (time: ${newTimeOfDay}, weather: ${currentWeather})`);
+      console.log(
+        `AmbienceManager: First update - starting ambience (time: ${newTimeOfDay}, weather: ${currentWeather})`,
+      );
       this.isFirstUpdate = false;
       this.currentTimeOfDay = newTimeOfDay;
       this.currentWeather = currentWeather;
@@ -218,7 +220,9 @@ export class AmbienceManager {
    * Update sound layers based on current conditions
    */
   private updateSoundLayers(): void {
-    console.log(`AmbienceManager: Updating sound layers (time: ${this.currentTimeOfDay}, weather: ${this.currentWeather})`);
+    console.log(
+      `AmbienceManager: Updating sound layers (time: ${this.currentTimeOfDay}, weather: ${this.currentWeather})`,
+    );
 
     // Check each sound layer
     this.soundLayers.forEach((layer, index) => {

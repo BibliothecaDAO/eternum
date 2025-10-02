@@ -2,15 +2,15 @@
 
 ## Overview
 
-The ambience system manages environmental and time-of-day sounds that play automatically based on the game's cycle progress and weather state. It supports **multiple sound variations** and two playback modes: **continuous looping** and **random intervals**.
+The ambience system manages environmental and time-of-day sounds that play automatically based on the game's cycle
+progress and weather state. It supports **multiple sound variations** and two playback modes: **continuous looping** and
+**random intervals**.
 
 ## Key Features
 
-✅ **Sound Variations** - Define arrays of sounds that are randomly selected
-✅ **Two Playback Modes** - Loop continuously or play at random intervals
-✅ **Time-of-Day Aware** - Sounds activate based on cycle progress
-✅ **Weather-Dependent** - Different sounds for different weather
-✅ **Smooth Fading** - Gradual fade in/out transitions
+✅ **Sound Variations** - Define arrays of sounds that are randomly selected ✅ **Two Playback Modes** - Loop
+continuously or play at random intervals ✅ **Time-of-Day Aware** - Sounds activate based on cycle progress ✅
+**Weather-Dependent** - Different sounds for different weather ✅ **Smooth Fading** - Gradual fade in/out transitions
 
 ## Architecture
 
@@ -26,6 +26,7 @@ AmbienceManager
 ### Step 1: Add Sound Files
 
 Place your sound files in `/public/sound/ambient/` directory:
+
 - `birds_morning.mp3`
 - `crickets_night.mp3`
 - `wolves_night.mp3`
@@ -37,6 +38,7 @@ Place your sound files in `/public/sound/ambient/` directory:
 Edit `/src/audio/config/registry.ts`:
 
 **For a single sound:**
+
 ```typescript
 "ambient.your_sound_name": {
   id: "ambient.your_sound_name",
@@ -51,6 +53,7 @@ Edit `/src/audio/config/registry.ts`:
 ```
 
 **For multiple variations:**
+
 ```typescript
 // Register each variation separately
 "ambient.birds.morning.1": {
@@ -81,6 +84,7 @@ Edit `/src/audio/config/registry.ts`:
 Edit `/src/three/managers/ambience-manager.ts`, add to the `soundLayers` array:
 
 **Single sound (loop mode):**
+
 ```typescript
 {
   assetId: "ambient.your_sound_name",
@@ -94,6 +98,7 @@ Edit `/src/three/managers/ambience-manager.ts`, add to the `soundLayers` array:
 ```
 
 **Multiple variations (loop mode):**
+
 ```typescript
 {
   assetId: [
@@ -111,6 +116,7 @@ Edit `/src/three/managers/ambience-manager.ts`, add to the `soundLayers` array:
 ```
 
 **Random intervals (one-shot sounds):**
+
 ```typescript
 {
   assetId: [
@@ -148,12 +154,14 @@ Based on `cycleProgress` (0-100):
 ## Playback Modes
 
 ### Loop Mode (`playbackMode: "loop"`)
+
 - Plays sound continuously
 - When multiple variations provided, picks one randomly at start
 - Best for: ambient background sounds (wind, rain, crickets)
 - Sound must have `loop: true` in registry
 
 ### Random Interval Mode (`playbackMode: "random_interval"`)
+
 - Plays sound at random intervals
 - Each play randomly selects from variations
 - Define `minInterval` and `maxInterval` in seconds
@@ -249,6 +257,7 @@ Based on `cycleProgress` (0-100):
 ## Current Sound Layers (Pre-configured)
 
 ### Time-Based Sounds:
+
 - **Birds chirping** - 3 variations, loop mode, Dawn + Day (clear)
 - **Crickets** - 2 variations, loop mode, Night + Evening (clear)
 - **Wolves howling** - 3 variations, random interval (15-45s), Night (clear)
@@ -256,6 +265,7 @@ Based on `cycleProgress` (0-100):
 - **Wind** - 2 variations, loop mode, Day (all weather)
 
 ### Weather-Based Sounds:
+
 - **Light rain** - Single sound, loop mode, All times (rain)
 - **Heavy rain** - Single sound, loop mode, All times (storm)
 - **Distant thunder** - 3 variations, random interval (5-20s), All times (storm)
@@ -263,11 +273,13 @@ Based on `cycleProgress` (0-100):
 ## Volume Control
 
 The final volume is calculated as:
+
 ```
 finalVolume = baseVolume × masterVolume × categoryVolume
 ```
 
 Where:
+
 - `baseVolume` - Set in sound layer config (0-1)
 - `masterVolume` - AmbienceManager master volume (0-1)
 - `categoryVolume` - AudioManager category volume (AMBIENT or ENVIRONMENT)
@@ -281,6 +293,7 @@ Where:
 ## GUI Controls
 
 The ambience system has GUI controls in the "Ambience System" folder:
+
 - **Enable Ambience** - Toggle system on/off
 - **Master Volume** - Overall ambience volume
 - **Debug Info** - Shows current time of day, weather, active sounds
@@ -296,17 +309,20 @@ The ambience system has GUI controls in the "Ambience System" folder:
 ## Common Issues
 
 ### Sound not playing?
+
 - Check sound file exists in `/public/sound/ambient/`
 - Verify asset is registered in `audio/config/registry.ts`
 - Ensure sound layer is configured in `AmbienceManager.soundLayers`
 - Check time of day and weather conditions match
 
 ### Volume too loud/quiet?
+
 - Adjust `baseVolume` in sound layer config
 - Check "Ambience System" → "Master Volume" in GUI
 - Check AudioManager category volumes (Settings)
 
 ### Abrupt transitions?
+
 - Increase `fadeInDuration` and `fadeOutDuration`
 - Default recommendation: 3-5 seconds for smooth transitions
 
@@ -346,6 +362,7 @@ To make sounds louder/quieter based on conditions, create multiple variations:
 ## How Variations Work
 
 When you provide an **array of assetIds**:
+
 - **Loop mode**: System picks one random variation when the layer activates, loops it continuously
 - **Random interval mode**: Each time the sound plays, system randomly picks from all variations
 
@@ -354,6 +371,7 @@ This creates **natural variety** - you won't hear the same bird chirp or wolf ho
 ## File Naming Convention
 
 For clarity, name your variations with numbers:
+
 ```
 birds_morning_1.mp3
 birds_morning_2.mp3
@@ -367,6 +385,7 @@ wolves_night_3.mp3
 ## Summary
 
 To add a new ambient sound:
+
 1. ✅ Add sound file(s) to `/public/sound/ambient/`
 2. ✅ Register each variation in `audio/config/registry.ts`
 3. ✅ Add layer config in `AmbienceManager.soundLayers` with array of IDs
@@ -374,6 +393,7 @@ To add a new ambient sound:
 5. ✅ Test with GUI controls
 
 The system handles:
+
 - Random variation selection ✓
 - Smooth fade in/out ✓
 - Time-based activation ✓

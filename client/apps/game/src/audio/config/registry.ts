@@ -873,7 +873,6 @@ export const AUDIO_REGISTRY: Record<string, AudioAsset> = {
     volume: 0.3,
   },
 
-
   // Wind - Day variations
   "ambient.wind.day.1": {
     id: "ambient.wind.day.1",

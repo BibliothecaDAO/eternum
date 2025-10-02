@@ -3,6 +3,7 @@
 ## Audio Hierarchy & Mixing Philosophy
 
 ### 1. Volume Hierarchy (Importance)
+
 ```
 Priority 1: UI Feedback (immediate user actions)
 Priority 2: Combat/Events (gameplay critical)
@@ -52,22 +53,22 @@ Implement ducking to automatically lower background layers when foreground sound
 ```typescript
 interface DuckingConfig {
   category: AudioCategory;
-  duckCategories: AudioCategory[];  // Which categories to duck
-  duckAmount: number;                // 0-1, how much to reduce volume
-  fadeTime: number;                  // seconds to fade down/up
+  duckCategories: AudioCategory[]; // Which categories to duck
+  duckAmount: number; // 0-1, how much to reduce volume
+  fadeTime: number; // seconds to fade down/up
 }
 
 const DUCKING_RULES: DuckingConfig[] = [
   {
     category: AudioCategory.UI,
     duckCategories: [AudioCategory.MUSIC, AudioCategory.AMBIENT],
-    duckAmount: 0.7,  // Reduce to 70% of current volume
+    duckAmount: 0.7, // Reduce to 70% of current volume
     fadeTime: 0.1,
   },
   {
     category: AudioCategory.COMBAT,
     duckCategories: [AudioCategory.MUSIC, AudioCategory.AMBIENT, AudioCategory.ENVIRONMENT],
-    duckAmount: 0.5,  // Reduce to 50%
+    duckAmount: 0.5, // Reduce to 50%
     fadeTime: 0.2,
   },
 ];
@@ -76,6 +77,7 @@ const DUCKING_RULES: DuckingConfig[] = [
 ### 5. Spatial Audio Improvements
 
 For spatial sounds (buildings, resources, combat):
+
 - **Distance attenuation**: Max distance should vary by importance
   - UI: No spatial (always full volume)
   - Combat: 50 units
@@ -90,9 +92,9 @@ Prevent audio fatigue from repetitive actions:
 ```typescript
 interface AntiSpamConfig {
   category: AudioCategory;
-  maxConcurrent: number;      // Max simultaneous sounds
-  minInterval: number;        // Min ms between same sound
-  volumeReduction: number;    // Reduce volume for rapid repeats
+  maxConcurrent: number; // Max simultaneous sounds
+  minInterval: number; // Min ms between same sound
+  volumeReduction: number; // Reduce volume for rapid repeats
 }
 
 const ANTI_SPAM_RULES: AntiSpamConfig[] = [
@@ -100,7 +102,7 @@ const ANTI_SPAM_RULES: AntiSpamConfig[] = [
     category: AudioCategory.RESOURCE,
     maxConcurrent: 3,
     minInterval: 100,
-    volumeReduction: 0.8,  // Each rapid repeat plays at 80% of previous
+    volumeReduction: 0.8, // Each rapid repeat plays at 80% of previous
   },
   {
     category: AudioCategory.BUILDING,
@@ -114,6 +116,7 @@ const ANTI_SPAM_RULES: AntiSpamConfig[] = [
 ### 7. Dynamic Range Compression
 
 Apply gentle compression to prevent jarring peaks:
+
 - **Threshold**: -12dB
 - **Ratio**: 3:1
 - **Attack**: 5ms
@@ -124,12 +127,14 @@ This keeps the mix cohesive without squashing dynamics.
 ### 8. Ambient Sound Design
 
 Current implementation is good! Key principles:
+
 - ✅ Random intervals prevent mechanical loops
 - ✅ Low volume (0.125-0.3 base)
 - ✅ Long intervals (25-225 seconds)
 - ✅ Multiple variations for each sound type
 
 **Improvements:**
+
 - Add more variations per sound type (currently 1-3, aim for 4-6)
 - Consider time-of-day intensity curves (birds louder at dawn, quieter at noon)
 - Add seasonal variations
@@ -139,6 +144,7 @@ Current implementation is good! Key principles:
 Current music volume (0.5 category × 1.0 individual = 0.5) is too high.
 
 **Recommendations:**
+
 - Reduce category to 0.4
 - Implement dynamic music intensity based on gameplay state
 - Duck music during important events
@@ -147,16 +153,19 @@ Current music volume (0.5 category × 1.0 individual = 0.5) is too high.
 ### 10. Implementation Priority
 
 **Phase 1** (Quick wins):
+
 1. Rebalance category volumes (5 min)
 2. Normalize individual sound volumes (30 min)
 3. Reduce music volume (1 min)
 
 **Phase 2** (Medium effort):
+
 1. Implement basic ducking for UI sounds (2 hours)
 2. Add anti-spam for resource collection (1 hour)
 3. Adjust spatial audio distances (30 min)
 
 **Phase 3** (Advanced):
+
 1. Full ducking system for all categories (4 hours)
 2. Dynamic range compression (6 hours)
 3. Advanced anti-spam with volume reduction (3 hours)
@@ -190,4 +199,5 @@ getAudioMetrics(): {
 
 ---
 
-**Note**: The current system has a solid foundation. These improvements will make the audio feel more polished and professional without requiring a complete rewrite.
+**Note**: The current system has a solid foundation. These improvements will make the audio feel more polished and
+professional without requiring a complete rewrite.
