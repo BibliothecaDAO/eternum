@@ -5,7 +5,7 @@ import { Navigator } from "@/three/managers/navigator";
 import { WeatherManager } from "@/three/managers/weather-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { GUIManager } from "@/three/utils/";
-import { Scene, OrthographicCamera, AmbientLight, HemisphereLight, Color } from "three";
+import { AmbientLight, HemisphereLight, OrthographicCamera, Scene } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 
 export default class HUDScene {
@@ -121,18 +121,7 @@ export default class HUDScene {
 
   update(deltaTime: number, cycleProgress?: number) {
     this.navigator.update();
-
-    // Update cycle progress if provided
-    if (cycleProgress !== undefined) {
-      this.cycleProgress = cycleProgress;
-    }
-
-    // Update weather system (handles rain)
-    this.weatherManager.update(deltaTime, this.camera.position);
-
-    // Update ambience system (handles ambient sounds)
-    const currentWeather = this.weatherManager.getCurrentWeather();
-    this.ambienceManager.update(this.cycleProgress, currentWeather, deltaTime);
+    this.rainEffect.update(deltaTime, this.camera.position);
   }
 
   onWindowResize(width: number, height: number) {

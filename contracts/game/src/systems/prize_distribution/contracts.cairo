@@ -301,6 +301,7 @@ pub mod prize_distribution_systems {
                             calc_remainder,
                             calc_sum_position_weights,
                             calc_s_parameter,
+                            calc_winner_count
                         );
                 world.write_model(@rank_prize);
             };

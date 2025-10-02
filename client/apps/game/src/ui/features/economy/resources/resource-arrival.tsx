@@ -1,10 +1,10 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getIsBlitz } from "@bibliothecadao/eternum";
-
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { DepositResources } from "@/ui/features/economy/resources";
-import { getBlockTimestamp } from "@bibliothecadao/eternum";
+import { formatStorageValue } from "@/ui/utils/storage-utils";
 
+import { getIsBlitz } from "@bibliothecadao/eternum";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
 import { configManager, divideByPrecision, formatTime, getStructureName } from "@bibliothecadao/eternum";
 import { useArrivalsByStructure, useResourceManager } from "@bibliothecadao/react";
 import { ResourceArrivalInfo, Structure } from "@bibliothecadao/types";
@@ -95,6 +95,10 @@ const ResourceArrival = ({ arrival, now }: { arrival: ResourceArrivalInfo; now: 
   const resourceManager = useResourceManager(arrival.structureEntityId);
 
   const storeCapacityKg = resourceManager.getStoreCapacityKg();
+  const formattedStoreCapacity = formatStorageValue(storeCapacityKg.capacityKg);
+  const formattedStoreCapacityUsed = formatStorageValue(storeCapacityKg.capacityUsedKg);
+  const formatWithKgSuffix = (value: { display: string; isInfinite: boolean }) =>
+    value.isInfinite ? value.display : `${value.display}kg`;
 
   const totalWeight = useMemo(() => {
     return arrival.resources.reduce((total, resource) => {
@@ -179,8 +183,7 @@ const ResourceArrival = ({ arrival, now }: { arrival: ResourceArrivalInfo; now: 
           )}
         >
           <span className={clsx(isOverCapacity && "font-bold")}>
-            Cap: {storeCapacityKg.capacityUsedKg.toLocaleString()}kg / {storeCapacityKg.capacityKg.toLocaleString()}
-            kg
+            Cap: {formatWithKgSuffix(formattedStoreCapacityUsed)} / {formatWithKgSuffix(formattedStoreCapacity)}
           </span>
           <span className={clsx(isOverCapacity && "font-bold")}>Total: {totalWeight.toLocaleString()}kg</span>
         </div>

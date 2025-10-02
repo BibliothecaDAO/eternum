@@ -322,6 +322,10 @@ export const WorldContextMenu = () => {
         return;
       }
 
+      if (distance > radialConfig.radius) {
+        return;
+      }
+
       if (event.button !== 0) {
         return;
       }

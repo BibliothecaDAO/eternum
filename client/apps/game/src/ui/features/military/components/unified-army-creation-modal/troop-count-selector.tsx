@@ -58,14 +58,14 @@ export const TroopCountSelector = ({ troopCount, maxAffordable, onChange }: Troo
       </div>
 
       {troopCount > maxAffordable && (
-        <div className="bg-gradient-to-r from-red/15 to-red/10 border-2 border-red/40 rounded-xl p-4 mt-4 shadow-lg">
+        <div className="bg-gradient-to-r from-danger/15 to-danger/10 border-2 border-danger/40 rounded-xl p-4 mt-4 shadow-lg">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-1 rounded-full bg-red/20">
-              <AlertTriangle className="w-5 h-5 text-red" />
+            <div className="p-1 rounded-full bg-danger/20">
+              <AlertTriangle className="w-5 h-5 text-danger" />
             </div>
-            <span className="text-red font-bold text-base">Insufficient Resources</span>
+            <span className="text-danger font-bold text-base">Insufficient Resources</span>
           </div>
-          <p className="text-sm text-red/90 ml-8">
+          <p className="text-sm text-danger/90 ml-8">
             You need <span className="font-bold">{troopCount.toLocaleString()}</span> troops but only have{" "}
             <span className="font-bold">{maxAffordable.toLocaleString()}</span> available
           </p>
