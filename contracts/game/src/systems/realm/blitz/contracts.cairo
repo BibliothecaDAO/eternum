@@ -1,5 +1,4 @@
 use s1_eternum::alias::ID;
-use starknet::ContractAddress;
 
 #[starknet::interface]
 pub trait IBlitzRealmSystems<T> {
@@ -163,7 +162,7 @@ pub mod blitz_realm_systems {
                 ref world, selector!("blitz_registration_config"), blitz_registration_config,
             );
 
-            
+
             ////////////////////////////////////////////////
             /// Register player's cosmetic items
             ////////////////////////////////////////////////

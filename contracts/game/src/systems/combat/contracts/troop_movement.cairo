@@ -135,9 +135,6 @@ pub mod troop_movement_systems {
 
                     // perform lottery to discover mine
                     let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
-                    let vrf_provider: ContractAddress = WorldConfigUtilImpl::get_member(
-                        world, selector!("vrf_provider_address"),
-                    );
                     let rng_library_dispatcher = rng_library::get_dispatcher(@world);
                     let vrf_seed: u256 = rng_library_dispatcher.get_random_number(caller, world);
                     let (troop_movement_util_systems_address, _) = world.dns(@"troop_movement_util_systems").unwrap();
