@@ -3,7 +3,7 @@
 use starknet::ContractAddress;
 #[starknet::interface]
 trait TimeLockMakerTrait<TState> {
-    fn create(ref self: TState, collection: ContractAddress, lock_end_time: u64);
+    fn create_lock(ref self: TState, collection: ContractAddress, lock_end_time: u64);
 }
 
 
@@ -18,7 +18,7 @@ mod CollectibleTimeLockMaker {
     const MAX_LOCK_DURATION: u64 = ONE_MONTH_IN_SECONDS * 6; // 6 months
 
     #[derive(Drop, starknet::Event)]
-    pub struct TimeLockCreated {
+    pub struct TimeLockCreatedOrUpdated {
         #[key]
         pub lock_id: felt252,
         pub lock_end_at: u64,
@@ -30,13 +30,13 @@ mod CollectibleTimeLockMaker {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
-        TimeLockCreated: TimeLockCreated,
+        TimeLockCreatedOrUpdated: TimeLockCreatedOrUpdated,
     }
 
 
     #[abi(embed_v0)]
     impl TimeLockMakerImpl of super::TimeLockMakerTrait<ContractState> {
-        fn create(ref self: ContractState, collection: ContractAddress, lock_end_time: u64) {
+        fn create_lock(ref self: ContractState, collection: ContractAddress, lock_end_time: u64) {
             // ensure lock_end_time is in the future
             let now = starknet::get_block_timestamp();
             assert!(lock_end_time > now, "CollectibleTimeLockMaker: lock end time must be in the future");
@@ -50,7 +50,7 @@ mod CollectibleTimeLockMaker {
             let collectible = IRealmsCollectibleLockAdminDispatcher { contract_address: collection };
             collectible.lock_state_update(lock_end_time.into(), lock_end_time);
 
-            self.emit(TimeLockCreated { lock_id: lock_end_time.into(), lock_end_at: lock_end_time });
+            self.emit(TimeLockCreatedOrUpdated { lock_id: lock_end_time.into(), lock_end_at: lock_end_time });
         }
     }
 }
