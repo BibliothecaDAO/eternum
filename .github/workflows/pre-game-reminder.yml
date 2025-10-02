@@ -1,0 +1,125 @@
+name: ⏰ Pre-Game Reminder
+
+# This workflow sends a Discord notification 5 minutes before game start time
+# It needs to be triggered manually or via API call from the deploy workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      game_start_timestamp:
+        description: "Game start timestamp (Unix epoch)"
+        required: true
+        type: string
+      reminder_minutes:
+        description: "Minutes before game to send reminder"
+        required: false
+        default: "5"
+        type: string
+
+jobs:
+  send-reminder:
+    name: 🔔 Send Pre-Game Reminder
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: ⏰ Calculate Wait Time
+        id: calc-wait
+        run: |
+          GAME_START_TIMESTAMP=${{ github.event.inputs.game_start_timestamp }}
+          REMINDER_MINUTES=${{ github.event.inputs.reminder_minutes }}
+          CURRENT_TIMESTAMP=$(date +%s)
+
+          # Calculate when to send the reminder (game_start - reminder_minutes)
+          REMINDER_SECONDS=$((REMINDER_MINUTES * 60))
+          REMINDER_TIMESTAMP=$((GAME_START_TIMESTAMP - REMINDER_SECONDS))
+
+          # Calculate wait time (how long until we should send)
+          WAIT_TIME=$((REMINDER_TIMESTAMP - CURRENT_TIMESTAMP))
+
+          echo "🕐 Current time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "🕐 Game starts at: $(date -d "@$GAME_START_TIMESTAMP" -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "🕐 Reminder at: $(date -d "@$REMINDER_TIMESTAMP" -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "⏳ Wait time: $WAIT_TIME seconds"
+
+          if [ $WAIT_TIME -lt 0 ]; then
+            echo "❌ Game start time has already passed or reminder time is in the past!"
+            exit 1
+          fi
+
+          echo "wait_time=$WAIT_TIME" >> $GITHUB_OUTPUT
+          echo "game_start_timestamp=$GAME_START_TIMESTAMP" >> $GITHUB_OUTPUT
+
+      - name: ⏳ Wait Until Reminder Time
+        run: |
+          WAIT_TIME=${{ steps.calc-wait.outputs.wait_time }}
+          echo "⏳ Waiting $WAIT_TIME seconds until reminder time..."
+          sleep $WAIT_TIME
+          echo "✅ Wait complete, sending reminder now!"
+
+      - name: 📢 Send Pre-Game Discord Notification
+        run: |
+          GAME_START_TIMESTAMP=${{ steps.calc-wait.outputs.game_start_timestamp }}
+          DISCORD_TIMESTAMP="<t:$GAME_START_TIMESTAMP:F>"
+          DISCORD_RELATIVE="<t:$GAME_START_TIMESTAMP:R>"
+
+          curl -X POST "${{ secrets.DISCORD_BLITZ_PRE_GAME_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "content": "<@&1417652761750798396>",
+              "embeds": [{
+                "title": "🎮 Game Starting Soon!",
+                "description": "The next Eternum Blitz game is about to begin!",
+                "color": 16744192,
+                "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'",
+                "fields": [
+                  {
+                    "name": "⏰ Game Starts",
+                    "value": "'"$DISCORD_TIMESTAMP"' ('"$DISCORD_RELATIVE"')",
+                    "inline": false
+                  },
+                  {
+                    "name": "🎯 Get Ready",
+                    "value": "Make sure you are registered and ready to play!",
+                    "inline": false
+                  }
+                ],
+                "footer": {
+                  "text": "Eternum Blitz Reminder Bot"
+                },
+                "thumbnail": {
+                  "url": "https://eternum.realms.world/images/buildings/construction/farm.png"
+                }
+              }]
+            }'
+
+      - name: ✅ Reminder Sent
+        run: |
+          echo "## ✅ Pre-Game Reminder Sent" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Discord notification sent at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "Game starts at: $(date -d "@${{ steps.calc-wait.outputs.game_start_timestamp }}" -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🚨 Notify on Failure
+        if: failure()
+        run: |
+          curl -X POST "${{ secrets.DISCORD_BLITZ_DEPLOY_FAILURE_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "❌ Pre-Game Reminder Failed!",
+                "description": "Failed to send the pre-game reminder notification.",
+                "color": 16711680,
+                "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'",
+                "fields": [
+                  {
+                    "name": "🔗 Workflow Run",
+                    "value": "[View Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})",
+                    "inline": false
+                  }
+                ],
+                "footer": {
+                  "text": "Eternum Reminder Bot"
+                }
+              }]
+            }'

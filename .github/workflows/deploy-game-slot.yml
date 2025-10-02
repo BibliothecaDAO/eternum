@@ -347,3 +347,14 @@ jobs:
           echo "The slot deployment encountered an error. Please check the logs above for details." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Failed at:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+
+      - name: ⏰ Schedule Pre-Game Reminder
+        if: success()
+        run: |
+          echo "🔔 Triggering pre-game reminder workflow..."
+          gh workflow run pre-game-reminder.yml \
+            -f game_start_timestamp="${{ steps.game-timing.outputs.timestamp }}" \
+            -f reminder_minutes="5"
+          echo "✅ Pre-game reminder workflow triggered"
+        env:
+          GH_TOKEN: ${{ github.token }}
