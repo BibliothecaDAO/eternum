@@ -71,18 +71,27 @@ export function StakeDialog({
     : undefined;
   const weeksToUnlock = toWeeks(timeUntilUnlock);
 
+  // Check if the current lock has expired
+  const isLockExpired = useMemo(() => {
+    if (!ownerLordsLock?.end_time) return false;
+    const currentTime = getUnixTime(new Date());
+    return Number(ownerLordsLock.end_time) < currentTime;
+  }, [ownerLordsLock?.end_time]);
+
   const newLockEndTime = useMemo(() => {
     const currentTime = getUnixTime(new Date());
     const additionalLockTime = lockWeeks * WEEK_IN_SECONDS;
-    if (ownerLordsLock?.end_time) {
+    if (ownerLordsLock?.end_time && !isLockExpired) {
+      // For active locks, extend from the current end time or current time, whichever is later
       return (
         Math.max(Number(ownerLordsLock.end_time), currentTime) +
         additionalLockTime
       );
     } else {
+      // For expired locks or new locks, start from current time
       return currentTime + additionalLockTime;
     }
-  }, [ownerLordsLock?.end_time, lockWeeks]);
+  }, [ownerLordsLock?.end_time, lockWeeks, isLockExpired]);
 
   const manageLock = async () => {
     if (address && lordsContract && veLords) {
@@ -134,15 +143,23 @@ export function StakeDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button onClick={() => setOpen(true)}>
-          <Plus className="w-4 h-4" /> Stake
+          <Plus className="w-4 h-4" /> 
+          {isLockExpired ? "Create New Lock" : "Stake"}
         </Button>
       </DialogTrigger>
       <DialogPortal>
         <DialogOverlay />
         <DialogContent>
           <DialogTitle className="text-xl font-bold mb-4">
-            $LORDS Staking
+            {isLockExpired ? "Create New $LORDS Lock" : "$LORDS Staking"}
           </DialogTitle>
+          {isLockExpired && (
+            <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                Your previous lock has expired. You can create a new lock or withdraw your Lords.
+              </p>
+            </div>
+          )}
           <div>
             <Label>Current Lock</Label>
             <div className="flex gap-4 my-4">
@@ -227,11 +244,13 @@ export function StakeDialog({
                 />
               </div>
             </div>
-            <Label>Lock Duration (+{lockWeeks} weeks)</Label>
+            <Label>
+              {isLockExpired ? "Lock Duration" : `Lock Duration (+${lockWeeks} weeks)`}
+            </Label>
             <Slider
               className="my-2"
               min={0}
-              max={maxLockWeeks - weeksToUnlock}
+              max={isLockExpired ? maxLockWeeks : maxLockWeeks - weeksToUnlock}
               step={1}
               value={[lockWeeks]}
               onValueChange={(value) => setLockWeeks(value[0] ?? 0)}
@@ -253,7 +272,7 @@ export function StakeDialog({
               className="w-full"
               onClick={manageLock}
             >
-              Stake
+              {isLockExpired ? "Create New Lock" : "Stake"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -39,6 +39,13 @@ export function UnlockDialog({
 }) {
   const [open, setOpen] = useState(false);
 
+  // Check if the current lock has expired
+  const isLockExpired = useMemo(() => {
+    if (!ownerLordsLock?.end_time) return false;
+    const currentTime = Math.floor(Date.now() / 1000);
+    return Number(ownerLordsLock.end_time) < currentTime;
+  }, [ownerLordsLock?.end_time]);
+
   const penalty = useMemo(() => {
     if (ownerLordsLock) {
       const lockInfo: LockInfo = {
@@ -86,7 +93,7 @@ export function UnlockDialog({
       <DialogTrigger asChild>
         <Button>
           <Unlock className="h-4 w-4" />
-          Early Unlock
+          {isLockExpired ? "Withdraw" : "Early Unlock"}
         </Button>
       </DialogTrigger>
       <DialogPortal>
@@ -94,7 +101,7 @@ export function UnlockDialog({
         <DialogContent>
           <DialogTitle className="flex items-center gap-3 text-xl font-bold">
             <Unlock className="h-6 w-6" />
-            Early Withdrawal
+            {isLockExpired ? "Withdraw Lords" : "Early Withdrawal"}
           </DialogTitle>
           <div>
             <Label>Current Lock</Label>
@@ -129,15 +136,21 @@ export function UnlockDialog({
             </div>
           </div>
           <div className="mb-4 flex flex-col gap-4">
-            <p className="">
-              Pay a penalty determined by lock duration to withdraw your locked
-              Lords early
-            </p>
+            {isLockExpired ? (
+              <p className="">
+                Your lock has expired. You can withdraw your Lords without penalty.
+              </p>
+            ) : (
+              <p className="">
+                Pay a penalty determined by lock duration to withdraw your locked
+                Lords early
+              </p>
+            )}
             <div className="flex">
               <Card className="w-auto">
                 <CardHeader className="p-3">
                   <CardTitle className="text-sm">
-                    After Withdrawal Penalty
+                    {isLockExpired ? "Amount to Withdraw" : "After Withdrawal Penalty"}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -153,14 +166,16 @@ export function UnlockDialog({
                           ),
                         )}
                       </div>
-                      <div className="text-xs text-red-300/60">
-                        Penalty: {formatEther(BigInt(penalty))} LORDS (
-                        {(
-                          (Number(penalty) / Number(ownerLordsLock.amount)) *
-                          100
-                        ).toFixed(2)}
-                        %)
-                      </div>
+                      {!isLockExpired && (
+                        <div className="text-xs text-red-300/60">
+                          Penalty: {formatEther(BigInt(penalty))} LORDS (
+                          {(
+                            (Number(penalty) / Number(ownerLordsLock.amount)) *
+                            100
+                          ).toFixed(2)}
+                          %)
+                        </div>
+                      )}
                     </div>
                   ) : (
                     "-"
