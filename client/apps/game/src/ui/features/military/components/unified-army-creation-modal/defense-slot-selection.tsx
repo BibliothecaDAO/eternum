@@ -1,7 +1,7 @@
 import Button from "@/ui/design-system/atoms/button";
+import { DEFENSE_NAMES } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { AlertTriangle } from "lucide-react";
-import { DEFENSE_NAMES } from "@bibliothecadao/types";
 
 import type { GuardSummary, SelectedTroopCombo } from "./types";
 
@@ -59,14 +59,14 @@ export const DefenseSlotSelection = ({
                   : isSlotSelectable
                     ? "hover:bg-gold/10 hover:border-gold/50 hover:scale-102 hover:shadow-md"
                     : "opacity-40 cursor-not-allowed",
-                hasGuard && !isSlotCompatible && "border-red/50 hover:border-red/60",
+                hasGuard && !isSlotCompatible && "border-danger/50 hover:border-danger/60",
               )}
             >
               <div className="text-base font-bold mb-1">{slotName}</div>
               <div
                 className={clsx(
                   "text-sm",
-                  hasGuard ? (isSlotCompatible ? "text-gold/90" : "text-red/80 font-semibold") : "text-gold/70",
+                  hasGuard ? (isSlotCompatible ? "text-gold/90" : "text-danger/80 font-semibold") : "text-gold/70",
                 )}
               >
                 {hasGuard ? `${guardTier} ${guardCategory}` : `Slot ${slot + 1}`}
@@ -75,7 +75,7 @@ export const DefenseSlotSelection = ({
                 <div className="mt-1 text-xs text-gold/50">Occupied slots only</div>
               )}
               {hasGuard && !isSlotCompatible && (
-                <div className="mt-1 text-xs text-red/70">
+                <div className="mt-1 text-xs text-danger/70">
                   Reinforce with {guardTier} {guardCategory}
                 </div>
               )}
@@ -89,12 +89,12 @@ export const DefenseSlotSelection = ({
         </div>
       )}
       {defenseSlotErrorMessage && (
-        <div className="mt-4 bg-gradient-to-r from-red/15 to-red/10 border-2 border-red/40 rounded-xl p-4 shadow-lg">
+        <div className="mt-4 bg-gradient-to-r from-danger/15 to-danger/10 border-2 border-danger/40 rounded-xl p-4 shadow-lg">
           <div className="flex items-center gap-3">
-            <div className="p-1 rounded-full bg-red/20">
-              <AlertTriangle className="w-5 h-5 text-red" />
+            <div className="p-1 rounded-full bg-danger/20">
+              <AlertTriangle className="w-5 h-5 text-danger" />
             </div>
-            <span className="text-sm text-red/90">{defenseSlotErrorMessage}</span>
+            <span className="text-sm text-danger/90">{defenseSlotErrorMessage}</span>
           </div>
         </div>
       )}

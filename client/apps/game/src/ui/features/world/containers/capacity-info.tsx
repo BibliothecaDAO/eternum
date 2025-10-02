@@ -1,6 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ResourceWeight } from "@/ui/features/economy/resources";
+import { formatStorageValue } from "@/ui/utils/storage-utils";
 import { configManager, getRealmInfo } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { BuildingType } from "@bibliothecadao/types";
@@ -17,18 +18,27 @@ const StorehouseInfo = ({
   storehouseCapacity: number;
   storehouseCapacityUsed: number;
 }) => {
+  const capacity = formatStorageValue(storehouseCapacity);
+  const used = formatStorageValue(storehouseCapacityUsed);
+  const remaining = formatStorageValue(Math.max(0, storehouseCapacity - storehouseCapacityUsed), {
+    forceInfinite: capacity.isInfinite,
+  });
+
+  const renderWithUnit = (formatted: { display: string; isInfinite: boolean }) =>
+    formatted.isInfinite ? formatted.display : `${formatted.display} kg`;
+
   return (
     <div className="max-w-xs z-50 space-y-3">
       {/* Storage summary */}
       <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm pt-4">
         <p className="font-bold text-gold text-right">Capacity:</p>
-        <p className="font-bold text-white">{storehouseCapacity.toLocaleString()} kg</p>
+        <p className="font-bold text-white">{renderWithUnit(capacity)}</p>
 
         <p className="font-bold text-gold text-right">Used:</p>
-        <p className="font-bold text-white">{storehouseCapacityUsed.toLocaleString()} kg</p>
+        <p className="font-bold text-white">{renderWithUnit(used)}</p>
 
         <p className="font-bold text-gold text-right">Left:</p>
-        <p className="font-bold text-white">{(storehouseCapacity - storehouseCapacityUsed).toLocaleString()} kg</p>
+        <p className="font-bold text-white">{renderWithUnit(remaining)}</p>
       </div>
 
       <ResourceWeight />
@@ -106,6 +116,12 @@ export const CapacityInfo = ({ structureEntityId, className }: { structureEntity
     : 0;
 
   const isStorageNearCapacity = storagePercentage >= 80;
+  const formattedStorehouseCapacity = realmInfo?.storehouses
+    ? formatStorageValue(realmInfo.storehouses.capacityKg)
+    : null;
+  const formattedStorehouseCapacityUsed = realmInfo?.storehouses
+    ? formatStorageValue(realmInfo.storehouses.capacityUsedKg)
+    : null;
 
   return (
     <div className={clsx("flex gap-4", className)}>
@@ -132,13 +148,12 @@ export const CapacityInfo = ({ structureEntityId, className }: { structureEntity
           </CircularProgress>
           <div className="flex flex-col">
             <div className={clsx("text-xs", isStorageNearCapacity && "text-red")}>
-              {realmInfo.storehouses.capacityKg < Number((2n ** 64n - 1n) / 1000n) ? (
-                <>
-                  {Math.round(realmInfo.storehouses.capacityUsedKg).toLocaleString()} /{" "}
-                  {Math.round(realmInfo.storehouses.capacityKg).toLocaleString()} kg
-                </>
-              ) : (
+              {formattedStorehouseCapacity?.isInfinite ? (
                 <span>∞</span>
+              ) : (
+                <>
+                  {formattedStorehouseCapacityUsed?.display} / {formattedStorehouseCapacity?.display} kg
+                </>
               )}
             </div>
           </div>

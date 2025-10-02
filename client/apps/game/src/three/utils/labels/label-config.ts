@@ -1,4 +1,5 @@
 import type { CameraView } from "../../scenes/hexagon-scene";
+import { resolveCameraView } from "./label-view";
 import { LabelConfig, LabelStyle } from "./label-types";
 
 /**
@@ -160,7 +161,8 @@ export function getOwnershipStyle(isMine: boolean, isDaydreams?: boolean): { def
  * Get camera view configuration safely
  */
 export function getCameraViewConfig(cameraView: CameraView): Partial<LabelConfig> {
-  return CAMERA_VIEW_CONFIGS[cameraView as number] || {};
+  const effectiveView = resolveCameraView(cameraView);
+  return CAMERA_VIEW_CONFIGS[effectiveView as number] || {};
 }
 
 /**
