@@ -29,13 +29,13 @@ export class AudioManager {
     return {
       masterVolume: 1.0,
       categoryVolumes: {
-        [AudioCategory.MUSIC]: 0.5,
-        [AudioCategory.UI]: 0.7,
-        [AudioCategory.RESOURCE]: 0.6,
-        [AudioCategory.BUILDING]: 0.6,
-        [AudioCategory.COMBAT]: 0.8,
-        [AudioCategory.AMBIENT]: 0.4,
-        [AudioCategory.ENVIRONMENT]: 0.5,
+        [AudioCategory.MUSIC]: 0.4,        // Reduced from 0.5 - background layer
+        [AudioCategory.UI]: 0.5,           // Reduced from 0.8 - clear but not overpowering
+        [AudioCategory.RESOURCE]: 0.5,     // Reduced from 0.6 - frequent actions
+        [AudioCategory.BUILDING]: 0.5,     // Reduced from 0.6 - frequent actions
+        [AudioCategory.COMBAT]: 0.7,       // Reduced from 0.8 - still important but not overpowering
+        [AudioCategory.AMBIENT]: 0.3,      // Reduced from 0.4 - subtle atmosphere
+        [AudioCategory.ENVIRONMENT]: 0.45, // Reduced from 0.5 - weather effects
       },
       muted: false,
       spatialEnabled: true,
@@ -268,6 +268,10 @@ export class AudioManager {
 
   getState(): Readonly<AudioState> {
     return { ...this.state };
+  }
+
+  isInitialized(): boolean {
+    return this.audioContext !== null && this.audioContext.state !== 'suspended';
   }
 
   getMetrics(): AudioMetrics {

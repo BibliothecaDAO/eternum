@@ -1,6 +1,8 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { RainEffect } from "@/three/effects/rain-effect";
+import { AmbienceManager } from "@/three/managers/ambience-manager";
 import { Navigator } from "@/three/managers/navigator";
+import { WeatherManager } from "@/three/managers/weather-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { GUIManager } from "@/three/utils/";
 import { Scene, OrthographicCamera, AmbientLight, HemisphereLight, Color } from "three";
@@ -16,7 +18,10 @@ export default class HUDScene {
   private ambientLight!: AmbientLight;
   private hemisphereLight!: HemisphereLight;
   private rainEffect!: RainEffect;
+  private weatherManager!: WeatherManager;
+  private ambienceManager!: AmbienceManager;
   private navigationTargetUnsubscribe: (() => void) | null = null;
+  private cycleProgress: number = 0;
 
   constructor(sceneManager: SceneManager, controls: MapControls) {
     this.scene = new Scene();
@@ -42,6 +47,13 @@ export default class HUDScene {
     this.addHemisphereLight();
     this.rainEffect = new RainEffect(this.scene);
     this.rainEffect.addGUIControls(this.GUIFolder);
+
+    // Initialize weather and ambience systems
+    this.weatherManager = new WeatherManager(this.scene, this.rainEffect);
+    this.weatherManager.addGUIControls(this.GUIFolder);
+
+    this.ambienceManager = new AmbienceManager();
+    this.ambienceManager.addGUIControls(this.GUIFolder);
 
     // Store subscription reference for cleanup
     this.navigationTargetUnsubscribe = useUIStore.subscribe(
@@ -107,9 +119,20 @@ export default class HUDScene {
     return this.camera;
   }
 
-  update(deltaTime: number) {
+  update(deltaTime: number, cycleProgress?: number) {
     this.navigator.update();
-    this.rainEffect.update(deltaTime, this.camera.position);
+
+    // Update cycle progress if provided
+    if (cycleProgress !== undefined) {
+      this.cycleProgress = cycleProgress;
+    }
+
+    // Update weather system (handles rain)
+    this.weatherManager.update(deltaTime, this.camera.position);
+
+    // Update ambience system (handles ambient sounds)
+    const currentWeather = this.weatherManager.getCurrentWeather();
+    this.ambienceManager.update(this.cycleProgress, currentWeather, deltaTime);
   }
 
   onWindowResize(width: number, height: number) {
@@ -142,6 +165,16 @@ export default class HUDScene {
     // Clean up rain effect (if it has a destroy method)
     if (this.rainEffect && "destroy" in this.rainEffect && typeof (this.rainEffect as any).destroy === "function") {
       (this.rainEffect as any).destroy();
+    }
+
+    // Clean up weather manager
+    if (this.weatherManager) {
+      this.weatherManager.dispose();
+    }
+
+    // Clean up ambience manager
+    if (this.ambienceManager) {
+      this.ambienceManager.dispose();
     }
 
     // Clean up lights
