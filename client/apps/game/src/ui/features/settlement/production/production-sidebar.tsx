@@ -181,7 +181,7 @@ const SidebarRealm = ({
   );
 
   const resourceProductionSummary = useMemo<ResourceProductionSummaryItem[]>(() => {
-    const summaries = new Map<ResourcesIds, { totalBuildings: number; activeBuildings: number }>();
+    const summaries = new Map<ResourcesIds, { totalBuildings: number }>();
 
     productionBuildings.forEach((building) => {
       if (!building?.produced?.resource) return;
@@ -189,31 +189,31 @@ const SidebarRealm = ({
       const resourceId = building.produced.resource as ResourcesIds;
       if (resourceId === ResourcesIds.Labor) return;
 
-      if (!summaries.has(resourceId)) {
-        summaries.set(resourceId, { totalBuildings: 0, activeBuildings: 0 });
-      }
-
       const summary = summaries.get(resourceId);
-      if (!summary) return;
-
-      summary.totalBuildings += 1;
-      if (!building.paused) {
-        summary.activeBuildings += 1;
+      if (summary) {
+        summary.totalBuildings += 1;
+      } else {
+        summaries.set(resourceId, { totalBuildings: 1 });
       }
     });
 
     const calculatedAt = Date.now();
 
     return Array.from(summaries.entries()).map(([resourceId, stats]) => {
-      let isProducing = stats.activeBuildings > 0;
+      let isProducing = false;
       let timeRemainingSeconds: number | null = null;
       let productionPerSecond: number | null = null;
       let outputRemaining: number | null = null;
+      let activeBuildings = 0;
 
       if (resourceData) {
         const productionInfo = ResourceManager.balanceAndProduction(resourceData, resourceId);
         const productionData = calculateResourceProductionData(resourceId, productionInfo, currentDefaultTick || 0);
         isProducing = productionData.isProducing;
+        if (isProducing) {
+          const buildingCount = Number(productionInfo.production.building_count || 0n);
+          activeBuildings = Number.isFinite(buildingCount) && buildingCount > 0 ? buildingCount : stats.totalBuildings;
+        }
 
         timeRemainingSeconds = Number.isFinite(productionData.timeRemainingSeconds)
           ? productionData.timeRemainingSeconds
@@ -227,7 +227,7 @@ const SidebarRealm = ({
       return {
         resourceId,
         totalBuildings: stats.totalBuildings,
-        activeBuildings: stats.activeBuildings,
+        activeBuildings,
         isProducing,
         timeRemainingSeconds,
         productionPerSecond,
