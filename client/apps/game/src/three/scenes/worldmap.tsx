@@ -525,7 +525,7 @@ export default class WorldmapScene extends HexagonScene {
         description: "Cycle through armies",
         sceneRestriction: SceneName.WorldMap,
         condition: () => this.selectableArmies.length > 0,
-        action: () => this.selectNextArmy(),
+        action: () => void this.selectNextArmy(),
       });
 
       this.shortcutManager.registerShortcut({
@@ -2836,7 +2836,7 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
-  private selectNextArmy() {
+  private async selectNextArmy(): Promise<void> {
     if (this.selectableArmies.length === 0) return;
     const account = ContractAddress(useAccountStore.getState().account?.address || "");
 
@@ -2848,13 +2848,24 @@ export default class WorldmapScene extends HexagonScene {
 
       // Skip armies with pending movement transactions
       if (!this.pendingArmyMovements.has(army.entityId)) {
+        const normalizedPosition = new Position({ x: army.position.col, y: army.position.row }).getNormalized();
+        // Use 0 duration for instant camera teleportation
+        this.moveCameraToColRow(normalizedPosition.x, normalizedPosition.y, 0);
+
+        try {
+          await this.updateVisibleChunks();
+        } catch (error) {
+          console.error(
+            `[WorldMap] Failed to update visible chunks while cycling armies (entityId=${army.entityId}):`,
+            error,
+          );
+        }
+
         // army.position is already in contract coordinates, pass it directly
         // handleHexSelection will normalize it internally when calling getHexagonEntity
         this.handleHexSelection(army.position, true);
         this.onArmySelection(army.entityId, account);
-        const normalizedPosition = new Position({ x: army.position.col, y: army.position.row }).getNormalized();
-        // Use 0 duration for instant camera teleportation
-        this.moveCameraToColRow(normalizedPosition.x, normalizedPosition.y, 0);
+        this.state.setLeftNavigationView(LeftView.EntityView);
         break;
       }
       attempts++;
