@@ -80,7 +80,7 @@ jobs:
                   },
                   {
                     "name": "🎯 Get Ready",
-                    "value": "Make sure you are registered and ready to play!",
+                    "value": "Make sure you are registered and ready to play!\n\n[Register and Play Here](https://dev.blitz.realms.world/)",
                     "inline": false
                   }
                 ],
