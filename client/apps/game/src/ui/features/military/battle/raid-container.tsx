@@ -33,7 +33,7 @@ import {
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 import { ActiveRelicEffects } from "../../world/components/entities/active-relic-effects";
-import { AttackTarget, TargetType } from "./attack-container";
+import { AttackTarget, TargetType } from "./types";
 import { formatTypeAndBonuses } from "./combat-utils";
 import { RaidResult } from "./raid-result";
 

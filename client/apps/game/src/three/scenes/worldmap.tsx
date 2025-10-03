@@ -20,7 +20,8 @@ import { LeftView, RightView } from "@/types";
 import { Position } from "@bibliothecadao/eternum";
 
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
-import { ChestModal, CombatModal, HelpModal } from "@/ui/features/military";
+import { ChestModal, HelpModal } from "@/ui/features/military";
+import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
 import { UnifiedArmyCreationModal } from "@/ui/features/military/components/unified-army-creation-modal";
 import { QuestModal } from "@/ui/features/progression";
 import { SetupResult } from "@bibliothecadao/dojo";
@@ -1108,21 +1109,18 @@ export default class WorldmapScene extends HexagonScene {
     const target = this.getHexagonEntity(targetHex);
     const selected = this.getHexagonEntity(selectedPath[0]);
 
-    // Find the army at the target position
-    this.state.toggleModal(
-      <CombatModal
-        selected={{
-          type: selected.army ? ActorType.Explorer : ActorType.Structure,
-          id: selectedEntityId,
-          hex: new Position({ x: selectedPath[0].col, y: selectedPath[0].row }).getContract(),
-        }}
-        target={{
-          type: target.army ? ActorType.Explorer : ActorType.Structure,
-          id: target.army?.id || target.structure?.id || 0,
-          hex: new Position({ x: targetHex.col, y: targetHex.row }).getContract(),
-        }}
-      />,
-    );
+    const attackerSummary = {
+      type: selected.army ? ActorType.Explorer : ActorType.Structure,
+      id: selectedEntityId,
+      hex: new Position({ x: selectedPath[0].col, y: selectedPath[0].row }).getContract(),
+    };
+    const targetSummary = {
+      type: target.army ? ActorType.Explorer : ActorType.Structure,
+      id: target.army?.id || target.structure?.id || 0,
+      hex: new Position({ x: targetHex.col, y: targetHex.row }).getContract(),
+    };
+
+    this.state.toggleModal(<QuickAttackPreview attacker={attackerSummary} target={targetSummary} />);
   }
 
   private onArmyCreate(actionPath: ActionPath[], selectedEntityId: ID) {
