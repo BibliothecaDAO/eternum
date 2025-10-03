@@ -436,6 +436,7 @@ export default class HexceptionScene extends HexagonScene {
     }
 
     this.clearHoverLabel();
+    this.disposeStateSyncSubscription();
 
     // Clean up structure update subscription
     if (this.structureUpdateSubscription) {
