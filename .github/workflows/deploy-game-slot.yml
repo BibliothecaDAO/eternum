@@ -112,7 +112,7 @@ jobs:
 
           upcoming = []
           day_offset = 0
-          while len(upcoming) < 3:
+          while len(upcoming) < 4:
               current_date = now.date() + timedelta(days=day_offset)
               for slot in slots:
                   candidate = datetime.combine(current_date, slot, tzinfo=timezone.utc)
@@ -139,13 +139,13 @@ jobs:
               fh.write(f"timestamp={to_timestamp(game_start)}\n")
               fh.write(f"readable={game_start.strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
               fh.write(f"discord_timestamp={discord_full(game_start)}\n")
-              fh.write(f"next_deployment_1={discord_full_relative(upcoming[0])}\n")
-              fh.write(f"next_deployment_2={discord_full_relative(upcoming[1])}\n")
-              fh.write(f"next_deployment_3={discord_full_relative(upcoming[2])}\n")
+              fh.write(f"next_deployment_1={discord_full_relative(upcoming[1])}\n")
+              fh.write(f"next_deployment_2={discord_full_relative(upcoming[2])}\n")
+              fh.write(f"next_deployment_3={discord_full_relative(upcoming[3])}\n")
 
           print(f"🕐 Next game start: {game_start.strftime('%Y-%m-%d %H:%M:%S UTC')}")
-          for slot_time in upcoming:
-              print(f"🗓️ {slot_time.strftime('%Y-%m-%d %H:%M:%S UTC')}")
+          for idx, slot_time in enumerate(upcoming[1:], 1):
+              print(f"🗓️ Upcoming slot {idx}: {slot_time.strftime('%Y-%m-%d %H:%M:%S UTC')}")
           PY
 
       - name: 🎲 Generate New Seed
@@ -283,8 +283,13 @@ jobs:
                     "inline": true
                   },
                   {
-                    "name": "⚡ Upcoming Games Start Time",
+                    "name": "⚡ Upcoming Games Start Will Begin At",
                     "value": "- ${{ steps.game-timing.outputs.next_deployment_1 }}\n\n- ${{ steps.game-timing.outputs.next_deployment_2 }}\n\n- ${{ steps.game-timing.outputs.next_deployment_3 }}",
+                    "inline": false
+                  },
+                  {
+                    "name": "🔗 Registration & Game Link",
+                    "value": "[Register Here](https://dev.blitz.realms.world/)",
                     "inline": false
                   }
                 ],
