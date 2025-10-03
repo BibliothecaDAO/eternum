@@ -4,7 +4,7 @@ import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
 import { GameWinnerMessage, NotLoggedInMessage } from "@/ui/shared";
 import { Leva } from "leva";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { env } from "../../../env";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
 import { BlitzSetHyperstructureShareholdersTo100 } from "../features/world/components/hyperstructures/blitz-hyperstructure-shareholder";
@@ -94,6 +94,24 @@ const StructureSynchronizerManager = () => {
 const ModalOverlay = () => {
   const showModal = useUIStore((state) => state.showModal);
   const modalContent = useUIStore((state) => state.modalContent);
+  const toggleModal = useUIStore((state) => state.toggleModal);
+
+  useEffect(() => {
+    if (!showModal) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        event.preventDefault();
+        toggleModal(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showModal, toggleModal]);
 
   return (
     <Suspense fallback={null}>
