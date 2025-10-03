@@ -11,6 +11,40 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const TARGET_PATH = path.join(__dirname, "..", "..", "..", "..", "target", "release");
 
+export const declareCollectibleTimelockMaker = async () => {
+  ////////////////////////////////////////////////
+  ////////   Collectible Timelock Maker Contract  
+  /////////////////////////////////////////////////
+
+  // declare contract
+  let casualName = "collectiblestimelockmaker";
+  let projectName = "collectibles";
+  let contractName = "CollectibleTimeLockMaker";
+  const class_hash = (await declare(getContractPath(TARGET_PATH, projectName, contractName), casualName)).class_hash;
+  return class_hash;
+};
+
+export const deployTimelockMakerContract = async () => {
+  //////////////////////////////////////////////////////////
+  ////////  Deploy Collectible Timelock Maker Contract
+  ///////////////////////////////////////////////////////////
+
+  // declare contract
+  let casualName = "collectiblestimelockmaker";
+  let projectName = "collectibles";
+  let contractName = "CollectibleTimeLockMaker";
+  const class_hash = (await declare(getContractPath(TARGET_PATH, projectName, contractName), casualName)).class_hash;
+
+  let constructorCalldata = [];
+  let address = await deploy(casualName, class_hash, constructorCalldata);
+  await saveContractAddressToCommonFolder(casualName, address);
+  console.log(
+    `\n\n 💾 Saved contract address to common folder (contracts/common/collectibles/addresses/${process.env.STARKNET_NETWORK}.json)`,
+  );
+  return address;
+};
+
+
 export const declareRealmsCollectibleContract = async () => {
   ///////////////////////////////////////////
   ////////   Collectible Contract  //////////

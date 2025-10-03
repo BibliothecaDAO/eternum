@@ -1,6 +1,7 @@
 import { processData } from "./data/process.js";
 import {
   deployRealmsCollectibleContract,
+  deployTimelockMakerContract,
   setAttrsRawToIPFSCID,
   setDefaultIPFSCID,
   setTraitTypeName,
@@ -112,6 +113,49 @@ export const deployCollectible = async (dataFileName) => {
   console.log("\n\n\n");
 
   return collectibleAddress;
+};
+
+
+/**
+ * Deploy a RealmsCollectible contract with the specified name and symbol
+ * All other parameters are read from environment variables
+ *
+ * @param {string} erc721Name - The name of the ERC721 token
+ * @param {string} erc721Symbol - The symbol of the ERC721 token
+ * @returns {Promise<bigint>} The deployed contract address
+ */
+export const deployTimeLockMaker = async () => {
+
+
+  // Pretty console header
+  console.log("\n\n");
+  console.log(`╔══════════════════════════════════════════════════════════╗`.green);
+  console.log(`║ Deploying Realms Collectible Timelock Maker ║`.green);
+  console.log(`╚══════════════════════════════════════════════════════════╝`.green);
+  console.log("\n");
+  console.log(`╔═════════════════════════════════════════════════════════════════╗`.yellow);
+  console.log("  Network: ".yellow + process.env.STARKNET_NETWORK.magenta);
+  console.log(`╚═════════════════════════════════════════════════════════════════╝`.yellow);
+  console.log("\n\n");
+
+  exitIfDeclined(await confirmMainnetDeployment());
+
+  // Deploy Timelock Manager contract
+  const timelockManagerAddress = await deployTimelockMakerContract();
+
+  console.log(`\n\n 🎨 Deployed Collectible Timelock Maker contract: ${toHex(timelockManagerAddress)}`);
+
+
+
+  console.log("\n\n");
+  console.log(`╔════════════════════════════════════════════════════════════════════════════════════════════╗`.yellow);
+  console.log(`    Contract: Deployed `.yellow + toHex(timelockManagerAddress).magenta + " ");
+  console.log("    Network: ".yellow + process.env.STARKNET_NETWORK.magenta);
+  console.log(`╚════════════════════════════════════════════════════════════════════════════════════════════╝`.yellow);
+
+  console.log("\n\n\n");
+
+  return timelockManagerAddress;
 };
 
 const toHex = (address) => {
