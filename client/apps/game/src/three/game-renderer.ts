@@ -79,6 +79,7 @@ export default class GameRenderer {
   private graphicsSetting: GraphicsSettings;
   private cleanupIntervals: NodeJS.Timeout[] = [];
   private environmentTarget?: WebGLRenderTarget;
+  private unsubscribeEnableMapZoom?: () => void;
 
   constructor(dojoContext: SetupResult) {
     this.graphicsSetting = GRAPHICS_SETTING;
@@ -379,7 +380,7 @@ export default class GameRenderer {
     this.controls.listenToKeyEvents(document.body);
 
     // Subscribe to zoom setting changes
-    useUIStore.subscribe(
+    this.unsubscribeEnableMapZoom = useUIStore.subscribe(
       (state) => state.enableMapZoom,
       (enableMapZoom) => {
         console.log(`[GameRenderer] Zoom setting changed to: ${enableMapZoom}`);
@@ -814,6 +815,11 @@ export default class GameRenderer {
     this.isDestroyed = true;
 
     try {
+      if (this.unsubscribeEnableMapZoom) {
+        this.unsubscribeEnableMapZoom();
+        this.unsubscribeEnableMapZoom = undefined;
+      }
+
       // Clean up intervals
       if (this.cleanupIntervals) {
         this.cleanupIntervals.forEach((interval) => clearInterval(interval));

@@ -79,6 +79,7 @@ export abstract class HexagonScene {
   protected ambientPurpleLight!: AmbientLight;
 
   private groundMesh!: Mesh;
+  private uiStateUnsubscribe?: () => void;
   private lightningEndTime: number = 0;
   private originalLightningIntensity: number = 0;
   private originalLightningColor: number = 0;
@@ -135,7 +136,7 @@ export abstract class HexagonScene {
     }
 
     // subscribe to state changes
-    useUIStore.subscribe(
+    this.uiStateUnsubscribe = useUIStore.subscribe(
       (state) => ({
         leftNavigationView: state.leftNavigationView,
         rightNavigationView: state.rightNavigationView,
@@ -151,6 +152,20 @@ export abstract class HexagonScene {
         this.state.cycleTime = cycleTime;
       },
     );
+  }
+
+  protected disposeStateSyncSubscription(): void {
+    if (!this.uiStateUnsubscribe) {
+      return;
+    }
+
+    try {
+      this.uiStateUnsubscribe();
+    } catch (error) {
+      console.warn("[HexagonScene] Failed to unsubscribe UI state listener", error);
+    } finally {
+      this.uiStateUnsubscribe = undefined;
+    }
   }
 
   private setupLighting(): void {

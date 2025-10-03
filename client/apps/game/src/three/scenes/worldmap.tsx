@@ -2686,6 +2686,7 @@ export default class WorldmapScene extends HexagonScene {
     this.currentHexGridTask = null;
 
     this.disposeStoreSubscriptions();
+    this.disposeStateSyncSubscription();
 
     this.resourceFXManager.destroy();
     this.stopRelicValidationTimer();
