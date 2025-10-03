@@ -273,23 +273,23 @@ jobs:
                 "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'",
                 "fields": [
                   {
+                    "name": "🕐 Registration Starts",
+                    "value": "'"$REGISTRATION_DISCORD_TIMESTAMP"'",
+                    "inline": true
+                  },
+                  {
                     "name": "🕐 Game Starts",
                     "value": "${{ steps.game-timing.outputs.discord_timestamp }}",
                     "inline": false
                   },
                   {
-                    "name": "⚡ Registration Starts",
-                    "value": "'"$REGISTRATION_DISCORD_TIMESTAMP"'",
-                    "inline": true
-                  },
-                  {
-                    "name": "⚡ Upcoming Games Start Will Begin At",
+                    "name": "⚡ Upcoming Games",
                     "value": "- ${{ steps.game-timing.outputs.next_deployment_1 }}\n\n- ${{ steps.game-timing.outputs.next_deployment_2 }}\n\n- ${{ steps.game-timing.outputs.next_deployment_3 }}",
                     "inline": false
                   },
                   {
                     "name": "🔗 Registration & Game Link",
-                    "value": "[Register Here](https://dev.blitz.realms.world/)",
+                    "value": "[Register and Play Here](https://dev.blitz.realms.world/)",
                     "inline": false
                   }
                 ],
