@@ -43,8 +43,12 @@ jobs:
           echo "⏳ Wait time: $WAIT_TIME seconds"
 
           if [ $WAIT_TIME -lt 0 ]; then
-            echo "❌ Game start time has already passed or reminder time is in the past!"
-            exit 1
+            if [ $CURRENT_TIMESTAMP -ge $GAME_START_TIMESTAMP ]; then
+              echo "❌ Game start time has already passed!"
+              exit 1
+            fi
+            echo "⚠️ Reminder time has passed; sending immediately."
+            WAIT_TIME=0
           fi
 
           echo "wait_time=$WAIT_TIME" >> $GITHUB_OUTPUT
