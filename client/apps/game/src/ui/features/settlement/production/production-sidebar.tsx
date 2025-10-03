@@ -11,11 +11,11 @@ import {
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useBuildings, useDojo } from "@bibliothecadao/react";
-import { getProducedResource, ID, RealmInfo, resources, ResourcesIds } from "@bibliothecadao/types";
+import { getProducedResource, ID, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { HasValue, runQuery } from "@dojoengine/recs";
-import { SparklesIcon } from "lucide-react";
 import clsx from "clsx";
+import { SparklesIcon } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 import { formatTimeRemaining } from "../../economy/resources/entity-resource-table/utils";
 
@@ -342,17 +342,6 @@ const SidebarRealm = ({
           ) : (
             <span className="text-xs text-gold/60">No production buildings</span>
           )}
-        </div>
-
-        <div className="flex flex-wrap gap-1 pt-2 border-t border-gold/20">
-          {Object.values(realm.resources).map((resource) => (
-            <ResourceIcon
-              key={resource}
-              resource={resources.find((r) => r.id === resource)?.trait || ""}
-              size="xs"
-              className="opacity-60"
-            />
-          ))}
         </div>
       </div>
     </div>
