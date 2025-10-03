@@ -1452,6 +1452,10 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
     "0x1f4",
   ];
 
+  const collectibles_cosmetics_max = config.config.blitz.registration.collectible_cosmetics_max_items;
+  const collectibles_cosmetics_address = config.config.blitz.registration.collectible_cosmetics_address;
+  const collectibles_timelock_address = config.config.blitz.registration.collectible_timelock_address;
+  
   const registrationCalldata = {
     signer: config.account,
     fee_token: config.config.blitz.registration.fee_token,
@@ -1462,6 +1466,10 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
     entry_token_class_hash: entryTokenClassHash,
     entry_token_ipfs_cid: entryTokenIpfsCid,
     entry_token_deploy_calldata: entryTokenDeployCalldata,
+
+    collectibles_cosmetics_max,
+    collectibles_cosmetics_address,
+    collectibles_timelock_address,
   };
 
   console.log(
@@ -1483,6 +1491,10 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
     │  ${chalk.gray("Entry Token Deploy Calldata:")} ${chalk.white(
       `[${registrationCalldata.entry_token_deploy_calldata.slice(0, 3).join(", ")}, ..., ${registrationCalldata.entry_token_deploy_calldata.slice(-3).join(", ")}]`,
     )}
+    │  ${chalk.gray("Collectible Cosmetics Max Items:")} ${chalk.white(registrationCalldata.collectibles_cosmetics_max)}
+    │  ${chalk.gray("Collectible Cosmetics Address:")} ${chalk.white(shortHexAddress(registrationCalldata.collectibles_cosmetics_address))}
+    │  ${chalk.gray("Collectible Timelock Address:")} ${chalk.white(shortHexAddress(registrationCalldata.collectibles_timelock_address))}
+    │
     └────────────────────────────────`),
   );
 

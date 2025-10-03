@@ -337,7 +337,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const registerCall: Call = {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-blitz_realm_systems`),
       entrypoint: "register",
-      calldata: [name, tokenId],
+      calldata: [name, tokenId, 0],
     };
 
     if (entryTokenAddress) {
@@ -2668,6 +2668,9 @@ export class EternumProvider extends EnhancedDojoProvider {
       entry_token_class_hash,
       entry_token_deploy_calldata,
       entry_token_ipfs_cid,
+      collectibles_cosmetics_max,
+      collectibles_cosmetics_address,
+      collectibles_timelock_address,
       signer,
     } = props;
     return await this.executeAndCheckTransaction(signer, {
@@ -2684,6 +2687,10 @@ export class EternumProvider extends EnhancedDojoProvider {
         entry_token_deploy_calldata.length,
         ...entry_token_deploy_calldata,
         entry_token_ipfs_cid,
+
+        collectibles_cosmetics_max,
+        collectibles_cosmetics_address,
+        collectibles_timelock_address,
       ],
     });
   }

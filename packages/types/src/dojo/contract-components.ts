@@ -1516,6 +1516,9 @@ export function defineContractComponents(world: World) {
             fee_token: RecsType.BigInt,
             fee_recipient: RecsType.BigInt,
             entry_token_address: RecsType.BigInt,
+            collectibles_cosmetics_max: RecsType.Number,
+            collectibles_cosmetics_address: RecsType.BigInt,
+            collectibles_timelock_address: RecsType.BigInt,
             registration_count: RecsType.Number,
             registration_count_max: RecsType.Number,
             registration_start_at: RecsType.Number,
@@ -1705,6 +1708,9 @@ export function defineContractComponents(world: World) {
               "ContractAddress", // BlitzRegistrationConfig fee_token
               "ContractAddress", // BlitzRegistrationConfig fee_recipient
               "ContractAddress", // BlitzRegistrationConfig entry_token_address
+              "u8", // BlitzHypersSettlementConfig collectibles_cosmetics_max
+              "ContractAddress", // BlitzHypersSettlementConfig collectibles_cosmetics_address
+              "ContractAddress", // BlitzHypersSettlementConfig collectibles_timelock_address
               "u16", // BlitzRegistrationConfig registration_count
               "u16", // BlitzRegistrationConfig registration_count_max
               "u32", // BlitzRegistrationConfig registration_start_at
