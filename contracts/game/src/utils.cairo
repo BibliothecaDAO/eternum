@@ -6,8 +6,9 @@ pub mod math;
 pub mod number;
 pub mod random;
 pub mod tasks;
+pub mod collectibles;
 pub mod interfaces {
-    pub mod blitz_entry_token;
+    pub mod collectibles;
 }
 #[cfg(test)]
 pub mod testing;

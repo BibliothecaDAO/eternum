@@ -1,5 +1,6 @@
 import { processData } from "./data/process.js";
-import { setMintCollectible } from "./libs/commands.js";
+import { getContractAddressFromCommonFolder, setMintCollectible } from "./libs/commands.js";
+import { getCasualName } from "./libs/common.js";
 import { confirmMainnetDeployment, exitIfDeclined } from "./utils.js";
 
 /**
@@ -10,11 +11,13 @@ import { confirmMainnetDeployment, exitIfDeclined } from "./utils.js";
  * @param {string} dataFileName - The name of the data file
  */
 export const mintCollectible = async (dataFileName) => {
-  const { name, symbol, updateContractAddress, setMintCalldata } = processData(dataFileName);
+  const { name, symbol, setMintCalldata } = processData(dataFileName, true);
 
-  const collectibleAddress = updateContractAddress;
+  const collectibleAddress = await getContractAddressFromCommonFolder(getCasualName(name));
   if (!collectibleAddress) {
-    throw new Error("Collectible address is required to be set in `updateContractAddress` in the data file");
+    throw new Error(`Collectible address is required to be set addresses file with key "${getCasualName(name)}"`);
+  } else {
+    console.log(`\n\nUpdating Address ${collectibleAddress}\n\n`)
   }
 
   // Pretty console header

@@ -55,16 +55,14 @@ pub trait IBudokanGame<T> {
 #[dojo::contract]
 pub mod quest_systems {
     use core::array::ArrayTrait;
-    use core::num::traits::Zero;
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS, ErrorMessages, resource_type_name};
     use s1_eternum::models::map::Tile;
-    use s1_eternum::models::owner::OwnerAddressTrait;
     use s1_eternum::models::position::TravelTrait;
     use s1_eternum::models::quest::{
-        Level, Quest, QuestDetails, QuestFeatureFlag, QuestGameRegistry, QuestLevels, QuestRegistrations, QuestTile,
+        Level, Quest, QuestDetails, QuestFeatureFlag, QuestGameRegistry, QuestLevels, QuestTile,
     };
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,

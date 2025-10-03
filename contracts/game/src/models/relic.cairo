@@ -69,7 +69,6 @@ pub impl RelicEffectImpl of RelicEffectTrait {
             17 => (2_000, 60, 0),
             _ => {
                 panic!("Invalid relic resource id");
-                (0, 0, 0)
             },
         }
     }
