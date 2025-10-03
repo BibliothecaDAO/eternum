@@ -1,5 +1,6 @@
 import { processData } from "./data/process.js";
-import { setAttrsRawToIPFSCID, setDefaultIPFSCID, setTraitTypeName, setTraitValueName } from "./libs/commands.js";
+import { getContractAddressFromCommonFolder, setAttrsRawToIPFSCID, setDefaultIPFSCID, setTraitTypeName, setTraitValueName } from "./libs/commands.js";
+import { getCasualName } from "./libs/common.js";
 import { confirmMainnetDeployment, exitIfDeclined } from "./utils.js";
 
 /**
@@ -11,16 +12,17 @@ export const updateCollectible = async (dataFileName) => {
   const {
     name,
     symbol,
-    updateContractAddress,
     setDefaultIpfsCidCalldata,
     setTraitTypesNameCalldata,
     setTraitValueNameCalldata,
     setAttrsRawToIPFSCIDCalldata,
-  } = processData(dataFileName);
+  } = processData(dataFileName, true);
 
-  const collectibleAddress = updateContractAddress;
+  const collectibleAddress = await getContractAddressFromCommonFolder(getCasualName(name));
   if (!collectibleAddress) {
-    throw new Error("Collectible address is required to be set in `updateContractAddress` in the data file");
+    throw new Error(`Collectible address is required to be set addresses file with key "${getCasualName(name)}"`);
+  } else {
+    console.log(`\n\nUpdating Address ${collectibleAddress}\n\n`)
   }
 
   // Pretty console header

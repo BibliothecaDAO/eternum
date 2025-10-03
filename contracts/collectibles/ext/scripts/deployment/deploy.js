@@ -2,11 +2,13 @@ import { processData } from "./data/process.js";
 import {
   deployRealmsCollectibleContract,
   deployTimelockMakerContract,
+  getContractAddressFromCommonFolder,
   setAttrsRawToIPFSCID,
   setDefaultIPFSCID,
   setTraitTypeName,
   setTraitValueName,
 } from "./libs/commands.js";
+import { getCasualName } from "./libs/common.js";
 import { confirmMainnetDeployment, exitIfDeclined } from "./utils.js";
 
 /**
@@ -22,16 +24,12 @@ export const deployCollectible = async (dataFileName) => {
     name,
     symbol,
     description,
-    updateContractAddress,
     setDefaultIpfsCidCalldata,
     setTraitTypesNameCalldata,
     setTraitValueNameCalldata,
     setAttrsRawToIPFSCIDCalldata,
-  } = processData(dataFileName);
+  } = processData(dataFileName, false);
 
-  if (updateContractAddress) {
-    throw new Error("Update contract address is not allowed to be set in the data file when deploying a new contract");
-  }
 
   // Pretty console header
   console.log("\n\n");
@@ -44,11 +42,16 @@ export const deployCollectible = async (dataFileName) => {
   console.log(`╚═════════════════════════════════════════════════════════════════╝`.yellow);
   console.log("\n\n");
 
+  const locker = await getContractAddressFromCommonFolder(getCasualName("Timelock Maker"));
+  if (!locker) {
+    throw new Error(
+      `Locker address is required to be set in addresses file with key "${getCasualName("Timelock Maker")}"`,
+    );
+  } 
   // Contract parameters from environment variables
   const defaultAdmin = BigInt(process.env.COLLECTIBLES_DEFAULT_ADMIN);
   const minter = BigInt(process.env.COLLECTIBLES_MINTER);
   const upgrader = BigInt(process.env.COLLECTIBLES_UPGRADER);
-  const locker = BigInt(process.env.COLLECTIBLES_LOCKER);
   const metadataUpdater = BigInt(process.env.COLLECTIBLES_METADATA_UPDATER);
   const defaultRoyaltyReceiver = BigInt(process.env.COLLECTIBLES_DEFAULT_ROYALTY_RECEIVER);
   const feeNumerator = BigInt(process.env.COLLECTIBLES_FEE_NUMERATOR);
