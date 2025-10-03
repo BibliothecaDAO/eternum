@@ -17,10 +17,7 @@ import { HasValue, runQuery } from "@dojoengine/recs";
 import { SparklesIcon } from "lucide-react";
 import clsx from "clsx";
 import { memo, useEffect, useMemo, useState } from "react";
-import {
-  calculateResourceProductionData,
-  formatTimeRemaining,
-} from "../../economy/resources/entity-resource-table/utils";
+import { formatTimeRemaining } from "../../economy/resources/entity-resource-table/utils";
 
 interface ProductionSidebarProps {
   realms: RealmInfo[];
@@ -208,11 +205,15 @@ const SidebarRealm = ({
 
       if (resourceData) {
         const productionInfo = ResourceManager.balanceAndProduction(resourceData, resourceId);
-        const productionData = calculateResourceProductionData(resourceId, productionInfo, currentDefaultTick || 0);
+        const productionData = ResourceManager.calculateResourceProductionData(
+          resourceId,
+          productionInfo,
+          currentDefaultTick || 0,
+        );
         isProducing = productionData.isProducing;
         if (isProducing) {
-          const buildingCount = Number(productionInfo.production.building_count || 0n);
-          activeBuildings = Number.isFinite(buildingCount) && buildingCount > 0 ? buildingCount : stats.totalBuildings;
+          const buildingCount = productionInfo.production.building_count;
+          activeBuildings = buildingCount > 0 ? buildingCount : stats.totalBuildings;
         }
 
         timeRemainingSeconds = Number.isFinite(productionData.timeRemainingSeconds)

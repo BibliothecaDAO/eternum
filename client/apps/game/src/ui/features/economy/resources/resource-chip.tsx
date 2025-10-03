@@ -3,7 +3,6 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ProductionModal } from "@/ui/features/settlement";
 import { currencyFormat, currencyIntlFormat } from "@/ui/utils/utils";
-import { calculateResourceProductionData } from "./entity-resource-table/utils";
 import {
   configManager,
   divideByPrecision,
@@ -88,7 +87,7 @@ export const ResourceChip = ({
   const productionData = useMemo(() => {
     if (!productionInfo) return null;
 
-    return calculateResourceProductionData(resourceEnumId, productionInfo, currentTick);
+    return ResourceManager.calculateResourceProductionData(resourceEnumId, productionInfo, currentTick);
   }, [productionInfo, resourceEnumId, currentTick]);
 
   const productionRate = productionData?.productionPerSecond ?? 0;

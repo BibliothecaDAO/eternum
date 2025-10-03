@@ -1,5 +1,4 @@
-import { divideByPrecision, ResourceManager } from "@bibliothecadao/eternum";
-import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { ResourcesIds } from "@bibliothecadao/types";
 import { currencyFormat, currencyIntlFormat } from "@/ui/utils/utils";
 
 // ==================== CONSTANTS ====================
@@ -37,49 +36,6 @@ export const FOOD_RESOURCES = [ResourcesIds.Wheat, ResourcesIds.Fish];
 
 // Resources that cannot be managed in Blitz mode
 export const BLITZ_UNMANAGEABLE_RESOURCES = [ResourcesIds.Labor, ResourcesIds.Wheat];
-
-// ==================== CALCULATION HELPERS ====================
-
-export interface ProductionData {
-  productionPerSecond: number;
-  isProducing: boolean;
-  outputRemaining: number;
-  timeRemainingSeconds: number;
-}
-
-/**
- * Calculate production data for a resource, accounting for elapsed time since last update
- */
-export const calculateResourceProductionData = (
-  resourceId: ResourcesIds,
-  productionInfo: ReturnType<typeof ResourceManager.balanceAndProduction>,
-  currentTick: number,
-): ProductionData => {
-  const productionPerSecond = divideByPrecision(Number(productionInfo.production.production_rate || 0), false);
-
-  // Calculate remaining output after accounting for elapsed time
-  const ticksSinceLastUpdate = currentTick - productionInfo.production.last_updated_at;
-  const totalAmountProduced = BigInt(ticksSinceLastUpdate) * productionInfo.production.production_rate;
-  const isFoodResource = FOOD_RESOURCES.includes(resourceId);
-  const remainingOutput = isFoodResource
-    ? productionInfo.production.output_amount_left
-    : productionInfo.production.output_amount_left - totalAmountProduced;
-
-  const isProducing =
-    productionInfo.production.building_count > 0 &&
-    productionInfo.production.production_rate !== 0n &&
-    (isFoodResource || remainingOutput > 0n);
-
-  const outputRemainingNumber = Number(remainingOutput) / RESOURCE_PRECISION;
-  const timeRemainingSeconds = productionPerSecond > 0 ? outputRemainingNumber / productionPerSecond : 0;
-
-  return {
-    productionPerSecond,
-    isProducing,
-    outputRemaining: outputRemainingNumber,
-    timeRemainingSeconds,
-  };
-};
 
 // ==================== FORMATTERS ====================
 

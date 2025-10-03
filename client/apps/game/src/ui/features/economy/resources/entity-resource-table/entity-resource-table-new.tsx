@@ -35,7 +35,6 @@ import React, { useCallback, useMemo, useState } from "react";
 import {
   ALWAYS_SHOW_RESOURCES,
   BLITZ_UNMANAGEABLE_RESOURCES,
-  calculateResourceProductionData,
   formatProductionPerHour,
   formatResourceAmount,
   formatTimeRemaining,
@@ -214,7 +213,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
         );
 
         const { productionPerSecond, isProducing, outputRemaining, timeRemainingSeconds } =
-          calculateResourceProductionData(resourceId, productionInfo, currentDefaultTick || 0);
+          ResourceManager.calculateResourceProductionData(resourceId, productionInfo, currentDefaultTick || 0);
 
         // Only count production rate if actually producing
         const activeProductionRate = isProducing ? productionPerSecond : 0;

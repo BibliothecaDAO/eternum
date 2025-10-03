@@ -17,7 +17,7 @@ import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
-import { ALWAYS_SHOW_RESOURCES, TIER_DISPLAY_NAMES, calculateResourceProductionData } from "./utils";
+import { ALWAYS_SHOW_RESOURCES, TIER_DISPLAY_NAMES } from "./utils";
 
 interface EntityResourceTableOldProps {
   entityId: ID | undefined;
@@ -231,7 +231,11 @@ export const EntityResourceTableOld = React.memo(({ entityId }: EntityResourceTa
               }
 
               const productionInfo = ResourceManager.balanceAndProduction(resourceComponent, resourceId);
-              const { isProducing } = calculateResourceProductionData(resourceId, productionInfo, currentTick);
+              const { isProducing } = ResourceManager.calculateResourceProductionData(
+                resourceId,
+                productionInfo,
+                currentTick,
+              );
 
               if (!isProducing) {
                 return false;
