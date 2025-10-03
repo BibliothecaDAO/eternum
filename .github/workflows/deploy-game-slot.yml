@@ -103,57 +103,50 @@ jobs:
       - name: ⏰ Calculate Game Start Time
         id: game-timing
         run: |
-          # Calculate game start time: round down to current hour, then add 2 hours 30 minutes (Unix timestamp)
-          CURRENT_HOUR_START=$(date -d "$(date '+%Y-%m-%d %H:00:00')" +%s)
-          GAME_START_TIMESTAMP=$((CURRENT_HOUR_START + 9000))
+          python3 <<'PY'
+          from datetime import datetime, time, timedelta, timezone
+          import os
 
-          # Create Discord timestamp format for automatic timezone conversion
-          DISCORD_TIMESTAMP="<t:$GAME_START_TIMESTAMP:F>"
-          GAME_START_READABLE=$(date -d "@$GAME_START_TIMESTAMP" -u '+%Y-%m-%d %H:%M:%S UTC')
+          now = datetime.now(timezone.utc)
+          slots = [time(9, 30), time(15, 30), time(19, 30)]
 
-          # Calculate next 10 deployment times (5 hours apart each)
-          CURRENT_TIMESTAMP=$(date +%s)
-          NEXT_1=$((CURRENT_TIMESTAMP + 18000))
-          NEXT_2=$((CURRENT_TIMESTAMP + 36000))
-          NEXT_3=$((CURRENT_TIMESTAMP + 54000))
-          NEXT_4=$((CURRENT_TIMESTAMP + 72000))
-          NEXT_5=$((CURRENT_TIMESTAMP + 90000))
-          NEXT_6=$((CURRENT_TIMESTAMP + 108000))
-          NEXT_7=$((CURRENT_TIMESTAMP + 126000))
-          NEXT_8=$((CURRENT_TIMESTAMP + 144000))
-          NEXT_9=$((CURRENT_TIMESTAMP + 162000))
-          NEXT_10=$((CURRENT_TIMESTAMP + 180000))
+          upcoming = []
+          day_offset = 0
+          while len(upcoming) < 3:
+              current_date = now.date() + timedelta(days=day_offset)
+              for slot in slots:
+                  candidate = datetime.combine(current_date, slot, tzinfo=timezone.utc)
+                  if candidate >= now or day_offset > 0:
+                      upcoming.append(candidate)
+                  if len(upcoming) == 3:
+                      break
+              day_offset += 1
 
-          # First one has full timestamp + relative time in brackets, rest are full timestamp format
-          NEXT_DEPLOYMENT_1="<t:$NEXT_1:F> (<t:$NEXT_1:R>)"
-          NEXT_DEPLOYMENT_2="<t:$NEXT_2:F>"
-          NEXT_DEPLOYMENT_3="<t:$NEXT_3:F>"
-          NEXT_DEPLOYMENT_4="<t:$NEXT_4:F>"
-          NEXT_DEPLOYMENT_5="<t:$NEXT_5:F>"
-          NEXT_DEPLOYMENT_6="<t:$NEXT_6:F>"
-          NEXT_DEPLOYMENT_7="<t:$NEXT_7:F>"
-          NEXT_DEPLOYMENT_8="<t:$NEXT_8:F>"
-          NEXT_DEPLOYMENT_9="<t:$NEXT_9:F>"
-          NEXT_DEPLOYMENT_10="<t:$NEXT_10:F>"
+          game_start = upcoming[0]
 
-          echo "🕐 Game start time set to: $GAME_START_READABLE"
-          echo "🕐 Discord timestamp: $DISCORD_TIMESTAMP"
-          echo "🕐 Next 10 deployments calculated"
-          echo "🕐 Unix timestamp: $GAME_START_TIMESTAMP"
+          def to_timestamp(dt: datetime) -> int:
+              return int(dt.timestamp())
 
-          echo "timestamp=$GAME_START_TIMESTAMP" >> $GITHUB_OUTPUT
-          echo "readable=$GAME_START_READABLE" >> $GITHUB_OUTPUT
-          echo "discord_timestamp=$DISCORD_TIMESTAMP" >> $GITHUB_OUTPUT
-          echo "next_deployment_1=$NEXT_DEPLOYMENT_1" >> $GITHUB_OUTPUT
-          echo "next_deployment_2=$NEXT_DEPLOYMENT_2" >> $GITHUB_OUTPUT
-          echo "next_deployment_3=$NEXT_DEPLOYMENT_3" >> $GITHUB_OUTPUT
-          echo "next_deployment_4=$NEXT_DEPLOYMENT_4" >> $GITHUB_OUTPUT
-          echo "next_deployment_5=$NEXT_DEPLOYMENT_5" >> $GITHUB_OUTPUT
-          echo "next_deployment_6=$NEXT_DEPLOYMENT_6" >> $GITHUB_OUTPUT
-          echo "next_deployment_7=$NEXT_DEPLOYMENT_7" >> $GITHUB_OUTPUT
-          echo "next_deployment_8=$NEXT_DEPLOYMENT_8" >> $GITHUB_OUTPUT
-          echo "next_deployment_9=$NEXT_DEPLOYMENT_9" >> $GITHUB_OUTPUT
-          echo "next_deployment_10=$NEXT_DEPLOYMENT_10" >> $GITHUB_OUTPUT
+          def discord_full(dt: datetime) -> str:
+              return f"<t:{to_timestamp(dt)}:F>"
+
+          def discord_full_relative(dt: datetime) -> str:
+              ts = to_timestamp(dt)
+              return f"<t:{ts}:F> (<t:{ts}:R>)"
+
+          output_path = os.environ["GITHUB_OUTPUT"]
+          with open(output_path, "a") as fh:
+              fh.write(f"timestamp={to_timestamp(game_start)}\n")
+              fh.write(f"readable={game_start.strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
+              fh.write(f"discord_timestamp={discord_full(game_start)}\n")
+              fh.write(f"next_deployment_1={discord_full_relative(upcoming[0])}\n")
+              fh.write(f"next_deployment_2={discord_full_relative(upcoming[1])}\n")
+              fh.write(f"next_deployment_3={discord_full_relative(upcoming[2])}\n")
+
+          print(f"🕐 Next game start: {game_start.strftime('%Y-%m-%d %H:%M:%S UTC')}")
+          for slot_time in upcoming:
+              print(f"🗓️ {slot_time.strftime('%Y-%m-%d %H:%M:%S UTC')}")
+          PY
 
       - name: 🎲 Generate New Seed
         id: generate-seed
@@ -274,7 +267,7 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{
               "embeds": [{
-                "title": "Babe wake up! New Blitz game just dropped! 🚀",
+                "title": "New Game Deployed 🚀",
                 "description": "New game has been deployed",
                 "color": 65280,
                 "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'",
@@ -290,8 +283,8 @@ jobs:
                     "inline": true
                   },
                   {
-                    "name": "⚡ Next 10 Deployments",
-                    "value": "1️⃣  ${{ steps.game-timing.outputs.next_deployment_1 }}\n\n2️⃣  ${{ steps.game-timing.outputs.next_deployment_2 }}\n\n3️⃣  ${{ steps.game-timing.outputs.next_deployment_3 }}\n\n4️⃣  ${{ steps.game-timing.outputs.next_deployment_4 }}\n\n5️⃣  ${{ steps.game-timing.outputs.next_deployment_5 }}\n\n6️⃣  ${{ steps.game-timing.outputs.next_deployment_6 }}\n\n7️⃣  ${{ steps.game-timing.outputs.next_deployment_7 }}\n\n8️⃣  ${{ steps.game-timing.outputs.next_deployment_8 }}\n\n9️⃣  ${{ steps.game-timing.outputs.next_deployment_9 }}\n\n🔟  ${{ steps.game-timing.outputs.next_deployment_10 }}",
+                    "name": "⚡ Upcoming Games",
+                    "value": "- ${{ steps.game-timing.outputs.next_deployment_1 }}\n\n- ${{ steps.game-timing.outputs.next_deployment_2 }}\n\n- ${{ steps.game-timing.outputs.next_deployment_3 }}",
                     "inline": false
                   }
                 ],
@@ -347,14 +340,3 @@ jobs:
           echo "The slot deployment encountered an error. Please check the logs above for details." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Failed at:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
-
-      - name: ⏰ Schedule Pre-Game Reminder
-        if: success()
-        run: |
-          echo "🔔 Triggering pre-game reminder workflow..."
-          gh workflow run pre-game-reminder.yml \
-            -f game_start_timestamp="${{ steps.game-timing.outputs.timestamp }}" \
-            -f reminder_minutes="5"
-          echo "✅ Pre-game reminder workflow triggered"
-        env:
-          GH_TOKEN: ${{ github.token }}
