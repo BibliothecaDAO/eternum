@@ -283,7 +283,7 @@ jobs:
                     "inline": true
                   },
                   {
-                    "name": "⚡ Upcoming Games",
+                    "name": "⚡ Upcoming Games Start Time",
                     "value": "- ${{ steps.game-timing.outputs.next_deployment_1 }}\n\n- ${{ steps.game-timing.outputs.next_deployment_2 }}\n\n- ${{ steps.game-timing.outputs.next_deployment_3 }}",
                     "inline": false
                   }
