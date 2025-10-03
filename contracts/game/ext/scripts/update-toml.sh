@@ -90,6 +90,7 @@ VILLAGE_PASS=$(jq -r '.villagePass' "$JSON_FILE")
 SEASON_PASS=$(jq -r '.seasonPass' "$JSON_FILE")
 REALMS=$(jq -r '.realms' "$JSON_FILE")
 LORDS=$(jq -r '.lords' "$JSON_FILE")
+COSMETIC_ITEMS=$(jq -r '."Collectibles: Realms: Cosmetic Items"' "$JSON_FILE")
 
 # Auto-detect manifest file for world address
 echo -e "${YELLOW}► Detecting manifest file for world address...${NC}"
@@ -128,6 +129,10 @@ echo -e "${BLUE}║  ${MAGENTA}${BOLD}REALMS:${NC} ${BLUE}${BOLD}$REALMS${NC}${B
 echo -e "${BLUE}║                                                                ║${NC}"
 echo -e "${BLUE}║  ${MAGENTA}${BOLD}LORDS:${NC} ${BLUE}${BOLD}$LORDS${NC}${BLUE}  ║${NC}"
 echo -e "${BLUE}║                                                                ║${NC}"
+if [[ -n "$COSMETIC_ITEMS" && "$COSMETIC_ITEMS" != "null" ]]; then
+echo -e "${BLUE}║  ${MAGENTA}${BOLD}COSMETIC ITEMS:${NC} ${BLUE}${BOLD}$COSMETIC_ITEMS${NC}${BLUE}  ║${NC}"
+echo -e "${BLUE}║                                                                ║${NC}"
+fi
 if [[ -n "$WORLD_ADDRESS" ]]; then
 echo -e "${BLUE}║  ${MAGENTA}${BOLD}WORLD ADDRESS:${NC} ${GREEN}${BOLD}$WORLD_ADDRESS${NC}${BLUE}  ║${NC}"
 echo -e "${BLUE}║                                                                ║${NC}"
@@ -139,7 +144,7 @@ echo -e "${YELLOW}► Updating TOML configuration...${NC}"
 tmp_file=$(mktemp)
 
 # Process the TOML file
-awk -v season_pass="$SEASON_PASS" -v village_pass="$VILLAGE_PASS" -v realms="$REALMS" -v lords="$LORDS" -v world_address="$WORLD_ADDRESS" '
+awk -v season_pass="$SEASON_PASS" -v village_pass="$VILLAGE_PASS" -v realms="$REALMS" -v lords="$LORDS" -v world_address="$WORLD_ADDRESS" -v cosmetic_items="$COSMETIC_ITEMS" '
 BEGIN { erc721_count = 0 }
 {
     if ($0 ~ /erc721:0x[0-9a-fA-F]+/) {
@@ -150,6 +155,8 @@ BEGIN { erc721_count = 0 }
             gsub(/erc721:0x[0-9a-fA-F]+/, "erc721:" season_pass)
         } else if (erc721_count == 3) {
             gsub(/erc721:0x[0-9a-fA-F]+/, "erc721:" realms)
+        } else if (erc721_count == 4 && cosmetic_items != "" && cosmetic_items != "null") {
+            gsub(/erc721:0x[0-9a-fA-F]+/, "erc721:" cosmetic_items)
         }
     } else if ($0 ~ /erc20:0x[0-9a-fA-F]+/) {
         gsub(/erc20:0x[0-9a-fA-F]+/, "erc20:" lords)
