@@ -169,32 +169,37 @@ pub mod blitz_realm_systems {
             
             // create lock if registration_count is 1
             let collectibles_lock_id: u64 = season_config.end_at;
-            if blitz_registration_config.registration_count == 1 {
-                iCollectiblesImpl::create_lock(
-                    blitz_registration_config.collectibles_timelock_address,
-                    blitz_registration_config.collectibles_cosmetics_address,
-                    collectibles_lock_id
-                );
-            }
-
-            // ensure all token ids are locked and retrieve their attributes
-            if cosmetic_token_ids.len() > 0 {
-                let player_cosmetic_attrs 
-                    = iCollectiblesImpl::ensure_locked_and_retrieve_attrs(
-                        blitz_registration_config.collectibles_cosmetics_address,
-                        owner,
-                        cosmetic_token_ids,
-                        collectibles_lock_id.into(),
-                        blitz_registration_config.collectibles_cosmetics_max
+            let collectibles_cosmetics_address = blitz_registration_config.collectibles_cosmetics_address;
+            let collectibles_timelock_address = blitz_registration_config.collectibles_timelock_address;
+            if collectibles_cosmetics_address.is_non_zero() && collectibles_timelock_address.is_non_zero() {
+                if blitz_registration_config.registration_count == 1 {
+                    iCollectiblesImpl::create_lock(
+                        collectibles_timelock_address,
+                        collectibles_cosmetics_address,
+                        collectibles_lock_id
                     );
+                }
 
-                world.write_model(
-                    @BlitzCosmeticAttrsRegister {
-                        player: starknet::get_caller_address(),
-                        attrs: player_cosmetic_attrs,
-                    }
-                );
+                // ensure all token ids are locked and retrieve their attributes
+                if cosmetic_token_ids.len() > 0 {
+                    let player_cosmetic_attrs 
+                        = iCollectiblesImpl::ensure_locked_and_retrieve_attrs(
+                            collectibles_cosmetics_address,
+                            owner,
+                            cosmetic_token_ids,
+                            collectibles_lock_id.into(),
+                            blitz_registration_config.collectibles_cosmetics_max
+                        );
+
+                    world.write_model(
+                        @BlitzCosmeticAttrsRegister {
+                            player: starknet::get_caller_address(),
+                            attrs: player_cosmetic_attrs,
+                        }
+                    );
+                }
             }
+
 
 
 
