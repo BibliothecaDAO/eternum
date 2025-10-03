@@ -43,7 +43,7 @@ mod CollectibleTimeLockMaker {
 
             // ensure lock_end_time not more than 6 months in the future
             assert!(
-                lock_end_time <= MAX_LOCK_DURATION, "CollectibleTimeLockMaker: lock end time must be within 6 months",
+                lock_end_time <= now + MAX_LOCK_DURATION, "CollectibleTimeLockMaker: lock end time must be within 6 months",
             );
 
             // create or update lock with lock_end_time as lock_id
