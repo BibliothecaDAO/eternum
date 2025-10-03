@@ -100,6 +100,7 @@ export class ArmyManager {
   private cleanupTimeout: NodeJS.Timeout | null = null;
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private memoryMonitor: MemoryMonitor;
+  private unsubscribeAccountStore?: () => void;
 
   // Reusable objects for memory optimization
   private readonly tempPosition: Vector3 = new Vector3();
@@ -194,7 +195,7 @@ export class ArmyManager {
       .name("Delete army");
     deleteArmyFolder.close();
 
-    useAccountStore.subscribe(() => {
+    this.unsubscribeAccountStore = useAccountStore.subscribe(() => {
       this.recheckOwnership();
     });
 
@@ -1345,6 +1346,11 @@ ${
   }
 
   public destroy() {
+    if (this.unsubscribeAccountStore) {
+      this.unsubscribeAccountStore();
+      this.unsubscribeAccountStore = undefined;
+    }
+
     // Clean up camera view listener
     if (this.hexagonScene) {
       this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);

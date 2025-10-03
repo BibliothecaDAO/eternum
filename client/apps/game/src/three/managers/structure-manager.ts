@@ -70,6 +70,7 @@ export class StructureManager {
   private structureUpdateSources: Map<ID, string> = new Map(); // Track update source to prevent relic clearing during chunk switches
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private battleTimerInterval: NodeJS.Timeout | null = null; // Timer for updating battle countdown
+  private unsubscribeAccountStore?: () => void;
 
   constructor(
     scene: Scene,
@@ -96,7 +97,7 @@ export class StructureManager {
       hexagonScene.addCameraViewListener(this.handleCameraViewChange);
     }
 
-    useAccountStore.subscribe(() => {
+    this.unsubscribeAccountStore = useAccountStore.subscribe(() => {
       this.structures.recheckOwnership();
       // Update labels when ownership changes
       this.updateVisibleStructures();
@@ -126,6 +127,11 @@ export class StructureManager {
   };
 
   public destroy() {
+    if (this.unsubscribeAccountStore) {
+      this.unsubscribeAccountStore();
+      this.unsubscribeAccountStore = undefined;
+    }
+
     // Clean up camera view listener
     if (this.hexagonScene) {
       this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);

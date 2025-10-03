@@ -159,6 +159,8 @@ export default class WorldmapScene extends HexagonScene {
   private questLabelsGroup: Group;
   private chestLabelsGroup: Group;
 
+  private storeSubscriptions: Array<() => void> = [];
+
   dojo: SetupResult;
 
   private fetchedChunks: Set<string> = new Set();
@@ -202,62 +204,6 @@ export default class WorldmapScene extends HexagonScene {
     this.GUIFolder.add(this, "moveCameraToURLLocation");
 
     this.loadBiomeModels(this.renderChunkSize.width * this.renderChunkSize.height);
-
-    useUIStore.subscribe(
-      (state) => state.selectableArmies,
-      (selectableArmies) => {
-        this.updateSelectableArmies(selectableArmies);
-      },
-    );
-
-    useUIStore.subscribe(
-      (state) => state.playerStructures,
-      (playerStructures) => {
-        this.updatePlayerStructures(playerStructures);
-      },
-    );
-
-    useUIStore.subscribe(
-      (state) => state.entityActions,
-      (armyActions) => {
-        this.state.entityActions = armyActions;
-      },
-    );
-    useUIStore.subscribe(
-      (state) => state.selectedHex,
-      (selectedHex) => {
-        this.state.selectedHex = selectedHex;
-      },
-    );
-    useUIStore.subscribe(
-      (state) => state.isSoundOn,
-      (isSoundOn) => {
-        this.state.isSoundOn = isSoundOn;
-      },
-    );
-    useUIStore.subscribe(
-      (state) => state.effectsLevel,
-      (effectsLevel) => {
-        this.state.effectsLevel = effectsLevel;
-      },
-    );
-
-    // Subscribe to zoom setting changes
-    useUIStore.subscribe(
-      (state) => state.enableMapZoom,
-      (enableMapZoom) => {
-        if (this.controls) {
-          this.controls.enableZoom = enableMapZoom;
-        }
-      },
-    );
-
-    useUIStore.subscribe(
-      (state) => state.entityActions.selectedEntityId,
-      (selectedEntityId) => {
-        if (!selectedEntityId) this.clearEntitySelection();
-      },
-    );
 
     // Initialize label groups
     this.armyLabelsGroup = new Group();
@@ -1453,6 +1399,8 @@ export default class WorldmapScene extends HexagonScene {
     this.questManager.addLabelsToScene();
     this.chestManager.addLabelsToScene();
 
+    this.registerStoreSubscriptions();
+
     this.setupCameraZoomHandler();
 
     // Ensure interactive hexes/chunks are initialized now that managers exist and caches are reset
@@ -1460,6 +1408,8 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   onSwitchOff() {
+    this.disposeStoreSubscriptions();
+
     // Remove label groups from scene
     this.scene.remove(this.armyLabelsGroup);
     this.scene.remove(this.structureLabelsGroup);
@@ -2735,6 +2685,8 @@ export default class WorldmapScene extends HexagonScene {
     }
     this.currentHexGridTask = null;
 
+    this.disposeStoreSubscriptions();
+
     this.resourceFXManager.destroy();
     this.stopRelicValidationTimer();
     this.clearCache();
@@ -2913,6 +2865,126 @@ export default class WorldmapScene extends HexagonScene {
     this.selectableArmies = armies;
     if (this.armyIndex >= armies.length) {
       this.armyIndex = 0;
+    }
+  }
+
+  private registerStoreSubscriptions() {
+    if (this.storeSubscriptions.length > 0) {
+      return;
+    }
+
+    this.storeSubscriptions.push(
+      useUIStore.subscribe(
+        (state) => state.selectableArmies,
+        (selectableArmies) => {
+          this.updateSelectableArmies(selectableArmies);
+        },
+      ),
+    );
+
+    this.storeSubscriptions.push(
+      useUIStore.subscribe(
+        (state) => state.playerStructures,
+        (playerStructures) => {
+          this.updatePlayerStructures(playerStructures);
+        },
+      ),
+    );
+
+    this.storeSubscriptions.push(
+      useUIStore.subscribe(
+        (state) => state.entityActions,
+        (armyActions) => {
+          this.state.entityActions = armyActions;
+        },
+      ),
+    );
+
+    this.storeSubscriptions.push(
+      useUIStore.subscribe(
+        (state) => state.selectedHex,
+        (selectedHex) => {
+          this.state.selectedHex = selectedHex;
+        },
+      ),
+    );
+
+    this.storeSubscriptions.push(
+      useUIStore.subscribe(
+        (state) => state.isSoundOn,
+        (isSoundOn) => {
+          this.state.isSoundOn = isSoundOn;
+        },
+      ),
+    );
+
+    this.storeSubscriptions.push(
+      useUIStore.subscribe(
+        (state) => state.effectsLevel,
+        (effectsLevel) => {
+          this.state.effectsLevel = effectsLevel;
+        },
+      ),
+    );
+
+    this.storeSubscriptions.push(
+      useUIStore.subscribe(
+        (state) => state.enableMapZoom,
+        (enableMapZoom) => {
+          if (this.controls) {
+            this.controls.enableZoom = enableMapZoom;
+          }
+        },
+      ),
+    );
+
+    this.storeSubscriptions.push(
+      useUIStore.subscribe(
+        (state) => state.entityActions.selectedEntityId,
+        (selectedEntityId) => {
+          if (!selectedEntityId) this.clearEntitySelection();
+        },
+      ),
+    );
+
+    this.syncStateFromStore();
+  }
+
+  private disposeStoreSubscriptions() {
+    if (this.storeSubscriptions.length === 0) {
+      return;
+    }
+
+    this.storeSubscriptions.forEach((unsubscribe) => {
+      try {
+        unsubscribe();
+      } catch (error) {
+        console.warn("[WorldMap] Failed to unsubscribe store listener", error);
+      }
+    });
+    this.storeSubscriptions = [];
+  }
+
+  private syncStateFromStore() {
+    const uiState = useUIStore.getState();
+
+    this.updateSelectableArmies(uiState.selectableArmies);
+    this.updatePlayerStructures(uiState.playerStructures);
+
+    this.state.entityActions = uiState.entityActions;
+    this.state.selectedHex = uiState.selectedHex;
+    this.state.isSoundOn = uiState.isSoundOn;
+    this.state.effectsLevel = uiState.effectsLevel;
+
+    if (this.controls) {
+      this.controls.enableZoom = uiState.enableMapZoom;
+    }
+
+    const selectedEntityId = uiState.entityActions.selectedEntityId;
+    if (!selectedEntityId) {
+      this.clearEntitySelection();
+    } else {
+      this.state.updateEntityActionSelectedEntityId(selectedEntityId);
     }
   }
 
