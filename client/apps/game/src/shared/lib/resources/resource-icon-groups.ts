@@ -1,7 +1,7 @@
 import { ProductionType } from "@/hooks/store/use-automation-store";
 import { ResourcesIds } from "@bibliothecadao/types";
 
-type ProductionRecipesMap = Record<number, Array<{ resource: ResourcesIds }>>;
+export type ProductionRecipesMap = Record<number, Array<{ resource: ResourcesIds }>>;
 
 export type ResourceIconGroup = ResourcesIds[];
 

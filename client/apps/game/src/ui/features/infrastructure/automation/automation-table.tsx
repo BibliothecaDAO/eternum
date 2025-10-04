@@ -123,6 +123,7 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
       <CommonAutomations
         presets={commonPresets}
         isRealmPaused={isRealmPaused}
+        productionRecipes={eternumConfig.resources.productionByComplexRecipe}
         onApply={(order) => {
           addOrder(order);
           setShowAddForm(false);
