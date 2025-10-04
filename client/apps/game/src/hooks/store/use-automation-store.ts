@@ -84,6 +84,11 @@ interface AutomationState {
   pausedRealms: Record<string, boolean>; // Track paused state by realm ID
   isGloballyPaused: boolean; // Global pause state - overrides all other automation
   addOrder: (orderData: Omit<AutomationOrder, "id" | "producedAmount"> & { mode?: OrderMode }) => void;
+  updateOrder: (
+    realmEntityId: string,
+    orderId: string,
+    updatedData: Omit<AutomationOrder, "id" | "producedAmount" | "realmEntityId">
+  ) => void;
   removeOrder: (realmEntityId: string, orderId: string) => void;
   updateOrderProducedAmount: (realmEntityId: string, orderId: string, producedThisCycle: number) => void;
   updateTransferTimestamp: (realmEntityId: string, orderId: string) => void; // Update last transfer timestamp
@@ -126,6 +131,28 @@ export const useAutomationStore = create<AutomationState>()(
           };
         });
       },
+      updateOrder: (realmEntityId, orderId, updatedData) =>
+        set((state) => {
+          const realmOrders = state.ordersByRealm[realmEntityId] || [];
+          if (realmOrders.length === 0) {
+            return state;
+          }
+
+          return {
+            ordersByRealm: {
+              ...state.ordersByRealm,
+              [realmEntityId]: realmOrders.map((order) =>
+                order.id === orderId
+                  ? {
+                      ...order,
+                      ...updatedData,
+                      realmEntityId,
+                    }
+                  : order,
+              ),
+            },
+          };
+        }),
       removeOrder: (realmEntityId, orderId) =>
         set((state) => {
           const realmOrders = state.ordersByRealm[realmEntityId] || [];

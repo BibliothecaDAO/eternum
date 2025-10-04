@@ -16,6 +16,7 @@ interface UseAutomationFormOptions {
   realmEntityId: string;
   realmName: string;
   resourceOptions: ResourceOption[];
+  initialOrder?: AutomationOrder;
 }
 
 interface AutomationOrderDraft
@@ -47,7 +48,34 @@ const MIN_PRIORITY = 1;
 const MAX_PRIORITY = 9;
 const MIN_TARGET_FOR_PRODUCE_ONCE = 1000;
 
-const createInitialState = ({ realmName, resourceOptions }: UseAutomationFormOptions): AutomationFormState => {
+const createInitialState = ({ realmName, resourceOptions, initialOrder }: UseAutomationFormOptions): AutomationFormState => {
+  if (initialOrder) {
+    const isInfinite = initialOrder.maxAmount === "infinite";
+    const numericMaxAmount = typeof initialOrder.maxAmount === "number" ? initialOrder.maxAmount : 0;
+
+    return {
+      order: {
+        priority: initialOrder.priority,
+        resourceToUse: initialOrder.resourceToUse,
+        mode: initialOrder.mode,
+        maxAmount: isInfinite ? "infinite" : numericMaxAmount,
+        productionType: initialOrder.productionType,
+        realmName: initialOrder.realmName ?? realmName,
+        bufferPercentage: initialOrder.bufferPercentage ?? 10,
+        transferMode: initialOrder.transferMode,
+        transferInterval: initialOrder.transferInterval,
+        transferThreshold: initialOrder.transferThreshold,
+        transferResources: initialOrder.transferResources ?? [],
+        targetEntityId: initialOrder.targetEntityId,
+        targetEntityName: initialOrder.targetEntityName,
+        lastTransferTimestamp: initialOrder.lastTransferTimestamp,
+      },
+      maxAmountInput: isInfinite ? String(numericMaxAmount || 0) : String(numericMaxAmount || 0),
+      isInfinite,
+      error: null,
+    };
+  }
+
   const defaultResource = resourceOptions[0]?.id;
 
   return {
@@ -220,15 +248,15 @@ interface SubmitFailure {
 export type AutomationFormSubmitResult = SubmitSuccess | SubmitFailure;
 
 export const useAutomationForm = (options: UseAutomationFormOptions) => {
-  const { realmEntityId, realmName, resourceOptions } = options;
+  const { realmEntityId, realmName, resourceOptions, initialOrder } = options;
 
   const [state, dispatch] = useReducer(automationFormReducer, undefined, () =>
-    createInitialState({ realmEntityId, realmName, resourceOptions }),
+    createInitialState({ realmEntityId, realmName, resourceOptions, initialOrder }),
   );
 
   useEffect(() => {
-    dispatch({ type: "RESET", payload: createInitialState({ realmEntityId, realmName, resourceOptions }) });
-  }, [realmEntityId, realmName, resourceOptions]);
+    dispatch({ type: "RESET", payload: createInitialState({ realmEntityId, realmName, resourceOptions, initialOrder }) });
+  }, [realmEntityId, realmName, resourceOptions, initialOrder]);
 
   const setMode = useCallback((mode: OrderMode) => {
     dispatch({ type: "SET_MODE", payload: mode });

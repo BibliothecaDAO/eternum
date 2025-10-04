@@ -48,12 +48,14 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
   const ordersByRealm = useAutomationStore((state) => state.ordersByRealm);
   const pausedRealms = useAutomationStore((state) => state.pausedRealms);
   const addOrder = useAutomationStore((state) => state.addOrder);
+  const updateOrder = useAutomationStore((state) => state.updateOrder);
   const removeOrder = useAutomationStore((state) => state.removeOrder);
   const toggleRealmPause = useAutomationStore((state) => state.toggleRealmPause);
 
   const ordersForRealm = useMemo(() => ordersByRealm[realmEntityId] || [], [ordersByRealm, realmEntityId]);
   const isRealmPaused = useMemo(() => pausedRealms[realmEntityId] || false, [pausedRealms, realmEntityId]);
 
+  const [editingOrder, setEditingOrder] = useState<AutomationOrder | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showHints, setShowHints] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
@@ -75,11 +77,34 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
 
   const handleRemoveOrder = (orderId: string) => {
     removeOrder(realmEntityId, orderId);
+    if (editingOrder?.id === orderId) {
+      setEditingOrder(null);
+    }
   };
 
-  const handleFormSubmit = (order: Omit<AutomationOrder, "id" | "producedAmount">) => {
+  const handleCreateOrder = (order: Omit<AutomationOrder, "id" | "producedAmount">) => {
     addOrder(order);
+    setEditingOrder(null);
     setShowAddForm(false);
+  };
+
+  const handleUpdateOrder = (order: Omit<AutomationOrder, "id" | "producedAmount">) => {
+    if (!editingOrder) {
+      return;
+    }
+
+    const { realmEntityId: orderRealmId, ...orderData } = order;
+    updateOrder(orderRealmId, editingOrder.id, orderData);
+    setEditingOrder(null);
+    setShowAddForm(false);
+  };
+
+  const handleFormCancel = () => {
+    if (editingOrder) {
+      setEditingOrder(null);
+    } else {
+      setShowAddForm(false);
+    }
   };
 
   const handleTemplateImport = (orders: AutomationOrderTemplate[]) => {
@@ -93,6 +118,8 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
       name: realmName,
     },
   ];
+
+  const isFormVisible = showAddForm || editingOrder !== null;
 
   return (
     <div className="bord">
@@ -126,13 +153,22 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
         productionRecipes={eternumConfig.resources.productionByComplexRecipe}
         onApply={(order) => {
           addOrder(order);
+          setEditingOrder(null);
           setShowAddForm(false);
         }}
       />
 
       <div className="my-4 flex items-center gap-2">
-        {!showAddForm && (
-          <Button onClick={() => setShowAddForm(true)} variant="default" size="xs" disabled={isRealmPaused}>
+        {!showAddForm && editingOrder === null && (
+          <Button
+            onClick={() => {
+              setEditingOrder(null);
+              setShowAddForm(true);
+            }}
+            variant="default"
+            size="xs"
+            disabled={isRealmPaused}
+          >
             Add New Automation {isRealmPaused && "(Paused)"}
           </Button>
         )}
@@ -141,14 +177,15 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
         </Button>
       </div>
 
-      {showAddForm && (
+      {isFormVisible && (
         <AutomationForm
           realmEntityId={realmEntityId}
           realmName={realmName}
           resourceOptions={resourceOptions}
           eternumConfig={eternumConfig}
-          onSubmit={handleFormSubmit}
-          onCancel={() => setShowAddForm(false)}
+          initialOrder={editingOrder ?? undefined}
+          onSubmit={editingOrder ? handleUpdateOrder : handleCreateOrder}
+          onCancel={handleFormCancel}
         />
       )}
 
@@ -160,6 +197,10 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
           isRealmPaused={isRealmPaused}
           eternumConfig={eternumConfig}
           onRemove={handleRemoveOrder}
+          onEdit={(order) => {
+            setEditingOrder(order);
+            setShowAddForm(false);
+          }}
         />
       )}
 

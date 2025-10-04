@@ -11,9 +11,10 @@ interface AutomationListProps {
   isRealmPaused: boolean;
   eternumConfig: EternumConfig;
   onRemove: (orderId: string) => void;
+  onEdit: (order: AutomationOrder) => void;
 }
 
-export const AutomationList: React.FC<AutomationListProps> = ({ orders, isRealmPaused, eternumConfig, onRemove }) => {
+export const AutomationList: React.FC<AutomationListProps> = ({ orders, isRealmPaused, eternumConfig, onRemove, onEdit }) => {
   return (
     <div className={`relative ${isRealmPaused ? "opacity-50" : ""}`}>
       {isRealmPaused && (
@@ -49,7 +50,7 @@ export const AutomationList: React.FC<AutomationListProps> = ({ orders, isRealmP
         </thead>
         <tbody>
           {orders.map((order) => (
-            <AutomationRow key={order.id} order={order} eternumConfig={eternumConfig} onRemove={onRemove} />
+            <AutomationRow key={order.id} order={order} eternumConfig={eternumConfig} onRemove={onRemove} onEdit={onEdit} />
           ))}
         </tbody>
       </table>

@@ -1,16 +1,11 @@
-import React from "react";
 import { LucideArrowRight } from "lucide-react";
+import React from "react";
 
+import { AutomationOrder, OrderMode, ProductionType, TransferMode } from "@/hooks/store/use-automation-store";
+import { getResourceIconGroups } from "@/shared/lib/resources";
+import { formatMinutes } from "@/shared/lib/time";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import {
-  AutomationOrder,
-  OrderMode,
-  ProductionType,
-  TransferMode,
-} from "@/hooks/store/use-automation-store";
-import { formatMinutes } from "@/shared/lib/time";
-import { getResourceIconGroups } from "@/shared/lib/resources";
 import { ResourcesIds } from "@bibliothecadao/types";
 
 type EternumConfig = ReturnType<typeof import("@/utils/config").ETERNUM_CONFIG>;
@@ -18,6 +13,7 @@ type EternumConfig = ReturnType<typeof import("@/utils/config").ETERNUM_CONFIG>;
 interface AutomationRowProps {
   order: AutomationOrder;
   onRemove: (orderId: string) => void;
+  onEdit: (order: AutomationOrder) => void;
   eternumConfig: EternumConfig;
 }
 
@@ -41,12 +37,13 @@ const getTransferLabel = (mode?: TransferMode, interval?: number, threshold?: nu
   return null;
 };
 
-export const AutomationRow: React.FC<AutomationRowProps> = ({ order, onRemove, eternumConfig }) => {
+export const AutomationRow: React.FC<AutomationRowProps> = ({ order, onRemove, onEdit, eternumConfig }) => {
   const resourceIconGroups = getResourceIconGroups({
     productionType: order.productionType,
     resourceToUse: order.resourceToUse,
     recipes: eternumConfig.resources.productionByComplexRecipe,
   });
+  const canEdit = order.productionType !== ProductionType.Transfer;
 
   return (
     <tr className="border-b border-gold/50">
@@ -137,9 +134,20 @@ export const AutomationRow: React.FC<AutomationRowProps> = ({ order, onRemove, e
                 : order.productionType}
       </td>
       <td className="px-6 py-4">
-        <Button onClick={() => onRemove(order.id)} variant="danger" size="xs">
-          Remove
-        </Button>
+        <div className="flex flex-col gap-2">
+          <Button
+            onClick={() => onEdit(order)}
+            variant="default"
+            size="xs"
+            disabled={!canEdit}
+            title={!canEdit ? "Transfers are managed from the transfer table" : undefined}
+          >
+            Edit
+          </Button>
+          <Button onClick={() => onRemove(order.id)} variant="danger" size="xs">
+            Remove
+          </Button>
+        </div>
       </td>
     </tr>
   );

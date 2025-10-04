@@ -27,6 +27,9 @@ interface AutomationFormProps {
   eternumConfig: EternumConfig;
   onSubmit: (order: Omit<AutomationOrder, "id" | "producedAmount">) => void;
   onCancel: () => void;
+  initialOrder?: AutomationOrder;
+  title?: string;
+  submitLabel?: string;
 }
 
 export const AutomationForm: React.FC<AutomationFormProps> = ({
@@ -36,12 +39,16 @@ export const AutomationForm: React.FC<AutomationFormProps> = ({
   eternumConfig,
   onSubmit,
   onCancel,
+  initialOrder,
+  title,
+  submitLabel,
 }) => {
   const { state, setMode, setPriority, setResource, setProductionType, setMaxAmountInput, toggleInfinite, setBufferPercentage, submit, reset } =
     useAutomationForm({
       realmEntityId,
       realmName,
       resourceOptions,
+      initialOrder,
     });
 
   const order = state.order;
@@ -103,9 +110,12 @@ export const AutomationForm: React.FC<AutomationFormProps> = ({
       ? ((order.maxAmount || 0) * (100 - (order.bufferPercentage || 10))) / 100
       : null;
 
+  const formTitle = title ?? (initialOrder ? "Edit Automation" : "Create New Order");
+  const formSubmitLabel = submitLabel ?? (initialOrder ? "Save Changes" : "Add Automation");
+
   return (
     <form onSubmit={handleSubmit} className="p-4 mb-6 space-y-4 border border-gold/20 rounded-md bg-black/10">
-      <h3 className="text-lg font-semibold">Create New Order</h3>
+      <h3 className="text-lg font-semibold">{formTitle}</h3>
       {state.error && <div className="text-red text-sm">{state.error}</div>}
       <div className="grid grid-cols-2 gap-4">
         <div>
@@ -256,7 +266,7 @@ export const AutomationForm: React.FC<AutomationFormProps> = ({
 
       <div className="flex justify-end gap-2">
         <Button type="submit" variant="gold" disabled={isSubmitDisabled}>
-          Add Automation
+          {formSubmitLabel}
         </Button>
         <Button onClick={onCancel} variant="default" size="md" type="button">
           Cancel
