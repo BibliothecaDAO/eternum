@@ -4,7 +4,7 @@ import { sqlApi } from "@/services/api";
 import { normalizeDiacriticalMarks } from "@/ui/utils/utils";
 import { getIsBlitz, getGuildFromPlayerAddress, getStructureTypeName } from "@bibliothecadao/eternum";
 import { useGuildMembers } from "@bibliothecadao/react";
-import type { Structure } from "@bibliothecadao/types";
+import type { ClientComponents, Structure } from "@bibliothecadao/types";
 import { StructureType } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 
@@ -14,7 +14,7 @@ import { mapStructureToEntity, withEntityDisplayData } from "./transfer-utils";
 
 interface UseTransferEntitiesOptions {
   accountAddress: string;
-  components: unknown;
+  components: ClientComponents | null | undefined;
   playerStructures: Structure[];
   guildOnly: boolean;
 }
@@ -60,7 +60,7 @@ export const useTransferEntities = ({
   });
 
   const guild = useMemo(() => {
-    if (!accountAddress) {
+    if (!accountAddress || !components) {
       return null;
     }
     try {

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useUISound } from "@/audio";
-import { ProductionType, useAutomationStore } from "@/hooks/store/use-automation-store";
+import { ProductionType, TransferMode, useAutomationStore } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Panel } from "@/ui/design-system/atoms";
 import Button from "@/ui/design-system/atoms/button";
@@ -25,6 +25,8 @@ import { TransferEntityPicker } from "./ui/transfer-entity-picker";
 import { TransferModeControls } from "./ui/transfer-mode-controls";
 import { TransferResourceList } from "./ui/transfer-resource-list";
 import { TransferSummary } from "./ui/transfer-summary";
+
+const MIN_RECURRING_TRANSFER_INTERVAL_HOURS = 1;
 
 export const AutomationTransferTable: React.FC = () => {
   const {
@@ -52,6 +54,8 @@ export const AutomationTransferTable: React.FC = () => {
   const [travelTime, setTravelTime] = useState<number | undefined>(undefined);
 
   const transferForm = useAutomationTransferForm({ source: selectedSource, destination: selectedDestination });
+  const { setTransferInterval } = transferForm;
+  const { transferInterval, transferMode } = transferForm.state;
 
   const {
     sourceEntityType,
@@ -312,10 +316,10 @@ export const AutomationTransferTable: React.FC = () => {
   ]);
 
   useEffect(() => {
-    if (transferForm.state.transferMode === ResourcesIds.Labor) {
-      transferForm.setTransferInterval(Math.max(MIN_AUTOMATION_INTERVAL, transferForm.state.transferInterval));
+    if (transferMode === TransferMode.Recurring && transferInterval < MIN_RECURRING_TRANSFER_INTERVAL_HOURS) {
+      setTransferInterval(MIN_RECURRING_TRANSFER_INTERVAL_HOURS);
     }
-  }, [transferForm]);
+  }, [setTransferInterval, transferInterval, transferMode]);
 
   return (
     <div className="container mx-auto xl:w-1/2">

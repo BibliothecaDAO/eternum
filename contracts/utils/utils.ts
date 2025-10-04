@@ -59,7 +59,7 @@ export function getSeasonAddresses(chain: Chain): SeasonAddresses {
       case "slottest":
         return slottestSeasonAddresses;
       case "local":
-        return localSeasonAddresses;
+        return localSeasonAddresses as any;
       default:
         throw new Error(`Invalid chain: ${chain}`);
     }

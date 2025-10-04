@@ -5,7 +5,7 @@ import {
   getAddressName,
   isMilitaryResource,
 } from "@bibliothecadao/eternum";
-import type { Structure } from "@bibliothecadao/types";
+import type { ClientComponents, Structure } from "@bibliothecadao/types";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 
 import type { EntityIdFormat, TransferEntityOption } from "./transfer-types";
@@ -30,7 +30,7 @@ export const mapStructureToEntity = (structure: Structure): EntityIdFormat => ({
 
 export const withEntityDisplayData = (
   entity: EntityIdFormat,
-  components: unknown,
+  components: ClientComponents | null | undefined,
   isBlitz: boolean,
 ): TransferEntityOption => {
   const entityName =
@@ -40,6 +40,6 @@ export const withEntityDisplayData = (
   return {
     ...entity,
     name: entityName,
-    accountName: getAddressName(entity.owner, components),
+    accountName: components ? getAddressName(entity.owner, components) : undefined,
   };
 };
