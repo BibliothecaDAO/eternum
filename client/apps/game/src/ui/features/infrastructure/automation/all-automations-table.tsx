@@ -11,24 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ProductionModal } from "@/ui/features/settlement";
 import { ETERNUM_CONFIG } from "@/utils/config";
+import { formatMinutes } from "@/shared/lib/time";
+import { getResourceIconGroups } from "@/shared/lib/resources";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { ArrowRightIcon, CheckIcon, PauseIcon, PlayIcon, TrashIcon } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 
 const eternumConfig = ETERNUM_CONFIG();
-
-// Helper function to format minutes into a human-readable string
-function formatMinutes(minutes: number): string {
-  if (minutes < 60) {
-    return `${minutes}m`;
-  }
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
-  if (remainingMinutes === 0) {
-    return `${hours}h`;
-  }
-  return `${hours}h ${remainingMinutes}m`;
-}
 
 export const AllAutomationsTable: React.FC = () => {
   const toggleModal = useUIStore((state) => state.toggleModal);
@@ -194,6 +183,11 @@ export const AllAutomationsTable: React.FC = () => {
               order.producedAmount >= order.maxAmount;
             const isPaused = isRealmPaused(order.realmEntityId);
             const isEffectivelyPaused = isGloballyPaused || isPaused;
+            const resourceIconGroups = getResourceIconGroups({
+              productionType: order.productionType,
+              resourceToUse: order.resourceToUse,
+              recipes: eternumConfig.resources.productionByComplexRecipe,
+            });
             return (
               <tr
                 key={order.id}
@@ -245,31 +239,20 @@ export const AllAutomationsTable: React.FC = () => {
                           <ArrowRightIcon className="w-4 h-4 mx-2" />
                           <span className="text-sm ml-1">{order.targetEntityName || order.targetEntityId}</span>
                         </>
-                      ) : order.productionType === ProductionType.ResourceToLabor ? (
-                        <>
-                          <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" className="mr-2" />
-                          <span className="mx-1">→</span>
-                          <ResourceIcon resource={"Labor"} size="sm" className="" />
-                        </>
-                      ) : order.productionType === ProductionType.LaborToResource ? (
-                        <>
-                          <ResourceIcon resource={"Labor"} size="sm" className="" />
-                          <span className="mx-1">→</span>
-                          <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" className="mr-2" />
-                        </>
                       ) : (
-                        <>
-                          {eternumConfig.resources.productionByComplexRecipe[order.resourceToUse].map((recipe) => (
-                            <ResourceIcon
-                              key={recipe.resource}
-                              resource={ResourcesIds[recipe.resource]}
-                              size="sm"
-                              className=""
-                            />
-                          ))}
-                          <span className="mx-1">→</span>
-                          <ResourceIcon resource={ResourcesIds[order.resourceToUse]} size="sm" className="mr-2" />
-                        </>
+                        resourceIconGroups.map((group, groupIndex) => (
+                          <React.Fragment key={`group-${groupIndex}`}>
+                            {groupIndex > 0 && <span className="mx-1">→</span>}
+                            {group.map((resourceId, resourceIndex) => (
+                              <React.Fragment key={`${resourceId}-${resourceIndex}`}>
+                                <ResourceIcon resource={ResourcesIds[resourceId]} size="sm" />
+                                {order.productionType === ProductionType.ResourceToLabor &&
+                                  groupIndex === 1 &&
+                                  resourceId === ResourcesIds.Labor && <span className="ml-1">Labor</span>}
+                              </React.Fragment>
+                            ))}
+                          </React.Fragment>
+                        ))
                       )}
                     </div>
                   </div>

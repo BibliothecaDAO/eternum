@@ -19,9 +19,9 @@ export const getContracts = (TARGET_PATH) => {
   return contracts;
 };
 
-export const getCasualName =(name)=> {
+export const getCasualName = (name) => {
   return `Collectibles: ${name}`;
-}
+};
 
 export const getContractPath = (TARGET_PATH, project_name, contract_name) => {
   const fileName = `${project_name}_${contract_name}`;

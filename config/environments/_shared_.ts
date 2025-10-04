@@ -220,10 +220,12 @@ const BLITZ_ENTRY_TOKEN_CLASS_HASH = await getSeasonAddresses(process.env.VITE_P
   .collectiblesClassHash!;
 
 const BLITZ_COLLECTIBLE_COSMETICS_MAX_ITEMS = 5;
-const BLITZ_COLLECTIBLE_COSMETICS_ADDRESS = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!
-  ["Collectibles: Realms: Cosmetic Items"];
-const BLITZ_COLLECTIBLE_TIMELOCK_ADDRESS = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!
-  ["Collectibles: Timelock Maker"];
+const BLITZ_COLLECTIBLE_COSMETICS_ADDRESS = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)![
+  "Collectibles: Realms: Cosmetic Items"
+];
+const BLITZ_COLLECTIBLE_TIMELOCK_ADDRESS = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)![
+  "Collectibles: Timelock Maker"
+];
 
 export const EternumGlobalConfig: Config = {
   agent: {
@@ -429,7 +431,7 @@ export const EternumGlobalConfig: Config = {
       entry_token_ipfs_cid: BLITZ_ENTRY_TOKEN_IPFS_CID,
       collectible_cosmetics_max_items: BLITZ_COLLECTIBLE_COSMETICS_MAX_ITEMS,
       collectible_cosmetics_address: BLITZ_COLLECTIBLE_COSMETICS_ADDRESS,
-      collectible_timelock_address: BLITZ_COLLECTIBLE_TIMELOCK_ADDRESS
+      collectible_timelock_address: BLITZ_COLLECTIBLE_TIMELOCK_ADDRESS,
     },
   },
   setup: {

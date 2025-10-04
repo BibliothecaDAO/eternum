@@ -17,7 +17,7 @@ export const mintCollectible = async (dataFileName) => {
   if (!collectibleAddress) {
     throw new Error(`Collectible address is required to be set addresses file with key "${getCasualName(name)}"`);
   } else {
-    console.log(`\n\nUpdating Address ${collectibleAddress}\n\n`)
+    console.log(`\n\nUpdating Address ${collectibleAddress}\n\n`);
   }
 
   // Pretty console header

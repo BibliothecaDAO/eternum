@@ -1455,7 +1455,7 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
   const collectibles_cosmetics_max = config.config.blitz.registration.collectible_cosmetics_max_items;
   const collectibles_cosmetics_address = config.config.blitz.registration.collectible_cosmetics_address;
   const collectibles_timelock_address = config.config.blitz.registration.collectible_timelock_address;
-  
+
   const registrationCalldata = {
     signer: config.account,
     fee_token: config.config.blitz.registration.fee_token,

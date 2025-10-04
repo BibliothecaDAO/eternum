@@ -19,7 +19,6 @@ console.log("    Collectible Class Hash: ".yellow + toHex(class_hash).magenta);
 console.log(`╚════════════════════════════════════════════════════════════════════════════════════════════╝`.yellow);
 console.log("\n\n");
 
-
 // Pretty console header
 console.log("\n\n");
 console.log(`╔══════════════════════════════════════════════════════════╗`.green);
@@ -27,8 +26,7 @@ console.log(`║   Declaring Collectible  Timelock Maker (Manager)        ║`.g
 console.log(`╚══════════════════════════════════════════════════════════╝`.green);
 console.log("\n");
 
-
-const tl_class_hash = await declareCollectibleTimelockMaker()
+const tl_class_hash = await declareCollectibleTimelockMaker();
 console.log("\n\n");
 console.log(`╔════════════════════════════════════════════════════════════════════════════════════════════╗`.yellow);
 console.log("    Collectible Timelock Maker Class Hash: ".yellow + toHex(tl_class_hash).magenta);
