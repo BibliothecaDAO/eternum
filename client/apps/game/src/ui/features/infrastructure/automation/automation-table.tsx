@@ -82,13 +82,13 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
     }
   };
 
-  const handleCreateOrder = (order: Omit<AutomationOrder, "id" | "producedAmount">) => {
+  const handleCreateOrder = (order: Omit<AutomationOrder, "id" | "producedAmount" | "createdAt">) => {
     addOrder(order);
     setEditingOrder(null);
     setShowAddForm(false);
   };
 
-  const handleUpdateOrder = (order: Omit<AutomationOrder, "id" | "producedAmount">) => {
+  const handleUpdateOrder = (order: Omit<AutomationOrder, "id" | "producedAmount" | "createdAt">) => {
     if (!editingOrder) {
       return;
     }

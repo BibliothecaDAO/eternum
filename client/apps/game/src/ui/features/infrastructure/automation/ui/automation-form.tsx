@@ -25,7 +25,7 @@ interface AutomationFormProps {
   realmName: string;
   resourceOptions: ResourceOption[];
   eternumConfig: EternumConfig;
-  onSubmit: (order: Omit<AutomationOrder, "id" | "producedAmount">) => void;
+  onSubmit: (order: Omit<AutomationOrder, "id" | "producedAmount" | "createdAt">) => void;
   onCancel: () => void;
   initialOrder?: AutomationOrder;
   title?: string;

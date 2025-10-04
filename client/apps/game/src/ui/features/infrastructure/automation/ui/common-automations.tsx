@@ -16,7 +16,7 @@ import { ResourcesIds } from "@bibliothecadao/types";
 interface CommonAutomationsProps {
   presets: CommonAutomationPreset[];
   isRealmPaused: boolean;
-  onApply: (orders: Array<Omit<AutomationOrder, "id" | "producedAmount">>) => void;
+  onApply: (orders: Array<Omit<AutomationOrder, "id" | "producedAmount" | "createdAt">>) => void;
   productionRecipes: ProductionRecipesMap;
 }
 
@@ -50,7 +50,10 @@ export const CommonAutomations: React.FC<CommonAutomationsProps> = ({
     return null;
   }
 
-  const renderOrderPreview = (order: Omit<AutomationOrder, "id" | "producedAmount">, key?: React.Key) => {
+  const renderOrderPreview = (
+    order: Omit<AutomationOrder, "id" | "producedAmount" | "createdAt">,
+    key?: React.Key,
+  ) => {
     if (order.productionType === ProductionType.Transfer) {
       const transferLabel = getTransferLabel(order.transferMode, order.transferInterval, order.transferThreshold);
 

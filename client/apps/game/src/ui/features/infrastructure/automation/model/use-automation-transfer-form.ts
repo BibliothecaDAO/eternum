@@ -116,7 +116,7 @@ const automationTransferReducer = (
 
 interface SubmitSuccess {
   success: true;
-  order: Omit<AutomationOrder, "id" | "producedAmount">;
+  order: Omit<AutomationOrder, "id" | "producedAmount" | "createdAt">;
 }
 
 interface SubmitFailure {
@@ -216,7 +216,7 @@ export const useAutomationTransferForm = ({ source, destination }: UseAutomation
       return { success: false, error };
     }
 
-    const order: Omit<AutomationOrder, "id" | "producedAmount"> = {
+    const order: Omit<AutomationOrder, "id" | "producedAmount" | "createdAt"> = {
       priority: 5,
       resourceToUse: state.resources[0].resourceId,
       mode: OrderMode.ProduceOnce,

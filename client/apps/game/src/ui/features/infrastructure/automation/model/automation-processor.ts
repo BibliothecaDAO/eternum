@@ -1,4 +1,10 @@
-import { AutomationOrder, OrderMode, ProductionType, TransferMode } from "@/hooks/store/use-automation-store";
+import {
+  AUTOMATION_ORDER_MAX_AGE_MS,
+  AutomationOrder,
+  OrderMode,
+  ProductionType,
+  TransferMode,
+} from "@/hooks/store/use-automation-store";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { configManager, multiplyByPrecision, ResourceManager } from "@bibliothecadao/eternum";
 import { ClientComponents, ResourcesIds } from "@bibliothecadao/types";
@@ -112,6 +118,7 @@ export async function processAutomationTick({
   }
 
   const realms = Object.keys(ordersByRealm);
+  const now = Date.now();
   for (const realmEntityId of realms) {
     if (isRealmPaused(realmEntityId)) {
       console.log(`Automation: Realm ${realmEntityId} is paused. Skipping all orders.`);
@@ -124,6 +131,14 @@ export async function processAutomationTick({
     console.log(`Automation: Processing ${realmOrders.length} orders for realm ${realmEntityId}.`);
 
     for (const order of realmOrders) {
+      if (!order.createdAt || now - order.createdAt > AUTOMATION_ORDER_MAX_AGE_MS) {
+        const ageMinutes = Math.floor((now - (order.createdAt ?? now)) / 60000);
+        console.log(
+          `Automation: Order ${order.id} in realm ${realmEntityId} expired and will be skipped (age ${ageMinutes} minutes).`,
+        );
+        continue;
+      }
+
       if (
         order.productionType !== ProductionType.Transfer &&
         order.mode === OrderMode.ProduceOnce &&

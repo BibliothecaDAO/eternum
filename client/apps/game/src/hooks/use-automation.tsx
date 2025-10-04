@@ -28,6 +28,7 @@ export const useAutomation = () => {
   const updateTransferTimestamp = useAutomationStore((state) => state.updateTransferTimestamp);
   const isRealmPaused = useAutomationStore((state) => state.isRealmPaused);
   const isGloballyPaused = useAutomationStore((state) => state.isGloballyPaused);
+  const cleanupStaleOrders = useAutomationStore((state) => state.cleanupStaleOrders);
   const processingRef = useRef(false);
   const ordersByRealmRef = useRef(ordersByRealm);
   const setNextRunTimestamp = useAutomationStore((state) => state.setNextRunTimestamp);
@@ -41,6 +42,13 @@ export const useAutomation = () => {
   useEffect(() => {
     ordersByRealmRef.current = ordersByRealm;
   }, [ordersByRealm]);
+
+  useEffect(() => {
+    const removed = cleanupStaleOrders();
+    if (removed > 0) {
+      console.info(`Automation: Cleared ${removed} stale automation order${removed === 1 ? "" : "s"}.`);
+    }
+  }, [cleanupStaleOrders]);
 
   const emitAutomationEvents = useCallback((events: AutomationEvent[]) => {
     events.forEach((event) => {
@@ -126,6 +134,12 @@ export const useAutomation = () => {
     processingRef.current = true;
 
     try {
+      const removed = cleanupStaleOrders();
+      if (removed > 0) {
+        ordersByRealmRef.current = useAutomationStore.getState().ordersByRealm;
+        console.info(`Automation: Skipped ${removed} expired automation order${removed === 1 ? "" : "s"}.`);
+      }
+
       const events = await processAutomationTick({
         ordersByRealm: ordersByRealmRef.current,
         components,
@@ -153,6 +167,7 @@ export const useAutomation = () => {
     burn_labor_for_resource_production,
     burn_resource_for_labor_production,
     burn_resource_for_resource_production,
+    cleanupStaleOrders,
     components,
     emitAutomationEvents,
     isGloballyPaused,

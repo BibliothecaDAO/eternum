@@ -1,6 +1,6 @@
 import { OrderMode, ProductionType, type AutomationOrder } from "@/hooks/store/use-automation-store";
-import type { ResourceOption } from "./use-automation-form";
 import { ResourcesIds } from "@bibliothecadao/types";
+import type { ResourceOption } from "./use-automation-form";
 
 export interface CommonAutomationContext {
   realmEntityId: string;
@@ -14,8 +14,8 @@ export interface CommonAutomationPreset {
   description: string;
   available: boolean;
   unavailableReason?: string;
-  orders: Array<Omit<AutomationOrder, "id" | "producedAmount">>;
-  previewOrder?: Omit<AutomationOrder, "id" | "producedAmount">;
+  orders: Array<Omit<AutomationOrder, "id" | "producedAmount" | "createdAt">>;
+  previewOrder?: Omit<AutomationOrder, "id" | "producedAmount" | "createdAt">;
 }
 
 interface MaintainResourceDefinition {
@@ -37,26 +37,26 @@ interface BundleDefinition {
 
 const MAINTAIN_RESOURCE_PRESETS: MaintainResourceDefinition[] = [
   {
-    id: "maintain-wood-1000",
+    id: "maintain-wood-4000",
     resourceId: ResourcesIds.Wood,
     displayName: "Wood",
-    targetAmount: 1000,
+    targetAmount: 4000,
     priority: 5,
     bufferPercentage: 10,
   },
   {
-    id: "maintain-copper-1000",
+    id: "maintain-copper-4000",
     resourceId: ResourcesIds.Copper,
     displayName: "Copper",
-    targetAmount: 1000,
+    targetAmount: 4000,
     priority: 5,
     bufferPercentage: 10,
   },
   {
-    id: "maintain-coal-1000",
+    id: "maintain-coal-4000",
     resourceId: ResourcesIds.Coal,
     displayName: "Coal",
-    targetAmount: 1000,
+    targetAmount: 4000,
     priority: 5,
     bufferPercentage: 10,
   },
@@ -91,7 +91,7 @@ const buildMaintainResourcePreset = (
     };
   }
 
-  const order: Omit<AutomationOrder, "id" | "producedAmount"> = {
+  const order: Omit<AutomationOrder, "id" | "producedAmount" | "createdAt"> = {
     realmEntityId,
     realmName,
     priority: definition.priority,
@@ -122,11 +122,8 @@ const buildBundlePreset = (
       preset: maintainPresetMap.get(childId),
       definition: maintainDefinitionMap.get(childId),
     }))
-    .filter(
-      (
-        value,
-      ): value is { preset: CommonAutomationPreset; definition: MaintainResourceDefinition } =>
-        Boolean(value.preset && value.definition),
+    .filter((value): value is { preset: CommonAutomationPreset; definition: MaintainResourceDefinition } =>
+      Boolean(value.preset && value.definition),
     );
 
   const missingResources = resolvedChildren
@@ -136,9 +133,10 @@ const buildBundlePreset = (
   const requiresAllChildren = resolvedChildren.length === definition.childPresetIds.length;
 
   if (missingResources.length > 0 || !requiresAllChildren) {
-    const reasonResources = missingResources.length > 0
-      ? missingResources
-      : definition.childPresetIds.map((childId) => maintainDefinitionMap.get(childId)?.displayName ?? childId);
+    const reasonResources =
+      missingResources.length > 0
+        ? missingResources
+        : definition.childPresetIds.map((childId) => maintainDefinitionMap.get(childId)?.displayName ?? childId);
 
     const unavailableReason = definition.unavailableMessage
       ? definition.unavailableMessage(reasonResources)

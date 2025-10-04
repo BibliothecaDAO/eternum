@@ -20,7 +20,7 @@ interface UseAutomationFormOptions {
 }
 
 interface AutomationOrderDraft
-  extends Omit<AutomationOrder, "id" | "producedAmount" | "realmEntityId" | "resourceToUse"> {
+  extends Omit<AutomationOrder, "id" | "producedAmount" | "realmEntityId" | "resourceToUse" | "createdAt"> {
   resourceToUse?: ResourcesIds;
 }
 
@@ -237,7 +237,7 @@ const automationFormReducer = (state: AutomationFormState, action: AutomationFor
 
 interface SubmitSuccess {
   success: true;
-  order: Omit<AutomationOrder, "id" | "producedAmount">;
+  order: Omit<AutomationOrder, "id" | "producedAmount" | "createdAt">;
 }
 
 interface SubmitFailure {
@@ -333,7 +333,7 @@ export const useAutomationForm = (options: UseAutomationFormOptions) => {
 
     const maxAmount = state.isInfinite ? "infinite" : state.order.maxAmount;
 
-    const order: Omit<AutomationOrder, "id" | "producedAmount"> = {
+    const order: Omit<AutomationOrder, "id" | "producedAmount" | "createdAt"> = {
       ...state.order,
       resourceToUse: state.order.resourceToUse!,
       realmEntityId,

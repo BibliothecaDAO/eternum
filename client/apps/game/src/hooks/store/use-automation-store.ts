@@ -2,6 +2,8 @@ import { ResourcesIds } from "@bibliothecadao/types";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
+export const AUTOMATION_ORDER_MAX_AGE_MS = 3 * 60 * 60 * 1000; // 3 hours
+
 export enum ProductionType {
   ResourceToResource = "resource_to_resource",
   ResourceToLabor = "resource_to_labor",
@@ -31,6 +33,7 @@ export interface AutomationOrder {
   productionType: ProductionType; // Example: to distinguish system calls
   realmName?: string; // Name of the realm
   bufferPercentage?: number; // For MaintainBalance: percentage buffer below target before producing (default 10%)
+  createdAt: number; // Timestamp (ms) when the order was created
 
   // Transfer-specific fields
   targetEntityId?: string; // Destination entity for transfers
@@ -83,11 +86,11 @@ interface AutomationState {
   ordersByRealm: Record<string, AutomationOrder[]>;
   pausedRealms: Record<string, boolean>; // Track paused state by realm ID
   isGloballyPaused: boolean; // Global pause state - overrides all other automation
-  addOrder: (orderData: Omit<AutomationOrder, "id" | "producedAmount"> & { mode?: OrderMode }) => void;
+  addOrder: (orderData: Omit<AutomationOrder, "id" | "producedAmount" | "createdAt"> & { mode?: OrderMode }) => void;
   updateOrder: (
     realmEntityId: string,
     orderId: string,
-    updatedData: Omit<AutomationOrder, "id" | "producedAmount" | "realmEntityId">
+    updatedData: Omit<AutomationOrder, "id" | "producedAmount" | "realmEntityId" | "createdAt">
   ) => void;
   removeOrder: (realmEntityId: string, orderId: string) => void;
   updateOrderProducedAmount: (realmEntityId: string, orderId: string, producedThisCycle: number) => void;
@@ -99,12 +102,72 @@ interface AutomationState {
   toggleRealmPause: (realmEntityId: string) => void; // Toggle pause state for a realm
   isRealmPaused: (realmEntityId: string) => boolean; // Check if a realm is paused
   toggleGlobalPause: () => void; // Toggle global pause state
+  cleanupStaleOrders: (maxAgeMs?: number) => number; // Remove and count expired orders
   exportAutomation: () => AutomationExportData; // Export current automation state
   importAutomation: (data: AutomationExportData) => { success: boolean; error?: string }; // Import automation state
   exportAsTemplate: (name?: string, description?: string, realmEntityId?: string) => AutomationTemplate; // Export as shareable template
   importTemplate: (template: AutomationTemplate) => AutomationOrderTemplate[]; // Import template and return orders for manual assignment
   getAvailableRealms: () => { id: string; name?: string; orderCount: number }[]; // Get list of realms with automation orders
 }
+
+interface PrunedOrdersResult {
+  ordersByRealm: Record<string, AutomationOrder[]>;
+  removedCount: number;
+  changed: boolean;
+}
+
+const normalizeAndPruneOrders = (
+  ordersByRealm: Record<string, AutomationOrder[]>,
+  now: number,
+  maxAgeMs: number,
+): PrunedOrdersResult => {
+  let removedCount = 0;
+  let changed = false;
+
+  const nextOrders: Record<string, AutomationOrder[]> = {};
+
+  for (const [realmId, orders] of Object.entries(ordersByRealm)) {
+    if (!Array.isArray(orders) || orders.length === 0) {
+      continue;
+    }
+
+    const refreshedOrders: AutomationOrder[] = [];
+
+    for (const order of orders) {
+      let orderWithTimestamp = order;
+
+      if (typeof order.createdAt !== "number") {
+        orderWithTimestamp = { ...order, createdAt: now };
+        changed = true;
+      }
+
+      const age = now - orderWithTimestamp.createdAt;
+      if (Number.isFinite(age) && age > maxAgeMs) {
+        removedCount += 1;
+        changed = true;
+        continue;
+      }
+
+      if (orderWithTimestamp !== order) {
+        refreshedOrders.push(orderWithTimestamp);
+      } else {
+        refreshedOrders.push(order);
+      }
+    }
+
+    if (refreshedOrders.length > 0) {
+      nextOrders[realmId] = refreshedOrders;
+    } else {
+      changed = true;
+    }
+  }
+
+  return {
+    ordersByRealm: nextOrders,
+    removedCount,
+    changed,
+  };
+};
 
 export const useAutomationStore = create<AutomationState>()(
   persist(
@@ -120,6 +183,7 @@ export const useAutomationStore = create<AutomationState>()(
           realmEntityId: String(newOrderData.realmEntityId),
           id: crypto.randomUUID(),
           producedAmount: 0,
+          createdAt: Date.now(),
         };
         set((state) => {
           const realmOrders = state.ordersByRealm[newOrder.realmEntityId] || [];
@@ -216,6 +280,29 @@ export const useAutomationStore = create<AutomationState>()(
         set((state) => ({
           isGloballyPaused: !state.isGloballyPaused,
         })),
+      cleanupStaleOrders: (maxAgeMs = AUTOMATION_ORDER_MAX_AGE_MS) => {
+        const now = Date.now();
+        let removed = 0;
+        set((state) => {
+          const { ordersByRealm, removedCount, changed } = normalizeAndPruneOrders(
+            state.ordersByRealm,
+            now,
+            maxAgeMs,
+          );
+
+          removed = removedCount;
+
+          if (!changed) {
+            return state;
+          }
+
+          return {
+            ordersByRealm,
+          };
+        });
+
+        return removed;
+      },
       exportAutomation: () => {
         const state = get();
         const exportData: AutomationExportData = {
@@ -277,8 +364,15 @@ export const useAutomationStore = create<AutomationState>()(
           }
 
           // If validation passes, update the store
+          const now = Date.now();
+          const { ordersByRealm } = normalizeAndPruneOrders(
+            data.ordersByRealm,
+            now,
+            AUTOMATION_ORDER_MAX_AGE_MS,
+          );
+
           set({
-            ordersByRealm: data.ordersByRealm,
+            ordersByRealm,
             pausedRealms: data.pausedRealms || {},
             isGloballyPaused: data.isGloballyPaused || false,
             nextRunTimestamp: data.nextRunTimestamp || null,
@@ -360,6 +454,22 @@ export const useAutomationStore = create<AutomationState>()(
     {
       name: "eternum-automation-orders-by-realm",
       storage: createJSONStorage(() => localStorage),
+      onRehydrateStorage: () => (state) => {
+        if (!state || typeof state !== "object" || !state.ordersByRealm) {
+          return;
+        }
+
+        const now = Date.now();
+        const { ordersByRealm, changed } = normalizeAndPruneOrders(
+          state.ordersByRealm,
+          now,
+          AUTOMATION_ORDER_MAX_AGE_MS,
+        );
+
+        if (changed) {
+          state.ordersByRealm = ordersByRealm;
+        }
+      },
     },
   ),
 );
