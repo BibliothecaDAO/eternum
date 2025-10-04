@@ -151,8 +151,8 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
         presets={commonPresets}
         isRealmPaused={isRealmPaused}
         productionRecipes={eternumConfig.resources.productionByComplexRecipe}
-        onApply={(order) => {
-          addOrder(order);
+        onApply={(orders) => {
+          orders.forEach(addOrder);
           setEditingOrder(null);
           setShowAddForm(false);
         }}
