@@ -23,7 +23,9 @@ export const AutomationHints: React.FC<AutomationHintsProps> = ({ visible }) => 
             <span className="font-bold">Maintain Balance:</span> Automation will keep resource balance at the target
             level. Production triggers when balance drops below target minus buffer percentage.
           </li>
-          <li>Resources produced will increase your realm&apos;s balance and may cause resource loss if storage is full.</li>
+          <li>
+            Resources produced will increase your realm&apos;s balance and may cause resource loss if storage is full.
+          </li>
           <li>
             Process activates every <span className="font-bold">1 minute</span> automatically.
           </li>
@@ -32,4 +34,3 @@ export const AutomationHints: React.FC<AutomationHintsProps> = ({ visible }) => 
     </div>
   );
 };
-

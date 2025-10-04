@@ -1,11 +1,6 @@
 import { useCallback, useReducer } from "react";
 
-import {
-  AutomationOrder,
-  OrderMode,
-  ProductionType,
-  TransferMode,
-} from "@/hooks/store/use-automation-store";
+import { AutomationOrder, OrderMode, ProductionType, TransferMode } from "@/hooks/store/use-automation-store";
 import { ResourcesIds } from "@bibliothecadao/types";
 
 import { isTransferAllowed } from "../lib/transfer-utils";
@@ -205,8 +200,8 @@ export const useAutomationTransferForm = ({ source, destination }: UseAutomation
       return { success: false, error };
     }
 
-    const invalidResources = state.resources.filter((resource) =>
-      !isTransferAllowed(source.category, destination.category, resource.resourceId),
+    const invalidResources = state.resources.filter(
+      (resource) => !isTransferAllowed(source.category, destination.category, resource.resourceId),
     );
 
     if (invalidResources.length > 0) {

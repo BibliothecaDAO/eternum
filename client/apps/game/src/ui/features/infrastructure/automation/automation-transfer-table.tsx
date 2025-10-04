@@ -126,18 +126,21 @@ export const AutomationTransferTable: React.FC = () => {
     [filteredDestinationEntities, selectedSource],
   );
 
-  const handleSourceSelected = useCallback((entity: SelectedEntity) => {
-    setSelectedSource(entity);
-    setShowAddForm(false);
-    setSelectedDestination(null);
-    setDestinationEntityType("");
-    setDestinationSearchTerm("");
-    transferForm.reset();
-    setOneOffResources([]);
-    setOneOffNewResourceId("");
-    setOneOffNewResourceAmount(100);
-    setOneOffError(null);
-  }, [setDestinationEntityType, setDestinationSearchTerm, transferForm]);
+  const handleSourceSelected = useCallback(
+    (entity: SelectedEntity) => {
+      setSelectedSource(entity);
+      setShowAddForm(false);
+      setSelectedDestination(null);
+      setDestinationEntityType("");
+      setDestinationSearchTerm("");
+      transferForm.reset();
+      setOneOffResources([]);
+      setOneOffNewResourceId("");
+      setOneOffNewResourceAmount(100);
+      setOneOffError(null);
+    },
+    [setDestinationEntityType, setDestinationSearchTerm, transferForm],
+  );
 
   const handleDestinationSelected = useCallback((entity: SelectedEntity) => {
     setSelectedDestination(entity);
@@ -188,9 +191,7 @@ export const AutomationTransferTable: React.FC = () => {
       setOneOffResources((prev) => {
         const exists = prev.some((resource) => resource.resourceId === resourceId);
         if (exists) {
-          return prev.map((resource) =>
-            resource.resourceId === resourceId ? { ...resource, amount } : resource,
-          );
+          return prev.map((resource) => (resource.resourceId === resourceId ? { ...resource, amount } : resource));
         }
         return [...prev, { resourceId, amount }];
       });
@@ -277,13 +278,7 @@ export const AutomationTransferTable: React.FC = () => {
       handleSourceSelected({ name: entity.name, entityId: entity.entityId, category: entity.category });
       setSourceSearchTerm("");
     }
-  }, [
-    debouncedSourceSearchTerm,
-    filteredSourceEntities,
-    handleSourceSelected,
-    setSourceSearchTerm,
-    sourceEntityType,
-  ]);
+  }, [debouncedSourceSearchTerm, filteredSourceEntities, handleSourceSelected, setSourceSearchTerm, sourceEntityType]);
 
   useEffect(() => {
     if (!destinationEntityType || !debouncedDestinationSearchTerm || debouncedDestinationSearchTerm.length < 2) {
@@ -450,7 +445,14 @@ export const AutomationTransferTable: React.FC = () => {
           )}
 
           {transferType === "automation" && selectedDestination && showAddForm && (
-            <Panel as="form" onSubmit={handleAddTransferOrder} tone="glass" radius="md" padding="md" className="mb-6 space-y-4 bg-black/10">
+            <Panel
+              as="form"
+              onSubmit={handleAddTransferOrder}
+              tone="glass"
+              radius="md"
+              padding="md"
+              className="mb-6 space-y-4 bg-black/10"
+            >
               <h3 className="text-lg font-semibold">Create New Transfer Automation</h3>
 
               <TransferModeControls

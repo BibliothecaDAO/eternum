@@ -30,7 +30,6 @@ export const deployCollectible = async (dataFileName) => {
     setAttrsRawToIPFSCIDCalldata,
   } = processData(dataFileName, false);
 
-
   // Pretty console header
   console.log("\n\n");
   console.log(`╔══════════════════════════════════════════════════════════╗`.green);
@@ -47,7 +46,7 @@ export const deployCollectible = async (dataFileName) => {
     throw new Error(
       `Locker address is required to be set in addresses file with key "${getCasualName("Timelock Maker")}"`,
     );
-  } 
+  }
   // Contract parameters from environment variables
   const defaultAdmin = BigInt(process.env.COLLECTIBLES_DEFAULT_ADMIN);
   const minter = BigInt(process.env.COLLECTIBLES_MINTER);
@@ -118,7 +117,6 @@ export const deployCollectible = async (dataFileName) => {
   return collectibleAddress;
 };
 
-
 /**
  * Deploy a RealmsCollectible contract with the specified name and symbol
  * All other parameters are read from environment variables
@@ -128,8 +126,6 @@ export const deployCollectible = async (dataFileName) => {
  * @returns {Promise<bigint>} The deployed contract address
  */
 export const deployTimeLockMaker = async () => {
-
-
   // Pretty console header
   console.log("\n\n");
   console.log(`╔══════════════════════════════════════════════════════════╗`.green);
@@ -147,8 +143,6 @@ export const deployTimeLockMaker = async () => {
   const timelockManagerAddress = await deployTimelockMakerContract();
 
   console.log(`\n\n 🎨 Deployed Collectible Timelock Maker contract: ${toHex(timelockManagerAddress)}`);
-
-
 
   console.log("\n\n");
   console.log(`╔════════════════════════════════════════════════════════════════════════════════════════════╗`.yellow);

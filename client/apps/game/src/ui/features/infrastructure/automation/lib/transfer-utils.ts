@@ -35,7 +35,9 @@ export const withEntityDisplayData = (
 ): TransferEntityOption => {
   const entityName =
     getEntityNameFromLocalStorage(entity.entityId) ||
-    (entity.realmId ? getRealmNameById(entity.realmId) : `${getStructureTypeName(entity.category, isBlitz)} ${entity.entityId}`);
+    (entity.realmId
+      ? getRealmNameById(entity.realmId)
+      : `${getStructureTypeName(entity.category, isBlitz)} ${entity.entityId}`);
 
   return {
     ...entity,

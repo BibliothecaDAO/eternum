@@ -73,10 +73,7 @@ export const useTransferEntities = ({
 
   const guildMembers = useGuildMembers(guild?.entityId || BigInt(0));
 
-  const playersInPlayersGuildAddress = useMemo(
-    () => guildMembers.map((member) => member.address),
-    [guildMembers],
-  );
+  const playersInPlayersGuildAddress = useMemo(() => guildMembers.map((member) => member.address), [guildMembers]);
 
   const categorizedPlayerStructures = useMemo(() => {
     const categories = {
@@ -196,9 +193,7 @@ export const useTransferEntities = ({
     return categoryEntities
       .filter((entity) => {
         const normalizedName = normalizeDiacriticalMarks(entity.name.toLowerCase());
-        const normalizedAccount = entity.accountName
-          ? normalizeDiacriticalMarks(entity.accountName.toLowerCase())
-          : "";
+        const normalizedAccount = entity.accountName ? normalizeDiacriticalMarks(entity.accountName.toLowerCase()) : "";
 
         return normalizedName.includes(normalizedSearch) || normalizedAccount.includes(normalizedSearch);
       })
@@ -220,9 +215,7 @@ export const useTransferEntities = ({
     return categoryEntities
       .filter((entity) => {
         const normalizedName = normalizeDiacriticalMarks(entity.name.toLowerCase());
-        const normalizedAccount = entity.accountName
-          ? normalizeDiacriticalMarks(entity.accountName.toLowerCase())
-          : "";
+        const normalizedAccount = entity.accountName ? normalizeDiacriticalMarks(entity.accountName.toLowerCase()) : "";
 
         return normalizedName.includes(normalizedSearch) || normalizedAccount.includes(normalizedSearch);
       })

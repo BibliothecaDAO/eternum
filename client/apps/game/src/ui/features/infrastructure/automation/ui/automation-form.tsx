@@ -1,10 +1,6 @@
 import React from "react";
 
-import {
-  AutomationOrder,
-  OrderMode,
-  ProductionType,
-} from "@/hooks/store/use-automation-store";
+import { AutomationOrder, OrderMode, ProductionType } from "@/hooks/store/use-automation-store";
 import Button from "@/ui/design-system/atoms/button";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
@@ -12,11 +8,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getResourceIconGroups } from "@/shared/lib/resources";
 import { ResourcesIds } from "@bibliothecadao/types";
 
-import {
-  AutomationFormSubmitResult,
-  ResourceOption,
-  useAutomationForm,
-} from "../model/use-automation-form";
+import { AutomationFormSubmitResult, ResourceOption, useAutomationForm } from "../model/use-automation-form";
 
 type EternumConfig = ReturnType<typeof import("@/utils/config").ETERNUM_CONFIG>;
 
@@ -43,13 +35,23 @@ export const AutomationForm: React.FC<AutomationFormProps> = ({
   title,
   submitLabel,
 }) => {
-  const { state, setMode, setPriority, setResource, setProductionType, setMaxAmountInput, toggleInfinite, setBufferPercentage, submit, reset } =
-    useAutomationForm({
-      realmEntityId,
-      realmName,
-      resourceOptions,
-      initialOrder,
-    });
+  const {
+    state,
+    setMode,
+    setPriority,
+    setResource,
+    setProductionType,
+    setMaxAmountInput,
+    toggleInfinite,
+    setBufferPercentage,
+    submit,
+    reset,
+  } = useAutomationForm({
+    realmEntityId,
+    realmName,
+    resourceOptions,
+    initialOrder,
+  });
 
   const order = state.order;
   const isInfinite = state.isInfinite;
@@ -57,7 +59,10 @@ export const AutomationForm: React.FC<AutomationFormProps> = ({
 
   const isSubmitDisabled =
     order.resourceToUse === undefined ||
-    (order.mode === OrderMode.ProduceOnce && !isInfinite && typeof order.maxAmount === "number" && order.maxAmount < 1000);
+    (order.mode === OrderMode.ProduceOnce &&
+      !isInfinite &&
+      typeof order.maxAmount === "number" &&
+      order.maxAmount < 1000);
 
   const handleResourceChange = (value: string) => {
     const parsedValue = Number.parseInt(value, 10);
@@ -165,7 +170,10 @@ export const AutomationForm: React.FC<AutomationFormProps> = ({
           <label htmlFor="resourceToUse" className="block mb-1 text-sm font-medium">
             Resource to Produce:
           </label>
-          <Select value={order.resourceToUse !== undefined ? String(order.resourceToUse) : ""} onValueChange={handleResourceChange}>
+          <Select
+            value={order.resourceToUse !== undefined ? String(order.resourceToUse) : ""}
+            onValueChange={handleResourceChange}
+          >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select resource" />
             </SelectTrigger>
@@ -211,9 +219,10 @@ export const AutomationForm: React.FC<AutomationFormProps> = ({
         <div>
           <label htmlFor="maxAmount" className="block mb-1 text-sm font-medium">
             {order.mode === OrderMode.MaintainBalance ? "Target Balance:" : "Target Amount:"}
-            {!isInfinite && order.mode === OrderMode.ProduceOnce && typeof order.maxAmount === "number" && order.maxAmount < 1000 && (
-              <span className="text-red ml-1">(min 1000)</span>
-            )}
+            {!isInfinite &&
+              order.mode === OrderMode.ProduceOnce &&
+              typeof order.maxAmount === "number" &&
+              order.maxAmount < 1000 && <span className="text-red ml-1">(min 1000)</span>}
           </label>
           <div className="flex items-center gap-2">
             <NumberInput
@@ -224,7 +233,13 @@ export const AutomationForm: React.FC<AutomationFormProps> = ({
             />
             {order.mode === OrderMode.ProduceOnce && (
               <>
-                <input type="checkbox" id="isInfinite" checked={isInfinite} onChange={toggleInfinite} className="w-4 h-4" />
+                <input
+                  type="checkbox"
+                  id="isInfinite"
+                  checked={isInfinite}
+                  onChange={toggleInfinite}
+                  className="w-4 h-4"
+                />
                 <label htmlFor="isInfinite" className="text-sm">
                   Infinite
                 </label>
@@ -252,8 +267,8 @@ export const AutomationForm: React.FC<AutomationFormProps> = ({
             />
             {maintainTriggerValue !== null && (
               <p className="text-xs text-gold/50 mt-1">
-                Production will start when balance drops below {100 - (order.bufferPercentage || 10)}% of target. (Current
-                trigger: {Math.floor(maintainTriggerValue).toLocaleString()})
+                Production will start when balance drops below {100 - (order.bufferPercentage || 10)}% of target.
+                (Current trigger: {Math.floor(maintainTriggerValue).toLocaleString()})
               </p>
             )}
           </div>

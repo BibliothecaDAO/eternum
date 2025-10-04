@@ -172,7 +172,12 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
             Add New Automation {isRealmPaused && "(Paused)"}
           </Button>
         )}
-        <Button onClick={() => setShowHints(!showHints)} variant="default" size="xs" className="text-gold/70 hover:text-gold">
+        <Button
+          onClick={() => setShowHints(!showHints)}
+          variant="default"
+          size="xs"
+          className="text-gold/70 hover:text-gold"
+        >
           {showHints ? "Hide Hints" : "Show Hints"}
         </Button>
       </div>

@@ -1,10 +1,5 @@
 import { useCallback, useEffect, useReducer } from "react";
-import {
-  AutomationOrder,
-  OrderMode,
-  ProductionType,
-  TransferMode,
-} from "@/hooks/store/use-automation-store";
+import { AutomationOrder, OrderMode, ProductionType, TransferMode } from "@/hooks/store/use-automation-store";
 import { ResourcesIds } from "@bibliothecadao/types";
 
 export interface ResourceOption {
@@ -48,7 +43,11 @@ const MIN_PRIORITY = 1;
 const MAX_PRIORITY = 9;
 const MIN_TARGET_FOR_PRODUCE_ONCE = 1000;
 
-const createInitialState = ({ realmName, resourceOptions, initialOrder }: UseAutomationFormOptions): AutomationFormState => {
+const createInitialState = ({
+  realmName,
+  resourceOptions,
+  initialOrder,
+}: UseAutomationFormOptions): AutomationFormState => {
   if (initialOrder) {
     const isInfinite = initialOrder.maxAmount === "infinite";
     const numericMaxAmount = typeof initialOrder.maxAmount === "number" ? initialOrder.maxAmount : 0;
@@ -255,7 +254,10 @@ export const useAutomationForm = (options: UseAutomationFormOptions) => {
   );
 
   useEffect(() => {
-    dispatch({ type: "RESET", payload: createInitialState({ realmEntityId, realmName, resourceOptions, initialOrder }) });
+    dispatch({
+      type: "RESET",
+      payload: createInitialState({ realmEntityId, realmName, resourceOptions, initialOrder }),
+    });
   }, [realmEntityId, realmName, resourceOptions, initialOrder]);
 
   const setMode = useCallback((mode: OrderMode) => {
@@ -302,10 +304,7 @@ export const useAutomationForm = (options: UseAutomationFormOptions) => {
       return { success: false, error };
     }
 
-    if (
-      typeof state.order.maxAmount === "number" &&
-      state.order.maxAmount <= 0
-    ) {
+    if (typeof state.order.maxAmount === "number" && state.order.maxAmount <= 0) {
       const error = "Target amount must be greater than 0.";
       dispatch({ type: "SET_ERROR", payload: error });
       return { success: false, error };

@@ -90,7 +90,7 @@ interface AutomationState {
   updateOrder: (
     realmEntityId: string,
     orderId: string,
-    updatedData: Omit<AutomationOrder, "id" | "producedAmount" | "realmEntityId" | "createdAt">
+    updatedData: Omit<AutomationOrder, "id" | "producedAmount" | "realmEntityId" | "createdAt">,
   ) => void;
   removeOrder: (realmEntityId: string, orderId: string) => void;
   updateOrderProducedAmount: (realmEntityId: string, orderId: string, producedThisCycle: number) => void;
@@ -284,11 +284,7 @@ export const useAutomationStore = create<AutomationState>()(
         const now = Date.now();
         let removed = 0;
         set((state) => {
-          const { ordersByRealm, removedCount, changed } = normalizeAndPruneOrders(
-            state.ordersByRealm,
-            now,
-            maxAgeMs,
-          );
+          const { ordersByRealm, removedCount, changed } = normalizeAndPruneOrders(state.ordersByRealm, now, maxAgeMs);
 
           removed = removedCount;
 
@@ -365,11 +361,7 @@ export const useAutomationStore = create<AutomationState>()(
 
           // If validation passes, update the store
           const now = Date.now();
-          const { ordersByRealm } = normalizeAndPruneOrders(
-            data.ordersByRealm,
-            now,
-            AUTOMATION_ORDER_MAX_AGE_MS,
-          );
+          const { ordersByRealm } = normalizeAndPruneOrders(data.ordersByRealm, now, AUTOMATION_ORDER_MAX_AGE_MS);
 
           set({
             ordersByRealm,

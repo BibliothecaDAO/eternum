@@ -2,10 +2,7 @@ import React from "react";
 
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import {
-  AutomationOrder,
-  TransferMode,
-} from "@/hooks/store/use-automation-store";
+import { AutomationOrder, TransferMode } from "@/hooks/store/use-automation-store";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { LucideArrowRight } from "lucide-react";
 
@@ -76,7 +73,8 @@ export const TransferSummary: React.FC<TransferSummaryProps> = ({ orders, source
                 </div>
               </td>
               <td className="px-6 py-4 text-xs">
-                {order.transferMode === TransferMode.Recurring && `Every ${formatMinutes(order.transferInterval || 60)}`}
+                {order.transferMode === TransferMode.Recurring &&
+                  `Every ${formatMinutes(order.transferInterval || 60)}`}
                 {order.transferMode === TransferMode.MaintainStock &&
                   `When < ${order.transferThreshold?.toLocaleString()}`}
                 {order.transferMode === TransferMode.DepletionTransfer &&

@@ -3,12 +3,7 @@ import React from "react";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import type { CommonAutomationPreset } from "../model/common-automations";
-import {
-  OrderMode,
-  ProductionType,
-  TransferMode,
-  type AutomationOrder,
-} from "@/hooks/store/use-automation-store";
+import { OrderMode, ProductionType, TransferMode, type AutomationOrder } from "@/hooks/store/use-automation-store";
 import { getResourceIconGroups, type ProductionRecipesMap } from "@/shared/lib/resources";
 import { formatMinutes } from "@/shared/lib/time";
 import { ResourcesIds } from "@bibliothecadao/types";
@@ -50,10 +45,7 @@ export const CommonAutomations: React.FC<CommonAutomationsProps> = ({
     return null;
   }
 
-  const renderOrderPreview = (
-    order: Omit<AutomationOrder, "id" | "producedAmount" | "createdAt">,
-    key?: React.Key,
-  ) => {
+  const renderOrderPreview = (order: Omit<AutomationOrder, "id" | "producedAmount" | "createdAt">, key?: React.Key) => {
     if (order.productionType === ProductionType.Transfer) {
       const transferLabel = getTransferLabel(order.transferMode, order.transferInterval, order.transferThreshold);
 
@@ -99,18 +91,14 @@ export const CommonAutomations: React.FC<CommonAutomationsProps> = ({
                       <ResourceIcon resource={ResourcesIds[resourceId]} size="sm" />
                       {order.productionType === ProductionType.ResourceToLabor &&
                         groupIndex === 1 &&
-                        resourceId === ResourcesIds.Labor && (
-                          <span className="text-xs text-gold/70">Labor</span>
-                        )}
+                        resourceId === ResourcesIds.Labor && <span className="text-xs text-gold/70">Labor</span>}
                     </React.Fragment>
                   ))}
                 </div>
               </React.Fragment>
             ))}
             {order.mode === OrderMode.MaintainBalance && order.maxAmount !== "infinite" && (
-              <span className="ml-2 text-[11px] text-gold/60">
-                Target: {Number(order.maxAmount).toLocaleString()}
-              </span>
+              <span className="ml-2 text-[11px] text-gold/60">Target: {Number(order.maxAmount).toLocaleString()}</span>
             )}
           </div>
         )}

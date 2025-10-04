@@ -1,6 +1,10 @@
 import { ProductionType, useAutomationStore } from "@/hooks/store/use-automation-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { AutomationEvent, PROCESS_INTERVAL_MS, processAutomationTick } from "@/ui/features/infrastructure/automation/model/automation-processor";
+import {
+  AutomationEvent,
+  PROCESS_INTERVAL_MS,
+  processAutomationTick,
+} from "@/ui/features/infrastructure/automation/model/automation-processor";
 import { useDojo } from "@bibliothecadao/react";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef } from "react";
@@ -83,8 +87,8 @@ export const useAutomation = () => {
             <div className="flex">
               <ResourceIcon className="inline-block" resource={ResourcesIds[order.resourceToUse]} size="sm" />
               <span className="ml-2">
-                Automation: Resource To Labor. Produced {producedAmount.toLocaleString()} labor from {ResourcesIds[order.resourceToUse]}
-                {" "}on realm {order.realmName ?? order.realmEntityId}.
+                Automation: Resource To Labor. Produced {producedAmount.toLocaleString()} labor from{" "}
+                {ResourcesIds[order.resourceToUse]} on realm {order.realmName ?? order.realmEntityId}.
               </span>
             </div>,
           );
@@ -95,8 +99,12 @@ export const useAutomation = () => {
           <div className="flex">
             <ResourceIcon className="inline-block" resource={ResourcesIds[order.resourceToUse]} size="sm" />
             <span className="ml-2">
-              Automation: {order.productionType === ProductionType.ResourceToResource ? "Resource To Resource" : "Labor To Resource"}.
-              Produced {producedAmount.toLocaleString()} of {producedResourceName} on {order.realmName ?? order.realmEntityId}.
+              Automation:{" "}
+              {order.productionType === ProductionType.ResourceToResource
+                ? "Resource To Resource"
+                : "Labor To Resource"}
+              . Produced {producedAmount.toLocaleString()} of {producedResourceName} on{" "}
+              {order.realmName ?? order.realmEntityId}.
             </span>
           </div>,
         );
@@ -107,11 +115,7 @@ export const useAutomation = () => {
   const processOrders = useCallback(async () => {
     if (processingRef.current) return;
 
-    if (
-      !starknetSignerAccount ||
-      !starknetSignerAccount.address ||
-      starknetSignerAccount.address === "0x0"
-    ) {
+    if (!starknetSignerAccount || !starknetSignerAccount.address || starknetSignerAccount.address === "0x0") {
       console.warn("Automation: Missing Starknet signer. Skipping.");
       return;
     }
