@@ -19,6 +19,10 @@ export const getContracts = (TARGET_PATH) => {
   return contracts;
 };
 
+export const getCasualName =(name)=> {
+  return `Collectibles: ${name}`;
+}
+
 export const getContractPath = (TARGET_PATH, project_name, contract_name) => {
   const fileName = `${project_name}_${contract_name}`;
   const contracts = getContracts(TARGET_PATH);
@@ -57,11 +61,21 @@ export const declare = async (filepath, contract_name) => {
 export const deploy = async (name, class_hash, constructorCalldata) => {
   // Deploy contract
   const account = getAccount();
+
+  // Use old UDC contract because new one isnt available on slot/katana
+  const UDC = {
+    ADDRESS: "0x041a78e741e5af2fec34b695679bc6891742439f7afb8484ecd7766661ad02bf",
+    ENTRYPOINT: "deployContract",
+  };
+  account.deployer.address = UDC.ADDRESS;
+  account.deployer.entryPoint = UDC.ENTRYPOINT;
+
   console.log(`\nDeploying ${name} ... \n\n`.green);
-  let contract = await account.deployContract({
+  const deployOptions = {
     classHash: class_hash,
     constructorCalldata: constructorCalldata,
-  });
+  };
+  let contract = await account.deployContract(deployOptions);
 
   // Wait for transaction
   let network = getNetwork(process.env.STARKNET_NETWORK);

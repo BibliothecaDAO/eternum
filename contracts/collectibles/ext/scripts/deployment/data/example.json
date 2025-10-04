@@ -2,7 +2,6 @@
     "name": "Collectible: Baby Chicken",
     "symbol": "CBDC",
     "description": "I dream of a better tomorrow, where chickens can cross the road and not be questioned about their motives.",
-    "updateContractAddress": "",
     "defaultIpfsCid": "Qmb7Zr5bJaSzrARdXVYzc5PMp3bbnydJu4reKBXGF8Aiz4",
     "defaultIpfsCidOverwrite": false,
     "traits": [

@@ -191,6 +191,10 @@ pub trait ISettlementConfig<T> {
         entry_token_class_hash: felt252,
         entry_token_deploy_calldata: Span<felt252>,
         entry_token_ipfs_cid: ByteArray,
+
+        collectibles_cosmetics_max: u8,
+        collectibles_cosmetics_address: starknet::ContractAddress,
+        collectibles_timelock_address: starknet::ContractAddress,
     );
 }
 
@@ -838,6 +842,10 @@ pub mod config_systems {
             entry_token_class_hash: felt252,
             entry_token_deploy_calldata: Span<felt252>,
             entry_token_ipfs_cid: ByteArray,
+
+            collectibles_cosmetics_max: u8,
+            collectibles_cosmetics_address: starknet::ContractAddress,
+            collectibles_timelock_address: starknet::ContractAddress,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -850,6 +858,9 @@ pub mod config_systems {
             blitz_registration_config.fee_token = fee_token;
             blitz_registration_config.fee_recipient = fee_recipient;
             blitz_registration_config.fee_amount = fee_amount;
+            blitz_registration_config.collectibles_cosmetics_max = collectibles_cosmetics_max;
+            blitz_registration_config.collectibles_cosmetics_address = collectibles_cosmetics_address;
+            blitz_registration_config.collectibles_timelock_address = collectibles_timelock_address;
 
             if fee_amount > 0 {
                 let entry_token_address = blitz_registration_config.deploy_entry_token(

@@ -612,6 +612,10 @@ export interface Config {
       registration_period_seconds: number;
       entry_token_class_hash: string;
       entry_token_ipfs_cid: string;
+
+      collectible_cosmetics_max_items: number;
+      collectible_cosmetics_address: string;
+      collectible_timelock_address: string;
     };
   };
 

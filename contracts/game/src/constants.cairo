@@ -282,7 +282,6 @@ pub fn relic_level(resource_type: u8) -> u8 {
         2
     } else {
         panic!("Eternum: not a relic");
-        0
     }
 }
 
@@ -294,7 +293,6 @@ pub fn relic_essence_cost(resource_type: u8) -> u128 {
         500
     } else {
         panic!("Eternum: invalid relic level");
-        0
     }
 }
 

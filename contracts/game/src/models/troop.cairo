@@ -122,7 +122,6 @@ pub impl GuardImpl of GuardTrait {
             4 => { array![GuardSlot::Delta, GuardSlot::Charlie, GuardSlot::Bravo, GuardSlot::Alpha] },
             _ => {
                 panic!("max guards is greater than 4");
-                array![]
             },
         }
     }
