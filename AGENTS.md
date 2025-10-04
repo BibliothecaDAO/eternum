@@ -47,3 +47,18 @@ Follow the active history style: concise, present-tense prefixes such as `fix:`,
 requests should outline scope, testing evidence (`pnpm lint`, `pnpm test`, local network notes), and attach screenshots
 or recordings for UI-visible changes. Flag contract migrations or schema updates explicitly so reviewers can sync their
 environments.
+
+- Break automation-table.tsx into subcomponents: AutomationForm, AutomationList, AutomationRow, and AutomationHints;
+  lift state into a local reducer or hook (useAutomationForm) that encapsulates validation and transforms.
+- Do the same for automation-transfer-table.tsx, splitting into TransferEntityPicker, TransferModeControls,
+  TransferResourceList, and TransferSummary; move large derived-data hooks (search, queries, debounce) into lib/ helpers
+  to keep JSX lean.
+- Create shared helpers (formatMinutes, resource icon groups, debounce) in src/shared/lib/time,
+  src/shared/lib/resources, etc., and replace ad-hoc implementations; document each helper with concise comments.
+
+UX/UI Plan
+
+- Map personas for “common automations” by analyzing existing template exports and high-frequency order patterns; define
+  a data structure (e.g., curated JSON) for recommended setups surfaced in UI.
+- Validate UX with usability checks (internal playtest or analytics) and iterate on copy, icons, and color cues; ensure
+  accessibility (keyboard focus, descriptive aria labels) in new components.
