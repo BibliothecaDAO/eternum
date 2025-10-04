@@ -12,7 +12,9 @@ import { ETERNUM_CONFIG } from "@/utils/config";
 import { AutomationForm } from "./ui/automation-form";
 import { AutomationHints } from "./ui/automation-hints";
 import { AutomationList } from "./ui/automation-list";
+import { CommonAutomations } from "./ui/common-automations";
 import type { ResourceOption } from "./model/use-automation-form";
+import { buildCommonAutomationPresets } from "./model/common-automations";
 
 interface AutomationTableProps {
   realmEntityId: string;
@@ -56,6 +58,16 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
   const [showHints, setShowHints] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [templateOrders, setTemplateOrders] = useState<AutomationOrderTemplate[]>([]);
+
+  const commonPresets = useMemo(
+    () =>
+      buildCommonAutomationPresets({
+        realmEntityId,
+        realmName,
+        resourceOptions,
+      }),
+    [realmEntityId, realmName, resourceOptions],
+  );
 
   if (!realmEntityId || !realmInfo) {
     return <p>Realm data not available.</p>;
@@ -107,6 +119,15 @@ export const AutomationTable: React.FC<AutomationTableProps> = ({ realmEntityId,
       </div>
 
       <AutomationHints visible={showHints} />
+
+      <CommonAutomations
+        presets={commonPresets}
+        isRealmPaused={isRealmPaused}
+        onApply={(order) => {
+          addOrder(order);
+          setShowAddForm(false);
+        }}
+      />
 
       <div className="my-4 flex items-center gap-2">
         {!showAddForm && (
