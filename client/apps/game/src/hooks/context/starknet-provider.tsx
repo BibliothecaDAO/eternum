@@ -7,6 +7,7 @@ import { useCallback } from "react";
 import { constants, shortString } from "starknet";
 import { env } from "../../../env";
 import { policies } from "./policies";
+import { useControllerAccount } from "./use-controller-account";
 
 const preset: string = "eternum";
 const slot: string = env.VITE_PUBLIC_SLOT;
@@ -105,7 +106,7 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
     return { nodeUrl: env.VITE_PUBLIC_NODE_URL };
   }, []);
 
-  let { connectors: predeployedConnectors } = usePredeployedAccounts({
+  const { connectors: predeployedConnectors } = usePredeployedAccounts({
     rpc: env.VITE_PUBLIC_NODE_URL as string,
     id: "katana",
     name: "Katana",
@@ -132,7 +133,13 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
       explorer={voyager}
       autoConnect
     >
-      {children}
+      <StarknetAccountSync>{children}</StarknetAccountSync>
     </StarknetConfig>
   );
 }
+
+const StarknetAccountSync = ({ children }: { children: React.ReactNode }) => {
+  useControllerAccount();
+
+  return <>{children}</>;
+};

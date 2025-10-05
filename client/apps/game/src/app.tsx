@@ -29,20 +29,18 @@ type ReadyAppProps = {
 
 const ReadyApp = ({ backgroundImage, setupResult }: ReadyAppProps) => {
   return (
-    <StarknetProvider>
-      <DojoProvider value={setupResult} backgroundImage={backgroundImage}>
-        <MetagameProvider>
-          <ErrorBoundary>
-            <StoryEventToastProvider>
-              <StoryEventToastBridge />
-              <TransactionNotification />
-              <World backgroundImage={backgroundImage} />
-              <WorldLoading />
-            </StoryEventToastProvider>
-          </ErrorBoundary>
-        </MetagameProvider>
-      </DojoProvider>
-    </StarknetProvider>
+    <DojoProvider value={setupResult} backgroundImage={backgroundImage}>
+      <MetagameProvider>
+        <ErrorBoundary>
+          <StoryEventToastProvider>
+            <StoryEventToastBridge />
+            <TransactionNotification />
+            <World backgroundImage={backgroundImage} />
+            <WorldLoading />
+          </StoryEventToastProvider>
+        </ErrorBoundary>
+      </MetagameProvider>
+    </DojoProvider>
   );
 };
 
@@ -137,13 +135,15 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<LandingLayout backgroundImage={backgroundImage} />} />
-        <Route path="/play/*" element={<GameRoute backgroundImage={backgroundImage} />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <StarknetProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<LandingLayout backgroundImage={backgroundImage} />} />
+          <Route path="/play/*" element={<GameRoute backgroundImage={backgroundImage} />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </StarknetProvider>
   );
 }
 
