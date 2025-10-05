@@ -3,11 +3,13 @@ import { usePredeployedAccounts } from "@dojoengine/predeployed-connector/react"
 import { Chain, getSlotChain, mainnet, sepolia } from "@starknet-react/chains";
 import { Connector, StarknetConfig, jsonRpcProvider, paymasterRpcProvider, voyager } from "@starknet-react/core";
 import type React from "react";
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { constants, shortString } from "starknet";
 import { env } from "../../../env";
 import { policies } from "./policies";
 import { useControllerAccount } from "./use-controller-account";
+import { useAccountStore } from "../store/use-account-store";
+import { bootstrapGame } from "../../init/bootstrap";
 
 const preset: string = "eternum";
 const slot: string = env.VITE_PUBLIC_SLOT;
@@ -140,6 +142,25 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
 
 const StarknetAccountSync = ({ children }: { children: React.ReactNode }) => {
   useControllerAccount();
+  useBootstrapPrefetch();
 
   return <>{children}</>;
+};
+
+const useBootstrapPrefetch = () => {
+  const account = useAccountStore((state) => state.account);
+  const hasPrefetchedRef = useRef(false);
+
+  useEffect(() => {
+    if (!account || hasPrefetchedRef.current) {
+      return;
+    }
+
+    hasPrefetchedRef.current = true;
+
+    void bootstrapGame().catch((error) => {
+      console.error("[BOOTSTRAP PREFETCH FAILED]", error);
+      hasPrefetchedRef.current = false;
+    });
+  }, [account]);
 };
