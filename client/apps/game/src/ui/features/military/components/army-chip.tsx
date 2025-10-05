@@ -14,7 +14,7 @@ import { ActorType, ArmyInfo, RelicRecipientType, TroopTier, TroopType } from "@
 import { useComponentValue } from "@dojoengine/react";
 import { ArrowLeftRight, CirclePlus, LucideArrowRight } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ArmyManagementCard } from "./army-management-card";
 import { HelpModal } from "./help-modal";
 import { TroopChip } from "./troop-chip";
@@ -79,10 +79,11 @@ export const ArmyChip = ({
   const isHome = army.isHome;
   const hasAdjacentOwnedStructure = army.hasAdjacentStructure;
 
-  const [location] = useLocation();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { hexPosition } = useQuery();
 
-  const isOnMap = useMemo(() => location.includes("map"), [location]);
+  const isOnMap = useMemo(() => location.pathname.includes("/play"), [location.pathname]);
 
   const resources = useComponentValue(components.Resource, getEntityIdFromKeys([BigInt(army.entityId)]));
 
@@ -196,6 +197,11 @@ export const ArmyChip = ({
                           <ViewOnMapIcon
                             className="w-5 h-5 hover:scale-110 transition-all duration-300 cursor-pointer"
                             position={new Position({ x: Number(army.position.x), y: Number(army.position.y) })}
+                            onClick={() => {
+                              if (!isOnMap) {
+                                navigate("/play/map");
+                              }
+                            }}
                           />
                         }
                         {isOnMap && <NavigateToPositionIcon position={new Position(army.position)} />}

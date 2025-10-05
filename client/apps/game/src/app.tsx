@@ -2,24 +2,25 @@ import { initPostHog } from "@/posthog";
 import { cleanupTracing } from "@/tracing";
 import { ErrorBoundary, TransactionNotification, WorldLoading } from "@/ui/shared";
 import { useEffect, useState } from "react";
-
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { env } from "../env";
 import { DojoProvider } from "./hooks/context/dojo-context";
 import { MetagameProvider } from "./hooks/context/metagame-provider";
 import { StarknetProvider } from "./hooks/context/starknet-provider";
 import "./index.css";
+import type { SetupResult } from "./init/bootstrap";
 import { bootstrapGame } from "./init/bootstrap";
 import { initializeServiceWorkerUpdates } from "./init/service-worker";
 import { IS_MOBILE } from "./ui/config";
 import { StoryEventToastBridge, StoryEventToastProvider } from "./ui/features/story-events";
+import { LandingLayout } from "./ui/layouts/landing";
 import { World } from "./ui/layouts/world";
 import { ConstructionGate } from "./ui/modules/construction-gate";
 import { LoadingScreen } from "./ui/modules/loading-screen";
 import { MobileBlocker } from "./ui/modules/mobile-blocker";
 import { getRandomBackgroundImage } from "./ui/utils/utils";
-import type { SetupResult } from "./init/bootstrap";
 
-type AppStatus = "construction" | "mobile-blocked" | "loading" | "ready" | "error";
+type GameRouteStatus = "loading" | "ready" | "error";
 
 type ReadyAppProps = {
   backgroundImage: string;
@@ -63,18 +64,52 @@ const BootstrapError = ({ error, onReload }: { error?: Error | null; onReload: (
   );
 };
 
+const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
+  const [status, setStatus] = useState<GameRouteStatus>("loading");
+  const [setupResult, setSetupResult] = useState<SetupResult | null>(null);
+  const [bootstrapError, setBootstrapError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    setStatus("loading");
+    setBootstrapError(null);
+    setSetupResult(null);
+
+    bootstrapGame()
+      .then((result) => {
+        if (isCancelled) return;
+        setSetupResult(result);
+        setStatus("ready");
+      })
+      .catch((error: unknown) => {
+        if (isCancelled) return;
+        console.error("[DOJO SETUP FAILED]", error);
+        const normalizedError = error instanceof Error ? error : new Error("Unknown bootstrap error");
+        setBootstrapError(normalizedError);
+        setStatus("error");
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  if (status === "error") {
+    return <BootstrapError error={bootstrapError} onReload={() => window.location.reload()} />;
+  }
+
+  if (status === "loading" || !setupResult) {
+    return <LoadingScreen backgroundImage={backgroundImage} />;
+  }
+
+  return <ReadyApp backgroundImage={backgroundImage} setupResult={setupResult} />;
+};
+
 function App() {
   const isConstructionMode = env.VITE_PUBLIC_CONSTRUCTION_FLAG == true;
   const isMobileBlocked = !isConstructionMode && IS_MOBILE;
-
-  const [status, setStatus] = useState<AppStatus>(() => {
-    if (isConstructionMode) return "construction";
-    if (isMobileBlocked) return "mobile-blocked";
-    return "loading";
-  });
   const [backgroundImage] = useState(() => getRandomBackgroundImage());
-  const [setupResult, setSetupResult] = useState<SetupResult | null>(null);
-  const [bootstrapError, setBootstrapError] = useState<Error | null>(null);
 
   useEffect(() => {
     initPostHog();
@@ -93,59 +128,23 @@ function App() {
     };
   }, []);
 
-  useEffect(() => {
-    if (isConstructionMode || isMobileBlocked) {
-      return;
-    }
-
-    let isCancelled = false;
-
-    setStatus("loading");
-    setBootstrapError(null);
-
-    bootstrapGame()
-      .then((result) => {
-        if (isCancelled) return;
-
-        setSetupResult(result);
-        setStatus("ready");
-      })
-      .catch((error: unknown) => {
-        if (isCancelled) return;
-
-        console.error("[DOJO SETUP FAILED]", error);
-
-        const normalizedError = error instanceof Error ? error : new Error("Unknown bootstrap error");
-        setBootstrapError(normalizedError);
-        setStatus("error");
-      });
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [isConstructionMode, isMobileBlocked]);
-
-  if (status === "construction") {
+  if (isConstructionMode) {
     return <ConstructionGate />;
   }
 
-  if (status === "mobile-blocked") {
+  if (isMobileBlocked) {
     return <MobileBlocker mobileVersionUrl={env.VITE_PUBLIC_MOBILE_VERSION_URL} />;
   }
 
-  if (status === "loading") {
-    return <LoadingScreen backgroundImage={backgroundImage} />;
-  }
-
-  if (status === "error") {
-    return <BootstrapError error={bootstrapError} onReload={() => window.location.reload()} />;
-  }
-
-  if (!setupResult) {
-    return <LoadingScreen backgroundImage={backgroundImage} />;
-  }
-
-  return <ReadyApp backgroundImage={backgroundImage} setupResult={setupResult} />;
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<LandingLayout backgroundImage={backgroundImage} />} />
+        <Route path="/play/*" element={<GameRoute backgroundImage={backgroundImage} />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
 export default App;
