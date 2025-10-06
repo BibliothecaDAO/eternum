@@ -83,10 +83,7 @@ export function Layout() {
         <Header />
         <main className={`flex-1 pb-20 ${!isHomePage ? "pt-0" : ""} relative`}>
           {/* Persistent Three.js Canvas - always rendered but optimized for visibility */}
-          <div
-            className={`absolute inset-0 ${isWorldmapPage ? "z-0" : "z-[-1] pointer-events-none opacity-0"}`}
-            style={{ display: isWorldmapPage ? "block" : "none" }}
-          >
+          <div className={`absolute inset-0 ${isWorldmapPage ? "z-0" : "z-[-1] pointer-events-none opacity-0"}`}>
             <ThreeCanvas
               ref={canvasRef}
               onReady={handleCanvasReady}

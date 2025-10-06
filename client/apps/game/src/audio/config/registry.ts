@@ -805,6 +805,146 @@ export const AUDIO_REGISTRY: Record<string, AudioAsset> = {
     loop: true,
     volume: 1.0,
   },
+
+  // === AMBIENT/ENVIRONMENTAL SOUNDS ===
+  // Birds - Morning/Day variations
+  "ambient.birds.morning.1": {
+    id: "ambient.birds.morning.1",
+    url: "/sound/ambient/birds_morning_1.mp3",
+    category: AudioCategory.AMBIENT,
+    priority: 5,
+    poolSize: 1,
+    spatial: false,
+    loop: true,
+    volume: 0.4,
+  },
+  "ambient.birds.morning.2": {
+    id: "ambient.birds.morning.2",
+    url: "/sound/ambient/birds_morning_2.mp3",
+    category: AudioCategory.AMBIENT,
+    priority: 5,
+    poolSize: 1,
+    spatial: false,
+    loop: true,
+    volume: 0.4,
+  },
+  "ambient.birds.morning.3": {
+    id: "ambient.birds.morning.3",
+    url: "/sound/ambient/birds_morning_3.mp3",
+    category: AudioCategory.AMBIENT,
+    priority: 5,
+    poolSize: 1,
+    spatial: false,
+    loop: true,
+    volume: 0.4,
+  },
+
+  // Crickets - Night variations
+  "ambient.crickets.night.1": {
+    id: "ambient.crickets.night.1",
+    url: "/sound/ambient/crickets_night_1.mp3",
+    category: AudioCategory.AMBIENT,
+    priority: 5,
+    poolSize: 1,
+    spatial: false,
+    loop: true,
+    volume: 0.35,
+  },
+
+  // Wolves - Night variations (random intervals)
+  "ambient.wolves.night.1": {
+    id: "ambient.wolves.night.1",
+    url: "/sound/ambient/wolves_night_1.mp3",
+    category: AudioCategory.AMBIENT,
+    priority: 4,
+    poolSize: 1,
+    spatial: false,
+    loop: false,
+    volume: 0.3,
+  },
+  "ambient.wolves.night.2": {
+    id: "ambient.wolves.night.2",
+    url: "/sound/ambient/wolves_night_2.mp3",
+    category: AudioCategory.AMBIENT,
+    priority: 4,
+    poolSize: 1,
+    spatial: false,
+    loop: false,
+    volume: 0.3,
+  },
+
+  // Wind - Day variations
+  "ambient.wind.day.1": {
+    id: "ambient.wind.day.1",
+    url: "/sound/ambient/wind_day_1.mp3",
+    category: AudioCategory.AMBIENT,
+    priority: 5,
+    poolSize: 1,
+    spatial: false,
+    loop: true,
+    volume: 0.25,
+  },
+  "ambient.wind.day.2": {
+    id: "ambient.wind.day.2",
+    url: "/sound/ambient/wind_day_2.mp3",
+    category: AudioCategory.AMBIENT,
+    priority: 5,
+    poolSize: 1,
+    spatial: false,
+    loop: true,
+    volume: 0.25,
+  },
+  "ambient.rain.light": {
+    id: "ambient.rain.light",
+    url: "/sound/ambient/rain_heavy.mp3", // Using rain_heavy as placeholder
+    category: AudioCategory.ENVIRONMENT,
+    priority: 6,
+    poolSize: 1,
+    spatial: false,
+    loop: true,
+    volume: 0.3, // Reduced volume to simulate lighter rain
+  },
+  "ambient.rain.heavy": {
+    id: "ambient.rain.heavy",
+    url: "/sound/ambient/rain_heavy.mp3",
+    category: AudioCategory.ENVIRONMENT,
+    priority: 6,
+    poolSize: 1,
+    spatial: false,
+    loop: true,
+    volume: 0.6,
+  },
+  // Thunder - Storm variations (random intervals)
+  "ambient.thunder.distant.1": {
+    id: "ambient.thunder.distant.1",
+    url: "/sound/ambient/thunder_distant_1.mp3",
+    category: AudioCategory.ENVIRONMENT,
+    priority: 5,
+    poolSize: 1,
+    spatial: false,
+    loop: false,
+    volume: 0.4,
+  },
+  "ambient.thunder.distant.2": {
+    id: "ambient.thunder.distant.2",
+    url: "/sound/ambient/thunder_distant_2.mp3",
+    category: AudioCategory.ENVIRONMENT,
+    priority: 5,
+    poolSize: 1,
+    spatial: false,
+    loop: false,
+    volume: 0.4,
+  },
+  "ambient.thunder.distant.3": {
+    id: "ambient.thunder.distant.3",
+    url: "/sound/ambient/thunder_distant_3.mp3",
+    category: AudioCategory.ENVIRONMENT,
+    priority: 5,
+    poolSize: 1,
+    spatial: false,
+    loop: false,
+    volume: 0.4,
+  },
 };
 
 export function getAudioAsset(id: string): AudioAsset | undefined {

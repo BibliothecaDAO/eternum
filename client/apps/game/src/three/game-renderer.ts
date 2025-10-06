@@ -79,6 +79,7 @@ export default class GameRenderer {
   private graphicsSetting: GraphicsSettings;
   private cleanupIntervals: NodeJS.Timeout[] = [];
   private environmentTarget?: WebGLRenderTarget;
+  private unsubscribeEnableMapZoom?: () => void;
 
   constructor(dojoContext: SetupResult) {
     this.graphicsSetting = GRAPHICS_SETTING;
@@ -379,7 +380,7 @@ export default class GameRenderer {
     this.controls.listenToKeyEvents(document.body);
 
     // Subscribe to zoom setting changes
-    useUIStore.subscribe(
+    this.unsubscribeEnableMapZoom = useUIStore.subscribe(
       (state) => state.enableMapZoom,
       (enableMapZoom) => {
         console.log(`[GameRenderer] Zoom setting changed to: ${enableMapZoom}`);
@@ -791,7 +792,8 @@ export default class GameRenderer {
     }
     this.composer.render();
     // Render the HUD scene without clearing the buffer
-    this.hudScene.update(deltaTime);
+    const cycleProgress = useUIStore.getState().cycleProgress || 0;
+    this.hudScene.update(deltaTime, cycleProgress);
     this.renderer.clearDepth(); // Clear only the depth buffer
     this.renderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
     this.labelRenderer.render(this.hudScene.getScene(), this.hudScene.getCamera());
@@ -813,6 +815,11 @@ export default class GameRenderer {
     this.isDestroyed = true;
 
     try {
+      if (this.unsubscribeEnableMapZoom) {
+        this.unsubscribeEnableMapZoom();
+        this.unsubscribeEnableMapZoom = undefined;
+      }
+
       // Clean up intervals
       if (this.cleanupIntervals) {
         this.cleanupIntervals.forEach((interval) => clearInterval(interval));

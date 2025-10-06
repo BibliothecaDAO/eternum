@@ -7,8 +7,8 @@ import { Leva } from "leva";
 import { lazy, Suspense, useEffect } from "react";
 import { env } from "../../../env";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
-import { BlitzSetHyperstructureShareholdersTo100 } from "../features/world/components/hyperstructures/blitz-hyperstructure-shareholder";
 import { StoryEventStream } from "../features/story-events";
+import { BlitzSetHyperstructureShareholdersTo100 } from "../features/world/components/hyperstructures/blitz-hyperstructure-shareholder";
 import { StoreManagers } from "../store-managers";
 
 // Lazy load components
@@ -35,11 +35,7 @@ const WorldContextMenu = lazy(() =>
 const BlankOverlayContainer = lazy(() =>
   import("../shared/containers/blank-overlay-container").then((module) => ({ default: module.BlankOverlayContainer })),
 );
-// const EntitiesInfoLabel = lazy(() =>
-//   import("../features/world/components/entities/entities-label").then((module) => ({
-//     default: module.EntitiesLabel,
-//   })),
-// );
+
 const TopCenterContainer = lazy(() => import("../shared/containers/top-center-container"));
 const BottomRightContainer = lazy(() =>
   import("../shared/containers/bottom-right-container").then((module) => ({ default: module.BottomRightContainer })),
@@ -85,10 +81,75 @@ const RealmTransferManager = lazy(() =>
   })),
 );
 
-const StructureSynchronizerManager = () => {
+export const World = ({ backgroundImage }: { backgroundImage: string }) => {
+  const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
+
+  return (
+    <>
+      <WorldEffects />
+
+      {/* Main world layer */}
+      <div
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+        }}
+        onMouseMove={(e) => {
+          e.stopPropagation();
+        }}
+        id="world"
+        className="world-selector fixed antialiased top-0 left-0 z-0 w-screen h-screen overflow-hidden ornate-borders pointer-events-none"
+      >
+        <div className="vignette" />
+
+        <Suspense fallback={<WorldSuspenseFallback backgroundImage={backgroundImage} />}>
+          <RealmTransferManager zIndex={100} />
+
+          <WorldOverlays backgroundImage={backgroundImage} />
+          <WorldInteractiveLayers />
+
+          <LoadingOroborus loading={isLoadingScreenEnabled} />
+
+          <StoryEventStream />
+
+          <Leva hidden={!env.VITE_PUBLIC_GRAPHICS_DEV} collapsed titleBar={{ position: { x: 0, y: 50 } }} />
+          <Tooltip />
+          <VersionDisplay />
+          <div id="labelrenderer" className="absolute top-0 pointer-events-none z-10" />
+        </Suspense>
+      </div>
+    </>
+  );
+};
+
+const WorldEffects = () => (
+  <>
+    <StoreManagers />
+    <StructureSynchronizer />
+    <NotLoggedInMessage />
+    <GameWinnerMessage />
+    <BlitzSetHyperstructureShareholdersTo100 />
+    <AutomationManager />
+  </>
+);
+
+const StructureSynchronizer = () => {
   useSyncPlayerStructures();
   return null;
 };
+
+const WorldSuspenseFallback = ({ backgroundImage }: { backgroundImage: string }) => (
+  <LoadingScreen backgroundImage={backgroundImage} />
+);
+
+const WorldOverlays = ({ backgroundImage }: { backgroundImage: string }) => (
+  <>
+    <ModalOverlay />
+    <BlankOverlay backgroundImage={backgroundImage} />
+  </>
+);
 
 // Modal component to prevent unnecessary World re-renders
 const ModalOverlay = () => {
@@ -122,8 +183,7 @@ const ModalOverlay = () => {
   );
 };
 
-// Blank overlay component for onboarding
-const OnboardingOverlay = ({ backgroundImage }: { backgroundImage: string }) => {
+const BlankOverlay = ({ backgroundImage }: { backgroundImage: string }) => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
 
   return (
@@ -135,90 +195,42 @@ const OnboardingOverlay = ({ backgroundImage }: { backgroundImage: string }) => 
   );
 };
 
-export const World = ({ backgroundImage }: { backgroundImage: string }) => {
-  const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
+const WorldInteractiveLayers = () => (
+  <>
+    <ActionInstructions />
+    <ActionInfo />
+    <WorldContextMenu />
+    <WorldHud />
+  </>
+);
 
-  // keep this here to see if it's rerendering
-  console.log("rerender World");
+const WorldHud = () => (
+  <div>
+    <LeftMiddleContainer>
+      <LeftNavigationModule />
+    </LeftMiddleContainer>
 
-  return (
-    <>
-      <StoreManagers />
-      <StructureSynchronizerManager />
-      <NotLoggedInMessage />
-      <GameWinnerMessage />
-      <BlitzSetHyperstructureShareholdersTo100 />
-      <AutomationManager />
+    <TopCenterContainer>
+      <TopMiddleNavigation />
+    </TopCenterContainer>
 
-      {/* Main world layer */}
-      <div
-        onClick={(e) => {
-          e.stopPropagation();
-        }}
-        onDoubleClick={(e) => {
-          e.stopPropagation();
-        }}
-        onMouseMove={(e) => {
-          e.stopPropagation();
-        }}
-        id="world"
-        className="world-selector fixed antialiased top-0 left-0 z-0 w-screen h-screen overflow-hidden ornate-borders pointer-events-none"
-      >
-        <div className="vignette" />
+    <BottomMiddleContainer>
+      <SelectedArmy />
+    </BottomMiddleContainer>
 
-        <Suspense fallback={<LoadingScreen backgroundImage={backgroundImage} />}>
-          <RealmTransferManager zIndex={100} />
+    <BottomRightContainer>
+      <MiniMapNavigation />
+    </BottomRightContainer>
 
-          {/* Extracted modal components */}
-          <ModalOverlay />
-          <OnboardingOverlay backgroundImage={backgroundImage} />
+    <RightMiddleContainer>
+      <RightNavigationModule />
+    </RightMiddleContainer>
 
-          <ActionInstructions />
-          <ActionInfo />
-          <WorldContextMenu />
-          {/* <EntitiesInfoLabel /> */}
-
-          <div>
-            <LeftMiddleContainer>
-              <LeftNavigationModule />
-            </LeftMiddleContainer>
-
-            <TopCenterContainer>
-              <TopMiddleNavigation />
-            </TopCenterContainer>
-
-            <BottomMiddleContainer>
-              <SelectedArmy />
-            </BottomMiddleContainer>
-
-            <BottomRightContainer>
-              <MiniMapNavigation />
-            </BottomRightContainer>
-
-            <RightMiddleContainer>
-              <RightNavigationModule />
-            </RightMiddleContainer>
-
-            <TopLeftContainer>
-              <TopLeftNavigation />
-            </TopLeftContainer>
-          </div>
-
-          <LoadingOroborus loading={isLoadingScreenEnabled} />
-
-          <StoryEventStream />
-
-          {/* todo: put this somewhere else maybe ? */}
-          {/* <Redirect to="/" /> */}
-          <Leva hidden={!env.VITE_PUBLIC_GRAPHICS_DEV} collapsed titleBar={{ position: { x: 0, y: 50 } }} />
-          <Tooltip />
-          <VersionDisplay />
-          <div id="labelrenderer" className="absolute top-0 pointer-events-none z-10" />
-        </Suspense>
-      </div>
-    </>
-  );
-};
+    <TopLeftContainer>
+      <TopLeftNavigation />
+    </TopLeftContainer>
+  </div>
+);
 
 const VersionDisplay = () => (
   <div className="absolute bottom-4 right-6 text-xs text-white/60 hover:text-white pointer-events-auto bg-white/20 rounded-lg p-1">

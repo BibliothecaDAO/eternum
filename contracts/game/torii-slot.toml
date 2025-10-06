@@ -2,7 +2,7 @@
 
 rpc = "https://api.cartridge.gg/x/eternum-blitz-slot-1/katana"
 
-world_address = "0x1c7df55659149bd7f9b232d749b05f06ce819ed411fd49cb265d46ac33b593"
+world_address = "0x38b3c568140a4fc2444d0e26953bdf7b798e8ead70511eed8d904ddf01632cb"
 
 db_dir = "torii-slot"
 
@@ -22,6 +22,7 @@ contracts = [
 	"erc721:0x432531b2276e32aa5b82ae095e6694d68f49a2c82f2ee8b406f681ec3826c8b",
 	"erc721:0x432531b2276e32aa5b82ae095e6694d68f49a2c82f2ee8b406f681ec3826c8b",
 	"erc721:0x56502f7cf5847c0a4d4d0d0a37fa02e104d637f278564ce2e85fcd9edd7d27a",
+	"erc721:0x5c49a7c26b90adf382572e85332865f7cc5b58bf8a17aebaabe1eba9b496489",
 	"erc20:0x3acbe76476cbf8997397878c52ce1acdf90ed1c295907f6505d3ff4c1646afa",
 ]
 

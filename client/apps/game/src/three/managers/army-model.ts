@@ -372,7 +372,7 @@ export class ArmyModel {
 
       this.ensureModelCapacity(modelData, index + 1);
       this.updateInstanceTransform(state.position, targetScale, state.rotation);
-      this.updateInstanceMeshes(modelData, index, state.color);
+      this.updateInstanceMeshes(modelData, index, entityId, state.color);
     });
   }
 
@@ -424,7 +424,7 @@ export class ArmyModel {
     this.dummyObject.updateMatrix();
   }
 
-  private updateInstanceMeshes(modelData: ModelData, index: number, color?: Color): void {
+  private updateInstanceMeshes(modelData: ModelData, index: number, entityId: number, color?: Color): void {
     modelData.instancedMeshes.forEach((mesh) => {
       mesh.setMatrixAt(index, this.dummyObject.matrix);
       mesh.instanceMatrix.needsUpdate = true;
@@ -434,8 +434,8 @@ export class ArmyModel {
         mesh.instanceColor.needsUpdate = true;
       }
 
-      mesh.userData.entityIdMap = mesh.userData.entityIdMap || new Map();
-      mesh.userData.entityIdMap.set(index, index);
+      mesh.userData.entityIdMap = mesh.userData.entityIdMap || new Map<number, number>();
+      mesh.userData.entityIdMap.set(index, entityId);
     });
   }
 

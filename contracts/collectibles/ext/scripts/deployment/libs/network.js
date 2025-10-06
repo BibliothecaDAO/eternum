@@ -30,6 +30,13 @@ const NETWORKS = {
     feeder_gateway_url: process.env.STARKNET_RPC + "/feeder_gateway",
     gateway_url: process.env.STARKNET_RPC + "/gateway",
   },
+  slottest: {
+    name: "slottest",
+    explorer_url: "https://slottest.voyager.online",
+    rpc_url: process.env.STARKNET_RPC,
+    feeder_gateway_url: process.env.STARKNET_RPC + "/feeder_gateway",
+    gateway_url: process.env.STARKNET_RPC + "/gateway",
+  },
 };
 
 export const getNetwork = (network) => {

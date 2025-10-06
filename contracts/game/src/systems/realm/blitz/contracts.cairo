@@ -1,10 +1,9 @@
 use s1_eternum::alias::ID;
-use starknet::ContractAddress;
 
 #[starknet::interface]
 pub trait IBlitzRealmSystems<T> {
     fn obtain_entry_token(ref self: T);
-    fn register(ref self: T, name: felt252, token_id: u128);
+    fn register(ref self: T, name: felt252, entry_token_id: u128, cosmetic_token_ids: Span<u128>);
     fn make_hyperstructures(ref self: T, count: u8);
     fn create(ref self: T) -> Array<ID>;
 }
@@ -23,7 +22,7 @@ pub mod blitz_realm_systems {
         BlitzHypersSettlementConfig, BlitzHypersSettlementConfigImpl, BlitzRealmPlayerRegister, BlitzEntryTokenRegister,
         BlitzRealmPositionRegister, BlitzRegistrationConfig, BlitzRegistrationConfigImpl, BlitzSettlementConfig,
         BlitzSettlementConfigImpl, MapConfig, RealmCountConfig, SeasonConfigImpl, TroopLimitConfig, TroopStaminaConfig,
-        WorldConfigUtilImpl,
+        WorldConfigUtilImpl, BlitzCosmeticAttrsRegister
     };
     use s1_eternum::models::events::{RealmCreatedStory, Story, StoryEvent};
     use s1_eternum::models::map::TileImpl;
@@ -45,9 +44,10 @@ pub mod blitz_realm_systems {
     use s1_eternum::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
     use s1_eternum::systems::utils::realm::iRealmImpl;
     use s1_eternum::systems::utils::structure::iStructureImpl;
+    use s1_eternum::utils::collectibles::iCollectiblesImpl;
     use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
     use crate::systems::prize_distribution::contracts::prize_distribution_systems;
-    use crate::utils::interfaces::blitz_entry_token::{IBlitzEntryTokenDispatcher, IBlitzEntryTokenDispatcherTrait};
+    use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
     use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 
     #[derive(Copy, Drop, Serde)]
@@ -86,7 +86,7 @@ pub mod blitz_realm_systems {
 
 
                 // mint entry erc721 token
-                let entry_token_contract = IBlitzEntryTokenDispatcher {
+                let entry_token_contract = ICollectibleDispatcher {
                     contract_address: blitz_registration_config.entry_token_address,
                 };
                 entry_token_contract.mint(caller, blitz_registration_config.entry_token_attrs_raw());
@@ -104,14 +104,15 @@ pub mod blitz_realm_systems {
 
         // Register for the game and pay the registration fee
         // Owner is the address that is going to own the realm
-        fn register(ref self: ContractState, name: felt252, token_id: u128) {
+        fn register(ref self: ContractState, name: felt252, entry_token_id: u128, cosmetic_token_ids: Span<u128>) {
 
             // todo ensure owner is a cartridge controller address
             assert!(name.is_non_zero(), "Eternum: Name cannot be empty");
 
             // check that season is still active
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world).assert_settling_started_and_not_over();
+            let season_config = SeasonConfigImpl::get(world);
+            season_config.assert_settling_started_and_not_over();
 
             let mut blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
                 world, selector!("blitz_registration_config"),
@@ -130,10 +131,10 @@ pub mod blitz_realm_systems {
             // if there is a required fee amount, ensure token is locked  
             if blitz_registration_config.fee_amount.is_non_zero() {
 
-                let entry_token_contract = IBlitzEntryTokenDispatcher {
+                let entry_token_contract = ICollectibleDispatcher {
                     contract_address: blitz_registration_config.entry_token_address,
                 };
-                let (lock_id, _) = entry_token_contract.token_lock_state(token_id.into());
+                let (lock_id, _) = entry_token_contract.token_lock_state(entry_token_id.into());
                 assert!(
                     lock_id.is_non_zero() 
                     && lock_id == blitz_registration_config.entry_token_lock_id(),
@@ -141,9 +142,9 @@ pub mod blitz_realm_systems {
                 );
 
                 // ensure token cant be reused
-                let entry_token_register: BlitzEntryTokenRegister = world.read_model(token_id);
+                let entry_token_register: BlitzEntryTokenRegister = world.read_model(entry_token_id);
                 assert!(!entry_token_register.registered, "Eternum: Entry token has already been used");
-                world.write_model(@BlitzEntryTokenRegister { token_id: token_id, registered: true } );
+                world.write_model(@BlitzEntryTokenRegister { token_id: entry_token_id, registered: true } );
             }
 
             // ensure that the player is not already registered
@@ -160,6 +161,47 @@ pub mod blitz_realm_systems {
             WorldConfigUtilImpl::set_member(
                 ref world, selector!("blitz_registration_config"), blitz_registration_config,
             );
+
+
+            ////////////////////////////////////////////////
+            /// Register player's cosmetic items
+            ////////////////////////////////////////////////
+            
+            // create lock if registration_count is 1
+            let collectibles_lock_id: u64 = season_config.end_at;
+            let collectibles_cosmetics_address = blitz_registration_config.collectibles_cosmetics_address;
+            let collectibles_timelock_address = blitz_registration_config.collectibles_timelock_address;
+            if collectibles_cosmetics_address.is_non_zero() && collectibles_timelock_address.is_non_zero() {
+                if blitz_registration_config.registration_count == 1 {
+                    iCollectiblesImpl::create_lock(
+                        collectibles_timelock_address,
+                        collectibles_cosmetics_address,
+                        collectibles_lock_id
+                    );
+                }
+
+                // ensure all token ids are locked and retrieve their attributes
+                if cosmetic_token_ids.len() > 0 {
+                    let player_cosmetic_attrs 
+                        = iCollectiblesImpl::ensure_locked_and_retrieve_attrs(
+                            collectibles_cosmetics_address,
+                            owner,
+                            cosmetic_token_ids,
+                            collectibles_lock_id.into(),
+                            blitz_registration_config.collectibles_cosmetics_max
+                        );
+
+                    world.write_model(
+                        @BlitzCosmeticAttrsRegister {
+                            player: starknet::get_caller_address(),
+                            attrs: player_cosmetic_attrs,
+                        }
+                    );
+                }
+            }
+
+
+
 
             ////////////////////////////////////////////////
             /// Generate the next 3 possible spawn points

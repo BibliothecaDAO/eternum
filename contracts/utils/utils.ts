@@ -14,6 +14,8 @@ import slottestGameManifest from "../../contracts/game/manifest_slottest.json";
  * @interface SeasonAddresses
  */
 export interface SeasonAddresses {
+  "Collectibles: Realms: Cosmetic Items": string;
+  "Collectibles: Timelock Maker": string;
   /** Class hash of the collectibles ERC721 contract */
   collectiblesClassHash?: string;
   /** Address of the village pass contract */
@@ -57,7 +59,7 @@ export function getSeasonAddresses(chain: Chain): SeasonAddresses {
       case "slottest":
         return slottestSeasonAddresses;
       case "local":
-        return localSeasonAddresses;
+        return localSeasonAddresses as any;
       default:
         throw new Error(`Invalid chain: ${chain}`);
     }
