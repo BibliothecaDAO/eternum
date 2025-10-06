@@ -128,7 +128,7 @@ export const LandingLayout = ({ backgroundImage }: LandingLayoutProps) => {
       <div className="relative z-10 flex min-h-screen flex-col">
         <header className="flex flex-col gap-6 px-6 py-6 lg:px-10">
           <nav aria-label="Landing sections" className="flex justify-center">
-            <div className="flex flex-wrap gap-2 rounded-full border border-white/10 bg-black/50 p-1 backdrop-blur">
+            <div className="flex flex-wrap gap-2 rounded-full border border-white/10 bg-black/50 panel-wood p-1 backdrop-blur">
               {SECTIONS.map((section) => (
                 <NavLink
                   key={section.path}
@@ -136,8 +136,9 @@ export const LandingLayout = ({ backgroundImage }: LandingLayoutProps) => {
                   end={section.path === "/"}
                   className={({ isActive }) =>
                     clsx(
-                      "rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60",
-                      isActive ? "bg-white/20 text-white" : "text-white/70 hover:text-white",
+                      "px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60",
+
+                      isActive ? "bg-gold/5 " : " hover:bg-gold/5 text-gold/50",
                     )
                   }
                 >

@@ -6,7 +6,7 @@ import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import type { SetupResult } from "@bibliothecadao/dojo";
 import { getIsBlitz, StructureTileSystemUpdate } from "@bibliothecadao/eternum";
 import { BuildingType, ClientComponents, FELT_CENTER, ID, RelicEffect, StructureType } from "@bibliothecadao/types";
-import { Group, Object3D, Scene, Vector3 } from "three";
+import { Euler, Group, Object3D, Scene, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { GuardArmy } from "../../../../../../packages/core/src/stores/map-data-store";
 import { StructureInfo } from "../types";
@@ -17,7 +17,12 @@ import { createStructureLabel, updateStructureLabel } from "../utils/labels/labe
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { FXManager } from "./fx-manager";
-import { playerCosmeticsStore, resolveStructureCosmetic } from "../cosmetics";
+import {
+  CosmeticAttachmentManager,
+  playerCosmeticsStore,
+  resolveStructureCosmetic,
+} from "../cosmetics";
+import type { CosmeticAttachmentTemplate } from "../cosmetics";
 
 const INITIAL_STRUCTURE_CAPACITY = 64;
 const WONDER_MODEL_INDEX = 4;
@@ -74,6 +79,11 @@ export class StructureManager {
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private battleTimerInterval: NodeJS.Timeout | null = null; // Timer for updating battle countdown
   private unsubscribeAccountStore?: () => void;
+  private attachmentManager: CosmeticAttachmentManager;
+  private structureAttachmentSignatures: Map<number, string> = new Map();
+  private activeStructureAttachmentEntities: Set<number> = new Set();
+  private readonly tempCosmeticPosition: Vector3 = new Vector3();
+  private readonly tempCosmeticRotation: Euler = new Euler();
 
   constructor(
     scene: Scene,
@@ -91,6 +101,7 @@ export class StructureManager {
     this.hexagonScene = hexagonScene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.fxManager = fxManager || new FXManager(scene);
+    this.attachmentManager = new CosmeticAttachmentManager(scene);
     this.components = dojoContext?.components as ClientComponents | undefined;
     this.applyPendingRelicEffectsCallback = applyPendingRelicEffectsCallback;
     this.clearPendingRelicEffectsCallback = clearPendingRelicEffectsCallback;
@@ -173,6 +184,10 @@ export class StructureManager {
     this.entityIdLabels.clear();
 
     this.labelPool.clear();
+
+    this.attachmentManager.clear();
+    this.activeStructureAttachmentEntities.clear();
+    this.structureAttachmentSignatures.clear();
 
     // Dispose of all structure models
     this.structureModels.forEach((models) => {
@@ -304,16 +319,23 @@ export class StructureManager {
     let finalGuardArmies = update.guardArmies;
     let finalActiveProductions = update.activeProductions;
 
-    // Calculate battle directions from battleData if available
-    let {
-      battleCooldownEnd,
+    const battleData = update.battleData ?? {};
+    let { battleCooldownEnd } = battleData as { battleCooldownEnd?: number };
+    const {
       latestAttackerId,
       latestDefenderId,
       latestAttackerCoordX,
       latestAttackerCoordY,
       latestDefenderCoordX,
       latestDefenderCoordY,
-    } = update.battleData || {};
+    } = battleData as {
+      latestAttackerId?: number;
+      latestDefenderId?: number;
+      latestAttackerCoordX?: number;
+      latestAttackerCoordY?: number;
+      latestDefenderCoordX?: number;
+      latestDefenderCoordY?: number;
+    };
 
     let { attackedFromDegrees, attackTowardDegrees } = getCombatAngles(
       hexCoords,
@@ -386,6 +408,7 @@ export class StructureManager {
       level,
       finalOwner,
       hasWonder,
+      cosmetic.attachments,
       update.isAlly,
       finalGuardArmies,
       finalActiveProductions,
@@ -399,6 +422,7 @@ export class StructureManager {
     const structureRecord = this.structures.getStructureByEntityId(entityId);
     if (structureRecord) {
       structureRecord.cosmeticId = cosmetic.cosmeticId;
+      structureRecord.attachments = cosmetic.attachments;
     }
 
     // Smart relic effects management - differentiate between genuine updates and chunk reloads
@@ -490,7 +514,7 @@ export class StructureManager {
   getStructureByHexCoords(hexCoords: { col: number; row: number }) {
     const allStructures = this.structures.getStructures();
 
-    for (const [_, structures] of allStructures) {
+    for (const structures of allStructures.values()) {
       const structure = Array.from(structures.values()).find(
         (structure) => structure.hexCoords.col === hexCoords.col && structure.hexCoords.row === hexCoords.row,
       );
@@ -525,6 +549,7 @@ export class StructureManager {
     const structuresMap = this.structures.getStructures();
     const structureEntries = Array.from(structuresMap.entries());
     const visibleStructureIds = new Set<ID>();
+    const attachmentRetain = new Set<number>();
 
     const preloadPromises: Promise<unknown>[] = [];
 
@@ -568,7 +593,7 @@ export class StructureManager {
 
         const existingLabel = this.entityIdLabels.get(structure.entityId);
         if (existingLabel) {
-          this.updateStructureLabelData(structure.entityId, structure, existingLabel);
+        this.updateStructureLabelData(structure, existingLabel);
           const newPosition = getWorldPositionForHex(structure.hexCoords);
           newPosition.y += 2;
           existingLabel.position.copy(newPosition);
@@ -585,6 +610,30 @@ export class StructureManager {
           this.dummy.rotation.y = randomRotation;
         }
         this.dummy.updateMatrix();
+
+        const entityNumericId = Number(structure.entityId);
+        const templates = structure.attachments ?? [];
+        if (templates.length > 0) {
+          attachmentRetain.add(entityNumericId);
+          const signature = this.getAttachmentSignature(templates);
+          const isActive = this.activeStructureAttachmentEntities.has(entityNumericId);
+          if (!isActive || this.structureAttachmentSignatures.get(entityNumericId) !== signature) {
+            this.attachmentManager.spawnAttachments(entityNumericId, templates);
+            this.structureAttachmentSignatures.set(entityNumericId, signature);
+            this.activeStructureAttachmentEntities.add(entityNumericId);
+          }
+
+          this.tempCosmeticPosition.copy(position);
+          this.tempCosmeticRotation.copy(this.dummy.rotation);
+          this.attachmentManager.updateAttachmentTransforms(entityNumericId, {
+            position: this.tempCosmeticPosition,
+            rotation: this.tempCosmeticRotation,
+          });
+        } else if (this.activeStructureAttachmentEntities.has(entityNumericId)) {
+          this.attachmentManager.removeAttachments(entityNumericId);
+          this.activeStructureAttachmentEntities.delete(entityNumericId);
+          this.structureAttachmentSignatures.delete(entityNumericId);
+        }
 
         let modelType = models[structure.stage];
         if (structureType === StructureType.Realm) {
@@ -613,16 +662,41 @@ export class StructureManager {
       models.forEach((model) => model.needsUpdate());
     }
 
+    if (this.activeStructureAttachmentEntities.size > 0) {
+      const toRemove: number[] = [];
+      this.activeStructureAttachmentEntities.forEach((entityId) => {
+        if (!attachmentRetain.has(entityId)) {
+          toRemove.push(entityId);
+        }
+      });
+
+      toRemove.forEach((entityId) => {
+        this.attachmentManager.removeAttachments(entityId);
+        this.activeStructureAttachmentEntities.delete(entityId);
+        this.structureAttachmentSignatures.delete(entityId);
+      });
+    }
+
     const labelsToRemove: ID[] = [];
-    this.entityIdLabels.forEach((_label, entityId) => {
+    for (const entityId of this.entityIdLabels.keys()) {
       if (!visibleStructureIds.has(entityId)) {
         labelsToRemove.push(entityId);
       }
-    });
+    }
 
     labelsToRemove.forEach((entityId) => {
       this.removeEntityIdLabel(entityId);
     });
+  }
+
+  private getAttachmentSignature(templates: CosmeticAttachmentTemplate[]): string {
+    if (templates.length === 0) {
+      return "";
+    }
+    return templates
+      .map((template) => `${template.id}:${template.slot ?? ""}`)
+      .sort((a, b) => (a > b ? 1 : a < b ? -1 : 0))
+      .join("|");
   }
 
   private getVisibleStructures(structures: Map<ID, StructureInfo>): StructureInfo[] {
@@ -694,7 +768,7 @@ export class StructureManager {
 
     this.entityIdLabels.set(structure.entityId, label);
     this.labelsGroup.add(label);
-    this.updateStructureLabelData(structure.entityId, structure, label);
+    this.updateStructureLabelData(structure, label);
   }
 
   private removeEntityIdLabel(entityId: ID) {
@@ -721,7 +795,7 @@ export class StructureManager {
   }
 
   public removeLabelsFromScene() {
-    this.entityIdLabels.forEach((label, _entityId) => {
+    this.entityIdLabels.forEach((label) => {
       this.labelsGroup.remove(label);
       this.labelPool.release(label);
     });
@@ -1052,7 +1126,7 @@ export class StructureManager {
   /**
    * Update a structure label with fresh data
    */
-  private updateStructureLabelData(_entityId: ID, structure: StructureInfo, existingLabel: CSS2DObject): void {
+  private updateStructureLabelData(structure: StructureInfo, existingLabel: CSS2DObject): void {
     // Update the existing label content in-place with correct camera view
     updateStructureLabel(existingLabel.element, structure, this.currentCameraView);
   }
@@ -1070,6 +1144,7 @@ class Structures {
     level: number = 0,
     owner: { address: bigint; ownerName: string; guildName: string },
     hasWonder: boolean,
+    attachments: CosmeticAttachmentTemplate[] | undefined,
     isAlly: boolean,
     guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>,
     activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>,
@@ -1092,6 +1167,7 @@ class Structures {
       owner,
       structureType,
       hasWonder,
+      attachments,
       isAlly,
       // Enhanced data
       guardArmies,
@@ -1145,7 +1221,7 @@ class Structures {
   }
 
   getStructureByEntityId(entityId: ID): StructureInfo | undefined {
-    for (const [_, structures] of this.structures) {
+    for (const structures of this.structures.values()) {
       const structure = structures.get(entityId);
       if (structure) {
         return structure;

@@ -44,13 +44,13 @@ describe("cosmetics resolver", () => {
 
   it("merges per-army attachments when compatible", () => {
     registerCosmetic({
-      id: "attachment:test:knight-banner",
+      id: "attachment:test:crossbow-banner",
       category: "attachment",
-      appliesTo: [formatArmyCosmeticTarget(TroopType.Knight, TroopTier.T1)],
+      appliesTo: [formatArmyCosmeticTarget(TroopType.Crossbowman, TroopTier.T1)],
       assetPaths: [],
       attachments: [
         {
-          id: "knight-banner",
+          id: "crossbow-banner",
           slot: "back",
         },
       ],
@@ -62,8 +62,8 @@ describe("cosmetics resolver", () => {
       version: 1,
       selection: {
         armies: {
-          [formatArmyCosmeticTarget(TroopType.Knight, TroopTier.T1)]: {
-            attachments: ["attachment:knight:axe", "attachment:test:knight-banner"],
+          [formatArmyCosmeticTarget(TroopType.Crossbowman, TroopTier.T1)]: {
+            attachments: ["attachment:weapon:bow-common", "attachment:test:crossbow-banner"],
           },
         },
         globalAttachments: [],
@@ -73,13 +73,13 @@ describe("cosmetics resolver", () => {
 
     const result = resolveArmyCosmetic({
       owner: "0x1",
-      troopType: TroopType.Knight,
+      troopType: TroopType.Crossbowman,
       tier: TroopTier.T1,
-      defaultModelType: ModelType.Knight1,
+      defaultModelType: ModelType.Crossbowman1,
     });
 
     const attachmentIds = result.attachments.map((attachment) => attachment.id).sort();
-    expect(attachmentIds).toEqual(["knight-axe", "knight-banner"]);
+    expect(attachmentIds).toEqual(["bow-common", "crossbow-banner"]);
     expect(result.attachments.every((item) => !!item.slot)).toBe(true);
   });
 });

@@ -3,6 +3,17 @@ import type { ModelType } from "../types/army";
 
 export type CosmeticCategory = "army-skin" | "structure-skin" | "attachment";
 
+export enum CosmeticTraitType {
+  RealmTitle = 1,
+  RealmAura = 2,
+  RealmSkin = 3,
+  TroopAura = 4,
+  TroopPrimary = 5,
+  TroopSecondary = 6,
+  TroopArmor = 7,
+  TroopBase = 8,
+}
+
 export interface CosmeticAttachmentTemplate {
   /** Identifier for lookup (e.g. aura, banner). */
   id: string;

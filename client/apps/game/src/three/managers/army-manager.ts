@@ -1,7 +1,7 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { ArmyModel } from "@/three/managers/army-model";
-import { ModelType } from "@/three/types/army";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
+import { ModelType } from "@/three/types/army";
 import { GUIManager, LABEL_STYLES } from "@/three/utils/";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
 import type { SetupResult } from "@bibliothecadao/dojo";
@@ -23,7 +23,10 @@ import {
 } from "@bibliothecadao/types";
 import { Color, Euler, Group, Raycaster, Scene, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
+import type { CosmeticAttachmentTemplate } from "../cosmetics";
+import { CosmeticAttachmentManager, playerCosmeticsStore, resolveArmyCosmetic } from "../cosmetics";
 import { ArmyData, RenderChunkSize } from "../types";
+import type { ArmyInstanceData } from "../types/army";
 import { getHexForWorldPosition, getWorldPositionForHex, hashCoordinates } from "../utils";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
@@ -32,7 +35,6 @@ import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { MemoryMonitor } from "../utils/memory-monitor";
 import { findShortestPath } from "../utils/pathfinding";
 import { FXManager } from "./fx-manager";
-import { playerCosmeticsStore, resolveArmyCosmetic } from "../cosmetics";
 
 interface PendingExplorerTroopsUpdate {
   troopCount: number;
@@ -72,6 +74,16 @@ interface AddArmyParams {
   latestDefenderCoordY?: number;
 }
 
+type RelicFxHandle = {
+  end: () => void;
+  instance?: {
+    initialX: number;
+    initialY: number;
+    initialZ: number;
+    [key: string]: unknown;
+  };
+};
+
 export class ArmyManager {
   private scene: Scene;
   private armyModel: ArmyModel;
@@ -92,10 +104,7 @@ export class ArmyManager {
   private hexagonScene?: HexagonScene;
   private fxManager: FXManager;
   private components?: ClientComponents;
-  private armyRelicEffects: Map<
-    ID,
-    Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void; instance?: any } }>
-  > = new Map();
+  private armyRelicEffects: Map<ID, Array<{ relicNumber: number; effect: RelicEffect; fx: RelicFxHandle }>> = new Map();
   private applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>;
   private clearPendingRelicEffectsCallback?: (entityId: ID) => void;
   private pendingExplorerTroopsUpdate: Map<ID, PendingExplorerTroopsUpdate> = new Map();
@@ -105,9 +114,13 @@ export class ArmyManager {
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private memoryMonitor: MemoryMonitor;
   private unsubscribeAccountStore?: () => void;
+  private attachmentManager: CosmeticAttachmentManager;
+  private armyAttachmentSignatures: Map<number, string> = new Map();
+  private activeArmyAttachmentEntities: Set<number> = new Set();
 
   // Reusable objects for memory optimization
   private readonly tempPosition: Vector3 = new Vector3();
+  private readonly tempCosmeticPosition: Vector3 = new Vector3();
 
   constructor(
     scene: Scene,
@@ -128,6 +141,7 @@ export class ArmyManager {
     this.labelsGroup = labelsGroup || new Group();
     this.hexagonScene = hexagonScene;
     this.fxManager = new FXManager(scene, 1);
+    this.attachmentManager = new CosmeticAttachmentManager(scene);
     this.components = dojoContext?.components as ClientComponents | undefined;
     this.applyPendingRelicEffectsCallback = applyPendingRelicEffectsCallback;
     this.clearPendingRelicEffectsCallback = clearPendingRelicEffectsCallback;
@@ -426,6 +440,91 @@ export class ArmyManager {
     return { modelTypesByEntity, requiredModelTypes };
   }
 
+  private getAttachmentSignature(templates: CosmeticAttachmentTemplate[]): string {
+    if (templates.length === 0) {
+      return "";
+    }
+    return templates
+      .map((template) => `${template.id}:${template.slot ?? ""}`)
+      .sort((a, b) => (a > b ? 1 : a < b ? -1 : 0))
+      .join("|");
+  }
+
+  private syncVisibleArmyAttachments(visibleArmies: ArmyData[]): void {
+    const retain = new Set<number>();
+
+    visibleArmies.forEach((army) => {
+      const templates = army.attachments ?? [];
+      const entityId = Number(army.entityId);
+
+      if (templates.length === 0) {
+        if (this.activeArmyAttachmentEntities.has(entityId)) {
+          this.attachmentManager.removeAttachments(entityId);
+          this.activeArmyAttachmentEntities.delete(entityId);
+        }
+        this.armyAttachmentSignatures.delete(entityId);
+        return;
+      }
+
+      retain.add(entityId);
+      const signature = this.getAttachmentSignature(templates);
+      const isActive = this.activeArmyAttachmentEntities.has(entityId);
+
+      if (!isActive || this.armyAttachmentSignatures.get(entityId) !== signature) {
+        this.attachmentManager.spawnAttachments(entityId, templates);
+        this.armyAttachmentSignatures.set(entityId, signature);
+        this.activeArmyAttachmentEntities.add(entityId);
+      }
+    });
+
+    if (this.activeArmyAttachmentEntities.size === 0) {
+      return;
+    }
+
+    const toRemove: number[] = [];
+    this.activeArmyAttachmentEntities.forEach((entityId) => {
+      if (!retain.has(entityId)) {
+        toRemove.push(entityId);
+      }
+    });
+
+    toRemove.forEach((entityId) => {
+      this.attachmentManager.removeAttachments(entityId);
+      this.activeArmyAttachmentEntities.delete(entityId);
+      this.armyAttachmentSignatures.delete(entityId);
+    });
+  }
+
+  private updateArmyAttachmentTransforms() {
+    if (this.activeArmyAttachmentEntities.size === 0) {
+      return;
+    }
+
+    const instanceDataMap = (this.armyModel as unknown as { instanceData?: Map<number, ArmyInstanceData> })
+      .instanceData as Map<number, ArmyInstanceData> | undefined;
+
+    this.visibleArmies.forEach((army) => {
+      const entityId = Number(army.entityId);
+      if (!this.activeArmyAttachmentEntities.has(entityId)) {
+        return;
+      }
+
+      const instanceData = instanceDataMap?.get(entityId);
+      if (instanceData?.position) {
+        this.tempCosmeticPosition.copy(instanceData.position);
+      } else {
+        const worldPosition = this.getArmyWorldPosition(army.entityId, army.hexCoords);
+        this.tempCosmeticPosition.copy(worldPosition);
+      }
+
+      this.attachmentManager.updateAttachmentTransforms(entityId, {
+        position: this.tempCosmeticPosition,
+        rotation: instanceData?.rotation,
+        scale: instanceData?.scale ?? this.scale,
+      });
+    });
+  }
+
   private async executeRenderForChunk(chunkKey: string): Promise<void> {
     const [startRow, startCol] = chunkKey.split(",").map(Number);
     const computeVisibleArmies = () => this.getVisibleArmiesForChunk(startRow, startCol);
@@ -518,6 +617,8 @@ export class ArmyManager {
     });
 
     this.visibleArmies = updatedVisibleArmies;
+    this.syncVisibleArmyAttachments(updatedVisibleArmies);
+    this.updateArmyAttachmentTransforms();
 
     // Update all model instances
     this.armyModel.updateAllInstances();
@@ -589,10 +690,10 @@ export class ArmyManager {
     let finalTroopCount = params.troopCount || 0;
     let finalCurrentStamina = params.currentStamina || 0;
     let finalOnChainStamina = params.onChainStamina || { amount: 0n, updatedTick: 0 };
-    let finalMaxStamina = params.maxStamina || 0;
+    const finalMaxStamina = params.maxStamina || 0;
     let finalOwnerAddress = params.owner.address;
     let finalOwnerName = params.owner.ownerName;
-    let finalGuildName = params.owner.guildName;
+    const finalGuildName = params.owner.guildName;
     let finalOwningStructureId = params.owningStructureId ?? null;
 
     let finalBattleCooldownEnd = params.battleCooldownEnd;
@@ -732,6 +833,7 @@ export class ArmyManager {
         guildName: finalGuildName,
       },
       cosmeticId: cosmetic.cosmeticId,
+      attachments: cosmetic.attachments,
       color,
       category: params.category,
       tier: params.tier,
@@ -836,8 +938,7 @@ export class ArmyManager {
     }
 
     // Add new effects that weren't previously active
-    const effectsToAdd: Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void; instance?: any } }> =
-      [];
+    const effectsToAdd: Array<{ relicNumber: number; effect: RelicEffect; fx: RelicFxHandle }> = [];
     for (const newEffect of newRelicEffects) {
       if (!currentRelicNumbers.has(newEffect.relicNumber)) {
         try {
@@ -858,7 +959,7 @@ export class ArmyManager {
             true,
           );
 
-          effectsToAdd.push({ relicNumber: newEffect.relicNumber, effect: newEffect.effect, fx });
+          effectsToAdd.push({ relicNumber: newEffect.relicNumber, effect: newEffect.effect, fx: fx as RelicFxHandle });
         } catch (error) {
           console.error(`Failed to add relic effect ${newEffect.relicNumber} for army ${entityId}:`, error);
         }
@@ -879,6 +980,13 @@ export class ArmyManager {
     const { playDefeatFx = true } = options;
 
     if (!this.armies.has(entityId)) return;
+
+    const numericEntityId = Number(entityId);
+    if (this.activeArmyAttachmentEntities.has(numericEntityId)) {
+      this.attachmentManager.removeAttachments(numericEntityId);
+      this.activeArmyAttachmentEntities.delete(numericEntityId);
+    }
+    this.armyAttachmentSignatures.delete(numericEntityId);
 
     // Monitor memory usage before removing army
     this.memoryMonitor.getCurrentStats(`removeArmy-${entityId}`);
@@ -966,6 +1074,7 @@ export class ArmyManager {
     this.armyModel.updateAnimations(deltaTime);
 
     // Update relic effect positions to follow moving armies
+    this.updateArmyAttachmentTransforms();
     this.updateRelicEffectPositions();
   }
 
@@ -991,7 +1100,7 @@ export class ArmyManager {
   }
 
   private async addEntityIdLabel(army: ArmyData, position: Vector3) {
-    const { label, isNew } = this.labelPool.acquire(() => {
+    const { label } = this.labelPool.acquire(() => {
       const element = createArmyLabel(army, this.currentCameraView);
       const cssLabel = new CSS2DObject(element);
       cssLabel.userData.baseRenderOrder = cssLabel.renderOrder;
@@ -1417,6 +1526,10 @@ ${
 
     // Clear label pool storage after dispose ensures detached DOM
     this.labelPool.clear();
+
+    this.attachmentManager.clear();
+    this.activeArmyAttachmentEntities.clear();
+    this.armyAttachmentSignatures.clear();
 
     // Clean up any other resources...
   }
