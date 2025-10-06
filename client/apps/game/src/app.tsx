@@ -11,6 +11,7 @@ import "./index.css";
 import type { SetupResult } from "./init/bootstrap";
 import { IS_MOBILE } from "./ui/config";
 import { StoryEventToastBridge, StoryEventToastProvider } from "./ui/features/story-events";
+import { LandingAccount, LandingCosmetics, LandingLeaderboard, LandingWelcome } from "./ui/features/landing";
 import { LandingLayout } from "./ui/layouts/landing";
 import { World } from "./ui/layouts/world";
 import { ConstructionGate } from "./ui/modules/construction-gate";
@@ -102,7 +103,12 @@ function App() {
     <StarknetProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<LandingLayout backgroundImage={backgroundImage} />} />
+          <Route path="/" element={<LandingLayout backgroundImage={backgroundImage} />}>
+            <Route index element={<LandingWelcome />} />
+            <Route path="cosmetics" element={<LandingCosmetics />} />
+            <Route path="account" element={<LandingAccount />} />
+            <Route path="leaderboard" element={<LandingLeaderboard />} />
+          </Route>
           <Route path="/play/*" element={<GameRoute backgroundImage={backgroundImage} />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -1,14 +1,17 @@
-import { ReactComponent as EternumWordsLogo } from "@/assets/icons/blitz-words-logo-g.svg";
-import { useNavigate } from "react-router-dom";
-import { Button } from "../design-system/atoms";
-import { Controller } from "../modules/controller/controller";
+import clsx from "clsx";
+import { NavLink, Outlet } from "react-router-dom";
 interface LandingLayoutProps {
   backgroundImage: string;
 }
 
-export const LandingLayout = ({ backgroundImage }: LandingLayoutProps) => {
-  const navigate = useNavigate();
+const SECTIONS = [
+  { label: "Overview", path: "/" },
+  { label: "Cosmetics", path: "/cosmetics" },
+  { label: "Account", path: "/account" },
+  { label: "Leaderboard", path: "/leaderboard" },
+];
 
+export const LandingLayout = ({ backgroundImage }: LandingLayoutProps) => {
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-black text-gold">
       <div className="absolute inset-0">
@@ -21,21 +24,30 @@ export const LandingLayout = ({ backgroundImage }: LandingLayoutProps) => {
       </div>
 
       <div className="relative z-10 flex min-h-screen flex-col">
-        <header className="flex justify-end px-6 py-6 lg:px-10">
-          <Controller />
+        <header className="flex flex-col gap-6 px-6 py-6 lg:px-10">
+          <nav aria-label="Landing sections" className="flex justify-center">
+            <div className="flex flex-wrap gap-2 rounded-full border border-white/10 bg-black/50 p-1 backdrop-blur">
+              {SECTIONS.map((section) => (
+                <NavLink
+                  key={section.path}
+                  to={section.path}
+                  end={section.path === "/"}
+                  className={({ isActive }) =>
+                    clsx(
+                      "rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60",
+                      isActive ? "bg-white/20 text-white" : "text-white/70 hover:text-white",
+                    )
+                  }
+                >
+                  {section.label}
+                </NavLink>
+              ))}
+            </div>
+          </nav>
         </header>
 
-        <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-6 text-center lg:px-0">
-          <div className="w-full rounded-3xl border border-white/10 bg-black/50 p-10 backdrop-blur">
-            <EternumWordsLogo className="mx-auto w-56 sm:w-48 lg:w-72 xl:w-[360px]" />
-
-            <div className="mt-8 flex flex-col items-center gap-4">
-              <div className="text-sm text-white/70">
-                Access your Cartridge profile or jump right in.
-              </div>
-              <Button onClick={() => navigate("/play")}>Enter Eternum</Button>
-            </div>
-          </div>
+        <main className="mx-auto flex w-full flex-1 flex-col items-center justify-center px-6 py-10 lg:px-0">
+          <Outlet />
         </main>
       </div>
     </div>
