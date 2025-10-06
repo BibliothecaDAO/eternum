@@ -7,6 +7,7 @@ import { ContractAddress } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
+import { useSocialStore } from "./use-social-store";
 
 interface RegisterPointsButtonProps {
   className?: string;
@@ -23,6 +24,7 @@ export const RegisterPointsButton = ({ className }: RegisterPointsButtonProps) =
 
   const [isSharePointsLoading, setIsSharePointsLoading] = useState(false);
   const setTooltip = useUIStore((state) => state.setTooltip);
+  const setPlayersByRank = useSocialStore((state) => state.setPlayersByRank);
 
   const hyperstructure_entities = useEntityQuery([Has(components.Hyperstructure)]);
 
@@ -56,6 +58,19 @@ export const RegisterPointsButton = ({ className }: RegisterPointsButtonProps) =
         signer: account,
         hyperstructure_ids: hyperstructuresEntityIds,
       });
+
+      // Hard refresh leaderboard after 3 seconds
+      console.log("Hard refreshing leaderboard data...");
+      const leaderboardManager = LeaderboardManager.instance(components, getRealmCountPerHyperstructure());
+
+      // Force complete re-initialization
+      leaderboardManager.initialize();
+
+      // Update UI store
+      setPlayersByRank(leaderboardManager.playersByRank);
+
+      console.log("Leaderboard hard refresh complete");
+        
     } catch (error) {
       console.error(error);
     } finally {
