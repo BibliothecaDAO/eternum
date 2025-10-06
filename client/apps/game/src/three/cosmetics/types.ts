@@ -1,3 +1,6 @@
+import type { TroopTier, TroopType, StructureType } from "@bibliothecadao/types";
+import type { ModelType } from "../types/army";
+
 export type CosmeticCategory = "army-skin" | "structure-skin" | "attachment";
 
 export interface CosmeticAttachmentTemplate {
@@ -13,6 +16,10 @@ export interface CosmeticAttachmentTemplate {
   rotation?: [number, number, number];
   /** When true the attachment persists for the entity lifetime. */
   persistent?: boolean;
+  /** Mount point or bone name used by the attachment manager (e.g. "weapon_r"). */
+  mountPoint?: string;
+  /** Logical slot for mutual exclusivity (e.g. "weapon", "back"). */
+  slot?: string;
 }
 
 export interface CosmeticRegistryEntry {
@@ -28,12 +35,24 @@ export interface CosmeticRegistryEntry {
   metadata?: Record<string, unknown>;
   /** Optional graphics tier guardrail (e.g. "low", "medium", "high"). */
   minGraphicsTier?: "low" | "medium" | "high";
+  /** Attachment slot enforced for category `attachment`. */
+  attachmentSlot?: string;
+}
+
+export interface ArmyCosmeticSelection {
+  skin?: string;
+  attachments?: string[];
+}
+
+export interface StructureCosmeticSelection {
+  skin?: string;
+  attachments?: string[];
 }
 
 export interface PlayerCosmeticSelection {
-  armies?: Record<string, string>; // key: troopType|tier, value: cosmeticId
-  structures?: Record<string, string>; // key: structureType|stage, value: cosmeticId
-  attachments?: string[]; // global attachments (auras etc.)
+  armies?: Record<string, ArmyCosmeticSelection>; // key: troopType|tier -> selection
+  structures?: Record<string, StructureCosmeticSelection>; // key: structureType|stage -> selection
+  globalAttachments?: string[]; // cosmetics applied to every entity (auras etc.)
   tokens?: string[]; // raw cosmetic token ids (hex strings)
 }
 
@@ -43,15 +62,25 @@ export interface PlayerCosmeticsSnapshot {
   selection: PlayerCosmeticSelection;
 }
 
-export interface CosmeticResolutionParams {
-  owner: string;
-  kind: "army" | "structure";
-  baseType: string;
-  variant?: string;
+export interface ArmyCosmeticParams {
+  owner: string | bigint | undefined;
+  troopType: TroopType;
+  tier: TroopTier;
+  defaultModelType: ModelType;
+}
+
+export interface StructureCosmeticParams {
+  owner: string | bigint | undefined;
+  structureType: StructureType;
+  stage?: number;
+  defaultModelKey: string;
 }
 
 export interface CosmeticResolutionResult {
+  cosmeticId: string;
   modelKey: string;
+  modelType?: ModelType;
   attachments: CosmeticAttachmentTemplate[];
+  registryEntry?: CosmeticRegistryEntry;
   metadata?: Record<string, unknown>;
 }

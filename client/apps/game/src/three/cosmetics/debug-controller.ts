@@ -1,10 +1,10 @@
-import { CosmeticResolutionParams, CosmeticResolutionResult } from "./types";
+import { CosmeticResolutionResult } from "./types";
 
 /**
  * Development-only overrides. No-op by default; filled in during later phases.
  */
 export class CosmeticDebugController {
-  resolveOverride(_params: CosmeticResolutionParams): CosmeticResolutionResult | undefined {
+  resolveOverride(_params: unknown): CosmeticResolutionResult | undefined {
     return undefined;
   }
 }

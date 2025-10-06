@@ -3,8 +3,9 @@ import { getStructureModelPaths } from "@/three/constants";
 import InstancedModel from "@/three/managers/instanced-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
+import type { SetupResult } from "@bibliothecadao/dojo";
 import { getIsBlitz, StructureTileSystemUpdate } from "@bibliothecadao/eternum";
-import { BuildingType, FELT_CENTER, ID, RelicEffect, StructureType } from "@bibliothecadao/types";
+import { BuildingType, ClientComponents, FELT_CENTER, ID, RelicEffect, StructureType } from "@bibliothecadao/types";
 import { Group, Object3D, Scene, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { GuardArmy } from "../../../../../../packages/core/src/stores/map-data-store";
@@ -16,6 +17,7 @@ import { createStructureLabel, updateStructureLabel } from "../utils/labels/labe
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { FXManager } from "./fx-manager";
+import { playerCosmeticsStore, resolveStructureCosmetic } from "../cosmetics";
 
 const INITIAL_STRUCTURE_CAPACITY = 64;
 const WONDER_MODEL_INDEX = 4;
@@ -58,6 +60,7 @@ export class StructureManager {
   private currentCameraView: CameraView;
   private hexagonScene?: HexagonScene;
   private fxManager: FXManager;
+  private components?: ClientComponents;
   private structureRelicEffects: Map<
     ID,
     Map<RelicSource, Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void } }>>
@@ -78,6 +81,7 @@ export class StructureManager {
     labelsGroup?: Group,
     hexagonScene?: HexagonScene,
     fxManager?: FXManager,
+    dojoContext?: SetupResult,
     applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>,
     clearPendingRelicEffectsCallback?: (entityId: ID) => void,
   ) {
@@ -87,6 +91,7 @@ export class StructureManager {
     this.hexagonScene = hexagonScene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.fxManager = fxManager || new FXManager(scene);
+    this.components = dojoContext?.components as ClientComponents | undefined;
     this.applyPendingRelicEffectsCallback = applyPendingRelicEffectsCallback;
     this.clearPendingRelicEffectsCallback = clearPendingRelicEffectsCallback;
     this.isBlitz = getIsBlitz();
@@ -358,6 +363,19 @@ export class StructureManager {
       }
     }
 
+    const ownerForCosmetics = finalOwner.address ?? 0n;
+    if (this.components && ownerForCosmetics !== 0n) {
+      playerCosmeticsStore.hydrateFromBlitzComponent(this.components, ownerForCosmetics);
+    }
+    const enumName = StructureType[key as keyof typeof StructureType];
+    const defaultModelKey = typeof enumName === "string" ? enumName : String(key);
+    const cosmetic = resolveStructureCosmetic({
+      owner: ownerForCosmetics,
+      structureType: key,
+      stage,
+      defaultModelKey,
+    });
+
     // Add the structure to the structures map with the complete owner info
     this.structures.addStructure(
       entityId,
@@ -377,6 +395,11 @@ export class StructureManager {
       battleCooldownEnd,
       battleTimerLeft,
     );
+
+    const structureRecord = this.structures.getStructureByEntityId(entityId);
+    if (structureRecord) {
+      structureRecord.cosmeticId = cosmetic.cosmeticId;
+    }
 
     // Smart relic effects management - differentiate between genuine updates and chunk reloads
     const currentTime = Date.now();

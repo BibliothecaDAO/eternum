@@ -4,6 +4,7 @@ import { ModelType } from "@/three/types/army";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { GUIManager, LABEL_STYLES } from "@/three/utils/";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
+import type { SetupResult } from "@bibliothecadao/dojo";
 import { Position } from "@bibliothecadao/eternum";
 
 import { COLORS } from "@/ui/features";
@@ -12,6 +13,7 @@ import { ExplorerTroopsSystemUpdate, ExplorerTroopsTileSystemUpdate, getBlockTim
 import { Biome, configManager, StaminaManager } from "@bibliothecadao/eternum";
 import {
   BiomeType,
+  ClientComponents,
   ContractAddress,
   HexEntityInfo,
   ID,
@@ -30,6 +32,7 @@ import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { MemoryMonitor } from "../utils/memory-monitor";
 import { findShortestPath } from "../utils/pathfinding";
 import { FXManager } from "./fx-manager";
+import { playerCosmeticsStore, resolveArmyCosmetic } from "../cosmetics";
 
 interface PendingExplorerTroopsUpdate {
   troopCount: number;
@@ -88,6 +91,7 @@ export class ArmyManager {
   private currentCameraView: CameraView;
   private hexagonScene?: HexagonScene;
   private fxManager: FXManager;
+  private components?: ClientComponents;
   private armyRelicEffects: Map<
     ID,
     Array<{ relicNumber: number; effect: RelicEffect; fx: { end: () => void; instance?: any } }>
@@ -110,6 +114,7 @@ export class ArmyManager {
     renderChunkSize: { width: number; height: number },
     labelsGroup?: Group,
     hexagonScene?: HexagonScene,
+    dojoContext?: SetupResult,
     applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>,
     clearPendingRelicEffectsCallback?: (entityId: ID) => void,
   ) {
@@ -123,6 +128,7 @@ export class ArmyManager {
     this.labelsGroup = labelsGroup || new Group();
     this.hexagonScene = hexagonScene;
     this.fxManager = new FXManager(scene, 1);
+    this.components = dojoContext?.components as ClientComponents | undefined;
     this.applyPendingRelicEffectsCallback = applyPendingRelicEffectsCallback;
     this.clearPendingRelicEffectsCallback = clearPendingRelicEffectsCallback;
 
@@ -577,9 +583,7 @@ export class ArmyManager {
 
     const { x, y } = params.hexCoords.getContract();
     const biome = Biome.getBiome(x, y);
-    const modelType = this.armyModel.getModelTypeForEntity(params.entityId, params.category, params.tier, biome);
-    await this.armyModel.preloadModels([modelType]);
-    this.armyModel.assignModelToEntity(params.entityId, modelType);
+    const baseModelType = this.armyModel.getModelTypeForEntity(params.entityId, params.category, params.tier, biome);
 
     // Variables to hold the final values
     let finalTroopCount = params.troopCount || 0;
@@ -689,6 +693,21 @@ export class ArmyManager {
       }
     }
 
+    const ownerForCosmetics = finalOwnerAddress ?? 0n;
+    if (this.components && ownerForCosmetics !== 0n) {
+      playerCosmeticsStore.hydrateFromBlitzComponent(this.components, ownerForCosmetics);
+    }
+    const cosmetic = resolveArmyCosmetic({
+      owner: ownerForCosmetics,
+      troopType: params.category,
+      tier: params.tier,
+      defaultModelType: baseModelType,
+    });
+    const resolvedModelType = cosmetic.modelType ?? baseModelType;
+
+    await this.armyModel.preloadModels([resolvedModelType]);
+    this.armyModel.assignModelToEntity(params.entityId, resolvedModelType);
+
     const isMine = finalOwnerAddress ? isAddressEqualToAccount(finalOwnerAddress) : false;
 
     // Determine the color based on ownership (consistent with structure labels)
@@ -712,6 +731,7 @@ export class ArmyManager {
         ownerName: finalOwnerName,
         guildName: finalGuildName,
       },
+      cosmeticId: cosmetic.cosmeticId,
       color,
       category: params.category,
       tier: params.tier,

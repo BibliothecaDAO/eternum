@@ -14,6 +14,14 @@
 
 ## High-Level Architecture
 
+### Progress Updates (Phase 2)
+- Resolver now maps registry data for armies/structures and exposes registry metadata to downstream systems.
+- Worldmap `ArmyManager` hydrates player cosmetics from recs and stores the resolved cosmetic id with each army instance.
+- `StructureManager` records resolved structure cosmetics, ready for asset/attachment usage in later phases.
+- Registry now models attachment slots/mount points and resolver enforces compatibility while merging per-unit/global attachment selections.
+- Registry + asset cache unit coverage expanded (`asset-cache`, `resolver` smoke tests).
+- Next: wire attachment spawning, extend structure model selection, and surface debug overrides.
+
 ### 1. Cosmetic Registry (Data-Driven Source of Truth)
 - Location: `client/apps/game/src/three/cosmetics/registry.ts`.
 - Structure: Typed array/object describing each cosmetic (`id`, `category`, `supportedBaseTypes`, `assetPaths`, `materials`, `attachments`, `gfxSettings` guardrail, simple doc comments).

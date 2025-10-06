@@ -67,7 +67,7 @@ export class PlayerCosmeticsStore {
       selection: {
         armies: {},
         structures: {},
-        attachments: [],
+        globalAttachments: [],
         tokens,
       },
     };
