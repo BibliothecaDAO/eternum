@@ -6,6 +6,8 @@ import type { ContractAddress } from "@bibliothecadao/types";
 import { fetchSQL, gameClientFetch } from "./apiClient";
 import { QUERIES } from "./queries";
 
+const DEFAULT_HYPERSTRUCTURE_RADIUS = 8;
+
 const LEGACY_TRAIT_KEY_COLLECTIONS = new Set<string>([
   "0x36017e69d21d6d8c13e266eabb73ef1f1d02722d86bdcabe5f168f8e549d3cd",
 ]);
@@ -73,6 +75,13 @@ interface HyperstructureShareholder {
   hyperstructure_id: number;
   start_at: number;
   shareholders: ContractAddressAndAmount[];
+}
+
+interface HyperstructureRealmCountRow {
+  hyperstructure_entity_id: number | string | bigint | null;
+  hyperstructure_coord_x: number | string | bigint | null;
+  hyperstructure_coord_y: number | string | bigint | null;
+  realm_count_within_radius: number | string | bigint | null;
 }
 
 interface HyperstructureRow {
@@ -157,17 +166,19 @@ export async function fetchPlayerLeaderboard(
     "0",
   );
 
-  const [
-    rows,
-    hyperstructureShareholderRows,
-    hyperstructureRows,
-    hyperstructureConfigRows,
-  ] = await Promise.all([
-    gameClientFetch<PlayerLeaderboardRow[]>(leaderboardQuery),
-    gameClientFetch<HyperstructureShareholderRow[]>(QUERIES.HYPERSTRUCTURE_SHAREHOLDERS),
-    gameClientFetch<HyperstructureRow[]>(QUERIES.HYPERSTRUCTURES_WITH_MULTIPLIER),
-    gameClientFetch<HyperstructureLeaderboardConfigRow[]>(QUERIES.HYPERSTRUCTURE_LEADERBOARD_CONFIG),
-  ]);
+  const [rows, hyperstructureShareholderRows, hyperstructureRows, hyperstructureConfigRows, hyperstructureRealmCounts] =
+    await Promise.all([
+      gameClientFetch<PlayerLeaderboardRow[]>(leaderboardQuery),
+      gameClientFetch<HyperstructureShareholderRow[]>(QUERIES.HYPERSTRUCTURE_SHAREHOLDERS),
+      gameClientFetch<HyperstructureRow[]>(QUERIES.HYPERSTRUCTURES_WITH_MULTIPLIER),
+      gameClientFetch<HyperstructureLeaderboardConfigRow[]>(QUERIES.HYPERSTRUCTURE_LEADERBOARD_CONFIG),
+      gameClientFetch<HyperstructureRealmCountRow[]>(
+        QUERIES.HYPERSTRUCTURES_WITH_REALM_COUNT.replaceAll(
+          "{radius}",
+          DEFAULT_HYPERSTRUCTURE_RADIUS.toString(),
+        ),
+      ),
+    ]);
 
   type NumericLike = string | number | bigint | null | undefined;
 
@@ -241,7 +252,7 @@ export async function fetchPlayerLeaderboard(
 
     const lower = trimmed.toLowerCase();
     const prefixed = lower.startsWith("0x") ? lower : `0x${lower}`;
-    return prefixed as ContractAddress;
+    return prefixed as unknown as ContractAddress;
   };
 
   const unwrapValue = (input: unknown): unknown => {
@@ -357,6 +368,20 @@ export async function fetchPlayerLeaderboard(
   const seasonEnd = parseNumericValue(configRow?.season_end);
   const realmCount = Math.max(0, Math.floor(parseNumericValue(configRow?.realm_count)));
 
+  const hyperstructureRealmCountsById = new Map<number, number>(
+    hyperstructureRealmCounts
+      .map((row) => {
+        const hyperstructureId = Math.floor(parseNumericValue(row.hyperstructure_entity_id));
+        if (!Number.isFinite(hyperstructureId) || hyperstructureId <= 0) {
+          return null;
+        }
+
+        const realmCount = Math.max(0, Math.floor(parseNumericValue(row.realm_count_within_radius)));
+        return [hyperstructureId, realmCount] as const;
+      })
+      .filter((entry): entry is readonly [number, number] => entry !== null),
+  );
+
   const hyperstructures = hyperstructureRows
     .map((row) => {
       const hyperstructureId = Math.floor(parseNumericValue(row.hyperstructure_id));
@@ -366,17 +391,21 @@ export async function fetchPlayerLeaderboard(
 
       const pointsMultiplierRaw = parseNumericValue(row.points_multiplier);
       const pointsMultiplier = pointsMultiplierRaw > 0 ? pointsMultiplierRaw : 1;
+      const realmCount = hyperstructureRealmCountsById.get(hyperstructureId) ?? 0;
 
       return {
         hyperstructure_id: hyperstructureId,
         points_multiplier: pointsMultiplier,
+        realm_count: realmCount,
       };
     })
-    .filter((item): item is { hyperstructure_id: number; points_multiplier: number } => item !== null);
+    .filter(
+      (item): item is { hyperstructure_id: number; points_multiplier: number; realm_count: number } => item !== null,
+    );
 
   const realmCountPerHyperstructures =
-    realmCount > 0
-      ? new Map(hyperstructures.map((item) => [item.hyperstructure_id, realmCount] as const))
+    hyperstructures.length > 0
+      ? new Map(hyperstructures.map((item) => [item.hyperstructure_id, item.realm_count] as const))
       : undefined;
 
   const hyperstructureShareholders = hyperstructureShareholderRows
@@ -418,7 +447,7 @@ export async function fetchPlayerLeaderboard(
     });
 
     unregisteredShareholderPoints = new Map(
-      Array.from(computed.entries()).map(([address, points]) => [address.toLowerCase(), points]),
+      Array.from(computed.entries()).map(([address, points]) => [String(address).toLowerCase(), points]),
     );
   }
 
@@ -483,9 +512,11 @@ export async function fetchPlayerLeaderboard(
       continue;
     }
 
+    const normalizedAddress = String(address).toLowerCase();
+
     const bonusRaw = Math.round(points * precision);
     additionalEntries.push({
-      playerAddress: address,
+      playerAddress: normalizedAddress,
       playerName: null,
       prizeClaimed: false,
       registeredPointsRaw: bonusRaw,
