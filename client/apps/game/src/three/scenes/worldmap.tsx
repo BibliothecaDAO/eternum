@@ -84,7 +84,7 @@ export default class WorldmapScene extends HexagonScene {
   private wheelHandler: ((event: WheelEvent) => void) | null = null;
   private wheelAccumulator = 0;
   private wheelResetTimeout: ReturnType<typeof setTimeout> | null = null;
-  private readonly wheelThreshold = 500;
+  private readonly wheelThreshold = 10;
   private wheelDirection: -1 | 0 | 1 = 0;
   private wheelStepsThisGesture = 0;
   private readonly wheelGestureTimeoutMs = 50;
@@ -629,34 +629,21 @@ export default class WorldmapScene extends HexagonScene {
 
       this.wheelAccumulator += normalizedDelta;
 
-      // Calculate how many steps we should take based on accumulated scroll
-      const stepsToTake = Math.floor(Math.abs(this.wheelAccumulator) / this.wheelThreshold);
-
-      if (stepsToTake === 0) {
+      if (Math.abs(this.wheelAccumulator) < this.wheelThreshold) {
         this.scheduleWheelAccumulatorReset();
         return;
       }
 
-      // Take multiple zoom steps if scrolled far enough
-      const zoomOut = direction > 0;
-      let stepsTaken = 0;
-      for (let i = 0; i < stepsToTake; i++) {
-        const nextView = zoomOut
-          ? Math.min(CameraView.Far, this.currentCameraView + 1)
-          : Math.max(CameraView.Close, this.currentCameraView - 1);
-
-        if (nextView === this.currentCameraView) {
-          // Hit zoom boundary, stop trying
-          break;
-        }
-
-        this.changeCameraView(nextView);
-        stepsTaken++;
+      if (this.wheelStepsThisGesture >= 1) {
+        const saturatingDirection = (Math.sign(this.wheelAccumulator) as -1 | 0 | 1) || direction;
+        this.wheelAccumulator = saturatingDirection * this.wheelThreshold;
+        this.scheduleWheelAccumulatorReset();
+        return;
       }
 
-      // Deduct consumed scroll amount from accumulator
-      this.wheelAccumulator -= direction * stepsToTake * this.wheelThreshold;
-      this.wheelStepsThisGesture += stepsTaken;
+      this.stepCameraView(direction > 0);
+      this.wheelStepsThisGesture = 1;
+      this.wheelAccumulator = 0;
       this.scheduleWheelAccumulatorReset();
     };
 
@@ -664,6 +651,18 @@ export default class WorldmapScene extends HexagonScene {
     if (canvas) {
       canvas.addEventListener("wheel", this.wheelHandler, { passive: false });
     }
+  }
+
+  private stepCameraView(zoomOut: boolean) {
+    const nextView = zoomOut
+      ? Math.min(CameraView.Far, this.currentCameraView + 1)
+      : Math.max(CameraView.Close, this.currentCameraView - 1);
+
+    if (nextView === this.currentCameraView) {
+      return;
+    }
+
+    this.changeCameraView(nextView);
   }
 
   private normalizeWheelDelta(event: WheelEvent): number {
