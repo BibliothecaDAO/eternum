@@ -499,6 +499,26 @@ GROUP BY
     "base.category"
 ORDER BY
     category;`,
+  HYPERSTRUCTURE_LEADERBOARD_CONFIG: `
+    SELECT
+      "victory_points_grant_config.hyp_points_per_second" AS points_per_second,
+      "season_config.end_at" AS season_end,
+      COALESCE("realm_count_config.count", 0) AS realm_count
+    FROM "s1_eternum-WorldConfig";
+  `,
+  HYPERSTRUCTURE_SHAREHOLDERS: `
+    SELECT
+      hyperstructure_id,
+      start_at,
+      shareholders
+    FROM "s1_eternum-HyperstructureShareholders";
+  `,
+  HYPERSTRUCTURES_WITH_MULTIPLIER: `
+    SELECT
+      hyperstructure_id,
+      points_multiplier
+    FROM "s1_eternum-Hyperstructure";
+  `,
   PLAYER_LEADERBOARD: `
     WITH RECURSIVE
       registered AS (
