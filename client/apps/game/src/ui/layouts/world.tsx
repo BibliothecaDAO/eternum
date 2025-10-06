@@ -7,8 +7,8 @@ import { Leva } from "leva";
 import { lazy, Suspense } from "react";
 import { env } from "../../../env";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
-import { BlitzSetHyperstructureShareholdersTo100 } from "../features/world/components/hyperstructures/blitz-hyperstructure-shareholder";
 import { StoryEventStream } from "../features/story-events";
+import { BlitzSetHyperstructureShareholdersTo100 } from "../features/world/components/hyperstructures/blitz-hyperstructure-shareholder";
 import { StoreManagers } from "../store-managers";
 
 // Lazy load components
@@ -35,11 +35,7 @@ const WorldContextMenu = lazy(() =>
 const BlankOverlayContainer = lazy(() =>
   import("../shared/containers/blank-overlay-container").then((module) => ({ default: module.BlankOverlayContainer })),
 );
-// const EntitiesInfoLabel = lazy(() =>
-//   import("../features/world/components/entities/entities-label").then((module) => ({
-//     default: module.EntitiesLabel,
-//   })),
-// );
+
 const TopCenterContainer = lazy(() => import("../shared/containers/top-center-container"));
 const BottomRightContainer = lazy(() =>
   import("../shared/containers/bottom-right-container").then((module) => ({ default: module.BottomRightContainer })),
@@ -85,52 +81,12 @@ const RealmTransferManager = lazy(() =>
   })),
 );
 
-const StructureSynchronizerManager = () => {
-  useSyncPlayerStructures();
-  return null;
-};
-
-// Modal component to prevent unnecessary World re-renders
-const ModalOverlay = () => {
-  const showModal = useUIStore((state) => state.showModal);
-  const modalContent = useUIStore((state) => state.modalContent);
-
-  return (
-    <Suspense fallback={null}>
-      <BlankOverlayContainer zIndex={120} open={showModal}>
-        {modalContent}
-      </BlankOverlayContainer>
-    </Suspense>
-  );
-};
-
-// Blank overlay component for onboarding
-const OnboardingOverlay = ({ backgroundImage }: { backgroundImage: string }) => {
-  const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
-
-  return (
-    <Suspense fallback={null}>
-      <BlankOverlayContainer zIndex={110} open={showBlankOverlay}>
-        <Onboarding backgroundImage={backgroundImage} />
-      </BlankOverlayContainer>
-    </Suspense>
-  );
-};
-
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
 
-  // keep this here to see if it's rerendering
-  console.log("rerender World");
-
   return (
     <>
-      <StoreManagers />
-      <StructureSynchronizerManager />
-      <NotLoggedInMessage />
-      <GameWinnerMessage />
-      <BlitzSetHyperstructureShareholdersTo100 />
-      <AutomationManager />
+      <WorldEffects />
 
       {/* Main world layer */}
       <div
@@ -148,50 +104,16 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
       >
         <div className="vignette" />
 
-        <Suspense fallback={<LoadingScreen backgroundImage={backgroundImage} />}>
+        <Suspense fallback={<WorldSuspenseFallback backgroundImage={backgroundImage} />}>
           <RealmTransferManager zIndex={100} />
 
-          {/* Extracted modal components */}
-          <ModalOverlay />
-          <OnboardingOverlay backgroundImage={backgroundImage} />
-
-          <ActionInstructions />
-          <ActionInfo />
-          <WorldContextMenu />
-          {/* <EntitiesInfoLabel /> */}
-
-          <div>
-            <LeftMiddleContainer>
-              <LeftNavigationModule />
-            </LeftMiddleContainer>
-
-            <TopCenterContainer>
-              <TopMiddleNavigation />
-            </TopCenterContainer>
-
-            <BottomMiddleContainer>
-              <SelectedArmy />
-            </BottomMiddleContainer>
-
-            <BottomRightContainer>
-              <MiniMapNavigation />
-            </BottomRightContainer>
-
-            <RightMiddleContainer>
-              <RightNavigationModule />
-            </RightMiddleContainer>
-
-            <TopLeftContainer>
-              <TopLeftNavigation />
-            </TopLeftContainer>
-          </div>
+          <WorldOverlays backgroundImage={backgroundImage} />
+          <WorldInteractiveLayers />
 
           <LoadingOroborus loading={isLoadingScreenEnabled} />
 
           <StoryEventStream />
 
-          {/* todo: put this somewhere else maybe ? */}
-          {/* <Redirect to="/" /> */}
           <Leva hidden={!env.VITE_PUBLIC_GRAPHICS_DEV} collapsed titleBar={{ position: { x: 0, y: 50 } }} />
           <Tooltip />
           <VersionDisplay />
@@ -201,6 +123,95 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     </>
   );
 };
+
+const WorldEffects = () => (
+  <>
+    <StoreManagers />
+    <StructureSynchronizer />
+    <NotLoggedInMessage />
+    <GameWinnerMessage />
+    <BlitzSetHyperstructureShareholdersTo100 />
+    <AutomationManager />
+  </>
+);
+
+const StructureSynchronizer = () => {
+  useSyncPlayerStructures();
+  return null;
+};
+
+const WorldSuspenseFallback = ({ backgroundImage }: { backgroundImage: string }) => (
+  <LoadingScreen backgroundImage={backgroundImage} />
+);
+
+const WorldOverlays = ({ backgroundImage }: { backgroundImage: string }) => (
+  <>
+    <ModalOverlay />
+    <BlankOverlay backgroundImage={backgroundImage} />
+  </>
+);
+
+const ModalOverlay = () => {
+  const showModal = useUIStore((state) => state.showModal);
+  const modalContent = useUIStore((state) => state.modalContent);
+
+  return (
+    <Suspense fallback={null}>
+      <BlankOverlayContainer zIndex={120} open={showModal}>
+        {modalContent}
+      </BlankOverlayContainer>
+    </Suspense>
+  );
+};
+
+const BlankOverlay = ({ backgroundImage }: { backgroundImage: string }) => {
+  const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
+
+  return (
+    <Suspense fallback={null}>
+      <BlankOverlayContainer zIndex={110} open={showBlankOverlay}>
+        <Onboarding backgroundImage={backgroundImage} />
+      </BlankOverlayContainer>
+    </Suspense>
+  );
+};
+
+const WorldInteractiveLayers = () => (
+  <>
+    <ActionInstructions />
+    <ActionInfo />
+    <WorldContextMenu />
+    <WorldHud />
+  </>
+);
+
+const WorldHud = () => (
+  <div>
+    <LeftMiddleContainer>
+      <LeftNavigationModule />
+    </LeftMiddleContainer>
+
+    <TopCenterContainer>
+      <TopMiddleNavigation />
+    </TopCenterContainer>
+
+    <BottomMiddleContainer>
+      <SelectedArmy />
+    </BottomMiddleContainer>
+
+    <BottomRightContainer>
+      <MiniMapNavigation />
+    </BottomRightContainer>
+
+    <RightMiddleContainer>
+      <RightNavigationModule />
+    </RightMiddleContainer>
+
+    <TopLeftContainer>
+      <TopLeftNavigation />
+    </TopLeftContainer>
+  </div>
+);
 
 const VersionDisplay = () => (
   <div className="absolute bottom-4 right-6 text-xs text-white/60 hover:text-white pointer-events-auto bg-white/20 rounded-lg p-1">

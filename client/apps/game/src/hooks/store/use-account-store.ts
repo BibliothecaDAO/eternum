@@ -6,7 +6,7 @@ interface AccountState {
   account: Account | AccountInterface | null;
   setAccount: (account: Account | AccountInterface | null) => void;
   connector: ControllerConnector | null;
-  setConnector: (connector: ControllerConnector) => void;
+  setConnector: (connector: ControllerConnector | null) => void;
   accountName: string | null;
   setAccountName: (accountName: string | null) => void;
 }

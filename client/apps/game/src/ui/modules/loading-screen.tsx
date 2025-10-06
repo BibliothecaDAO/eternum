@@ -1,9 +1,15 @@
 import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { OnboardingContainer } from "@/ui/layouts/onboarding";
 import { useSeasonStart } from "@bibliothecadao/react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "../../index.css";
-export const LoadingScreen = ({ backgroundImage }: { backgroundImage: string }) => {
+
+interface LoadingScreenProps {
+  backgroundImage: string;
+  progress?: number;
+}
+
+export const LoadingScreen = ({ backgroundImage, progress }: LoadingScreenProps) => {
   const statements = [
     "Syncing Realms...",
     "Gathering Dragonhide...",
@@ -26,8 +32,11 @@ export const LoadingScreen = ({ backgroundImage }: { backgroundImage: string }) 
   ];
 
   const [currentStatement, setCurrentStatement] = useState(0);
-  // sync progress out of 100
-  const initialSyncProgress = useSyncStore((state) => state.initialSyncProgress);
+  const storeProgress = useSyncStore((state) => state.initialSyncProgress);
+  const resolvedProgress = useMemo(() => {
+    const next = typeof progress === "number" ? progress : storeProgress;
+    return Math.max(0, Math.min(100, Math.round(next)));
+  }, [progress, storeProgress]);
 
   useEffect(() => {
     // Set initial statement
@@ -51,12 +60,9 @@ export const LoadingScreen = ({ backgroundImage }: { backgroundImage: string }) 
           <img src="/images/logos/eternum-loader.png" className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8" />
           {`${statements[currentStatement]}`}
           <div className="w-full  rounded-full h-2.5 mt-4">
-            <div
-              className="bg-gold h-2.5 rounded-full transition-all duration-300"
-              style={{ width: `${initialSyncProgress}%` }}
-            />
+            <div className="bg-gold h-2.5 rounded-full transition-all duration-300" style={{ width: `${resolvedProgress}%` }} />
           </div>
-          <div className="text-sm mt-2 ">{initialSyncProgress === 100 ? 99 : initialSyncProgress}%</div>
+          <div className="text-sm mt-2 ">{resolvedProgress === 100 ? 99 : resolvedProgress}%</div>
         </div>
       </div>
     </OnboardingContainer>
