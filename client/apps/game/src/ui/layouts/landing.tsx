@@ -1,8 +1,7 @@
 import clsx from "clsx";
-import { useEffect, useMemo, useState } from "react";
 import type { TransitionEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { Controller } from "../modules/controller/controller";
 import { LANDING_BACKGROUNDS } from "./landing-backgrounds";
 
 interface LandingLayoutProps {
@@ -128,10 +127,6 @@ export const LandingLayout = ({ backgroundImage }: LandingLayoutProps) => {
 
       <div className="relative z-10 flex min-h-screen flex-col">
         <header className="flex flex-col gap-6 px-6 py-6 lg:px-10">
-          <div className="flex justify-end">
-            <Controller />
-          </div>
-
           <nav aria-label="Landing sections" className="flex justify-center">
             <div className="flex flex-wrap gap-2 rounded-full border border-white/10 bg-black/50 p-1 backdrop-blur">
               {SECTIONS.map((section) => (
