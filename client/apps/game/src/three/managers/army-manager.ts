@@ -23,8 +23,13 @@ import {
 } from "@bibliothecadao/types";
 import { Color, Euler, Group, Raycaster, Scene, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
-import type { CosmeticAttachmentTemplate } from "../cosmetics";
-import { CosmeticAttachmentManager, playerCosmeticsStore, resolveArmyCosmetic } from "../cosmetics";
+import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
+import {
+  CosmeticAttachmentManager,
+  playerCosmeticsStore,
+  resolveArmyCosmetic,
+  resolveArmyMountTransforms,
+} from "../cosmetics";
 import { ArmyData, RenderChunkSize } from "../types";
 import type { ArmyInstanceData } from "../types/army";
 import { getHexForWorldPosition, getWorldPositionForHex, hashCoordinates } from "../utils";
@@ -117,6 +122,7 @@ export class ArmyManager {
   private attachmentManager: CosmeticAttachmentManager;
   private armyAttachmentSignatures: Map<number, string> = new Map();
   private activeArmyAttachmentEntities: Set<number> = new Set();
+  private readonly armyAttachmentTransformScratch = new Map<string, AttachmentTransform>();
 
   // Reusable objects for memory optimization
   private readonly tempPosition: Vector3 = new Vector3();
@@ -517,11 +523,19 @@ export class ArmyManager {
         this.tempCosmeticPosition.copy(worldPosition);
       }
 
-      this.attachmentManager.updateAttachmentTransforms(entityId, {
+      const baseTransform = {
         position: this.tempCosmeticPosition,
         rotation: instanceData?.rotation,
         scale: instanceData?.scale ?? this.scale,
-      });
+      };
+
+      const { x, y } = army.hexCoords.getContract();
+      const biome = Biome.getBiome(x, y);
+      const modelType = this.armyModel.getModelTypeForEntity(entityId, army.category, army.tier, biome);
+
+      const mountTransforms = resolveArmyMountTransforms(modelType, baseTransform, this.armyAttachmentTransformScratch);
+
+      this.attachmentManager.updateAttachmentTransforms(entityId, baseTransform, mountTransforms);
     });
   }
 

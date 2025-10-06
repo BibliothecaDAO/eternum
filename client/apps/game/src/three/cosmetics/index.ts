@@ -5,3 +5,4 @@ export * from "./asset-cache";
 export * from "./resolver";
 export * from "./attachment-manager";
 export * from "./debug-controller";
+export * from "./mount-resolver";

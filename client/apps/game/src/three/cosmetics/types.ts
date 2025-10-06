@@ -1,4 +1,5 @@
 import type { TroopTier, TroopType, StructureType } from "@bibliothecadao/types";
+import type { Euler, Vector3 } from "three";
 import type { ModelType } from "../types/army";
 
 export type CosmeticCategory = "army-skin" | "structure-skin" | "attachment";
@@ -31,6 +32,12 @@ export interface CosmeticAttachmentTemplate {
   mountPoint?: string;
   /** Logical slot for mutual exclusivity (e.g. "weapon", "back"). */
   slot?: string;
+}
+
+export interface AttachmentTransform {
+  position: Vector3;
+  rotation?: Euler;
+  scale?: Vector3;
 }
 
 export interface CosmeticRegistryEntry {

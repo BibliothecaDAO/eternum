@@ -1,7 +1,7 @@
 import { Euler, Mesh, Object3D, Scene, Vector3 } from "three";
 import { CosmeticAssetHandle, ensureCosmeticAsset, loadCosmeticAsset } from "./asset-cache";
 import { getCosmeticRegistry } from "./registry";
-import { CosmeticAttachmentTemplate, CosmeticRegistryEntry } from "./types";
+import { AttachmentTransform, CosmeticAttachmentTemplate, CosmeticRegistryEntry } from "./types";
 
 interface AttachmentHandle {
   id: string;
@@ -100,6 +100,7 @@ export class CosmeticAttachmentManager {
   updateAttachmentTransforms(
     entityId: number,
     transform: { position: Vector3; rotation?: Euler; scale?: Vector3 },
+    mountTransforms?: Map<string, AttachmentTransform>,
   ) {
     const handles = this.attachments.get(entityId);
     if (!handles) return;
@@ -110,33 +111,43 @@ export class CosmeticAttachmentManager {
       const source = this.templateSources.get(template.id);
       const canonical = source?.template;
 
-      object.position.copy(transform.position);
+      const mount = template.mountPoint ? mountTransforms?.get(template.mountPoint) : undefined;
+
+      const basePosition = mount?.position ?? transform.position;
+      object.position.copy(basePosition);
+
+      const baseRotation = mount?.rotation ?? transform.rotation;
+      const baseScale = mount?.scale ?? transform.scale;
 
       const offset = template.offset ?? canonical?.offset;
       if (offset) {
         this.tempOffset.set(offset[0], offset[1], offset[2]);
+        if (baseRotation) {
+          this.tempOffset.applyEuler(baseRotation);
+        }
         object.position.add(this.tempOffset);
       }
 
-      const baseRotation = transform.rotation;
       const rotation = template.rotation ?? canonical?.rotation;
       if (rotation || baseRotation) {
-        this.tempRotation.set(rotation?.[0] ?? 0, rotation?.[1] ?? 0, rotation?.[2] ?? 0);
         if (baseRotation) {
-          this.tempRotation.x += baseRotation.x;
-          this.tempRotation.y += baseRotation.y;
-          this.tempRotation.z += baseRotation.z;
+          this.tempRotation.copy(baseRotation);
+        } else {
+          this.tempRotation.set(0, 0, 0);
+        }
+        if (rotation) {
+          this.tempRotation.x += rotation[0];
+          this.tempRotation.y += rotation[1];
+          this.tempRotation.z += rotation[2];
         }
         object.rotation.copy(this.tempRotation);
+      } else {
+        object.rotation.set(0, 0, 0);
       }
 
       const templateScale = template.scale ?? canonical?.scale ?? DEFAULT_SCALE;
-      if (transform.scale) {
-        object.scale.set(
-          transform.scale.x * templateScale,
-          transform.scale.y * templateScale,
-          transform.scale.z * templateScale,
-        );
+      if (baseScale) {
+        object.scale.set(baseScale.x * templateScale, baseScale.y * templateScale, baseScale.z * templateScale);
       } else {
         object.scale.set(templateScale, templateScale, templateScale);
       }

@@ -17,12 +17,13 @@ import { createStructureLabel, updateStructureLabel } from "../utils/labels/labe
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { FXManager } from "./fx-manager";
+import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
 import {
   CosmeticAttachmentManager,
   playerCosmeticsStore,
   resolveStructureCosmetic,
+  resolveStructureMountTransforms,
 } from "../cosmetics";
-import type { CosmeticAttachmentTemplate } from "../cosmetics";
 
 const INITIAL_STRUCTURE_CAPACITY = 64;
 const WONDER_MODEL_INDEX = 4;
@@ -57,7 +58,7 @@ export class StructureManager {
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
   private labelPool = new LabelPool();
   private dummy: Object3D = new Object3D();
-  structures: Structures = new Structures();
+  public readonly structures: Structures;
   structureHexCoords: Map<number, Set<number>> = new Map();
   private currentChunk: string = "";
   private renderChunkSize: RenderChunkSize;
@@ -84,6 +85,13 @@ export class StructureManager {
   private activeStructureAttachmentEntities: Set<number> = new Set();
   private readonly tempCosmeticPosition: Vector3 = new Vector3();
   private readonly tempCosmeticRotation: Euler = new Euler();
+  private readonly structureAttachmentTransformScratch = new Map<string, AttachmentTransform>();
+  private readonly handleStructureRecordRemoved = (structure: StructureInfo) => {
+    const entityNumericId = Number(structure.entityId);
+    this.attachmentManager.removeAttachments(entityNumericId);
+    this.activeStructureAttachmentEntities.delete(entityNumericId);
+    this.structureAttachmentSignatures.delete(entityNumericId);
+  };
 
   constructor(
     scene: Scene,
@@ -97,6 +105,7 @@ export class StructureManager {
   ) {
     this.scene = scene;
     this.renderChunkSize = renderChunkSize;
+    this.structures = new Structures(this.handleStructureRecordRemoved);
     this.labelsGroup = labelsGroup || new Group();
     this.hexagonScene = hexagonScene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
@@ -625,10 +634,20 @@ export class StructureManager {
 
           this.tempCosmeticPosition.copy(position);
           this.tempCosmeticRotation.copy(this.dummy.rotation);
-          this.attachmentManager.updateAttachmentTransforms(entityNumericId, {
+
+          const baseTransform = {
             position: this.tempCosmeticPosition,
             rotation: this.tempCosmeticRotation,
-          });
+            scale: this.dummy.scale,
+          };
+
+          const mountTransforms = resolveStructureMountTransforms(
+            structure.structureType,
+            baseTransform,
+            this.structureAttachmentTransformScratch,
+          );
+
+          this.attachmentManager.updateAttachmentTransforms(entityNumericId, baseTransform, mountTransforms);
         } else if (this.activeStructureAttachmentEntities.has(entityNumericId)) {
           this.attachmentManager.removeAttachments(entityNumericId);
           this.activeStructureAttachmentEntities.delete(entityNumericId);
@@ -1135,6 +1154,8 @@ export class StructureManager {
 class Structures {
   private structures: Map<StructureType, Map<ID, StructureInfo>> = new Map();
 
+  constructor(private readonly onRemove?: (structure: StructureInfo) => void) {}
+
   addStructure(
     entityId: ID,
     structureType: StructureType,
@@ -1190,11 +1211,14 @@ class Structures {
 
   removeStructureFromPosition(hexCoords: { col: number; row: number }) {
     this.structures.forEach((structures) => {
-      structures.forEach((structure) => {
+      const removalQueue: ID[] = [];
+      structures.forEach((structure, entityId) => {
         if (structure.hexCoords.col === hexCoords.col && structure.hexCoords.row === hexCoords.row) {
-          structures.delete(structure.entityId);
+          removalQueue.push(entityId);
+          this.onRemove?.(structure);
         }
       });
+      removalQueue.forEach((entityId) => structures.delete(entityId));
     });
   }
 
@@ -1208,6 +1232,7 @@ class Structures {
     this.structures.forEach((structures) => {
       const structure = structures.get(entityId);
       if (structure) {
+        this.onRemove?.(structure);
         structures.delete(entityId);
         removedStructure = structure;
       }
