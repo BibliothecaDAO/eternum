@@ -118,7 +118,7 @@ jobs:
                   candidate = datetime.combine(current_date, slot, tzinfo=timezone.utc)
                   if candidate >= now or day_offset > 0:
                       upcoming.append(candidate)
-                  if len(upcoming) == 3:
+                  if len(upcoming) >= 4:
                       break
               day_offset += 1
 
