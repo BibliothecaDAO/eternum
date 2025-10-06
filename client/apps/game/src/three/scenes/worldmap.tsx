@@ -659,10 +659,35 @@ export default class WorldmapScene extends HexagonScene {
       : Math.max(CameraView.Close, this.currentCameraView - 1);
 
     if (nextView === this.currentCameraView) {
+      if (this.isCameraDistanceOutOfSync(this.currentCameraView)) {
+        this.changeCameraView(this.currentCameraView);
+      }
       return;
     }
 
     this.changeCameraView(nextView);
+  }
+
+  private getTargetDistanceForCameraView(view: CameraView): number {
+    switch (view) {
+      case CameraView.Close:
+        return 10;
+      case CameraView.Far:
+        return 40;
+      case CameraView.Medium:
+      default:
+        return 20;
+    }
+  }
+
+  private getCurrentCameraDistance(): number {
+    return this.controls.object.position.distanceTo(this.controls.target);
+  }
+
+  private isCameraDistanceOutOfSync(view: CameraView, tolerance: number = 1): boolean {
+    const currentDistance = this.getCurrentCameraDistance();
+    const targetDistance = this.getTargetDistanceForCameraView(view);
+    return Math.abs(currentDistance - targetDistance) > tolerance;
   }
 
   private normalizeWheelDelta(event: WheelEvent): number {
