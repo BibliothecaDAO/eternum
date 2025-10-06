@@ -41,6 +41,7 @@ export class CosmeticAttachmentManager {
   private readonly templatePools = new Map<string, AttachmentTemplatePool>();
   private readonly templateSources = new Map<string, AttachmentSource>();
   private readonly warnedMissing = new Set<string>();
+  private readonly pendingPlaceholderUpgrades = new Set<string>();
   private readonly tempOffset = new Vector3();
   private readonly tempRotation = new Euler();
 
@@ -60,6 +61,14 @@ export class CosmeticAttachmentManager {
       const object = this.acquireAttachmentObject(template);
       if (!object) {
         return;
+      }
+
+      if (import.meta.env.DEV) {
+        console.debug(
+          "[Cosmetics Debug] spawn attachment",
+          template.id,
+          object.userData.cosmeticPlaceholder ? "placeholder" : "ready",
+        );
       }
 
       const handle: AttachmentHandle = {
@@ -178,6 +187,9 @@ export class CosmeticAttachmentManager {
         if (upgraded) {
           this.disposePlaceholder(object);
           object = upgraded;
+          if (import.meta.env.DEV) {
+            console.debug("[Cosmetics Debug] upgraded placeholder for", template.id);
+          }
         }
       }
     }
@@ -197,10 +209,8 @@ export class CosmeticAttachmentManager {
     const source = pool.source;
     if (source) {
       const handle = ensureCosmeticAsset(source.entry);
-      if (handle.status === "idle") {
-        void loadCosmeticAsset(source.entry).catch((error) => {
-          console.warn(`[Cosmetics] Failed to load attachment asset for ${source.entry.id}`, error);
-        });
+      if (handle.status === "idle" || handle.status === "loading") {
+        this.queuePlaceholderUpgrade(template.id, source);
       }
 
       if (handle.status === "ready") {
@@ -221,6 +231,74 @@ export class CosmeticAttachmentManager {
     placeholder.name = `cosmetic-placeholder:${template.id}`;
     placeholder.userData.cosmeticPlaceholder = true;
     return placeholder;
+  }
+
+  private queuePlaceholderUpgrade(templateId: string, source: AttachmentSource) {
+    if (this.pendingPlaceholderUpgrades.has(templateId)) {
+      return;
+    }
+
+    this.pendingPlaceholderUpgrades.add(templateId);
+    void loadCosmeticAsset(source.entry)
+      .then(() => {
+        this.upgradePlaceholdersForTemplate(templateId);
+      })
+      .catch((error) => {
+        console.warn(`[Cosmetics] Failed to load attachment asset for ${source.entry.id}`, error);
+      })
+      .finally(() => {
+        this.pendingPlaceholderUpgrades.delete(templateId);
+      });
+  }
+
+  private upgradePlaceholdersForTemplate(templateId: string) {
+    const pool = this.templatePools.get(templateId);
+    const source = pool?.source;
+    if (!pool || !source) {
+      return;
+    }
+
+    const handle = ensureCosmeticAsset(source.entry);
+    if (handle.status !== "ready") {
+      return;
+    }
+
+    this.attachments.forEach((handles) => {
+      handles.forEach((attachment) => {
+        if (attachment.template.id !== templateId) return;
+        const placeholder = attachment.object;
+        if (!placeholder.userData.cosmeticPlaceholder) {
+          return;
+        }
+
+        const upgraded = this.cloneFromAsset(handle, source.assetIndex);
+        if (!upgraded) {
+          return;
+        }
+
+        upgraded.position.copy(placeholder.position);
+        upgraded.quaternion.copy(placeholder.quaternion);
+        upgraded.scale.copy(placeholder.scale);
+        upgraded.visible = placeholder.visible;
+        upgraded.userData = {
+          ...placeholder.userData,
+          cosmeticPlaceholder: false,
+        };
+
+        const parent = placeholder.parent ?? this.scene;
+        parent.add(upgraded);
+        parent.remove(placeholder);
+
+        this.disposePlaceholder(placeholder);
+        pool.inUse.delete(placeholder);
+        pool.inUse.add(upgraded);
+        attachment.object = upgraded;
+
+        if (import.meta.env.DEV) {
+          console.debug("[Cosmetics Debug] upgraded in-place for", templateId);
+        }
+      });
+    });
   }
 
   private cloneFromAsset(handle: CosmeticAssetHandle, assetIndex?: number): Object3D | undefined {

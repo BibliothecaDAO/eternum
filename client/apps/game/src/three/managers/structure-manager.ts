@@ -9,6 +9,13 @@ import { BuildingType, ClientComponents, FELT_CENTER, ID, RelicEffect, Structure
 import { Euler, Group, Object3D, Scene, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { GuardArmy } from "../../../../../../packages/core/src/stores/map-data-store";
+import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
+import {
+  CosmeticAttachmentManager,
+  playerCosmeticsStore,
+  resolveStructureCosmetic,
+  resolveStructureMountTransforms,
+} from "../cosmetics";
 import { StructureInfo } from "../types";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
@@ -17,13 +24,6 @@ import { createStructureLabel, updateStructureLabel } from "../utils/labels/labe
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { FXManager } from "./fx-manager";
-import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
-import {
-  CosmeticAttachmentManager,
-  playerCosmeticsStore,
-  resolveStructureCosmetic,
-  resolveStructureMountTransforms,
-} from "../cosmetics";
 
 const INITIAL_STRUCTURE_CAPACITY = 64;
 const WONDER_MODEL_INDEX = 4;
@@ -554,6 +554,31 @@ export class StructureManager {
       });
   }
 
+  private resolveStructureAttachmentsForRender(structure: StructureInfo): CosmeticAttachmentTemplate[] {
+    const baseAttachments = structure.attachments ? [...structure.attachments] : [];
+
+    if (import.meta.env.DEV && structure.structureType === StructureType.Realm) {
+      if (structure.isMine) {
+        console.debug("[Cosmetics Debug] Owned realm attachments before override", structure.entityId, baseAttachments);
+      }
+      const hasDebugAttachment = baseAttachments.some((template) => template.id === "legacy-realm-aura");
+      if (!hasDebugAttachment) {
+        baseAttachments.push({
+          id: "legacy-realm-aura",
+          assetPath: "models/cosmetics/high-res/s1_legacy_realm_aura.glb",
+          mountPoint: "origin",
+          slot: "aura",
+          persistent: true,
+        });
+        if (structure.isMine) {
+          console.debug("[Cosmetics Debug] Injected debug aura for owned realm", structure.entityId);
+        }
+      }
+    }
+
+    return baseAttachments;
+  }
+
   private async performVisibleStructuresUpdate(): Promise<void> {
     const structuresMap = this.structures.getStructures();
     const structureEntries = Array.from(structuresMap.entries());
@@ -602,7 +627,7 @@ export class StructureManager {
 
         const existingLabel = this.entityIdLabels.get(structure.entityId);
         if (existingLabel) {
-        this.updateStructureLabelData(structure, existingLabel);
+          this.updateStructureLabelData(structure, existingLabel);
           const newPosition = getWorldPositionForHex(structure.hexCoords);
           newPosition.y += 2;
           existingLabel.position.copy(newPosition);
@@ -621,7 +646,7 @@ export class StructureManager {
         this.dummy.updateMatrix();
 
         const entityNumericId = Number(structure.entityId);
-        const templates = structure.attachments ?? [];
+        const templates = this.resolveStructureAttachmentsForRender(structure);
         if (templates.length > 0) {
           attachmentRetain.add(entityNumericId);
           const signature = this.getAttachmentSignature(templates);
