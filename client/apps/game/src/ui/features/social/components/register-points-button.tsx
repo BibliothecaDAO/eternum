@@ -70,7 +70,6 @@ export const RegisterPointsButton = ({ className }: RegisterPointsButtonProps) =
       setPlayersByRank(leaderboardManager.playersByRank);
 
       console.log("Leaderboard hard refresh complete");
-        
     } catch (error) {
       console.error(error);
     } finally {
