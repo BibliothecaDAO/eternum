@@ -36,7 +36,10 @@ interface UseAttackTargetResult {
   isLoading: boolean;
 }
 
-export const useAttackTargetData = (attackerEntityId: ID, targetHex: { x: number; y: number }): UseAttackTargetResult => {
+export const useAttackTargetData = (
+  attackerEntityId: ID,
+  targetHex: { x: number; y: number },
+): UseAttackTargetResult => {
   const {
     network: { toriiClient },
     setup: {
