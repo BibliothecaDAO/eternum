@@ -291,12 +291,13 @@ export function defineContractComponents(world: World) {
           total_player_count_committed: RecsType.Number,
           total_player_count_revealed: RecsType.Number,
           total_prize_amount: RecsType.BigInt,
+          total_prize_amount_calculated: RecsType.BigInt,
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "PlayersRankTrial",
-            types: ["u128", "ContractAddress", "u16", "u128", "u128", "u16", "u16", "u128"],
+            types: ["u128", "ContractAddress", "u16", "u128", "u128", "u16", "u16", "u128", "u128"],
             customTypes: [],
           },
         },
