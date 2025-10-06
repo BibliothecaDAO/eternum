@@ -441,9 +441,7 @@ const MarketplaceCollectionCard = memo(function MarketplaceCollectionCard({
     );
   }
 
-  return (
-    <CollectionCard collectionKey={collectionKey} collection={collection} stats={stats} variants={variants} />
-  );
+  return <CollectionCard collectionKey={collectionKey} collection={collection} stats={stats} variants={variants} />;
 });
 
 const CurrentCycleCard = memo(function CurrentCycleCard({

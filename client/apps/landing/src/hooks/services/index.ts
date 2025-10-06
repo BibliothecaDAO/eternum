@@ -173,10 +173,7 @@ export async function fetchPlayerLeaderboard(
       gameClientFetch<HyperstructureRow[]>(QUERIES.HYPERSTRUCTURES_WITH_MULTIPLIER),
       gameClientFetch<HyperstructureLeaderboardConfigRow[]>(QUERIES.HYPERSTRUCTURE_LEADERBOARD_CONFIG),
       gameClientFetch<HyperstructureRealmCountRow[]>(
-        QUERIES.HYPERSTRUCTURES_WITH_REALM_COUNT.replaceAll(
-          "{radius}",
-          DEFAULT_HYPERSTRUCTURE_RADIUS.toString(),
-        ),
+        QUERIES.HYPERSTRUCTURES_WITH_REALM_COUNT.replaceAll("{radius}", DEFAULT_HYPERSTRUCTURE_RADIUS.toString()),
       ),
     ]);
 

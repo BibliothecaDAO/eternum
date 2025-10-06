@@ -45,9 +45,7 @@ export const calculateUnregisteredShareholderPointsCache = ({
     const realmCount = realmCountPerHyperstructures?.get(hyperstructureId) ?? 0;
 
     const pointsPerSecond =
-      hyperstructure && realmCount > 0
-        ? pointsPerSecondWithoutMultiplier * pointsMultiplier * realmCount
-        : 0;
+      hyperstructure && realmCount > 0 ? pointsPerSecondWithoutMultiplier * pointsMultiplier * realmCount : 0;
     if (pointsPerSecond === 0) continue;
 
     const shareholders = hyperstructureShareholder.shareholders as unknown as ContractAddressAndAmount[];
