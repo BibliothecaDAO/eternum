@@ -12,6 +12,7 @@ import {
   GuardData,
   Hyperstructure,
   HyperstructureRealmCountDataRaw,
+  PlayerLeaderboardRow,
   PlayerRelicsData,
   PlayersData,
   PlayerStructure,
@@ -38,6 +39,7 @@ import {
 } from "../../utils/sql";
 import { BATTLE_QUERIES } from "./battle";
 import { HYPERSTRUCTURE_QUERIES } from "./hyperstructure";
+import { PLAYER_LEADERBOARD_QUERY } from "./leaderboard";
 import { QUEST_QUERIES } from "./quest";
 import { RELICS_QUERIES } from "./relics";
 import { extractRelicsFromResourceData } from "./relics-utils";
@@ -591,5 +593,15 @@ export class SqlApi {
     const results = await fetchWithErrorHandling<{ total_count: number }>(url, "Failed to count story events");
     const firstResult = extractFirstOrNull(results);
     return firstResult?.total_count ?? 0;
+  }
+
+  /**
+   * Fetches player leaderboard data from the SQL database.
+   * SQL queries always return arrays.
+   */
+  async fetchPlayerLeaderboard(limit: number = 10, offset: number = 0): Promise<PlayerLeaderboardRow[]> {
+    const query = PLAYER_LEADERBOARD_QUERY.replace("{limit}", limit.toString()).replace("{offset}", offset.toString());
+    const url = buildApiUrl(this.baseUrl, query);
+    return await fetchWithErrorHandling<PlayerLeaderboardRow>(url, "Failed to fetch player leaderboard");
   }
 }
