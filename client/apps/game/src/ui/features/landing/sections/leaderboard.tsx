@@ -51,13 +51,13 @@ export const LandingLeaderboard = () => {
     }
 
     try {
-      const result = await fetchLandingLeaderboard(LEADERBOARD_LIMIT, 0, { signal: controller.signal });
+      const result = await fetchLandingLeaderboard(LEADERBOARD_LIMIT, 0);
 
       if (!isMountedRef.current || controller.signal.aborted || activeRequestRef.current !== controller) {
         return;
       }
 
-      setEntries([...result, ...result, ...result, ...result]);
+      setEntries(result);
       setLastUpdatedAt(Date.now());
       setError(null);
     } catch (caughtError) {
