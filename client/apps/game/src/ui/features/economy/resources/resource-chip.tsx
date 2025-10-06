@@ -52,60 +52,65 @@ export const ResourceChip = ({
   const [displayBalance, setDisplayBalance] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
-  const { currentDefaultTick: currentTick, currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
+  const { currentDefaultTick, currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
+  const currentTick = currentDefaultTick || 0;
+  const resourceEnumId = resourceId as ResourcesIds;
 
   const actualBalance = useMemo(() => {
     return resourceManager.balance(resourceId);
-  }, [resourceManager, currentTick]);
+  }, [resourceManager, resourceId, currentTick]);
 
   // Always show actual + produced (was previously only on hover)
   useEffect(() => {
     setDisplayBalance(Number(actualBalance || 0) + Number(amountProduced || 0n));
   }, [actualBalance, amountProduced]);
 
-  const production = useMemo(() => {
-    if (currentTick === 0) return null;
+  useEffect(() => {
+    if (currentTick === 0) return;
+
     const { balance, hasReachedMaxCapacity, amountProduced, amountProducedLimited } =
-      resourceManager.balanceWithProduction(currentTick, resourceId);
+      resourceManager.balanceWithProduction(currentTick, resourceEnumId);
+
     setBalance(balance);
     setHasReachedMaxCap(hasReachedMaxCapacity);
     setAmountProduced(amountProduced);
     setAmountProducedLimited(amountProducedLimited);
-    const resource = resourceManager.getResource();
-    if (!resource) return null;
-    return ResourceManager.balanceAndProduction(resource, resourceId).production;
-  }, [resourceManager, currentTick, resourceId, hasReachedMaxCap, amountProducedLimited, amountProduced, balance]);
+  }, [resourceManager, resourceEnumId, currentTick]);
+
+  const productionInfo = useMemo(() => {
+    const resourceComponent = resourceManager.getResource();
+    if (!resourceComponent) return null;
+
+    return ResourceManager.balanceAndProduction(resourceComponent, resourceEnumId);
+  }, [resourceManager, resourceEnumId, currentTick]);
+
+  const productionData = useMemo(() => {
+    if (!productionInfo) return null;
+
+    return ResourceManager.calculateResourceProductionData(resourceEnumId, productionInfo, currentTick);
+  }, [productionInfo, resourceEnumId, currentTick]);
+
+  const productionRate = productionData?.productionPerSecond ?? 0;
+  const isProducing = productionData?.isProducing ?? false;
 
   const timeUntilValueReached = useMemo(() => {
     return resourceManager.timeUntilValueReached(currentTick, resourceId);
   }, [resourceManager, currentTick]);
 
-  const productionRate = useMemo(() => {
-    return Number(divideByPrecision(Number(production?.production_rate || 0), false));
-  }, [production]);
-
-  const productionEndsAt = useMemo(() => {
-    return resourceManager.getProductionEndsAt(resourceId);
-  }, [resourceManager]);
-
-  const isActive = useMemo(() => {
-    return resourceManager.isActive(resourceId);
-  }, [resourceManager]);
-
   useEffect(() => {
     const tickTime = configManager.getTick(TickIds.Default) * 1000;
     let realTick = currentTick;
 
-    if (isActive && !hasReachedMaxCap) {
+    if (isProducing && !hasReachedMaxCap) {
       const interval = setInterval(() => {
         realTick += 1;
-        const { hasReachedMaxCapacity } = resourceManager.balanceWithProduction(realTick, resourceId);
+        const { hasReachedMaxCapacity } = resourceManager.balanceWithProduction(realTick, resourceEnumId);
 
         setHasReachedMaxCap(hasReachedMaxCapacity);
       }, tickTime);
       return () => clearInterval(interval);
     }
-  }, [resourceManager, currentTick, isActive, hasReachedMaxCap]);
+  }, [resourceManager, resourceEnumId, currentTick, isProducing, hasReachedMaxCap]);
 
   const icon = useMemo(() => {
     return (
@@ -332,9 +337,7 @@ export const ResourceChip = ({
                 {currencyFormat(Number(amountProduced || 0n), 2)}
               </span> */}
               <div className="flex  gap-4 w-full col-span-12">
-                {isActive &&
-                !hasReachedMaxCap &&
-                (productionEndsAt > currentTick || resourceManager.isFood(resourceId)) ? (
+                {isProducing && !hasReachedMaxCap ? (
                   <div className={`self-center flex ${size === "large" ? "text-base" : "text-xs"} justify-end`}>
                     <div className={!isStorageFull ? "text-green" : "text-red"}>
                       +

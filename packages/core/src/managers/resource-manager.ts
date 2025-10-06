@@ -1,10 +1,17 @@
 // import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
-import { BuildingType, ClientComponents, ID, Resource, ResourcesIds } from "@bibliothecadao/types";
+import { BuildingType, ClientComponents, ID, Resource, ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { divideByPrecision, getBuildingCount, gramToKg, kgToGram, multiplyByPrecision } from "../utils";
 import { configManager } from "./config-manager";
+
+export interface ResourceProductionData {
+  productionPerSecond: number;
+  isProducing: boolean;
+  outputRemaining: number;
+  timeRemainingSeconds: number;
+}
 
 export class ResourceManager {
   entityId: ID;
@@ -1092,5 +1099,35 @@ export class ResourceManager {
     }
 
     return activeProductions;
+  }
+
+  public static calculateResourceProductionData(
+    resourceId: ResourcesIds,
+    productionInfo: ReturnType<typeof ResourceManager.balanceAndProduction>,
+    currentTick: number,
+  ): ResourceProductionData {
+    const productionPerSecond = divideByPrecision(Number(productionInfo.production.production_rate || 0), false);
+
+    const ticksSinceLastUpdate = currentTick - productionInfo.production.last_updated_at;
+    const totalAmountProduced = BigInt(ticksSinceLastUpdate) * productionInfo.production.production_rate;
+    const isFoodResource = resourceId === ResourcesIds.Wheat || resourceId === ResourcesIds.Fish;
+    const remainingOutput = isFoodResource
+      ? productionInfo.production.output_amount_left
+      : productionInfo.production.output_amount_left - totalAmountProduced;
+
+    const isProducing =
+      productionInfo.production.building_count > 0 &&
+      productionInfo.production.production_rate !== 0n &&
+      (isFoodResource || remainingOutput > 0n);
+
+    const outputRemainingNumber = Number(remainingOutput) / RESOURCE_PRECISION;
+    const timeRemainingSeconds = productionPerSecond > 0 ? outputRemainingNumber / productionPerSecond : 0;
+
+    return {
+      productionPerSecond,
+      isProducing,
+      outputRemaining: outputRemainingNumber,
+      timeRemainingSeconds,
+    };
   }
 }
