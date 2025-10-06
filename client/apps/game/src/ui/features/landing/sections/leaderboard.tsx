@@ -9,9 +9,9 @@ const LEADERBOARD_LIMIT = 25;
 const REFRESH_INTERVAL_MS = 60_000;
 
 const podiumStyles = [
-  "border-amber-300/50 bg-gradient-to-br from-amber-400/15 via-amber-500/5 to-transparent",
-  "border-zinc-300/40 bg-gradient-to-br from-zinc-100/10 via-zinc-600/5 to-transparent",
-  "border-orange-300/40 bg-gradient-to-br from-orange-400/10 via-orange-500/5 to-transparent",
+  "border-gold/70 shadow-[0_0_45px_-18px_rgba(255,215,128,0.55)] hover:shadow-[0_0_65px_-18px_rgba(255,215,128,0.75)]",
+  "border-white/40 shadow-[0_0_40px_-20px_rgba(226,232,240,0.45)] hover:shadow-[0_0_60px_-20px_rgba(226,232,240,0.55)]",
+  "border-orange-400/60 shadow-[0_0_42px_-20px_rgba(255,170,102,0.45)] hover:shadow-[0_0_62px_-20px_rgba(255,170,102,0.6)]",
 ] as const;
 
 const podiumProgress = [
@@ -50,7 +50,7 @@ export const LandingLeaderboard = () => {
     }
 
     try {
-      const result = await fetchLandingLeaderboard(LEADERBOARD_LIMIT, 0);
+      const result = await fetchLandingLeaderboard(LEADERBOARD_LIMIT, 0, { signal: controller.signal });
 
       if (!isMountedRef.current || controller.signal.aborted || activeRequestRef.current !== controller) {
         return;
@@ -138,15 +138,15 @@ export const LandingLeaderboard = () => {
     <div className="space-y-6" aria-hidden>
       <div className="grid gap-4 md:grid-cols-3">
         {[0, 1, 2].map((item) => (
-          <div key={item} className="h-36 animate-pulse rounded-2xl border border-white/10 bg-white/5" />
+          <div key={item} className="h-36 animate-pulse rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-black/30 to-black/70" />
         ))}
       </div>
-      <div className="h-80 animate-pulse rounded-2xl border border-white/10 bg-white/5" />
+      <div className="h-80 animate-pulse rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-black/30 to-black/70" />
     </div>
   );
 
   return (
-    <section className="w-full max-w-5xl space-y-8 rounded-3xl border border-white/10 bg-black/50 p-8 text-white shadow-[0_20px_60px_-30px_rgba(0,0,0,0.8)] backdrop-blur">
+    <section className="relative w-full max-w-5xl space-y-8 rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 via-black/40 to-black/90 p-8 text-white shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl">
       <header className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           <h2 className="text-3xl font-semibold text-white">Leaderboard</h2>
@@ -176,7 +176,7 @@ export const LandingLeaderboard = () => {
       {isLoading && entries.length === 0 ? (
         renderSkeleton()
       ) : entries.length === 0 ? (
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center text-sm text-white/70">
+        <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-black/35 to-black/75 p-8 text-center text-sm text-white/70 shadow-[0_25px_50px_-25px_rgba(12,10,35,0.75)]">
           No ranked players yet. Check back soon once battles begin.
         </div>
       ) : (
@@ -189,8 +189,7 @@ export const LandingLeaderboard = () => {
 
                 return (
                   <article
-                    key={entry.address}
-                    className={`flex h-full flex-col justify-between rounded-2xl border border-white/10 bg-white/5 p-5 shadow-[0_10px_30px_-15px_rgba(0,0,0,0.9)] ${podiumStyles[index] ?? podiumStyles[2]}`}
+                    className={`group relative flex h-full flex-col justify-between overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-black/35 to-black/80 p-6 backdrop-blur-sm transition-transform duration-300 hover:-translate-y-1 ${podiumStyles[index] ?? podiumStyles[2]}`}
                   >
                     <div className="flex items-center justify-between text-xs font-medium uppercase tracking-wide text-white/60">
                       <span>Rank</span>
@@ -234,7 +233,7 @@ export const LandingLeaderboard = () => {
           ) : null}
 
           {remainingEntries.length > 0 ? (
-            <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+            <div className="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-black/35 to-black/80 shadow-[0_25px_50px_-25px_rgba(10,12,30,0.75)] backdrop-blur-sm">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-white/5 text-left">
                   <thead>
@@ -258,7 +257,7 @@ export const LandingLeaderboard = () => {
                       const addressLabel = displayAddress(entry.address);
 
                       return (
-                        <tr key={entry.address} className="transition-colors hover:bg-white/5">
+                        <tr key={entry.address} className="transition-colors hover:bg-white/10">
                           <td className="px-4 py-3 text-white/70">#{entry.rank}</td>
                           <td className="px-4 py-3">
                             <div className="flex flex-col">
