@@ -146,11 +146,7 @@ export class LeaderboardManager {
 
       const hyperstructure = getComponentValue(this.components.Hyperstructure, hyperstructureShareholdersEntityId);
 
-      const pointsPerSecond = hyperstructure
-        ? pointsPerSecondWithoutMultiplier *
-          hyperstructure.points_multiplier *
-          (this.realmCountPerHyperstructures.get(hyperstructure.hyperstructure_id) || 0)
-        : 0;
+      const pointsPerSecond = hyperstructure ? pointsPerSecondWithoutMultiplier * hyperstructure.points_multiplier : 0;
       const shareholders = hyperstructureShareholders.shareholders as unknown as ContractAddressAndAmount[];
       const startTimestamp = Number(hyperstructureShareholders.start_at);
       if (startTimestamp === 0) continue;
