@@ -11,6 +11,7 @@ pub struct PlayersRankTrial {
     pub total_player_count_committed: u16,
     pub total_player_count_revealed: u16,
     pub total_prize_amount: u128,
+    pub total_prize_amount_calculated: u128,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
