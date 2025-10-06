@@ -169,6 +169,39 @@ function Index() {
     },
   ];
 
+  const howItWorksSteps = [
+    {
+      value: "register",
+      title: "Register",
+      description: "You have 2 hours every 6 hours to register for the next game before the lobby closes.",
+      icon: UserRoundPlus,
+      highlight: "Registration allows us to place everyone on the map at random locations when the game starts.",
+    },
+    {
+      value: "settle",
+      title: "Settle Your Realms",
+      description: "When you settle, your 3 realms are placed randomly on the map and the game starts.",
+      icon: Castle,
+      highlight:
+        "Everybody starts with the same 3 realms and the same resources. Randomly placed on the map. No one has an advantage.",
+    },
+    {
+      value: "conquer",
+      title: "Conquer for 2 Hours",
+      description: "Once the game starts you have 2 hours to climb the leaderboard where every transaction is onchain.",
+      icon: Swords,
+      highlight: "You can win points by exploring tiles, conquering structures and controlling hyperstructures.",
+    },
+    {
+      value: "loot",
+      title: "Win Loot Chests or tokens",
+      description: "Top performers earn rare chests packed with cosmetics, plus tokens.",
+      icon: Boxes,
+      highlight:
+        "A subset of top players can earn prizes, with prize values increasing depending on whether it's a free-to-play game or if you need to pay to enter.",
+    },
+  ];
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
