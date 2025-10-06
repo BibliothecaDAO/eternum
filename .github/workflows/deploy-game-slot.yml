@@ -103,28 +103,50 @@ jobs:
       - name: ⏰ Calculate Game Start Time
         id: game-timing
         run: |
-          # Calculate game start time: round down to current hour, then add 2 hours 30 minutes (Unix timestamp)
-          CURRENT_HOUR_START=$(date -d "$(date '+%Y-%m-%d %H:00:00')" +%s)
-          GAME_START_TIMESTAMP=$((CURRENT_HOUR_START + 9000))
-          
-          # Create Discord timestamp format for automatic timezone conversion
-          DISCORD_TIMESTAMP="<t:$GAME_START_TIMESTAMP:F>"
-          GAME_START_READABLE=$(date -d "@$GAME_START_TIMESTAMP" -u '+%Y-%m-%d %H:%M:%S UTC')
-          
-          # Calculate next deployment time (5 hours from now)
-          CURRENT_TIMESTAMP=$(date +%s)
-          NEXT_DEPLOYMENT_TIMESTAMP=$((CURRENT_TIMESTAMP + 18000))
-          NEXT_DEPLOYMENT_DISCORD_TIMESTAMP="<t:$NEXT_DEPLOYMENT_TIMESTAMP:R>"
-          
-          echo "🕐 Game start time set to: $GAME_START_READABLE"
-          echo "🕐 Discord timestamp: $DISCORD_TIMESTAMP"
-          echo "🕐 Next deployment timestamp: $NEXT_DEPLOYMENT_DISCORD_TIMESTAMP"
-          echo "🕐 Unix timestamp: $GAME_START_TIMESTAMP"
-          
-          echo "timestamp=$GAME_START_TIMESTAMP" >> $GITHUB_OUTPUT
-          echo "readable=$GAME_START_READABLE" >> $GITHUB_OUTPUT
-          echo "discord_timestamp=$DISCORD_TIMESTAMP" >> $GITHUB_OUTPUT
-          echo "next_deployment_timestamp=$NEXT_DEPLOYMENT_DISCORD_TIMESTAMP" >> $GITHUB_OUTPUT
+          python3 <<'PY'
+          from datetime import datetime, time, timedelta, timezone
+          import os
+
+          now = datetime.now(timezone.utc)
+          slots = [time(9, 30), time(15, 30), time(19, 30)]
+
+          upcoming = []
+          day_offset = 0
+          while len(upcoming) < 4:
+              current_date = now.date() + timedelta(days=day_offset)
+              for slot in slots:
+                  candidate = datetime.combine(current_date, slot, tzinfo=timezone.utc)
+                  if candidate >= now or day_offset > 0:
+                      upcoming.append(candidate)
+                  if len(upcoming) >= 4:
+                      break
+              day_offset += 1
+
+          game_start = upcoming[0]
+
+          def to_timestamp(dt: datetime) -> int:
+              return int(dt.timestamp())
+
+          def discord_full(dt: datetime) -> str:
+              return f"<t:{to_timestamp(dt)}:F>"
+
+          def discord_full_relative(dt: datetime) -> str:
+              ts = to_timestamp(dt)
+              return f"<t:{ts}:F> (<t:{ts}:R>)"
+
+          output_path = os.environ["GITHUB_OUTPUT"]
+          with open(output_path, "a") as fh:
+              fh.write(f"timestamp={to_timestamp(game_start)}\n")
+              fh.write(f"readable={game_start.strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
+              fh.write(f"discord_timestamp={discord_full(game_start)}\n")
+              fh.write(f"next_deployment_1={discord_full_relative(upcoming[1])}\n")
+              fh.write(f"next_deployment_2={discord_full_relative(upcoming[2])}\n")
+              fh.write(f"next_deployment_3={discord_full_relative(upcoming[3])}\n")
+
+          print(f"🕐 Next game start: {game_start.strftime('%Y-%m-%d %H:%M:%S UTC')}")
+          for idx, slot_time in enumerate(upcoming[1:], 1):
+              print(f"🗓️ Upcoming slot {idx}: {slot_time.strftime('%Y-%m-%d %H:%M:%S UTC')}")
+          PY
 
       - name: 🎲 Generate New Seed
         id: generate-seed
@@ -245,25 +267,30 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{
               "embeds": [{
-                "title": "Babe wake up! New Blitz game just dropped! 🚀",
+                "title": "New Game Deployed 🚀",
                 "description": "New game has been deployed",
                 "color": 65280,
                 "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"'",
                 "fields": [
+                  {
+                    "name": "🕐 Registration Starts",
+                    "value": "'"$REGISTRATION_DISCORD_TIMESTAMP"'",
+                    "inline": true
+                  },
                   {
                     "name": "🕐 Game Starts",
                     "value": "${{ steps.game-timing.outputs.discord_timestamp }}",
                     "inline": false
                   },
                   {
-                    "name": "⚡ Registration Starts",
-                    "value": "'"$REGISTRATION_DISCORD_TIMESTAMP"'",
-                    "inline": true
+                    "name": "⚡ Upcoming Games",
+                    "value": "- ${{ steps.game-timing.outputs.next_deployment_1 }}\n\n- ${{ steps.game-timing.outputs.next_deployment_2 }}\n\n- ${{ steps.game-timing.outputs.next_deployment_3 }}",
+                    "inline": false
                   },
                   {
-                    "name": "⚡ Next Deployment",
-                    "value": "${{ steps.game-timing.outputs.next_deployment_timestamp }}",
-                    "inline": true
+                    "name": "🔗 Registration & Game Link",
+                    "value": "[Register and Play Here](https://dev.blitz.realms.world/)",
+                    "inline": false
                   }
                 ],
                 "footer": {

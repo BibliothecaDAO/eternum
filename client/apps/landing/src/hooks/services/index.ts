@@ -1,8 +1,12 @@
 import { getCollectionByAddress } from "@/config";
 import { trimAddress } from "@/lib/utils";
 import { RealmMetadata } from "@/types";
+import { calculateUnregisteredShareholderPointsCache, type ContractAddressAndAmount } from "@/utils/leaderboard";
+import type { ContractAddress } from "@bibliothecadao/types";
 import { fetchSQL, gameClientFetch } from "./apiClient";
 import { QUERIES } from "./queries";
+
+const DEFAULT_HYPERSTRUCTURE_RADIUS = 8;
 
 const LEGACY_TRAIT_KEY_COLLECTIONS = new Set<string>([
   "0x36017e69d21d6d8c13e266eabb73ef1f1d02722d86bdcabe5f168f8e549d3cd",
@@ -53,6 +57,36 @@ interface PlayerLeaderboardEntry {
   prizeClaimed: boolean;
   registeredPointsRaw: number;
   registeredPoints: number;
+}
+
+interface HyperstructureLeaderboardConfigRow {
+  points_per_second: string | number | bigint | null;
+  season_end: string | number | bigint | null;
+  realm_count: string | number | bigint | null;
+}
+
+interface HyperstructureShareholderRow {
+  hyperstructure_id: number | string | bigint | null;
+  start_at: number | string | bigint | null;
+  shareholders: unknown;
+}
+
+interface HyperstructureShareholder {
+  hyperstructure_id: number;
+  start_at: number;
+  shareholders: ContractAddressAndAmount[];
+}
+
+interface HyperstructureRealmCountRow {
+  hyperstructure_entity_id: number | string | bigint | null;
+  hyperstructure_coord_x: number | string | bigint | null;
+  hyperstructure_coord_y: number | string | bigint | null;
+  realm_count_within_radius: number | string | bigint | null;
+}
+
+interface HyperstructureRow {
+  hyperstructure_id: number | string | bigint | null;
+  points_multiplier: number | string | bigint | null;
 }
 
 interface CollectionTrait {
@@ -118,29 +152,321 @@ export async function fetchPlayerLeaderboard(
   limit: number = 10,
   offset: number = 0,
 ): Promise<PlayerLeaderboardEntry[]> {
-  const query = QUERIES.PLAYER_LEADERBOARD.replace("{limit}", limit.toString()).replace("{offset}", offset.toString());
+  const safeLimit = Math.max(0, limit);
+  const safeOffset = Math.max(0, offset);
 
-  const rows = await gameClientFetch<PlayerLeaderboardRow[]>(query);
+  if (safeLimit === 0) {
+    return [];
+  }
 
-  return rows
+  const effectiveLimit = safeLimit + safeOffset;
+
+  const leaderboardQuery = QUERIES.PLAYER_LEADERBOARD.replace("{limit}", effectiveLimit.toString()).replace(
+    "{offset}",
+    "0",
+  );
+
+  const [rows, hyperstructureShareholderRows, hyperstructureRows, hyperstructureConfigRows, hyperstructureRealmCounts] =
+    await Promise.all([
+      gameClientFetch<PlayerLeaderboardRow[]>(leaderboardQuery),
+      gameClientFetch<HyperstructureShareholderRow[]>(QUERIES.HYPERSTRUCTURE_SHAREHOLDERS),
+      gameClientFetch<HyperstructureRow[]>(QUERIES.HYPERSTRUCTURES_WITH_MULTIPLIER),
+      gameClientFetch<HyperstructureLeaderboardConfigRow[]>(QUERIES.HYPERSTRUCTURE_LEADERBOARD_CONFIG),
+      gameClientFetch<HyperstructureRealmCountRow[]>(
+        QUERIES.HYPERSTRUCTURES_WITH_REALM_COUNT.replaceAll("{radius}", DEFAULT_HYPERSTRUCTURE_RADIUS.toString()),
+      ),
+    ]);
+
+  type NumericLike = string | number | bigint | null | undefined;
+
+  const parseNumericValue = (value: NumericLike): number => {
+    if (typeof value === "number") {
+      return Number.isFinite(value) ? value : 0;
+    }
+
+    if (typeof value === "bigint") {
+      return Number(value);
+    }
+
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (!trimmed.length) {
+        return 0;
+      }
+
+      try {
+        if (/^0x[0-9a-f]+$/i.test(trimmed)) {
+          return Number(BigInt(trimmed));
+        }
+
+        const numeric = Number(trimmed);
+        return Number.isFinite(numeric) ? numeric : 0;
+      } catch {
+        return 0;
+      }
+    }
+
+    return 0;
+  };
+
+  const parseBigInt = (value: NumericLike): bigint => {
+    if (typeof value === "bigint") {
+      return value;
+    }
+
+    if (typeof value === "number") {
+      if (!Number.isFinite(value)) {
+        return 0n;
+      }
+      return BigInt(Math.trunc(value));
+    }
+
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (!trimmed.length) {
+        return 0n;
+      }
+
+      try {
+        return trimmed.startsWith("0x") || trimmed.startsWith("0X") ? BigInt(trimmed) : BigInt(trimmed);
+      } catch {
+        return 0n;
+      }
+    }
+
+    return 0n;
+  };
+
+  const normalizeAddress = (value: unknown): ContractAddress | null => {
+    if (typeof value !== "string") {
+      return null;
+    }
+
+    const trimmed = value.trim();
+    if (!trimmed.length) {
+      return null;
+    }
+
+    const lower = trimmed.toLowerCase();
+    const prefixed = lower.startsWith("0x") ? lower : `0x${lower}`;
+    return prefixed as unknown as ContractAddress;
+  };
+
+  const unwrapValue = (input: unknown): unknown => {
+    if (input && typeof input === "object") {
+      const record = input as Record<string, unknown>;
+      if ("value" in record) {
+        return unwrapValue(record.value);
+      }
+      if ("inner" in record) {
+        return unwrapValue(record.inner);
+      }
+    }
+    return input;
+  };
+
+  const parseShareholders = (raw: unknown): ContractAddressAndAmount[] => {
+    if (raw === null || raw === undefined) {
+      return [];
+    }
+
+    let candidate: unknown = raw;
+
+    if (typeof raw === "string") {
+      const trimmed = raw.trim();
+      if (!trimmed.length) {
+        return [];
+      }
+
+      try {
+        candidate = JSON.parse(trimmed);
+      } catch {
+        const normalised = trimmed.replace(/\(/g, "[").replace(/\)/g, "]");
+        try {
+          candidate = JSON.parse(normalised);
+        } catch {
+          return [];
+        }
+      }
+    }
+
+    if (!Array.isArray(candidate)) {
+      return [];
+    }
+
+    const shareholders: ContractAddressAndAmount[] = [];
+
+    for (const entry of candidate) {
+      if (!entry) {
+        continue;
+      }
+
+      let addressValue: unknown;
+      let percentageValue: unknown;
+
+      if (Array.isArray(entry)) {
+        [addressValue, percentageValue] = entry;
+      } else if (typeof entry === "object") {
+        const record = entry as Record<string, unknown>;
+
+        if (Array.isArray(record.value)) {
+          [addressValue, percentageValue] = record.value;
+        } else {
+          addressValue = record.address ?? record["0"];
+          percentageValue = record.percentage ?? record["1"];
+        }
+      }
+
+      addressValue = unwrapValue(addressValue);
+      percentageValue = unwrapValue(percentageValue);
+
+      const address = normalizeAddress(addressValue);
+      if (!address) {
+        continue;
+      }
+
+      const numeric = parseNumericValue(percentageValue as NumericLike);
+      if (numeric <= 0) {
+        continue;
+      }
+
+      let percentage = numeric;
+      if (percentage > 1) {
+        if (percentage > 1000) {
+          percentage = percentage / 10_000;
+        } else if (percentage > 100) {
+          percentage = percentage / 10_000;
+        } else {
+          percentage = percentage / 100;
+        }
+      }
+
+      if (percentage <= 0) {
+        continue;
+      }
+
+      if (percentage > 1) {
+        percentage = 1;
+      }
+
+      shareholders.push({
+        address,
+        percentage,
+      });
+    }
+
+    return shareholders;
+  };
+
+  const configRow = hyperstructureConfigRows[0];
+  const rawPointsPerSecond = parseBigInt(configRow?.points_per_second);
+  const pointsPerSecondWithoutMultiplier =
+    rawPointsPerSecond > 0n ? Number(rawPointsPerSecond) / REGISTERED_POINTS_PRECISION : 0;
+  const seasonEnd = parseNumericValue(configRow?.season_end);
+  const realmCount = Math.max(0, Math.floor(parseNumericValue(configRow?.realm_count)));
+
+  const hyperstructureRealmCountsById = new Map<number, number>(
+    hyperstructureRealmCounts
+      .map((row) => {
+        const hyperstructureId = Math.floor(parseNumericValue(row.hyperstructure_entity_id));
+        if (!Number.isFinite(hyperstructureId) || hyperstructureId <= 0) {
+          return null;
+        }
+
+        const realmCount = Math.max(0, Math.floor(parseNumericValue(row.realm_count_within_radius)));
+        return [hyperstructureId, realmCount] as const;
+      })
+      .filter((entry): entry is readonly [number, number] => entry !== null),
+  );
+
+  const hyperstructures = hyperstructureRows
+    .map((row) => {
+      const hyperstructureId = Math.floor(parseNumericValue(row.hyperstructure_id));
+      if (!Number.isFinite(hyperstructureId) || hyperstructureId <= 0) {
+        return null;
+      }
+
+      const pointsMultiplierRaw = parseNumericValue(row.points_multiplier);
+      const pointsMultiplier = pointsMultiplierRaw > 0 ? pointsMultiplierRaw : 1;
+      const realmCount = hyperstructureRealmCountsById.get(hyperstructureId) ?? 0;
+
+      return {
+        hyperstructure_id: hyperstructureId,
+        points_multiplier: pointsMultiplier,
+        realm_count: realmCount,
+      };
+    })
+    .filter(
+      (item): item is { hyperstructure_id: number; points_multiplier: number; realm_count: number } => item !== null,
+    );
+
+  const realmCountPerHyperstructures =
+    hyperstructures.length > 0
+      ? new Map(hyperstructures.map((item) => [item.hyperstructure_id, item.realm_count] as const))
+      : undefined;
+
+  const hyperstructureShareholders = hyperstructureShareholderRows
+    .map((row) => {
+      const hyperstructureId = Math.floor(parseNumericValue(row.hyperstructure_id));
+      if (!Number.isFinite(hyperstructureId) || hyperstructureId <= 0) {
+        return null;
+      }
+
+      const startAt = Math.floor(parseNumericValue(row.start_at));
+      if (startAt <= 0) {
+        return null;
+      }
+
+      const shareholders = parseShareholders(row.shareholders);
+      if (shareholders.length === 0) {
+        return null;
+      }
+
+      return {
+        hyperstructure_id: hyperstructureId,
+        start_at: startAt,
+        shareholders,
+      };
+    })
+    .filter((item): item is HyperstructureShareholder => item !== null);
+
+  const hasHyperstructureData =
+    pointsPerSecondWithoutMultiplier > 0 && hyperstructureShareholders.length > 0 && hyperstructures.length > 0;
+
+  let unregisteredShareholderPoints = new Map<string, number>();
+  if (hasHyperstructureData) {
+    const computed = calculateUnregisteredShareholderPointsCache({
+      pointsPerSecondWithoutMultiplier,
+      realmCountPerHyperstructures,
+      seasonEnd,
+      hyperstructureShareholders,
+      hyperstructures,
+    });
+
+    unregisteredShareholderPoints = new Map(
+      Array.from(computed.entries()).map(([address, points]) => [String(address).toLowerCase(), points]),
+    );
+  }
+
+  const processedAddresses = new Set<string>();
+  const precision = REGISTERED_POINTS_PRECISION;
+
+  const entriesFromRows = rows
     .map((row) => {
       const rawPointsValue =
         typeof row.registered_points === "number" ? row.registered_points : Number(row.registered_points ?? 0);
 
       const safeRawPoints = Number.isFinite(rawPointsValue) ? rawPointsValue : 0;
 
-      // Decode hex-encoded player name if it looks like a hex string
       let decodedPlayerName = row.player_name?.trim() || null;
       if (decodedPlayerName && decodedPlayerName.startsWith("0x")) {
         try {
-          // Remove '0x' prefix and convert hex to ASCII
           const hexString = decodedPlayerName.slice(2);
           let ascii = "";
           for (let i = 0; i < hexString.length; i += 2) {
-            const hexByte = hexString.substr(i, 2);
+            const hexByte = hexString.slice(i, i + 2);
             const charCode = parseInt(hexByte, 16);
-            if (charCode > 0 && charCode < 127) {
-              // Only printable ASCII
+            if (Number.isInteger(charCode) && charCode > 0 && charCode < 127) {
               ascii += String.fromCharCode(charCode);
             }
           }
@@ -148,20 +474,58 @@ export async function fetchPlayerLeaderboard(
             decodedPlayerName = ascii;
           }
         } catch (error) {
-          // If decoding fails, keep original value
           console.warn("Failed to decode player name:", decodedPlayerName);
         }
       }
 
+      const playerAddress = row.player_address ?? "";
+      if (!playerAddress.length) {
+        return null;
+      }
+
+      const normalizedAddress = playerAddress.toLowerCase();
+      processedAddresses.add(normalizedAddress);
+
+      const baseRaw = safeRawPoints;
+      const bonusPoints = unregisteredShareholderPoints.get(normalizedAddress) ?? 0;
+      const bonusRaw = Math.round(bonusPoints * precision);
+      const totalRaw = baseRaw + bonusRaw;
+      const totalPoints = totalRaw / precision;
+
       return {
-        playerAddress: row.player_address ?? "",
+        playerAddress,
         playerName: decodedPlayerName,
         prizeClaimed: Boolean(row.prize_claimed),
-        registeredPointsRaw: safeRawPoints,
-        registeredPoints: safeRawPoints / REGISTERED_POINTS_PRECISION,
+        registeredPointsRaw: totalRaw,
+        registeredPoints: totalPoints,
       } as PlayerLeaderboardEntry;
     })
-    .filter((entry) => entry.playerAddress.length > 0);
+    .filter((entry): entry is PlayerLeaderboardEntry => Boolean(entry));
+
+  const additionalEntries: PlayerLeaderboardEntry[] = [];
+
+  for (const [address, points] of unregisteredShareholderPoints) {
+    if (processedAddresses.has(address) || points <= 0) {
+      continue;
+    }
+
+    const normalizedAddress = String(address).toLowerCase();
+
+    const bonusRaw = Math.round(points * precision);
+    additionalEntries.push({
+      playerAddress: normalizedAddress,
+      playerName: null,
+      prizeClaimed: false,
+      registeredPointsRaw: bonusRaw,
+      registeredPoints: bonusRaw / precision,
+    });
+  }
+
+  const combinedEntries = [...entriesFromRows, ...additionalEntries].sort(
+    (a, b) => b.registeredPoints - a.registeredPoints,
+  );
+
+  return combinedEntries.slice(safeOffset, safeOffset + safeLimit);
 }
 
 export interface FetchAllCollectionTokensOptions {

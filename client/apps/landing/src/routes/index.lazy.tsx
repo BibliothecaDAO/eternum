@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { marketplaceCollections, realmsAddress, seasonPassAddress } from "@/config";
 import {
@@ -19,9 +20,9 @@ import { DEFAULT_GAME_STATUS, fetchGameStatus } from "@/hooks/services/game-stat
 import { displayAddress, trimAddress } from "@/lib/utils";
 import { MergedNftData } from "@/types";
 import { useAccount } from "@starknet-react/core";
-import { useQuery, useSuspenseQueries } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute, Link } from "@tanstack/react-router";
-import { motion } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 import { AlertTriangle, Boxes, Castle, CirclePlayIcon, Clock, Swords, Trophy, UserRoundPlus } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 
@@ -37,16 +38,33 @@ export const Route = createLazyFileRoute("/")({
   component: Index,
 });
 
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      when: "beforeChildren",
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.3,
+    },
+  },
+};
+
 function Index() {
   const { address: accountAddress } = useAccount();
 
   // Fetch marketplace collection statistics
   const collections = Object.entries(marketplaceCollections).filter(([key, collection]) => collection.address != "");
-  const collectionStatisticsQueries = collections.map(([key, collection]) => ({
-    queryKey: ["activeMarketOrdersTotal", key],
-    queryFn: () => (collection.address !== "" ? fetchCollectionStatistics(collection.address) : null),
-    refetchInterval: 30_000,
-  }));
 
   const userCollectionsQueries = [
     {
@@ -69,15 +87,15 @@ function Index() {
     },
   ];
 
-  const results = useSuspenseQueries({
-    queries: [...userCollectionsQueries, ...collectionStatisticsQueries],
+  const queryResults = useQueries({
+    queries: userCollectionsQueries,
   });
 
   // Properly type and extract the results
-  const realms = results[0];
-  const collectionStats = results.slice(3) as { data: ActiveMarketOrdersTotal[] }[];
-  const ownedRealms = (realms.data ?? []) as MergedNftData[];
-  const hasRealms = ownedRealms.length > 0;
+  const realmsQuery = queryResults[0];
+  const ownedRealms = ((realmsQuery?.data as MergedNftData[]) ?? []).filter(Boolean);
+  const isRealmsLoading = Boolean(!realmsQuery?.data && realmsQuery?.isPending);
+  const hasRealms = !isRealmsLoading && ownedRealms.length > 0;
   const totalRealmCount = ownedRealms.length;
   const featuredRealms = ownedRealms.slice(0, 6) as MergedNftData[];
 
@@ -116,33 +134,8 @@ function Index() {
     });
   }, [leaderboardData, leaderboardFormatter]);
 
-  console.log({ topPlayers });
-
   const gameStatus = fetchedGameStatus ?? DEFAULT_GAME_STATUS;
-
   // Framer Motion variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        when: "beforeChildren",
-        staggerChildren: 0.1,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.3,
-      },
-    },
-  };
-
   const howItWorksSteps = [
     {
       value: "register",
@@ -264,12 +257,14 @@ function Index() {
             initial="hidden"
             animate="visible"
           >
-            {collections.map(([key, collection], index) => {
-              const stats = collectionStats[index]?.data?.[0];
-              return (
-                <CollectionCard collectionKey={key} collection={collection} stats={stats} variants={itemVariants} />
-              );
-            })}
+            {collections.map(([key, collection]) => (
+              <MarketplaceCollectionCard
+                key={key}
+                collectionKey={key}
+                collection={collection}
+                variants={itemVariants}
+              />
+            ))}
           </motion.div>
         </div>
       </section>
@@ -292,7 +287,19 @@ function Index() {
                   </Button>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {hasRealms ? (
+                  {isRealmsLoading ? (
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between text-sm text-muted-foreground">
+                        <Skeleton className="h-4 w-28" />
+                        <Skeleton className="h-6 w-10 rounded-md" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                        {Array.from({ length: 3 }).map((_, index) => (
+                          <Skeleton key={`realm-skeleton-${index}`} className="aspect-square w-full rounded-xl" />
+                        ))}
+                      </div>
+                    </div>
+                  ) : hasRealms ? (
                     <>
                       <div className="flex items-center justify-between text-sm text-muted-foreground">
                         <span>Realms in wallet</span>
@@ -344,6 +351,65 @@ function Index() {
     </div>
   );
 }
+
+interface MarketplaceCollectionCardProps {
+  collectionKey: string;
+  collection: (typeof marketplaceCollections)[keyof typeof marketplaceCollections];
+  variants: Variants;
+}
+
+const MarketplaceCollectionCard = memo(function MarketplaceCollectionCard({
+  collectionKey,
+  collection,
+  variants,
+}: MarketplaceCollectionCardProps) {
+  const { data, isPending, isError } = useQuery<ActiveMarketOrdersTotal[]>({
+    queryKey: ["activeMarketOrdersTotal", collectionKey],
+    queryFn: () => fetchCollectionStatistics(collection.address),
+    refetchInterval: 30_000,
+    enabled: Boolean(collection.address),
+  });
+
+  const stats = data?.[0];
+
+  if (isPending) {
+    return (
+      <motion.div
+        variants={variants}
+        className="relative min-h-[350px] overflow-hidden rounded-lg border border-gold/40 bg-background/70"
+      >
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80" />
+        <div className="relative flex h-full flex-col justify-end gap-6 p-4">
+          <Skeleton className="h-8 w-40 rounded-md bg-gold/20" />
+          <div className="grid grid-cols-3 gap-4">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={`collection-skeleton-${index}`} className="space-y-2">
+                <Skeleton className="h-3 w-14" />
+                <Skeleton className="h-5 w-20" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <motion.div
+        variants={variants}
+        className="relative min-h-[350px] rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive"
+      >
+        <div className="flex h-full flex-col items-start justify-end gap-4">
+          <span className="text-lg font-semibold">Unable to load {collection.name}</span>
+          <span className="text-sm text-destructive/80">Please try again in a moment.</span>
+        </div>
+      </motion.div>
+    );
+  }
+
+  return <CollectionCard collectionKey={collectionKey} collection={collection} stats={stats} variants={variants} />;
+});
 
 const CurrentCycleCard = memo(function CurrentCycleCard({
   status,

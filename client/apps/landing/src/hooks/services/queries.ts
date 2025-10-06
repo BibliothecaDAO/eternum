@@ -499,6 +499,48 @@ GROUP BY
     "base.category"
 ORDER BY
     category;`,
+  HYPERSTRUCTURE_LEADERBOARD_CONFIG: `
+    SELECT
+      "victory_points_grant_config.hyp_points_per_second" AS points_per_second,
+      "season_config.end_at" AS season_end,
+      COALESCE("realm_count_config.count", 0) AS realm_count
+    FROM "s1_eternum-WorldConfig";
+  `,
+  HYPERSTRUCTURE_SHAREHOLDERS: `
+    SELECT
+      hyperstructure_id,
+      start_at,
+      shareholders
+    FROM "s1_eternum-HyperstructureShareholders";
+  `,
+  HYPERSTRUCTURES_WITH_REALM_COUNT: `
+    SELECT 
+        h.entity_id AS hyperstructure_entity_id,
+        h."base.coord_x" AS hyperstructure_coord_x,
+        h."base.coord_y" AS hyperstructure_coord_y,
+        COUNT(
+            CASE 
+                WHEN r.category = 1 
+                AND (
+                    (r."base.coord_x" - h."base.coord_x") * (r."base.coord_x" - h."base.coord_x") +
+                    (r."base.coord_y" - h."base.coord_y") * (r."base.coord_y" - h."base.coord_y")
+                ) <= ({radius} * {radius})
+                THEN 1 
+                ELSE NULL 
+            END
+        ) AS realm_count_within_radius
+    FROM "s1_eternum-Structure" AS h
+    LEFT JOIN "s1_eternum-Structure" AS r ON r.category = 1
+    WHERE h.category = 2
+    GROUP BY h.entity_id, h."base.coord_x", h."base.coord_y"
+    ORDER BY h.entity_id;
+  `,
+  HYPERSTRUCTURES_WITH_MULTIPLIER: `
+    SELECT
+      hyperstructure_id,
+      points_multiplier
+    FROM "s1_eternum-Hyperstructure";
+  `,
   PLAYER_LEADERBOARD: `
     WITH RECURSIVE
       registered AS (
