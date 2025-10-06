@@ -4,7 +4,8 @@ export const LandingCosmetics = () => {
       <header>
         <h2 className="text-2xl font-semibold text-white">Cosmetics</h2>
         <p className="mt-2 text-sm text-white/70">
-          Preview cosmetics, curate loadouts, and plan your next purchases. Structured sections and filters will live here.
+          Preview cosmetics, curate loadouts, and plan your next purchases. Structured sections and filters will live
+          here.
         </p>
       </header>
 

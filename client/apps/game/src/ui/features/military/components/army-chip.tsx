@@ -197,11 +197,11 @@ export const ArmyChip = ({
                           <ViewOnMapIcon
                             className="w-5 h-5 hover:scale-110 transition-all duration-300 cursor-pointer"
                             position={new Position({ x: Number(army.position.x), y: Number(army.position.y) })}
-                            onClick={() => {
-                              if (!isOnMap) {
-                                navigate("/play/map");
-                              }
-                            }}
+                            // onClick={() => {
+                            //   if (!isOnMap) {
+                            //     navigate("/play/map");
+                            //   }
+                            // }}
                           />
                         }
                         {isOnMap && <NavigateToPositionIcon position={new Position(army.position)} />}

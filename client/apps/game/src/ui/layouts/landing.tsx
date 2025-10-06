@@ -21,8 +21,8 @@ export const LandingLayout = ({ backgroundImage }: LandingLayoutProps) => {
 
   const resolvedBackground = useMemo(() => {
     const normalizedPath = location.pathname.toLowerCase();
-    const matchedKey = Object.keys(LANDING_BACKGROUNDS).find((key) =>
-      normalizedPath === key || normalizedPath.startsWith(`${key}/`)
+    const matchedKey = Object.keys(LANDING_BACKGROUNDS).find(
+      (key) => normalizedPath === key || normalizedPath.startsWith(`${key}/`),
     );
 
     if (matchedKey) {
@@ -117,7 +117,7 @@ export const LandingLayout = ({ backgroundImage }: LandingLayoutProps) => {
             src={`/images/covers/blitz/${transitionBackground}.png`}
             className={clsx(
               "absolute inset-0 h-full w-full object-cover transition-opacity duration-700",
-              isTransitioning ? "opacity-100" : "opacity-0"
+              isTransitioning ? "opacity-100" : "opacity-0",
             )}
             onTransitionEnd={handleTransitionEnd}
           />
@@ -142,7 +142,7 @@ export const LandingLayout = ({ backgroundImage }: LandingLayoutProps) => {
                   className={({ isActive }) =>
                     clsx(
                       "rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60",
-                      isActive ? "bg-white/20 text-white" : "text-white/70 hover:text-white"
+                      isActive ? "bg-white/20 text-white" : "text-white/70 hover:text-white",
                     )
                   }
                 >

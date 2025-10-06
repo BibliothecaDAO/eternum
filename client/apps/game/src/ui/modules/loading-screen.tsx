@@ -60,7 +60,10 @@ export const LoadingScreen = ({ backgroundImage, progress }: LoadingScreenProps)
           <img src="/images/logos/eternum-loader.png" className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8" />
           {`${statements[currentStatement]}`}
           <div className="w-full  rounded-full h-2.5 mt-4">
-            <div className="bg-gold h-2.5 rounded-full transition-all duration-300" style={{ width: `${resolvedProgress}%` }} />
+            <div
+              className="bg-gold h-2.5 rounded-full transition-all duration-300"
+              style={{ width: `${resolvedProgress}%` }}
+            />
           </div>
           <div className="text-sm mt-2 ">{resolvedProgress === 100 ? 99 : resolvedProgress}%</div>
         </div>
