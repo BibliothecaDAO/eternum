@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { marketplaceCollections, realmsAddress, seasonPassAddress } from "@/config";
 import {
@@ -19,7 +20,7 @@ import { DEFAULT_GAME_STATUS, fetchGameStatus } from "@/hooks/services/game-stat
 import { displayAddress, trimAddress } from "@/lib/utils";
 import { MergedNftData } from "@/types";
 import { useAccount } from "@starknet-react/core";
-import { useQuery, useSuspenseQueries } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { AlertTriangle, Boxes, Castle, CirclePlayIcon, Clock, Swords, Trophy, UserRoundPlus } from "lucide-react";
@@ -69,15 +70,17 @@ function Index() {
     },
   ];
 
-  const results = useSuspenseQueries({
+  const queryResults = useQueries({
     queries: [...userCollectionsQueries, ...collectionStatisticsQueries],
   });
 
   // Properly type and extract the results
-  const realms = results[0];
-  const collectionStats = results.slice(3) as { data: ActiveMarketOrdersTotal[] }[];
-  const ownedRealms = (realms.data ?? []) as MergedNftData[];
-  const hasRealms = ownedRealms.length > 0;
+  const userQueryCount = userCollectionsQueries.length;
+  const realmsQuery = queryResults[0];
+  const ownedRealms = ((realmsQuery?.data as MergedNftData[]) ?? []).filter(Boolean);
+  const isRealmsLoading = Boolean(!realmsQuery?.data && realmsQuery?.isPending);
+  const hasRealms = !isRealmsLoading && ownedRealms.length > 0;
+  const collectionStats = queryResults.slice(userQueryCount) as { data: ActiveMarketOrdersTotal[] | undefined }[];
   const totalRealmCount = ownedRealms.length;
   const featuredRealms = ownedRealms.slice(0, 6) as MergedNftData[];
 
@@ -115,8 +118,6 @@ function Index() {
       };
     });
   }, [leaderboardData, leaderboardFormatter]);
-
-  console.log({ topPlayers });
 
   const gameStatus = fetchedGameStatus ?? DEFAULT_GAME_STATUS;
 
@@ -292,7 +293,19 @@ function Index() {
                   </Button>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {hasRealms ? (
+                  {isRealmsLoading ? (
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between text-sm text-muted-foreground">
+                        <Skeleton className="h-4 w-28" />
+                        <Skeleton className="h-6 w-10 rounded-md" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                        {Array.from({ length: 3 }).map((_, index) => (
+                          <Skeleton key={`realm-skeleton-${index}`} className="aspect-square w-full rounded-xl" />
+                        ))}
+                      </div>
+                    </div>
+                  ) : hasRealms ? (
                     <>
                       <div className="flex items-center justify-between text-sm text-muted-foreground">
                         <span>Realms in wallet</span>
