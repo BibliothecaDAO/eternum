@@ -1847,6 +1847,23 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    BlitzCosmeticAttrsRegister: (() => {
+      return defineComponent(
+        world,
+        {
+          player: RecsType.BigInt,
+          attrs: RecsType.BigIntArray,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "BlitzCosmeticAttrsRegister",
+            types: ["ContractAddress", "Span<u128>"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     ...eventsComponents(world),
   };
 }

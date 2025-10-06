@@ -22,9 +22,10 @@
 ### 2. Player Cosmetics Store
 - Location: `client/apps/game/src/three/cosmetics/player-cosmetics-store.ts`.
 - Responsibilities:
-  - Subscribe to the cosmetics recs component (once per session) and cache results by owner `ContractAddress`.
-  - Expose a synchronous `getSnapshot(address)` (returns cached cosmetics or `undefined`) and async `prefetch()` for bootstrapping.
+  - Read player cosmetic token ids from Dojo via `components.BlitzCosmeticAttrsRegister` using `getComponentValue` + `getEntityIdFromKeys`.
+  - Cache results by owner `ContractAddress`, exposing a synchronous `getSnapshot(address)` (returns cached cosmetics or `undefined`) and async `prefetch()` for bootstrapping.
   - Emit a ready promise so world bootstrap waits for initial load; ignores any mid-session updates (documented behaviour).
+  - Surface raw token ids alongside derived selections so downstream resolvers can map ids to cosmetic definitions.
 
 ### 3. Cosmetic Asset Cache & Preloader
 - Location: `client/apps/game/src/three/cosmetics/asset-cache.ts`.
