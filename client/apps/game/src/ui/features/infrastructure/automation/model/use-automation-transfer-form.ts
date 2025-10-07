@@ -29,6 +29,13 @@ type AutomationTransferFormAction =
   | { type: "SET_NEW_RESOURCE_AMOUNT"; payload: number }
   | { type: "ADD_RESOURCE"; payload: SelectedResource }
   | { type: "REMOVE_RESOURCE"; payload: ResourcesIds }
+  | { type: "REORDER_RESOURCES"; payload: { fromIndex: number; toIndex: number } }
+  | { type: "LOAD_FROM_ORDER"; payload: {
+      resources: SelectedResource[];
+      transferMode: TransferMode;
+      transferInterval?: number;
+      transferThreshold?: number;
+    } }
   | { type: "RESET" }
   | { type: "SET_ERROR"; payload: string }
   | { type: "CLEAR_ERROR" };
@@ -92,6 +99,44 @@ const automationTransferReducer = (
         resources: state.resources.filter((resource) => resource.resourceId !== action.payload),
         error: null,
       };
+    case "REORDER_RESOURCES": {
+      const { fromIndex, toIndex } = action.payload;
+      if (
+        fromIndex === toIndex ||
+        fromIndex < 0 ||
+        toIndex < 0 ||
+        fromIndex >= state.resources.length ||
+        toIndex >= state.resources.length
+      ) {
+        return state;
+      }
+      const next = [...state.resources];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return {
+        ...state,
+        resources: next,
+        error: null,
+      };
+    }
+    case "LOAD_FROM_ORDER": {
+      return {
+        ...state,
+        transferMode: action.payload.transferMode,
+        transferInterval:
+          action.payload.transferMode === TransferMode.Recurring
+            ? action.payload.transferInterval ?? INITIAL_STATE.transferInterval
+            : state.transferInterval,
+        transferThreshold:
+          action.payload.transferMode !== TransferMode.Recurring
+            ? action.payload.transferThreshold ?? INITIAL_STATE.transferThreshold
+            : state.transferThreshold,
+        resources: action.payload.resources,
+        newResourceId: INITIAL_STATE.newResourceId,
+        newResourceAmount: INITIAL_STATE.newResourceAmount,
+        error: null,
+      };
+    }
     case "RESET":
       return INITIAL_STATE;
     case "SET_ERROR":
@@ -183,6 +228,22 @@ export const useAutomationTransferForm = ({ source, destination }: UseAutomation
     dispatch({ type: "REMOVE_RESOURCE", payload: resourceId });
   }, []);
 
+  const reorderResources = useCallback((fromIndex: number, toIndex: number) => {
+    dispatch({ type: "REORDER_RESOURCES", payload: { fromIndex, toIndex } });
+  }, []);
+
+  const loadFromOrder = useCallback((order: AutomationOrder) => {
+    dispatch({
+      type: "LOAD_FROM_ORDER",
+      payload: {
+        resources: order.transferResources ?? [],
+        transferMode: order.transferMode ?? TransferMode.Recurring,
+        transferInterval: order.transferInterval,
+        transferThreshold: order.transferThreshold,
+      },
+    });
+  }, []);
+
   const reset = useCallback(() => {
     dispatch({ type: "RESET" });
   }, []);
@@ -244,6 +305,8 @@ export const useAutomationTransferForm = ({ source, destination }: UseAutomation
     setNewResourceAmount,
     addResource,
     removeResource,
+    reorderResources,
+    loadFromOrder,
     submit,
     reset,
     clearError,
