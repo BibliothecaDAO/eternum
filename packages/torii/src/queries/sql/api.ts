@@ -39,7 +39,14 @@ import {
 } from "../../utils/sql";
 import { BATTLE_QUERIES } from "./battle";
 import { HYPERSTRUCTURE_QUERIES } from "./hyperstructure";
-import { PLAYER_LEADERBOARD_QUERY } from "./leaderboard";
+import {
+  buildAdditionalLeaderboardEntries,
+  buildRegisteredLeaderboardEntries,
+  computeUnregisteredShareholderPoints,
+  fetchLeaderboardSourceData,
+  sanitizeLeaderboardPagination,
+  sortLeaderboardEntries,
+} from "./leaderboard-helpers";
 import { QUEST_QUERIES } from "./quest";
 import { RELICS_QUERIES } from "./relics";
 import { extractRelicsFromResourceData } from "./relics-utils";
@@ -48,6 +55,8 @@ import { STORY_QUERIES } from "./story";
 import { STRUCTURE_QUERIES } from "./structure";
 import { TILES_QUERIES } from "./tiles";
 import { TRADING_QUERIES } from "./trading";
+
+const DEFAULT_HYPERSTRUCTURE_RADIUS = 8;
 
 export class SqlApi {
   constructor(private readonly baseUrl: string) {}
@@ -596,12 +605,48 @@ export class SqlApi {
   }
 
   /**
-   * Fetches player leaderboard data from the SQL database.
-   * SQL queries always return arrays.
+   * Fetches player leaderboard data with unregistered shareholder points aggregated server-side.
    */
   async fetchPlayerLeaderboard(limit: number = 10, offset: number = 0): Promise<PlayerLeaderboardRow[]> {
-    const query = PLAYER_LEADERBOARD_QUERY.replace("{limit}", limit.toString()).replace("{offset}", offset.toString());
-    const url = buildApiUrl(this.baseUrl, query);
-    return await fetchWithErrorHandling<PlayerLeaderboardRow>(url, "Failed to fetch player leaderboard");
+    const { safeLimit, safeOffset, effectiveLimit } = sanitizeLeaderboardPagination(limit, offset);
+
+    if (safeLimit === 0) {
+      return [];
+    }
+
+    const {
+      registeredRows,
+      hyperstructureShareholderRows,
+      hyperstructureRows,
+      hyperstructureConfigRow,
+      hyperstructureRealmCounts,
+    } = await fetchLeaderboardSourceData({
+      baseUrl: this.baseUrl,
+      effectiveLimit,
+      defaultHyperstructureRadius: DEFAULT_HYPERSTRUCTURE_RADIUS,
+      fetchHyperstructuresWithRealmCount: (radius) => this.fetchHyperstructuresWithRealmCount(radius),
+    });
+
+    const unregisteredShareholderPoints = computeUnregisteredShareholderPoints({
+      configRow: hyperstructureConfigRow,
+      hyperstructureRows,
+      hyperstructureShareholderRows,
+      hyperstructureRealmCounts,
+    });
+
+    const { entries: registeredEntries, processedAddresses } = buildRegisteredLeaderboardEntries({
+      registeredRows,
+      unregisteredShareholderPoints,
+    });
+
+    const additionalEntries = buildAdditionalLeaderboardEntries({
+      unregisteredShareholderPoints,
+      processedAddresses,
+    });
+
+    const sortedEntries = sortLeaderboardEntries([...registeredEntries, ...additionalEntries]);
+
+    return sortedEntries.slice(safeOffset, safeOffset + safeLimit);
   }
+
 }

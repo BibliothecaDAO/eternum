@@ -57,6 +57,32 @@ export interface PlayerLeaderboardRow {
   player_name: string | null;
   prize_claimed: number | string | null;
   registered_points: number | string | null;
+  playerAddress?: string | null;
+  playerName?: string | null;
+  prizeClaimed?: number | string | boolean | null;
+  registeredPoints?: number | string | null;
+  total_points?: number | string | null;
+  totalPoints?: number | string | null;
+  unregisteredPoints?: number | string | null;
+  registeredPointsRaw?: number | string | null;
+  registeredPointsRegistered?: number | string | null;
+}
+
+export interface HyperstructureLeaderboardConfigRow {
+  points_per_second: string | number | bigint | null;
+  season_end: string | number | bigint | null;
+  realm_count: string | number | bigint | null;
+}
+
+export interface HyperstructureShareholderRow {
+  hyperstructure_id: number | string | bigint | null;
+  start_at: number | string | bigint | null;
+  shareholders: unknown;
+}
+
+export interface HyperstructureRow {
+  hyperstructure_id: number | string | bigint | null;
+  points_multiplier: number | string | bigint | null;
 }
 
 export interface StoryEventData {

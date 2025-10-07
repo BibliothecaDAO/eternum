@@ -1,12 +1,19 @@
 import { sqlApi } from "@/services/api";
+import type { PlayerLeaderboardRow } from "@bibliothecadao/torii";
 
 const DEFAULT_LIMIT = 20;
+const REGISTERED_POINTS_PRECISION = 1_000_000;
 
 export interface PlayerLeaderboardData {
   rank: number;
   address: string;
   displayName: string | null;
+  /** Registered + unregistered points combined */
   points: number;
+  /** Raw registered portion if available from the backend */
+  registeredPoints?: number;
+  /** Unregistered (shareholder) contribution if available */
+  unregisteredPoints?: number;
   prizeClaimed: boolean;
 }
 
@@ -108,22 +115,87 @@ export const fetchLandingLeaderboard = async (
   const rows = await sqlApi.fetchPlayerLeaderboard(safeLimit, safeOffset);
 
   return rows
-    .map((row, index) => {
-      const address = normaliseAddress(row.player_address);
+    .map((rawRow, index) => {
+      const row = rawRow as Record<string, unknown>;
+
+      const rawAddress =
+        (typeof row["player_address"] === "string" ? (row["player_address"] as string) : undefined) ??
+        (typeof row["playerAddress"] === "string" ? (row["playerAddress"] as string) : undefined) ??
+        null;
+
+      const address = normaliseAddress(rawAddress);
       if (!address) {
         return null;
       }
 
-      const points = parseNumeric(row.registered_points);
-      const displayName = decodePlayerName(row.player_name);
-      const prizeClaimed = Boolean(parseNumeric(row.prize_claimed));
+      const rawName =
+        (typeof row["player_name"] === "string" ? (row["player_name"] as string) : undefined) ??
+        (typeof row["playerName"] === "string" ? (row["playerName"] as string) : undefined) ??
+        null;
+
+      const displayName = decodePlayerName(rawName);
+
+      const baseRegistered = parseNumeric(
+        (row["registered_points"] as NumericLike) ??
+          (row["registeredPointsRegistered"] as NumericLike) ??
+          (row["registeredPointsBase"] as NumericLike) ??
+          0,
+      );
+
+      const totalPointsCandidate = parseNumeric(
+        (row["registeredPoints"] as NumericLike) ??
+          (row["total_points"] as NumericLike) ??
+          (row["points"] as NumericLike) ??
+          (row["registered_points"] as NumericLike) ??
+          0,
+      );
+
+      let totalRaw = totalPointsCandidate;
+      let registeredRaw = baseRegistered;
+
+      if (totalRaw <= 0 && registeredRaw > 0) {
+        totalRaw = registeredRaw;
+      }
+
+      const hasExplicitRegisteredField =
+        Object.prototype.hasOwnProperty.call(row, "registered_points") ||
+        Object.prototype.hasOwnProperty.call(row, "registeredPointsRegistered") ||
+        Object.prototype.hasOwnProperty.call(row, "registeredPointsBase");
+
+      if (registeredRaw <= 0) {
+        registeredRaw = hasExplicitRegisteredField ? 0 : totalRaw;
+      }
+
+      if (totalRaw <= 0) {
+        totalRaw = registeredRaw;
+      }
+
+      if (registeredRaw > totalRaw) {
+        registeredRaw = totalRaw;
+      }
+
+      let unregisteredRaw = totalRaw - registeredRaw;
+      if (unregisteredRaw < 0) {
+        unregisteredRaw = 0;
+      }
+
+      const registeredPoints = registeredRaw / REGISTERED_POINTS_PRECISION;
+      const totalPoints = totalRaw / REGISTERED_POINTS_PRECISION;
+      const unregisteredPoints = unregisteredRaw / REGISTERED_POINTS_PRECISION;
+
+      const prizeClaimedRaw =
+        typeof row["prizeClaimed"] === "boolean"
+          ? (row["prizeClaimed"] as boolean)
+          : Boolean(parseNumeric(row["prize_claimed"] as NumericLike));
 
       return {
         rank: safeOffset + index + 1,
         address,
         displayName: displayName && displayName.length ? displayName : null,
-        points,
-        prizeClaimed,
+        points: totalPoints,
+        registeredPoints,
+        unregisteredPoints,
+        prizeClaimed: prizeClaimedRaw,
       } satisfies PlayerLeaderboardData;
     })
     .filter((entry): entry is PlayerLeaderboardData => entry !== null)
