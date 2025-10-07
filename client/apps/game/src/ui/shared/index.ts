@@ -4,6 +4,7 @@
 // Core UI Components
 export { GameWinnerMessage } from "./components/game-winner-message";
 export { ModalContainer } from "./components/modal-container";
+export { ProductionStatusBadge } from "./components/production-status-badge";
 export { NameChangePopup } from "./components/name-change-popup";
 export { NotLoggedInMessage } from "./components/not-logged-in-message";
 export { PWAUpdatePopup } from "./components/pwa-update-popup";

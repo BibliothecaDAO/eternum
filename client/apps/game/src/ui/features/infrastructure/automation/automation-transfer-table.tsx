@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useUISound } from "@/audio";
-import { ProductionType, TransferMode, useAutomationStore } from "@/hooks/store/use-automation-store";
+import { AutomationOrder, ProductionType, TransferMode, useAutomationStore } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Panel } from "@/ui/design-system/atoms";
 import Button from "@/ui/design-system/atoms/button";
@@ -15,12 +15,12 @@ import {
   getIsBlitz,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { EntityType, ResourcesIds, getResourceTiers } from "@bibliothecadao/types";
+import { EntityType, ResourcesIds, StructureType, getResourceTiers } from "@bibliothecadao/types";
 
-import { useAutomationTransferForm } from "./model/use-automation-transfer-form";
+import type { ResourceBalance, SelectedEntity, SelectedResource, TransferEntityOption } from "./lib/transfer-types";
+import { isTransferAllowed, toSelectedEntity } from "./lib/transfer-utils";
 import { useTransferEntities } from "./lib/use-transfer-entities";
-import { isTransferAllowed } from "./lib/transfer-utils";
-import type { ResourceBalance, SelectedEntity, SelectedResource } from "./lib/transfer-types";
+import { useAutomationTransferForm } from "./model/use-automation-transfer-form";
 import { TransferEntityPicker } from "./ui/transfer-entity-picker";
 import { TransferModeControls } from "./ui/transfer-mode-controls";
 import { TransferResourceList } from "./ui/transfer-resource-list";
@@ -42,12 +42,14 @@ export const AutomationTransferTable: React.FC = () => {
 
   const addOrder = useAutomationStore((state) => state.addOrder);
   const removeOrder = useAutomationStore((state) => state.removeOrder);
+  const updateOrder = useAutomationStore((state) => state.updateOrder);
   const ordersByRealm = useAutomationStore((state) => state.ordersByRealm);
 
   const playerStructures = useUIStore((state) => state.playerStructures);
 
   const [transferType, setTransferType] = useState<"automation" | "oneoff">("automation");
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingTransferOrderId, setEditingTransferOrderId] = useState<string | null>(null);
   const [guildOnly, setGuildOnly] = useState(true);
   const [selectedSource, setSelectedSource] = useState<SelectedEntity | null>(null);
   const [selectedDestination, setSelectedDestination] = useState<SelectedEntity | null>(null);
@@ -74,6 +76,7 @@ export const AutomationTransferTable: React.FC = () => {
     sourceEntityTypeOptions,
     filteredSourceEntities,
     filteredDestinationEntities,
+    entitiesListWithAccountNames,
   } = useTransferEntities({
     accountAddress: account.address,
     components,
@@ -115,7 +118,7 @@ export const AutomationTransferTable: React.FC = () => {
           balance: divideByPrecision(balance?.balance || 0),
         } as ResourceBalance;
       })
-      .filter((resource) => resource.id !== ResourcesIds.Labor);
+      .filter((resource) => resource.id !== ResourcesIds.Labor && resource.balance > 0);
   }, [components, currentDefaultTick, selectedSource]);
 
   const safeDestinationEntities = useMemo(
@@ -126,9 +129,19 @@ export const AutomationTransferTable: React.FC = () => {
     [filteredDestinationEntities, selectedSource],
   );
 
+  const flatDestinationEntities = useMemo(
+    () =>
+      entitiesListWithAccountNames.flatMap((group) =>
+        group.entities.map((entity) => ({ entity, groupName: group.name })),
+      ),
+    [entitiesListWithAccountNames],
+  );
+
   const handleSourceSelected = useCallback(
-    (entity: SelectedEntity) => {
-      setSelectedSource(entity);
+    (entity: TransferEntityOption) => {
+      const mapped = toSelectedEntity(entity);
+      setSelectedSource(mapped);
+      setEditingTransferOrderId(null);
       setShowAddForm(false);
       setSelectedDestination(null);
       setDestinationEntityType("");
@@ -142,13 +155,61 @@ export const AutomationTransferTable: React.FC = () => {
     [setDestinationEntityType, setDestinationSearchTerm, transferForm],
   );
 
-  const handleDestinationSelected = useCallback((entity: SelectedEntity) => {
-    setSelectedDestination(entity);
+  const handleDestinationSelected = useCallback((entity: TransferEntityOption) => {
+    const mapped = toSelectedEntity(entity);
+    setSelectedDestination(mapped);
     setOneOffResources([]);
     setOneOffNewResourceId("");
     setOneOffNewResourceAmount(100);
     setOneOffError(null);
   }, []);
+
+  const handleDestinationEntitySelect = useCallback(
+    (entity: TransferEntityOption) => {
+      setEditingTransferOrderId(null);
+      transferForm.reset();
+      handleDestinationSelected(entity);
+    },
+    [handleDestinationSelected, transferForm],
+  );
+
+  const handleEditTransferOrder = useCallback(
+    (order: AutomationOrder) => {
+      if (!selectedSource) {
+        return;
+      }
+
+      const targetIdRaw = order.targetEntityId ?? "";
+      const resolved = flatDestinationEntities.find(({ entity }) => String(entity.entityId) === targetIdRaw);
+
+      if (resolved) {
+        setDestinationEntityType(resolved.groupName);
+        handleDestinationSelected(resolved.entity);
+      } else if (targetIdRaw) {
+        setDestinationEntityType("");
+        const numericId = Number(targetIdRaw);
+        setSelectedDestination({
+          name: order.targetEntityName || `Entity ${targetIdRaw}`,
+          entityId: Number.isNaN(numericId) ? 0 : numericId,
+          category: StructureType.Realm,
+        });
+      }
+
+      setDestinationSearchTerm("");
+      setEditingTransferOrderId(order.id);
+      transferForm.loadFromOrder(order);
+      setShowAddForm(true);
+    },
+    [
+      flatDestinationEntities,
+      handleDestinationSelected,
+      selectedSource,
+      setDestinationEntityType,
+      setDestinationSearchTerm,
+      setSelectedDestination,
+      transferForm,
+    ],
+  );
 
   const handleAddAutomationResource = useCallback(
     (resourceId: ResourcesIds, amount: number) => {
@@ -166,15 +227,77 @@ export const AutomationTransferTable: React.FC = () => {
         return;
       }
 
-      addOrder(result.order);
+      const { realmEntityId, ...orderData } = result.order;
+
+      if (editingTransferOrderId) {
+        updateOrder(realmEntityId, editingTransferOrderId, orderData);
+      } else {
+        addOrder(result.order);
+      }
+
       transferForm.reset();
       setShowAddForm(false);
+      setEditingTransferOrderId(null);
       setSelectedDestination(null);
       setDestinationEntityType("");
       setDestinationSearchTerm("");
     },
-    [addOrder, setDestinationEntityType, setDestinationSearchTerm, transferForm],
+    [
+      addOrder,
+      editingTransferOrderId,
+      setDestinationEntityType,
+      setDestinationSearchTerm,
+      setSelectedDestination,
+      transferForm,
+      updateOrder,
+    ],
   );
+
+  const handleCloneTransferOrder = useCallback(
+    (order: AutomationOrder) => {
+      if (!selectedSource) {
+        return;
+      }
+
+      setEditingTransferOrderId(null);
+      transferForm.loadFromOrder(order);
+      setSelectedDestination(null);
+      setDestinationEntityType("");
+      setDestinationSearchTerm("");
+      setShowAddForm(true);
+    },
+    [
+      selectedSource,
+      setDestinationEntityType,
+      setDestinationSearchTerm,
+      setSelectedDestination,
+      setShowAddForm,
+      transferForm,
+    ],
+  );
+
+  const handleRemoveTransferOrder = useCallback(
+    (orderId: string) => {
+      if (!selectedSource) {
+        return;
+      }
+
+      removeOrder(selectedSource.entityId.toString(), orderId);
+
+      if (editingTransferOrderId === orderId) {
+        setEditingTransferOrderId(null);
+        transferForm.reset();
+        setShowAddForm(false);
+      }
+    },
+    [editingTransferOrderId, removeOrder, selectedSource, setShowAddForm, transferForm],
+  );
+
+  const handleTransferFormCancel = useCallback(() => {
+    setEditingTransferOrderId(null);
+    transferForm.reset();
+    setShowAddForm(false);
+  }, [transferForm]);
 
   const handleAddOneOffResource = useCallback(
     (resourceId: ResourcesIds, amount: number) => {
@@ -205,6 +328,21 @@ export const AutomationTransferTable: React.FC = () => {
 
   const handleRemoveOneOffResource = useCallback((resourceId: ResourcesIds) => {
     setOneOffResources((prev) => prev.filter((resource) => resource.resourceId !== resourceId));
+  }, []);
+
+  const handleReorderOneOffResource = useCallback((fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) {
+      return;
+    }
+    setOneOffResources((prev) => {
+      if (fromIndex < 0 || toIndex < 0 || fromIndex >= prev.length || toIndex >= prev.length) {
+        return prev;
+      }
+      const next = [...prev];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return next;
+    });
   }, []);
 
   const handleOneOffTransfer = useCallback(() => {
@@ -267,15 +405,11 @@ export const AutomationTransferTable: React.FC = () => {
     );
 
     if (exactMatch) {
-      handleSourceSelected({
-        name: exactMatch.name,
-        entityId: exactMatch.entityId,
-        category: exactMatch.category,
-      });
+      handleSourceSelected(exactMatch);
       setSourceSearchTerm("");
     } else if (filteredSourceEntities.length === 1) {
       const [entity] = filteredSourceEntities;
-      handleSourceSelected({ name: entity.name, entityId: entity.entityId, category: entity.category });
+      handleSourceSelected(entity);
       setSourceSearchTerm("");
     }
   }, [debouncedSourceSearchTerm, filteredSourceEntities, handleSourceSelected, setSourceSearchTerm, sourceEntityType]);
@@ -291,15 +425,11 @@ export const AutomationTransferTable: React.FC = () => {
     );
 
     if (exactMatch) {
-      handleDestinationSelected({
-        name: exactMatch.name,
-        entityId: exactMatch.entityId,
-        category: exactMatch.category,
-      });
+      handleDestinationSelected(exactMatch);
       setDestinationSearchTerm("");
     } else if (safeDestinationEntities.length === 1) {
       const [entity] = safeDestinationEntities;
-      handleDestinationSelected({ name: entity.name, entityId: entity.entityId, category: entity.category });
+      handleDestinationSelected(entity);
       setDestinationSearchTerm("");
     }
   }, [
@@ -378,35 +508,34 @@ export const AutomationTransferTable: React.FC = () => {
         </div>
       </Panel>
 
-      <TransferEntityPicker
-        mode="source"
-        title="Source"
-        selectedEntity={selectedSource}
-        description="You can only send resources from entities you own."
-        entityTypeOptions={sourceEntityTypeOptions}
-        selectedEntityType={sourceEntityType}
-        onEntityTypeChange={setSourceEntityType}
-        searchTerm={sourceSearchTerm}
-        onSearchTermChange={handleSourceSearchChange}
-        debouncedSearchTerm={debouncedSourceSearchTerm}
-        filteredEntities={filteredSourceEntities}
-        onSelectEntity={(entity) =>
-          handleSourceSelected({ name: entity.name, entityId: entity.entityId, category: entity.category })
-        }
-        onResetSelection={() => {
-          setSelectedSource(null);
-          setSourceEntityType("");
-          setSourceSearchTerm("");
-          setSelectedDestination(null);
-          setDestinationEntityType("");
-          setDestinationSearchTerm("");
-          transferForm.reset();
-        }}
-        isPaused={isSourcePaused}
-      />
-
-      {selectedSource && (
-        <>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <TransferEntityPicker
+          mode="source"
+          title="Source"
+          selectedEntity={selectedSource}
+          description="You can only send resources from entities you own."
+          entityTypeOptions={sourceEntityTypeOptions}
+          selectedEntityType={sourceEntityType}
+          onEntityTypeChange={setSourceEntityType}
+          searchTerm={sourceSearchTerm}
+          onSearchTermChange={handleSourceSearchChange}
+          debouncedSearchTerm={debouncedSourceSearchTerm}
+          filteredEntities={filteredSourceEntities}
+          onSelectEntity={handleSourceSelected}
+          onResetSelection={() => {
+            setSelectedSource(null);
+            setSourceEntityType("");
+            setSourceSearchTerm("");
+            setSelectedDestination(null);
+            setDestinationEntityType("");
+            setDestinationSearchTerm("");
+            setEditingTransferOrderId(null);
+            transferForm.reset();
+            setShowAddForm(false);
+          }}
+          isPaused={isSourcePaused}
+        />
+        {selectedSource ? (
           <TransferEntityPicker
             mode="destination"
             title="Destination"
@@ -419,16 +548,39 @@ export const AutomationTransferTable: React.FC = () => {
             onSearchTermChange={handleDestinationSearchChange}
             debouncedSearchTerm={debouncedDestinationSearchTerm}
             filteredEntities={safeDestinationEntities}
-            onSelectEntity={(entity) =>
-              handleDestinationSelected({ name: entity.name, entityId: entity.entityId, category: entity.category })
-            }
+            onSelectEntity={handleDestinationEntitySelect}
             onResetSelection={() => {
               setSelectedDestination(null);
               setDestinationEntityType("");
               setDestinationSearchTerm("");
+              setEditingTransferOrderId(null);
               transferForm.reset();
+              setShowAddForm(false);
             }}
           />
+        ) : (
+          <div className="rounded-md border border-dashed border-gold/25 bg-black/15 p-6 text-sm text-gold/60">
+            Choose a source structure to reveal eligible destinations.
+          </div>
+        )}
+      </div>
+
+      {selectedSource && (
+        <>
+          {transferType === "automation" && (
+            <div className="my-4">
+              <TransferSummary
+                orders={transferOrders}
+                sourceName={selectedSource?.name}
+                isPaused={isSourcePaused}
+                onSelect={handleEditTransferOrder}
+                onRemove={handleRemoveTransferOrder}
+                onClone={handleCloneTransferOrder}
+                activeOrderId={editingTransferOrderId}
+                isLinkActive={Boolean(selectedDestination)}
+              />
+            </div>
+          )}
 
           {selectedDestination && travelTime && transferType === "oneoff" && (
             <p className="text-sm text-gold/70 mb-4">Travel Time: ~{Math.round(travelTime / 60)} minutes</p>
@@ -437,7 +589,15 @@ export const AutomationTransferTable: React.FC = () => {
           {transferType === "automation" && (
             <div className="my-4">
               {!showAddForm && (
-                <Button onClick={() => setShowAddForm(true)} variant="default" disabled={isSourcePaused}>
+                <Button
+                  onClick={() => {
+                    setEditingTransferOrderId(null);
+                    transferForm.reset();
+                    setShowAddForm(true);
+                  }}
+                  variant="default"
+                  disabled={isSourcePaused}
+                >
                   Add New Transfer Automation {isSourcePaused && "(Paused)"}
                 </Button>
               )}
@@ -453,7 +613,9 @@ export const AutomationTransferTable: React.FC = () => {
               padding="md"
               className="mb-6 space-y-4 bg-black/10"
             >
-              <h3 className="text-lg font-semibold">Create New Transfer Automation</h3>
+              <h3 className="text-lg font-semibold">
+                {editingTransferOrderId ? "Edit Transfer Automation" : "Create New Transfer Automation"}
+              </h3>
 
               <TransferModeControls
                 mode={transferForm.state.transferMode}
@@ -467,12 +629,16 @@ export const AutomationTransferTable: React.FC = () => {
               <TransferResourceList
                 resources={transferForm.state.resources}
                 onRemove={transferForm.removeResource}
+                onReorder={transferForm.reorderResources}
                 availableResources={orderedResourcesWithBalances}
                 newResourceId={transferForm.state.newResourceId}
                 onNewResourceChange={transferForm.setNewResourceId}
                 newResourceAmount={transferForm.state.newResourceAmount}
                 onNewResourceAmountChange={transferForm.setNewResourceAmount}
                 onAddResource={handleAddAutomationResource}
+                transferMode={transferForm.state.transferMode}
+                transferInterval={transferForm.state.transferInterval}
+                transferThreshold={transferForm.state.transferThreshold}
                 addButtonLabel="Add"
                 title="Resources to Transfer"
                 emptyMessage="No resources selected for this automation."
@@ -482,9 +648,9 @@ export const AutomationTransferTable: React.FC = () => {
 
               <div className="flex justify-end gap-2">
                 <Button type="submit" variant="gold" disabled={transferForm.state.resources.length === 0}>
-                  Confirm Transfer Automation
+                  {editingTransferOrderId ? "Update Transfer Automation" : "Confirm Transfer Automation"}
                 </Button>
-                <Button onClick={() => setShowAddForm(false)} variant="default" size="xs" type="button">
+                <Button onClick={handleTransferFormCancel} variant="default" size="xs" type="button">
                   Cancel
                 </Button>
               </div>
@@ -509,6 +675,7 @@ export const AutomationTransferTable: React.FC = () => {
                 <TransferResourceList
                   resources={oneOffResources}
                   onRemove={handleRemoveOneOffResource}
+                  onReorder={handleReorderOneOffResource}
                   availableResources={orderedResourcesWithBalances}
                   newResourceId={oneOffNewResourceId}
                   onNewResourceChange={(value) => setOneOffNewResourceId(value)}
@@ -535,15 +702,6 @@ export const AutomationTransferTable: React.FC = () => {
                 </div>
               </Panel>
             </>
-          )}
-
-          {transferType === "automation" && (
-            <TransferSummary
-              orders={transferOrders}
-              sourceName={selectedSource?.name}
-              isPaused={isSourcePaused}
-              onRemove={(orderId) => removeOrder(selectedSource?.entityId.toString() || "", orderId)}
-            />
           )}
         </>
       )}
