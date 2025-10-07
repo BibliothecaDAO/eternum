@@ -7,7 +7,15 @@
 import * as SystemProps from "@bibliothecadao/types";
 import { DojoCall, DojoProvider } from "@dojoengine/core";
 import EventEmitter from "eventemitter3";
-import { Account, AccountInterface, AllowArray, Call, CallData, Result, uint256 } from "starknet";
+import {
+  Account,
+  AccountInterface,
+  AllowArray,
+  Call,
+  CallData,
+  GetTransactionReceiptResponse,
+  uint256,
+} from "starknet";
 import { TransactionType } from "./types";
 export const NAMESPACE = "s1_eternum";
 export { TransactionType };
@@ -232,10 +240,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param transactionDetails - Transaction call data
    * @returns Transaction receipt
    */
-  async executeAndCheckTransaction(
-    signer: Account | AccountInterface,
-    transactionDetails: AllowArray<Call>,
-  ): Promise<Result> {
+  async executeAndCheckTransaction(signer: Account | AccountInterface, transactionDetails: AllowArray<Call>) {
     if (typeof window !== "undefined") {
       console.log({ signer, transactionDetails });
     }
@@ -268,7 +273,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     return transactionResult;
   }
 
-  async callAndReturnResult(signer: Account | AccountInterface, transactionDetails: DojoCall | Call): Promise<Result> {
+  async callAndReturnResult(signer: Account | AccountInterface, transactionDetails: DojoCall | Call) {
     if (typeof window !== "undefined") {
       console.log({ signer, transactionDetails });
     }
@@ -283,7 +288,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @returns Transaction receipt
    * @throws Error if transaction fails or is reverted
    */
-  async waitForTransactionWithCheck(transactionHash: string): Promise<Result> {
+  async waitForTransactionWithCheck(transactionHash: string): Promise<GetTransactionReceiptResponse> {
     let receipt;
     try {
       receipt = await this.provider.waitForTransaction(transactionHash, {
@@ -968,7 +973,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * }
    * ```
    */
-  public async create_building(props: SystemProps.CreateBuildingProps): Promise<Result> {
+  public async create_building(props: SystemProps.CreateBuildingProps): Promise<GetTransactionReceiptResponse> {
     const { entity_id, directions, building_category, use_simple, signer } = props;
 
     const call = this.createProviderCall(signer, {
@@ -2699,7 +2704,9 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param props.signer - Account executing the transaction
    * @returns Transaction receipt
    */
-  public async create_marketplace_orders(props: SystemProps.CreateMarketplaceOrdersProps): Promise<Result> {
+  public async create_marketplace_orders(
+    props: SystemProps.CreateMarketplaceOrdersProps,
+  ): Promise<GetTransactionReceiptResponse> {
     const { tokens, signer, marketplace_address } = props;
 
     const calls = tokens.map((token) => {
@@ -2781,7 +2788,9 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param props.signer - Account executing the transaction
    * @returns Transaction receipt
    */
-  public async edit_marketplace_order(props: SystemProps.EditMarketplaceOrderProps): Promise<Result> {
+  public async edit_marketplace_order(
+    props: SystemProps.EditMarketplaceOrderProps,
+  ): Promise<GetTransactionReceiptResponse> {
     const { order_id, new_price, signer } = props;
 
     const call = {
@@ -2795,17 +2804,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       throw new Error("Transaction failed - no result returned");
     }
     return result;
-  }
-
-  public async set_quest_games(props: SystemProps.SetQuestGamesProps) {
-    const { signer, quest_games } = props;
-    for (const quest_game of quest_games) {
-      return await this.executeAndCheckTransaction(signer, {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-quest_systems`),
-        entrypoint: "add_game",
-        calldata: quest_game,
-      });
-    }
   }
 
   public async start_quest(props: SystemProps.StartQuestProps) {

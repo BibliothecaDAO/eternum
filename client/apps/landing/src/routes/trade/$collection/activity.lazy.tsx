@@ -4,9 +4,8 @@ import { ResourceIcon } from "@/components/ui/elements/resource-icon";
 import { ScrollHeader } from "@/components/ui/scroll-header";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { marketplaceCollections } from "@/config";
-import { fetchMarketOrderEvents } from "@/hooks/services";
+import { useMarketplaceActivity } from "@/hooks/use-marketplace-activity";
 import { formatRelativeTime } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { AlertTriangle, Clock, Loader2, Pencil, ShoppingCart, Tag, X } from "lucide-react";
 import { Suspense, useState } from "react";
@@ -27,11 +26,8 @@ function ActivityPage() {
 
   const isSeasonPassEndSeason = collection === "season-passes" && env.VITE_PUBLIC_SHOW_END_GAME_WARNING;
 
-  const { data: events, isLoading } = useQuery({
-    queryKey: ["marketOrderEvents", collection, filterType],
-    queryFn: () => fetchMarketOrderEvents(collectionAddress, filterType),
-    refetchInterval: 30_000,
-  });
+  const { events: marketEvents, isLoading } = useMarketplaceActivity(filterType, collectionAddress);
+
   // Function to get display status
   const getDisplayStatus = (status: string) => {
     if (status === "Accepted") return "Sale";
@@ -94,7 +90,7 @@ function ActivityPage() {
               <div className="flex-grow flex items-center justify-center min-h-[200px]">
                 <Loader2 className="w-10 h-10 animate-spin" />
               </div>
-            ) : events && events.length > 0 ? (
+            ) : marketEvents.length > 0 ? (
               <div className="space-y-4">
                 <div className="overflow-x-auto">
                   <div className="min-w-[750px]">
@@ -108,7 +104,7 @@ function ActivityPage() {
 
                     {/* Table body */}
                     <div className="w-full">
-                      {events.map((event) => {
+                      {marketEvents.map((event) => {
                         const metadata = event.metadata;
                         const image = metadata?.image?.startsWith("ipfs://")
                           ? metadata?.image.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/")

@@ -63,8 +63,9 @@ export const useMarketplace = () => {
 
   const acceptOrders = async (params: AcceptOrdersParams & { totalPrice: bigint }) => {
     if (!account) throw new Error("Account not connected");
+    if (!lordsContract) throw new Error("Lords contract is not initialized");
     setIsAcceptingOrder(true);
-    const lordsApproved = lordsContract?.populate("approve", [marketplaceAddress, params.totalPrice]);
+    const lordsApproved = lordsContract.populate("approve", [marketplaceAddress, params.totalPrice]);
 
     try {
       await accept_marketplace_orders(

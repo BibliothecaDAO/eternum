@@ -65,7 +65,7 @@ export default function TransferNftDialog({
       contract && address && transferTo
         ? selectedTokens.map((tokenId) => {
             console.log("Creating transfer call for tokenId:", tokenId, "from:", address, "to:", transferTo);
-            return contract.populate("transfer_from", [address, BigInt(transferTo || ""), tokenId]);
+            return contract.populate("transfer_from", [address as string, transferTo as string, BigInt(tokenId)]);
           })
         : undefined,
   });

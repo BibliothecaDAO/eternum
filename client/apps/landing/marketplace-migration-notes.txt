@@ -1,0 +1,5 @@
+- [ ] Install @cartridge/marketplace@0.0.16 alongside the matching @dojoengine/sdk, @dojoengine/torii-wasm, @tanstack/react-db, and @tanstack/query-db-collection packages; current versions in package.json are provisional until we verify compatibility.
+- [x] Confirm @cartridge/marketplace@0.0.16 resolves locally; MarketplaceProvider depends on its exports.
+- [ ] OrderModel field mapping (maker address, price units, expiration format) must be validated once the SDK is available; fetchActiveMarketOrders is now replaced by useActiveMarketplaceOrders but the value checks are still outstanding.
+- [ ] Need guidance on torii project/world address mapping to hydrate Torii clients for token fetching (current provider exposes toriiClient but downstream services still rely on SQL).
+- [ ] Remaining services (fetchAllCollectionTokens, fetchCollectionStatistics, etc.) still depend on SQL endpoints; the new marketplace hooks now cover active orders and activity feeds, but the rest must be rewritten against Torii once schema details are clarified.

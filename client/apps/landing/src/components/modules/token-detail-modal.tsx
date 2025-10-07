@@ -3,18 +3,17 @@ import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { marketplaceCollections, realmsAddress, seasonPassAddress } from "@/config";
-import { fetchActiveMarketOrders } from "@/hooks/services";
 import { useLords } from "@/hooks/use-lords";
 import { useMarketplace } from "@/hooks/use-marketplace";
+import { useActiveMarketplaceOrders } from "@/hooks/use-active-market-orders";
 import { useOpenChest } from "@/hooks/use-open-chest";
 import { formatRelativeTime } from "@/lib/utils";
 import { useLootChestOpeningStore } from "@/stores/loot-chest-opening";
 import { MergedNftData } from "@/types";
 import { shortenHex } from "@dojoengine/utils";
 import { useAccount, useConnect } from "@starknet-react/core";
-import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Copy, Info, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { formatUnits } from "viem";
 import { env } from "../../../env";
@@ -120,12 +119,17 @@ export const TokenDetailModal = ({
     : originalImage;
   const { cancelOrder, acceptOrders, isLoading } = marketplaceActions;
 
-  const { data: activeMarketOrder } = useQuery({
-    queryKey: ["activeMarketOrdersTotal", seasonPassAddress, tokenData.token_id.toString()],
-    queryFn: () => fetchActiveMarketOrders(seasonPassAddress, [tokenData.token_id.toString()]),
-    refetchInterval: 30_000,
-    enabled: isOpen,
-  });
+  const activeOrderLookup = useMemo(
+    () => [
+      {
+        contractAddress: tokenData.contract_address,
+        tokenId: tokenData.token_id.toString(),
+      },
+    ],
+    [tokenData.contract_address, tokenData.token_id],
+  );
+
+  const [activeMarketplaceOrder] = useActiveMarketplaceOrders(activeOrderLookup);
 
   console.log("[TokenDetailModal] tokenData", tokenData);
 
@@ -185,10 +189,11 @@ export const TokenDetailModal = ({
   }, [isListed, price, orderId, isOwner, isSyncing]);
 
   const handleCancelOrder = async () => {
-    if (!orderId && !activeMarketOrder?.[0]?.order_id) return; // Basic validation
+    const fallbackOrderId = activeMarketplaceOrder?.order_id;
+    if (!orderId && !fallbackOrderId) return; // Basic validation
     try {
       await cancelOrder({
-        order_id: BigInt(orderId ?? activeMarketOrder?.[0]?.order_id ?? 0),
+        order_id: BigInt(orderId ?? fallbackOrderId ?? 0),
       });
       toast.success("Transaction confirmed! Syncing cancellation...");
       setIsSyncing(true);

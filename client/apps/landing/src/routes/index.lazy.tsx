@@ -365,7 +365,7 @@ const MarketplaceCollectionCard = memo(function MarketplaceCollectionCard({
 }: MarketplaceCollectionCardProps) {
   const { data, isPending, isError } = useQuery<ActiveMarketOrdersTotal[]>({
     queryKey: ["activeMarketOrdersTotal", collectionKey],
-    queryFn: () => fetchCollectionStatistics(collection.address),
+    queryFn: () => fetchCollectionStatistics(collection.address, { useMockup: true }),
     refetchInterval: 30_000,
     enabled: Boolean(collection.address),
   });

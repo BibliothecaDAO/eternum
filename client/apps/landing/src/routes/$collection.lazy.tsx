@@ -64,7 +64,7 @@ function ManageCollectionRoute() {
 
   const { data: collectionStats } = useQuery({
     queryKey: ["collectionStatistics", collectionAddress],
-    queryFn: () => fetchCollectionStatistics(collectionAddress),
+    queryFn: () => fetchCollectionStatistics(collectionAddress, { useMockup: true }),
     refetchInterval: 60_000,
   });
 

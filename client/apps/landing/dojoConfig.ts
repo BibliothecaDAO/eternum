@@ -17,7 +17,6 @@ const manifest = getGameManifest(VITE_PUBLIC_CHAIN as Chain);
 export const dojoConfig = createDojoConfig({
   rpcUrl: VITE_PUBLIC_NODE_URL,
   toriiUrl: VITE_PUBLIC_TORII,
-  relayUrl: VITE_PUBLIC_TORII_RELAY,
   masterAddress: VITE_PUBLIC_MASTER_ADDRESS,
   masterPrivateKey: VITE_PUBLIC_MASTER_PRIVATE_KEY,
   accountClassHash:

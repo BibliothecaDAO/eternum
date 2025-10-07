@@ -13,12 +13,11 @@ import {
 } from "@/components/ui/pagination";
 import { Slider } from "@/components/ui/slider";
 import { marketplaceAddress, marketplaceCollections } from "@/config";
+import { fetchCollectionStatistics, fetchCollectionTraits } from "@/hooks/services";
 import {
-  fetchAllCollectionTokens,
   FetchAllCollectionTokensOptions,
-  fetchCollectionStatistics,
-  fetchCollectionTraits,
-} from "@/hooks/services";
+  useMarketplaceCollectionTokens,
+} from "@/hooks/use-marketplace-collection-tokens";
 import { useSelectedPassesStore } from "@/stores/selected-passes";
 import { useDebounce } from "@bibliothecadao/react";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
@@ -84,7 +83,7 @@ function CollectionPage() {
   // --- API Queries ---
   const totals = useSuspenseQuery({
     queryKey: ["activeMarketOrdersTotal", collection],
-    queryFn: () => fetchCollectionStatistics(collectionAddress),
+    queryFn: () => fetchCollectionStatistics(collectionAddress, { useMockup: true }),
     refetchInterval: 30_000,
   });
 
@@ -100,11 +99,11 @@ function CollectionPage() {
     [currentPage, debouncedFilters, debouncedSortBy, debouncedListedOnly, ITEMS_PER_PAGE],
   );
 
-  const tokensQuery = useQuery({
-    queryKey: ["allCollectionTokens", marketplaceAddress, collection, tokenOptions],
-    queryFn: () => fetchAllCollectionTokens(collectionAddress, tokenOptions),
-    refetchInterval: 8_000,
-  });
+  const {
+    tokens: collectionTokens,
+    totalCount,
+    isLoading: tokensLoading,
+  } = useMarketplaceCollectionTokens(collectionAddress, tokenOptions);
 
   // Get all traits for filter UI efficiently
   const allTraitsQuery = useQuery({
@@ -115,8 +114,8 @@ function CollectionPage() {
   });
 
   // --- Derived State ---
-  const tokens = useMemo(() => tokensQuery.data?.tokens ?? [], [tokensQuery.data?.tokens]);
-  const totalItems = tokensQuery.data?.totalCount ?? 0;
+  const tokens = useMemo(() => collectionTokens, [collectionTokens]);
+  const totalItems = totalCount;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
   const activeOrders = totals.data?.[0]?.active_order_count ?? 0;
   const allTraits = allTraitsQuery.data ?? {};
@@ -290,13 +289,13 @@ function CollectionPage() {
                   </div>
                 }
               >
-                {tokensQuery.isLoading && (
+                {tokensLoading && (
                   <div className="flex-grow flex items-center justify-center min-h-[200px]">
                     <Loader2 className="w-10 h-10 animate-spin" />
                   </div>
                 )}
 
-                {!tokensQuery.isLoading && tokens.length > 0 && (
+                {!tokensLoading && tokens.length > 0 && (
                   <CollectionTokenGrid
                     tokens={tokens}
                     isCompactGrid={isCompactGrid}
@@ -311,10 +310,10 @@ function CollectionPage() {
                   />
                 )}
 
-                {!tokensQuery.isLoading && tokens.length === 0 && Object.keys(selectedFilters).length > 0 && (
+                {!tokensLoading && tokens.length === 0 && Object.keys(selectedFilters).length > 0 && (
                   <div className="text-center py-6 text-muted-foreground">No items match the selected filters.</div>
                 )}
-                {!tokensQuery.isLoading && totalItems === 0 && Object.keys(selectedFilters).length === 0 && (
+                {!tokensLoading && totalItems === 0 && Object.keys(selectedFilters).length === 0 && (
                   <div className="text-center py-6 text-muted-foreground">No items available.</div>
                 )}
               </Suspense>

@@ -1,11 +1,10 @@
 import { getCollectionByAddress } from "@/config";
-import { fetchActiveMarketOrders } from "@/hooks/services";
 import { useMarketplace } from "@/hooks/use-marketplace";
+import { useActiveMarketplaceOrders } from "@/hooks/use-active-market-orders";
 import { useMarketplaceApproval } from "@/hooks/use-marketplace-approval";
 import { MergedNftData } from "@/types";
-import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, ArrowLeft, Minus, Plus } from "lucide-react";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Button } from "../ui/button";
 import {
   Drawer,
@@ -73,15 +72,16 @@ export const CreateListingsDrawer: React.FC<CreateListingsDrawerProps> = ({
     setListExpiration(calculateExpirationTimestamp(durationKey));
   };
 
-  const { data: activeMarketOrder } = useQuery({
-    queryKey: ["activeMarketOrders", tokens?.[0]?.contract_address, tokens.map((t) => t.token_id.toString())],
-    queryFn: () =>
-      fetchActiveMarketOrders(
-        tokens?.[0]?.contract_address, //needs to be changed for multipl collections
-        tokens.map((t) => t.token_id.toString()),
-      ),
-    refetchInterval: 30_000,
-  });
+  const orderLookups = useMemo(
+    () =>
+      tokens.map((token) => ({
+        contractAddress: token.contract_address,
+        tokenId: token.token_id.toString(),
+      })),
+    [tokens],
+  );
+
+  const activeMarketOrders = useActiveMarketplaceOrders(orderLookups);
 
   // Handler for price change
   const handlePriceChange = (tokenId: string, price: string) => {
@@ -113,8 +113,8 @@ export const CreateListingsDrawer: React.FC<CreateListingsDrawerProps> = ({
 
       await marketplaceActions.listItems({
         tokens: tokensToProcess.map((token) => {
-          const existingOrder = activeMarketOrder?.find((order) => {
-            return order.token_id.toString() === token.token_id.toString();
+          const existingOrder = activeMarketOrders.find((order) => {
+            return order.token_id === token.token_id.toString();
           });
           return {
             token_id: parseInt(token.token_id.toString()),

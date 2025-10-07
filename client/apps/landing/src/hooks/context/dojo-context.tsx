@@ -53,6 +53,15 @@ export const DojoProvider = ({ children, value }: DojoProviderProps) => {
   );
 };
 
+const useMasterAccount = (rpcProvider: RpcProvider) => {
+  const masterAddress = env.VITE_PUBLIC_MASTER_ADDRESS;
+  const privateKey = env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
+  return useMemo(
+    () => new Account({ provider: rpcProvider, address: masterAddress, signer: privateKey }),
+    [rpcProvider, masterAddress, privateKey],
+  );
+};
+
 export const useDojo = (): DojoResult => {
   const contextValue = useContext(DojoContext);
   if (!contextValue) throw new Error("The `useDojo` hook must be used within a `DojoProvider`");
@@ -84,10 +93,7 @@ const DojoContextProvider = ({
   const masterAddress = env.VITE_PUBLIC_MASTER_ADDRESS;
   const privateKey = env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
 
-  const masterAccount = useMemo(
-    () => new Account(rpcProvider, masterAddress, privateKey),
-    [rpcProvider, masterAddress, privateKey],
-  );
+  const masterAccount = useMasterAccount(rpcProvider);
 
   const displayAddr = controllerAccount ? displayAddress(controllerAccount.address) : displayAddress(masterAddress);
 

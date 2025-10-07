@@ -1,7 +1,19 @@
 import { useCallback } from "react";
 import { useDojo } from "../";
 
-export const useBridgeAsset = () => {
+export const useBridgeAsset = (): {
+  bridgeDepositIntoRealm: (
+    resources: { tokenAddress: string; amount: bigint }[],
+    recipientStructureId: bigint,
+    clientFeeRecipient: bigint,
+  ) => Promise<any> | undefined;
+  bridgeWithdrawFromRealm: (
+    resources: { tokenAddress: string; amount: bigint }[],
+    fromStructureId: bigint,
+    toRecipientAddress: bigint,
+    clientFeeRecipient: bigint,
+  ) => Promise<any> | undefined;
+} => {
   const {
     account: { account },
     setup: {

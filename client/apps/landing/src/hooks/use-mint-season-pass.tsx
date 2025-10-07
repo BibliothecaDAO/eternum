@@ -30,26 +30,30 @@ export const useMintSeasonPass = () => {
     async (token_ids: string[], recipient?: string) => {
       console.log(token_ids);
       const tokenIdsNumberArray: number[] = token_ids.map((tokenId) => parseInt(tokenId, 16));
-      if (account && canMint) {
-        setIsMinting(true);
-        setMintingTokenId(token_ids);
-        /*await mint_season_passes({
-          signer: account,
-          recipient: recipient ?? account.address,
-          token_ids: tokenIdsNumberArray,
-          season_pass_address: seasonPassAddress,
-        })*/
-        const calls = token_ids.map((tokenId) => contract.populate("mint", [recipient ?? account.address, tokenId]));
-        try {
-          send(calls);
-        } catch (e) {
-          console.error(`mint error:`, e);
-          setMintingTokenId(["0"]);
-          setIsMinting(false);
-        }
+      if (!account || !contract || !canMint) {
+        return;
+      }
+
+      setIsMinting(true);
+      setMintingTokenId(token_ids);
+      /*await mint_season_passes({
+        signer: account,
+        recipient: recipient ?? account.address,
+        token_ids: tokenIdsNumberArray,
+        season_pass_address: seasonPassAddress,
+      })*/
+      const calls = token_ids.map((tokenId) =>
+        contract.populate("mint", [recipient ?? account.address, BigInt(tokenId)]),
+      );
+      try {
+        await send(calls);
+      } catch (e) {
+        console.error(`mint error:`, e);
+        setMintingTokenId(["0"]);
+        setIsMinting(false);
       }
     },
-    [account, canMint],
+    [account, canMint, contract, send],
   );
 
   useEffect(() => {

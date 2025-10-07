@@ -13,12 +13,12 @@ packages:
   - "contracts/season_resources/scripts/deployment"
 
 catalog:
-  starknet: 6.23.1
+  starknet: ^8.5.2
   starknetkit: ^2.6.1
   "@cartridge/controller": ^0.7.14-alpha.3
   "@cartridge/connector": ^0.7.14-alpha.3
-  "@starknet-react/core": 3.7.2
-  "@starknet-react/chains": 3.1.2
+  "@starknet-react/core": "5.0.3"
+  "@starknet-react/chains": 5.0.3
   "@metamask/sdk": ^0.32.1
   "@solana/web3.js": ^1.98.0
   open: ^10.1.0
@@ -26,13 +26,13 @@ catalog:
   react-dom: ^18
   "@types/react": ^18
   "@types/react-dom": ^18
-  "@dojoengine/react": 1.5.5
-  "@dojoengine/core": 1.5.5
-  "@dojoengine/sdk": 1.5.5
-  "@dojoengine/predeployed-connector": 1.5.5
+  "@dojoengine/react": "1.7.0-preview.3"
+  "@dojoengine/core": "1.7.0-preview.3"
+  "@dojoengine/sdk": "1.7.0-preview.3"
+  "@dojoengine/predeployed-connector": "1.7.0-preview.3"
   "@dojoengine/recs": ^2.0.13
-  "@dojoengine/state": 1.5.5
-  "@dojoengine/torii-client": 1.5.5
-  "@dojoengine/torii-wasm": 1.5.5
-  "@dojoengine/utils": 1.5.5
+  "@dojoengine/state": "1.7.0-preview.3"
+  "@dojoengine/torii-client": "1.7.0-preview.3"
+  "@dojoengine/torii-wasm": "1.7.0-preview.3"
+  "@dojoengine/utils": "1.7.0-preview.3"
   "posthog-js": ^1.160.0

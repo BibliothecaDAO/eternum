@@ -13,7 +13,9 @@ import { dojoConfig } from "../dojoConfig";
 import { StarknetProvider } from "./components/providers/starknet-provider";
 import { ThemeProvider } from "./components/providers/theme-provider";
 import { TypeH1 } from "./components/typography/type-h1";
+import { ArcadeProvider } from "./hooks/context/arcade-context";
 import { DojoProvider } from "./hooks/context/dojo-context";
+import { MarketplaceProvider } from "./hooks/context/marketplace-context";
 import { DojoEventListener } from "./hooks/subscriptions.tsx/dojo-event-listener";
 import { routeTree } from "./routeTree.gen";
 import { ETERNUM_CONFIG } from "./utils/config";
@@ -61,7 +63,11 @@ if (!rootElement.innerHTML) {
           <StarknetProvider>
             <DojoProvider value={setupResult}>
               <DojoEventListener>
-                <RouterProvider router={router} />
+                <ArcadeProvider>
+                  <MarketplaceProvider>
+                    <RouterProvider router={router} />
+                  </MarketplaceProvider>
+                </ArcadeProvider>
               </DojoEventListener>
             </DojoProvider>
           </StarknetProvider>

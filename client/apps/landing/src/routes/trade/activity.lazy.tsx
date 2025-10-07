@@ -3,9 +3,8 @@ import { Button } from "@/components/ui/button";
 import { ResourceIcon } from "@/components/ui/elements/resource-icon";
 import { ScrollHeader } from "@/components/ui/scroll-header";
 import { seasonPassAddress } from "@/config";
-import { fetchMarketOrderEvents } from "@/hooks/services";
+import { useMarketplaceActivity } from "@/hooks/use-marketplace-activity";
 import { formatRelativeTime } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { Clock, Loader2, Pencil, ShoppingCart, Tag, X } from "lucide-react";
 import { Suspense, useState } from "react";
@@ -19,11 +18,7 @@ export const Route = createLazyFileRoute("/trade/activity")({
 function ActivityPage() {
   const [filterType, setFilterType] = useState<"all" | "sales" | "listings">("all");
 
-  const { data: marketEvents, isLoading } = useQuery({
-    queryKey: ["marketOrderEvents", seasonPassAddress, filterType],
-    queryFn: () => fetchMarketOrderEvents(seasonPassAddress, filterType, 50, 0),
-    refetchInterval: 30_000,
-  });
+  const { events: marketEvents, isLoading } = useMarketplaceActivity(filterType, seasonPassAddress);
 
   // Function to get display status
   const getDisplayStatus = (status: string) => {

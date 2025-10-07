@@ -15,7 +15,7 @@ function CollectionsPage() {
   const collections = Object.entries(marketplaceCollections).filter(([key, collection]) => collection.address != "");
   const queries = collections.map(([key, collection]) => ({
     queryKey: ["activeMarketOrdersTotal", key],
-    queryFn: () => fetchCollectionStatistics(collection.address),
+    queryFn: () => fetchCollectionStatistics(collection.address, { useMockup: true }),
     refetchInterval: 30_000,
   }));
 

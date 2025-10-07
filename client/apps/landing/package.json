@@ -24,6 +24,8 @@
     "@bibliothecadao/provider": "workspace:*",
     "@bibliothecadao/react": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
+    "@cartridge/arcade": "0.3.5",
+    "@cartridge/marketplace": "0.0.16",
     "@dojoengine/core": "catalog:",
     "@graphql-codegen/schema-ast": "^4.1.0",
     "@graphql-typed-document-node/core": "^3.2.0",

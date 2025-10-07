@@ -12,6 +12,41 @@ const LEGACY_TRAIT_KEY_COLLECTIONS = new Set<string>([
   "0x36017e69d21d6d8c13e266eabb73ef1f1d02722d86bdcabe5f168f8e549d3cd",
 ]);
 
+const MOCK_COLLECTION_STATISTICS: Record<string, ActiveMarketOrdersTotal[]> = {
+  default: [
+    {
+      active_order_count: 3,
+      floor_price_wei: BigInt("27500000000000000000000"),
+      open_orders_total_wei: BigInt("734100000000000000000000"),
+    },
+    {
+      active_order_count: 8,
+      floor_price_wei: BigInt("900000000000000000000"),
+      open_orders_total_wei: BigInt("179894000000000000000000"),
+    },
+    {
+      active_order_count: 97,
+      floor_price_wei: BigInt("39000000000000000000"),
+      open_orders_total_wei: BigInt("37620000000000000000000"),
+    },
+    {
+      active_order_count: 16,
+      floor_price_wei: BigInt("18000000000000000000000"),
+      open_orders_total_wei: BigInt("317298000000000000000000"),
+    },
+    {
+      active_order_count: 394,
+      floor_price_wei: BigInt("50000000000000000000"),
+      open_orders_total_wei: BigInt("255025000000000000000000"),
+    },
+    {
+      active_order_count: 34,
+      floor_price_wei: BigInt("99000000000000000000"),
+      open_orders_total_wei: BigInt("7339000000000000000000"),
+    },
+  ],
+};
+
 export interface ActiveMarketOrdersTotal {
   active_order_count: number;
   open_orders_total_wei: bigint | null; // SUM can return null if there are no rows
@@ -131,10 +166,25 @@ export async function fetchCollectionTraits(contractAddress: string): Promise<Re
   );
 }
 
+export interface FetchCollectionStatisticsOptions {
+  useMockup?: boolean;
+}
+
 /**
  * Fetch totals for active market orders from the API
  */
-export async function fetchCollectionStatistics(contractAddress: string): Promise<ActiveMarketOrdersTotal[]> {
+export async function fetchCollectionStatistics(
+  contractAddress: string,
+  options: FetchCollectionStatisticsOptions = {},
+): Promise<ActiveMarketOrdersTotal[]> {
+  if (options.useMockup) {
+    const mockKey = trimAddress(contractAddress)?.toLowerCase();
+    if (mockKey && MOCK_COLLECTION_STATISTICS[mockKey]) {
+      return MOCK_COLLECTION_STATISTICS[mockKey];
+    }
+    return MOCK_COLLECTION_STATISTICS.default ?? [];
+  }
+
   const collectionId = getCollectionByAddress(contractAddress)?.id;
   if (!collectionId) {
     throw new Error(`No collection found for address ${contractAddress}`);
@@ -528,141 +578,6 @@ export async function fetchPlayerLeaderboard(
   return combinedEntries.slice(safeOffset, safeOffset + safeLimit);
 }
 
-export interface FetchAllCollectionTokensOptions {
-  ownerAddress?: string;
-  limit?: number;
-  offset?: number;
-  traitFilters?: Record<string, string[]>;
-  sortBy?: "price_asc" | "price_desc" | "token_id_asc" | "token_id_desc" | "listed_first";
-  listedOnly?: boolean;
-}
-
-interface FetchAllCollectionTokensResult {
-  tokens: CollectionToken[];
-  totalCount: number;
-}
-
-/**
- * Fetch tokens in collection with enhanced filtering, sorting, and pagination
- */
-export async function fetchAllCollectionTokens(
-  contractAddress: string,
-  options: FetchAllCollectionTokensOptions = {},
-): Promise<FetchAllCollectionTokensResult> {
-  const collectionId = getCollectionByAddress(contractAddress)?.id;
-  if (!collectionId) {
-    throw new Error(`No collection found for address ${contractAddress}`);
-  }
-
-  const { ownerAddress, limit, offset, traitFilters = {}, sortBy = "listed_first", listedOnly = false } = options;
-  const normalizedContractAddress = trimAddress(contractAddress)?.toLowerCase();
-  const useLegacyTraitKey = normalizedContractAddress
-    ? LEGACY_TRAIT_KEY_COLLECTIONS.has(normalizedContractAddress)
-    : false;
-
-  // Build trait filter clauses using simple JSON string matching
-  let traitFilterClauses = "";
-  const traitFilterKeys = Object.keys(traitFilters);
-  if (traitFilterKeys.length > 0) {
-    const clauses = traitFilterKeys
-      .map((traitType) => {
-        const values = traitFilters[traitType];
-        if (values.length === 0) return "";
-
-        // Match the complete attribute object to ensure trait_type and value are paired
-        const valueConditions = values
-          .map((value) => {
-            const escapedTraitType = traitType.replace(/'/g, "''");
-            const escapedValue = value.replace(/'/g, "''");
-
-            const traitKey = useLegacyTraitKey ? "trait" : "trait_type";
-            return `t.metadata LIKE '%{"${traitKey}":"${escapedTraitType}","value":"${escapedValue}"}%'`;
-          })
-          .join(" OR ");
-
-        return `(${valueConditions})`;
-      })
-      .filter((clause) => clause.length > 0);
-
-    if (clauses.length > 0) {
-      traitFilterClauses = `AND (${clauses.join(" AND ")})`;
-    }
-  }
-
-  // Build listed only filter
-  const listedOnlyClause = listedOnly ? "AND ao.order_id IS NOT NULL" : "";
-
-  // Build order by clause
-  let orderByClause = "";
-  switch (sortBy) {
-    case "price_asc":
-      orderByClause = "ORDER BY is_listed DESC, price_sort_key ASC NULLS LAST, token_id_hex ASC";
-      break;
-    case "price_desc":
-      orderByClause = "ORDER BY is_listed DESC, price_sort_key DESC NULLS LAST, token_id_hex ASC";
-      break;
-    case "token_id_asc":
-      orderByClause = "ORDER BY token_id_hex ASC";
-      break;
-    case "token_id_desc":
-      orderByClause = "ORDER BY token_id_hex DESC";
-      break;
-    case "listed_first":
-    default:
-      orderByClause =
-        "ORDER BY is_listed DESC, CASE WHEN metadata IS NULL THEN 1 ELSE 0 END ASC, price_sort_key ASC NULLS LAST, token_id_hex ASC";
-      break;
-  }
-
-  // Build limit/offset clause
-  const limitOffsetClause = limit !== undefined && offset !== undefined ? `LIMIT ${limit} OFFSET ${offset}` : "";
-
-  // Build the main query
-  const query = QUERIES.ALL_COLLECTION_TOKENS.replaceAll("{contractAddress}", contractAddress)
-    .replace("{ownerAddress}", ownerAddress ?? "")
-    .replace("{collectionId}", collectionId.toString())
-    .replace("{traitFilters}", traitFilterClauses)
-    .replace("{listedOnlyFilter}", listedOnlyClause)
-    .replace("{orderByClause}", orderByClause)
-    .replace("{limitOffsetClause}", limitOffsetClause);
-
-  // Build the count query
-  const countQuery = QUERIES.ALL_COLLECTION_TOKENS_COUNT.replaceAll("{contractAddress}", contractAddress)
-    .replace("{ownerAddress}", ownerAddress ?? "")
-    .replace("{collectionId}", collectionId.toString())
-    .replace("{traitFilters}", traitFilterClauses)
-    .replace("{listedOnlyFilter}", listedOnlyClause);
-
-  // Execute both queries
-  const [rawData, countData] = await Promise.all([
-    fetchSQL<any[]>(query),
-    fetchSQL<{ total_count: number }[]>(countQuery),
-  ]);
-
-  const tokens = rawData.map((item) => {
-    const tokenIdHex = item.token_id_hex ?? (item.token_id ? `0x${item.token_id}` : null);
-    const tokenIdDecimal = tokenIdHex ? BigInt(tokenIdHex).toString() : (item.token_id ?? "");
-
-    return {
-      ...item,
-      token_id: tokenIdDecimal,
-      token_id_hex: tokenIdHex,
-      token_id_decimal: tokenIdDecimal,
-      order_id: item.order_id ? parseInt(item.order_id, 16) : null,
-      best_price_hex: item.price_hex ? BigInt(item.price_hex) : null,
-      token_owner: item.token_owner ?? null,
-      order_owner: item.order_owner ?? null,
-      metadata: normalizeMetadata(item.metadata),
-      contract_address: contractAddress,
-      is_listed: Boolean(item.is_listed),
-    };
-  });
-
-  const totalCount = countData[0]?.total_count ?? 0;
-
-  return { tokens, totalCount };
-}
-
 /**
  * Fetch a single collection token by ID from the API
  */
@@ -744,27 +659,6 @@ interface RawTokenBalanceWithMetadata {
   order_id?: string;
 }
 
-interface ActiveMarketOrder {
-  order_id: string;
-  token_id: string;
-  price: string;
-  owner: string;
-  expiration: number;
-  collection_id: number;
-}
-
-export async function fetchActiveMarketOrders(
-  contractAddress: string,
-  tokenIds: string[],
-): Promise<ActiveMarketOrder[]> {
-  const collectionId = getCollectionByAddress(contractAddress)?.id;
-  const query = QUERIES.ACTIVE_MARKET_ORDERS.replace("{collectionId}", collectionId?.toString() ?? "0").replace(
-    "{tokenIds}",
-    tokenIds.map((id) => `'${id}'`).join(","),
-  );
-  return await fetchSQL<ActiveMarketOrder[]>(query);
-}
-
 export async function fetchTokenBalancesWithMetadata(
   contractAddress: string,
   accountAddress: string,
@@ -790,62 +684,6 @@ export async function fetchTokenBalancesWithMetadata(
     best_price_hex: item.best_price_hex ? BigInt(item.best_price_hex) : null,
     metadata: normalizeMetadata(item.metadata),
     order_id: item.order_id ?? null,
-  }));
-}
-
-interface MarketOrderEvent {
-  event_id: string;
-  state: string;
-  token_id: string;
-  price: string;
-  owner: string;
-  expiration: number;
-  name: string | null;
-  symbol: string | null;
-  metadata: RealmMetadata | null;
-  executed_at: string | null;
-}
-
-// Raw type for data fetched by fetchMarketOrderEvents
-interface RawMarketOrderEvent {
-  internal_event_id: string;
-  executed_at?: string;
-  state: string;
-  token_id: string;
-  price: string;
-  owner: string;
-  expiration: number;
-  name?: string;
-  symbol?: string;
-  metadata?: string; // Raw JSON string
-}
-
-export async function fetchMarketOrderEvents(
-  contractAddress: string,
-  type: "sales" | "listings" | "all",
-  limit?: number,
-  offset?: number,
-): Promise<MarketOrderEvent[]> {
-  const finalType = type === "sales" ? "Accepted" : type;
-  const collectionId = getCollectionByAddress(contractAddress)?.id ?? 1;
-
-  const query = QUERIES.MARKET_ORDER_EVENTS.replaceAll("{contractAddress}", contractAddress)
-    .replace("{collectionId}", collectionId?.toString())
-    .replace("{limit}", limit?.toString() ?? "50")
-    .replace("{offset}", offset?.toString() ?? "0")
-    .replaceAll("{type}", finalType);
-  const rawData = await fetchSQL<RawMarketOrderEvent[]>(query);
-  return rawData.map((item) => ({
-    event_id: item.internal_event_id,
-    executed_at: item.executed_at ?? null,
-    state: item.state,
-    token_id: item.token_id,
-    price: item.price,
-    owner: item.owner,
-    expiration: item.expiration,
-    name: item.name ?? null,
-    symbol: item.symbol ?? null,
-    metadata: item.metadata ? JSON.parse(item.metadata) : null,
   }));
 }
 
