@@ -8,6 +8,10 @@ interface CosmeticTileProps {
 }
 
 export const CosmeticTile = ({ item, active, onSelect }: CosmeticTileProps) => {
+  const attributes = item.attributes ?? item.metadata?.attributes ?? [];
+  const rarity = attributes.find((attribute) => attribute.trait_type === "Rarity")?.value;
+  const cosmeticType = attributes.find((attribute) => attribute.trait_type === "Type")?.value;
+
   return (
     <button
       type="button"
@@ -24,6 +28,23 @@ export const CosmeticTile = ({ item, active, onSelect }: CosmeticTileProps) => {
       <div className="flex flex-col items-start text-left">
         <span className="text-sm font-medium ">{item.name}</span>
         <span className="mt-1 line-clamp-2 text-xs text-white/60">{item.description}</span>
+        <div className="mt-3 flex flex-wrap gap-2 text-[0.65rem] text-white/70">
+          {rarity && (
+            <span className="rounded-full border border-white/15 bg-black/40 px-2 py-0.5 uppercase tracking-wide">
+              {rarity}
+            </span>
+          )}
+          {cosmeticType && (
+            <span className="rounded-full border border-white/15 bg-black/40 px-2 py-0.5 capitalize">
+              {cosmeticType.toLowerCase()}
+            </span>
+          )}
+          {item.tokenSymbol && (
+            <span className="rounded-full border border-white/15 bg-black/40 px-2 py-0.5 uppercase tracking-wide">
+              {item.tokenSymbol}
+            </span>
+          )}
+        </div>
       </div>
     </button>
   );
