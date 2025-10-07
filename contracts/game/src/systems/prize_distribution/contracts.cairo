@@ -74,6 +74,7 @@ pub mod prize_distribution_systems {
                 total_player_count_committed: 1,
                 total_player_count_revealed: 1,
                 total_prize_amount: prize_amount,
+                total_prize_amount_calculated: prize_amount,
             };
 
             let player_rank_final = PlayersRankFinal {
@@ -290,12 +291,8 @@ pub mod prize_distribution_systems {
                 player_rank.rank = trial.last_rank;
                 world.write_model(@player_rank);
 
-                // update rank prize
-                let mut rank_prize: RankPrize = world.read_model((trial.trial_id, player_rank.rank));
-                rank_prize.total_players_same_rank_count += 1;
-                rank_prize
-                    .total_prize_amount +=
-                        iPrizeDistributionCalcImpl::get_position_prize_amount(
+                // calculate and assign prize for the player's position
+                let mut position_prize_amount = iPrizeDistributionCalcImpl::get_position_prize_amount(
                             calc_entry_cost,
                             trial.total_player_count_revealed, // not player.rank
                             calc_remainder,
@@ -303,6 +300,31 @@ pub mod prize_distribution_systems {
                             calc_s_parameter,
                             calc_winner_count
                         );
+                trial.total_prize_amount_calculated += position_prize_amount;
+
+                // prevent over-distributing funds due to tiny rounding errors
+                if trial.total_prize_amount_calculated > trial.total_prize_amount {
+
+                    // e.g this setup will result in a rounding error
+                    //       let _1e18: u128 = 1_000_000_000_000_000_000;
+                    //       let entry_cost_amount: u128 = 10 * _1e18;
+                    //       let prize_pool_amount: u128 = 16 * _1e18 ;
+                    //       let registered_player_count: u16 = 6;
+                    //       let total_players_with_non_zero_points: u16 = 6;
+                    //
+                    //   
+                    //   assert_eq!(p1, 7428694895990680191);
+                    //   assert_eq!(p2, 8571305104009319810); // sum = 16,000,000,000,000,000,001
+
+                    let difference = trial.total_prize_amount_calculated - trial.total_prize_amount;
+                    position_prize_amount -= difference;
+                    trial.total_prize_amount_calculated -= difference;
+                }
+
+                // update rank prize model
+                let mut rank_prize: RankPrize = world.read_model((trial.trial_id, player_rank.rank));
+                rank_prize.total_players_same_rank_count += 1;
+                rank_prize.total_prize_amount += position_prize_amount;
                 world.write_model(@rank_prize);
             };
 

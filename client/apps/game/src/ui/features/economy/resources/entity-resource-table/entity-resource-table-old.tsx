@@ -9,6 +9,7 @@ import {
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
   isMilitaryResource,
+  ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { BuildingType, getBuildingFromResource, getResourceTiers, ID, ResourcesIds } from "@bibliothecadao/types";
@@ -65,6 +66,7 @@ export const EntityResourceTableOld = React.memo(({ entityId }: EntityResourceTa
   const structure = useComponentValue(setup.components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
 
   const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
+  const currentTick = currentDefaultTick || 0;
 
   const activeRelicEffects = useMemo(() => {
     const structureArmyRelicEffects = structure ? getStructureArmyRelicEffects(structure, currentArmiesTick) : [];
@@ -215,14 +217,29 @@ export const EntityResourceTableOld = React.memo(({ entityId }: EntityResourceTa
         {Object.entries(getResourceTiers(getIsBlitz())).map(([tier, resourceIds]) => {
           const resourcesForTier = (resourceIds as ResourcesIds[]).filter((resourceId: ResourcesIds) => {
             const alwaysShow = ALWAYS_SHOW_RESOURCES.includes(resourceId);
-            const { balance } = resourceManager.balanceWithProduction(currentDefaultTick, resourceId);
+            const { balance } = resourceManager.balanceWithProduction(currentTick, resourceId);
 
             if (!showAllResources && !alwaysShow && balance <= 0) {
               return false;
             }
 
-            if (showProductionOnly && !resourceManager.isActive(resourceId)) {
-              return false;
+            if (showProductionOnly) {
+              const resourceComponent = resources;
+
+              if (!resourceComponent) {
+                return false;
+              }
+
+              const productionInfo = ResourceManager.balanceAndProduction(resourceComponent, resourceId);
+              const { isProducing } = ResourceManager.calculateResourceProductionData(
+                resourceId,
+                productionInfo,
+                currentTick,
+              );
+
+              if (!isProducing) {
+                return false;
+              }
             }
 
             if (showMilitaryOnly && !isMilitaryResource(resourceId)) {

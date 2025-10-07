@@ -52,6 +52,13 @@ export interface TokenTransfer {
   symbol: string;
 }
 
+export interface PlayerLeaderboardRow {
+  player_address: string | null;
+  player_name: string | null;
+  prize_claimed: number | string | null;
+  registered_points: number | string | null;
+}
+
 export interface StoryEventData {
   owner: string | null;
   entity_id: number | null;

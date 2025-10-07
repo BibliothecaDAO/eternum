@@ -39,7 +39,7 @@ export class LeaderboardManager {
 
   constructor(
     private readonly components: ClientComponents,
-    unregisteredShareholderPointsUpdateInterval: number = 60000,
+    unregisteredShareholderPointsUpdateInterval: number = 10000,
     realmCountPerHyperstructures: Map<ID, number> = new Map(),
   ) {
     this.unregisteredShareholderPointsUpdateInterval = unregisteredShareholderPointsUpdateInterval;
@@ -69,6 +69,12 @@ export class LeaderboardManager {
     this.pointsPerGuild = this.getGuildsPoints();
     this.playersByRank = this.getPlayersByRank();
     this.guildsByRank = this.getGuildsByRank();
+  }
+
+  public forceRefresh() {
+    // Reset the last update timestamp to force cache update
+    this.lastUnregisteredShareholderPointsUpdate = 0;
+    this.initialize();
   }
 
   public updatePoints() {
@@ -146,11 +152,7 @@ export class LeaderboardManager {
 
       const hyperstructure = getComponentValue(this.components.Hyperstructure, hyperstructureShareholdersEntityId);
 
-      const pointsPerSecond = hyperstructure
-        ? pointsPerSecondWithoutMultiplier *
-          hyperstructure.points_multiplier *
-          (this.realmCountPerHyperstructures.get(hyperstructure.hyperstructure_id) || 0)
-        : 0;
+      const pointsPerSecond = hyperstructure ? pointsPerSecondWithoutMultiplier * hyperstructure.points_multiplier : 0;
       const shareholders = hyperstructureShareholders.shareholders as unknown as ContractAddressAndAmount[];
       const startTimestamp = Number(hyperstructureShareholders.start_at);
       if (startTimestamp === 0) continue;

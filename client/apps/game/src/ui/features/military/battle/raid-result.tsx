@@ -9,7 +9,7 @@ import { ClientComponents, ContractAddress, ID, resources } from "@bibliothecada
 import { ComponentValue, isComponentUpdate } from "@dojoengine/recs";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AttackTarget } from "./attack-container";
+import { AttackTarget } from "./types";
 
 // Add the tweet formatting function
 const getFormattedRaidTweet = ({

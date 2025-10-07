@@ -1,9 +1,9 @@
 import { CosmeticGallery, CosmeticShowcase } from "@/ui/features/landing/cosmetics/components";
-import { COSMETIC_ITEMS, type CosmeticItem } from "@/ui/features/landing/cosmetics/config/cosmetics.data";
 import {
   COSMETIC_MODEL_BY_EPOCH_ITEM,
   DEFAULT_COSMETIC_MODEL_PATH,
 } from "@/ui/features/landing/cosmetics/config/cosmetic-model-map";
+import { COSMETIC_ITEMS, type CosmeticItem } from "@/ui/features/landing/cosmetics/config/cosmetics.data";
 import { useToriiCosmetics } from "@/ui/features/landing/cosmetics/lib/use-torii-cosmetics";
 import { useEffect, useMemo, useState } from "react";
 
