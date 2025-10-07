@@ -102,7 +102,7 @@ function buildDefaultArmyEntries(): CosmeticRegistryEntry[] {
           baseModelType: modelType,
         },
       } satisfies CosmeticRegistryEntry;
-    }).filter((entry): entry is CosmeticRegistryEntry => Boolean(entry));
+    }).filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
   });
 }
 

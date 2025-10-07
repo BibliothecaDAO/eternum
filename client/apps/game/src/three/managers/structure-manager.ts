@@ -398,7 +398,7 @@ export class StructureManager {
     if (this.components && ownerForCosmetics !== 0n) {
       playerCosmeticsStore.hydrateFromBlitzComponent(this.components, ownerForCosmetics);
     }
-    const enumName = StructureType[key as keyof typeof StructureType];
+    const enumName = StructureType[key as unknown as keyof typeof StructureType];
     const defaultModelKey = typeof enumName === "string" ? enumName : String(key);
     const cosmetic = resolveStructureCosmetic({
       owner: ownerForCosmetics,
@@ -886,7 +886,7 @@ export class StructureManager {
       const newPosition = getWorldPositionForHex(structure.hexCoords);
       newPosition.y += 2;
       existingLabel.position.copy(newPosition);
-      this.updateStructureLabelData(entityId, structure, existingLabel);
+      this.updateStructureLabelData(structure, existingLabel);
       return;
     }
 
@@ -1058,7 +1058,7 @@ export class StructureManager {
     // Update the label if it exists
     const label = this.entityIdLabels.get(update.entityId);
     if (label) {
-      this.updateStructureLabelData(update.entityId, structure, label);
+      this.updateStructureLabelData(structure, label);
     }
   }
 
@@ -1080,7 +1080,7 @@ export class StructureManager {
     // Update label
     const label = this.entityIdLabels.get(entityId);
     if (label) {
-      this.updateStructureLabelData(entityId, structure, label);
+      this.updateStructureLabelData(structure, label);
     }
   }
 
@@ -1126,7 +1126,7 @@ export class StructureManager {
     // Update the label if it exists
     const label = this.entityIdLabels.get(update.entityId);
     if (label) {
-      this.updateStructureLabelData(update.entityId, structure, label);
+      this.updateStructureLabelData(structure, label);
     }
   }
 
@@ -1159,7 +1159,7 @@ export class StructureManager {
             // Update visible label if it exists
             const label = this.entityIdLabels.get(entityId);
             if (label) {
-              this.updateStructureLabelData(entityId, structure, label);
+              this.updateStructureLabelData(structure, label);
             }
           }
         }
