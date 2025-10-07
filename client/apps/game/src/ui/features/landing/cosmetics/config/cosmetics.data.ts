@@ -13,6 +13,8 @@ export interface CosmeticItem {
   balance?: string;
   attributes?: CosmeticMetadataAttribute[];
   image?: string | null;
+  tokenId?: string | null;
+  slot?: string | null;
 }
 
 /**

@@ -46,6 +46,7 @@ export const LandingCosmetics = () => {
       const epochItemKey = epochItemValueRaw?.toString().trim();
       const mappedModelPath = epochItemKey ? COSMETIC_MODEL_BY_EPOCH_ITEM[epochItemKey] ?? null : null;
       const resolvedModelPath = mappedModelPath ?? fallbackModelPath;
+      const slot = asset.metadata?.attributes?.find((attribute) => attribute.trait_type === "Type")?.value ?? null;
 
       return {
         id: normalisedId,
@@ -57,6 +58,8 @@ export const LandingCosmetics = () => {
         balance: asset.balance,
         attributes: asset.metadata?.attributes ?? [],
         image: resolveAssetImage(asset.metadata?.image ?? null),
+        tokenId: asset.tokenId,
+        slot,
       };
     });
   }, [toriiCosmetics]);

@@ -17,6 +17,7 @@ export interface ToriiCosmeticRow {
   account_address: string;
   token_name: string;
   token_symbol: string;
+  token_id?: string | number;
   balance: string | number;
   decimals: number;
   metadata: string | null;
@@ -26,6 +27,7 @@ export interface ToriiCosmeticAsset {
   accountAddress: string;
   tokenName: string;
   tokenSymbol: string;
+  tokenId: string | null;
   balance: string;
   decimals: number;
   metadata: CosmeticMetadata | null;
@@ -38,6 +40,7 @@ const buildSqlQuery = (accountAddress: string) => `SELECT
   b.account_address,
   h.name AS token_name,
   h.symbol AS token_symbol,
+  h.token_id,
   CAST(b.balance AS DECIMAL(38, 0)) AS balance,
   h.decimals,
   h.metadata
@@ -102,6 +105,11 @@ const fetchCosmeticAssets = async (accountAddress: string): Promise<ToriiCosmeti
     accountAddress: row.account_address,
     tokenName: row.token_name,
     tokenSymbol: row.token_symbol,
+    tokenId: row.token_id === undefined
+      ? null
+      : typeof row.token_id === "number"
+        ? row.token_id.toString()
+        : row.token_id,
     balance: typeof row.balance === "number" ? row.balance.toString() : row.balance,
     decimals: row.decimals,
     metadata: parseMetadata(row.metadata),
