@@ -1,12 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { resolveArmyCosmetic, resolveStructureCosmetic } from "../resolver";
-import {
-  clearRegistry,
-  formatArmyCosmeticTarget,
-  registerCosmetic,
-  seedDefaultCosmetics,
-} from "../registry";
+import { clearRegistry, formatArmyCosmeticTarget, registerCosmetic, seedDefaultCosmetics } from "../registry";
 import { playerCosmeticsStore } from "../player-cosmetics-store";
 import { ModelType } from "../../types/army";
 import { StructureType, TroopTier, TroopType } from "@bibliothecadao/types";

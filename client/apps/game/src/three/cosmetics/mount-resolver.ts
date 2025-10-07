@@ -98,7 +98,7 @@ function applyDefinitions(
 
     let rotation: Euler | undefined;
     if (base.rotation || definition.rotation) {
-      rotation = (base.rotation ? base.rotation.clone() : ZERO_ROTATION.clone());
+      rotation = base.rotation ? base.rotation.clone() : ZERO_ROTATION.clone();
       if (definition.rotation) {
         rotation.x += definition.rotation[0];
         rotation.y += definition.rotation[1];
@@ -108,7 +108,7 @@ function applyDefinitions(
 
     let scale: Vector3 | undefined;
     if (base.scale || definition.scale) {
-      scale = (base.scale ? base.scale.clone() : UNIT_SCALE_IDENTITY.clone());
+      scale = base.scale ? base.scale.clone() : UNIT_SCALE_IDENTITY.clone();
       if (definition.scale) {
         scale.x *= definition.scale[0];
         scale.y *= definition.scale[1];

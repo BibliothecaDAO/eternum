@@ -22,17 +22,15 @@ export const CosmeticTile = ({ item, active, onSelect }: CosmeticTileProps) => {
 
   const baseClass =
     "group relative flex flex-col gap-3 overflow-hidden rounded-2xl border bg-white/5 p-3 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-gold";
-  const activeClass = active ? "border-gold/80 shadow-[0_0_24px_rgba(255,215,128,0.3)]" : "border-white/10 hover:border-white/30";
+  const activeClass = active
+    ? "border-gold/80 shadow-[0_0_24px_rgba(255,215,128,0.3)]"
+    : "border-white/10 hover:border-white/30";
   const equippedClass = isEquipped
     ? "border-gold/60 shadow-[0_0_30px_rgba(250,204,21,0.25)] after:pointer-events-none after:absolute after:inset-0 after:content-[''] after:bg-[radial-gradient(circle_at_top,#facc15_0%,transparent_60%)] after:opacity-70"
     : "";
 
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(item.id)}
-      className={`${baseClass} ${activeClass} ${equippedClass}`}
-    >
+    <button type="button" onClick={() => onSelect(item.id)} className={`${baseClass} ${activeClass} ${equippedClass}`}>
       <div className="relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-black/40">
         <CosmeticModelViewer modelPath={item.modelPath} variant="card" autoRotate={active} />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/5 via-transparent to-black/40 opacity-0 transition group-hover:opacity-100" />

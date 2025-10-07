@@ -83,24 +83,14 @@ const ROUTE_TRACK_DEFINITIONS: RouteTrackDefinition[] = [
     key: "play:main",
     priority: 80,
     mode: "shuffle",
-    tracks: [
-      "music.shadow_song",
-      "music.twilight_harvest",
-      "music.strangers_arrival",
-      "music.shining_realms",
-    ],
+    tracks: ["music.shadow_song", "music.twilight_harvest", "music.strangers_arrival", "music.shining_realms"],
     match: createStartsWithMatcher("/play"),
   },
   {
     key: "common:fallback",
     priority: 1,
     mode: "shuffle",
-    tracks: [
-      "music.daybreak",
-      "music.morning_ember",
-      "music.shadow_song",
-      "music.wanderers_chronicle",
-    ],
+    tracks: ["music.daybreak", "music.morning_ember", "music.shadow_song", "music.wanderers_chronicle"],
     match: () => true,
   },
 ];
@@ -125,4 +115,3 @@ export const matchRoutePlaylist = (pathname: string, override?: Partial<RouteMat
     tracks: [...selected.tracks],
   };
 };
-

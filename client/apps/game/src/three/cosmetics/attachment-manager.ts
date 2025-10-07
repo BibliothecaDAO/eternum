@@ -205,7 +205,10 @@ export class CosmeticAttachmentManager {
     return object;
   }
 
-  private instantiateAttachment(pool: AttachmentTemplatePool, template: CosmeticAttachmentTemplate): Object3D | undefined {
+  private instantiateAttachment(
+    pool: AttachmentTemplatePool,
+    template: CosmeticAttachmentTemplate,
+  ): Object3D | undefined {
     const source = pool.source;
     if (source) {
       const handle = ensureCosmeticAsset(source.entry);

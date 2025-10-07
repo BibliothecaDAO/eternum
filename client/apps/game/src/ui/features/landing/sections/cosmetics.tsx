@@ -1,8 +1,5 @@
 import { CosmeticGallery, CosmeticShowcase } from "@/ui/features/landing/cosmetics/components";
-import {
-  COSMETIC_ITEMS,
-  type CosmeticItem,
-} from "@/ui/features/landing/cosmetics/config/cosmetics.data";
+import { COSMETIC_ITEMS, type CosmeticItem } from "@/ui/features/landing/cosmetics/config/cosmetics.data";
 import {
   COSMETIC_MODEL_BY_EPOCH_ITEM,
   DEFAULT_COSMETIC_MODEL_PATH,
@@ -44,7 +41,7 @@ export const LandingCosmetics = () => {
         (attribute) => attribute.trait_type === "Epoch Item",
       )?.value;
       const epochItemKey = epochItemValueRaw?.toString().trim();
-      const mappedModelPath = epochItemKey ? COSMETIC_MODEL_BY_EPOCH_ITEM[epochItemKey] ?? null : null;
+      const mappedModelPath = epochItemKey ? (COSMETIC_MODEL_BY_EPOCH_ITEM[epochItemKey] ?? null) : null;
       const resolvedModelPath = mappedModelPath ?? fallbackModelPath;
       const slot = asset.metadata?.attributes?.find((attribute) => attribute.trait_type === "Type")?.value ?? null;
 

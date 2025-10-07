@@ -122,12 +122,9 @@ export function resolveArmyCosmetic(params: ArmyCosmeticParams): CosmeticResolut
 
   const snapshot = playerCosmeticsStore.getSnapshot(owner);
   const armySelection = snapshot?.selection.armies?.[target];
-  const selectionSkinId =
-    typeof armySelection === "string" ? armySelection : armySelection?.skin;
+  const selectionSkinId = typeof armySelection === "string" ? armySelection : armySelection?.skin;
   const selectionAttachments =
-    typeof armySelection === "object" && armySelection
-      ? armySelection.attachments ?? []
-      : [];
+    typeof armySelection === "object" && armySelection ? (armySelection.attachments ?? []) : [];
 
   const debugOverride = cosmeticDebugController.resolveOverride?.({
     owner,
@@ -148,8 +145,7 @@ export function resolveArmyCosmetic(params: ArmyCosmeticParams): CosmeticResolut
   const allowedTargets = [target, formatArmyCosmeticFamily(params.troopType)];
   upsertAttachments(attachments, resolvedEntry?.attachments, resolvedEntry?.attachmentSlot);
 
-  const globalAttachments =
-    snapshot?.selection.globalAttachments ?? (snapshot?.selection as any)?.attachments ?? [];
+  const globalAttachments = snapshot?.selection.globalAttachments ?? (snapshot?.selection as any)?.attachments ?? [];
 
   const attachmentEntries = [
     ...collectAttachmentEntries(globalAttachments, allowedTargets),
@@ -166,16 +162,14 @@ export function resolveArmyCosmetic(params: ArmyCosmeticParams): CosmeticResolut
 export function resolveStructureCosmetic(params: StructureCosmeticParams): CosmeticResolutionResult {
   const owner = normalizeOwner(params.owner);
   const target = formatStructureCosmeticTarget(params.structureType, params.stage);
-  const fallbackEntry = findEntryForTarget(target) ?? findEntryForTarget(formatStructureCosmeticTarget(params.structureType));
+  const fallbackEntry =
+    findEntryForTarget(target) ?? findEntryForTarget(formatStructureCosmeticTarget(params.structureType));
 
   const snapshot = playerCosmeticsStore.getSnapshot(owner);
   const structureSelection = snapshot?.selection.structures?.[target];
-  const selectionSkinId =
-    typeof structureSelection === "string" ? structureSelection : structureSelection?.skin;
+  const selectionSkinId = typeof structureSelection === "string" ? structureSelection : structureSelection?.skin;
   const selectionAttachments =
-    typeof structureSelection === "object" && structureSelection
-      ? structureSelection.attachments ?? []
-      : [];
+    typeof structureSelection === "object" && structureSelection ? (structureSelection.attachments ?? []) : [];
 
   const debugOverride = cosmeticDebugController.resolveOverride?.({
     owner,
@@ -196,8 +190,7 @@ export function resolveStructureCosmetic(params: StructureCosmeticParams): Cosme
 
   upsertAttachments(attachments, resolvedEntry?.attachments, resolvedEntry?.attachmentSlot);
 
-  const globalAttachments =
-    snapshot?.selection.globalAttachments ?? (snapshot?.selection as any)?.attachments ?? [];
+  const globalAttachments = snapshot?.selection.globalAttachments ?? (snapshot?.selection as any)?.attachments ?? [];
 
   const attachmentEntries = [
     ...collectAttachmentEntries(globalAttachments, allowedTargets),

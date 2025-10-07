@@ -1,13 +1,6 @@
 import { gltfLoader } from "@/three/utils/utils";
 import type { GLTF } from "three-stdlib";
-import {
-  Material,
-  Mesh,
-  MeshBasicMaterial,
-  MeshStandardMaterial,
-  Texture,
-  TextureLoader,
-} from "three";
+import { Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, Texture, TextureLoader } from "three";
 import { CosmeticRegistryEntry } from "./types";
 import { getCosmeticRegistry } from "./registry";
 import { MaterialPool } from "../utils/material-pool";
