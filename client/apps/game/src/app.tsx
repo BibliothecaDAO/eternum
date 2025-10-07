@@ -1,7 +1,4 @@
-<<<<<<< HEAD
 import { MusicRouterProvider } from "@/audio";
-=======
->>>>>>> 64007c02e60d9154c428b7da31f34b514a76ec4d
 import { cleanupTracing } from "@/tracing";
 import { ErrorBoundary, TransactionNotification, WorldLoading } from "@/ui/shared";
 import { useEffect, useState } from "react";
@@ -14,8 +11,8 @@ import { useGameBootstrap } from "./hooks/context/use-game-bootstrap";
 import "./index.css";
 import type { SetupResult } from "./init/bootstrap";
 import { IS_MOBILE } from "./ui/config";
-import { StoryEventToastBridge, StoryEventToastProvider } from "./ui/features/story-events";
 import { LandingAccount, LandingCosmetics, LandingLeaderboard, LandingWelcome } from "./ui/features/landing";
+import { StoryEventToastBridge, StoryEventToastProvider } from "./ui/features/story-events";
 import { LandingLayout } from "./ui/layouts/landing";
 import { World } from "./ui/layouts/world";
 import { ConstructionGate } from "./ui/modules/construction-gate";
