@@ -150,6 +150,17 @@ Current music volume (0.5 category × 1.0 individual = 0.5) is too high.
 - Duck music during important events
 - Crossfade between tracks (500ms-1000ms)
 
+#### Route-aware playback
+
+- The background score is now orchestrated by `MusicRouterProvider` (`src/audio/providers/music-router-provider.tsx`),
+  which keeps a single instance alive across routes.
+- Route and mode specific playlists live in `src/audio/config/route-tracks.ts`; update this map when adding new pages or
+  seasonal cues.
+- Consumers should prefer `useBackgroundMusic()` (or the legacy `useMusicPlayer()` wrapper) to react to the shared
+  player state and trigger manual transitions.
+- Track handoffs use an ~800 ms crossfade implemented via `AudioManager.fadeOutAndStopMusic`, so new playlists can
+  transition smoothly without hard cuts.
+
 ### 10. Implementation Priority
 
 **Phase 1** (Quick wins):

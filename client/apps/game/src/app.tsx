@@ -1,3 +1,4 @@
+import { MusicRouterProvider } from "@/audio";
 import { cleanupTracing } from "@/tracing";
 import { ErrorBoundary, TransactionNotification, WorldLoading } from "@/ui/shared";
 import { useEffect, useState } from "react";
@@ -102,16 +103,18 @@ function App() {
   return (
     <StarknetProvider>
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<LandingLayout backgroundImage={backgroundImage} />}>
-            <Route index element={<LandingWelcome />} />
-            <Route path="cosmetics" element={<LandingCosmetics />} />
-            <Route path="account" element={<LandingAccount />} />
-            <Route path="leaderboard" element={<LandingLeaderboard />} />
-          </Route>
-          <Route path="/play/*" element={<GameRoute backgroundImage={backgroundImage} />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <MusicRouterProvider>
+          <Routes>
+            <Route path="/" element={<LandingLayout backgroundImage={backgroundImage} />}>
+              <Route index element={<LandingWelcome />} />
+              <Route path="cosmetics" element={<LandingCosmetics />} />
+              <Route path="account" element={<LandingAccount />} />
+              <Route path="leaderboard" element={<LandingLeaderboard />} />
+            </Route>
+            <Route path="/play/*" element={<GameRoute backgroundImage={backgroundImage} />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </MusicRouterProvider>
       </BrowserRouter>
     </StarknetProvider>
   );
