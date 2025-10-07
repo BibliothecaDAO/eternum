@@ -17,10 +17,10 @@ import {
 import { useDojo } from "@bibliothecadao/react";
 import { EntityType, ResourcesIds, getResourceTiers } from "@bibliothecadao/types";
 
-import { useAutomationTransferForm } from "./model/use-automation-transfer-form";
-import { useTransferEntities } from "./lib/use-transfer-entities";
-import { isTransferAllowed } from "./lib/transfer-utils";
 import type { ResourceBalance, SelectedEntity, SelectedResource } from "./lib/transfer-types";
+import { isTransferAllowed } from "./lib/transfer-utils";
+import { useTransferEntities } from "./lib/use-transfer-entities";
+import { useAutomationTransferForm } from "./model/use-automation-transfer-form";
 import { TransferEntityPicker } from "./ui/transfer-entity-picker";
 import { TransferModeControls } from "./ui/transfer-mode-controls";
 import { TransferResourceList } from "./ui/transfer-resource-list";
@@ -115,7 +115,7 @@ export const AutomationTransferTable: React.FC = () => {
           balance: divideByPrecision(balance?.balance || 0),
         } as ResourceBalance;
       })
-      .filter((resource) => resource.id !== ResourcesIds.Labor);
+      .filter((resource) => resource.id !== ResourcesIds.Labor && resource.balance > 0);
   }, [components, currentDefaultTick, selectedSource]);
 
   const safeDestinationEntities = useMemo(
