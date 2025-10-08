@@ -4,7 +4,9 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 
 const BlankOverlayContainer = lazy(() =>
-  import("@/ui/shared/containers/blank-overlay-container").then((module) => ({ default: module.BlankOverlayContainer })),
+  import("@/ui/shared/containers/blank-overlay-container").then((module) => ({
+    default: module.BlankOverlayContainer,
+  })),
 );
 
 const Onboarding = lazy(() =>

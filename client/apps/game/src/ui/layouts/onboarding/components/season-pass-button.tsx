@@ -56,7 +56,10 @@ export const SeasonPassButton = ({ onSettleRealm }: SeasonPassButtonProps) => {
     };
   }, [Structure, account.address, realmsEntities]);
 
-  const hasRealmsOrVillages = useMemo(() => realmsEntities.length > 0 || villageEntities.length > 0, [realmsEntities, villageEntities]);
+  const hasRealmsOrVillages = useMemo(
+    () => realmsEntities.length > 0 || villageEntities.length > 0,
+    [realmsEntities, villageEntities],
+  );
 
   const [settlingStartTimeRemaining, setSettlingStartTimeRemaining] = useState<string>("");
 
@@ -112,16 +115,34 @@ export const SeasonPassButton = ({ onSettleRealm }: SeasonPassButtonProps) => {
 
       <div className="flex flex-col gap-3 w-full">
         <div className="flex w-full flex-wrap">
-          <a className="text-brown cursor-pointer w-full" href={`${mintUrl}trade`} target="_blank" rel="noopener noreferrer">
-            <Button size="lg" forceUppercase={false} className={`w-full rounded-md shadow-md ${!hasRealmsOrVillages ? "animate-pulse" : ""}`}>
+          <a
+            className="text-brown cursor-pointer w-full"
+            href={`${mintUrl}trade`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Button
+              size="lg"
+              forceUppercase={false}
+              className={`w-full rounded-md shadow-md ${!hasRealmsOrVillages ? "animate-pulse" : ""}`}
+            >
               <div className="flex items-center justify-start w-full">
                 <Castle className="!w-5 !h-5 mr-2 fill-gold" />
                 <span className="font-medium flex-grow text-center">Season Passes</span>
               </div>
             </Button>
           </a>
-          <a className="text-brown cursor-pointer w-full" href={`${mintUrl}mint`} target="_blank" rel="noopener noreferrer">
-            <Button size="lg" forceUppercase={false} className={`w-full rounded-md shadow-md ${!hasRealmsOrVillages ? "animate-pulse" : ""}`}>
+          <a
+            className="text-brown cursor-pointer w-full"
+            href={`${mintUrl}mint`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Button
+              size="lg"
+              forceUppercase={false}
+              className={`w-full rounded-md shadow-md ${!hasRealmsOrVillages ? "animate-pulse" : ""}`}
+            >
               <div className="flex items-center justify-start w-full">
                 <TreasureChest className="!w-5 !h-5 mr-2 fill-gold" />
                 <span className="font-medium flex-grow text-center">Claim Season Pass</span>
@@ -132,21 +153,36 @@ export const SeasonPassButton = ({ onSettleRealm }: SeasonPassButtonProps) => {
       </div>
 
       <div className="flex w-full mt-3">
-        <a className="text-brown cursor-pointer w-full" href="https://discord.gg/uQnjZhZPfu" target="_blank" rel="noopener noreferrer">
+        <a
+          className="text-brown cursor-pointer w-full"
+          href="https://discord.gg/uQnjZhZPfu"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <Button size="lg" forceUppercase={false} className="w-full rounded-md shadow-md">
             <div className="flex items-center justify-start w-full">
               <MessageSquare className="!w-5 !h-5 mx-auto fill-gold" />
             </div>
           </Button>
         </a>
-        <a className="text-brown cursor-pointer w-full" href="https://x.com/realms_gg" target="_blank" rel="noopener noreferrer">
+        <a
+          className="text-brown cursor-pointer w-full"
+          href="https://x.com/realms_gg"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <Button size="lg" forceUppercase={false} className="w-full rounded-md shadow-md">
             <div className="flex items-center justify-start w-full">
               <TwitterIcon className="!w-5 !h-5 mx-auto fill-gold" />
             </div>
           </Button>
         </a>
-        <a className="text-brown cursor-pointer w-full" href="https://docs.realms.world/" target="_blank" rel="noopener noreferrer">
+        <a
+          className="text-brown cursor-pointer w-full"
+          href="https://docs.realms.world/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <Button size="lg" forceUppercase={false} className="w-full rounded-md shadow-md">
             <div className="flex items-center w-full">
               <FileText className="!w-5 !h-5 mx-auto fill-gold" />

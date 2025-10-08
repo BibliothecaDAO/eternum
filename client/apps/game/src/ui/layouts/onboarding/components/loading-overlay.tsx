@@ -30,7 +30,7 @@ const useCyclingStatement = (statements: readonly string[], intervalMs: number) 
     }
 
     const intervalId = window.setInterval(() => {
-      setIndex((prev) => ((prev + 1) % statements.length + statements.length) % statements.length);
+      setIndex((prev) => (((prev + 1) % statements.length) + statements.length) % statements.length);
     }, intervalMs);
 
     return () => window.clearInterval(intervalId);

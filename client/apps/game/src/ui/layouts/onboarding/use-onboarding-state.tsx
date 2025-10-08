@@ -27,7 +27,9 @@ interface UseOnboardingStateReturn {
   handleExitSettleRealm: () => void;
 }
 
-export const useOnboardingState = ({ resolveBottomContent }: UseOnboardingStateOptions = {}): UseOnboardingStateReturn => {
+export const useOnboardingState = ({
+  resolveBottomContent,
+}: UseOnboardingStateOptions = {}): UseOnboardingStateReturn => {
   const [stage, setStage] = useState<OnboardingStage>("intro");
   const isBlitz = getIsBlitz();
   const isLocalChain = env.VITE_PUBLIC_CHAIN === "local";

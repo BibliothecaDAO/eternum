@@ -12,8 +12,6 @@ export const OnboardingContainer = ({ children, backgroundImage }: OnboardingCon
       src={`/images/covers/blitz/${backgroundImage}.png`}
       alt="Cover"
     />
-    <div className="absolute z-10 w-screen h-screen">
-      {children}
-    </div>
+    <div className="absolute z-10 w-screen h-screen">{children}</div>
   </div>
 );
