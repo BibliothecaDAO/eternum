@@ -1,11 +1,12 @@
-import { getCollectionByAddress } from "@/config";
+import { getCollectionByAddress, marketplaceCollections } from "@/config";
 import { fetchActiveMarketOrders } from "@/hooks/services";
 import { useMarketplace } from "@/hooks/use-marketplace";
 import { useMarketplaceApproval } from "@/hooks/use-marketplace-approval";
+import { useBatchRoyalties } from "@/hooks/use-royalties";
 import { MergedNftData } from "@/types";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, Minus, Plus } from "lucide-react";
-import React, { useState } from "react";
+import { AlertTriangle, ArrowLeft, Info, Minus, Plus } from "lucide-react";
+import React, { useMemo, useState } from "react";
 import { Button } from "../ui/button";
 import {
   Drawer,
@@ -54,6 +55,31 @@ export const CreateListingsDrawer: React.FC<CreateListingsDrawerProps> = ({
   const [hasUsedIncrement, setHasUsedIncrement] = useState(false);
 
   const selectedCollectionAddresses = [...new Set(tokens.map((token) => token.contract_address))];
+
+  // Get the collection type from the first token's contract address
+  const collectionKey = useMemo(() => {
+    if (tokens.length === 0) return null;
+    const firstToken = tokens[0];
+    const collectionData = getCollectionByAddress(firstToken.contract_address);
+    
+    // Find the key that matches this collection
+    const entry = Object.entries(marketplaceCollections).find(
+      ([_, data]) => data.address === collectionData?.address
+    );
+    return entry ? entry[0] as keyof typeof marketplaceCollections : null;
+  }, [tokens]);
+
+  // Calculate royalties for all tokens
+  const royaltyTokens = useMemo(() => {
+    if (!collectionKey) return [];
+    return tokens.map((token) => ({
+      collection: collectionKey,
+      tokenId: token.token_id.toString(),
+      salePrice: tokenPrices[token.token_id.toString()] || "0",
+    }));
+  }, [tokens, tokenPrices, collectionKey]);
+
+  const { royalties, totalRoyalties, isLoading: isLoadingRoyalties } = useBatchRoyalties(royaltyTokens);
 
   const { collectionApprovedForMarketplace, isApprovingMarketplace, handleApproveMarketplace } =
     useMarketplaceApproval(selectedCollectionAddresses);
@@ -255,19 +281,42 @@ export const CreateListingsDrawer: React.FC<CreateListingsDrawerProps> = ({
               })}
             </div>
             {/* Proceeds below the table */}
-            <div className="mb-1 flex justify-between border-t py-3 font-semibold">
-              <span>Total proceeds: </span>
-              <div>
-                {Object.values(tokenPrices)
-                  .reduce((total, price) => {
-                    if (!price || parseFloat(price) <= 0) return total;
-                    return total + (parseFloat(price) * (100 - MARKETPLACE_FEE_PERCENT)) / 100;
-                  }, 0)
-                  .toLocaleString("en-US", {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 2,
-                  })}
-                <span className="ml-3">LORDS</span>
+            <div className="mb-1 border-t py-3 space-y-2">
+              {/* Show royalty info if loading */}
+              {isLoadingRoyalties && (
+                <div className="text-sm text-muted-foreground text-center">
+                  Loading royalty information...
+                </div>
+              )}
+              
+              {/* Breakdown of fees */}
+              {!isLoadingRoyalties && Object.values(tokenPrices).some(price => price && parseFloat(price) > 0) && (
+                <>
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Marketplace fee (2.5%):</span>
+                    <div>
+                      {(totalRoyalties.totalMarketplaceFee / 10n**18n).toString()}
+                      <span className="ml-2">LORDS</span>
+                    </div>
+                  </div>
+                  {totalRoyalties.totalRoyaltyAmount > 0n && (
+                    <div className="flex justify-between text-sm text-muted-foreground">
+                      <span>Creator royalties:</span>
+                      <div>
+                        {(totalRoyalties.totalRoyaltyAmount / 10n**18n).toString()}
+                        <span className="ml-2">LORDS</span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+              
+              <div className="flex justify-between font-semibold pt-2 border-t">
+                <span>You will receive: </span>
+                <div>
+                  {isLoadingRoyalties ? "..." : (totalRoyalties.totalSellerProceeds / 10n**18n).toString()}
+                  <span className="ml-3">LORDS</span>
+                </div>
               </div>
             </div>
           </div>
