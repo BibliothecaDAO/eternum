@@ -438,6 +438,7 @@ export default class GameRenderer {
 
     if (targetScene === this.sceneManager.getCurrentScene() && targetScene === SceneName.WorldMap) {
       this.sceneManager.moveCameraForScene();
+      this.transitionManager?.fadeIn();
     } else {
       this.sceneManager.switchScene(targetScene);
     }

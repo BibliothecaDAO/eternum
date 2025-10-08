@@ -1,6 +1,7 @@
 import { Position } from "@bibliothecadao/eternum";
 
 import { BuildingType, ID, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
+import type { CosmeticAttachmentTemplate } from "../cosmetics/types";
 
 export enum SceneName {
   WorldMap = "map",
@@ -24,6 +25,8 @@ export interface StructureInfo {
   owner: { address: bigint; ownerName: string; guildName: string };
   structureType: StructureType;
   hasWonder: boolean;
+  cosmeticId?: string;
+  attachments?: CosmeticAttachmentTemplate[];
   // Enhanced data from MapDataStore
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
@@ -45,6 +48,8 @@ export interface ArmyData {
   category: TroopType;
   tier: TroopTier;
   isDaydreamsAgent: boolean;
+  cosmeticId?: string;
+  attachments?: CosmeticAttachmentTemplate[];
   // Enhanced data from MapDataStore
   troopCount: number;
   currentStamina: number;

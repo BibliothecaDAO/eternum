@@ -1,10 +1,9 @@
 import { useSyncPlayerStructures } from "@/hooks/helpers/use-sync-player-structures";
-import { useUIStore } from "@/hooks/store/use-ui-store";
-import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
 import { GameWinnerMessage, NotLoggedInMessage } from "@/ui/shared";
+import { PlayOverlayManager } from "./play-overlay-manager";
 import { Leva } from "leva";
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense } from "react";
 import { env } from "../../../env";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
 import { StoryEventStream } from "../features/story-events";
@@ -30,10 +29,6 @@ const ActionInstructions = lazy(() =>
 
 const WorldContextMenu = lazy(() =>
   import("../features/world/components/context-menu").then((module) => ({ default: module.WorldContextMenu })),
-);
-
-const BlankOverlayContainer = lazy(() =>
-  import("../shared/containers/blank-overlay-container").then((module) => ({ default: module.BlankOverlayContainer })),
 );
 
 const TopCenterContainer = lazy(() => import("../shared/containers/top-center-container"));
@@ -67,8 +62,6 @@ const TopLeftNavigation = lazy(() =>
     default: module.TopLeftNavigation,
   })),
 );
-const Onboarding = lazy(() => import("./onboarding").then((module) => ({ default: module.Onboarding })));
-
 const MiniMapNavigation = lazy(() =>
   import("../features/world/containers/mini-map-navigation/mini-map-navigation").then((module) => ({
     default: module.MiniMapNavigation,
@@ -82,8 +75,6 @@ const RealmTransferManager = lazy(() =>
 );
 
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
-  const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
-
   return (
     <>
       <WorldEffects />
@@ -106,11 +97,8 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
         <Suspense fallback={<WorldSuspenseFallback backgroundImage={backgroundImage} />}>
           <RealmTransferManager zIndex={100} />
-
-          <WorldOverlays backgroundImage={backgroundImage} />
+          <PlayOverlayManager backgroundImage={backgroundImage} />
           <WorldInteractiveLayers />
-
-          <LoadingOroborus loading={isLoadingScreenEnabled} />
 
           <StoryEventStream />
 
@@ -143,57 +131,6 @@ const StructureSynchronizer = () => {
 const WorldSuspenseFallback = ({ backgroundImage }: { backgroundImage: string }) => (
   <LoadingScreen backgroundImage={backgroundImage} />
 );
-
-const WorldOverlays = ({ backgroundImage }: { backgroundImage: string }) => (
-  <>
-    <ModalOverlay />
-    <BlankOverlay backgroundImage={backgroundImage} />
-  </>
-);
-
-// Modal component to prevent unnecessary World re-renders
-const ModalOverlay = () => {
-  const showModal = useUIStore((state) => state.showModal);
-  const modalContent = useUIStore((state) => state.modalContent);
-  const toggleModal = useUIStore((state) => state.toggleModal);
-
-  useEffect(() => {
-    if (!showModal) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.stopPropagation();
-        event.preventDefault();
-        toggleModal(null);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [showModal, toggleModal]);
-
-  return (
-    <Suspense fallback={null}>
-      <BlankOverlayContainer zIndex={120} open={showModal}>
-        {modalContent}
-      </BlankOverlayContainer>
-    </Suspense>
-  );
-};
-
-const BlankOverlay = ({ backgroundImage }: { backgroundImage: string }) => {
-  const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
-
-  return (
-    <Suspense fallback={null}>
-      <BlankOverlayContainer zIndex={110} open={showBlankOverlay}>
-        <Onboarding backgroundImage={backgroundImage} />
-      </BlankOverlayContainer>
-    </Suspense>
-  );
-};
 
 const WorldInteractiveLayers = () => (
   <>

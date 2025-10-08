@@ -166,7 +166,10 @@ export const initialSync = async (
   state: AppStore,
   setInitialSyncProgress: (progress: number) => void,
 ) => {
+  console.log("[STARTING syncEntitiesDebounced]");
   await syncEntitiesDebounced(setup.network.toriiClient, setup, null, false);
+
+  console.log("[syncEntitiesDebounced COMPLETED]");
 
   let start = performance.now();
   let end;

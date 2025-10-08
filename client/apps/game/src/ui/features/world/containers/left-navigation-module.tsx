@@ -46,7 +46,7 @@ type LeftNavigationContext = {
   isBlitz: boolean;
 };
 
-const DEFAULT_BUTTON_SIZE: CircleButtonProps["size"] = "xl";
+const DEFAULT_BUTTON_SIZE: CircleButtonProps["size"] = "lg";
 
 const buildLeftNavigationItems = ({
   view,
@@ -259,7 +259,7 @@ export const LeftNavigationModule = memo(() => {
       <div className="flex-grow overflow-hidden">
         <div
           className={`max-h-full transition-all duration-200 space-x-1 flex z-0 w-screen pr-2 md:pr-0 md:w-[600px] text-gold md:pt-16 pointer-events-none ${
-            isOffscreen(view) ? "-translate-x-[89%]" : ""
+            isOffscreen(view) ? "-translate-x-[92%]" : ""
           }`}
         >
           <BaseContainer

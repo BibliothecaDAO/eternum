@@ -221,6 +221,7 @@ export default class WorldmapScene extends HexagonScene {
       this.renderChunkSize,
       this.armyLabelsGroup,
       this,
+      this.dojo,
       (entityId: ID) => this.applyPendingRelicEffects(entityId),
       (entityId: ID) => this.clearPendingRelicEffects(entityId),
     );
@@ -233,6 +234,7 @@ export default class WorldmapScene extends HexagonScene {
       this.structureLabelsGroup,
       this,
       this.fxManager,
+      this.dojo,
       (entityId: ID) => this.applyPendingRelicEffects(entityId),
       (entityId: ID) => this.clearPendingRelicEffects(entityId),
     );

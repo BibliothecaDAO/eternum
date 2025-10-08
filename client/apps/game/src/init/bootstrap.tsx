@@ -29,7 +29,7 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
   const uiStore = useUIStore.getState();
   const syncingStore = useSyncStore.getState();
 
-  console.log("[STARTING DOJO SETUP...]");
+  console.log("[STARTING DOJO SETUP]");
 
   const setupResult = await setup(
     { ...dojoConfig },
@@ -52,12 +52,19 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
       },
     },
   );
+  console.log("[DOJO SETUP COMPLETED]");
 
   await initialSync(setupResult, uiStore, syncingStore.setInitialSyncProgress);
 
+  console.log("[INITIAL SYNC COMPLETED]");
+
   configManager.setDojo(setupResult.components, ETERNUM_CONFIG());
 
+  console.log("[GAME RENDERER INITIALIZED]");
+
   initializeGameRenderer(setupResult, env.VITE_PUBLIC_GRAPHICS_DEV == true);
+
+  console.log("[GAME RENDERER INITIALIZED]");
 
   inject();
 

@@ -1,3 +1,4 @@
+import { MusicRouterProvider } from "@/audio";
 import { cleanupTracing } from "@/tracing";
 import { ErrorBoundary, TransactionNotification, WorldLoading } from "@/ui/shared";
 import { useEffect, useState } from "react";
@@ -6,12 +7,13 @@ import { env } from "../env";
 import { DojoProvider } from "./hooks/context/dojo-context";
 import { MetagameProvider } from "./hooks/context/metagame-provider";
 import { StarknetProvider } from "./hooks/context/starknet-provider";
-import { useGameBootstrap } from "./hooks/context/use-game-bootstrap";
+import { usePlayFlow } from "./hooks/context/use-play-flow";
 import "./index.css";
 import type { SetupResult } from "./init/bootstrap";
+import type { Account, AccountInterface } from "starknet";
 import { IS_MOBILE } from "./ui/config";
-import { StoryEventToastBridge, StoryEventToastProvider } from "./ui/features/story-events";
 import { LandingAccount, LandingCosmetics, LandingLeaderboard, LandingWelcome } from "./ui/features/landing";
+import { StoryEventToastBridge, StoryEventToastProvider } from "./ui/features/story-events";
 import { LandingLayout } from "./ui/layouts/landing";
 import { World } from "./ui/layouts/world";
 import { ConstructionGate } from "./ui/modules/construction-gate";
@@ -22,11 +24,12 @@ import { getRandomBackgroundImage } from "./ui/utils/utils";
 type ReadyAppProps = {
   backgroundImage: string;
   setupResult: SetupResult;
+  account: Account | AccountInterface;
 };
 
-const ReadyApp = ({ backgroundImage, setupResult }: ReadyAppProps) => {
+const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
   return (
-    <DojoProvider value={setupResult} backgroundImage={backgroundImage}>
+    <DojoProvider value={setupResult} account={account}>
       <MetagameProvider>
         <ErrorBoundary>
           <StoryEventToastProvider>
@@ -60,17 +63,27 @@ const BootstrapError = ({ error, onRetry }: { error?: Error | null; onRetry: () 
 };
 
 const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
-  const { status, setupResult, error, retry, progress } = useGameBootstrap();
+  const { activeStep, steps } = usePlayFlow(backgroundImage);
 
-  if (status === "error") {
-    return <BootstrapError error={error} onRetry={retry} />;
+  if (activeStep === "bootstrap-error") {
+    return <BootstrapError error={steps.bootstrap.error} onRetry={steps.bootstrap.retry} />;
   }
 
-  if (status !== "ready" || !setupResult) {
-    return <LoadingScreen backgroundImage={backgroundImage} progress={progress} />;
+  if (activeStep === "bootstrap") {
+    return <LoadingScreen backgroundImage={backgroundImage} progress={steps.bootstrap.progress} />;
   }
 
-  return <ReadyApp backgroundImage={backgroundImage} setupResult={setupResult} />;
+  if (activeStep === "account" && steps.account.fallback) {
+    return <>{steps.account.fallback}</>;
+  }
+
+  const readyData = steps.ready;
+
+  if (!readyData.setupResult || !readyData.account) {
+    return <LoadingScreen backgroundImage={backgroundImage} progress={steps.bootstrap.progress} />;
+  }
+
+  return <ReadyApp backgroundImage={backgroundImage} setupResult={readyData.setupResult} account={readyData.account} />;
 };
 
 function App() {
@@ -102,16 +115,18 @@ function App() {
   return (
     <StarknetProvider>
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<LandingLayout backgroundImage={backgroundImage} />}>
-            <Route index element={<LandingWelcome />} />
-            <Route path="cosmetics" element={<LandingCosmetics />} />
-            <Route path="account" element={<LandingAccount />} />
-            <Route path="leaderboard" element={<LandingLeaderboard />} />
-          </Route>
-          <Route path="/play/*" element={<GameRoute backgroundImage={backgroundImage} />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <MusicRouterProvider>
+          <Routes>
+            <Route path="/" element={<LandingLayout backgroundImage={backgroundImage} />}>
+              <Route index element={<LandingWelcome />} />
+              <Route path="cosmetics" element={<LandingCosmetics />} />
+              <Route path="account" element={<LandingAccount />} />
+              <Route path="leaderboard" element={<LandingLeaderboard />} />
+            </Route>
+            <Route path="/play/*" element={<GameRoute backgroundImage={backgroundImage} />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </MusicRouterProvider>
       </BrowserRouter>
     </StarknetProvider>
   );

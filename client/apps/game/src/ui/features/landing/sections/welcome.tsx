@@ -12,7 +12,7 @@ export const LandingWelcome = () => {
 
       <div className="mt-8 flex flex-col items-center gap-4 text-white/80">
         <p className="text-sm text-white/70">Access your Cartridge profile or jump right in.</p>
-        <Button onClick={() => navigate("/play")}>Enter Blitz</Button>
+        <Button onClick={() => navigate("/play")}>Enter Eternum</Button>
         <div className="flex justify-end">
           <Controller />
         </div>
