@@ -1,4 +1,4 @@
-import { lordsAddress, marketplaceAddress, marketplaceCollections } from "@/config";
+import { lordsAddress, marketplaceAddress } from "@/config";
 import { LordsAbi } from "@bibliothecadao/eternum";
 import {
   AcceptMarketplaceOrdersProps,
@@ -9,9 +9,8 @@ import {
 import { useAccount, useContract } from "@starknet-react/core";
 import { useState } from "react";
 import { toast } from "sonner";
-import { AccountInterface, Call } from "starknet";
+import { AccountInterface } from "starknet";
 import { useDojo } from "./context/dojo-context";
-import { useBatchRoyalties } from "./use-royalties";
 
 // Define the parameters needed for each function, excluding the signer which is handled internally.
 type ListItemsParams = Omit<CreateMarketplaceOrdersProps, "signer" | "marketplace_address">;
@@ -87,56 +86,6 @@ export const useMarketplace = () => {
     }
   };
 
-  // Enhanced acceptOrders function that includes royalty payments
-  const acceptOrdersWithRoyalties = async (
-    params: AcceptOrdersParams & {
-      totalPrice: bigint;
-      royaltyPayments: Array<{
-        receiver: string;
-        amount: bigint;
-      }>;
-    }
-  ) => {
-    if (!account) throw new Error("Account not connected");
-    setIsAcceptingOrder(true);
-
-    // Create multicall array for all necessary transactions
-    const calls: Call[] = [];
-
-    // 1. Approve lords for total price
-    if (lordsContract) {
-      calls.push(lordsContract.populate("approve", [marketplaceAddress, params.totalPrice]));
-    }
-
-    // 2. Add royalty payment calls
-    params.royaltyPayments.forEach((payment) => {
-      if (payment.amount > 0n && payment.receiver !== "0x0") {
-        calls.push({
-          contractAddress: lordsAddress,
-          entrypoint: "transfer",
-          calldata: [payment.receiver, payment.amount.toString(), "0"], // low and high parts of u256
-        });
-      }
-    });
-
-    try {
-      await accept_marketplace_orders(
-        {
-          order_ids: params.order_ids,
-          signer: account as AccountInterface,
-          marketplace_address: marketplaceAddress,
-        },
-        ...calls,
-      );
-      toast.success("Order accepted successfully with royalties paid!");
-    } catch (error) {
-      console.error("Failed to accept order with royalties:", error);
-      toast.error("Failed to accept order. Please try again.");
-    } finally {
-      setIsAcceptingOrder(false);
-    }
-  };
-
   const cancelOrder = async (params: CancelOrderParams) => {
     if (!account) throw new Error("Account not connected");
     setIsCancellingOrder(true);
@@ -177,7 +126,6 @@ export const useMarketplace = () => {
   return {
     listItems,
     acceptOrders,
-    acceptOrdersWithRoyalties,
     cancelOrder,
     editOrder,
     isLoading: isCreatingOrder || isAcceptingOrder || isCancellingOrder || isEditingOrder,

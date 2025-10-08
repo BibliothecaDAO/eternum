@@ -20,12 +20,12 @@ interface PurchaseDialogProps {
 export const PurchaseDialog = ({ isOpen, onOpenChange, collection }: PurchaseDialogProps) => {
   const { selectedPasses, getTotalPrice, clearSelection } = useSelectedPassesStore("$collection" + collection);
   const totalPrice = getTotalPrice();
-  const { acceptOrdersWithRoyalties } = useMarketplace();
+  const { acceptOrders } = useMarketplace();
 
   const { connectors, connect } = useConnect();
   const { address } = useAccount();
 
-  // Calculate royalties for selected items
+  // Calculate royalties for selected items (for display only)
   const royaltyTokens = useMemo(
     () =>
       selectedPasses.map((pass) => ({
@@ -39,18 +39,9 @@ export const PurchaseDialog = ({ isOpen, onOpenChange, collection }: PurchaseDia
   const { royalties, totalRoyalties, isLoading: isLoadingRoyalties } = useBatchRoyalties(royaltyTokens);
 
   const handlePurchase = async () => {
-    // Prepare royalty payments
-    const royaltyPayments = royalties
-      .filter((r) => r.royaltyInfo && r.royaltyInfo.royaltyAmount > 0n)
-      .map((r) => ({
-        receiver: r.royaltyInfo!.receiver,
-        amount: r.royaltyInfo!.royaltyAmount,
-      }));
-
-    await acceptOrdersWithRoyalties({
+    await acceptOrders({
       order_ids: selectedPasses.map((pass) => BigInt(pass.order_id ?? 0)),
       totalPrice: BigInt(parseEther(totalPrice.toString())),
-      royaltyPayments,
     });
     
     // After successful purchase:
