@@ -30,7 +30,7 @@ export const CosmeticShowcase = ({ item }: CosmeticShowcaseProps) => {
   };
 
   return (
-    <section className="flex h-full flex-col justify-between gap-6">
+    <section className="relative z-10 flex h-full flex-col justify-between gap-6">
       <div className="relative flex-1 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 via-black/20 to-black/70 transition [cursor:grab] hover:border-gold/40 active:[cursor:grabbing] min-h-[320px]">
         {item ? (
           <div className="h-full w-full">
@@ -58,13 +58,15 @@ export const CosmeticShowcase = ({ item }: CosmeticShowcaseProps) => {
         <div className="pointer-events-none absolute inset-x-10 bottom-6 h-28 rounded-full bg-black/60 blur-3xl" />
       </div>
 
-      <footer className="space-y-2">
-        <h3 className="text-2xl font-semibold text-white">{item?.name ?? "Select a cosmetic"}</h3>
-        <p className="text-sm leading-relaxed text-white/70">
-          {item?.description ?? "Highlight cosmetics to inspect materials, lighting passes, and rarity modifiers."}
-        </p>
+      <footer className="space-y-4 rounded-2xl border border-white/10 bg-black/40 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+        <div className="space-y-2">
+          <h3 className="text-2xl font-semibold text-white">{item?.name ?? "Select a cosmetic"}</h3>
+          <p className="text-sm leading-relaxed text-white/70">
+            {item?.description ?? "Highlight cosmetics to inspect materials, lighting passes, and rarity modifiers."}
+          </p>
+        </div>
 
-        <div className="flex flex-col gap-2 pt-1">
+        <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-2 text-xs text-white/60">
             {slot && (
               <span className="rounded-full border border-white/15 bg-black/40 px-3 py-1 capitalize">
@@ -83,6 +85,8 @@ export const CosmeticShowcase = ({ item }: CosmeticShowcaseProps) => {
             disabled={!canEquip || isEquipped}
             variant={isEquipped ? "primarySelected" : "gold"}
             forceUppercase={false}
+            className="self-start"
+            size="md"
           >
             {isEquipped ? "Equipped" : hasSlotConflict ? "Replace equipped cosmetic" : "Equip cosmetic"}
           </Button>

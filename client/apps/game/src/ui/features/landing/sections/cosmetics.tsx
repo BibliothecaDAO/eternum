@@ -141,7 +141,10 @@ export const LandingCosmetics = () => {
         <CosmeticGallery items={filteredItems} selectedId={selectedId} onSelect={(id) => setSelectedId(id)} />
       </div>
 
-      <aside className="w-full rounded-3xl panel-wood border-white/10 bg-black/70 p-6 backdrop-blur xl:w-1/2 xl:min-w-[26rem]">
+      <aside
+        className="relative flex h-full w-full flex-col overflow-y-auto rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 via-black/70 to-black/95 p-6 shadow-2xl backdrop-blur xl:w-1/2 xl:min-w-[26rem]"
+      >
+        <div className="pointer-events-none absolute inset-0 rounded-3xl border border-white/5" aria-hidden />
         <CosmeticShowcase item={selectedItem} />
       </aside>
     </section>
