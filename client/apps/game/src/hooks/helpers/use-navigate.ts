@@ -1,3 +1,5 @@
+import { useCallback } from "react";
+
 import { Position } from "@bibliothecadao/eternum";
 
 import { useQuery } from "@bibliothecadao/react";
@@ -38,20 +40,27 @@ export const useNavigateToMapView = () => {
   };
 };
 
-export const useSpectatorModeClick = (components: ClientComponents) => {
+export const useSpectatorModeClick = (components: ClientComponents | null) => {
   const spectatorRealmEntityId = useUIStore((state) => state.spectatorRealmEntityId);
   const setFollowArmyMoves = useUIStore((state) => state.setFollowArmyMoves);
   const goToStructure = useGoToStructure();
 
-  return () => {
+  return useCallback(() => {
+    if (!components) {
+      return;
+    }
+
     const structure =
       spectatorRealmEntityId &&
       getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(spectatorRealmEntityId)]));
-    if (structure) {
-      goToStructure(structure.entity_id, new Position({ x: structure.base.coord_x, y: structure.base.coord_y }), true);
-      setFollowArmyMoves(true);
+
+    if (!structure) {
+      return;
     }
-  };
+
+    goToStructure(structure.entity_id, new Position({ x: structure.base.coord_x, y: structure.base.coord_y }), true);
+    setFollowArmyMoves(true);
+  }, [components, goToStructure, setFollowArmyMoves, spectatorRealmEntityId]);
 };
 
 export const useGoToStructure = () => {
@@ -61,6 +70,12 @@ export const useGoToStructure = () => {
 
   return (structureEntityId: ID, position: Position, isMapView: boolean) => {
     setStructureEntityId(structureEntityId);
-    isMapView ? navigateToMapView(position) : navigateToHexView(position);
+
+    if (isMapView) {
+      navigateToMapView(position);
+      return;
+    }
+
+    navigateToHexView(position);
   };
 };

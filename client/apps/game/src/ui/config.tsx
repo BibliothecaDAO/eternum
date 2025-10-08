@@ -27,13 +27,13 @@ const checkGraphicsSettings = async () => {
         // It's likely a desktop
         localStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.HIGH);
       } else {
-        // It's likely a laptop or mobile device
-        localStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.LOW);
+        // Default to high even on portable devices; users can dial it down if needed
+        localStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.HIGH);
       }
     } catch (error) {
       console.error("Error calling getBattery():", error);
-      // Set default values if getBattery() is not supported
-      localStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.LOW);
+      // Default to high when getBattery() is not supported
+      localStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.HIGH);
     } finally {
       localStorage.setItem("INITIAL_LAPTOP_CHECK", "true");
     }
