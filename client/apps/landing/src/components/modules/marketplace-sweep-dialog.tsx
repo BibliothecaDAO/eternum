@@ -129,7 +129,7 @@ export const PurchaseDialog = ({ isOpen, onOpenChange, collection }: PurchaseDia
               </div>
               {totalRoyalties.totalRoyaltyAmount > 0n && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Creator Royalties:</span>
+                  <span className="text-sm text-muted-foreground">Creator Royalties ({((Number(totalRoyalties.totalRoyaltyAmount) / Number(totalRoyalties.totalPrice)) * 100).toFixed(2)}%):</span>
                   <div className="flex items-center gap-2">
                     <span>{formatUnits(totalRoyalties.totalRoyaltyAmount, 18)}</span>
                     <ResourceIcon resource="Lords" size="sm" />

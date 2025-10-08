@@ -1,5 +1,5 @@
 import { marketplaceCollections } from "@/config";
-import { useContract, useReadContract } from "@starknet-react/core";
+import { useReadContract } from "@starknet-react/core";
 import { useMemo } from "react";
 import { parseUnits } from "viem";
 
@@ -24,18 +24,25 @@ interface UseRoyaltiesReturn {
   error: Error | null;
 }
 
-// Simple ERC2981 ABI for royalty_info method
+// Simple ERC2981 ABI for royalty_info method - Starknet style
 const ERC2981_ABI = [
   {
-    name: "royalty_info",
     type: "function",
+    name: "royalty_info",
     inputs: [
-      { name: "token_id", type: "felt252" },
-      { name: "sale_price", type: "felt252" },
+      {
+        name: "token_id",
+        type: "core::integer::u256",
+      },
+      {
+        name: "sale_price",
+        type: "core::integer::u256",
+      },
     ],
     outputs: [
-      { name: "receiver", type: "felt252" },
-      { name: "royalty_amount", type: "felt252" },
+      {
+        type: "(core::starknet::contract_address::ContractAddress, core::integer::u256)",
+      },
     ],
     state_mutability: "view",
   },
@@ -61,30 +68,36 @@ export const useRoyalties = ({ collection, tokenId, salePrice }: UseRoyaltiesPar
     return (salePriceWei * BigInt(Math.floor(MARKETPLACE_FEE_PERCENT * 100))) / BigInt(10000);
   }, [salePriceWei]);
 
-  // Get contract instance
-  const { contract } = useContract({
+  // Read royalty info from contract
+  const {
+    data: royaltyData,
+    isLoading,
+    error,
+  } = useReadContract({
     abi: ERC2981_ABI,
     address: contractAddress as `0x${string}`,
-  });
-
-  // Read royalty info from contract
-  const { data: royaltyData, isLoading, error } = useReadContract({
-    contract: contract || undefined,
     functionName: "royalty_info",
     args: [tokenId, salePriceWei.toString()],
-    enabled: !!contract && !!tokenId && salePriceWei > 0n,
+    enabled: !!contractAddress && !!tokenId && salePriceWei > 0n,
   });
 
   // Process royalty data
   const royaltyInfo = useMemo(() => {
-    if (!royaltyData || !Array.isArray(royaltyData) || royaltyData.length < 2) {
+    if (!royaltyData) {
       return null;
     }
 
-    return {
-      receiver: royaltyData[0] as string,
-      royaltyAmount: BigInt(royaltyData[1] as string),
-    };
+    // Handle object format from starknet-react (tuple response)
+    if (typeof royaltyData === "object" && "0" in royaltyData && "1" in royaltyData) {
+      const receiver = royaltyData[0];
+      const royaltyAmount = royaltyData[1];
+
+      return {
+        receiver: receiver.toString(),
+        royaltyAmount: BigInt(royaltyAmount.toString()),
+      };
+    }
+    return null;
   }, [royaltyData]);
 
   // Calculate royalty percentage

@@ -5,7 +5,7 @@ import { useMarketplaceApproval } from "@/hooks/use-marketplace-approval";
 import { useBatchRoyalties } from "@/hooks/use-royalties";
 import { MergedNftData } from "@/types";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, Info, Minus, Plus } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Minus, Plus } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { Button } from "../ui/button";
 import {
@@ -61,12 +61,10 @@ export const CreateListingsDrawer: React.FC<CreateListingsDrawerProps> = ({
     if (tokens.length === 0) return null;
     const firstToken = tokens[0];
     const collectionData = getCollectionByAddress(firstToken.contract_address);
-    
+
     // Find the key that matches this collection
-    const entry = Object.entries(marketplaceCollections).find(
-      ([_, data]) => data.address === collectionData?.address
-    );
-    return entry ? entry[0] as keyof typeof marketplaceCollections : null;
+    const entry = Object.entries(marketplaceCollections).find(([_, data]) => data.address === collectionData?.address);
+    return entry ? (entry[0] as keyof typeof marketplaceCollections) : null;
   }, [tokens]);
 
   // Calculate royalties for all tokens
@@ -284,37 +282,42 @@ export const CreateListingsDrawer: React.FC<CreateListingsDrawerProps> = ({
             <div className="mb-1 border-t py-3 space-y-2">
               {/* Show royalty info if loading */}
               {isLoadingRoyalties && (
-                <div className="text-sm text-muted-foreground text-center">
-                  Loading royalty information...
-                </div>
+                <div className="text-sm text-muted-foreground text-center">Loading royalty information...</div>
               )}
-              
+
               {/* Breakdown of fees */}
-              {!isLoadingRoyalties && Object.values(tokenPrices).some(price => price && parseFloat(price) > 0) && (
+              {!isLoadingRoyalties && Object.values(tokenPrices).some((price) => price && parseFloat(price) > 0) && (
                 <>
                   <div className="flex justify-between text-sm text-muted-foreground">
                     <span>Marketplace fee (2.5%):</span>
                     <div>
-                      {(totalRoyalties.totalMarketplaceFee / 10n**18n).toString()}
+                      {(totalRoyalties.totalMarketplaceFee / 10n ** 18n).toString()}
                       <span className="ml-2">LORDS</span>
                     </div>
                   </div>
                   {totalRoyalties.totalRoyaltyAmount > 0n && (
                     <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>Creator royalties:</span>
+                      <span>
+                        Creator royalties (
+                        {(
+                          (Number(totalRoyalties.totalRoyaltyAmount) / Number(totalRoyalties.totalPrice)) *
+                          100
+                        ).toFixed(2)}
+                        %):
+                      </span>
                       <div>
-                        {(totalRoyalties.totalRoyaltyAmount / 10n**18n).toString()}
+                        {(totalRoyalties.totalRoyaltyAmount / 10n ** 18n).toString()}
                         <span className="ml-2">LORDS</span>
                       </div>
                     </div>
                   )}
                 </>
               )}
-              
+
               <div className="flex justify-between font-semibold pt-2 border-t">
                 <span>You will receive: </span>
                 <div>
-                  {isLoadingRoyalties ? "..." : (totalRoyalties.totalSellerProceeds / 10n**18n).toString()}
+                  {isLoadingRoyalties ? "..." : (totalRoyalties.totalSellerProceeds / 10n ** 18n).toString()}
                   <span className="ml-3">LORDS</span>
                 </div>
               </div>
