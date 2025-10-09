@@ -112,30 +112,31 @@ export const useAutomation = () => {
     });
   }, []);
 
-  const processOrders = useCallback(async () => {
-    if (processingRef.current) return;
+  const processOrders = useCallback(async (): Promise<boolean> => {
+    if (processingRef.current) return false;
 
     if (!starknetSignerAccount || !starknetSignerAccount.address || starknetSignerAccount.address === "0x0") {
       console.warn("Automation: Missing Starknet signer. Skipping.");
-      return;
+      return false;
     }
 
     if (!components) {
       console.warn("Automation: Missing Dojo components. Skipping.");
-      return;
+      return false;
     }
 
     if (currentTickRef.current === 0) {
       console.warn("Automation: Current tick is 0. Skipping.");
-      return;
+      return false;
     }
 
     if (isGloballyPaused) {
       console.log("Automation: Globally paused. Skipping all processing.");
-      return;
+      return false;
     }
 
     processingRef.current = true;
+    let didProcess = false;
 
     try {
       const removed = cleanupStaleOrders();
@@ -161,12 +162,15 @@ export const useAutomation = () => {
         updateTransferTimestamp,
       });
 
+      didProcess = true;
       emitAutomationEvents(events);
     } catch (error) {
       console.error("Automation: Unhandled error while processing orders:", error);
     } finally {
       processingRef.current = false;
     }
+
+    return didProcess;
   }, [
     burn_labor_for_resource_production,
     burn_resource_for_labor_production,
@@ -188,8 +192,10 @@ export const useAutomation = () => {
   // available.
   useEffect(() => {
     const runAndSchedule = async () => {
-      await processOrders();
-      setNextRunTimestamp(Date.now() + PROCESS_INTERVAL_MS);
+      const processed = await processOrders();
+      if (processed) {
+        setNextRunTimestamp(Date.now() + PROCESS_INTERVAL_MS);
+      }
     };
 
     runAndSchedule(); // Initial run and schedule

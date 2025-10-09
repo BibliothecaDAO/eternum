@@ -31,7 +31,10 @@ import { AnimatedInstancedMesh, ArmyInstanceData, ModelData, ModelType, Movement
 import { getHexForWorldPosition } from "../utils";
 import { applyEasing, EasingType } from "../utils/easing";
 import { MaterialPool } from "../utils/material-pool";
+import { env } from "../../../env";
 import { MemoryMonitor } from "../utils/memory-monitor";
+
+const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
 export class ArmyModel {
   // Core properties
@@ -81,7 +84,7 @@ export class ArmyModel {
   private isAgent: boolean = false;
 
   // Memory monitoring
-  private memoryMonitor: MemoryMonitor;
+  private memoryMonitor?: MemoryMonitor;
 
   // Material sharing
   private static materialPool = MaterialPool.getInstance();
@@ -102,12 +105,14 @@ export class ArmyModel {
     this.currentCameraView = cameraView || CameraView.Medium;
 
     // Initialize memory monitor for army model operations
-    this.memoryMonitor = new MemoryMonitor({
-      spikeThresholdMB: 20, // Lower threshold for model operations
-      onMemorySpike: (spike) => {
-        console.warn(`🪖  Army Model Memory Spike: +${spike.increaseMB.toFixed(1)}MB in ${spike.context}`);
-      },
-    });
+    if (MEMORY_MONITORING_ENABLED) {
+      this.memoryMonitor = new MemoryMonitor({
+        spikeThresholdMB: 20, // Lower threshold for model operations
+        onMemorySpike: (spike) => {
+          console.warn(`🪖  Army Model Memory Spike: +${spike.increaseMB.toFixed(1)}MB in ${spike.context}`);
+        },
+      });
+    }
 
     // Initialize animation arrays
     this.timeOffsets = new Float32Array(MAX_INSTANCES);
@@ -536,7 +541,7 @@ export class ArmyModel {
     if (path.length < 2) return;
 
     // Monitor memory usage before starting movement
-    this.memoryMonitor.getCurrentStats(`startMovement-${entityId}`);
+    this.memoryMonitor?.getCurrentStats(`startMovement-${entityId}`);
 
     // Log material sharing stats periodically (every 10th movement)
     if (entityId % 10 === 0) {
@@ -604,7 +609,7 @@ export class ArmyModel {
   public updateMovements(deltaTime: number): void {
     // Monitor memory usage when processing multiple army movements
     if (this.movingInstances.size > 5) {
-      this.memoryMonitor.getCurrentStats(`updateMovements-bulk-${this.movingInstances.size}`);
+      this.memoryMonitor?.getCurrentStats(`updateMovements-bulk-${this.movingInstances.size}`);
     }
 
     this.movingInstances.forEach((movement, entityId) => {

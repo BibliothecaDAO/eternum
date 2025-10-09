@@ -15,6 +15,26 @@ const ALL_RESOURCE_IDS = Object.values(ResourcesIds).filter((value) => typeof va
 export const PROCESS_INTERVAL_MS = 60 * 1000; // 1 minute
 const CYCLE_BUFFER = 150;
 
+type OptimisticLedger = Record<number, number>;
+
+function initializeOptimisticLedger(initialBalances: Record<number, number>): OptimisticLedger {
+  const ledger: OptimisticLedger = {};
+  for (const resourceId of ALL_RESOURCE_IDS) {
+    ledger[resourceId] = initialBalances[resourceId] ?? 0;
+  }
+  return ledger;
+}
+
+function getLedgerBalance(ledger: OptimisticLedger, resourceId: ResourcesIds): number {
+  return ledger[resourceId] ?? 0;
+}
+
+function applyLedgerDelta(ledger: OptimisticLedger, resourceId: ResourcesIds, delta: number): void {
+  const current = ledger[resourceId] ?? 0;
+  const next = current + delta;
+  ledger[resourceId] = next < 0 ? 0 : next;
+}
+
 export type AutomationEvent =
   | {
       type: "transfer-complete";
@@ -130,6 +150,9 @@ export async function processAutomationTick({
 
     console.log(`Automation: Processing ${realmOrders.length} orders for realm ${realmEntityId}.`);
 
+    const initialBalances = await fetchBalances(currentTick, realmEntityId, components);
+    const optimisticLedger = initializeOptimisticLedger(initialBalances);
+
     for (const order of realmOrders) {
       if (!order.createdAt || now - order.createdAt > AUTOMATION_ORDER_MAX_AGE_MS) {
         const ageMinutes = Math.floor((now - (order.createdAt ?? now)) / 60000);
@@ -155,6 +178,7 @@ export async function processAutomationTick({
         const transferEvent = await handleTransferOrder(order, {
           components,
           currentTick,
+          optimisticLedger,
           signer,
           systemCalls,
           updateTransferTimestamp,
@@ -168,6 +192,7 @@ export async function processAutomationTick({
       const productionEvent = await handleProductionOrder(order, {
         components,
         currentTick,
+        optimisticLedger,
         signer,
         systemCalls,
         updateOrderProducedAmount,
@@ -185,6 +210,7 @@ export async function processAutomationTick({
 interface TransferOrderContext {
   components: ClientComponents;
   currentTick: number;
+  optimisticLedger: OptimisticLedger;
   signer: StarknetAccount;
   systemCalls: AutomationProcessorParams["systemCalls"];
   updateTransferTimestamp: AutomationProcessorParams["updateTransferTimestamp"];
@@ -192,7 +218,7 @@ interface TransferOrderContext {
 
 async function handleTransferOrder(
   order: AutomationOrder,
-  { components, currentTick, signer, systemCalls, updateTransferTimestamp }: TransferOrderContext,
+  { components, currentTick, optimisticLedger, signer, systemCalls, updateTransferTimestamp }: TransferOrderContext,
 ): Promise<AutomationEvent | null> {
   try {
     if (!order.transferMode) return null;
@@ -214,16 +240,14 @@ async function handleTransferOrder(
       order.transferMode === TransferMode.MaintainStock ||
       order.transferMode === TransferMode.DepletionTransfer
     ) {
-      const targetBalances = await fetchBalances(currentTick, order.targetEntityId!, components);
-      const sourceBalances = await fetchBalances(currentTick, order.realmEntityId, components);
-
       const triggerResource = order.transferResources?.[0];
       if (triggerResource) {
         if (order.transferMode === TransferMode.MaintainStock) {
+          const targetBalances = await fetchBalances(currentTick, order.targetEntityId!, components);
           const targetBalance = targetBalances[triggerResource.resourceId] || 0;
           shouldTransfer = targetBalance < multiplyByPrecision(order.transferThreshold || 0);
         } else {
-          const sourceBalance = sourceBalances[triggerResource.resourceId] || 0;
+          const sourceBalance = getLedgerBalance(optimisticLedger, triggerResource.resourceId);
           shouldTransfer = sourceBalance > multiplyByPrecision(order.transferThreshold || 0);
         }
       }
@@ -237,12 +261,12 @@ async function handleTransferOrder(
       return null;
     }
 
-    const sourceBalances = await fetchBalances(currentTick, order.realmEntityId, components);
     const resourcesToTransfer: { resource: ResourcesIds; amount: number }[] = [];
+    const resourceDebits: { resourceId: ResourcesIds; amount: number }[] = [];
 
     for (const resource of order.transferResources || []) {
       const requiredAmount = multiplyByPrecision(resource.amount);
-      const availableAmount = sourceBalances[resource.resourceId] || 0;
+      const availableAmount = getLedgerBalance(optimisticLedger, resource.resourceId);
 
       if (availableAmount < requiredAmount) {
         console.warn(
@@ -255,6 +279,7 @@ async function handleTransferOrder(
         resource: resource.resourceId,
         amount: requiredAmount,
       });
+      resourceDebits.push({ resourceId: resource.resourceId, amount: requiredAmount });
     }
 
     if (!resourcesToTransfer.length) {
@@ -262,12 +287,23 @@ async function handleTransferOrder(
       return null;
     }
 
-    await systemCalls.sendResources({
-      signer,
-      sender_entity_id: Number(order.realmEntityId),
-      recipient_entity_id: Number(order.targetEntityId),
-      resources: resourcesToTransfer,
-    });
+    for (const debit of resourceDebits) {
+      applyLedgerDelta(optimisticLedger, debit.resourceId, -debit.amount);
+    }
+
+    try {
+      await systemCalls.sendResources({
+        signer,
+        sender_entity_id: Number(order.realmEntityId),
+        recipient_entity_id: Number(order.targetEntityId),
+        resources: resourcesToTransfer,
+      });
+    } catch (error) {
+      for (const debit of resourceDebits) {
+        applyLedgerDelta(optimisticLedger, debit.resourceId, debit.amount);
+      }
+      throw error;
+    }
 
     console.log(
       `Automation: Executed transfer from ${order.realmName} to ${order.targetEntityName}.`,
@@ -293,6 +329,7 @@ async function handleTransferOrder(
 interface ProductionOrderContext {
   components: ClientComponents;
   currentTick: number;
+  optimisticLedger: OptimisticLedger;
   signer: StarknetAccount;
   systemCalls: AutomationProcessorParams["systemCalls"];
   updateOrderProducedAmount: AutomationProcessorParams["updateOrderProducedAmount"];
@@ -300,10 +337,12 @@ interface ProductionOrderContext {
 
 async function handleProductionOrder(
   order: AutomationOrder,
-  { components, currentTick, signer, systemCalls, updateOrderProducedAmount }: ProductionOrderContext,
+  { components, currentTick, optimisticLedger, signer, systemCalls, updateOrderProducedAmount }: ProductionOrderContext,
 ): Promise<AutomationEvent | null> {
+  let reservedInputs: { resourceId: ResourcesIds; amount: number }[] = [];
+  let inputsReservedApplied = false;
   try {
-    const currentBalances = await fetchBalances(currentTick, order.realmEntityId, components);
+    const optimisticBalances = optimisticLedger;
     const recipe = getProductionRecipe(order.resourceToUse, order.productionType);
 
     console.log(
@@ -344,7 +383,7 @@ async function handleProductionOrder(
 
     const insufficiency = recipe.inputs.some((input) => {
       if (input.amount <= 0) return false;
-      const balance = currentBalances[input.resourceId] || 0;
+      const balance = getLedgerBalance(optimisticBalances, input.resourceId);
       if (balance < multiplyByPrecision(input.amount)) {
         console.warn(
           `Automation: Insufficient balance for ${ResourcesIds[input.resourceId]} in realm ${order.realmEntityId}, order ${order.id}. Required ${multiplyByPrecision(input.amount)}, available ${balance}. Skipping.`,
@@ -358,24 +397,32 @@ async function handleProductionOrder(
       return null;
     }
 
-    let maxPossibleCycles = recipe.inputs.length
+    const maxPossibleCycles = recipe.inputs.length
       ? Math.min(
           ...recipe.inputs
             .filter((input) => input.amount > 0)
             .map((input) => {
-              const balance = currentBalances[input.resourceId] || 0;
+              const balance = getLedgerBalance(optimisticBalances, input.resourceId);
               return Math.floor(balance / multiplyByPrecision(input.amount));
             }),
         )
       : 10000;
-
-    maxPossibleCycles = Math.max(1, maxPossibleCycles - CYCLE_BUFFER);
 
     if (!Number.isFinite(maxPossibleCycles) || maxPossibleCycles <= 0) {
       return null;
     }
 
     let cyclesToRun = maxPossibleCycles;
+
+    if (order.mode === OrderMode.MaintainBalance) {
+      if (maxPossibleCycles <= CYCLE_BUFFER) {
+        console.warn(
+          `Automation: Max possible cycles (${maxPossibleCycles}) for order ${order.id} do not exceed buffer (${CYCLE_BUFFER}). Skipping to avoid low-stock failure.`,
+        );
+        return null;
+      }
+      cyclesToRun = maxPossibleCycles - CYCLE_BUFFER;
+    }
 
     if (order.mode === OrderMode.ProduceOnce && order.maxAmount !== "infinite") {
       const remainingAmountToProduce = order.maxAmount - order.producedAmount;
@@ -416,7 +463,20 @@ async function handleProductionOrder(
       return null;
     }
 
+    reservedInputs = recipe.inputs
+      .filter((input) => input.amount > 0)
+      .map((input) => {
+        const totalAmount = input.amount * cyclesToRun;
+        return { resourceId: input.resourceId, amount: multiplyByPrecision(totalAmount) };
+      });
+
+    for (const reservation of reservedInputs) {
+      applyLedgerDelta(optimisticLedger, reservation.resourceId, -reservation.amount);
+    }
+    inputsReservedApplied = reservedInputs.length > 0;
+
     let producedThisCycle = 0;
+    let outputCredit: { resourceId: ResourcesIds; amount: number } | null = null;
 
     if (order.productionType === ProductionType.ResourceToResource) {
       const calldata = {
@@ -425,8 +485,22 @@ async function handleProductionOrder(
         production_cycles: [cyclesToRun],
         produced_resource_types: [order.resourceToUse],
       };
-      await systemCalls.burnResourceForResourceProduction(calldata);
+      try {
+        await systemCalls.burnResourceForResourceProduction(calldata);
+      } catch (error) {
+        for (const reservation of reservedInputs) {
+          applyLedgerDelta(optimisticLedger, reservation.resourceId, reservation.amount);
+        }
+        inputsReservedApplied = false;
+        throw error;
+      }
+      inputsReservedApplied = false;
+      reservedInputs = [];
       producedThisCycle = cyclesToRun * recipe.outputAmount;
+      outputCredit = {
+        resourceId: order.resourceToUse,
+        amount: multiplyByPrecision(recipe.outputAmount * cyclesToRun),
+      };
     } else if (order.productionType === ProductionType.LaborToResource) {
       const calldata = {
         signer,
@@ -434,8 +508,22 @@ async function handleProductionOrder(
         production_cycles: [cyclesToRun],
         produced_resource_types: [order.resourceToUse],
       };
-      await systemCalls.burnLaborForResourceProduction(calldata);
+      try {
+        await systemCalls.burnLaborForResourceProduction(calldata);
+      } catch (error) {
+        for (const reservation of reservedInputs) {
+          applyLedgerDelta(optimisticLedger, reservation.resourceId, reservation.amount);
+        }
+        inputsReservedApplied = false;
+        throw error;
+      }
+      inputsReservedApplied = false;
+      reservedInputs = [];
       producedThisCycle = cyclesToRun * recipe.outputAmount;
+      outputCredit = {
+        resourceId: order.resourceToUse,
+        amount: multiplyByPrecision(recipe.outputAmount * cyclesToRun),
+      };
     } else if (order.productionType === ProductionType.ResourceToLabor) {
       const inputAmount = recipe.inputs[0].amount;
       const totalToSpend = cyclesToRun * inputAmount;
@@ -445,12 +533,34 @@ async function handleProductionOrder(
         resource_amounts: [multiplyByPrecision(totalToSpend)],
         entity_id: realmIdNumberForSyscall,
       };
-      await systemCalls.burnResourceForLaborProduction(calldata);
+      try {
+        await systemCalls.burnResourceForLaborProduction(calldata);
+      } catch (error) {
+        for (const reservation of reservedInputs) {
+          applyLedgerDelta(optimisticLedger, reservation.resourceId, reservation.amount);
+        }
+        inputsReservedApplied = false;
+        throw error;
+      }
+      inputsReservedApplied = false;
+      reservedInputs = [];
       producedThisCycle = cyclesToRun * recipe.outputAmount;
+      outputCredit = {
+        resourceId: ResourcesIds.Labor,
+        amount: multiplyByPrecision(recipe.outputAmount * cyclesToRun),
+      };
     }
 
     if (!producedThisCycle) {
+      for (const reservation of reservedInputs) {
+        applyLedgerDelta(optimisticLedger, reservation.resourceId, reservation.amount);
+      }
+      inputsReservedApplied = false;
       return null;
+    }
+
+    if (outputCredit) {
+      applyLedgerDelta(optimisticLedger, outputCredit.resourceId, outputCredit.amount);
     }
 
     updateOrderProducedAmount(order.realmEntityId, order.id, producedThisCycle);
@@ -465,6 +575,12 @@ async function handleProductionOrder(
       producedAmount: producedThisCycle,
     };
   } catch (error) {
+    if (inputsReservedApplied && reservedInputs.length) {
+      for (const reservation of reservedInputs) {
+        applyLedgerDelta(optimisticLedger, reservation.resourceId, reservation.amount);
+      }
+      inputsReservedApplied = false;
+    }
     console.error(
       `Automation: Error processing order ${order.id} for ${ResourcesIds[order.resourceToUse]} in realm ${order.realmEntityId}:`,
       error,
@@ -477,8 +593,10 @@ async function fetchBalances(
   tick: number,
   realmEntityId: string,
   dojoComponents: ClientComponents,
+  options: { includeVirtualProduction?: boolean } = {},
 ): Promise<Record<number, number>> {
   const balances: Record<number, number> = {};
+  const { includeVirtualProduction = false } = options;
   try {
     const realmIdNumber = Number(realmEntityId);
     if (Number.isNaN(realmIdNumber)) {
@@ -488,8 +606,13 @@ async function fetchBalances(
     const manager = new ResourceManager(dojoComponents, realmIdNumber);
 
     for (const resourceId of ALL_RESOURCE_IDS) {
-      const balanceComponent = manager.balanceWithProduction(tick, resourceId);
-      balances[resourceId] = Number(balanceComponent.balance);
+      if (includeVirtualProduction) {
+        const balanceComponent = manager.balanceWithProduction(tick, resourceId);
+        balances[resourceId] = Number(balanceComponent.balance);
+      } else {
+        const currentBalance = manager.balance(resourceId);
+        balances[resourceId] = Number(currentBalance);
+      }
     }
   } catch (error) {
     console.error(`Error fetching balances for realm ${realmEntityId}:`, error);
