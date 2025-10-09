@@ -4,8 +4,4 @@
 // Bridge System
 export { Bridge } from "./bridge/bridge";
 
-// Automation System
-export { AllAutomationsTable } from "./automation/all-automations-table";
-export { AutomationTable } from "./automation/automation-table";
-export { AutomationTransferTable } from "./automation/automation-transfer-table";
-export { TransferModal } from "./automation/transfer-modal";
+// Automation System (UI rebuilt elsewhere)

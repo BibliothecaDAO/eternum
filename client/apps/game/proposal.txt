@@ -1,0 +1,78 @@
+Automation flow
+
+1) Simplify production automation
+Instead of several production mode (maintain, once, infinite, etc...) There's only one, of which you can pick from 3 types : labor to resource, resource to resource, resource to labor.
+You input the way you want the resource to be produced, the % of resource to be used, and it start the production.
+Json for producing: 
+[
+  {
+    "entityId": 181,
+    "name": "Sgámsíší",
+    "resources": [
+      {
+        "name": "Copper",
+        "percentOfRssToBurnForLaborProd": 10,
+        "percentOfRawRssToBurnForRssProd": 30,
+        "percentOfLaborToBurnForRssProd": 10
+      },
+      {
+        "name": "Obsidian",
+        "percentOfRssToBurnForLaborProd": 10,
+        "percentOfRawRssToBurnForRssProd": 30,
+        "percentOfLaborToBurnForRssProd": 10
+      },
+      {
+        "name": "Silver",
+        "percentOfRssToBurnForLaborProd": 10,
+        "percentOfRawRssToBurnForRssProd": 30,
+        "percentOfLaborToBurnForRssProd": 10
+      }
+    ]
+  },
+  {
+    "entityId": 205,
+    "name": "Noomamu",
+    "resources": [
+      {
+        "name": "Stone",
+        "percentOfRssToBurnForLaborProd": 10,
+        "percentOfRawRssToBurnForRssProd": 30,
+        "percentOfLaborToBurnForRssProd": 10
+      },
+      {
+        "name": "Coal",
+        "percentOfRssToBurnForLaborProd": 10,
+        "percentOfRawRssToBurnForRssProd": 30,
+        "percentOfLaborToBurnForRssProd": 10
+      },
+      {
+        "name": "Copper",
+        "percentOfRssToBurnForLaborProd": 10,
+        "percentOfRawRssToBurnForRssProd": 30,
+        "percentOfLaborToBurnForRssProd": 10
+      }
+    ]
+  }
+]
+
+--> All this can be split into multicalls per realm, the client must first get all the rss in the realm, split it evenly (like 30/30/30), prepare the json then sends the multicall. 
+This avoids the first order to use up 30% of the 100%, then the second uses 30% of 70% left, then third 30% of 49% etc... Which is a current issue atm.
+During eternum s1 I used to run this batching 50 calls at once.
+
+2) How does this translate into the UI :
+Let's say you're creating a new wood building. You select the building, you pick standard/simple construct mode and you build it.
+By default, it creates automation percentOfRssToBurnForLaborProd = 0% percentOfRawRssToBurnForRssProd = 30% percentOfLaborToBurnForRssProd = 10% therefore the prod is bootstrapped at building creation.
+The player can then adjust the 3 types of prod using a slider ranging from 0% to 90% (always keep 10% margin).
+
+3) One step further :
+- Calculate that the total amount of a resources consumed does not go over 90% (like if copper is used 4 times and user has setup 30% on each building using copper we are at 120% = fail)
+- After every building creation, recalculate how each resource is consumed and adjusts the sliders automatically.
+- Ideally, the user selects presets and doesnt even see the sliders (like full rss farming, full army farming prioritize army prod with copper and labor, labor farming, etc...)
+
+4) Cleanup automation and production UI
+- For me, the UI and setup must be realm per realm. So I'd remove all the total rss balance, automation, etc for all realms - keep just the one that is currently selected.
+- So on the right side of the UI, where we currently have 5 buttons, only have :
+	* one panel for the realm balance
+	* one panel for the production building and the rate they are currently producing. Put the production presets there. Put a button that opens up a simplified automation modal with the setup for the realm. It should be very compact and only used by advanced players.
+	And that should be it for the production/automation UI.
+
