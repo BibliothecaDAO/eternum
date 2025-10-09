@@ -37,9 +37,12 @@ import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions"
 import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions } from "../utils/labels/label-transitions";
+import { env } from "../../../env";
 import { MemoryMonitor } from "../utils/memory-monitor";
 import { findShortestPath } from "../utils/pathfinding";
 import { FXManager } from "./fx-manager";
+
+const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
 interface PendingExplorerTroopsUpdate {
   troopCount: number;
@@ -117,7 +120,7 @@ export class ArmyManager {
   private tickCheckTimeout: NodeJS.Timeout | null = null;
   private cleanupTimeout: NodeJS.Timeout | null = null;
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
-  private memoryMonitor: MemoryMonitor;
+  private memoryMonitor?: MemoryMonitor;
   private unsubscribeAccountStore?: () => void;
   private attachmentManager: CosmeticAttachmentManager;
   private armyAttachmentSignatures: Map<number, string> = new Map();
@@ -153,12 +156,14 @@ export class ArmyManager {
     this.clearPendingRelicEffectsCallback = clearPendingRelicEffectsCallback;
 
     // Initialize memory monitor for tracking army operations
-    this.memoryMonitor = new MemoryMonitor({
-      spikeThresholdMB: 25, // Lower threshold for army operations
-      onMemorySpike: (spike) => {
-        console.warn(`🎖️  Army Manager Memory Spike: +${spike.increaseMB.toFixed(1)}MB in ${spike.context}`);
-      },
-    });
+    if (MEMORY_MONITORING_ENABLED) {
+      this.memoryMonitor = new MemoryMonitor({
+        spikeThresholdMB: 25, // Lower threshold for army operations
+        onMemorySpike: (spike) => {
+          console.warn(`🎖️  Army Manager Memory Spike: +${spike.increaseMB.toFixed(1)}MB in ${spike.context}`);
+        },
+      });
+    }
 
     // Subscribe to camera view changes if scene is provided
     if (hexagonScene) {
@@ -694,7 +699,7 @@ export class ArmyManager {
     if (this.armies.has(params.entityId)) return;
 
     // Monitor memory usage before adding army
-    this.memoryMonitor.getCurrentStats(`addArmy-${params.entityId}`);
+    this.memoryMonitor?.getCurrentStats(`addArmy-${params.entityId}`);
 
     const { x, y } = params.hexCoords.getContract();
     const biome = Biome.getBiome(x, y);
@@ -884,7 +889,7 @@ export class ArmyManager {
     exploredTiles: Map<number, Map<number, BiomeType>>,
   ) {
     // Monitor memory usage before army movement
-    this.memoryMonitor.getCurrentStats(`moveArmy-start-${entityId}`);
+    this.memoryMonitor?.getCurrentStats(`moveArmy-start-${entityId}`);
 
     const armyData = this.armies.get(entityId);
     if (!armyData) return;
@@ -933,7 +938,7 @@ export class ArmyManager {
     this.armyModel.startMovement(entityId, worldPath, armyData.matrixIndex, armyData.category, armyData.tier);
 
     // Monitor memory usage after army movement setup
-    this.memoryMonitor.getCurrentStats(`moveArmy-complete-${entityId}`);
+    this.memoryMonitor?.getCurrentStats(`moveArmy-complete-${entityId}`);
   }
 
   public async updateRelicEffects(entityId: ID, newRelicEffects: Array<{ relicNumber: number; effect: RelicEffect }>) {
@@ -1003,7 +1008,7 @@ export class ArmyManager {
     this.armyAttachmentSignatures.delete(numericEntityId);
 
     // Monitor memory usage before removing army
-    this.memoryMonitor.getCurrentStats(`removeArmy-${entityId}`);
+    this.memoryMonitor?.getCurrentStats(`removeArmy-${entityId}`);
 
     console.debug(`[ArmyManager] removeArmy invoked for entity ${entityId}`);
 
