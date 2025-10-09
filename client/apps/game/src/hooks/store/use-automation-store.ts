@@ -77,6 +77,7 @@ type RealmAutomationInput = Partial<Omit<RealmAutomationConfig, "realmId" | "res
 interface ProductionAutomationState {
   realms: Record<string, RealmAutomationConfig>;
   nextRunTimestamp: number | null;
+  hydrated: boolean;
   upsertRealm: (realmId: string, data?: RealmAutomationInput) => void;
   setRealmPreset: (realmId: string, presetId: RealmPresetId | null) => void;
   setRealmMetadata: (
@@ -101,6 +102,7 @@ interface ProductionAutomationState {
   setNextRunTimestamp: (timestamp: number | null) => void;
   recordExecution: (realmId: string, summary: RealmAutomationExecutionSummary) => void;
   getRealmConfig: (realmId: string) => RealmAutomationConfig | undefined;
+  setHydrated: (value: boolean) => void;
 }
 
 const clampPercent = (value: number): number => {
@@ -170,6 +172,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
     (set, get) => ({
       realms: {},
       nextRunTimestamp: null,
+      hydrated: typeof window === "undefined",
       upsertRealm: (realmId, data) =>
         set((state) => {
           const existing = state.realms[realmId];
@@ -484,7 +487,12 @@ export const useAutomationStore = create<ProductionAutomationState>()(
             },
           };
         }),
-      resetAll: () => set({ realms: {}, nextRunTimestamp: null }),
+      resetAll: () =>
+        set((state) => ({
+          realms: {},
+          nextRunTimestamp: null,
+          hydrated: state.hydrated,
+        })),
       setNextRunTimestamp: (timestamp) => set({ nextRunTimestamp: timestamp }),
       recordExecution: (realmId, summary) =>
         set((state) => {
@@ -510,11 +518,16 @@ export const useAutomationStore = create<ProductionAutomationState>()(
           resources: sanitizeRealmResources(realm.resources, realm.entityType),
         };
       },
+      setHydrated: (value) => set({ hydrated: value }),
     }),
     {
       name: "eternum-production-automation",
       storage: createJSONStorage(() => localStorage),
-      version: 3,
+      version: 4,
+      partialize: (state) => ({
+        realms: state.realms,
+        nextRunTimestamp: state.nextRunTimestamp,
+      }),
       migrate: (persistedState: any) => {
         const fallback = { realms: {}, nextRunTimestamp: null };
         if (!persistedState || typeof persistedState !== "object") {
@@ -568,6 +581,18 @@ export const useAutomationStore = create<ProductionAutomationState>()(
         return {
           realms: nextRealms,
           nextRunTimestamp,
+        };
+      },
+      onRehydrateStorage: () => {
+        return (_state, error) => {
+          if (error) {
+            console.error("[Automation] Failed to rehydrate automation store", error);
+          }
+          try {
+            useAutomationStore.setState({ hydrated: true }, true);
+          } catch (setError) {
+            console.error("[Automation] Failed to mark automation store as hydrated", setError);
+          }
         };
       },
     },

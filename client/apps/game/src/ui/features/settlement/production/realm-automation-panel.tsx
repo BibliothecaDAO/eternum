@@ -56,7 +56,20 @@ export const RealmAutomationPanel = ({
     const needsMetadataUpdate =
       current && (current.realmName !== realmName || current.entityType !== entityType);
 
+    console.log("[RealmAutomationPanel] metadata check", {
+      realmEntityId,
+      hasExistingConfig: Boolean(current),
+      needsMetadataUpdate,
+      incomingName: realmName,
+      incomingEntityType: entityType,
+    });
+
     if (!current || needsMetadataUpdate) {
+      console.log("[RealmAutomationPanel] upsertRealm", {
+        realmEntityId,
+        realmName,
+        entityType,
+      });
       upsertRealm(realmEntityId, { realmName, entityType });
     }
   }, [entityType, realmEntityId, realmName, upsertRealm]);
@@ -68,6 +81,10 @@ export const RealmAutomationPanel = ({
 
   useEffect(() => {
     if (!missingResources.length) return;
+    console.log("[RealmAutomationPanel] ensuring missing resources", {
+      realmEntityId,
+      missingResources,
+    });
     missingResources.forEach((resourceId) => ensureResourceConfig(realmEntityId, resourceId));
   }, [ensureResourceConfig, missingResources, realmEntityId]);
 
@@ -83,6 +100,10 @@ export const RealmAutomationPanel = ({
 
   useEffect(() => {
     if (!extraResources.length) return;
+    console.log("[RealmAutomationPanel] trimming extra resources", {
+      realmEntityId,
+      extraResources,
+    });
     extraResources.forEach((resourceId) => removeResourceConfig(realmEntityId, resourceId));
   }, [extraResources, realmEntityId, removeResourceConfig]);
 
@@ -167,6 +188,10 @@ export const RealmAutomationPanel = ({
   const activePresetId = inferRealmPreset(realmAutomation);
   const handlePresetSelect = useCallback(
     (presetId: RealmPresetId) => {
+      console.log("[RealmAutomationPanel] handlePresetSelect", {
+        realmEntityId,
+        presetId,
+      });
       if (presetId === "custom") {
         setRealmPreset(realmEntityId, null);
         return;
@@ -182,6 +207,12 @@ export const RealmAutomationPanel = ({
       key: "resourceToResource" | "laborToResource",
       value: number,
     ) => {
+      console.log("[RealmAutomationPanel] handleSliderChange", {
+        realmEntityId,
+        resourceId,
+        key,
+        value,
+      });
       setRealmPreset(realmEntityId, null);
       setResourcePercentages(realmEntityId, resourceId, { [key]: value });
     },

@@ -4,8 +4,8 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ProductionModal } from "@/ui/features/settlement";
 import { REALM_PRESETS, RealmPresetId, inferRealmPreset } from "@/utils/automation-presets";
 import { getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
-import { usePlayerOwnedRealmsInfo } from "@bibliothecadao/react";
-import { ResourcesIds } from "@bibliothecadao/types";
+import { usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
+import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -62,26 +62,60 @@ export const ProductionOverviewPanel = () => {
   const toggleModal = useUIStore((state) => state.toggleModal);
   const automationRealms = useAutomationStore((state) => state.realms);
   const upsertRealm = useAutomationStore((state) => state.upsertRealm);
+  const removeRealm = useAutomationStore((state) => state.removeRealm);
   const setRealmPreset = useAutomationStore((state) => state.setRealmPreset);
   const [selectedProduction, setSelectedProduction] = useState<{ realmId: string; resourceId: ResourcesIds } | null>(
     null,
   );
 
   const playerRealms = usePlayerOwnedRealmsInfo();
+  const playerVillages = usePlayerOwnedVillagesInfo();
   const isBlitz = getIsBlitz();
 
   useEffect(() => {
-    playerRealms.forEach((realm) => {
-      upsertRealm(String(realm.entityId), {
-        realmName: getStructureName(realm.structure, isBlitz).name,
-        entityType: "realm",
+    const managedStructures = [...playerRealms, ...playerVillages];
+    const activeIds = new Set(managedStructures.map((structure) => String(structure.entityId)));
+
+    console.log("[ProductionOverviewPanel] Sync managed structures", {
+      realmCount: playerRealms.length,
+      villageCount: playerVillages.length,
+      total: managedStructures.length,
+    });
+
+    managedStructures.forEach((structure) => {
+      const entityType = structure.structure?.category === StructureType.Village ? "village" : "realm";
+      const structureName = getStructureName(structure.structure, isBlitz).name;
+
+      console.log("[ProductionOverviewPanel] upsertRealm", {
+        entityId: structure.entityId,
+        entityType,
+        structureName,
+      });
+
+      upsertRealm(String(structure.entityId), {
+        realmName: structureName,
+        entityType,
       });
     });
-  }, [isBlitz, playerRealms, upsertRealm]);
+
+    Object.entries(useAutomationStore.getState().realms).forEach(([realmId, config]) => {
+      const supportedType = config.entityType === "realm" || config.entityType === "village";
+      if (!supportedType || !activeIds.has(realmId)) {
+        console.log("[ProductionOverviewPanel] removeRealm", {
+          realmId,
+          entityType: config.entityType,
+          supportedType,
+          isActive: activeIds.has(realmId),
+        });
+        removeRealm(realmId);
+      }
+    });
+  }, [isBlitz, playerRealms, playerVillages, removeRealm, upsertRealm]);
 
   const realmCards = useMemo<RealmCard[]>(() => {
     const cards: RealmCard[] = [];
-    playerRealms.forEach((realm) => {
+    const managedStructures = [...playerRealms, ...playerVillages];
+    managedStructures.forEach((realm) => {
       const automation = automationRealms[String(realm.entityId)];
       const realmName = getStructureName(realm.structure, isBlitz).name;
       const producedResources = automation?.resources ?? {};
@@ -120,16 +154,25 @@ export const ProductionOverviewPanel = () => {
       cards.push({
         id: String(realm.entityId),
         name: realmName,
-        type: automation?.entityType ?? "realm",
+        type: entityType,
         resourceIds,
         lastRun: automation?.lastExecution?.executedAt,
         presetId: inferRealmPreset(automation) ?? "custom",
         productionLookup,
       });
+
+      console.log("[ProductionOverviewPanel] realmCard built", {
+        entityId: realm.entityId,
+        name: realmName,
+        entityType,
+        resourceCount: resourceIds.length,
+        lastRun: automation?.lastExecution?.executedAt,
+        presetId: inferRealmPreset(automation),
+      });
     });
 
     return cards.sort((a, b) => a.name.localeCompare(b.name));
-  }, [automationRealms, isBlitz, playerRealms]);
+  }, [automationRealms, isBlitz, playerRealms, playerVillages]);
 
   const globalPreset = useMemo<RealmPresetId | "mixed">(() => {
     if (realmCards.length === 0) return "custom";

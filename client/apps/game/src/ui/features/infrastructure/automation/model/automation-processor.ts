@@ -42,6 +42,7 @@ export interface RealmProductionPlan {
 export interface BuildRealmProductionPlanArgs {
   realmConfig: RealmAutomationConfig;
   components: ClientComponents | null | undefined;
+  currentTick?: number;
 }
 
 const ZERO_PLAN: RealmProductionPlan = {
@@ -74,6 +75,7 @@ const DEFAULT_PLAN_CALLSET: RealmProductionCallset = {
 export const buildRealmProductionPlan = ({
   realmConfig,
   components,
+  currentTick,
 }: BuildRealmProductionPlanArgs): RealmProductionPlan => {
   if (!realmConfig) {
     return { ...ZERO_PLAN };
@@ -176,9 +178,34 @@ export const buildRealmProductionPlan = ({
   const consumptionByResource: Record<number, number> = {};
   const outputsByResource: Record<number, number> = {};
 
+  const computeHumanBalance = (resourceId: ResourcesIds): number => {
+    try {
+      if (typeof currentTick === "number" && Number.isFinite(currentTick)) {
+        const { balance } = resourceManager.balanceWithProduction(currentTick, resourceId);
+        const human = divideByPrecision(Number(balance));
+        return human;
+      }
+    } catch (error) {
+      console.warn("[Automation] balanceWithProduction fallback", {
+        realmId: realmConfig.realmId,
+        resourceId,
+        error,
+      });
+    }
+    const fallbackRaw = resourceManager.balance(resourceId);
+    return divideByPrecision(Number(fallbackRaw));
+  };
+
   resourcesToTrack.forEach((resourceId) => {
-    const balanceRaw = resourceManager.balance(resourceId);
-    const balanceHuman = divideByPrecision(Number(balanceRaw));
+    const balanceHuman = computeHumanBalance(resourceId);
+    console.log("[Automation] Resource availability snapshot", {
+      realmId: realmConfig.realmId,
+      realmName: realmConfig.realmName,
+      entityType,
+      resourceId,
+      balanceHuman,
+      currentTick,
+    });
     totalAvailable.set(resourceId, balanceHuman);
     const maxConsumable = Math.floor((balanceHuman * MAX_RESOURCE_ALLOCATION_PERCENT) / 100);
     availableBudget.set(resourceId, Math.max(0, maxConsumable));
@@ -299,15 +326,42 @@ export const buildRealmProductionPlan = ({
       const outputPerCycle = laborConfig?.resourceOutputPerInputResources ?? 0;
 
       if (!laborConfig || !inputResources.length || outputPerCycle <= 0) {
+        console.log("[Automation] Missing labor recipe configuration", {
+          realmId: realmConfig.realmId,
+          realmName: realmConfig.realmName,
+          entityType,
+          resourceId,
+          hasLaborConfig: Boolean(laborConfig),
+          inputResourceCount: inputResources.length,
+          outputPerCycle,
+        });
         skipped.push({
           resourceId,
           reason: "Missing labor recipe configuration",
         });
       } else {
         let maxCycles = Number.POSITIVE_INFINITY;
+        const laborDebug: Array<{
+          inputResource: ResourcesIds;
+          totalAvailable: number;
+          budget: number;
+          desired: number;
+          permitted: number;
+          amountPerCycle: number;
+          cyclesForInput: number;
+        }> = [];
 
         for (const input of inputResources) {
           if (input.amount <= 0) {
+            laborDebug.push({
+              inputResource: input.resource,
+              totalAvailable: getTotal(input.resource),
+              budget: getBudget(input.resource),
+              desired: 0,
+              permitted: 0,
+              amountPerCycle: input.amount,
+              cyclesForInput: 0,
+            });
             continue;
           }
           const total = getTotal(input.resource);
@@ -319,15 +373,45 @@ export const buildRealmProductionPlan = ({
 
           const desired = Math.floor((total * laborToResource) / 100);
           if (desired <= 0) {
+            laborDebug.push({
+              inputResource: input.resource,
+              totalAvailable: total,
+              budget,
+              desired,
+              permitted: 0,
+              amountPerCycle: input.amount,
+              cyclesForInput: 0,
+            });
             maxCycles = 0;
             break;
           }
           const permitted = Math.min(desired, budget);
           const cyclesForInput = Math.floor(permitted / input.amount);
+          laborDebug.push({
+            inputResource: input.resource,
+            totalAvailable: total,
+            budget,
+            desired,
+            permitted,
+            amountPerCycle: input.amount,
+            cyclesForInput,
+          });
           maxCycles = Math.min(maxCycles, cyclesForInput);
         }
 
         if (!Number.isFinite(maxCycles) || maxCycles <= 0) {
+          console.log("[Automation] Labor recipe insufficient inputs", {
+            realmId: realmConfig.realmId,
+            realmName: realmConfig.realmName,
+            entityType,
+            resourceId,
+            laborToResourceTargetPercent: laborToResource,
+            evaluatedLaborInputs: laborDebug,
+            laborConfigInputCount: inputResources.length,
+            laborConfigRaw: inputResources,
+            availableBudgets: Array.from(availableBudget.entries()),
+            totalAvailableResources: Array.from(totalAvailable.entries()),
+          });
           skipped.push({
             resourceId,
             reason: "Insufficient labor recipe inputs",
@@ -342,6 +426,16 @@ export const buildRealmProductionPlan = ({
           for (const entry of inputsConsumed) {
             if (!reserveAmount(entry.resourceId, entry.amount)) {
               allocationSucceeded = false;
+              console.log("[Automation] Labor recipe reserve failure", {
+                realmId: realmConfig.realmId,
+                realmName: realmConfig.realmName,
+                entityType,
+                resourceId,
+                attemptedInput: entry,
+                remainingBudget: availableBudget.get(entry.resourceId),
+                maxCycles,
+                inputsConsumed,
+              });
               break;
             }
           }
