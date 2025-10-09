@@ -34,6 +34,31 @@ export enum RelicSource {
   Production = "production",
 }
 
+const normalizeEntityId = (entityId: ID | bigint | string | undefined | null): ID | undefined => {
+  if (entityId === undefined || entityId === null) {
+    return undefined;
+  }
+
+  if (typeof entityId === "bigint") {
+    const normalized = Number(entityId);
+    if (!Number.isSafeInteger(normalized)) {
+      console.warn(`[StructureManager] Entity id ${entityId.toString()} exceeds safe integer range`);
+    }
+    return normalized as ID;
+  }
+
+  if (typeof entityId === "string") {
+    const parsed = Number(entityId);
+    if (Number.isNaN(parsed)) {
+      console.warn(`[StructureManager] Failed to parse entity id string "${entityId}"`);
+      return undefined;
+    }
+    return parsed as ID;
+  }
+
+  return entityId;
+};
+
 interface PendingLabelUpdate {
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
@@ -288,7 +313,12 @@ export class StructureManager {
 
   async onUpdate(update: StructureTileSystemUpdate) {
     console.log("[UPDATE STRUCTURE SYSTEM ON UPDATE]", update);
-    const { entityId, hexCoords, structureType, stage, level, owner, hasWonder } = update;
+    const { entityId: rawEntityId, hexCoords, structureType, stage, level, owner, hasWonder } = update;
+    const entityId = normalizeEntityId(rawEntityId);
+    if (entityId === undefined) {
+      console.warn("[StructureManager] Received tile update without a valid entity id", update);
+      return;
+    }
     await this.ensureStructureModels(structureType);
     const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
     const position = getWorldPositionForHex(normalizedCoord);
@@ -907,14 +937,23 @@ export class StructureManager {
     newRelicEffects: Array<{ relicNumber: number; effect: RelicEffect }>,
     relicSource: RelicSource = RelicSource.Guard,
   ) {
-    const structure = this.structures.getStructureByEntityId(entityId);
+    const normalizedEntityId = normalizeEntityId(entityId);
+    if (normalizedEntityId === undefined) {
+      console.warn("[StructureManager] Received relic effect update without a valid entity id", {
+        entityId,
+        relicSource,
+      });
+      return;
+    }
+
+    const structure = this.structures.getStructureByEntityId(normalizedEntityId);
     if (!structure) return;
 
     // Get or create the effects map for this entity
-    let entityEffectsMap = this.structureRelicEffects.get(entityId);
+    let entityEffectsMap = this.structureRelicEffects.get(normalizedEntityId);
     if (!entityEffectsMap) {
       entityEffectsMap = new Map();
-      this.structureRelicEffects.set(entityId, entityEffectsMap);
+      this.structureRelicEffects.set(normalizedEntityId, entityEffectsMap);
     }
 
     // Get current effects for this specific source
@@ -956,7 +995,7 @@ export class StructureManager {
             effectsToAdd.push({ relicNumber: newEffect.relicNumber, effect: newEffect.effect, fx });
           }
         } catch (error) {
-          console.error(`Failed to add relic effect ${newEffect.relicNumber} for structure ${entityId}:`, error);
+          console.error(`Failed to add relic effect ${newEffect.relicNumber} for structure ${normalizedEntityId}:`, error);
         }
       }
     }
@@ -966,7 +1005,7 @@ export class StructureManager {
       entityEffectsMap.delete(relicSource);
       // If no sources have effects, remove the entity from the main map
       if (entityEffectsMap.size === 0) {
-        this.structureRelicEffects.delete(entityId);
+        this.structureRelicEffects.delete(normalizedEntityId);
       }
     } else {
       // Keep existing effects that are still in the new list, add new ones
@@ -976,7 +1015,12 @@ export class StructureManager {
   }
 
   public getStructureRelicEffects(entityId: ID): { relicId: number; effect: RelicEffect }[] {
-    const entityEffectsMap = this.structureRelicEffects.get(entityId);
+    const normalizedEntityId = normalizeEntityId(entityId);
+    if (normalizedEntityId === undefined) {
+      return [];
+    }
+
+    const entityEffectsMap = this.structureRelicEffects.get(normalizedEntityId);
     if (!entityEffectsMap) return [];
 
     // Combine effects from all sources
@@ -991,7 +1035,12 @@ export class StructureManager {
     entityId: ID,
     relicSource: RelicSource,
   ): { relicId: number; effect: RelicEffect }[] {
-    const entityEffectsMap = this.structureRelicEffects.get(entityId);
+    const normalizedEntityId = normalizeEntityId(entityId);
+    if (normalizedEntityId === undefined) {
+      return [];
+    }
+
+    const entityEffectsMap = this.structureRelicEffects.get(normalizedEntityId);
     if (!entityEffectsMap) return [];
 
     const effects = entityEffectsMap.get(relicSource);
@@ -1007,20 +1056,26 @@ export class StructureManager {
     owner: { address: bigint; ownerName: string; guildName: string };
     battleCooldownEnd: number;
   }): void {
-    const structure = this.structures.getStructureByEntityId(update.entityId);
-    console.log("[UPDATING STRUCTURE LABEL]", update);
+    const entityId = normalizeEntityId(update.entityId);
+    if (entityId === undefined) {
+      console.warn("[StructureManager] Received structure update without a valid entity id", update);
+      return;
+    }
+
+    const structure = this.structures.getStructureByEntityId(entityId);
+    console.log("[UPDATING STRUCTURE LABEL]", { ...update, entityId });
 
     // If structure doesn't exist yet, store the update as pending
     if (!structure) {
       const currentTime = Date.now();
 
       // Check if we already have a pending update for this entity
-      const existingPending = this.pendingLabelUpdates.get(update.entityId);
+      const existingPending = this.pendingLabelUpdates.get(entityId);
 
       // Only store if this is newer than the existing pending update or it's a different type
       if (!existingPending || currentTime >= existingPending.timestamp) {
-        console.log(`[PENDING LABEL UPDATE] Storing pending structure update for ${update.entityId}`);
-        this.pendingLabelUpdates.set(update.entityId, {
+        console.log(`[PENDING LABEL UPDATE] Storing pending structure update for ${entityId}`);
+        this.pendingLabelUpdates.set(entityId, {
           guardArmies: update.guardArmies.map((guard) => ({
             slot: guard.slot,
             category: guard.category,
@@ -1035,7 +1090,7 @@ export class StructureManager {
           battleTimerLeft: getBattleTimerLeft(update.battleCooldownEnd),
         });
       } else {
-        console.log(`[PENDING LABEL UPDATE] Ignoring older pending structure update for ${update.entityId}`);
+        console.log(`[PENDING LABEL UPDATE] Ignoring older pending structure update for ${entityId}`);
       }
       return;
     }
@@ -1053,10 +1108,10 @@ export class StructureManager {
     structure.battleCooldownEnd = update.battleCooldownEnd;
     structure.battleTimerLeft = getBattleTimerLeft(update.battleCooldownEnd);
 
-    this.structures.updateStructure(update.entityId, structure);
+    this.structures.updateStructure(entityId, structure);
 
     // Update the label if it exists
-    const label = this.entityIdLabels.get(update.entityId);
+    const label = this.entityIdLabels.get(entityId);
     if (label) {
       this.updateStructureLabelData(structure, label);
     }
@@ -1066,8 +1121,18 @@ export class StructureManager {
    * Update structure battle direction and label
    */
   public updateBattleDirection(entityId: ID, degrees: number | undefined, role: "attacker" | "defender"): void {
-    console.log("[UPDATING BATTLE DEGREES FOR STRUCTURE]", { entityId, degrees, role });
-    const structure = this.structures.getStructureByEntityId(entityId);
+    const normalizedEntityId = normalizeEntityId(entityId);
+    if (normalizedEntityId === undefined) {
+      console.warn("[StructureManager] Received battle direction update without a valid entity id", {
+        entityId,
+        degrees,
+        role,
+      });
+      return;
+    }
+
+    console.log("[UPDATING BATTLE DEGREES FOR STRUCTURE]", { entityId: normalizedEntityId, degrees, role });
+    const structure = this.structures.getStructureByEntityId(normalizedEntityId);
     if (!structure) return;
 
     // Update degrees based on role
@@ -1078,7 +1143,7 @@ export class StructureManager {
     }
 
     // Update label
-    const label = this.entityIdLabels.get(entityId);
+    const label = this.entityIdLabels.get(normalizedEntityId);
     if (label) {
       this.updateStructureLabelData(structure, label);
     }
@@ -1091,16 +1156,22 @@ export class StructureManager {
     entityId: ID;
     activeProductions: Array<{ buildingCount: number; buildingType: BuildingType }>;
   }): void {
-    const structure = this.structures.getStructureByEntityId(update.entityId);
+    const entityId = normalizeEntityId(update.entityId);
+    if (entityId === undefined) {
+      console.warn("[StructureManager] Received building update without a valid entity id", update);
+      return;
+    }
+
+    const structure = this.structures.getStructureByEntityId(entityId);
 
     // If structure doesn't exist yet, store the update as pending
     if (!structure) {
       const currentTime = Date.now();
 
-      console.log(`[PENDING LABEL UPDATE] Storing pending building update for structure ${update.entityId}`);
+      console.log(`[PENDING LABEL UPDATE] Storing pending building update for structure ${entityId}`);
 
       // Check if there's already a pending update for this structure
-      const existingPending = this.pendingLabelUpdates.get(update.entityId);
+      const existingPending = this.pendingLabelUpdates.get(entityId);
       if (existingPending && currentTime >= existingPending.timestamp) {
         // Update the existing pending with new active productions
         existingPending.activeProductions = update.activeProductions;
@@ -1108,14 +1179,14 @@ export class StructureManager {
         existingPending.updateType = "building";
       } else if (!existingPending) {
         // Create a new pending update with just the active productions
-        this.pendingLabelUpdates.set(update.entityId, {
+        this.pendingLabelUpdates.set(entityId, {
           activeProductions: update.activeProductions,
           owner: { address: 0n, ownerName: "", guildName: "" }, // Will be updated when structure is created
           timestamp: currentTime,
           updateType: "building",
         });
       } else {
-        console.log(`[PENDING LABEL UPDATE] Ignoring older pending building update for structure ${update.entityId}`);
+        console.log(`[PENDING LABEL UPDATE] Ignoring older pending building update for structure ${entityId}`);
       }
       return;
     }
@@ -1124,7 +1195,7 @@ export class StructureManager {
     structure.activeProductions = update.activeProductions;
 
     // Update the label if it exists
-    const label = this.entityIdLabels.get(update.entityId);
+    const label = this.entityIdLabels.get(entityId);
     if (label) {
       this.updateStructureLabelData(structure, label);
     }
@@ -1200,11 +1271,20 @@ class Structures {
     battleCooldownEnd?: number,
     battleTimerLeft?: number,
   ) {
+    const normalizedEntityId = normalizeEntityId(entityId);
+    if (normalizedEntityId === undefined) {
+      console.warn("[Structures] Attempted to add structure without a valid entity id", {
+        entityId,
+        structureType,
+      });
+      return;
+    }
+
     if (!this.structures.has(structureType)) {
       this.structures.set(structureType, new Map());
     }
-    this.structures.get(structureType)!.set(entityId, {
-      entityId,
+    this.structures.get(structureType)!.set(normalizedEntityId, {
+      entityId: normalizedEntityId,
       hexCoords,
       stage,
       initialized,
@@ -1228,7 +1308,11 @@ class Structures {
   }
 
   updateStructureStage(entityId: ID, structureType: StructureType, stage: number) {
-    const structure = this.structures.get(structureType)?.get(entityId);
+    const normalizedEntityId = normalizeEntityId(entityId);
+    if (normalizedEntityId === undefined) {
+      return;
+    }
+    const structure = this.structures.get(structureType)?.get(normalizedEntityId);
     if (structure) {
       structure.stage = stage;
     }
@@ -1248,17 +1332,26 @@ class Structures {
   }
 
   updateStructure(entityId: ID, structure: StructureInfo) {
-    this.structures.get(structure.structureType)?.set(entityId, structure);
+    const normalizedEntityId = normalizeEntityId(entityId);
+    if (normalizedEntityId === undefined) {
+      return;
+    }
+    this.structures.get(structure.structureType)?.set(normalizedEntityId, structure);
   }
 
   removeStructure(entityId: ID): StructureInfo | null {
+    const normalizedEntityId = normalizeEntityId(entityId);
+    if (normalizedEntityId === undefined) {
+      return null;
+    }
+
     let removedStructure: StructureInfo | null = null;
 
     this.structures.forEach((structures) => {
-      const structure = structures.get(entityId);
+      const structure = structures.get(normalizedEntityId);
       if (structure) {
         this.onRemove?.(structure);
-        structures.delete(entityId);
+        structures.delete(normalizedEntityId);
         removedStructure = structure;
       }
     });
@@ -1271,8 +1364,12 @@ class Structures {
   }
 
   getStructureByEntityId(entityId: ID): StructureInfo | undefined {
+    const normalizedEntityId = normalizeEntityId(entityId);
+    if (normalizedEntityId === undefined) {
+      return undefined;
+    }
     for (const structures of this.structures.values()) {
-      const structure = structures.get(entityId);
+      const structure = structures.get(normalizedEntityId);
       if (structure) {
         return structure;
       }
