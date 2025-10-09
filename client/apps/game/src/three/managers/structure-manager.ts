@@ -798,10 +798,15 @@ export class StructureManager {
   }
 
   public getInstanceIdFromEntityId(structureType: StructureType, entityId: ID): number | undefined {
+    const normalizedEntityId = normalizeEntityId(entityId);
+    if (normalizedEntityId === undefined) {
+      return undefined;
+    }
+
     // First check the wonder map
     if (structureType === StructureType.Realm) {
       for (const [instanceId, id] of this.wonderEntityIdMaps.entries()) {
-        if (id === entityId) {
+        if (id === normalizedEntityId) {
           return instanceId;
         }
       }
@@ -810,7 +815,7 @@ export class StructureManager {
     const map = this.entityIdMaps.get(structureType);
     if (!map) return undefined;
     for (const [instanceId, id] of map.entries()) {
-      if (id === entityId) {
+      if (id === normalizedEntityId) {
         return instanceId;
       }
     }
@@ -846,11 +851,16 @@ export class StructureManager {
   }
 
   private removeEntityIdLabel(entityId: ID) {
-    const label = this.entityIdLabels.get(entityId);
+    const normalizedEntityId = normalizeEntityId(entityId);
+    if (normalizedEntityId === undefined) {
+      return;
+    }
+
+    const label = this.entityIdLabels.get(normalizedEntityId);
     if (label) {
       this.labelsGroup.remove(label);
       this.labelPool.release(label);
-      this.entityIdLabels.delete(entityId);
+      this.entityIdLabels.delete(normalizedEntityId);
     }
   }
 
@@ -886,13 +896,27 @@ export class StructureManager {
   }
 
   public removeLabelsExcept(entityId?: ID) {
-    this.entityIdLabels.forEach((label, labelEntityId) => {
-      if (labelEntityId !== entityId) {
-        this.labelsGroup.remove(label);
-        if (label.element && label.element.parentNode) {
-          label.element.parentNode.removeChild(label.element);
-        }
+    const normalizedEntityId = entityId !== undefined ? normalizeEntityId(entityId) : undefined;
+    const labelsToRemove: ID[] = [];
+
+    this.entityIdLabels.forEach((_label, labelEntityId) => {
+      if (labelEntityId !== normalizedEntityId) {
+        labelsToRemove.push(labelEntityId);
       }
+    });
+
+    labelsToRemove.forEach((labelEntityId) => {
+      const label = this.entityIdLabels.get(labelEntityId);
+      if (!label) {
+        return;
+      }
+
+      this.labelsGroup.remove(label);
+      this.labelPool.release(label);
+      if (label.element && label.element.parentNode) {
+        label.element.parentNode.removeChild(label.element);
+      }
+      this.entityIdLabels.delete(labelEntityId);
     });
   }
 
@@ -903,7 +927,12 @@ export class StructureManager {
   }
 
   public showLabel(entityId: ID): void {
-    const structure = this.structures.getStructureByEntityId(entityId);
+    const normalizedEntityId = normalizeEntityId(entityId);
+    if (normalizedEntityId === undefined) {
+      return;
+    }
+
+    const structure = this.structures.getStructureByEntityId(normalizedEntityId);
     if (!structure) {
       return;
     }
@@ -911,7 +940,7 @@ export class StructureManager {
     const position = getWorldPositionForHex(structure.hexCoords);
     position.y += 0.05;
 
-    const existingLabel = this.entityIdLabels.get(entityId);
+    const existingLabel = this.entityIdLabels.get(normalizedEntityId);
     if (existingLabel) {
       const newPosition = getWorldPositionForHex(structure.hexCoords);
       newPosition.y += 2;
