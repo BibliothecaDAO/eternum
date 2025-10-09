@@ -12,8 +12,13 @@ import {
   AccountInterface,
   AllowArray,
   Call,
+  CallContractResponse,
   CallData,
+  CallResult,
   GetTransactionReceiptResponse,
+  InvokeFunctionResponse,
+  RpcProvider,
+  UniversalDetails,
   uint256,
 } from "starknet";
 import { TransactionType } from "./types";
@@ -74,7 +79,23 @@ function ApplyEventEmitter<T extends new (...args: any[]) => {}>(Base: T) {
     }
   };
 }
-const EnhancedDojoProvider = ApplyEventEmitter(DojoProvider);
+type DojoProviderLike = {
+  manifest: any;
+  provider: RpcProvider;
+  execute: (
+    account: Account | AccountInterface,
+    call: AllowArray<DojoCall | Call>,
+    nameSpace: string,
+    details?: UniversalDetails,
+  ) => Promise<InvokeFunctionResponse>;
+  call: (nameSpace: string, call: DojoCall | Call) => Promise<CallResult>;
+  callRaw: (nameSpace: string, call: DojoCall | Call) => Promise<CallContractResponse>;
+};
+
+type DojoProviderConstructorLike = new (manifest?: any, url?: string, logLevel?: any) => DojoProviderLike;
+
+const BaseDojoProvider = DojoProvider as unknown as DojoProviderConstructorLike;
+const EnhancedDojoProvider = ApplyEventEmitter(BaseDojoProvider);
 class PromiseQueue {
   private queue: Array<{
     providerCall: () => Promise<any>;
@@ -225,11 +246,6 @@ export class EternumProvider extends EnhancedDojoProvider {
   ) {
     super(katana, url);
     this.manifest = katana;
-
-    this.getWorldAddress = function () {
-      const worldAddress = this.manifest.world.address;
-      return worldAddress;
-    };
     this.promiseQueue = new PromiseQueue(this);
   }
 

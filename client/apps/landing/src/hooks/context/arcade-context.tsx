@@ -15,6 +15,7 @@ import type { Chain } from "@starknet-react/chains";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { constants, getChecksumAddress } from "starknet";
 
+import { env } from "../../../env";
 import { useDojo } from "./dojo-context";
 
 const chainIdMap: Record<string, string> = {
@@ -63,7 +64,7 @@ export const ArcadeProvider = ({ children }: ArcadeProviderProps) => {
   }
 
   const { network } = useDojo();
-  const chainId = useMemo(() => resolveChainId(network?.env?.VITE_PUBLIC_CHAIN), [network?.env?.VITE_PUBLIC_CHAIN]);
+  const chainId = useMemo(() => resolveChainId(env?.VITE_PUBLIC_CHAIN), [env?.VITE_PUBLIC_CHAIN]);
 
   const [book, setBook] = useState<BookModel | null>(null);
   const [orders, setOrders] = useState<Record<string, Record<string, Record<string, OrderModel>>>>({});

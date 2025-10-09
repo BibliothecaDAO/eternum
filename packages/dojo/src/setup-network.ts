@@ -23,6 +23,7 @@ export async function setupNetwork(
     useBurner: boolean;
   },
 ): Promise<SetupNetworkExplicitReturn> {
+  console.log("config", config);
   const provider = new EternumProvider(config.manifest, config.rpcUrl, env.vrfProviderAddress);
 
   const toriiClient = await createClient({
