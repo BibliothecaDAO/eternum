@@ -117,7 +117,8 @@ export const RealmAutomationPanel = ({
 
       if (percentages.resourceToResource > 0) {
         complexInputs.forEach((input) => {
-          if (isAutomationResourceBlocked(input.resource, effectiveEntityType)) return;
+          if (input.resource === ResourcesIds.Wheat) return;
+          if (isAutomationResourceBlocked(input.resource, effectiveEntityType, "input")) return;
           totals.set(
             input.resource,
             (totals.get(input.resource) ?? 0) + percentages.resourceToResource,
@@ -127,7 +128,8 @@ export const RealmAutomationPanel = ({
 
       if (percentages.laborToResource > 0) {
         simpleInputs.forEach((input) => {
-          if (isAutomationResourceBlocked(input.resource, effectiveEntityType)) return;
+          if (input.resource === ResourcesIds.Wheat) return;
+          if (isAutomationResourceBlocked(input.resource, effectiveEntityType, "input")) return;
           totals.set(
             input.resource,
             (totals.get(input.resource) ?? 0) + percentages.laborToResource,
@@ -141,6 +143,7 @@ export const RealmAutomationPanel = ({
 
   const aggregatedUsageList = useMemo(() => {
     return Array.from(aggregatedUsageMap.entries())
+      .filter(([resourceId]) => resourceId !== ResourcesIds.Wheat)
       .map(([resourceId, percent]) => ({ resourceId, percent }))
       .sort((a, b) => a.resourceId - b.resourceId);
   }, [aggregatedUsageMap]);
@@ -148,6 +151,7 @@ export const RealmAutomationPanel = ({
   const aggregatedUsageRecord = useMemo(() => {
     const record: Record<number, number> = {};
     aggregatedUsageMap.forEach((value, key) => {
+      if (key === ResourcesIds.Wheat) return;
       record[key] = value;
     });
     return record;

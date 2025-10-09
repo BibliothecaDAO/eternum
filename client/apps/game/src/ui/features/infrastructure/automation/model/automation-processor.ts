@@ -155,7 +155,7 @@ export const buildRealmProductionPlan = ({
     if (resourceToResource > 0) {
       const inputs = configManager.complexSystemResourceInputs[resourceId] ?? [];
       inputs.forEach((input) => {
-        if (!isAutomationResourceBlocked(input.resource, entityType)) {
+        if (!isAutomationResourceBlocked(input.resource, entityType, "input")) {
           resourcesToTrack.add(input.resource);
         }
       });
@@ -164,7 +164,7 @@ export const buildRealmProductionPlan = ({
     if (laborToResource > 0) {
       const inputs = configManager.simpleSystemResourceInputs[resourceId] ?? [];
       inputs.forEach((input) => {
-        if (!isAutomationResourceBlocked(input.resource, entityType)) {
+        if (!isAutomationResourceBlocked(input.resource, entityType, "input")) {
           resourcesToTrack.add(input.resource);
         }
       });

@@ -4,7 +4,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ProductionModal } from "@/ui/features/settlement";
 import { REALM_PRESETS, RealmPresetId, inferRealmPreset } from "@/utils/automation-presets";
 import { getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
-import { usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
+import { usePlayerOwnedRealmsInfo } from "@bibliothecadao/react";
 import { ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -68,8 +68,6 @@ export const ProductionOverviewPanel = () => {
   );
 
   const playerRealms = usePlayerOwnedRealmsInfo();
-  const playerVillages = usePlayerOwnedVillagesInfo();
-
   const isBlitz = getIsBlitz();
 
   useEffect(() => {
@@ -79,20 +77,11 @@ export const ProductionOverviewPanel = () => {
         entityType: "realm",
       });
     });
-
-    playerVillages.forEach((village) => {
-      upsertRealm(String(village.entityId), {
-        realmName: getStructureName(village.structure, isBlitz).name,
-        entityType: "village",
-      });
-    });
-  }, [isBlitz, playerRealms, playerVillages, upsertRealm]);
+  }, [isBlitz, playerRealms, upsertRealm]);
 
   const realmCards = useMemo<RealmCard[]>(() => {
     const cards: RealmCard[] = [];
-    const allRealms = [...playerRealms, ...playerVillages];
-
-    allRealms.forEach((realm) => {
+    playerRealms.forEach((realm) => {
       const automation = automationRealms[String(realm.entityId)];
       const realmName = getStructureName(realm.structure, isBlitz).name;
       const producedResources = automation?.resources ?? {};
@@ -140,7 +129,7 @@ export const ProductionOverviewPanel = () => {
     });
 
     return cards.sort((a, b) => a.name.localeCompare(b.name));
-  }, [automationRealms, isBlitz, playerRealms, playerVillages]);
+  }, [automationRealms, isBlitz, playerRealms]);
 
   const globalPreset = useMemo<RealmPresetId | "mixed">(() => {
     if (realmCards.length === 0) return "custom";

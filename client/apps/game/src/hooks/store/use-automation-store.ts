@@ -3,17 +3,18 @@ import { calculatePresetAllocations, RealmPresetId } from "@/utils/automation-pr
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
-const GLOBAL_AUTOMATION_BLOCKED_RESOURCES: ResourcesIds[] = [ResourcesIds.Wheat];
-const GLOBAL_AUTOMATION_BLOCKED_RESOURCE_SET = new Set<ResourcesIds>(GLOBAL_AUTOMATION_BLOCKED_RESOURCES);
+const BLOCKED_OUTPUT_RESOURCES: ResourcesIds[] = [ResourcesIds.Wheat, ResourcesIds.Labor];
+const BLOCKED_OUTPUT_RESOURCE_SET = new Set<ResourcesIds>(BLOCKED_OUTPUT_RESOURCES);
 
 export const isAutomationResourceBlocked = (
   resourceId: ResourcesIds,
   entityType: RealmEntityType = "realm",
+  role: "output" | "input" = "output",
 ): boolean => {
-  if (resourceId === ResourcesIds.Labor) {
-    return entityType !== "village";
+  if (role === "input") {
+    return false;
   }
-  return GLOBAL_AUTOMATION_BLOCKED_RESOURCE_SET.has(resourceId);
+  return BLOCKED_OUTPUT_RESOURCE_SET.has(resourceId);
 };
 
 export const MAX_RESOURCE_ALLOCATION_PERCENT = 90;

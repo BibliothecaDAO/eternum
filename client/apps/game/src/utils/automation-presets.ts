@@ -27,10 +27,10 @@ const computeUsageTotals = (
     if (isAutomationResourceBlocked(resourceId, entityType)) return;
 
     const complexInputs = (configManager.complexSystemResourceInputs[resourceId] ?? []).filter(
-      (input) => !isAutomationResourceBlocked(input.resource, entityType),
+      (input) => !isAutomationResourceBlocked(input.resource, entityType, "input"),
     );
     const simpleInputs = (configManager.simpleSystemResourceInputs[resourceId] ?? []).filter(
-      (input) => !isAutomationResourceBlocked(input.resource, entityType),
+      (input) => !isAutomationResourceBlocked(input.resource, entityType, "input"),
     );
 
     if (percentages.resourceToResource > 0) {
@@ -58,7 +58,7 @@ const adjustContribution = (
 ) => {
   if (amount <= 0) return;
   inputs.forEach(({ resource }) => {
-    if (isAutomationResourceBlocked(resource, entityType)) return;
+    if (isAutomationResourceBlocked(resource, entityType, "input")) return;
     const current = totals.get(resource) ?? 0;
     const next = direction === "add" ? current + amount : Math.max(0, current - amount);
     totals.set(resource, Math.min(MAX_RESOURCE_ALLOCATION_PERCENT, next));
@@ -76,7 +76,7 @@ const determineComplexShare = (
 
   let share = presetTarget;
   complexInputs.forEach(({ resource }) => {
-    if (isAutomationResourceBlocked(resource, entityType)) return;
+    if (isAutomationResourceBlocked(resource, entityType, "input")) return;
     const count = usageCounts.get(resource) ?? 1;
     const maxPerResource = Math.floor(MAX_RESOURCE_ALLOCATION_PERCENT / count);
     const headroom = MAX_RESOURCE_ALLOCATION_PERCENT - (usageTotals.get(resource) ?? 0);
@@ -97,7 +97,7 @@ const determineLaborShare = (
 
   let share = presetTarget;
   simpleInputs.forEach(({ resource }) => {
-    if (isAutomationResourceBlocked(resource, entityType)) return;
+    if (isAutomationResourceBlocked(resource, entityType, "input")) return;
     const headroom = MAX_RESOURCE_ALLOCATION_PERCENT - (usageTotals.get(resource) ?? 0);
     share = Math.max(0, Math.min(share, headroom));
   });
@@ -138,7 +138,7 @@ export const calculatePresetAllocations = (
   resources.forEach((setting) => {
     const rawComplexInputs = configManager.complexSystemResourceInputs[setting.resourceId] ?? [];
     rawComplexInputs
-      .filter((input) => !isAutomationResourceBlocked(input.resource, entityType))
+      .filter((input) => !isAutomationResourceBlocked(input.resource, entityType, "input"))
       .forEach(({ resource }) => {
         complexUsageCounts.set(resource, (complexUsageCounts.get(resource) ?? 0) + 1);
       });
@@ -147,9 +147,9 @@ export const calculatePresetAllocations = (
   resources.forEach((setting) => {
     const { resourceId, percentages } = setting;
     const rawComplexInputs = configManager.complexSystemResourceInputs[resourceId] ?? [];
-    const complexInputs = rawComplexInputs.filter((input) => !isAutomationResourceBlocked(input.resource, entityType));
+    const complexInputs = rawComplexInputs.filter((input) => !isAutomationResourceBlocked(input.resource, entityType, "input"));
     const rawSimpleInputs = configManager.simpleSystemResourceInputs[resourceId] ?? [];
-    const simpleInputs = rawSimpleInputs.filter((input) => !isAutomationResourceBlocked(input.resource, entityType));
+    const simpleInputs = rawSimpleInputs.filter((input) => !isAutomationResourceBlocked(input.resource, entityType, "input"));
 
     if (percentages.resourceToResource > 0) {
       adjustContribution(usageTotals, percentages.resourceToResource, complexInputs, "remove", entityType);
@@ -162,9 +162,9 @@ export const calculatePresetAllocations = (
   resources.forEach((setting) => {
     const { resourceId } = setting;
     const rawComplexInputs = configManager.complexSystemResourceInputs[resourceId] ?? [];
-    const complexInputs = rawComplexInputs.filter((input) => !isAutomationResourceBlocked(input.resource, entityType));
+    const complexInputs = rawComplexInputs.filter((input) => !isAutomationResourceBlocked(input.resource, entityType, "input"));
     const rawSimpleInputs = configManager.simpleSystemResourceInputs[resourceId] ?? [];
-    const simpleInputs = rawSimpleInputs.filter((input) => !isAutomationResourceBlocked(input.resource, entityType));
+    const simpleInputs = rawSimpleInputs.filter((input) => !isAutomationResourceBlocked(input.resource, entityType, "input"));
 
     const hasComplex = rawComplexInputs.length > 0;
     const hasSimple = rawSimpleInputs.length > 0;

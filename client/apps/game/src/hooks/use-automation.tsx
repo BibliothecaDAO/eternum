@@ -5,7 +5,7 @@ import {
   PROCESS_INTERVAL_MS,
 } from "@/ui/features/infrastructure/automation/model/automation-processor";
 import { useAutomationStore } from "./store/use-automation-store";
-import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
+import { useDojo, usePlayerOwnedRealmsInfo } from "@bibliothecadao/react";
 import { getStructureName, getIsBlitz } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef } from "react";
@@ -31,28 +31,30 @@ export const useAutomation = () => {
   const recordExecution = useAutomationStore((state) => state.recordExecution);
   const ensureResourceConfig = useAutomationStore((state) => state.ensureResourceConfig);
   const upsertRealm = useAutomationStore((state) => state.upsertRealm);
+  const removeRealm = useAutomationStore((state) => state.removeRealm);
   const processingRef = useRef(false);
   const processRealmsRef = useRef<() => Promise<boolean>>(async () => false);
   const setNextRunTimestampRef = useRef(setNextRunTimestamp);
   const playerRealms = usePlayerOwnedRealmsInfo();
-  const playerVillages = usePlayerOwnedVillagesInfo();
   const realmResourcesSignatureRef = useRef<string>("");
 
   useEffect(() => {
     const blitzMode = getIsBlitz();
+    const activeRealmIds = new Set(playerRealms.map((realm) => String(realm.entityId)));
+
     playerRealms.forEach((realm) => {
       upsertRealm(String(realm.entityId), {
         realmName: getStructureName(realm.structure, blitzMode).name,
         entityType: "realm",
       });
     });
-    playerVillages.forEach((village) => {
-      upsertRealm(String(village.entityId), {
-        realmName: getStructureName(village.structure, blitzMode).name,
-        entityType: "village",
-      });
+
+    Object.entries(useAutomationStore.getState().realms).forEach(([realmId, config]) => {
+      if (config.entityType !== "realm" || !activeRealmIds.has(realmId)) {
+        removeRealm(realmId);
+      }
     });
-  }, [playerRealms, playerVillages, upsertRealm]);
+  }, [playerRealms, removeRealm, upsertRealm]);
 
   const processRealms = useCallback(async (): Promise<boolean> => {
     if (processingRef.current) return false;
@@ -67,8 +69,14 @@ export const useAutomation = () => {
       return false;
     }
 
-    const realmList = Object.values(realms);
+    const realmList = Object.values(realms).filter((realm) => realm.entityType === "realm");
+    console.debug("[Automation] processRealms invoked", {
+      timestamp: Date.now(),
+      totalTrackedRealms: Object.keys(realms).length,
+      activeRealmCount: realmList.length,
+    });
     if (realmList.length === 0) {
+      console.debug("[Automation] No eligible realms found for automation run.");
       return false;
     }
 
@@ -121,6 +129,11 @@ export const useAutomation = () => {
 
           const summary = buildExecutionSummary(plan, Date.now());
           recordExecution(realmConfig.realmId, summary);
+          console.debug("[Automation] Execution complete", {
+            realmId: realmConfig.realmId,
+            executedAt: summary.executedAt,
+            outputsByResource: summary.outputsByResource,
+          });
           anyExecuted = true;
 
           const producedResources = Object.entries(plan.outputsByResource);
@@ -142,6 +155,10 @@ export const useAutomation = () => {
       }
     } finally {
       processingRef.current = false;
+      console.debug("[Automation] processRealms finished", {
+        executed: anyExecuted,
+        timestamp: Date.now(),
+      });
     }
 
     return anyExecuted;
@@ -157,6 +174,7 @@ export const useAutomation = () => {
 
   useEffect(() => {
     const signature = Object.entries(realms)
+      .filter(([, realm]) => realm.entityType === "realm")
       .map(([realmId, realm]) => {
         const resourceKeys = Object.keys(realm.resources ?? {}).sort().join(",");
         return `${realmId}:${resourceKeys}`;
@@ -172,9 +190,13 @@ export const useAutomation = () => {
 
   useEffect(() => {
     const runAutomation = async () => {
+      console.debug("[Automation] Scheduled run fired", { timestamp: Date.now() });
       const processed = await processRealmsRef.current();
       if (processed) {
         setNextRunTimestampRef.current(Date.now() + PROCESS_INTERVAL_MS);
+        console.debug("[Automation] Next run scheduled", {
+          nextRunTimestamp: Date.now() + PROCESS_INTERVAL_MS,
+        });
       }
     };
 

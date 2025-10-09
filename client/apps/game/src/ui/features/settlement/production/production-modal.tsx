@@ -1,7 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { ModalContainer } from "@/ui/shared";
-import { usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
+import { usePlayerOwnedRealmsInfo } from "@bibliothecadao/react";
 import { ID, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
 
@@ -12,19 +12,19 @@ const ProductionSidebar = lazy(() =>
 const ProductionBody = lazy(() => import("./production-body").then((module) => ({ default: module.ProductionBody })));
 
 const ProductionContainer = ({
-  playerRealmsAndVillages,
+  playerRealms,
   preSelectedResource,
 }: {
-  playerRealmsAndVillages: RealmInfo[];
+  playerRealms: RealmInfo[];
   preSelectedResource?: ResourcesIds;
 }) => {
   const initialRealm = useMemo(() => {
     const structureEntityId = useUIStore.getState().structureEntityId;
-    const selectedRealm = playerRealmsAndVillages.find((r) => r.entityId === structureEntityId);
+    const selectedRealm = playerRealms.find((r) => r.entityId === structureEntityId);
     return selectedRealm;
-  }, [playerRealmsAndVillages]);
+  }, [playerRealms]);
 
-  const [selectedRealm, setSelectedRealm] = useState<RealmInfo | undefined>(initialRealm || playerRealmsAndVillages[0]);
+  const [selectedRealm, setSelectedRealm] = useState<RealmInfo | undefined>(initialRealm || playerRealms[0]);
   const [selectedResource, setSelectedResource] = useState<ResourcesIds | null>(preSelectedResource ?? null);
 
   useEffect(() => {
@@ -34,31 +34,31 @@ const ProductionContainer = ({
 
   const handleSelectRealm = useCallback(
     (id: ID) => {
-      const realm = playerRealmsAndVillages.find((r) => r.entityId === id);
+      const realm = playerRealms.find((r) => r.entityId === id);
       setSelectedRealm(realm);
       setSelectedResource(null);
     },
-    [playerRealmsAndVillages],
+    [playerRealms],
   );
 
   const handleManageResource = useCallback(
     (realmId: ID, resource: ResourcesIds) => {
-      const realm = playerRealmsAndVillages.find((r) => r.entityId === realmId) || selectedRealm;
+      const realm = playerRealms.find((r) => r.entityId === realmId) || selectedRealm;
       if (realm) {
         setSelectedRealm(realm);
         setSelectedResource(resource);
       }
     },
-    [playerRealmsAndVillages, selectedRealm],
+    [playerRealms, selectedRealm],
   );
 
   return (
     <div className="production-modal-selector container mx-auto grid grid-cols-12 bg-dark-wood h-full row-span-12 rounded-2xl relative">
       <div className="col-span-4 p-4 pb-36 row-span-10 overflow-y-auto panel-wood-right">
         <Suspense fallback={<LoadingAnimation />}>
-          {playerRealmsAndVillages.length > 0 && (
+          {playerRealms.length > 0 && (
             <ProductionSidebar
-              realms={playerRealmsAndVillages}
+              realms={playerRealms}
               selectedRealmEntityId={selectedRealm?.entityId || 0}
               onSelectRealm={handleSelectRealm}
               onSelectResource={handleManageResource}
@@ -83,16 +83,11 @@ const ProductionContainer = ({
 
 export const ProductionModal = ({ preSelectedResource }: { preSelectedResource?: ResourcesIds }) => {
   const playerRealms = usePlayerOwnedRealmsInfo();
-  const playerVillages = usePlayerOwnedVillagesInfo();
-
-  const playerRealmsAndVillages = useMemo(() => {
-    return [...playerRealms, ...playerVillages];
-  }, [playerRealms, playerVillages]);
 
   return (
     <ModalContainer size="full">
       <ProductionContainer
-        playerRealmsAndVillages={playerRealmsAndVillages}
+        playerRealms={playerRealms}
         preSelectedResource={preSelectedResource}
       />
     </ModalContainer>
