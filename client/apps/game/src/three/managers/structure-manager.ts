@@ -1024,7 +1024,10 @@ export class StructureManager {
             effectsToAdd.push({ relicNumber: newEffect.relicNumber, effect: newEffect.effect, fx });
           }
         } catch (error) {
-          console.error(`Failed to add relic effect ${newEffect.relicNumber} for structure ${normalizedEntityId}:`, error);
+          console.error(
+            `Failed to add relic effect ${newEffect.relicNumber} for structure ${normalizedEntityId}:`,
+            error,
+          );
         }
       }
     }

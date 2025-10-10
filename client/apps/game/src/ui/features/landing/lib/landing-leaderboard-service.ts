@@ -101,10 +101,7 @@ const decodePlayerName = (value: string | null): string | null => {
   }
 };
 
-const transformLandingLeaderboardRow = (
-  rawRow: PlayerLeaderboardRow,
-  rank: number,
-): PlayerLeaderboardData | null => {
+const transformLandingLeaderboardRow = (rawRow: PlayerLeaderboardRow, rank: number): PlayerLeaderboardData | null => {
   const row = rawRow as unknown as Record<string, unknown>;
 
   const rawAddress =
@@ -209,8 +206,5 @@ export const fetchLandingLeaderboard = async (
     }
   });
 
-  return entries
-    .sort((a, b) => b.points - a.points)
-    .map((entry, index) => ({ ...entry, rank: index + 1 }));
+  return entries.sort((a, b) => b.points - a.points).map((entry, index) => ({ ...entry, rank: index + 1 }));
 };
-
