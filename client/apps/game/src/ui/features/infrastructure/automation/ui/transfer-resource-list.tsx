@@ -69,11 +69,15 @@ export const TransferResourceList: React.FC<TransferResourceListProps> = ({
 }) => {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
 
-  const availableResourceItems = useMemo(() => availableResources.map((resource) => ({
-    id: resource.id,
-    label: resource.trait,
-    balance: resource.balance,
-  })), [availableResources]);
+  const availableResourceItems = useMemo(
+    () =>
+      availableResources.map((resource) => ({
+        id: resource.id,
+        label: resource.trait,
+        balance: resource.balance,
+      })),
+    [availableResources],
+  );
 
   const handleAddClick = () => {
     if (!newResourceId || disabled) {

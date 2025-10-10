@@ -648,5 +648,4 @@ export class SqlApi {
 
     return sortedEntries.slice(safeOffset, safeOffset + safeLimit);
   }
-
 }

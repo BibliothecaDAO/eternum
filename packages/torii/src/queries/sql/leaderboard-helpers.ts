@@ -38,9 +38,7 @@ export interface FetchLeaderboardSourceDataOptions {
   baseUrl: string;
   effectiveLimit: number;
   defaultHyperstructureRadius: number;
-  fetchHyperstructuresWithRealmCount: (
-    radius: number,
-  ) => Promise<HyperstructureRealmCountDataRaw[]>;
+  fetchHyperstructuresWithRealmCount: (radius: number) => Promise<HyperstructureRealmCountDataRaw[]>;
 }
 
 export const sanitizeLeaderboardPagination = (limit: number, offset: number): LeaderboardPagination => {
@@ -60,10 +58,10 @@ export const fetchLeaderboardSourceData = async ({
   defaultHyperstructureRadius,
   fetchHyperstructuresWithRealmCount,
 }: FetchLeaderboardSourceDataOptions): Promise<LeaderboardSourceData> => {
-  const leaderboardQuery = LEADERBOARD_QUERIES.PLAYER_LEADERBOARD.replace(
-    "{limit}",
-    effectiveLimit.toString(),
-  ).replace("{offset}", "0");
+  const leaderboardQuery = LEADERBOARD_QUERIES.PLAYER_LEADERBOARD.replace("{limit}", effectiveLimit.toString()).replace(
+    "{offset}",
+    "0",
+  );
 
   const [
     registeredRows,
@@ -105,9 +103,7 @@ export interface LeaderboardConfig {
   seasonEnd: number;
 }
 
-const parseLeaderboardConfig = (
-  configRow?: HyperstructureLeaderboardConfigRow,
-): LeaderboardConfig | null => {
+const parseLeaderboardConfig = (configRow?: HyperstructureLeaderboardConfigRow): LeaderboardConfig | null => {
   if (!configRow) {
     return null;
   }

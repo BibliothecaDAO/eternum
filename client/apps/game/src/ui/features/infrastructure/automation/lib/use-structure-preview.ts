@@ -1,7 +1,14 @@
 import { useMemo } from "react";
 
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
-import { divideByPrecision, getStructureRelicEffects, getStructureTypeName, getEntityIdFromKeys, getIsBlitz, ResourceManager } from "@bibliothecadao/eternum";
+import {
+  divideByPrecision,
+  getStructureRelicEffects,
+  getStructureTypeName,
+  getEntityIdFromKeys,
+  getIsBlitz,
+  ResourceManager,
+} from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { getResourceTiers, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
@@ -42,8 +49,7 @@ const toMinutes = (seconds: number | null | undefined) => {
   return Math.ceil(seconds / 60);
 };
 
-const sortByBalance = (resources: StructurePreviewResource[]) =>
-  [...resources].sort((a, b) => b.balance - a.balance);
+const sortByBalance = (resources: StructurePreviewResource[]) => [...resources].sort((a, b) => b.balance - a.balance);
 
 export const useStructurePreview = (structure: SelectedEntity | null): StructurePreview => {
   const {

@@ -56,11 +56,7 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
 
   return (
     <div
-      className={clsx(
-        "relative inline-flex items-center justify-center",
-        wrapperSize,
-        onClick ? "cursor-pointer" : "",
-      )}
+      className={clsx("relative inline-flex items-center justify-center", wrapperSize, onClick ? "cursor-pointer" : "")}
       onClick={onClick}
     >
       {shouldPulse && (

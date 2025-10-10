@@ -30,12 +30,15 @@ type AutomationTransferFormAction =
   | { type: "ADD_RESOURCE"; payload: SelectedResource }
   | { type: "REMOVE_RESOURCE"; payload: ResourcesIds }
   | { type: "REORDER_RESOURCES"; payload: { fromIndex: number; toIndex: number } }
-  | { type: "LOAD_FROM_ORDER"; payload: {
-      resources: SelectedResource[];
-      transferMode: TransferMode;
-      transferInterval?: number;
-      transferThreshold?: number;
-    } }
+  | {
+      type: "LOAD_FROM_ORDER";
+      payload: {
+        resources: SelectedResource[];
+        transferMode: TransferMode;
+        transferInterval?: number;
+        transferThreshold?: number;
+      };
+    }
   | { type: "RESET" }
   | { type: "SET_ERROR"; payload: string }
   | { type: "CLEAR_ERROR" };
@@ -125,11 +128,11 @@ const automationTransferReducer = (
         transferMode: action.payload.transferMode,
         transferInterval:
           action.payload.transferMode === TransferMode.Recurring
-            ? action.payload.transferInterval ?? INITIAL_STATE.transferInterval
+            ? (action.payload.transferInterval ?? INITIAL_STATE.transferInterval)
             : state.transferInterval,
         transferThreshold:
           action.payload.transferMode !== TransferMode.Recurring
-            ? action.payload.transferThreshold ?? INITIAL_STATE.transferThreshold
+            ? (action.payload.transferThreshold ?? INITIAL_STATE.transferThreshold)
             : state.transferThreshold,
         resources: action.payload.resources,
         newResourceId: INITIAL_STATE.newResourceId,
