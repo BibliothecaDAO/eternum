@@ -59,6 +59,7 @@ import {
 import { Account, AccountInterface } from "starknet";
 import { Color, Group, InstancedBufferAttribute, Matrix4, Object3D, Raycaster, Vector2, Vector3 } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
+import { env } from "../../../env";
 import { FXManager } from "../managers/fx-manager";
 import { HoverLabelManager } from "../managers/hover-label-manager";
 import { QuestManager } from "../managers/quest-manager";
@@ -79,6 +80,7 @@ import { openStructureContextMenu } from "./context-menu/structure-context-menu"
 //const dummyObject = new Object3D();
 const dummyVector = new Vector3();
 const dummy = new Object3D();
+const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
 export default class WorldmapScene extends HexagonScene {
   private chunkSize = 8; // Size of each chunk
@@ -103,7 +105,7 @@ export default class WorldmapScene extends HexagonScene {
   private armyManager: ArmyManager;
   private pendingArmyMovements: Set<ID> = new Set();
   private structureManager: StructureManager;
-  private memoryMonitor: MemoryMonitor;
+  private memoryMonitor?: MemoryMonitor;
   private chestManager: ChestManager;
   private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
   // normalized positions and if they are allied or not
@@ -195,12 +197,14 @@ export default class WorldmapScene extends HexagonScene {
     this.resourceFXManager = new ResourceFXManager(this.scene, 1.2);
 
     // Initialize memory monitor for worldmap operations
-    this.memoryMonitor = new MemoryMonitor({
-      spikeThresholdMB: 30, // Higher threshold for world operations
-      onMemorySpike: (spike) => {
-        console.warn(`🗺️  WorldMap Memory Spike: +${spike.increaseMB.toFixed(1)}MB in ${spike.context}`);
-      },
-    });
+    if (MEMORY_MONITORING_ENABLED) {
+      this.memoryMonitor = new MemoryMonitor({
+        spikeThresholdMB: 30, // Higher threshold for world operations
+        onMemorySpike: (spike) => {
+          console.warn(`🗺️  WorldMap Memory Spike: +${spike.increaseMB.toFixed(1)}MB in ${spike.context}`);
+        },
+      });
+    }
 
     this.GUIFolder.add(this, "moveCameraToURLLocation");
 
@@ -221,6 +225,7 @@ export default class WorldmapScene extends HexagonScene {
       this.renderChunkSize,
       this.armyLabelsGroup,
       this,
+      this.dojo,
       (entityId: ID) => this.applyPendingRelicEffects(entityId),
       (entityId: ID) => this.clearPendingRelicEffects(entityId),
     );
@@ -233,6 +238,7 @@ export default class WorldmapScene extends HexagonScene {
       this.structureLabelsGroup,
       this,
       this.fxManager,
+      this.dojo,
       (entityId: ID) => this.applyPendingRelicEffects(entityId),
       (entityId: ID) => this.clearPendingRelicEffects(entityId),
     );
@@ -1025,6 +1031,12 @@ export default class WorldmapScene extends HexagonScene {
       const effectType = isExplored ? "travel" : "compass";
       const effectLabel = isExplored ? "Traveling" : "Exploring";
 
+      const existingEffect = this.travelEffects.get(key);
+      if (existingEffect) {
+        existingEffect();
+        this.travelEffects.delete(key);
+      }
+
       const { end } = this.fxManager.playFxAtCoords(
         effectType,
         position.x,
@@ -1050,7 +1062,7 @@ export default class WorldmapScene extends HexagonScene {
       this.pendingArmyMovements.add(selectedEntityId);
 
       // Monitor memory usage before army movement action
-      this.memoryMonitor.getCurrentStats(`worldmap-moveArmy-start-${selectedEntityId}`);
+      this.memoryMonitor?.getCurrentStats(`worldmap-moveArmy-start-${selectedEntityId}`);
 
       armyActionManager
         .moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick)
@@ -1058,7 +1070,7 @@ export default class WorldmapScene extends HexagonScene {
           // Transaction submitted successfully, cleanup visual effects
           cleanup();
           // Monitor memory usage after army movement completion
-          this.memoryMonitor.getCurrentStats(`worldmap-moveArmy-complete-${selectedEntityId}`);
+          this.memoryMonitor?.getCurrentStats(`worldmap-moveArmy-complete-${selectedEntityId}`);
         })
         .catch((e) => {
           // Transaction failed, remove from pending and cleanup

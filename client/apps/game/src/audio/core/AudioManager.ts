@@ -10,6 +10,7 @@ export class AudioManager {
   private loadedAudio: Map<string, AudioBuffer> = new Map();
   private activeSources: Set<AudioBufferSourceNode> = new Set();
   private musicSources: Set<AudioBufferSourceNode> = new Set(); // Track music sources separately
+  private musicGainNodes: Map<AudioBufferSourceNode, GainNode> = new Map();
   private poolManager: AudioPoolManager | null = null;
   private state: AudioState;
   private static readonly STORAGE_KEY = "ETERNUM_AUDIO_SETTINGS";
@@ -190,17 +191,31 @@ export class AudioManager {
       source.loop = options.loop ?? asset.loop;
     }
 
+    const categoryGain = this.categoryGainNodes.get(asset.category);
+    if (!categoryGain) {
+      throw new Error(`Missing gain node for category ${asset.category}`);
+    }
+
     const gainNode = this.audioContext.createGain();
     const finalVolume = (options.volume ?? asset.volume) * this.state.categoryVolumes[asset.category];
-    gainNode.gain.value = finalVolume;
+    const now = this.audioContext.currentTime;
+
+    if (options.fadeInMs && options.fadeInMs > 0) {
+      const rampDuration = options.fadeInMs / 1000;
+      gainNode.gain.setValueAtTime(0, now);
+      gainNode.gain.linearRampToValueAtTime(finalVolume, now + rampDuration);
+    } else {
+      gainNode.gain.setValueAtTime(finalVolume, now);
+    }
 
     source.connect(gainNode);
-    gainNode.connect(this.categoryGainNodes.get(asset.category)!);
+    gainNode.connect(categoryGain);
 
     source.onended = () => {
       this.activeSources.delete(source);
       if (asset.category === AudioCategory.MUSIC) {
         this.musicSources.delete(source);
+        this.musicGainNodes.delete(source);
       }
       options.onComplete?.();
     };
@@ -208,6 +223,7 @@ export class AudioManager {
     this.activeSources.add(source);
     if (asset.category === AudioCategory.MUSIC) {
       this.musicSources.add(source);
+      this.musicGainNodes.set(source, gainNode);
     }
 
     source.start();
@@ -217,9 +233,22 @@ export class AudioManager {
 
   stop(source: AudioBufferSourceNode): void {
     if (this.activeSources.has(source)) {
-      source.stop();
+      try {
+        source.stop();
+      } catch (error) {
+        console.warn("Failed to stop audio source", error);
+      }
       this.activeSources.delete(source);
       this.musicSources.delete(source);
+      const gainNode = this.musicGainNodes.get(source);
+      if (gainNode) {
+        try {
+          gainNode.disconnect();
+        } catch (error) {
+          console.warn("Failed to disconnect music gain node", error);
+        }
+        this.musicGainNodes.delete(source);
+      }
     }
   }
 
@@ -231,14 +260,61 @@ export class AudioManager {
         // Ignore errors if source already stopped
       }
       this.activeSources.delete(source);
+      const gainNode = this.musicGainNodes.get(source);
+      if (gainNode) {
+        try {
+          gainNode.disconnect();
+        } catch (error) {
+          console.warn("Failed to disconnect music gain node", error);
+        }
+        this.musicGainNodes.delete(source);
+      }
     });
     this.musicSources.clear();
+    this.musicGainNodes.clear();
   }
 
   stopAll(): void {
     this.activeSources.forEach((source) => source.stop());
     this.activeSources.clear();
     this.musicSources.clear();
+    this.musicGainNodes.forEach((gainNode) => {
+      try {
+        gainNode.disconnect();
+      } catch (error) {
+        console.warn("Failed to disconnect music gain node", error);
+      }
+    });
+    this.musicGainNodes.clear();
+  }
+
+  async fadeOutAndStopMusic(source: AudioBufferSourceNode, durationMs = 500): Promise<void> {
+    const gainNode = this.musicGainNodes.get(source);
+
+    if (!this.audioContext || !gainNode) {
+      this.stop(source);
+      return;
+    }
+
+    const durationSeconds = Math.max(durationMs, 0) / 1000;
+    const now = this.audioContext.currentTime;
+
+    gainNode.gain.cancelScheduledValues(now);
+    gainNode.gain.setValueAtTime(gainNode.gain.value, now);
+    gainNode.gain.linearRampToValueAtTime(0, now + durationSeconds);
+
+    await new Promise<void>((resolve) => {
+      const timeout = setTimeout(() => {
+        resolve();
+      }, durationMs + 60);
+
+      source.onended = () => {
+        clearTimeout(timeout);
+        resolve();
+      };
+    });
+
+    this.stop(source);
   }
 
   setMasterVolume(volume: number): void {
@@ -310,6 +386,7 @@ export class AudioManager {
     this.loadedAudio.clear();
     this.audioAssets.clear();
     this.musicSources.clear();
+    this.musicGainNodes.clear();
     AudioManager.instance = null as any;
   }
 }

@@ -18,6 +18,7 @@ export { usePlayResourceSound } from "./hooks/usePlayResourceSound";
 
 // Components
 export { useMusicPlayer, ScrollingTrackName } from "./components/MusicPlayer";
+export { MusicRouterProvider, useBackgroundMusic } from "./providers/music-router-provider";
 
 // Debug utilities
 export { AudioDebugger } from "./utils/debug";

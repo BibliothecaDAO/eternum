@@ -32,12 +32,12 @@ type RightNavigationContext = {
   isBlitz: boolean;
 };
 
-const DEFAULT_BUTTON_SIZE: CircleButtonProps["size"] = "xl";
+const DEFAULT_BUTTON_SIZE: CircleButtonProps["size"] = "lg";
 
 const MIN_PANEL_WIDTH = 460;
 const MAX_PANEL_WIDTH = 1200;
 const STORY_MIN_PANEL_WIDTH = 820;
-const OFFSCREEN_TRANSLATION_RATIO = 0.86;
+const OFFSCREEN_TRANSLATION_RATIO = 0.94;
 const RESIZE_STORAGE_KEY = "right-navigation-width";
 const RESIZE_HINT_STORAGE_KEY = "hide-resize-hint";
 

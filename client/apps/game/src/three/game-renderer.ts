@@ -40,10 +40,13 @@ import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import Stats from "three/examples/jsm/libs/stats.module.js";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
+import { env } from "../../env";
 import { SceneName } from "./types";
 import { transitionDB } from "./utils/";
 import { MaterialPool } from "./utils/material-pool";
 import { MemoryMonitor, MemorySpike } from "./utils/memory-monitor";
+
+const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
 export default class GameRenderer {
   private labelRenderer!: CSS2DRenderer;
@@ -58,8 +61,8 @@ export default class GameRenderer {
 
   // Stats and Monitoring
   private stats!: Stats;
-  private memoryMonitor!: MemoryMonitor;
-  private memoryStatsElement!: HTMLDivElement;
+  private memoryMonitor?: MemoryMonitor;
+  private memoryStatsElement?: HTMLDivElement;
 
   // Camera settings
   private cameraDistance = 10; // Maintain the same distance
@@ -230,6 +233,10 @@ export default class GameRenderer {
   }
 
   public initMemoryMonitoring() {
+    if (!MEMORY_MONITORING_ENABLED) {
+      return;
+    }
+
     // Check if memory API is supported
     if (!MemoryMonitor.isMemoryAPISupported()) {
       console.warn("Memory monitoring not supported in this browser");
@@ -438,6 +445,7 @@ export default class GameRenderer {
 
     if (targetScene === this.sceneManager.getCurrentScene() && targetScene === SceneName.WorldMap) {
       this.sceneManager.moveCameraForScene();
+      this.transitionManager?.fadeIn();
     } else {
       this.sceneManager.switchScene(targetScene);
     }

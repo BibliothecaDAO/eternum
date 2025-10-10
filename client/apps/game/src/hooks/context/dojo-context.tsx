@@ -1,18 +1,16 @@
 import { ReactNode, useContext, useMemo } from "react";
 
-import { useControllerAccount } from "@/hooks/context/use-controller-account";
-import { useDojoAccessGate } from "@/hooks/context/use-dojo-access-gate";
 import { displayAddress } from "@/ui/utils/utils";
 import { SetupResult } from "@bibliothecadao/dojo";
 import { DojoContext } from "@bibliothecadao/react";
-import { Account, RpcProvider } from "starknet";
+import { Account, AccountInterface, RpcProvider } from "starknet";
 
 import { env } from "../../../env";
 
 interface DojoProviderProps {
   children: ReactNode;
   value: SetupResult;
-  backgroundImage: string;
+  account: Account | AccountInterface;
 }
 
 const requiredEnvs: Array<keyof typeof env> = [
@@ -39,7 +37,7 @@ const createMasterAccount = (rpcProvider: RpcProvider) =>
     signer: env.VITE_PUBLIC_MASTER_PRIVATE_KEY,
   });
 
-export const DojoProvider = ({ children, value, backgroundImage }: DojoProviderProps) => {
+export const DojoProvider = ({ children, value, account }: DojoProviderProps) => {
   const currentValue = useContext(DojoContext);
   if (currentValue) {
     throw new Error("DojoProvider can only be used once");
@@ -47,19 +45,7 @@ export const DojoProvider = ({ children, value, backgroundImage }: DojoProviderP
 
   const rpcProvider = useMemo(() => createRpcProvider(), []);
   const masterAccount = useMemo(() => createMasterAccount(rpcProvider), [rpcProvider]);
-  const controllerAccount = useControllerAccount();
-  const gateState = useDojoAccessGate({
-    backgroundImage,
-    setupResult: value,
-    controllerAccount: controllerAccount ?? null,
-  });
-
-  if (gateState.type !== "ready") {
-    return gateState.fallback;
-  }
-
-  const resolvedAccount = gateState.account;
-  const accountAddress = "address" in resolvedAccount ? resolvedAccount.address : "";
+  const accountAddress = "address" in account ? account.address : "";
 
   return (
     <DojoContext.Provider
@@ -67,7 +53,7 @@ export const DojoProvider = ({ children, value, backgroundImage }: DojoProviderP
         ...value,
         masterAccount,
         account: {
-          account: resolvedAccount,
+          account,
           accountDisplay: displayAddress(accountAddress ?? ""),
         },
       }}
