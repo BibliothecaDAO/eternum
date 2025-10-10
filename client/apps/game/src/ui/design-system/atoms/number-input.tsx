@@ -28,7 +28,7 @@ export const NumberInput = ({
   arrows = true,
   allowDecimals = false,
   onFocus,
-  onBlur,
+  onBlur: onBlurProp,
   disabled = false,
 }: NumberInputProps) => {
   const formatNumber = (num: number): string => {
@@ -72,10 +72,13 @@ export const NumberInput = ({
         className="button-wood w-full appearance-none !outline-none h-full text-center bg-transparent text-gold flex-grow"
         value={displayValue}
         onFocus={onFocus}
-        onBlur={onBlur}
         disabled={disabled}
         onChange={(e) => {
           const inputValue = e.target.value;
+          if (inputValue.trim() === '') {
+            setDisplayValue('');
+            return;
+          }
           if (allowDecimals) {
             const match = inputValue.match(/[+-]?([0-9,]+([.][0-9]*)?|[.][0-9]+)/);
             if (match) {
@@ -98,6 +101,12 @@ export const NumberInput = ({
               onChange(min);
             }
           }
+        }}
+        onBlur={() => {
+          if (displayValue === '') {
+            setDisplayValue(formatNumber(Math.max(value, min)));
+          }
+          onBlurProp?.();
         }}
       />
 
