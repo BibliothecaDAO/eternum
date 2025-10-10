@@ -8,7 +8,7 @@ import {
 import type { ClientComponents, Structure } from "@bibliothecadao/types";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 
-import type { EntityIdFormat, TransferEntityOption } from "./transfer-types";
+import type { EntityIdFormat, SelectedEntity, TransferEntityOption } from "./transfer-types";
 
 export const isTransferAllowed = (
   sourceCategory: StructureType,
@@ -45,3 +45,9 @@ export const withEntityDisplayData = (
     accountName: components ? getAddressName(entity.owner, components) : undefined,
   };
 };
+
+export const toSelectedEntity = (entity: TransferEntityOption): SelectedEntity => ({
+  name: entity.name,
+  entityId: entity.entityId,
+  category: entity.category,
+});

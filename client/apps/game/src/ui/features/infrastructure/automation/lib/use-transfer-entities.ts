@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 
 import { sqlApi } from "@/services/api";
 import { normalizeDiacriticalMarks } from "@/ui/utils/utils";
@@ -155,6 +155,38 @@ export const useTransferEntities = ({
     const otherGroups = makeEntityGroups(categorizedOtherStructures, "Other", true);
     return [...yourGroups, ...otherGroups];
   }, [categorizedOtherStructures, categorizedPlayerStructures, makeEntityGroups]);
+
+  useEffect(() => {
+    if (sourceEntityType) {
+      return;
+    }
+
+    const preferredSource = sourceEntitiesListWithAccountNames.find(
+      ({ name, entities }) => name === "Your Realms" && entities.length > 0,
+    );
+    const fallbackSource = sourceEntitiesListWithAccountNames.find(({ entities }) => entities.length > 0);
+    const targetValue = preferredSource ?? fallbackSource;
+
+    if (targetValue) {
+      setSourceEntityType(targetValue.name);
+    }
+  }, [sourceEntityType, sourceEntitiesListWithAccountNames]);
+
+  useEffect(() => {
+    if (destinationEntityType) {
+      return;
+    }
+
+    const preferredDestination = entitiesListWithAccountNames.find(
+      ({ name, entities }) => name === "Your Realms" && entities.length > 0,
+    );
+    const fallbackDestination = entitiesListWithAccountNames.find(({ entities }) => entities.length > 0);
+    const targetValue = preferredDestination ?? fallbackDestination;
+
+    if (targetValue) {
+      setDestinationEntityType(targetValue.name);
+    }
+  }, [destinationEntityType, entitiesListWithAccountNames]);
 
   const entityTypeOptions: EntityTypeOption[] = useMemo(
     () =>
