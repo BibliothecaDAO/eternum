@@ -6,7 +6,7 @@ import {
 } from "@/ui/features/infrastructure/automation/model/automation-processor";
 import { useAutomationStore } from "./store/use-automation-store";
 import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
-import { getStructureName, getIsBlitz, getBlockTimestamp } from "@bibliothecadao/eternum";
+import { getStructureName, getIsBlitz, getBlockTimestamp, ResourceManager } from "@bibliothecadao/eternum";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
@@ -96,11 +96,30 @@ export const useAutomation = () => {
       const { currentDefaultTick } = getBlockTimestamp();
 
       for (const realmConfig of realmList) {
-        const plan = buildRealmProductionPlan({ realmConfig, components, currentTick: currentDefaultTick });
+        // Ensure resource configs exist for any active production before planning,
+        // so initial allocations follow the realm preset instead of defaulting to labor.
+        try {
+          const realmIdNum = Number(realmConfig.realmId);
+          if (Number.isFinite(realmIdNum) && realmIdNum > 0) {
+            const resourceManager = new ResourceManager(components, realmIdNum);
+            const resourceComponent = resourceManager.getResource();
+            if (resourceComponent) {
+              const ALL_RESOURCE_IDS = Object.values(ResourcesIds).filter(
+                (value) => typeof value === "number",
+              ) as ResourcesIds[];
+              for (const resourceId of ALL_RESOURCE_IDS) {
+                const prod = ResourceManager.balanceAndProduction(resourceComponent, resourceId).production;
+                if (prod && prod.building_count > 0) {
+                  ensureResourceConfig(realmConfig.realmId, resourceId);
+                }
+              }
+            }
+          }
+        } catch (_e) {
+          // Quietly continue; planning below still handles defaults
+        }
 
-        plan.evaluatedResourceIds.forEach((resourceId) => {
-          ensureResourceConfig(realmConfig.realmId, resourceId);
-        });
+        const plan = buildRealmProductionPlan({ realmConfig, components, currentTick: currentDefaultTick });
         if (!planHasExecutableCalls(plan)) {
           continue;
         }
