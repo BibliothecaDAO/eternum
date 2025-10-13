@@ -1,5 +1,5 @@
 import { getCollectionByAddress } from "@/config";
-import { trimAddress } from "@/lib/utils";
+import { padAddress, trimAddress } from "@/lib/utils";
 import { RealmMetadata } from "@/types";
 import { calculateUnregisteredShareholderPointsCache, type ContractAddressAndAmount } from "@/utils/leaderboard";
 import type { ContractAddress } from "@bibliothecadao/types";
@@ -98,7 +98,7 @@ interface CollectionTrait {
  * Fetch all unique traits for a collection efficiently without loading full token data
  */
 export async function fetchCollectionTraits(contractAddress: string): Promise<Record<string, string[]>> {
-  const query = QUERIES.COLLECTION_TRAITS.replace("{contractAddress}", contractAddress);
+  const query = QUERIES.COLLECTION_TRAITS.replace("{contractAddress}", padAddress(contractAddress));
   const rawData = await fetchSQL<CollectionTrait[]>(query);
 
   const traitsMap: Record<string, Set<string>> = {};
@@ -141,7 +141,7 @@ export async function fetchCollectionStatistics(contractAddress: string): Promis
   }
   const query = QUERIES.COLLECTION_STATISTICS.replaceAll("{collectionId}", collectionId.toString()).replaceAll(
     "{contractAddress}",
-    contractAddress,
+    padAddress(contractAddress),
   );
   return await fetchSQL<ActiveMarketOrdersTotal[]>(query);
 }
@@ -618,8 +618,8 @@ export async function fetchAllCollectionTokens(
   const limitOffsetClause = limit !== undefined && offset !== undefined ? `LIMIT ${limit} OFFSET ${offset}` : "";
 
   // Build the main query
-  const query = QUERIES.ALL_COLLECTION_TOKENS.replaceAll("{contractAddress}", contractAddress)
-    .replace("{ownerAddress}", ownerAddress ?? "")
+  const query = QUERIES.ALL_COLLECTION_TOKENS.replaceAll("{contractAddress}", padAddress(contractAddress))
+    .replace("{ownerAddress}", ownerAddress ? padAddress(ownerAddress) : "")
     .replace("{collectionId}", collectionId.toString())
     .replace("{traitFilters}", traitFilterClauses)
     .replace("{listedOnlyFilter}", listedOnlyClause)
@@ -627,8 +627,8 @@ export async function fetchAllCollectionTokens(
     .replace("{limitOffsetClause}", limitOffsetClause);
 
   // Build the count query
-  const countQuery = QUERIES.ALL_COLLECTION_TOKENS_COUNT.replaceAll("{contractAddress}", contractAddress)
-    .replace("{ownerAddress}", ownerAddress ?? "")
+  const countQuery = QUERIES.ALL_COLLECTION_TOKENS_COUNT.replaceAll("{contractAddress}", padAddress(contractAddress))
+    .replace("{ownerAddress}", ownerAddress ? padAddress(ownerAddress) : "")
     .replace("{collectionId}", collectionId.toString())
     .replace("{traitFilters}", traitFilterClauses)
     .replace("{listedOnlyFilter}", listedOnlyClause);
@@ -674,8 +674,8 @@ export async function fetchSingleCollectionToken(
   const tokenIdBigInt = tokenId.startsWith("0x") ? BigInt(tokenId) : BigInt(tokenId);
   const tokenIdDecimal = tokenIdBigInt.toString();
 
-  const query = QUERIES.SINGLE_COLLECTION_TOKEN.replaceAll("'{contractAddress}'", `'${contractAddress}'`)
-    .replaceAll("{contractAddress}", contractAddress)
+  const query = QUERIES.SINGLE_COLLECTION_TOKEN.replaceAll("'{contractAddress}'", `'${padAddress(contractAddress)}'`)
+    .replaceAll("{contractAddress}", padAddress(contractAddress))
     .replaceAll("{tokenId}", tokenIdDecimal)
     .replaceAll("{collectionId}", collectionId.toString());
 
@@ -708,9 +708,9 @@ export async function fetchSeasonPassRealmsByAddress(
   seasonPassAddress: string,
   accountAddress: string,
 ): Promise<SeasonPassRealm[]> {
-  const query = QUERIES.SEASON_PASS_REALMS_BY_ADDRESS.replace("{realmsAddress}", realmsAddress)
-    .replace("{seasonPassAddress}", seasonPassAddress)
-    .replace(/{accountAddress}/g, accountAddress);
+  const query = QUERIES.SEASON_PASS_REALMS_BY_ADDRESS.replace("{realmsAddress}", padAddress(realmsAddress))
+    .replace("{seasonPassAddress}", padAddress(seasonPassAddress))
+    .replace(/{accountAddress}/g, padAddress(accountAddress));
   const rawData = await fetchSQL<any[]>(query);
   return rawData.map((item) => ({
     ...item,
@@ -774,10 +774,10 @@ export async function fetchTokenBalancesWithMetadata(
     throw new Error(`No collection found for address ${contractAddress}`);
   }
 
-  const query = QUERIES.TOKEN_BALANCES_WITH_METADATA.replaceAll("{contractAddress}", contractAddress)
+  const query = QUERIES.TOKEN_BALANCES_WITH_METADATA.replaceAll("{contractAddress}", padAddress(contractAddress))
     .replace("{collectionId}", collectionId.toString())
-    .replace("{accountAddress}", accountAddress)
-    .replace("{trimmedAccountAddress}", trimAddress(accountAddress));
+    .replace("{accountAddress}", padAddress(accountAddress))
+    .replace("{trimmedAccountAddress}", padAddress(accountAddress));
   const rawData = await fetchSQL<RawTokenBalanceWithMetadata[]>(query);
   return rawData.map((item) => ({
     token_id: Number(item.token_id.split(":")[1]).toString(),
@@ -829,7 +829,7 @@ export async function fetchMarketOrderEvents(
   const finalType = type === "sales" ? "Accepted" : type;
   const collectionId = getCollectionByAddress(contractAddress)?.id ?? 1;
 
-  const query = QUERIES.MARKET_ORDER_EVENTS.replaceAll("{contractAddress}", contractAddress)
+  const query = QUERIES.MARKET_ORDER_EVENTS.replaceAll("{contractAddress}", padAddress(contractAddress))
     .replace("{collectionId}", collectionId?.toString())
     .replace("{limit}", limit?.toString() ?? "50")
     .replace("{offset}", offset?.toString() ?? "0")
@@ -962,8 +962,8 @@ export async function fetchCollectibleClaimed(
   // Convert Unix timestamp to ISO string format for SQL datetime comparison
   const formattedTimestamp = new Date(minTimestamp * 1000).toISOString().replace("T", " ").replace("Z", "");
 
-  const query = QUERIES.COLLECTIBLE_CLAIMED.replace("{contractAddress}", contractAddress)
-    .replace("{playerAddress}", playerAddress)
+  const query = QUERIES.COLLECTIBLE_CLAIMED.replace("{contractAddress}", padAddress(contractAddress))
+    .replace("{playerAddress}", padAddress(playerAddress))
     .replace("{minTimestamp}", `'${formattedTimestamp}'`);
 
   return await gameClientFetch<CollectibleClaimed[]>(query);
