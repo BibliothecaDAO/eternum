@@ -9,7 +9,7 @@ import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { Bridge } from "@/ui/features/infrastructure";
 import { ProductionModal } from "@/ui/features/settlement";
 import { ProductionOverviewPanel } from "@/ui/features/settlement/production/production-overview-panel";
-import { TransferAutomationPanel } from "@/ui/features/settlement/production/transfer-automation-panel";
+import { TransferAutomationPanel } from "@/ui/features/economy/transfers/transfer-automation-panel";
 import { StoryEventsChronicles } from "@/ui/features/story-events";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
 import { motion } from "framer-motion";
@@ -252,8 +252,7 @@ export const RightNavigationModule = () => {
             initial="hidden"
             animate="visible"
             className={clsx(
-              "pointer-events-auto flex flex-col justify-start",
-              storyChroniclesActive || resourceTableActive ? "h-[88vh]" : "h-[60vh]",
+              "pointer-events-auto flex flex-col justify-start h-[88vh]",
             )}
           >
             <div className="flex flex-col mb-auto">
@@ -311,8 +310,7 @@ export const RightNavigationModule = () => {
             </div>
             <BaseContainer
               className={clsx(
-                "panel-wood panel-wood-corners w-full flex-1 rounded-l-2xl border-l-2 border-y-2 border-gold/20 pointer-events-auto overflow-x-auto",
-                storyChroniclesActive || resourceTableActive ? "h-[88vh] overflow-y-auto" : "h-[60vh] overflow-y-auto",
+                "panel-wood panel-wood-corners w-full flex-1 rounded-l-2xl border-l-2 border-y-2 border-gold/20 pointer-events-auto overflow-x-auto h-[88vh] overflow-y-auto",
               )}
             >
               <Suspense fallback={<div className="p-8">Loading...</div>}>

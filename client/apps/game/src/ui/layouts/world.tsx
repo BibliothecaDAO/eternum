@@ -9,6 +9,7 @@ import { AutomationManager } from "../features/infrastructure/automation/automat
 import { StoryEventStream } from "../features/story-events";
 import { BlitzSetHyperstructureShareholdersTo100 } from "../features/world/components/hyperstructures/blitz-hyperstructure-shareholder";
 import { StoreManagers } from "../store-managers";
+import { TransferAutomationManager } from "../features/infrastructure/automation/transfer-automation-manager";
 
 // Lazy load components
 const SelectedArmy = lazy(() =>
@@ -120,6 +121,7 @@ const WorldEffects = () => (
     <GameWinnerMessage />
     <BlitzSetHyperstructureShareholdersTo100 />
     <AutomationManager />
+    <TransferAutomationManager />
   </>
 );
 

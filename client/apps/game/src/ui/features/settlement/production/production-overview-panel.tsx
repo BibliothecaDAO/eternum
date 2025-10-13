@@ -200,30 +200,35 @@ export const ProductionOverviewPanel = () => {
       <div className="flex flex-col gap-2">
         <div>
           <h4 className="text-sm font-semibold text-gold">Production Overview</h4>
-          <p className="text-[11px] text-gold/60">Review automation and switch presets per realm.</p>
+          <p className="text-[11px] text-gold/60">Review automation and switch production presets.</p>
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-[10px] uppercase tracking-wide text-gold/60">Apply preset to all realms</span>
-          <div className="flex flex-wrap gap-2">
-            {REALM_PRESETS.map((preset) => {
-              const isActive = globalPreset === preset.id;
-              return (
-                <button
-                  key={`global-${preset.id}`}
-                  type="button"
-                  className={clsx(
-                    "rounded border px-2 py-1 text-[11px] uppercase tracking-wide transition-colors",
-                    isActive
-                      ? "border-gold bg-gold/20 text-gold"
-                      : "border-gold/20 bg-black/30 text-gold/70 hover:border-gold/40 hover:bg-gold/10",
-                  )}
-                  onClick={() => handleGlobalPresetChange(preset.id)}
-                  disabled={realmCards.length === 0}
-                >
-                  {preset.label}
-                </button>
-              );
-            })}
+          <span className="text-[10px] uppercase tracking-wide text-gold/60">Apply production preset to all realms</span>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap gap-2">
+              {REALM_PRESETS.map((preset) => {
+                const isActive = globalPreset === preset.id;
+                return (
+                  <button
+                    key={`global-${preset.id}`}
+                    type="button"
+                    className={clsx(
+                      "rounded border px-2 py-1 text-[11px] uppercase tracking-wide transition-colors",
+                      isActive
+                        ? "border-gold bg-gold/20 text-gold"
+                        : "border-gold/20 bg-black/30 text-gold/70 hover:border-gold/40 hover:bg-gold/10",
+                    )}
+                    onClick={() => handleGlobalPresetChange(preset.id)}
+                    disabled={realmCards.length === 0}
+                  >
+                    {preset.label}
+                  </button>
+                );
+              })}
+            </div>
+            <Button variant="outline" size="xs" onClick={() => toggleModal(<ProductionModal />)}>
+              Advanced
+            </Button>
           </div>
           {globalPreset === "mixed" && (
             <span className="text-[10px] text-gold/60">Mixed selection across realms.</span>
@@ -329,11 +334,7 @@ export const ProductionOverviewPanel = () => {
         </div>
       )}
 
-      <div className="flex justify-end pt-1">
-        <Button variant="outline" size="xs" onClick={() => toggleModal(<ProductionModal />)}>
-          Advanced
-        </Button>
-      </div>
+      {/* Advanced button placed inline with global preset buttons */}
     </div>
   );
 };
