@@ -41,6 +41,14 @@ export const TROOP_TIERS: Record<string, number> = {
   T3: 3,
 };
 
+type StructureMapDataRawWithEntity = StructureMapDataRaw & {
+  internal_entity_id?: string | null;
+};
+
+type ArmyMapDataRawWithEntity = ArmyMapDataRaw & {
+  internal_entity_id?: string | null;
+};
+
 export interface GuardArmy {
   slot: number;
   category: string | null; // troop type (crossbowman, paladin, knight)
@@ -55,6 +63,7 @@ export interface ActiveProduction {
 }
 
 export interface StructureMapData {
+  entity: string;
   entityId: number;
   coordX: number;
   coordY: number;
@@ -80,6 +89,7 @@ export interface StructureMapData {
 }
 
 export interface ArmyMapData {
+  entity: string;
   entityId: number;
   coordX: number;
   coordY: number;
@@ -112,6 +122,7 @@ export class MapDataStore {
   private armiesMap: Map<number, ArmyMapData> = new Map();
   private hyperstructureRealmCountMap: Map<ID, number> = new Map();
   private addressToNameMap: Map<string, string> = new Map();
+  private entityToEntityIdMap: Map<string, number> = new Map();
   private isLoading: boolean = false;
   private lastFetchTime: number = 0;
   private readonly REFRESH_INTERVAL: number;
@@ -130,6 +141,13 @@ export class MapDataStore {
   private hexToBigInt(hex: string | null): bigint {
     if (!hex || hex === "0x0") return 0n;
     return BigInt(hex);
+  }
+
+  private normalizeEntityHex(entity: string | null | undefined): string | undefined {
+    if (!entity) return undefined;
+    const trimmed = entity.trim();
+    if (!trimmed) return undefined;
+    return trimmed.toLowerCase();
   }
 
   private parseActiveProductions(
@@ -354,11 +372,10 @@ export class MapDataStore {
     ]);
 
     // Transform and store structures
-    structuresRaw.forEach((structure: StructureMapDataRaw) => {
-      if (structure.entity_id === 177) {
-        console.log({ structureTest: structure });
-      }
-
+    structuresRaw.forEach((structureRaw: StructureMapDataRaw) => {
+      const structure = structureRaw as StructureMapDataRawWithEntity;
+      const structureEntityHex = structure.internal_entity_id ?? "";
+      const normalizedStructureEntityHex = this.normalizeEntityHex(structureEntityHex);
       const guardArmies = this.parseGuardArmies(structure);
 
       const activeProductions = this.parseActiveProductions(
@@ -379,6 +396,7 @@ export class MapDataStore {
           : getStructureTypeName(structure.structure_type, isBlitz);
 
       const structureData: StructureMapData = {
+        entity: structureEntityHex,
         entityId: structure.entity_id,
         coordX: structure.coord_x,
         coordY: structure.coord_y,
@@ -410,10 +428,16 @@ export class MapDataStore {
 
       this.structuresMap.set(structure.entity_id, structureData);
       this.addressToNameMap.set(structureData.ownerAddress, ownerName);
+      if (normalizedStructureEntityHex) {
+        this.entityToEntityIdMap.set(normalizedStructureEntityHex, structure.entity_id);
+      }
     });
 
     // Transform and store armies
-    armiesRaw.forEach((army: ArmyMapDataRaw) => {
+    armiesRaw.forEach((armyRaw: ArmyMapDataRaw) => {
+      const army = armyRaw as ArmyMapDataRawWithEntity;
+      const armyEntityHex = army.internal_entity_id ?? "";
+      const normalizedArmyEntityHex = this.normalizeEntityHex(armyEntityHex);
       const ownerName = army.owner_name
         ? BigInt(army.owner_name) === 0n
           ? ""
@@ -421,6 +445,7 @@ export class MapDataStore {
         : "";
 
       const armyData: ArmyMapData = {
+        entity: armyEntityHex,
         entityId: army.entity_id,
         coordX: army.coord_x,
         coordY: army.coord_y,
@@ -449,6 +474,9 @@ export class MapDataStore {
 
       this.armiesMap.set(army.entity_id, armyData);
       this.addressToNameMap.set(armyData.ownerAddress, ownerName);
+      if (normalizedArmyEntityHex) {
+        this.entityToEntityIdMap.set(normalizedArmyEntityHex, army.entity_id);
+      }
     });
 
     // Store hyperstructure realm counts
@@ -526,6 +554,26 @@ export class MapDataStore {
     return Array.from(this.armiesMap.values()).filter((army) => army.ownerAddress === normalizedAddress);
   }
 
+  public getEntityIdFromEntity(entity: string): number | undefined {
+    this._checkRefresh();
+    const normalizedEntity = this.normalizeEntityHex(entity);
+    if (!normalizedEntity) {
+      return undefined;
+    }
+
+    return this.entityToEntityIdMap.get(normalizedEntity);
+  }
+
+  public async getEntityIdFromEntityAsync(entity: string): Promise<number | undefined> {
+    await this.waitForData();
+    const normalizedEntity = this.normalizeEntityHex(entity);
+    if (!normalizedEntity) {
+      return undefined;
+    }
+
+    return this.entityToEntityIdMap.get(normalizedEntity);
+  }
+
   public getEntitiesInRadius(
     centerX: number,
     centerY: number,
@@ -579,6 +627,7 @@ export class MapDataStore {
     this.structuresMap.clear();
     this.armiesMap.clear();
     this.addressToNameMap.clear();
+    this.entityToEntityIdMap.clear();
     this.lastFetchTime = 0;
   }
 
@@ -635,6 +684,7 @@ export class MapDataStore {
     this.structuresMap.clear();
     this.armiesMap.clear();
     this.addressToNameMap.clear();
+    this.entityToEntityIdMap.clear();
     console.log("MapDataStore: Destroyed and cleaned up");
   }
 }
