@@ -712,7 +712,9 @@ export default class HexceptionScene extends HexagonScene {
     });
 
     const producedResource = getProducedResource(building.category as BuildingType);
-    this.state.toggleModal(<ProductionModal preSelectedResource={producedResource} />);
+    this.state.toggleModal(
+      <ProductionModal preSelectedResource={producedResource === ResourcesIds.Labor ? undefined : producedResource} />,
+    );
   }
 
   public moveCameraToURLLocation() {
