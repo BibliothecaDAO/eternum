@@ -162,6 +162,12 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.resume_production(props);
   };
 
+  const execute_realm_production_plan = async (
+    props: SystemProps.ExecuteRealmProductionPlanProps,
+  ): Promise<GetTransactionReceiptResponse> => {
+    return await provider.execute_realm_production_plan(props);
+  };
+
   const change_bank_owner_fee = async (
     props: SystemProps.ChangeBankOwnerFeeProps,
   ): Promise<GetTransactionReceiptResponse> => {
@@ -483,6 +489,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     destroy_building: withAuth(destroy_building),
     pause_production: withAuth(pause_production),
     resume_production: withAuth(resume_production),
+    execute_realm_production_plan: withAuth(execute_realm_production_plan),
     create_building: withAuth(create_building),
     claim_wonder_production_bonus: withAuth(claim_wonder_production_bonus),
 
