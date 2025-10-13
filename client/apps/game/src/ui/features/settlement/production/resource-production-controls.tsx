@@ -169,20 +169,6 @@ export const ResourceProductionControls = ({
 
   const tabs = [
     {
-      label: "Resource Production",
-      component: (
-        <RawResourcesPanel
-          selectedResource={selectedResource}
-          productionAmount={productionAmount}
-          setProductionAmount={setProductionAmount}
-          resourceBalances={resourceBalances}
-          isSelected={useRawResources}
-          onSelect={() => setUseRawResources(true)}
-          outputResourceAmount={outputResourceAmountWithBonus}
-        />
-      ),
-    },
-    {
       label: "Labor Production",
       component: (
         <div>
@@ -197,6 +183,20 @@ export const ResourceProductionControls = ({
             />
           )}
         </div>
+      ),
+    },
+    {
+      label: "Resource Production",
+      component: (
+        <RawResourcesPanel
+          selectedResource={selectedResource}
+          productionAmount={productionAmount}
+          setProductionAmount={setProductionAmount}
+          resourceBalances={resourceBalances}
+          isSelected={useRawResources}
+          onSelect={() => setUseRawResources(true)}
+          outputResourceAmount={outputResourceAmountWithBonus}
+        />
       ),
     },
   ];
