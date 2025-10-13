@@ -92,15 +92,15 @@
       "9": [
         {
           "resource": 35,
-          "amount": 4
+          "amount": 3
         },
         {
           "resource": 2,
-          "amount": 0.72
+          "amount": 0.6
         },
         {
           "resource": 11,
-          "amount": 0.48
+          "amount": 0.4
         }
       ],
       "10": [],
@@ -128,15 +128,15 @@
       "19": [
         {
           "resource": 35,
-          "amount": 4
+          "amount": 3
         },
         {
           "resource": 2,
-          "amount": 0.72
+          "amount": 0.6
         },
         {
           "resource": 5,
-          "amount": 0.48
+          "amount": 0.4
         }
       ],
       "20": [],
@@ -144,15 +144,15 @@
       "22": [
         {
           "resource": 35,
-          "amount": 4
+          "amount": 3
         },
         {
           "resource": 2,
-          "amount": 0.72
+          "amount": 0.6
         },
         {
           "resource": 7,
-          "amount": 0.48
+          "amount": 0.4
         }
       ],
       "23": [],
@@ -170,7 +170,7 @@
         },
         {
           "resource": 4,
-          "amount": 0.24
+          "amount": 0.4
         }
       ],
       "27": [
@@ -184,11 +184,11 @@
         },
         {
           "resource": 4,
-          "amount": 0.48
+          "amount": 0.2
         },
         {
           "resource": 11,
-          "amount": 0.32
+          "amount": 0.4
         },
         {
           "resource": 38,
@@ -206,11 +206,11 @@
         },
         {
           "resource": 11,
-          "amount": 0.64
+          "amount": 0.2
         },
         {
           "resource": 9,
-          "amount": 0.72
+          "amount": 0.6
         },
         {
           "resource": 38,
@@ -224,7 +224,7 @@
         },
         {
           "resource": 4,
-          "amount": 0.24
+          "amount": 0.4
         }
       ],
       "30": [
@@ -238,11 +238,11 @@
         },
         {
           "resource": 4,
-          "amount": 0.48
+          "amount": 0.2
         },
         {
           "resource": 5,
-          "amount": 0.32
+          "amount": 0.4
         },
         {
           "resource": 38,
@@ -260,11 +260,11 @@
         },
         {
           "resource": 5,
-          "amount": 0.64
+          "amount": 0.2
         },
         {
           "resource": 19,
-          "amount": 0.72
+          "amount": 0.6
         },
         {
           "resource": 38,
@@ -278,7 +278,7 @@
         },
         {
           "resource": 4,
-          "amount": 0.24
+          "amount": 0.4
         }
       ],
       "33": [
@@ -292,11 +292,11 @@
         },
         {
           "resource": 4,
-          "amount": 0.48
+          "amount": 0.2
         },
         {
           "resource": 7,
-          "amount": 0.32
+          "amount": 0.4
         },
         {
           "resource": 38,
@@ -314,11 +314,11 @@
         },
         {
           "resource": 7,
-          "amount": 0.64
+          "amount": 0.2
         },
         {
           "resource": 22,
-          "amount": 0.72
+          "amount": 0.6
         },
         {
           "resource": 38,
@@ -489,28 +489,10 @@
       ],
       "27": [],
       "28": [],
-      "29": [
-        {
-          "resource": 35,
-          "amount": 2
-        },
-        {
-          "resource": 23,
-          "amount": 0.5
-        }
-      ],
+      "29": [],
       "30": [],
       "31": [],
-      "32": [
-        {
-          "resource": 35,
-          "amount": 2
-        },
-        {
-          "resource": 23,
-          "amount": 0.5
-        }
-      ],
+      "32": [],
       "33": [],
       "34": [],
       "35": [],
@@ -931,42 +913,28 @@
       "1": [
         {
           "resource": 23,
-          "amount": 40
+          "amount": 30
         },
         {
           "resource": 3,
-          "amount": 60
-        }
-      ],
-      "2": [
-        {
-          "resource": 23,
-          "amount": 60
-        },
-        {
-          "resource": 3,
-          "amount": 90
-        },
-        {
-          "resource": 4,
-          "amount": 60
+          "amount": 30
         }
       ],
       "3": [],
       "4": [
         {
           "resource": 23,
-          "amount": 40
+          "amount": 30
         },
         {
           "resource": 3,
-          "amount": 60
+          "amount": 30
         }
       ],
       "5": [
         {
           "resource": 23,
-          "amount": 40
+          "amount": 30
         }
       ],
       "6": [
@@ -976,11 +944,11 @@
         },
         {
           "resource": 3,
-          "amount": 90
+          "amount": 60
         },
         {
           "resource": 2,
-          "amount": 60
+          "amount": 30
         }
       ],
       "7": [
@@ -990,15 +958,15 @@
         },
         {
           "resource": 3,
-          "amount": 180
-        },
-        {
-          "resource": 2,
           "amount": 120
         },
         {
-          "resource": 4,
+          "resource": 2,
           "amount": 60
+        },
+        {
+          "resource": 4,
+          "amount": 30
         }
       ],
       "8": [],
@@ -1009,34 +977,34 @@
         },
         {
           "resource": 3,
-          "amount": 180
-        },
-        {
-          "resource": 2,
           "amount": 120
         },
         {
-          "resource": 4,
+          "resource": 2,
           "amount": 60
+        },
+        {
+          "resource": 4,
+          "amount": 30
         }
       ],
       "10": [],
       "11": [
         {
           "resource": 23,
-          "amount": 360
+          "amount": 240
         },
         {
           "resource": 3,
-          "amount": 540
+          "amount": 240
         },
         {
           "resource": 4,
-          "amount": 360
+          "amount": 120
         },
         {
           "resource": 11,
-          "amount": 180
+          "amount": 60
         },
         {
           "resource": 38,
@@ -1051,15 +1019,15 @@
         },
         {
           "resource": 3,
-          "amount": 180
-        },
-        {
-          "resource": 2,
           "amount": 120
         },
         {
-          "resource": 4,
+          "resource": 2,
           "amount": 60
+        },
+        {
+          "resource": 4,
+          "amount": 30
         }
       ],
       "14": [],
@@ -1072,19 +1040,19 @@
       "21": [
         {
           "resource": 23,
-          "amount": 360
+          "amount": 240
         },
         {
           "resource": 3,
-          "amount": 540
+          "amount": 240
         },
         {
           "resource": 4,
-          "amount": 360
+          "amount": 120
         },
         {
           "resource": 5,
-          "amount": 180
+          "amount": 60
         },
         {
           "resource": 38,
@@ -1096,19 +1064,19 @@
       "24": [
         {
           "resource": 23,
-          "amount": 360
+          "amount": 240
         },
         {
           "resource": 3,
-          "amount": 540
+          "amount": 240
         },
         {
           "resource": 4,
-          "amount": 360
+          "amount": 120
         },
         {
           "resource": 7,
-          "amount": 180
+          "amount": 60
         },
         {
           "resource": 38,
@@ -1124,7 +1092,7 @@
         },
         {
           "resource": 3,
-          "amount": 90
+          "amount": 60
         }
       ],
       "28": [
@@ -1134,11 +1102,11 @@
         },
         {
           "resource": 3,
-          "amount": 270
+          "amount": 180
         },
         {
           "resource": 4,
-          "amount": 180
+          "amount": 90
         }
       ],
       "29": [
@@ -1148,15 +1116,15 @@
         },
         {
           "resource": 3,
-          "amount": 540
-        },
-        {
-          "resource": 4,
           "amount": 360
         },
         {
-          "resource": 11,
+          "resource": 4,
           "amount": 180
+        },
+        {
+          "resource": 11,
+          "amount": 90
         },
         {
           "resource": 38,
@@ -1170,15 +1138,15 @@
         },
         {
           "resource": 3,
-          "amount": 1080
-        },
-        {
-          "resource": 11,
           "amount": 720
         },
         {
-          "resource": 9,
+          "resource": 11,
           "amount": 360
+        },
+        {
+          "resource": 9,
+          "amount": 180
         },
         {
           "resource": 38,
@@ -1192,11 +1160,11 @@
         },
         {
           "resource": 3,
-          "amount": 270
+          "amount": 180
         },
         {
           "resource": 4,
-          "amount": 180
+          "amount": 90
         }
       ],
       "32": [
@@ -1206,15 +1174,15 @@
         },
         {
           "resource": 3,
-          "amount": 540
-        },
-        {
-          "resource": 4,
           "amount": 360
         },
         {
-          "resource": 5,
+          "resource": 4,
           "amount": 180
+        },
+        {
+          "resource": 5,
+          "amount": 90
         },
         {
           "resource": 38,
@@ -1228,15 +1196,15 @@
         },
         {
           "resource": 3,
-          "amount": 1080
-        },
-        {
-          "resource": 5,
           "amount": 720
         },
         {
-          "resource": 19,
+          "resource": 5,
           "amount": 360
+        },
+        {
+          "resource": 19,
+          "amount": 180
         },
         {
           "resource": 38,
@@ -1250,11 +1218,11 @@
         },
         {
           "resource": 3,
-          "amount": 270
+          "amount": 180
         },
         {
           "resource": 4,
-          "amount": 180
+          "amount": 90
         }
       ],
       "35": [
@@ -1264,15 +1232,15 @@
         },
         {
           "resource": 3,
-          "amount": 540
-        },
-        {
-          "resource": 4,
           "amount": 360
         },
         {
-          "resource": 7,
+          "resource": 4,
           "amount": 180
+        },
+        {
+          "resource": 7,
+          "amount": 90
         },
         {
           "resource": 38,
@@ -1286,15 +1254,15 @@
         },
         {
           "resource": 3,
-          "amount": 1080
-        },
-        {
-          "resource": 7,
           "amount": 720
         },
         {
-          "resource": 22,
+          "resource": 7,
           "amount": 360
+        },
+        {
+          "resource": 22,
+          "amount": 180
         },
         {
           "resource": 38,
@@ -1304,7 +1272,7 @@
       "37": [
         {
           "resource": 23,
-          "amount": 20
+          "amount": 30
         }
       ],
       "38": []
@@ -1314,45 +1282,39 @@
       "1": [
         {
           "resource": 23,
-          "amount": 160
-        }
-      ],
-      "2": [
-        {
-          "resource": 23,
-          "amount": 480
+          "amount": 90
         }
       ],
       "3": [],
       "4": [
         {
           "resource": 23,
-          "amount": 160
+          "amount": 90
         }
       ],
       "5": [
         {
           "resource": 23,
-          "amount": 40
+          "amount": 30
         }
       ],
       "6": [
         {
           "resource": 23,
-          "amount": 480
+          "amount": 300
         }
       ],
       "7": [
         {
           "resource": 23,
-          "amount": 1200
+          "amount": 720
         }
       ],
       "8": [],
       "9": [
         {
           "resource": 23,
-          "amount": 1200
+          "amount": 720
         }
       ],
       "10": [],
@@ -1361,7 +1323,7 @@
       "13": [
         {
           "resource": 23,
-          "amount": 1200
+          "amount": 720
         }
       ],
       "14": [],
@@ -1380,13 +1342,13 @@
       "27": [
         {
           "resource": 23,
-          "amount": 240
+          "amount": 180
         }
       ],
       "28": [
         {
           "resource": 23,
-          "amount": 1440
+          "amount": 900
         }
       ],
       "29": [],
@@ -1394,7 +1356,7 @@
       "31": [
         {
           "resource": 23,
-          "amount": 1440
+          "amount": 900
         }
       ],
       "32": [],
@@ -1402,7 +1364,7 @@
       "34": [
         {
           "resource": 23,
-          "amount": 1440
+          "amount": 900
         }
       ],
       "35": [],
@@ -1410,7 +1372,7 @@
       "37": [
         {
           "resource": 23,
-          "amount": 20
+          "amount": 30
         }
       ],
       "38": []
@@ -1601,7 +1563,7 @@
   "startingResources": [
     {
       "resource": 35,
-      "amount": 500
+      "amount": 1000
     },
     {
       "resource": 23,
@@ -1740,15 +1702,15 @@
       "entry_token_class_hash": "0x181c70595dd7db697c37ceb35c74fab69a037836b99cc80c17fd92a16289e26",
       "entry_token_ipfs_cid": "Qm123idkmaybe",
       "collectible_cosmetics_max_items": 5,
-      "collectible_cosmetics_address": "0x1834f0fcea53d79298884fd32cd32b63cf582149f4b96b35889b26024076f10",
-      "collectible_timelock_address": "0x28166295beac43b864f9f147158f8e0a119cd5d593a34759622a3b481f3a83d"
+      "collectible_cosmetics_address": "0xa1e90c033cbfddda614e3e38b21c48dbcec4c7946ebfb4435471d9360d3ae6",
+      "collectible_timelock_address": "0x27177af2b98e5b3bfb046e14a3992c61b9ddd0650eca5af336ddbc7fa6bd68c"
     }
   },
   "setup": {
     "chain": "local",
     "addresses": {
-      "Collectibles: Timelock Maker": "0x28166295beac43b864f9f147158f8e0a119cd5d593a34759622a3b481f3a83d",
-      "Collectibles: Realms: Cosmetic Items": "0x1834f0fcea53d79298884fd32cd32b63cf582149f4b96b35889b26024076f10",
+      "Collectibles: Timelock Maker": "0x27177af2b98e5b3bfb046e14a3992c61b9ddd0650eca5af336ddbc7fa6bd68c",
+      "Collectibles: Realms: Cosmetic Items": "0xa1e90c033cbfddda614e3e38b21c48dbcec4c7946ebfb4435471d9360d3ae6",
       "collectiblesClassHash": "0x181c70595dd7db697c37ceb35c74fab69a037836b99cc80c17fd92a16289e26",
       "seasonPass": "0x58a1714d738ac2dd2c06e949d573c14ff1e49f40e5c5f1a983a1e486f233d26",
       "realms": "0x79a5a6da4bbf73eb75aa64e0e037b5142c29fb17990b8e1493a5b0c32f290ec",
