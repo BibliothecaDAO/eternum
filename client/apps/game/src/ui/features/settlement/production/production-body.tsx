@@ -43,16 +43,6 @@ export const ProductionBody = ({
     return getStructureRelicEffects(productionBoostBonus, getBlockTimestamp().currentArmiesTick);
   }, [productionBoostBonus]);
 
-  const laborBonus = useMemo(() => {
-    if (activeRelics.find((relic) => relic.id === ResourcesIds.LaborProductionRelic1)) {
-      return Number(RELICS.find((relic) => relic.id === ResourcesIds.LaborProductionRelic1)?.bonus) || 1;
-    } else if (activeRelics.find((relic) => relic.id === ResourcesIds.LaborProductionRelic2)) {
-      return Number(RELICS.find((relic) => relic.id === ResourcesIds.LaborProductionRelic2)?.bonus) || 1;
-    } else {
-      return 1;
-    }
-  }, [activeRelics]);
-
   const troopsBonus = useMemo(() => {
     if (activeRelics.find((relic) => relic.id === ResourcesIds.TroopProductionRelic1)) {
       return Number(RELICS.find((relic) => relic.id === ResourcesIds.TroopProductionRelic1)?.bonus) || 1;
@@ -141,7 +131,6 @@ export const ProductionBody = ({
             selectedResource={selectedResource}
             realm={realm}
             wonderBonus={wonderBonus}
-            laborBonus={laborBonus}
             productionBonus={productionBonus}
             troopsBonus={troopsBonus}
           />
