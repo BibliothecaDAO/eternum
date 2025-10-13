@@ -64,6 +64,7 @@ export const ProductionOverviewPanel = () => {
   const upsertRealm = useAutomationStore((state) => state.upsertRealm);
   const removeRealm = useAutomationStore((state) => state.removeRealm);
   const setRealmPreset = useAutomationStore((state) => state.setRealmPreset);
+  const hydrated = useAutomationStore((state) => state.hydrated);
   const [selectedProduction, setSelectedProduction] = useState<{ realmId: string; resourceId: ResourcesIds } | null>(
     null,
   );
@@ -73,24 +74,18 @@ export const ProductionOverviewPanel = () => {
   const isBlitz = getIsBlitz();
 
   useEffect(() => {
+    if (!hydrated) return;
     const managedStructures = [...playerRealms, ...playerVillages];
     const activeIds = new Set(managedStructures.map((structure) => String(structure.entityId)));
 
-    console.log("[ProductionOverviewPanel] Sync managed structures", {
-      realmCount: playerRealms.length,
-      villageCount: playerVillages.length,
-      total: managedStructures.length,
-    });
+    // If we don't yet have any structures, skip pruning to avoid wiping store during data load.
+    if (managedStructures.length === 0) {
+      return;
+    }
 
     managedStructures.forEach((structure) => {
       const entityType = structure.structure?.category === StructureType.Village ? "village" : "realm";
       const structureName = getStructureName(structure.structure, isBlitz).name;
-
-      console.log("[ProductionOverviewPanel] upsertRealm", {
-        entityId: structure.entityId,
-        entityType,
-        structureName,
-      });
 
       upsertRealm(String(structure.entityId), {
         realmName: structureName,
@@ -101,16 +96,10 @@ export const ProductionOverviewPanel = () => {
     Object.entries(useAutomationStore.getState().realms).forEach(([realmId, config]) => {
       const supportedType = config.entityType === "realm" || config.entityType === "village";
       if (!supportedType || !activeIds.has(realmId)) {
-        console.log("[ProductionOverviewPanel] removeRealm", {
-          realmId,
-          entityType: config.entityType,
-          supportedType,
-          isActive: activeIds.has(realmId),
-        });
         removeRealm(realmId);
       }
     });
-  }, [isBlitz, playerRealms, playerVillages, removeRealm, upsertRealm]);
+  }, [isBlitz, playerRealms, playerVillages, removeRealm, upsertRealm, hydrated]);
 
   const realmCards = useMemo<RealmCard[]>(() => {
     const cards: RealmCard[] = [];
@@ -161,14 +150,7 @@ export const ProductionOverviewPanel = () => {
         productionLookup,
       });
 
-      console.log("[ProductionOverviewPanel] realmCard built", {
-        entityId: realm.entityId,
-        name: realmName,
-        entityType,
-        resourceCount: resourceIds.length,
-        lastRun: automation?.lastExecution?.executedAt,
-        presetId: inferRealmPreset(automation),
-      });
+      // quiet
     });
 
     return cards.sort((a, b) => a.name.localeCompare(b.name));
@@ -186,10 +168,6 @@ export const ProductionOverviewPanel = () => {
 
   const handlePresetChange = useCallback(
     (realmId: string, presetId: RealmPresetId) => {
-      if (presetId === "custom") {
-        setRealmPreset(realmId, null);
-        return;
-      }
       setRealmPreset(realmId, presetId);
     },
     [setRealmPreset],
@@ -250,9 +228,7 @@ export const ProductionOverviewPanel = () => {
           {globalPreset === "mixed" && (
             <span className="text-[10px] text-gold/60">Mixed selection across realms.</span>
           )}
-          {globalPreset === "custom" && (
-            <span className="text-[10px] text-gold/60">Realms use custom automation settings.</span>
-          )}
+          {/* No explicit message for custom preset */}
         </div>
       </div>
 
@@ -294,9 +270,7 @@ export const ProductionOverviewPanel = () => {
                       );
                     })}
                   </div>
-                  {card.presetId === "custom" && (
-                    <span className="text-[10px] text-gold/60">Custom automation in use.</span>
-                  )}
+                  {/* No explicit message for custom preset */}
                 </div>
                 <span
                   className="text-[10px] text-gold/50 whitespace-nowrap"

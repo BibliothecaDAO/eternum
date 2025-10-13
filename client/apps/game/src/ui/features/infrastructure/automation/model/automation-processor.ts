@@ -186,7 +186,7 @@ export const buildRealmProductionPlan = ({
         return human;
       }
     } catch (error) {
-      console.warn("[Automation] balanceWithProduction fallback", {
+      console.log("[Automation] balanceWithProduction fallback", {
         realmId: realmConfig.realmId,
         resourceId,
         error,
@@ -198,14 +198,6 @@ export const buildRealmProductionPlan = ({
 
   resourcesToTrack.forEach((resourceId) => {
     const balanceHuman = computeHumanBalance(resourceId);
-    console.log("[Automation] Resource availability snapshot", {
-      realmId: realmConfig.realmId,
-      realmName: realmConfig.realmName,
-      entityType,
-      resourceId,
-      balanceHuman,
-      currentTick,
-    });
     totalAvailable.set(resourceId, balanceHuman);
     const maxConsumable = Math.floor((balanceHuman * MAX_RESOURCE_ALLOCATION_PERCENT) / 100);
     availableBudget.set(resourceId, Math.max(0, maxConsumable));

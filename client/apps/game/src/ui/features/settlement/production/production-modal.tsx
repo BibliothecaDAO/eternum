@@ -3,6 +3,7 @@ import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation
 import { ModalContainer } from "@/ui/shared";
 import { usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
 import { ID, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
+import { getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
 
 const ProductionSidebar = lazy(() =>
@@ -35,10 +36,6 @@ const ProductionContainer = ({
   const handleSelectRealm = useCallback(
     (id: ID) => {
       const realm = playerStructures.find((structure) => structure.entityId === id);
-      console.log("[ProductionModal] handleSelectRealm", {
-        selectedEntityId: id,
-        matchFound: Boolean(realm),
-      });
       setSelectedRealm(realm);
       setSelectedResource(null);
     },
@@ -48,11 +45,6 @@ const ProductionContainer = ({
   const handleManageResource = useCallback(
     (realmId: ID, resource: ResourcesIds) => {
       const realm = playerStructures.find((structure) => structure.entityId === realmId) || selectedRealm;
-      console.log("[ProductionModal] handleManageResource", {
-        realmId,
-        resource,
-        matchFound: Boolean(realm),
-      });
       if (realm) {
         setSelectedRealm(realm);
         setSelectedResource(resource);
@@ -95,12 +87,14 @@ export const ProductionModal = ({ preSelectedResource }: { preSelectedResource?:
   const playerVillages = usePlayerOwnedVillagesInfo();
 
   const managedStructures = useMemo(() => {
-    const combined = [...playerRealms, ...playerVillages];
-    console.log("[ProductionModal] managedStructures memo", {
-      realmCount: playerRealms.length,
-      villageCount: playerVillages.length,
-      total: combined.length,
-    });
+    const isBlitz = getIsBlitz();
+    const combined = [...playerRealms, ...playerVillages]
+      .slice()
+      .sort((a, b) =>
+        getStructureName(a.structure, isBlitz).name.localeCompare(
+          getStructureName(b.structure, isBlitz).name,
+        ),
+      );
     return combined;
   }, [playerRealms, playerVillages]);
 

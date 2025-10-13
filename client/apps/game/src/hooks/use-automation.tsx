@@ -32,33 +32,28 @@ export const useAutomation = () => {
   const ensureResourceConfig = useAutomationStore((state) => state.ensureResourceConfig);
   const upsertRealm = useAutomationStore((state) => state.upsertRealm);
   const removeRealm = useAutomationStore((state) => state.removeRealm);
+  const hydrated = useAutomationStore((state) => state.hydrated);
   const processingRef = useRef(false);
   const processRealmsRef = useRef<() => Promise<boolean>>(async () => false);
   const setNextRunTimestampRef = useRef(setNextRunTimestamp);
   const playerRealms = usePlayerOwnedRealmsInfo();
   const playerVillages = usePlayerOwnedVillagesInfo();
   const realmResourcesSignatureRef = useRef<string>("");
+  const automationEnabledAtRef = useRef<number>(Date.now() + PROCESS_INTERVAL_MS);
 
   useEffect(() => {
+    if (!hydrated) return;
     const blitzMode = getIsBlitz();
     const managedStructures = [...playerRealms, ...playerVillages];
     const activeIds = new Set(managedStructures.map((structure) => String(structure.entityId)));
 
-    console.log("[Automation] Sync managed structures", {
-      realmCount: playerRealms.length,
-      villageCount: playerVillages.length,
-      total: managedStructures.length,
-    });
+    if (managedStructures.length === 0) {
+      return;
+    }
 
     managedStructures.forEach((structure) => {
       const entityType = structure.structure?.category === StructureType.Village ? "village" : "realm";
       const name = getStructureName(structure.structure, blitzMode).name;
-
-      console.log("[Automation] upsertRealm", {
-        entityId: structure.entityId,
-        entityType,
-        name,
-      });
 
       upsertRealm(String(structure.entityId), {
         realmName: name,
@@ -69,40 +64,28 @@ export const useAutomation = () => {
     Object.entries(useAutomationStore.getState().realms).forEach(([realmId, config]) => {
       const supportedType = config.entityType === "realm" || config.entityType === "village";
       if (!supportedType || !activeIds.has(realmId)) {
-        console.log("[Automation] removeRealm", {
-          realmId,
-          entityType: config.entityType,
-          supportedType,
-          isActive: activeIds.has(realmId),
-        });
         removeRealm(realmId);
       }
     });
-  }, [playerRealms, playerVillages, removeRealm, upsertRealm]);
+  }, [hydrated, playerRealms, playerVillages, removeRealm, upsertRealm]);
 
   const processRealms = useCallback(async (): Promise<boolean> => {
     if (processingRef.current) return false;
 
     if (!starknetSignerAccount || !starknetSignerAccount.address || starknetSignerAccount.address === "0x0") {
-      console.warn("Automation: Missing Starknet signer. Skipping automation pass.");
+      console.log("Automation: Missing Starknet signer. Skipping automation pass.");
       return false;
     }
 
     if (!components) {
-      console.warn("Automation: Missing Dojo components. Skipping automation pass.");
+      console.log("Automation: Missing Dojo components. Skipping automation pass.");
       return false;
     }
 
     const realmList = Object.values(realms).filter(
       (realm) => realm.entityType === "realm" || realm.entityType === "village",
     );
-    console.log("[Automation] processRealms invoked", {
-      timestamp: Date.now(),
-      totalTrackedRealms: Object.keys(realms).length,
-      activeRealmCount: realmList.length,
-    });
     if (realmList.length === 0) {
-      console.log("[Automation] No eligible realms found for automation run.");
       return false;
     }
 
@@ -111,7 +94,6 @@ export const useAutomation = () => {
 
     try {
       const { currentDefaultTick } = getBlockTimestamp();
-      console.log("[Automation] Using currentDefaultTick for planning", { currentDefaultTick });
 
       for (const realmConfig of realmList) {
         const plan = buildRealmProductionPlan({ realmConfig, components, currentTick: currentDefaultTick });
@@ -120,26 +102,8 @@ export const useAutomation = () => {
           ensureResourceConfig(realmConfig.realmId, resourceId);
         });
         if (!planHasExecutableCalls(plan)) {
-          console.log("[Automation] Skipping execution (no executable calls)", {
-            realmId: realmConfig.realmId,
-            realmName: realmConfig.realmName,
-            entityType: realmConfig.entityType,
-            configuredResources: Object.keys(realmConfig.resources ?? {}).length,
-            evaluatedResourceIds: plan.evaluatedResourceIds,
-            callset: plan.callset,
-            skipped: plan.skipped,
-          });
           continue;
         }
-
-        console.log("[Automation] Executing automation plan", {
-          realmId: realmConfig.realmId,
-          realmName: realmConfig.realmName,
-          entityType: realmConfig.entityType,
-          callset: plan.callset,
-          consumptionByResource: plan.consumptionByResource,
-          outputsByResource: plan.outputsByResource,
-        });
 
         try {
           const callset = plan.callset;
@@ -158,11 +122,6 @@ export const useAutomation = () => {
 
           const summary = buildExecutionSummary(plan, Date.now());
           recordExecution(realmConfig.realmId, summary);
-          console.log("[Automation] Execution complete", {
-            realmId: realmConfig.realmId,
-            executedAt: summary.executedAt,
-            outputsByResource: summary.outputsByResource,
-          });
           anyExecuted = true;
 
           const producedResources = Object.entries(plan.outputsByResource);
@@ -184,10 +143,6 @@ export const useAutomation = () => {
       }
     } finally {
       processingRef.current = false;
-      console.log("[Automation] processRealms finished", {
-        executed: anyExecuted,
-        timestamp: Date.now(),
-      });
     }
 
     return anyExecuted;
@@ -213,25 +168,25 @@ export const useAutomation = () => {
 
     if (signature !== realmResourcesSignatureRef.current) {
       realmResourcesSignatureRef.current = signature;
-      void processRealmsRef.current();
+      // Do not auto-run immediately after reload; wait until the first scheduled window
+      if (Date.now() >= automationEnabledAtRef.current) {
+        void processRealmsRef.current();
+      }
     }
   }, [realms]);
 
   useEffect(() => {
+    // Do not fire an automation run immediately; start at the next run (1min)
     const runAutomation = async () => {
-      console.log("[Automation] Scheduled run fired", { timestamp: Date.now() });
       const processed = await processRealmsRef.current();
-      if (processed) {
-        setNextRunTimestampRef.current(Date.now() + PROCESS_INTERVAL_MS);
-        console.log("[Automation] Next run scheduled", {
-          nextRunTimestamp: Date.now() + PROCESS_INTERVAL_MS,
-        });
-      }
+      // Update next run timestamp regardless of processed result to reflect schedule
+      setNextRunTimestampRef.current(Date.now() + PROCESS_INTERVAL_MS);
     };
 
-    runAutomation();
-    const intervalId = window.setInterval(runAutomation, PROCESS_INTERVAL_MS);
+    // Set initial next run timestamp now (quiet)
+    setNextRunTimestampRef.current(automationEnabledAtRef.current);
 
+    const intervalId = window.setInterval(runAutomation, PROCESS_INTERVAL_MS);
     return () => window.clearInterval(intervalId);
   }, []);
 };

@@ -26,7 +26,12 @@ const resolveResourceLabel = (resourceId: number): string => {
 };
 
 const uniqueResources = (resources: ResourcesIds[]): ResourcesIds[] => {
-  return Array.from(new Set(resources)).sort((a, b) => a - b);
+  const list = Array.from(new Set(resources));
+  return list.sort((a, b) => {
+    if (a === ResourcesIds.Wheat && b !== ResourcesIds.Wheat) return -1;
+    if (b === ResourcesIds.Wheat && a !== ResourcesIds.Wheat) return 1;
+    return a - b;
+  });
 };
 
 const gatherImpactedResources = (resourceIds: number[]): number[] => {
@@ -44,6 +49,7 @@ export const RealmAutomationPanel = ({
   const setResourcePercentages = useAutomationStore((state) => state.setResourcePercentages);
   const ensureResourceConfig = useAutomationStore((state) => state.ensureResourceConfig);
   const removeResourceConfig = useAutomationStore((state) => state.removeResourceConfig);
+  const hydrated = useAutomationStore((state) => state.hydrated);
   const realmAutomation = useAutomationStore((state) => state.realms[realmEntityId]);
 
   const realmResources = useMemo(
@@ -52,27 +58,15 @@ export const RealmAutomationPanel = ({
   );
 
   useEffect(() => {
+    if (!hydrated) return;
     const current = useAutomationStore.getState().realms[realmEntityId];
     const needsMetadataUpdate =
       current && (current.realmName !== realmName || current.entityType !== entityType);
 
-    console.log("[RealmAutomationPanel] metadata check", {
-      realmEntityId,
-      hasExistingConfig: Boolean(current),
-      needsMetadataUpdate,
-      incomingName: realmName,
-      incomingEntityType: entityType,
-    });
-
     if (!current || needsMetadataUpdate) {
-      console.log("[RealmAutomationPanel] upsertRealm", {
-        realmEntityId,
-        realmName,
-        entityType,
-      });
       upsertRealm(realmEntityId, { realmName, entityType });
     }
-  }, [entityType, realmEntityId, realmName, upsertRealm]);
+  }, [entityType, realmEntityId, realmName, upsertRealm, hydrated]);
 
   const missingResources = useMemo(() => {
     if (!realmAutomation) return realmResources;
@@ -80,13 +74,10 @@ export const RealmAutomationPanel = ({
   }, [realmAutomation, realmResources]);
 
   useEffect(() => {
+    if (!hydrated) return;
     if (!missingResources.length) return;
-    console.log("[RealmAutomationPanel] ensuring missing resources", {
-      realmEntityId,
-      missingResources,
-    });
     missingResources.forEach((resourceId) => ensureResourceConfig(realmEntityId, resourceId));
-  }, [ensureResourceConfig, missingResources, realmEntityId]);
+  }, [ensureResourceConfig, missingResources, realmEntityId, hydrated]);
 
   const extraResources = useMemo(() => {
     if (!realmAutomation) return [];
@@ -99,13 +90,10 @@ export const RealmAutomationPanel = ({
   }, [realmAutomation, realmResources, entityType]);
 
   useEffect(() => {
+    if (!hydrated) return;
     if (!extraResources.length) return;
-    console.log("[RealmAutomationPanel] trimming extra resources", {
-      realmEntityId,
-      extraResources,
-    });
     extraResources.forEach((resourceId) => removeResourceConfig(realmEntityId, resourceId));
-  }, [extraResources, realmEntityId, removeResourceConfig]);
+  }, [extraResources, realmEntityId, removeResourceConfig, hydrated]);
 
   const automationRows = useMemo(() => {
     const rows = realmResources.map((resourceId) => {
@@ -188,14 +176,6 @@ export const RealmAutomationPanel = ({
   const activePresetId = inferRealmPreset(realmAutomation);
   const handlePresetSelect = useCallback(
     (presetId: RealmPresetId) => {
-      console.log("[RealmAutomationPanel] handlePresetSelect", {
-        realmEntityId,
-        presetId,
-      });
-      if (presetId === "custom") {
-        setRealmPreset(realmEntityId, null);
-        return;
-      }
       setRealmPreset(realmEntityId, presetId);
     },
     [realmEntityId, setRealmPreset],
@@ -207,12 +187,6 @@ export const RealmAutomationPanel = ({
       key: "resourceToResource" | "laborToResource",
       value: number,
     ) => {
-      console.log("[RealmAutomationPanel] handleSliderChange", {
-        realmEntityId,
-        resourceId,
-        key,
-        value,
-      });
       setRealmPreset(realmEntityId, null);
       setResourcePercentages(realmEntityId, resourceId, { [key]: value });
     },

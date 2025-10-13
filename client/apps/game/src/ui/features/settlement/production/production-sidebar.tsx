@@ -219,7 +219,14 @@ const SidebarRealm = ({
 
         <div className="flex flex-wrap items-center gap-2">
           {hasProduction ? (
-            resourceProductionSummary.map((summary) => {
+            [...resourceProductionSummary]
+              .sort((a, b) => {
+                // Wheat first, then by resource id ascending
+                if (a.resourceId === ResourcesIds.Wheat && b.resourceId !== ResourcesIds.Wheat) return -1;
+                if (b.resourceId === ResourcesIds.Wheat && a.resourceId !== ResourcesIds.Wheat) return 1;
+                return a.resourceId - b.resourceId;
+              })
+              .map((summary) => {
               const resourceLabel = ResourcesIds[summary.resourceId];
               const elapsedSeconds = (currentTime - summary.calculatedAt) / 1000;
               const effectiveRemainingSeconds =

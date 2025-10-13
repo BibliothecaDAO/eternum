@@ -7,12 +7,12 @@ import {
 import { configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 
-export type RealmPresetId = "labor" | "resource" | "both" | "idle" | "custom";
+export type RealmPresetId = "labor" | "resource" | "idle" | "custom";
 
 export const REALM_PRESETS: { id: RealmPresetId; label: string; description?: string }[] = [
   { id: "labor", label: "Labor", description: "Allocate 10% labor, skip resource burn." },
   { id: "resource", label: "Resource", description: "Distribute resource burn up to 90%." },
-  { id: "both", label: "Both", description: "Mix 5% labor with resource burn." },
+  { id: "custom", label: "Custom", description: "Manually tuned mix of labor/resource." },
   { id: "idle", label: "Idle", description: "Pause automation (0%)." },
 ];
 
@@ -111,7 +111,7 @@ export const calculatePresetAllocations = (
 ): Map<number, { resourceToResource: number; laborToResource: number }> => {
   const allocations = new Map<number, { resourceToResource: number; laborToResource: number }>();
 
-  if (!automation || presetId === "custom") {
+  if (!automation) {
     return allocations;
   }
 
@@ -179,7 +179,7 @@ export const calculatePresetAllocations = (
       case "resource":
         targetResourceToResource = hasComplex ? 90 : 0;
         break;
-      case "both":
+      case "custom":
         targetLaborToResource = hasSimple ? 5 : 0;
         targetResourceToResource = hasComplex ? 90 : 0;
         break;
@@ -234,7 +234,8 @@ export const inferRealmPreset = (automation?: RealmAutomationConfig): RealmPrese
   if (!hasResourceShare && !hasLaborShare) return "idle";
   if (!hasResourceShare && hasLaborShare) return "labor";
   if (hasResourceShare && !hasLaborShare) return "resource";
-  if (hasResourceShare && hasLaborShare) return "both";
+  // Any mix of labor + resource is considered custom
+  if (hasResourceShare && hasLaborShare) return "custom";
 
   return "custom";
 };
