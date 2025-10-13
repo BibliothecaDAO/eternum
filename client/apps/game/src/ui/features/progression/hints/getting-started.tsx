@@ -29,17 +29,17 @@ export const GettingStarted = () => {
     {
       title: "Materials: The Lifeblood of Realms",
       content:
-        "Materials are tangible, tokenized assets. Categories include: Food (Wheat, Fish - vital for production and armies), Resources (22 types, e.g., Wood, Stone, Dragonhide), Troops (units for armies), Donkeys (for transport), Labor (for 'simple mode' building/production, acquired by burning resources), and Ancient Fragments (for Hyperstructures). All materials (except Labor) can be bridged out as ERC20 tokens via Realms/Banks and have weight affecting storage and transport.",
+        "Materials are tangible, tokenized assets. Categories include: Food (Wheat, Fish - vital for production and armies), Resources (22 types, e.g., Wood, Stone, Dragonhide), Troops (units for armies), Donkeys (for transport), Labor (for 'labor mode' building/production, acquired by burning resources), and Ancient Fragments (for Hyperstructures). All materials (except Labor) can be bridged out as ERC20 tokens via Realms/Banks and have weight affecting storage and transport.",
     },
     {
       title: "Buildings & Construction",
       content:
-        "Construction uses either Standard mode (resource-efficient) or Simple mode (labor-focused). Key building types: The Keep (central structure), Resource Buildings (for each of the 22 resources), Economic Buildings (Farms, Markets, etc.), and Military Buildings (for troop production). Buildings require available buildable hexes and population capacity, which increase with Realm/Village upgrades.",
+        "Construction uses either Resource mode (resource-efficient) or Labor mode (labor-focused). Key building types: The Keep (central structure), Resource Buildings (for each of the 22 resources), Economic Buildings (Farms, Markets, etc.), and Military Buildings (for troop production). Buildings require available buildable hexes and population capacity, which increase with Realm/Village upgrades.",
     },
     {
       title: "Production Essentials",
       content:
-        "Production also has Standard (resource-intensive) or Simple (food and labor) modes. Food is unique as it can be produced without inputs. Other resources require combinations of other resources or labor. Labor itself is produced by burning resources. Troops and Donkeys also require production.",
+        "Production also has Resource (resource-intensive) or Labor (food and labor) modes. Food is unique as it can be produced without inputs. Other resources require combinations of other resources or labor. Labor itself is produced by burning resources. Troops and Donkeys also require production.",
     },
     {
       title: "The World Map & Exploration",

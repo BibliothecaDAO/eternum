@@ -151,8 +151,8 @@ export const AutomationForm: React.FC<AutomationFormProps> = ({
               <SelectValue placeholder="Select type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={ProductionType.ResourceToResource}>Standard (Resource-based)</SelectItem>
-              <SelectItem value={ProductionType.LaborToResource}>Simple (Labor-based)</SelectItem>
+              <SelectItem value={ProductionType.ResourceToResource}>Resource (Resource-based)</SelectItem>
+              <SelectItem value={ProductionType.LaborToResource}>Labor (Labor-based)</SelectItem>
             </SelectContent>
           </Select>
           <div className="text-xs text-gold/50 mb-1">Choose how automation will convert resources.</div>

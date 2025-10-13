@@ -169,7 +169,7 @@ export const ResourceProductionControls = ({
 
   const tabs = [
     {
-      label: "Standard Production",
+      label: "Resource Production",
       component: (
         <RawResourcesPanel
           selectedResource={selectedResource}
@@ -183,7 +183,7 @@ export const ResourceProductionControls = ({
       ),
     },
     {
-      label: "Simple Production",
+      label: "Labor Production",
       component: (
         <div>
           {laborCurrentInputs.length > 0 && (
