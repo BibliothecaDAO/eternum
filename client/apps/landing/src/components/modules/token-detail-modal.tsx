@@ -415,7 +415,22 @@ export const TokenDetailModal = ({
                       <Separator orientation="vertical" className="h-4" />
                       <div className="flex items-center gap-2">
                         <span className="text-muted-foreground text-sm">Owned By</span>
-                        <span className="text-foreground">{shortenHex(tokenData.token_owner ?? "", 10)}</span>
+                        {(() => {
+                          const v = (tokenData as any)?.token_owner as unknown;
+                          let addr = "";
+                          if (typeof v === "string") {
+                            addr = v;
+                          } else if (typeof v === "number" || typeof v === "bigint") {
+                            try {
+                              addr = `0x${BigInt(v).toString(16)}`;
+                            } catch {}
+                          } else if (v != null) {
+                            try {
+                              addr = String(v);
+                            } catch {}
+                          }
+                          return <span className="text-foreground">{addr ? shortenHex(addr, 10) : ""}</span>;
+                        })()}
                       </div>
                     </div>
                   </div>

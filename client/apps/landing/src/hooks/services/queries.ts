@@ -66,99 +66,52 @@ export const QUERIES = {
           );
   `,
   COLLECTION_STATISTICS: `
-      /* ────────────────────────────────────────────────────────────────────────────
-      ❶  Gather ACTIVE orders and count them
-      ❷  Decode each 0x-hex price in marketplace-MarketOrderEvent → integer (total volume)
-      ❸  Decode ACTIVE order prices → integer (floor price)
-      ❹  Return the scalars as one record
-      ────────────────────────────────────────────────────────────────────────── */
-    WITH
-    /* ❶ ----------------------------------------------------------------------- */
-    active_orders AS (
+      /* Fast collection stats: count active orders + get floor price.
+         We avoid recursive hex decoding and heavy joins. The price column
+         is stored as a fixed 0x-prefixed, zero-padded 64-hex string, so
+         MIN(price) yields the numeric floor. */
+      WITH active_orders AS (
         SELECT mo."order.price" AS price_hex
         FROM   "marketplace-MarketOrderModel" AS mo
-        JOIN   token_balances tb
-               ON  tb.contract_address = "{contractAddress}"
-               AND substr(tb.token_id, instr(tb.token_id, ':') + 1) = printf("0x%064x", mo."order.token_id")
-               /* normalise both addresses before comparing ---------- */
-               AND ltrim(lower(replace(mo."order.owner" , "0x","")), "0")
-                   = ltrim(lower(replace(tb.account_address, "0x","")), "0")
-               AND tb.balance != "0x0000000000000000000000000000000000000000000000000000000000000000"
         WHERE  mo."order.active" = 1
-        AND    mo."order.collection_id" = {collectionId}
-        AND    mo."order.expiration" > strftime('%s','now')
-    ),
-    total_active AS (
-        SELECT COUNT(*) AS active_order_count
-        FROM   active_orders
-    ),
-
-    /* ❷ ----------------------------------------------------------------------- */
-    accepted AS (                           -- only "Accepted" events
-        SELECT "market_order.price" AS hex_price
-        FROM   "marketplace-MarketOrderEvent"
-        WHERE  state = 'Accepted'
-        AND    "market_order.collection_id" = {collectionId}
-    ),
-    -- recursive hex-string → integer for accepted events
-    digits(hex, pos, len, val) AS (
-        SELECT lower(substr(hex_price, 3)),      -- strip leading 0x
-               1,
-               length(substr(hex_price, 3)),
-               0
-        FROM   accepted
-        UNION ALL
-        SELECT hex,
-               pos + 1,
-               len,
-               val * 16 + instr('0123456789abcdef', substr(hex, pos, 1)) - 1
-        FROM   digits
-        WHERE  pos <= len
-    ),
-    decoded AS (                                -- final value for each accepted row
-        SELECT val AS wei
-        FROM   digits
-        WHERE  pos = len + 1
-    ),
-    total_volume AS (
-        SELECT SUM(wei) AS open_orders_total_wei
-        FROM   decoded
-    ),
-
-    /* ❸ ----------------------------------------------------------------------- */
-    -- recursive hex-string → integer for ACTIVE order prices to compute floor
-    digits_active(hex, pos, len, val) AS (
-        SELECT lower(substr(price_hex, 3)),
-               1,
-               length(substr(price_hex, 3)),
-               0
-        FROM   active_orders
-        UNION ALL
-        SELECT hex,
-               pos + 1,
-               len,
-               val * 16 + instr('0123456789abcdef', substr(hex, pos, 1)) - 1
-        FROM   digits_active
-        WHERE  pos <= len
-    ),
-    decoded_active AS (
-        SELECT val AS wei
-        FROM   digits_active
-        WHERE  pos = len + 1
-    ),
-    floor_price AS (
-        SELECT MIN(wei) AS floor_price_wei
-        FROM   decoded_active
+          AND  mo."order.collection_id" = {collectionId}
+          AND  mo."order.expiration" > strftime('%s','now')
+      )
+      SELECT
+        COUNT(*)               AS active_order_count,
+        NULL                   AS open_orders_total_wei, -- computed client-side
+        MIN(price_hex)         AS floor_price_wei
+      FROM active_orders;
+  `,
+  /* Prices for Accepted events only; summed client-side as BigInt */
+  COLLECTION_ACCEPTED_EVENT_PRICES: `
+    SELECT "market_order.price" AS price_hex
+    FROM   "marketplace-MarketOrderEvent"
+    WHERE  state = 'Accepted'
+      AND  "market_order.collection_id" = {collectionId}
+  `,
+  /* Fast active count + floor using a stricter ownership check via EXISTS.
+     Keep around in case we want correctness over speed on some pages. */
+  COLLECTION_ACTIVE_AND_FLOOR_WITH_OWNERSHIP: `
+    WITH active_orders AS (
+      SELECT mo."order.price" AS price_hex
+      FROM   "marketplace-MarketOrderModel" AS mo
+      WHERE  mo."order.active" = 1
+        AND  mo."order.collection_id" = {collectionId}
+        AND  mo."order.expiration" > strftime('%s','now')
+        AND  EXISTS (
+               SELECT 1
+               FROM   token_balances tb
+               WHERE  tb.contract_address = "{contractAddress}"
+                 AND  tb.token_id = printf("{contractAddress}:%s", printf("0x%064x", mo."order.token_id"))
+                 AND  lower(tb.account_address) = lower(mo."order.owner")
+                 AND  tb.balance != "0x0000000000000000000000000000000000000000000000000000000000000000"
+             )
     )
-
-    /* ❹ ----------------------------------------------------------------------- */
     SELECT
-        total_active.active_order_count,
-        total_volume.open_orders_total_wei,
-        floor_price.floor_price_wei
-    FROM   total_active
-    CROSS  JOIN total_volume
-    CROSS  JOIN floor_price;
+      COUNT(*)       AS active_order_count,
+      MIN(price_hex) AS floor_price_wei
+    FROM active_orders
   `,
   OPEN_ORDERS_BY_PRICE: `
     /* Paginated active orders query:
@@ -292,18 +245,92 @@ WITH limited_active_orders AS (
   AND tb.account_address = '{trimmedAccountAddress}';
   `,
   ALL_COLLECTION_TOKENS: `
-    /* Fetch tokens in collection with enhanced filtering, sorting, and pagination */
+    /* Deprecated: kept for reference. Use ALL_COLLECTION_TOKENS_LISTED or ALL_COLLECTION_TOKENS_FULL_PAGED. */
+    SELECT 1 WHERE 0
+  `,
+  /* Listed-only, page first then hydrate metadata. Supports traitFilters (on tokens metadata) and ordering. */
+  ALL_COLLECTION_TOKENS_LISTED: `
     WITH active_orders AS (
       SELECT
-        printf("0x%064x", mo."order.token_id") AS token_id_hex,
+        printf('0x%064x', mo."order.token_id") AS token_id_hex,
         mo."order.price" AS price_hex,
         mo."order.expiration" AS expiration,
         mo."order.owner" AS order_owner,
         mo.order_id
       FROM "marketplace-MarketOrderModel" AS mo
       WHERE mo."order.active" = 1
-        AND mo."order.expiration" > strftime('%s','now')
         AND mo."order.collection_id" = {collectionId}
+        AND mo."order.expiration" > strftime('%s','now')
+        AND ('{ownerAddress}' = '' OR mo."order.owner" = '{ownerAddress}')
+    ),
+    paged AS (
+      SELECT token_id_hex
+      FROM active_orders
+      {listedOrderByPaged}
+      {limitOffsetClause}
+    ),
+    tokens_latest AS (
+      SELECT token_id, name, symbol, contract_address, MAX(metadata) AS metadata
+      FROM tokens
+      WHERE contract_address = '{contractAddress}'
+        AND token_id IN (SELECT token_id_hex FROM paged)
+      GROUP BY token_id
+    )
+    SELECT
+      a.token_id_hex,
+      substr(a.token_id_hex, 3) AS token_id,
+      1 AS is_listed,
+      NULL AS token_owner,
+      a.price_hex,
+      a.expiration,
+      a.order_owner,
+      a.order_id,
+      NULL AS balance,
+      t.name,
+      t.symbol,
+      t.metadata,
+      '{contractAddress}' AS contract_address
+    FROM paged p
+    JOIN active_orders a ON a.token_id_hex = p.token_id_hex
+    LEFT JOIN tokens_latest t ON t.token_id = a.token_id_hex
+    WHERE 1=1
+      {traitFilters}
+    {listedOrderByFinal}
+  `,
+  ALL_COLLECTION_TOKENS_LISTED_COUNT: `
+    WITH active_orders AS (
+      SELECT printf('0x%064x', mo."order.token_id") AS token_id_hex
+      FROM "marketplace-MarketOrderModel" AS mo
+      WHERE mo."order.active" = 1
+        AND mo."order.collection_id" = {collectionId}
+        AND mo."order.expiration" > strftime('%s','now')
+        AND ('{ownerAddress}' = '' OR mo."order.owner" = '{ownerAddress}')
+    ),
+    tokens_latest AS (
+      SELECT token_id, MAX(metadata) AS metadata
+      FROM tokens
+      WHERE contract_address = '{contractAddress}'
+      GROUP BY token_id
+    )
+    SELECT COUNT(*) AS total_count
+    FROM active_orders a
+    LEFT JOIN tokens_latest t ON t.token_id = a.token_id_hex
+    WHERE 1=1
+      {traitFilters}
+  `,
+  /* Full view: union owned + listed, page first, then hydrate metadata. */
+  ALL_COLLECTION_TOKENS_FULL_PAGED: `
+    WITH active_orders AS (
+      SELECT
+        printf('0x%064x', mo."order.token_id") AS token_id_hex,
+        mo."order.price" AS price_hex,
+        mo."order.expiration" AS expiration,
+        mo."order.owner" AS order_owner,
+        mo.order_id
+      FROM "marketplace-MarketOrderModel" AS mo
+      WHERE mo."order.active" = 1
+        AND mo."order.collection_id" = {collectionId}
+        AND mo."order.expiration" > strftime('%s','now')
         AND ('{ownerAddress}' = '' OR mo."order.owner" = '{ownerAddress}')
     ),
     owned_tokens AS (
@@ -313,10 +340,9 @@ WITH limited_active_orders AS (
         tb.balance
       FROM token_balances tb
       WHERE tb.contract_address = '{contractAddress}'
-        AND tb.balance != "0x0000000000000000000000000000000000000000000000000000000000000000"
+        AND tb.balance != '0x0000000000000000000000000000000000000000000000000000000000000000'
     ),
     collection_tokens AS (
-      /* Union of listed tokens and owned tokens to avoid full tokens scan */
       SELECT 
         ot.token_id_hex,
         ot.token_owner,
@@ -328,10 +354,7 @@ WITH limited_active_orders AS (
         CASE WHEN ao.order_id IS NOT NULL THEN 1 ELSE 0 END AS is_listed
       FROM owned_tokens ot
       LEFT JOIN active_orders ao ON ao.token_id_hex = ot.token_id_hex
-      
       UNION ALL
-      
-      /* Include listed tokens that have no current owner */
       SELECT 
         ao.token_id_hex,
         NULL AS token_owner,
@@ -346,35 +369,71 @@ WITH limited_active_orders AS (
         SELECT 1 FROM owned_tokens ot WHERE ot.token_id_hex = ao.token_id_hex
       )
     ),
-    filtered_tokens AS (
-      SELECT
-        ct.token_id_hex,
-        substr(ct.token_id_hex, 3) AS token_id,
-        ct.is_listed,
-        ct.token_owner,
-        ct.price_hex,
-        ct.expiration,
-        ct.order_owner,
-        ct.order_id,
-        ct.balance,
-        ct.price_hex AS price_sort_key,
-        t.name,
-        t.symbol,
-        t.metadata,
-        '{contractAddress}' AS contract_address
-      FROM collection_tokens ct
-      /* Join tokens only for the limited set from collection_tokens */
-      LEFT JOIN tokens t 
-        ON t.token_id = ct.token_id_hex 
-        AND t.contract_address = '{contractAddress}'
-      WHERE ct.token_id_hex != '0x0000000000000000000000000000000000000000000000000000000000000000'
-        {traitFilters}
-        {listedOnlyFilter}
-        AND t.token_id != '0x0000000000000000000000000000000000000000000000000000000000000000'
+    paged AS (
+      SELECT token_id_hex
+      FROM collection_tokens
+      {fullOrderByPaged}
+      {limitOffsetClause}
+    ),
+    tokens_latest AS (
+      SELECT token_id, name, symbol, contract_address, MAX(metadata) AS metadata
+      FROM tokens
+      WHERE contract_address = '{contractAddress}'
+        AND token_id IN (SELECT token_id_hex FROM paged)
+      GROUP BY token_id
     )
-    SELECT * FROM filtered_tokens
-    {orderByClause}
-    {limitOffsetClause}
+    SELECT
+      ct.token_id_hex,
+      substr(ct.token_id_hex, 3) AS token_id,
+      ct.is_listed,
+      ct.token_owner,
+      ct.price_hex,
+      ct.expiration,
+      ct.order_owner,
+      ct.order_id,
+      ct.balance,
+      t.name,
+      t.symbol,
+      t.metadata,
+      '{contractAddress}' AS contract_address
+    FROM paged p
+    JOIN collection_tokens ct ON ct.token_id_hex = p.token_id_hex
+    LEFT JOIN tokens_latest t ON t.token_id = ct.token_id_hex
+    WHERE 1=1
+      {traitFilters}
+    {fullOrderByFinal}
+  `,
+  ALL_COLLECTION_TOKENS_FULL_COUNT: `
+    WITH active_orders AS (
+      SELECT printf('0x%064x', mo."order.token_id") AS token_id_hex
+      FROM "marketplace-MarketOrderModel" AS mo
+      WHERE mo."order.active" = 1
+        AND mo."order.collection_id" = {collectionId}
+        AND mo."order.expiration" > strftime('%s','now')
+        AND ('{ownerAddress}' = '' OR mo."order.owner" = '{ownerAddress}')
+    ),
+    owned_tokens AS (
+      SELECT DISTINCT substr(tb.token_id, instr(tb.token_id, ':') + 1) AS token_id_hex
+      FROM token_balances tb
+      WHERE tb.contract_address = '{contractAddress}'
+        AND tb.balance != '0x0000000000000000000000000000000000000000000000000000000000000000'
+    ),
+    all_tokens AS (
+      SELECT token_id_hex FROM owned_tokens
+      UNION
+      SELECT token_id_hex FROM active_orders
+    ),
+    tokens_latest AS (
+      SELECT token_id, MAX(metadata) AS metadata
+      FROM tokens
+      WHERE contract_address = '{contractAddress}'
+      GROUP BY token_id
+    )
+    SELECT COUNT(*) AS total_count
+    FROM all_tokens at
+    LEFT JOIN tokens_latest t ON t.token_id = at.token_id_hex
+    WHERE 1=1
+      {traitFilters}
   `,
   ALL_COLLECTION_TOKENS_COUNT: `
     /* Count total tokens matching filters for pagination */
@@ -681,29 +740,69 @@ FROM   "s1_eternum-Structure";`,
   TOTAL_TRANSACTIONS: `SELECT COUNT(*) AS total_rows
 FROM transactions;`,
   COLLECTION_TRAITS: `
-    /* Extract all unique trait types and values from collection metadata efficiently */
-    WITH traits_extracted AS (
-      SELECT 
-        t.metadata,
-        t.contract_address
-      FROM tokens t
-      WHERE t.contract_address = '{contractAddress}'
-        AND t.metadata IS NOT NULL
-        AND t.metadata != ''
+    /* Faster: de-dupe per token_id and use json_each(path); no ORDER BY */
+    WITH token_meta AS (
+      SELECT t.token_id, MAX(t.metadata) AS metadata
+      FROM   tokens t
+      WHERE  t.contract_address = '{contractAddress}'
+        AND  t.metadata IS NOT NULL
+        AND  t.metadata != ''
+        AND  json_type(t.metadata, '$.attributes') = 'array'
+      GROUP BY t.token_id
+    ),
+    attrs AS (
+      SELECT je.value AS attr
+      FROM   token_meta tm
+      JOIN   json_each(tm.metadata, '$.attributes') AS je
     )
     SELECT DISTINCT
       COALESCE(
-        json_extract(attr.value, '$.trait_type'),
-        json_extract(attr.value, '$.trait')
+        json_extract(attr, '$.trait_type'),
+        json_extract(attr, '$.trait')
       ) AS trait_type,
-      json_extract(attr.value, '$.value') AS trait_value
-    FROM traits_extracted t,
-         json_each(json_extract(t.metadata, '$.attributes')) AS attr
+      json_extract(attr, '$.value') AS trait_value
+    FROM attrs
     WHERE COALESCE(
-            json_extract(attr.value, '$.trait_type'),
-            json_extract(attr.value, '$.trait')
+            json_extract(attr, '$.trait_type'),
+            json_extract(attr, '$.trait')
           ) IS NOT NULL
-      AND json_extract(attr.value, '$.value') IS NOT NULL
-    ORDER BY trait_type, trait_value
+      AND json_extract(attr, '$.value') IS NOT NULL
+  `,
+  COLLECTION_TRAITS_LISTED: `
+    /* Traits derived only from currently listed tokens (much faster) */
+    WITH active_orders AS (
+      SELECT printf('0x%064x', mo."order.token_id") AS token_id_hex
+      FROM   "marketplace-MarketOrderModel" AS mo
+      WHERE  mo."order.active" = 1
+        AND  mo."order.expiration" > strftime('%s','now')
+        AND  mo."order.collection_id" = {collectionId}
+    ),
+    token_meta AS (
+      SELECT t.token_id, MAX(t.metadata) AS metadata
+      FROM   tokens t
+      JOIN   active_orders ao ON ao.token_id_hex = t.token_id
+      WHERE  t.contract_address = '{contractAddress}'
+        AND  t.metadata IS NOT NULL
+        AND  t.metadata != ''
+        AND  json_type(t.metadata, '$.attributes') = 'array'
+      GROUP BY t.token_id
+    ),
+    attrs AS (
+      SELECT je.value AS attr
+      FROM   token_meta tm
+      JOIN   json_each(tm.metadata, '$.attributes') AS je
+    )
+    SELECT DISTINCT
+      COALESCE(
+        json_extract(attr, '$.trait_type'),
+        json_extract(attr, '$.trait')
+      ) AS trait_type,
+      json_extract(attr, '$.value') AS trait_value
+    FROM attrs
+    WHERE COALESCE(
+            json_extract(attr, '$.trait_type'),
+            json_extract(attr, '$.trait')
+          ) IS NOT NULL
+      AND json_extract(attr, '$.value') IS NOT NULL
   `,
 };
