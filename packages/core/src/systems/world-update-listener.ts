@@ -17,6 +17,7 @@ import {
   type Component,
   defineComponentSystem,
   defineQuery,
+  type Entity,
   getComponentValue,
   HasValue,
   isComponentUpdate,
@@ -85,6 +86,28 @@ export class WorldUpdateListener {
       this.registerStoryEventStream();
       WorldUpdateListener.storyEventRegistered = true;
     }
+  }
+
+  private resolveEntityId(
+    entityId: ID | undefined,
+    updateEntity: Entity,
+    getComponentEntityId: () => ID | undefined,
+  ): ID | undefined {
+    if (entityId) {
+      return entityId;
+    }
+
+    console.log(`[WorldUpdateListener] entityId not in currentState, checking component:`, updateEntity);
+
+    const componentEntityId = getComponentEntityId();
+
+    if (componentEntityId) {
+      return componentEntityId;
+    }
+
+    console.log(`[WorldUpdateListener] entityId not in component, checking mapDataStore:`, updateEntity);
+
+    return this.mapDataStore.getEntityIdFromEntity(String(updateEntity));
   }
 
   private setupSystem<T>(
@@ -248,8 +271,20 @@ export class WorldUpdateListener {
               const normalizedOwnerStructureId =
                 currentState.owner && currentState.owner !== 0 ? currentState.owner : null;
 
+              const entityId = this.resolveEntityId(currentState.explorer_id as ID | undefined, update.entity, () => {
+                const componentState = getComponentValue(this.setup.components.ExplorerTroops, update.entity) as
+                  | { explorer_id?: ID }
+                  | undefined;
+                return componentState?.explorer_id;
+              });
+
+              if (!entityId) {
+                console.log("[onExplorerTroopsUpdate] Unable to resolve entityId, update:", update);
+                return;
+              }
+
               return {
-                entityId: currentState.explorer_id,
+                entityId,
                 troopCount: divideByPrecision(Number(currentState.troops.count)),
                 onChainStamina: {
                   amount: BigInt(currentState.troops.stamina.amount),
@@ -414,6 +449,8 @@ export class WorldUpdateListener {
           this.setup.components.Structure,
           callback,
           async (update: any): Promise<StructureSystemUpdate | undefined> => {
+            console.log("[onStructureUpdate] raw update:", update);
+
             if (isComponentUpdate(update, this.setup.components.Structure)) {
               const [currentState, _prevState] = update.value;
 
@@ -448,12 +485,24 @@ export class WorldUpdateListener {
 
               const playerName = await this.dataEnhancer.getPlayerName(ownerString);
 
-              this.dataEnhancer.updateStructureOwner(currentState.entity_id, ownerValue, playerName);
+              const entityId = this.resolveEntityId(currentState.entity_id as ID | undefined, update.entity, () => {
+                const componentState = getComponentValue(this.setup.components.Structure, update.entity) as
+                  | { entity_id?: ID }
+                  | undefined;
+                return componentState?.entity_id;
+              });
+
+              if (!entityId) {
+                console.log("[onStructureUpdate] Unable to resolve entityId, update:", update);
+                return;
+              }
+
+              this.dataEnhancer.updateStructureOwner(entityId, ownerValue, playerName);
 
               const baseCoords = currentState.base ?? { coord_x: 0, coord_y: 0 };
 
-              return {
-                entityId: currentState.entity_id,
+              const structureSystemUpdate: StructureSystemUpdate = {
+                entityId,
                 guardArmies,
                 owner: {
                   address: currentState.owner,
@@ -468,6 +517,10 @@ export class WorldUpdateListener {
                   troopGuards?.delta?.battle_cooldown_end ?? 0,
                 ),
               };
+
+              console.log("[onStructureUpdate] StructureSystemUpdate:", structureSystemUpdate);
+
+              return structureSystemUpdate;
             }
           },
           false,
@@ -526,6 +579,7 @@ export class WorldUpdateListener {
           this.setup.components.Tile,
           callback,
           async (update: any) => {
+            console.log("[onTileUpdate] raw update:", update);
             const newState = update.value[0];
             const prevState = update.value[1];
 

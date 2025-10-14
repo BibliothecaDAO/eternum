@@ -85,14 +85,10 @@ export const ProductionModal = ({ preSelectedResource }: { preSelectedResource?:
   const playerRealms = usePlayerOwnedRealmsInfo();
   const playerVillages = usePlayerOwnedVillagesInfo();
 
-  const playerRealmsAndVillages = useMemo(() => {
-    return [...playerRealms, ...playerVillages];
-  }, [playerRealms, playerVillages]);
-
   return (
     <ModalContainer size="full">
       <ProductionContainer
-        playerRealmsAndVillages={playerRealmsAndVillages}
+        playerRealmsAndVillages={[...playerRealms, ...playerVillages]}
         preSelectedResource={preSelectedResource}
       />
     </ModalContainer>

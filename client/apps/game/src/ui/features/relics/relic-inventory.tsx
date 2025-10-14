@@ -8,6 +8,10 @@ import { EntityWithRelics, PlayerRelicsData } from "@bibliothecadao/torii";
 import { ContractAddress, RelicRecipientType, StructureType } from "@bibliothecadao/types";
 import { Castle, Crown, Landmark, Pickaxe, Sparkles, Swords } from "lucide-react";
 import { useMemo } from "react";
+import { useLocation } from "react-router-dom";
+
+import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
+import { NavigateToPositionIcon } from "@/ui/features/military/components/army-chip";
 import { RelicCard } from "./relic-card";
 
 interface RelicInventoryProps {
@@ -42,6 +46,8 @@ export const RelicInventory = ({ relicsData }: RelicInventoryProps) => {
     const {
       setup: { components },
     } = useDojo();
+    const location = useLocation();
+    const isOnMap = useMemo(() => location.pathname.includes("/play"), [location.pathname]);
     const totalRelics = entities.reduce((sum, entity) => sum + entity.relics.length, 0);
     const entitiesWithInfo = useMemo(() => {
       return entities
@@ -71,48 +77,66 @@ export const RelicInventory = ({ relicsData }: RelicInventoryProps) => {
           </div>
         ) : (
           <div className="space-y-4">
-            {entitiesWithInfo.map((entity) => (
-              <div key={entity.entityId} className="bg-brown/20 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    {entity.info.structureCategory && getStructureIcon(entity.info.structureCategory)}
-                    {!entity.info.structureCategory && <Swords className="w-5 h-5 text-gold" />}
-                    <h4 className="font-semibold text-gold">{entity.info.name?.name}</h4>
-                    <span className="text-xs text-gold/60">ID: {entity.entityId}</span>
-                  </div>
-                  <div className="text-sm text-gold/70">
-                    Position: ({entity.position.x}, {entity.position.y})
-                  </div>
-                </div>
+            {entitiesWithInfo.map((entity) => {
+              const isStructure = Boolean(entity.info.structureCategory);
+              const positionInstance = new Position({
+                x: Number(entity.position.x),
+                y: Number(entity.position.y),
+              });
 
-                {entity.relics.length === 0 ? (
-                  <div className="text-sm text-gold/60 italic">No relics</div>
-                ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-                    {entity.relics.map((relic) => {
-                      const isActive = false;
-
-                      return (
-                        <RelicCard
-                          key={`${entity.entityId}-${relic.resourceId}`}
-                          resourceId={relic.resourceId}
-                          amount={relic.amount}
-                          entityId={entity.entityId}
-                          entityOwnerId={entity.structureType ? entity.entityId : Number(entity.info.explorer?.owner)}
-                          entityType={entity.structureType ? RelicRecipientType.Structure : RelicRecipientType.Explorer}
-                          isActive={isActive}
-                          onActivate={(resourceId, amount) => {
-                            console.log(
-                              `Activating relic ${resourceId} (amount: ${amount}) on entity ${entity.entityId}`,
-                            );
-                          }}
+              return (
+                <div key={entity.entityId} className="bg-brown/20 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      {entity.info.structureCategory && getStructureIcon(entity.info.structureCategory)}
+                      {!entity.info.structureCategory && <Swords className="w-5 h-5 text-gold" />}
+                      <h4 className="font-semibold text-gold">{entity.info.name?.name}</h4>
+                      {isStructure && <span className="text-xs text-gold/60">ID: {entity.entityId}</span>}
+                    </div>
+                    {isStructure ? (
+                      <div className="text-sm text-gold/70">
+                        Position: ({entity.position.x}, {entity.position.y})
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <ViewOnMapIcon
+                          className="w-5 h-5 hover:scale-110 transition-all duration-300 cursor-pointer"
+                          position={positionInstance}
                         />
-                      );
-                    })}
+                        {isOnMap && <NavigateToPositionIcon position={positionInstance} />}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            ))}
+
+                  {entity.relics.length === 0 ? (
+                    <div className="text-sm text-gold/60 italic">No relics</div>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                      {entity.relics.map((relic) => {
+                        const isActive = false;
+
+                        return (
+                          <RelicCard
+                            key={`${entity.entityId}-${relic.resourceId}`}
+                            resourceId={relic.resourceId}
+                            amount={relic.amount}
+                            entityId={entity.entityId}
+                            entityOwnerId={entity.structureType ? entity.entityId : Number(entity.info.explorer?.owner)}
+                            entityType={entity.structureType ? RelicRecipientType.Structure : RelicRecipientType.Explorer}
+                            isActive={isActive}
+                            onActivate={(resourceId, amount) => {
+                              console.log(
+                                `Activating relic ${resourceId} (amount: ${amount}) on entity ${entity.entityId}`,
+                              );
+                            }}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

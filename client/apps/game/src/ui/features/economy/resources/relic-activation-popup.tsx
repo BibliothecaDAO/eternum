@@ -1,9 +1,13 @@
 import Button from "@/ui/design-system/atoms/button";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { sqlApi } from "@/services/api";
+import { countAvailableRelics } from "@/ui/features/relics/utils/count-available-relics";
 import { BasePopup } from "@/ui/design-system/molecules/base-popup";
 import { getRecipientTypeColor, getRelicTypeColor } from "@/ui/design-system/molecules/relic-colors";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { divideByPrecision } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   findResourceById,
   getRelicInfo,
@@ -21,6 +25,7 @@ interface RelicActivationPopupProps {
   relicId: ID;
   relicBalance: number;
   onClose: () => void;
+  onActivated?: () => void;
 }
 
 export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
@@ -30,6 +35,7 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
   relicId,
   relicBalance,
   onClose,
+  onActivated,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +44,9 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
     setup: { systemCalls },
     account: { account },
   } = useDojo();
+
+  const setAvailableRelicsNumber = useUIStore((state) => state.setAvailableRelicsNumber);
+  const queryClient = useQueryClient();
 
   const relicInfo = useMemo(() => {
     return getRelicInfo(relicId as ResourcesIds);
@@ -95,6 +104,22 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
       });
 
       await applyRelicCall;
+
+      if (account?.address && account.address !== "0x0") {
+        try {
+          const updatedRelics = await sqlApi.fetchAllPlayerRelics(account.address);
+          setAvailableRelicsNumber(countAvailableRelics(updatedRelics));
+        } catch (refreshError) {
+          console.error("Failed to refresh relic data after activation:", refreshError);
+        }
+
+        queryClient.invalidateQueries({
+          predicate: ({ queryKey }) =>
+            Array.isArray(queryKey) && queryKey.length > 1 && queryKey[0] === "playerRelics" && queryKey[1] === account.address,
+        });
+      }
+
+      onActivated?.();
       onClose();
     } catch (err) {
       console.error("Failed to activate relic:", err);

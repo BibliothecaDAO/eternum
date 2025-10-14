@@ -42,7 +42,7 @@ export const HelpContainer = ({
   };
   allowBothDirections?: boolean;
 }) => {
-  const [transferType, setTransferType] = useState<TransferType>(TransferType.Resources);
+  const [transferType, setTransferType] = useState<TransferType>(TransferType.Troops);
   const [swapped, setSwapped] = useState<boolean>(false);
 
   const updateSelectedEntityId = useUIStore((state) => state.updateEntityActionSelectedEntityId);
@@ -119,19 +119,6 @@ export const HelpContainer = ({
           <div className="flex rounded-md overflow-hidden border border-gold/30 shadow-lg">
             <button
               className={`px-8 py-3 text-lg font-semibold transition-all duration-200 ${
-                transferType === TransferType.Resources
-                  ? "bg-gold/20 text-gold border-b-2 border-gold"
-                  : "bg-dark-brown text-gold/70 hover:text-gold hover:bg-brown-900/50"
-              }`}
-              onClick={() => setTransferType(TransferType.Resources)}
-            >
-              <div className="flex items-center">
-                <span className="mr-2">💰</span>
-                Transfer Resources
-              </div>
-            </button>
-            <button
-              className={`px-8 py-3 text-lg font-semibold transition-all duration-200 ${
                 transferType === TransferType.Troops
                   ? "bg-gold/20 text-gold border-b-2 border-gold"
                   : "bg-dark-brown text-gold/70 hover:text-gold hover:bg-brown-900/50"
@@ -141,6 +128,19 @@ export const HelpContainer = ({
               <div className="flex items-center">
                 <span className="mr-2">⚔️</span>
                 Transfer Troops
+              </div>
+            </button>
+            <button
+              className={`px-8 py-3 text-lg font-semibold transition-all duration-200 ${
+                transferType === TransferType.Resources
+                  ? "bg-gold/20 text-gold border-b-2 border-gold"
+                  : "bg-dark-brown text-gold/70 hover:text-gold hover:bg-brown-900/50"
+              }`}
+              onClick={() => setTransferType(TransferType.Resources)}
+            >
+              <div className="flex items-center">
+                <span className="mr-2">💰</span>
+                Transfer Resources
               </div>
             </button>
           </div>

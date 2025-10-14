@@ -24,13 +24,13 @@ import {
   getDirectionBetweenAdjacentHexes,
   RESOURCE_PRECISION,
   StructureType,
+  type TroopType,
   type ActorType,
   type ID,
   type RelicEffectWithEndTick,
   type ResourcesIds,
   type Troops,
   type TroopTier,
-  type TroopType,
 } from "@bibliothecadao/types";
 
 interface ActorSummary {
@@ -136,10 +136,24 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     return army ? { troops: buildTroopSnapshot(army.troops) } : null;
   }, [attackerType, structureGuards, ExplorerTroops, attacker.id]);
 
-  const targetArmyData: { troops: Troops } | null = useMemo(() => {
-    if (!targetData?.info[0]) return null;
-    return { troops: buildTroopSnapshot(targetData.info[0]) };
+  const targetTroopSnapshots = useMemo(() => {
+    if (!targetData?.info) return [];
+    return targetData.info.map((info) => buildTroopSnapshot(info));
   }, [targetData]);
+
+  const isStructureTarget = targetData?.targetType === TargetType.Structure;
+  const targetArmyData: { troops: Troops } | null = useMemo(() => {
+    if (!targetTroopSnapshots[0]) return null;
+    return { troops: targetTroopSnapshots[0] };
+  }, [targetTroopSnapshots]);
+
+  const queuedTargetGuards = useMemo(
+    () => (isStructureTarget ? targetTroopSnapshots.slice(1) : []),
+    [isStructureTarget, targetTroopSnapshots],
+  );
+
+  const totalGuardCount = isStructureTarget ? targetTroopSnapshots.length : 0;
+  const hasQueuedGuards = totalGuardCount > 1;
 
   const isVillageWithoutTroops = useMemo(() => {
     return (
@@ -230,12 +244,27 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const outcomeLabel = (() => {
     if (!battleSimulation) {
       if (targetArmyData) return "Simulating...";
+      if (isStructureTarget && hasQueuedGuards) return `${totalGuardCount} guards defending`;
       return "No defenders";
     }
 
-    if (battleSimulation.attackerDamage > battleSimulation.defenderDamage) return "Victory";
-    if (battleSimulation.attackerDamage === battleSimulation.defenderDamage) return "Draw";
-    return "Defeat";
+    let baseLabel: string;
+
+    if (battleSimulation.attackerDamage > battleSimulation.defenderDamage) baseLabel = "Victory";
+    else if (battleSimulation.attackerDamage === battleSimulation.defenderDamage) baseLabel = "Draw";
+    else baseLabel = "Defeat";
+
+    if (!isStructureTarget || !hasQueuedGuards) {
+      return baseLabel;
+    }
+
+    if (defenderRemaining <= 0) {
+      const remaining = queuedTargetGuards.length;
+      const suffix = remaining === 1 ? "1 guard remains" : `${remaining} guards remain`;
+      return `${baseLabel} • ${suffix}`;
+    }
+
+    return `${baseLabel} • Guard 1/${totalGuardCount}`;
   })();
 
   const handleAttack = async () => {
@@ -322,6 +351,24 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     </div>
   );
 
+  const guardStatusMessage = (() => {
+    if (!isStructureTarget || !hasQueuedGuards) return "";
+    if (!battleSimulation || !targetArmyData) {
+      return "Multiple guards are protecting this structure. You'll fight them one after another.";
+    }
+
+    if (defenderRemaining <= 0) {
+      const remaining = queuedTargetGuards.length;
+      return remaining === 1
+        ? "One more guard will replace this one before you can claim the structure."
+        : `${remaining} guards will replace this one before you can claim the structure.`;
+    }
+
+    return queuedTargetGuards.length === 1
+      ? "Defeat this guard and the final defender will take the field."
+      : `Defeat this guard to face ${queuedTargetGuards.length} more guards before you can claim the structure.`;
+  })();
+
   return (
     <div className="w-[280px] max-w-[85vw] rounded-lg border border-gold/30 bg-dark-wood px-3 py-2.5 text-gold shadow-lg">
       <div className="mb-1.5 flex items-center justify-between text-[11px] uppercase tracking-wide text-gold/60">
@@ -348,11 +395,26 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           {targetArmyData ? (
             <>
               {casualtyLine("Your forces", attackerLosses, attackerRemaining, attackerRemaining <= 0)}
-              {casualtyLine("Enemy army", defenderLosses, defenderRemaining, defenderRemaining <= 0)}
+              {casualtyLine(
+                isStructureTarget ? "Active guard" : "Enemy army",
+                defenderLosses,
+                defenderRemaining,
+                defenderRemaining <= 0,
+              )}
             </>
           ) : (
             <div className="rounded-md border border-emerald-500/40 bg-emerald-900/20 px-3 py-2 text-sm text-emerald-200">
               No defending troops. You can claim without resistance.
+            </div>
+          )}
+
+          {isStructureTarget && totalGuardCount > 1 && (
+            <div className="rounded-lg border border-gold/20 bg-dark-brown/70 px-3 py-2 text-xs text-gold/80">
+              <div className="flex items-center justify-between text-[11px] uppercase tracking-wide text-gold/60">
+                <span>More defenders ahead</span>
+                <span>{queuedTargetGuards.length} remaining</span>
+              </div>
+              <p className="mt-1 text-[11px] text-gold/70">{guardStatusMessage}</p>
             </div>
           )}
 
