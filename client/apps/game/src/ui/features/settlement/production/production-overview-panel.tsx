@@ -3,8 +3,8 @@ import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ProductionModal } from "@/ui/features/settlement";
 import { REALM_PRESETS, RealmPresetId, inferRealmPreset } from "@/utils/automation-presets";
-import { getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
-import { usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
+import { getIsBlitz, getStructureName, ResourceManager } from "@bibliothecadao/eternum";
+import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -64,6 +64,7 @@ export const ProductionOverviewPanel = () => {
   const upsertRealm = useAutomationStore((state) => state.upsertRealm);
   const removeRealm = useAutomationStore((state) => state.removeRealm);
   const setRealmPreset = useAutomationStore((state) => state.setRealmPreset);
+  const ensureResourceConfig = useAutomationStore((state) => state.ensureResourceConfig);
   const hydrated = useAutomationStore((state) => state.hydrated);
   const [selectedProduction, setSelectedProduction] = useState<{ realmId: string; resourceId: ResourcesIds } | null>(
     null,
@@ -71,6 +72,9 @@ export const ProductionOverviewPanel = () => {
 
   const playerRealms = usePlayerOwnedRealmsInfo();
   const playerVillages = usePlayerOwnedVillagesInfo();
+  const {
+    setup: { components },
+  } = useDojo();
   const isBlitz = getIsBlitz();
 
   useEffect(() => {
@@ -110,8 +114,30 @@ export const ProductionOverviewPanel = () => {
       const producedResources = automation?.resources ?? {};
       const entityType = automation?.entityType ?? "realm";
 
-      const resourceIds = Object.keys(producedResources)
-        .map((key) => Number(key) as ResourcesIds)
+      // Derive produced resources from live game state (buildings) to enable presets
+      // even before any automation resources are configured.
+      let producedFromBuildings: ResourcesIds[] = [];
+      try {
+        const realmIdNum = Number(realm.entityId);
+        if (components && Number.isFinite(realmIdNum) && realmIdNum > 0) {
+          const resourceManager = new ResourceManager(components, realmIdNum);
+          const resourceComponent = resourceManager.getResource();
+          if (resourceComponent) {
+            const ALL = Object.values(ResourcesIds).filter((v) => typeof v === "number") as ResourcesIds[];
+            for (const resId of ALL) {
+              const prod = ResourceManager.balanceAndProduction(resourceComponent, resId).production;
+              if (prod && prod.building_count > 0) {
+                producedFromBuildings.push(resId);
+              }
+            }
+          }
+        }
+      } catch (_e) {
+        // ignore
+      }
+
+      const configuredIds = Object.keys(producedResources).map((key) => Number(key) as ResourcesIds);
+      const unionIds = Array.from(new Set([...configuredIds, ...producedFromBuildings]))
         .filter((resourceId) => !isAutomationResourceBlocked(resourceId, entityType))
         .sort((a, b) => a - b)
         .slice(0, 8);
@@ -144,7 +170,7 @@ export const ProductionOverviewPanel = () => {
         id: String(realm.entityId),
         name: realmName,
         type: entityType,
-        resourceIds,
+        resourceIds: unionIds,
         lastRun: automation?.lastExecution?.executedAt,
         presetId: inferRealmPreset(automation) ?? "custom",
         productionLookup,
@@ -168,9 +194,29 @@ export const ProductionOverviewPanel = () => {
 
   const handlePresetChange = useCallback(
     (realmId: string, presetId: RealmPresetId) => {
+      // Ensure resource configs exist for resources produced by buildings,
+      // so preset allocations apply immediately.
+      try {
+        const realmIdNum = Number(realmId);
+        if (components && Number.isFinite(realmIdNum) && realmIdNum > 0) {
+          const resourceManager = new ResourceManager(components, realmIdNum);
+          const resourceComponent = resourceManager.getResource();
+          if (resourceComponent) {
+            const ALL = Object.values(ResourcesIds).filter((v) => typeof v === "number") as ResourcesIds[];
+            for (const resId of ALL) {
+              const prod = ResourceManager.balanceAndProduction(resourceComponent, resId).production;
+              if (prod && prod.building_count > 0) {
+                ensureResourceConfig(realmId, resId);
+              }
+            }
+          }
+        }
+      } catch (_e) {
+        // fall through; preset still applies and scheduler will backfill
+      }
       setRealmPreset(realmId, presetId);
     },
-    [setRealmPreset],
+    [components, ensureResourceConfig, setRealmPreset],
   );
 
   const handleGlobalPresetChange = useCallback(

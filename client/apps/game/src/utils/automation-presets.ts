@@ -214,7 +214,9 @@ export const calculatePresetAllocations = (
 };
 
 export const inferRealmPreset = (automation?: RealmAutomationConfig): RealmPresetId => {
-  if (!automation) return "custom";
+  // If no automation context yet, default to labor since
+  // the processor uses a 10% labor baseline for unconfigured resources.
+  if (!automation) return "labor";
   if (automation.presetId && automation.presetId !== "custom") {
     return automation.presetId as RealmPresetId;
   }
@@ -225,13 +227,13 @@ export const inferRealmPreset = (automation?: RealmAutomationConfig): RealmPrese
   );
 
   if (!resources.length) {
-    return "idle";
+    return "labor";
   }
 
   const hasResourceShare = resources.some((setting) => (setting.percentages.resourceToResource ?? 0) > 0);
   const hasLaborShare = resources.some((setting) => (setting.percentages.laborToResource ?? 0) > 0);
 
-  if (!hasResourceShare && !hasLaborShare) return "idle";
+  if (!hasResourceShare && !hasLaborShare) return "labor";
   if (!hasResourceShare && hasLaborShare) return "labor";
   if (hasResourceShare && !hasLaborShare) return "resource";
   // Any mix of labor + resource is considered custom
