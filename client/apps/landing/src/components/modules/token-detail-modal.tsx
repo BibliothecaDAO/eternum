@@ -215,6 +215,11 @@ export const TokenDetailModal = ({
     }
   };
 
+  // Determine ownership validity: current owner must match lister
+  const normalizedCurrentOwner = tokenData.token_owner ? String(tokenData.token_owner).toLowerCase() : undefined;
+  const normalizedOrderOwner = tokenData.order_owner ? String(tokenData.order_owner).toLowerCase() : undefined;
+  const ownershipInvalid = Boolean(isListed && normalizedCurrentOwner && normalizedOrderOwner && normalizedCurrentOwner !== normalizedOrderOwner);
+
   const renderPriceSection = () => {
     if (!isListed || price === undefined) {
       return (
@@ -348,6 +353,14 @@ export const TokenDetailModal = ({
 
     return (
       <div className="flex flex-col items-center sm:items-stretch mt-2">
+        {ownershipInvalid && (
+          <div className="flex items-center justify-center gap-2 text-sm text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-md p-2 mb-2">
+            <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+            <span>
+              This listing is no longer valid because the token has been transferred to a different owner. Purchase is disabled.
+            </span>
+          </div>
+        )}
         {showInsufficientBalance && (
           <div className="flex items-center justify-center gap-2 text-sm text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-md p-2 mb-2">
             <AlertTriangle className="h-5 w-5 flex-shrink-0" />
@@ -365,10 +378,16 @@ export const TokenDetailModal = ({
           onClick={handleAcceptOrder}
           size="lg"
           variant="cta"
-          disabled={isLoading || isSyncing || marketplaceActions.isAcceptingOrder || isExpired}
+          disabled={isLoading || isSyncing || marketplaceActions.isAcceptingOrder || isExpired || ownershipInvalid}
           className="w-full sm:w-auto"
         >
-          {isExpired ? "Listing Expired" : marketplaceActions.isAcceptingOrder ? "Purchasing..." : "Buy Now"}
+          {isExpired
+            ? "Listing Expired"
+            : ownershipInvalid
+              ? "Purchase Disabled"
+              : marketplaceActions.isAcceptingOrder
+                ? "Purchasing..."
+                : "Buy Now"}
         </Button>
       </div>
     );

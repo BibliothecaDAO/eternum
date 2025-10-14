@@ -44,6 +44,18 @@ historical = []
 cache_size = -156_250_000 # 20GB of cache size - increased for better query performance
 page_size = 65_536 # 64KB pages - better for large queries
 
+# Create indexes on auxiliary tables used by marketplace queries
+# Trigger once when marketplace models are registered
+hooks = [
+	{ event = { ModelRegistered = { model_tag = "marketplace-MarketOrderModel" } }, statement = "CREATE INDEX IF NOT EXISTS [idx_tokens_contract_address] ON tokens (contract_address)" },
+	{ event = { ModelRegistered = { model_tag = "marketplace-MarketOrderModel" } }, statement = "CREATE INDEX IF NOT EXISTS [idx_tokens_contract_token] ON tokens (contract_address, token_id)" },
+	{ event = { ModelRegistered = { model_tag = "marketplace-MarketOrderModel" } }, statement = "CREATE INDEX IF NOT EXISTS [idx_token_balances_contract_token] ON token_balances (contract_address, token_id)" },
+	{ event = { ModelRegistered = { model_tag = "marketplace-MarketOrderModel" } }, statement = "CREATE INDEX IF NOT EXISTS [idx_token_balances_contract_account] ON token_balances (contract_address, account_address)" },
+	{ event = { ModelRegistered = { model_tag = "marketplace-MarketOrderModel" } }, statement = "CREATE INDEX IF NOT EXISTS [idx_token_transfers_contract_to] ON token_transfers (contract_address, to_address)" },
+	{ event = { ModelRegistered = { model_tag = "marketplace-MarketOrderModel" } }, statement = "CREATE INDEX IF NOT EXISTS [idx_token_transfers_contract_token_from] ON token_transfers (contract_address, token_id, from_address)" },
+	{ event = { ModelRegistered = { model_tag = "marketplace-MarketOrderModel" } }, statement = "CREATE INDEX IF NOT EXISTS [idx_tb_live_by_contract] ON token_balances (contract_address, token_id, account_address) WHERE balance != '0x0000000000000000000000000000000000000000000000000000000000000000'" },
+]
+
 # Model indices for marketplace performance optimization
 [[sql.model_indices]]
 model_tag = "marketplace-MarketOrderModel"
@@ -58,6 +70,11 @@ fields = ["order.active", "order.collection_id", "order.owner", "order.expiratio
 [[sql.model_indices]]
 model_tag = "marketplace-MarketOrderModel"
 fields = ["order.collection_id", "order.active", "order.price"]
+
+# Composite index optimized for active orders by collection + expiration + price (paging by price)
+[[sql.model_indices]]
+model_tag = "marketplace-MarketOrderModel"
+fields = ["order.collection_id", "order.active", "order.expiration", "order.price"]
 
 # Index for token lookups
 [[sql.model_indices]]
@@ -78,6 +95,15 @@ fields = ["order.active", "order.token_id"]
 [[sql.model_indices]]
 model_tag = "marketplace-MarketOrderModel"
 fields = ["order.expiration", "order.active"]
+
+# Indices for marketplace events (activity, totals)
+[[sql.model_indices]]
+model_tag = "marketplace-MarketOrderEvent"
+fields = ["market_order.collection_id", "state"]
+
+[[sql.model_indices]]
+model_tag = "marketplace-MarketOrderEvent"
+fields = ["internal_executed_at"]
 
 [server]
 http_cors_origins = ["*"]
