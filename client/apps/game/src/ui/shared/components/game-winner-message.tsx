@@ -8,6 +8,7 @@ import { ContractAddress } from "@bibliothecadao/types";
 import { Copy, Share2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import eternumLogoWhite from "../../../../../eternum-mobile/public/images/eternum-logo-white.svg";
 
 type TopPlayer = {
   rank: number;
@@ -59,8 +60,6 @@ const COVER_IMAGES = [
   "/images/covers/blitz/07.png",
   "/images/covers/blitz/08.png",
 ];
-
-const REALMS_LOGO_PATH = "/images/logos/RealmsWorld.png";
 
 const getSecondaryLabel = (player: TopPlayer) => {
   if (player.guildName) return player.guildName;
@@ -166,6 +165,17 @@ export const GameWinnerMessage = () => {
     let objectUrl: string | null = null;
 
     try {
+      if (typeof document !== "undefined") {
+        const fontSet = (document as Document & { fonts?: FontFaceSet }).fonts;
+        if (fontSet && "ready" in fontSet) {
+          try {
+            await fontSet.ready;
+          } catch (error) {
+            console.warn("Font loading check failed", error);
+          }
+        }
+      }
+
       const svgElement = leaderboardSvgRef.current;
       const clone = svgElement.cloneNode(true) as SVGSVGElement;
       clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
@@ -193,7 +203,7 @@ export const GameWinnerMessage = () => {
         const blob = await response.blob();
         const dataUrl = await toDataUrl(blob);
         imageNode.setAttribute("href", dataUrl);
-        imageNode.removeAttribute("xlink:href");
+        imageNode.setAttribute("xlink:href", dataUrl);
       });
 
       await Promise.all(inlineImagePromises);
@@ -276,22 +286,14 @@ export const GameWinnerMessage = () => {
     }
 
     const placeText = playerRank ? formatOrdinal(playerRank) : "a top spot";
-    const championName = topThreePlayers[0]?.name;
     const eventLabel = isBlitz ? "Realms Blitz" : "the Realms leaderboard";
-    const topThreeSummary = topThreePlayers.map((player) => `${player.rank}. ${player.name}`).join(" | ");
+    const mainLine = `Secured ${placeText} on ${eventLabel} with ${currencyIntlFormat(highlightedPlayer?.points ?? 0, 0)} pts 👑`;
 
-    const lines = [
-      `I just secured ${placeText} on ${eventLabel}!`,
-      championName ? `Champion: ${championName}` : undefined,
-      `Top 3: ${topThreeSummary}`,
-      "Realms Blitz · Realms",
-    ].filter(Boolean) as string[];
+    // Share message on multiple lines, separating the link to its own line
+    const tweetText = `${mainLine}\n\nParticipate in the most insane fully onchain game powered by Starknet here:\n${typeof window !== "undefined" ? window.location.origin : "https://localhost:5175"}`;
 
     const shareIntent = new URL("https://twitter.com/intent/tweet");
-    shareIntent.searchParams.set("text", lines.join("\n"));
-
-    const origin = typeof window !== "undefined" ? window.location.origin : "https://realms.world";
-    shareIntent.searchParams.set("url", origin);
+    shareIntent.searchParams.set("text", tweetText);
 
     if (typeof window !== "undefined") {
       window.open(shareIntent.toString(), "_blank", "noopener,noreferrer");
@@ -355,150 +357,189 @@ export const GameWinnerMessage = () => {
                     viewBox={`0 0 ${CARD_DIMENSIONS.width} ${CARD_DIMENSIONS.height}`}
                     width={CARD_DIMENSIONS.width}
                     height={CARD_DIMENSIONS.height}
-                    className="h-auto w-full max-w-[720px] drop-shadow-[0_32px_70px_rgba(1,11,18,0.64)]"
+                    className="h-auto w-full max-w-[720px]"
                     role="img"
                     aria-label={`${cardSubtitle} highlight card`}
+                    style={{
+                      fontFamily: '"Space Grotesk", sans-serif',
+                      filter: "drop-shadow(0 32px 70px rgba(1, 11, 18, 0.64))",
+                    }}
                   >
                     <defs>
-                      <linearGradient id="blitz-card-bg" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor="#052b37" />
-                        <stop offset="55%" stopColor="#071722" />
-                        <stop offset="100%" stopColor="#040d13" />
+                      <linearGradient id="blitz-cover-overlay" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stopColor="rgba(4, 17, 25, 0.82)" />
+                        <stop offset="52%" stopColor="rgba(4, 17, 25, 0.44)" />
+                        <stop offset="100%" stopColor="rgba(4, 17, 25, 0.24)" />
                       </linearGradient>
-                      <radialGradient id="blitz-card-glow" cx="0.72" cy="0.24" r="0.92">
-                        <stop offset="0%" stopColor="rgba(68, 206, 233, 0.45)" />
-                        <stop offset="100%" stopColor="rgba(68, 206, 233, 0)" />
+                      <radialGradient id="blitz-radial-glow" cx="0.22" cy="0.2" r="0.9">
+                        <stop offset="0%" stopColor="rgba(118, 255, 242, 0.45)" />
+                        <stop offset="100%" stopColor="rgba(118, 255, 242, 0)" />
                       </radialGradient>
-                      <linearGradient id="blitz-card-pill" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor="rgba(118, 255, 242, 0.85)" />
-                        <stop offset="100%" stopColor="rgba(94, 222, 255, 0.78)" />
+                      <linearGradient id="blitz-rank-gradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#f7fffe" />
+                        <stop offset="100%" stopColor="#b8fff2" />
                       </linearGradient>
-                      <linearGradient id="blitz-card-rank" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#f6fffd" />
-                        <stop offset="100%" stopColor="#c9fff3" />
-                      </linearGradient>
-                      <clipPath id="blitz-cover-clip">
-                        <rect x="356" y="30" width="248" height="300" rx="46" />
+                      <clipPath id="blitz-card-clip">
+                        <rect width="640" height="360" rx="44" />
                       </clipPath>
                     </defs>
 
-                    <rect width="100%" height="100%" rx="44" fill="url(#blitz-card-bg)" />
-                    <rect width="100%" height="100%" rx="44" fill="url(#blitz-card-glow)" />
-                    {CARD_RADII.map((radius, index) => (
-                      <circle
-                        key={radius}
-                        cx="190"
-                        cy="180"
-                        r={radius}
-                        fill="none"
-                        stroke="rgba(98, 243, 255, 0.16)"
-                        strokeWidth={index === 0 ? 1.4 : 0.9}
-                      />
-                    ))}
-                    <g clipPath="url(#blitz-cover-clip)">
-                      <rect x="356" y="30" width="248" height="300" fill="#041820" />
+                    <g clipPath="url(#blitz-card-clip)">
+                      <rect width="640" height="360" fill="#04131f" />
                       <image
                         href={coverImage}
-                        x="356"
-                        y="30"
-                        width="248"
-                        height="300"
+                        x="0"
+                        y="0"
+                        width="640"
+                        height="360"
                         preserveAspectRatio="xMidYMid slice"
                       />
-                      <rect x="356" y="30" width="248" height="300" fill="url(#blitz-card-glow)" opacity="0.2" />
+                      <rect width="640" height="360" fill="url(#blitz-cover-overlay)" />
+                      <rect width="640" height="360" fill="url(#blitz-radial-glow)" opacity="0.68" />
+                      {CARD_RADII.map((radius, index) => (
+                        <circle
+                          key={radius}
+                          cx="320"
+                          cy="180"
+                          r={radius}
+                          fill="none"
+                          stroke="rgba(111, 250, 255, 0.18)"
+                          strokeWidth={index === 0 ? 1.6 : 1}
+                        />
+                      ))}
+
+                      <image
+                        href={eternumLogoWhite}
+                        x="40"
+                        y="64"
+                        width="60"
+                        height="60"
+                        preserveAspectRatio="xMidYMid meet"
+                        opacity="0.96"
+                      />
+
+                      <rect
+                        x="404"
+                        y="134"
+                        width="192"
+                        height="130"
+                        rx="26"
+                        fill="rgba(6, 22, 30, 0.58)"
+                        stroke="rgba(120, 255, 242, 0.34)"
+                        strokeWidth="1.4"
+                      />
+
+                      <text
+                        x="108"
+                        y="70"
+                        fontSize="12"
+                        letterSpacing="0.32em"
+                        fontWeight="600"
+                        fill="rgba(202, 255, 255, 0.78)"
+                        style={{ textTransform: "uppercase" }}
+                      >
+                        {cardTitle}
+                      </text>
+                      <text
+                        x="108"
+                        y="98"
+                        fontSize="24"
+                        fontWeight="600"
+                        letterSpacing="0.18em"
+                        fill="#efffff"
+                        style={{ textTransform: "uppercase" }}
+                      >
+                        {cardSubtitle}
+                      </text>
+                      {winnerLine && (
+                        <text x="108" y="122" fontSize="13" fill="rgba(198, 244, 255, 0.78)">
+                          {truncateText(`Champion · ${winnerLine}`, 56)}
+                        </text>
+                      )}
+
+                      <text x="86" y="242" fontSize="104" fontWeight="600" fill="url(#blitz-rank-gradient)">
+                        {highlightOrdinal}
+                      </text>
+                      <text
+                        x="94"
+                        y="272"
+                        fontSize="14"
+                        letterSpacing="0.28em"
+                        fill="rgba(190, 240, 255, 0.74)"
+                        style={{ textTransform: "uppercase" }}
+                      >
+                        Leaderboard Spot
+                      </text>
+
+                      <text
+                        x="500"
+                        y="170"
+                        fontSize="13"
+                        letterSpacing="0.3em"
+                        fill="rgba(198, 248, 255, 0.78)"
+                        textAnchor="middle"
+                        style={{ textTransform: "uppercase" }}
+                      >
+                        Points Secured
+                      </text>
+                      <text x="500" y="214" fontSize="46" fontWeight="600" fill="#7bffe6" textAnchor="middle">
+                        {highlightPointsValue}
+                      </text>
+                      <text x="500" y="244" fontSize="14" fill="rgba(178, 234, 247, 0.78)" textAnchor="middle">
+                        Blitz Performance
+                      </text>
+
+                      {highlightName && (
+                        <text x="94" y="308" fontSize="20" fontWeight="600" fill="#f1fffb">
+                          {highlightName}
+                        </text>
+                      )}
+                      {highlightSecondaryLabel && (
+                        <text x="94" y={highlightName ? 330 : 308} fontSize="14" fill="rgba(200, 242, 255, 0.78)">
+                          {highlightSecondaryLabel}
+                        </text>
+                      )}
+
+                      <text
+                        x="560"
+                        y="312"
+                        fontSize="12"
+                        fill="rgba(160, 236, 255, 0.58)"
+                        textAnchor="end"
+                        letterSpacing="0.28em"
+                        style={{ textTransform: "uppercase" }}
+                      >
+                        Realms Blitz
+                      </text>
+                      <image
+                        href="/images/logos/starknet-logo.png"
+                        x="560"
+                        y="322"
+                        width="30"
+                        height="30"
+                        preserveAspectRatio="xMidYMid meet"
+                        opacity="0.9"
+                      />
+                      <text
+                        x="560"
+                        y="340"
+                        fontSize="12"
+                        fill="rgba(144, 224, 255, 0.72)"
+                        textAnchor="end"
+                        letterSpacing="0.1em"
+                      >
+                        Powered by Starknet
+                      </text>
                     </g>
+
                     <rect
-                      x="356"
-                      y="30"
-                      width="248"
-                      height="300"
-                      rx="46"
+                      width="640"
+                      height="360"
+                      rx="44"
                       fill="none"
-                      stroke="rgba(116, 244, 255, 0.38)"
-                      strokeWidth="1.6"
+                      stroke="rgba(115, 244, 255, 0.38)"
+                      strokeWidth="1.5"
                     />
-                    <image
-                      href={REALMS_LOGO_PATH}
-                      x="44"
-                      y="40"
-                      width="60"
-                      height="60"
-                      preserveAspectRatio="xMidYMid meet"
-                      opacity="0.9"
-                    />
-                    <text
-                      x="118"
-                      y="68"
-                      fontSize="14"
-                      fontWeight="600"
-                      letterSpacing="0.3em"
-                      fill="rgba(206, 250, 255, 0.78)"
-                      style={{ textTransform: "uppercase" }}
-                    >
-                      {cardTitle}
-                    </text>
-                    <rect
-                      x="44"
-                      y="116"
-                      width="188"
-                      height="36"
-                      rx="18"
-                      fill="url(#blitz-card-pill)"
-                      fillOpacity="0.22"
-                      stroke="rgba(120, 255, 242, 0.38)"
-                    />
-                    <text
-                      x="138"
-                      y="138"
-                      fontSize="12"
-                      fontWeight="600"
-                      letterSpacing="0.32em"
-                      fill="rgba(202, 255, 251, 0.78)"
-                      textAnchor="middle"
-                      style={{ textTransform: "uppercase" }}
-                    >
-                      {cardSubtitle}
-                    </text>
-                    <text x="44" y="210" fontSize="72" fontWeight="600" fill="url(#blitz-card-rank)">
-                      {highlightOrdinal}
-                    </text>
-                    <text
-                      x="44"
-                      y="232"
-                      fontSize="13"
-                      letterSpacing="0.26em"
-                      fill="rgba(214, 252, 255, 0.76)"
-                      style={{ textTransform: "uppercase" }}
-                    >
-                      Leaderboard Spot
-                    </text>
-                    <text x="44" y="274" fontSize="36" fontWeight="600" fill="#7bffe6">
-                      {highlightPointsValue}
-                    </text>
-                    <text x="44" y="296" fontSize="16" fill="rgba(192, 246, 255, 0.78)">
-                      Points secured
-                    </text>
-                    {highlightName && (
-                      <text x="44" y="322" fontSize="18" fontWeight="600" fill="#f3fffb">
-                        {highlightName}
-                      </text>
-                    )}
-                    {highlightSecondaryLabel && (
-                      <text x="44" y={highlightName ? 342 : 322} fontSize="14" fill="rgba(178, 234, 247, 0.72)">
-                        {highlightSecondaryLabel}
-                      </text>
-                    )}
-                    <text
-                      x="600"
-                      y="328"
-                      fontSize="12"
-                      fill="rgba(156, 236, 255, 0.54)"
-                      textAnchor="end"
-                      letterSpacing="0.24em"
-                      style={{ textTransform: "uppercase" }}
-                    >
-                      Realms Blitz
-                    </text>
                   </svg>
                 ) : (
                   <div className="flex h-[220px] w-full max-w-[720px] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-sm text-white/60">
