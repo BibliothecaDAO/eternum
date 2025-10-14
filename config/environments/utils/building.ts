@@ -131,39 +131,39 @@ export const COMPLEX_BUILDING_COSTS: ResourceInputs = {
   [BuildingType.ResourceLabor]: [],
   [BuildingType.ResourceAncientFragment]: [],
   // Basic Buildings
-  [BuildingType.ResourceWheat]: [{ resource: ResourcesIds.Labor, amount: 20 }],
+  [BuildingType.ResourceWheat]: [{ resource: ResourcesIds.Labor, amount: 30 }], // Farm
   [BuildingType.ResourceFish]: [],
-  [BuildingType.ResourceWood]: [{ resource: ResourcesIds.Labor, amount: 40 }],
+  [BuildingType.ResourceWood]: [{ resource: ResourcesIds.Labor, amount: 30 }], // Wood Mill
   [BuildingType.ResourceStone]: [],
   [BuildingType.ResourceCoal]: [
-    { resource: ResourcesIds.Labor, amount: 40 },
-    { resource: ResourcesIds.Wood, amount: 60 },
-  ],
+    { resource: ResourcesIds.Labor, amount: 30 },
+    { resource: ResourcesIds.Wood, amount: 30 },
+  ], // Coal Mine
   [BuildingType.ResourceCopper]: [
     { resource: ResourcesIds.Labor, amount: 60 },
-    { resource: ResourcesIds.Wood, amount: 90 },
-    { resource: ResourcesIds.Coal, amount: 60 },
-  ],
+    { resource: ResourcesIds.Wood, amount: 60 },
+    { resource: ResourcesIds.Coal, amount: 30 },
+  ], // Copper Smelter
   [BuildingType.ResourceObsidian]: [],
   [BuildingType.ResourceSilver]: [],
   [BuildingType.ResourceIronwood]: [
     { resource: ResourcesIds.Labor, amount: 120 },
-    { resource: ResourcesIds.Wood, amount: 180 },
-    { resource: ResourcesIds.Coal, amount: 120 },
-    { resource: ResourcesIds.Copper, amount: 60 },
-  ],
+    { resource: ResourcesIds.Wood, amount: 120 },
+    { resource: ResourcesIds.Coal, amount: 60 },
+    { resource: ResourcesIds.Copper, amount: 30 },
+  ], // Ironwood Mill
   [BuildingType.ResourceColdIron]: [
     { resource: ResourcesIds.Labor, amount: 120 },
-    { resource: ResourcesIds.Wood, amount: 180 },
-    { resource: ResourcesIds.Coal, amount: 120 },
-    { resource: ResourcesIds.Copper, amount: 60 },
-  ],
+    { resource: ResourcesIds.Wood, amount: 120 },
+    { resource: ResourcesIds.Coal, amount: 60 },
+    { resource: ResourcesIds.Copper, amount: 30 },
+  ], // Cold Iron Foundry
   [BuildingType.ResourceGold]: [
     { resource: ResourcesIds.Labor, amount: 120 },
-    { resource: ResourcesIds.Wood, amount: 180 },
-    { resource: ResourcesIds.Coal, amount: 120 },
-    { resource: ResourcesIds.Copper, amount: 60 },
-  ],
+    { resource: ResourcesIds.Wood, amount: 120 },
+    { resource: ResourcesIds.Coal, amount: 60 },
+    { resource: ResourcesIds.Copper, amount: 30 },
+  ], // Gold Mine
   [BuildingType.ResourceHartwood]: [],
   [BuildingType.ResourceDiamonds]: [],
   [BuildingType.ResourceSapphire]: [],
@@ -175,99 +175,94 @@ export const COMPLEX_BUILDING_COSTS: ResourceInputs = {
   [BuildingType.ResourceTwilightQuartz]: [],
   [BuildingType.ResourceAlchemicalSilver]: [],
   [BuildingType.ResourceAdamantine]: [
-    { resource: ResourcesIds.Labor, amount: 360 },
-    { resource: ResourcesIds.Wood, amount: 540 },
-    { resource: ResourcesIds.Copper, amount: 360 },
-    { resource: ResourcesIds.Ironwood, amount: 180 },
+    { resource: ResourcesIds.Labor, amount: 240 },
+    { resource: ResourcesIds.Wood, amount: 240 },
+    { resource: ResourcesIds.Copper, amount: 120 },
+    { resource: ResourcesIds.Ironwood, amount: 60 },
     { resource: ResourcesIds.Essence, amount: 600 },
-  ],
+  ], // Adamantine Mine
   [BuildingType.ResourceMithral]: [
-    { resource: ResourcesIds.Labor, amount: 360 },
-    { resource: ResourcesIds.Wood, amount: 540 },
-    { resource: ResourcesIds.Copper, amount: 360 },
-    { resource: ResourcesIds.ColdIron, amount: 180 },
+    { resource: ResourcesIds.Labor, amount: 240 },
+    { resource: ResourcesIds.Wood, amount: 240 },
+    { resource: ResourcesIds.Copper, amount: 120 },
+    { resource: ResourcesIds.ColdIron, amount: 60 },
     { resource: ResourcesIds.Essence, amount: 600 },
-  ],
+  ], // Mithral Forge
   [BuildingType.ResourceDragonhide]: [
-    { resource: ResourcesIds.Labor, amount: 360 },
-    { resource: ResourcesIds.Wood, amount: 540 },
-    { resource: ResourcesIds.Copper, amount: 360 },
-    { resource: ResourcesIds.Gold, amount: 180 },
+    { resource: ResourcesIds.Labor, amount: 240 },
+    { resource: ResourcesIds.Wood, amount: 240 },
+    { resource: ResourcesIds.Copper, amount: 120 },
+    { resource: ResourcesIds.Gold, amount: 60 },
     { resource: ResourcesIds.Essence, amount: 600 },
-  ],
+  ], // Dragonhide Tannery
   // T1 Military Buildings
   [BuildingType.ResourceKnightT1]: [
     { resource: ResourcesIds.Labor, amount: 180 },
-    { resource: ResourcesIds.Wood, amount: 270 },
-    { resource: ResourcesIds.Copper, amount: 180 },
-  ],
+    { resource: ResourcesIds.Wood, amount: 180 },
+    { resource: ResourcesIds.Copper, amount: 90 },
+  ], // T1 Barracks
   [BuildingType.ResourceCrossbowmanT1]: [
     { resource: ResourcesIds.Labor, amount: 180 },
-    { resource: ResourcesIds.Wood, amount: 270 },
-    { resource: ResourcesIds.Copper, amount: 180 },
-  ],
+    { resource: ResourcesIds.Wood, amount: 180 },
+    { resource: ResourcesIds.Copper, amount: 90 },
+  ], // T1 Archery Range
   [BuildingType.ResourcePaladinT1]: [
     { resource: ResourcesIds.Labor, amount: 180 },
-    { resource: ResourcesIds.Wood, amount: 270 },
-    { resource: ResourcesIds.Copper, amount: 180 },
-  ],
+    { resource: ResourcesIds.Wood, amount: 180 },
+    { resource: ResourcesIds.Copper, amount: 90 },
+  ], // T1 Stables
   // T2 Military Buildings
   [BuildingType.ResourceKnightT2]: [
     { resource: ResourcesIds.Labor, amount: 360 },
-    { resource: ResourcesIds.Wood, amount: 540 },
-    { resource: ResourcesIds.Copper, amount: 360 },
-    { resource: ResourcesIds.ColdIron, amount: 180 },
+    { resource: ResourcesIds.Wood, amount: 360 },
+    { resource: ResourcesIds.Copper, amount: 180 },
+    { resource: ResourcesIds.ColdIron, amount: 90 },
     { resource: ResourcesIds.Essence, amount: 600 },
-  ],
+  ], // T2 Barracks
   [BuildingType.ResourceCrossbowmanT2]: [
     { resource: ResourcesIds.Labor, amount: 360 },
-    { resource: ResourcesIds.Wood, amount: 540 },
-    { resource: ResourcesIds.Copper, amount: 360 },
-    { resource: ResourcesIds.Ironwood, amount: 180 },
+    { resource: ResourcesIds.Wood, amount: 360 },
+    { resource: ResourcesIds.Copper, amount: 180 },
+    { resource: ResourcesIds.Ironwood, amount: 90 },
     { resource: ResourcesIds.Essence, amount: 600 },
-  ],
+  ], // T2 Archery Range
   [BuildingType.ResourcePaladinT2]: [
     { resource: ResourcesIds.Labor, amount: 360 },
-    { resource: ResourcesIds.Wood, amount: 540 },
-    { resource: ResourcesIds.Copper, amount: 360 },
-    { resource: ResourcesIds.Gold, amount: 180 },
+    { resource: ResourcesIds.Wood, amount: 360 },
+    { resource: ResourcesIds.Copper, amount: 180 },
+    { resource: ResourcesIds.Gold, amount: 90 },
     { resource: ResourcesIds.Essence, amount: 600 },
-  ],
+  ], // T2 Stables
   // T3 Military Buildings
   [BuildingType.ResourceKnightT3]: [
     { resource: ResourcesIds.Labor, amount: 720 },
-    { resource: ResourcesIds.Wood, amount: 1080 },
-    { resource: ResourcesIds.ColdIron, amount: 720 },
-    { resource: ResourcesIds.Mithral, amount: 360 },
+    { resource: ResourcesIds.Wood, amount: 720 },
+    { resource: ResourcesIds.ColdIron, amount: 360 },
+    { resource: ResourcesIds.Mithral, amount: 180 },
     { resource: ResourcesIds.Essence, amount: 1200 },
-  ],
+  ], // T3 Barracks
   [BuildingType.ResourceCrossbowmanT3]: [
     { resource: ResourcesIds.Labor, amount: 720 },
-    { resource: ResourcesIds.Wood, amount: 1080 },
-    { resource: ResourcesIds.Ironwood, amount: 720 },
-    { resource: ResourcesIds.Adamantine, amount: 360 },
+    { resource: ResourcesIds.Wood, amount: 720 },
+    { resource: ResourcesIds.Ironwood, amount: 360 },
+    { resource: ResourcesIds.Adamantine, amount: 180 },
     { resource: ResourcesIds.Essence, amount: 1200 },
-  ],
+  ], // T3 Archery Range
   [BuildingType.ResourcePaladinT3]: [
     { resource: ResourcesIds.Labor, amount: 720 },
-    { resource: ResourcesIds.Wood, amount: 1080 },
-    { resource: ResourcesIds.Gold, amount: 720 },
-    { resource: ResourcesIds.Dragonhide, amount: 360 },
+    { resource: ResourcesIds.Wood, amount: 720 },
+    { resource: ResourcesIds.Gold, amount: 360 },
+    { resource: ResourcesIds.Dragonhide, amount: 180 },
     { resource: ResourcesIds.Essence, amount: 1200 },
-  ],
+  ], // T3 Stables
   // Economic Buildings
+  [BuildingType.WorkersHut]: [
+    { resource: ResourcesIds.Labor, amount: 30 },
+    { resource: ResourcesIds.Wood, amount: 30 },
+  ], // Worker Hut
   [BuildingType.ResourceDonkey]: [
     { resource: ResourcesIds.Labor, amount: 60 },
-    { resource: ResourcesIds.Wood, amount: 90 },
-  ],
-  [BuildingType.WorkersHut]: [
-    { resource: ResourcesIds.Labor, amount: 40 },
     { resource: ResourcesIds.Wood, amount: 60 },
-  ],
-  [BuildingType.Storehouse]: [
-    { resource: ResourcesIds.Labor, amount: 60 },
-    { resource: ResourcesIds.Wood, amount: 90 },
-    { resource: ResourcesIds.Copper, amount: 60 },
   ],
 };
 
@@ -276,17 +271,17 @@ export const SIMPLE_BUILDING_COSTS: ResourceInputs = {
   [BuildingType.ResourceLabor]: [],
   [BuildingType.ResourceAncientFragment]: [],
   // Basic Buildings
-  [BuildingType.ResourceWheat]: [{ resource: ResourcesIds.Labor, amount: 20 }],
+  [BuildingType.ResourceWheat]: [{ resource: ResourcesIds.Labor, amount: 30 }], // Farm
   [BuildingType.ResourceFish]: [],
-  [BuildingType.ResourceWood]: [{ resource: ResourcesIds.Labor, amount: 40 }],
+  [BuildingType.ResourceWood]: [{ resource: ResourcesIds.Labor, amount: 30 }], // Wood Mill
   [BuildingType.ResourceStone]: [],
-  [BuildingType.ResourceCoal]: [{ resource: ResourcesIds.Labor, amount: 160 }],
-  [BuildingType.ResourceCopper]: [{ resource: ResourcesIds.Labor, amount: 480 }],
+  [BuildingType.ResourceCoal]: [{ resource: ResourcesIds.Labor, amount: 90 }], // Coal Mine
+  [BuildingType.ResourceCopper]: [{ resource: ResourcesIds.Labor, amount: 300 }], // Copper Smelter
   [BuildingType.ResourceObsidian]: [],
   [BuildingType.ResourceSilver]: [],
-  [BuildingType.ResourceIronwood]: [{ resource: ResourcesIds.Labor, amount: 1200 }],
-  [BuildingType.ResourceColdIron]: [{ resource: ResourcesIds.Labor, amount: 1200 }],
-  [BuildingType.ResourceGold]: [{ resource: ResourcesIds.Labor, amount: 1200 }],
+  [BuildingType.ResourceIronwood]: [{ resource: ResourcesIds.Labor, amount: 720 }], // Ironwood Mill
+  [BuildingType.ResourceColdIron]: [{ resource: ResourcesIds.Labor, amount: 720 }], // Cold Iron Foundry
+  [BuildingType.ResourceGold]: [{ resource: ResourcesIds.Labor, amount: 720 }], // Gold Mine
   [BuildingType.ResourceHartwood]: [],
   [BuildingType.ResourceDiamonds]: [],
   [BuildingType.ResourceSapphire]: [],
@@ -301,9 +296,9 @@ export const SIMPLE_BUILDING_COSTS: ResourceInputs = {
   [BuildingType.ResourceMithral]: [],
   [BuildingType.ResourceDragonhide]: [],
   // T1 Military Buildings - only available in simple mode
-  [BuildingType.ResourceKnightT1]: [{ resource: ResourcesIds.Labor, amount: 1440 }],
-  [BuildingType.ResourceCrossbowmanT1]: [{ resource: ResourcesIds.Labor, amount: 1440 }],
-  [BuildingType.ResourcePaladinT1]: [{ resource: ResourcesIds.Labor, amount: 1440 }],
+  [BuildingType.ResourceKnightT1]: [{ resource: ResourcesIds.Labor, amount: 900 }], // T1 Barracks
+  [BuildingType.ResourceCrossbowmanT1]: [{ resource: ResourcesIds.Labor, amount: 900 }], // T1 Archery Range
+  [BuildingType.ResourcePaladinT1]: [{ resource: ResourcesIds.Labor, amount: 900 }], // T1 Stables
 
   // T2 Military Buildings - not available in simple mode
   [BuildingType.ResourceKnightT2]: [],
@@ -316,7 +311,6 @@ export const SIMPLE_BUILDING_COSTS: ResourceInputs = {
   [BuildingType.ResourcePaladinT3]: [],
 
   // Economic Buildings
-  [BuildingType.ResourceDonkey]: [{ resource: ResourcesIds.Labor, amount: 240 }],
-  [BuildingType.WorkersHut]: [{ resource: ResourcesIds.Labor, amount: 160 }],
-  [BuildingType.Storehouse]: [{ resource: ResourcesIds.Labor, amount: 480 }],
+  [BuildingType.ResourceDonkey]: [{ resource: ResourcesIds.Labor, amount: 180 }],
+  [BuildingType.WorkersHut]: [{ resource: ResourcesIds.Labor, amount: 90 }], // Worker Hut
 };

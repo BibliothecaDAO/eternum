@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Bot, Hammer } from "lucide-react";
 import type { Building, RealmInfo as RealmInfoType, ResourcesIds } from "@bibliothecadao/types";
+import { Bot, Hammer } from "lucide-react";
+import { useState } from "react";
 
 import { Tabs } from "@/ui/design-system/atoms";
 import { AutomationTable } from "@/ui/features/infrastructure";
@@ -15,7 +15,6 @@ interface ProductionWorkflowsProps {
   selectedResource: ResourcesIds | null;
   onSelectResource: (resource: ResourcesIds | null) => void;
   wonderBonus: number;
-  laborBonus: number;
   productionBonus: number;
   troopsBonus: number;
   realmEntityId: string;
@@ -28,7 +27,6 @@ export const ProductionWorkflows = ({
   selectedResource,
   onSelectResource,
   wonderBonus,
-  laborBonus,
   productionBonus,
   troopsBonus,
   realmEntityId,
@@ -55,7 +53,6 @@ export const ProductionWorkflows = ({
               selectedResource={selectedResource}
               realm={realm}
               wonderBonus={wonderBonus}
-              laborBonus={laborBonus}
               productionBonus={productionBonus}
               troopsBonus={troopsBonus}
             />
@@ -68,11 +65,7 @@ export const ProductionWorkflows = ({
       description: "Create repeatable production rules",
       icon: Bot,
       content: (
-        <AutomationTable
-          realmInfo={realm}
-          availableResources={producedResources}
-          realmEntityId={realmEntityId}
-        />
+        <AutomationTable realmInfo={realm} availableResources={producedResources} realmEntityId={realmEntityId} />
       ),
     },
   ];
@@ -84,7 +77,12 @@ export const ProductionWorkflows = ({
         <p className="text-sm text-gold/70">Choose how you want to manage this realm's output.</p>
       </div>
 
-      <Tabs selectedIndex={activeTab} onChange={(index: number) => setActiveTab(index)} className="w-full" variant="default">
+      <Tabs
+        selectedIndex={activeTab}
+        onChange={(index: number) => setActiveTab(index)}
+        className="w-full"
+        variant="default"
+      >
         <Tabs.List className="flex flex-col gap-2 rounded-xl border border-gold/25 bg-dark-brown/80 p-2 sm:flex-row sm:items-stretch sm:justify-start justify-start">
           {workflows.map((workflow, index) => {
             const Icon = workflow.icon;

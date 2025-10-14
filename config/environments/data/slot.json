@@ -92,15 +92,15 @@
       "9": [
         {
           "resource": 35,
-          "amount": 4
+          "amount": 3
         },
         {
           "resource": 2,
-          "amount": 0.72
+          "amount": 0.6
         },
         {
           "resource": 11,
-          "amount": 0.48
+          "amount": 0.4
         }
       ],
       "10": [],
@@ -128,15 +128,15 @@
       "19": [
         {
           "resource": 35,
-          "amount": 4
+          "amount": 3
         },
         {
           "resource": 2,
-          "amount": 0.72
+          "amount": 0.6
         },
         {
           "resource": 5,
-          "amount": 0.48
+          "amount": 0.4
         }
       ],
       "20": [],
@@ -144,15 +144,15 @@
       "22": [
         {
           "resource": 35,
-          "amount": 4
+          "amount": 3
         },
         {
           "resource": 2,
-          "amount": 0.72
+          "amount": 0.6
         },
         {
           "resource": 7,
-          "amount": 0.48
+          "amount": 0.4
         }
       ],
       "23": [],
@@ -170,7 +170,7 @@
         },
         {
           "resource": 4,
-          "amount": 0.24
+          "amount": 0.4
         }
       ],
       "27": [
@@ -184,11 +184,11 @@
         },
         {
           "resource": 4,
-          "amount": 0.48
+          "amount": 0.2
         },
         {
           "resource": 11,
-          "amount": 0.32
+          "amount": 0.4
         },
         {
           "resource": 38,
@@ -206,11 +206,11 @@
         },
         {
           "resource": 11,
-          "amount": 0.64
+          "amount": 0.2
         },
         {
           "resource": 9,
-          "amount": 0.72
+          "amount": 0.6
         },
         {
           "resource": 38,
@@ -224,7 +224,7 @@
         },
         {
           "resource": 4,
-          "amount": 0.24
+          "amount": 0.4
         }
       ],
       "30": [
@@ -238,11 +238,11 @@
         },
         {
           "resource": 4,
-          "amount": 0.48
+          "amount": 0.2
         },
         {
           "resource": 5,
-          "amount": 0.32
+          "amount": 0.4
         },
         {
           "resource": 38,
@@ -260,11 +260,11 @@
         },
         {
           "resource": 5,
-          "amount": 0.64
+          "amount": 0.2
         },
         {
           "resource": 19,
-          "amount": 0.72
+          "amount": 0.6
         },
         {
           "resource": 38,
@@ -278,7 +278,7 @@
         },
         {
           "resource": 4,
-          "amount": 0.24
+          "amount": 0.4
         }
       ],
       "33": [
@@ -292,11 +292,11 @@
         },
         {
           "resource": 4,
-          "amount": 0.48
+          "amount": 0.2
         },
         {
           "resource": 7,
-          "amount": 0.32
+          "amount": 0.4
         },
         {
           "resource": 38,
@@ -314,11 +314,11 @@
         },
         {
           "resource": 7,
-          "amount": 0.64
+          "amount": 0.2
         },
         {
           "resource": 22,
-          "amount": 0.72
+          "amount": 0.6
         },
         {
           "resource": 38,
@@ -489,28 +489,10 @@
       ],
       "27": [],
       "28": [],
-      "29": [
-        {
-          "resource": 35,
-          "amount": 2
-        },
-        {
-          "resource": 23,
-          "amount": 0.5
-        }
-      ],
+      "29": [],
       "30": [],
       "31": [],
-      "32": [
-        {
-          "resource": 35,
-          "amount": 2
-        },
-        {
-          "resource": 23,
-          "amount": 0.5
-        }
-      ],
+      "32": [],
       "33": [],
       "34": [],
       "35": [],
@@ -931,42 +913,28 @@
       "1": [
         {
           "resource": 23,
-          "amount": 40
+          "amount": 30
         },
         {
           "resource": 3,
-          "amount": 60
-        }
-      ],
-      "2": [
-        {
-          "resource": 23,
-          "amount": 60
-        },
-        {
-          "resource": 3,
-          "amount": 90
-        },
-        {
-          "resource": 4,
-          "amount": 60
+          "amount": 30
         }
       ],
       "3": [],
       "4": [
         {
           "resource": 23,
-          "amount": 40
+          "amount": 30
         },
         {
           "resource": 3,
-          "amount": 60
+          "amount": 30
         }
       ],
       "5": [
         {
           "resource": 23,
-          "amount": 40
+          "amount": 30
         }
       ],
       "6": [
@@ -976,11 +944,11 @@
         },
         {
           "resource": 3,
-          "amount": 90
+          "amount": 60
         },
         {
           "resource": 2,
-          "amount": 60
+          "amount": 30
         }
       ],
       "7": [
@@ -990,15 +958,15 @@
         },
         {
           "resource": 3,
-          "amount": 180
-        },
-        {
-          "resource": 2,
           "amount": 120
         },
         {
-          "resource": 4,
+          "resource": 2,
           "amount": 60
+        },
+        {
+          "resource": 4,
+          "amount": 30
         }
       ],
       "8": [],
@@ -1009,34 +977,34 @@
         },
         {
           "resource": 3,
-          "amount": 180
-        },
-        {
-          "resource": 2,
           "amount": 120
         },
         {
-          "resource": 4,
+          "resource": 2,
           "amount": 60
+        },
+        {
+          "resource": 4,
+          "amount": 30
         }
       ],
       "10": [],
       "11": [
         {
           "resource": 23,
-          "amount": 360
+          "amount": 240
         },
         {
           "resource": 3,
-          "amount": 540
+          "amount": 240
         },
         {
           "resource": 4,
-          "amount": 360
+          "amount": 120
         },
         {
           "resource": 11,
-          "amount": 180
+          "amount": 60
         },
         {
           "resource": 38,
@@ -1051,15 +1019,15 @@
         },
         {
           "resource": 3,
-          "amount": 180
-        },
-        {
-          "resource": 2,
           "amount": 120
         },
         {
-          "resource": 4,
+          "resource": 2,
           "amount": 60
+        },
+        {
+          "resource": 4,
+          "amount": 30
         }
       ],
       "14": [],
@@ -1072,19 +1040,19 @@
       "21": [
         {
           "resource": 23,
-          "amount": 360
+          "amount": 240
         },
         {
           "resource": 3,
-          "amount": 540
+          "amount": 240
         },
         {
           "resource": 4,
-          "amount": 360
+          "amount": 120
         },
         {
           "resource": 5,
-          "amount": 180
+          "amount": 60
         },
         {
           "resource": 38,
@@ -1096,19 +1064,19 @@
       "24": [
         {
           "resource": 23,
-          "amount": 360
+          "amount": 240
         },
         {
           "resource": 3,
-          "amount": 540
+          "amount": 240
         },
         {
           "resource": 4,
-          "amount": 360
+          "amount": 120
         },
         {
           "resource": 7,
-          "amount": 180
+          "amount": 60
         },
         {
           "resource": 38,
@@ -1124,7 +1092,7 @@
         },
         {
           "resource": 3,
-          "amount": 90
+          "amount": 60
         }
       ],
       "28": [
@@ -1134,11 +1102,11 @@
         },
         {
           "resource": 3,
-          "amount": 270
+          "amount": 180
         },
         {
           "resource": 4,
-          "amount": 180
+          "amount": 90
         }
       ],
       "29": [
@@ -1148,15 +1116,15 @@
         },
         {
           "resource": 3,
-          "amount": 540
-        },
-        {
-          "resource": 4,
           "amount": 360
         },
         {
-          "resource": 11,
+          "resource": 4,
           "amount": 180
+        },
+        {
+          "resource": 11,
+          "amount": 90
         },
         {
           "resource": 38,
@@ -1170,15 +1138,15 @@
         },
         {
           "resource": 3,
-          "amount": 1080
-        },
-        {
-          "resource": 11,
           "amount": 720
         },
         {
-          "resource": 9,
+          "resource": 11,
           "amount": 360
+        },
+        {
+          "resource": 9,
+          "amount": 180
         },
         {
           "resource": 38,
@@ -1192,11 +1160,11 @@
         },
         {
           "resource": 3,
-          "amount": 270
+          "amount": 180
         },
         {
           "resource": 4,
-          "amount": 180
+          "amount": 90
         }
       ],
       "32": [
@@ -1206,15 +1174,15 @@
         },
         {
           "resource": 3,
-          "amount": 540
-        },
-        {
-          "resource": 4,
           "amount": 360
         },
         {
-          "resource": 5,
+          "resource": 4,
           "amount": 180
+        },
+        {
+          "resource": 5,
+          "amount": 90
         },
         {
           "resource": 38,
@@ -1228,15 +1196,15 @@
         },
         {
           "resource": 3,
-          "amount": 1080
-        },
-        {
-          "resource": 5,
           "amount": 720
         },
         {
-          "resource": 19,
+          "resource": 5,
           "amount": 360
+        },
+        {
+          "resource": 19,
+          "amount": 180
         },
         {
           "resource": 38,
@@ -1250,11 +1218,11 @@
         },
         {
           "resource": 3,
-          "amount": 270
+          "amount": 180
         },
         {
           "resource": 4,
-          "amount": 180
+          "amount": 90
         }
       ],
       "35": [
@@ -1264,15 +1232,15 @@
         },
         {
           "resource": 3,
-          "amount": 540
-        },
-        {
-          "resource": 4,
           "amount": 360
         },
         {
-          "resource": 7,
+          "resource": 4,
           "amount": 180
+        },
+        {
+          "resource": 7,
+          "amount": 90
         },
         {
           "resource": 38,
@@ -1286,15 +1254,15 @@
         },
         {
           "resource": 3,
-          "amount": 1080
-        },
-        {
-          "resource": 7,
           "amount": 720
         },
         {
-          "resource": 22,
+          "resource": 7,
           "amount": 360
+        },
+        {
+          "resource": 22,
+          "amount": 180
         },
         {
           "resource": 38,
@@ -1304,7 +1272,7 @@
       "37": [
         {
           "resource": 23,
-          "amount": 20
+          "amount": 30
         }
       ],
       "38": []
@@ -1314,45 +1282,39 @@
       "1": [
         {
           "resource": 23,
-          "amount": 160
-        }
-      ],
-      "2": [
-        {
-          "resource": 23,
-          "amount": 480
+          "amount": 90
         }
       ],
       "3": [],
       "4": [
         {
           "resource": 23,
-          "amount": 160
+          "amount": 90
         }
       ],
       "5": [
         {
           "resource": 23,
-          "amount": 40
+          "amount": 30
         }
       ],
       "6": [
         {
           "resource": 23,
-          "amount": 480
+          "amount": 300
         }
       ],
       "7": [
         {
           "resource": 23,
-          "amount": 1200
+          "amount": 720
         }
       ],
       "8": [],
       "9": [
         {
           "resource": 23,
-          "amount": 1200
+          "amount": 720
         }
       ],
       "10": [],
@@ -1361,7 +1323,7 @@
       "13": [
         {
           "resource": 23,
-          "amount": 1200
+          "amount": 720
         }
       ],
       "14": [],
@@ -1380,13 +1342,13 @@
       "27": [
         {
           "resource": 23,
-          "amount": 240
+          "amount": 180
         }
       ],
       "28": [
         {
           "resource": 23,
-          "amount": 1440
+          "amount": 900
         }
       ],
       "29": [],
@@ -1394,7 +1356,7 @@
       "31": [
         {
           "resource": 23,
-          "amount": 1440
+          "amount": 900
         }
       ],
       "32": [],
@@ -1402,7 +1364,7 @@
       "34": [
         {
           "resource": 23,
-          "amount": 1440
+          "amount": 900
         }
       ],
       "35": [],
@@ -1410,7 +1372,7 @@
       "37": [
         {
           "resource": 23,
-          "amount": 20
+          "amount": 30
         }
       ],
       "38": []
@@ -1435,7 +1397,7 @@
     "startSettlingAfterSeconds": 59,
     "startSettlingAt": 0,
     "startMainAfterSeconds": 60,
-    "startMainAt": 1760088600,
+    "startMainAt": 1760434200,
     "durationSeconds": 7200,
     "bridgeCloseAfterEndSeconds": 604800,
     "pointRegistrationCloseAfterEndSeconds": 600
@@ -1462,7 +1424,7 @@
   "startingResources": [
     {
       "resource": 35,
-      "amount": 500
+      "amount": 1000
     },
     {
       "resource": 23,
@@ -1515,7 +1477,7 @@
     "1": [
       {
         "resource": 23,
-        "amount": 200
+        "amount": 180
       },
       {
         "resource": 35,
@@ -1529,7 +1491,7 @@
     "2": [
       {
         "resource": 23,
-        "amount": 400
+        "amount": 360
       },
       {
         "resource": 35,
@@ -1537,17 +1499,17 @@
       },
       {
         "resource": 38,
-        "amount": 1200
+        "amount": 800
       },
       {
         "resource": 3,
-        "amount": 400
+        "amount": 360
       }
     ],
     "3": [
       {
         "resource": 23,
-        "amount": 800
+        "amount": 720
       },
       {
         "resource": 35,
@@ -1555,19 +1517,19 @@
       },
       {
         "resource": 38,
-        "amount": 4800
+        "amount": 1600
       },
       {
         "resource": 3,
-        "amount": 1200
+        "amount": 720
       },
       {
         "resource": 2,
-        "amount": 600
+        "amount": 360
       },
       {
         "resource": 4,
-        "amount": 600
+        "amount": 360
       }
     ]
   },
@@ -1768,8 +1730,8 @@
     "manifest": {
       "world": {
         "class_hash": "0x7bc7b264612d3ac261df0a6d72a6b73c84b9386ef0095dd340d42afc01bb53c",
-        "address": "0x3dd60eb80ff27b53e9cc7786a5ad1efd2bbe4225002f8593eb7c243c28af030",
-        "seed": "s1_eternum_slot_1760083434",
+        "address": "0x368fef2e5ab16162fa4c1f7a1fac14bc23c8062bbef1b2a84601730eb877e09",
+        "seed": "s1_eternum_slot_1760429025",
         "name": "Realms: Eternum",
         "entrypoints": [
           "uuid",
@@ -3246,7 +3208,7 @@
       },
       "contracts": [
         {
-          "address": "0x4eb8934ea6a3ec10681578031dab71421d8443110243c3a96ae68da40e9566b",
+          "address": "0x5bafb3678db740459f962aaece90a0422a152c380efed02ac4ba24fdbb9e508",
           "class_hash": "0x11afa3c21ac3b6529777149b8377c7e66f14aba74d2d1204bf070e538f61a4",
           "abi": [
             {
@@ -3723,7 +3685,7 @@
           ]
         },
         {
-          "address": "0x3f3877b017973bf4d16ca29266e48986ef1703c765568bbd880fc8bbbd71db0",
+          "address": "0x1170167330961b4cd13c6a6d4a69d3b07fced29a868eccd4d9582af9859abe8",
           "class_hash": "0x3e9f2f8a6325114c23744c6a814a4c93f253f06860e0d4f381940efd0a5ce5d",
           "abi": [
             {
@@ -3975,7 +3937,7 @@
           ]
         },
         {
-          "address": "0x380ed5674cf58ed38b2b9c9fa03d9852a06f2a8e21d0c0f43a24c954fa27cff",
+          "address": "0x34d7c0e39d24170bdc713d24cc03a71be265312671980440c74b2815687bd2c",
           "class_hash": "0x1527c48e09612baa2c2ace19131ab597305661a4761b942c1f90063e3562a14",
           "abi": [
             {
@@ -4226,7 +4188,7 @@
           ]
         },
         {
-          "address": "0x64a5e716e06caf94666a37205c93131c068654e1e54f575069af3dfcff84f95",
+          "address": "0x99a891f4aae350ddab9b5b2d0a71f2268ae55a94dc551131698d122ed7faeb",
           "class_hash": "0x60c230eeb0c3a4301a4b82d4ba26752c7f3265867b4df070e0be2fe544822a8",
           "abi": [
             {
@@ -5990,7 +5952,7 @@
           ]
         },
         {
-          "address": "0x308ff458c9f86ca8936e21ba06516041d0f3b5d519bcf2278dcf552ff9dcf5b",
+          "address": "0x19539f4b26639d5ca4eeca04295f0fd154249d2909fc153d5fbc3a176abd42f",
           "class_hash": "0x4a6d0c11782b55765d0fb1e522e2acd50f36a4860e01f48083a326b52e8a280",
           "abi": [
             {
@@ -6204,7 +6166,7 @@
           ]
         },
         {
-          "address": "0x199a91f1abc538f1bc01024b087e6a78dd34390f69498f55d983fb0b87979e9",
+          "address": "0x6da0dd4b2106f571ae0525b8cfca665c6894355856f448fd81c2283cb7698fc",
           "class_hash": "0x4e08b04c4918701a9e99713ceac5538b1e26d31a1f297356d1128f523bcadb0",
           "abi": [
             {
@@ -6473,7 +6435,7 @@
           ]
         },
         {
-          "address": "0x6469d194ee230bbddad46d839498282509623a38b08b350caa32a8b7cb1f018",
+          "address": "0x5fcbc4b47349e4fe49f1721058dce20aadf0694501acd8af5b15dbc4ec470f1",
           "class_hash": "0x285841825e88919d1129f37e2bf24d71eeedfddaed544754bf52a45da23dec",
           "abi": [
             {
@@ -6950,7 +6912,7 @@
           ]
         },
         {
-          "address": "0x42ecf2ded199b6573267b06ed1932b5031d971b65a8d41209929ac56d6bf171",
+          "address": "0x34edd5364c3790fe735615432e9f5cad527072d89614719d1c522edd9723efc",
           "class_hash": "0x5c9b43a309db0ace943f6c7a47f6188e0241dbe194d020b82fc16ffff7f8e13",
           "abi": [
             {
@@ -7266,7 +7228,7 @@
           ]
         },
         {
-          "address": "0x657b1bd19738bd4176a7a1b7745d0edb0b0e6334206cc3b5d34ce61f9a71c99",
+          "address": "0x1fe64bee7ef035339f7ef357de086a2e5ed58ec177af66a2138248b26123821",
           "class_hash": "0x1e1ba79ac7fa5cea76109584a036b3205fdd101acaa6b1c0dcf644a824312c",
           "abi": [
             {
@@ -7507,7 +7469,7 @@
           ]
         },
         {
-          "address": "0x6d569a35b10dbd81bba057acecbc6bce0a5ca212c1d2ee3620162b7ccf1197d",
+          "address": "0x4eb6589ff621fbbbb3d30e5465aafde7deb5f3cfe50bba3c6ae83d9dacf58cb",
           "class_hash": "0x7d88be9d002f497cbead10bcc53c5692fe516d98b8328cc3d8c4c6d57fc34fa",
           "abi": [
             {
@@ -7984,7 +7946,7 @@
           ]
         },
         {
-          "address": "0x5634236102ec7c42a26d84909ba1184edfa5c68891b6a3a9a7d72f10c4fbf2c",
+          "address": "0x432c3fd346a73896c9a22110594aabf30ccbbd4b17ebf373c1e40e13ba0f3",
           "class_hash": "0x2f2e9e898349130105c403b3cba2b1ea942a69e67fd39ebe65a573936c32fda",
           "abi": [
             {
@@ -8184,7 +8146,7 @@
           ]
         },
         {
-          "address": "0x4a4a550c718736a98c09fcaebcc32a366e0f5f0888a6507c41cbcc52ac19dab",
+          "address": "0x3717492d470c1b2d100fd3b533e6af618c1677ba45b2ddd6c58c004ca343fbb",
           "class_hash": "0x62f9bb4475843a269260c75eb61ca6b5cbf385e175eb7ba337c65b134ac8614",
           "abi": [
             {
@@ -8405,7 +8367,7 @@
           ]
         },
         {
-          "address": "0x6f71ae3cfc9a3c6f47323225fe8fafac7f3430f1a261f89cd29a32f80dec38d",
+          "address": "0x73c4ac8cbb76446b5a2f9b361c16ff333a8c695cfb2d90ef479d959bc6a1632",
           "class_hash": "0x4750ed9a4073808f768f37a963b05f037674b1dd9335097a9d20695ceac002f",
           "abi": [
             {
@@ -8639,7 +8601,7 @@
           ]
         },
         {
-          "address": "0x6a6f4a04275e20df27a13837d720d22f657de0ce7a96cb2d06ce6252c022631",
+          "address": "0x687a7378f3f3a79f6d4457773994d0bbf673592d398d0d9ae1d62b20b325668",
           "class_hash": "0x2ea02511b59660d4e1fd7062fe7e190fdd82e448b7015af7cc616ca9b84d408",
           "abi": [
             {
@@ -9236,7 +9198,7 @@
           ]
         },
         {
-          "address": "0x7c85b71a57d46907143901e1ffb202e57bb78d12d71127ff39a951f3f6ee8eb",
+          "address": "0x38f8391e3780fa08dbf409a729d9f337bfd81e3bc418b4b7c155535d78c3a60",
           "class_hash": "0x73b33fba72807c1ec9432f95a04b1a79d9ee3d29aea7dd8f5cc442959077e80",
           "abi": [
             {
@@ -9817,7 +9779,7 @@
           ]
         },
         {
-          "address": "0x567030cefdca2280f89f93857bf9b1d384362242fc3217118e735d9b24c84ea",
+          "address": "0xf31bb6420ce23df6d0f2625bc22dbc3543fc8247d5642cec17081626caf05a",
           "class_hash": "0x12274c20ffbc975fa023cc52d8bec1993af2705b580b2d779a55a38851636ba",
           "abi": [
             {
@@ -10073,7 +10035,7 @@
           ]
         },
         {
-          "address": "0x4aef2b62f9153b3ffc5194337af92c6143b9c0acc51f1db7037bb87b6ff5b03",
+          "address": "0x17c39aa79c05ae4061288d8f3319cf0b4de639e4f9b2cbc9a16e164295f391b",
           "class_hash": "0x6897dbcf6821841d460a819278f9006f96ab9bf6be9fd6814fcc97e35cd3ce2",
           "abi": [
             {
@@ -10307,7 +10269,7 @@
           ]
         },
         {
-          "address": "0x46ff7fe0d043294cbd532a0e416d2f324a7c1ca41188855fc65c1f681fbfb9e",
+          "address": "0x14624837b8d09a491cab2dbef452bf7be2ba5c1afb081073bdd4f4ade1fdcd7",
           "class_hash": "0x3b6e58ff2690f9894f48d8f094ec5e36f10d345c51d3741617215dbb1a31d93",
           "abi": [
             {
@@ -10784,7 +10746,7 @@
           ]
         },
         {
-          "address": "0x4553dde2cef46fbfd1d0cbc7dee51278eaf013d554d4cbf1be9a65ac3978821",
+          "address": "0x4e4ffa524eb11c9b0880a2ec9fc7ff8867ef68143cf299849a65a118edf12e",
           "class_hash": "0xda6453f689e15368c0aa9409049d1a99c08862db1a49336f9a4ed3fc6a2aa9",
           "abi": [
             {
@@ -11041,7 +11003,7 @@
           ]
         },
         {
-          "address": "0x6034f8a88b41b720eb16519b43044ed08d84922bf704966b0e4bafa4b04001f",
+          "address": "0x6eebe276255d81469337015a7d2f74199a61e93cd7091b71fae8b3ee29b9cd9",
           "class_hash": "0x1d917a501fcc09f7e93f346467d9811c84e4f557730618cd39fe24472ab785b",
           "abi": [
             {
@@ -11329,7 +11291,7 @@
           ]
         },
         {
-          "address": "0x6707ee9f08bfa25a11a8869ef1dc2f62b38f098a7b9a87211d9286695891636",
+          "address": "0x12d0490ef8a01ac7e3902bf06c1ee8c9dc2ae04761ec83c12fd6e4331fc2fb3",
           "class_hash": "0xd23bfa9bc8b2e8400aed633f5c48b3561fe9d6a872d5bd59b24588d893f177",
           "abi": [
             {
@@ -11724,7 +11686,7 @@
           ]
         },
         {
-          "address": "0x72f3d9e8891b53bd6e1090deb733b341b1815cc8d222f8031c343cb6418dc71",
+          "address": "0x1302f13208a87a3963b055b4d9e5bd72654ebdfba509b95b4b63c3922a60f6d",
           "class_hash": "0x7831a5d86c235f0167a4ad140e5ff40bd1efb901c73971255b94a95208db96e",
           "abi": [
             {
@@ -11919,7 +11881,7 @@
           ]
         },
         {
-          "address": "0x714243de3162462392a1a6b3b0ed7cb4ceab14bc505d1dbb1f46f5c232c377f",
+          "address": "0x4b880cbcd173e4958d9e79f1d66e116a67c16f8ba0ab9defc58f9b316aaf604",
           "class_hash": "0x78f70ba05b3b9afc909333edaf8cf754ac2ea5174f7f9565710baf721cf4e37",
           "abi": [
             {
@@ -12119,7 +12081,7 @@
           ]
         },
         {
-          "address": "0x33072bd1dcd0739192e85bf22f9cf5bec1f8e0641108d522fe4b33fa8a9e473",
+          "address": "0x44bf9c5b511bf329f004511bb0f4013fdc3dabe0c443be1a905587fa9477503",
           "class_hash": "0x5be03adb8a7a6ae0c79d733324959cbc5dfcc9051e0e2aacda3006dcd64b592",
           "abi": [
             {
@@ -12356,7 +12318,7 @@
           ]
         },
         {
-          "address": "0x2225328cdbd9623f7bbe4dda6f6eccb15865cdfee1e917082b44b635fcb8303",
+          "address": "0x22d468388367cfbdc32b46754fea916d7a6c9001b0aacc3f38583097c0aa98a",
           "class_hash": "0x15f8cdd7fd24beab128f8e65af56e2261fcbc8a225dd40d14531a661a3d224d",
           "abi": [
             {
@@ -12622,7 +12584,7 @@
           ]
         },
         {
-          "address": "0x4c1267f8fd8cc8c4e8a8bf4477db92b132fb6a21ca52e66b2e989814af27b58",
+          "address": "0xf4230e385135211a92c9b314de27ecc97fb1622cd40b1f0bf6a7ca8fe2bcd0",
           "class_hash": "0x6311e234cdb5616a0428d7cf9dc44c2ef2662eec2c72197d706d22a3710b420",
           "abi": [
             {
@@ -12942,7 +12904,7 @@
           ]
         },
         {
-          "address": "0x28204833fab08182216e9bef85619bd9fcf079138e8ad503ff26a99d8a868f9",
+          "address": "0x174f8c3598512f4f38047bb833e9f77165da6004f699e152eae0645dc4427c3",
           "class_hash": "0x3b55e94daeaaf67269c0d979f90a54c00b6355c2f604ded1c1d0deb17d60aa0",
           "abi": [
             {
@@ -13413,7 +13375,7 @@
           ]
         },
         {
-          "address": "0x3141cba026ed5817a754bccc32df71a1660686b8c49ea41eab34db0fd91bc4a",
+          "address": "0x489ec246c2542621dba1bdfe0dd01b817f2a0289acf01ef4a5ff3269771fe7",
           "class_hash": "0x24c4c0ca1ad17c1541dc49230f76254d02a0144923584047508d583836ee0ad",
           "abi": [
             {
@@ -13719,7 +13681,7 @@
           ]
         },
         {
-          "address": "0x2608d704ff2793344d9a193be736a018fae02918b8934bfc618e577981f945a",
+          "address": "0x75e4e31f2472655b9a279b5359acdea8a3b169d4d76f7202f52b622f56c2779",
           "class_hash": "0x6b649c4f5c48e4161b5e49251f47d7fa396b3074562fec488088a688f0260bd",
           "abi": [
             {
@@ -14196,7 +14158,7 @@
           ]
         },
         {
-          "address": "0x5c362a9d25bb604ed52e9ebf013eb83958d2a93dbdebbd257b3dad04be9ed86",
+          "address": "0x1268dffdfcc38b0a9df4e63902d540ba9374c20ce848badeb60500d3bd35a63",
           "class_hash": "0x3081c2782460c080662cb301c5c8791e7bf638d7ad87ee4fd3149637be416e0",
           "abi": [
             {
@@ -14448,7 +14410,7 @@
           ]
         },
         {
-          "address": "0xf03f2e85dd95186cc1e0e2a45646660a363794abacde3263c86f699dde09a9",
+          "address": "0x6a1739ea4c0a094c09c7dc673814a1f7186c07ae9410250a8deb81e5e62cd80",
           "class_hash": "0x71db859274d4587ca254f08dffc59bdb2b904e9806a915b03b3cb287a892cf5",
           "abi": [
             {
@@ -14925,7 +14887,7 @@
           ]
         },
         {
-          "address": "0x130f04e934d4dd11efa4478e8e3a905321c779691f3c107ff09b88d9a044d65",
+          "address": "0x473b9dd43312fb9d407d65c4a713661b7ba398ee1baa80bbbd69e94b9acab1a",
           "class_hash": "0x69618c05c9218ddb1031167a168a6bbf398288b1eab248201953112cce0e0f9",
           "abi": [
             {

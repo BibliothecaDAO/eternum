@@ -1,8 +1,12 @@
 import { Button, NumberInput, Tabs } from "@/ui/design-system/atoms";
 import { ResourceIcon } from "@/ui/design-system/molecules";
-import { getBlockTimestamp } from "@bibliothecadao/eternum";
-
-import { configManager, divideByPrecision, formatTime, getBuildingQuantity } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  divideByPrecision,
+  formatTime,
+  getBlockTimestamp,
+  getBuildingQuantity,
+} from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { getBuildingFromResource, RealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
@@ -74,7 +78,6 @@ export const ResourceProductionControls = ({
 
   const handleLaborResourcesProduce = async () => {
     if (!laborConfig) return;
-
     if (productionAmount > 0) {
       setIsLoading(true);
       const productionCycles = Math.floor(productionAmount / resourceOutputPerInputResourcesWithBonus);
@@ -139,6 +142,17 @@ export const ResourceProductionControls = ({
     );
   }, [laborConfig, resourceOutputPerInputResourcesWithBonus]);
 
+  const canUseLabor = useMemo(() => {
+    return laborCurrentInputs.length > 0;
+  }, [laborCurrentInputs]);
+
+  // If labor can't be used and the current panel is labor, force user into standard production
+  useEffect(() => {
+    if (!canUseLabor && !useRawResources) {
+      setUseRawResources(true);
+    }
+  }, [canUseLabor, useRawResources, setUseRawResources]);
+
   const currentInputs = useMemo(() => {
     return useRawResources ? rawCurrentInputs : laborCurrentInputs;
   }, [useRawResources, rawCurrentInputs, laborCurrentInputs]);
@@ -165,26 +179,8 @@ export const ResourceProductionControls = ({
     return getBuildingQuantity(realm.entityId, getBuildingFromResource(selectedResource), components);
   }, [realm.entityId, selectedResource, components]);
 
-  const [selectedTab, setSelectedTab] = useState(0);
-
-  const tabs = [
-    {
-      label: "Labor Production",
-      component: (
-        <div>
-          {laborCurrentInputs.length > 0 && (
-            <LaborResourcesPanel
-              productionAmount={productionAmount}
-              setProductionAmount={setProductionAmount}
-              resourceBalances={resourceBalances}
-              onSelect={() => setUseRawResources(false)}
-              laborInputResources={laborConfig?.inputResources || []}
-              resourceOutputPerInputResources={resourceOutputPerInputResourcesWithBonus}
-            />
-          )}
-        </div>
-      ),
-    },
+  // Only show the tabs that the user can actually select
+  const selectableTabs = [
     {
       label: "Resource Production",
       component: (
@@ -198,14 +194,43 @@ export const ResourceProductionControls = ({
           outputResourceAmount={outputResourceAmountWithBonus}
         />
       ),
+      canSelect: true,
     },
-  ];
+    {
+      label: "Labor Production",
+      component: canUseLabor ? (
+        <LaborResourcesPanel
+          productionAmount={productionAmount}
+          setProductionAmount={setProductionAmount}
+          resourceBalances={resourceBalances}
+          onSelect={() => setUseRawResources(false)}
+          laborInputResources={laborConfig?.inputResources || []}
+          resourceOutputPerInputResources={resourceOutputPerInputResourcesWithBonus}
+        />
+      ) : null,
+      canSelect: canUseLabor,
+    },
+  ].filter((tab) => tab.canSelect);
+
+  // Prevent selecting disabled tab if not available
+  const [selectedTab, setSelectedTab] = useState(0);
+
+  useEffect(() => {
+    if (selectedTab >= selectableTabs.length) {
+      setSelectedTab(0);
+    }
+    // If labor panel isn't available, always stay on first (standard) tab & set to standard
+    if (!canUseLabor && !useRawResources) {
+      setUseRawResources(true);
+    }
+    // eslint-disable-next-line
+  }, [selectableTabs.length, canUseLabor]);
 
   if (rawCurrentInputs.length === 0 && laborCurrentInputs.length === 0) return null;
 
   return (
-    <div className=" p-6 rounded-lg panel-wood">
-      <div className={`grid ${laborCurrentInputs.length > 0 ? "grid-cols-2" : "grid-cols-1"} gap-4`}>
+    <div className="p-6 rounded-lg panel-wood">
+      <div className={`grid ${canUseLabor ? "grid-cols-2" : "grid-cols-1"} gap-4`}>
         <div className="grid grid-cols-1 gap-4">
           <div className="mb-4">
             <h3 className="text-2xl font-bold mb-4">Start Production - {ResourcesIds[selectedResource]}</h3>
@@ -225,31 +250,54 @@ export const ResourceProductionControls = ({
             </div>
           </div>
         </div>
-        <Tabs
-          selectedIndex={selectedTab}
-          onChange={(index: any) => {
-            setSelectedTab(index);
-          }}
-        >
-          <Tabs.List className="p-2 w-full">
-            {tabs.map((tab, index) => (
-              <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
-            ))}
-          </Tabs.List>
+        {selectableTabs.length > 1 ? (
+          <Tabs
+            selectedIndex={selectedTab}
+            onChange={(index: any) => {
+              setSelectedTab(index);
+              if (selectableTabs[index].label === "Standard Production") {
+                setUseRawResources(true);
+              } else {
+                setUseRawResources(false);
+              }
+            }}
+          >
+            <Tabs.List className="p-2 w-full">
+              {selectableTabs.map((tab, index) => (
+                <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
+              ))}
+            </Tabs.List>
 
-          <Tabs.Panels className="overflow-hidden">
-            {tabs.map((tab, index) => (
-              <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
-            ))}
-          </Tabs.Panels>
-        </Tabs>
+            <Tabs.Panels className="overflow-hidden">
+              {selectableTabs.map((tab, index) => (
+                <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
+              ))}
+            </Tabs.Panels>
+          </Tabs>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <RawResourcesPanel
+              selectedResource={selectedResource}
+              productionAmount={productionAmount}
+              setProductionAmount={setProductionAmount}
+              resourceBalances={resourceBalances}
+              isSelected={true}
+              onSelect={() => setUseRawResources(true)}
+              outputResourceAmount={outputResourceAmountWithBonus}
+            />
+            <div className="text-sm text-gold/70 mt-2">
+              <span>
+                Only standard production is available for this resource. Simple production is not unlocked or not
+                available yet.
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Output */}
-
       <div className="flex flex-col gap-2">
-        <div className="flex  justify-between gap-2">
-          {" "}
+        <div className="flex justify-between gap-2">
           <div>
             <h2 className="flex items-center gap-2 mt-4">
               {Math.round(productionAmount).toLocaleString()} {ResourcesIds[selectedResource]}
@@ -268,7 +316,7 @@ export const ResourceProductionControls = ({
                 ? formatTime(Math.floor((ticks / buildingCount) * (realm.category === StructureType.Village ? 2 : 1)))
                 : "0s"}
             </span>
-          </h4>{" "}
+          </h4>
         </div>
 
         <Button
