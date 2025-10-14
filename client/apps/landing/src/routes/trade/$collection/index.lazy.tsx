@@ -3,7 +3,9 @@ import { FullPageLoader } from "@/components/modules/full-page-loader";
 import { PurchaseDialog } from "@/components/modules/marketplace-sweep-dialog";
 import { TraitFilterUI } from "@/components/modules/trait-filter-ui";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Pagination,
   PaginationContent,
@@ -80,6 +82,8 @@ function CollectionPage() {
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>(() => applyEnforcedFilters({}));
   const [sortBy, setSortBy] = useState<FetchAllCollectionTokensOptions["sortBy"]>("price_asc");
   const [listedOnly, setListedOnly] = useState(true);
+  const [hideInvalid, setHideInvalid] = useState(false);
+
   // Persist listedOnly per collection in localStorage
   useEffect(() => {
     try {
@@ -95,6 +99,22 @@ function CollectionPage() {
       window.localStorage.setItem(STORAGE_KEYS.listedOnly(collectionAddress), listedOnly ? "1" : "0");
     } catch {}
   }, [collectionAddress, listedOnly]);
+
+  // Persist hideInvalid per collection in localStorage
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(STORAGE_KEYS.hideInvalid(collectionAddress));
+      if (saved !== null) {
+        setHideInvalid(saved === "1");
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collectionAddress]);
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(STORAGE_KEYS.hideInvalid(collectionAddress), hideInvalid ? "1" : "0");
+    } catch {}
+  }, [collectionAddress, hideInvalid]);
 
   // Debounce filters to avoid excessive API calls
   const debouncedFilters = useDebounce(selectedFilters, 300);
@@ -136,15 +156,40 @@ function CollectionPage() {
   });
 
   // --- Derived State ---
-  const tokens = useMemo(() => tokensQuery.data?.tokens ?? [], [tokensQuery.data?.tokens]);
+  const allTokens = useMemo(() => tokensQuery.data?.tokens ?? [], [tokensQuery.data?.tokens]);
+
+  // Filter out invalid listings if hideInvalid is enabled
+  const tokens = useMemo(() => {
+    if (!hideInvalid) return allTokens;
+
+    return allTokens.filter((token) => {
+      const listingActive = token.expiration !== null && token.best_price_hex !== null;
+      if (!listingActive) return true; // Keep non-listed items
+
+      // Check if listing is invalid (owner mismatch)
+      const owner = token.token_owner?.toLowerCase?.();
+      const lister = token.order_owner?.toLowerCase?.();
+      const isInvalid = listingActive && owner && lister && owner !== lister;
+
+      return !isInvalid; // Keep only valid listings or non-listed items
+    });
+  }, [allTokens, hideInvalid]);
+
   const totalItems = tokensQuery.data?.totalCount ?? 0;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
   const activeOrders = totals.data?.[0]?.active_order_count ?? 0;
   const allTraits = allTraitsQuery.data ?? {};
-  const listedTokensOnPage = useMemo(
-    () => tokens.filter((token) => token.expiration !== null && token.best_price_hex !== null),
-    [tokens],
-  );
+  const listedTokensOnPage = useMemo(() => {
+    return tokens.filter((token) => {
+      const listed = token.expiration !== null && token.best_price_hex !== null;
+      if (!listed) return false;
+      const owner = token.token_owner?.toLowerCase?.();
+      const lister = token.order_owner?.toLowerCase?.();
+      return owner && lister && owner === lister;
+    });
+  }, [tokens]);
+
+  console.log({tokens})
 
   // --- Event Handlers ---
   const handlePageChange = (page: number) => {
@@ -237,7 +282,7 @@ function CollectionPage() {
     setPageInput(String(currentPage));
   }, [currentPage]);
 
-  // Reset to first page when switching listed/all or sort
+  // Reset to first page when switching listed/all or sort (but not hideInvalid - that's a display-only filter)
   useEffect(() => {
     setCurrentPage(1);
   }, [listedOnly, sortBy]);
@@ -245,9 +290,8 @@ function CollectionPage() {
   // Update effect to use debounced value
   useEffect(() => {
     if (sweepCount > 0 && tokens.length > 0) {
-      // Only select from listed items
-      const listedTokens = tokens.filter((token) => token.expiration !== null && token.best_price_hex !== null);
-      const itemsToSelect = listedTokens.slice(0, sweepCount);
+      // Only select from valid listings (listed and current owner matches lister)
+      const itemsToSelect = listedTokensOnPage.slice(0, sweepCount);
       const currentSelectedIds = new Set(selectedPasses.map((pass) => pass.token_id));
 
       itemsToSelect.forEach((item) => {
@@ -285,10 +329,10 @@ function CollectionPage() {
         </div>
       ) : (
         <>
-          <div className="flex flex-row justify-between items-center mb-4 px-4">
-            <div />
-            <div className="flex justify-end my-2 gap-2 sm:gap-4 items-center">
-              {Object.keys(allTraits).length > 0 && (
+          <div className="flex flex-col gap-4 mb-4 px-4">
+            {/* Filters Section */}
+            {Object.keys(allTraits).length > 0 && (
+              <div className="w-full flex flex-col sm:flex-row items-start sm:items-end gap-3 justify-between">
                 <TraitFilterUI
                   allTraits={allTraits}
                   selectedFilters={selectedFilters}
@@ -296,96 +340,130 @@ function CollectionPage() {
                   clearFilter={clearFilter}
                   clearAllFilters={clearAllFilters}
                 />
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  clearCollectionTraitsCache(collectionAddress);
-                  allTraitsQuery.refetch();
-                }}
-                disabled={allTraitsQuery.isFetching}
-                title="Reload all traits (bypass cache)"
-              >
-                {allTraitsQuery.isFetching ? (
-                  <span className="inline-flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Reloading
-                  </span>
-                ) : (
-                  "Reload Traits"
-                )}
-              </Button>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as FetchAllCollectionTokensOptions["sortBy"])}
-                className="px-3 py-1 rounded border text-sm bg-background"
-                title="Sort by"
-              >
-                <option value="price_asc">Price: Low to High</option>
-                <option value="price_desc">Price: High to Low</option>
-                <option value="token_id_asc">Token ID: Low to High</option>
-                <option value="token_id_desc">Token ID: High to Low</option>
-              </select>
-              <div className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-gold/40 bg-gold/10 text-gold text-sm font-bold shadow-sm whitespace-nowrap">
-                <span className="opacity-90">Page</span>
-                <Input
-                  name="topPage"
-                  type="number"
-                  min={1}
-                  max={Math.max(totalPages, 1)}
-                  value={pageInput}
-                  onChange={(e) => setPageInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      commitPageInput();
-                    }
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    clearCollectionTraitsCache(collectionAddress);
+                    allTraitsQuery.refetch();
                   }}
-                  onBlur={commitPageInput}
-                  className="h-7 w-14 text-center px-2 py-0 leading-none text-foreground bg-background/60 border border-gold/30"
-                  title="Go to page"
-                />
-                <span className="opacity-70 mx-1">/</span>
-                <span className="text-foreground text-base leading-none px-1 py-0.5 rounded bg-background/60 border border-gold/30">{Math.max(totalPages, 1)}</span>
-              </div>
-              <div className="hidden sm:flex items-center rounded-md overflow-hidden border">
-                <Button
-                  variant={listedOnly ? "default" : "outline"}
-                  size="sm"
-                  className="rounded-none"
-                  onClick={() => setListedOnly(true)}
-                  title="Show listed items only"
+                  disabled={allTraitsQuery.isFetching}
+                  title="Refresh filter options from blockchain"
+                  className="text-xs h-9 px-3 shadow-sm whitespace-nowrap"
                 >
-                  Listed Only
-                </Button>
-                <Button
-                  variant={!listedOnly ? "default" : "outline"}
-                  size="sm"
-                  className="rounded-none border-l"
-                  onClick={() => setListedOnly(false)}
-                  title="Show all items (includes unlisted)"
-                >
-                  Show All
+                  {allTraitsQuery.isFetching ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span>Refreshing Filters</span>
+                    </span>
+                  ) : (
+                    <span>Refresh Filters</span>
+                  )}
                 </Button>
               </div>
-              <div className="hidden sm:flex items-center rounded-md overflow-hidden border ml-2">
-                <Button
-                  variant={isCompactGrid ? "default" : "outline"}
-                  size="sm"
-                  className="rounded-none"
-                  onClick={() => setIsCompactGrid(true)}
-                  title="Compact grid"
+            )}
+
+            {/* Controls Section */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              {/* Left Side - View Controls */}
+              <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                {/* Sort Dropdown */}
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as FetchAllCollectionTokensOptions["sortBy"])}
+                  className="h-9 px-3 py-1.5 rounded-md border text-xs sm:text-sm bg-background hover:bg-accent/50 transition-colors"
+                  title="Sort by"
                 >
-                  Compact
-                </Button>
-                <Button
-                  variant={!isCompactGrid ? "default" : "outline"}
-                  size="sm"
-                  className="rounded-none border-l"
-                  onClick={() => setIsCompactGrid(false)}
-                  title="Large grid"
-                >
-                  Large
-                </Button>
+                  <option value="price_asc">Price: Low to High</option>
+                  <option value="price_desc">Price: High to Low</option>
+                  <option value="token_id_asc">Token ID: Low to High</option>
+                  <option value="token_id_desc">Token ID: High to Low</option>
+                </select>
+
+                {/* Listed/All Toggle */}
+                <div className="flex items-center rounded-md overflow-hidden border shadow-sm">
+                  <Button
+                    variant={listedOnly ? "default" : "ghost"}
+                    size="sm"
+                    className="rounded-none text-xs sm:text-sm h-9 px-3"
+                    onClick={() => setListedOnly(true)}
+                    title="Show listed items only"
+                  >
+                    Listed
+                  </Button>
+                  <Button
+                    variant={!listedOnly ? "default" : "ghost"}
+                    size="sm"
+                    className="rounded-none border-l text-xs sm:text-sm h-9 px-3"
+                    onClick={() => setListedOnly(false)}
+                    title="Show all items (includes unlisted)"
+                  >
+                    All
+                  </Button>
+                </div>
+
+                {/* Hide Invalid Checkbox */}
+                <div className="flex items-center h-9 px-3 rounded-md border border-input bg-background hover:bg-accent/50 transition-colors space-x-2 shadow-sm">
+                  <Checkbox
+                    id="hide-invalid"
+                    checked={hideInvalid}
+                    onCheckedChange={(checked) => setHideInvalid(checked === true)}
+                  />
+                  <Label
+                    htmlFor="hide-invalid"
+                    className="text-xs sm:text-sm font-medium leading-none cursor-pointer whitespace-nowrap"
+                  >
+                    Hide Invalid
+                  </Label>
+                </div>
+
+                {/* Grid Size Toggle - Desktop Only */}
+                <div className="hidden lg:flex items-center rounded-md overflow-hidden border shadow-sm">
+                  <Button
+                    variant={isCompactGrid ? "default" : "ghost"}
+                    size="sm"
+                    className="rounded-none text-xs h-9 px-3"
+                    onClick={() => setIsCompactGrid(true)}
+                    title="Compact grid"
+                  >
+                    Compact
+                  </Button>
+                  <Button
+                    variant={!isCompactGrid ? "default" : "ghost"}
+                    size="sm"
+                    className="rounded-none border-l text-xs h-9 px-3"
+                    onClick={() => setIsCompactGrid(false)}
+                    title="Large grid"
+                  >
+                    Large
+                  </Button>
+                </div>
+              </div>
+
+              {/* Right Side - Pagination */}
+              <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                {/* Page Navigation */}
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gold/40 bg-gold/10 text-gold text-xs sm:text-sm font-bold shadow-sm">
+                  <span className="opacity-90">Page</span>
+                  <Input
+                    name="topPage"
+                    type="number"
+                    min={1}
+                    max={Math.max(totalPages, 1)}
+                    value={pageInput}
+                    onChange={(e) => setPageInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        commitPageInput();
+                      }
+                    }}
+                    onBlur={commitPageInput}
+                    className="h-7 w-14 text-center px-2 py-0 leading-none text-foreground bg-background/60 border border-gold/30 rounded"
+                    title="Go to page"
+                  />
+                  <span className="opacity-70">/</span>
+                  <span className="text-foreground text-sm leading-none px-1.5 py-0.5 rounded bg-background/60 border border-gold/30">{Math.max(totalPages, 1)}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -410,11 +488,12 @@ function CollectionPage() {
                     tokens={tokens}
                     isCompactGrid={isCompactGrid}
                     onToggleSelection={(pass) => {
-                      // Only allow listed items to be selected
-                      const isListed = pass.expiration !== null && pass.best_price_hex !== null;
-                      if (isListed) {
-                        togglePass(pass);
-                      }
+                      // Only allow valid listings: listed and owner matches lister
+                      const listed = pass.expiration !== null && pass.best_price_hex !== null;
+                      const owner = pass.token_owner?.toLowerCase?.();
+                      const lister = pass.order_owner?.toLowerCase?.();
+                      const valid = listed && owner && lister && owner === lister;
+                      if (valid) togglePass(pass);
                     }}
                     pageId={`$collection${collection}`}
                   />

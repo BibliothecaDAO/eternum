@@ -791,6 +791,8 @@ export async function fetchAllCollectionTokens(
     .replaceAll("{collectionId}", collectionId.toString())
     .replaceAll("{traitFilters}", traitFilterClauses)
     .replaceAll("{limitOffsetClause}", limitOffsetClause)
+    .replaceAll("{limit}", String(limit ?? 0))
+    .replaceAll("{offset}", String(offset ?? 0))
     .replaceAll("{listedOrderByPaged}", listedOnly ? listedOrderByPaged : "")
     .replaceAll("{listedOrderByFinal}", listedOnly ? listedOrderByFinal : "")
     .replaceAll("{fullOrderByPaged}", listedOnly ? "" : fullOrderByPaged)

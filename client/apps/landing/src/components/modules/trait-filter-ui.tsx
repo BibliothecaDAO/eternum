@@ -163,23 +163,21 @@ const TraitSelect = ({
   const placeholder = getTraitPlaceholder(traitType);
 
   return (
-    <div className="flex flex-col gap-1.5 min-w-0 flex-shrink-0">
-      <Select value={selectedValue} onValueChange={onValueChange}>
-        <SelectTrigger id={`filter-${traitType}`} className="h-9 min-w-[120px] max-w-[200px] text-xs sm:text-sm">
-          <SelectValue placeholder={placeholder}>{selectedValue ? placeholder : undefined}</SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {sortedValues.map((value) => (
-            <SelectItem key={value} value={value} className="flex items-center gap-2 text-lg">
-              <div className="flex items-center gap-2">
-                {traitType === "Resource" && <ResourceIcon resource={value} size="md" />}
-                <span className="text-xs">{formatDisplayValue(traitType, value)}</span>
-              </div>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+    <Select value={selectedValue} onValueChange={onValueChange}>
+      <SelectTrigger id={`filter-${traitType}`} className="h-9 w-full sm:w-[160px] text-xs sm:text-sm">
+        <SelectValue placeholder={placeholder}>{selectedValue ? placeholder : undefined}</SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        {sortedValues.map((value) => (
+          <SelectItem key={value} value={value} className="flex items-center gap-2 text-lg">
+            <div className="flex items-center gap-2">
+              {traitType === "Resource" && <ResourceIcon resource={value} size="md" />}
+              <span className="text-xs">{formatDisplayValue(traitType, value)}</span>
+            </div>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 };
 
@@ -233,21 +231,19 @@ export function TraitFilterUI({
   };
 
   return (
-    <>
+    <div className="flex flex-col gap-3 w-full">
       {hasActiveFilters && (
-        <div className="border-r pr-4 border-border/50 flex flex-wrap gap-0.5 sm:gap-2 items-center">
+        <div className="flex flex-wrap gap-2 items-center pb-2 border-b border-border/50">
           {renderFilterBadges()}
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row sm:justify-center items-center sm:items-end gap-2 sm:gap-4 max-w-full">
-        <div className="flex flex-wrap justify-center sm:justify-end items-center gap-2 sm:gap-4 max-w-full overflow-x-auto">
-          {allTraits["Wonder"] && (
-            <WonderFilter isChecked={!!selectedFilters["Wonder"]} onToggle={handleWonderToggle} />
-          )}
-          <div className="flex flex-wrap gap-2 sm:gap-4 max-w-full">{renderTraitSelects()}</div>
-        </div>
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        {allTraits["Wonder"] && (
+          <WonderFilter isChecked={!!selectedFilters["Wonder"]} onToggle={handleWonderToggle} />
+        )}
+        {renderTraitSelects()}
       </div>
-    </>
+    </div>
   );
 }

@@ -248,9 +248,15 @@ WITH limited_active_orders AS (
     /* Deprecated: kept for reference. Use ALL_COLLECTION_TOKENS_LISTED or ALL_COLLECTION_TOKENS_FULL_PAGED. */
     SELECT 1 WHERE 0
   `,
-  /* Listed-only, page first then hydrate metadata. Supports traitFilters (on tokens metadata) and ordering. */
+  /* Listed-only, page first with trait filters applied before paging, then hydrate metadata. */
   ALL_COLLECTION_TOKENS_LISTED: `
-    WITH active_orders AS (
+    WITH filter_token_ids AS (
+      SELECT t.token_id
+      FROM tokens t
+      WHERE t.contract_address = '{contractAddress}'
+        {traitFilters}
+    ),
+    active_orders AS (
       SELECT
         printf('0x%064x', mo."order.token_id") AS token_id_hex,
         mo."order.price" AS price_hex,
@@ -264,8 +270,9 @@ WITH limited_active_orders AS (
         AND ('{ownerAddress}' = '' OR mo."order.owner" = '{ownerAddress}')
     ),
     paged AS (
-      SELECT token_id_hex
-      FROM active_orders
+      SELECT a.token_id_hex
+      FROM active_orders a
+      JOIN filter_token_ids f ON f.token_id = a.token_id_hex
       {listedOrderByPaged}
       {limitOffsetClause}
     ),
@@ -275,12 +282,21 @@ WITH limited_active_orders AS (
       WHERE contract_address = '{contractAddress}'
         AND token_id IN (SELECT token_id_hex FROM paged)
       GROUP BY token_id
+    ),
+    owners AS (
+      SELECT substr(tb.token_id, instr(tb.token_id, ':') + 1) AS token_id_hex,
+             MIN(tb.account_address) AS account_address
+      FROM token_balances tb
+      WHERE tb.contract_address = '{contractAddress}'
+        AND tb.balance != '0x0000000000000000000000000000000000000000000000000000000000000000'
+        AND substr(tb.token_id, instr(tb.token_id, ':') + 1) IN (SELECT token_id_hex FROM paged)
+      GROUP BY substr(tb.token_id, instr(tb.token_id, ':') + 1)
     )
     SELECT
       a.token_id_hex,
       substr(a.token_id_hex, 3) AS token_id,
       1 AS is_listed,
-      NULL AS token_owner,
+      o.account_address AS token_owner,
       a.price_hex,
       a.expiration,
       a.order_owner,
@@ -293,8 +309,7 @@ WITH limited_active_orders AS (
     FROM paged p
     JOIN active_orders a ON a.token_id_hex = p.token_id_hex
     LEFT JOIN tokens_latest t ON t.token_id = a.token_id_hex
-    WHERE 1=1
-      {traitFilters}
+    LEFT JOIN owners o ON o.token_id_hex = a.token_id_hex
     {listedOrderByFinal}
   `,
   ALL_COLLECTION_TOKENS_LISTED_COUNT: `
@@ -318,9 +333,17 @@ WITH limited_active_orders AS (
     WHERE 1=1
       {traitFilters}
   `,
-  /* Full view: union owned + listed, page first, then hydrate metadata. */
+  /* Full view: split-page (listed slice + unlisted slice via tokens),
+     apply trait filters before slicing, then hydrate metadata. */
   ALL_COLLECTION_TOKENS_FULL_PAGED: `
-    WITH active_orders AS (
+    WITH
+    filter_token_ids AS (
+      SELECT t.token_id
+      FROM tokens t
+      WHERE t.contract_address = '{contractAddress}'
+        {traitFilters}
+    ),
+    active_orders AS (
       SELECT
         printf('0x%064x', mo."order.token_id") AS token_id_hex,
         mo."order.price" AS price_hex,
@@ -333,47 +356,42 @@ WITH limited_active_orders AS (
         AND mo."order.expiration" > strftime('%s','now')
         AND ('{ownerAddress}' = '' OR mo."order.owner" = '{ownerAddress}')
     ),
-    owned_tokens AS (
-      SELECT DISTINCT
-        substr(tb.token_id, instr(tb.token_id, ':') + 1) AS token_id_hex,
-        tb.account_address AS token_owner,
-        tb.balance
-      FROM token_balances tb
-      WHERE tb.contract_address = '{contractAddress}'
-        AND tb.balance != '0x0000000000000000000000000000000000000000000000000000000000000000'
+    listed_count AS (
+      SELECT COUNT(*) AS ct FROM active_orders
     ),
-    collection_tokens AS (
-      SELECT 
-        ot.token_id_hex,
-        ot.token_owner,
-        ot.balance,
-        ao.price_hex,
-        ao.expiration,
-        ao.order_owner,
-        ao.order_id,
-        CASE WHEN ao.order_id IS NOT NULL THEN 1 ELSE 0 END AS is_listed
-      FROM owned_tokens ot
-      LEFT JOIN active_orders ao ON ao.token_id_hex = ot.token_id_hex
-      UNION ALL
-      SELECT 
-        ao.token_id_hex,
-        NULL AS token_owner,
-        NULL AS balance,
-        ao.price_hex,
-        ao.expiration,
-        ao.order_owner,
-        ao.order_id,
-        1 AS is_listed
-      FROM active_orders ao
-      WHERE NOT EXISTS (
-        SELECT 1 FROM owned_tokens ot WHERE ot.token_id_hex = ao.token_id_hex
-      )
+    limits AS (
+      SELECT
+        ct AS listed_total,
+        MAX(0, MIN(ct - {offset}, {limit})) AS listed_take,
+        MAX(0, {limit} - MAX(0, MIN(ct - {offset}, {limit}))) AS unlisted_take,
+        MAX(0, {offset} - ct) AS unlisted_offset,
+        MAX(0, MIN(ct, {offset})) AS listed_offset
+      FROM listed_count
+    ),
+    listed_slice AS (
+      SELECT a.token_id_hex, a.price_hex, a.expiration, a.order_owner, a.order_id, 1 AS is_listed
+      FROM active_orders a
+      JOIN filter_token_ids f ON f.token_id = a.token_id_hex
+      ORDER BY a.price_hex, a.token_id_hex
+      LIMIT (SELECT listed_take FROM limits)
+      OFFSET (SELECT listed_offset FROM limits)
+    ),
+    unlisted_candidates AS (
+      SELECT f.token_id AS token_id_hex
+      FROM filter_token_ids f
+      WHERE f.token_id NOT IN (SELECT token_id_hex FROM active_orders)
+    ),
+    unlisted_slice AS (
+      SELECT u.token_id_hex, NULL AS price_hex, NULL AS expiration, NULL AS order_owner, NULL AS order_id, 0 AS is_listed
+      FROM unlisted_candidates u
+      ORDER BY u.token_id_hex
+      LIMIT (SELECT unlisted_take FROM limits)
+      OFFSET (SELECT unlisted_offset FROM limits)
     ),
     paged AS (
-      SELECT token_id_hex
-      FROM collection_tokens
-      {fullOrderByPaged}
-      {limitOffsetClause}
+      SELECT token_id_hex, price_hex, expiration, order_owner, order_id, is_listed FROM listed_slice
+      UNION ALL
+      SELECT token_id_hex, price_hex, expiration, order_owner, order_id, is_listed FROM unlisted_slice
     ),
     tokens_latest AS (
       SELECT token_id, name, symbol, contract_address, MAX(metadata) AS metadata
@@ -381,27 +399,34 @@ WITH limited_active_orders AS (
       WHERE contract_address = '{contractAddress}'
         AND token_id IN (SELECT token_id_hex FROM paged)
       GROUP BY token_id
+    ),
+    owners AS (
+      SELECT substr(tb.token_id, instr(tb.token_id, ':') + 1) AS token_id_hex,
+             MIN(tb.account_address) AS account_address
+      FROM token_balances tb
+      WHERE tb.contract_address = '{contractAddress}'
+        AND tb.balance != '0x0000000000000000000000000000000000000000000000000000000000000000'
+        AND substr(tb.token_id, instr(tb.token_id, ':') + 1) IN (SELECT token_id_hex FROM paged)
+      GROUP BY substr(tb.token_id, instr(tb.token_id, ':') + 1)
     )
     SELECT
-      ct.token_id_hex,
-      substr(ct.token_id_hex, 3) AS token_id,
-      ct.is_listed,
-      ct.token_owner,
-      ct.price_hex,
-      ct.expiration,
-      ct.order_owner,
-      ct.order_id,
-      ct.balance,
+      p.token_id_hex,
+      substr(p.token_id_hex, 3) AS token_id,
+      p.is_listed,
+      o.account_address AS token_owner,
+      p.price_hex,
+      p.expiration,
+      p.order_owner,
+      p.order_id,
+      NULL AS balance,
       t.name,
       t.symbol,
       t.metadata,
       '{contractAddress}' AS contract_address
     FROM paged p
-    JOIN collection_tokens ct ON ct.token_id_hex = p.token_id_hex
-    LEFT JOIN tokens_latest t ON t.token_id = ct.token_id_hex
-    WHERE 1=1
-      {traitFilters}
-    {fullOrderByFinal}
+    LEFT JOIN tokens_latest t ON t.token_id = p.token_id_hex
+    LEFT JOIN owners o ON o.token_id_hex = p.token_id_hex
+    ORDER BY p.is_listed DESC, (p.price_hex IS NULL), p.price_hex, p.token_id_hex
   `,
   ALL_COLLECTION_TOKENS_FULL_COUNT: `
     WITH active_orders AS (
