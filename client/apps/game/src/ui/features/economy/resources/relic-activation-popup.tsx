@@ -115,7 +115,10 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
 
         queryClient.invalidateQueries({
           predicate: ({ queryKey }) =>
-            Array.isArray(queryKey) && queryKey.length > 1 && queryKey[0] === "playerRelics" && queryKey[1] === account.address,
+            Array.isArray(queryKey) &&
+            queryKey.length > 1 &&
+            queryKey[0] === "playerRelics" &&
+            queryKey[1] === account.address,
         });
       }
 

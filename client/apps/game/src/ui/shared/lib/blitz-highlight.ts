@@ -93,4 +93,3 @@ export const buildBlitzShareMessage = ({
 };
 
 export const BLITZ_DEFAULT_SHARE_ORIGIN = DEFAULT_FALLBACK_ORIGIN;
-

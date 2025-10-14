@@ -138,4 +138,3 @@ export const copySvgToClipboard = async (
     }
   }
 };
-

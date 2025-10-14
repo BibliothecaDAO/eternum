@@ -112,8 +112,8 @@ export const BuildingsList = ({
     const bgImage = selectedProduction.isLabor
       ? BUILDING_IMAGES_PATH[BuildingType.ResourceLabor as keyof typeof BUILDING_IMAGES_PATH]
       : selectedProduction.buildings[0]?.category
-          ? BUILDING_IMAGES_PATH[selectedProduction.buildings[0].category as keyof typeof BUILDING_IMAGES_PATH]
-          : "";
+        ? BUILDING_IMAGES_PATH[selectedProduction.buildings[0].category as keyof typeof BUILDING_IMAGES_PATH]
+        : "";
 
     return (
       <div
@@ -163,8 +163,8 @@ export const BuildingsList = ({
             const bgImage = production.isLabor
               ? BUILDING_IMAGES_PATH[BuildingType.ResourceLabor as keyof typeof BUILDING_IMAGES_PATH]
               : production.buildings[0]?.category
-                  ? BUILDING_IMAGES_PATH[production.buildings[0].category as keyof typeof BUILDING_IMAGES_PATH]
-                  : "";
+                ? BUILDING_IMAGES_PATH[production.buildings[0].category as keyof typeof BUILDING_IMAGES_PATH]
+                : "";
 
             return (
               <div

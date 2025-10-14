@@ -12,7 +12,13 @@ import "./index.css";
 import type { SetupResult } from "./init/bootstrap";
 import type { Account, AccountInterface } from "starknet";
 import { IS_MOBILE } from "./ui/config";
-import { LandingAccount, LandingCosmetics, LandingLeaderboard, LandingPlayer, LandingWelcome } from "./ui/features/landing";
+import {
+  LandingAccount,
+  LandingCosmetics,
+  LandingLeaderboard,
+  LandingPlayer,
+  LandingWelcome,
+} from "./ui/features/landing";
 import { StoryEventToastBridge, StoryEventToastProvider } from "./ui/features/story-events";
 import { LandingLayout } from "./ui/layouts/landing";
 import { World } from "./ui/layouts/world";

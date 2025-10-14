@@ -67,10 +67,7 @@ export const ModalContainer = ({ children, size = "full", title }: ModalContaine
   }, [handleEscapePress]);
 
   return (
-    <div
-      className="z-50 flex h-full w-full items-center justify-center"
-      onPointerDown={handleBackdropPointerDown}
-    >
+    <div className="z-50 flex h-full w-full items-center justify-center" onPointerDown={handleBackdropPointerDown}>
       <div
         ref={modalRef}
         className={`bg-dark-wood panel-wood text-gold ${containerClasses} overflow-hidden`}

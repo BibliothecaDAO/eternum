@@ -25,11 +25,14 @@ export const PlayOverlayManager = ({ backgroundImage }: PlayOverlayManagerProps)
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
 
-  const handleModalOverlayPointerDown = useCallback((event: PointerEvent<HTMLDivElement>) => {
-    if (event.target === event.currentTarget) {
-      toggleModal(null);
-    }
-  }, [toggleModal]);
+  const handleModalOverlayPointerDown = useCallback(
+    (event: PointerEvent<HTMLDivElement>) => {
+      if (event.target === event.currentTarget) {
+        toggleModal(null);
+      }
+    },
+    [toggleModal],
+  );
 
   useEffect(() => {
     if (!showModal) {

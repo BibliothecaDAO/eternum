@@ -75,8 +75,8 @@ export const NumberInput = ({
         disabled={disabled}
         onChange={(e) => {
           const inputValue = e.target.value;
-          if (inputValue.trim() === '') {
-            setDisplayValue('');
+          if (inputValue.trim() === "") {
+            setDisplayValue("");
             return;
           }
           if (allowDecimals) {
@@ -103,7 +103,7 @@ export const NumberInput = ({
           }
         }}
         onBlur={() => {
-          if (displayValue === '') {
+          if (displayValue === "") {
             setDisplayValue(formatNumber(Math.max(value, min)));
           }
           onBlurProp?.();
