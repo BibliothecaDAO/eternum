@@ -501,7 +501,7 @@ export const GameWinnerMessage = () => {
                       )}
 
                       <text
-                        x="560"
+                        x="585"
                         y="312"
                         fontSize="12"
                         fill="rgba(160, 236, 255, 0.58)"
