@@ -68,6 +68,8 @@ const MINIMAP_CONFIG = {
   },
 };
 
+const FETCH_TILES_SLOW_THRESHOLD_MS = 2_000;
+
 // Generic cluster interface for any entity type
 interface EntityCluster {
   centerCol: number;
@@ -933,23 +935,40 @@ class Minimap {
   private async fetchTiles() {
     if (this.isFetchingTiles) return;
     this.isFetchingTiles = true;
+    const getTimestamp = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
+    const startTime = getTimestamp();
     console.log("fetchTiles");
     try {
-      this.tiles = await sqlApi.fetchAllTiles().then((tiles) => {
-        return tiles.map((tile) => {
-          const position = new Position({ x: tile.col, y: tile.row });
-          const { x: col, y: row } = position.getNormalized();
-          return {
-            ...tile,
-            col,
-            row,
-          };
-        });
+      const rawTiles = await sqlApi.fetchAllTiles();
+      const fetchEndTime = getTimestamp();
+      const normalizedTiles = rawTiles.map((tile) => {
+        const position = new Position({ x: tile.col, y: tile.row });
+        const { x: col, y: row } = position.getNormalized();
+        return {
+          ...tile,
+          col,
+          row,
+        };
       });
+      const normalizeEndTime = getTimestamp();
+      this.tiles = normalizedTiles;
       this.updateWorldBounds();
       this.clampMapCenter();
       this.recomputeScales();
       this.draw(); // Redraw the minimap with new data
+      const endTime = getTimestamp();
+      const fetchDuration = fetchEndTime - startTime;
+      const normalizeDuration = normalizeEndTime - fetchEndTime;
+      const postProcessDuration = endTime - normalizeEndTime;
+      const totalDuration = endTime - startTime;
+      console.log(
+        `[Minimap] fetchTiles finished in ${totalDuration.toFixed(2)}ms (fetch ${fetchDuration.toFixed(2)}ms, normalize ${normalizeDuration.toFixed(2)}ms, render ${postProcessDuration.toFixed(2)}ms)`,
+      );
+      if (totalDuration > FETCH_TILES_SLOW_THRESHOLD_MS) {
+        console.warn(
+          `[Minimap] fetchTiles slow: ${totalDuration.toFixed(2)}ms > ${FETCH_TILES_SLOW_THRESHOLD_MS}ms threshold`,
+        );
+      }
     } catch (error) {
       console.error("Failed to fetch tiles:", error);
     } finally {
