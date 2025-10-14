@@ -1,6 +1,7 @@
 import { forwardRef } from "react";
 
-import eternumLogoWhite from "../../../../../eternum-mobile/public/images/eternum-logo-white.svg";
+// Using the eternum.svg logo from the game's public directory
+const eternumLogoWhite = "/images/logos/eternum-new.svg";
 
 import { currencyIntlFormat } from "@/ui/utils/utils";
 
@@ -8,10 +9,10 @@ import {
   BLITZ_CARD_DIMENSIONS,
   BLITZ_CARD_RADII,
   BlitzHighlightPlayer,
+  formatOrdinal,
   getBlitzCoverImage,
   getSecondaryLabel,
   truncateText,
-  formatOrdinal,
 } from "../lib/blitz-highlight";
 
 interface BlitzHighlightCardProps {
@@ -192,26 +193,12 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
             preserveAspectRatio="xMidYMid meet"
             opacity="0.9"
           />
-          <text
-            x="560"
-            y="340"
-            fontSize="12"
-            fill="rgba(144, 224, 255, 0.72)"
-            textAnchor="end"
-            letterSpacing="0.1em"
-          >
+          <text x="560" y="340" fontSize="12" fill="rgba(144, 224, 255, 0.72)" textAnchor="end" letterSpacing="0.1em">
             Powered by Starknet
           </text>
         </g>
 
-        <rect
-          width="640"
-          height="360"
-          rx="44"
-          fill="none"
-          stroke="rgba(115, 244, 255, 0.38)"
-          strokeWidth="1.5"
-        />
+        <rect width="640" height="360" rx="44" fill="none" stroke="rgba(115, 244, 255, 0.38)" strokeWidth="1.5" />
       </svg>
     );
   },
