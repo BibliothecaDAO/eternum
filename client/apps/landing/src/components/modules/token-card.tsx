@@ -7,6 +7,7 @@ import { COSMETIC_NAMES } from "@/utils/cosmetics";
 import { RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types";
 import { useAccount } from "@starknet-react/core";
 import { ArrowRightLeft, Check, Plus } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useMemo, useState } from "react";
 import { formatUnits } from "viem";
 import { Button } from "../ui/button";
@@ -40,9 +41,13 @@ export const TokenCard = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const normalizedAccountAddress = accountAddress ? trimAddress(accountAddress)?.toLowerCase() : undefined;
-  const normalizedTokenOwner = token.account_address ? trimAddress(token.account_address)?.toLowerCase() : undefined;
+  const normalizedTokenOwner = token.token_owner ? trimAddress(token.token_owner)?.toLowerCase() : undefined;
+  const normalizedOrderOwner = token.order_owner ? trimAddress(token.order_owner)?.toLowerCase() : undefined;
   const isOwner = normalizedTokenOwner ? normalizedTokenOwner === normalizedAccountAddress : true;
-  const isListed = token.expiration !== null && token.best_price_hex !== null;
+  const listingActive = token.expiration !== null && token.best_price_hex !== null;
+  const listingOwnerMismatch = listingActive && normalizedOrderOwner && normalizedTokenOwner && normalizedOrderOwner !== normalizedTokenOwner;
+  const isActuallyListed = listingActive && !listingOwnerMismatch;
+  const isDisabledCard = listingOwnerMismatch;
   const collection = getCollectionByAddress(contract_address);
   const collectionName = collection?.name;
 
@@ -88,14 +93,7 @@ export const TokenCard = ({
 
   const displayName = getDisplayName();
 
-  const listingActive = useMemo(() => {
-    if (token.expiration !== null && token.best_price_hex !== null) {
-      return true;
-    }
-    return false;
-  }, [token.expiration, token.best_price_hex]);
-
-  const canToggleSelection = Boolean(onToggleSelection && (isOwner || listingActive));
+  const canToggleSelection = Boolean(onToggleSelection && (isOwner || isActuallyListed));
 
   const handleToggleSelection = (event: React.MouseEvent) => {
     event.preventDefault();
@@ -107,8 +105,9 @@ export const TokenCard = ({
     <>
       <Card
         onClick={canToggleSelection ? handleToggleSelection : undefined}
-        className={`relative transition-all duration-200 rounded-lg overflow-hidden shadow-md hover:shadow-xl 
-          ${isSelected ? "ring-1  ring-gold scale-[1.01] bg-gold/5" : canToggleSelection ? "hover:ring-1 hover:ring-gold hover:bg-gold/5" : ""} 
+        className={`relative transition-all duration-200 rounded-lg overflow-hidden shadow-md hover:shadow-xl
+          ${isSelected ? "ring-1 ring-gold scale-[1.01] bg-gold/5" : canToggleSelection ? "hover:ring-1 hover:ring-gold hover:bg-gold/5" : ""}
+          ${isDisabledCard ? "ring-2 ring-orange-500/40 bg-orange-500/[0.08]" : ""}
           ${canToggleSelection ? "cursor-pointer" : "cursor-default"} group`}
       >
         <div className="relative">
@@ -124,8 +123,13 @@ export const TokenCard = ({
           <img
             src={image}
             alt={name ?? "Token Image"}
-            className={`w-full object-contain transition-all duration-200
-              ${isSelected ? "opacity-100" : "opacity-90 group-hover:opacity-100"}`}
+            className={`w-full object-contain transition-all duration-200 ${
+              isDisabledCard
+                ? "opacity-60 saturate-50 contrast-90 brightness-95"
+                : isSelected
+                  ? "opacity-100"
+                  : "opacity-90 group-hover:opacity-100"
+            }`}
           />
 
           {/* Selection overlay appears when this card can be toggled */}
@@ -141,10 +145,26 @@ export const TokenCard = ({
           )}
 
           {/* Listing Indicator */}
-          {listingActive && (
-            <div className="absolute top-2 left-2 bg-green-600 text-white px-2 py-0.5 rounded-md text-xs font-bold z-20">
+          {isActuallyListed && (
+            <div className="absolute top-2 left-2 bg-green-600 border border-green-700 text-white px-2 py-0.5 rounded-md text-xs font-bold z-20 opacity-100 shadow-md">
               Listed
             </div>
+          )}
+
+          {/* Invalid Listing Indicator */}
+          {listingOwnerMismatch && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="absolute top-2 left-2 bg-orange-500 border border-orange-500/80 text-white px-2 py-0.5 rounded-md text-xs font-bold z-20 opacity-100 shadow-md cursor-help">
+                    Invalid Listing
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p>This listing is no longer valid. The token owner has changed since the listing was created.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
         </div>
         <CardHeader className={`p-4 pb-2 ${isSelected ? "bg-gold/5" : ""}`}>
@@ -183,10 +203,26 @@ export const TokenCard = ({
           <div className="flex justify-between">
             <div className="flex flex-col">
               {listingActive ? (
-                <div className="text-xl flex items-center gap-2 font-mono">
-                  {Number(formatUnits(BigInt(token.best_price_hex ?? 0), 18)).toLocaleString()}{" "}
-                  <ResourceIcon withTooltip={false} resource="Lords" size="sm" />
-                </div>
+                listingOwnerMismatch ? (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="text-xl flex items-center gap-2 font-mono cursor-help opacity-60">
+                          {Number(formatUnits(BigInt(token.best_price_hex ?? 0), 18)).toLocaleString()}{" "}
+                          <ResourceIcon withTooltip={false} resource="Lords" size="sm" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>This listing price is no longer valid. The token owner has changed.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ) : (
+                  <div className="text-xl flex items-center gap-2 font-mono">
+                    {Number(formatUnits(BigInt(token.best_price_hex ?? 0), 18)).toLocaleString()}{" "}
+                    <ResourceIcon withTooltip={false} resource="Lords" size="sm" />
+                  </div>
+                )
               ) : (
                 <div className="text-xl text-muted-foreground">Not Listed</div>
               )}
@@ -208,11 +244,17 @@ export const TokenCard = ({
             ) : (
               <Button
                 disabled={isSelected}
-                variant={isOwner ? "outline" : "default"}
+                variant={isOwner ? "outline" : (isActuallyListed ? "default" : "ghost")}
                 className="w-full"
                 onClick={handleCardClick}
               >
-                {isOwner ? "Manage" : isSelected ? "Selected" : !listingActive ? "Show Details" : "Buy Now"}
+                {isOwner
+                  ? "Manage"
+                  : isSelected
+                    ? "Selected"
+                    : !isActuallyListed
+                      ? "Show Details"
+                      : "Buy Now"}
               </Button>
             )}
 
