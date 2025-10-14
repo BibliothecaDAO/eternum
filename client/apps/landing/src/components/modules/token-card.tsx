@@ -1,7 +1,6 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCollectionByAddress } from "@/config";
 import { useMarketplace } from "@/hooks/use-marketplace";
-import { trimAddress } from "@/lib/utils";
 import { MergedNftData } from "@/types";
 import { COSMETIC_NAMES } from "@/utils/cosmetics";
 import { RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types";
@@ -39,10 +38,11 @@ export const TokenCard = ({
   const marketplaceActions = useMarketplace();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const isOwner = token.account_address === trimAddress(accountAddress);
+  const isOwner = token.account_address === accountAddress;
   const isListed = token.expiration !== null && token.best_price_hex !== null;
   const collection = getCollectionByAddress(contract_address);
   const collectionName = collection?.name;
+  const canSelect = typeof onToggleSelection === "function" && (isListed || isOwner);
 
   // Determine collection type based on collection name
   const getCollectionType = (name?: string): CollectionType => {
@@ -95,10 +95,10 @@ export const TokenCard = ({
   return (
     <>
       <Card
-        onClick={isListed ? onToggleSelection : undefined}
+        onClick={canSelect ? onToggleSelection : undefined}
         className={`relative transition-all duration-200 rounded-lg overflow-hidden shadow-md hover:shadow-xl 
-          ${isSelected ? "ring-1  ring-gold scale-[1.01] bg-gold/5" : isListed ? "hover:ring-1 hover:ring-gold hover:bg-gold/5" : ""} 
-          ${isListed ? "cursor-pointer" : "cursor-default"} group`}
+          ${isSelected ? "ring-1  ring-gold scale-[1.01] bg-gold/5" : canSelect ? "hover:ring-1 hover:ring-gold hover:bg-gold/5" : ""} 
+          ${canSelect ? "cursor-pointer" : "cursor-default"} group`}
       >
         <div className="relative">
           {attributes?.find((attribute) => attribute.trait_type === "Wonder")?.value && (
@@ -117,8 +117,8 @@ export const TokenCard = ({
               ${isSelected ? "opacity-100" : "opacity-90 group-hover:opacity-100"}`}
           />
 
-          {/* Selection Overlay - Only show for listed items */}
-          {isListed && (
+          {/* Selection Overlay - Only show when selectable */}
+          {canSelect && (
             <div
               className={`absolute inset-0 bg-black/50 flex items-start justify-end transition-opacity duration-200
               ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
