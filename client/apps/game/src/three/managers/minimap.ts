@@ -118,6 +118,8 @@ class Minimap {
   private tiles: Tile[] = []; // SQL-fetched tiles
   private hoveredHexCoords: { col: number; row: number } | null = null; // New property for tracking hovered hex
   private isMinimized: boolean = false; // Add minimized state
+  private tilesRefreshIntervalId: number | null = null;
+  private isFetchingTiles: boolean = false;
 
   // Entity visibility toggles
   private showRealms: boolean = true;
@@ -147,6 +149,7 @@ class Minimap {
       this.initializeCanvas(camera);
       this.canvas.addEventListener("canvasResized", this.handleResize);
       this.fetchTiles(); // Start fetching tiles
+      this.startTilesRefreshLoop();
     });
   }
 
@@ -917,7 +920,19 @@ class Minimap {
     if (this.context) this.draw();
   }
 
+  private startTilesRefreshLoop() {
+    if (this.tilesRefreshIntervalId !== null) {
+      window.clearInterval(this.tilesRefreshIntervalId);
+    }
+
+    this.tilesRefreshIntervalId = window.setInterval(() => {
+      void this.fetchTiles();
+    }, 10_000);
+  }
+
   private async fetchTiles() {
+    if (this.isFetchingTiles) return;
+    this.isFetchingTiles = true;
     console.log("fetchTiles");
     try {
       this.tiles = await sqlApi.fetchAllTiles().then((tiles) => {
@@ -937,6 +952,8 @@ class Minimap {
       this.draw(); // Redraw the minimap with new data
     } catch (error) {
       console.error("Failed to fetch tiles:", error);
+    } finally {
+      this.isFetchingTiles = false;
     }
   }
 
@@ -1071,6 +1088,11 @@ class Minimap {
 
     if ((window as any).minimapInstance === this) {
       (window as any).minimapInstance = undefined;
+    }
+
+    if (this.tilesRefreshIntervalId !== null) {
+      window.clearInterval(this.tilesRefreshIntervalId);
+      this.tilesRefreshIntervalId = null;
     }
 
     console.log(`🧹 Minimap: Disposed ${imagesDisposed} images and cleaned up canvas`);
