@@ -39,7 +39,9 @@ export const TokenCard = ({
   const marketplaceActions = useMarketplace();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const isOwner = token.account_address === trimAddress(accountAddress);
+  const normalizedAccountAddress = accountAddress ? trimAddress(accountAddress)?.toLowerCase() : undefined;
+  const normalizedTokenOwner = token.account_address ? trimAddress(token.account_address)?.toLowerCase() : undefined;
+  const isOwner = normalizedTokenOwner ? normalizedTokenOwner === normalizedAccountAddress : true;
   const isListed = token.expiration !== null && token.best_price_hex !== null;
   const collection = getCollectionByAddress(contract_address);
   const collectionName = collection?.name;
@@ -57,7 +59,8 @@ export const TokenCard = ({
     e.stopPropagation();
     setIsModalOpen(true);
   };
-  const handleTransferClick = () => {
+  const handleTransferClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (toggleNftSelection) {
       toggleNftSelection();
     }
@@ -92,13 +95,21 @@ export const TokenCard = ({
     return false;
   }, [token.expiration, token.best_price_hex]);
 
+  const canToggleSelection = Boolean(onToggleSelection && (isOwner || listingActive));
+
+  const handleToggleSelection = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onToggleSelection?.();
+  };
+
   return (
     <>
       <Card
-        onClick={isListed ? onToggleSelection : undefined}
+        onClick={canToggleSelection ? handleToggleSelection : undefined}
         className={`relative transition-all duration-200 rounded-lg overflow-hidden shadow-md hover:shadow-xl 
-          ${isSelected ? "ring-1  ring-gold scale-[1.01] bg-gold/5" : isListed ? "hover:ring-1 hover:ring-gold hover:bg-gold/5" : ""} 
-          ${isListed ? "cursor-pointer" : "cursor-default"} group`}
+          ${isSelected ? "ring-1  ring-gold scale-[1.01] bg-gold/5" : canToggleSelection ? "hover:ring-1 hover:ring-gold hover:bg-gold/5" : ""} 
+          ${canToggleSelection ? "cursor-pointer" : "cursor-default"} group`}
       >
         <div className="relative">
           {attributes?.find((attribute) => attribute.trait_type === "Wonder")?.value && (
@@ -117,8 +128,8 @@ export const TokenCard = ({
               ${isSelected ? "opacity-100" : "opacity-90 group-hover:opacity-100"}`}
           />
 
-          {/* Selection Overlay - Only show for listed items */}
-          {isListed && (
+          {/* Selection overlay appears when this card can be toggled */}
+          {canToggleSelection && (
             <div
               className={`absolute inset-0 bg-black/50 flex items-start justify-end transition-opacity duration-200
               ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
