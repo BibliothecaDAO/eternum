@@ -68,7 +68,7 @@ const MINIMAP_CONFIG = {
   },
 };
 
-const FETCH_TILES_SLOW_THRESHOLD_MS = 2_000;
+const FETCH_TILES_SLOW_THRESHOLD_MS = 1_000;
 
 // Generic cluster interface for any entity type
 interface EntityCluster {
