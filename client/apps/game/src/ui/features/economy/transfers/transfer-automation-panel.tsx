@@ -61,6 +61,14 @@ export const TransferAutomationPanel = () => {
   const [percent, setPercent] = useState(10);
   const [repeat, setRepeat] = useState(false);
   const [interval, setIntervalMinutes] = useState(30);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!statusMessage) return;
+    const t = window.setTimeout(() => setStatusMessage(null), 4000);
+    return () => window.clearTimeout(t);
+  }, [statusMessage]);
 
   // Prefill from draft (Advanced -> Edit)
   const draft = useTransferPanelDraftStore((s) => s.draft);
@@ -147,29 +155,6 @@ export const TransferAutomationPanel = () => {
     }
   }, [selectedSourceId]);
 
-  // Computed preview for percent amounts and donkey capacity
-  const percentPreview = useMemo(() => {
-    if (!components || !selectedSourceId || selectedResources.length === 0) return null as null | {
-      perResource: { id: ResourcesIds; humanAmount: number }[];
-      totalKg: number;
-      donkeys: { have: number; need: number };
-    };
-    const rm = new ResourceManager(components as any, selectedSourceId);
-    const perResource = selectedResources
-      .map((rid) => {
-        const bal = rm.balanceWithProduction(currentDefaultTick, rid).balance ?? 0n;
-        const human = Number(bal) / RESOURCE_PRECISION;
-        const cfg = resourceConfigs[rid] ?? { percent };
-        const amt = Math.floor((Math.min(90, Math.max(5, cfg.percent)) / 100) * human);
-        return { id: rid, humanAmount: amt };
-      })
-      .filter((x) => x.humanAmount > 0);
-    const totalKg = getTotalResourceWeightKg(perResource.map((p) => ({ resourceId: p.id, amount: p.humanAmount })));
-    const need = calculateDonkeysNeeded(totalKg);
-    const donkeyRaw = rm.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey).balance ?? 0n;
-    const have = Number(donkeyRaw) / RESOURCE_PRECISION;
-    return { perResource, totalKg, donkeys: { have, need } };
-  }, [components, selectedSourceId, selectedResources, percent, currentDefaultTick]);
 
   // keep any global percent sanity for draft fallback
   const percentClamped = Math.min(90, Math.max(5, percent));
@@ -206,6 +191,38 @@ export const TransferAutomationPanel = () => {
     } catch {}
     return map;
   }, [components, selectedSourceId, selectedResources, currentDefaultTick]);
+
+  // Donkey availability separate to avoid re-computation on slider changes
+  const donkeyAvailable = useMemo(() => {
+    if (!components || !selectedSourceId) return 0;
+    try {
+      const rm = new ResourceManager(components as any, selectedSourceId);
+      const raw = rm.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey).balance ?? 0n;
+      return Math.max(0, Math.floor(Number(raw) / RESOURCE_PRECISION));
+    } catch {
+      return 0;
+    }
+  }, [components, selectedSourceId, currentDefaultTick]);
+
+  // Computed preview for percent amounts and donkey capacity (fast path)
+  const percentPreview = useMemo(() => {
+    if (!selectedSourceId || selectedResources.length === 0) return null as null | {
+      perResource: { id: ResourcesIds; humanAmount: number }[];
+      totalKg: number;
+      donkeys: { have: number; need: number };
+    };
+    const perResource = selectedResources
+      .map((rid) => {
+        const available = sourceBalances.get(rid) ?? 0;
+        const cfg = resourceConfigs[rid] ?? { percent };
+        const amt = Math.floor((Math.min(90, Math.max(5, cfg.percent)) / 100) * available);
+        return { id: rid, humanAmount: amt };
+      })
+      .filter((x) => x.humanAmount > 0);
+    const totalKg = getTotalResourceWeightKg(perResource.map((p) => ({ resourceId: p.id, amount: p.humanAmount })));
+    const need = calculateDonkeysNeeded(totalKg);
+    return { perResource, totalKg, donkeys: { have: donkeyAvailable, need } };
+  }, [selectedSourceId, selectedResources, resourceConfigs, percent, sourceBalances, donkeyAvailable]);
 
   const addScheduled = useTransferAutomationStore((s) => s.add);
 
@@ -246,6 +263,9 @@ export const TransferAutomationPanel = () => {
       return;
     }
 
+    setIsSubmitting(true);
+    setStatusMessage(null);
+
     if (!repeat) {
       // one-off: call send_resources_multiple
       try {
@@ -278,9 +298,13 @@ export const TransferAutomationPanel = () => {
           ],
         });
         toast.success("Transfer sent.");
+        setStatusMessage("Transfer started");
       } catch (e) {
         console.error(e);
         toast.error("Transfer failed.");
+        setStatusMessage("Transfer failed");
+      } finally {
+        setIsSubmitting(false);
       }
       return;
     }
@@ -314,12 +338,15 @@ export const TransferAutomationPanel = () => {
           ],
         });
         toast.success("Transfer sent and scheduled.");
+        setStatusMessage("Transfer started and scheduled");
       } else {
         toast.warning("Nothing to send now. Scheduling for later.");
+        setStatusMessage("Scheduled for later");
       }
     } catch (e) {
       console.error(e);
       toast.error("Immediate run failed. Scheduled for later.");
+      setStatusMessage("Scheduled; immediate run failed");
     }
 
     addScheduled({
@@ -336,6 +363,7 @@ export const TransferAutomationPanel = () => {
       active: true,
     });
     toast.success("Scheduled transfer created.");
+    setIsSubmitting(false);
   }, [components, account, selectedResources, selectedSourceId, destinationId, percent, repeat, interval, ownedSources, destinations, addScheduled, currentDefaultTick, percentPreview, isBlitz]);
 
   const openAdvanced = useCallback(() => {
@@ -406,6 +434,7 @@ export const TransferAutomationPanel = () => {
         </div>
       </section>
 
+      {selectedResources.length > 0 && (
       <section className="space-y-2">
         <div className="text-xs text-gold/70">Source Location</div>
         <input
@@ -413,7 +442,7 @@ export const TransferAutomationPanel = () => {
           value={sourceSearch}
           onChange={(e) => setSourceSearch(e.target.value)}
           placeholder="Filter by name or ID"
-          className="w-full px-2 py-1 text-xs rounded border border-gold/30 bg-black/30 text-gold/80 outline-none mb-2"
+          className="w-full px-2 py-1 text-xs rounded border border-gold/30 bg-black/30 text-gold/80 placeholder:text-gold/40 focus:border-gold/60 outline-none mb-2"
         />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           {eligibleSources
@@ -443,7 +472,9 @@ export const TransferAutomationPanel = () => {
           })}
         </div>
       </section>
+      )}
 
+      {selectedResources.length > 0 && selectedSourceId && (
       <section className="space-y-2">
         <div className="flex items-center justify-between">
           <div className="text-xs text-gold/70">Destination</div>
@@ -457,7 +488,7 @@ export const TransferAutomationPanel = () => {
           value={destSearch}
           onChange={(e) => setDestSearch(e.target.value)}
           placeholder="Filter by name or ID"
-          className="w-full px-2 py-1 text-xs rounded border border-gold/30 bg-black/30 text-gold/80 outline-none mb-2"
+          className="w-full px-2 py-1 text-xs rounded border border-gold/30 bg-black/30 text-gold/80 placeholder:text-gold/40 focus:border-gold/60 outline-none mb-2"
         />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           {destinations.map((ps: any) => {
@@ -477,7 +508,9 @@ export const TransferAutomationPanel = () => {
           })}
         </div>
       </section>
+      )}
 
+      {selectedResources.length > 0 && selectedSourceId && (
       <section className="space-y-2">
         <div className="text-xs text-gold/70">Per-resource Amounts</div>
         <div className="grid grid-cols-3 gap-2">
@@ -518,13 +551,29 @@ export const TransferAutomationPanel = () => {
             {percentPreview.perResource.map((p) => (
               <span key={p.id} className="mr-2">{p.humanAmount.toLocaleString()} {ResourcesIds[p.id]} </span>
             ))}
-            <span className={`${percentPreview.donkeys.need > percentPreview.donkeys.have ? "text-red" : "text-green"}`}>
+            <span
+              className={
+                percentPreview.donkeys.need > percentPreview.donkeys.have
+                  ? "text-danger/80"
+                  : "text-gold/70"
+              }
+            >
               • Donkeys {percentPreview.donkeys.need.toLocaleString()} used / {percentPreview.donkeys.have.toLocaleString()} available
             </span>
           </div>
         )}
-      </section>
 
+        {percentPreview && percentPreview.donkeys.need > percentPreview.donkeys.have && (
+          <div className="flex items-start gap-2 rounded-md border border-danger/40 bg-danger/10 p-2 text-xs text-danger/80">
+            <span>
+              Insufficient donkeys at source to carry this transfer. Reduce the load or add more donkeys.
+            </span>
+          </div>
+        )}
+      </section>
+      )}
+
+      {selectedResources.length > 0 && selectedSourceId && (
       <section className="space-y-2">
         <div className="flex items-center gap-4 text-xs text-gold/70">
           <label className="flex items-center gap-2">
@@ -550,19 +599,36 @@ export const TransferAutomationPanel = () => {
               className="w-full accent-gold"
             />
           </div>
-        )}
+          )}
       </section>
+      )}
 
       <div className="flex items-center justify-between pt-2 border-t border-gold/20">
+        <div className="flex items-center gap-3">
+          {selectedResources.length > 0 && selectedSourceId && (
+            <>
+              <Button
+                variant="primary"
+                size="md"
+                onClick={submit}
+                isLoading={isSubmitting}
+                disabled={
+                  isSubmitting ||
+                  selectedResources.length === 0 ||
+                  !selectedSourceId ||
+                  !destinationId ||
+                  (percentPreview ? percentPreview.donkeys.need > percentPreview.donkeys.have : false)
+                }
+              >
+                {repeat ? "Schedule" : "Transfer"}
+              </Button>
+              {statusMessage && (
+                <span className="text-xxs text-gold/70">{statusMessage}</span>
+              )}
+            </>
+          )}
+        </div>
         <Button variant="outline" size="sm" onClick={openAdvanced}>Advanced</Button>
-        <Button
-          variant="primary"
-          size="md"
-          onClick={submit}
-          disabled={selectedResources.length === 0 || !selectedSourceId || !destinationId}
-        >
-          {repeat ? "Schedule" : "Transfer"}
-        </Button>
       </div>
     </div>
   );
