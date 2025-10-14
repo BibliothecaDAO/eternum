@@ -44,6 +44,7 @@ type LeftNavigationContext = {
   toggleModal: (content: ReactNode | null) => void;
   isTradeOpen: boolean;
   isBlitz: boolean;
+  availableRelicsNumber: number;
 };
 
 const DEFAULT_BUTTON_SIZE: CircleButtonProps["size"] = "lg";
@@ -59,6 +60,7 @@ const buildLeftNavigationItems = ({
   toggleModal,
   isTradeOpen,
   isBlitz,
+  availableRelicsNumber,
 }: LeftNavigationContext): LeftNavigationItem[] => {
   const toggleView = (targetView: LeftView) => () => setView(view === targetView ? LeftView.None : targetView);
 
@@ -144,6 +146,10 @@ const buildLeftNavigationItems = ({
       disabled: disableButtons,
       active: view === LeftView.RelicsView,
       onClick: toggleView(LeftView.RelicsView),
+      primaryNotification:
+        availableRelicsNumber > 0
+          ? { value: availableRelicsNumber, color: "gold", location: "topright" as const }
+          : undefined,
     },
   ];
 
@@ -193,6 +199,7 @@ export const LeftNavigationModule = memo(() => {
 
   const arrivedArrivalsNumber = useUIStore((state) => state.arrivedArrivalsNumber);
   const pendingArrivalsNumber = useUIStore((state) => state.pendingArrivalsNumber);
+  const availableRelicsNumber = useUIStore((state) => state.availableRelicsNumber);
 
   const view = useUIStore((state) => state.leftNavigationView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
@@ -232,6 +239,7 @@ export const LeftNavigationModule = memo(() => {
         toggleModal,
         isTradeOpen,
         isBlitz,
+        availableRelicsNumber,
       }),
     [
       view,
@@ -244,6 +252,7 @@ export const LeftNavigationModule = memo(() => {
       toggleModal,
       isTradeOpen,
       isBlitz,
+      availableRelicsNumber,
     ],
   );
 

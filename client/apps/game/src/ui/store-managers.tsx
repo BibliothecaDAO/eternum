@@ -2,6 +2,7 @@ import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
+import { countAvailableRelics } from "@/ui/features/relics/utils/count-available-relics";
 import {
   getAddressName,
   getAllArrivals,
@@ -50,6 +51,50 @@ const ResourceArrivalsStoreManager = () => {
     // Cleanup interval on unmount
     return () => clearInterval(intervalId);
   }, [playerStructures, components, setArrivedArrivalsNumber, setPendingArrivalsNumber]);
+  return null;
+};
+
+const RelicsStoreManager = () => {
+  const {
+    account: { account },
+  } = useDojo();
+
+  const setAvailableRelicsNumber = useUIStore((state) => state.setAvailableRelicsNumber);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    if (!account.address || account.address === "0x0") {
+      setAvailableRelicsNumber(0);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    const updateRelicsAvailability = async () => {
+      try {
+        const relicsData = await sqlApi.fetchAllPlayerRelics(account.address);
+        if (!isMounted) {
+          return;
+        }
+
+        const totalRelics = countAvailableRelics(relicsData);
+
+        setAvailableRelicsNumber(totalRelics);
+      } catch (error) {
+        console.error("Failed to update available relics:", error);
+      }
+    };
+
+    updateRelicsAvailability();
+    const intervalId = setInterval(updateRelicsAvailability, 60000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
+  }, [account.address, setAvailableRelicsNumber]);
+
   return null;
 };
 
@@ -228,6 +273,7 @@ export const StoreManagers = () => {
     <>
       <MinigameStoreManager />
       <ResourceArrivalsStoreManager />
+      <RelicsStoreManager />
       <PlayerStructuresStoreManager />
       <ButtonStateStoreManager />
       <PlayerDataStoreManager />
