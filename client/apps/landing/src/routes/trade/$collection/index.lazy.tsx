@@ -3,6 +3,7 @@ import { FullPageLoader } from "@/components/modules/full-page-loader";
 import { PurchaseDialog } from "@/components/modules/marketplace-sweep-dialog";
 import { TraitFilterUI } from "@/components/modules/trait-filter-ui";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Pagination,
   PaginationContent,
@@ -13,7 +14,10 @@ import {
 } from "@/components/ui/pagination";
 import { Slider } from "@/components/ui/slider";
 import { marketplaceAddress, marketplaceCollections } from "@/config";
+import { STORAGE_KEYS } from "@/constants/storage";
+import { ITEMS_PER_PAGE, MAX_VISIBLE_PAGES } from "@/constants/ui";
 import {
+  clearCollectionTraitsCache,
   fetchAllCollectionTokens,
   FetchAllCollectionTokensOptions,
   fetchCollectionStatistics,
@@ -23,7 +27,7 @@ import { useSelectedPassesStore } from "@/stores/selected-passes";
 import { useDebounce } from "@bibliothecadao/react";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createLazyFileRoute, useNavigate } from "@tanstack/react-router";
-import { AlertTriangle, Grid2X2, Grid3X3, Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { formatUnits } from "viem";
 import { env } from "../../../../env";
@@ -32,6 +36,8 @@ export const Route = createLazyFileRoute("/trade/$collection/")({
   component: CollectionPage,
   pendingComponent: FullPageLoader,
 });
+
+// Visible constants moved to '@/constants/ui'
 
 function CollectionPage() {
   const { collection } = Route.useParams();
@@ -73,13 +79,28 @@ function CollectionPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>(() => applyEnforcedFilters({}));
   const [sortBy, setSortBy] = useState<FetchAllCollectionTokensOptions["sortBy"]>("price_asc");
-  const [listedOnly, setListedOnly] = useState(false);
-  const ITEMS_PER_PAGE = 24;
+  const [listedOnly, setListedOnly] = useState(true);
+  // Persist listedOnly per collection in localStorage
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(STORAGE_KEYS.listedOnly(collectionAddress));
+      if (saved !== null) {
+        setListedOnly(saved === "1");
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collectionAddress]);
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(STORAGE_KEYS.listedOnly(collectionAddress), listedOnly ? "1" : "0");
+    } catch {}
+  }, [collectionAddress, listedOnly]);
 
   // Debounce filters to avoid excessive API calls
   const debouncedFilters = useDebounce(selectedFilters, 300);
   const debouncedSortBy = useDebounce(sortBy, 300);
   const debouncedListedOnly = useDebounce(listedOnly, 300);
+  const [pageInput, setPageInput] = useState<string>("1");
 
   // --- API Queries ---
   const totals = useSuspenseQuery({
@@ -120,7 +141,6 @@ function CollectionPage() {
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
   const activeOrders = totals.data?.[0]?.active_order_count ?? 0;
   const allTraits = allTraitsQuery.data ?? {};
-  const MAX_VISIBLE_PAGES = 5;
   const listedTokensOnPage = useMemo(
     () => tokens.filter((token) => token.expiration !== null && token.best_price_hex !== null),
     [tokens],
@@ -132,6 +152,17 @@ function CollectionPage() {
       setCurrentPage(page);
     }
   };
+
+  // Commit inline page input (defined after totalPages and handlePageChange)
+  const commitPageInput = useCallback(() => {
+    const raw = parseInt(pageInput, 10);
+    if (!Number.isNaN(raw)) {
+      const page = Math.min(Math.max(raw, 1), Math.max(totalPages, 1));
+      handlePageChange(page);
+    } else {
+      setPageInput(String(currentPage));
+    }
+  }, [pageInput, totalPages, currentPage, handlePageChange]);
 
   const handleFilterChange = useCallback(
     (traitType: string, value: string) => {
@@ -194,6 +225,23 @@ function CollectionPage() {
     setSelectedFilters(applyEnforcedFilters({}));
   }, [applyEnforcedFilters]);
 
+  // Clamp current page to valid range when totalPages changes
+  useEffect(() => {
+    if (totalPages > 0 && currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages]);
+
+  // Keep top page input in sync with current page
+  useEffect(() => {
+    setPageInput(String(currentPage));
+  }, [currentPage]);
+
+  // Reset to first page when switching listed/all or sort
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [listedOnly, sortBy]);
+
   // Update effect to use debounced value
   useEffect(() => {
     if (sweepCount > 0 && tokens.length > 0) {
@@ -238,8 +286,8 @@ function CollectionPage() {
       ) : (
         <>
           <div className="flex flex-row justify-between items-center mb-4 px-4">
-            <div></div>
-            <div className="flex justify-end my-2 gap-1 sm:gap-4 items-center">
+            <div />
+            <div className="flex justify-end my-2 gap-2 sm:gap-4 items-center">
               {Object.keys(allTraits).length > 0 && (
                 <TraitFilterUI
                   allTraits={allTraits}
@@ -249,6 +297,24 @@ function CollectionPage() {
                   clearAllFilters={clearAllFilters}
                 />
               )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  clearCollectionTraitsCache(collectionAddress);
+                  allTraitsQuery.refetch();
+                }}
+                disabled={allTraitsQuery.isFetching}
+                title="Reload all traits (bypass cache)"
+              >
+                {allTraitsQuery.isFetching ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Reloading
+                  </span>
+                ) : (
+                  "Reload Traits"
+                )}
+              </Button>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as FetchAllCollectionTokensOptions["sortBy"])}
@@ -260,24 +326,67 @@ function CollectionPage() {
                 <option value="token_id_asc">Token ID: Low to High</option>
                 <option value="token_id_desc">Token ID: High to Low</option>
               </select>
-              <Button
-                variant={listedOnly ? "default" : "outline"}
-                size="sm"
-                onClick={() => setListedOnly(!listedOnly)}
-                title="Show only listed items"
-                className="hidden sm:flex"
-              >
-                Listed Only
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="hidden sm:flex"
-                onClick={() => setIsCompactGrid(!isCompactGrid)}
-                title={isCompactGrid ? "Switch to larger grid" : "Switch to compact grid"}
-              >
-                {isCompactGrid ? <Grid3X3 className="h-4 w-4" /> : <Grid2X2 className="h-4 w-4" />}
-              </Button>
+              <div className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-gold/40 bg-gold/10 text-gold text-sm font-bold shadow-sm whitespace-nowrap">
+                <span className="opacity-90">Page</span>
+                <Input
+                  name="topPage"
+                  type="number"
+                  min={1}
+                  max={Math.max(totalPages, 1)}
+                  value={pageInput}
+                  onChange={(e) => setPageInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      commitPageInput();
+                    }
+                  }}
+                  onBlur={commitPageInput}
+                  className="h-7 w-14 text-center px-2 py-0 leading-none text-foreground bg-background/60 border border-gold/30"
+                  title="Go to page"
+                />
+                <span className="opacity-70 mx-1">/</span>
+                <span className="text-foreground text-base leading-none px-1 py-0.5 rounded bg-background/60 border border-gold/30">{Math.max(totalPages, 1)}</span>
+              </div>
+              <div className="hidden sm:flex items-center rounded-md overflow-hidden border">
+                <Button
+                  variant={listedOnly ? "default" : "outline"}
+                  size="sm"
+                  className="rounded-none"
+                  onClick={() => setListedOnly(true)}
+                  title="Show listed items only"
+                >
+                  Listed Only
+                </Button>
+                <Button
+                  variant={!listedOnly ? "default" : "outline"}
+                  size="sm"
+                  className="rounded-none border-l"
+                  onClick={() => setListedOnly(false)}
+                  title="Show all items (includes unlisted)"
+                >
+                  Show All
+                </Button>
+              </div>
+              <div className="hidden sm:flex items-center rounded-md overflow-hidden border ml-2">
+                <Button
+                  variant={isCompactGrid ? "default" : "outline"}
+                  size="sm"
+                  className="rounded-none"
+                  onClick={() => setIsCompactGrid(true)}
+                  title="Compact grid"
+                >
+                  Compact
+                </Button>
+                <Button
+                  variant={!isCompactGrid ? "default" : "outline"}
+                  size="sm"
+                  className="rounded-none border-l"
+                  onClick={() => setIsCompactGrid(false)}
+                  title="Large grid"
+                >
+                  Large
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -314,8 +423,17 @@ function CollectionPage() {
                 {!tokensQuery.isLoading && tokens.length === 0 && Object.keys(selectedFilters).length > 0 && (
                   <div className="text-center py-6 text-muted-foreground">No items match the selected filters.</div>
                 )}
-                {!tokensQuery.isLoading && totalItems === 0 && Object.keys(selectedFilters).length === 0 && (
-                  <div className="text-center py-6 text-muted-foreground">No items available.</div>
+                {!tokensQuery.isLoading && tokens.length === 0 && Object.keys(selectedFilters).length === 0 && (
+                  totalItems > 0 ? (
+                    <div className="text-center py-6 text-muted-foreground">
+                      No items on this page. Try a lower page number or{' '}
+                      <button className="underline" onClick={() => handlePageChange(Math.max(1, totalPages))}>
+                        go to last page
+                      </button>.
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 text-muted-foreground">No items available.</div>
+                  )
                 )}
               </Suspense>
             </div>
@@ -452,6 +570,41 @@ function CollectionPage() {
                   </PaginationItem>
                 </PaginationContent>
               </Pagination>
+              <div className="flex items-center justify-center gap-2 py-2 text-sm">
+                <span>
+                  Page <span className="font-semibold">{currentPage}</span> of <span className="font-semibold">{totalPages}</span>
+                </span>
+                <span className="text-muted-foreground">|</span>
+                <span>Go to:</span>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const form = e.currentTarget as HTMLFormElement;
+                    const input = form.querySelector('input[name="page"]') as HTMLInputElement | null;
+                    if (!input) return;
+                    const raw = parseInt(input.value, 10);
+                    if (!Number.isFinite(raw)) return;
+                    const page = Math.min(Math.max(raw, 1), totalPages);
+                    handlePageChange(page);
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <Input
+                    name="page"
+                    type="number"
+                    min={1}
+                    max={totalPages}
+                    defaultValue={currentPage}
+                    className="h-8 w-16"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        // let onSubmit handle it
+                      }
+                    }}
+                  />
+                  <Button type="submit" size="sm" variant="outline">Go</Button>
+                </form>
+              </div>
             </div>
           )}
 

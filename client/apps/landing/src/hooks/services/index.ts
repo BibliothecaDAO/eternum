@@ -94,41 +94,107 @@ interface CollectionTrait {
   trait_value: string;
 }
 
+// Local cache for traits (24h TTL)
+const TRAITS_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 1 day
+const traitsCacheKey = (paddedAddress: string, mode: 'listed' | 'full') => `collection_traits:${paddedAddress}:${mode}`;
+
+export function clearCollectionTraitsCache(contractAddress: string, mode?: 'listed' | 'full') {
+  if (typeof window === "undefined") return;
+  try {
+    const padded = padAddress(contractAddress);
+    if (mode) {
+      window.localStorage.removeItem(traitsCacheKey(padded, mode));
+    } else {
+      window.localStorage.removeItem(traitsCacheKey(padded, 'listed'));
+      window.localStorage.removeItem(traitsCacheKey(padded, 'full'));
+    }
+  } catch {
+    // ignore storage errors
+  }
+}
+
 /**
  * Fetch all unique traits for a collection efficiently without loading full token data
  */
-export async function fetchCollectionTraits(contractAddress: string): Promise<Record<string, string[]>> {
-  const query = QUERIES.COLLECTION_TRAITS.replace("{contractAddress}", padAddress(contractAddress));
-  const rawData = await fetchSQL<CollectionTrait[]>(query);
+export async function fetchCollectionTraits(
+  contractAddress: string,
+  options?: { mode?: 'listed' | 'full' }
+): Promise<Record<string, string[]>> {
+  const collectionId = getCollectionByAddress(contractAddress)?.id;
+  if (!collectionId) {
+    throw new Error(`No collection found for address ${contractAddress}`);
+  }
+
+  const padded = padAddress(contractAddress);
+  const mode: 'listed' | 'full' = options?.mode ?? 'listed';
+
+  // Return cached traits if present and not expired
+  if (typeof window !== "undefined") {
+    try {
+      const cachedRaw = window.localStorage.getItem(traitsCacheKey(padded, mode));
+      if (cachedRaw) {
+        const cached = JSON.parse(cachedRaw) as { ts: number; data: Record<string, string[]> } | null;
+        if (cached && typeof cached.ts === "number" && cached.data && Date.now() - cached.ts < TRAITS_CACHE_TTL_MS) {
+          return cached.data;
+        }
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }
+
+  let rawData: CollectionTrait[] = [];
+  if (mode === 'listed') {
+    // Fast path: traits from currently listed tokens only; if empty, fallback to full
+    const listedQuery = QUERIES.COLLECTION_TRAITS_LISTED.replaceAll("{contractAddress}", padded).replaceAll(
+      "{collectionId}",
+      String(collectionId),
+    );
+    rawData = await fetchSQL<CollectionTrait[]>(listedQuery);
+    if (!rawData || rawData.length === 0) {
+      const fullQuery = QUERIES.COLLECTION_TRAITS.replace("{contractAddress}", padded);
+      rawData = await fetchSQL<CollectionTrait[]>(fullQuery);
+    }
+  } else {
+    // Full traits regardless of listing state
+    const fullQuery = QUERIES.COLLECTION_TRAITS.replace("{contractAddress}", padded);
+    rawData = await fetchSQL<CollectionTrait[]>(fullQuery);
+  }
 
   const traitsMap: Record<string, Set<string>> = {};
 
-  rawData.forEach(({ trait_type, trait_value }) => {
-    const traitType = String(trait_type);
-    const value = String(trait_value);
-
-    if (!traitsMap[traitType]) {
-      traitsMap[traitType] = new Set();
-    }
+  for (const row of rawData) {
+    const traitType = String(row.trait_type ?? "");
+    const value = String(row.trait_value ?? "");
+    if (!traitType || !value) continue;
+    if (!traitsMap[traitType]) traitsMap[traitType] = new Set();
     traitsMap[traitType].add(value);
-  });
+  }
 
-  // Convert sets to sorted arrays
-  return Object.fromEntries(
-    Object.entries(traitsMap).map(([key, valueSet]) => [
+  // Convert sets to sorted arrays (numeric if possible, else string)
+  const result = Object.fromEntries(
+    Object.entries(traitsMap).map(([key, set]) => [
       key,
-      Array.from(valueSet).sort((a, b) => {
-        // Try numeric sort first
-        const aNum = Number(a);
-        const bNum = Number(b);
-        if (!isNaN(aNum) && !isNaN(bNum)) {
-          return aNum - bNum;
-        }
-        // Fall back to string sort
+      Array.from(set).sort((a, b) => {
+        const na = Number(a);
+        const nb = Number(b);
+        if (Number.isFinite(na) && Number.isFinite(nb)) return na - nb;
         return a.localeCompare(b);
       }),
     ]),
   );
+
+  // Cache to localStorage
+  if (typeof window !== "undefined") {
+    try {
+      const payload = JSON.stringify({ ts: Date.now(), data: result });
+      window.localStorage.setItem(traitsCacheKey(padded, mode), payload);
+    } catch {
+      // ignore storage errors
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -139,11 +205,59 @@ export async function fetchCollectionStatistics(contractAddress: string): Promis
   if (!collectionId) {
     throw new Error(`No collection found for address ${contractAddress}`);
   }
-  const query = QUERIES.COLLECTION_STATISTICS.replaceAll("{collectionId}", collectionId.toString()).replaceAll(
+  const paddedAddress = padAddress(contractAddress);
+
+  // Fast path: compute active count + floor in SQL (no recursive hex decoding).
+  const statsQuery = QUERIES.COLLECTION_STATISTICS.replaceAll("{collectionId}", collectionId.toString()).replaceAll(
     "{contractAddress}",
-    padAddress(contractAddress),
+    paddedAddress,
   );
-  return await fetchSQL<ActiveMarketOrdersTotal[]>(query);
+
+  // Fetch Accepted event prices and sum client-side using BigInt to avoid
+  // the very slow recursive hex → integer decoding in SQL.
+  const acceptedPricesQuery = QUERIES.COLLECTION_ACCEPTED_EVENT_PRICES.replaceAll(
+    "{collectionId}",
+    collectionId.toString(),
+  );
+
+  const [statsRows, acceptedPriceRows] = await Promise.all([
+    fetchSQL<ActiveMarketOrdersTotal[]>(statsQuery),
+    fetchSQL<{ price_hex: string }[]>(acceptedPricesQuery),
+  ]);
+
+  const base = statsRows?.[0] ?? { active_order_count: 0, open_orders_total_wei: null, floor_price_wei: null };
+
+  // Sum hex prices client-side. BigInt handles 256-bit safely.
+  let totalWei = 0n;
+  for (const row of acceptedPriceRows ?? []) {
+    const v = row?.price_hex;
+    if (typeof v === "string" && v.length > 0) {
+      try {
+        totalWei += BigInt(v);
+      } catch {
+        // ignore malformed values
+      }
+    }
+  }
+
+  // Parse floor (hex) into BigInt as well
+  let floorWei: bigint | null = null;
+  try {
+    if (base.floor_price_wei !== null && base.floor_price_wei !== undefined) {
+      // floor_price_wei comes back as 0x-hex string from SQL MIN(price)
+      floorWei = BigInt(base.floor_price_wei as unknown as string);
+    }
+  } catch {
+    floorWei = null;
+  }
+
+  const merged: ActiveMarketOrdersTotal = {
+    active_order_count: Number(base.active_order_count ?? 0),
+    open_orders_total_wei: totalWei,
+    floor_price_wei: floorWei,
+  };
+
+  return [merged];
 }
 
 const REGISTERED_POINTS_PRECISION = 1_000_000;
@@ -589,49 +703,104 @@ export async function fetchAllCollectionTokens(
     }
   }
 
-  // Build listed only filter
-  const listedOnlyClause = listedOnly ? "AND ao.order_id IS NOT NULL" : "";
-
-  // Build order by clause
-  let orderByClause = "";
-  switch (sortBy) {
-    case "price_asc":
-      orderByClause = "ORDER BY is_listed DESC, price_sort_key ASC NULLS LAST, token_id_hex ASC";
-      break;
-    case "price_desc":
-      orderByClause = "ORDER BY is_listed DESC, price_sort_key DESC NULLS LAST, token_id_hex ASC";
-      break;
-    case "token_id_asc":
-      orderByClause = "ORDER BY token_id_hex ASC";
-      break;
-    case "token_id_desc":
-      orderByClause = "ORDER BY token_id_hex DESC";
-      break;
-    case "listed_first":
-    default:
-      orderByClause =
-        "ORDER BY is_listed DESC, CASE WHEN metadata IS NULL THEN 1 ELSE 0 END ASC, price_sort_key ASC NULLS LAST, token_id_hex ASC";
-      break;
-  }
-
   // Build limit/offset clause
   const limitOffsetClause = limit !== undefined && offset !== undefined ? `LIMIT ${limit} OFFSET ${offset}` : "";
 
-  // Build the main query
-  const query = QUERIES.ALL_COLLECTION_TOKENS.replaceAll("{contractAddress}", padAddress(contractAddress))
-    .replace("{ownerAddress}", ownerAddress ? padAddress(ownerAddress) : "")
-    .replace("{collectionId}", collectionId.toString())
-    .replace("{traitFilters}", traitFilterClauses)
-    .replace("{listedOnlyFilter}", listedOnlyClause)
-    .replace("{orderByClause}", orderByClause)
-    .replace("{limitOffsetClause}", limitOffsetClause);
+  // Build order clauses for the two paths
+  // ORDER BY used inside the paged CTE (no alias) for listed-only
+  const buildListedOrderPaged = () => {
+    switch (sortBy) {
+      case "price_desc":
+        return "ORDER BY (price_hex IS NULL), price_hex DESC, token_id_hex";
+      case "token_id_asc":
+        return "ORDER BY token_id_hex ASC";
+      case "token_id_desc":
+        return "ORDER BY token_id_hex DESC";
+      case "listed_first":
+      case "price_asc":
+      default:
+        return "ORDER BY (price_hex IS NULL), price_hex, token_id_hex";
+    }
+  };
 
-  // Build the count query
-  const countQuery = QUERIES.ALL_COLLECTION_TOKENS_COUNT.replaceAll("{contractAddress}", padAddress(contractAddress))
-    .replace("{ownerAddress}", ownerAddress ? padAddress(ownerAddress) : "")
-    .replace("{collectionId}", collectionId.toString())
-    .replace("{traitFilters}", traitFilterClauses)
-    .replace("{listedOnlyFilter}", listedOnlyClause);
+  // ORDER BY used in final SELECT (qualified with alias 'a') for listed-only
+  const buildListedOrderFinal = () => {
+    switch (sortBy) {
+      case "price_desc":
+        return "ORDER BY (a.price_hex IS NULL), a.price_hex DESC, a.token_id_hex";
+      case "token_id_asc":
+        return "ORDER BY a.token_id_hex ASC";
+      case "token_id_desc":
+        return "ORDER BY a.token_id_hex DESC";
+      case "listed_first":
+      case "price_asc":
+      default:
+        return "ORDER BY (a.price_hex IS NULL), a.price_hex, a.token_id_hex";
+    }
+  };
+
+  // ORDER BY used inside the paged CTE (no alias) for full view
+  const buildFullOrderPaged = () => {
+    switch (sortBy) {
+      case "price_desc":
+        return "ORDER BY is_listed DESC, (price_hex IS NULL), price_hex DESC, token_id_hex";
+      case "token_id_asc":
+        return "ORDER BY token_id_hex ASC";
+      case "token_id_desc":
+        return "ORDER BY token_id_hex DESC";
+      case "listed_first":
+      case "price_asc":
+      default:
+        return "ORDER BY is_listed DESC, (price_hex IS NULL), price_hex, token_id_hex";
+    }
+  };
+
+  // ORDER BY used in final SELECT (qualified with alias 'ct') for full view
+  const buildFullOrderFinal = () => {
+    switch (sortBy) {
+      case "price_desc":
+        return "ORDER BY ct.is_listed DESC, (ct.price_hex IS NULL), ct.price_hex DESC, ct.token_id_hex";
+      case "token_id_asc":
+        return "ORDER BY ct.token_id_hex ASC";
+      case "token_id_desc":
+        return "ORDER BY ct.token_id_hex DESC";
+      case "listed_first":
+      case "price_asc":
+      default:
+        return "ORDER BY ct.is_listed DESC, (ct.price_hex IS NULL), ct.price_hex, ct.token_id_hex";
+    }
+  };
+
+  const listedOrderByPaged = buildListedOrderPaged();
+  const listedOrderByFinal = buildListedOrderFinal();
+  const fullOrderByPaged = buildFullOrderPaged();
+  const fullOrderByFinal = buildFullOrderFinal();
+
+  // Choose fast listed-only or full paged query
+  const queryTemplate = listedOnly
+    ? QUERIES.ALL_COLLECTION_TOKENS_LISTED
+    : QUERIES.ALL_COLLECTION_TOKENS_FULL_PAGED;
+
+  const countTemplate = listedOnly
+    ? QUERIES.ALL_COLLECTION_TOKENS_LISTED_COUNT
+    : QUERIES.ALL_COLLECTION_TOKENS_FULL_COUNT;
+
+  const query = queryTemplate
+    .replaceAll("{contractAddress}", padAddress(contractAddress))
+    .replaceAll("{ownerAddress}", ownerAddress ? padAddress(ownerAddress) : "")
+    .replaceAll("{collectionId}", collectionId.toString())
+    .replaceAll("{traitFilters}", traitFilterClauses)
+    .replaceAll("{limitOffsetClause}", limitOffsetClause)
+    .replaceAll("{listedOrderByPaged}", listedOnly ? listedOrderByPaged : "")
+    .replaceAll("{listedOrderByFinal}", listedOnly ? listedOrderByFinal : "")
+    .replaceAll("{fullOrderByPaged}", listedOnly ? "" : fullOrderByPaged)
+    .replaceAll("{fullOrderByFinal}", listedOnly ? "" : fullOrderByFinal);
+
+  const countQuery = countTemplate
+    .replaceAll("{contractAddress}", padAddress(contractAddress))
+    .replaceAll("{ownerAddress}", ownerAddress ? padAddress(ownerAddress) : "")
+    .replaceAll("{collectionId}", collectionId.toString())
+    .replaceAll("{traitFilters}", traitFilterClauses);
 
   // Execute both queries
   const [rawData, countData] = await Promise.all([
