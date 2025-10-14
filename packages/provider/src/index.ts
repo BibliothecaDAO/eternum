@@ -14,6 +14,7 @@ import {
   Call,
   CallData,
   GetTransactionReceiptResponse,
+  BigNumberish,
   uint256,
 } from "starknet";
 import { TransactionType } from "./types";
@@ -303,7 +304,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { signer, feeToken, feeAmount } = props;
     const blitzRealmSystemsAddress = getContractByName(this.manifest, `${NAMESPACE}-blitz_realm_systems`);
 
-    const calls: AllowArray<Call> = [];
+    const calls: Call[] = [];
 
     if (feeToken && feeAmount !== undefined) {
       try {
@@ -327,7 +328,8 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [],
     });
 
-    const call = this.createProviderCall(signer, calls.length === 1 ? calls[0] : calls);
+    const callArgs: AllowArray<Call> = calls.length === 1 ? calls[0] : calls;
+    const call = this.createProviderCall(signer, callArgs);
     return await this.promiseQueue.enqueue(call);
   }
 
@@ -1184,6 +1186,112 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [entity_id, building_coord.x, building_coord.y],
     });
 
+    return await this.promiseQueue.enqueue(call);
+  }
+
+  public async execute_realm_production_plan(
+    props: SystemProps.ExecuteRealmProductionPlanProps,
+  ): Promise<GetTransactionReceiptResponse | undefined> {
+    const { signer, realm_entity_id } = props;
+    const productionSystemsAddress = getContractByName(this.manifest, `${NAMESPACE}-production_systems`);
+
+    const sanitizeInstructions = (
+      instructions: SystemProps.ProductionPlanInstruction[] | undefined,
+    ): { resource: string; cycles: string }[] => {
+      if (!instructions?.length) return [];
+      return instructions
+        .map(({ resource_id, cycles }) => {
+          const normalizeResource = (value: BigNumberish) => {
+            if (typeof value === "bigint") return value.toString();
+            if (typeof value === "number") return Math.floor(value).toString();
+            if (typeof value === "string") {
+              const parsed = Number(value);
+              if (Number.isFinite(parsed)) {
+                return Math.floor(parsed).toString();
+              }
+              return value;
+            }
+            return String(value);
+          };
+
+          const normalizeCycles = (value: BigNumberish) => {
+            if (typeof value === "bigint") return value.toString();
+            if (typeof value === "number") return Math.floor(value).toString();
+            if (typeof value === "string") {
+              if (value.startsWith("0x") || value.startsWith("0X")) {
+                try {
+                  return BigInt(value).toString();
+                } catch {
+                  return "0";
+                }
+              }
+              const parsed = Number(value);
+              if (Number.isFinite(parsed)) {
+                return Math.floor(parsed).toString();
+              }
+            }
+            return String(value);
+          };
+
+          const normalizedCycles = normalizeCycles(cycles);
+          const normalizedResource = normalizeResource(resource_id);
+
+          const cyclesNumber = Number(normalizedCycles);
+
+          return {
+            resource: normalizedResource,
+            cycles: Number.isFinite(cyclesNumber) ? Math.max(0, Math.floor(cyclesNumber)).toString() : "0",
+          };
+        })
+        .filter((item) => Number(item.cycles) > 0);
+    };
+
+    const resourceInstructions = sanitizeInstructions(props.resource_to_resource);
+    const laborInstructions = sanitizeInstructions(props.labor_to_resource);
+
+    if (!resourceInstructions.length && !laborInstructions.length) {
+      console.warn("execute_realm_production_plan called with no executable instructions");
+      return undefined;
+    }
+
+    const calls: Call[] = [];
+
+    if (resourceInstructions.length) {
+      const producedResourceTypes = resourceInstructions.map((item) => item.resource);
+      const productionCycles = resourceInstructions.map((item) => item.cycles);
+
+      calls.push({
+        contractAddress: productionSystemsAddress,
+        entrypoint: "burn_resource_for_resource_production",
+        calldata: [
+          realm_entity_id,
+          producedResourceTypes.length,
+          ...producedResourceTypes,
+          productionCycles.length,
+          ...productionCycles,
+        ],
+      });
+    }
+
+    if (laborInstructions.length) {
+      const producedResourceTypes = laborInstructions.map((item) => item.resource);
+      const productionCycles = laborInstructions.map((item) => item.cycles);
+
+      calls.push({
+        contractAddress: productionSystemsAddress,
+        entrypoint: "burn_labor_for_resource_production",
+        calldata: [
+          realm_entity_id,
+          productionCycles.length,
+          ...productionCycles,
+          producedResourceTypes.length,
+          ...producedResourceTypes,
+        ],
+      });
+    }
+
+    const callArgs: AllowArray<Call> = calls.length === 1 ? calls[0] : calls;
+    const call = this.createProviderCall(signer, callArgs);
     return await this.promiseQueue.enqueue(call);
   }
 

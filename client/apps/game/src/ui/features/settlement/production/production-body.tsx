@@ -1,9 +1,8 @@
-import { AutomationTable } from "@/ui/features/infrastructure";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
-import { configManager, getEntityIdFromKeys, getStructureRelicEffects } from "@bibliothecadao/eternum";
+import { configManager, getEntityIdFromKeys, getIsBlitz, getStructureRelicEffects, getStructureName } from "@bibliothecadao/eternum";
 import { useBuildings, useDojo } from "@bibliothecadao/react";
-import { getProducedResource, RealmInfo as RealmInfoType, RELICS, ResourcesIds } from "@bibliothecadao/types";
+import { getProducedResource, RealmInfo as RealmInfoType, RELICS, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { SparklesIcon } from "lucide-react";
 import { useMemo } from "react";
@@ -11,6 +10,7 @@ import { ActiveRelicEffects } from "../../world/components/entities/active-relic
 import { BuildingsList } from "./buildings-list";
 import { ProductionControls } from "./production-controls";
 import { RealmInfo } from "./realm-info";
+import { RealmAutomationPanel } from "./realm-automation-panel";
 
 export const ProductionBody = ({
   realm,
@@ -66,13 +66,26 @@ export const ProductionBody = ({
 
   const buildings = useBuildings(realm.position.x, realm.position.y);
   const productionBuildings = buildings.filter((building) => building && getProducedResource(building.category));
-  const producedResources = Array.from(
-    new Set(
-      productionBuildings
-        .filter((building) => building.produced && building.produced.resource)
-        .map((building) => building.produced.resource),
-    ),
+  const producedResources = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          productionBuildings
+            .filter((building) => building.produced && building.produced.resource)
+            .map((building) => building.produced.resource as ResourcesIds),
+        ),
+      ),
+    [productionBuildings],
   );
+
+  const realmDisplayName = useMemo(() => {
+    return getStructureName(realm.structure, getIsBlitz()).name;
+  }, [realm.structure]);
+
+  const entityType = useMemo(() => {
+    const category = Number(realm.structure?.category ?? 0);
+    return category === StructureType.Village ? "village" : "realm";
+  }, [realm.structure?.category]);
 
   return (
     <>
@@ -98,10 +111,11 @@ export const ProductionBody = ({
           </div>
         )}
 
-        <AutomationTable
-          realmInfo={realm}
-          availableResources={producedResources}
+        <RealmAutomationPanel
           realmEntityId={realm.entityId.toString()}
+          realmName={realmDisplayName}
+          producedResources={producedResources}
+          entityType={entityType}
         />
 
         <BuildingsList

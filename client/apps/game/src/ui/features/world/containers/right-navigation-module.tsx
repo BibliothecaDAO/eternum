@@ -6,8 +6,10 @@ import { getIsBlitz } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 
 import CircleButton from "@/ui/design-system/molecules/circle-button";
-import { AllAutomationsTable, AutomationTransferTable, Bridge, TransferModal } from "@/ui/features/infrastructure";
+import { Bridge } from "@/ui/features/infrastructure";
 import { ProductionModal } from "@/ui/features/settlement";
+import { ProductionOverviewPanel } from "@/ui/features/settlement/production/production-overview-panel";
+import { TransferAutomationPanel } from "@/ui/features/economy/transfers/transfer-automation-panel";
 import { StoryEventsChronicles } from "@/ui/features/story-events";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
 import { motion } from "framer-motion";
@@ -73,29 +75,18 @@ const buildRightNavigationItems = ({
       size: DEFAULT_BUTTON_SIZE,
       disabled: disableButtons,
       active: view === RightView.Production,
-      onClick: () => toggleModal(<ProductionModal />),
+      onClick: toggleView(RightView.Production),
     },
     {
       id: MenuEnum.transfer,
       className: "transfer-selector",
       image: BuildingThumbs.transfer,
       tooltipLocation: "top",
-      label: "Transfer",
+      label: "Transfers",
       size: DEFAULT_BUTTON_SIZE,
       disabled: disableButtons,
       active: view === RightView.Transfer,
-      onClick: () => toggleModal(<TransferModal />),
-    },
-    {
-      id: MenuEnum.automation,
-      className: "automation-selector",
-      image: BuildingThumbs.automation,
-      tooltipLocation: "top",
-      label: "Automation",
-      size: DEFAULT_BUTTON_SIZE,
-      disabled: disableButtons,
-      active: view === RightView.Automation,
-      onClick: toggleView(RightView.Automation),
+      onClick: toggleView(RightView.Transfer),
     },
     {
       id: MenuEnum.bridge,
@@ -124,9 +115,8 @@ const buildRightNavigationItems = ({
   const allowedMenus: MenuEnum[] = [
     MenuEnum.resourceTable,
     MenuEnum.production,
-    MenuEnum.automation,
-    MenuEnum.storyEvents,
     MenuEnum.transfer,
+    MenuEnum.storyEvents,
     ...(isBlitz ? [] : [MenuEnum.bridge]),
   ];
 
@@ -262,8 +252,7 @@ export const RightNavigationModule = () => {
             initial="hidden"
             animate="visible"
             className={clsx(
-              "pointer-events-auto flex flex-col justify-start",
-              storyChroniclesActive || resourceTableActive ? "h-[88vh]" : "h-[60vh]",
+              "pointer-events-auto flex flex-col justify-start h-[88vh]",
             )}
           >
             <div className="flex flex-col mb-auto">
@@ -321,8 +310,7 @@ export const RightNavigationModule = () => {
             </div>
             <BaseContainer
               className={clsx(
-                "panel-wood panel-wood-corners w-full flex-1 rounded-l-2xl border-l-2 border-y-2 border-gold/20 pointer-events-auto overflow-x-auto",
-                storyChroniclesActive || resourceTableActive ? "h-[88vh] overflow-y-auto" : "h-[60vh] overflow-y-auto",
+                "panel-wood panel-wood-corners w-full flex-1 rounded-l-2xl border-l-2 border-y-2 border-gold/20 pointer-events-auto overflow-x-auto h-[88vh] overflow-y-auto",
               )}
             >
               <Suspense fallback={<div className="p-8">Loading...</div>}>
@@ -331,24 +319,24 @@ export const RightNavigationModule = () => {
                     <EntityResourceTable entityId={structureEntityId} />
                   </div>
                 )}
+                {view === RightView.Production && (
+                  <div className="production-selector p-2 flex flex-col space-y-1 overflow-y-auto">
+                    <ProductionOverviewPanel />
+                  </div>
+                )}
                 {view === RightView.Bridge && (
                   <div className="bridge-selector p-2 flex flex-col space-y-1 overflow-y-auto">
                     <Bridge structures={structures} />
                   </div>
                 )}
-                {view === RightView.Automation && (
-                  <div className="automation-selector p-2 flex flex-col space-y-1 overflow-y-auto">
-                    <AllAutomationsTable />
+                {view === RightView.Transfer && (
+                  <div className="transfer-selector p-2 flex flex-col space-y-1 overflow-y-auto">
+                    <TransferAutomationPanel />
                   </div>
                 )}
                 {storyChroniclesActive && (
                   <div className="story-events-selector flex h-full flex-col">
                     <StoryEventsChronicles />
-                  </div>
-                )}
-                {view === RightView.Transfer && (
-                  <div className="transfer-selector p-2 flex flex-col space-y-1 overflow-y-auto">
-                    <AutomationTransferTable />
                   </div>
                 )}
               </Suspense>

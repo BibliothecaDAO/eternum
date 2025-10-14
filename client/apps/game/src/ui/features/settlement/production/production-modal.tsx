@@ -3,6 +3,7 @@ import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation
 import { ModalContainer } from "@/ui/shared";
 import { usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
 import { ID, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
+import { getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
 
 const ProductionSidebar = lazy(() =>
@@ -12,19 +13,19 @@ const ProductionSidebar = lazy(() =>
 const ProductionBody = lazy(() => import("./production-body").then((module) => ({ default: module.ProductionBody })));
 
 const ProductionContainer = ({
-  playerRealmsAndVillages,
+  playerStructures,
   preSelectedResource,
 }: {
-  playerRealmsAndVillages: RealmInfo[];
+  playerStructures: RealmInfo[];
   preSelectedResource?: ResourcesIds;
 }) => {
   const initialRealm = useMemo(() => {
     const structureEntityId = useUIStore.getState().structureEntityId;
-    const selectedRealm = playerRealmsAndVillages.find((r) => r.entityId === structureEntityId);
+    const selectedRealm = playerStructures.find((structure) => structure.entityId === structureEntityId);
     return selectedRealm;
-  }, [playerRealmsAndVillages]);
+  }, [playerStructures]);
 
-  const [selectedRealm, setSelectedRealm] = useState<RealmInfo | undefined>(initialRealm || playerRealmsAndVillages[0]);
+  const [selectedRealm, setSelectedRealm] = useState<RealmInfo | undefined>(initialRealm || playerStructures[0]);
   const [selectedResource, setSelectedResource] = useState<ResourcesIds | null>(preSelectedResource ?? null);
 
   useEffect(() => {
@@ -34,31 +35,31 @@ const ProductionContainer = ({
 
   const handleSelectRealm = useCallback(
     (id: ID) => {
-      const realm = playerRealmsAndVillages.find((r) => r.entityId === id);
+      const realm = playerStructures.find((structure) => structure.entityId === id);
       setSelectedRealm(realm);
       setSelectedResource(null);
     },
-    [playerRealmsAndVillages],
+    [playerStructures],
   );
 
   const handleManageResource = useCallback(
     (realmId: ID, resource: ResourcesIds) => {
-      const realm = playerRealmsAndVillages.find((r) => r.entityId === realmId) || selectedRealm;
+      const realm = playerStructures.find((structure) => structure.entityId === realmId) || selectedRealm;
       if (realm) {
         setSelectedRealm(realm);
         setSelectedResource(resource);
       }
     },
-    [playerRealmsAndVillages, selectedRealm],
+    [playerStructures, selectedRealm],
   );
 
   return (
     <div className="production-modal-selector container mx-auto grid grid-cols-12 bg-dark-wood h-full row-span-12 rounded-2xl relative">
       <div className="col-span-4 p-4 pb-36 row-span-10 overflow-y-auto panel-wood-right">
         <Suspense fallback={<LoadingAnimation />}>
-          {playerRealmsAndVillages.length > 0 && (
+          {playerStructures.length > 0 && (
             <ProductionSidebar
-              realms={playerRealmsAndVillages}
+              realms={playerStructures}
               selectedRealmEntityId={selectedRealm?.entityId || 0}
               onSelectRealm={handleSelectRealm}
               onSelectResource={handleManageResource}
@@ -85,14 +86,22 @@ export const ProductionModal = ({ preSelectedResource }: { preSelectedResource?:
   const playerRealms = usePlayerOwnedRealmsInfo();
   const playerVillages = usePlayerOwnedVillagesInfo();
 
-  const playerRealmsAndVillages = useMemo(() => {
-    return [...playerRealms, ...playerVillages];
+  const managedStructures = useMemo(() => {
+    const isBlitz = getIsBlitz();
+    const combined = [...playerRealms, ...playerVillages]
+      .slice()
+      .sort((a, b) =>
+        getStructureName(a.structure, isBlitz).name.localeCompare(
+          getStructureName(b.structure, isBlitz).name,
+        ),
+      );
+    return combined;
   }, [playerRealms, playerVillages]);
 
   return (
     <ModalContainer size="full">
       <ProductionContainer
-        playerRealmsAndVillages={playerRealmsAndVillages}
+        playerStructures={managedStructures}
         preSelectedResource={preSelectedResource}
       />
     </ModalContainer>
