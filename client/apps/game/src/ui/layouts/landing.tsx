@@ -12,6 +12,7 @@ const SECTIONS = [
   { label: "Overview", path: "/" },
   { label: "Cosmetics", path: "/cosmetics" },
   { label: "Account", path: "/account" },
+  { label: "Player", path: "/player" },
   { label: "Leaderboard", path: "/leaderboard" },
 ];
 
