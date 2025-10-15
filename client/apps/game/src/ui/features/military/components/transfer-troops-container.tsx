@@ -918,6 +918,9 @@ export const TransferTroopsContainer = ({
 
                       const troopInfo = guardData.troops;
                       const isActive = guardSlot === slotIndex;
+                      const isSourceGuardSelection =
+                        transferDirection === TransferDirection.StructureToExplorer;
+                      const isOutOfTroops = isSourceGuardSelection && troopInfo.count <= 0;
 
                       const isMismatch =
                         transferDirection === TransferDirection.ExplorerToStructure
@@ -933,11 +936,12 @@ export const TransferTroopsContainer = ({
 
                       const cardClasses = [
                         "flex flex-col rounded-md border p-3 text-left transition-all duration-150 ease-in-out",
-                        "cursor-pointer",
-                        isActive && !isMismatch && "bg-gold/20 border-gold ring-2 ring-gold/50",
-                        isActive && isMismatch && "bg-danger/10 border-danger/60",
-                        !isActive && !isMismatch && "bg-dark-brown border-gold/30 hover:bg-gold/10",
-                        !isActive && isMismatch && "bg-danger/10 border-danger/50 hover:border-danger/60",
+                        isOutOfTroops ? "cursor-not-allowed bg-dark-brown border-gold/20 opacity-70" : "cursor-pointer",
+                        isActive && !isMismatch && !isOutOfTroops && "bg-gold/20 border-gold ring-2 ring-gold/50",
+                        isActive && isMismatch && !isOutOfTroops && "bg-danger/10 border-danger/60",
+                        isActive && isOutOfTroops && "bg-dark-brown border-gold/20 opacity-70",
+                        !isActive && !isMismatch && !isOutOfTroops && "bg-dark-brown border-gold/30 hover:bg-gold/10",
+                        !isActive && isMismatch && !isOutOfTroops && "bg-danger/10 border-danger/50 hover:border-danger/60",
                       ]
                         .filter((value): value is string => Boolean(value))
                         .join(" ");
@@ -946,8 +950,15 @@ export const TransferTroopsContainer = ({
                         <button
                           key={slotIndex}
                           type="button"
-                          onClick={() => setGuardSlot(slotIndex)}
+                          onClick={() => {
+                            if (isOutOfTroops) {
+                              return;
+                            }
+                            setGuardSlot(slotIndex);
+                          }}
                           className={cardClasses}
+                          disabled={isOutOfTroops}
+                          aria-disabled={isOutOfTroops}
                           aria-pressed={isActive}
                         >
                           <div className="flex items-center justify-between">
