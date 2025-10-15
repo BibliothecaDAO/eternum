@@ -166,11 +166,7 @@ export const LandingPlayer = () => {
   }, [shareMessage]);
 
   return (
-    <section className="w-full max-w-4xl space-y-6 overflow-y-auto rounded-3xl border border-white/10 bg-black/60 p-8 text-white/90 shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl max-h-[82vh] sm:max-h-[85vh] lg:max-h-[88vh]">
-      <header className="space-y-2">
-        <h2 className="text-3xl font-semibold text-white">Player Highlights</h2>
-      </header>
-
+    <section className="w-full mb-2 max-w-2xl space-y-4 overflow-y-auto rounded-3xl border border-white/10 bg-black/60 p-5 text-white/90 shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl max-h-[70vh] sm:max-w-3xl sm:space-y-5 sm:p-6 sm:max-h-[72vh] xl:max-h-[74vh] xl:space-y-6 xl:p-7 2xl:max-h-[86vh] 2xl:max-w-4xl 2xl:p-8">
       {isLoading ? (
         <div className="space-y-4" aria-busy aria-live="polite">
           <div className="h-20 animate-pulse rounded-2xl border border-white/5 bg-white/5" />
@@ -182,33 +178,37 @@ export const LandingPlayer = () => {
           <p className="mt-1 text-red-200/80">{error}</p>
         </div>
       ) : (
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-[0_25px_55px_-25px_rgba(12,10,35,0.7)]">
-          <div className="flex flex-col items-center gap-2 text-center">
-            <h3 className="text-base font-semibold text-white">Share your victory</h3>
-            <p className="text-sm text-white/60">Copy the Blitz highlight card or take the share link straight to X.</p>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-[0_25px_55px_-25px_rgba(12,10,35,0.7)] sm:p-5 xl:p-6">
+          <div className="flex flex-col items-center gap-1.5 text-center sm:gap-2">
+            <h3 className="text-sm font-semibold text-white sm:text-base">Share your victory</h3>
+            <p className="text-xs text-white/60 sm:text-sm">
+              Copy the Blitz highlight card or take the share link straight to X.
+            </p>
           </div>
 
-          <div className="mt-6 flex justify-center">
+          <div className="mt-4 flex justify-center sm:mt-5 xl:mt-6">
             {highlightPlayer ? (
-              <BlitzHighlightCard
-                ref={cardRef}
-                title="Realms Blitz"
-                subtitle="Blitz Leaderboard"
-                winnerLine={highlightPlayer.name}
-                highlight={highlightPlayer}
-              />
+              <div className="w-full max-w-[420px] sm:max-w-[520px] xl:max-w-[580px] 2xl:max-w-[720px]">
+                <BlitzHighlightCard
+                  ref={cardRef}
+                  title="Realms Blitz"
+                  subtitle="Blitz Leaderboard"
+                  winnerLine={highlightPlayer.name}
+                  highlight={highlightPlayer}
+                />
+              </div>
             ) : (
-              <div className="flex h-[220px] w-full max-w-[720px] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-sm text-white/60">
+              <div className="flex h-[170px] w-full max-w-[420px] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-xs text-white/60 sm:h-[190px] sm:max-w-[520px] sm:text-sm xl:max-w-[580px] xl:text-sm 2xl:max-w-[720px] 2xl:h-[220px]">
                 Final standings will appear once the next Blitz round completes.
               </div>
             )}
           </div>
 
-          <div className="mt-6 flex flex-col gap-3 md:flex-row">
+          <div className="mt-4 flex flex-col gap-2 sm:mt-5 sm:gap-2.5 md:flex-row xl:mt-6">
             <Button
               onClick={handleCopyImage}
               variant="gold"
-              className="w-full flex-1 justify-center gap-2 !px-4 !py-3 md:!px-6"
+              className="w-full flex-1 justify-center gap-2 !px-4 !py-2 sm:!py-2.5 xl:!py-3 md:!px-6"
               forceUppercase={false}
               isLoading={isCopyingImage}
               disabled={isCopyingImage || !highlightPlayer}
@@ -219,7 +219,7 @@ export const LandingPlayer = () => {
             <Button
               onClick={handleShareOnX}
               variant="outline"
-              className="w-full flex-1 justify-center gap-2 !px-4 !py-3 md:!px-6"
+              className="w-full flex-1 justify-center gap-2 !px-4 !py-2 sm:!py-2.5 xl:!py-3 md:!px-6"
               forceUppercase={false}
               disabled={!highlightPlayer}
             >
@@ -229,7 +229,7 @@ export const LandingPlayer = () => {
             <Button
               onClick={handleCopyMessage}
               variant="secondary"
-              className="w-full flex-1 justify-center gap-2 !px-4 !py-3 md:!px-6"
+              className="w-full flex-1 justify-center gap-2 !px-4 !py-2 sm:!py-2.5 xl:!py-3 md:!px-6"
               forceUppercase={false}
             >
               <Copy className="h-4 w-4" />
