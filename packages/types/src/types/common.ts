@@ -22,6 +22,11 @@ export enum ActorType {
   Structure = "structure",
 }
 
+export interface SelectedEntity {
+  name: string;
+  entityId: ID;
+}
+
 export enum TileOccupier {
   None = 0,
   RealmRegularLevel1 = 1,

@@ -1,13 +1,20 @@
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useTransferAutomationStore } from "@/hooks/store/use-transfer-automation-store";
+import { useTransferPanelDraftStore } from "@/hooks/store/use-transfer-panel-draft-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { getStructureName, ResourceManager, getTotalResourceWeightKg, calculateDonkeysNeeded, getIsBlitz, isMilitaryResource } from "@bibliothecadao/eternum";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import {
+  calculateDonkeysNeeded,
+  getIsBlitz,
+  getStructureName,
+  getTotalResourceWeightKg,
+  isMilitaryResource,
+  ResourceManager,
+} from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { ResourcesIds, RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
-import { useTransferAutomationStore } from "@/hooks/store/use-transfer-automation-store";
-import { useTransferPanelDraftStore } from "@/hooks/store/use-transfer-panel-draft-store";
+import { RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { TransferAutomationAdvancedModal } from "./transfer-automation-modal";
 
@@ -104,20 +111,28 @@ export const TransferAutomationPanel = () => {
   const eligibleSources = useMemo(() => {
     if (!components) return [] as any[];
     if (selectedResources.length === 0) return ownedSources;
-    return ownedSources.filter((ps: any) => {
-      const rm = new ResourceManager(components as any, ps.entityId);
-      for (const rid of selectedResources) {
-        const bal = rm.balanceWithProduction(currentDefaultTick, rid).balance ?? 0n;
-        if (Number(bal) <= 0) return false;
-      }
-      return true;
-    }).sort((a: any, b: any) => {
-      const rma = new ResourceManager(components as any, a.entityId);
-      const rmb = new ResourceManager(components as any, b.entityId);
-      const suma = selectedResources.reduce((acc, rid) => acc + Number(rma.balanceWithProduction(currentDefaultTick, rid).balance ?? 0n), 0);
-      const sumb = selectedResources.reduce((acc, rid) => acc + Number(rmb.balanceWithProduction(currentDefaultTick, rid).balance ?? 0n), 0);
-      return sumb - suma;
-    });
+    return ownedSources
+      .filter((ps: any) => {
+        const rm = new ResourceManager(components as any, ps.entityId);
+        for (const rid of selectedResources) {
+          const bal = rm.balanceWithProduction(currentDefaultTick, rid).balance ?? 0n;
+          if (Number(bal) <= 0) return false;
+        }
+        return true;
+      })
+      .sort((a: any, b: any) => {
+        const rma = new ResourceManager(components as any, a.entityId);
+        const rmb = new ResourceManager(components as any, b.entityId);
+        const suma = selectedResources.reduce(
+          (acc, rid) => acc + Number(rma.balanceWithProduction(currentDefaultTick, rid).balance ?? 0n),
+          0,
+        );
+        const sumb = selectedResources.reduce(
+          (acc, rid) => acc + Number(rmb.balanceWithProduction(currentDefaultTick, rid).balance ?? 0n),
+          0,
+        );
+        return sumb - suma;
+      });
   }, [components, ownedSources, selectedResources, currentDefaultTick]);
 
   // Destinations: owned realms + villages (toggle does not affect source list)
@@ -154,7 +169,6 @@ export const TransferAutomationPanel = () => {
       setDestinationId(null);
     }
   }, [selectedSourceId]);
-
 
   // keep any global percent sanity for draft fallback
   const percentClamped = Math.min(90, Math.max(5, percent));
@@ -206,11 +220,12 @@ export const TransferAutomationPanel = () => {
 
   // Computed preview for percent amounts and donkey capacity (fast path)
   const percentPreview = useMemo(() => {
-    if (!selectedSourceId || selectedResources.length === 0) return null as null | {
-      perResource: { id: ResourcesIds; humanAmount: number }[];
-      totalKg: number;
-      donkeys: { have: number; need: number };
-    };
+    if (!selectedSourceId || selectedResources.length === 0)
+      return null as null | {
+        perResource: { id: ResourcesIds; humanAmount: number }[];
+        totalKg: number;
+        donkeys: { have: number; need: number };
+      };
     const perResource = selectedResources
       .map((rid) => {
         const available = sourceBalances.get(rid) ?? 0;
@@ -251,7 +266,12 @@ export const TransferAutomationPanel = () => {
     if (hasMilitary) {
       const src = ownedSources.find((s: any) => s.entityId === selectedSourceId);
       const dst = destinations.find((d: any) => d.entityId === destinationId);
-      if (!src || !dst || src.structure?.base?.category !== StructureType.Realm || dst.structure?.base?.category !== StructureType.Realm) {
+      if (
+        !src ||
+        !dst ||
+        src.structure?.base?.category !== StructureType.Realm ||
+        dst.structure?.base?.category !== StructureType.Realm
+      ) {
         toast.error("Troops can only be transferred Realm ↔ Realm.");
         return;
       }
@@ -357,14 +377,31 @@ export const TransferAutomationPanel = () => {
       resourceIds: selectedResources,
       resourceConfigs: selectedResources.map((rid) => ({
         resourceId: rid,
+        mode: "percent",
         percent: resourceConfigs[rid]?.percent ?? percent,
       })),
+      percent,
       intervalMinutes: interval,
       active: true,
     });
     toast.success("Scheduled transfer created.");
     setIsSubmitting(false);
-  }, [components, account, selectedResources, selectedSourceId, destinationId, percent, repeat, interval, ownedSources, destinations, addScheduled, currentDefaultTick, percentPreview, isBlitz]);
+  }, [
+    components,
+    account,
+    selectedResources,
+    selectedSourceId,
+    destinationId,
+    percent,
+    repeat,
+    interval,
+    ownedSources,
+    destinations,
+    addScheduled,
+    currentDefaultTick,
+    percentPreview,
+    isBlitz,
+  ]);
 
   const openAdvanced = useCallback(() => {
     toggleModal(<TransferAutomationAdvancedModal onClose={() => toggleModal(null)} />);
@@ -412,195 +449,204 @@ export const TransferAutomationPanel = () => {
               return true;
             })
             .sort((a: any, b: any) => a - b)
-            .map((rid: ResourcesIds) => {
-            const sel = selectedResources.includes(rid);
-            const totalHuman = resourceTotals.get(rid) ?? 0;
-            return (
-              <button
-                key={rid}
-                type="button"
-                onClick={() =>
-                  setSelectedResources((prev) => (prev.includes(rid) ? prev.filter((r) => r !== rid) : [...prev, rid]))
-                }
-                className={`px-2 py-1 rounded border text-xs flex items-center gap-1 ${sel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
-                title={ResourcesIds[rid] as string}
-              >
-                <ResourceIcon resource={ResourcesIds[rid]} size="xs" />
-                {ResourcesIds[rid]} <span className="text-[10px] text-gold/60">({totalHuman.toLocaleString()})</span>
-              </button>
-            );
-          })
-          }
+            .map((rid: any) => {
+              const sel = selectedResources.includes(rid);
+              const totalHuman = resourceTotals.get(rid) ?? 0;
+              return (
+                <button
+                  key={rid}
+                  type="button"
+                  onClick={() =>
+                    setSelectedResources((prev) =>
+                      prev.includes(rid) ? prev.filter((r) => r !== rid) : [...prev, rid],
+                    )
+                  }
+                  className={`px-2 py-1 rounded border text-xs flex items-center gap-1 ${sel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
+                  title={ResourcesIds[rid] as string}
+                >
+                  <ResourceIcon resource={ResourcesIds[rid]} size="xs" />
+                  {ResourcesIds[rid]} <span className="text-[10px] text-gold/60">({totalHuman.toLocaleString()})</span>
+                </button>
+              );
+            })}
         </div>
       </section>
 
       {selectedResources.length > 0 && (
-      <section className="space-y-2">
-        <div className="text-xs text-gold/70">Source Location</div>
-        <input
-          type="text"
-          value={sourceSearch}
-          onChange={(e) => setSourceSearch(e.target.value)}
-          placeholder="Filter by name or ID"
-          className="w-full px-2 py-1 text-xs rounded border border-gold/30 bg-black/30 text-gold/80 placeholder:text-gold/40 focus:border-gold/60 outline-none mb-2"
-        />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          {eligibleSources
-            .filter((ps: any) => {
-              const q = sourceSearch.trim();
-              if (!q) return true;
-              const isNumeric = /^\d+$/.test(q);
+        <section className="space-y-2">
+          <div className="text-xs text-gold/70">Source Location</div>
+          <input
+            type="text"
+            value={sourceSearch}
+            onChange={(e) => setSourceSearch(e.target.value)}
+            placeholder="Filter by name or ID"
+            className="w-full px-2 py-1 text-xs rounded border border-gold/30 bg-black/30 text-gold/80 placeholder:text-gold/40 focus:border-gold/60 outline-none mb-2"
+          />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {eligibleSources
+              .filter((ps: any) => {
+                const q = sourceSearch.trim();
+                if (!q) return true;
+                const isNumeric = /^\d+$/.test(q);
+                const name = getStructureName(ps.structure, isBlitz).name;
+                if (isNumeric) return String(ps.entityId).includes(q);
+                const norm = (s: string) =>
+                  s
+                    .toLowerCase()
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "");
+                return norm(name).includes(norm(q));
+              })
+              .map((ps: any) => {
+                const name = getStructureName(ps.structure, isBlitz).name;
+                const isSel = selectedSourceId === ps.entityId;
+                return (
+                  <button
+                    key={ps.entityId}
+                    type="button"
+                    className={`text-left px-2 py-2 rounded border ${isSel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
+                    onClick={() => setSelectedSourceId(selectedSourceId === ps.entityId ? null : ps.entityId)}
+                  >
+                    <div className="text-sm font-semibold">{name}</div>
+                    <div className="text-xxs uppercase text-gold/60">{StructureType[ps.structure?.base?.category]}</div>
+                  </button>
+                );
+              })}
+          </div>
+        </section>
+      )}
+
+      {selectedResources.length > 0 && selectedSourceId && (
+        <section className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-gold/70">Destination</div>
+            <label className="text-xxs text-gold/60 flex items-center gap-2">
+              <input type="checkbox" checked={ownedDestOnly} onChange={(e) => setOwnedDestOnly(e.target.checked)} />
+              Owned only
+            </label>
+          </div>
+          <input
+            type="text"
+            value={destSearch}
+            onChange={(e) => setDestSearch(e.target.value)}
+            placeholder="Filter by name or ID"
+            className="w-full px-2 py-1 text-xs rounded border border-gold/30 bg-black/30 text-gold/80 placeholder:text-gold/40 focus:border-gold/60 outline-none mb-2"
+          />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {destinations.map((ps: any) => {
               const name = getStructureName(ps.structure, isBlitz).name;
-              if (isNumeric) return String(ps.entityId).includes(q);
-              const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-              return norm(name).includes(norm(q));
-            })
-            .map((ps: any) => {
-            const name = getStructureName(ps.structure, isBlitz).name;
-            const isSel = selectedSourceId === ps.entityId;
-            return (
-              <button
-                key={ps.entityId}
-                type="button"
-                className={`text-left px-2 py-2 rounded border ${isSel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
-                onClick={() => setSelectedSourceId(selectedSourceId === ps.entityId ? null : ps.entityId)}
-              >
-                <div className="text-sm font-semibold">{name}</div>
-                <div className="text-xxs uppercase text-gold/60">{StructureType[ps.structure?.base?.category]}</div>
-              </button>
-            );
-          })}
-        </div>
-      </section>
+              const isSel = destinationId === ps.entityId;
+              return (
+                <button
+                  key={`dst-${ps.entityId}`}
+                  type="button"
+                  className={`text-left px-2 py-2 rounded border ${isSel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
+                  onClick={() => setDestinationId(destinationId === ps.entityId ? null : ps.entityId)}
+                >
+                  <div className="text-sm font-semibold">{name}</div>
+                  <div className="text-xxs uppercase text-gold/60">{StructureType[ps.structure?.base?.category]}</div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
       )}
 
       {selectedResources.length > 0 && selectedSourceId && (
-      <section className="space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="text-xs text-gold/70">Destination</div>
-          <label className="text-xxs text-gold/60 flex items-center gap-2">
-            <input type="checkbox" checked={ownedDestOnly} onChange={(e) => setOwnedDestOnly(e.target.checked)} />
-            Owned only
-          </label>
-        </div>
-        <input
-          type="text"
-          value={destSearch}
-          onChange={(e) => setDestSearch(e.target.value)}
-          placeholder="Filter by name or ID"
-          className="w-full px-2 py-1 text-xs rounded border border-gold/30 bg-black/30 text-gold/80 placeholder:text-gold/40 focus:border-gold/60 outline-none mb-2"
-        />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          {destinations.map((ps: any) => {
-            const name = getStructureName(ps.structure, isBlitz).name;
-            const isSel = destinationId === ps.entityId;
-            return (
-              <button
-                key={`dst-${ps.entityId}`}
-                type="button"
-                className={`text-left px-2 py-2 rounded border ${isSel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
-                onClick={() => setDestinationId(destinationId === ps.entityId ? null : ps.entityId)}
-              >
-                <div className="text-sm font-semibold">{name}</div>
-                <div className="text-xxs uppercase text-gold/60">{StructureType[ps.structure?.base?.category]}</div>
-              </button>
-            );
-          })}
-        </div>
-      </section>
-      )}
-
-      {selectedResources.length > 0 && selectedSourceId && (
-      <section className="space-y-2">
-        <div className="text-xs text-gold/70">Per-resource Amounts</div>
-        <div className="grid grid-cols-3 gap-2">
-          {selectedResources.map((rid) => {
-            const cfg = resourceConfigs[rid] ?? { percent };
-            const available = sourceBalances.get(rid) ?? 0;
-            const willSend = Math.floor((Math.min(90, Math.max(5, cfg.percent)) / 100) * available);
-            return (
-              <div key={`cfg-${rid}`} className="rounded border border-gold/20 bg-black/20 p-2">
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2 text-xs text-gold/80">
-                    <ResourceIcon resource={ResourcesIds[rid]} size="xs" />
-                    <div className="font-semibold">{ResourcesIds[rid]}</div>
-                  </div>
-                  <div className="text-xxs text-gold/60">Avail: {available.toLocaleString()}</div>
-                </div>
-                <div>
+        <section className="space-y-2">
+          <div className="text-xs text-gold/70">Per-resource Amounts</div>
+          <div className="grid grid-cols-3 gap-2">
+            {selectedResources.map((rid) => {
+              const cfg = resourceConfigs[rid] ?? { percent };
+              const available = sourceBalances.get(rid) ?? 0;
+              const willSend = Math.floor((Math.min(90, Math.max(5, cfg.percent)) / 100) * available);
+              return (
+                <div key={`cfg-${rid}`} className="rounded border border-gold/20 bg-black/20 p-2">
                   <div className="flex items-center justify-between mb-1">
-                    <div className="text-xxs text-gold/60">{cfg.percent}%</div>
-                    <div className="text-xxs text-gold/60">Will send: {willSend.toLocaleString()}</div>
+                    <div className="flex items-center gap-2 text-xs text-gold/80">
+                      <ResourceIcon resource={ResourcesIds[rid]} size="xs" />
+                      <div className="font-semibold">{ResourcesIds[rid]}</div>
+                    </div>
+                    <div className="text-xxs text-gold/60">Avail: {available.toLocaleString()}</div>
                   </div>
-                  <input
-                    type="range"
-                    min={5}
-                    max={90}
-                    step={5}
-                    value={cfg.percent}
-                    onChange={(e) => setResourceConfigs((prev) => ({ ...prev, [rid]: { percent: Math.min(90, Math.max(5, parseInt(e.target.value))) } }))}
-                    className="w-full accent-gold"
-                  />
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="text-xxs text-gold/60">{cfg.percent}%</div>
+                      <div className="text-xxs text-gold/60">Will send: {willSend.toLocaleString()}</div>
+                    </div>
+                    <input
+                      type="range"
+                      min={5}
+                      max={90}
+                      step={5}
+                      value={cfg.percent}
+                      onChange={(e) =>
+                        setResourceConfigs((prev) => ({
+                          ...prev,
+                          [rid]: { percent: Math.min(90, Math.max(5, parseInt(e.target.value))) },
+                        }))
+                      }
+                      className="w-full accent-gold"
+                    />
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-        {percentPreview && (
-          <div className="text-xxs text-gold/60">
-            {percentPreview.perResource.map((p) => (
-              <span key={p.id} className="mr-2">{p.humanAmount.toLocaleString()} {ResourcesIds[p.id]} </span>
-            ))}
-            <span
-              className={
-                percentPreview.donkeys.need > percentPreview.donkeys.have
-                  ? "text-danger/80"
-                  : "text-gold/70"
-              }
-            >
-              • Donkeys {percentPreview.donkeys.need.toLocaleString()} used / {percentPreview.donkeys.have.toLocaleString()} available
-            </span>
+              );
+            })}
           </div>
-        )}
+          {percentPreview && (
+            <div className="text-xxs text-gold/60">
+              {percentPreview.perResource.map((p) => (
+                <span key={p.id} className="mr-2">
+                  {p.humanAmount.toLocaleString()} {ResourcesIds[p.id]}{" "}
+                </span>
+              ))}
+              <span
+                className={
+                  percentPreview.donkeys.need > percentPreview.donkeys.have ? "text-danger/80" : "text-gold/70"
+                }
+              >
+                • Donkeys {percentPreview.donkeys.need.toLocaleString()} used /{" "}
+                {percentPreview.donkeys.have.toLocaleString()} available
+              </span>
+            </div>
+          )}
 
-        {percentPreview && percentPreview.donkeys.need > percentPreview.donkeys.have && (
-          <div className="flex items-start gap-2 rounded-md border border-danger/40 bg-danger/10 p-2 text-xs text-danger/80">
-            <span>
-              Insufficient donkeys at source to carry this transfer. Reduce the load or add more donkeys.
-            </span>
-          </div>
-        )}
-      </section>
+          {percentPreview && percentPreview.donkeys.need > percentPreview.donkeys.have && (
+            <div className="flex items-start gap-2 rounded-md border border-danger/40 bg-danger/10 p-2 text-xs text-danger/80">
+              <span>Insufficient donkeys at source to carry this transfer. Reduce the load or add more donkeys.</span>
+            </div>
+          )}
+        </section>
       )}
 
       {selectedResources.length > 0 && selectedSourceId && (
-      <section className="space-y-2">
-        <div className="flex items-center gap-4 text-xs text-gold/70">
-          <label className="flex items-center gap-2">
-            <input type="radio" name="freq" checked={!repeat} onChange={() => setRepeat(false)} /> One-off
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="radio" name="freq" checked={repeat} onChange={() => setRepeat(true)} /> Repeat
-          </label>
-        </div>
-        {repeat && (
-          <div>
-            <div className="flex items-center justify-between">
-              <div className="text-xs text-gold/70">Interval</div>
-              <div className="text-xxs text-gold/60">{interval} min</div>
-            </div>
-            <input
-              type="range"
-              min={5}
-              max={60}
-              step={5}
-              value={interval}
-              onChange={(e) => setIntervalMinutes(parseInt(e.target.value))}
-              className="w-full accent-gold"
-            />
+        <section className="space-y-2">
+          <div className="flex items-center gap-4 text-xs text-gold/70">
+            <label className="flex items-center gap-2">
+              <input type="radio" name="freq" checked={!repeat} onChange={() => setRepeat(false)} /> One-off
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="radio" name="freq" checked={repeat} onChange={() => setRepeat(true)} /> Repeat
+            </label>
           </div>
+          {repeat && (
+            <div>
+              <div className="flex items-center justify-between">
+                <div className="text-xs text-gold/70">Interval</div>
+                <div className="text-xxs text-gold/60">{interval} min</div>
+              </div>
+              <input
+                type="range"
+                min={5}
+                max={60}
+                step={5}
+                value={interval}
+                onChange={(e) => setIntervalMinutes(parseInt(e.target.value))}
+                className="w-full accent-gold"
+              />
+            </div>
           )}
-      </section>
+        </section>
       )}
 
       <div className="flex items-center justify-between pt-2 border-t border-gold/20">
@@ -622,13 +668,13 @@ export const TransferAutomationPanel = () => {
               >
                 {repeat ? "Schedule" : "Transfer"}
               </Button>
-              {statusMessage && (
-                <span className="text-xxs text-gold/70">{statusMessage}</span>
-              )}
+              {statusMessage && <span className="text-xxs text-gold/70">{statusMessage}</span>}
             </>
           )}
         </div>
-        <Button variant="outline" size="sm" onClick={openAdvanced}>Advanced</Button>
+        <Button variant="outline" onClick={openAdvanced}>
+          Advanced
+        </Button>
       </div>
     </div>
   );
