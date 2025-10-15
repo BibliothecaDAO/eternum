@@ -1,5 +1,5 @@
-import { ResourcesIds } from "@bibliothecadao/types";
 import { calculatePresetAllocations, RealmPresetId } from "@/utils/automation-presets";
+import { ResourcesIds } from "@bibliothecadao/types";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
@@ -72,6 +72,13 @@ export interface RealmAutomationConfig {
   lastExecution?: RealmAutomationExecutionSummary;
 }
 
+export enum ProductionType {
+  ResourceToResource = "resource-to-resource",
+  LaborToResource = "labor-to-resource",
+  ResourceToLabor = "resource-to-labor",
+  Transfer = "transfer",
+}
+
 type RealmAutomationInput = Partial<Omit<RealmAutomationConfig, "realmId" | "resources" | "createdAt" | "updatedAt">>;
 
 interface ProductionAutomationState {
@@ -128,7 +135,9 @@ const createDefaultResourceSettings = (
       resourceToResource: clampPercent(
         basePercentages.resourceToResource ?? DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES.resourceToResource,
       ),
-      laborToResource: clampPercent(basePercentages.laborToResource ?? DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES.laborToResource),
+      laborToResource: clampPercent(
+        basePercentages.laborToResource ?? DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES.laborToResource,
+      ),
     },
   };
 };
@@ -160,7 +169,9 @@ const sanitizeRealmResources = (
     sanitized[resourceId] = {
       ...value,
       resourceId,
-      percentages: normalizePercentages(value.percentages as Partial<ResourceAutomationPercentages> & { resourceToLabor?: number }),
+      percentages: normalizePercentages(
+        value.percentages as Partial<ResourceAutomationPercentages> & { resourceToLabor?: number },
+      ),
     };
   });
 
@@ -318,7 +329,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
             },
           };
         }),
-     ensureResourceConfig: (realmId, resourceId, options) => {
+      ensureResourceConfig: (realmId, resourceId, options) => {
         const store = get();
         const realmContext = store.realms[realmId];
         const realmEntityType = realmContext?.entityType ?? "realm";
@@ -358,8 +369,8 @@ export const useAutomationStore = create<ProductionAutomationState>()(
                 ...realmConfig,
                 resources: sanitizeRealmResources(
                   {
-                  ...realmConfig.resources,
-                  [resourceId]: newConfig,
+                    ...realmConfig.resources,
+                    [resourceId]: newConfig,
                   },
                   realmConfig.entityType,
                 ),
@@ -597,17 +608,3 @@ export const useAutomationStore = create<ProductionAutomationState>()(
     },
   ),
 );
-
-// Mark the automation store as hydrated after persistence completes.
-try {
-  // onFinishHydration exists on zustand persist middleware instances
-  (useAutomationStore as any)?.persist?.onFinishHydration?.((_state: any) => {
-    try {
-      useAutomationStore.setState({ hydrated: true }, true);
-    } catch (err) {
-      console.error("[Automation] Failed to mark automation store as hydrated", err);
-    }
-  });
-} catch (hookErr) {
-  // ignore in environments where persist is not available
-}

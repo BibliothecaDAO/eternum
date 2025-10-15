@@ -1,8 +1,7 @@
 import { isAutomationResourceBlocked, useAutomationStore } from "@/hooks/store/use-automation-store";
-import { REALM_PRESETS, RealmPresetId } from "@/utils/automation-presets";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { REALM_PRESETS, RealmPresetId } from "@/utils/automation-presets";
 import { ResourcesIds } from "@bibliothecadao/types";
-import clsx from "clsx";
 import { useMemo } from "react";
 
 const formatRelative = (timestamp?: number) => {
@@ -19,12 +18,12 @@ const formatRelative = (timestamp?: number) => {
 
 const formatAmount = (value: number) => Math.round(value).toLocaleString();
 
-type TransferRow = {
+interface TransferRow {
   resourceId: ResourcesIds;
   amount: number;
-};
+}
 
-type RealmTransferCard = {
+interface RealmTransferCard {
   id: string;
   name: string;
   type: string;
@@ -34,7 +33,7 @@ type RealmTransferCard = {
   outgoing: TransferRow[];
   incoming: TransferRow[];
   skipped: number;
-};
+}
 
 export const TransferAutomationPanel = () => {
   const automationRealms = useAutomationStore((state) => state.realms);
@@ -43,7 +42,7 @@ export const TransferAutomationPanel = () => {
     return Object.values(automationRealms)
       .map((realm) => {
         const exec = realm.lastExecution;
-        if (!exec) return null;
+        if (!exec) return undefined;
 
         const totals = new Map<number, { consumed: number; produced: number }>();
 
@@ -100,9 +99,9 @@ export const TransferAutomationPanel = () => {
           outgoing,
           incoming,
           skipped: exec.skipped?.length ?? 0,
-        } satisfies RealmTransferCard;
+        } as RealmTransferCard;
       })
-      .filter((card): card is RealmTransferCard => card !== null && (card.outgoing.length || card.incoming.length));
+      .filter((card): card is RealmTransferCard => !!card && (card.outgoing.length > 0 || card.incoming.length > 0));
   }, [automationRealms]);
 
   return (
@@ -130,7 +129,8 @@ export const TransferAutomationPanel = () => {
 
               <div className="flex items-center justify-between text-[11px] text-gold/60">
                 <span>
-                  Preset: {card.presetId === "custom" ? "Custom" : REALM_PRESETS.find((p) => p.id === card.presetId)?.label}
+                  Preset:{" "}
+                  {card.presetId === "custom" ? "Custom" : REALM_PRESETS.find((p) => p.id === card.presetId)?.label}
                 </span>
                 <span>{formatRelative(card.lastRun)}</span>
               </div>
