@@ -5,7 +5,7 @@ import {
   type ResourcesIds,
 } from "@bibliothecadao/types";
 import { Bot, Hammer } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Tabs } from "@/ui/design-system/atoms";
 
@@ -37,7 +37,23 @@ export const ProductionWorkflows = ({
   productionBonus,
   troopsBonus,
 }: ProductionWorkflowsProps) => {
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState(() => (selectedResource ? 0 : 1));
+  const previousSelectedResourceRef = useRef<ResourcesIds | null>(selectedResource ?? null);
+
+  useEffect(() => {
+    const previous = previousSelectedResourceRef.current;
+    if (selectedResource !== null && previous === null && activeTab !== 0) {
+      setActiveTab(0);
+    }
+    previousSelectedResourceRef.current = selectedResource ?? null;
+  }, [selectedResource, activeTab]);
+
+  const handleTabChange = (index: number) => {
+    setActiveTab(index);
+    if (index === 1 && selectedResource !== null) {
+      onSelectResource(null);
+    }
+  };
 
   const workflows = [
     {
@@ -97,12 +113,7 @@ export const ProductionWorkflows = ({
         <p className="text-sm text-gold/70">Choose how you want to manage this realm's output.</p>
       </div>
 
-      <Tabs
-        selectedIndex={activeTab}
-        onChange={(index: number) => setActiveTab(index)}
-        className="w-full"
-        variant="default"
-      >
+      <Tabs selectedIndex={activeTab} onChange={handleTabChange} className="w-full" variant="default">
         <Tabs.List className="flex flex-col gap-2 rounded-xl border border-gold/25 bg-dark-brown/80 p-2 sm:flex-row sm:items-stretch sm:justify-start justify-start">
           {workflows.map((workflow, index) => {
             const Icon = workflow.icon;
