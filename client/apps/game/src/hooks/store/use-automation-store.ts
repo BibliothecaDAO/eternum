@@ -617,10 +617,7 @@ if (typeof window !== "undefined") {
     }
   };
 
-  useAutomationStore.persist.onFinishHydration((_state, error) => {
-    if (error) {
-      console.error("[Automation] Hydration error", error);
-    }
+  useAutomationStore.persist.onFinishHydration(() => {
     setStoreHydrated();
   });
 
