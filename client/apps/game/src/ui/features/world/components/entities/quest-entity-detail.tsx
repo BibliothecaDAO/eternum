@@ -45,6 +45,7 @@ export const QuestEntityDetail = ({ questEntityId, compact = false, className }:
 
   // Precompute common class strings for consistency with ArmyEntityDetail
   const smallTextClass = compact ? "text-xxs" : "text-xs";
+  const panelClass = "bg-dark-brown/60 rounded p-2 border border-gold/20";
 
   const questLevelsEntity = useMemo(
     () => getComponentValue(components.QuestLevels, getEntityIdFromKeys([BigInt(quest?.game_address || 0)])),
@@ -63,7 +64,11 @@ export const QuestEntityDetail = ({ questEntityId, compact = false, className }:
           <h4 className={`${compact ? "text-base" : "text-lg"} font-bold`}>{game?.name}</h4>
           <span className="text-sm">Level {(quest?.level ?? 0) + 1}</span>
         </div>
-        <div className={`px-2 py-1 rounded text-xs font-bold ${hasSlotsRemaining ? "bg-green/20" : "bg-red/20"}`}>
+        <div
+          className={`px-2 py-1 rounded text-xs font-bold ${
+            hasSlotsRemaining ? "bg-ally/80 border border-ally text-lightest" : "bg-danger/80 border border-danger text-lightest"
+          }`}
+        >
           {hasSlotsRemaining ? "Active" : "Ended"}
         </div>
       </div>
@@ -71,7 +76,7 @@ export const QuestEntityDetail = ({ questEntityId, compact = false, className }:
       <div className="text-sm">Interact with an explorer unit to start and claim quests.</div>
 
       {/* Reward display */}
-      <div className="flex flex-row justify-between mt-1 bg-gray-800/40 rounded p-2 border border-gold/20">
+      <div className={`flex flex-row justify-between mt-1 ${panelClass}`}>
         <div className="flex flex-col">
           <div className={`${smallTextClass} font-bold text-gold/90 uppercase mb-1`}>Reward</div>
           <QuestReward quest={quest} />
@@ -83,7 +88,7 @@ export const QuestEntityDetail = ({ questEntityId, compact = false, className }:
       </div>
 
       {/* Quest details */}
-      <div className="flex flex-row justify-between mt-1 bg-gray-800/40 rounded p-2 border border-gold/20">
+      <div className={`flex flex-row justify-between mt-1 ${panelClass}`}>
         <div className="flex flex-col">
           <div className={`${smallTextClass} font-bold text-gold/90 uppercase mb-1`}>Target</div>
           <span className="text-sm">{questLevel?.value?.target_score?.value}XP</span>

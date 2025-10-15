@@ -189,6 +189,7 @@ export const ArmyEntityDetail = memo(
 
     const headerTextClass = compact ? "text-base" : "text-lg";
     const smallTextClass = compact ? "text-xxs" : "text-xs";
+    const panelClass = "bg-dark-brown/60 rounded p-2 border border-gold/20";
 
     if (isLoadingExplorer || (explorer?.owner && isLoadingStructure)) {
       return (
@@ -199,6 +200,10 @@ export const ArmyEntityDetail = memo(
     }
 
     if (!explorer || !derivedData) return null;
+
+    const relationBadgeClass = derivedData.isAlly
+      ? "bg-ally/80 border border-ally text-lightest"
+      : "bg-enemy/80 border border-enemy text-lightest";
 
     return (
       <div className={`flex flex-col ${compact ? "gap-1" : "gap-2"} ${className}`}>
@@ -228,7 +233,7 @@ export const ArmyEntityDetail = memo(
                 disabled={Date.now() - lastRefresh < 10000}
               />
             )}
-            <div className={`px-2 py-1 rounded text-xs font-bold ${derivedData.isAlly ? "bg-green/20" : "bg-red/20"}`}>
+            <div className={`px-2 py-1 rounded text-xs font-bold ${relationBadgeClass}`}>
               {derivedData.isAlly ? "Ally" : "Enemy"}
             </div>
             {derivedData.addressName !== undefined && showButtons && (
@@ -239,7 +244,7 @@ export const ArmyEntityDetail = memo(
             {derivedData.isMine && showButtons && (
               <button
                 onClick={handleDeleteExplorer}
-                className={`p-1 rounded bg-red-600/80 hover:bg-red-700 transition text-white flex items-center ${
+                className={`p-1 rounded bg-danger/90 hover:bg-danger transition text-lightest flex items-center ${
                   isLoadingDelete ? "opacity-60 cursor-not-allowed" : ""
                 }`}
                 title="Delete Army"
@@ -268,7 +273,7 @@ export const ArmyEntityDetail = memo(
             )}
 
             {/* Stamina and capacity - more prominent */}
-            <div className="flex flex-col gap-1 mt-1 bg-gray-800/40 rounded p-2 border border-gold/20">
+            <div className={`flex flex-col gap-1 mt-1 ${panelClass}`}>
               <div className="flex items-center justify-between gap-2">
                 <div className={`${smallTextClass} font-bold text-gold/90 uppercase`}>STAMINA</div>
                 {derivedData.stamina && derivedData.maxStamina && (

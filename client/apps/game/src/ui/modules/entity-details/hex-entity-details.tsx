@@ -99,12 +99,14 @@ export const HexEntityDetails = () => {
           {hasOccupier && tile && (
             <div className="flex-shrink-0">
               {isStructure ? (
-                <StructureEntityDetail
-                  structureEntityId={tile.occupier_id}
-                  compact={false}
-                  maxInventory={Infinity}
-                  showButtons={true}
-                />
+                <div className="flex flex-col gap-3">
+                  <StructureEntityDetail
+                    structureEntityId={tile.occupier_id}
+                    compact={false}
+                    maxInventory={Infinity}
+                    showButtons={true}
+                  />
+                </div>
               ) : isTileOccupierQuest(tile.occupier_type) ? (
                 <QuestEntityDetail questEntityId={tile.occupier_id} compact={false} className="max-w-md mx-auto" />
               ) : (
