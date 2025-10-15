@@ -608,3 +608,23 @@ export const useAutomationStore = create<ProductionAutomationState>()(
     },
   ),
 );
+
+if (typeof window !== "undefined") {
+  const setStoreHydrated = () => {
+    const { hydrated, setHydrated } = useAutomationStore.getState();
+    if (!hydrated) {
+      setHydrated(true);
+    }
+  };
+
+  useAutomationStore.persist.onFinishHydration((_state, error) => {
+    if (error) {
+      console.error("[Automation] Hydration error", error);
+    }
+    setStoreHydrated();
+  });
+
+  if (useAutomationStore.persist.hasHydrated?.()) {
+    setStoreHydrated();
+  }
+}
