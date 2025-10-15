@@ -131,6 +131,8 @@ export const GameEndTimer = memo(() => {
     : 1;
   const ringDashOffset = ringCircumference * (1 - progressRatio);
 
+  // Fix build issue: urgencyState === "default" is always false for type narrowing (see TS error).
+  // Instead, use showRing for conditional logic, since showRing is false when urgencyState is "default".
   const ringColor = useMemo(() => {
     if (!showRing) return "#dfaa54"; // gold
     if (secondsForDisplay <= 10) return "#FAFF00"; // yellow pop
@@ -185,7 +187,7 @@ export const GameEndTimer = memo(() => {
             <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 32 32">
               <circle
                 className="opacity-30"
-                stroke={urgencyState === "default" ? "#312E20" : "currentColor"}
+                stroke={!showRing ? "#312E20" : "currentColor"}
                 strokeWidth="3"
                 fill="none"
                 cx="16"
@@ -204,7 +206,7 @@ export const GameEndTimer = memo(() => {
                 strokeLinecap="round"
                 className="transition-all duration-500"
                 style={{
-                  filter: urgencyState !== "default" ? "drop-shadow(0 0 6px rgba(255,255,255,0.45))" : undefined,
+                  filter: showRing ? "drop-shadow(0 0 6px rgba(255,255,255,0.45))" : undefined,
                 }}
               />
             </svg>

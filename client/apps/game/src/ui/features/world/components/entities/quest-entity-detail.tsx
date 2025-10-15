@@ -66,7 +66,9 @@ export const QuestEntityDetail = ({ questEntityId, compact = false, className }:
         </div>
         <div
           className={`px-2 py-1 rounded text-xs font-bold ${
-            hasSlotsRemaining ? "bg-ally/80 border border-ally text-lightest" : "bg-danger/80 border border-danger text-lightest"
+            hasSlotsRemaining
+              ? "bg-ally/80 border border-ally text-lightest"
+              : "bg-danger/80 border border-danger text-lightest"
           }`}
         >
           {hasSlotsRemaining ? "Active" : "Ended"}

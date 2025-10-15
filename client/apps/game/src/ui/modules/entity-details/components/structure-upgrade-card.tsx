@@ -133,9 +133,7 @@ export const StructureUpgradeCard = ({ structureEntityId, className }: Structure
               />
             </div>
             {missingRequirements.length > 0 && (
-              <p className="text-xxs text-amber-200/80">
-                Collect remaining resources to finish the upgrade.
-              </p>
+              <p className="text-xxs text-amber-200/80">Collect remaining resources to finish the upgrade.</p>
             )}
           </div>
         )}
@@ -152,13 +150,11 @@ export const StructureUpgradeCard = ({ structureEntityId, className }: Structure
                   className="bg-slate-900/40"
                 />
                 <div className="w-full rounded-full bg-slate-800">
-                  <div
-                    className="h-1 rounded-full bg-gold"
-                    style={{ width: `${requirement.progress}%` }}
-                  />
+                  <div className="h-1 rounded-full bg-gold" style={{ width: `${requirement.progress}%` }} />
                 </div>
                 <span className="text-xxs text-gold/80">
-                  {Math.min(requirement.current, requirement.amount).toLocaleString()} / {requirement.amount.toLocaleString()}
+                  {Math.min(requirement.current, requirement.amount).toLocaleString()} /{" "}
+                  {requirement.amount.toLocaleString()}
                 </span>
               </div>
             ))}
