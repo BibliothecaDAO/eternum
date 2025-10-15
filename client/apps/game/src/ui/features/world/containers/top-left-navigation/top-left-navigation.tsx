@@ -4,7 +4,7 @@ import { getBlockTimestamp, getIsBlitz, Position } from "@bibliothecadao/eternum
 
 import { useUISound } from "@/audio/hooks/useUISound";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { SecondaryMenuItems } from "@/ui/features/world";
+import { CapacityInfo, SecondaryMenuItems } from "@/ui/features/world";
 import { NameChangePopup } from "@/ui/shared";
 import {
   deleteEntityNameLocalStorage,
@@ -122,6 +122,10 @@ export const TopLeftNavigation = memo(() => {
           />
         </div>
 
+        <CapacityInfo
+          structureEntityId={structureEntityId}
+          className="storage-selector flex flex-col md:flex-row gap-1  self-center"
+        />
         <div className="world-navigation-selector text-xs md:text-base flex md:flex-row gap-2 md:gap-2 justify-between p-1 md:px-4 relative ">
           <div className="cycle-selector flex justify-center md:justify-start gap-2">
             <TickProgress />
