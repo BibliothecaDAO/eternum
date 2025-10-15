@@ -195,30 +195,6 @@ export const ProductionOverviewPanel = () => {
     return "mixed";
   }, [realmCards]);
 
-  const resourcesToEnsure = useMemo(() => {
-    const queue: { realmId: string; resourceId: ResourcesIds }[] = [];
-    realmCards.forEach((card) => {
-      const automationConfig = automationRealms[card.id];
-      const configured = new Set(
-        Object.keys(automationConfig?.resources ?? {}).map((key) => Number(key) as ResourcesIds),
-      );
-      card.resourceIds.forEach((resourceId) => {
-        if (!configured.has(resourceId)) {
-          queue.push({ realmId: card.id, resourceId });
-        }
-      });
-    });
-    return queue;
-  }, [realmCards, automationRealms]);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    if (resourcesToEnsure.length === 0) return;
-    resourcesToEnsure.forEach(({ realmId, resourceId }) => {
-      ensureResourceConfig(realmId, resourceId);
-    });
-  }, [hydrated, resourcesToEnsure, ensureResourceConfig]);
-
   const handlePresetChange = useCallback(
     (realmId: string, presetId: RealmPresetId) => {
       // Ensure resource configs exist for resources produced by buildings,
