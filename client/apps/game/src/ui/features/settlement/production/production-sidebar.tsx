@@ -227,40 +227,40 @@ const SidebarRealm = ({
                 return a.resourceId - b.resourceId;
               })
               .map((summary) => {
-              const resourceLabel = ResourcesIds[summary.resourceId];
-              const elapsedSeconds = (currentTime - summary.calculatedAt) / 1000;
-              const effectiveRemainingSeconds =
-                summary.timeRemainingSeconds !== null
-                  ? Math.max(summary.timeRemainingSeconds - elapsedSeconds, 0)
-                  : null;
-              const formattedRemaining =
-                summary.isProducing && effectiveRemainingSeconds !== null
-                  ? formatTimeRemaining(Math.ceil(effectiveRemainingSeconds))
-                  : null;
-              const tooltipParts = summary.isProducing
-                ? [
-                    resourceLabel,
-                    `${summary.activeBuildings}/${summary.totalBuildings} producing`,
-                    formattedRemaining ? `${formattedRemaining} left` : null,
-                  ]
-                : [
-                    resourceLabel,
-                    `Idle (${summary.totalBuildings} building${summary.totalBuildings !== 1 ? "s" : ""})`,
-                  ];
+                const resourceLabel = ResourcesIds[summary.resourceId];
+                const elapsedSeconds = (currentTime - summary.calculatedAt) / 1000;
+                const effectiveRemainingSeconds =
+                  summary.timeRemainingSeconds !== null
+                    ? Math.max(summary.timeRemainingSeconds - elapsedSeconds, 0)
+                    : null;
+                const formattedRemaining =
+                  summary.isProducing && effectiveRemainingSeconds !== null
+                    ? formatTimeRemaining(Math.ceil(effectiveRemainingSeconds))
+                    : null;
+                const tooltipParts = summary.isProducing
+                  ? [
+                      resourceLabel,
+                      `${summary.activeBuildings}/${summary.totalBuildings} producing`,
+                      formattedRemaining ? `${formattedRemaining} left` : null,
+                    ]
+                  : [
+                      resourceLabel,
+                      `Idle (${summary.totalBuildings} building${summary.totalBuildings !== 1 ? "s" : ""})`,
+                    ];
 
-              return (
-                <ProductionStatusBadge
-                  key={summary.resourceId}
-                  resourceLabel={resourceLabel}
-                  tooltipText={tooltipParts.filter(Boolean).join(" • ")}
-                  isProducing={summary.isProducing}
-                  timeRemainingSeconds={effectiveRemainingSeconds}
-                  totalCount={summary.totalBuildings}
-                  size="sm"
-                  onClick={() => onSelectResource(realm.entityId, summary.resourceId)}
-                />
-              );
-            })
+                return (
+                  <ProductionStatusBadge
+                    key={summary.resourceId}
+                    resourceLabel={resourceLabel}
+                    tooltipText={tooltipParts.filter(Boolean).join(" • ")}
+                    isProducing={summary.isProducing}
+                    timeRemainingSeconds={effectiveRemainingSeconds}
+                    totalCount={summary.totalBuildings}
+                    size="sm"
+                    onClick={() => onSelectResource(realm.entityId, summary.resourceId)}
+                  />
+                );
+              })
           ) : (
             <span className="text-xs text-gold/60">No production buildings</span>
           )}

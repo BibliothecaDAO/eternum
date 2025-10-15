@@ -10,4 +10,3 @@ export const useTransferPanelDraftStore = create<TransferPanelDraftState>((set) 
   draft: null,
   setDraft: (entry) => set({ draft: entry }),
 }));
-

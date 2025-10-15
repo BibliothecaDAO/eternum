@@ -49,7 +49,9 @@ export const ProductionWorkflows = ({
           {!selectedResource && (
             <div className="flex items-start gap-3 rounded-lg border border-gold/30 bg-dark-brown/70 px-4 py-3 text-sm text-gold/80">
               <span className="font-semibold text-gold">Select a building</span>
-              <span className="text-left">Choose any resource card below to inspect its buildings and manage production.</span>
+              <span className="text-left">
+                Choose any resource card below to inspect its buildings and manage production.
+              </span>
             </div>
           )}
 

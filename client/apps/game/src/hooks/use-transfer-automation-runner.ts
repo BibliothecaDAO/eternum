@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import { useDojo } from "@bibliothecadao/react";
-import { getBlockTimestamp, ResourceManager, getTotalResourceWeightKg, calculateDonkeysNeeded, isMilitaryResource, getEntityIdFromKeys } from "@bibliothecadao/eternum";
+import {
+  getBlockTimestamp,
+  ResourceManager,
+  getTotalResourceWeightKg,
+  calculateDonkeysNeeded,
+  isMilitaryResource,
+  getEntityIdFromKeys,
+} from "@bibliothecadao/eternum";
 import { ClientComponents, ResourcesIds, StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useTransferAutomationStore } from "./store/use-transfer-automation-store";

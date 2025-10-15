@@ -24,7 +24,9 @@ export const LandingWelcome = () => {
           <EternumWordsLogo className="mx-auto w-44 sm:w-56 lg:w-72 xl:w-[360px]" />
 
           <div className="mt-6 flex w-full flex-col items-center gap-3 sm:mt-8 sm:flex-row sm:justify-center sm:gap-4">
-            <Button className="w-full sm:w-auto" onClick={() => navigate("/play")}>Enter Blitz</Button>
+            <Button className="w-full sm:w-auto" onClick={() => navigate("/play")}>
+              Enter Blitz
+            </Button>
             <div className="flex justify-center sm:justify-end">
               <Controller />
             </div>

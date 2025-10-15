@@ -251,9 +251,7 @@ export const RightNavigationModule = () => {
             }}
             initial="hidden"
             animate="visible"
-            className={clsx(
-              "pointer-events-auto flex flex-col justify-start h-[88vh]",
-            )}
+            className={clsx("pointer-events-auto flex flex-col justify-start h-[88vh]")}
           >
             <div className="flex flex-col mb-auto">
               {navigationItems.map((item) => (
