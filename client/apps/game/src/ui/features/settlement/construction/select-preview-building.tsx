@@ -320,36 +320,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         ),
         component: (
           <div className="p-2 space-y-2">
-            {biomeRecommendation && (
-              <div className="border border-gold/20 rounded-md bg-gold/10 p-3">
-                <div className="text-[11px] uppercase tracking-wider text-gold/60 font-semibold">Biome Advantage</div>
-                <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gold/80">
-                  {biomeRecommendation.hasDistinctBest ? (
-                    <>
-                      <span>
-                        {biomeRecommendation.best.length > 1
-                          ? `Best choices for ${formatBiomeLabel(biomeRecommendation.biome)} biome:`
-                          : `Best choice for ${formatBiomeLabel(biomeRecommendation.biome)} biome:`}
-                      </span>
-                      {biomeRecommendation.best.map((option) => (
-                        <div
-                          key={option.armyType}
-                          className="flex items-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-900/20 px-2 py-1"
-                        >
-                          <ResourceIcon resource={option.resourceName} size="xs" />
-                          <span className="text-emerald-200 font-semibold">{option.armyType}</span>
-                          <span className="text-[11px] text-emerald-200">{formatBiomeBonus(option.bonus)}</span>
-                        </div>
-                      ))}
-                    </>
-                  ) : (
-                    <span className="text-gold/60">
-                      All army types fight equally well in the {formatBiomeLabel(biomeRecommendation.biome)} biome.
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
             {ARMY_TYPES.map((armyType) => {
               const militaryBuildings = buildingTypes.filter((a) => {
                 const building = BuildingType[a as keyof typeof BuildingType];

@@ -33,8 +33,8 @@ const WorldContextMenu = lazy(() =>
 );
 
 const TopCenterContainer = lazy(() => import("../shared/containers/top-center-container"));
-const BottomRightContainer = lazy(() =>
-  import("../shared/containers/bottom-right-container").then((module) => ({ default: module.BottomRightContainer })),
+const BottomLeftContainer = lazy(() =>
+  import("../shared/containers/bottom-left-container").then((module) => ({ default: module.BottomLeftContainer })),
 );
 const LeftMiddleContainer = lazy(() => import("../shared/containers/left-middle-container"));
 const RightMiddleContainer = lazy(() => import("../shared/containers/right-middle-container"));
@@ -157,9 +157,9 @@ const WorldHud = () => (
       <SelectedArmy />
     </BottomMiddleContainer>
 
-    <BottomRightContainer>
+    <BottomLeftContainer>
       <MiniMapNavigation />
-    </BottomRightContainer>
+    </BottomLeftContainer>
 
     <RightMiddleContainer>
       <RightNavigationModule />

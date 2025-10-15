@@ -13,25 +13,27 @@ export const LandingWelcome = () => {
   const buttonClasses = "h-9 px-4 min-w-[96px] w-full sm:w-auto";
 
   return (
-    <section className="flex w-full justify-center px-3 sm:px-4 lg:px-6">
-      <div className="relative w-full max-w-2xl sm:max-w-3xl 2xl:max-w-4xl">
-        <img
-          alt=""
-          aria-hidden="true"
-          src={LANDING_PANEL_IMAGE}
-          loading="lazy"
-          className="mx-auto w-full max-h-[60vh] max-w-[640px] select-none object-contain pointer-events-none md:max-h-[65vh] md:max-w-full 2xl:max-h-none"
-        />
-
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-4 py-8 text-center text-gold sm:px-8 sm:py-10">
-          <EternumWordsLogo className="mx-auto w-44 sm:w-56 lg:w-72 xl:w-[360px]" />
-
-          <div className="mt-6 flex w-full flex-col items-center gap-3 sm:mt-8 sm:flex-row sm:justify-center sm:gap-4">
-            <Button className={buttonClasses} onClick={() => navigate("/play")}>
-              Enter Blitz
-            </Button>
-            <div className="flex justify-center sm:justify-end w-full sm:w-auto">
-              <Controller className={buttonClasses} />
+    // Move section higher: remove mb-50, add negative mt and a little pb for balance
+    <section className="flex w-full items-center justify-center px-3 sm:px-4 lg:px-6 -mt-8 sm:-mt-14 pb-4">
+      <div className="flex flex-col items-center justify-center w-full max-w-2xl sm:max-w-3xl 2xl:max-w-4xl">
+        {/* Panel container with absolute logo+buttons inside */}
+        <div className="relative flex items-center justify-center w-full">
+          <img
+            alt=""
+            aria-hidden="true"
+            src={LANDING_PANEL_IMAGE}
+            loading="lazy"
+            className="mx-auto w-full max-h-[60vh] max-w-[640px] select-none object-contain pointer-events-none md:max-h-[65vh] md:max-w-full 2xl:max-h-none"
+          />
+          <div className="absolute inset-0 flex flex-col items-center justify-center px-4 py-8 text-center text-gold sm:px-8 sm:py-10">
+            <EternumWordsLogo className="mx-auto w-44 sm:w-56 lg:w-72 xl:w-[360px]" />
+            <div className="mt-6 flex w-full flex-col items-center gap-3 sm:mt-8 sm:flex-row sm:justify-center sm:gap-4">
+              <Button className={buttonClasses} onClick={() => navigate("/play")}>
+                Enter Blitz
+              </Button>
+              <div className="flex justify-center sm:justify-end w-full sm:w-auto">
+                <Controller className={buttonClasses} />
+              </div>
             </div>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -11,6 +11,7 @@ import {
   getEntityIdFromKeys,
   getGuardsByStructure,
   StaminaManager,
+  formatTime,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
@@ -86,6 +87,16 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const updateSelectedEntityId = useUIStore((state) => state.updateEntityActionSelectedEntityId);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [currentTime, setCurrentTime] = useState(() => Math.floor(Date.now() / 1000));
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(Math.floor(Date.now() / 1000));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const {
     attackerRelicEffects,
@@ -221,11 +232,9 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const attackerRemaining = Math.max(attackerTroopsTotal - attackerLosses, 0);
   const defenderRemaining = Math.max(defenderTroopsTotal - defenderLosses, 0);
 
-  const attackerOnCooldown = useMemo(() => {
-    if (!attackerArmyData) return false;
-    const currentTime = Math.floor(Date.now() / 1000);
-    return attackerArmyData.troops.battle_cooldown_end > currentTime;
-  }, [attackerArmyData]);
+  const attackerCooldownEnd = Number(attackerArmyData?.troops.battle_cooldown_end ?? 0);
+  const attackerCooldownRemaining = Math.max(0, attackerCooldownEnd - currentTime);
+  const attackerOnCooldown = attackerCooldownRemaining > 0;
 
   const attackDisabled =
     attackerOnCooldown ||
@@ -420,7 +429,10 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
           {attackDisabled && (
             <div className="rounded-md border border-red-400/30 bg-red-900/20 px-3 py-2 text-xs text-red-200">
-              {attackButtonLabel}
+              <span>{attackButtonLabel}</span>
+              {attackerOnCooldown && attackerCooldownRemaining > 0 && (
+                <div className="mt-1 text-[11px] text-gold/70">{formatTime(attackerCooldownRemaining)} remaining</div>
+              )}
             </div>
           )}
         </div>
