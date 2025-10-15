@@ -13,7 +13,7 @@ import {
   HyperstructureLeaderboardHyperstructure,
   HyperstructureShareholder,
 } from "../../utils/leaderboard";
-import { buildApiUrl, fetchWithErrorHandling } from "../../utils/sql";
+import { buildApiUrl, extractFirstOrNull, fetchWithErrorHandling, formatAddressForQuery } from "../../utils/sql";
 import { LEADERBOARD_QUERIES } from "./leaderboard";
 
 export const REGISTERED_POINTS_PRECISION = 1_000_000;
@@ -58,10 +58,13 @@ export const fetchLeaderboardSourceData = async ({
   defaultHyperstructureRadius,
   fetchHyperstructuresWithRealmCount,
 }: FetchLeaderboardSourceDataOptions): Promise<LeaderboardSourceData> => {
-  const leaderboardQuery = LEADERBOARD_QUERIES.PLAYER_LEADERBOARD.replace("{limit}", effectiveLimit.toString()).replace(
-    "{offset}",
-    "0",
-  );
+  const leaderboardQuery =
+    effectiveLimit > 0
+      ? LEADERBOARD_QUERIES.PLAYER_LEADERBOARD.replace("{limit}", effectiveLimit.toString()).replace(
+          "{offset}",
+          "0",
+        )
+      : LEADERBOARD_QUERIES.PLAYER_LEADERBOARD_ALL;
 
   const [
     registeredRows,
@@ -96,6 +99,45 @@ export const fetchLeaderboardSourceData = async ({
     hyperstructureConfigRow: hyperstructureConfigRows[0],
     hyperstructureRealmCounts,
   };
+};
+
+export interface FetchRegisteredLeaderboardRowOptions {
+  baseUrl: string;
+  playerAddress: string;
+}
+
+export const fetchRegisteredLeaderboardRow = async ({
+  baseUrl,
+  playerAddress,
+}: FetchRegisteredLeaderboardRowOptions): Promise<PlayerLeaderboardRow | null> => {
+  const trimmed = playerAddress.trim().toLowerCase();
+  if (!trimmed) {
+    return null;
+  }
+
+  const prefixed = trimmed.startsWith("0x") ? trimmed : `0x${trimmed}`;
+  if (!/^0x[0-9a-f]+$/.test(prefixed)) {
+    return null;
+  }
+
+  let canonicalAddress: string;
+  try {
+    canonicalAddress = formatAddressForQuery(prefixed).toLowerCase();
+  } catch {
+    return null;
+  }
+
+  const query = LEADERBOARD_QUERIES.PLAYER_LEADERBOARD_BY_ADDRESS.replace(
+    "{playerAddress}",
+    canonicalAddress,
+  );
+
+  const results = await fetchWithErrorHandling<PlayerLeaderboardRow>(
+    buildApiUrl(baseUrl, query),
+    "Failed to fetch player leaderboard entry",
+  );
+
+  return extractFirstOrNull(results);
 };
 
 export interface LeaderboardConfig {
@@ -336,6 +378,26 @@ export const sortLeaderboardEntries = (entries: PlayerLeaderboardRow[]): PlayerL
     const bTotal = parseNumericValue(b.registeredPoints ?? b.total_points ?? b.registered_points);
 
     return bTotal - aTotal;
+  });
+};
+
+export const addLeaderboardRanks = (entries: PlayerLeaderboardRow[]): PlayerLeaderboardRow[] => {
+  let lastTotal: number | null = null;
+  let currentRank = 0;
+
+  return entries.map((entry, index) => {
+    const total = parseNumericValue(entry.registeredPoints ?? entry.total_points ?? entry.registered_points);
+    const normalizedTotal = Number.isFinite(total) ? total : 0;
+
+    if (lastTotal === null || normalizedTotal !== lastTotal) {
+      currentRank = index + 1;
+      lastTotal = normalizedTotal;
+    }
+
+    return {
+      ...entry,
+      rank: currentRank,
+    };
   });
 };
 
