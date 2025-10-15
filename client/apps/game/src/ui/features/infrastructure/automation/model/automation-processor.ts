@@ -1,4 +1,5 @@
 import {
+  DONKEY_DEFAULT_RESOURCE_PERCENT,
   DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES,
   MAX_RESOURCE_ALLOCATION_PERCENT,
   RealmAutomationConfig,
@@ -131,7 +132,12 @@ export const buildRealmProductionPlan = ({
       const config = realmConfig.resources[resourceId];
       const percentages = config?.percentages
         ? { ...config.percentages }
-        : { ...DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES };
+        : resourceId === ResourcesIds.Donkey
+          ? { resourceToResource: DONKEY_DEFAULT_RESOURCE_PERCENT, laborToResource: 0 }
+          : { ...DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES };
+      if (resourceId === ResourcesIds.Donkey) {
+        percentages.laborToResource = 0;
+      }
       return { resourceId, config, percentages };
     });
 
