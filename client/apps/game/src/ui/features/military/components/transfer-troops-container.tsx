@@ -222,6 +222,81 @@ export const TransferTroopsContainer = ({
     return divideByPrecision(Number(count));
   }, [targetExplorerTroops?.troops.count]);
 
+  const findDefaultGuardSlot = useCallback((): number | null => {
+    if (!guardSelectionRequired) {
+      return null;
+    }
+
+    if (transferDirection === TransferDirection.StructureToExplorer) {
+      if (useStructureBalance) {
+        return null;
+      }
+
+      const targetTroop = targetExplorerTroops?.troops;
+      const targetTroopCount = targetTroop?.count;
+      const hasExistingTargetTroops =
+        typeof targetTroopCount === "bigint"
+          ? targetTroopCount !== 0n
+          : typeof targetTroopCount === "number"
+            ? targetTroopCount > 0
+            : typeof targetTroopCount === "string" && Number(targetTroopCount) > 0;
+
+      for (const slotIndex of availableGuards) {
+        const guard = selectedGuards[slotIndex];
+        if (!guard?.troops) {
+          continue;
+        }
+
+        const { tier, category, count } = guard.troops;
+        if (count <= 0) {
+          continue;
+        }
+
+        if (hasExistingTargetTroops && targetTroop) {
+          if (targetTroop.tier !== tier || targetTroop.category !== category) {
+            continue;
+          }
+        }
+
+        return slotIndex;
+      }
+    }
+
+    if (transferDirection === TransferDirection.ExplorerToStructure) {
+      const explorerTroop = selectedExplorerTroops?.troops;
+      if (!explorerTroop) {
+        return null;
+      }
+
+      for (const slotIndex of availableGuards) {
+        const guard = targetGuards[slotIndex];
+        if (!guard?.troops) {
+          continue;
+        }
+
+        const { tier, category, count } = guard.troops;
+        if (count === 0) {
+          return slotIndex;
+        }
+
+        if (explorerTroop.tier === tier && explorerTroop.category === category) {
+          return slotIndex;
+        }
+      }
+    }
+
+    return null;
+  }, [
+    guardSelectionRequired,
+    transferDirection,
+    useStructureBalance,
+    targetExplorerTroops,
+    availableGuards,
+    selectedGuards,
+    selectedExplorerTroops,
+    targetGuards,
+  ]);
+
   const structureBalanceCount = useMemo(() => {
     if (!structureTroopBalance) return 0;
     return divideByPrecision(Number(structureTroopBalance.balance));
@@ -266,6 +341,21 @@ export const TransferTroopsContainer = ({
       setGuardSlot(null);
     }
   }, [guardSelectionRequired, availableGuards, guardSlot]);
+
+  useEffect(() => {
+    if (!guardSelectionRequired) {
+      return;
+    }
+
+    if (guardSlot !== null && availableGuards.includes(guardSlot)) {
+      return;
+    }
+
+    const defaultSlot = findDefaultGuardSlot();
+    if (defaultSlot !== null) {
+      setGuardSlot(defaultSlot);
+    }
+  }, [guardSelectionRequired, availableGuards, guardSlot, findDefaultGuardSlot]);
 
   // Handle transfer
   const handleTransfer = async () => {

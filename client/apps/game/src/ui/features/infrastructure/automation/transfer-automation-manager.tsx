@@ -4,4 +4,3 @@ export const TransferAutomationManager = () => {
   useTransferAutomationRunner();
   return null;
 };
-

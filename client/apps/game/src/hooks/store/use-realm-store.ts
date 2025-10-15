@@ -10,6 +10,8 @@ export interface RealmStore {
   setArrivedArrivalsNumber: (arrivedArrivalsNumber: number) => void;
   pendingArrivalsNumber: number;
   setPendingArrivalsNumber: (pendingArrivalsNumber: number) => void;
+  availableRelicsNumber: number;
+  setAvailableRelicsNumber: (availableRelicsNumber: number) => void;
 }
 
 export const createRealmStoreSlice = (set: any) => ({
@@ -21,4 +23,6 @@ export const createRealmStoreSlice = (set: any) => ({
   setArrivedArrivalsNumber: (arrivedArrivalsNumber: number) => set({ arrivedArrivalsNumber }),
   pendingArrivalsNumber: 0,
   setPendingArrivalsNumber: (pendingArrivalsNumber: number) => set({ pendingArrivalsNumber }),
+  availableRelicsNumber: 0,
+  setAvailableRelicsNumber: (availableRelicsNumber: number) => set({ availableRelicsNumber }),
 });

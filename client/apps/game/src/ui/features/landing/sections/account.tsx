@@ -1,6 +1,6 @@
 export const LandingAccount = () => {
   return (
-    <section className="w-full max-w-3xl space-y-6 rounded-3xl border border-white/10 bg-black/50 p-8 text-white backdrop-blur">
+    <section className="w-full mb-2 max-w-3xl space-y-6 rounded-3xl border border-white/10 bg-black/50 p-8 text-white backdrop-blur">
       <header>
         <h2 className="text-2xl font-semibold text-white">Account</h2>
         <p className="mt-2 text-sm text-white/70">

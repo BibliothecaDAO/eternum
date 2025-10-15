@@ -157,7 +157,9 @@ export const useAutomation = () => {
           }
         } catch (error) {
           console.error(`Automation: Failed to execute plan for realm ${realmConfig.realmId}`, error);
-          toast.error(`Automation failed for ${realmConfig.realmName ?? realmConfig.realmId}. Check console for details.`);
+          toast.error(
+            `Automation failed for ${realmConfig.realmName ?? realmConfig.realmId}. Check console for details.`,
+          );
         }
       }
     } finally {
@@ -179,7 +181,9 @@ export const useAutomation = () => {
     const signature = Object.entries(realms)
       .filter(([, realm]) => realm.entityType === "realm" || realm.entityType === "village")
       .map(([realmId, realm]) => {
-        const resourceKeys = Object.keys(realm.resources ?? {}).sort().join(",");
+        const resourceKeys = Object.keys(realm.resources ?? {})
+          .sort()
+          .join(",");
         return `${realmId}:${resourceKeys}`;
       })
       .sort()

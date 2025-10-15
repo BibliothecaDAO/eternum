@@ -25,10 +25,9 @@ export interface TransferAutomationEntry {
   nextRunAt?: number | null;
 }
 
-type NewEntry = Omit<
-  TransferAutomationEntry,
-  "id" | "createdAt" | "lastRunAt" | "nextRunAt" | "active"
-> & { active?: boolean };
+type NewEntry = Omit<TransferAutomationEntry, "id" | "createdAt" | "lastRunAt" | "nextRunAt" | "active"> & {
+  active?: boolean;
+};
 
 interface TransferAutomationState {
   entries: Record<string, TransferAutomationEntry>;
@@ -75,7 +74,9 @@ export const useTransferAutomationStore = create<TransferAutomationState>()(
           sourceName: raw.sourceName,
           destinationEntityId: String(raw.destinationEntityId),
           destinationName: raw.destinationName,
-          resourceIds: Array.from(new Set(raw.resourceIds || [])).filter((r) => typeof r === "number") as ResourcesIds[],
+          resourceIds: Array.from(new Set(raw.resourceIds || [])).filter(
+            (r) => typeof r === "number",
+          ) as ResourcesIds[],
           amountMode: raw.amountMode ?? "percent",
           percent: clampPercent(raw.percent),
           flatAmount: typeof raw.flatAmount === "number" ? Math.max(0, Math.floor(raw.flatAmount)) : undefined,
@@ -96,21 +97,20 @@ export const useTransferAutomationStore = create<TransferAutomationState>()(
             amountMode: patch.amountMode ?? prev.amountMode ?? "percent",
             percent: patch.percent !== undefined ? clampPercent(patch.percent) : prev.percent,
             flatAmount:
-              patch.flatAmount !== undefined
-                ? Math.max(0, Math.floor(patch.flatAmount as number))
-                : prev.flatAmount,
+              patch.flatAmount !== undefined ? Math.max(0, Math.floor(patch.flatAmount as number)) : prev.flatAmount,
             intervalMinutes:
               patch.intervalMinutes !== undefined ? clampInterval(patch.intervalMinutes) : prev.intervalMinutes,
           };
-        
+
           return { entries: { ...state.entries, [id]: next } };
         });
       },
-      remove: (id) => set((state) => {
-        const next = { ...state.entries };
-        delete next[id];
-        return { entries: next };
-      }),
+      remove: (id) =>
+        set((state) => {
+          const next = { ...state.entries };
+          delete next[id];
+          return { entries: next };
+        }),
       toggleActive: (id, active) =>
         set((state) => {
           const prev = state.entries[id];
@@ -161,10 +161,17 @@ export const useTransferAutomationStore = create<TransferAutomationState>()(
                 resourceId: c.resourceId,
                 mode: c.mode === "flat" ? "flat" : "percent",
                 percent: typeof c.percent === "number" ? clampPercent(c.percent) : undefined,
-                flatPercent: typeof c.flatPercent === "number" ? Math.min(90, Math.max(1, Math.floor(c.flatPercent))) : undefined,
+                flatPercent:
+                  typeof c.flatPercent === "number" ? Math.min(90, Math.max(1, Math.floor(c.flatPercent))) : undefined,
                 flatAmount: typeof c.flatAmount === "number" ? Math.max(0, Math.floor(c.flatAmount)) : undefined,
               }))
-              .map((c) => ({ resourceId: c.resourceId, mode: c.mode, percent: c.percent, flatPercent: (c as any).flatPercent, flatAmount: (c as any).flatAmount })) as any;
+              .map((c) => ({
+                resourceId: c.resourceId,
+                mode: c.mode,
+                percent: c.percent,
+                flatPercent: (c as any).flatPercent,
+                flatAmount: (c as any).flatAmount,
+              })) as any;
           }
           entries[id] = {
             id,
@@ -179,15 +186,11 @@ export const useTransferAutomationStore = create<TransferAutomationState>()(
             amountMode: (v as any).amountMode ?? "percent",
             percent,
             flatAmount:
-              typeof (v as any).flatAmount === "number"
-                ? Math.max(0, Math.floor((v as any).flatAmount))
-                : undefined,
+              typeof (v as any).flatAmount === "number" ? Math.max(0, Math.floor((v as any).flatAmount)) : undefined,
             intervalMinutes,
             lastRunAt: typeof (v as any).lastRunAt === "number" ? (v as any).lastRunAt : undefined,
             nextRunAt:
-              (v as any).nextRunAt === null || typeof (v as any).nextRunAt === "number"
-                ? (v as any).nextRunAt
-                : null,
+              (v as any).nextRunAt === null || typeof (v as any).nextRunAt === "number" ? (v as any).nextRunAt : null,
           };
         });
         return { entries };

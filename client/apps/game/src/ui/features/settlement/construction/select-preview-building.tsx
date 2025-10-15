@@ -443,7 +443,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                             !isTierLockedInSimpleMode && hasBalance && realm?.hasCapacity && hasEnoughPopulation;
                           const disabledReason =
                             isTierLockedInSimpleMode && info?.tier
-                              ? `Switch to Standard mode to build Tier ${info.tier} military buildings.`
+                              ? `Switch to Resource mode to build Tier ${info.tier} military buildings.`
                               : undefined;
 
                           return (
@@ -507,7 +507,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         <h6>Building Costs</h6>
         <div className="flex items-center gap-2">
           <label className="inline-flex items-center cursor-pointer">
-            <span className={`mr-2 text-xs ${useSimpleCost ? "text-gold/50" : ""}`}>Standard</span>
+            <span className={`mr-2 text-xs ${useSimpleCost ? "text-gold/50" : ""}`}>Resource</span>
             <div className="relative">
               <input
                 type="checkbox"
@@ -517,7 +517,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
               />
               <div className="w-9 h-5 bg-brown/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gold/30"></div>
             </div>
-            <span className={`ml-2 text-xs ${useSimpleCost ? "" : "text-gold/50"}`}>Simple</span>
+            <span className={`ml-2 text-xs ${useSimpleCost ? "" : "text-gold/50"}`}>Labor</span>
           </label>
           <HintModalButton className="" section={HintSection.Buildings} />
         </div>
@@ -934,7 +934,7 @@ export const BuildingInfo = ({
             })}
           </div>
         </>
-      ) : resourceProduced !== undefined && !useSimpleCost ? ( // Show only if production exists and not simple mode
+      ) : resourceProduced !== undefined && !useSimpleCost ? ( // Show only if production exists and not labor mode
         <div className="text-gold/70 italic text-xs pt-2 border-t border-gold/10">
           No ongoing resource costs in this mode.
         </div>

@@ -7,8 +7,6 @@ import {
   computeExploreFoodCosts,
   configManager,
   divideByPrecision,
-  getArmyTotalCapacityInKg,
-  getRemainingCapacityInKg,
   ResourceManager,
   StaminaManager,
 } from "@bibliothecadao/eternum";
@@ -23,17 +21,6 @@ interface ArmyWarningProps {
 }
 
 export const ArmyWarning = ({ army, explorerResources, structureResources }: ArmyWarningProps) => {
-  const remainingCapacity = useMemo(() => getRemainingCapacityInKg(explorerResources), [explorerResources]);
-  const totalCapacity = useMemo(() => getArmyTotalCapacityInKg(explorerResources), [explorerResources]);
-
-  const hasNoRemainingCapacityToExplore = useMemo(() => {
-    return remainingCapacity < configManager.getExploreReward().resource_weight;
-  }, [totalCapacity, remainingCapacity]);
-
-  // const hasNoTotalCapacityToExplore = useMemo(() => {
-  //   return totalCapacity < configManager.getExploreReward().resource_weight;
-  // }, [totalCapacity]);
-  const hasNoTotalCapacityToExplore = false;
   const food = useMemo(() => {
     // cannot use instantiated resource manager because it uses recs, which isn't synced for all armies (only yours)
     const { balance: wheat } = ResourceManager.balanceWithProduction(
@@ -97,22 +84,6 @@ export const ArmyWarning = ({ army, explorerResources, structureResources }: Arm
           <div className="flex">
             <span className="w-5">⚠️</span>
             <span>Not enough stamina to explore (min {minStaminaNeededExplore})</span>
-          </div>
-        </div>
-      )}
-      {hasNoTotalCapacityToExplore && (
-        <div className="text-xxs font-semibold text-center bg-danger rounded px-1 py-0.5">
-          <div className="flex">
-            <span className="w-5">⚠️</span>
-            <span>Need more troops to explore (min 75)</span>
-          </div>
-        </div>
-      )}
-      {!hasNoTotalCapacityToExplore && hasNoRemainingCapacityToExplore && (
-        <div className="text-xxs font-semibold text-center bg-danger rounded px-1 py-0.5">
-          <div className="flex">
-            <span className="w-5">⚠️</span>
-            <span>Too heavy to explore</span>
           </div>
         </div>
       )}

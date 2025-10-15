@@ -31,8 +31,6 @@ export const RelicCard = React.memo(
     }, [resourceId]);
 
     const handleClick = () => {
-      if (!onActivate) return;
-
       import("../economy/resources/relic-activation-popup").then(({ RelicActivationPopup }) => {
         const recipientType =
           entityType === RelicRecipientType.Explorer ? RelicRecipientType.Explorer : RelicRecipientType.Structure;
@@ -45,6 +43,7 @@ export const RelicCard = React.memo(
             relicId={resourceId}
             relicBalance={divideByPrecision(amount)}
             onClose={() => toggleModal(null)}
+            onActivated={() => onActivate?.(resourceId, amount)}
           />,
         );
       });

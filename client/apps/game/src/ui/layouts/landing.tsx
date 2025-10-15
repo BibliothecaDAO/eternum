@@ -13,6 +13,7 @@ const SECTIONS = [
   { label: "Overview", path: "/" },
   { label: "Cosmetics", path: "/cosmetics" },
   { label: "Account", path: "/account" },
+  { label: "Player", path: "/player" },
   { label: "Leaderboard", path: "/leaderboard" },
 ];
 
@@ -162,7 +163,7 @@ export const LandingLayout = ({ backgroundImage, backgroundVideo }: LandingLayou
       </div>
 
       <div className="relative z-10 flex min-h-screen flex-col">
-        <header className="flex flex-col gap-6 px-6 py-6 lg:px-10">
+        <header className="flex flex-col gap-6 px-6 pt-0 lg:px-10">
           <nav aria-label="Landing sections" className="flex justify-center">
             <div className="relative flex w-full max-w-[720px] justify-center px-2 sm:px-4">
               <img
@@ -195,7 +196,7 @@ export const LandingLayout = ({ backgroundImage, backgroundVideo }: LandingLayou
           </nav>
         </header>
 
-        <main className="mx-auto flex w-full flex-1 flex-col items-center justify-center px-6 py-10 lg:px-0">
+        <main className="mx-auto flex w-full flex-1 flex-col items-center justify-center px-6 lg:px-0">
           <Outlet />
         </main>
       </div>

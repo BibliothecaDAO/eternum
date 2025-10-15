@@ -16,7 +16,8 @@ export const RelicsModule = () => {
   } = useDojo();
 
   const { hexPosition } = useQuery();
-  const [activeTab, setActiveTab] = useState<"chests" | "inventory">("chests");
+  // My Relics tab ("inventory") is selected by default now
+  const [activeTab, setActiveTab] = useState<"chests" | "inventory">("inventory");
   const [refreshKey, setRefreshKey] = useState(0);
   const [searchDistance, setSearchDistance] = useState(30);
   const [lastRefreshTime, setLastRefreshTime] = useState(0);
@@ -126,14 +127,6 @@ export const RelicsModule = () => {
       {/* Tab Navigation */}
       <div className="flex border-b border-gold/20">
         <button
-          onClick={() => setActiveTab("chests")}
-          className={`px-4 py-2 font-semibold transition-colors ${
-            activeTab === "chests" ? "text-gold border-b-2 border-gold" : "text-gold/60 hover:text-gold/80"
-          }`}
-        >
-          Nearby Crates ({chests.length})
-        </button>
-        <button
           onClick={() => setActiveTab("inventory")}
           className={`px-4 py-2 font-semibold transition-colors ${
             activeTab === "inventory" ? "text-gold border-b-2 border-gold" : "text-gold/60 hover:text-gold/80"
@@ -145,6 +138,14 @@ export const RelicsModule = () => {
               relicsData.armies.reduce((sum, a) => sum + a.relics.length, 0)
             : 0}
           )
+        </button>
+        <button
+          onClick={() => setActiveTab("chests")}
+          className={`px-4 py-2 font-semibold transition-colors ${
+            activeTab === "chests" ? "text-gold border-b-2 border-gold" : "text-gold/60 hover:text-gold/80"
+          }`}
+        >
+          Nearby Crates ({chests.length})
         </button>
       </div>
 

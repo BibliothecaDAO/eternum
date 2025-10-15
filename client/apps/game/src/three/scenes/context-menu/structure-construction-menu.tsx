@@ -231,7 +231,7 @@ export const createConstructionMenu = ({
       } else if (!hasEnoughPopulation) {
         hint = "Not enough population";
       } else if (!simpleModeAllowed) {
-        hint = "Unavailable in simple cost mode";
+        hint = "Unavailable in labor cost mode";
       }
     }
 
@@ -322,7 +322,7 @@ export const createConstructionMenu = ({
       childSubtitle: `Realm ${idString}`,
       onSelect: () => {},
       disabled: tierDisabled,
-      hint: tierDisabled ? "Unavailable in simple cost mode" : undefined,
+      hint: tierDisabled ? "Unavailable in labor cost mode" : undefined,
       children: units
         .map(({ label: unitLabel, building, resource }) => {
           const resourceInfo = findResourceById(resource);

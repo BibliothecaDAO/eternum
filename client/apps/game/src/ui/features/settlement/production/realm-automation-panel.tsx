@@ -53,15 +53,15 @@ export const RealmAutomationPanel = ({
   const realmAutomation = useAutomationStore((state) => state.realms[realmEntityId]);
 
   const realmResources = useMemo(
-    () => uniqueResources(producedResources.filter((resourceId) => !isAutomationResourceBlocked(resourceId, entityType))),
+    () =>
+      uniqueResources(producedResources.filter((resourceId) => !isAutomationResourceBlocked(resourceId, entityType))),
     [entityType, producedResources],
   );
 
   useEffect(() => {
     if (!hydrated) return;
     const current = useAutomationStore.getState().realms[realmEntityId];
-    const needsMetadataUpdate =
-      current && (current.realmName !== realmName || current.entityType !== entityType);
+    const needsMetadataUpdate = current && (current.realmName !== realmName || current.entityType !== entityType);
 
     if (!current || needsMetadataUpdate) {
       upsertRealm(realmEntityId, { realmName, entityType });
@@ -85,7 +85,8 @@ export const RealmAutomationPanel = ({
     return Object.keys(realmAutomation.resources ?? {})
       .map((key) => Number(key) as ResourcesIds)
       .filter(
-        (resourceId) => !isAutomationResourceBlocked(resourceId, effectiveEntityType) && !realmResources.includes(resourceId),
+        (resourceId) =>
+          !isAutomationResourceBlocked(resourceId, effectiveEntityType) && !realmResources.includes(resourceId),
       );
   }, [realmAutomation, realmResources, entityType]);
 
@@ -128,10 +129,7 @@ export const RealmAutomationPanel = ({
         complexInputs.forEach((input) => {
           if (input.resource === ResourcesIds.Wheat) return;
           if (isAutomationResourceBlocked(input.resource, effectiveEntityType, "input")) return;
-          totals.set(
-            input.resource,
-            (totals.get(input.resource) ?? 0) + percentages.resourceToResource,
-          );
+          totals.set(input.resource, (totals.get(input.resource) ?? 0) + percentages.resourceToResource);
         });
       }
 
@@ -139,10 +137,7 @@ export const RealmAutomationPanel = ({
         simpleInputs.forEach((input) => {
           if (input.resource === ResourcesIds.Wheat) return;
           if (isAutomationResourceBlocked(input.resource, effectiveEntityType, "input")) return;
-          totals.set(
-            input.resource,
-            (totals.get(input.resource) ?? 0) + percentages.laborToResource,
-          );
+          totals.set(input.resource, (totals.get(input.resource) ?? 0) + percentages.laborToResource);
         });
       }
     });
@@ -182,11 +177,7 @@ export const RealmAutomationPanel = ({
   );
 
   const handleSliderChange = useCallback(
-    (
-      resourceId: ResourcesIds,
-      key: "resourceToResource" | "laborToResource",
-      value: number,
-    ) => {
+    (resourceId: ResourcesIds, key: "resourceToResource" | "laborToResource", value: number) => {
       setRealmPreset(realmEntityId, null);
       setResourcePercentages(realmEntityId, resourceId, { [key]: value });
     },
@@ -206,9 +197,7 @@ export const RealmAutomationPanel = ({
       <header className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>
           <h4 className="text-lg font-semibold text-gold">Production Automation</h4>
-          <p className="text-xs text-gold/60">
-            Adjust sliders or apply a preset to fine-tune production.
-          </p>
+          <p className="text-xs text-gold/60">Adjust sliders or apply a preset to fine-tune production.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {REALM_PRESETS.map((preset) => (
@@ -369,9 +358,7 @@ export const RealmAutomationPanel = ({
         <div className="flex items-center justify-between">
           <h5 className="text-sm font-semibold text-gold">Last Automation Run</h5>
           {lastExecution ? (
-            <span className="text-[11px] text-gold/60">
-              {new Date(lastExecution.executedAt).toLocaleString()}
-            </span>
+            <span className="text-[11px] text-gold/60">{new Date(lastExecution.executedAt).toLocaleString()}</span>
           ) : (
             <span className="text-[11px] text-gold/60">Pending execution</span>
           )}
@@ -379,7 +366,10 @@ export const RealmAutomationPanel = ({
         {lastExecution ? (
           <div className="grid grid-cols-4 gap-2">
             {lastExecutionEntries.map((entry, index) => (
-              <div key={`exec-${entry.resourceId}-${index}`} className="rounded border border-gold/20 px-3 py-2 text-xs text-gold/80">
+              <div
+                key={`exec-${entry.resourceId}-${index}`}
+                className="rounded border border-gold/20 px-3 py-2 text-xs text-gold/80"
+              >
                 <div className="flex items-center gap-2">
                   <ResourceIcon resource={ResourcesIds[entry.resourceId as ResourcesIds]} size="xs" />
                   <span className="font-semibold text-gold">{resolveResourceLabel(entry.resourceId)}</span>
@@ -389,9 +379,7 @@ export const RealmAutomationPanel = ({
             ))}
           </div>
         ) : (
-          <p className="text-xs text-gold/60">
-            Once automation executes, production summaries will appear here.
-          </p>
+          <p className="text-xs text-gold/60">Once automation executes, production summaries will appear here.</p>
         )}
         {lastExecution?.skipped.length ? (
           <div className="text-[11px] text-warning">

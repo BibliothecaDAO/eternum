@@ -122,7 +122,7 @@ export const ResourceWeight = ({ className }: { className?: string }) => {
           </div>
         </div>
 
-        {/* Standard resources */}
+        {/* Resource materials */}
         <div className="p-1.5 border border-gold/20 rounded-md bg-brown-900/30">
           <div className="text-center text-gold/90 text-xs font-medium">1 kg/unit</div>
           <div className="flex items-center justify-center">

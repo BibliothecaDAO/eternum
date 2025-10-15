@@ -41,7 +41,6 @@ export const RealmVillageDetails = () => {
     return toHexString(structure?.owner || 0n);
   }, [structure]);
 
-
   const isImmune = useMemo(() => isStructureImmune(currentBlockTimestamp || 0), [structure, currentBlockTimestamp]);
   const timer = useMemo(
     () => getStructureImmunityTimer(structure?.structure, currentBlockTimestamp || 0),

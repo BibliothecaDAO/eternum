@@ -1,16 +1,24 @@
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
-import { configManager, getEntityIdFromKeys, getIsBlitz, getStructureRelicEffects, getStructureName } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  getEntityIdFromKeys,
+  getIsBlitz,
+  getStructureName,
+  getStructureRelicEffects,
+} from "@bibliothecadao/eternum";
 import { useBuildings, useDojo } from "@bibliothecadao/react";
-import { getProducedResource, RealmInfo as RealmInfoType, RELICS, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import {
+  getProducedResource,
+  RealmInfo as RealmInfoType,
+  RELICS,
+  ResourcesIds,
+  StructureType,
+} from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { SparklesIcon } from "lucide-react";
 import { useMemo } from "react";
-import { ActiveRelicEffects } from "../../world/components/entities/active-relic-effects";
-import { BuildingsList } from "./buildings-list";
-import { ProductionControls } from "./production-controls";
-import { RealmInfo } from "./realm-info";
-import { RealmAutomationPanel } from "./realm-automation-panel";
+import { ProductionOverview } from "./production-overview";
+import { ProductionWorkflows } from "./production-workflows";
 
 export const ProductionBody = ({
   realm,
@@ -88,54 +96,26 @@ export const ProductionBody = ({
   }, [realm.structure?.category]);
 
   return (
-    <>
-      <div className="space-y-2">
-        <RealmInfo realm={realm} />
-        <ActiveRelicEffects relicEffects={activeRelics} entityId={realm.entityId} />
-        {hasActivatedWonderBonus && (
-          <div className="bg-gradient-to-r from-gold/20 to-gold/5 border-2 border-gold/30 rounded-lg px-6 py-4 shadow-lg shadow-gold/10 relative overflow-hidden">
-            <div className="absolute inset-0 opacity-5"></div>
-            <div className="relative">
-              <div className="flex items-center gap-4">
-                <div className="bg-gold/20 p-3 rounded-lg">
-                  <SparklesIcon className="w-7 h-7 text-gold" />
-                </div>
-                <div>
-                  <h6 className="text-gold font-bold text-lg mb-1">Wonder Bonus Active</h6>
-                  <p className="text-gold/90 text-sm">
-                    ✨ Currently receiving +{((wonderBonus - 1) * 100).toFixed(2)}% production bonus
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+    <div className="space-y-6">
+      <ProductionOverview
+        realm={realm}
+        activeRelics={activeRelics}
+        wonderBonus={wonderBonus}
+        hasActivatedWonderBonus={hasActivatedWonderBonus || false}
+      />
 
-        <RealmAutomationPanel
-          realmEntityId={realm.entityId.toString()}
-          realmName={realmDisplayName}
-          producedResources={producedResources}
-          entityType={entityType}
-        />
-
-        <BuildingsList
-          realm={realm}
-          onSelectProduction={onSelectResource}
-          selectedResource={selectedResource}
-          producedResources={producedResources}
-          productionBuildings={productionBuildings}
-        />
-
-        {selectedResource && (
-          <ProductionControls
-            selectedResource={selectedResource}
-            realm={realm}
-            wonderBonus={wonderBonus}
-            productionBonus={productionBonus}
-            troopsBonus={troopsBonus}
-          />
-        )}
-      </div>
-    </>
+      <ProductionWorkflows
+        realm={realm}
+        realmDisplayName={realmDisplayName}
+        producedResources={producedResources}
+        productionBuildings={productionBuildings}
+        selectedResource={selectedResource}
+        onSelectResource={onSelectResource}
+        wonderBonus={wonderBonus}
+        productionBonus={productionBonus}
+        troopsBonus={troopsBonus}
+        realmEntityId={realm.entityId.toString()}
+      />
+    </div>
   );
 };

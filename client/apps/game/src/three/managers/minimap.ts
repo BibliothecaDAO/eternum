@@ -68,6 +68,8 @@ const MINIMAP_CONFIG = {
   },
 };
 
+const FETCH_TILES_SLOW_THRESHOLD_MS = 1_000;
+
 // Generic cluster interface for any entity type
 interface EntityCluster {
   centerCol: number;
@@ -118,6 +120,8 @@ class Minimap {
   private tiles: Tile[] = []; // SQL-fetched tiles
   private hoveredHexCoords: { col: number; row: number } | null = null; // New property for tracking hovered hex
   private isMinimized: boolean = false; // Add minimized state
+  private tilesRefreshIntervalId: number | null = null;
+  private isFetchingTiles: boolean = false;
 
   // Entity visibility toggles
   private showRealms: boolean = true;
@@ -147,6 +151,7 @@ class Minimap {
       this.initializeCanvas(camera);
       this.canvas.addEventListener("canvasResized", this.handleResize);
       this.fetchTiles(); // Start fetching tiles
+      this.startTilesRefreshLoop();
     });
   }
 
@@ -917,26 +922,57 @@ class Minimap {
     if (this.context) this.draw();
   }
 
+  private startTilesRefreshLoop() {
+    if (this.tilesRefreshIntervalId !== null) {
+      window.clearInterval(this.tilesRefreshIntervalId);
+    }
+
+    this.tilesRefreshIntervalId = window.setInterval(() => {
+      void this.fetchTiles();
+    }, 10_000);
+  }
+
   private async fetchTiles() {
+    if (this.isFetchingTiles) return;
+    this.isFetchingTiles = true;
+    const getTimestamp = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
+    const startTime = getTimestamp();
     console.log("fetchTiles");
     try {
-      this.tiles = await sqlApi.fetchAllTiles().then((tiles) => {
-        return tiles.map((tile) => {
-          const position = new Position({ x: tile.col, y: tile.row });
-          const { x: col, y: row } = position.getNormalized();
-          return {
-            ...tile,
-            col,
-            row,
-          };
-        });
+      const rawTiles = await sqlApi.fetchAllTiles();
+      const fetchEndTime = getTimestamp();
+      const normalizedTiles = rawTiles.map((tile) => {
+        const position = new Position({ x: tile.col, y: tile.row });
+        const { x: col, y: row } = position.getNormalized();
+        return {
+          ...tile,
+          col,
+          row,
+        };
       });
+      const normalizeEndTime = getTimestamp();
+      this.tiles = normalizedTiles;
       this.updateWorldBounds();
       this.clampMapCenter();
       this.recomputeScales();
       this.draw(); // Redraw the minimap with new data
+      const endTime = getTimestamp();
+      const fetchDuration = fetchEndTime - startTime;
+      const normalizeDuration = normalizeEndTime - fetchEndTime;
+      const postProcessDuration = endTime - normalizeEndTime;
+      const totalDuration = endTime - startTime;
+      console.log(
+        `[Minimap] fetchTiles finished in ${totalDuration.toFixed(2)}ms (fetch ${fetchDuration.toFixed(2)}ms, normalize ${normalizeDuration.toFixed(2)}ms, render ${postProcessDuration.toFixed(2)}ms)`,
+      );
+      if (totalDuration > FETCH_TILES_SLOW_THRESHOLD_MS) {
+        console.warn(
+          `[Minimap] fetchTiles slow: ${totalDuration.toFixed(2)}ms > ${FETCH_TILES_SLOW_THRESHOLD_MS}ms threshold`,
+        );
+      }
     } catch (error) {
       console.error("Failed to fetch tiles:", error);
+    } finally {
+      this.isFetchingTiles = false;
     }
   }
 
@@ -1071,6 +1107,11 @@ class Minimap {
 
     if ((window as any).minimapInstance === this) {
       (window as any).minimapInstance = undefined;
+    }
+
+    if (this.tilesRefreshIntervalId !== null) {
+      window.clearInterval(this.tilesRefreshIntervalId);
+      this.tilesRefreshIntervalId = null;
     }
 
     console.log(`🧹 Minimap: Disposed ${imagesDisposed} images and cleaned up canvas`);
