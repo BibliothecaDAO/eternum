@@ -125,7 +125,7 @@ export const LandingLayout = ({ backgroundImage, backgroundVideo }: LandingLayou
   };
 
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden bg-black text-gold">
+    <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-black text-gold">
       <div className="absolute inset-0">
         <img
           alt="Eternum background"
