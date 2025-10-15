@@ -939,7 +939,6 @@ export class WorldUpdateListener {
     this.setupSystem(
       this.setup.components.events.StoryEvent,
       (event: StoryEventSystemUpdate) => {
-        console.debug("📖 StoryEvent received:", event);
         storyEventBus.publish(event);
       },
       async (update: any): Promise<StoryEventSystemUpdate | undefined> => {
@@ -950,7 +949,6 @@ export class WorldUpdateListener {
             return undefined;
           }
 
-          console.debug("📦 StoryEvent raw state:", currentState);
           return this.mapStoryEventPayload(currentState);
         }
 

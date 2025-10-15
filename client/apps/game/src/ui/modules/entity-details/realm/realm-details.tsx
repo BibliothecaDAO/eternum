@@ -2,10 +2,8 @@ import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getIsBlitz } from "@bibliothecadao/eternum";
 
-import { Tabs } from "@/ui/design-system/atoms/tab";
 import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";
-import { Buildings } from "@/ui/modules/entity-details/realm/buildings";
 import { Castle } from "@/ui/modules/entity-details/realm/castle";
 import { copyPlayerAddressToClipboard, displayAddress } from "@/ui/utils/utils";
 import {
@@ -18,8 +16,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
-import { useMemo, useState } from "react";
-import { TransferRealm } from "./transfer-realm";
+import { useMemo } from "react";
 
 export const RealmVillageDetails = () => {
   const dojo = useDojo();
@@ -44,30 +41,6 @@ export const RealmVillageDetails = () => {
     return toHexString(structure?.owner || 0n);
   }, [structure]);
 
-  const isBlitz = getIsBlitz();
-  const [selectedTab, setSelectedTab] = useState(0);
-  const tabs = useMemo(() => {
-    const baseTabs = [
-      {
-        key: "Castle",
-        label: <div className="castle-tab-selector">Overview</div>,
-        component: <Castle />,
-      },
-      {
-        key: "Buildings",
-        label: <div className="buildings-tab-selector"> Buildings</div>,
-        component: <Buildings structure={structure} />,
-      },
-    ];
-    if (!isBlitz) {
-      baseTabs.push({
-        key: "Transfer",
-        label: <div className="transfer-tab-selector">Transfer</div>,
-        component: <TransferRealm structure={structure} />,
-      });
-    }
-    return baseTabs;
-  }, [structure, isBlitz]);
 
   const isImmune = useMemo(() => isStructureImmune(currentBlockTimestamp || 0), [structure, currentBlockTimestamp]);
   const timer = useMemo(
@@ -116,27 +89,7 @@ export const RealmVillageDetails = () => {
           </div>
         </div>
 
-        {(isRealm || isVillage) && (
-          <Tabs
-            selectedIndex={selectedTab}
-            onChange={(index: number) => setSelectedTab(index)}
-            variant="default"
-            className="h-full"
-          >
-            <Tabs.List className="mb-3">
-              {tabs.map((tab, index) => (
-                <Tabs.Tab key={index} className="px-6 py-2">
-                  {tab.label}
-                </Tabs.Tab>
-              ))}
-            </Tabs.List>
-            <Tabs.Panels>
-              {tabs.map((tab, index) => (
-                <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
-              ))}
-            </Tabs.Panels>
-          </Tabs>
-        )}
+        {(isRealm || isVillage) && <Castle />}
       </div>
     )
   );

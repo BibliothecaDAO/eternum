@@ -22,27 +22,33 @@ export const TickProgress = memo(() => {
   const { currentBlockTimestamp } = useBlockTimestamp();
 
   const cycleTime = configManager.getTick(TickIds.Armies);
-  const dayDuration = cycleTime * PHASES.length;
+  const hasValidCycle = cycleTime > 0;
+  const dayDuration = hasValidCycle ? cycleTime * PHASES.length : 1;
   const playGong = useUISound(getIsBlitz() ? "event.blitz_gong" : "event.gong");
 
   const lastProgressRef = useRef(0);
 
   const phaseData = useMemo(() => {
-    const dayElapsed = currentBlockTimestamp % dayDuration;
-    const currentPhase = Math.floor(dayElapsed / cycleTime);
-    const phaseElapsed = dayElapsed % cycleTime;
+    const dayElapsed = hasValidCycle ? currentBlockTimestamp % dayDuration : 0;
+    const currentPhase = hasValidCycle ? Math.floor(dayElapsed / cycleTime) : 0;
+    const phaseElapsed = hasValidCycle ? dayElapsed % cycleTime : 0;
+    const phaseProgress = hasValidCycle ? (phaseElapsed / cycleTime) * 100 : 0;
+    const dayProgress = hasValidCycle ? (dayElapsed / dayDuration) * 100 : 0;
+
+    const clampedPhase = Math.min(Math.max(currentPhase, 0), PHASES.length - 1);
 
     return {
-      currentPhase,
-      phaseProgress: (phaseElapsed / cycleTime) * 100,
-      phaseName: PHASES[currentPhase]?.name || "Unknown",
+      currentPhase: clampedPhase,
+      phaseProgress,
+      phaseName: PHASES[clampedPhase]?.name || "Unknown",
+      dayProgress,
     };
-  }, [currentBlockTimestamp, cycleTime, dayDuration]);
+  }, [currentBlockTimestamp, cycleTime, dayDuration, hasValidCycle]);
 
   useEffect(() => {
-    setCycleProgress(phaseData.phaseProgress);
+    setCycleProgress(Math.min(Math.max(phaseData.dayProgress, 0), 100));
     setCycleTime(cycleTime);
-  }, [phaseData.phaseProgress, cycleTime, setCycleProgress, setCycleTime]);
+  }, [phaseData.dayProgress, cycleTime, setCycleProgress, setCycleTime]);
 
   useEffect(() => {
     if (lastProgressRef.current > phaseData.phaseProgress) {

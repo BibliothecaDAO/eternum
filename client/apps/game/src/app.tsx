@@ -3,6 +3,7 @@ import { cleanupTracing } from "@/tracing";
 import { ErrorBoundary, TransactionNotification, WorldLoading } from "@/ui/shared";
 import { useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import type { Account, AccountInterface } from "starknet";
 import { env } from "../env";
 import { DojoProvider } from "./hooks/context/dojo-context";
 import { MetagameProvider } from "./hooks/context/metagame-provider";
@@ -10,7 +11,6 @@ import { StarknetProvider } from "./hooks/context/starknet-provider";
 import { usePlayFlow } from "./hooks/context/use-play-flow";
 import "./index.css";
 import type { SetupResult } from "./init/bootstrap";
-import type { Account, AccountInterface } from "starknet";
 import { IS_MOBILE } from "./ui/config";
 import {
   LandingAccount,
@@ -32,6 +32,9 @@ type ReadyAppProps = {
   setupResult: SetupResult;
   account: Account | AccountInterface;
 };
+
+// Served from client/public/videos/landing/background.mp4
+const LANDING_BACKGROUND_VIDEO = "/videos/menu.mp4";
 
 const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
   return (
@@ -123,7 +126,10 @@ function App() {
       <BrowserRouter>
         <MusicRouterProvider>
           <Routes>
-            <Route path="/" element={<LandingLayout backgroundImage={backgroundImage} />}>
+            <Route
+              path="/"
+              element={<LandingLayout backgroundImage={backgroundImage} backgroundVideo={LANDING_BACKGROUND_VIDEO} />}
+            >
               <Route index element={<LandingWelcome />} />
               <Route path="cosmetics" element={<LandingCosmetics />} />
               <Route path="account" element={<LandingAccount />} />

@@ -130,6 +130,17 @@ export interface MintResourcesProps extends SystemSigner {
   resources: BigNumberish[];
 }
 
+export interface ProductionPlanInstruction {
+  resource_id: BigNumberish;
+  cycles: BigNumberish;
+}
+
+export interface ExecuteRealmProductionPlanProps extends SystemSigner {
+  realm_entity_id: BigNumberish;
+  resource_to_resource?: ProductionPlanInstruction[];
+  labor_to_resource?: ProductionPlanInstruction[];
+}
+
 export interface CreateMultipleRealmsProps extends SystemSigner {
   owner: BigNumberish;
   realms: {

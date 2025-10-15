@@ -6,7 +6,7 @@ import { formatMinutes } from "@/shared/lib/time";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ProductionStatusBadge } from "@/ui/shared";
 
-import type { SelectedEntity } from "../lib/transfer-types";
+import type { SelectedEntity } from "@bibliothecadao/types";
 import type { StructurePreview } from "../lib/use-structure-preview";
 
 const numberFormatter = new Intl.NumberFormat("en-US", {

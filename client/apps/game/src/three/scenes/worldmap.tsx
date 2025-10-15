@@ -675,6 +675,30 @@ export default class WorldmapScene extends HexagonScene {
     this.changeCameraView(nextView);
   }
 
+  public changeCameraView(position: CameraView) {
+    super.changeCameraView(position);
+    if (!this.mainDirectionalLight) {
+      return;
+    }
+    this.configureWorldmapShadows();
+  }
+
+  private configureWorldmapShadows() {
+    if (!this.mainDirectionalLight) {
+      return;
+    }
+    this.mainDirectionalLight.castShadow = true;
+    this.mainDirectionalLight.shadow.mapSize.set(2048, 2048);
+    this.mainDirectionalLight.shadow.camera.left = -60;
+    this.mainDirectionalLight.shadow.camera.right = 60;
+    this.mainDirectionalLight.shadow.camera.top = 45;
+    this.mainDirectionalLight.shadow.camera.bottom = -45;
+    this.mainDirectionalLight.shadow.camera.far = 110;
+    this.mainDirectionalLight.shadow.camera.near = 8;
+    this.mainDirectionalLight.shadow.bias = -0.02;
+    this.mainDirectionalLight.shadow.camera.updateProjectionMatrix();
+  }
+
   private getTargetDistanceForCameraView(view: CameraView): number {
     switch (view) {
       case CameraView.Close:
@@ -1396,7 +1420,7 @@ export default class WorldmapScene extends HexagonScene {
     this.controls.maxDistance = 40;
     this.camera.far = 65;
     this.camera.updateProjectionMatrix();
-    this.mainDirectionalLight.castShadow = false;
+    this.configureWorldmapShadows();
     this.controls.enablePan = true;
     this.controls.enableZoom = useUIStore.getState().enableMapZoom;
     this.controls.zoomToCursor = false;

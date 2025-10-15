@@ -1,13 +1,26 @@
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
-import { configManager, getEntityIdFromKeys, getStructureRelicEffects } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  getEntityIdFromKeys,
+  getIsBlitz,
+  getStructureName,
+  getStructureRelicEffects,
+} from "@bibliothecadao/eternum";
 import { useBuildings, useDojo } from "@bibliothecadao/react";
-import { Building, getProducedResource, RealmInfo as RealmInfoType, RELICS, ResourcesIds } from "@bibliothecadao/types";
+import {
+  getProducedResource,
+  RealmInfo as RealmInfoType,
+  RELICS,
+  ResourcesIds,
+  StructureType,
+} from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
-
+import { BuildingsList } from "./buildings-list";
+import { ProductionControls } from "./production-controls";
 import { ProductionOverview } from "./production-overview";
-import { ProductionWorkflows } from "./production-workflows";
+import { RealmAutomationPanel } from "./realm-automation-panel";
 
 export const ProductionBody = ({
   realm,
@@ -62,16 +75,27 @@ export const ProductionBody = ({
   }, [activeRelics]);
 
   const buildings = useBuildings(realm.position.x, realm.position.y);
-  const productionBuildings = buildings.filter((building): building is Building =>
-    Boolean(building && getProducedResource(building.category)),
+  const productionBuildings = buildings.filter((building) => building && getProducedResource(building.category));
+  const producedResources = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          productionBuildings
+            .filter((building) => building.produced && building.produced.resource)
+            .map((building) => building.produced.resource as ResourcesIds),
+        ),
+      ),
+    [productionBuildings],
   );
-  const producedResources = Array.from(
-    new Set(
-      productionBuildings
-        .map((building) => building.produced?.resource)
-        .filter((resource): resource is ResourcesIds => resource !== undefined && resource !== null),
-    ),
-  );
+
+  const realmDisplayName = useMemo(() => {
+    return getStructureName(realm.structure, getIsBlitz()).name;
+  }, [realm.structure]);
+
+  const entityType = useMemo(() => {
+    const category = Number(realm.structure?.category ?? 0);
+    return category === StructureType.Village ? "village" : "realm";
+  }, [realm.structure?.category]);
 
   return (
     <div className="space-y-6">
@@ -82,17 +106,30 @@ export const ProductionBody = ({
         hasActivatedWonderBonus={hasActivatedWonderBonus || false}
       />
 
-      <ProductionWorkflows
+      <RealmAutomationPanel
+        realmEntityId={realm.entityId.toString()}
+        realmName={realmDisplayName}
+        producedResources={producedResources}
+        entityType={entityType}
+      />
+
+      <BuildingsList
         realm={realm}
+        onSelectProduction={onSelectResource}
+        selectedResource={selectedResource}
         producedResources={producedResources}
         productionBuildings={productionBuildings}
-        selectedResource={selectedResource}
-        onSelectResource={onSelectResource}
-        wonderBonus={wonderBonus}
-        productionBonus={productionBonus}
-        troopsBonus={troopsBonus}
-        realmEntityId={realm.entityId.toString()}
       />
+
+      {selectedResource && (
+        <ProductionControls
+          selectedResource={selectedResource}
+          realm={realm}
+          wonderBonus={wonderBonus}
+          productionBonus={productionBonus}
+          troopsBonus={troopsBonus}
+        />
+      )}
     </div>
   );
 };

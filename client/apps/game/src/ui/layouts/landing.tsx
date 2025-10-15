@@ -6,6 +6,7 @@ import { LANDING_BACKGROUNDS } from "./landing-backgrounds";
 
 interface LandingLayoutProps {
   backgroundImage: string;
+  backgroundVideo?: string;
 }
 
 const SECTIONS = [
@@ -16,7 +17,10 @@ const SECTIONS = [
   { label: "Leaderboard", path: "/leaderboard" },
 ];
 
-export const LandingLayout = ({ backgroundImage }: LandingLayoutProps) => {
+// Served from client/public/images/landing/wooden-panel.png
+const LANDING_NAV_PANEL_IMAGE = "/images/landing/wooden-panel.png";
+
+export const LandingLayout = ({ backgroundImage, backgroundVideo }: LandingLayoutProps) => {
   const location = useLocation();
 
   const resolvedBackground = useMemo(() => {
@@ -37,6 +41,10 @@ export const LandingLayout = ({ backgroundImage }: LandingLayoutProps) => {
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
+    if (backgroundVideo) {
+      return;
+    }
+
     if (resolvedBackground === currentBackground || resolvedBackground === transitionBackground) {
       return;
     }
@@ -66,9 +74,13 @@ export const LandingLayout = ({ backgroundImage }: LandingLayoutProps) => {
       loader.removeEventListener("load", handleReady);
       loader.removeEventListener("error", handleReady);
     };
-  }, [currentBackground, resolvedBackground, transitionBackground]);
+  }, [backgroundVideo, currentBackground, resolvedBackground, transitionBackground]);
 
   useEffect(() => {
+    if (backgroundVideo) {
+      return;
+    }
+
     if (!transitionBackground) {
       return;
     }
@@ -90,7 +102,17 @@ export const LandingLayout = ({ backgroundImage }: LandingLayoutProps) => {
       window.clearTimeout(timeout);
       setIsTransitioning(false);
     };
-  }, [transitionBackground]);
+  }, [backgroundVideo, transitionBackground]);
+
+  useEffect(() => {
+    if (!backgroundVideo) {
+      return;
+    }
+
+    if (resolvedBackground !== currentBackground) {
+      setCurrentBackground(resolvedBackground);
+    }
+  }, [backgroundVideo, currentBackground, resolvedBackground]);
 
   const handleTransitionEnd = (event: TransitionEvent<HTMLImageElement>) => {
     if (event.propertyName !== "opacity" || !transitionBackground) {
@@ -111,7 +133,7 @@ export const LandingLayout = ({ backgroundImage }: LandingLayoutProps) => {
           className="absolute inset-0 h-full w-full object-cover"
         />
 
-        {transitionBackground ? (
+        {!backgroundVideo && transitionBackground ? (
           <img
             alt="Eternum background"
             src={`/images/covers/blitz/${transitionBackground}.png`}
@@ -123,29 +145,53 @@ export const LandingLayout = ({ backgroundImage }: LandingLayoutProps) => {
           />
         ) : null}
 
-        <div className="absolute inset-0 bg-black/70" />
+        {backgroundVideo ? (
+          <video
+            autoPlay
+            className="absolute inset-0 h-full w-full object-cover"
+            loop
+            muted
+            playsInline
+            poster={`/images/covers/blitz/${currentBackground}.png`}
+            preload="auto"
+          >
+            <source src={backgroundVideo} type="video/mp4" />
+          </video>
+        ) : null}
+
+        <div className="absolute inset-0 bg-black/10" />
       </div>
 
       <div className="relative z-10 flex min-h-screen flex-col">
         <header className="flex flex-col gap-6 px-6 py-6 lg:px-10">
           <nav aria-label="Landing sections" className="flex justify-center">
-            <div className="flex flex-wrap gap-2 rounded-full border border-white/10 bg-black/50 panel-wood p-1 backdrop-blur">
-              {SECTIONS.map((section) => (
-                <NavLink
-                  key={section.path}
-                  to={section.path}
-                  end={section.path === "/"}
-                  className={({ isActive }) =>
-                    clsx(
-                      "px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60",
-
-                      isActive ? "bg-gold/5 " : " hover:bg-gold/5 text-gold/50",
-                    )
-                  }
-                >
-                  {section.label}
-                </NavLink>
-              ))}
+            <div className="relative flex w-full max-w-[720px] justify-center px-2 sm:px-4">
+              <img
+                alt=""
+                aria-hidden="true"
+                src={"/borders/top-bar.png"}
+                loading="lazy"
+                className="w-full select-none object-contain pointer-events-none"
+              />
+              <div className="absolute inset-0 flex items-center justify-center px-6 py-4 sm:px-8 -mt-6">
+                <div className="flex w-full flex-wrap items-center justify-center gap-2">
+                  {SECTIONS.map((section) => (
+                    <NavLink
+                      key={section.path}
+                      to={section.path}
+                      end={section.path === "/"}
+                      className={({ isActive }) =>
+                        clsx(
+                          "rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60",
+                          isActive ? "bg-gold/5" : "text-gold/50 hover:bg-gold/5",
+                        )
+                      }
+                    >
+                      {section.label}
+                    </NavLink>
+                  ))}
+                </div>
+              </div>
             </div>
           </nav>
         </header>
