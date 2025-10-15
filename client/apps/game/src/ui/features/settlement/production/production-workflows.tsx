@@ -1,15 +1,21 @@
-import type { Building, RealmInfo as RealmInfoType, ResourcesIds } from "@bibliothecadao/types";
+import {
+  StructureType,
+  type Building,
+  type RealmInfo as RealmInfoType,
+  type ResourcesIds,
+} from "@bibliothecadao/types";
 import { Bot, Hammer } from "lucide-react";
 import { useState } from "react";
 
 import { Tabs } from "@/ui/design-system/atoms";
-import { AutomationTable } from "@/ui/features/infrastructure";
 
 import { BuildingsList } from "./buildings-list";
 import { ProductionControls } from "./production-controls";
+import { RealmAutomationPanel } from "./realm-automation-panel";
 
 interface ProductionWorkflowsProps {
   realm: RealmInfoType;
+  realmDisplayName: string;
   producedResources: ResourcesIds[];
   productionBuildings: Building[];
   selectedResource: ResourcesIds | null;
@@ -22,6 +28,7 @@ interface ProductionWorkflowsProps {
 
 export const ProductionWorkflows = ({
   realm,
+  realmDisplayName,
   producedResources,
   productionBuildings,
   selectedResource,
@@ -29,7 +36,6 @@ export const ProductionWorkflows = ({
   wonderBonus,
   productionBonus,
   troopsBonus,
-  realmEntityId,
 }: ProductionWorkflowsProps) => {
   const [activeTab, setActiveTab] = useState(0);
 
@@ -40,6 +46,13 @@ export const ProductionWorkflows = ({
       icon: Hammer,
       content: (
         <div className="space-y-4">
+          {!selectedResource && (
+            <div className="flex items-start gap-3 rounded-lg border border-gold/30 bg-dark-brown/70 px-4 py-3 text-sm text-gold/80">
+              <span className="font-semibold text-gold">Select a building</span>
+              <span className="text-left">Choose any resource card below to inspect its buildings and manage production.</span>
+            </div>
+          )}
+
           <BuildingsList
             realm={realm}
             onSelectProduction={onSelectResource}
@@ -65,7 +78,12 @@ export const ProductionWorkflows = ({
       description: "Create repeatable production rules",
       icon: Bot,
       content: (
-        <AutomationTable realmInfo={realm} availableResources={producedResources} realmEntityId={realmEntityId} />
+        <RealmAutomationPanel
+          realmEntityId={realm.entityId.toString()}
+          realmName={realmDisplayName}
+          producedResources={producedResources}
+          entityType={realm.structure?.category === StructureType.Village ? "village" : "realm"}
+        />
       ),
     },
   ];

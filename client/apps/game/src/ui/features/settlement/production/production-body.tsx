@@ -17,10 +17,8 @@ import {
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
-import { BuildingsList } from "./buildings-list";
-import { ProductionControls } from "./production-controls";
 import { ProductionOverview } from "./production-overview";
-import { RealmAutomationPanel } from "./realm-automation-panel";
+import { ProductionWorkflows } from "./production-workflows";
 
 export const ProductionBody = ({
   realm,
@@ -106,30 +104,18 @@ export const ProductionBody = ({
         hasActivatedWonderBonus={hasActivatedWonderBonus || false}
       />
 
-      <RealmAutomationPanel
-        realmEntityId={realm.entityId.toString()}
-        realmName={realmDisplayName}
-        producedResources={producedResources}
-        entityType={entityType}
-      />
-
-      <BuildingsList
+      <ProductionWorkflows
         realm={realm}
-        onSelectProduction={onSelectResource}
-        selectedResource={selectedResource}
+        realmDisplayName={realmDisplayName}
         producedResources={producedResources}
         productionBuildings={productionBuildings}
+        selectedResource={selectedResource}
+        onSelectResource={onSelectResource}
+        wonderBonus={wonderBonus}
+        productionBonus={productionBonus}
+        troopsBonus={troopsBonus}
+        realmEntityId={realm.entityId.toString()}
       />
-
-      {selectedResource && (
-        <ProductionControls
-          selectedResource={selectedResource}
-          realm={realm}
-          wonderBonus={wonderBonus}
-          productionBonus={productionBonus}
-          troopsBonus={troopsBonus}
-        />
-      )}
     </div>
   );
 };
