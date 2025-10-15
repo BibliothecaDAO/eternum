@@ -548,7 +548,7 @@ export default class WorldmapScene extends HexagonScene {
       this.shortcutManager.registerShortcut({
         id: "toggle-view",
         key: "v",
-        description: "Toggle between map and hex view",
+        description: "Toggle between world and local view",
         sceneRestriction: SceneName.WorldMap,
         action: () => toggleMapHexView(),
       });

@@ -9,8 +9,8 @@ import { useMemo } from "react";
 
 interface CategorizedShortcuts {
   global: KeyboardShortcut[];
-  map: KeyboardShortcut[];
-  hex: KeyboardShortcut[];
+  world: KeyboardShortcut[];
+  local: KeyboardShortcut[];
 }
 
 export const ShortcutsWindow = () => {
@@ -23,15 +23,15 @@ export const ShortcutsWindow = () => {
   const categorizedShortcuts = useMemo((): CategorizedShortcuts => {
     const categories: CategorizedShortcuts = {
       global: [],
-      map: [],
-      hex: [],
+      world: [],
+      local: [],
     };
 
     registeredShortcuts.forEach((shortcut) => {
       if (shortcut.id.startsWith("worldmap.") || shortcut.id.startsWith("map.")) {
-        categories.map.push(shortcut);
+        categories.world.push(shortcut);
       } else if (shortcut.id.startsWith("hexception.") || shortcut.id.startsWith("hex.")) {
-        categories.hex.push(shortcut);
+        categories.local.push(shortcut);
       } else {
         categories.global.push(shortcut);
       }
@@ -83,8 +83,8 @@ export const ShortcutsWindow = () => {
           ) : (
             <div className="space-y-6">
               {renderShortcutSection("Global", categorizedShortcuts.global)}
-              {renderShortcutSection("Map View", categorizedShortcuts.map)}
-              {renderShortcutSection("Hex View", categorizedShortcuts.hex)}
+              {renderShortcutSection("World View", categorizedShortcuts.world)}
+              {renderShortcutSection("Local View", categorizedShortcuts.local)}
             </div>
           )}
 

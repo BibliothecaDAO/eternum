@@ -199,7 +199,7 @@ export default class HexceptionScene extends HexagonScene {
       this.shortcutManager.registerShortcut({
         id: "toggle-view",
         key: "v",
-        description: "Toggle between map and hex view",
+        description: "Toggle between world and local view",
         sceneRestriction: SceneName.Hexception,
         action: () => toggleMapHexView(),
       });
@@ -207,7 +207,7 @@ export default class HexceptionScene extends HexagonScene {
       this.shortcutManager.registerShortcut({
         id: "escape-handler",
         key: "Escape",
-        description: "Return to world map from hexagon view",
+        description: "Return to world view from local view",
         sceneRestriction: SceneName.Hexception,
         action: () => {
           if (this.isNavigationViewOpen()) {
