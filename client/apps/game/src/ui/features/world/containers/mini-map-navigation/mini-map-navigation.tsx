@@ -175,9 +175,9 @@ export const MiniMapNavigation = () => {
 
   return (
     <div
-      className={` z-[1001] self-end text-xxs pointer-events-auto flex flex-col panel-wood relative transition-all duration-300 ${
+      className={` z-[1001] self-start text-xxs pointer-events-auto flex flex-col panel-wood relative transition-all duration-300 ${
         isExpanded ? "fixed !w-full !h-full !left-0 !top-10 !scale-[0.85]" : ""
-      } ${isMinimized ? "cursor-pointer fixed bottom-2 right-2" : ""}`}
+      } ${isMinimized ? "cursor-pointer fixed bottom-2 left-2" : ""}`}
     >
       {showMinimap && !isMinimized && (
         <div className="flex flex-wrap p-1 justify-between items-center gap-2 bg-black/70 border-b border-amber-900/50">
