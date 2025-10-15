@@ -1,5 +1,4 @@
-export const LEADERBOARD_QUERIES = {
-  PLAYER_LEADERBOARD: `
+const PLAYER_LEADERBOARD_BASE = `
     WITH RECURSIVE
       registered AS (
         SELECT
@@ -79,9 +78,23 @@ export const LEADERBOARD_QUERIES = {
         NULLIF("address_name.address", 'address_name.address'),
         ''
       )) = totals.player_address
+`;
+
+export const LEADERBOARD_QUERIES = {
+  PLAYER_LEADERBOARD: `
+    ${PLAYER_LEADERBOARD_BASE}
     ORDER BY registered_points DESC, totals.player_address
     LIMIT {limit}
     OFFSET {offset};
+  `,
+  PLAYER_LEADERBOARD_ALL: `
+    ${PLAYER_LEADERBOARD_BASE}
+    ORDER BY registered_points DESC, totals.player_address;
+  `,
+  PLAYER_LEADERBOARD_BY_ADDRESS: `
+    ${PLAYER_LEADERBOARD_BASE}
+    WHERE totals.player_address = lower('{playerAddress}')
+    LIMIT 1;
   `,
   HYPERSTRUCTURE_LEADERBOARD_CONFIG: `
     SELECT
