@@ -696,9 +696,7 @@ export class SqlApi {
       processedAddresses,
     });
 
-    const rankedEntries = addLeaderboardRanks(
-      sortLeaderboardEntries([...registeredEntries, ...additionalEntries]),
-    );
+    const rankedEntries = addLeaderboardRanks(sortLeaderboardEntries([...registeredEntries, ...additionalEntries]));
 
     const candidateAddresses = new Set<string>();
     const pushCandidate = (value: string | null | undefined) => {

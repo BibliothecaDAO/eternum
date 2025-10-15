@@ -918,8 +918,7 @@ export const TransferTroopsContainer = ({
 
                       const troopInfo = guardData.troops;
                       const isActive = guardSlot === slotIndex;
-                      const isSourceGuardSelection =
-                        transferDirection === TransferDirection.StructureToExplorer;
+                      const isSourceGuardSelection = transferDirection === TransferDirection.StructureToExplorer;
                       const isOutOfTroops = isSourceGuardSelection && troopInfo.count <= 0;
 
                       const isMismatch =
@@ -941,7 +940,10 @@ export const TransferTroopsContainer = ({
                         isActive && isMismatch && !isOutOfTroops && "bg-danger/10 border-danger/60",
                         isActive && isOutOfTroops && "bg-dark-brown border-gold/20 opacity-70",
                         !isActive && !isMismatch && !isOutOfTroops && "bg-dark-brown border-gold/30 hover:bg-gold/10",
-                        !isActive && isMismatch && !isOutOfTroops && "bg-danger/10 border-danger/50 hover:border-danger/60",
+                        !isActive &&
+                          isMismatch &&
+                          !isOutOfTroops &&
+                          "bg-danger/10 border-danger/50 hover:border-danger/60",
                       ]
                         .filter((value): value is string => Boolean(value))
                         .join(" ");

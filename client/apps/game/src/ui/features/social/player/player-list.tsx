@@ -89,9 +89,7 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
     const searchFiltered = searchQuery
       ? filteredPlayers.filter((player) => {
           const matchesName = player.name.toLowerCase().includes(normalizedQuery);
-          const matchesGuild = showTribeDetails
-            ? player.guild?.name?.toLowerCase().includes(normalizedQuery)
-            : false;
+          const matchesGuild = showTribeDetails ? player.guild?.name?.toLowerCase().includes(normalizedQuery) : false;
 
           return matchesName || matchesGuild;
         })
@@ -155,8 +153,16 @@ const PlayerListHeader = ({
     }
 
     params.push(
-      { label: "Structures", sortKey: "structures", className: showTribeDetails ? "col-span-3 text-center" : "col-span-4 text-center" },
-      { label: "Points", sortKey: "points", className: showTribeDetails ? "col-span-2 text-center" : "col-span-3 text-center" },
+      {
+        label: "Structures",
+        sortKey: "structures",
+        className: showTribeDetails ? "col-span-3 text-center" : "col-span-4 text-center",
+      },
+      {
+        label: "Points",
+        sortKey: "points",
+        className: showTribeDetails ? "col-span-2 text-center" : "col-span-3 text-center",
+      },
     );
 
     return params;

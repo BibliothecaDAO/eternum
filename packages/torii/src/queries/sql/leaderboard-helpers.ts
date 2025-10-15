@@ -60,10 +60,7 @@ export const fetchLeaderboardSourceData = async ({
 }: FetchLeaderboardSourceDataOptions): Promise<LeaderboardSourceData> => {
   const leaderboardQuery =
     effectiveLimit > 0
-      ? LEADERBOARD_QUERIES.PLAYER_LEADERBOARD.replace("{limit}", effectiveLimit.toString()).replace(
-          "{offset}",
-          "0",
-        )
+      ? LEADERBOARD_QUERIES.PLAYER_LEADERBOARD.replace("{limit}", effectiveLimit.toString()).replace("{offset}", "0")
       : LEADERBOARD_QUERIES.PLAYER_LEADERBOARD_ALL;
 
   const [
@@ -127,10 +124,7 @@ export const fetchRegisteredLeaderboardRow = async ({
     return null;
   }
 
-  const query = LEADERBOARD_QUERIES.PLAYER_LEADERBOARD_BY_ADDRESS.replace(
-    "{playerAddress}",
-    canonicalAddress,
-  );
+  const query = LEADERBOARD_QUERIES.PLAYER_LEADERBOARD_BY_ADDRESS.replace("{playerAddress}", canonicalAddress);
 
   const results = await fetchWithErrorHandling<PlayerLeaderboardRow>(
     buildApiUrl(baseUrl, query),

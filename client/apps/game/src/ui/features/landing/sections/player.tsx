@@ -15,7 +15,10 @@ import { displayAddress } from "@/ui/utils/utils";
 import { Copy, Share2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { fetchLandingLeaderboardEntryByAddress, type LandingLeaderboardEntry } from "../lib/landing-leaderboard-service";
+import {
+  fetchLandingLeaderboardEntryByAddress,
+  type LandingLeaderboardEntry,
+} from "../lib/landing-leaderboard-service";
 
 const getDisplayName = (entry: LandingLeaderboardEntry): string => {
   const candidate = entry.displayName?.trim();

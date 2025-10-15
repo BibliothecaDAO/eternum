@@ -129,68 +129,52 @@ export const Social = () => {
     }
   };
 
-  const tabs = useMemo<SocialTabConfig[]>(
-    () => {
-      const baseTabs: SocialTabConfig[] = [
-        {
-          key: "Players",
-          label: (
-            <div className="flex items-center gap-2">
-              <Users size={16} />
-              <span>Players</span>
-            </div>
-          ),
-          component: <PlayersPanel players={playerInfo} viewPlayerInfo={viewPlayerInfo} />,
-          expandedContent: <PlayerId selectedPlayer={selectedPlayer} />,
-        },
-      ];
-
-      if (!isBlitz) {
-        baseTabs.push({
-          key: "Tribes",
-          label: (
-            <div className="flex items-center gap-2">
-              <Shapes size={16} />
-              <span>Tribes</span>
-            </div>
-          ),
-          component: <Guilds players={playerInfo} viewGuildMembers={viewGuildMembers} />,
-          expandedContent: selectedPlayer ? (
-            <PlayerId
-              selectedPlayer={selectedPlayer}
-              selectedGuild={selectedGuild}
-              back={() => viewPlayerInfo(0n)}
-            />
-          ) : (
-            <GuildMembers players={playerInfo} viewPlayerInfo={viewPlayerInfo} setIsExpanded={setIsExpanded} />
-          ),
-        });
-      }
-
-      baseTabs.push({
-        key: "Blitz Prize",
+  const tabs = useMemo<SocialTabConfig[]>(() => {
+    const baseTabs: SocialTabConfig[] = [
+      {
+        key: "Players",
         label: (
           <div className="flex items-center gap-2">
-            <span>Blitz Prize</span>
+            <Users size={16} />
+            <span>Players</span>
           </div>
         ),
-        component: <PrizePanel />,
-        expandedContent: null,
-      });
+        component: <PlayersPanel players={playerInfo} viewPlayerInfo={viewPlayerInfo} />,
+        expandedContent: <PlayerId selectedPlayer={selectedPlayer} />,
+      },
+    ];
 
-      return baseTabs;
-    },
-    [
-      isBlitz,
-      isExpanded,
-      selectedGuild,
-      selectedPlayer,
-      playerInfo,
-      viewPlayerInfo,
-      viewGuildMembers,
-      setIsExpanded,
-    ],
-  );
+    if (!isBlitz) {
+      baseTabs.push({
+        key: "Tribes",
+        label: (
+          <div className="flex items-center gap-2">
+            <Shapes size={16} />
+            <span>Tribes</span>
+          </div>
+        ),
+        component: <Guilds players={playerInfo} viewGuildMembers={viewGuildMembers} />,
+        expandedContent: selectedPlayer ? (
+          <PlayerId selectedPlayer={selectedPlayer} selectedGuild={selectedGuild} back={() => viewPlayerInfo(0n)} />
+        ) : (
+          <GuildMembers players={playerInfo} viewPlayerInfo={viewPlayerInfo} setIsExpanded={setIsExpanded} />
+        ),
+      });
+    }
+
+    baseTabs.push({
+      key: "Blitz Prize",
+      label: (
+        <div className="flex items-center gap-2">
+          <span>Blitz Prize</span>
+        </div>
+      ),
+      component: <PrizePanel />,
+      expandedContent: null,
+    });
+
+    return baseTabs;
+  }, [isBlitz, isExpanded, selectedGuild, selectedPlayer, playerInfo, viewPlayerInfo, viewGuildMembers, setIsExpanded]);
 
   const tabsLength = tabs.length;
   const activeTabIndex = Math.max(0, Math.min(selectedTab, tabsLength - 1));
