@@ -48,7 +48,7 @@ export const HelpContainer = ({
   const updateSelectedEntityId = useUIStore((state) => state.updateEntityActionSelectedEntityId);
   const toggleModal = useUIStore((state) => state.toggleModal);
 
-  // Get the current entities we're working with based on swap state
+  // Get the current entities we're working with based on direction state
   const currentSelected = swapped ? target : selected;
   const currentTarget = swapped ? selected : target;
 
@@ -75,9 +75,13 @@ export const HelpContainer = ({
     toggleModal(null);
   };
 
-  // Handle swapping selected and target entities
-  const handleSwapEntities = () => {
-    setSwapped(!swapped);
+  // Handle toggling transfer direction when both entities support it
+  const handleToggleDirection = () => {
+    if (!allowBothDirections) {
+      return;
+    }
+
+    setSwapped((previous) => !previous);
   };
 
   // Render transfer direction options
@@ -89,22 +93,24 @@ export const HelpContainer = ({
         </div>
         <div className="flex flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <button className={`px-4 py-2 rounded-md border ${"bg-gold/20 border-gold"}`}>
-              {transferDirection === TransferDirection.ExplorerToStructure
-                ? "Explorer → Structure"
-                : transferDirection === TransferDirection.StructureToExplorer
-                  ? "Structure → Explorer"
-                  : "Explorer → Explorer"}
+            <button
+              type="button"
+              onClick={handleToggleDirection}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md border bg-gold/20 border-gold transition-colors ${
+                allowBothDirections ? "cursor-pointer hover:bg-gold/30 hover:border-gold" : "cursor-default"
+              }`}
+              aria-disabled={!allowBothDirections}
+              title={allowBothDirections ? "Tap to switch direction" : undefined}
+            >
+              <span className="font-semibold">
+                {transferDirection === TransferDirection.ExplorerToStructure
+                  ? "Explorer → Structure"
+                  : transferDirection === TransferDirection.StructureToExplorer
+                    ? "Structure → Explorer"
+                    : "Explorer → Explorer"}
+              </span>
+              {allowBothDirections && <span className="text-lg">🔄</span>}
             </button>
-            {allowBothDirections && (
-              <button
-                className="flex items-center px-3 py-2 rounded-md border border-gold/30 hover:border-gold/50 bg-dark-brown text-gold/70 hover:text-gold"
-                onClick={handleSwapEntities}
-              >
-                <span className="mr-1">🔄</span>
-                Swap
-              </button>
-            )}
           </div>
         </div>
       </div>
