@@ -157,14 +157,11 @@ const normalizePercentages = (
     resourceId === ResourcesIds.Donkey
       ? DONKEY_DEFAULT_RESOURCE_PERCENT
       : DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES.resourceToResource;
-  const laborDefault =
-    resourceId === ResourcesIds.Donkey ? 0 : DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES.laborToResource;
+  const laborDefault = resourceId === ResourcesIds.Donkey ? 0 : DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES.laborToResource;
 
   const resourceToResource = clampPercent(percentages?.resourceToResource ?? resourceDefault);
   const laborToResource =
-    resourceId === ResourcesIds.Donkey
-      ? 0
-      : clampPercent(percentages?.laborToResource ?? laborDefault);
+    resourceId === ResourcesIds.Donkey ? 0 : clampPercent(percentages?.laborToResource ?? laborDefault);
 
   return {
     resourceToResource,
@@ -418,10 +415,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
           }
 
           const current = realm.resources[resourceId] ?? createDefaultResourceSettings(resourceId);
-          const updatedPercentages = normalizePercentages(
-            { ...current.percentages, ...percentages },
-            resourceId,
-          );
+          const updatedPercentages = normalizePercentages({ ...current.percentages, ...percentages }, resourceId);
           const nextState = {
             realms: {
               ...state.realms,
