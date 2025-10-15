@@ -1,7 +1,9 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { Button } from "@/ui/design-system/atoms";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { RightView } from "@/types";
 import { ProductionModal } from "@/ui/features/settlement";
 import { formatStorageValue } from "@/ui/utils/storage-utils";
 import {
@@ -132,6 +134,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
   const toggleModal = useUIStore((state) => state.toggleModal);
   const togglePopup = useUIStore((state) => state.togglePopup);
   const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
+  const setRightNavigationView = useUIStore((state) => state.setRightNavigationView);
   const goToStructure = useGoToStructure();
   const { isMapView } = useQuery();
   const {
@@ -1014,6 +1017,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
           onConfirm={handleDragDropConfirm}
           onCancel={handleDragDropCancel}
           structureColumns={structureColumns}
+          onQueued={() => setRightNavigationView(RightView.Transfer)}
         />
       )}
     </div>
@@ -1306,6 +1310,7 @@ const DragDropAmountDialog = React.memo(
     onConfirm,
     onCancel,
     structureColumns,
+    onQueued,
   }: {
     dragData: {
       fromStructureId: number;
@@ -1313,9 +1318,10 @@ const DragDropAmountDialog = React.memo(
       resourceId: ResourcesIds;
       maxAmount: number;
     };
-    onConfirm: (amount: number, sendNow?: boolean) => void;
+    onConfirm: (amount: number, sendNow?: boolean) => Promise<void> | void;
     onCancel: () => void;
     structureColumns: Array<{ entityId: number; label: string }>;
+    onQueued?: () => void;
   }) => {
     const [amount, setAmount] = useState(() => {
       const defaultAmount = Math.min(dragData.maxAmount * 0.1, 100);
@@ -1352,13 +1358,30 @@ const DragDropAmountDialog = React.memo(
     const donkeyTrait = findResourceById(ResourcesIds.Donkey)?.trait as string;
 
     const isValidTransfer = amount > 0 && amount <= dragData.maxAmount && canCarry;
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleQueue = (e: React.FormEvent) => {
+    const handleQueue = async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-      isValidTransfer && onConfirm(amount);
+      if (isLoading || !isValidTransfer) return;
+
+      try {
+        await onConfirm(amount);
+        onQueued?.();
+      } catch (error) {
+        console.error(error);
+      }
     };
 
-    const handleSendNow = () => isValidTransfer && onConfirm(amount, true);
+    const handleSendNow = async () => {
+      if (!isValidTransfer) return;
+      setIsLoading(true);
+      try {
+        await onConfirm(amount, true);
+      } catch (error) {
+        console.error(error);
+        setIsLoading(false);
+      }
+    };
 
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -1461,23 +1484,25 @@ const DragDropAmountDialog = React.memo(
             <div className="flex gap-3 pt-2">
               <button
                 type="submit"
-                disabled={!isValidTransfer}
+                disabled={!isValidTransfer || isLoading}
                 className="flex-1 px-4 py-2 bg-blue/20 text-blue rounded hover:bg-blue/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {!canCarry ? "Insufficient Donkeys" : "Queue"}
               </button>
-              <button
+              <Button
                 type="button"
+                isLoading={isLoading}
                 onClick={handleSendNow}
-                disabled={!isValidTransfer}
+                disabled={!isValidTransfer || isLoading}
                 className="flex-1 px-4 py-2 bg-gold/20 text-gold rounded hover:bg-gold/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Send
-              </button>
+              </Button>
               <button
                 type="button"
                 onClick={onCancel}
-                className="px-4 py-2 bg-red/20 text-red rounded hover:bg-red/30 transition-colors"
+                disabled={isLoading}
+                className="px-4 py-2 bg-red/20 text-red rounded hover:bg-red/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>

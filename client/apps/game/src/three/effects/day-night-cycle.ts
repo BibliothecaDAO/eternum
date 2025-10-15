@@ -21,6 +21,7 @@ interface DayNightParams {
   transitionSmoothness: number; // 0-1, higher = smoother
   colorTransitionSpeed: number; // How fast colors transition (0.01-1.0)
   sunPositionEasing: number; // How fast sun follows camera (0.01-1.0)
+  progressSmoothing: number; // How quickly progress eases toward target (0-1)
 }
 
 export class DayNightCycleManager {
@@ -35,8 +36,9 @@ export class DayNightCycleManager {
     sunHeight: 12,
     sunDistance: 15,
     transitionSmoothness: 0.5,
-    colorTransitionSpeed: 0.05, // Smooth color transitions
+    colorTransitionSpeed: 0.02, // Smooth color transitions
     sunPositionEasing: 0.1, // Smooth sun movement when camera pans
+    progressSmoothing: 0.02, // Slow progress easing for gradual day changes
   };
 
   // Current color state (for smooth transitions)
@@ -56,6 +58,9 @@ export class DayNightCycleManager {
   // Current sun position state (for smooth camera tracking)
   private currentSunPosition: Vector3 = new Vector3(0, 12, 0);
   private currentSunTarget: Vector3 = new Vector3(0, 0, 5.2);
+  private currentAngle: number = 0; // Track smoothed angular progress
+  private isProgressInitialized: boolean = false;
+  private readonly fullRotation: number = Math.PI * 2;
 
   // Store original lighting values to restore when disabled
   private originalLightingState: {
@@ -184,8 +189,19 @@ export class DayNightCycleManager {
     // Apply cycle speed multiplier for testing
     const adjustedProgress = (cycleProgress * this.params.cycleSpeed) % 100;
 
+    const targetAngle = (adjustedProgress / 100) * this.fullRotation;
+    if (!this.isProgressInitialized) {
+      this.currentAngle = targetAngle;
+      this.isProgressInitialized = true;
+    } else {
+      this.currentAngle = this.lerpAngle(this.currentAngle, targetAngle, this.params.progressSmoothing);
+    }
+
+    const normalizedAngle = MathUtils.euclideanModulo(this.currentAngle, this.fullRotation);
+    const smoothedProgress = (normalizedAngle / this.fullRotation) * 100;
+
     // Get target colors for current time
-    const targetColors = this.getInterpolatedTimeColors(adjustedProgress);
+    const targetColors = this.getInterpolatedTimeColors(smoothedProgress);
 
     // Smoothly transition current colors toward target colors
     this.currentColors = this.lerpTimeColors(this.currentColors, targetColors, this.params.colorTransitionSpeed);
@@ -194,7 +210,7 @@ export class DayNightCycleManager {
     this.updateLighting(this.currentColors);
 
     // Update sun position (relative to camera target if provided)
-    this.updateSunPosition(adjustedProgress, cameraTarget);
+    this.updateSunPosition(smoothedProgress, cameraTarget);
   }
 
   /**
@@ -375,6 +391,7 @@ export class DayNightCycleManager {
     if (!enabled) {
       // Restore original lighting
       this.restoreOriginalLighting();
+      this.isProgressInitialized = false;
     }
   }
 
@@ -398,6 +415,7 @@ export class DayNightCycleManager {
     this.fog.color.copy(this.originalLightingState.fogColor);
     this.fog.near = this.originalLightingState.fogNear;
     this.fog.far = this.originalLightingState.fogFar;
+    this.isProgressInitialized = false;
   }
 
   /**
@@ -445,6 +463,8 @@ export class DayNightCycleManager {
 
     dayNightFolder.add(this.params, "sunDistance", 10, 30, 1).name("Sun Distance");
 
+    dayNightFolder.add(this.params, "progressSmoothing", 0.001, 0.5, 0.001).name("Progress Smoothing");
+
     // Add manual time control for testing
     const timeControl = { manualProgress: 0 };
     dayNightFolder
@@ -465,5 +485,13 @@ export class DayNightCycleManager {
    */
   dispose(): void {
     this.restoreOriginalLighting();
+  }
+
+  /**
+   * Interpolate between two angles while respecting wrap-around
+   */
+  private lerpAngle(current: number, target: number, t: number): number {
+    const delta = MathUtils.euclideanModulo(target - current + Math.PI, this.fullRotation) - Math.PI;
+    return current + delta * MathUtils.clamp(t, 0, 1);
   }
 }

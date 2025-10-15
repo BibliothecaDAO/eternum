@@ -3,18 +3,32 @@ import { Button } from "@/ui/design-system/atoms";
 import { Controller } from "@/ui/modules/controller/controller";
 import { useNavigate } from "react-router-dom";
 
+// Served from client/public/images/landing/wooden-panel.png
+const LANDING_PANEL_IMAGE = "/borders/landing-frame-1.png";
+
 export const LandingWelcome = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="w-full max-w-3xl rounded-3xl border border-white/10 bg-black/50 p-10 text-center text-gold backdrop-blur">
-      <EternumWordsLogo className="mx-auto w-56 sm:w-48 lg:w-72 xl:w-[360px]" />
+    <section className="flex w-full justify-center px-4 sm:px-6">
+      <div className="relative w-full max-w-4xl">
+        <img
+          alt=""
+          aria-hidden="true"
+          src={LANDING_PANEL_IMAGE}
+          loading="lazy"
+          className="w-full select-none object-contain pointer-events-none"
+        />
 
-      <div className="mt-8 flex flex-col items-center gap-4 text-white/80">
-        <p className="text-sm text-white/70">Access your Cartridge profile or jump right in.</p>
-        <Button onClick={() => navigate("/play")}>Enter Blitz</Button>
-        <div className="flex justify-end">
-          <Controller />
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-6 py-10 text-center text-gold sm:px-10">
+          <EternumWordsLogo className="mx-auto w-56 sm:w-48 lg:w-72 xl:w-[360px]" />
+
+          <div className="mt-8 flex gap-4 items-center  ">
+            <Button onClick={() => navigate("/play")}>Enter Blitz</Button>
+            <div className="flex justify-end">
+              <Controller />
+            </div>
+          </div>
         </div>
       </div>
     </section>
