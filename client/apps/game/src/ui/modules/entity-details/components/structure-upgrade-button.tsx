@@ -1,11 +1,11 @@
 import { useMemo, useState, type MouseEvent } from "react";
 
-import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import { ResourcesIds } from "@bibliothecadao/types";
-import { Loader2, Sparkles, Shield } from "lucide-react";
+import { Loader2, Shield, Sparkles } from "lucide-react";
 
 interface StructureUpgradeButtonProps {
   structureEntityId: number;
@@ -25,35 +25,29 @@ const formatAmount = (value: number) =>
   }).format(Math.max(0, value));
 
 export const StructureUpgradeButton = ({ structureEntityId, className }: StructureUpgradeButtonProps) => {
+  // Always call every hook first, then conditionals/returns after ALL hooks
   const upgradeInfo = useStructureUpgrade(structureEntityId);
   const setTooltip = useUIStore((state) => state.setTooltip);
   const [isUpgrading, setIsUpgrading] = useState(false);
 
-  const showNothing = !upgradeInfo || !upgradeInfo.isOwner;
-  if (showNothing) {
-    return null;
-  }
+  const showButton = !!(upgradeInfo && upgradeInfo.isOwner);
 
-  const {
-    canUpgrade,
-    currentLevel,
-    nextLevel,
-    isMaxLevel,
-    missingRequirements,
-    handleUpgrade,
-  } = upgradeInfo;
+  const canUpgrade = upgradeInfo?.canUpgrade ?? false;
+  const currentLevel = upgradeInfo?.currentLevel ?? 0;
+  const nextLevel = upgradeInfo?.nextLevel ?? null;
+  const isMaxLevel = upgradeInfo?.isMaxLevel ?? false;
+  const missingRequirements = upgradeInfo?.missingRequirements ?? [];
+  const handleUpgrade = upgradeInfo?.handleUpgrade ?? (async () => {});
 
-  const missingResources = useMemo(
-    () =>
-      missingRequirements
-        .map((requirement) => ({
-          id: requirement.resource,
-          label: ResourcesIds[requirement.resource] ?? `Resource ${requirement.resource}`,
-          missing: Math.max(0, requirement.amount - requirement.current),
-        }))
-        .filter((item) => item.missing > 0.0001),
-    [missingRequirements],
-  );
+  const missingResources = useMemo(() => {
+    return missingRequirements
+      .map((requirement) => ({
+        id: requirement.resource,
+        label: ResourcesIds[requirement.resource] ?? `Resource ${requirement.resource}`,
+        missing: Math.max(0, requirement.amount - requirement.current),
+      }))
+      .filter((item) => item.missing > 0.0001);
+  }, [missingRequirements]);
 
   const tooltipContent = useMemo(() => {
     if (isMaxLevel) {
@@ -85,9 +79,7 @@ export const StructureUpgradeButton = ({ structureEntityId, className }: Structu
           {missingResources.map((resource) => (
             <div key={resource.id} className="flex items-center gap-2">
               <ResourceIcon resource={String(resource.label)} size="xs" withTooltip={false} />
-              <span className="flex-1 text-gold/75">
-                {formatResourceLabel(String(resource.label))}
-              </span>
+              <span className="flex-1 text-gold/75">{formatResourceLabel(String(resource.label))}</span>
               <span className="font-semibold text-gold/90">{formatAmount(resource.missing)}</span>
             </div>
           ))}
@@ -134,6 +126,11 @@ export const StructureUpgradeButton = ({ structureEntityId, className }: Structu
     className,
   );
 
+  // Only conditionally return after all hooks have been called
+  if (!showButton) {
+    return null;
+  }
+
   return (
     <button
       type="button"
@@ -153,9 +150,7 @@ export const StructureUpgradeButton = ({ structureEntityId, className }: Structu
       ) : (
         <Sparkles className="h-3.5 w-3.5" />
       )}
-      <span className="hidden sm:inline">
-        {isMaxLevel ? "Max" : nextLevel ? `Lvl ${nextLevel}` : "Upgrade"}
-      </span>
+      <span className="hidden sm:inline">{isMaxLevel ? "Max" : nextLevel ? `Lvl ${nextLevel}` : "Upgrade"}</span>
       <span className="sm:hidden">{isMaxLevel ? "Max" : "Lv"}</span>
     </button>
   );
