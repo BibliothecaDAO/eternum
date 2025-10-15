@@ -3,8 +3,10 @@ import { getBlockTimestamp } from "@bibliothecadao/eternum";
 import { Clock } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 
-const DEBUG_URGENCY_MODE = false; // Flip to true and tweak the value below to preview urgency states quickly.
-const DEBUG_SECONDS_REMAINING = 150;
+const DEBUG_URGENCY_MODE = true; // Flip to true and tweak the value below to preview urgency states quickly.
+const DEBUG_SECONDS_REMAINING = 25;
+
+const SCREEN_BORDER_CLASSES = ["urgency-border-warning", "urgency-border-critical", "urgency-border-final"] as const;
 
 const URGENCY_THRESHOLD_SECONDS = 5 * 60;
 const CRITICAL_THRESHOLD_SECONDS = 2 * 60;
@@ -136,6 +138,28 @@ export const GameEndTimer = memo(() => {
     if (urgencyState === "critical") return "#C84444"; // danger
     return "#f59e0b"; // progress-bar-medium
   }, [secondsForDisplay, showRing, urgencyState]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const body = document.body;
+    if (!body) return;
+
+    const activeClass = urgencyState === "default" ? null : `urgency-border-${urgencyState}`;
+
+    SCREEN_BORDER_CLASSES.forEach((className) => {
+      body.classList.remove(className);
+    });
+
+    if (activeClass) {
+      body.classList.add(activeClass);
+    }
+
+    return () => {
+      if (activeClass) {
+        body.classList.remove(activeClass);
+      }
+    };
+  }, [urgencyState]);
 
   const handleMouseEnter = useCallback(() => {
     setIsTooltipVisible(true);
