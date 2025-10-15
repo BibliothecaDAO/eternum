@@ -40,6 +40,7 @@ import {
 import { BATTLE_QUERIES } from "./battle";
 import { HYPERSTRUCTURE_QUERIES } from "./hyperstructure";
 import {
+  addLeaderboardRanks,
   buildAdditionalLeaderboardEntries,
   buildRegisteredLeaderboardEntries,
   computeUnregisteredShareholderPoints,
@@ -645,7 +646,94 @@ export class SqlApi {
     });
 
     const sortedEntries = sortLeaderboardEntries([...registeredEntries, ...additionalEntries]);
+    const rankedEntries = addLeaderboardRanks(sortedEntries);
 
-    return sortedEntries.slice(safeOffset, safeOffset + safeLimit);
+    return rankedEntries.slice(safeOffset, safeOffset + safeLimit);
+  }
+
+  /**
+   * Fetches leaderboard data for a single player by address, including unregistered shareholder points.
+   */
+  async fetchPlayerLeaderboardByAddress(playerAddress: string): Promise<PlayerLeaderboardRow | null> {
+    const trimmed = playerAddress.trim().toLowerCase();
+    if (!trimmed) {
+      return null;
+    }
+
+    const prefixed = trimmed.startsWith("0x") ? trimmed : `0x${trimmed}`;
+    if (!/^0x[0-9a-f]+$/.test(prefixed)) {
+      return null;
+    }
+
+    let canonicalAddress: string;
+    try {
+      canonicalAddress = formatAddressForQuery(prefixed).toLowerCase();
+    } catch {
+      return null;
+    }
+
+    const leaderboardSourceData = await fetchLeaderboardSourceData({
+      baseUrl: this.baseUrl,
+      effectiveLimit: 0,
+      defaultHyperstructureRadius: DEFAULT_HYPERSTRUCTURE_RADIUS,
+      fetchHyperstructuresWithRealmCount: (radius) => this.fetchHyperstructuresWithRealmCount(radius),
+    });
+
+    const unregisteredShareholderPoints = computeUnregisteredShareholderPoints({
+      configRow: leaderboardSourceData.hyperstructureConfigRow,
+      hyperstructureRows: leaderboardSourceData.hyperstructureRows,
+      hyperstructureShareholderRows: leaderboardSourceData.hyperstructureShareholderRows,
+      hyperstructureRealmCounts: leaderboardSourceData.hyperstructureRealmCounts,
+    });
+
+    const { entries: registeredEntries, processedAddresses } = buildRegisteredLeaderboardEntries({
+      registeredRows: leaderboardSourceData.registeredRows,
+      unregisteredShareholderPoints,
+    });
+
+    const additionalEntries = buildAdditionalLeaderboardEntries({
+      unregisteredShareholderPoints,
+      processedAddresses,
+    });
+
+    const rankedEntries = addLeaderboardRanks(sortLeaderboardEntries([...registeredEntries, ...additionalEntries]));
+
+    const candidateAddresses = new Set<string>();
+    const pushCandidate = (value: string | null | undefined) => {
+      if (typeof value !== "string") {
+        return;
+      }
+
+      const normalized = value.trim().toLowerCase();
+      if (normalized) {
+        candidateAddresses.add(normalized);
+      }
+    };
+
+    pushCandidate(canonicalAddress);
+    pushCandidate(prefixed);
+
+    try {
+      pushCandidate(`0x${BigInt(prefixed).toString(16)}`);
+    } catch {
+      // ignore invalid conversions
+    }
+
+    try {
+      pushCandidate(`0x${BigInt(canonicalAddress).toString(16)}`);
+    } catch {
+      // ignore invalid conversions
+    }
+
+    const match = rankedEntries.find((entry) => {
+      const entryCandidates = [
+        typeof entry.player_address === "string" ? entry.player_address.toLowerCase() : null,
+        typeof entry.playerAddress === "string" ? entry.playerAddress.toLowerCase() : null,
+      ];
+
+      return entryCandidates.some((value) => value !== null && candidateAddresses.has(value));
+    });
+
+    return match ?? null;
   }
 }

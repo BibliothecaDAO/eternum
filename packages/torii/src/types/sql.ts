@@ -66,6 +66,7 @@ export interface PlayerLeaderboardRow {
   unregisteredPoints?: number | string | null;
   registeredPointsRaw?: number | string | null;
   registeredPointsRegistered?: number | string | null;
+  rank?: number | string | null;
 }
 
 export interface HyperstructureLeaderboardConfigRow {

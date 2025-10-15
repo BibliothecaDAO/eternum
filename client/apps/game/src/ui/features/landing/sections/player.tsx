@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { useAccountStore } from "@/hooks/store/use-account-store";
+
 import { Button } from "@/ui/design-system/atoms";
 import { BlitzHighlightCard } from "@/ui/shared/components/blitz-highlight-card";
 import {
@@ -13,9 +15,10 @@ import { displayAddress } from "@/ui/utils/utils";
 import { Copy, Share2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { fetchLandingLeaderboard, type LandingLeaderboardEntry } from "../lib/landing-leaderboard-service";
-
-const PODIUM_LIMIT = 3;
+import {
+  fetchLandingLeaderboardEntryByAddress,
+  type LandingLeaderboardEntry,
+} from "../lib/landing-leaderboard-service";
 
 const getDisplayName = (entry: LandingLeaderboardEntry): string => {
   const candidate = entry.displayName?.trim();
@@ -34,9 +37,13 @@ const toHighlightPlayer = (entry: LandingLeaderboardEntry): BlitzHighlightPlayer
 });
 
 export const LandingPlayer = () => {
-  const [entries, setEntries] = useState<LandingLeaderboardEntry[]>([]);
+  const account = useAccountStore((state) => state.account);
+  const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
+
+  const [playerEntry, setPlayerEntry] = useState<LandingLeaderboardEntry | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isCopyingImage, setIsCopyingImage] = useState(false);
 
   const cardRef = useRef<SVGSVGElement | null>(null);
@@ -44,30 +51,47 @@ export const LandingPlayer = () => {
   useEffect(() => {
     let isMounted = true;
 
-    const loadLeaderboard = async () => {
+    const loadPlayerEntry = async () => {
       if (!isMounted) {
         return;
       }
 
+      if (!playerAddress) {
+        setPlayerEntry(null);
+        setStatusMessage("Connect a wallet to view your Blitz standing.");
+        setError(null);
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
+      setStatusMessage(null);
+      setError(null);
 
       try {
-        const result = await fetchLandingLeaderboard(PODIUM_LIMIT, 0);
+        const result = await fetchLandingLeaderboardEntryByAddress(playerAddress);
 
         if (!isMounted) {
           return;
         }
 
-        setEntries(result);
-        setError(null);
+        if (!result) {
+          setPlayerEntry(null);
+          setStatusMessage("You haven't earned Blitz points yet. Play a round to climb the leaderboard.");
+        } else {
+          setPlayerEntry(result);
+          setStatusMessage(null);
+          setError(null);
+        }
       } catch (caughtError) {
         if (!isMounted) {
           return;
         }
 
         const message = caughtError instanceof Error ? caughtError.message : "Unable to load player standings.";
-        setEntries([]);
+        setPlayerEntry(null);
         setError(message);
+        setStatusMessage(null);
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -75,17 +99,16 @@ export const LandingPlayer = () => {
       }
     };
 
-    void loadLeaderboard();
+    void loadPlayerEntry();
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [playerAddress]);
 
-  const highlightEntry = entries[0] ?? null;
   const highlightPlayer = useMemo<BlitzHighlightPlayer | null>(
-    () => (highlightEntry ? toHighlightPlayer(highlightEntry) : null),
-    [highlightEntry],
+    () => (playerEntry ? toHighlightPlayer(playerEntry) : null),
+    [playerEntry],
   );
 
   const highlightRank = highlightPlayer?.rank ?? null;
@@ -176,6 +199,10 @@ export const LandingPlayer = () => {
         <div className="rounded-2xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-200" role="alert">
           <p className="font-semibold text-red-100">Leaderboard unavailable</p>
           <p className="mt-1 text-red-200/80">{error}</p>
+        </div>
+      ) : statusMessage ? (
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/80" role="status">
+          <p>{statusMessage}</p>
         </div>
       ) : (
         <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-[0_25px_55px_-25px_rgba(12,10,35,0.7)] sm:p-5 xl:p-6">

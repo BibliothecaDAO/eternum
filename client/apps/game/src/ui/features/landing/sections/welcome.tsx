@@ -9,6 +9,9 @@ const LANDING_PANEL_IMAGE = "/borders/landing-frame-1.png";
 export const LandingWelcome = () => {
   const navigate = useNavigate();
 
+  // shared classes for both buttons for same size
+  const buttonClasses = "h-9 px-4 min-w-[96px] w-full sm:w-auto";
+
   return (
     <section className="flex w-full justify-center px-3 sm:px-4 lg:px-6">
       <div className="relative w-full max-w-2xl sm:max-w-3xl 2xl:max-w-4xl">
@@ -24,11 +27,11 @@ export const LandingWelcome = () => {
           <EternumWordsLogo className="mx-auto w-44 sm:w-56 lg:w-72 xl:w-[360px]" />
 
           <div className="mt-6 flex w-full flex-col items-center gap-3 sm:mt-8 sm:flex-row sm:justify-center sm:gap-4">
-            <Button className="w-full sm:w-auto" onClick={() => navigate("/play")}>
+            <Button className={buttonClasses} onClick={() => navigate("/play")}>
               Enter Blitz
             </Button>
-            <div className="flex justify-center sm:justify-end">
-              <Controller />
+            <div className="flex justify-center sm:justify-end w-full sm:w-auto">
+              <Controller className={buttonClasses} />
             </div>
           </div>
         </div>

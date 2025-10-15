@@ -4,9 +4,12 @@ import Button from "@/ui/design-system/atoms/button";
 import { useConnect } from "@starknet-react/core";
 import { Loader2 } from "lucide-react";
 import { useCallback, useEffect } from "react";
-import { env } from "../../../../env";
 
-export const Controller = () => {
+interface ControllerProps {
+  className?: string;
+}
+
+export const Controller = ({ className = "" }: ControllerProps) => {
   const { connect, connectors, isPending } = useConnect();
   const { connector, account, accountName, setAccountName } = useAccountStore((state) => state);
 
@@ -55,7 +58,11 @@ export const Controller = () => {
 
   if (isPending) {
     return (
-      <Button className="bg-dark-wood !pb-0 !pt-0" variant="default" onClick={handleConnect}>
+      <Button
+        className={`bg-dark-wood !pb-0 !pt-0 h-9 px-4 min-w-[96px] ${className}`}
+        variant="default"
+        onClick={handleConnect}
+      >
         <div className="flex items-center gap-2">
           <CartridgeSmall className="w-4 h-4 fill-current" />
           <Loader2 className="w-4 h-4 fill-current" />
@@ -65,14 +72,22 @@ export const Controller = () => {
   }
 
   return account ? (
-    <Button variant="default" className="bg-dark-wood !pb-0 !pt-0" onClick={handleInventoryClick}>
+    <Button
+      // variant="default"
+      className={`h-9 px-4 min-w-[96px] ${className}`}
+      onClick={handleInventoryClick}
+    >
       <div className="flex items-center gap-2">
         <CartridgeSmall className="w-4 h-4 fill-current" />
         {accountName && accountName.length > 8 ? `${accountName.substring(0, 8)}...` : accountName}
       </div>
     </Button>
   ) : (
-    <Button className="bg-dark-wood !pb-0 !pt-0" variant="default" onClick={handleConnect}>
+    <Button
+      className={`h-9 px-4 min-w-[96px] ${className}`}
+      // variant="default"
+      onClick={handleConnect}
+    >
       <div className="flex items-center gap-2">
         <CartridgeSmall className="w-4 h-4 fill-current" />
         Login

@@ -1,10 +1,10 @@
 import { NumberInput } from "@/ui/design-system/atoms";
 import Button from "@/ui/design-system/atoms/button";
 import { displayAddress, getRealmCountPerHyperstructure } from "@/ui/utils/utils";
-import { LeaderboardManager, toHexString } from "@bibliothecadao/eternum";
+import { getIsBlitz, LeaderboardManager, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
-import { Has, getComponentValue } from "@dojoengine/recs";
+import { getComponentValue, Has } from "@dojoengine/recs";
 import { AlertTriangle, Clock3, Info, Trophy, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -138,6 +138,10 @@ export const PrizePanel = () => {
   const [status, setStatus] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
+  const isBlitz = getIsBlitz();
+  const timelineSubject = isBlitz ? "Game" : "Season";
+  const timelineSubjectLower = timelineSubject.toLowerCase();
+
   // All players with > 0 points are included automatically
 
   const hasFinal = Boolean(finalTrialId && (finalTrialId as bigint) > 0n);
@@ -161,16 +165,17 @@ export const PrizePanel = () => {
       : seasonTiming.status === "grace"
         ? "Grace Window"
         : seasonTiming.status === "running"
-          ? "In Season"
+          ? `In ${timelineSubject}`
           : "Loading";
-  const statusChipClass =
-    rankingCompleted || rankingWindowOpen
-      ? "border-green-400/40 text-green-300 bg-green-900/20"
+  const statusChipClass = rankingCompleted
+    ? "border-brilliance/40 text-brilliance bg-brilliance/10"
+    : rankingWindowOpen
+      ? "border-gold/40 text-gold bg-gold/10"
       : graceActive
-        ? "border-yellow-400/40 text-yellow-200 bg-yellow-900/20"
+        ? "border-cta/40 text-cta bg-cta/10"
         : seasonRunning
-          ? "border-gray-500/40 text-gray-300 bg-gray-900/30"
-          : "border-gray-500/30 text-gray-300 bg-gray-900/20";
+          ? "border-gray-gold/40 text-gold/70 bg-gray-gold/15"
+          : "border-light-brown/40 text-gold/60 bg-light-brown/40";
 
   const countdownSeconds =
     seasonTiming.status === "running"
@@ -186,8 +191,8 @@ export const PrizePanel = () => {
       : graceActive
         ? `Registration closes in ${countdownText ?? "..."}.`
         : seasonRunning
-          ? `Season ends in ${countdownText ?? "..."}.`
-          : "Checking season status...";
+          ? `${timelineSubject} ends in ${countdownText ?? "..."}.`
+          : `Checking ${timelineSubjectLower} status...`;
   const statusPrimaryTitle = rankingCompleted
     ? "Ranking finalized"
     : rankingWindowOpen
@@ -195,8 +200,8 @@ export const PrizePanel = () => {
       : graceActive
         ? "Grace period in progress"
         : seasonRunning
-          ? "Season still running"
-          : "Season status loading";
+          ? `${timelineSubject} still running`
+          : `${timelineSubject} status loading`;
   const statusPrimaryBody = rankingCompleted
     ? "Another commander already completed the ranking. Players can claim rewards now."
     : rankingWindowOpen
@@ -204,8 +209,8 @@ export const PrizePanel = () => {
       : graceActive
         ? `Points registration closes in ${countdownText ?? "..."}.`
         : seasonRunning
-          ? `Finalization unlocks after the season ends${countdownText ? ` (${countdownText})` : ""}.`
-          : "Waiting on season data.";
+          ? `Finalization unlocks after the ${timelineSubjectLower} ends${countdownText ? ` (${countdownText})` : ""}.`
+          : `Waiting on ${timelineSubjectLower} data.`;
 
   const handleStartOrContinue = async () => {
     // Allow single-registrant claim even if no points registered
@@ -273,7 +278,7 @@ export const PrizePanel = () => {
   if (hasFinal) {
     return (
       <div className="flex flex-col gap-4 h-full">
-        <div className="rounded-2xl border border-gold/25 bg-gradient-to-br from-black/70 via-black/50 to-gold/5 p-5 shadow-[0_20px_40px_-20px_rgba(255,215,0,0.35)]">
+        <div className="panel-wood bg-dark/80 rounded-2xl border border-gold/20 p-5 shadow-[0_25px_45px_-25px_rgba(0,0,0,0.65)]">
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-2 text-gold">
@@ -282,18 +287,18 @@ export const PrizePanel = () => {
                 </span>
                 <div>
                   <span className="text-lg font-semibold tracking-wide uppercase">Blitz Prize</span>
-                  <div className="text-xs text-gray-400">Season rewards — final rankings locked in</div>
+                  <div className="text-xs text-gold/70">{`${timelineSubject} rewards — final rankings locked in`}</div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-xs text-gray-400">
+              <div className="flex items-center gap-2 text-xs text-gold/70">
                 <Info size={14} /> Prize amounts are displayed using fee token decimals when available.
               </div>
             </div>
 
-            <div className="rounded-xl border border-gold/15 bg-black/40 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-gray-400 pb-3 border-b border-gold/10 mb-3">
+            <div className="rounded-xl border border-gold/15 panel-wood bg-dark/70 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-gold/70 pb-3 border-b border-gold/10 mb-3">
                 <span>Ranking Reference</span>
-                <div className="flex items-center gap-4 text-gray-300">
+                <div className="flex items-center gap-4 text-gold/80">
                   {/* <span className="font-mono">ID: {String(finalTrialId)}</span> */}
                   <span className="font-mono">Total Pot: {formatTokenAmount(finalTotalPot)}</span>
                 </div>
@@ -303,7 +308,7 @@ export const PrizePanel = () => {
 
             <div className="flex items-center justify-between gap-3 pt-1">
               <ClaimBlitzPrizeButton />
-              <div className="text-xs text-gray-400">Each ranked player can now claim their reward.</div>
+              <div className="text-xs text-gold/70">Each ranked player can now claim their reward.</div>
             </div>
           </div>
         </div>
@@ -317,7 +322,7 @@ export const PrizePanel = () => {
 
   return (
     <div className="flex flex-col gap-4 h-full">
-      <div className="rounded-2xl border border-gold/20 bg-gradient-to-br from-black/70 via-black/55 to-gold/5 p-5 shadow-[0_20px_40px_-20px_rgba(255,215,0,0.35)] h-full flex flex-col gap-5">
+      <div className="panel-wood bg-dark/80 rounded-2xl border border-gold/20 p-5 shadow-[0_25px_45px_-25px_rgba(0,0,0,0.65)] h-full flex flex-col gap-5">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2 text-gold">
             <span className="grid h-8 w-8 place-items-center rounded-full bg-gold/15">
@@ -325,74 +330,74 @@ export const PrizePanel = () => {
             </span>
             <div>
               <span className="text-lg font-semibold tracking-wide uppercase">Blitz Prize</span>
-              <div className="text-xs text-gray-400">Player rankings determine the prize split</div>
+              <div className="text-xs text-gold/70">Player rankings determine the prize split</div>
             </div>
           </div>
           <div className={`px-3 py-1 rounded-full border text-[10px] uppercase tracking-[0.25em] ${statusChipClass}`}>
             {statusChipLabel}
           </div>
         </div>
-        <div className="text-xs text-gray-400">{statusSubtitle}</div>
+        <div className="text-xs text-gold/70">{statusSubtitle}</div>
 
         {hasMyTrial ? (
           <>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-              <div className="rounded-xl border border-gold/20 bg-black/45 p-4 flex items-center gap-3 shadow-inner shadow-black/60">
+              <div className="rounded-xl border border-gold/20 panel-wood bg-dark/70 p-4 flex items-center gap-3 shadow-inner shadow-black/60">
                 <span className="grid h-9 w-9 place-items-center rounded-full bg-gold/15 text-gold">
                   <Users size={16} />
                 </span>
                 <div>
-                  <div className="text-gray-400">Players Accounted</div>
-                  <div className="text-sm text-gray-100 font-medium">{myCommitted}</div>
+                  <div className="text-gold/70">Players Accounted</div>
+                  <div className="text-sm text-gold font-medium">{myCommitted}</div>
                 </div>
               </div>
-              <div className="rounded-xl border border-gold/20 bg-black/45 p-4 flex items-center gap-3 shadow-inner shadow-black/60">
+              <div className="rounded-xl border border-gold/20 panel-wood bg-dark/70 p-4 flex items-center gap-3 shadow-inner shadow-black/60">
                 <span className="grid h-9 w-9 place-items-center rounded-full bg-gold/15 text-gold">
                   <Clock3 size={16} />
                 </span>
                 <div>
-                  <div className="text-gray-400">Already Ranked</div>
-                  <div className="text-sm text-gray-100 font-medium">{myRevealed}</div>
+                  <div className="text-gold/70">Already Ranked</div>
+                  <div className="text-sm text-gold font-medium">{myRevealed}</div>
                 </div>
               </div>
-              <div className="rounded-xl border border-gold/20 bg-black/45 p-4 flex items-center gap-3 shadow-inner shadow-black/60">
+              <div className="rounded-xl border border-gold/20 panel-wood bg-dark/70 p-4 flex items-center gap-3 shadow-inner shadow-black/60">
                 <span className="grid h-9 w-9 place-items-center rounded-full bg-yellow-400/20 text-yellow-300">
                   <AlertTriangle size={16} />
                 </span>
                 <div>
-                  <div className="text-gray-400">Still Pending</div>
-                  <div className="text-sm text-gray-100 font-medium">{myRemaining}</div>
+                  <div className="text-gold/70">Still Pending</div>
+                  <div className="text-sm text-gold font-medium">{myRemaining}</div>
                 </div>
               </div>
-              <div className="rounded-xl border border-gold/20 bg-black/45 p-4 flex items-center gap-3 shadow-inner shadow-black/60">
+              <div className="rounded-xl border border-gold/20 panel-wood bg-dark/70 p-4 flex items-center gap-3 shadow-inner shadow-black/60">
                 <span className="grid h-9 w-9 place-items-center rounded-full bg-gold/20 text-gold">
                   <Trophy size={16} />
                 </span>
                 <div>
-                  <div className="text-gray-400">Reward Pool (raw)</div>
-                  <div className="text-sm text-gray-100 font-medium">
+                  <div className="text-gold/70">Reward Pool (raw)</div>
+                  <div className="text-sm text-gold font-medium">
                     {(myTrial!.total_prize_amount as bigint).toString()}
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-xl border border-gold/20 bg-black/45 p-4 shadow-inner shadow-black/60">
-              <div className="flex items-center justify-between text-xs text-gray-400 pb-3 border-b border-gold/10 mb-3">
+            <div className="rounded-xl border border-gold/20 panel-wood bg-dark/70 p-4 shadow-inner shadow-black/60">
+              <div className="flex items-center justify-between text-xs text-gold/70 pb-3 border-b border-gold/10 mb-3">
                 <span>Current Ranking Progress</span>
                 <div className="flex items-center gap-4">
-                  <span className="font-mono text-gray-300">Ref: {String(myTrialId)}</span>
-                  <span className="text-gray-300 font-medium">Total Pot: {formatTokenAmount(myTotalPot)}</span>
+                  <span className="font-mono text-gold/80">Ref: {String(myTrialId)}</span>
+                  <span className="text-gold/80 font-medium">Total Pot: {formatTokenAmount(myTotalPot)}</span>
                 </div>
               </div>
               <WinnersTable trialId={myTrialId} />
             </div>
 
-            <div className="rounded-xl border border-gold/15 bg-black/45 p-4 flex flex-col gap-4">
+            <div className="rounded-xl border border-gold/15 panel-wood bg-dark/70 p-4 flex flex-col gap-4">
               <div className="flex flex-wrap items-start gap-3">
-                <div className="flex flex-col gap-1 text-xs text-gray-400">
+                <div className="flex flex-col gap-1 text-xs text-gold/70">
                   <span className="uppercase tracking-[0.3em] text-[10px] text-gold/70">Next Step</span>
-                  <span className="text-sm text-gray-200">Submit the next batch to finish the community ranking.</span>
+                  <span className="text-sm text-gold">Submit the next batch to finish the community ranking.</span>
                 </div>
                 <div
                   className={`ml-auto px-3 py-1 rounded-full border text-[10px] uppercase tracking-[0.25em] ${statusChipClass}`}
@@ -424,14 +429,14 @@ export const PrizePanel = () => {
                 </Button>
               </div>
               {showAdvanced && (
-                <div className="border-t border-gold/10 pt-4 space-y-3 text-xs text-gray-400">
+                <div className="border-t border-gold/10 pt-4 space-y-3 text-xs text-gold/70">
                   <div className="grid gap-3 md:grid-cols-2">
                     <div>
                       <div className="text-[11px] uppercase tracking-[0.3em] text-gold/70 mb-1">Batch Size</div>
                       <NumberInput value={playersPerTx} onChange={setPlayersPerTx} min={1} max={500} />
-                      <div className="text-[11px] text-gray-500 mt-1">Players processed per transaction</div>
+                      <div className="text-[11px] text-gold/60 mt-1">Players processed per transaction</div>
                     </div>
-                    <div className="flex flex-col gap-1 p-3 rounded-lg bg-black/30 border border-gold/10">
+                    <div className="flex flex-col gap-1 p-3 rounded-lg panel-wood bg-dark/70 border border-gold/15">
                       <div>
                         Remaining: {myRemaining} of {myCommitted}
                       </div>
@@ -448,50 +453,50 @@ export const PrizePanel = () => {
                 </div>
               )}
               {status === "Failed" && (
-                <div className="rounded-md bg-red-900/40 border border-red-500/40 text-red-300 p-2 text-xs">
+                <div className="rounded-md bg-danger/15 border border-danger/40 text-danger p-2 text-xs">
                   Failed to submit
                 </div>
               )}
               {status === "Done" && (
-                <div className="rounded-md bg-green-900/30 border border-green-500/30 text-green-200 p-2 text-xs">
+                <div className="rounded-md bg-brilliance/10 border border-brilliance/40 text-brilliance p-2 text-xs">
                   Submitted successfully.
                 </div>
               )}
               {status && status !== "Failed" && status !== "Done" && (
-                <div className="text-xs text-gray-500">{status}</div>
+                <div className="text-xs text-gold/60">{status}</div>
               )}
             </div>
           </>
         ) : (
           <>
             <div className="grid gap-3 md:grid-cols-2">
-              <div className="rounded-xl border border-gold/20 bg-black/45 p-4 flex items-center gap-3 shadow-inner shadow-black/50">
+              <div className="rounded-xl border border-gold/20 panel-wood bg-dark/70 p-4 flex items-center gap-3 shadow-inner shadow-black/50">
                 <span className="grid h-9 w-9 place-items-center rounded-full bg-gold/15 text-gold">
                   <Clock3 size={16} />
                 </span>
                 <div>
-                  <div className="text-sm text-gray-100 font-medium">{statusPrimaryTitle}</div>
-                  <div className="text-xs text-gray-400">{statusPrimaryBody}</div>
+                  <div className="text-sm text-gold font-medium">{statusPrimaryTitle}</div>
+                  <div className="text-xs text-gold/70">{statusPrimaryBody}</div>
                 </div>
               </div>
-              <div className="rounded-xl border border-gold/20 bg-black/45 p-4 flex items-center gap-3 shadow-inner shadow-black/50">
+              <div className="rounded-xl border border-gold/20 panel-wood bg-dark/70 p-4 flex items-center gap-3 shadow-inner shadow-black/50">
                 <span className="grid h-9 w-9 place-items-center rounded-full bg-gold/15 text-gold">
                   <Users size={16} />
                 </span>
                 <div>
-                  <div className="text-sm text-gray-100 font-medium">{totalRegistered} players ready</div>
-                  <div className="text-xs text-gray-400">
+                  <div className="text-sm text-gold font-medium">{totalRegistered} players ready</div>
+                  <div className="text-xs text-gold/70">
                     Every player with registered points will be included automatically.
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-xl border border-gold/15 bg-black/45 p-4 flex flex-col gap-4">
+            <div className="rounded-xl border border-gold/15 panel-wood bg-dark/70 p-4 flex flex-col gap-4">
               <div className="flex flex-wrap items-start gap-3">
-                <div className="flex flex-col gap-1 text-xs text-gray-400">
+                <div className="flex flex-col gap-1 text-xs text-gold/70">
                   <span className="uppercase tracking-[0.3em] text-[10px] text-gold/70">Preparation</span>
-                  <span className="text-sm text-gray-200">
+                  <span className="text-sm text-gold">
                     One player submits when the window opens. Everyone else just claims.
                   </span>
                 </div>
@@ -520,21 +525,21 @@ export const PrizePanel = () => {
                       ? "Ranking Complete"
                       : rankingWindowOpen
                         ? "Start Ranking Submission"
-                        : "Ready When Season Ends"}
+                        : `Ready When ${timelineSubject} Ends`}
                 </Button>
                 <Button className="md:w-auto" variant="outline" onClick={() => setShowAdvanced((v) => !v)}>
                   {showAdvanced ? "Hide Advanced" : "Advanced Controls"}
                 </Button>
               </div>
               {showAdvanced && (
-                <div className="border-t border-gold/10 pt-4 space-y-3 text-xs text-gray-400">
+                <div className="border-t border-gold/10 pt-4 space-y-3 text-xs text-gold/70">
                   <div className="grid gap-3 md:grid-cols-2">
                     <div>
                       <div className="text-[11px] uppercase tracking-[0.3em] text-gold/70 mb-1">Batch Size</div>
                       <NumberInput value={playersPerTx} onChange={setPlayersPerTx} min={1} max={500} />
-                      <div className="text-[11px] text-gray-500 mt-1">Players processed per transaction</div>
+                      <div className="text-[11px] text-gold/60 mt-1">Players processed per transaction</div>
                     </div>
-                    <div className="flex flex-col gap-1 p-3 rounded-lg bg-black/30 border border-gold/10">
+                    <div className="flex flex-col gap-1 p-3 rounded-lg panel-wood bg-dark/70 border border-gold/15">
                       <div>Commit count: {registeredPlayers.length}</div>
                       <div>Estimated tx: {Math.ceil(registeredPlayers.length / Math.max(1, playersPerTx))}</div>
                       <div>
@@ -549,17 +554,17 @@ export const PrizePanel = () => {
                 </div>
               )}
               {status === "Failed" && (
-                <div className="rounded-md bg-red-900/40 border border-red-500/40 text-red-300 p-2 text-xs">
+                <div className="rounded-md bg-danger/15 border border-danger/40 text-danger p-2 text-xs">
                   Failed to start ranking. Try a smaller batch size or wait until the ranking window opens.
                 </div>
               )}
               {status === "Done" && (
-                <div className="rounded-md bg-green-900/30 border border-green-500/30 text-green-200 p-2 text-xs">
+                <div className="rounded-md bg-brilliance/10 border border-brilliance/40 text-brilliance p-2 text-xs">
                   Submitted successfully.
                 </div>
               )}
               {status && status !== "Failed" && status !== "Done" && (
-                <div className="text-xs text-gray-500">{status}</div>
+                <div className="text-xs text-gold/60">{status}</div>
               )}
             </div>
           </>
