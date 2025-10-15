@@ -35,6 +35,7 @@ import { Loader, MessageCircle } from "lucide-react";
 import { memo, useCallback, useMemo, useState } from "react";
 import { ImmunityTimer } from "../structures/immunity-timer";
 import { ActiveRelicEffects } from "./active-relic-effects";
+import { StructureUpgradeButton } from "@/ui/modules/entity-details/components/structure-upgrade-button";
 
 interface StructureEntityDetailProps {
   structureEntityId: ID;
@@ -61,6 +62,8 @@ export const StructureEntityDetail = memo(
     const userAddress = ContractAddress(account.account.address);
     const [lastRefresh, setLastRefresh] = useState(0);
     const [isRefreshing, setIsRefreshing] = useState(false);
+
+    const structureEntityIdNumber = Number(structureEntityId ?? 0);
 
     const {
       data: structureDetails,
@@ -258,7 +261,12 @@ export const StructureEntityDetail = memo(
             {/* Structure name and type */}
             <div className="flex flex-col gap-0.5">
               <div className="bg-gold/10 rounded-sm px-2 py-0.5 border-l-4 border-gold">
-                <h6 className={`${compact ? "text-base" : "text-lg"} font-bold truncate`}>{structureName}</h6>
+                <div className="flex items-center justify-between gap-2">
+                  <h6 className={`${compact ? "text-base" : "text-lg"} font-bold truncate`}>{structureName}</h6>
+                  {showButtons && structureEntityIdNumber > 0 && (
+                    <StructureUpgradeButton structureEntityId={structureEntityIdNumber} />
+                  )}
+                </div>
               </div>
 
               {/* Hyperstructure VP/s display */}
