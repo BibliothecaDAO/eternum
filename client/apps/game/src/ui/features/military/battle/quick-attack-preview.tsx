@@ -7,11 +7,11 @@ import {
   Biome,
   CombatSimulator,
   configManager,
+  formatTime,
   getBlockTimestamp,
   getEntityIdFromKeys,
   getGuardsByStructure,
   StaminaManager,
-  formatTime,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
@@ -24,14 +24,13 @@ import { TargetType } from "./types";
 import {
   getDirectionBetweenAdjacentHexes,
   RESOURCE_PRECISION,
-  StructureType,
-  type TroopType,
   type ActorType,
   type ID,
   type RelicEffectWithEndTick,
   type ResourcesIds,
   type Troops,
   type TroopTier,
+  type TroopType,
 } from "@bibliothecadao/types";
 
 interface ActorSummary {
@@ -166,12 +165,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const totalGuardCount = isStructureTarget ? targetTroopSnapshots.length : 0;
   const hasQueuedGuards = totalGuardCount > 1;
 
-  const isVillageWithoutTroops = useMemo(() => {
-    return (
-      targetData?.structureCategory === StructureType.Village && (!targetData.info || targetData.info.length === 0)
-    );
-  }, [targetData]);
-
   const battleSimulation = useMemo(() => {
     if (!attackerArmyData) return null;
     if (!targetArmyData) return null;
@@ -236,14 +229,9 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const attackerCooldownRemaining = Math.max(0, attackerCooldownEnd - currentTime);
   const attackerOnCooldown = attackerCooldownRemaining > 0;
 
-  const attackDisabled =
-    attackerOnCooldown ||
-    attackerStamina < combatConfig.stamina_attack_req ||
-    !attackerArmyData ||
-    isVillageWithoutTroops;
+  const attackDisabled = attackerOnCooldown || attackerStamina < combatConfig.stamina_attack_req || !attackerArmyData;
 
   const attackButtonLabel = (() => {
-    if (isVillageWithoutTroops) return "Villages cannot be claimed";
     if (attackerOnCooldown) return "On cooldown";
     if (attackerStamina < combatConfig.stamina_attack_req) return `Need ${combatConfig.stamina_attack_req} stamina`;
     if (!attackerArmyData) return "No troops selected";

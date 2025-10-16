@@ -5,8 +5,8 @@ import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
-import { currencyFormat } from "@/ui/utils/utils";
 import { getRelicBonusSummary } from "@/ui/utils/relic-utils";
+import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import {
@@ -33,18 +33,17 @@ import {
   RESOURCE_PRECISION,
   resources,
   ResourcesIds,
-  StructureType,
   Troops,
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
+import { Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ActiveRelicEffects } from "../../world/components/entities/active-relic-effects";
-import { AttackTarget, TargetType } from "./types";
 import { BattleCooldownTimer } from "./battle-cooldown-timer";
 import { BattleStats, CombatLoading, ResourceStealing, TroopDisplay } from "./components";
-import { Users } from "lucide-react";
+import { AttackTarget, TargetType } from "./types";
 
 enum AttackerType {
   Structure,
@@ -250,10 +249,6 @@ export const CombatContainer = ({
         battle_cooldown_end: target.info[0].battle_cooldown_end || 0,
       },
     };
-  }, [target]);
-
-  const isVillageWithoutTroops = useMemo(() => {
-    return target?.structureCategory === StructureType.Village && !target?.info;
   }, [target]);
 
   const params = configManager.getCombatConfig();
@@ -576,13 +571,12 @@ export const CombatContainer = ({
   }, [attackerArmyData]);
 
   const buttonMessage = useMemo(() => {
-    if (isVillageWithoutTroops) return "Villages cannot be claimed";
     if (isAttackerOnCooldown) return "On Battle Cooldown";
     if (attackerStamina < combatConfig.stamina_attack_req)
       return `Not Enough Stamina (${combatConfig.stamina_attack_req} Required)`;
     if (!attackerArmyData) return "No Troops Present";
     return "Attack!";
-  }, [isVillageWithoutTroops, isAttackerOnCooldown, attackerStamina, attackerArmyData, combatConfig]);
+  }, [isAttackerOnCooldown, attackerStamina, attackerArmyData, combatConfig]);
 
   const trueAttackDamage = useMemo(() => {
     if (!battleSimulation || !targetArmyData) return 0;
@@ -751,13 +745,7 @@ export const CombatContainer = ({
             <div className="text-lg sm:text-xl font-bold text-green-400 mb-2" role="status">
               No Defending Troops Present!
             </div>
-            {isVillageWithoutTroops ? (
-              <p className="text-gold/80 mb-4" role="alert">
-                Villages cannot be claimed
-              </p>
-            ) : (
-              <p className="text-gold/80 mb-4">This realm can be claimed without a battle.</p>
-            )}
+            <p className="text-gold/80 mb-4">This realm can be claimed without a battle.</p>
           </div>
         </div>
       )}
@@ -773,12 +761,7 @@ export const CombatContainer = ({
           variant="primary"
           className="px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-bold text-base sm:text-lg transition-colors w-full sm:w-auto min-w-[200px]"
           isLoading={loading}
-          disabled={
-            attackerStamina < combatConfig.stamina_attack_req ||
-            !attackerArmyData ||
-            isVillageWithoutTroops ||
-            isAttackerOnCooldown
-          }
+          disabled={attackerStamina < combatConfig.stamina_attack_req || !attackerArmyData || isAttackerOnCooldown}
           onClick={onAttack}
           aria-label={`Attack button: ${buttonMessage}`}
           aria-describedby={attackerStamina < combatConfig.stamina_attack_req ? "stamina-warning" : undefined}
