@@ -42,7 +42,7 @@ export function ArmyCreationDrawer({
   } = useDojo();
 
   const dojo = useDojo();
-  const armyManager = new ArmyManager(dojo.setup.systemCalls, dojo.setup.components, structureId);
+  const armyManager = new ArmyManager(dojo.setup.systemCalls, structureId as ID);
 
   const [isLoading, setIsLoading] = useState(false);
   const [troopCount, setTroopCount] = useState(0);

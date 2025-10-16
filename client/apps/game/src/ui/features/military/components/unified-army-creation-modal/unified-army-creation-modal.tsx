@@ -21,6 +21,7 @@ import {
   Direction,
   getDirectionBetweenAdjacentHexes,
   getNeighborHexes,
+  ID,
   resources,
   TroopTier,
   TroopType,
@@ -243,7 +244,7 @@ export const UnifiedArmyCreationModal = ({
 
   const armyManager = useMemo(() => {
     if (!activeStructureId) return null;
-    return new ArmyManager(systemCalls, components, activeStructureId);
+    return new ArmyManager(systemCalls, activeStructureId as ID);
   }, [activeStructureId, components, systemCalls]);
 
   useEffect(() => {

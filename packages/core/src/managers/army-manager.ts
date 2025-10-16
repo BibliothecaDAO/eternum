@@ -1,128 +1,12 @@
-import {
-  ClientComponents,
-  Direction,
-  ID,
-  ResourcesIds,
-  SystemCalls,
-  TroopTier,
-  TroopType,
-} from "@bibliothecadao/types";
-import { ComponentValue, getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { uuid } from "@latticexyz/utils";
+import { Direction, ID, SystemCalls, TroopTier, TroopType } from "@bibliothecadao/types";
 import { Account, AccountInterface } from "starknet";
 import { multiplyByPrecision } from "../utils";
-import { ResourceManager } from "./resource-manager";
 
 export class ArmyManager {
   constructor(
     private readonly systemCalls: SystemCalls,
-    private readonly components: ClientComponents,
     private readonly realmEntityId: ID,
   ) {}
-
-  private _updateResourceBalances(resourceId: ResourcesIds, amount: number): () => void {
-    const resourceManager = new ResourceManager(this.components, this.realmEntityId);
-    return resourceManager.optimisticResourceUpdate(resourceId, -amount);
-  }
-
-  private _updateExplorerTroops(
-    armyEntityId: ID,
-    army: ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>,
-    troopCount: number,
-  ): void {
-    const overrideId = uuid();
-    this.components.ExplorerTroops.addOverride(overrideId, {
-      entity: getEntityIdFromKeys([BigInt(armyEntityId)]),
-      value: {
-        ...army,
-        troops: {
-          ...army.troops,
-          category: army.troops.category,
-          tier: army.troops.tier,
-          count: BigInt(army.troops.count) + BigInt(troopCount),
-          stamina: army.troops.stamina,
-        },
-      },
-    });
-  }
-
-  private _getGuardSlot(guardSlot: number, structure: ComponentValue<ClientComponents["Structure"]["schema"]>) {
-    switch (guardSlot) {
-      case 0:
-        return structure.troop_guards.delta;
-      case 1:
-        return structure.troop_guards.charlie;
-      case 2:
-        return structure.troop_guards.bravo;
-      case 3:
-        return structure.troop_guards.alpha;
-      default:
-        throw new Error(`Invalid guard slot: ${guardSlot}`);
-    }
-  }
-
-  private _updateGuardTroops(structureId: number, guardSlot: number, troopCount: number): void {
-    const overrideId = uuid();
-    const structureEntity = getEntityIdFromKeys([BigInt(structureId)]);
-    const structure = getComponentValue(this.components.Structure, structureEntity);
-    if (!structure) return;
-
-    const guard = this._getGuardSlot(guardSlot, structure);
-
-    if (guard) {
-      const guardKey = ["delta", "charlie", "bravo", "alpha"][guardSlot];
-      this.components.Structure.addOverride(overrideId, {
-        entity: structureEntity,
-        value: {
-          ...structure,
-          troop_guards: {
-            ...structure.troop_guards,
-            [guardKey]: {
-              ...guard,
-              count: BigInt(guard.count) + BigInt(troopCount),
-            },
-          },
-        },
-      });
-    }
-  }
-
-  private _getTroopResourceId(troopType: TroopType, troopTier: TroopTier): ResourcesIds {
-    switch (troopType) {
-      case TroopType.Knight:
-        return ResourcesIds.Knight;
-      case TroopType.Crossbowman:
-        return ResourcesIds.Crossbowman;
-      case TroopType.Paladin:
-        return ResourcesIds.Paladin;
-    }
-  }
-
-  private _optimisticAddTroops(
-    troopType: TroopType,
-    troopTier: TroopTier,
-    troopCount: number,
-    isExplorer: boolean,
-    armyEntityId?: ID,
-    structureId?: number,
-    guardSlot?: number,
-  ): void {
-    // Update resource balances for each troop type
-    if (troopCount > 0) {
-      const troopResourceId = this._getTroopResourceId(troopType, troopTier);
-      this._updateResourceBalances(troopResourceId, troopCount);
-
-      if (isExplorer && armyEntityId) {
-        const army = getComponentValue(this.components.ExplorerTroops, getEntityIdFromKeys([BigInt(armyEntityId)]));
-        if (army) {
-          this._updateExplorerTroops(armyEntityId, army, multiplyByPrecision(troopCount));
-        }
-      } else if (structureId !== undefined && guardSlot !== undefined) {
-        this._updateGuardTroops(structureId, guardSlot, multiplyByPrecision(troopCount));
-      }
-    }
-  }
 
   public async addTroopsToExplorer(
     signer: Account | AccountInterface,
@@ -138,8 +22,6 @@ export class ArmyManager {
       amount: multiplyByPrecision(troopCount),
       home_direction: homeDirection,
     });
-
-    this._optimisticAddTroops(troopType, troopTier, troopCount, true, armyEntityId);
   }
 
   // don't need to multiply by precision here because the guard_add function already does it
@@ -158,8 +40,6 @@ export class ArmyManager {
       tier: Object.keys(TroopTier).indexOf(troopTier),
       amount: multiplyByPrecision(troopCount),
     });
-
-    this._optimisticAddTroops(troopType, troopTier, troopCount, false, undefined, this.realmEntityId, slot);
   }
 
   // don't need to multiply by precision here because the explorer_create function already does it

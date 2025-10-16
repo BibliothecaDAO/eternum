@@ -106,8 +106,25 @@ export class WorldUpdateListener {
     }
 
     console.log(`[WorldUpdateListener] entityId not in component, checking mapDataStore:`, updateEntity);
+    const mapStoreEntityId = this.mapDataStore.getEntityIdFromEntity(String(updateEntity));
 
-    return this.mapDataStore.getEntityIdFromEntity(String(updateEntity));
+    if (!mapStoreEntityId) {
+      this.logMissingEntityId("resolveEntityId", {
+        updateEntity,
+      });
+    }
+
+    return mapStoreEntityId;
+  }
+
+  private logMissingEntityId(context: string, details: unknown) {
+    const border = "❗".repeat(40);
+    console.error(
+      `\n${border}\n🚨❗️ CRITICAL: MISSING ENTITY ID DETECTED (${context}) ❗️🚨\n${border}\n` +
+        "🚫 This condition should NEVER happen. Investigate immediately! 🚫",
+    );
+    console.error(`🛑 [WorldUpdateListener] Missing entityId context: ${context} 🛑`, details);
+    console.trace(`🔍 [WorldUpdateListener] Missing entityId stack trace (${context})`);
   }
 
   private setupSystem<T>(
@@ -119,6 +136,8 @@ export class WorldUpdateListener {
     const handleUpdate = async (update: any) => {
       const value = await getUpdate(update);
       if (value) {
+        // Add console log for every update before calling the callback
+        console.log(`[WorldUpdateListener] [${component?.metadata?.name ?? "<unknown>"}] update:`, value);
         callback(value);
       }
     };
@@ -182,8 +201,19 @@ export class WorldUpdateListener {
 
                   // Army is confirmed dead or doesn't exist - mark as removed
                   const coordsSource = currentState ?? _prevState;
+                  const removedEntityId = _prevState?.occupier_id;
+
+                  if (removedEntityId === undefined || removedEntityId === null) {
+                    this.logMissingEntityId("Army.onTileUpdate.removed", {
+                      update,
+                      currentState,
+                      prevState: _prevState,
+                    });
+                    return;
+                  }
+
                   return {
-                    entityId: _prevState.occupier_id,
+                    entityId: removedEntityId,
                     hexCoords: { col: coordsSource.col, row: coordsSource.row },
                     troopType: previousExplorer.troopType as TroopType,
                     troopTier: previousExplorer.troopTier as TroopTier,
@@ -200,20 +230,31 @@ export class WorldUpdateListener {
                 return;
               }
 
+              const rawOccupierId = currentState?.occupier_id;
+
+              if (rawOccupierId === undefined || rawOccupierId === null) {
+                this.logMissingEntityId("Army.onTileUpdate.current", {
+                  update,
+                  currentState,
+                  prevState: _prevState,
+                });
+                return;
+              }
+
               const { currentArmiesTick } = getBlockTimestamp();
 
               // Use sequential update processing to prevent race conditions
-              const result = await this.processSequentialUpdate(currentState.occupier_id, async () => {
+              const result = await this.processSequentialUpdate(rawOccupierId, async () => {
                 // Try to get the structure owner ID from ExplorerTroops component
                 let structureOwnerId: ID | undefined;
                 try {
                   const explorerTroops = getComponentValue(
                     this.setup.components.ExplorerTroops,
-                    getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
+                    getEntityIdFromKeys([BigInt(rawOccupierId)]),
                   );
                   structureOwnerId = explorerTroops?.owner;
                 } catch (error) {
-                  console.warn(`[DEBUG] Could not get structure owner for army ${currentState.occupier_id}:`, error);
+                  console.warn(`[DEBUG] Could not get structure owner for army ${rawOccupierId}:`, error);
                 }
 
                 const normalizedStructureOwnerId =
@@ -221,7 +262,7 @@ export class WorldUpdateListener {
 
                 // Use DataEnhancer to fetch all enhanced data
                 const enhancedData = await this.dataEnhancer.enhanceArmyData(
-                  currentState.occupier_id,
+                  rawOccupierId,
                   explorer,
                   currentArmiesTick,
                   normalizedStructureOwnerId,
@@ -230,7 +271,7 @@ export class WorldUpdateListener {
                 const maxStamina = StaminaManager.getMaxStamina(explorer.troopType, explorer.troopTier);
 
                 return {
-                  entityId: currentState.occupier_id,
+                  entityId: rawOccupierId,
                   hexCoords: { col: currentState.col, row: currentState.row },
                   // need to set it to 0n if no owner address because else it won't be registered on the worldmap
                   ownerAddress: enhancedData?.owner.address ? BigInt(enhancedData.owner.address) : 0n,
@@ -279,7 +320,7 @@ export class WorldUpdateListener {
               });
 
               if (!entityId) {
-                console.log("[onExplorerTroopsUpdate] Unable to resolve entityId, update:", update);
+                this.logMissingEntityId("onExplorerTroopsUpdate", { update });
                 return;
               }
 
@@ -317,8 +358,15 @@ export class WorldUpdateListener {
               const explorer = getComponentValue(this.setup.components.ExplorerTroops, update.entity);
               if (!explorer && !prevState) return;
               if (!explorer && undefined === currentState && prevState) {
-                console.debug(`[WorldUpdateListener] ExplorerTroops removed for entity ${prevState.explorer_id}`);
-                return prevState.explorer_id;
+                const deadArmyEntityId = prevState?.explorer_id;
+
+                if (deadArmyEntityId === undefined || deadArmyEntityId === null) {
+                  this.logMissingEntityId("Army.onDeadArmy", { update, prevState });
+                  return;
+                }
+
+                console.debug(`[WorldUpdateListener] ExplorerTroops removed for entity ${deadArmyEntityId}`);
+                return deadArmyEntityId;
               }
             }
           },
@@ -344,10 +392,17 @@ export class WorldUpdateListener {
 
             const category = structure.base.category as StructureType;
 
-            const stage = getStructureStage(category, structure.entity_id, this.setup.components);
+            const structureEntityId = structure.entity_id;
+
+            if (structureEntityId === undefined || structureEntityId === null) {
+              this.logMissingEntityId("Structure.onContribution", { update, structure });
+              return;
+            }
+
+            const stage = getStructureStage(category, structureEntityId, this.setup.components);
 
             return {
-              entityId: structure.entity_id,
+              entityId: structureEntityId,
               structureType: category,
               stage,
             };
@@ -374,20 +429,31 @@ export class WorldUpdateListener {
 
               const initialized = hyperstructure?.initialized || false;
 
+              const rawOccupierId = currentState?.occupier_id;
+
+              if (rawOccupierId === undefined || rawOccupierId === null) {
+                this.logMissingEntityId("Structure.onTileUpdate", {
+                  update,
+                  currentState,
+                  structureInfo,
+                });
+                return;
+              }
+
               let hyperstructureRealmCount: number | undefined;
 
               if (structureInfo.type === StructureType.Hyperstructure) {
-                hyperstructureRealmCount = this.dataEnhancer.getHyperstructureRealmCount(currentState.occupier_id);
+                hyperstructureRealmCount = this.dataEnhancer.getHyperstructureRealmCount(rawOccupierId);
               }
 
               // Use sequential update processing to prevent race conditions
-              const result = await this.processSequentialUpdate(currentState.occupier_id, async () => {
+              const result = await this.processSequentialUpdate(rawOccupierId, async () => {
                 // Use DataEnhancer to fetch all enhanced data
-                const enhancedData = await this.dataEnhancer.enhanceStructureData(currentState.occupier_id);
+                const enhancedData = await this.dataEnhancer.enhanceStructureData(rawOccupierId);
 
                 const structureComponent = getComponentValue(
                   this.setup.components.Structure,
-                  getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
+                  getEntityIdFromKeys([BigInt(rawOccupierId)]),
                 );
 
                 let ownerAddress = structureComponent?.owner ?? enhancedData.owner.address ?? 0n;
@@ -410,10 +476,10 @@ export class WorldUpdateListener {
 
                 ownerName = ownerName || "";
 
-                this.dataEnhancer.updateStructureOwner(currentState.occupier_id, ownerAddress, ownerName);
+                this.dataEnhancer.updateStructureOwner(rawOccupierId, ownerAddress, ownerName);
 
                 return {
-                  entityId: currentState.occupier_id,
+                  entityId: rawOccupierId,
                   hexCoords: {
                     col: currentState.col,
                     row: currentState.row,
@@ -493,7 +559,7 @@ export class WorldUpdateListener {
               });
 
               if (!entityId) {
-                console.log("[onStructureUpdate] Unable to resolve entityId, update:", update);
+                this.logMissingEntityId("onStructureUpdate", { update });
                 return;
               }
 
@@ -536,6 +602,18 @@ export class WorldUpdateListener {
 
               if (!currentState) return;
 
+              console.log("[onStructureBuildingsUpdate] currentState:", currentState);
+
+              const entityId = currentState?.entity_id;
+
+              if (entityId === undefined || entityId === null) {
+                this.logMissingEntityId("Structure.onStructureBuildingsUpdate", {
+                  update,
+                  currentState,
+                });
+                return;
+              }
+
               // Convert hex strings to bigints
               const packedValues: bigint[] = [
                 currentState.packed_counts_1 ? BigInt(currentState.packed_counts_1) : 0n,
@@ -545,6 +623,8 @@ export class WorldUpdateListener {
 
               // Unpack the building counts
               const buildingCounts = unpackBuildingCounts(packedValues);
+
+              console.log("[onStructureBuildingsUpdate] unpacked buildingCounts:", buildingCounts);
 
               const activeProductions: ActiveProduction[] = [];
 
@@ -560,8 +640,10 @@ export class WorldUpdateListener {
                 }
               }
 
+              console.log("[onStructureBuildingsUpdate] activeProductions:", activeProductions);
+
               return {
-                entityId: currentState.entity_id,
+                entityId,
                 activeProductions,
               };
             }
@@ -579,18 +661,20 @@ export class WorldUpdateListener {
           this.setup.components.Tile,
           callback,
           async (update: any) => {
-            console.log("[onTileUpdate] raw update:", update);
             const newState = update.value[0];
             const prevState = update.value[1];
 
             const newStateBiomeType = BiomeIdToType[newState?.biome];
             const { col, row } = prevState || newState;
-            return {
+            const result = {
               hexCoords: { col, row },
               removeExplored: !newState,
               biome:
                 newStateBiomeType === BiomeType.None ? BiomeType.Grassland : newStateBiomeType || BiomeType.Grassland,
             };
+            // Log the update value
+            console.log("[onTileUpdate] TileSystemUpdate:", result);
+            return result;
           },
           false,
         );
@@ -616,12 +700,16 @@ export class WorldUpdateListener {
               const buildingType = building.category;
               const paused = building.paused;
 
-              return {
+              const result = {
                 buildingType,
                 innerCol,
                 innerRow,
                 paused,
               };
+
+              console.log("[onBuildingUpdate] BuildingSystemUpdate:", result);
+
+              return result;
             }
           },
           false,
@@ -646,11 +734,20 @@ export class WorldUpdateListener {
 
               if (!quest) return;
 
-              return {
-                entityId: update.entity,
+              const questEntityId = update?.entity;
+
+              if (questEntityId === undefined || questEntityId === null) {
+                this.logMissingEntityId("Quest.onTileUpdate", { update, currentState });
+                return;
+              }
+
+              const val = {
+                entityId: questEntityId,
                 occupierId: currentState?.occupier_id,
                 hexCoords: { col: currentState.col, row: currentState.row },
               };
+              console.log("[onQuestTileUpdate] update:", val);
+              return val;
             }
           },
           false,
@@ -665,6 +762,8 @@ export class WorldUpdateListener {
         this.setupSystem(
           this.setup.components.events.ExplorerMoveEvent,
           (value: ExplorerMoveSystemUpdate) => {
+            // Log the ExplorerMove update
+            console.log("[onExplorerMoveEventUpdate] ExplorerMoveSystemUpdate:", value);
             this.storeExplorerMoveEvent(value);
             callback(value);
           },
@@ -698,11 +797,20 @@ export class WorldUpdateListener {
 
               if (!chest) return;
 
-              return {
-                entityId: update.entity,
+              const chestEntityId = update?.entity;
+
+              if (chestEntityId === undefined || chestEntityId === null) {
+                this.logMissingEntityId("Chest.onTileUpdate", { update, currentState });
+                return;
+              }
+
+              const result = {
+                entityId: chestEntityId,
                 occupierId: currentState?.occupier_id,
                 hexCoords: { col: currentState.col, row: currentState.row },
               };
+              console.log("[onChestTileUpdate] update:", result);
+              return result;
             }
           },
           false,
@@ -722,7 +830,15 @@ export class WorldUpdateListener {
                 prevState.occupier_type === TileOccupier.Chest &&
                 (!currentState || currentState.occupier_type !== TileOccupier.Chest)
               ) {
-                return prevState.occupier_id;
+                const deadChestEntityId = prevState?.occupier_id;
+
+                if (deadChestEntityId === undefined || deadChestEntityId === null) {
+                  this.logMissingEntityId("Chest.onDeadChest", { update, currentState, prevState });
+                  return;
+                }
+
+                console.log("[onDeadChest] update:", deadChestEntityId);
+                return deadChestEntityId;
               }
             }
           },
@@ -745,10 +861,12 @@ export class WorldUpdateListener {
           if (isComponentUpdate(update, this.setup.components.Structure)) {
             const [currentState, _prevState] = update.value;
             if (!currentState) return;
-            callback({
+            const val = {
               entityId,
               level: currentState.base.level,
-            });
+            };
+            console.log("[onLevelUpdate] StructureEntityListener:", val);
+            callback(val);
           }
         });
 
@@ -780,10 +898,12 @@ export class WorldUpdateListener {
                   return;
                 }
 
-                return {
+                const val = {
                   entityId,
                   relicEffects,
                 };
+                console.log("[onExplorerTroopsRelicEffectUpdate] update:", val);
+                return val;
               }
             }
           },
@@ -807,10 +927,19 @@ export class WorldUpdateListener {
                 return;
               }
 
-              return {
-                entityId: currentState.entity_id,
+              const guardEntityId = currentState?.entity_id;
+
+              if (guardEntityId === undefined || guardEntityId === null) {
+                this.logMissingEntityId("RelicEffect.onStructureGuardUpdate", { update, currentState });
+                return;
+              }
+
+              const val = {
+                entityId: guardEntityId,
                 relicEffects,
               };
+              console.log("[onStructureGuardRelicEffectUpdate] update:", val);
+              return val;
             }
           },
           false,
@@ -834,10 +963,19 @@ export class WorldUpdateListener {
                 return;
               }
 
-              return {
-                entityId: currentState.structure_id,
+              const productionEntityId = currentState?.structure_id;
+
+              if (productionEntityId === undefined || productionEntityId === null) {
+                this.logMissingEntityId("RelicEffect.onStructureProductionUpdate", { update, currentState });
+                return;
+              }
+
+              const val = {
+                entityId: productionEntityId,
                 relicEffects,
               };
+              console.log("[onStructureProductionRelicEffectUpdate] update:", val);
+              return val;
             }
           },
           false,
@@ -848,7 +986,13 @@ export class WorldUpdateListener {
 
   public get StoryEvent() {
     return {
-      subscribe: (listener: (event: StoryEventSystemUpdate) => void) => storyEventBus.subscribe(listener),
+      subscribe: (listener: (event: StoryEventSystemUpdate) => void) => {
+        const wrappedListener = (event: StoryEventSystemUpdate) => {
+          console.log("[StoryEvent] update:", event);
+          listener(event);
+        };
+        return storyEventBus.subscribe(wrappedListener);
+      },
     };
   }
 
@@ -907,6 +1051,11 @@ export class WorldUpdateListener {
                 logic: currentState.winner_id === currentState.attacker_owner ? "attacker won" : "defender won",
               });
 
+              if (entityId === undefined || entityId === null) {
+                this.logMissingEntityId("BattleEvent.onBattleUpdate", { update, currentState });
+                return;
+              }
+
               const result = {
                 entityId,
                 battleData: {
@@ -939,6 +1088,8 @@ export class WorldUpdateListener {
     this.setupSystem(
       this.setup.components.events.StoryEvent,
       (event: StoryEventSystemUpdate) => {
+        // Add log before publishing event
+        console.log("[registerStoryEventStream] update:", event);
         storyEventBus.publish(event);
       },
       async (update: any): Promise<StoryEventSystemUpdate | undefined> => {
@@ -967,6 +1118,8 @@ export class WorldUpdateListener {
     this.setupSystem(
       this.setup.components.events.ExplorerMoveEvent,
       (value: ExplorerMoveSystemUpdate) => {
+        // Log before storing to cache
+        console.log("[registerExplorerMoveCache] ExplorerMoveSystemUpdate:", value);
         this.storeExplorerMoveEvent(value);
       },
       async (update: any): Promise<ExplorerMoveSystemUpdate | undefined> => {
@@ -997,7 +1150,7 @@ export class WorldUpdateListener {
     const exploreFindVariant = this.unwrapSchemaEnum(currentState?.explore_find);
     const exploreFind = exploreFindVariant?.name ?? null;
 
-    return {
+    const val = {
       explorerId,
       resourceId,
       amount,
@@ -1005,6 +1158,8 @@ export class WorldUpdateListener {
       timestamp,
       exploreFind,
     };
+    console.log("[parseExplorerMoveEvent] update:", val);
+    return val;
   }
 
   private storeExplorerMoveEvent(event: ExplorerMoveSystemUpdate | undefined) {
@@ -1016,6 +1171,9 @@ export class WorldUpdateListener {
     if (!key) {
       return;
     }
+
+    // Add log for store
+    console.log("[storeExplorerMoveEvent] storing:", event);
 
     this.explorerMoveEventCache.set(key, event);
     this.explorerMoveEventOrder.push(key);
@@ -1036,7 +1194,11 @@ export class WorldUpdateListener {
     if (!key) {
       return undefined;
     }
-    return this.explorerMoveEventCache.get(key);
+    const val = this.explorerMoveEventCache.get(key);
+    if (val) {
+      console.log("[getCachedExplorerMoveEvent] hit:", val);
+    }
+    return val;
   }
 
   private getExplorerMoveCacheKey(explorerId: ID | null, timestamp: number | null): string | null {
@@ -1086,7 +1248,11 @@ export class WorldUpdateListener {
       ? getAddressName(ownerAddress as unknown as ContractAddress, this.setup.components) || null
       : null;
 
-    return {
+    if (safeEntityId === null) {
+      this.logMissingEntityId("mapStoryEventPayload", { currentState });
+    }
+
+    const val = {
       ownerAddress,
       ownerName,
       entityId: safeEntityId,
@@ -1096,6 +1262,9 @@ export class WorldUpdateListener {
       storyPayload,
       rawStory: currentState.story,
     };
+    console.log("[mapStoryEventPayload] update:", val);
+
+    return val;
   }
 
   private normalizeOptionalValue<T>(value: unknown): T | null {
@@ -1189,7 +1358,7 @@ export class WorldUpdateListener {
 
     const normalizedPayload = this.normalizeSchemaValue(variant.payload);
 
-    return {
+    const val = {
       storyType: variant.name,
       storyPayload:
         normalizedPayload && typeof normalizedPayload === "object"
@@ -1198,6 +1367,9 @@ export class WorldUpdateListener {
             ? { value: normalizedPayload }
             : null,
     };
+    console.log("[extractStoryVariant] update:", val);
+
+    return val;
   }
 
   private unwrapSchemaEnum(value: unknown): { name: string; payload: unknown } | null {
@@ -1309,6 +1481,11 @@ export class WorldUpdateListener {
         // Double-check sequence number before returning result
         if (this.updateSequenceMap.get(entityId) !== currentSequence) {
           return null;
+        }
+
+        // Add a log for every sequential update before returning result
+        if (result !== null && result !== undefined) {
+          console.log(`[processSequentialUpdate] update:`, result);
         }
 
         return result;

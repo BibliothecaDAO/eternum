@@ -399,7 +399,7 @@ export class StructureManager {
         this.pendingLabelUpdates.delete(entityId);
       } else {
         console.log(
-          `[PENDING LABEL UPDATE] Applying pending update for structure ${entityId} (type: ${pendingUpdate.updateType})`,
+          `[PENDING LABEL UPDATE] Applying pending update for structure ${entityId} (type: ${pendingUpdate.updateType}, pendingUpdate: ${pendingUpdate})`,
         );
         finalOwner = pendingUpdate.owner;
         if (pendingUpdate.guardArmies) {
