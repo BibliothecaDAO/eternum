@@ -22,6 +22,7 @@ export const DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES: ResourceAutomationPercenta
   resourceToResource: 0,
   laborToResource: 10,
 };
+export const DONKEY_DEFAULT_RESOURCE_PERCENT = 10;
 
 export type RealmEntityType = "realm" | "village";
 
@@ -125,7 +126,13 @@ const createDefaultResourceSettings = (
   defaults?: Partial<ResourceAutomationPercentages>,
 ): ResourceAutomationSettings => {
   const now = Date.now();
-  const basePercentages = { ...DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES, ...defaults };
+  const basePercentages = {
+    ...DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES,
+    ...(resourceId === ResourcesIds.Donkey
+      ? { resourceToResource: DONKEY_DEFAULT_RESOURCE_PERCENT, laborToResource: 0 }
+      : {}),
+    ...defaults,
+  };
   return {
     resourceId,
     autoManaged: overrides?.autoManaged ?? true,
@@ -144,14 +151,23 @@ const createDefaultResourceSettings = (
 
 const normalizePercentages = (
   percentages?: Partial<ResourceAutomationPercentages> & { resourceToLabor?: number },
-): ResourceAutomationPercentages => ({
-  resourceToResource: clampPercent(
-    percentages?.resourceToResource ?? DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES.resourceToResource,
-  ),
-  laborToResource: clampPercent(
-    percentages?.laborToResource ?? DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES.laborToResource,
-  ),
-});
+  resourceId?: ResourcesIds,
+): ResourceAutomationPercentages => {
+  const resourceDefault =
+    resourceId === ResourcesIds.Donkey
+      ? DONKEY_DEFAULT_RESOURCE_PERCENT
+      : DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES.resourceToResource;
+  const laborDefault = resourceId === ResourcesIds.Donkey ? 0 : DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES.laborToResource;
+
+  const resourceToResource = clampPercent(percentages?.resourceToResource ?? resourceDefault);
+  const laborToResource =
+    resourceId === ResourcesIds.Donkey ? 0 : clampPercent(percentages?.laborToResource ?? laborDefault);
+
+  return {
+    resourceToResource,
+    laborToResource,
+  };
+};
 
 const sanitizeRealmResources = (
   resources: Record<number, ResourceAutomationSettings> | undefined,
@@ -171,6 +187,7 @@ const sanitizeRealmResources = (
       resourceId,
       percentages: normalizePercentages(
         value.percentages as Partial<ResourceAutomationPercentages> & { resourceToLabor?: number },
+        resourceId,
       ),
     };
   });
@@ -398,7 +415,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
           }
 
           const current = realm.resources[resourceId] ?? createDefaultResourceSettings(resourceId);
-          const updatedPercentages = normalizePercentages({ ...current.percentages, ...percentages });
+          const updatedPercentages = normalizePercentages({ ...current.percentages, ...percentages }, resourceId);
           const nextState = {
             realms: {
               ...state.realms,
@@ -608,3 +625,20 @@ export const useAutomationStore = create<ProductionAutomationState>()(
     },
   ),
 );
+
+if (typeof window !== "undefined") {
+  const setStoreHydrated = () => {
+    const { hydrated, setHydrated } = useAutomationStore.getState();
+    if (!hydrated) {
+      setHydrated(true);
+    }
+  };
+
+  useAutomationStore.persist.onFinishHydration(() => {
+    setStoreHydrated();
+  });
+
+  if (useAutomationStore.persist.hasHydrated?.()) {
+    setStoreHydrated();
+  }
+}
