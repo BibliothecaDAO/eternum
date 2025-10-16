@@ -3,7 +3,7 @@ import { getBlockTimestamp } from "@bibliothecadao/eternum";
 import { Clock } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 
-const DEBUG_URGENCY_MODE = true; // Flip to true and tweak the value below to preview urgency states quickly.
+const DEBUG_URGENCY_MODE = false; // Flip to true and tweak the value below to preview urgency states quickly.
 const DEBUG_SECONDS_REMAINING = 25;
 
 const SCREEN_BORDER_CLASSES = ["urgency-border-warning", "urgency-border-critical", "urgency-border-final"] as const;
