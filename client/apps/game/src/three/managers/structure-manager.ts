@@ -399,7 +399,7 @@ export class StructureManager {
         this.pendingLabelUpdates.delete(entityId);
       } else {
         console.log(
-          `[PENDING LABEL UPDATE] Applying pending update for structure ${entityId} (type: ${pendingUpdate.updateType})`,
+          `[PENDING LABEL UPDATE] Applying pending update for structure ${entityId} (type: ${pendingUpdate.updateType}, pendingUpdate: ${pendingUpdate})`,
         );
         finalOwner = pendingUpdate.owner;
         if (pendingUpdate.guardArmies) {
@@ -1103,24 +1103,33 @@ export class StructureManager {
 
       // Check if we already have a pending update for this entity
       const existingPending = this.pendingLabelUpdates.get(entityId);
+      const guardArmies = update.guardArmies.map((guard) => ({
+        slot: guard.slot,
+        category: guard.category,
+        tier: guard.tier,
+        count: guard.count,
+        stamina: guard.stamina,
+      }));
 
-      // Only store if this is newer than the existing pending update or it's a different type
-      if (!existingPending || currentTime >= existingPending.timestamp) {
-        console.log(`[PENDING LABEL UPDATE] Storing pending structure update for ${entityId}`);
+      if (!existingPending) {
+        console.log(`[PENDING LABEL UPDATE] Storing new pending structure update for ${entityId}`);
         this.pendingLabelUpdates.set(entityId, {
-          guardArmies: update.guardArmies.map((guard) => ({
-            slot: guard.slot,
-            category: guard.category,
-            tier: guard.tier,
-            count: guard.count,
-            stamina: guard.stamina,
-          })),
-          owner: update.owner,
+          guardArmies,
+          owner: { ...update.owner },
           timestamp: currentTime,
           updateType: "structure",
           battleCooldownEnd: update.battleCooldownEnd,
           battleTimerLeft: getBattleTimerLeft(update.battleCooldownEnd),
         });
+      } else if (currentTime >= existingPending.timestamp) {
+        console.log(`[PENDING LABEL UPDATE] Merging pending structure update for ${entityId}`);
+        existingPending.guardArmies = guardArmies;
+        existingPending.owner = { ...update.owner };
+        existingPending.timestamp = currentTime;
+        existingPending.updateType = "structure";
+        existingPending.battleCooldownEnd = update.battleCooldownEnd;
+        existingPending.battleTimerLeft = getBattleTimerLeft(update.battleCooldownEnd);
+        this.pendingLabelUpdates.set(entityId, existingPending);
       } else {
         console.log(`[PENDING LABEL UPDATE] Ignoring older pending structure update for ${entityId}`);
       }

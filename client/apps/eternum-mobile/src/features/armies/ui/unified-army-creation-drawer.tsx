@@ -90,7 +90,7 @@ export function UnifiedArmyCreationDrawer({
 
   const dojo = useDojo();
   const armyManager = useMemo(() => {
-    return new ArmyManager(dojo.setup.systemCalls, components, structureId);
+    return new ArmyManager(dojo.setup.systemCalls, structureId as ID);
   }, [structureId, components, dojo.setup.systemCalls]);
 
   const [isLoading, setIsLoading] = useState(false);
