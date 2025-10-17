@@ -26,8 +26,11 @@ const formatAmount = (value: number) =>
 
 export const StructureUpgradeButton = ({ structureEntityId, className }: StructureUpgradeButtonProps) => {
   // Always call every hook first, then conditionals/returns after ALL hooks
+
   const upgradeInfo = useStructureUpgrade(structureEntityId);
   const setTooltip = useUIStore((state) => state.setTooltip);
+
+  // Use a hook wrapper to preserve state.
   const [isUpgrading, setIsUpgrading] = useState(false);
 
   const showButton = !!(upgradeInfo && upgradeInfo.isOwner);
@@ -39,6 +42,7 @@ export const StructureUpgradeButton = ({ structureEntityId, className }: Structu
   const missingRequirements = upgradeInfo?.missingRequirements ?? [];
   const handleUpgrade = upgradeInfo?.handleUpgrade ?? (async () => {});
 
+  // Ideally, real resources, but shown mocked for now unless you have an enum mapping for resource names
   const missingResources = useMemo(() => {
     return missingRequirements
       .map((requirement) => ({
@@ -88,7 +92,13 @@ export const StructureUpgradeButton = ({ structureEntityId, className }: Structu
     );
   }, [canUpgrade, currentLevel, isMaxLevel, missingResources, nextLevel]);
 
-  const handleMouseEnter = (event: MouseEvent<HTMLButtonElement>) => {
+  // Even when disabled, mouse events do not fire on native <button disabled>. To show tooltip on disabled, wrap in a <div>
+  // See: https://github.com/reactwg/react-18/discussions/48#discussioncomment-2861449
+
+  const handleMouseEnter = (event: MouseEvent<HTMLDivElement | HTMLButtonElement>) => {
+    // Use event delegation: always fire even if button is disabled
+    // Still, check tooltipContent before showing
+    console.log("tooltipContent", tooltipContent);
     if (!tooltipContent) return;
     setTooltip({
       anchorElement: event.currentTarget,
@@ -109,6 +119,7 @@ export const StructureUpgradeButton = ({ structureEntityId, className }: Structu
     try {
       await handleUpgrade();
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error("Failed to upgrade realm", error);
     } finally {
       setIsUpgrading(false);
@@ -116,42 +127,54 @@ export const StructureUpgradeButton = ({ structureEntityId, className }: Structu
     }
   };
 
+  // Use only colors that are present in tailwind.config.js (gold, red, emerald)
   const baseClasses = cn(
     "flex items-center gap-1 rounded-md border px-2 py-1 text-xxs font-semibold uppercase tracking-wide transition focus:outline-none focus:ring-1",
     isMaxLevel
-      ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-100"
+      ? "border-emerald-400/40 bg-brilliance/20 text-brilliance"
       : canUpgrade
-        ? "border-gold/50 bg-gold/15 text-gold hover:bg-gold/30 focus:ring-gold/40"
-        : "border-red/50 bg-red-500/10 text-red-100 hover:bg-red-500/20 focus:ring-red/40",
+        ? "border-gold/60 bg-gold/10 text-gold hover:bg-gold/25 focus:ring-gold/40"
+        : "border-danger/60 bg-danger/20 text-danger hover:bg-danger/40 focus:ring-danger/40",
+    canUpgrade && !isMaxLevel ? "animate-pulse" : "",
     className,
   );
 
-  // Only conditionally return after all hooks have been called
   if (!showButton) {
     return null;
   }
 
+  // To allow tooltip on disabled, wrap in div
   return (
-    <button
-      type="button"
-      className={baseClasses}
+    <div
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onFocus={handleMouseEnter as never}
       onBlur={handleMouseLeave}
-      onClick={onUpgrade}
-      disabled={isMaxLevel || !canUpgrade || isUpgrading}
+      className="inline-block"
       data-tooltip-anchor
     >
-      {isMaxLevel ? (
-        <Shield className="h-3.5 w-3.5" />
-      ) : isUpgrading ? (
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-      ) : (
-        <Sparkles className="h-3.5 w-3.5" />
-      )}
-      <span className="hidden sm:inline">{isMaxLevel ? "Max" : nextLevel ? `Lvl ${nextLevel}` : "Upgrade"}</span>
-      <span className="sm:hidden">{isMaxLevel ? "Max" : "Lv"}</span>
-    </button>
+      <button
+        type="button"
+        className={baseClasses}
+        onClick={onUpgrade}
+        // Don't handle mouse enter/leave here (not fired when disabled)
+        disabled={isMaxLevel || !canUpgrade || isUpgrading}
+        tabIndex={0}
+        style={
+          // Show pointer by hand if disabled to indicate interactiveness for tooltip
+          isMaxLevel || !canUpgrade || isUpgrading ? { pointerEvents: "none" } : undefined
+        }
+      >
+        {isMaxLevel ? (
+          <Shield className="h-3.5 w-3.5 text-brilliance" />
+        ) : isUpgrading ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-gold" />
+        ) : (
+          <Sparkles className="h-3.5 w-3.5 text-danger" />
+        )}
+        <span className="hidden sm:inline">{isMaxLevel ? "Max" : nextLevel ? `Lvl ${nextLevel}` : "Upgrade"}</span>
+        <span className="sm:hidden">{isMaxLevel ? "Max" : "Lv"}</span>
+      </button>
+    </div>
   );
 };
