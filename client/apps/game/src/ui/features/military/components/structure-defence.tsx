@@ -22,6 +22,7 @@ interface StructureDefenceProps {
   cooldownSlots?: { slot: number; timeLeft: number }[]; // Slots with active cooldown [1, 4]
   structureId: ID;
   maxDefenseSlots?: number; // Total possible defense slots (e.g., 8)
+  onDefenseUpdated?: () => void;
 }
 
 interface CooldownTimerProps {
@@ -63,7 +64,7 @@ export const CooldownTimer = ({ slot, time }: CooldownTimerProps) => {
   );
 };
 
-export const StructureDefence = ({ maxDefenses, troops, cooldownSlots, structureId }: StructureDefenceProps) => {
+export const StructureDefence = ({ maxDefenses, troops, cooldownSlots, structureId, onDefenseUpdated }: StructureDefenceProps) => {
   const [defenseTroops, setDefenseTroops] = useState(troops);
   const [originalOrder, setOriginalOrder] = useState<DefenseTroop[]>([]);
   const [isReordering, setIsReordering] = useState(false);
@@ -255,6 +256,7 @@ export const StructureDefence = ({ maxDefenses, troops, cooldownSlots, structure
                           guardSlot={index}
                           onCancel={() => setExpandedSlot(null)}
                           onSuccess={() => {
+                            onDefenseUpdated?.();
                             setExpandedSlot(null);
                           }}
                         />
