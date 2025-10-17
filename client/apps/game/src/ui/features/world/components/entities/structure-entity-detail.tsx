@@ -29,6 +29,7 @@ import {
   ID,
   MERCENARIES,
   RelicEffectWithEndTick,
+  RelicRecipientType,
   StructureType,
 } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
@@ -37,7 +38,7 @@ import { memo, useCallback, useMemo, useState } from "react";
 import { ImmunityTimer } from "../structures/immunity-timer";
 import { ActiveRelicEffects } from "./active-relic-effects";
 import { StructureProductionPanel } from "./structure-production-panel";
-import { StructureInventoryTabs } from "./structure-inventory-sections";
+import { EntityInventoryTabs } from "./entity-inventory-tabs";
 
 interface StructureEntityDetailProps {
   structureEntityId: ID;
@@ -413,11 +414,12 @@ export const StructureEntityDetail = memo(
           {resources ? (
             <div className={panelClass}>
               <div className={`${sectionTitleClass} mb-2`}>Inventory</div>
-              <StructureInventoryTabs
+              <EntityInventoryTabs
                 resources={resources}
                 activeRelicIds={structureDetails?.relicEffects?.map((effect) => effect.id) ?? []}
                 entityId={structureEntityId}
                 entityOwnerId={structureEntityId}
+                recipientType={RelicRecipientType.Structure}
                 maxItems={maxInventory}
                 compact={compact}
                 allowRelicActivation={showButtons && isMine}

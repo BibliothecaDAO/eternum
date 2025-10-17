@@ -3,32 +3,30 @@ import { Tabs } from "@/ui/design-system/atoms/tab";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { RelicActivationPopup } from "@/ui/features/economy/resources/relic-activation-popup";
 import { divideByPrecision, getBlockTimestamp, ResourceManager } from "@bibliothecadao/eternum";
-import { ClientComponents, ComponentValue, getRelicInfo, ID, isRelic, RelicRecipientType } from "@bibliothecadao/types";
+import {
+  ClientComponents,
+  ComponentValue,
+  getRelicInfo,
+  ID,
+  isRelic,
+  RelicRecipientType,
+} from "@bibliothecadao/types";
 import { Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 
-type DisplayResource = {
+interface DisplayResource {
   resourceId: number;
   amount: number;
   rawAmount: number;
   isRelic: boolean;
   isActive: boolean;
   canActivate: boolean;
-};
-
-type SharedProps = {
-  resources: ComponentValue<ClientComponents["Resource"]["schema"]>;
-  activeRelicIds: number[];
-  entityId: ID;
-  entityOwnerId?: ID;
-  maxItems?: number;
-  compact?: boolean;
-  allowRelicActivation?: boolean;
-};
+}
 
 const buildDisplayResources = (
   resources: ComponentValue<ClientComponents["Resource"]["schema"]>,
   activeRelicIds: number[],
+  recipientType: RelicRecipientType,
 ) => {
   const { currentDefaultTick } = getBlockTimestamp();
   const balances = ResourceManager.getResourceBalancesWithProduction(resources, currentDefaultTick).filter(
@@ -55,7 +53,7 @@ const buildDisplayResources = (
     if (baseItem.isRelic) {
       baseItem.isActive = activeRelicSet.has(baseItem.resourceId);
       const relicInfo = getRelicInfo(baseItem.resourceId);
-      baseItem.canActivate = relicInfo?.recipientType === RelicRecipientType.Structure;
+      baseItem.canActivate = relicInfo?.recipientType === recipientType;
       relicList.push(baseItem);
     } else {
       regular.push(baseItem);
@@ -75,62 +73,52 @@ const buildDisplayResources = (
   };
 };
 
-type InventoryBuckets = ReturnType<typeof buildDisplayResources>;
+interface InventorySectionProps {
+  items: DisplayResource[];
+  isRelicSection: boolean;
+  entityId: ID;
+  entityOwnerId?: ID;
+  allowRelicActivation: boolean;
+  compact: boolean;
+  recipientType: RelicRecipientType;
+  maxItems?: number;
+}
 
-type StructureInventorySectionBaseProps = SharedProps & {
-  section: "resources" | "relics";
-  buckets?: InventoryBuckets;
-};
-
-const StructureInventorySectionBase = ({
-  resources,
-  activeRelicIds,
+const InventorySection = ({
+  items,
+  isRelicSection,
   entityId,
   entityOwnerId,
-  maxItems = Infinity,
-  compact = false,
-  allowRelicActivation = false,
-  section,
-  buckets: bucketsOverride,
-}: StructureInventorySectionBaseProps) => {
-  const [showAll, setShowAll] = useState(false);
+  allowRelicActivation,
+  compact,
+  recipientType,
+  maxItems,
+}: InventorySectionProps) => {
   const toggleModal = useUIStore((state) => state.toggleModal);
+  const [showAll, setShowAll] = useState(false);
 
-  const { regular, relicList } = useMemo(
-    () => bucketsOverride ?? buildDisplayResources(resources, activeRelicIds),
-    [resources, activeRelicIds, bucketsOverride],
-  );
-
-  const items = section === "resources" ? regular : relicList;
-  const emptyMessage = section === "resources" ? "No resources stored." : "No relics stored.";
-  const textSize = compact ? "text-xxs" : "text-xs";
-
-  if (items.length === 0) {
-    return <div className={`${textSize} text-gold/60 italic`}>{emptyMessage}</div>;
-  }
-
-  const finiteMax = Number.isFinite(maxItems) ? Number(maxItems) : undefined;
-  const limit = showAll || finiteMax === undefined ? items.length : Math.max(finiteMax, 0);
-  const visibleItems = items.slice(0, limit);
-  const hiddenCount = Math.max(items.length - visibleItems.length, 0);
-  const canToggleVisibility = hiddenCount > 0 && finiteMax !== undefined;
-
-  const gridClass = compact
+  const listClass = compact
     ? "grid grid-cols-2 gap-1"
     : "grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] gap-1.5";
+  const textSize = compact ? "text-xxs" : "text-xs";
 
-  const infoLabel = hiddenCount > 0 ? `Showing ${visibleItems.length} / ${items.length}` : `Total ${items.length}`;
+  const hasLimit = maxItems !== undefined && Number.isFinite(maxItems);
+  const limitValue = hasLimit ? Math.max(Number(maxItems), 0) : items.length;
+  const visibleItems = showAll || !hasLimit ? items : items.slice(0, limitValue);
+  const hiddenCount = hasLimit ? Math.max(items.length - limitValue, 0) : 0;
+
+  const infoLabel = hiddenCount > 0 && !showAll ? `Showing ${visibleItems.length} / ${items.length}` : `Total ${items.length}`;
 
   const handleRelicClick = (resource: DisplayResource) => {
-    if (section !== "relics") return;
-    if (!allowRelicActivation || !resource.canActivate || resource.isActive) return;
+    if (!isRelicSection) return;
     if (!entityId || !entityOwnerId) return;
+    if (!allowRelicActivation || !resource.canActivate || resource.isActive) return;
 
     toggleModal(
       <RelicActivationPopup
         entityId={entityId}
         entityOwnerId={entityOwnerId}
-        recipientType={RelicRecipientType.Structure}
+        recipientType={recipientType}
         relicId={resource.resourceId}
         relicBalance={resource.amount}
         onClose={() => toggleModal(null)}
@@ -138,17 +126,21 @@ const StructureInventorySectionBase = ({
     );
   };
 
+  if (!items.length) {
+    return <div className={`${textSize} text-gold/60 italic`}>{isRelicSection ? "No relics stored." : "No resources stored."}</div>;
+  }
+
   return (
     <div className={`flex flex-col ${compact ? "gap-2" : "gap-3"}`}>
       <div className="flex items-center justify-between gap-2">
         <span className={`${textSize} text-gold/50`}>{infoLabel}</span>
-        {section === "relics" && allowRelicActivation && (
+        {isRelicSection && allowRelicActivation && (
           <span className={`${textSize} text-gold/50`}>Tap a relic to activate</span>
         )}
       </div>
-      <div className={`${gridClass} rounded-lg border border-gold/20 bg-dark/40 p-2`} role="list">
+      <div className={`${listClass} rounded-lg border border-gold/20 bg-dark/40 p-2`} role="list">
         {visibleItems.map((item) => {
-          if (section === "relics") {
+          if (isRelicSection) {
             const isClickable = allowRelicActivation && item.canActivate && !item.isActive;
             return (
               <div
@@ -196,84 +188,90 @@ const StructureInventorySectionBase = ({
           );
         })}
       </div>
-      {canToggleVisibility && (
+      {hiddenCount > 0 && (
         <button
           type="button"
           className="self-start rounded-full border border-gold/30 bg-dark/60 px-3 py-1 text-xxs font-semibold uppercase tracking-[0.22em] text-gold/80 hover:border-gold/50 hover:text-gold"
           onClick={() => setShowAll((prev) => !prev)}
         >
-          {showAll ? "Hide" : `Show ${hiddenCount} more`}
+          {showAll ? "Show less" : `Show ${hiddenCount} more`}
         </button>
       )}
     </div>
   );
 };
 
-export const StructureResourcesSection = (props: SharedProps) => (
-  <StructureInventorySectionBase section="resources" {...props} />
-);
+export interface EntityInventoryTabsProps {
+  resources: ComponentValue<ClientComponents["Resource"]["schema"]>;
+  activeRelicIds?: number[];
+  entityId: ID;
+  entityOwnerId?: ID;
+  recipientType: RelicRecipientType;
+  maxItems?: number;
+  compact?: boolean;
+  allowRelicActivation?: boolean;
+  resourceLabel?: string;
+  relicLabel?: string;
+  className?: string;
+}
 
-export const StructureRelicsSection = (props: SharedProps) => (
-  <StructureInventorySectionBase section="relics" {...props} />
-);
-
-type StructureInventoryTabsProps = SharedProps;
-
-export const StructureInventoryTabs = ({
+export const EntityInventoryTabs = ({
   resources,
-  activeRelicIds,
+  activeRelicIds = [],
   entityId,
   entityOwnerId,
+  recipientType,
   maxItems,
-  compact,
-  allowRelicActivation,
-}: StructureInventoryTabsProps) => {
-  const buckets = useMemo(() => buildDisplayResources(resources, activeRelicIds), [resources, activeRelicIds]);
-
-  const resourceCount = buckets.regular.length;
-  const relicCount = buckets.relicList.length;
+  compact = false,
+  allowRelicActivation = false,
+  resourceLabel = "Resources",
+  relicLabel = "Relics",
+  className,
+}: EntityInventoryTabsProps) => {
+  const buckets = useMemo(
+    () => buildDisplayResources(resources, activeRelicIds, recipientType),
+    [resources, activeRelicIds, recipientType],
+  );
 
   const labelTextClass = `${compact ? "text-xs" : "text-sm"} font-semibold transition-colors`;
   const badgeClass =
-    "rounded-full border border-gold/25 px-2 py-0.5 text-xxs font-semibold text-gold/70 transition-colors group-aria-selected:border-gold group-aria-selected:text-gold group-data-[headlessui-state=selected]:border-gold group-data-[headlessui-state=selected]:text-gold";
+    "ml-2 rounded-full border border-gold/25 px-2 py-0.5 text-xxs font-semibold text-gold/70 transition-colors group-data-[headlessui-state=selected]:border-gold group-data-[headlessui-state=selected]:text-gold";
 
   return (
-    <Tabs variant="inventory" size={compact ? "small" : "medium"} className="w-full gap-3">
+    <Tabs variant="inventory" size={compact ? "small" : "medium"} className={`w-full gap-3 ${className ?? ""}`}>
       <Tabs.List className="flex w-full justify-start gap-4 border-b border-gold/20 pb-0.5">
         <Tabs.Tab className="!mx-0">
-          <span className={labelTextClass}>Resources</span>
-          <span className={badgeClass}>{resourceCount}</span>
+          <span className={labelTextClass}>{resourceLabel}</span>
+          <span className={badgeClass}>{buckets.regular.length}</span>
         </Tabs.Tab>
         <Tabs.Tab className="!mx-0">
-          <span className={labelTextClass}>Relics</span>
-          <span className={badgeClass}>{relicCount}</span>
+          <span className={labelTextClass}>{relicLabel}</span>
+          <span className={badgeClass}>{buckets.relicList.length}</span>
         </Tabs.Tab>
       </Tabs.List>
       <Tabs.Panels className="mt-3 w-full">
         <Tabs.Panel className="w-full">
-          <StructureInventorySectionBase
-            section="resources"
-            resources={resources}
-            activeRelicIds={activeRelicIds}
+          <InventorySection
+            items={buckets.regular}
+            isRelicSection={false}
             entityId={entityId}
             entityOwnerId={entityOwnerId}
-            maxItems={maxItems}
+            allowRelicActivation={false}
             compact={compact}
-            allowRelicActivation={allowRelicActivation}
-            buckets={buckets}
+            recipientType={recipientType}
+            maxItems={maxItems}
           />
         </Tabs.Panel>
         <Tabs.Panel className="w-full">
-          <StructureInventorySectionBase
-            section="relics"
-            resources={resources}
-            activeRelicIds={activeRelicIds}
+          <InventorySection
+            items={buckets.relicList}
+            isRelicSection
             entityId={entityId}
             entityOwnerId={entityOwnerId}
-            maxItems={maxItems}
-            compact={compact}
             allowRelicActivation={allowRelicActivation}
-            buckets={buckets}
+            compact={compact}
+            recipientType={recipientType}
+            maxItems={maxItems}
           />
         </Tabs.Panel>
       </Tabs.Panels>
