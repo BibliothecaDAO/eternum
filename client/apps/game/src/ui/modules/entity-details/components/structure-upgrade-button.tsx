@@ -169,6 +169,8 @@ export const StructureUpgradeButton = ({ structureEntityId, className }: Structu
           <Shield className="h-3.5 w-3.5 text-brilliance" />
         ) : isUpgrading ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin text-gold" />
+        ) : canUpgrade ? (
+          <Sparkles className="h-3.5 w-3.5 text-gold" />
         ) : (
           <Sparkles className="h-3.5 w-3.5 text-danger" />
         )}
