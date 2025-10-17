@@ -63,7 +63,7 @@ const aggregateRelics = (playerRelics: PlayerRelicsData | null): AggregatedRelic
 
 const resolveResourceKey = (resourceId: ID): string => {
   if (typeof resourceId === "number") {
-    const key = ResourcesIds[resourceId as keyof typeof ResourcesIds];
+    const key = ResourcesIds[resourceId];
     if (typeof key === "string") {
       return key;
     }
@@ -72,7 +72,7 @@ const resolveResourceKey = (resourceId: ID): string => {
   if (typeof resourceId === "string") {
     const numericId = Number(resourceId);
     if (!Number.isNaN(numericId)) {
-      const key = ResourcesIds[numericId as keyof typeof ResourcesIds];
+      const key = ResourcesIds[numericId];
       if (typeof key === "string") {
         return key;
       }
