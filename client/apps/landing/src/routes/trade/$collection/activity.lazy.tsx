@@ -47,7 +47,10 @@ function ActivityPage() {
         </div>
       )}
 
-      <ScrollHeader className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0" onScrollChange={setIsHeaderScrolled}>
+      <ScrollHeader
+        className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0"
+        onScrollChange={setIsHeaderScrolled}
+      >
         {isHeaderScrolled ? <h4 className="text-lg sm:text-xl font-bold pl-4">Activity</h4> : <div></div>}
         <div className="flex flex-wrap justify-end gap-2 px-4 items-center">
           <span className="text-sm text-muted-foreground">Type:</span>

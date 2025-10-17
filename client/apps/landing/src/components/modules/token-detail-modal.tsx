@@ -218,7 +218,9 @@ export const TokenDetailModal = ({
   // Determine ownership validity: current owner must match lister
   const normalizedCurrentOwner = tokenData.token_owner ? String(tokenData.token_owner).toLowerCase() : undefined;
   const normalizedOrderOwner = tokenData.order_owner ? String(tokenData.order_owner).toLowerCase() : undefined;
-  const ownershipInvalid = Boolean(isListed && normalizedCurrentOwner && normalizedOrderOwner && normalizedCurrentOwner !== normalizedOrderOwner);
+  const ownershipInvalid = Boolean(
+    isListed && normalizedCurrentOwner && normalizedOrderOwner && normalizedCurrentOwner !== normalizedOrderOwner,
+  );
 
   const renderPriceSection = () => {
     if (!isListed || price === undefined) {
@@ -357,7 +359,8 @@ export const TokenDetailModal = ({
           <div className="flex items-center justify-center gap-2 text-sm text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-md p-2 mb-2">
             <AlertTriangle className="h-5 w-5 flex-shrink-0" />
             <span>
-              This listing is no longer valid because the token has been transferred to a different owner. Purchase is disabled.
+              This listing is no longer valid because the token has been transferred to a different owner. Purchase is
+              disabled.
             </span>
           </div>
         )}
