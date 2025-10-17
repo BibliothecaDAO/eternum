@@ -517,7 +517,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
   const dojo = useDojo();
 
-  const armyManager = new ArmyManager(dojo.setup.systemCalls, dojo.setup.components, army?.entityId || 0);
+  const armyManager = new ArmyManager(dojo.setup.systemCalls, army?.entityId || 0);
 
   const [isLoading, setIsLoading] = useState(false);
 

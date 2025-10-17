@@ -7,7 +7,7 @@ type BlurOverlayContainerProps = {
   zIndex?: number;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const BlankOverlayContainer = memo(({ children, open, zIndex = 10001 }: BlurOverlayContainerProps) => {
+export const BlankOverlayContainer = memo(({ children, open, zIndex = 10001, ...rest }: BlurOverlayContainerProps) => {
   return (
     <Transition
       show={open}
@@ -22,6 +22,7 @@ export const BlankOverlayContainer = memo(({ children, open, zIndex = 10001 }: B
       <div
         className={`top-0 left-0 flex justify-center items-center rounded-lg fixed w-screen h-screen pointer-events-auto`}
         style={{ zIndex }}
+        {...rest}
       >
         {children}
       </div>

@@ -1,4 +1,5 @@
 import {
+  DONKEY_DEFAULT_RESOURCE_PERCENT,
   DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES,
   MAX_RESOURCE_ALLOCATION_PERCENT,
   isAutomationResourceBlocked,
@@ -101,7 +102,12 @@ export const RealmAutomationPanel = ({
       const config = realmAutomation?.resources[resourceId];
       const percentages = config?.percentages
         ? { ...config.percentages }
-        : { ...DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES };
+        : resourceId === ResourcesIds.Donkey
+          ? { resourceToResource: DONKEY_DEFAULT_RESOURCE_PERCENT, laborToResource: 0 }
+          : { ...DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES };
+      if (resourceId === ResourcesIds.Donkey) {
+        percentages.laborToResource = 0;
+      }
 
       const complexInputs = configManager.complexSystemResourceInputs[resourceId] ?? [];
       const simpleInputs = configManager.simpleSystemResourceInputs[resourceId] ?? [];
@@ -315,6 +321,8 @@ export const RealmAutomationPanel = ({
             );
           };
 
+          const isDonkeyResource = resourceId === ResourcesIds.Donkey;
+
           return (
             <div
               key={`automation-row-${resourceId}`}
@@ -342,12 +350,13 @@ export const RealmAutomationPanel = ({
                   (next) => handleSliderChange(resourceId, "resourceToResource", next),
                   complexImpacted,
                 )}
-                {renderSlider(
-                  "Labor",
-                  percentages.laborToResource,
-                  (next) => handleSliderChange(resourceId, "laborToResource", next),
-                  simpleImpacted,
-                )}
+                {!isDonkeyResource &&
+                  renderSlider(
+                    "Labor",
+                    percentages.laborToResource,
+                    (next) => handleSliderChange(resourceId, "laborToResource", next),
+                    simpleImpacted,
+                  )}
               </div>
             </div>
           );

@@ -14,9 +14,16 @@ import { getIsBlitz, getPlayerInfo, LeaderboardManager } from "@bibliothecadao/e
 import { useDojo, usePlayers } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { Shapes, Users } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { ReactNode, useEffect, useMemo } from "react";
 import { PlayerId } from "./player-id";
 import { useSocialStore } from "./use-social-store";
+
+interface SocialTabConfig {
+  key: string;
+  label: ReactNode;
+  component: ReactNode;
+  expandedContent: ReactNode;
+}
 
 export const Social = () => {
   const {
@@ -122,8 +129,8 @@ export const Social = () => {
     }
   };
 
-  const tabs = useMemo(
-    () => [
+  const tabs = useMemo<SocialTabConfig[]>(() => {
+    const baseTabs: SocialTabConfig[] = [
       {
         key: "Players",
         label: (
@@ -135,7 +142,10 @@ export const Social = () => {
         component: <PlayersPanel players={playerInfo} viewPlayerInfo={viewPlayerInfo} />,
         expandedContent: <PlayerId selectedPlayer={selectedPlayer} />,
       },
-      {
+    ];
+
+    if (!isBlitz) {
+      baseTabs.push({
         key: "Tribes",
         label: (
           <div className="flex items-center gap-2">
@@ -149,29 +159,31 @@ export const Social = () => {
         ) : (
           <GuildMembers players={playerInfo} viewPlayerInfo={viewPlayerInfo} setIsExpanded={setIsExpanded} />
         ),
-      },
-      {
-        key: "Blitz Prize",
-        label: (
-          <div className="flex items-center gap-2">
-            <span>Blitz Prize</span>
-          </div>
-        ),
-        component: <PrizePanel />,
-        expandedContent: null,
-      },
-    ],
-    [
-      selectedTab,
-      isExpanded,
-      selectedGuild,
-      selectedPlayer,
-      playerInfo,
-      viewPlayerInfo,
-      viewGuildMembers,
-      setIsExpanded,
-    ],
-  );
+      });
+    }
+
+    baseTabs.push({
+      key: "Blitz Prize",
+      label: (
+        <div className="flex items-center gap-2">
+          <span>Blitz Prize</span>
+        </div>
+      ),
+      component: <PrizePanel />,
+      expandedContent: null,
+    });
+
+    return baseTabs;
+  }, [isBlitz, isExpanded, selectedGuild, selectedPlayer, playerInfo, viewPlayerInfo, viewGuildMembers, setIsExpanded]);
+
+  const tabsLength = tabs.length;
+  const activeTabIndex = Math.max(0, Math.min(selectedTab, tabsLength - 1));
+
+  useEffect(() => {
+    if (tabsLength > 0 && activeTabIndex !== selectedTab) {
+      setSelectedTab(activeTabIndex);
+    }
+  }, [activeTabIndex, selectedTab, setSelectedTab, tabsLength]);
 
   const SocialContent = () => {
     const { isSyncing } = useSyncLeaderboard();
@@ -180,7 +192,7 @@ export const Social = () => {
     ) : (
       <Tabs
         size="small"
-        selectedIndex={selectedTab}
+        selectedIndex={activeTabIndex}
         onChange={(index: number) => {
           setSelectedTab(index);
           setIsExpanded(false);
@@ -190,12 +202,8 @@ export const Social = () => {
       >
         <div className="flex flex-col h-full">
           <Tabs.List className="">
-            {tabs.map((tab, idx) => (
-              <Tabs.Tab
-                key={tab.key}
-                className={`py-3 px-6 flex items-center justify-center ${isBlitz && tab.key === "Tribes" ? "opacity-50 cursor-not-allowed pointer-events-none" : ""}`}
-                disabled={isBlitz && tab.key === "Tribes"}
-              >
+            {tabs.map((tab) => (
+              <Tabs.Tab key={tab.key} className="py-3 px-6 flex items-center justify-center">
                 {tab.label}
               </Tabs.Tab>
             ))}
@@ -220,8 +228,8 @@ export const Social = () => {
       onClick={() => togglePopup(leaderboard)}
       show={isOpen}
       title={leaderboard}
-      hintSection={HintSection.Tribes}
-      childrenExpanded={tabs[selectedTab].expandedContent}
+      hintSection={isBlitz ? HintSection.Points : HintSection.Tribes}
+      childrenExpanded={tabs[activeTabIndex]?.expandedContent ?? null}
       isExpanded={isExpanded}
     >
       {isOpen ? <SocialContent /> : null}

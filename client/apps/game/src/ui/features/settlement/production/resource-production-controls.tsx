@@ -182,7 +182,7 @@ export const ResourceProductionControls = ({
   // Only show the tabs that the user can actually select
   const selectableTabs = [
     {
-      label: "Standard Production",
+      label: "Resource Production",
       component: (
         <RawResourcesPanel
           selectedResource={selectedResource}
@@ -197,7 +197,7 @@ export const ResourceProductionControls = ({
       canSelect: true,
     },
     {
-      label: "Simple Production",
+      label: "Labor Production",
       component: canUseLabor ? (
         <LaborResourcesPanel
           productionAmount={productionAmount}

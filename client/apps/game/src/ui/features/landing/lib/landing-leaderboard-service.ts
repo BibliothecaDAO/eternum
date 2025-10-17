@@ -208,3 +208,23 @@ export const fetchLandingLeaderboard = async (
 
   return entries.sort((a, b) => b.points - a.points).map((entry, index) => ({ ...entry, rank: index + 1 }));
 };
+
+export const fetchLandingLeaderboardEntryByAddress = async (
+  playerAddress: string,
+): Promise<PlayerLeaderboardData | null> => {
+  const normalizedAddress = normaliseAddress(playerAddress);
+  if (!normalizedAddress) {
+    return null;
+  }
+
+  const rawRow = await sqlApi.fetchPlayerLeaderboardByAddress(normalizedAddress);
+  if (!rawRow) {
+    return null;
+  }
+
+  const row = rawRow as unknown as Record<string, unknown>;
+  const rawRank = parseNumeric(row["rank"] as NumericLike);
+  const rank = rawRank > 0 ? Math.floor(rawRank) : 1;
+
+  return transformLandingLeaderboardRow(rawRow, rank);
+};

@@ -38,7 +38,8 @@ export const SecondaryMenuItems = () => {
     connector.controller.openProfile("trophies");
   }, [connector]);
 
-  const secondaryNavigation = useMemo(() => {
+  // For leaderboard + (optionally) rewards, preserve current logic
+  const leaderboardButtons = useMemo(() => {
     const buttons = [
       {
         button: (
@@ -70,31 +71,16 @@ export const SecondaryMenuItems = () => {
       });
     }
     return buttons;
-  }, [structureEntityId, hasSeasonEnded]);
+  }, [structureEntityId, hasSeasonEnded, isPopupOpen, togglePopup]);
 
   return (
     <div className="flex h-full ml-auto">
-      <div className="top-right-navigation-selector self-center flex  space-x-2 mr-1">
-        <HomeButton />
-        {secondaryNavigation.map((a, index) => (
+      <div className="top-right-navigation-selector self-center flex space-x-2 mr-1">
+        {/* Leaderboard/Rewards */}
+        {leaderboardButtons.map((a, index) => (
           <div key={index}>{a.button}</div>
         ))}
-        <CircleButton
-          className="trophies-selector border-none"
-          image={BuildingThumbs.trophy}
-          label={"Trophies"}
-          size="md"
-          onClick={handleTrophyClick}
-        />
-        <CircleButton
-          className="latest-features-selector border-none"
-          tooltipLocation="bottom"
-          active={isPopupOpen(latestFeatures)}
-          image={BuildingThumbs.latestUpdates}
-          label={"Latest Features"}
-          size="md"
-          onClick={() => togglePopup(latestFeatures)}
-        />
+        {/* Shortcuts */}
         <CircleButton
           className="shortcuts-selector border-none"
           tooltipLocation="bottom"
@@ -104,6 +90,17 @@ export const SecondaryMenuItems = () => {
           size="md"
           onClick={() => togglePopup(shortcuts)}
         />
+        {/* Latest Features */}
+        <CircleButton
+          className="latest-features-selector border-none"
+          tooltipLocation="bottom"
+          active={isPopupOpen(latestFeatures)}
+          image={BuildingThumbs.latestUpdates}
+          label={"Latest Features"}
+          size="md"
+          onClick={() => togglePopup(latestFeatures)}
+        />
+        {/* Settings */}
         <CircleButton
           className="settings-selector border-none"
           tooltipLocation="bottom"
@@ -113,6 +110,9 @@ export const SecondaryMenuItems = () => {
           size="md"
           onClick={() => togglePopup(settings)}
         />
+        {/* Main menu (home) */}
+        <HomeButton />
+        {/* Controller button */}
         <Controller />
       </div>
     </div>

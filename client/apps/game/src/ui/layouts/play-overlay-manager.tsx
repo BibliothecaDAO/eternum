@@ -1,4 +1,5 @@
-import { Suspense, lazy, useEffect } from "react";
+import { Suspense, lazy, useCallback, useEffect } from "react";
+import type { PointerEvent } from "react";
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
@@ -24,6 +25,15 @@ export const PlayOverlayManager = ({ backgroundImage }: PlayOverlayManagerProps)
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
 
+  const handleModalOverlayPointerDown = useCallback(
+    (event: PointerEvent<HTMLDivElement>) => {
+      if (event.target === event.currentTarget) {
+        toggleModal(null);
+      }
+    },
+    [toggleModal],
+  );
+
   useEffect(() => {
     if (!showModal) {
       return;
@@ -46,7 +56,7 @@ export const PlayOverlayManager = ({ backgroundImage }: PlayOverlayManagerProps)
   return (
     <>
       <Suspense fallback={null}>
-        <BlankOverlayContainer zIndex={120} open={showModal}>
+        <BlankOverlayContainer zIndex={120} open={showModal} onPointerDown={handleModalOverlayPointerDown}>
           {modalContent}
         </BlankOverlayContainer>
       </Suspense>

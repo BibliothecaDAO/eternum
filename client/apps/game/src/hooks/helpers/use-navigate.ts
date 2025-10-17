@@ -42,7 +42,6 @@ export const useNavigateToMapView = () => {
 
 export const useSpectatorModeClick = (components: ClientComponents | null) => {
   const spectatorRealmEntityId = useUIStore((state) => state.spectatorRealmEntityId);
-  const setFollowArmyMoves = useUIStore((state) => state.setFollowArmyMoves);
   const goToStructure = useGoToStructure();
 
   return useCallback(() => {
@@ -59,8 +58,7 @@ export const useSpectatorModeClick = (components: ClientComponents | null) => {
     }
 
     goToStructure(structure.entity_id, new Position({ x: structure.base.coord_x, y: structure.base.coord_y }), true);
-    setFollowArmyMoves(true);
-  }, [components, goToStructure, setFollowArmyMoves, spectatorRealmEntityId]);
+  }, [components, goToStructure, spectatorRealmEntityId]);
 };
 
 export const useGoToStructure = () => {

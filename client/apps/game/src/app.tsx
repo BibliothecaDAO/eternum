@@ -12,7 +12,13 @@ import { usePlayFlow } from "./hooks/context/use-play-flow";
 import "./index.css";
 import type { SetupResult } from "./init/bootstrap";
 import { IS_MOBILE } from "./ui/config";
-import { LandingAccount, LandingCosmetics, LandingLeaderboard, LandingWelcome } from "./ui/features/landing";
+import {
+  LandingAccount,
+  LandingCosmetics,
+  LandingLeaderboard,
+  LandingPlayer,
+  LandingWelcome,
+} from "./ui/features/landing";
 import { StoryEventToastBridge, StoryEventToastProvider } from "./ui/features/story-events";
 import { LandingLayout } from "./ui/layouts/landing";
 import { World } from "./ui/layouts/world";
@@ -127,6 +133,7 @@ function App() {
               <Route index element={<LandingWelcome />} />
               <Route path="cosmetics" element={<LandingCosmetics />} />
               <Route path="account" element={<LandingAccount />} />
+              <Route path="player" element={<LandingPlayer />} />
               <Route path="leaderboard" element={<LandingLeaderboard />} />
             </Route>
             <Route path="/play/*" element={<GameRoute backgroundImage={backgroundImage} />} />

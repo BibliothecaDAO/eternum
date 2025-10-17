@@ -42,13 +42,13 @@ export const HelpContainer = ({
   };
   allowBothDirections?: boolean;
 }) => {
-  const [transferType, setTransferType] = useState<TransferType>(TransferType.Resources);
+  const [transferType, setTransferType] = useState<TransferType>(TransferType.Troops);
   const [swapped, setSwapped] = useState<boolean>(false);
 
   const updateSelectedEntityId = useUIStore((state) => state.updateEntityActionSelectedEntityId);
   const toggleModal = useUIStore((state) => state.toggleModal);
 
-  // Get the current entities we're working with based on swap state
+  // Get the current entities we're working with based on direction state
   const currentSelected = swapped ? target : selected;
   const currentTarget = swapped ? selected : target;
 
@@ -75,9 +75,13 @@ export const HelpContainer = ({
     toggleModal(null);
   };
 
-  // Handle swapping selected and target entities
-  const handleSwapEntities = () => {
-    setSwapped(!swapped);
+  // Handle toggling transfer direction when both entities support it
+  const handleToggleDirection = () => {
+    if (!allowBothDirections) {
+      return;
+    }
+
+    setSwapped((previous) => !previous);
   };
 
   // Render transfer direction options
@@ -89,22 +93,24 @@ export const HelpContainer = ({
         </div>
         <div className="flex flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <button className={`px-4 py-2 rounded-md border ${"bg-gold/20 border-gold"}`}>
-              {transferDirection === TransferDirection.ExplorerToStructure
-                ? "Explorer → Structure"
-                : transferDirection === TransferDirection.StructureToExplorer
-                  ? "Structure → Explorer"
-                  : "Explorer → Explorer"}
+            <button
+              type="button"
+              onClick={handleToggleDirection}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md border bg-gold/20 border-gold transition-colors ${
+                allowBothDirections ? "cursor-pointer hover:bg-gold/30 hover:border-gold" : "cursor-default"
+              }`}
+              aria-disabled={!allowBothDirections}
+              title={allowBothDirections ? "Tap to switch direction" : undefined}
+            >
+              <span className="font-semibold">
+                {transferDirection === TransferDirection.ExplorerToStructure
+                  ? "Explorer → Structure"
+                  : transferDirection === TransferDirection.StructureToExplorer
+                    ? "Structure → Explorer"
+                    : "Explorer → Explorer"}
+              </span>
+              {allowBothDirections && <span className="text-lg">🔄</span>}
             </button>
-            {allowBothDirections && (
-              <button
-                className="flex items-center px-3 py-2 rounded-md border border-gold/30 hover:border-gold/50 bg-dark-brown text-gold/70 hover:text-gold"
-                onClick={handleSwapEntities}
-              >
-                <span className="mr-1">🔄</span>
-                Swap
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -119,19 +125,6 @@ export const HelpContainer = ({
           <div className="flex rounded-md overflow-hidden border border-gold/30 shadow-lg">
             <button
               className={`px-8 py-3 text-lg font-semibold transition-all duration-200 ${
-                transferType === TransferType.Resources
-                  ? "bg-gold/20 text-gold border-b-2 border-gold"
-                  : "bg-dark-brown text-gold/70 hover:text-gold hover:bg-brown-900/50"
-              }`}
-              onClick={() => setTransferType(TransferType.Resources)}
-            >
-              <div className="flex items-center">
-                <span className="mr-2">💰</span>
-                Transfer Resources
-              </div>
-            </button>
-            <button
-              className={`px-8 py-3 text-lg font-semibold transition-all duration-200 ${
                 transferType === TransferType.Troops
                   ? "bg-gold/20 text-gold border-b-2 border-gold"
                   : "bg-dark-brown text-gold/70 hover:text-gold hover:bg-brown-900/50"
@@ -141,6 +134,19 @@ export const HelpContainer = ({
               <div className="flex items-center">
                 <span className="mr-2">⚔️</span>
                 Transfer Troops
+              </div>
+            </button>
+            <button
+              className={`px-8 py-3 text-lg font-semibold transition-all duration-200 ${
+                transferType === TransferType.Resources
+                  ? "bg-gold/20 text-gold border-b-2 border-gold"
+                  : "bg-dark-brown text-gold/70 hover:text-gold hover:bg-brown-900/50"
+              }`}
+              onClick={() => setTransferType(TransferType.Resources)}
+            >
+              <div className="flex items-center">
+                <span className="mr-2">💰</span>
+                Transfer Resources
               </div>
             </button>
           </div>

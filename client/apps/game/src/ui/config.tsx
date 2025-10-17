@@ -126,7 +126,7 @@ export const BuildingThumbs = {
   squire: `${prefix}squire.png`,
   question: `${prefix}shortcuts.png`,
   scale: `${prefix}trade.png`,
-  settings: `${prefix}support.png`,
+  settings: `${prefix}settings.png`,
   guild: `${prefix}guild.png`,
   trophy: `${prefix}trophy.png`,
   discord: `${prefix}discord.png`,

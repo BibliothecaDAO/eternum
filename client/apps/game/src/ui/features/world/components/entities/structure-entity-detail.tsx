@@ -35,6 +35,7 @@ import { Loader, MessageCircle } from "lucide-react";
 import { memo, useCallback, useMemo, useState } from "react";
 import { ImmunityTimer } from "../structures/immunity-timer";
 import { ActiveRelicEffects } from "./active-relic-effects";
+import { StructureUpgradeButton } from "@/ui/modules/entity-details/components/structure-upgrade-button";
 
 interface StructureEntityDetailProps {
   structureEntityId: ID;
@@ -61,6 +62,8 @@ export const StructureEntityDetail = memo(
     const userAddress = ContractAddress(account.account.address);
     const [lastRefresh, setLastRefresh] = useState(0);
     const [isRefreshing, setIsRefreshing] = useState(false);
+
+    const structureEntityIdNumber = Number(structureEntityId ?? 0);
 
     const {
       data: structureDetails,
@@ -164,6 +167,7 @@ export const StructureEntityDetail = memo(
 
     // Precompute common class strings for consistency with ArmyEntityDetail
     const smallTextClass = compact ? "text-xxs" : "text-xs";
+    const panelClass = "bg-dark-brown/60 rounded p-2 border border-gold/20";
 
     const openChat = useChatStore((state) => state.actions.openChat);
     const addTab = useChatStore((state) => state.actions.addTab);
@@ -225,7 +229,9 @@ export const StructureEntityDetail = memo(
               />
             )}
             <div
-              className={`px-2 py-1 rounded text-xs h6 ${isAlly ? "bg-green/30 border-green/50 border" : "bg-red/30 border-red/50 border"}`}
+              className={`px-2 py-1 rounded text-xs h6 border ${
+                isAlly ? "bg-ally/80 border-ally text-lightest" : "bg-enemy/80 border-enemy text-lightest"
+              }`}
             >
               {isAlly ? "Ally" : "Enemy"}
             </div>
@@ -258,7 +264,12 @@ export const StructureEntityDetail = memo(
             {/* Structure name and type */}
             <div className="flex flex-col gap-0.5">
               <div className="bg-gold/10 rounded-sm px-2 py-0.5 border-l-4 border-gold">
-                <h6 className={`${compact ? "text-base" : "text-lg"} font-bold truncate`}>{structureName}</h6>
+                <div className="flex items-center justify-between gap-2">
+                  <h6 className={`${compact ? "text-base" : "text-lg"} font-bold truncate`}>{structureName}</h6>
+                  {showButtons && structureEntityIdNumber > 0 && (
+                    <StructureUpgradeButton structureEntityId={structureEntityIdNumber} />
+                  )}
+                </div>
               </div>
 
               {/* Hyperstructure VP/s display */}
@@ -272,7 +283,7 @@ export const StructureEntityDetail = memo(
 
             {/* Progress bar for hyperstructures */}
             {isHyperstructure && !getIsBlitz() && (
-              <div className="flex flex-col gap-1 mt-1 bg-gray-800/40 rounded p-2 border border-gold/20">
+              <div className={`flex flex-col gap-1 mt-1 ${panelClass}`}>
                 <div className="flex justify-between items-center">
                   <div className={`${smallTextClass} font-bold text-gold/90 uppercase`}>Construction Progress</div>
                   <div className="text-xs font-semibold bg-gold/20 px-2 py-0.5 rounded-full">
@@ -295,7 +306,7 @@ export const StructureEntityDetail = memo(
 
             {/* Active resource productions display */}
             {resources && (
-              <div className="mt-1 bg-gray-800/40 rounded p-2 border border-gold/20">
+              <div className={`mt-1 ${panelClass}`}>
                 <div className={`${smallTextClass} font-bold text-gold/90 uppercase mb-1`}>Active Productions</div>
                 <ActiveResourceProductions resources={resources} compact={true} size="xs" />
               </div>

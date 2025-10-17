@@ -320,36 +320,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         ),
         component: (
           <div className="p-2 space-y-2">
-            {biomeRecommendation && (
-              <div className="border border-gold/20 rounded-md bg-gold/10 p-3">
-                <div className="text-[11px] uppercase tracking-wider text-gold/60 font-semibold">Biome Advantage</div>
-                <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gold/80">
-                  {biomeRecommendation.hasDistinctBest ? (
-                    <>
-                      <span>
-                        {biomeRecommendation.best.length > 1
-                          ? `Best choices for ${formatBiomeLabel(biomeRecommendation.biome)} biome:`
-                          : `Best choice for ${formatBiomeLabel(biomeRecommendation.biome)} biome:`}
-                      </span>
-                      {biomeRecommendation.best.map((option) => (
-                        <div
-                          key={option.armyType}
-                          className="flex items-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-900/20 px-2 py-1"
-                        >
-                          <ResourceIcon resource={option.resourceName} size="xs" />
-                          <span className="text-emerald-200 font-semibold">{option.armyType}</span>
-                          <span className="text-[11px] text-emerald-200">{formatBiomeBonus(option.bonus)}</span>
-                        </div>
-                      ))}
-                    </>
-                  ) : (
-                    <span className="text-gold/60">
-                      All army types fight equally well in the {formatBiomeLabel(biomeRecommendation.biome)} biome.
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
             {ARMY_TYPES.map((armyType) => {
               const militaryBuildings = buildingTypes.filter((a) => {
                 const building = BuildingType[a as keyof typeof BuildingType];
@@ -443,7 +413,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                             !isTierLockedInSimpleMode && hasBalance && realm?.hasCapacity && hasEnoughPopulation;
                           const disabledReason =
                             isTierLockedInSimpleMode && info?.tier
-                              ? `Switch to Standard mode to build Tier ${info.tier} military buildings.`
+                              ? `Switch to Resource mode to build Tier ${info.tier} military buildings.`
                               : undefined;
 
                           return (
@@ -507,7 +477,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         <h6>Building Costs</h6>
         <div className="flex items-center gap-2">
           <label className="inline-flex items-center cursor-pointer">
-            <span className={`mr-2 text-xs ${useSimpleCost ? "text-gold/50" : ""}`}>Standard</span>
+            <span className={`mr-2 text-xs ${useSimpleCost ? "text-gold/50" : ""}`}>Resource</span>
             <div className="relative">
               <input
                 type="checkbox"
@@ -517,7 +487,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
               />
               <div className="w-9 h-5 bg-brown/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gold/30"></div>
             </div>
-            <span className={`ml-2 text-xs ${useSimpleCost ? "" : "text-gold/50"}`}>Simple</span>
+            <span className={`ml-2 text-xs ${useSimpleCost ? "" : "text-gold/50"}`}>Labor</span>
           </label>
           <HintModalButton className="" section={HintSection.Buildings} />
         </div>
@@ -934,7 +904,7 @@ export const BuildingInfo = ({
             })}
           </div>
         </>
-      ) : resourceProduced !== undefined && !useSimpleCost ? ( // Show only if production exists and not simple mode
+      ) : resourceProduced !== undefined && !useSimpleCost ? ( // Show only if production exists and not labor mode
         <div className="text-gold/70 italic text-xs pt-2 border-t border-gold/10">
           No ongoing resource costs in this mode.
         </div>

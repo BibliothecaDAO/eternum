@@ -1,9 +1,9 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { ModalContainer } from "@/ui/shared";
+import { getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 import { usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
 import { ID, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
-import { getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
 
 const ProductionSidebar = lazy(() =>
