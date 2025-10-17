@@ -2,8 +2,8 @@ import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
-import { countAvailableRelics } from "@/ui/features/relics/utils/count-available-relics";
 import {
+  formatArmies,
   getAddressName,
   getAllArrivals,
   getBlockTimestamp,
@@ -11,7 +11,6 @@ import {
   getEntityInfo,
   getGuildFromPlayerAddress,
   getIsBlitz,
-  formatArmies,
   SelectableArmy,
 } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
@@ -20,7 +19,7 @@ import { ContractAddress, WORLD_CONFIG_ID } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
 import { useGameSettingsMetadata, useMiniGames } from "metagame-sdk";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { env } from "../../env";
 
 const ResourceArrivalsStoreManager = () => {
@@ -59,41 +58,97 @@ const RelicsStoreManager = () => {
     account: { account },
   } = useDojo();
 
-  const setAvailableRelicsNumber = useUIStore((state) => state.setAvailableRelicsNumber);
+  const setPlayerRelics = useUIStore((state) => state.setPlayerRelics);
+  const setPlayerRelicsLoading = useUIStore((state) => state.setPlayerRelicsLoading);
+  const relicsRefreshNonce = useUIStore((state) => state.relicsRefreshNonce);
+
+  const isMountedRef = useRef(true);
+  const lastHandledRefresh = useRef(0);
 
   useEffect(() => {
-    let isMounted = true;
+    isMountedRef.current = true;
 
-    if (!account.address || account.address === "0x0") {
-      setAvailableRelicsNumber(0);
-      return () => {
-        isMounted = false;
-      };
-    }
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
-    const updateRelicsAvailability = async () => {
+  const fetchPlayerRelics = useCallback(
+    async (showLoading = true) => {
+      if (!isMountedRef.current) {
+        return;
+      }
+
+      if (!account.address || account.address === "0x0") {
+        setPlayerRelics(null);
+        setPlayerRelicsLoading(false);
+        return;
+      }
+
+      if (showLoading) {
+        setPlayerRelicsLoading(true);
+      }
+
       try {
+        console.log("fetching relics data");
         const relicsData = await sqlApi.fetchAllPlayerRelics(account.address);
-        if (!isMounted) {
+        console.log("relicsData", relicsData, account.address, isMountedRef.current);
+        if (!isMountedRef.current) {
           return;
         }
 
-        const totalRelics = countAvailableRelics(relicsData);
-
-        setAvailableRelicsNumber(totalRelics);
+        setPlayerRelics(relicsData);
       } catch (error) {
-        console.error("Failed to update available relics:", error);
+        if (isMountedRef.current) {
+          console.error("Failed to update available relics:", error);
+        }
+      } finally {
+        if (showLoading && isMountedRef.current) {
+          setPlayerRelicsLoading(false);
+        }
       }
-    };
+    },
+    [account.address, setPlayerRelics, setPlayerRelicsLoading],
+  );
 
-    updateRelicsAvailability();
-    const intervalId = setInterval(updateRelicsAvailability, 60000);
+  useEffect(() => {
+    if (!account.address || account.address === "0x0") {
+      if (isMountedRef.current) {
+        setPlayerRelics(null);
+        setPlayerRelicsLoading(false);
+      }
+      return;
+    }
+
+    fetchPlayerRelics(true);
+
+    const intervalId = setInterval(() => {
+      fetchPlayerRelics(false);
+    }, 10000);
 
     return () => {
-      isMounted = false;
       clearInterval(intervalId);
     };
-  }, [account.address, setAvailableRelicsNumber]);
+  }, [account.address, fetchPlayerRelics, setPlayerRelics, setPlayerRelicsLoading]);
+
+  useEffect(() => {
+    if (!account.address || account.address === "0x0") {
+      lastHandledRefresh.current = relicsRefreshNonce;
+      return;
+    }
+
+    if (relicsRefreshNonce === lastHandledRefresh.current) {
+      return;
+    }
+
+    lastHandledRefresh.current = relicsRefreshNonce;
+
+    if (relicsRefreshNonce === 0) {
+      return;
+    }
+
+    fetchPlayerRelics(true);
+  }, [account.address, fetchPlayerRelics, relicsRefreshNonce]);
 
   return null;
 };
