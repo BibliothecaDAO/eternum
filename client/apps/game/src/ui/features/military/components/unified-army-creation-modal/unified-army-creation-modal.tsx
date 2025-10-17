@@ -27,7 +27,7 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ActionFooter } from "./action-footer";
@@ -65,6 +65,7 @@ export const UnifiedArmyCreationModal = ({
     setup: { components, systemCalls },
     account: { account },
   } = useDojo();
+  const queryClient = useQueryClient();
 
   const playerRealms = usePlayerOwnedRealmsInfo();
   const playerVillages = usePlayerOwnedVillagesInfo();
@@ -153,12 +154,19 @@ export const UnifiedArmyCreationModal = ({
   const guardsBySlot = useMemo(() => {
     const map = new Map<number, GuardSummary>();
     (guardsData ?? []).forEach((guard) => {
+      const troops = guard.troops;
+      const count =
+        troops && troops.count !== undefined
+          ? divideByPrecision(Number(troops.count))
+          : undefined;
+
       map.set(Number(guard.slot), {
         slot: guard.slot,
-        troops: guard.troops
+        troops: troops
           ? {
-              category: guard.troops.category as TroopType | undefined,
-              tier: guard.troops.tier as TroopTier | undefined,
+              category: troops.category as TroopType | undefined,
+              tier: troops.tier as TroopTier | undefined,
+              count,
             }
           : null,
       });
@@ -400,6 +408,13 @@ export const UnifiedArmyCreationModal = ({
           troopCount,
           guardSlot,
         );
+        if (activeStructureId > 0) {
+          await queryClient.invalidateQueries({
+            queryKey: ["guards", String(activeStructureId)],
+            exact: true,
+            refetchType: "active",
+          });
+        }
       }
     } catch (error) {
       console.error("Failed to create army:", error);
