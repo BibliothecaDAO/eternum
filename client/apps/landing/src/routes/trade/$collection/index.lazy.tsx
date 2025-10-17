@@ -189,7 +189,7 @@ function CollectionPage() {
     });
   }, [tokens]);
 
-  console.log({tokens})
+  console.log({ tokens });
 
   // --- Event Handlers ---
   const handlePageChange = (page: number) => {
@@ -453,7 +453,7 @@ function CollectionPage() {
                     value={pageInput}
                     onChange={(e) => setPageInput(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
+                      if (e.key === "Enter") {
                         commitPageInput();
                       }
                     }}
@@ -462,7 +462,9 @@ function CollectionPage() {
                     title="Go to page"
                   />
                   <span className="opacity-70">/</span>
-                  <span className="text-foreground text-sm leading-none px-1.5 py-0.5 rounded bg-background/60 border border-gold/30">{Math.max(totalPages, 1)}</span>
+                  <span className="text-foreground text-sm leading-none px-1.5 py-0.5 rounded bg-background/60 border border-gold/30">
+                    {Math.max(totalPages, 1)}
+                  </span>
                 </div>
               </div>
             </div>
