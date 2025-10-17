@@ -96,17 +96,17 @@ interface CollectionTrait {
 
 // Local cache for traits (24h TTL)
 const TRAITS_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 1 day
-const traitsCacheKey = (paddedAddress: string, mode: 'listed' | 'full') => `collection_traits:${paddedAddress}:${mode}`;
+const traitsCacheKey = (paddedAddress: string, mode: "listed" | "full") => `collection_traits:${paddedAddress}:${mode}`;
 
-export function clearCollectionTraitsCache(contractAddress: string, mode?: 'listed' | 'full') {
+export function clearCollectionTraitsCache(contractAddress: string, mode?: "listed" | "full") {
   if (typeof window === "undefined") return;
   try {
     const padded = padAddress(contractAddress);
     if (mode) {
       window.localStorage.removeItem(traitsCacheKey(padded, mode));
     } else {
-      window.localStorage.removeItem(traitsCacheKey(padded, 'listed'));
-      window.localStorage.removeItem(traitsCacheKey(padded, 'full'));
+      window.localStorage.removeItem(traitsCacheKey(padded, "listed"));
+      window.localStorage.removeItem(traitsCacheKey(padded, "full"));
     }
   } catch {
     // ignore storage errors
@@ -118,7 +118,7 @@ export function clearCollectionTraitsCache(contractAddress: string, mode?: 'list
  */
 export async function fetchCollectionTraits(
   contractAddress: string,
-  options?: { mode?: 'listed' | 'full' }
+  options?: { mode?: "listed" | "full" },
 ): Promise<Record<string, string[]>> {
   const collectionId = getCollectionByAddress(contractAddress)?.id;
   if (!collectionId) {
@@ -126,7 +126,7 @@ export async function fetchCollectionTraits(
   }
 
   const padded = padAddress(contractAddress);
-  const mode: 'listed' | 'full' = options?.mode ?? 'listed';
+  const mode: "listed" | "full" = options?.mode ?? "listed";
 
   // Return cached traits if present and not expired
   if (typeof window !== "undefined") {
@@ -144,7 +144,7 @@ export async function fetchCollectionTraits(
   }
 
   let rawData: CollectionTrait[] = [];
-  if (mode === 'listed') {
+  if (mode === "listed") {
     // Fast path: traits from currently listed tokens only; if empty, fallback to full
     const listedQuery = QUERIES.COLLECTION_TRAITS_LISTED.replaceAll("{contractAddress}", padded).replaceAll(
       "{collectionId}",
@@ -777,9 +777,7 @@ export async function fetchAllCollectionTokens(
   const fullOrderByFinal = buildFullOrderFinal();
 
   // Choose fast listed-only or full paged query
-  const queryTemplate = listedOnly
-    ? QUERIES.ALL_COLLECTION_TOKENS_LISTED
-    : QUERIES.ALL_COLLECTION_TOKENS_FULL_PAGED;
+  const queryTemplate = listedOnly ? QUERIES.ALL_COLLECTION_TOKENS_LISTED : QUERIES.ALL_COLLECTION_TOKENS_FULL_PAGED;
 
   const countTemplate = listedOnly
     ? QUERIES.ALL_COLLECTION_TOKENS_LISTED_COUNT

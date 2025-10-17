@@ -66,9 +66,7 @@ export default defineConfig({
           text: "Realms",
           collapsed: true,
           link: "/blitz/realms/realm",
-          items: [
-            { text: "Buildings", link: "/blitz/realms/buildings" },
-          ],
+          items: [{ text: "Buildings", link: "/blitz/realms/buildings" }],
         },
         {
           text: "Materials",
@@ -96,9 +94,7 @@ export default defineConfig({
           text: "World Map & Movement",
           collapsed: true,
           link: "/blitz/worldmap-movement/worldmap",
-          items: [
-            { text: "Movement & Exploration", link: "/blitz/worldmap-movement/movement" },
-          ],
+          items: [{ text: "Movement & Exploration", link: "/blitz/worldmap-movement/movement" }],
         },
         { text: "World Structures", link: "/blitz/world-structures" },
         { text: "Victory", link: "/blitz/victory" },
@@ -149,9 +145,7 @@ export default defineConfig({
           text: "World Map & Movement",
           link: "/eternum/worldmap-movement/worldmap",
           collapsed: true,
-          items: [
-            { text: "Movement & Exploration", link: "/eternum/worldmap-movement/movement" },
-          ],
+          items: [{ text: "Movement & Exploration", link: "/eternum/worldmap-movement/movement" }],
         },
         { text: "World Structures", link: "/eternum/world-structures" },
         { text: "Tribes", link: "/eternum/tribes" },

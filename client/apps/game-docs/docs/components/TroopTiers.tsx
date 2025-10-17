@@ -250,8 +250,7 @@ export const TroopTierDamageStats = () => {
             <tr style={table.tableRow}>
               <td style={{ ...table.tableCell, ...table.tableFirstColumn }}>
                 <div style={table.tableTierCell}>
-                  <span style={table.tierBadge}>T2</span>
-                  3 × T1
+                  <span style={table.tierBadge}>T2</span>3 × T1
                 </div>
               </td>
               <td style={{ ...table.tableCell, fontWeight: "bold" }}>300%</td>
@@ -260,8 +259,7 @@ export const TroopTierDamageStats = () => {
             <tr style={table.tableRow}>
               <td style={{ ...table.tableCell, ...table.tableFirstColumn }}>
                 <div style={table.tableTierCell}>
-                  <span style={table.tierBadge}>T3</span>
-                  3 × T2 (9 × T1)
+                  <span style={table.tierBadge}>T3</span>3 × T2 (9 × T1)
                 </div>
               </td>
               <td style={{ ...table.tableCell, fontWeight: "bold" }}>900%</td>
