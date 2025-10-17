@@ -38,6 +38,9 @@ import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory"
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { env } from "../../../env";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { shortString } from "starknet";
 import { MemoryMonitor } from "../utils/memory-monitor";
 import { findShortestPath } from "../utils/pathfinding";
 import { FXManager } from "./fx-manager";
@@ -813,6 +816,60 @@ export class ArmyManager {
       }
     }
 
+    const structureIdForOwner =
+      finalOwningStructureId !== null && finalOwningStructureId !== undefined
+        ? finalOwningStructureId
+        : params.owningStructureId ?? null;
+
+    if (structureIdForOwner !== null && this.components?.Structure) {
+      try {
+        const structureEntityId = getEntityIdFromKeys([BigInt(structureIdForOwner)]);
+        const liveStructure = getComponentValue(this.components.Structure, structureEntityId);
+
+        if (liveStructure) {
+          const liveOwnerRaw = liveStructure.owner;
+          if (liveOwnerRaw !== undefined && liveOwnerRaw !== null) {
+            const normalizedOwnerAddress =
+              typeof liveOwnerRaw === "bigint" ? liveOwnerRaw : BigInt(liveOwnerRaw ?? 0);
+
+            finalOwnerAddress = normalizedOwnerAddress;
+
+            let resolvedOwnerName = finalOwnerName;
+            if (this.components.AddressName) {
+              const addressName = getComponentValue(
+                this.components.AddressName,
+                getEntityIdFromKeys([normalizedOwnerAddress]),
+              );
+
+              if (addressName?.name) {
+                try {
+                  resolvedOwnerName = shortString.decodeShortString(addressName.name.toString());
+                } catch (error) {
+                  console.warn(
+                    `[ArmyManager] Failed to decode owner name for army ${params.entityId}:`,
+                    error,
+                  );
+                }
+              }
+            }
+
+            if (!resolvedOwnerName || resolvedOwnerName.length === 0) {
+              resolvedOwnerName = `0x${normalizedOwnerAddress.toString(16)}`;
+            }
+
+            finalOwnerName = resolvedOwnerName;
+          }
+        }
+      } catch (error) {
+        console.warn(
+          `[ArmyManager] Failed to resolve owner from Structure component for army ${params.entityId}:`,
+          error,
+        );
+      }
+    }
+
+    finalOwningStructureId = structureIdForOwner ?? finalOwningStructureId;
+
     const ownerForCosmetics = finalOwnerAddress ?? 0n;
     if (this.components && ownerForCosmetics !== 0n) {
       playerCosmeticsStore.hydrateFromBlitzComponent(this.components, ownerForCosmetics);
@@ -1473,12 +1530,59 @@ ${
     );
 
     army.troopCount = update.troopCount;
-    army.owner.address = update.ownerAddress;
+
+    let resolvedOwnerAddress =
+      typeof update.ownerAddress === "bigint" ? update.ownerAddress : BigInt(update.ownerAddress ?? 0);
+    let resolvedOwnerName = update.ownerName;
+
+    if (update.ownerStructureId !== null && update.ownerStructureId !== undefined && this.components?.Structure) {
+      try {
+        const structureEntityId = getEntityIdFromKeys([BigInt(update.ownerStructureId)]);
+        const liveStructure = getComponentValue(this.components.Structure, structureEntityId);
+
+        if (liveStructure) {
+          const liveOwnerRaw = liveStructure.owner;
+          if (liveOwnerRaw !== undefined && liveOwnerRaw !== null) {
+            resolvedOwnerAddress = typeof liveOwnerRaw === "bigint" ? liveOwnerRaw : BigInt(liveOwnerRaw ?? 0);
+
+            if (this.components.AddressName) {
+              const addressName = getComponentValue(
+                this.components.AddressName,
+                getEntityIdFromKeys([resolvedOwnerAddress]),
+              );
+
+              if (addressName?.name) {
+                try {
+                  resolvedOwnerName = shortString.decodeShortString(addressName.name.toString());
+                } catch (error) {
+                  console.warn(
+                    `[ArmyManager] Failed to decode owner name during explorer update for army ${update.entityId}:`,
+                    error,
+                  );
+                }
+              }
+            }
+
+            if (!resolvedOwnerName || resolvedOwnerName.length === 0) {
+              resolvedOwnerName = `0x${resolvedOwnerAddress.toString(16)}`;
+            }
+          }
+        }
+      } catch (error) {
+        console.warn(
+          `[ArmyManager] Failed to resolve owner from Structure component during explorer update for army ${update.entityId}:`,
+          error,
+        );
+      }
+    }
+
+    army.owner.address = resolvedOwnerAddress;
+    army.owner.ownerName = resolvedOwnerName;
+    army.owningStructureId = update.ownerStructureId;
     // Update ownership status - this ensures armies are correctly marked as owned when the user's account
     // becomes available after initial load, since tile updates may occur before account authentication
-    army.isMine = isAddressEqualToAccount(update.ownerAddress);
+    army.isMine = isAddressEqualToAccount(resolvedOwnerAddress);
     army.onChainStamina = update.onChainStamina;
-    army.owner.ownerName = update.ownerName;
     army.battleCooldownEnd = update.battleCooldownEnd;
     army.battleTimerLeft = getBattleTimerLeft(update.battleCooldownEnd);
     const ownerStructureId = (update as { ownerStructureId?: ID | null }).ownerStructureId ?? null;

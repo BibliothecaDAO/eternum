@@ -1,0 +1,22 @@
+{
+  "extends": "../../../packages/tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ESNext",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "outDir": "dist",
+    "rootDir": "src",
+    "esModuleInterop": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "noEmitOnError": true,
+    "types": ["bun-types", "node"]
+  },
+  "include": ["src/**/*", "drizzle.config.ts"],
+  "exclude": ["dist", "node_modules"]
+}
