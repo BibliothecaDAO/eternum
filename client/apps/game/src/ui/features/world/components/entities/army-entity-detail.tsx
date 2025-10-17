@@ -1,11 +1,9 @@
 import { getIsBlitz } from "@bibliothecadao/eternum";
 
-import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { ArmyCapacity } from "@/ui/design-system/molecules/army-capacity";
 import { StaminaResource } from "@/ui/design-system/molecules/stamina-resource";
 import { InventoryResources } from "@/ui/features/economy/resources";
 import { TroopChip } from "@/ui/features/military";
-import { useChatStore } from "@/ui/features/social";
 import { getCharacterName } from "@/utils/agent";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
@@ -20,9 +18,8 @@ import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
 import { ContractAddress, ID, RelicRecipientType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
-import { Loader, MessageCircle, Trash2 } from "lucide-react";
+import { Loader, RefreshCw, Trash2 } from "lucide-react";
 import { memo, useCallback, useMemo, useState } from "react";
-import { toast } from "sonner";
 import { ArmyWarning } from "../armies/army-warning";
 import { ActiveRelicEffects } from "./active-relic-effects";
 
@@ -124,9 +121,7 @@ export const ArmyEntityDetail = memo(
       );
 
       const guild = structure ? getGuildFromPlayerAddress(ContractAddress(structure.owner), components) : undefined;
-      const userGuild = getGuildFromPlayerAddress(userAddress, components);
       const isMine = structure?.owner === userAddress;
-      const isAlly = isMine || (guild && userGuild && guild.entityId === userGuild.entityId) || false;
 
       const addressName = structure?.owner
         ? getAddressName(structure?.owner, components)
@@ -138,7 +133,6 @@ export const ArmyEntityDetail = memo(
         stamina,
         maxStamina,
         playerGuild: guild,
-        isAlly,
         addressName,
         isMine,
         structureOwnerName: structureOwnerName,
@@ -159,37 +153,13 @@ export const ArmyEntityDetail = memo(
       }
     };
 
-    const openChat = useChatStore((state) => state.actions.openChat);
-    const addTab = useChatStore((state) => state.actions.addTab);
-    const getUserIdByUsername = useChatStore((state) => state.actions.getUserIdByUsername);
-
-    const handleChatClick = () => {
-      if (derivedData?.isMine) {
-        openChat();
-      } else if (derivedData?.addressName) {
-        const userId = getUserIdByUsername(derivedData.addressName);
-        if (userId) {
-          addTab({
-            type: "direct",
-            name: derivedData.addressName,
-            recipientId: userId,
-          });
-          openChat();
-        } else {
-          // Show toast notification when user is not found
-          toast.error(`${derivedData.addressName} is not available for direct messaging`, {
-            description: "They probably offline right now, please try again later.",
-            duration: 5000,
-          });
-          // Open global chat as fallback
-          openChat();
-        }
-      }
-    };
-
     const headerTextClass = compact ? "text-base" : "text-lg";
     const smallTextClass = compact ? "text-xxs" : "text-xs";
     const panelClass = "bg-dark-brown/60 rounded p-2 border border-gold/20";
+    const actionButtonBase =
+      "inline-flex min-w-[104px] items-center justify-center gap-2 rounded-md px-3 py-1 text-xs font-semibold uppercase tracking-wide transition-colors focus:outline-none focus:ring-1 disabled:cursor-not-allowed disabled:opacity-60";
+    const standardActionClasses = `${actionButtonBase} border border-gold/60 bg-gold/10 text-gold hover:bg-gold/20 focus:ring-gold/30`;
+    const dangerActionClasses = `${actionButtonBase} border border-danger/60 bg-danger/20 text-danger hover:bg-danger/40 focus:ring-danger/40`;
 
     if (isLoadingExplorer || (explorer?.owner && isLoadingStructure)) {
       return (
@@ -200,10 +170,6 @@ export const ArmyEntityDetail = memo(
     }
 
     if (!explorer || !derivedData) return null;
-
-    const relationBadgeClass = derivedData.isAlly
-      ? "bg-ally/80 border border-ally text-lightest"
-      : "bg-enemy/80 border border-enemy text-lightest";
 
     return (
       <div className={`flex flex-col ${compact ? "gap-1" : "gap-2"} ${className}`}>
@@ -226,36 +192,34 @@ export const ArmyEntityDetail = memo(
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             {showButtons && (
-              <RefreshButton
+              <button
                 onClick={handleRefresh}
-                isLoading={isRefreshing}
-                size="sm"
-                disabled={Date.now() - lastRefresh < 10000}
-              />
-            )}
-            <div className={`px-2 py-1 rounded text-xs font-bold ${relationBadgeClass}`}>
-              {derivedData.isAlly ? "Ally" : "Enemy"}
-            </div>
-            {derivedData.addressName !== undefined && showButtons && (
-              <button onClick={handleChatClick} className="p-1 rounded hover:bg-gold/10 transition" title="Chat">
-                <MessageCircle />
+                className={standardActionClasses}
+                disabled={isRefreshing || Date.now() - lastRefresh < 10000}
+                title="Refresh data"
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                <span>Refresh</span>
               </button>
             )}
             {derivedData.isMine && showButtons && (
               <button
                 onClick={handleDeleteExplorer}
-                className={`p-1 rounded bg-danger/90 hover:bg-danger transition text-lightest flex items-center ${
-                  isLoadingDelete ? "opacity-60 cursor-not-allowed" : ""
-                }`}
+                className={dangerActionClasses}
                 title="Delete Army"
                 disabled={isLoadingDelete}
               >
                 {isLoadingDelete ? (
-                  <span className="animate-spin mr-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>
+                  <>
+                    <Loader className="h-4 w-4 animate-spin" />
+                    <span>Deleting</span>
+                  </>
                 ) : (
-                  <Trash2 size={25} />
+                  <>
+                    <Trash2 className="h-4 w-4" />
+                    <span>Delete</span>
+                  </>
                 )}
-                {isLoadingDelete && <span className="ml-1 text-xs">Deleting...</span>}
               </button>
             )}
           </div>

@@ -11,15 +11,14 @@ import {
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { getIsBlitz, MAP_DATA_REFRESH_INTERVAL, MapDataStore, Position } from "@bibliothecadao/eternum";
 
-import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { ActiveResourceProductions, InventoryResources } from "@/ui/features/economy/resources";
 import { CompactDefenseDisplay } from "@/ui/features/military";
-import { useChatStore } from "@/ui/features/social";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
 import { displayAddress } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import { sqlApi } from "@/services/api";
+import { StructureUpgradeButton } from "@/ui/modules/entity-details/components/structure-upgrade-button";
 import { useDojo } from "@bibliothecadao/react";
 import { getStructureFromToriiClient } from "@bibliothecadao/torii";
 import {
@@ -31,11 +30,10 @@ import {
   StructureType,
 } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
-import { Loader, MessageCircle } from "lucide-react";
+import { Eye, Loader, RefreshCw } from "lucide-react";
 import { memo, useCallback, useMemo, useState } from "react";
 import { ImmunityTimer } from "../structures/immunity-timer";
 import { ActiveRelicEffects } from "./active-relic-effects";
-import { StructureUpgradeButton } from "@/ui/modules/entity-details/components/structure-upgrade-button";
 
 interface StructureEntityDetailProps {
   structureEntityId: ID;
@@ -150,7 +148,6 @@ export const StructureEntityDetail = memo(
     const resources = structureDetails?.resources;
     const playerGuild = structureDetails?.playerGuild;
     const guards = structureDetails?.guards || [];
-    const isAlly = structureDetails?.isAlly || false;
     const addressName = structureDetails?.addressName;
     const isMine = structureDetails?.isMine || false;
     const hyperstructureRealmCount = structureDetails?.hyperstructureRealmCount;
@@ -168,26 +165,9 @@ export const StructureEntityDetail = memo(
     // Precompute common class strings for consistency with ArmyEntityDetail
     const smallTextClass = compact ? "text-xxs" : "text-xs";
     const panelClass = "bg-dark-brown/60 rounded p-2 border border-gold/20";
-
-    const openChat = useChatStore((state) => state.actions.openChat);
-    const addTab = useChatStore((state) => state.actions.addTab);
-    const getUserIdByUsername = useChatStore((state) => state.actions.getUserIdByUsername);
-
-    const handleChatClick = () => {
-      if (isMine) {
-        openChat();
-      } else {
-        const userId = getUserIdByUsername(addressName || "");
-
-        if (userId) {
-          addTab({
-            type: "direct",
-            name: addressName || "",
-            recipientId: userId,
-          });
-        }
-      }
-    };
+    const actionButtonBase =
+      "inline-flex min-w-[104px] items-center justify-center gap-2 rounded-md px-3 py-1 text-xs font-semibold uppercase tracking-wide transition-colors focus:outline-none focus:ring-1 focus:ring-gold/30 disabled:cursor-not-allowed disabled:opacity-60";
+    const standardActionClasses = `${actionButtonBase} border border-gold/60 bg-gold/10 text-gold hover:bg-gold/20`;
 
     const structureName = useMemo(() => {
       return structure ? getStructureName(structure, getIsBlitz()).name : undefined;
@@ -219,44 +199,35 @@ export const StructureEntityDetail = memo(
               </div>
             )}
           </div>
-          <div className="flex items-center gap-1 flex-shrink-0">
-            {showButtons && (
-              <RefreshButton
+          {showButtons && (
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
                 onClick={handleRefresh}
-                isLoading={isRefreshing}
-                size="sm"
-                disabled={Date.now() - lastRefresh < 10000}
-              />
-            )}
-            <div
-              className={`px-2 py-1 rounded text-xs h6 border ${
-                isAlly ? "bg-ally/80 border-ally text-lightest" : "bg-enemy/80 border-enemy text-lightest"
-              }`}
-            >
-              {isAlly ? "Ally" : "Enemy"}
-            </div>
-            {addressName !== undefined && showButtons && (
-              <>
-                {isMine && (
-                  <button
-                    onClick={() =>
-                      goToStructure(
-                        structureEntityId,
-                        new Position({ x: structure.base.coord_x, y: structure.base.coord_y }),
-                        false,
-                      )
-                    }
-                    className="px-2 py-1 rounded text-xs bg-gold/20 hover:bg-gold/30 transition"
-                  >
-                    VIEW
-                  </button>
-                )}
-                <button onClick={handleChatClick} className="p-1 rounded hover:bg-gold/10 transition" title="Chat">
-                  <MessageCircle />
+                disabled={isRefreshing || Date.now() - lastRefresh < 10000}
+                className={standardActionClasses}
+                title="Refresh data"
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                <span>Refresh</span>
+              </button>
+              {isMine && (
+                <button
+                  onClick={() =>
+                    goToStructure(
+                      structureEntityId,
+                      new Position({ x: structure.base.coord_x, y: structure.base.coord_y }),
+                      false,
+                    )
+                  }
+                  className={standardActionClasses}
+                >
+                  <Eye className="h-4 w-4" />
+                  <span>View</span>
                 </button>
-              </>
-            )}
-          </div>
+              )}
+              {structureEntityIdNumber > 0 && <StructureUpgradeButton structureEntityId={structureEntityIdNumber} />}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-2 w-full">
@@ -266,9 +237,6 @@ export const StructureEntityDetail = memo(
               <div className="bg-gold/10 rounded-sm px-2 py-0.5 border-l-4 border-gold">
                 <div className="flex items-center justify-between gap-2">
                   <h6 className={`${compact ? "text-base" : "text-lg"} font-bold truncate`}>{structureName}</h6>
-                  {showButtons && structureEntityIdNumber > 0 && (
-                    <StructureUpgradeButton structureEntityId={structureEntityIdNumber} />
-                  )}
                 </div>
               </div>
 
@@ -304,14 +272,6 @@ export const StructureEntityDetail = memo(
               </div>
             )}
 
-            {/* Active resource productions display */}
-            {resources && (
-              <div className={`mt-1 ${panelClass}`}>
-                <div className={`${smallTextClass} font-bold text-gold/90 uppercase mb-1`}>Active Productions</div>
-                <ActiveResourceProductions resources={resources} compact={true} size="xs" />
-              </div>
-            )}
-
             {/* Guards/Defense section */}
             {guards.length > 0 && (
               <div className="flex flex-col gap-0.5 w-full mt-1 border-t border-gold/20 pt-1">
@@ -325,6 +285,14 @@ export const StructureEntityDetail = memo(
               </div>
             )}
           </div>
+
+          {/* Active resource productions display */}
+          {resources && (
+            <div className={`mt-1 ${panelClass}`}>
+              <div className={`${smallTextClass} font-bold text-gold/90 uppercase mb-1`}>Active Productions</div>
+              <ActiveResourceProductions resources={resources} compact={true} size="xs" />
+            </div>
+          )}
 
           {/* Resources section */}
           <div className="flex flex-col gap-0.5 w-full mt-1 border-t border-gold/20 pt-1">

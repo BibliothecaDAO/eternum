@@ -98,7 +98,6 @@ export const StructureUpgradeButton = ({ structureEntityId, className }: Structu
   const handleMouseEnter = (event: MouseEvent<HTMLDivElement | HTMLButtonElement>) => {
     // Use event delegation: always fire even if button is disabled
     // Still, check tooltipContent before showing
-    console.log("tooltipContent", tooltipContent);
     if (!tooltipContent) return;
     setTooltip({
       anchorElement: event.currentTarget,
