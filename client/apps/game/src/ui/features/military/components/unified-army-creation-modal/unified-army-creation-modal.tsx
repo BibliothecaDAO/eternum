@@ -155,10 +155,7 @@ export const UnifiedArmyCreationModal = ({
     const map = new Map<number, GuardSummary>();
     (guardsData ?? []).forEach((guard) => {
       const troops = guard.troops;
-      const count =
-        troops && troops.count !== undefined
-          ? divideByPrecision(Number(troops.count))
-          : undefined;
+      const count = troops && troops.count !== undefined ? divideByPrecision(Number(troops.count)) : undefined;
 
       map.set(Number(guard.slot), {
         slot: guard.slot,

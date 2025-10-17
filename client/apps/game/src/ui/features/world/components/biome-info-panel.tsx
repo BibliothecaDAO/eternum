@@ -103,8 +103,7 @@ export const BiomeInfoPanel = ({ biome, collapsed = false }: BiomeInfoPanelProps
           config,
           bonus,
           styles,
-          summaryTextClass:
-            bonus > 1 ? "text-green-300" : bonus < 1 ? "text-red-300" : "text-gold/80",
+          summaryTextClass: bonus > 1 ? "text-green-300" : bonus < 1 ? "text-red-300" : "text-gold/80",
         };
       }),
     [biome, troopTypes],

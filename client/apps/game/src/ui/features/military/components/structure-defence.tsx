@@ -64,7 +64,13 @@ export const CooldownTimer = ({ slot, time }: CooldownTimerProps) => {
   );
 };
 
-export const StructureDefence = ({ maxDefenses, troops, cooldownSlots, structureId, onDefenseUpdated }: StructureDefenceProps) => {
+export const StructureDefence = ({
+  maxDefenses,
+  troops,
+  cooldownSlots,
+  structureId,
+  onDefenseUpdated,
+}: StructureDefenceProps) => {
   const [defenseTroops, setDefenseTroops] = useState(troops);
   const [originalOrder, setOriginalOrder] = useState<DefenseTroop[]>([]);
   const [isReordering, setIsReordering] = useState(false);

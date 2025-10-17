@@ -85,7 +85,6 @@ const PlayerRelicTray = lazy(() =>
   })),
 );
 
-
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   return (
     <>
