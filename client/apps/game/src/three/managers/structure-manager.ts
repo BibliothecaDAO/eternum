@@ -6,6 +6,9 @@ import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import type { SetupResult } from "@bibliothecadao/dojo";
 import { getIsBlitz, StructureTileSystemUpdate } from "@bibliothecadao/eternum";
 import { BuildingType, ClientComponents, FELT_CENTER, ID, RelicEffect, StructureType } from "@bibliothecadao/types";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { shortString } from "starknet";
 import { Euler, Group, Object3D, Scene, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { GuardArmy } from "../../../../../../packages/core/src/stores/map-data-store";
@@ -424,6 +427,36 @@ export class StructureManager {
       }
     }
 
+    if (this.components?.Structure) {
+      const liveStructure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
+
+      if (liveStructure) {
+        const liveOwnerAddress = liveStructure.owner;
+
+        if (liveOwnerAddress !== undefined) {
+          let liveOwnerName = finalOwner.ownerName;
+
+          if (this.components.AddressName) {
+            const addressName = getComponentValue(this.components.AddressName, getEntityIdFromKeys([liveOwnerAddress]));
+
+            if (addressName?.name) {
+              try {
+                liveOwnerName = shortString.decodeShortString(addressName.name.toString());
+              } catch (error) {
+                console.warn(`[StructureManager] Failed to decode owner name for ${entityId}:`, error);
+              }
+            }
+          }
+
+          finalOwner = {
+            address: liveOwnerAddress,
+            ownerName: liveOwnerName,
+            guildName: finalOwner.guildName,
+          };
+        }
+      }
+    }
+
     const ownerForCosmetics = finalOwner.address ?? 0n;
     if (this.components && ownerForCosmetics !== 0n) {
       playerCosmeticsStore.hydrateFromBlitzComponent(this.components, ownerForCosmetics);
@@ -462,6 +495,11 @@ export class StructureManager {
     if (structureRecord) {
       structureRecord.cosmeticId = cosmetic.cosmeticId;
       structureRecord.attachments = cosmetic.attachments;
+    }
+
+    const existingLabel = this.entityIdLabels.get(entityId);
+    if (existingLabel && structureRecord) {
+      this.updateStructureLabelData(structureRecord, existingLabel);
     }
 
     // Smart relic effects management - differentiate between genuine updates and chunk reloads
