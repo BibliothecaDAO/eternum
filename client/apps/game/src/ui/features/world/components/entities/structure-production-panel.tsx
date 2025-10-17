@@ -1,15 +1,15 @@
 import { ResourceManager, getBlockTimestamp } from "@bibliothecadao/eternum";
 import { useBuildings } from "@bibliothecadao/react";
-import { ResourcesIds, getProducedResource } from "@bibliothecadao/types";
-import type { StructureDetails } from "@bibliothecadao/torii";
+import { ClientComponents, ResourcesIds, getProducedResource } from "@bibliothecadao/types";
 import { memo, useEffect, useMemo, useState } from "react";
 
 import { ProductionStatusBadge } from "@/ui/shared";
+import { ComponentValue } from "@dojoengine/recs";
 import { formatTimeRemaining } from "../../../economy/resources/entity-resource-table/utils";
 
 interface StructureProductionPanelProps {
-  structure: NonNullable<StructureDetails["structure"]>;
-  resources: NonNullable<StructureDetails["resources"]>;
+  structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
+  resources: ComponentValue<ClientComponents["Resource"]["schema"]>;
   compact?: boolean;
   smallTextClass: string;
 }
@@ -46,16 +46,10 @@ export const StructureProductionPanel = memo(
 
     const { currentDefaultTick } = getBlockTimestamp();
 
-    const buildingsData = useBuildings(
-      Number(structure.base.coord_x ?? 0),
-      Number(structure.base.coord_y ?? 0),
-    );
+    const buildingsData = useBuildings(Number(structure.base.coord_x ?? 0), Number(structure.base.coord_y ?? 0));
 
     const productionBuildings = useMemo(
-      () =>
-        (buildingsData ?? []).filter(
-          (building) => building && getProducedResource(building.category),
-        ),
+      () => (buildingsData ?? []).filter((building) => building && getProducedResource(building.category)),
       [buildingsData],
     );
 
@@ -106,9 +100,7 @@ export const StructureProductionPanel = memo(
         productionPerSecond = Number.isFinite(productionData.productionPerSecond)
           ? productionData.productionPerSecond
           : null;
-        outputRemaining = Number.isFinite(productionData.outputRemaining)
-          ? productionData.outputRemaining
-          : null;
+        outputRemaining = Number.isFinite(productionData.outputRemaining) ? productionData.outputRemaining : null;
 
         return {
           resourceId,

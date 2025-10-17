@@ -3,14 +3,8 @@ import { Tabs } from "@/ui/design-system/atoms/tab";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { RelicActivationPopup } from "@/ui/features/economy/resources/relic-activation-popup";
 import { divideByPrecision, getBlockTimestamp, ResourceManager } from "@bibliothecadao/eternum";
-import {
-  ClientComponents,
-  ComponentValue,
-  getRelicInfo,
-  ID,
-  isRelic,
-  RelicRecipientType,
-} from "@bibliothecadao/types";
+import { ClientComponents, getRelicInfo, ID, isRelic, RelicRecipientType } from "@bibliothecadao/types";
+import { ComponentValue } from "@dojoengine/recs";
 import { Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -97,9 +91,7 @@ const InventorySection = ({
   const toggleModal = useUIStore((state) => state.toggleModal);
   const [showAll, setShowAll] = useState(false);
 
-  const listClass = compact
-    ? "grid grid-cols-2 gap-1"
-    : "grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] gap-1.5";
+  const listClass = compact ? "grid grid-cols-2 gap-1" : "grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] gap-1.5";
   const textSize = compact ? "text-xxs" : "text-xs";
 
   const hasLimit = maxItems !== undefined && Number.isFinite(maxItems);
@@ -107,7 +99,8 @@ const InventorySection = ({
   const visibleItems = showAll || !hasLimit ? items : items.slice(0, limitValue);
   const hiddenCount = hasLimit ? Math.max(items.length - limitValue, 0) : 0;
 
-  const infoLabel = hiddenCount > 0 && !showAll ? `Showing ${visibleItems.length} / ${items.length}` : `Total ${items.length}`;
+  const infoLabel =
+    hiddenCount > 0 && !showAll ? `Showing ${visibleItems.length} / ${items.length}` : `Total ${items.length}`;
 
   const handleRelicClick = (resource: DisplayResource) => {
     if (!isRelicSection) return;
@@ -127,7 +120,11 @@ const InventorySection = ({
   };
 
   if (!items.length) {
-    return <div className={`${textSize} text-gold/60 italic`}>{isRelicSection ? "No relics stored." : "No resources stored."}</div>;
+    return (
+      <div className={`${textSize} text-gold/60 italic`}>
+        {isRelicSection ? "No relics stored." : "No resources stored."}
+      </div>
+    );
   }
 
   return (
