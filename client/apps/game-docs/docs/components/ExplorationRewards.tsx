@@ -10,9 +10,9 @@ export const ExplorationRewards = () => {
     { material: "Labor", id: ResourcesIds.Labor, quantity: 250, chance: 15 },
     { material: "Labor", id: ResourcesIds.Labor, quantity: 500, chance: 8 },
     { material: "Donkeys", id: ResourcesIds.Donkey, quantity: 100, chance: 6 },
-    { material: "T1 Knights", id: ResourcesIds.Knight, quantity: 2500, chance: 2 },
-    { material: "T1 Crossbowmen", id: ResourcesIds.Crossbowman, quantity: 2500, chance: 2 },
-    { material: "T1 Paladins", id: ResourcesIds.Paladin, quantity: 2500, chance: 2 },
+    { material: "T1 Knights", id: ResourcesIds.Knight, quantity: 1000, chance: 2 },
+    { material: "T1 Crossbowmen", id: ResourcesIds.Crossbowman, quantity: 1000, chance: 2 },
+    { material: "T1 Paladins", id: ResourcesIds.Paladin, quantity: 1000, chance: 2 },
   ];
 
   return (

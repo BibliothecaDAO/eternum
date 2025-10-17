@@ -40,7 +40,6 @@ export default defineConfig({
       text: "Overview",
       items: [
         { text: "Introduction", link: "/overview/introduction" },
-        { text: "Game Entry", link: "/overview/entry" },
         { text: "Cartridge Controller", link: "/overview/controller" },
         { text: "$LORDS Token", link: "/overview/lords" },
         {
@@ -48,7 +47,6 @@ export default defineConfig({
           collapsed: true,
           link: "/overview/chests/loot-chests",
           items: [
-            { text: "Loot Chests", link: "/overview/chests/loot-chests" },
             { text: "Chest Contents", link: "/overview/chests/contents" },
             { text: "Cosmetic Items", link: "/overview/chests/cosmetics" },
           ],
@@ -62,13 +60,13 @@ export default defineConfig({
       text: "Blitz",
       items: [
         { text: "Key Concepts", link: "/blitz/key-concepts" },
+        { text: "Game Entry", link: "/blitz/game-entry" },
         { text: "World Physics", link: "/blitz/world-physics" },
         {
           text: "Realms",
           collapsed: true,
           link: "/blitz/realms/realm",
           items: [
-            { text: "Realms", link: "/blitz/realms/realm" },
             { text: "Buildings", link: "/blitz/realms/buildings" },
           ],
         },
@@ -77,7 +75,6 @@ export default defineConfig({
           collapsed: true,
           link: "/blitz/materials/resources",
           items: [
-            { text: "Materials", link: "/blitz/materials/resources" },
             { text: "Production", link: "/blitz/materials/production" },
             { text: "Transfers & Trade", link: "/blitz/materials/transfers-and-trade" },
             { text: "Bridging", link: "/blitz/materials/bridging" },
@@ -90,7 +87,6 @@ export default defineConfig({
           collapsed: true,
           link: "/blitz/military/armies",
           items: [
-            { text: "Armies", link: "/blitz/military/armies" },
             { text: "Troop Tiers", link: "/blitz/military/troop-tiers" },
             { text: "Stamina & Biomes", link: "/blitz/military/stamina-and-biomes" },
             { text: "Damage", link: "/blitz/military/damage" },
@@ -101,7 +97,6 @@ export default defineConfig({
           collapsed: true,
           link: "/blitz/worldmap-movement/worldmap",
           items: [
-            { text: "World Map", link: "/blitz/worldmap-movement/worldmap" },
             { text: "Movement & Exploration", link: "/blitz/worldmap-movement/movement" },
           ],
         },
@@ -115,13 +110,13 @@ export default defineConfig({
       text: "Eternum (Season 1 - Concluded)",
       items: [
         { text: "Key Concepts", link: "/eternum/key-concepts" },
+        { text: "Game Entry", link: "/eternum/game-entry" },
         { text: "World Physics", link: "/eternum/world-physics" },
         {
           text: "Realms & Villages",
           link: "/eternum/realm-and-villages/realm",
           collapsed: true,
           items: [
-            { text: "Realms", link: "/eternum/realm-and-villages/realm" },
             { text: "Villages", link: "/eternum/realm-and-villages/villages" },
             { text: "Buildings", link: "/eternum/realm-and-villages/buildings" },
             { text: "Wonders", link: "/eternum/realm-and-villages/wonders" },
@@ -132,7 +127,6 @@ export default defineConfig({
           link: "/eternum/resources/resources",
           collapsed: true,
           items: [
-            { text: "Materials", link: "/eternum/resources/resources" },
             { text: "Production", link: "/eternum/resources/production" },
             { text: "Automation", link: "/eternum/resources/automation" },
             { text: "Storage", link: "/eternum/resources/storage" },
@@ -145,7 +139,6 @@ export default defineConfig({
           link: "/eternum/military/armies",
           collapsed: true,
           items: [
-            { text: "Armies", link: "/eternum/military/armies" },
             { text: "Troop Tiers", link: "/eternum/military/troop-tiers" },
             { text: "Stamina & Biomes", link: "/eternum/military/stamina-and-biomes" },
             { text: "Damage", link: "/eternum/military/damage" },
@@ -157,7 +150,6 @@ export default defineConfig({
           link: "/eternum/worldmap-movement/worldmap",
           collapsed: true,
           items: [
-            { text: "World Map", link: "/eternum/worldmap-movement/worldmap" },
             { text: "Movement & Exploration", link: "/eternum/worldmap-movement/movement" },
           ],
         },
@@ -182,7 +174,10 @@ export default defineConfig({
     {
       text: "Changelog",
       collapsed: true,
-      items: [{ text: "3 September 2025", link: "/changelog/3-september-2025" }],
+      items: [
+        { text: "20 October 2025", link: "/changelog/20-october-2025" },
+        { text: "3 September 2025", link: "/changelog/3-september-2025" },
+      ],
     },
   ],
 });

@@ -31,7 +31,7 @@ for the entire journey.
   <em>Moving armies in the client</em>
 </div>
 
-The amount of stamina consumed when moving into a hex depends on both the biome of that hex and the type of troops
+The amount of stamina consumed when moving into an explored hex depends on both the biome of that hex and the type of troops
 within the army. The table below details biome-specific stamina costs for each troop type:
 
 <BiomeStamina />
@@ -54,10 +54,9 @@ reward chances for any explored hex are as follows:
 
 <ExplorationRewards />
 
-If an army doesn't have sufficient carrying capacity to store the discovered materials, the materials will be
-permanently lost (burned) but the army will be able to continue exploring provided they have enough stamina. Armies can
-return to a structure to offload the materials, or drop them to free up space. Note that any materials discarded in the
-field will also be burned.
+Exploration rewards are automatically sent back to the home Realm of the exploring army, so armies aren't limited by their
+carry capacity in Blitz. However, the mist is a scary place and troops don't like to delve into it alone, so a minimum of
+10 troops are required in an army to explore a hex.
 
 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
   <img src="/gifs/explore.gif" alt="Explore" />
@@ -68,7 +67,7 @@ field will also be burned.
 
 Lords may transfer troops from one army to another, provided that they are on adjacent hexes, the same troop type, and
 the same tier. To transfer troops from one army to another, or to a structure, the player first needs to select its army
-on the worldmap using left-click, then right-click on the target and select the Transfer -> Transfer Troops tab. Troops
+on the worldmap using left-click, then right-click on the target and select the Transfer Troops tab. Troops
 can be transferred between armies (and Realm defense slots) at any time, and transfers are not impacted by battle
 timers. However, in all instances of a troop transfer, the army that has received troops:
 

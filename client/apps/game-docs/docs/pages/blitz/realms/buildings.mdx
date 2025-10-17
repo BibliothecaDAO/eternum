@@ -6,25 +6,23 @@ import { BlitzBuildingCard } from "@/components/BlitzBuildingCard";
 
 # 🪓 Buildings
 
-## Standard vs. Simple
+## Resource Mode vs. Labor Mode
 
-Blitz offers two building systems. Lords can switch between standard and simple building modes at any time by clicking
+Blitz offers two building systems. Lords can switch between resource and labor building modes at any time by clicking
 the toggle at the top of the construction tab.
 
-![Simple Mode Production](/gifs/simple-mode.gif)
-
 _Note: Some buildings only require labor to construct. Farms and Wood Mills have the same construction cost in both
-standard and simple building modes._
+resource and labor building modes._
 
-### Standard Mode
+### Resource Mode
 
 This is the classic building experience. Construction requires a combination of labor and a particular set of resources
-as building materials. Standard mode is more complex and involves a greater number of materials, however it is far more
+as building materials. Resource mode is more complex and involves a greater number of materials, however it is far more
 efficient overall.
 
-### Simple Mode
+### Labor Mode
 
-This mode allows players to utilize labor as the singular input for construction. Simple mode greatly improves
+This mode allows players to utilize labor as the singular input for construction. Labor mode greatly improves
 accessibility and simplifies gameplay overall, but is much less efficient in both time and materials.
 
 ## Placement & Population
@@ -64,7 +62,7 @@ production. This building cannot be destroyed and provides a baseline population
 
 There is a specific resource building for each of the 9 resources in Blitz, so Lords will require separate resource
 buildings if they wish to produce more than one type of resource. These buildings only require food to construct and
-have the same requirements in simple and standard mode.
+have the same requirements in labor and resource mode.
 
 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
 <BlitzBuildingCard 
@@ -72,11 +70,11 @@ have the same requirements in simple and standard mode.
   image="/images/buildings/construction/lumber_mill.png" 
   buildingType={5} 
   description={["Produces Wood resource"]}
-  simpleCosts={[
-    { resource: 23, amount: 40 } // Labor
+  laborCosts={[
+    { resource: ResourcesIds.Labor, amount: 30 } // Labor
   ]}
-  standardCosts={[
-    { resource: 23, amount: 40 } // Labor
+  resourceCosts={[
+    { resource: ResourcesIds.Labor, amount: 30 } // Labor
   ]}
 />
 
@@ -85,12 +83,12 @@ have the same requirements in simple and standard mode.
   image="/images/buildings/construction/mine.png"
   buildingType={4}
   description={["Produces Coal resource"]}
-  simpleCosts={[
-    { resource: 23, amount: 160 }, // Labor
+  laborCosts={[
+    { resource: ResourcesIds.Labor, amount: 90 }, // Labor
   ]}
-  standardCosts={[
-    { resource: 23, amount: 40 }, // Labor
-    { resource: 3, amount: 60 }, // Wood
+  resourceCosts={[
+    { resource: ResourcesIds.Labor, amount: 30 }, // Labor
+    { resource: ResourcesIds.Wood, amount: 30 }, // Wood
   ]}
 />
 
@@ -99,13 +97,13 @@ have the same requirements in simple and standard mode.
   image="/images/buildings/construction/forge.png"
   buildingType={6}
   description={["Produces Copper resource"]}
-  simpleCosts={[
-    { resource: 23, amount: 480 }, // Labor
+  laborCosts={[
+    { resource: ResourcesIds.Labor, amount: 300 }, // Labor
   ]}
-  standardCosts={[
-    { resource: 23, amount: 60 }, // Labor
-    { resource: 3, amount: 90 }, // Wood
-    { resource: 2, amount: 60 }, // Coal
+  resourceCosts={[
+    { resource: ResourcesIds.Labor, amount: 60 }, // Labor
+    { resource: ResourcesIds.Wood, amount: 60 }, // Wood
+    { resource: ResourcesIds.Coal, amount: 30 }, // Coal
   ]}
 />
 
@@ -114,14 +112,14 @@ have the same requirements in simple and standard mode.
   image="/images/buildings/construction/lumber_mill.png"
   buildingType={7}
   description={["Produces Ironwood resource"]}
-  simpleCosts={[
-    { resource: 23, amount: 1200 }, // Labor
+  laborCosts={[
+    { resource: ResourcesIds.Labor, amount: 720 }, // Labor
   ]}
-  standardCosts={[
-    { resource: 23, amount: 120 }, // Labor
-    { resource: 3, amount: 180 }, // Wood
-    { resource: 2, amount: 120 }, // Coal
-    { resource: 4, amount: 60 }, // Copper
+  resourceCosts={[
+    { resource: ResourcesIds.Labor, amount: 120 }, // Labor
+    { resource: ResourcesIds.Wood, amount: 120 }, // Wood
+    { resource: ResourcesIds.Coal, amount: 60 }, // Coal
+    { resource: ResourcesIds.Copper, amount: 30 }, // Copper
   ]}
 />
 
@@ -130,14 +128,14 @@ have the same requirements in simple and standard mode.
   image="/images/buildings/construction/forge.png"
   buildingType={13}
   description={["Produces Cold Iron resource"]}
-  simpleCosts={[
-    { resource: 23, amount: 1200 }, // Labor
+  laborCosts={[
+    { resource: ResourcesIds.Labor, amount: 720 }, // Labor
   ]}
-  standardCosts={[
-    { resource: 23, amount: 120 }, // Labor
-    { resource: 3, amount: 180 }, // Wood
-    { resource: 2, amount: 120 }, // Coal
-    { resource: 4, amount: 60 }, // Copper
+  resourceCosts={[
+    { resource: ResourcesIds.Labor, amount: 120 }, // Labor
+    { resource: ResourcesIds.Wood, amount: 120 }, // Wood
+    { resource: ResourcesIds.Coal, amount: 60 }, // Coal
+    { resource: ResourcesIds.Copper, amount: 30 }, // Copper
   ]}
 />
 
@@ -146,14 +144,14 @@ have the same requirements in simple and standard mode.
   image="/images/buildings/construction/forge.png"
   buildingType={9}
   description={["Produces Gold resource"]}
-  simpleCosts={[
-    { resource: 23, amount: 1200 }, // Labor
+  laborCosts={[
+    { resource: ResourcesIds.Labor, amount: 720 }, // Labor
   ]}
-  standardCosts={[
-    { resource: 23, amount: 120 }, // Labor
-    { resource: 3, amount: 180 }, // Wood
-    { resource: 2, amount: 120 }, // Coal
-    { resource: 4, amount: 60 }, // Copper
+  resourceCosts={[
+    { resource: ResourcesIds.Labor, amount: 120 }, // Labor
+    { resource: ResourcesIds.Wood, amount: 120 }, // Wood
+    { resource: ResourcesIds.Coal, amount: 60 }, // Coal
+    { resource: ResourcesIds.Copper, amount: 30 }, // Copper
   ]}
 />
 
@@ -161,12 +159,12 @@ have the same requirements in simple and standard mode.
   title="Adamantine Mine"
   image="/images/buildings/construction/forge.png"
   buildingType={21}
-  description={["Produces Adamantine resource", "Only available in standard building mode"]}
-  standardCosts={[
-    { resource: 23, amount: 360 }, // Labor
-    { resource: 3, amount: 540 }, // Wood
-    { resource: 4, amount: 360 }, // Copper
-    { resource: 5, amount: 180 }, // Ironwood
+  description={["Produces Adamantine resource", "Only available in resource mode"]}
+  resourceCosts={[
+    { resource: ResourcesIds.Labor, amount: 240 }, // Labor
+    { resource: ResourcesIds.Wood, amount: 240 }, // Wood
+    { resource: ResourcesIds.Copper, amount: 120 }, // Copper
+    { resource: ResourcesIds.Ironwood, amount: 60 }, // Ironwood
     { resource: ResourcesIds.Essence, amount: 600 }, // Essence
   ]}
   standardOnly={true}
@@ -176,12 +174,12 @@ have the same requirements in simple and standard mode.
   title="Mithral Forge"
   image="/images/buildings/construction/forge.png"
   buildingType={11}
-  description={["Produces Mithral resource", "Only available in standard building mode"]}
-  standardCosts={[
-    { resource: 23, amount: 360 }, // Labor
-    { resource: 3, amount: 540 }, // Wood
-    { resource: 4, amount: 360 }, // Copper
-    { resource: 11, amount: 180 }, // Cold Iron
+  description={["Produces Mithral resource", "Only available in resource mode"]}
+ resourceCosts={[
+    { resource: ResourcesIds.Labor, amount: 240 }, // Labor
+    { resource: ResourcesIds.Wood, amount: 240 }, // Wood
+    { resource: ResourcesIds.Copper, amount: 120 }, // Copper
+    { resource: ResourcesIds.ColdIron, amount: 60 }, // Cold Iron
     { resource: ResourcesIds.Essence, amount: 600 }, // Essence
   ]}
   standardOnly={true}
@@ -193,13 +191,13 @@ have the same requirements in simple and standard mode.
   buildingType={24}
   description={[
     "Produces Dragonhide resource",
-    "Only available in standard building mode",
+    "Only available in resource mode",
   ]}
-  standardCosts={[
-    { resource: 23, amount: 360 }, // Labor
-    { resource: 3, amount: 540 }, // Wood
-    { resource: 4, amount: 360 }, // Copper
-    { resource: 7, amount: 180 }, // Gold
+  resourceCosts={[
+    { resource: ResourcesIds.Labor, amount: 240 }, // Labor
+    { resource: ResourcesIds.Wood, amount: 240 }, // Wood
+    { resource: ResourcesIds.Copper, amount: 120 }, // Copper
+    { resource: ResourcesIds.Gold, amount: 60 }, // Gold
     { resource: ResourcesIds.Essence, amount: 600 } // Essence
   ]}
   standardOnly={true}
@@ -209,7 +207,7 @@ have the same requirements in simple and standard mode.
 ### Economic Buildings
 
 These buildings define the utility of a Realm or Village, including food production, donkey production, and population
-capacity. All of these buildings can be constructed in either standard or simple mode, but have varying costs and
+capacity. All of these buildings can be constructed in either resource or labor mode, but have varying costs and
 population requirements:
 
 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
@@ -219,10 +217,10 @@ population requirements:
   buildingType={37}
   description={["Produces Wheat (food)"]}
   simpleCosts={[
-    { resource: 23, amount: 20 } // Labor
+    { resource: 23, amount: 30 } // Labor
   ]}
   standardCosts={[
-    { resource: 23, amount: 20 } // Labor
+    { resource: 23, amount: 30 } // Labor
   ]}
 />
 
@@ -232,11 +230,11 @@ population requirements:
   buildingType={1}
   description={["Increases population capacity by 5"]}
   simpleCosts={[
-    { resource: 23, amount: 160 }, // Labor
+    { resource: 23, amount: 90 }, // Labor
   ]}
   standardCosts={[
-    { resource: 23, amount: 40 }, // Labor
-    { resource: 3, amount: 60 }, // Wood
+    { resource: 23, amount: 30 }, // Labor
+    { resource: 3, amount: 30 }, // Wood
   ]}
 />
 
@@ -248,11 +246,11 @@ population requirements:
     "Produces Donkeys for transportation of materials",
   ]}
   simpleCosts={[
-    { resource: 23, amount: 240 } // Labor
+    { resource: 23, amount: 180 } // Labor
   ]}
   standardCosts={[
     { resource: 23, amount: 60 }, // Labor
-    { resource: 3, amount: 90 } // Wood
+    { resource: 3, amount: 60 } // Wood
   ]}
 />
 </div>
@@ -263,8 +261,8 @@ Your military buildings are essential for training up armies to defend your terr
 are three 'tiers' of each of the three troop types, but a different building is required to produce each troop tier. As
 such, there are a total of 9 military buildings in the game.
 
-Note: Only T1 troop buildings can be constructed in both standard and simple mode. T2 and T3 military buildings are only
-available for construction in standard mode.
+Note: Only T1 troop buildings can be constructed in both labor and resource mode. T2 and T3 military buildings are only
+available for construction in resource mode.
 
 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
 <BlitzBuildingCard 
@@ -273,15 +271,15 @@ available for construction in standard mode.
   buildingType={28} 
   description={[
     "Produces T1 Knights",
-    "Available in both simple and standard building modes"
+    "Available in both labor and resource modes"
   ]}
-  simpleCosts={[
-    { resource: 23, amount: 1440 } // Labor
+  laborCosts={[
+    { resource: ResourcesIds.Labor, amount: 900 } // Labor
   ]}
-  standardCosts={[
-    { resource: 23, amount: 180 }, // Labor
-    { resource: 3, amount: 270 }, // Wood
-    { resource: 4, amount: 180 } // Copper
+  resourceCosts={[
+    { resource: ResourcesIds.Labor, amount: 180 }, // Labor
+    { resource: ResourcesIds.Wood, amount: 180 }, // Wood
+    { resource: ResourcesIds.Copper, amount: 90 } // Copper
   ]}
 />
 
@@ -289,12 +287,12 @@ available for construction in standard mode.
   title="Barracks (T2)"
   image="/images/buildings/construction/barracks.png"
   buildingType={29}
-  description={["Produces T2 Knights", "Only available in standard building mode"]}
-  standardCosts={[
-    { resource: 23, amount: 360 }, // Labor
-    { resource: 3, amount: 540 }, // Wood
-    { resource: 4, amount: 360 }, // Copper
-    { resource: 6, amount: 180 }, // Cold Iron
+  description={["Produces T2 Knights", "Only available in resource mode"]}
+  resourceCosts={[
+    { resource: ResourcesIds.Labor, amount: 360 }, // Labor
+    { resource: ResourcesIds.Wood, amount: 360 }, // Wood
+    { resource: ResourcesIds.Copper, amount: 180 }, // Copper
+    { resource: ResourcesIds.ColdIron, amount: 90 }, // Cold Iron
     { resource: ResourcesIds.Essence, amount: 600 }, // Essence
   ]}
 />
@@ -303,12 +301,12 @@ available for construction in standard mode.
   title="Barracks (T3)"
   image="/images/buildings/construction/barracks.png"
   buildingType={30}
-  description={["Produces T3 Knights", "Only available in standard building mode"]}
-  standardCosts={[
-    { resource: 23, amount: 720 }, // Labor
-    { resource: 3, amount: 1080 }, // Wood
-    { resource: 6, amount: 720 }, // Cold Iron
-    { resource: 8, amount: 360 }, // Mithral
+  description={["Produces T3 Knights", "Only available in resource mode"]}
+  resourceCosts={[
+    { resource: ResourcesIds.Labor, amount: 720 }, // Labor
+    { resource: ResourcesIds.Wood, amount: 720 }, // Wood
+    { resource: ResourcesIds.ColdIron, amount: 360 }, // Cold Iron
+    { resource: ResourcesIds.Mithral, amount: 180 }, // Mithral
     { resource: ResourcesIds.Essence, amount: 1200 }, // Essence
   ]}
 />
@@ -327,14 +325,14 @@ available for construction in standard mode.
   title="Archery Range (T1)"
   image="/images/buildings/construction/archery.png"
   buildingType={31}
-  description={["Produces T1 Crossbowmen", "Available in both simple and standard building modes"]}
-  simpleCosts={[
-    { resource: 23, amount: 1440 }, // Labor
+  description={["Produces T1 Crossbowmen", "Available in both labor and resource modes"]}
+  laborCosts={[
+    { resource: ResourcesIds.Labor, amount: 900 } // Labor
   ]}
-  standardCosts={[
-    { resource: 23, amount: 180 }, // Labor
-    { resource: 3, amount: 270 }, // Wood
-    { resource: 4, amount: 180 }, // Copper
+  resourceCosts={[
+    { resource: ResourcesIds.Labor, amount: 180 }, // Labor
+    { resource: ResourcesIds.Wood, amount: 180 }, // Wood
+    { resource: ResourcesIds.Copper, amount: 90 } // Copper
   ]}
 />
 
@@ -342,12 +340,12 @@ available for construction in standard mode.
   title="Archery Range (T2)"
   image="/images/buildings/construction/archery.png"
   buildingType={32}
-  description={["Produces T2 Crossbowmen", "Only available in standard building mode"]}
-  standardCosts={[
-    { resource: 23, amount: 360 }, // Labor
-    { resource: 3, amount: 540 }, // Wood
-    { resource: 4, amount: 360 }, // Copper
-    { resource: 7, amount: 180 }, // Ironwood
+  description={["Produces T2 Crossbowmen", "Only available in resource mode"]}
+  resourceCosts={[
+    { resource: ResourcesIds.Labor, amount: 360 }, // Labor
+    { resource: ResourcesIds.Wood, amount: 360 }, // Wood
+    { resource: ResourcesIds.Copper, amount: 180 }, // Copper
+    { resource: ResourcesIds.Ironwood, amount: 90 }, // Ironwood
     { resource: ResourcesIds.Essence, amount: 600 }, // Essence
   ]}
 />
@@ -356,12 +354,12 @@ available for construction in standard mode.
   title="Archery Range (T3)"
   image="/images/buildings/construction/archery.png"
   buildingType={33}
-  description={["Produces T3 Crossbowmen", "Only available in standard building mode"]}
-  standardCosts={[
-    { resource: 23, amount: 720 }, // Labor
-    { resource: 3, amount: 1080 }, // Wood
-    { resource: 7, amount: 720 }, // Ironwood
-    { resource: 9, amount: 360 }, // Adamantine
+  description={["Produces T3 Crossbowmen", "Only available in resource mode"]}
+  resourceCosts={[
+    { resource: ResourcesIds.Labor, amount: 720 }, // Labor
+    { resource: ResourcesIds.Wood, amount: 720 }, // Wood
+    { resource: ResourcesIds.Ironwood, amount: 360 }, // Ironwood
+    { resource: ResourcesIds.Adamantine, amount: 180 }, // Adamantine
     { resource: ResourcesIds.Essence, amount: 1200 }, // Essence
   ]}
 />
@@ -380,14 +378,14 @@ available for construction in standard mode.
   title="Stables (T1)"
   image="/images/buildings/construction/stable.png"
   buildingType={34}
-  description={["Produces T1 Paladins", "Available in both simple and standard building modes"]}
-  simpleCosts={[
-    { resource: 23, amount: 1440 }, // Labor
+  description={["Produces T1 Paladins", "Available in both labor and resource modes"]}
+  laborCosts={[
+    { resource: ResourcesIds.Labor, amount: 900 } // Labor
   ]}
-  standardCosts={[
-    { resource: 23, amount: 180 }, // Labor
-    { resource: 3, amount: 270 }, // Wood
-    { resource: 4, amount: 180 }, // Copper
+  resourceCosts={[
+    { resource: ResourcesIds.Labor, amount: 180 }, // Labor
+    { resource: ResourcesIds.Wood, amount: 180 }, // Wood
+    { resource: ResourcesIds.Copper, amount: 90 } // Copper
   ]}
 />
 
@@ -395,12 +393,12 @@ available for construction in standard mode.
   title="Stables (T2)"
   image="/images/buildings/construction/stable.png"
   buildingType={35}
-  description={["Produces T2 Paladins", "Only available in standard building mode"]}
-  standardCosts={[
-    { resource: 23, amount: 360 }, // Labor
-    { resource: 3, amount: 540 }, // Wood
-    { resource: 4, amount: 360 }, // Copper
-    { resource: 10, amount: 180 }, // Gold
+  description={["Produces T2 Paladins", "Only available in resource mode"]}
+  resourceCosts={[
+    { resource: ResourcesIds.Labor, amount: 360 }, // Labor
+    { resource: ResourcesIds.Wood, amount: 360 }, // Wood
+    { resource: ResourcesIds.Copper, amount: 180 }, // Copper
+    { resource: ResourcesIds.Gold, amount: 90 }, // Gold
     { resource: ResourcesIds.Essence, amount: 600 }, // Essence
   ]}
 />
@@ -409,12 +407,12 @@ available for construction in standard mode.
   title="Stables (T3)" 
   image="/images/buildings/construction/stable.png" 
   buildingType={36} 
-  description={["Produces T3 Paladins", "Only available in standard building mode"]}
-  standardCosts={[
-    { resource: 23, amount: 720 }, // Labor
-    { resource: 3, amount: 1080 }, // Wood
-    { resource: 10, amount: 720 }, // Gold
-    { resource: 11, amount: 360 }, // Dragonhide
+  description={["Produces T3 Paladins", "Only available in resource mode"]}
+  resourceCosts={[
+    { resource: ResourcesIds.Labor, amount: 720 }, // Labor
+    { resource: ResourcesIds.Wood, amount: 720 }, // Wood
+    { resource: ResourcesIds.Gold, amount: 360 }, // Gold
+    { resource: ResourcesIds.Dragonhide, amount: 180 }, // Dragonhide
     { resource: ResourcesIds.Essence, amount: 1200 } // Essence 
   ]}
 />

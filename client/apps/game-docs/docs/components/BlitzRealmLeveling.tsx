@@ -35,7 +35,7 @@ export const BlitzRealmLeveling = () => {
       currentLevel: "Settlement",
       nextLevel: "City",
       resources: [
-        { id: 23, amount: 200 }, // Labor
+        { id: 23, amount: 180 }, // Labor
         { id: 35, amount: 1200 }, // Wheat
         { id: 38, amount: 200 }, // Essence
       ],
@@ -44,22 +44,22 @@ export const BlitzRealmLeveling = () => {
       currentLevel: "City",
       nextLevel: "Kingdom",
       resources: [
-        { id: 23, amount: 400 }, // Labor
+        { id: 23, amount: 360 }, // Labor
         { id: 35, amount: 3600 }, // Wheat
-        { id: 38, amount: 1200 }, // Essence
-        { id: 3, amount: 400 }, // Wood
+        { id: 38, amount: 800 }, // Essence
+        { id: 3, amount: 360 }, // Wood
       ],
     },
     {
       currentLevel: "Kingdom",
       nextLevel: "Empire",
       resources: [
-        { id: 23, amount: 800 }, // Labor
+        { id: 23, amount: 720 }, // Labor
         { id: 35, amount: 7200 }, // Wheat
-        { id: 38, amount: 4800 }, // Essence
-        { id: 3, amount: 1200 }, // Wood
-        { id: 2, amount: 600 }, // Coal
-        { id: 4, amount: 600 }, // Copper
+        { id: 38, amount: 1600 }, // Essence
+        { id: 3, amount: 720 }, // Wood
+        { id: 2, amount: 360 }, // Coal
+        { id: 4, amount: 360 }, // Copper
       ],
     },
   ];

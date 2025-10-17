@@ -9,7 +9,7 @@ export default function BlitzTroopsLimitTable() {
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "0.5rem" }}>
         <div>
-          <div style={stats.label}>Max Field Troops Per Structure:</div>
+          <div style={stats.label}>Max Field Armies Per Structure:</div>
           <div style={stats.value}>10</div>
         </div>
         <div>
