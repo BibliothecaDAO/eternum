@@ -12,6 +12,7 @@ pub mod interfaces {
 }
 #[cfg(test)]
 pub mod testing;
+pub mod world;
 pub mod trophies;
 pub mod village;
 pub mod vrgda;

@@ -14,13 +14,14 @@ pub trait IPrizeDistributionSystems<T> {
 // todo: release entry token
 #[dojo::contract]
 pub mod prize_distribution_systems {
-    use core::num::traits::zero::Zero;
+    use series_chest_reward_calculator::SeriesChestRewardStateTrait;
+use core::num::traits::zero::Zero;
     use cubit::f128::types::fixed::{Fixed, FixedTrait};
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{WorldStorageTrait, WorldStorage};
     use s1_eternum::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
-    use s1_eternum::models::config::{BlitzRegistrationConfig, SeasonConfigImpl, WorldConfigUtilImpl, BlitzRealmPlayerRegister};
+    use s1_eternum::models::config::{BlitzRegistrationConfig, SeasonConfigImpl, WorldConfigUtilImpl, BlitzRealmPlayerRegister, BlitzPreviousGame};
     use s1_eternum::models::events::{PrizeDistributedStory, PrizeDistributionFinalStory, Story, StoryEvent};
     use s1_eternum::models::rank::{PlayerRank, PlayersRankFinal, PlayersRankTrial, RankPrize};
     use s1_eternum::models::season::{SeasonPrize};
@@ -28,6 +29,10 @@ pub mod prize_distribution_systems {
     use s1_eternum::systems::realm::utils::contracts::{IERC20Dispatcher, IERC20DispatcherTrait};
     use s1_eternum::systems::utils::prize::iPrizeDistributionCalcImpl;
     use s1_eternum::{models::{hyperstructure::{PlayerRegisteredPoints}}};
+    use s1_eternum::models::series_chest_reward::{SeriesChestRewardState, GameChestReward};
+    use s1_eternum::utils::world::CustomDojoWorldImpl;
+    use s1_eternum::systems::utils::series_chest_reward::series_chest_reward_calculator;
+    use s1_eternum::systems::utils::series_chest_reward::series_chest_reward_calculator::{SeriesChestRewardStateImpl};
     use starknet::ContractAddress;
 
 
@@ -345,6 +350,34 @@ pub mod prize_distribution_systems {
                 // finalize the rankings
                 players_rank_final.trial_id = trial.trial_id;
                 world.write_model(@players_rank_final);
+
+                //////////////////////////////////////////
+                ///  finalize allocation of chests
+                //////////////////////////////////////////
+                 
+                // get the allocations from the last game of the series 
+                let last_game: BlitzPreviousGame = world.read_model(WORLD_CONFIG_ID);
+                let last_game_world
+                        = CustomDojoWorldImpl::custom_world_same_namespace(last_game.last_game_world_address);
+                let mut series_chest_reward_state: SeriesChestRewardState 
+                    = last_game_world.read_model(WORLD_CONFIG_ID);
+    
+                // intialize if not previously initialized
+                if series_chest_reward_state.game_index.is_zero() {
+                    series_chest_reward_state = SeriesChestRewardStateImpl::new();
+                };
+
+                let num_chests_allocated 
+                    = series_chest_reward_state.allocate_chests(trial.total_player_count_revealed.into());
+                
+                // save the series_chest_reward_state in this world so it can be used in future worlds
+                world.write_model(@series_chest_reward_state);
+                world.write_model(
+                    @GameChestReward {
+                        world_id: WORLD_CONFIG_ID,
+                        allocated_chests: num_chests_allocated.try_into().unwrap(),
+                        distributed_chests: 0
+                    });
 
                 // emit event
                 world

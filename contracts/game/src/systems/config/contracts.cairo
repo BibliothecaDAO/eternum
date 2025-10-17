@@ -1,14 +1,17 @@
 use s1_eternum::models::config::{
     BattleConfig, CapacityConfig, HyperstrtConstructConfig, MapConfig, QuestConfig, ResourceBridgeConfig,
     ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, StructureCapacityConfig, TradeConfig, TroopDamageConfig,
-    TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig, VillageTokenConfig,
+    TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig, VillageTokenConfig
 };
+
 use s1_eternum::models::resource::production::building::BuildingCategory;
 
 #[starknet::interface]
 pub trait IWorldConfig<T> {
     fn set_world_config(ref self: T, admin_address: starknet::ContractAddress);
 }
+
+
 #[starknet::interface]
 pub trait IMercenariesConfig<T> {
     fn set_mercenaries_name_config(ref self: T, name: felt252);
@@ -130,6 +133,11 @@ pub trait IGameModeConfig<T> {
 }
 
 #[starknet::interface]
+pub trait IBlitzConfig<T> {
+    fn set_blitz_previous_game(ref self: T, prev_world_address: starknet::ContractAddress);
+}
+
+#[starknet::interface]
 pub trait IVillageFoundResourcesConfig<T> {
     fn set_village_found_resources_config(ref self: T, village_found_resources: Span<(u8, u128, u128)>);
 }
@@ -234,7 +242,7 @@ pub mod config_systems {
         StructureCapacityConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig, TradeConfig,
         TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig,
         VillageFoundResourcesConfig, VillageTokenConfig, WeightConfig, WonderProductionBonusConfig, WorldConfig,
-        WorldConfigUtilImpl, BlitzRegistrationConfigImpl
+        WorldConfigUtilImpl, BlitzRegistrationConfigImpl, BlitzPreviousGame
     };
     use s1_eternum::models::name::AddressName;
     use s1_eternum::models::resource::production::building::BuildingCategory;
@@ -905,6 +913,22 @@ pub mod config_systems {
             assert_caller_is_admin(world);
             WorldConfigUtilImpl::set_member(ref world, selector!("blitz_mode_on"), blitz_mode_on);
         }
+    }
+
+    #[abi(embed_v0)]
+    impl IBlitzConfig of super::IBlitzConfig<ContractState> {
+
+        fn set_blitz_previous_game(ref self: ContractState, prev_world_address: starknet::ContractAddress) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+            
+            world.write_model(
+                @BlitzPreviousGame{
+                    config_id: WORLD_CONFIG_ID,
+                    last_game_world_address: prev_world_address
+                })
+        }
+
     }
 
     #[abi(embed_v0)]

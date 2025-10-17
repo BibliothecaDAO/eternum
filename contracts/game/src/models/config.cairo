@@ -967,3 +967,11 @@ pub struct BlitzCosmeticAttrsRegister {
     pub player: ContractAddress,
     pub attrs: Span<u128>,
 }
+
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
+pub struct BlitzPreviousGame {
+    #[key]
+    pub config_id: ID,
+    pub last_game_world_address: ContractAddress,
+}
