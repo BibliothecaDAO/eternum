@@ -16,7 +16,6 @@ import {
 
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 
-import { InventoryResources } from "@/ui/features/economy/resources";
 import { CompactDefenseDisplay } from "@/ui/features/military";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
 import { displayAddress } from "@/ui/utils/utils";
@@ -30,7 +29,6 @@ import {
   ID,
   MERCENARIES,
   RelicEffectWithEndTick,
-  RelicRecipientType,
   StructureType,
 } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
@@ -39,6 +37,7 @@ import { memo, useCallback, useMemo, useState } from "react";
 import { ImmunityTimer } from "../structures/immunity-timer";
 import { ActiveRelicEffects } from "./active-relic-effects";
 import { StructureProductionPanel } from "./structure-production-panel";
+import { StructureInventoryTabs } from "./structure-inventory-sections";
 
 interface StructureEntityDetailProps {
   structureEntityId: ID;
@@ -411,25 +410,25 @@ export const StructureEntityDetail = memo(
             </div>
           )}
 
-          <div className={panelClass}>
-            <div className={`${sectionTitleClass} mb-2`}>Resources & Relics</div>
-            {resources ? (
-              <InventoryResources
-                relicEffects={structureDetails?.relicEffects.map((effect) => effect.id) || []}
-                max={maxInventory}
+          {resources ? (
+            <div className={panelClass}>
+              <div className={`${sectionTitleClass} mb-2`}>Inventory</div>
+              <StructureInventoryTabs
                 resources={resources}
-                className="flex flex-wrap gap-1 w-full no-scrollbar"
-                resourcesIconSize={compact ? "xs" : "sm"}
-                textSize={compact ? "xxs" : "xs"}
+                activeRelicIds={structureDetails?.relicEffects?.map((effect) => effect.id) ?? []}
                 entityId={structureEntityId}
                 entityOwnerId={structureEntityId}
-                recipientType={RelicRecipientType.Structure}
-                activateRelics={showButtons && isMine}
+                maxItems={maxInventory}
+                compact={compact}
+                allowRelicActivation={showButtons && isMine}
               />
-            ) : (
+            </div>
+          ) : (
+            <div className={panelClass}>
+              <div className={`${sectionTitleClass} mb-2`}>Inventory</div>
               <div className={`${smallTextClass} text-gold/60 italic`}>No resources stored.</div>
-            )}
-          </div>
+            </div>
+          )}
 
           {structureDetails?.relicEffects && structureDetails.relicEffects.length > 0 && (
             <div className={panelClass}>
