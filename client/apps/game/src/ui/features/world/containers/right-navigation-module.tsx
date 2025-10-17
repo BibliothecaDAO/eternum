@@ -251,7 +251,7 @@ export const RightNavigationModule = () => {
             }}
             initial="hidden"
             animate="visible"
-            className={clsx("pointer-events-auto flex flex-col justify-start h-[88vh]")}
+            className={clsx("pointer-events-auto flex flex-col justify-start h-[calc(100vh-160px)]")}
           >
             <div className="flex flex-col mb-auto">
               {navigationItems.map((item) => (
@@ -308,7 +308,7 @@ export const RightNavigationModule = () => {
             </div>
             <BaseContainer
               className={clsx(
-                "panel-wood panel-wood-corners w-full flex-1 rounded-l-2xl border-l-2 border-y-2 border-gold/20 pointer-events-auto overflow-x-auto h-[88vh] overflow-y-auto",
+                "panel-wood panel-wood-corners w-full flex-1 rounded-l-2xl border-l-2 border-y-2 border-gold/20 pointer-events-auto overflow-x-auto h-[calc(100vh-160px)] overflow-y-auto",
               )}
             >
               <Suspense fallback={<div className="p-8">Loading...</div>}>

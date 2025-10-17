@@ -12,7 +12,7 @@ import { ClientComponents } from "@bibliothecadao/types";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { memo, useEffect, useMemo, useState } from "react";
 import { ArmyEntityDetail } from "./army-entity-detail";
-import { ChestEntityDetail } from "./chest-entity-detail";
+import { RelicCrateEntityDetail } from "./relic-crate-entity-detail";
 import { QuestEntityDetail } from "./quest-entity-detail";
 import { StructureEntityDetail } from "./structure-entity-detail";
 
@@ -68,7 +68,7 @@ export const EntitiesLabel = memo(() => {
       ) : isQuest ? (
         <QuestEntityDetail questEntityId={tile.occupier_id} compact={true} />
       ) : isChest ? (
-        <ChestEntityDetail chestEntityId={tile.occupier_id} compact={true} />
+        <RelicCrateEntityDetail crateEntityId={tile.occupier_id} compact={true} />
       ) : (
         <ArmyEntityDetail armyEntityId={tile.occupier_id} compact={true} />
       )}

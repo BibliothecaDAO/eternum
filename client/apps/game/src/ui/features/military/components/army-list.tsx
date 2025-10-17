@@ -12,7 +12,7 @@ import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
 import { Guard } from "@bibliothecadao/torii";
 import { ClientComponents, StructureType, Troops } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PlusIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ArmyChip } from "./army-chip";
@@ -21,6 +21,7 @@ import { UnifiedArmyCreationModal } from "./unified-army-creation-modal";
 
 export const ArmyList = ({ structure }: { structure: ComponentValue<ClientComponents["Structure"]["schema"]> }) => {
   const dojo = useDojo();
+  const queryClient = useQueryClient();
   const setTooltip = useUIStore((state) => state.setTooltip);
   const [guards, setGuards] = useState<Guard[]>([]);
 
@@ -70,6 +71,15 @@ export const ArmyList = ({ structure }: { structure: ComponentValue<ClientCompon
   const name = useMemo(() => getStructureName(structure, getIsBlitz()).name, [structure]);
 
   const toggleModal = useUIStore((state) => state.toggleModal);
+  const handleDefenseUpdated = () => {
+    if (!structure?.entity_id) return;
+
+    queryClient.invalidateQueries({
+      queryKey: ["guards", String(structure.entity_id)],
+      exact: true,
+      refetchType: "active",
+    });
+  };
 
   const handleCreateAttack = () => {
     toggleModal(<UnifiedArmyCreationModal structureId={structure.entity_id || 0} isExplorer={true} />);
@@ -186,6 +196,7 @@ export const ArmyList = ({ structure }: { structure: ComponentValue<ClientCompon
             troops: army.troops! as Troops,
           }))}
           cooldownSlots={cooldownSlots}
+          onDefenseUpdated={handleDefenseUpdated}
         />
       </div>
     </div>

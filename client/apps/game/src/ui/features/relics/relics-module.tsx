@@ -1,33 +1,30 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
 import { Position } from "@bibliothecadao/eternum";
 
 import { RangeInput } from "@/ui/design-system/atoms";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
-import { useDojo, useQuery } from "@bibliothecadao/react";
+import { useQuery } from "@bibliothecadao/react";
 import { useQuery as useReactQuery } from "@tanstack/react-query";
 import { Loader } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChestList } from "./chest-list";
 import { RelicInventory } from "./relic-inventory";
 
 export const RelicsModule = () => {
-  const {
-    account: { account },
-  } = useDojo();
+  const playerRelics = useUIStore((state) => state.playerRelics);
+  const playerRelicsLoading = useUIStore((state) => state.playerRelicsLoading);
+  const triggerRelicsRefresh = useUIStore((state) => state.triggerRelicsRefresh);
 
   const { hexPosition } = useQuery();
-  // My Relics tab ("inventory") is selected by default now
   const [activeTab, setActiveTab] = useState<"chests" | "inventory">("inventory");
   const [refreshKey, setRefreshKey] = useState(0);
   const [searchDistance, setSearchDistance] = useState(30);
   const [lastRefreshTime, setLastRefreshTime] = useState(0);
   const [remainingCooldown, setRemainingCooldown] = useState(0);
 
-  const userAddress = account.address;
-
   const contractPosition = new Position({ x: hexPosition?.col || 0, y: hexPosition?.row || 0 }).getContract();
 
-  // Query nearby chests
   const {
     data: chests = [],
     isLoading: isLoadingChests,
@@ -38,42 +35,38 @@ export const RelicsModule = () => {
       return sqlApi.fetchChestsNearPosition(contractPosition, searchDistance);
     },
     enabled: true,
-    staleTime: 30000, // 30 seconds
+    staleTime: 30000,
   });
 
-  // Query player relics
-  const {
-    data: relicsData,
-    isLoading: isLoadingRelics,
-    refetch: refetchRelics,
-  } = useReactQuery({
-    queryKey: ["playerRelics", userAddress, refreshKey],
-    queryFn: async () => {
-      return sqlApi.fetchAllPlayerRelics(userAddress);
-    },
-    enabled: true,
-    staleTime: 60000, // 1 minute
-  });
+  const totalRelics = useMemo(() => {
+    if (!playerRelics) {
+      return 0;
+    }
+
+    const structuresCount = playerRelics.structures.reduce((sum, structure) => sum + structure.relics.length, 0);
+    const armiesCount = playerRelics.armies.reduce((sum, army) => sum + army.relics.length, 0);
+
+    return structuresCount + armiesCount;
+  }, [playerRelics]);
 
   const handleRefresh = () => {
     const now = Date.now();
     const timeSinceLastRefresh = now - lastRefreshTime;
 
     if (timeSinceLastRefresh < 10000) {
-      // Still in cooldown
       return;
     }
 
     setLastRefreshTime(now);
-    setRefreshKey((prev) => prev + 1);
+
     if (activeTab === "chests") {
+      setRefreshKey((prev) => prev + 1);
       refetchChests();
     } else {
-      refetchRelics();
+      triggerRelicsRefresh();
     }
   };
 
-  // Update cooldown timer
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
@@ -85,22 +78,20 @@ export const RelicsModule = () => {
     return () => clearInterval(interval);
   }, [lastRefreshTime]);
 
-  const isLoading = activeTab === "chests" ? isLoadingChests : isLoadingRelics;
+  const isLoading = activeTab === "chests" ? isLoadingChests : playerRelicsLoading;
 
   return (
     <div className="p-4 space-y-4">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gold">Relics & Crates</h1>
         <div className="flex items-center gap-2">
           {remainingCooldown > 0 && (
             <span className="text-gold/60 text-sm">Refresh available in {remainingCooldown}s</span>
           )}
-          <RefreshButton onClick={handleRefresh} isLoading={isLoading} disabled={remainingCooldown > 0} />
+          <RefreshButton onClick={handleRefresh} isLoading={isLoading} disabled={remainingCooldown > 0 || isLoading} />
         </div>
       </div>
 
-      {/* Distance Control - Only show for chests tab */}
       {activeTab === "chests" && (
         <div className="bg-dark-wood/50 p-4 rounded-lg space-y-2">
           <div className="flex items-center justify-between mb-2">
@@ -124,7 +115,6 @@ export const RelicsModule = () => {
         </div>
       )}
 
-      {/* Tab Navigation */}
       <div className="flex border-b border-gold/20">
         <button
           onClick={() => setActiveTab("inventory")}
@@ -132,12 +122,7 @@ export const RelicsModule = () => {
             activeTab === "inventory" ? "text-gold border-b-2 border-gold" : "text-gold/60 hover:text-gold/80"
           }`}
         >
-          My Relics (
-          {relicsData
-            ? relicsData.structures.reduce((sum, s) => sum + s.relics.length, 0) +
-              relicsData.armies.reduce((sum, a) => sum + a.relics.length, 0)
-            : 0}
-          )
+          My Relics ({totalRelics})
         </button>
         <button
           onClick={() => setActiveTab("chests")}
@@ -149,7 +134,6 @@ export const RelicsModule = () => {
         </button>
       </div>
 
-      {/* Content */}
       <div className="min-h-[400px]">
         {isLoading ? (
           <div className="flex items-center justify-center h-64">
@@ -161,7 +145,7 @@ export const RelicsModule = () => {
         ) : (
           <>
             {activeTab === "chests" && <ChestList chests={chests} />}
-            {activeTab === "inventory" && relicsData && <RelicInventory relicsData={relicsData} />}
+            {activeTab === "inventory" && playerRelics && <RelicInventory relicsData={playerRelics} />}
           </>
         )}
       </div>

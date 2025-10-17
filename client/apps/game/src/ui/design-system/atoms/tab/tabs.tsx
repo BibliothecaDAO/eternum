@@ -33,6 +33,14 @@ export const VARIANTS: any = {
     },
     tabList: "flex p-1 space-x-2 panel-wood border-2 border-yellow-700 rounded-lg",
   },
+  inventory: {
+    tab: {
+      base: "group relative flex cursor-pointer items-center gap-2 border-b-[3px] border-transparent px-0 py-1 text-gold/70 !outline-none transition-colors duration-75",
+      active: "border-gold text-gold",
+      inactive: "hover:text-gold/90",
+    },
+    tabList: "flex w-full justify-start gap-4",
+  },
 };
 
 interface TabsProps {
