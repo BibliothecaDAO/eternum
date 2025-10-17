@@ -36,6 +36,10 @@ const TopCenterContainer = lazy(() => import("../shared/containers/top-center-co
 const BottomLeftContainer = lazy(() =>
   import("../shared/containers/bottom-left-container").then((module) => ({ default: module.BottomLeftContainer })),
 );
+const BottomRightContainer = lazy(() =>
+  import("../shared/containers/bottom-right-container").then((module) => ({ default: module.BottomRightContainer })),
+);
+
 const LeftMiddleContainer = lazy(() => import("../shared/containers/left-middle-container"));
 const RightMiddleContainer = lazy(() => import("../shared/containers/right-middle-container"));
 const TopLeftContainer = lazy(() => import("../shared/containers/top-left-container"));
@@ -74,6 +78,13 @@ const RealmTransferManager = lazy(() =>
     default: module.RealmTransferManager,
   })),
 );
+
+const PlayerRelicTray = lazy(() =>
+  import("../features/relics/components/player-relic-tray").then((module) => ({
+    default: module.PlayerRelicTray,
+  })),
+);
+
 
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   return (
@@ -164,6 +175,10 @@ const WorldHud = () => (
     <RightMiddleContainer>
       <RightNavigationModule />
     </RightMiddleContainer>
+
+    <BottomRightContainer>
+      <PlayerRelicTray />
+    </BottomRightContainer>
 
     <TopLeftContainer>
       <TopLeftNavigation />
