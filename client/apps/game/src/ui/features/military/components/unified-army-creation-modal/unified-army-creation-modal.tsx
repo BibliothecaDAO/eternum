@@ -153,12 +153,19 @@ export const UnifiedArmyCreationModal = ({
   const guardsBySlot = useMemo(() => {
     const map = new Map<number, GuardSummary>();
     (guardsData ?? []).forEach((guard) => {
+      const troops = guard.troops;
+      const count =
+        troops && troops.count !== undefined
+          ? divideByPrecision(Number(troops.count))
+          : undefined;
+
       map.set(Number(guard.slot), {
         slot: guard.slot,
-        troops: guard.troops
+        troops: troops
           ? {
-              category: guard.troops.category as TroopType | undefined,
-              tier: guard.troops.tier as TroopTier | undefined,
+              category: troops.category as TroopType | undefined,
+              tier: troops.tier as TroopTier | undefined,
+              count,
             }
           : null,
       });

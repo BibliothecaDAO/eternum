@@ -22,5 +22,6 @@ export interface GuardSummary {
   troops?: {
     category?: TroopType;
     tier?: TroopTier;
+    count?: number;
   } | null;
 }
