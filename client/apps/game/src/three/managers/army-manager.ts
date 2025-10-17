@@ -819,7 +819,7 @@ export class ArmyManager {
     const structureIdForOwner =
       finalOwningStructureId !== null && finalOwningStructureId !== undefined
         ? finalOwningStructureId
-        : params.owningStructureId ?? null;
+        : (params.owningStructureId ?? null);
 
     if (structureIdForOwner !== null && this.components?.Structure) {
       try {
@@ -829,8 +829,7 @@ export class ArmyManager {
         if (liveStructure) {
           const liveOwnerRaw = liveStructure.owner;
           if (liveOwnerRaw !== undefined && liveOwnerRaw !== null) {
-            const normalizedOwnerAddress =
-              typeof liveOwnerRaw === "bigint" ? liveOwnerRaw : BigInt(liveOwnerRaw ?? 0);
+            const normalizedOwnerAddress = typeof liveOwnerRaw === "bigint" ? liveOwnerRaw : BigInt(liveOwnerRaw ?? 0);
 
             finalOwnerAddress = normalizedOwnerAddress;
 
@@ -845,10 +844,7 @@ export class ArmyManager {
                 try {
                   resolvedOwnerName = shortString.decodeShortString(addressName.name.toString());
                 } catch (error) {
-                  console.warn(
-                    `[ArmyManager] Failed to decode owner name for army ${params.entityId}:`,
-                    error,
-                  );
+                  console.warn(`[ArmyManager] Failed to decode owner name for army ${params.entityId}:`, error);
                 }
               }
             }

@@ -147,9 +147,13 @@ export const calculatePresetAllocations = (
   resources.forEach((setting) => {
     const { resourceId, percentages } = setting;
     const rawComplexInputs = configManager.complexSystemResourceInputs[resourceId] ?? [];
-    const complexInputs = rawComplexInputs.filter((input) => !isAutomationResourceBlocked(input.resource, entityType, "input"));
+    const complexInputs = rawComplexInputs.filter(
+      (input) => !isAutomationResourceBlocked(input.resource, entityType, "input"),
+    );
     const rawSimpleInputs = configManager.simpleSystemResourceInputs[resourceId] ?? [];
-    const simpleInputs = rawSimpleInputs.filter((input) => !isAutomationResourceBlocked(input.resource, entityType, "input"));
+    const simpleInputs = rawSimpleInputs.filter(
+      (input) => !isAutomationResourceBlocked(input.resource, entityType, "input"),
+    );
 
     if (percentages.resourceToResource > 0) {
       adjustContribution(usageTotals, percentages.resourceToResource, complexInputs, "remove", entityType);
@@ -162,9 +166,13 @@ export const calculatePresetAllocations = (
   resources.forEach((setting) => {
     const { resourceId } = setting;
     const rawComplexInputs = configManager.complexSystemResourceInputs[resourceId] ?? [];
-    const complexInputs = rawComplexInputs.filter((input) => !isAutomationResourceBlocked(input.resource, entityType, "input"));
+    const complexInputs = rawComplexInputs.filter(
+      (input) => !isAutomationResourceBlocked(input.resource, entityType, "input"),
+    );
     const rawSimpleInputs = configManager.simpleSystemResourceInputs[resourceId] ?? [];
-    const simpleInputs = rawSimpleInputs.filter((input) => !isAutomationResourceBlocked(input.resource, entityType, "input"));
+    const simpleInputs = rawSimpleInputs.filter(
+      (input) => !isAutomationResourceBlocked(input.resource, entityType, "input"),
+    );
 
     const hasComplex = rawComplexInputs.length > 0;
     const hasSimple = rawSimpleInputs.length > 0;

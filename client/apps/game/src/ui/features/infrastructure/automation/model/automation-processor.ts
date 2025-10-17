@@ -5,11 +5,7 @@ import {
   RealmAutomationExecutionSummary,
   isAutomationResourceBlocked,
 } from "@/hooks/store/use-automation-store";
-import {
-  configManager,
-  divideByPrecision,
-  ResourceManager,
-} from "@bibliothecadao/eternum";
+import { configManager, divideByPrecision, ResourceManager } from "@bibliothecadao/eternum";
 import { ClientComponents, ResourcesIds } from "@bibliothecadao/types";
 
 export const PROCESS_INTERVAL_MS = 60 * 1000;

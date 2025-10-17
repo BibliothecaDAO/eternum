@@ -55,7 +55,10 @@ type RealmCard = {
   resourceIds: ResourcesIds[];
   lastRun?: number;
   presetId: RealmPresetId;
-  productionLookup: Record<number, { produced: number; cycles: number; method: string; executedAt: number } | undefined>;
+  productionLookup: Record<
+    number,
+    { produced: number; cycles: number; method: string; executedAt: number } | undefined
+  >;
 };
 
 export const ProductionOverviewPanel = () => {
@@ -229,17 +232,14 @@ export const ProductionOverviewPanel = () => {
     [handlePresetChange, realmCards],
   );
 
-  const handleResourceClick = useCallback(
-    (realmId: string, resourceId: ResourcesIds) => {
-      setSelectedProduction((current) => {
-        if (current && current.realmId === realmId && current.resourceId === resourceId) {
-          return null;
-        }
-        return { realmId, resourceId };
-      });
-    },
-    [],
-  );
+  const handleResourceClick = useCallback((realmId: string, resourceId: ResourcesIds) => {
+    setSelectedProduction((current) => {
+      if (current && current.realmId === realmId && current.resourceId === resourceId) {
+        return null;
+      }
+      return { realmId, resourceId };
+    });
+  }, []);
 
   return (
     <div className="flex flex-col gap-3">
@@ -249,7 +249,9 @@ export const ProductionOverviewPanel = () => {
           <p className="text-[11px] text-gold/60">Review automation and switch production presets.</p>
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-[10px] uppercase tracking-wide text-gold/60">Apply production preset to all realms</span>
+          <span className="text-[10px] uppercase tracking-wide text-gold/60">
+            Apply production preset to all realms
+          </span>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap gap-2">
               {REALM_PRESETS.map((preset) => {
@@ -276,9 +278,7 @@ export const ProductionOverviewPanel = () => {
               Advanced
             </Button>
           </div>
-          {globalPreset === "mixed" && (
-            <span className="text-[10px] text-gold/60">Mixed selection across realms.</span>
-          )}
+          {globalPreset === "mixed" && <span className="text-[10px] text-gold/60">Mixed selection across realms.</span>}
           {/* No explicit message for custom preset */}
         </div>
       </div>
@@ -298,7 +298,9 @@ export const ProductionOverviewPanel = () => {
 
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[10px] uppercase tracking-wide text-gold/60 whitespace-nowrap">Realm preset</span>
+                  <span className="text-[10px] uppercase tracking-wide text-gold/60 whitespace-nowrap">
+                    Realm preset
+                  </span>
                   <div className="flex flex-wrap gap-2">
                     {REALM_PRESETS.map((preset) => {
                       const isActive = card.presetId === preset.id;
@@ -311,7 +313,8 @@ export const ProductionOverviewPanel = () => {
                             isActive
                               ? "border-gold bg-gold/20 text-gold"
                               : "border-gold/20 bg-black/30 text-gold/70 hover:border-gold/40 hover:bg-gold/10",
-                            card.resourceIds.length === 0 && "opacity-40 cursor-not-allowed hover:border-gold/20 hover:bg-black/30",
+                            card.resourceIds.length === 0 &&
+                              "opacity-40 cursor-not-allowed hover:border-gold/20 hover:bg-black/30",
                           )}
                           onClick={() => handlePresetChange(card.id, preset.id)}
                           disabled={card.resourceIds.length === 0}

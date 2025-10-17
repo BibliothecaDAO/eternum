@@ -1,19 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  buildThreadId,
-  sortParticipants,
-} from "../direct-messages";
+import { buildThreadId, sortParticipants } from "../direct-messages";
 import { directMessageCreateSchema } from "../../../../../../../common/validation/realtime/direct-messages";
 
 describe("direct message helpers", () => {
   it("builds deterministic thread ids", () => {
-    expect(buildThreadId("player-a", "player-b")).toBe(
-      "player-a|player-b",
-    );
-    expect(buildThreadId("player-b", "player-a")).toBe(
-      "player-a|player-b",
-    );
+    expect(buildThreadId("player-a", "player-b")).toBe("player-a|player-b");
+    expect(buildThreadId("player-b", "player-a")).toBe("player-a|player-b");
   });
 
   it("sorts participants lexicographically", () => {

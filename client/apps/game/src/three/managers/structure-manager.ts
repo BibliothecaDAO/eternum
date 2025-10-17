@@ -428,10 +428,7 @@ export class StructureManager {
     }
 
     if (this.components?.Structure) {
-      const liveStructure = getComponentValue(
-        this.components.Structure,
-        getEntityIdFromKeys([BigInt(entityId)]),
-      );
+      const liveStructure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
 
       if (liveStructure) {
         const liveOwnerAddress = liveStructure.owner;
@@ -440,19 +437,13 @@ export class StructureManager {
           let liveOwnerName = finalOwner.ownerName;
 
           if (this.components.AddressName) {
-            const addressName = getComponentValue(
-              this.components.AddressName,
-              getEntityIdFromKeys([liveOwnerAddress]),
-            );
+            const addressName = getComponentValue(this.components.AddressName, getEntityIdFromKeys([liveOwnerAddress]));
 
             if (addressName?.name) {
               try {
                 liveOwnerName = shortString.decodeShortString(addressName.name.toString());
               } catch (error) {
-                console.warn(
-                  `[StructureManager] Failed to decode owner name for ${entityId}:`,
-                  error,
-                );
+                console.warn(`[StructureManager] Failed to decode owner name for ${entityId}:`, error);
               }
             }
           }

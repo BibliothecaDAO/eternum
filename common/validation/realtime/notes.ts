@@ -62,5 +62,4 @@ export const noteListQuerySchema = z.object({
 export interface PlayerNote extends z.infer<typeof noteSchema> {}
 export interface PlayerNoteCreate extends z.infer<typeof noteCreateSchema> {}
 export interface PlayerNoteUpdate extends z.infer<typeof noteUpdateSchema> {}
-export interface PlayerNoteListQuery
-  extends z.infer<typeof noteListQuerySchema> {}
+export interface PlayerNoteListQuery extends z.infer<typeof noteListQuerySchema> {}

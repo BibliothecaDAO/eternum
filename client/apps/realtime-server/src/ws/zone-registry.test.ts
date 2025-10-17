@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { createZoneRegistry } from "./zone-registry";
 import type { WSContext } from "hono/ws";
 
-const createMockSocket = () => ({} as unknown as WSContext<unknown>);
+const createMockSocket = () => ({}) as unknown as WSContext<unknown>;
 
 describe("createZoneRegistry", () => {
   it("adds sockets to zones and tracks membership", () => {

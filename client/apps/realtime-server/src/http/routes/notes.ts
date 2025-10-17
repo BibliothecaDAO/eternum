@@ -76,9 +76,7 @@ notesRoutes.patch("/:id", async (c) => {
   const [existing] = await db
     .select()
     .from(notes)
-    .where(
-      and(eq(notes.id, payload.id), eq(notes.authorId, player.playerId)),
-    )
+    .where(and(eq(notes.id, payload.id), eq(notes.authorId, player.playerId)))
     .limit(1);
 
   if (!existing) {
@@ -97,11 +95,7 @@ notesRoutes.patch("/:id", async (c) => {
     updatedAt: new Date(),
   };
 
-  const [updated] = await db
-    .update(notes)
-    .set(changes)
-    .where(eq(notes.id, payload.id))
-    .returning();
+  const [updated] = await db.update(notes).set(changes).where(eq(notes.id, payload.id)).returning();
 
   return c.json({ note: updated });
 });
@@ -118,11 +112,7 @@ notesRoutes.delete("/:id", async (c) => {
   const payload = payloadResult.data;
   const player = c.get("playerSession")!;
 
-  const { rowCount } = await db
-    .delete(notes)
-    .where(
-      and(eq(notes.id, payload.id), eq(notes.authorId, player.playerId)),
-    );
+  const { rowCount } = await db.delete(notes).where(and(eq(notes.id, payload.id), eq(notes.authorId, player.playerId)));
 
   if (rowCount === 0) {
     return c.json({ error: "Note not found." }, 404);
@@ -135,9 +125,7 @@ notesRoutes.get("/", async (c) => {
   const payloadResult = noteListQuerySchema.safeParse({
     zoneId: c.req.query("zoneId"),
     cursor: c.req.query("cursor"),
-    limit: c.req.query("limit")
-      ? Number(c.req.query("limit"))
-      : undefined,
+    limit: c.req.query("limit") ? Number(c.req.query("limit")) : undefined,
     since: c.req.query("since"),
   });
 
@@ -153,10 +141,7 @@ notesRoutes.get("/", async (c) => {
   }
 
   if (payload.since) {
-    const since =
-      payload.since instanceof Date
-        ? payload.since
-        : new Date(payload.since);
+    const since = payload.since instanceof Date ? payload.since : new Date(payload.since);
     filters.push(gt(notes.createdAt, since));
   }
 
@@ -174,10 +159,7 @@ notesRoutes.get("/", async (c) => {
   const limit = payload.limit ?? 50;
   const items = await query.orderBy(desc(notes.createdAt)).limit(limit);
 
-  const nextCursor =
-    items.length === limit
-      ? items[items.length - 1]?.createdAt?.toISOString()
-      : null;
+  const nextCursor = items.length === limit ? items[items.length - 1]?.createdAt?.toISOString() : null;
 
   return c.json({
     notes: items,

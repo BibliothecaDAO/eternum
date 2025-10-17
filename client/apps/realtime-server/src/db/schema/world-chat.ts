@@ -1,9 +1,6 @@
 import { index, jsonb, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 
-import type {
-  EntityMetadata,
-  MapLocation,
-} from "../../../../../../common/validation/realtime/shared";
+import type { EntityMetadata, MapLocation } from "../../../../../../common/validation/realtime/shared";
 import {
   DISPLAY_NAME_MAX_LENGTH,
   ENTITY_ID_MAX_LENGTH,
@@ -26,20 +23,12 @@ export const worldChatMessages = pgTable(
     content: varchar("content", { length: MESSAGE_MAX_LENGTH }).notNull(),
     location: jsonb("location").$type<MapLocation | null>(),
     metadata: jsonb("metadata").$type<EntityMetadata | null>(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     moderatedAt: timestamp("moderated_at", { withTimezone: true }),
   },
   (table) => ({
-    zoneCreatedIndex: index("world_chat_zone_created_idx").on(
-      table.zoneId,
-      table.createdAt,
-    ),
-    senderCreatedIndex: index("world_chat_sender_created_idx").on(
-      table.senderId,
-      table.createdAt,
-    ),
+    zoneCreatedIndex: index("world_chat_zone_created_idx").on(table.zoneId, table.createdAt),
+    senderCreatedIndex: index("world_chat_sender_created_idx").on(table.senderId, table.createdAt),
   }),
 );
 

@@ -21,18 +21,15 @@ import clsx from "clsx";
 import { AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 
-const getArrivalKey = (arrival: ResourceArrivalInfo) =>
-  `${arrival.structureEntityId}-${arrival.day}-${arrival.slot}`;
+const getArrivalKey = (arrival: ResourceArrivalInfo) => `${arrival.structureEntityId}-${arrival.day}-${arrival.slot}`;
 
 const getArrivalWeightKg = (arrival: ResourceArrivalInfo) => {
-  return arrival.resources
-    .filter(Boolean)
-    .reduce((total, resource) => {
-      const weightPerUnit = configManager.resourceWeightsKg[resource.resourceId] || 0;
-      const resourceAmount = divideByPrecision(resource.amount);
+  return arrival.resources.filter(Boolean).reduce((total, resource) => {
+    const weightPerUnit = configManager.resourceWeightsKg[resource.resourceId] || 0;
+    const resourceAmount = divideByPrecision(resource.amount);
 
-      return total + resourceAmount * weightPerUnit;
-    }, 0);
+    return total + resourceAmount * weightPerUnit;
+  }, 0);
 };
 
 export const StructureArrivals = memo(({ structure }: { structure: Structure }) => {
@@ -208,11 +205,7 @@ export const StructureArrivals = memo(({ structure }: { structure: Structure }) 
       {isExpanded && (
         <div className="flex flex-col gap-2 p-1">
           {arrivals.map((arrival) => (
-            <ResourceArrival
-              now={now}
-              arrival={arrival}
-              key={getArrivalKey(arrival)}
-            />
+            <ResourceArrival now={now} arrival={arrival} key={getArrivalKey(arrival)} />
           ))}
         </div>
       )}
@@ -231,8 +224,8 @@ export const StructureArrivals = memo(({ structure }: { structure: Structure }) 
           <div className="flex flex-col items-center gap-3 text-amber-400">
             <AlertCircle className="w-12 h-12" />
             <p className="text-center">
-              At least one arrival will exceed your storage capacity if you receive everything now. Some resources may be
-              lost in the process.
+              At least one arrival will exceed your storage capacity if you receive everything now. Some resources may
+              be lost in the process.
             </p>
             <p className="text-center">
               {bulkCapacityProjection.limitedArrivals.length} arrival

@@ -91,19 +91,14 @@ export const ProductionModal = ({ preSelectedResource }: { preSelectedResource?:
     const combined = [...playerRealms, ...playerVillages]
       .slice()
       .sort((a, b) =>
-        getStructureName(a.structure, isBlitz).name.localeCompare(
-          getStructureName(b.structure, isBlitz).name,
-        ),
+        getStructureName(a.structure, isBlitz).name.localeCompare(getStructureName(b.structure, isBlitz).name),
       );
     return combined;
   }, [playerRealms, playerVillages]);
 
   return (
     <ModalContainer size="full">
-      <ProductionContainer
-        playerStructures={managedStructures}
-        preSelectedResource={preSelectedResource}
-      />
+      <ProductionContainer playerStructures={managedStructures} preSelectedResource={preSelectedResource} />
     </ModalContainer>
   );
 };

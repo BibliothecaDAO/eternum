@@ -16,14 +16,9 @@ export const playerIdSchema = z
   .min(1, "Player id is required.")
   .max(PLAYER_ID_MAX_LENGTH, "Player id is too long.");
 
-export const starknetAddressSchema = z
-  .string()
-  .regex(/^0x[0-9a-fA-F]{63,66}$/, "Invalid Starknet address.");
+export const starknetAddressSchema = z.string().regex(/^0x[0-9a-fA-F]{63,66}$/, "Invalid Starknet address.");
 
-export const zoneIdSchema = z
-  .string()
-  .min(1, "Zone id is required.")
-  .max(ZONE_ID_MAX_LENGTH, "Zone id is too long.");
+export const zoneIdSchema = z.string().min(1, "Zone id is required.").max(ZONE_ID_MAX_LENGTH, "Zone id is too long.");
 
 export const displayNameSchema = z
   .string()
@@ -33,9 +28,7 @@ export const displayNameSchema = z
 
 export const timestampSchema = z.union([
   z.date(),
-  z
-    .string()
-    .datetime({ offset: true, message: "Invalid timestamp format." }),
+  z.string().datetime({ offset: true, message: "Invalid timestamp format." }),
 ]);
 
 export const mapLocationSchema = z.object({

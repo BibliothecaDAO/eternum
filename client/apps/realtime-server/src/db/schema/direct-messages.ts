@@ -1,22 +1,7 @@
-import {
-  boolean,
-  index,
-  jsonb,
-  pgTable,
-  primaryKey,
-  text,
-  timestamp,
-  uniqueIndex,
-  varchar,
-} from "drizzle-orm/pg-core";
+import { boolean, index, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
 
-import type {
-  EntityMetadata,
-} from "../../../../../../common/validation/realtime/shared";
-import {
-  ENTITY_ID_MAX_LENGTH,
-  PLAYER_ID_MAX_LENGTH,
-} from "../../../../../../common/validation/realtime/shared";
+import type { EntityMetadata } from "../../../../../../common/validation/realtime/shared";
+import { ENTITY_ID_MAX_LENGTH, PLAYER_ID_MAX_LENGTH } from "../../../../../../common/validation/realtime/shared";
 
 export const directMessageThreads = pgTable(
   "direct_message_threads",
@@ -24,9 +9,7 @@ export const directMessageThreads = pgTable(
     id: varchar("id", { length: ENTITY_ID_MAX_LENGTH }).primaryKey(),
     playerAId: varchar("player_a_id", { length: PLAYER_ID_MAX_LENGTH }).notNull(),
     playerBId: varchar("player_b_id", { length: PLAYER_ID_MAX_LENGTH }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }),
     lastMessageId: varchar("last_message_id", {
       length: ENTITY_ID_MAX_LENGTH,
@@ -36,10 +19,7 @@ export const directMessageThreads = pgTable(
     metadata: jsonb("metadata").$type<EntityMetadata | null>(),
   },
   (table) => ({
-    participantIndex: uniqueIndex("direct_message_players_unique").on(
-      table.playerAId,
-      table.playerBId,
-    ),
+    participantIndex: uniqueIndex("direct_message_players_unique").on(table.playerAId, table.playerBId),
   }),
 );
 
@@ -59,19 +39,11 @@ export const directMessages = pgTable(
     }).notNull(),
     content: text("content").notNull(),
     metadata: jsonb("metadata").$type<EntityMetadata | null>(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
-    threadCreatedIndex: index("direct_messages_thread_created_idx").on(
-      table.threadId,
-      table.createdAt,
-    ),
-    senderCreatedIndex: index("direct_messages_sender_created_idx").on(
-      table.senderId,
-      table.createdAt,
-    ),
+    threadCreatedIndex: index("direct_messages_thread_created_idx").on(table.threadId, table.createdAt),
+    senderCreatedIndex: index("direct_messages_sender_created_idx").on(table.senderId, table.createdAt),
   }),
 );
 
@@ -91,9 +63,7 @@ export const directMessageReadReceipts = pgTable(
         onUpdate: "cascade",
       }),
     readerId: varchar("reader_id", { length: PLAYER_ID_MAX_LENGTH }).notNull(),
-    readAt: timestamp("read_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    readAt: timestamp("read_at", { withTimezone: true }).notNull().defaultNow(),
     confirmed: boolean("confirmed").default(false).notNull(),
   },
   (table) => ({
@@ -101,10 +71,7 @@ export const directMessageReadReceipts = pgTable(
       name: "direct_message_read_receipts_pk",
       columns: [table.threadId, table.messageId, table.readerId],
     }),
-    threadReaderIndex: index("direct_message_read_receipts_thread_reader_idx").on(
-      table.threadId,
-      table.readerId,
-    ),
+    threadReaderIndex: index("direct_message_read_receipts_thread_reader_idx").on(table.threadId, table.readerId),
   }),
 );
 
@@ -125,12 +92,9 @@ export const directMessageTypingStates = pgTable(
       name: "direct_message_typing_states_pk",
       columns: [table.threadId, table.playerId],
     }),
-    threadIndex: index("direct_message_typing_states_thread_idx").on(
-      table.threadId,
-    ),
+    threadIndex: index("direct_message_typing_states_thread_idx").on(table.threadId),
   }),
 );
 
-export type DirectMessageThreadRecord =
-  typeof directMessageThreads.$inferSelect;
+export type DirectMessageThreadRecord = typeof directMessageThreads.$inferSelect;
 export type DirectMessageRecord = typeof directMessages.$inferSelect;

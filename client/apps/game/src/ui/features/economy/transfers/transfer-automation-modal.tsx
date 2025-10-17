@@ -38,7 +38,10 @@ export const TransferAutomationAdvancedModal = ({ onClose }: { onClose?: () => v
         const rm = new ResourceManager(components as any, sourceId);
 
         // donkey capacity & build resources using per-resource config (fallback to legacy fields)
-        const configMap = new Map<number, { mode: "percent" | "flat"; percent?: number; flatAmount?: number; flatPercent?: number }>();
+        const configMap = new Map<
+          number,
+          { mode: "percent" | "flat"; percent?: number; flatAmount?: number; flatPercent?: number }
+        >();
         if (Array.isArray(entry.resourceConfigs)) {
           for (const c of entry.resourceConfigs as any[]) configMap.set(c.resourceId, c);
         }
@@ -121,7 +124,11 @@ export const TransferAutomationAdvancedModal = ({ onClose }: { onClose?: () => v
     const q = filter.trim();
     if (!q) return list;
     const isNumeric = /^\d+$/.test(q);
-    const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const norm = (s: string) =>
+      s
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
     return list.filter((e) => {
       const src = e.sourceName ?? e.sourceEntityId;
       const dst = e.destinationName ?? e.destinationEntityId;
@@ -147,7 +154,10 @@ export const TransferAutomationAdvancedModal = ({ onClose }: { onClose?: () => v
         ) : (
           <div className="space-y-2">
             {filtered.map((e) => (
-              <div key={e.id} className="flex items-center justify-between rounded border border-gold/20 bg-black/30 p-2">
+              <div
+                key={e.id}
+                className="flex items-center justify-between rounded border border-gold/20 bg-black/30 p-2"
+              >
                 <div className="flex flex-col text-xs text-gold/80">
                   <div className="font-semibold text-gold/90">
                     {e.sourceName ?? e.sourceEntityId} → {e.destinationName ?? e.destinationEntityId}
@@ -155,9 +165,9 @@ export const TransferAutomationAdvancedModal = ({ onClose }: { onClose?: () => v
                   <div>
                     {Array.isArray(e.resourceConfigs) && e.resourceConfigs.length > 0
                       ? `${e.resourceConfigs.length} resources (per-resource config)`
-                      : ((e.amountMode ?? "percent") === "percent"
-                          ? `${e.percent}% of ${e.resourceIds.map((r) => ResourcesIds[r]).join(", ")}`
-                          : `Flat ${Math.max(0, Math.floor(e.flatAmount ?? 0)).toLocaleString()} of ${e.resourceIds.map((r) => ResourcesIds[r]).join(", ")}`)}
+                      : (e.amountMode ?? "percent") === "percent"
+                        ? `${e.percent}% of ${e.resourceIds.map((r) => ResourcesIds[r]).join(", ")}`
+                        : `Flat ${Math.max(0, Math.floor(e.flatAmount ?? 0)).toLocaleString()} of ${e.resourceIds.map((r) => ResourcesIds[r]).join(", ")}`}
                     {e.active ? ` • every ${e.intervalMinutes}m` : " • paused"}
                   </div>
                 </div>
@@ -165,9 +175,15 @@ export const TransferAutomationAdvancedModal = ({ onClose }: { onClose?: () => v
                   <Button size="xs" variant="outline" onClick={() => toggleActive(e.id, !e.active)}>
                     {e.active ? "Pause" : "Resume"}
                   </Button>
-                  <Button size="xs" onClick={() => runNow(e)}>Run now</Button>
-                  <Button size="xs" variant="outline" onClick={() => handleEdit(e)}>Edit</Button>
-                  <Button size="xs" variant="danger" onClick={() => remove(e.id)}>Delete</Button>
+                  <Button size="xs" onClick={() => runNow(e)}>
+                    Run now
+                  </Button>
+                  <Button size="xs" variant="outline" onClick={() => handleEdit(e)}>
+                    Edit
+                  </Button>
+                  <Button size="xs" variant="danger" onClick={() => remove(e.id)}>
+                    Delete
+                  </Button>
                 </div>
               </div>
             ))}

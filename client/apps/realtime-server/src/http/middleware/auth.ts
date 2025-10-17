@@ -12,10 +12,7 @@ export type AppEnv = {
   };
 };
 
-export const attachPlayerSession: MiddlewareHandler<AppEnv> = async (
-  c,
-  next,
-) => {
+export const attachPlayerSession: MiddlewareHandler<AppEnv> = async (c, next) => {
   const playerId =
     c.req.header("x-player-id") ??
     c.req.query("playerId") ??
@@ -38,10 +35,7 @@ export const attachPlayerSession: MiddlewareHandler<AppEnv> = async (
   await next();
 };
 
-export const requirePlayerSession: MiddlewareHandler<AppEnv> = async (
-  c,
-  next,
-) => {
+export const requirePlayerSession: MiddlewareHandler<AppEnv> = async (c, next) => {
   if (!c.get("playerSession")) {
     return c.json({ error: "Player session required." }, 401);
   }

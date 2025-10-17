@@ -1,8 +1,20 @@
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
-import { configManager, getEntityIdFromKeys, getIsBlitz, getStructureRelicEffects, getStructureName } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  getEntityIdFromKeys,
+  getIsBlitz,
+  getStructureRelicEffects,
+  getStructureName,
+} from "@bibliothecadao/eternum";
 import { useBuildings, useDojo } from "@bibliothecadao/react";
-import { getProducedResource, RealmInfo as RealmInfoType, RELICS, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import {
+  getProducedResource,
+  RealmInfo as RealmInfoType,
+  RELICS,
+  ResourcesIds,
+  StructureType,
+} from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { SparklesIcon } from "lucide-react";
 import { useMemo } from "react";

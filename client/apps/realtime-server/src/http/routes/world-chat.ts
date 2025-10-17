@@ -21,9 +21,7 @@ worldChatRoutes.get("/", async (c) => {
   const payloadResult = worldChatHistoryQuerySchema.safeParse({
     zoneId: c.req.query("zoneId"),
     cursor: c.req.query("cursor"),
-    limit: c.req.query("limit")
-      ? Number(c.req.query("limit"))
-      : undefined,
+    limit: c.req.query("limit") ? Number(c.req.query("limit")) : undefined,
     since: c.req.query("since"),
   });
 
@@ -39,10 +37,7 @@ worldChatRoutes.get("/", async (c) => {
   }
 
   if (payload.since) {
-    const since =
-      payload.since instanceof Date
-        ? payload.since
-        : new Date(payload.since);
+    const since = payload.since instanceof Date ? payload.since : new Date(payload.since);
     filters.push(gt(worldChatMessages.createdAt, since));
   }
 
@@ -57,14 +52,9 @@ worldChatRoutes.get("/", async (c) => {
   }
 
   const limit = payload.limit ?? 50;
-  const messages = await query
-    .orderBy(desc(worldChatMessages.createdAt))
-    .limit(limit);
+  const messages = await query.orderBy(desc(worldChatMessages.createdAt)).limit(limit);
 
-  const nextCursor =
-    messages.length === limit
-      ? messages[messages.length - 1]?.createdAt?.toISOString()
-      : null;
+  const nextCursor = messages.length === limit ? messages[messages.length - 1]?.createdAt?.toISOString() : null;
 
   return c.json({
     messages,

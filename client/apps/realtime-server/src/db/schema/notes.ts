@@ -1,18 +1,7 @@
-import {
-  pgEnum,
-  pgTable,
-  text,
-  timestamp,
-  varchar,
-  jsonb,
-  index,
-} from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, text, timestamp, varchar, jsonb, index } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
-import type {
-  EntityMetadata,
-  MapLocation,
-} from "../../../../../../common/validation/realtime/shared";
+import type { EntityMetadata, MapLocation } from "../../../../../../common/validation/realtime/shared";
 import {
   ENTITY_ID_MAX_LENGTH,
   MESSAGE_MAX_LENGTH,
@@ -21,10 +10,7 @@ import {
 } from "../../../../../../common/validation/realtime/shared";
 import { noteSchema } from "../../../../../../common/validation/realtime/notes";
 
-export const noteVisibilityEnum = pgEnum("note_visibility", [
-  "public",
-  "private",
-]);
+export const noteVisibilityEnum = pgEnum("note_visibility", ["public", "private"]);
 
 export const notes = pgTable(
   "notes",
@@ -40,21 +26,13 @@ export const notes = pgTable(
       .default(sql`'{}'::jsonb`),
     visibility: noteVisibilityEnum("visibility").default("public").notNull(),
     metadata: jsonb("metadata").$type<EntityMetadata | null>(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }),
     expiresAt: timestamp("expires_at", { withTimezone: true }),
   },
   (table) => ({
-    zoneCreatedIndex: index("notes_zone_created_idx").on(
-      table.zoneId,
-      table.createdAt,
-    ),
-    authorCreatedIndex: index("notes_author_created_idx").on(
-      table.authorId,
-      table.createdAt,
-    ),
+    zoneCreatedIndex: index("notes_zone_created_idx").on(table.zoneId, table.createdAt),
+    authorCreatedIndex: index("notes_author_created_idx").on(table.authorId, table.createdAt),
   }),
 );
 

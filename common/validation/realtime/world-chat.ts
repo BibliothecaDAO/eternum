@@ -50,12 +50,8 @@ export const worldChatAckSchema = z.object({
   deliveredAt: timestampSchema,
 });
 
-export interface WorldChatSender
-  extends z.infer<typeof worldChatSenderSchema> {}
-export interface WorldChatMessage
-  extends z.infer<typeof worldChatMessageSchema> {}
-export interface WorldChatPublishPayload
-  extends z.infer<typeof worldChatPublishSchema> {}
-export interface WorldChatHistoryQuery
-  extends z.infer<typeof worldChatHistoryQuerySchema> {}
+export interface WorldChatSender extends z.infer<typeof worldChatSenderSchema> {}
+export interface WorldChatMessage extends z.infer<typeof worldChatMessageSchema> {}
+export interface WorldChatPublishPayload extends z.infer<typeof worldChatPublishSchema> {}
+export interface WorldChatHistoryQuery extends z.infer<typeof worldChatHistoryQuerySchema> {}
 export interface WorldChatAck extends z.infer<typeof worldChatAckSchema> {}
