@@ -170,6 +170,36 @@ export const StructureEntityDetail = memo(
       return getStructureTypeName(structure.base.category as StructureType, isBlitz);
     }, [structure?.base?.category, isBlitz]);
 
+    const backgroundImage = useMemo(() => {
+      if (!structure?.base?.category) return undefined;
+
+      switch (structure.base.category as StructureType) {
+        case StructureType.Realm: {
+          const level = Number(structure.base.level ?? 0);
+          if (level >= 3) {
+            return "/images/buildings/construction/castleThree.png";
+          }
+          if (level >= 2) {
+            return "/images/buildings/construction/castleTwo.png";
+          }
+          if (level >= 1) {
+            return "/images/buildings/construction/castleOne.png";
+          }
+          return "/images/buildings/construction/castleZero.png";
+        }
+        case StructureType.Hyperstructure:
+          return "/images/buildings/construction/hyperstructure.png";
+        case StructureType.FragmentMine:
+          return "/images/buildings/construction/essence-rift.png";
+        case StructureType.Village:
+          return "/images/buildings/construction/camp.png";
+        case StructureType.Bank:
+          return "/images/buildings/construction/bank.png";
+        default:
+          return undefined;
+      }
+    }, [structure?.base?.category, structure?.base?.level]);
+
     const guardSlotsUsed =
       structure?.base.troop_guard_count !== undefined ? Number(structure.base.troop_guard_count) : undefined;
     const guardSlotsMax =
@@ -240,7 +270,14 @@ export const StructureEntityDetail = memo(
             compact ? "px-3 py-3" : "px-4 py-4"
           }`}
         >
-          <div className="relative flex flex-col gap-3">
+          {backgroundImage && (
+            <div
+              className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-25 pointer-events-none"
+              style={{ backgroundImage: `url(${backgroundImage})` }}
+              aria-hidden="true"
+            />
+          )}
+          <div className="relative z-10 flex flex-col gap-3">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="flex flex-col flex-1 min-w-0 gap-1">
                 {typeLabel && (
