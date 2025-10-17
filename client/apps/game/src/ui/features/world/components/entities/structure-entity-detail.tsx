@@ -16,7 +16,7 @@ import {
 
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 
-import { ActiveResourceProductions, InventoryResources } from "@/ui/features/economy/resources";
+import { InventoryResources } from "@/ui/features/economy/resources";
 import { CompactDefenseDisplay } from "@/ui/features/military";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
 import { displayAddress } from "@/ui/utils/utils";
@@ -38,6 +38,7 @@ import { Eye, Loader, RefreshCw } from "lucide-react";
 import { memo, useCallback, useMemo, useState } from "react";
 import { ImmunityTimer } from "../structures/immunity-timer";
 import { ActiveRelicEffects } from "./active-relic-effects";
+import { StructureProductionPanel } from "./structure-production-panel";
 
 interface StructureEntityDetailProps {
   structureEntityId: ID;
@@ -395,13 +396,18 @@ export const StructureEntityDetail = memo(
 
           {resources ? (
             <div className={panelClass}>
-              <div className={`${sectionTitleClass} mb-2`}>Active Productions</div>
-              <ActiveResourceProductions resources={resources} compact={true} size="xs" />
+              <div className={`${sectionTitleClass} mb-2`}>Buildings & Production</div>
+              <StructureProductionPanel
+                structure={structure}
+                resources={resources}
+                compact={compact}
+                smallTextClass={smallTextClass}
+              />
             </div>
           ) : (
             <div className={panelClass}>
-              <div className={`${sectionTitleClass} mb-1`}>Active Productions</div>
-              <div className={`${smallTextClass} text-gold/60 italic`}>Production data unavailable.</div>
+              <div className={`${sectionTitleClass} mb-1`}>Buildings & Production</div>
+              <div className={`${smallTextClass} text-gold/60 italic`}>Buildings & Production data unavailable.</div>
             </div>
           )}
 
