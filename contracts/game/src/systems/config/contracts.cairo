@@ -134,7 +134,7 @@ pub trait IGameModeConfig<T> {
 
 #[starknet::interface]
 pub trait IBlitzConfig<T> {
-    fn set_blitz_previous_game(ref self: T, prev_world_address: starknet::ContractAddress);
+    fn set_blitz_previous_game(ref self: T, prev_prize_distribution_systems: starknet::ContractAddress);
 }
 
 #[starknet::interface]
@@ -918,14 +918,16 @@ pub mod config_systems {
     #[abi(embed_v0)]
     impl IBlitzConfig of super::IBlitzConfig<ContractState> {
 
-        fn set_blitz_previous_game(ref self: ContractState, prev_world_address: starknet::ContractAddress) {
+        fn set_blitz_previous_game(
+            ref self: ContractState, prev_prize_distribution_systems: starknet::ContractAddress
+        ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
             
             world.write_model(
                 @BlitzPreviousGame{
                     config_id: WORLD_CONFIG_ID,
-                    last_game_world_address: prev_world_address
+                    last_prize_distribution_systems: prev_prize_distribution_systems
                 })
         }
 

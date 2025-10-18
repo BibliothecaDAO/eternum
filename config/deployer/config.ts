@@ -60,6 +60,9 @@ export class GameConfigDeployer {
     await setGameModeConfig(config);
     await this.sleepNonLocal();
 
+    await setBlitzPreviousGame(config);
+    await this.sleepNonLocal();
+
     await setVictoryPointsConfig(config);
     await this.sleepNonLocal();
 
@@ -1353,6 +1356,48 @@ export const setGameModeConfig = async (config: Config) => {
     blitz_mode_on: config.config.blitz.mode.on,
   });
   console.log(chalk.green(`\n    ✔ Game mode configured `) + chalk.gray(gameModeTx.statusReceipt) + "\n");
+};
+
+export const setBlitzPreviousGame = async (config: Config) => {
+  // Read previously saved address from configuration
+  const prevAddress = (config.config as any)?.prev_prize_distribution_address as string | undefined;
+  // obtain current prize_distribution_systems from the current manifest
+  let currentAddress: string | undefined = undefined;
+  try {
+    const tag = `${NAMESPACE}-prize_distribution_systems`;
+    currentAddress = getContractByName((config.config.setup as any)?.manifest, tag);
+  } catch {
+    currentAddress = undefined;
+  }
+
+  // Validate previous address exists and is different from current
+  const isNonZero = (addr?: string) => !!addr && addr !== "0x0" && addr !== "0x";
+  if (!isNonZero(prevAddress)) {
+    console.log(chalk.gray("    ↪ No previous prize_distribution_systems found; skipping blitz previous game config"));
+    return;
+  }
+  if (currentAddress && prevAddress?.toLowerCase() === currentAddress.toLowerCase()) {
+    console.log(chalk.gray("    ↪ Previous prize_distribution_systems equals current; skipping blitz previous game config"));
+    return;
+  }
+
+  console.log(
+    chalk.cyan(`
+  ⚡ Blitz Previous Game
+  ═════════════════════`),
+  );
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Previous Prize Distribution Systems")}
+    │  ${chalk.gray("Address:")} ${chalk.white(prevAddress)}
+    └────────────────────────────────`),
+  );
+
+  const tx = await config.provider.set_blitz_previous_game({
+    signer: config.account,
+    prev_prize_distribution_systems: prevAddress!,
+  });
+  console.log(chalk.green(`\n    ✔ Blitz previous game set `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
 export const setVictoryPointsConfig = async (config: Config) => {

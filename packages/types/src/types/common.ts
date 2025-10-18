@@ -630,6 +630,10 @@ export interface Config {
     addresses: SeasonAddresses;
     manifest: any;
   };
+
+  // Previous prize distribution systems address (carried between runs)
+  prev_prize_distribution_address?: string | null;
+
 }
 
 export interface RealmInfo {

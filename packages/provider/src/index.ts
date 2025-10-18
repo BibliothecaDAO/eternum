@@ -2198,6 +2198,16 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async set_blitz_previous_game(props: SystemProps.SetBlitzPreviousGameProps) {
+    const { prev_prize_distribution_systems, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_blitz_previous_game",
+      calldata: [prev_prize_distribution_systems],
+    });
+  }
+
   public async set_travel_food_cost_config(props: SystemProps.SetTravelFoodCostConfigProps) {
     const {
       config_id,

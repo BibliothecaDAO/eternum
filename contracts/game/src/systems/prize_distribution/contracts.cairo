@@ -34,13 +34,82 @@ use core::num::traits::zero::Zero;
     use s1_eternum::systems::utils::series_chest_reward::series_chest_reward_calculator;
     use s1_eternum::systems::utils::series_chest_reward::series_chest_reward_calculator::{SeriesChestRewardStateImpl};
     use starknet::ContractAddress;
-
+    use super::{IPrizeDistributionSystems, IPrizeDistributionSystemsDispatcher, IPrizeDistributionSystemsDispatcherTrait};
 
     const SYSTEM_TRIAL_ID: u128 = 1000;
 
 
     #[abi(embed_v0)]
-    pub impl PrizeDistributionSystemsImpl of super::IPrizeDistributionSystems<ContractState> {
+    pub impl PrizeDistributionSystemsImpl of IPrizeDistributionSystems<ContractState> {
+
+        fn blitz_get_or_compute_series_chest_reward_state(ref self: ContractState) -> SeriesChestRewardState {
+
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+
+            // return early if the new state has already been calculated
+            let mut current_game_series_chest_reward_state: SeriesChestRewardState 
+                = world.read_model(WORLD_CONFIG_ID);
+            if current_game_series_chest_reward_state.game_index.is_non_zero() {
+                return current_game_series_chest_reward_state;
+            }
+
+            // ensure the main game has started (so registration has closed)
+            let mut season_config = SeasonConfigImpl::get(world);
+            season_config.assert_started_main();
+
+            // ensure blitz game mode is on
+            let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
+            assert!(blitz_mode_on == true, "Eternum: Not a blitz game");
+
+            let last_game: BlitzPreviousGame = world.read_model(WORLD_CONFIG_ID);
+            let mut last_game_series_chest_reward_state : SeriesChestRewardState 
+                = if last_game.last_prize_distribution_systems.is_non_zero() {
+                    IPrizeDistributionSystemsDispatcher{
+                        contract_address: last_game.last_prize_distribution_systems
+                    }.blitz_get_or_compute_series_chest_reward_state()
+            } else {
+                SeriesChestRewardStateImpl::new()
+            };
+
+            // intialize if not previously initialized
+            if last_game_series_chest_reward_state.game_index.is_zero() {
+                last_game_series_chest_reward_state = SeriesChestRewardStateImpl::new();
+            };
+
+
+            if current_game_series_chest_reward_state.game_index > last_game_series_chest_reward_state.game_index {
+                return current_game_series_chest_reward_state;
+            } else {
+                current_game_series_chest_reward_state = last_game_series_chest_reward_state;
+                let mut blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
+                    world, selector!("blitz_registration_config"),
+                );
+
+                // return early if there were less than 2 players in the game
+                let n_obs = blitz_registration_config.registration_count;
+                if n_obs < 2 {
+                    world.write_model(@current_game_series_chest_reward_state);
+                    return current_game_series_chest_reward_state;
+                }
+
+
+                let num_chests_allocated 
+                    = current_game_series_chest_reward_state
+                        .allocate_chests(n_obs.into());
+            
+                // save the series_chest_reward_state in this world so it can be used in future worlds
+                world.write_model(@current_game_series_chest_reward_state);
+                world.write_model(
+                    @GameChestReward {
+                        world_id: WORLD_CONFIG_ID,
+                        allocated_chests: num_chests_allocated.try_into().unwrap(),
+                        distributed_chests: 0
+                    });
+
+                return current_game_series_chest_reward_state;
+            }
+        }
+
 
         fn blitz_prize_claim_no_game(ref self: ContractState, registered_player: ContractAddress) {
             // ensure the main game has started (so registration has closed)
@@ -355,29 +424,8 @@ use core::num::traits::zero::Zero;
                 ///  finalize allocation of chests
                 //////////////////////////////////////////
                  
-                // get the allocations from the last game of the series 
-                let last_game: BlitzPreviousGame = world.read_model(WORLD_CONFIG_ID);
-                let last_game_world
-                        = CustomDojoWorldImpl::custom_world_same_namespace(last_game.last_game_world_address);
-                let mut series_chest_reward_state: SeriesChestRewardState 
-                    = last_game_world.read_model(WORLD_CONFIG_ID);
-    
-                // intialize if not previously initialized
-                if series_chest_reward_state.game_index.is_zero() {
-                    series_chest_reward_state = SeriesChestRewardStateImpl::new();
-                };
-
-                let num_chests_allocated 
-                    = series_chest_reward_state.allocate_chests(trial.total_player_count_revealed.into());
-                
-                // save the series_chest_reward_state in this world so it can be used in future worlds
-                world.write_model(@series_chest_reward_state);
-                world.write_model(
-                    @GameChestReward {
-                        world_id: WORLD_CONFIG_ID,
-                        allocated_chests: num_chests_allocated.try_into().unwrap(),
-                        distributed_chests: 0
-                    });
+                // compute reward chest allocations for this game
+                self.blitz_get_or_compute_series_chest_reward_state();
 
                 // emit event
                 world

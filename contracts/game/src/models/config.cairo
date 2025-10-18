@@ -973,5 +973,5 @@ pub struct BlitzCosmeticAttrsRegister {
 pub struct BlitzPreviousGame {
     #[key]
     pub config_id: ID,
-    pub last_game_world_address: ContractAddress,
+    pub last_prize_distribution_systems: ContractAddress,
 }

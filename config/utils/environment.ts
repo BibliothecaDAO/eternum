@@ -1,31 +1,71 @@
 export type NetworkType = "local" | "sepolia" | "slot" | "slottest" | "mainnet";
 
+import fs from "fs";
+
+// Replacer for JSON.stringify that converts BigInt values to strings.
+function bigIntReplacer(_key: string, value: unknown) {
+  return typeof value === "bigint" ? value.toString() : value;
+}
+
+function extractContractAddressFromManifest(manifest: any, tag: string): string | null {
+  try {
+    const list = manifest?.contracts;
+    if (!Array.isArray(list)) return null;
+    const found = list.find((c: any) => c?.tag === tag);
+    return found?.address ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function saveConfigJsonFromConfigTsFile(chain: NetworkType) {
-  const fs = require("fs");
   const CONFIGURATION_FILE = `../environments/${chain}`;
-  const configurationJson = (await import(CONFIGURATION_FILE)).default;
+  const configurationJson: any = (await import(CONFIGURATION_FILE)).default;
 
-  // Add a replacer function to handle BigInt
-  const bigIntReplacer = (key: string, value: any) => {
-    if (typeof value === "bigint") {
-      return value.toString();
+  const dataDir = "./environments/data";
+  const targetPath = `${dataDir}/${chain}.json`;
+
+  // Compute prev_prize_distribution_address based on previous file and current manifest
+  let prevSaved: string | null = null;
+  let prevCurrent: string | null = null;
+  try {
+    if (fs.existsSync(targetPath)) {
+      const prevRaw = fs.readFileSync(targetPath, "utf8");
+      const prevParsed = JSON.parse(prevRaw);
+      prevSaved = prevParsed?.configuration?.prev_prize_distribution_address ?? prevParsed?.prev_prize_distribution_address ?? null;
+      const prevManifest = prevParsed?.configuration?.setup?.manifest ?? prevParsed?.setup?.manifest;
+      prevCurrent = extractContractAddressFromManifest(prevManifest, "s1_eternum-prize_distribution_systems");
     }
-    return value;
-  };
+  } catch {}
 
-  // make or overwrite the json file
+  const newManifest = configurationJson?.setup?.manifest;
+  const newCurrent = extractContractAddressFromManifest(newManifest, "s1_eternum-prize_distribution_systems");
+
+  const norm = (x?: string | null) => (x ? x.toLowerCase() : "");
+  const clean = (x: string) => (x === "0x0" || x === "0x" ? "" : x);
+  const equal = (a?: string | null, b?: string | null) => clean(norm(a)) === clean(norm(b));
+
+  let computedPrev: string | null = null;
+  if (prevCurrent) {
+    computedPrev = equal(prevCurrent, newCurrent) ? prevSaved ?? null : prevCurrent;
+  } else {
+    computedPrev = null;
+  }
+
+  configurationJson.prev_prize_distribution_address = computedPrev;
+
   const jsonFileContent = `{
       "generatedFromTsFile": true,
       "message": "This file was generated from the .ts file and should not be edited manually",
       "configuration": ${JSON.stringify(configurationJson, bigIntReplacer, 2)}
     }`;
 
-  const dataDir = "./environments/data";
-  // make the directory if it doesn't exist
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
   }
-  fs.writeFileSync(`${dataDir}/${chain}.json`, jsonFileContent);
+  const tmpPath = `${targetPath}.tmp`;
+  fs.writeFileSync(tmpPath, jsonFileContent);
+  fs.renameSync(tmpPath, targetPath);
 }
 
 /**
