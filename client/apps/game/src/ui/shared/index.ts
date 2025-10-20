@@ -2,7 +2,7 @@
 // Re-export all shared, cross-feature components
 
 // Core UI Components
-export { GameWinnerMessage } from "./components/game-winner-message";
+export { EndgameModal } from "./components/endgame-modal";
 export { ModalContainer } from "./components/modal-container";
 export { ProductionStatusBadge } from "./components/production-status-badge";
 export { NameChangePopup } from "./components/name-change-popup";

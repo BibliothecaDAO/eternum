@@ -2,9 +2,15 @@ import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { BlitzHighlightCard } from "@/ui/shared/components/blitz-highlight-card";
-import { BLITZ_CARD_DIMENSIONS, BlitzHighlightPlayer, buildBlitzShareMessage } from "@/ui/shared/lib/blitz-highlight";
+import {
+  BLITZ_CARD_DIMENSIONS,
+  BLITZ_DEFAULT_SHARE_ORIGIN,
+  BlitzHighlightPlayer,
+  buildBlitzShareMessage,
+  formatOrdinal,
+} from "@/ui/shared/lib/blitz-highlight";
 import { copySvgToClipboard } from "@/ui/shared/lib/copy-svg";
-import { displayAddress, getRealmCountPerHyperstructure } from "@/ui/utils/utils";
+import { currencyIntlFormat, displayAddress, getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { getAddressName, getGuildFromPlayerAddress, getIsBlitz, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
@@ -12,7 +18,7 @@ import { Copy, Share2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-export const GameWinnerMessage = () => {
+export const EndgameModal = () => {
   const {
     account: { account },
     setup: { components },
@@ -20,20 +26,15 @@ export const GameWinnerMessage = () => {
 
   const { currentBlockTimestamp } = useBlockTimestamp();
 
-  const gameWinner = useUIStore((state) => state.gameWinner);
   const gameEndAt = useUIStore((state) => state.gameEndAt);
-
-  void currentBlockTimestamp; // DEBUG: remove once hasGameEnded hook restored
-  void gameEndAt; // DEBUG: remove once hasGameEnded hook restored
 
   const isBlitz = getIsBlitz();
 
   const [isVisible, setIsVisible] = useState(true);
   const [isAnimating, setIsAnimating] = useState(true);
-  const [topThreePlayers, setTopThreePlayers] = useState<BlitzHighlightPlayer[]>([]);
-  const [playerRank, setPlayerRank] = useState<number | null>(null);
   const [highlightedPlayer, setHighlightedPlayer] = useState<BlitzHighlightPlayer | null>(null);
   const [isCopying, setIsCopying] = useState(false);
+  const [isRanked, setIsRanked] = useState<boolean>(true);
 
   const leaderboardSvgRef = useRef<SVGSVGElement | null>(null);
 
@@ -71,10 +72,6 @@ export const GameWinnerMessage = () => {
         } satisfies BlitzHighlightPlayer;
       };
 
-      const formattedTopThree = rankedPlayers
-        .slice(0, 3)
-        .map(([address, points], index) => createTopPlayer(address, index + 1, points));
-
       const playerAddress = ContractAddress(account.address);
       const myIndex = rankedPlayers.findIndex(([address]) => address === playerAddress);
       let myPlayer: BlitzHighlightPlayer | null = null;
@@ -82,22 +79,24 @@ export const GameWinnerMessage = () => {
       if (myIndex >= 0) {
         const [address, points] = rankedPlayers[myIndex];
         myPlayer = createTopPlayer(address, myIndex + 1, points);
+        setIsRanked(true);
+      } else {
+        setIsRanked(false);
       }
 
-      setTopThreePlayers(formattedTopThree);
-      setPlayerRank(myIndex >= 0 ? myIndex + 1 : null);
-      setHighlightedPlayer(myPlayer ?? formattedTopThree[0] ?? null);
+      setHighlightedPlayer(myPlayer ?? null);
     } catch (error) {
       console.error("Failed to load final leaderboard", error);
-      setTopThreePlayers([]);
-      setPlayerRank(null);
       setHighlightedPlayer(null);
+      setIsRanked(false);
     }
   }, [account.address, components, hasGameEnded]);
 
+  const highlight = highlightedPlayer;
+
   const copyLeaderboardImage = useCallback(async () => {
-    if (topThreePlayers.length === 0 || !leaderboardSvgRef.current) {
-      toast.error("Final standings are still loading.");
+    if (!highlight || !leaderboardSvgRef.current) {
+      toast.error("Your final standings are still loading.");
       return;
     }
 
@@ -116,19 +115,27 @@ export const GameWinnerMessage = () => {
     } finally {
       setIsCopying(false);
     }
-  }, [topThreePlayers]);
+  }, [highlight]);
 
-  const highlightPoints = highlightedPlayer?.points ?? null;
+  const highlightPoints = highlight?.points ?? null;
+
+  const leaderboardUrl = useMemo(() => {
+    if (typeof window !== "undefined") {
+      return new URL("/leaderboard", window.location.origin).toString();
+    }
+
+    return `${BLITZ_DEFAULT_SHARE_ORIGIN}/leaderboard`;
+  }, []);
 
   const handleShareOnX = useCallback(() => {
-    if (topThreePlayers.length === 0) {
-      toast.error("Final standings are still loading.");
+    if (!highlight) {
+      toast.error("Your final standings are still loading.");
       return;
     }
 
     const shareText = buildBlitzShareMessage({
-      rank: playerRank,
-      points: highlightPoints,
+      rank: highlight.rank,
+      points: highlight.points,
       eventLabel: isBlitz ? "Realms Blitz" : "the Realms leaderboard",
       origin: typeof window !== "undefined" ? window.location.origin : undefined,
     });
@@ -139,16 +146,26 @@ export const GameWinnerMessage = () => {
     if (typeof window !== "undefined") {
       window.open(shareIntent.toString(), "_blank", "noopener,noreferrer");
     }
-  }, [highlightPoints, isBlitz, playerRank, topThreePlayers]);
+  }, [highlight, isBlitz]);
+
+  const handleViewLeaderboard = useCallback(() => {
+    if (typeof window === "undefined") {
+      toast.error("Opening the leaderboard is not supported in this environment.");
+      return;
+    }
+
+    window.location.href = leaderboardUrl;
+  }, [leaderboardUrl]);
 
   if (!hasGameEnded || !isVisible) return null;
 
-  const highlight = highlightedPlayer;
   const cardTitle = isBlitz ? "Realms Blitz" : "Realms";
   const cardSubtitle = isBlitz ? "Blitz Leaderboard" : "Final Leaderboard";
-  const championName = topThreePlayers[0]?.name || gameWinner?.name;
-  const championGuild = topThreePlayers[0]?.guildName || gameWinner?.guildName;
-  const winnerLine = championName ? (championGuild ? `${championName} — ${championGuild}` : championName) : null;
+  const playerName = highlight?.name ?? null;
+  const playerGuild = highlight?.guildName ?? null;
+  const winnerLine = playerName ? (playerGuild ? `${playerName} — ${playerGuild}` : playerName) : null;
+  const placementLabel = highlight ? formatOrdinal(highlight.rank) : null;
+  const pointsLabel = highlightPoints !== null ? currencyIntlFormat(highlightPoints, 0) : null;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-center px-4 pt-[54px]">
@@ -175,55 +192,92 @@ export const GameWinnerMessage = () => {
               <h2 className="text-3xl font-semibold uppercase tracking-[0.24em] text-white md:text-[36px]">
                 {cardSubtitle}
               </h2>
-              {winnerLine && (
-                <p className="text-sm font-medium text-cyan-100/70 md:text-base">Champion · {winnerLine}</p>
+              {isRanked && winnerLine && (
+                <p className="text-sm font-medium text-cyan-100/80 md:text-base">{winnerLine}</p>
+              )}
+              {isRanked && placementLabel && pointsLabel && (
+                <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-200/70 md:text-sm">
+                  {placementLabel} • {pointsLabel} pts
+                </p>
+              )}
+              {!isRanked && (
+                <p className="mt-2 text-sm font-medium text-cyan-100/80 md:text-base">
+                  You are not ranked in the leaderboard.
+                </p>
               )}
             </div>
-
             <div className="flex flex-col gap-6 rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[3px] md:px-8 md:py-7">
               <p className="text-center text-[11px] uppercase tracking-[0.28em] text-white/60 md:text-xs">
-                Capture the moment and share your Blitz flex.
+                Copy the Blitz highlight card or take the share link straight to X.
               </p>
-
               <div className="flex justify-center">
-                {topThreePlayers.length > 0 ? (
-                  <BlitzHighlightCard
-                    ref={leaderboardSvgRef}
-                    title={cardTitle}
-                    subtitle={cardSubtitle}
-                    winnerLine={winnerLine}
-                    highlight={highlight}
-                  />
+                {isRanked ? (
+                  highlight ? (
+                    <BlitzHighlightCard
+                      ref={leaderboardSvgRef}
+                      title={cardTitle}
+                      subtitle={cardSubtitle}
+                      winnerLine={winnerLine}
+                      highlight={highlight}
+                    />
+                  ) : (
+                    <div className="flex h-[220px] w-full max-w-[720px] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-sm text-white/60">
+                      Your Blitz standings are syncing…
+                    </div>
+                  )
                 ) : (
-                  <div className="flex h-[220px] w-full max-w-[720px] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-sm text-white/60">
-                    Final standings are syncing…
+                  <div className="flex h-[180px] w-full max-w-[720px] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-base text-white/70">
+                    Sorry, you are not ranked in the final leaderboard.
                   </div>
                 )}
               </div>
-
-              <div className="flex flex-col gap-3 md:flex-row">
-                <Button
-                  onClick={copyLeaderboardImage}
-                  disabled={isCopying || topThreePlayers.length === 0}
-                  className="w-full flex-1 justify-center gap-2 !px-4 !py-3 md:!px-6"
-                  variant="gold"
-                  aria-busy={isCopying}
-                  forceUppercase={false}
-                >
-                  <Copy className="h-4 w-4" />
-                  <span>{isCopying ? "Preparing image…" : "Copy highlight image"}</span>
-                </Button>
-                <Button
-                  onClick={handleShareOnX}
-                  disabled={topThreePlayers.length === 0}
-                  className="w-full flex-1 justify-center gap-2 !px-4 !py-3 md:!px-6"
-                  variant="outline"
-                  forceUppercase={false}
-                >
-                  <Share2 className="h-4 w-4" />
-                  <span>Share on X</span>
-                </Button>
-              </div>
+              {isRanked && (
+                <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:gap-4">
+                  <Button
+                    onClick={copyLeaderboardImage}
+                    disabled={isCopying || !highlight}
+                    className="w-full md:flex-1 min-w-[180px] justify-center gap-2 !px-4 !py-3 md:!px-5"
+                    variant="gold"
+                    aria-busy={isCopying}
+                    forceUppercase={false}
+                  >
+                    <Copy className="h-4 w-4" />
+                    <span className="text-sm font-semibold leading-tight text-center">
+                      {isCopying ? "Preparing image…" : "Copy image"}
+                    </span>
+                  </Button>
+                  <Button
+                    onClick={handleShareOnX}
+                    disabled={!highlight}
+                    className="w-full md:flex-1 min-w-[180px] justify-center gap-2 !px-4 !py-3 md:!px-5"
+                    variant="outline"
+                    forceUppercase={false}
+                  >
+                    <Share2 className="h-4 w-4" />
+                    <span className="text-sm font-semibold leading-tight text-center">Share on X</span>
+                  </Button>
+                  <Button
+                    onClick={handleViewLeaderboard}
+                    className="w-full md:flex-1 min-w-[180px] justify-center !px-4 !py-3 md:!px-5"
+                    variant="outline"
+                    forceUppercase={false}
+                  >
+                    <span className="text-sm font-semibold leading-tight text-center">View leaderboard</span>
+                  </Button>
+                </div>
+              )}
+              {!isRanked && (
+                <div className="flex justify-center mt-2">
+                  <Button
+                    onClick={handleViewLeaderboard}
+                    className="w-full md:flex-1 min-w-[180px] justify-center !px-4 !py-3 md:!px-5"
+                    variant="outline"
+                    forceUppercase={false}
+                  >
+                    <span className="text-sm font-semibold leading-tight text-center">View leaderboard</span>
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
