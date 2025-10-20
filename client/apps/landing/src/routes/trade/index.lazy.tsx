@@ -11,6 +11,29 @@ export const Route = createLazyFileRoute("/trade/")({
   pendingComponent: FullPageLoader,
 });
 
+// Framer Motion variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      when: "beforeChildren",
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.3,
+    },
+  },
+};
+
 function CollectionsPage() {
   const collections = Object.entries(marketplaceCollections).filter(([key, collection]) => collection.address != "");
   const queries = collections.map(([key, collection]) => ({
@@ -23,28 +46,6 @@ function CollectionsPage() {
     queries,
   });
 
-  // Framer Motion variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        when: "beforeChildren",
-        staggerChildren: 0.1,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.3,
-      },
-    },
-  };
 
   return (
     <div className="container mx-auto py-8 px-4">
