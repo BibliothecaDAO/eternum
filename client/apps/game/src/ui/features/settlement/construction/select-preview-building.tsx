@@ -181,11 +181,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
               const hasBalance = checkBalance(buildingCosts);
 
-              const hasEnoughPopulation = hasEnoughPopulationForBuilding(
-                realm,
-                configManager.getBuildingCategoryConfig(building).population_cost,
-              );
-
+              const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
               const canBuild = hasBalance && realm?.hasCapacity && hasEnoughPopulation;
 
               return (
