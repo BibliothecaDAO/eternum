@@ -108,17 +108,17 @@ jobs:
           import os
 
           now = datetime.now(timezone.utc)
-          slots = [time(9, 30), time(15, 30), time(19, 30)]
+          slots = [time(0, 0), time(9, 30), time(15, 30), time(19, 30)]
 
           upcoming = []
           day_offset = 0
-          while len(upcoming) < 4:
+          while len(upcoming) < 5:
               current_date = now.date() + timedelta(days=day_offset)
               for slot in slots:
                   candidate = datetime.combine(current_date, slot, tzinfo=timezone.utc)
                   if candidate >= now or day_offset > 0:
                       upcoming.append(candidate)
-                  if len(upcoming) >= 4:
+                  if len(upcoming) >= 5:
                       break
               day_offset += 1
 
@@ -142,6 +142,7 @@ jobs:
               fh.write(f"next_deployment_1={discord_full_relative(upcoming[1])}\n")
               fh.write(f"next_deployment_2={discord_full_relative(upcoming[2])}\n")
               fh.write(f"next_deployment_3={discord_full_relative(upcoming[3])}\n")
+              fh.write(f"next_deployment_4={discord_full_relative(upcoming[4])}\n")
 
           print(f"🕐 Next game start: {game_start.strftime('%Y-%m-%d %H:%M:%S UTC')}")
           for idx, slot_time in enumerate(upcoming[1:], 1):
@@ -284,7 +285,7 @@ jobs:
                   },
                   {
                     "name": "⚡ Upcoming Games",
-                    "value": "- ${{ steps.game-timing.outputs.next_deployment_1 }}\n\n- ${{ steps.game-timing.outputs.next_deployment_2 }}\n\n- ${{ steps.game-timing.outputs.next_deployment_3 }}",
+                    "value": "- ${{ steps.game-timing.outputs.next_deployment_1 }}\n\n- ${{ steps.game-timing.outputs.next_deployment_2 }}\n\n- ${{ steps.game-timing.outputs.next_deployment_3 }}\n\n- ${{ steps.game-timing.outputs.next_deployment_4 }}",
                     "inline": false
                   },
                   {
