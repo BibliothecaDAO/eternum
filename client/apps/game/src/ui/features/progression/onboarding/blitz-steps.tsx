@@ -2,6 +2,7 @@ import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useGoToStructure, useSpectatorModeClick } from "@/hooks/helpers/use-navigate";
 import { useSetAddressName } from "@/hooks/helpers/use-set-address-name";
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { Position } from "@bibliothecadao/eternum";
 import { WORLD_CONFIG_ID } from "@bibliothecadao/types";
 
@@ -116,11 +117,13 @@ const NoGameState = ({
   registrationEndAt,
   creationStartAt,
   creationEndAt,
+  spectateDisabled,
 }: {
   registrationStartAt: number;
   registrationEndAt: number;
   creationStartAt: number;
   creationEndAt: number;
+  spectateDisabled: boolean;
 }) => {
   const registrationDuration = registrationEndAt - registrationStartAt;
 
@@ -149,7 +152,7 @@ const NoGameState = ({
       </div>
 
       <div className="pt-2">
-        <SpectateButton onClick={onSpectatorModeClick} />
+        <SpectateButton onClick={onSpectatorModeClick} disabled={spectateDisabled} />
       </div>
     </motion.div>
   );
@@ -494,6 +497,7 @@ const RegistrationState = ({
   entryTokenStatus,
   hasSufficientFeeBalance,
   isFeeBalanceLoading,
+  spectateDisabled,
 }: {
   entryTokenBalance: bigint;
   registrationCount: number;
@@ -510,6 +514,7 @@ const RegistrationState = ({
   entryTokenStatus: "idle" | "minting" | "timeout" | "error";
   hasSufficientFeeBalance: boolean;
   isFeeBalanceLoading: boolean;
+  spectateDisabled: boolean;
 }) => {
   const {
     setup: { components },
@@ -611,7 +616,7 @@ const RegistrationState = ({
           </div>
         )}
 
-        <SpectateButton onClick={onSpectatorModeClick} />
+        <SpectateButton onClick={onSpectatorModeClick} disabled={spectateDisabled} />
       </div>
     </motion.div>
   );
@@ -623,11 +628,13 @@ const GameActiveState = ({
   gameEndAt,
   isRegistered,
   onSettle,
+  spectateDisabled,
 }: {
   hasSettled: boolean;
   gameEndAt?: number;
   isRegistered: boolean;
   onSettle: () => Promise<void>;
+  spectateDisabled: boolean;
 }) => {
   const {
     setup: { components },
@@ -691,7 +698,7 @@ const GameActiveState = ({
                     <span>Play Blitz</span>
                   </div>
                 </Button>
-                <SpectateButton onClick={onSpectatorModeClick} />
+                <SpectateButton onClick={onSpectatorModeClick} disabled={spectateDisabled} />
               </>
             ) : (
               <>
@@ -718,7 +725,7 @@ const GameActiveState = ({
                     </div>
                   )}
                 </Button>
-                <SpectateButton onClick={onSpectatorModeClick} />
+                <SpectateButton onClick={onSpectatorModeClick} disabled={spectateDisabled} />
               </>
             )}
           </>
@@ -727,7 +734,7 @@ const GameActiveState = ({
             <div className="bg-brown/10 border border-brown/30 rounded-lg p-4 text-center">
               <p className="text-gold/70">You are not registered for this game</p>
             </div>
-            <SpectateButton onClick={onSpectatorModeClick} />
+            <SpectateButton onClick={onSpectatorModeClick} disabled={spectateDisabled} />
           </div>
         )}
       </div>
@@ -751,12 +758,22 @@ export const BlitzOnboarding = () => {
     },
   } = setup;
 
+  const { currentBlockTimestamp } = useBlockTimestamp();
+
   const worldConfigEntityId = useMemo(() => getEntityIdFromKeys([WORLD_CONFIG_ID]), []);
   const worldConfigValue = useComponentValue(components.WorldConfig, worldConfigEntityId);
 
   const blitzConfig = configManager.getBlitzConfig()?.blitz_registration_config;
   const blitzNumHyperStructuresLeft = configManager.getBlitzConfig()?.blitz_num_hyperstructures_left;
   const seasonConfig = configManager.getSeasonConfig();
+  const seasonEndAt = seasonConfig?.endAt ?? null;
+  const hasGameEnded = useMemo(() => {
+    if (!seasonEndAt) {
+      return false;
+    }
+
+    return currentBlockTimestamp > seasonEndAt;
+  }, [currentBlockTimestamp, seasonEndAt]);
   const devMode = configManager.getDevModeConfig()?.dev_mode_on;
   const registrationCount = useMemo(() => {
     const liveCount = worldConfigValue?.blitz_registration_config?.registration_count;
@@ -1105,6 +1122,7 @@ export const BlitzOnboarding = () => {
         onSettle={handleSettle}
         hasSettled={!!playerSettled}
         gameEndAt={seasonConfig?.endAt}
+        spectateDisabled={hasGameEnded}
       />
     ) : null;
 
@@ -1173,6 +1191,7 @@ export const BlitzOnboarding = () => {
           registrationEndAt={registration_end_at}
           creationStartAt={creation_start_at}
           creationEndAt={creation_end_at}
+          spectateDisabled={hasGameEnded}
         />
       )}
       {gameState === GameState.REGISTRATION && (
@@ -1192,6 +1211,7 @@ export const BlitzOnboarding = () => {
           entryTokenStatus={entryTokenStatus}
           hasSufficientFeeBalance={hasSufficientFeeBalance}
           isFeeBalanceLoading={isFeeBalanceLoading}
+          spectateDisabled={hasGameEnded}
         />
       )}
     </div>
