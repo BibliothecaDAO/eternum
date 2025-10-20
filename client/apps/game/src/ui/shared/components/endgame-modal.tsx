@@ -34,6 +34,7 @@ export const EndgameModal = () => {
   const [isAnimating, setIsAnimating] = useState(true);
   const [highlightedPlayer, setHighlightedPlayer] = useState<BlitzHighlightPlayer | null>(null);
   const [isCopying, setIsCopying] = useState(false);
+  const [isRanked, setIsRanked] = useState<boolean>(true);
 
   const leaderboardSvgRef = useRef<SVGSVGElement | null>(null);
 
@@ -42,10 +43,9 @@ export const EndgameModal = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // const hasGameEnded = useMemo(() => {
-  //   return currentBlockTimestamp > (gameEndAt ?? 0);
-  // }, [currentBlockTimestamp, gameEndAt]);
-  const hasGameEnded = true;
+  const hasGameEnded = useMemo(() => {
+    return currentBlockTimestamp > (gameEndAt ?? 0);
+  }, [currentBlockTimestamp, gameEndAt]);
 
   useEffect(() => {
     if (!hasGameEnded) return;
@@ -72,10 +72,6 @@ export const EndgameModal = () => {
         } satisfies BlitzHighlightPlayer;
       };
 
-      const formattedTopThree = rankedPlayers
-        .slice(0, 3)
-        .map(([address, points], index) => createTopPlayer(address, index + 1, points));
-
       const playerAddress = ContractAddress(account.address);
       const myIndex = rankedPlayers.findIndex(([address]) => address === playerAddress);
       let myPlayer: BlitzHighlightPlayer | null = null;
@@ -83,12 +79,16 @@ export const EndgameModal = () => {
       if (myIndex >= 0) {
         const [address, points] = rankedPlayers[myIndex];
         myPlayer = createTopPlayer(address, myIndex + 1, points);
+        setIsRanked(true);
+      } else {
+        setIsRanked(false);
       }
 
-      setHighlightedPlayer(myPlayer ?? formattedTopThree[0] ?? null);
+      setHighlightedPlayer(myPlayer ?? null);
     } catch (error) {
       console.error("Failed to load final leaderboard", error);
       setHighlightedPlayer(null);
+      setIsRanked(false);
     }
   }, [account.address, components, hasGameEnded]);
 
@@ -192,68 +192,92 @@ export const EndgameModal = () => {
               <h2 className="text-3xl font-semibold uppercase tracking-[0.24em] text-white md:text-[36px]">
                 {cardSubtitle}
               </h2>
-              {winnerLine && <p className="text-sm font-medium text-cyan-100/80 md:text-base">{winnerLine}</p>}
-              {placementLabel && pointsLabel && (
+              {isRanked && winnerLine && (
+                <p className="text-sm font-medium text-cyan-100/80 md:text-base">{winnerLine}</p>
+              )}
+              {isRanked && placementLabel && pointsLabel && (
                 <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-200/70 md:text-sm">
                   {placementLabel} • {pointsLabel} pts
                 </p>
               )}
+              {!isRanked && (
+                <p className="mt-2 text-sm font-medium text-cyan-100/80 md:text-base">
+                  You are not ranked in the leaderboard.
+                </p>
+              )}
             </div>
-
             <div className="flex flex-col gap-6 rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[3px] md:px-8 md:py-7">
               <p className="text-center text-[11px] uppercase tracking-[0.28em] text-white/60 md:text-xs">
-                Capture the moment and share your Blitz flex.
+                Copy the Blitz highlight card or take the share link straight to X.
               </p>
-
               <div className="flex justify-center">
-                {highlight ? (
-                  <BlitzHighlightCard
-                    ref={leaderboardSvgRef}
-                    title={cardTitle}
-                    subtitle={cardSubtitle}
-                    winnerLine={winnerLine}
-                    highlight={highlight}
-                  />
+                {isRanked ? (
+                  highlight ? (
+                    <BlitzHighlightCard
+                      ref={leaderboardSvgRef}
+                      title={cardTitle}
+                      subtitle={cardSubtitle}
+                      winnerLine={winnerLine}
+                      highlight={highlight}
+                    />
+                  ) : (
+                    <div className="flex h-[220px] w-full max-w-[720px] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-sm text-white/60">
+                      Your Blitz standings are syncing…
+                    </div>
+                  )
                 ) : (
-                  <div className="flex h-[220px] w-full max-w-[720px] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-sm text-white/60">
-                    Your Blitz standings are syncing…
+                  <div className="flex h-[180px] w-full max-w-[720px] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-base text-white/70">
+                    Sorry, you are not ranked in the final leaderboard.
                   </div>
                 )}
               </div>
-
-              <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:gap-4">
-                <Button
-                  onClick={copyLeaderboardImage}
-                  disabled={isCopying || !highlight}
-                  className="w-full md:flex-1 min-w-[180px] justify-center gap-2 !px-4 !py-3 md:!px-5"
-                  variant="gold"
-                  aria-busy={isCopying}
-                  forceUppercase={false}
-                >
-                  <Copy className="h-4 w-4" />
-                  <span className="text-sm font-semibold leading-tight text-center">
-                    {isCopying ? "Preparing image…" : "Copy image"}
-                  </span>
-                </Button>
-                <Button
-                  onClick={handleShareOnX}
-                  disabled={!highlight}
-                  className="w-full md:flex-1 min-w-[180px] justify-center gap-2 !px-4 !py-3 md:!px-5"
-                  variant="outline"
-                  forceUppercase={false}
-                >
-                  <Share2 className="h-4 w-4" />
-                  <span className="text-sm font-semibold leading-tight text-center">Share on X</span>
-                </Button>
-                <Button
-                  onClick={handleViewLeaderboard}
-                  className="w-full md:flex-1 min-w-[180px] justify-center !px-4 !py-3 md:!px-5"
-                  variant="outline"
-                  forceUppercase={false}
-                >
-                  <span className="text-sm font-semibold leading-tight text-center">View leaderboard</span>
-                </Button>
-              </div>
+              {isRanked && (
+                <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:gap-4">
+                  <Button
+                    onClick={copyLeaderboardImage}
+                    disabled={isCopying || !highlight}
+                    className="w-full md:flex-1 min-w-[180px] justify-center gap-2 !px-4 !py-3 md:!px-5"
+                    variant="gold"
+                    aria-busy={isCopying}
+                    forceUppercase={false}
+                  >
+                    <Copy className="h-4 w-4" />
+                    <span className="text-sm font-semibold leading-tight text-center">
+                      {isCopying ? "Preparing image…" : "Copy image"}
+                    </span>
+                  </Button>
+                  <Button
+                    onClick={handleShareOnX}
+                    disabled={!highlight}
+                    className="w-full md:flex-1 min-w-[180px] justify-center gap-2 !px-4 !py-3 md:!px-5"
+                    variant="outline"
+                    forceUppercase={false}
+                  >
+                    <Share2 className="h-4 w-4" />
+                    <span className="text-sm font-semibold leading-tight text-center">Share on X</span>
+                  </Button>
+                  <Button
+                    onClick={handleViewLeaderboard}
+                    className="w-full md:flex-1 min-w-[180px] justify-center !px-4 !py-3 md:!px-5"
+                    variant="outline"
+                    forceUppercase={false}
+                  >
+                    <span className="text-sm font-semibold leading-tight text-center">View leaderboard</span>
+                  </Button>
+                </div>
+              )}
+              {!isRanked && (
+                <div className="flex justify-center mt-2">
+                  <Button
+                    onClick={handleViewLeaderboard}
+                    className="w-full md:flex-1 min-w-[180px] justify-center !px-4 !py-3 md:!px-5"
+                    variant="outline"
+                    forceUppercase={false}
+                  >
+                    <span className="text-sm font-semibold leading-tight text-center">View leaderboard</span>
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
