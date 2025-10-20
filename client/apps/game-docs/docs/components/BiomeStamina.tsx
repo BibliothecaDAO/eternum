@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { colors, icon, modifiers, section, table } from "./styles";
 
@@ -182,8 +183,8 @@ export const BiomeStamina = () => {
           </thead>
           <tbody>
             {biomeGroups.map((group) => (
-              <>
-                <tr key={group.name}>
+              <Fragment key={group.name}>
+                <tr>
                   <td
                     colSpan={4}
                     style={{
@@ -210,7 +211,7 @@ export const BiomeStamina = () => {
                     ))}
                   </tr>
                 ))}
-              </>
+              </Fragment>
             ))}
           </tbody>
         </table>

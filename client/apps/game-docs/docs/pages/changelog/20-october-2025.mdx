@@ -9,47 +9,45 @@ layout: docs
 ### New Features
 
 - **Game Entry Split**: Split the combined Game Entry page into two dedicated pages placed under their sections:
-  - [Eternum → Game Entry](/eternum/game-entry)
-  - [Blitz → Game Entry](/blitz/game-entry)
+  - [Eternum/Game Entry](/eternum/game-entry)
+  - [Blitz/Game Entry](/blitz/game-entry)
 
 ### Content Updates
 
-- [Blitz → Game Entry](/blitz/game-entry): Minor clarifications to scheduling, prize pool distribution, and rewards
+- [Blitz/Game Entry](/blitz/game-entry): Minor clarifications to scheduling, prize pool distribution, and rewards
   wording.
-- [Overview → Loot Chests](/overview/chests/loot-chests): Clarified opening flow (collection page), epoch labeling, and
+- [Overview/Loot Chests](/overview/chests/loot-chests): Clarified opening flow (collection page), epoch labeling, and
   current dev status.
-- [Overview → Chest Contents](/overview/chests/contents): Clarified per-epoch item lists and independent roll mechanics;
+- [Overview/Chest Contents](/overview/chests/contents): Clarified per-epoch item lists and independent roll mechanics;
   noted WIP sections.
-- [Overview → Cosmetics](/overview/chests/cosmetics): Clarified equip slots, Season 2 scope for per‑Realm cosmetics, and
+- [Overview/Cosmetics](/overview/chests/cosmetics): Clarified equip slots, Season 2 scope for per‑Realm cosmetics, and
   ownership persistence.
-- [Overview → $LORDS Token](/overview/lords): Clarified Blitz entry fees convert to $LORDS and prize pools pay top
+- [Overview/$LORDS Token](/overview/lords): Clarified Blitz entry fees convert to $LORDS and prize pools pay top
   performers.
-- [Blitz → Key Concepts](/blitz/key-concepts): Clarified exploration (no resource discovery), mode names
-  (resource/labor), and rewards phrasing.
-- [Blitz → World Physics](/blitz/world-physics): Clarified time/phase wording, materials isolation/bridging (WIP), and
+- [Blitz/Key Concepts](/blitz/key-concepts): Clarified exploration (no resource discovery), mode names (resource/labor),
+  and rewards phrasing.
+- [Blitz/World Physics](/blitz/world-physics): Clarified time/phase wording, materials isolation/bridging (WIP), and
   stamina/travel notes.
-- [Blitz → Realms → Realms](/blitz/realms/realm): Added missing starting Wheat (1,000) to Starting Resources table.
-- [Blitz → Realms → Realm Upgrade Costs](/blitz/realms/realm): Reduced labor, resource, and essence requirements.
-- [Blitz → Production](/blitz/materials/production): Refreshed production tables and labels to align with labor/resource
+- [Blitz/Realms](/blitz/realms/realm): Added missing starting Wheat (1,000) to Starting Resources table.
+- [Blitz/Realms/Realm Upgrade Costs](/blitz/realms/realm): Reduced labor, resource, and essence requirements.
+- [Blitz/Production](/blitz/materials/production): Refreshed production tables and labels to align with labor/resource
   modes.
-- [Blitz → World Map & Movement](/blitz/worldmap-movement/movement): Minor clarifications; Relic Crates now award 1,000
-  VP on open.
-- [Blitz → World Structures](/blitz/world-structures): Updated discovery chances for Essence Rifts and Camps.
-- [Blitz → Troop Tiers](/blitz/military/troop-tiers): Revised tier presentation and naming; images updated.
-- [Blitz → Prize Pool](/blitz/prize-pool) / [Victory](/blitz/victory): Minor text clarifications; VP and distribution
-  wording tightened.
+- [Blitz/World Map & Movement](/blitz/worldmap-movement/movement): Minor clarifications; Relic Crates now award 1,000 VP
+  on open.
+- [Blitz/World Structures](/blitz/world-structures): Updated discovery chances for Essence Rifts and Camps.
+- [Blitz/Troop Tiers](/blitz/military/troop-tiers): Revised tier presentation and naming; images updated.
+- [Blitz/Prize Pool](/blitz/prize-pool) / [Blitz/Victory](/blitz/victory): Minor text clarifications; VP and
+  distribution wording tightened.
 
-### Balance Change Summary and Quick Links
+### Balance Change Summary
 
-- Production: Tables updated; mode rename (standard/simple → resource/labor). See
-  [Production](/blitz/materials/production)
-- Buildings: Costs tuned; mode rename (standard/simple → resource/labor). See [Buildings](/blitz/realms/buildings)
+- [Production](/blitz/materials/production): Tables updated; mode rename (standard/simple → resource/labor).
+- [Buildings](/blitz/realms/buildings): Costs tuned; mode rename (standard/simple → resource/labor).
 - Exploration & Rewards: Relic Crates grant 1,000 VP; minor movement/map clarifications; troop exploration bundles
-  reduced (2,500 → 1,000). See [World Map & Movement](/blitz/worldmap-movement/movement) and Victory ➜
-  [Victory](/blitz/victory)
+  reduced (2,500 → 1,000). See [World Map & Movement](/blitz/worldmap-movement/movement) and [Victory](/blitz/victory).
 - Discovery Rates: Essence Rifts and Camps discovery chances adjusted from 1/20 to 1/30. See
-  [World Structures](/blitz/world-structures)
-- Troop Power Curve: T2 ≈ 3× T1, T3 ≈ 9× T1; presentation refreshed. See [Troop Tiers](/blitz/military/troop-tiers)
+  [World Structures](/blitz/world-structures).
+- Troop Power Curve: T2 ≈ 3× T1, T3 ≈ 9× T1; presentation refreshed. See [Troop Tiers](/blitz/military/troop-tiers).
 
 ### Technical Improvements
 
@@ -57,19 +55,15 @@ layout: docs
   Eternum; removed the Overview Game Entry link.
 - **Prev/Next Order**: Fixed navigation loops for first pages in groups; prev/next now follows sidebar sequence across
   all pages and subpages.
-- **Naming Consistency (Blitz)**: Standard/Simple renamed to Resource/Labor across buildings; component props updated
-  (`standardCosts`→`resourceCosts`, `simpleCosts`→`laborCosts`). Corrected resource IDs to ensure proper icons in
-  military building cards.
-- **Asset Cleanup**: Removed deprecated GIFs no longer referenced after buildings/production updates (`resources.gif`,
-  `resource-arrival.gif`, `final-bridge-in.gif`).
+- **Naming Consistency (Blitz)**: Standard/Simple renamed to Resource/Labor across buildings; component props updated.
+  Corrected resource IDs to ensure proper icons in military building cards.
+- **Asset Cleanup**: Removed deprecated GIFs no longer referenced after buildings/production updates.
 
 ### Incoming Updates
 
 - GIFs and client flow instructions: updates pending to reflect new UI/flows.
-- Competitive Series (Warrior & Elite): expanded details expected in November (see Key Concepts ➜ /blitz/key-concepts
-  and Game Entry ➜ /blitz/game-entry).
-- Automation: docs overhaul planned after the in-progress automation upgrade (see Automation ➜
-  /blitz/materials/automation).
+- Competitive Series (Warrior & Elite): expanded details expected in November.
+- Automation: docs overhaul planned after the in-progress automation upgrade.
 
 ---
 
