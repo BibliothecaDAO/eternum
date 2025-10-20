@@ -226,7 +226,9 @@ const BLITZ_COLLECTIBLE_COSMETICS_ADDRESS = await getSeasonAddresses(process.env
 const BLITZ_COLLECTIBLE_TIMELOCK_ADDRESS = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)![
   "Collectibles: Timelock Maker"
 ];
-
+const BLITZ_COLLECTIBLE_LOOTCHEST_ADDRESS = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)![
+  "Collectibles: Realms: Loot Chest"
+];
 export const EternumGlobalConfig: Config = {
   agent: {
     controller_address: AGENT_CONTROLLER_ADDRESS,
@@ -432,6 +434,7 @@ export const EternumGlobalConfig: Config = {
       collectible_cosmetics_max_items: BLITZ_COLLECTIBLE_COSMETICS_MAX_ITEMS,
       collectible_cosmetics_address: BLITZ_COLLECTIBLE_COSMETICS_ADDRESS,
       collectible_timelock_address: BLITZ_COLLECTIBLE_TIMELOCK_ADDRESS,
+      collectibles_lootchest_address: BLITZ_COLLECTIBLE_LOOTCHEST_ADDRESS,
     },
   },
   setup: {

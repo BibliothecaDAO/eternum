@@ -1500,6 +1500,7 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
   const collectibles_cosmetics_max = config.config.blitz.registration.collectible_cosmetics_max_items;
   const collectibles_cosmetics_address = config.config.blitz.registration.collectible_cosmetics_address;
   const collectibles_timelock_address = config.config.blitz.registration.collectible_timelock_address;
+  const collectibles_lootchest_address = config.config.blitz.registration.collectibles_lootchest_address;
 
   const registrationCalldata = {
     signer: config.account,
@@ -1515,6 +1516,7 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
     collectibles_cosmetics_max,
     collectibles_cosmetics_address,
     collectibles_timelock_address,
+    collectibles_lootchest_address
   };
 
   console.log(
@@ -1539,8 +1541,27 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
     │  ${chalk.gray("Collectible Cosmetics Max Items:")} ${chalk.white(registrationCalldata.collectibles_cosmetics_max)}
     │  ${chalk.gray("Collectible Cosmetics Address:")} ${chalk.white(shortHexAddress(registrationCalldata.collectibles_cosmetics_address))}
     │  ${chalk.gray("Collectible Timelock Address:")} ${chalk.white(shortHexAddress(registrationCalldata.collectibles_timelock_address))}
+    │  ${chalk.gray("Collectible LootChest Address:")} ${chalk.white(shortHexAddress(registrationCalldata.collectibles_lootchest_address))}
     │
     └────────────────────────────────`),
+  );
+
+  // Grant MINTER_ROLE to prize_distribution_systems for loot chest minting
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Granting Minter Role")}
+    │  ${chalk.gray("Granting minter role for Loot Chest Contract to prize_distribution_systems...")}
+    └────────────────────────────────`),
+  );
+
+  const prizeDistributionSystemsAddr = getContractByName(config.provider.manifest, `${NAMESPACE}-prize_distribution_systems`);
+  const grantRoleTx = await config.provider.grant_collectible_minter_role({
+    signer: config.account,
+    collectible_address: collectibles_lootchest_address,
+    minter_address: prizeDistributionSystemsAddr,
+  });
+  console.log(
+    chalk.green(`    ✔ Minter role granted `) + chalk.gray(grantRoleTx.statusReceipt) + "\n",
   );
 
   const blitzRegistrationTx = await config.provider.set_blitz_registration_config(registrationCalldata);

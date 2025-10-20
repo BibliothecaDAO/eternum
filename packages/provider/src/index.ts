@@ -11,10 +11,10 @@ import {
   Account,
   AccountInterface,
   AllowArray,
+  BigNumberish,
   Call,
   CallData,
   GetTransactionReceiptResponse,
-  BigNumberish,
   uint256,
 } from "starknet";
 import { TransactionType } from "./types";
@@ -2776,6 +2776,20 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async grant_collectible_minter_role(props: {
+    collectible_address: string;
+    minter_address: string;
+    signer: Account | AccountInterface;
+  }) {
+    const { collectible_address, minter_address, signer } = props;
+    const MINTER_ROLE = "0x032df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6";
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: collectible_address,
+      entrypoint: "grant_role",
+      calldata: [MINTER_ROLE, minter_address],
+    });
+  }
+
   public async set_blitz_registration_config(props: SystemProps.SetBlitzRegistrationConfigProps) {
     const {
       fee_token,
@@ -2789,6 +2803,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       collectibles_cosmetics_max,
       collectibles_cosmetics_address,
       collectibles_timelock_address,
+      collectibles_lootchest_address,
       signer,
     } = props;
     return await this.executeAndCheckTransaction(signer, {
@@ -2809,6 +2824,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         collectibles_cosmetics_max,
         collectibles_cosmetics_address,
         collectibles_timelock_address,
+        collectibles_lootchest_address,
       ],
     });
   }

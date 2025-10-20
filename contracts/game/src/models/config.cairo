@@ -565,6 +565,7 @@ pub struct BlitzRegistrationConfig {
     pub collectibles_cosmetics_max: u8,
     pub collectibles_cosmetics_address: ContractAddress,
     pub collectibles_timelock_address: ContractAddress,
+    pub collectibles_lootchest_address: ContractAddress,
     pub registration_count: u16,
     pub registration_count_max: u16,
     pub registration_start_at: u32,
@@ -623,6 +624,10 @@ pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
 
     fn entry_token_attrs_raw(self: BlitzRegistrationConfig) -> u128 {
         1
+    }
+
+    fn collectibles_lootchest_attrs_raw(self: BlitzRegistrationConfig) -> u128 {
+        0x101 // @note to be changed 
     }
 
 

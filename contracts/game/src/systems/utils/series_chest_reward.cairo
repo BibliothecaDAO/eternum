@@ -26,7 +26,7 @@ pub mod series_chest_reward_calculator {
     const RECENT_RATE_WEIGHT_BPS: u128 = 6_000; // 0.6
     const ANCHOR_WINDOW: u32 = 5; 
     const EMA_WINDOW: u32 = 20; 
-    const MIN_EFFECTIVE_PLAYERS: u128 = 24;
+    const MIN_EFFECTIVE_PLAYERS: u128 = 1;
     const MAX_RATE_INCREASE_BPS: u128 = 600; // 6%
     const MAX_RATE_DECREASE_BPS: u128 = 600; // 6%
 
