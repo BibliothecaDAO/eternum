@@ -211,11 +211,8 @@ export const section = {
   },
   sectionContent: {
     display: "grid",
-    gridTemplateColumns: "repeat(1, minmax(0, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
     gap: "1.5rem",
-    "@media (min-width: 768px)": {
-      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-    },
   },
   fullWidthHeader: {
     gridColumn: "1 / -1",
@@ -406,14 +403,8 @@ export const importantNote = {
 export const troop = {
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(1, minmax(0, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
     gap: "1.25rem",
-    "@media (min-width: 640px)": {
-      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-    },
-    "@media (min-width: 1024px)": {
-      gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-    },
   },
   card: {
     padding: "1.25rem",

@@ -120,13 +120,10 @@ const componentStyles = {
   },
   gridStyle: {
     display: "grid",
-    gridTemplateColumns: "repeat(1, minmax(0, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
     gap: "1rem",
     marginTop: "1rem",
     marginBottom: "1rem",
-    "@media (min-width: 640px)": {
-      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-    },
   },
   sectionItemStyle: {
     backgroundColor: colors.background.light,
