@@ -2,9 +2,14 @@ import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { BlitzHighlightCard } from "@/ui/shared/components/blitz-highlight-card";
-import { BLITZ_CARD_DIMENSIONS, BlitzHighlightPlayer, buildBlitzShareMessage } from "@/ui/shared/lib/blitz-highlight";
+import {
+  BLITZ_CARD_DIMENSIONS,
+  BlitzHighlightPlayer,
+  buildBlitzShareMessage,
+  formatOrdinal,
+} from "@/ui/shared/lib/blitz-highlight";
 import { copySvgToClipboard } from "@/ui/shared/lib/copy-svg";
-import { displayAddress, getRealmCountPerHyperstructure } from "@/ui/utils/utils";
+import { currencyIntlFormat, displayAddress, getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { getAddressName, getGuildFromPlayerAddress, getIsBlitz, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
@@ -12,7 +17,7 @@ import { Copy, Share2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-export const GameWinnerMessage = () => {
+export const EndgameModal = () => {
   const {
     account: { account },
     setup: { components },
@@ -20,18 +25,13 @@ export const GameWinnerMessage = () => {
 
   const { currentBlockTimestamp } = useBlockTimestamp();
 
-  const gameWinner = useUIStore((state) => state.gameWinner);
   const gameEndAt = useUIStore((state) => state.gameEndAt);
 
-  void currentBlockTimestamp; // DEBUG: remove once hasGameEnded hook restored
-  void gameEndAt; // DEBUG: remove once hasGameEnded hook restored
 
   const isBlitz = getIsBlitz();
 
   const [isVisible, setIsVisible] = useState(true);
   const [isAnimating, setIsAnimating] = useState(true);
-  const [topThreePlayers, setTopThreePlayers] = useState<BlitzHighlightPlayer[]>([]);
-  const [playerRank, setPlayerRank] = useState<number | null>(null);
   const [highlightedPlayer, setHighlightedPlayer] = useState<BlitzHighlightPlayer | null>(null);
   const [isCopying, setIsCopying] = useState(false);
 
@@ -84,20 +84,18 @@ export const GameWinnerMessage = () => {
         myPlayer = createTopPlayer(address, myIndex + 1, points);
       }
 
-      setTopThreePlayers(formattedTopThree);
-      setPlayerRank(myIndex >= 0 ? myIndex + 1 : null);
       setHighlightedPlayer(myPlayer ?? formattedTopThree[0] ?? null);
     } catch (error) {
       console.error("Failed to load final leaderboard", error);
-      setTopThreePlayers([]);
-      setPlayerRank(null);
       setHighlightedPlayer(null);
     }
   }, [account.address, components, hasGameEnded]);
 
+  const highlight = highlightedPlayer;
+
   const copyLeaderboardImage = useCallback(async () => {
-    if (topThreePlayers.length === 0 || !leaderboardSvgRef.current) {
-      toast.error("Final standings are still loading.");
+    if (!highlight || !leaderboardSvgRef.current) {
+      toast.error("Your final standings are still loading.");
       return;
     }
 
@@ -116,19 +114,19 @@ export const GameWinnerMessage = () => {
     } finally {
       setIsCopying(false);
     }
-  }, [topThreePlayers]);
+  }, [highlight]);
 
-  const highlightPoints = highlightedPlayer?.points ?? null;
+  const highlightPoints = highlight?.points ?? null;
 
   const handleShareOnX = useCallback(() => {
-    if (topThreePlayers.length === 0) {
-      toast.error("Final standings are still loading.");
+    if (!highlight) {
+      toast.error("Your final standings are still loading.");
       return;
     }
 
     const shareText = buildBlitzShareMessage({
-      rank: playerRank,
-      points: highlightPoints,
+      rank: highlight.rank,
+      points: highlight.points,
       eventLabel: isBlitz ? "Realms Blitz" : "the Realms leaderboard",
       origin: typeof window !== "undefined" ? window.location.origin : undefined,
     });
@@ -139,16 +137,19 @@ export const GameWinnerMessage = () => {
     if (typeof window !== "undefined") {
       window.open(shareIntent.toString(), "_blank", "noopener,noreferrer");
     }
-  }, [highlightPoints, isBlitz, playerRank, topThreePlayers]);
+  }, [highlight, isBlitz]);
+
+
 
   if (!hasGameEnded || !isVisible) return null;
 
-  const highlight = highlightedPlayer;
   const cardTitle = isBlitz ? "Realms Blitz" : "Realms";
   const cardSubtitle = isBlitz ? "Blitz Leaderboard" : "Final Leaderboard";
-  const championName = topThreePlayers[0]?.name || gameWinner?.name;
-  const championGuild = topThreePlayers[0]?.guildName || gameWinner?.guildName;
-  const winnerLine = championName ? (championGuild ? `${championName} — ${championGuild}` : championName) : null;
+  const playerName = highlight?.name ?? null;
+  const playerGuild = highlight?.guildName ?? null;
+  const winnerLine = playerName ? (playerGuild ? `${playerName} — ${playerGuild}` : playerName) : null;
+  const placementLabel = highlight ? formatOrdinal(highlight.rank) : null;
+  const pointsLabel = highlightPoints !== null ? currencyIntlFormat(highlightPoints, 0) : null;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-center px-4 pt-[54px]">
@@ -176,7 +177,12 @@ export const GameWinnerMessage = () => {
                 {cardSubtitle}
               </h2>
               {winnerLine && (
-                <p className="text-sm font-medium text-cyan-100/70 md:text-base">Champion · {winnerLine}</p>
+                <p className="text-sm font-medium text-cyan-100/80 md:text-base">{winnerLine}</p>
+              )}
+              {placementLabel && pointsLabel && (
+                <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-200/70 md:text-sm">
+                  {placementLabel} • {pointsLabel} pts
+                </p>
               )}
             </div>
 
@@ -186,7 +192,7 @@ export const GameWinnerMessage = () => {
               </p>
 
               <div className="flex justify-center">
-                {topThreePlayers.length > 0 ? (
+                {highlight ? (
                   <BlitzHighlightCard
                     ref={leaderboardSvgRef}
                     title={cardTitle}
@@ -196,7 +202,7 @@ export const GameWinnerMessage = () => {
                   />
                 ) : (
                   <div className="flex h-[220px] w-full max-w-[720px] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-sm text-white/60">
-                    Final standings are syncing…
+                    Your Blitz standings are syncing…
                   </div>
                 )}
               </div>
@@ -204,7 +210,7 @@ export const GameWinnerMessage = () => {
               <div className="flex flex-col gap-3 md:flex-row">
                 <Button
                   onClick={copyLeaderboardImage}
-                  disabled={isCopying || topThreePlayers.length === 0}
+                  disabled={isCopying || !highlight}
                   className="w-full flex-1 justify-center gap-2 !px-4 !py-3 md:!px-6"
                   variant="gold"
                   aria-busy={isCopying}
@@ -215,7 +221,7 @@ export const GameWinnerMessage = () => {
                 </Button>
                 <Button
                   onClick={handleShareOnX}
-                  disabled={topThreePlayers.length === 0}
+                  disabled={!highlight}
                   className="w-full flex-1 justify-center gap-2 !px-4 !py-3 md:!px-6"
                   variant="outline"
                   forceUppercase={false}

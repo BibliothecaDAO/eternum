@@ -1,6 +1,6 @@
 import { useSyncPlayerStructures } from "@/hooks/helpers/use-sync-player-structures";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
-import { GameWinnerMessage, NotLoggedInMessage } from "@/ui/shared";
+import { EndgameModal, NotLoggedInMessage } from "@/ui/shared";
 import { PlayOverlayManager } from "./play-overlay-manager";
 import { Leva } from "leva";
 import { lazy, Suspense } from "react";
@@ -128,7 +128,7 @@ const WorldEffects = () => (
     <StoreManagers />
     <StructureSynchronizer />
     <NotLoggedInMessage />
-    <GameWinnerMessage />
+    <EndgameModal />
     <BlitzSetHyperstructureShareholdersTo100 />
     <AutomationManager />
     <TransferAutomationManager />

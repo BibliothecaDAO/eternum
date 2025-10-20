@@ -1092,6 +1092,7 @@ export const BlitzOnboarding = () => {
   }
 
   const { registration_start_at, registration_end_at, creation_start_at, creation_end_at } = blitzConfig;
+  console.log("blitzConfig", blitzConfig);
 
   // Determine if we are in registration phase
   const now = Date.now() / 1000;
