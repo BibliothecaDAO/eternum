@@ -1,7 +1,9 @@
 use starknet::ContractAddress;
+use s1_eternum::models::series_chest_reward::{SeriesChestRewardState};
 
 #[starknet::interface]
 pub trait IPrizeDistributionSystems<T> {
+    fn blitz_get_or_compute_series_chest_reward_state(ref self: T) -> SeriesChestRewardState;
     fn blitz_prize_claim_no_game(ref self: T, registered_player: ContractAddress);
     fn blitz_prize_claim(ref self: T, players: Array<ContractAddress>);
     fn blitz_prize_player_rank(
