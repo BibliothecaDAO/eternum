@@ -26,6 +26,7 @@ import { AlertTriangle, Grid2X2, Grid3X3, Loader2 } from "lucide-react";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { formatUnits } from "viem";
 import { env } from "../../../../env";
+import { addAddressPadding } from "starknet";
 
 export const Route = createLazyFileRoute("/trade/$collection/")({
   component: CollectionPage,
@@ -379,9 +380,9 @@ function CollectionPage() {
                       (Max Price:{" "}
                       {selectedPasses.length > 0
                         ? formatUnits(
-                            BigInt(Math.max(...selectedPasses.map((pass) => Number(pass.best_price_hex)))),
-                            18,
-                          )
+                          BigInt(Math.max(...selectedPasses.map((pass) => Number(pass.best_price_hex)))),
+                          18,
+                        )
                         : 0}
                       )
                     </span>

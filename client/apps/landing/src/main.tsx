@@ -63,11 +63,9 @@ if (!rootElement.innerHTML) {
           <StarknetProvider>
             <DojoProvider value={setupResult}>
               <DojoEventListener>
-                <ArcadeProvider>
-                  <MarketplaceProvider>
-                    <RouterProvider router={router} />
-                  </MarketplaceProvider>
-                </ArcadeProvider>
+                <MarketplaceProvider>
+                  <RouterProvider router={router} />
+                </MarketplaceProvider>
               </DojoEventListener>
             </DojoProvider>
           </StarknetProvider>

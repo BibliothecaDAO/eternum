@@ -1,4 +1,7 @@
-import { useCollection, useListedTokensForCollection, useMarketplace } from "@cartridge/marketplace";
+import {
+  useMarketplaceCollectionListings as useArcadeCollectionListings,
+  useMarketplaceCollectionTokens as useArcadeCollectionTokens,
+} from "@cartridge/arcade/marketplace";
 import { useMemo } from "react";
 
 import { trimAddress } from "@/lib/utils";
@@ -73,39 +76,50 @@ export const useMarketplaceCollectionTokens = (
     [normalizedCollectionAddress],
   );
 
-  console.log("collectionAddress", collectionAddress);
-
-  const test = useMarketplace();
-
-  console.log({ test });
-
-  const { data: listedOrders, isLoading: listingsLoading } = useListedTokensForCollection(collectionAddress);
-
-  console.log({ listedOrders });
+  const listingsQuery = useArcadeCollectionListings({ collection: collectionAddress, attributeFilters: traitFilters }, true);
+  const listedOrders = listingsQuery.data ?? [];
 
   const tokenIds = useMemo(() => {
-    const ids = (listedOrders ?? [])
+    const ids = listedOrders
       .map((order) => normalizeTokenId(order.tokenId))
       .filter((value): value is string => Boolean(value));
     return ids;
   }, [listedOrders]);
 
-  const { collection: tokenMetadata, isLoading: metadataLoading } = useCollection(
-    collectionAddress,
-    tokenIds,
-    Math.max(tokenIds.length, 1),
+  const hasTokenLookups = tokenIds.length > 0;
+
+  const normalizedAttributeFilters = useMemo(() => {
+    const entries = Object.entries(traitFilters).filter(([, values]) => values && values.length > 0);
+    if (!entries.length) return undefined;
+    return Object.fromEntries(entries);
+  }, [traitFilters]);
+
+  const tokensQueryOptions = useMemo(
+    () => ({
+      address: collectionAddress,
+      tokenIds,
+      attributeFilters: normalizedAttributeFilters,
+      fetchImages: false,
+      limit: Math.max(tokenIds.length, 1),
+    }),
+    [collectionAddress, tokenIds, normalizedAttributeFilters],
   );
+
+  const tokensQuery = useArcadeCollectionTokens(tokensQueryOptions, true);
 
   const tokenMetadataMap = useMemo(() => {
     const map = new Map<string, any>();
-    tokenMetadata.forEach((token) => {
-      const normalizedId = normalizeTokenId((token as any)?.token_id ?? (token as any)?.tokenId);
-      if (normalizedId) {
-        map.set(normalizedId, token);
-      }
+    const pages = tokensQuery.data?.pages ?? [];
+    pages.forEach((page) => {
+      page.tokens.forEach((token) => {
+        const normalizedId = normalizeTokenId((token as any)?.token_id ?? (token as any)?.tokenId);
+        if (normalizedId) {
+          map.set(normalizedId, token);
+        }
+      });
     });
     return map;
-  }, [tokenMetadata]);
+  }, [tokensQuery.data]);
 
   const normalizedOwner = useMemo(() => normalizeAddress(ownerAddress), [ownerAddress]);
 
@@ -224,6 +238,10 @@ export const useMarketplaceCollectionTokens = (
   return {
     tokens: paginatedTokens,
     totalCount,
-    isLoading: !isReady || listingsLoading || metadataLoading,
+    isLoading:
+      !isReady ||
+      listingsQuery.status === "loading" ||
+      listingsQuery.isFetching ||
+      (hasTokenLookups && (tokensQuery.status === "loading" || tokensQuery.isFetching)),
   };
 };
