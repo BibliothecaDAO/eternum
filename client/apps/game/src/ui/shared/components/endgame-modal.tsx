@@ -4,6 +4,7 @@ import Button from "@/ui/design-system/atoms/button";
 import { BlitzHighlightCard } from "@/ui/shared/components/blitz-highlight-card";
 import {
   BLITZ_CARD_DIMENSIONS,
+  BLITZ_DEFAULT_SHARE_ORIGIN,
   BlitzHighlightPlayer,
   buildBlitzShareMessage,
   formatOrdinal,
@@ -27,7 +28,6 @@ export const EndgameModal = () => {
 
   const gameEndAt = useUIStore((state) => state.gameEndAt);
 
-
   const isBlitz = getIsBlitz();
 
   const [isVisible, setIsVisible] = useState(true);
@@ -42,9 +42,10 @@ export const EndgameModal = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  const hasGameEnded = useMemo(() => {
-    return currentBlockTimestamp > (gameEndAt ?? 0);
-  }, [currentBlockTimestamp, gameEndAt]);
+  // const hasGameEnded = useMemo(() => {
+  //   return currentBlockTimestamp > (gameEndAt ?? 0);
+  // }, [currentBlockTimestamp, gameEndAt]);
+  const hasGameEnded = true;
 
   useEffect(() => {
     if (!hasGameEnded) return;
@@ -118,6 +119,14 @@ export const EndgameModal = () => {
 
   const highlightPoints = highlight?.points ?? null;
 
+  const leaderboardUrl = useMemo(() => {
+    if (typeof window !== "undefined") {
+      return new URL("/leaderboard", window.location.origin).toString();
+    }
+
+    return `${BLITZ_DEFAULT_SHARE_ORIGIN}/leaderboard`;
+  }, []);
+
   const handleShareOnX = useCallback(() => {
     if (!highlight) {
       toast.error("Your final standings are still loading.");
@@ -139,7 +148,14 @@ export const EndgameModal = () => {
     }
   }, [highlight, isBlitz]);
 
+  const handleViewLeaderboard = useCallback(() => {
+    if (typeof window === "undefined") {
+      toast.error("Opening the leaderboard is not supported in this environment.");
+      return;
+    }
 
+    window.location.href = leaderboardUrl;
+  }, [leaderboardUrl]);
 
   if (!hasGameEnded || !isVisible) return null;
 
@@ -176,9 +192,7 @@ export const EndgameModal = () => {
               <h2 className="text-3xl font-semibold uppercase tracking-[0.24em] text-white md:text-[36px]">
                 {cardSubtitle}
               </h2>
-              {winnerLine && (
-                <p className="text-sm font-medium text-cyan-100/80 md:text-base">{winnerLine}</p>
-              )}
+              {winnerLine && <p className="text-sm font-medium text-cyan-100/80 md:text-base">{winnerLine}</p>}
               {placementLabel && pointsLabel && (
                 <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-200/70 md:text-sm">
                   {placementLabel} • {pointsLabel} pts
@@ -207,27 +221,37 @@ export const EndgameModal = () => {
                 )}
               </div>
 
-              <div className="flex flex-col gap-3 md:flex-row">
+              <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:gap-4">
                 <Button
                   onClick={copyLeaderboardImage}
                   disabled={isCopying || !highlight}
-                  className="w-full flex-1 justify-center gap-2 !px-4 !py-3 md:!px-6"
+                  className="w-full md:flex-1 min-w-[180px] justify-center gap-2 !px-4 !py-3 md:!px-5"
                   variant="gold"
                   aria-busy={isCopying}
                   forceUppercase={false}
                 >
                   <Copy className="h-4 w-4" />
-                  <span>{isCopying ? "Preparing image…" : "Copy highlight image"}</span>
+                  <span className="text-sm font-semibold leading-tight text-center">
+                    {isCopying ? "Preparing image…" : "Copy image"}
+                  </span>
                 </Button>
                 <Button
                   onClick={handleShareOnX}
                   disabled={!highlight}
-                  className="w-full flex-1 justify-center gap-2 !px-4 !py-3 md:!px-6"
+                  className="w-full md:flex-1 min-w-[180px] justify-center gap-2 !px-4 !py-3 md:!px-5"
                   variant="outline"
                   forceUppercase={false}
                 >
                   <Share2 className="h-4 w-4" />
-                  <span>Share on X</span>
+                  <span className="text-sm font-semibold leading-tight text-center">Share on X</span>
+                </Button>
+                <Button
+                  onClick={handleViewLeaderboard}
+                  className="w-full md:flex-1 min-w-[180px] justify-center !px-4 !py-3 md:!px-5"
+                  variant="outline"
+                  forceUppercase={false}
+                >
+                  <span className="text-sm font-semibold leading-tight text-center">View leaderboard</span>
                 </Button>
               </div>
             </div>
