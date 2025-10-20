@@ -108,7 +108,7 @@ jobs:
           import os
 
           now = datetime.now(timezone.utc)
-          slots = [time(0, 0), time(9, 30), time(15, 30), time(19, 30)]
+          slots = [time(0, 30), time(9, 30), time(15, 30), time(19, 30)]
 
           upcoming = []
           day_offset = 0
