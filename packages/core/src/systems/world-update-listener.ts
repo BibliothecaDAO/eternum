@@ -537,10 +537,10 @@ export class WorldUpdateListener {
                 });
               };
 
-              pushGuard(0, troopGuards?.delta);
-              pushGuard(1, troopGuards?.charlie);
-              pushGuard(2, troopGuards?.bravo);
               pushGuard(3, troopGuards?.alpha);
+              pushGuard(2, troopGuards?.bravo);
+              pushGuard(1, troopGuards?.charlie);
+              pushGuard(0, troopGuards?.delta);
 
               // Use DataEnhancer to fetch player name
               const ownerValue = currentState.owner ?? 0n;

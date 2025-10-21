@@ -161,7 +161,7 @@ export const StructureDefence = ({
                       key={slot || `empty-${index}`}
                       draggableId={`slot-${slot || `empty-${index}`}`}
                       index={index}
-                      isDragDisabled={!defense || cooldownSlots?.some((c) => c.slot === index) || isExpanded}
+                      isDragDisabled={!defense || cooldownSlots?.some((c) => c.slot === slot) || isExpanded}
                     >
                       {(provided, snapshot) => (
                         <div
@@ -179,15 +179,15 @@ export const StructureDefence = ({
                           <div className="w-28 flex items-center gap-1.5">
                             <div className="w-1 h-1 rounded-full bg-gold/40" />
                             <div className="text-xs text-gold/80 font-medium">
-                              {DEFENSE_NAMES[index as keyof typeof DEFENSE_NAMES]}
+                              {DEFENSE_NAMES[slot as keyof typeof DEFENSE_NAMES]}
                             </div>
                           </div>
 
                           <div className="flex-1 relative">
-                            {cooldownSlots?.some((c) => c.slot === index) ? (
+                            {cooldownSlots?.some((c) => c.slot === slot) ? (
                               <CooldownTimer
                                 slot={index}
-                                time={cooldownSlots?.find((c) => c.slot === index)?.timeLeft || 0}
+                                time={cooldownSlots?.find((c) => c.slot === slot)?.timeLeft || 0}
                               />
                             ) : defense && defense.troops.count > 0n ? (
                               <div className="relative flex gap-4">
@@ -243,7 +243,7 @@ export const StructureDefence = ({
                         <div className="flex justify-between items-center mb-3">
                           <h3 className="text-gold font-bold text-sm">
                             {defense ? "Update Defense" : "Add Defense"}:{" "}
-                            {DEFENSE_NAMES[index as keyof typeof DEFENSE_NAMES]}
+                            {DEFENSE_NAMES[slot as keyof typeof DEFENSE_NAMES]}
                           </h3>
                           <Button
                             variant="secondary"
@@ -256,10 +256,10 @@ export const StructureDefence = ({
 
                         <ArmyCreate
                           owner_entity={structureId}
-                          army={getArmyInfoForSlot(index) as any}
+                          army={getArmyInfoForSlot(slot || 0) as any}
                           armyManager={armyManager}
                           isExplorer={false}
-                          guardSlot={index}
+                          guardSlot={slot}
                           onCancel={() => setExpandedSlot(null)}
                           onSuccess={() => {
                             onDefenseUpdated?.();

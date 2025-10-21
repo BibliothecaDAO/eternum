@@ -374,6 +374,8 @@ export const UnifiedArmyCreationModal = ({
     });
   }, [armyType, selectedGuardCategory, selectedGuardTier]);
 
+  console.log({ guardSlot });
+
   const handleCreate = async () => {
     if (!armyManager || troopCount <= 0) return;
 

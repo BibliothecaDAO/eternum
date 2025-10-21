@@ -197,25 +197,14 @@ export class MapDataStore {
   private parseGuardArmies(structure: StructureMapDataRaw): GuardArmy[] {
     const guards: GuardArmy[] = [];
 
-    // Parse delta guard (slot 0)
-    if (structure.delta_count && this.hexToBigInt(structure.delta_count) > 0n) {
+    // Parse alpha guard (slot 3) - push first so it ends up last
+    if (structure.alpha_count && this.hexToBigInt(structure.alpha_count) > 0n) {
       guards.push({
-        slot: 0,
-        category: this.getCategoryName(structure.delta_category),
-        tier: structure.delta_tier ? TROOP_TIERS[structure.delta_tier] : 1,
-        count: divideByPrecision(Number(this.hexToBigInt(structure.delta_count))),
-        stamina: Number(this.hexToBigInt(structure.delta_stamina_amount)),
-      });
-    }
-
-    // Parse charlie guard (slot 1)
-    if (structure.charlie_count && this.hexToBigInt(structure.charlie_count) > 0n) {
-      guards.push({
-        slot: 1,
-        category: this.getCategoryName(structure.charlie_category),
-        tier: structure.charlie_tier ? TROOP_TIERS[structure.charlie_tier] : 1,
-        count: divideByPrecision(Number(this.hexToBigInt(structure.charlie_count))),
-        stamina: Number(this.hexToBigInt(structure.charlie_stamina_amount)),
+        slot: 3,
+        category: this.getCategoryName(structure.alpha_category),
+        tier: structure.alpha_tier ? TROOP_TIERS[structure.alpha_tier] : 1,
+        count: divideByPrecision(Number(this.hexToBigInt(structure.alpha_count))),
+        stamina: Number(this.hexToBigInt(structure.alpha_stamina_amount)),
       });
     }
 
@@ -230,17 +219,29 @@ export class MapDataStore {
       });
     }
 
-    // Parse alpha guard (slot 3)
-    if (structure.alpha_count && this.hexToBigInt(structure.alpha_count) > 0n) {
+    // Parse charlie guard (slot 1)
+    if (structure.charlie_count && this.hexToBigInt(structure.charlie_count) > 0n) {
       guards.push({
-        slot: 3,
-        category: this.getCategoryName(structure.alpha_category),
-        tier: structure.alpha_tier ? TROOP_TIERS[structure.alpha_tier] : 1,
-        count: divideByPrecision(Number(this.hexToBigInt(structure.alpha_count))),
-        stamina: Number(this.hexToBigInt(structure.alpha_stamina_amount)),
+        slot: 1,
+        category: this.getCategoryName(structure.charlie_category),
+        tier: structure.charlie_tier ? TROOP_TIERS[structure.charlie_tier] : 1,
+        count: divideByPrecision(Number(this.hexToBigInt(structure.charlie_count))),
+        stamina: Number(this.hexToBigInt(structure.charlie_stamina_amount)),
       });
     }
 
+    // Parse delta guard (slot 0) - push last so it ends up first
+    if (structure.delta_count && this.hexToBigInt(structure.delta_count) > 0n) {
+      guards.push({
+        slot: 0,
+        category: this.getCategoryName(structure.delta_category),
+        tier: structure.delta_tier ? TROOP_TIERS[structure.delta_tier] : 1,
+        count: divideByPrecision(Number(this.hexToBigInt(structure.delta_count))),
+        stamina: Number(this.hexToBigInt(structure.delta_stamina_amount)),
+      });
+    }
+
+    // The pushes are now in inverse order to the original code.
     return guards;
   }
 

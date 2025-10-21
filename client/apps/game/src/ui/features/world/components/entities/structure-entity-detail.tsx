@@ -37,8 +37,8 @@ import { Eye, Loader, RefreshCw } from "lucide-react";
 import { memo, useCallback, useMemo, useState } from "react";
 import { ImmunityTimer } from "../structures/immunity-timer";
 import { ActiveRelicEffects } from "./active-relic-effects";
-import { StructureProductionPanel } from "./structure-production-panel";
 import { EntityInventoryTabs } from "./entity-inventory-tabs";
+import { StructureProductionPanel } from "./structure-production-panel";
 
 interface StructureEntityDetailProps {
   structureEntityId: ID;
@@ -105,7 +105,7 @@ export const StructureEntityDetail = memo(
 
         const isMine = structure.owner === userAddress;
         const guild = getGuildFromPlayerAddress(ContractAddress(structure.owner), components);
-        const guards = getGuardsByStructure(structure).filter((guard) => guard.troops.count > 0n);
+        const guards = getGuardsByStructure(structure);
         const userGuild = getGuildFromPlayerAddress(userAddress, components);
         const isAlly = isMine || (guild && userGuild && guild.entityId === userGuild.entityId) || false;
         const addressName = structure.owner ? getAddressName(structure.owner, components) : MERCENARIES;
@@ -377,17 +377,14 @@ export const StructureEntityDetail = memo(
 
           <div className={panelClass}>
             <div className={`${sectionTitleClass} mb-2`}>Defenses</div>
-            {guardSlotsUsed !== undefined && guardSlotsMax !== undefined && (
-              <div className={`${smallTextClass} text-gold/60 mb-2`}>
-                Slots: {guardSlotsUsed}/{guardSlotsMax}
-              </div>
-            )}
             {guards.length > 0 ? (
               <CompactDefenseDisplay
                 troops={guards.map((army) => ({
                   slot: army.slot,
                   troops: army.troops,
                 }))}
+                slotsUsed={guardSlotsUsed}
+                slotsMax={guardSlotsMax}
               />
             ) : (
               <div className={`${smallTextClass} text-gold/60 italic`}>No defenders stationed.</div>

@@ -113,7 +113,7 @@ export const DefenseSlotSelection = ({
                       isSelected ? "text-gray-950" : "text-gold/70",
                     )}
                   >
-                    {`Slot ${slot + 1}`}
+                    {"No defense"}
                   </div>
                 )}
               </Button>

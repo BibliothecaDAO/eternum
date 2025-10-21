@@ -156,17 +156,10 @@ export const getGuardsByStructure = (structure: ComponentValue<ClientComponents[
   // Extract guard troops from the structure
   const guards = [
     {
-      slot: 0,
-      troops: structure.troop_guards.delta,
-      destroyedTick: structure.troop_guards.delta_destroyed_tick,
-      // timestamp
-      cooldownEnd: structure.troop_guards.delta_destroyed_tick * armiesTickInSeconds + guardResurrectionDelay,
-    },
-    {
-      slot: 1,
-      troops: structure.troop_guards.charlie,
-      destroyedTick: structure.troop_guards.charlie_destroyed_tick,
-      cooldownEnd: structure.troop_guards.charlie_destroyed_tick * armiesTickInSeconds + guardResurrectionDelay,
+      slot: 3,
+      troops: structure.troop_guards.alpha,
+      destroyedTick: structure.troop_guards.alpha_destroyed_tick,
+      cooldownEnd: structure.troop_guards.alpha_destroyed_tick * armiesTickInSeconds + guardResurrectionDelay,
     },
     {
       slot: 2,
@@ -175,10 +168,16 @@ export const getGuardsByStructure = (structure: ComponentValue<ClientComponents[
       cooldownEnd: structure.troop_guards.bravo_destroyed_tick * armiesTickInSeconds + guardResurrectionDelay,
     },
     {
-      slot: 3,
-      troops: structure.troop_guards.alpha,
-      destroyedTick: structure.troop_guards.alpha_destroyed_tick,
-      cooldownEnd: structure.troop_guards.alpha_destroyed_tick * armiesTickInSeconds + guardResurrectionDelay,
+      slot: 1,
+      troops: structure.troop_guards.charlie,
+      destroyedTick: structure.troop_guards.charlie_destroyed_tick,
+      cooldownEnd: structure.troop_guards.charlie_destroyed_tick * armiesTickInSeconds + guardResurrectionDelay,
+    },
+    {
+      slot: 0,
+      troops: structure.troop_guards.delta,
+      destroyedTick: structure.troop_guards.delta_destroyed_tick,
+      cooldownEnd: structure.troop_guards.delta_destroyed_tick * armiesTickInSeconds + guardResurrectionDelay,
     },
   ];
 

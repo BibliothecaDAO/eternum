@@ -325,37 +325,20 @@ export class SqlApi {
     // Transform the flat SQL result into structured Guard objects
     const guards: Guard[] = [
       {
-        slot: 0,
+        slot: 3,
         troops:
-          guardData.delta_count && hexToBigInt(guardData.delta_count) > 0n
+          guardData.alpha_count && hexToBigInt(guardData.alpha_count) > 0n
             ? {
-                category: guardData.delta_category,
-                tier: guardData.delta_tier,
-                count: hexToBigInt(guardData.delta_count),
+                category: guardData.alpha_category,
+                tier: guardData.alpha_tier,
+                count: hexToBigInt(guardData.alpha_count),
                 stamina: {
-                  amount: hexToBigInt(guardData.delta_stamina_amount),
-                  updated_tick: hexToBigInt(guardData.delta_stamina_updated_tick),
+                  amount: hexToBigInt(guardData.alpha_stamina_amount),
+                  updated_tick: hexToBigInt(guardData.alpha_stamina_updated_tick),
                 },
               }
             : null,
-        destroyedTick: hexToBigInt(guardData.delta_destroyed_tick),
-        cooldownEnd: 0, // Will be calculated by the client
-      },
-      {
-        slot: 1,
-        troops:
-          guardData.charlie_count && hexToBigInt(guardData.charlie_count) > 0n
-            ? {
-                category: guardData.charlie_category,
-                tier: guardData.charlie_tier,
-                count: hexToBigInt(guardData.charlie_count),
-                stamina: {
-                  amount: hexToBigInt(guardData.charlie_stamina_amount),
-                  updated_tick: hexToBigInt(guardData.charlie_stamina_updated_tick),
-                },
-              }
-            : null,
-        destroyedTick: hexToBigInt(guardData.charlie_destroyed_tick),
+        destroyedTick: hexToBigInt(guardData.alpha_destroyed_tick),
         cooldownEnd: 0, // Will be calculated by the client
       },
       {
@@ -376,20 +359,37 @@ export class SqlApi {
         cooldownEnd: 0, // Will be calculated by the client
       },
       {
-        slot: 3,
+        slot: 1,
         troops:
-          guardData.alpha_count && hexToBigInt(guardData.alpha_count) > 0n
+          guardData.charlie_count && hexToBigInt(guardData.charlie_count) > 0n
             ? {
-                category: guardData.alpha_category,
-                tier: guardData.alpha_tier,
-                count: hexToBigInt(guardData.alpha_count),
+                category: guardData.charlie_category,
+                tier: guardData.charlie_tier,
+                count: hexToBigInt(guardData.charlie_count),
                 stamina: {
-                  amount: hexToBigInt(guardData.alpha_stamina_amount),
-                  updated_tick: hexToBigInt(guardData.alpha_stamina_updated_tick),
+                  amount: hexToBigInt(guardData.charlie_stamina_amount),
+                  updated_tick: hexToBigInt(guardData.charlie_stamina_updated_tick),
                 },
               }
             : null,
-        destroyedTick: hexToBigInt(guardData.alpha_destroyed_tick),
+        destroyedTick: hexToBigInt(guardData.charlie_destroyed_tick),
+        cooldownEnd: 0, // Will be calculated by the client
+      },
+      {
+        slot: 0,
+        troops:
+          guardData.delta_count && hexToBigInt(guardData.delta_count) > 0n
+            ? {
+                category: guardData.delta_category,
+                tier: guardData.delta_tier,
+                count: hexToBigInt(guardData.delta_count),
+                stamina: {
+                  amount: hexToBigInt(guardData.delta_stamina_amount),
+                  updated_tick: hexToBigInt(guardData.delta_stamina_updated_tick),
+                },
+              }
+            : null,
+        destroyedTick: hexToBigInt(guardData.delta_destroyed_tick),
         cooldownEnd: 0, // Will be calculated by the client
       },
     ];
