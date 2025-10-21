@@ -9,7 +9,7 @@ import {
   directMessageReadReceiptSchema,
   directMessageThreadQuerySchema,
   directMessageTypingSchema,
-} from "../../../../../../common/validation/realtime/direct-messages";
+} from "@bibliothecadao/types";
 import { db } from "../../db/client";
 import {
   directMessageReadReceipts,

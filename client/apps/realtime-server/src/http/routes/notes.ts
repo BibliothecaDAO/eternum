@@ -3,12 +3,7 @@ import { randomUUID } from "crypto";
 import { and, desc, eq, gt, lt } from "drizzle-orm";
 import { Hono } from "hono";
 
-import {
-  noteCreateSchema,
-  noteDeleteSchema,
-  noteListQuerySchema,
-  noteUpdateSchema,
-} from "../../../../../../common/validation/realtime/notes";
+import { noteCreateSchema, noteDeleteSchema, noteListQuerySchema, noteUpdateSchema } from "@bibliothecadao/types";
 import { db } from "../../db/client";
 import { notes } from "../../db/schema/notes";
 import type { AppEnv } from "../middleware/auth";

@@ -36,6 +36,11 @@ export const attachPlayerSession: MiddlewareHandler<AppEnv> = async (c, next) =>
 };
 
 export const requirePlayerSession: MiddlewareHandler<AppEnv> = async (c, next) => {
+  if (c.req.method === "OPTIONS") {
+    await next();
+    return;
+  }
+
   if (!c.get("playerSession")) {
     return c.json({ error: "Player session required." }, 401);
   }

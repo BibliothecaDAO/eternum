@@ -1,7 +1,7 @@
 import { boolean, index, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
 
-import type { EntityMetadata } from "../../../../../../common/validation/realtime/shared";
-import { ENTITY_ID_MAX_LENGTH, PLAYER_ID_MAX_LENGTH } from "../../../../../../common/validation/realtime/shared";
+import type { EntityMetadata } from "@bibliothecadao/types";
+import { ENTITY_ID_MAX_LENGTH, PLAYER_ID_MAX_LENGTH } from "@bibliothecadao/types";
 
 export const directMessageThreads = pgTable(
   "direct_message_threads",

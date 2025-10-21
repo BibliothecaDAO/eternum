@@ -7,6 +7,7 @@ import { getIsBlitz } from "@bibliothecadao/eternum";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { ResourceArrivals as AllResourceArrivals, MarketModal } from "@/ui/features/economy/trading";
 import { construction, hyperstructures, military, trade } from "@/ui/features/world";
+import { RealtimeChatShell, type InitializeRealtimeClientParams } from "@/ui/features/social";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
 import { getEntityInfo } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
@@ -262,6 +263,25 @@ export const LeftNavigationModule = memo(() => {
   };
 
   const ConnectedAccount = useAccountStore((state) => state.account);
+  const defaultZoneId = "global";
+  const zoneIds = useMemo(() => [defaultZoneId], [defaultZoneId]);
+  const realtimeBaseUrl = (import.meta.env.VITE_PUBLIC_REALTIME_URL as string | undefined) ?? "";
+
+  const realtimeInitializer = useMemo<InitializeRealtimeClientParams | null>(() => {
+    if (!realtimeBaseUrl) return null;
+
+    const walletAddress = ConnectedAccount?.address ?? account.address ?? undefined;
+    const playerId = walletAddress ?? "demo-player";
+
+    return {
+      baseUrl: realtimeBaseUrl,
+      identity: {
+        playerId,
+        walletAddress,
+      },
+      joinZones: zoneIds,
+    };
+  }, [ConnectedAccount, account.address, realtimeBaseUrl, zoneIds]);
 
   return (
     <div className="flex flex-col">
@@ -305,8 +325,15 @@ export const LeftNavigationModule = memo(() => {
         </div>
       </div>
       <div className="flex">
-        {/* <Chat /> */}
-        {/* <ChatModule /> */}
+        {ConnectedAccount && (
+          <div className="pointer-events-auto w-full">
+            <RealtimeChatShell
+              initializer={realtimeInitializer}
+              zoneIds={zoneIds}
+              defaultZoneId={defaultZoneId}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

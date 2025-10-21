@@ -3,10 +3,7 @@ import { randomUUID } from "crypto";
 import { and, desc, eq, gt, lt } from "drizzle-orm";
 import { Hono } from "hono";
 
-import {
-  worldChatHistoryQuerySchema,
-  worldChatPublishSchema,
-} from "../../../../../../common/validation/realtime/world-chat";
+import { worldChatHistoryQuerySchema, worldChatPublishSchema } from "@bibliothecadao/types";
 import { db } from "../../db/client";
 import { worldChatMessages } from "../../db/schema/world-chat";
 import type { AppEnv } from "../middleware/auth";

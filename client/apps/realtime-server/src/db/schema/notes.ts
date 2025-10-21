@@ -1,14 +1,14 @@
-import { pgEnum, pgTable, text, timestamp, varchar, jsonb, index } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+import { index, jsonb, pgEnum, pgTable, timestamp, varchar } from "drizzle-orm/pg-core";
 
-import type { EntityMetadata, MapLocation } from "../../../../../../common/validation/realtime/shared";
+import type { EntityMetadata, MapLocation } from "@bibliothecadao/types";
 import {
   ENTITY_ID_MAX_LENGTH,
   MESSAGE_MAX_LENGTH,
+  noteSchema,
   PLAYER_ID_MAX_LENGTH,
   ZONE_ID_MAX_LENGTH,
-} from "../../../../../../common/validation/realtime/shared";
-import { noteSchema } from "../../../../../../common/validation/realtime/notes";
+} from "@bibliothecadao/types";
 
 export const noteVisibilityEnum = pgEnum("note_visibility", ["public", "private"]);
 
