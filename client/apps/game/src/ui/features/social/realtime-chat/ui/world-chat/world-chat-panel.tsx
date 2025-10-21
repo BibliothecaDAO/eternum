@@ -23,6 +23,18 @@ const formatWorldMessageTime = (message: WorldChatMessage) => {
   return "Now";
 };
 
+const formatSenderName = (message: WorldChatMessage) =>
+  message.sender.displayName?.trim() || message.sender.playerId || "Unknown adventurer";
+
+const truncateWallet = (wallet?: string, visibleChars = 4) => {
+  if (!wallet) return undefined;
+  const normalized = wallet.trim();
+  if (normalized.length <= visibleChars * 2 + 3) {
+    return normalized;
+  }
+  return `${normalized.slice(0, visibleChars + 2)}…${normalized.slice(-visibleChars)}`;
+};
+
 export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelProps) {
   // Select value directly to prevent infinite re-renders
   const fallbackZoneId = useRealtimeChatSelector((state) => state.activeZoneId ?? Object.keys(state.worldZones)[0]);
@@ -66,37 +78,58 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
           Focus
         </button>
       </header>
-      <div className="flex-1 overflow-y-auto px-4 py-3">
+      <div className="flex-1 px-4 py-3">
         {!zone && <p className="text-sm text-neutral-500">Join a zone to view chat.</p>}
         {zone && (
-          <>
+          <div className="flex h-full flex-col overflow-hidden">
             {zone.hasMoreHistory && (
               <button
                 type="button"
                 onClick={() => loadHistory(zone.lastFetchedCursor ?? undefined)}
-                className="mb-3 w-full rounded border border-neutral-700 px-2 py-1 text-xs text-neutral-300 hover:border-neutral-500"
+                className="mb-3 w-full rounded border border-neutral-700 px-2 py-1 text-xs text-neutral-300 transition hover:border-neutral-500 hover:text-neutral-100"
               >
                 Load older messages
               </button>
             )}
-            <ul className="space-y-2">
-              {messages.map((message) => (
-                <li
-                  key={message.id}
-                  className="flex flex-col gap-1 rounded bg-neutral-800 px-3 py-2 text-sm text-neutral-100"
-                >
-                  <div className="flex items-center justify-between text-xs text-neutral-400">
-                    <span>{message.sender.displayName ?? message.sender.playerId}</span>
-                    <span>{formatWorldMessageTime(message)}</span>
-                  </div>
-                  <p className="whitespace-pre-wrap break-words text-neutral-100">{message.content}</p>
-                </li>
-              ))}
-              {messages.length === 0 && (
-                <li className="text-sm text-neutral-500">No messages yet. Be the first to say hello!</li>
-              )}
-            </ul>
-          </>
+            <div className="flex-1 overflow-y-auto pr-1">
+              <ul className="flex flex-col gap-1.5">
+                {messages.map((message) => {
+                  const senderName = formatSenderName(message);
+                  const walletBadge = truncateWallet(message.sender.walletAddress);
+                  return (
+                    <li key={message.id}>
+                      <article className="flex flex-col gap-1 rounded-md bg-neutral-800/70 px-3 py-1.5 text-sm text-neutral-100 shadow-sm ring-1 ring-transparent transition hover:bg-neutral-800 hover:ring-amber-400/50">
+                        <header className="flex items-center justify-between gap-2 text-[11px] text-neutral-400">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <span className="max-w-[140px] truncate font-medium text-neutral-100" title={senderName}>
+                              {senderName}
+                            </span>
+                            {walletBadge && (
+                              <span
+                                className="max-w-[100px] truncate rounded bg-neutral-900/70 px-1.5 py-0.5 text-[10px] font-medium text-amber-300"
+                                title={message.sender.walletAddress ?? undefined}
+                              >
+                                {walletBadge}
+                              </span>
+                            )}
+                          </div>
+                          <span className="whitespace-nowrap text-[10px] uppercase tracking-wide text-neutral-500">
+                            {formatWorldMessageTime(message)}
+                          </span>
+                        </header>
+                        <p className="whitespace-pre-wrap break-words text-[13px] leading-tight text-neutral-100">
+                          {message.content}
+                        </p>
+                      </article>
+                    </li>
+                  );
+                })}
+                {messages.length === 0 && (
+                  <li className="text-sm text-neutral-500">No messages yet. Be the first to say hello!</li>
+                )}
+              </ul>
+            </div>
+          </div>
         )}
       </div>
       <div className="border-t border-neutral-800 p-4">

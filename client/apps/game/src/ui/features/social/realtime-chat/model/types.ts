@@ -10,6 +10,7 @@ import type {
   WorldChatMessage,
   WorldChatPublishPayload,
 } from "../../../../../../../../../../../common/validation/realtime/world-chat";
+import type { PlayerPresencePayload } from "@bibliothecadao/types";
 import { RealtimeClient } from "../../../../../../../../../shared/realtime/client";
 
 export type RealtimeConnectionStatus = "idle" | "connecting" | "connected" | "error";
@@ -21,15 +22,9 @@ export interface RealtimePlayerIdentity {
   avatarUrl?: string;
 }
 
-export interface PlayerPresence {
-  playerId: string;
-  displayName?: string | null;
-  walletAddress?: string | null;
-  lastSeenAt?: string | null;
-  isOnline: boolean;
+export type PlayerPresence = PlayerPresencePayload & {
   isTypingInThreadIds: string[];
-  lastZoneId?: string | null;
-}
+};
 
 export interface PendingMessage {
   id: string;
@@ -98,9 +93,10 @@ export interface RealtimeChatActions {
   joinZone(zoneId: string): void;
   leaveZone(zoneId: string): void;
   setActiveZone(zoneId: string | undefined): void;
+  ensureDirectThread(participantId: string): string | undefined;
   setActiveThread(threadId: string | undefined): void;
   receiveWorldMessage(zoneId: string, message: WorldChatMessage, options?: { clientMessageId?: string }): void;
-  receiveDirectMessage(message: DirectMessage): void;
+  receiveDirectMessage(message: DirectMessage, thread?: DirectMessageThread): void;
   setWorldHistory(zoneId: string, messages: WorldChatMessage[], meta?: Partial<WorldChatZoneState>): void;
   setDirectHistory(threadId: string, messages: DirectMessage[], meta?: Partial<DirectMessageThreadState>): void;
   setOnlinePlayers(players: PlayerPresence[]): void;

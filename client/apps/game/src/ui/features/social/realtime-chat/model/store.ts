@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import { RealtimeClient } from "@bibliothecadao/types";
+import { RealtimeClient, type PlayerPresencePayload } from "@bibliothecadao/types";
 import type {
   DirectMessage,
   DirectMessageOutboundMessage,
@@ -12,6 +12,7 @@ import type {
   LoadWorldChatHistoryParams,
   PendingMessage,
   RealtimeChatStore,
+  PlayerPresence,
   RealtimeConnectionStatus,
   WorldChatMessage,
   WorldChatOutboundMessage,
@@ -59,6 +60,16 @@ const createThreadState = (thread: DirectMessageThreadState["thread"]): DirectMe
   lastFetchedCursor: undefined,
   isFetchingHistory: false,
   pendingMessages: [],
+});
+
+const normalizePresencePayload = (presence: PlayerPresencePayload): PlayerPresence => ({
+  playerId: presence.playerId,
+  displayName: presence.displayName ?? null,
+  walletAddress: presence.walletAddress ?? null,
+  lastSeenAt: presence.lastSeenAt ?? null,
+  isOnline: Boolean(presence.isOnline),
+  isTypingInThreadIds: presence.isTypingInThreadIds ?? [],
+  lastZoneId: presence.lastZoneId ?? null,
 });
 
 const createFallbackThread = (message: DirectMessage): DirectMessageThread => {
@@ -170,7 +181,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
               }
               break;
             case "direct:message":
-              actions.receiveDirectMessage(message.message);
+              actions.receiveDirectMessage(message.message, message.thread);
               if (message.clientMessageId) {
                 actions.resolvePendingMessage(message.clientMessageId, { status: "sent" });
               }
@@ -187,6 +198,14 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
               set((state) => ({
                 pendingReadReceipts: [...state.pendingReadReceipts, message.receipt],
               }));
+              break;
+            case "presence:sync":
+              actions.setOnlinePlayers((message.players ?? []).map(normalizePresencePayload));
+              break;
+            case "presence:update":
+              if (message.player) {
+                actions.upsertOnlinePlayer(normalizePresencePayload(message.player));
+              }
               break;
             case "error":
               set({
@@ -269,6 +288,39 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         worldZones: nextWorldZones,
         unreadWorldTotal: nextUnreadTotal,
       });
+    },
+    ensureDirectThread: (participantId: string) => {
+      const { identity, dmThreads } = get();
+      const selfId = identity?.playerId;
+      if (!selfId || participantId === selfId) {
+        return undefined;
+      }
+
+      const participants = [selfId, participantId].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)) as [string, string];
+      const threadId = `${participants[0]}|${participants[1]}`;
+      const existingThread = dmThreads[threadId];
+
+      if (existingThread) {
+        return threadId;
+      }
+
+      const now = new Date().toISOString();
+      const threadState = createThreadState({
+        id: threadId,
+        participants,
+        createdAt: now,
+        updatedAt: now,
+        unreadCounts: {},
+      });
+
+      set({
+        dmThreads: {
+          ...dmThreads,
+          [threadId]: threadState,
+        },
+      });
+
+      return threadId;
     },
     setActiveThread: (threadId) => {
       const { dmThreads, unreadDirectTotal, activeThreadId } = get();
@@ -353,10 +405,10 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         unreadWorldTotal: nextUnreadTotal,
       });
     },
-    receiveDirectMessage: (message) => {
+    receiveDirectMessage: (message, threadInfo) => {
       const { dmThreads, identity, activeThreadId, unreadDirectTotal } = get();
       const existingThread = dmThreads[message.threadId];
-      const baseThread = existingThread?.thread ?? createFallbackThread(message);
+      const baseThread = threadInfo ?? existingThread?.thread ?? createFallbackThread(message);
       const threadState = existingThread ?? createThreadState(baseThread);
       const messages = [...threadState.messages, message].slice(-200);
       const isOwnMessage = identity?.playerId === message.senderId;
@@ -374,7 +426,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
           [message.threadId]: {
             ...threadState,
             thread: {
-              ...threadState.thread,
+              ...baseThread,
               lastMessageId: message.id,
               updatedAt,
             },
@@ -415,15 +467,27 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       });
     },
     setOnlinePlayers: (players) => {
-      const next = Object.fromEntries(players.map((player) => [player.playerId, player]));
+      const normalized = players.map((player) => ({
+        ...player,
+        isTypingInThreadIds: player.isTypingInThreadIds ?? [],
+      }));
+      const next = Object.fromEntries(normalized.map((player) => [player.playerId, player]));
       set({ onlinePlayers: next });
     },
     upsertOnlinePlayer: (player) => {
       const { onlinePlayers } = get();
+      const normalized = {
+        ...player,
+        isTypingInThreadIds: player.isTypingInThreadIds ?? [],
+      };
       set({
         onlinePlayers: {
           ...onlinePlayers,
-          [player.playerId]: player,
+          [normalized.playerId]: {
+            ...onlinePlayers[normalized.playerId],
+            ...normalized,
+            isTypingInThreadIds: normalized.isTypingInThreadIds,
+          },
         },
       });
     },

@@ -29,6 +29,16 @@ export type DirectReadMessage = {
   payload: DirectMessageReadReceipt;
 };
 
+export interface PlayerPresencePayload {
+  playerId: string;
+  displayName?: string | null;
+  walletAddress?: string | null;
+  lastSeenAt?: string | null;
+  isOnline: boolean;
+  isTypingInThreadIds?: string[];
+  lastZoneId?: string | null;
+}
+
 export type RealtimeClientMessage =
   | JoinZoneMessage
   | LeaveZoneMessage
@@ -62,6 +72,16 @@ export type DirectReadBroadcastMessage = {
   receipt: DirectMessageReadReceipt;
 };
 
+export type PresenceSyncBroadcastMessage = {
+  type: "presence:sync";
+  players: PlayerPresencePayload[];
+};
+
+export type PresenceUpdateBroadcastMessage = {
+  type: "presence:update";
+  player: PlayerPresencePayload;
+};
+
 export type RealtimeServerMessage =
   | { type: "connected"; playerId: string }
   | { type: "joined:zone"; zoneId: string }
@@ -70,6 +90,8 @@ export type RealtimeServerMessage =
   | DirectBroadcastMessage
   | DirectTypingBroadcastMessage
   | DirectReadBroadcastMessage
+  | PresenceSyncBroadcastMessage
+  | PresenceUpdateBroadcastMessage
   | { type: "error"; message: string; code?: string }
   | { type: string; [key: string]: unknown };
 

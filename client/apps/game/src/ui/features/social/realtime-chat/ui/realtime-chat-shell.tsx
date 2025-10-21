@@ -1,4 +1,4 @@
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 
 import {
   useRealtimeChatActions,
@@ -31,6 +31,7 @@ export function RealtimeChatShell({
   children,
   showPresence = true,
 }: RealtimeChatShellProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const actions = useRealtimeChatActions();
   useRealtimeChatInitializer(initializer);
   const { connectionStatus, lastConnectionError } = useRealtimeConnection();
@@ -52,42 +53,102 @@ export function RealtimeChatShell({
   }, [actions, defaultZoneId, zoneKey]);
 
   const handlePresenceSelect = (player: PlayerPresence) => {
-    // Placeholder: future implementation will resolve or create DM thread before focusing.
-    void player;
+    if (!player?.playerId) return;
+    const threadId = actions.ensureDirectThread(player.playerId);
+    if (threadId) {
+      actions.setActiveThread(threadId);
+      setIsExpanded(true);
+    }
   };
 
+  const connectionIndicator = useMemo(() => {
+    switch (connectionStatus) {
+      case "connected":
+        return "text-emerald-400";
+      case "error":
+        return "text-red-400";
+      default:
+        return "text-neutral-300";
+    }
+  }, [connectionStatus]);
+
+  const toggleExpanded = () => {
+    setIsExpanded((prev) => !prev);
+  };
+
+  const unreadBadgeClass = "rounded-full border px-2 py-0.5 text-[11px] leading-none";
+
   return (
-    <div className={`flex h-96 w-full bg-neutral-950 text-neutral-100 ${className ?? ""}`}>
-      <ThreadListPanel />
-      <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-neutral-800 px-4 py-3 text-xs uppercase tracking-wide text-neutral-400">
-          <span>
-            Connection:{" "}
-            <strong
-              className={
+    <div className={`w-full ${className ?? ""}`}>
+      <div
+        className={`flex flex-col overflow-hidden rounded-xl border border-neutral-800 bg-neutral-950 text-neutral-100 shadow-lg transition-[height,_transform] duration-200 ${
+          isExpanded ? "h-[60vh] max-h-[600px]" : "h-14"
+        }`}
+      >
+        <header className="flex items-center justify-between border-b border-neutral-800 bg-neutral-900/80 px-3 py-2 text-xs uppercase tracking-wide text-neutral-400">
+          <button
+            type="button"
+            onClick={toggleExpanded}
+            className="flex items-center gap-2 rounded px-2 py-1 text-neutral-100 transition hover:bg-neutral-800"
+          >
+            <span className="text-[11px] font-semibold">{isExpanded ? "Hide Chat" : "Open Chat"}</span>
+            <span
+              className={`h-2 w-2 rounded-full ${
                 connectionStatus === "connected"
-                  ? "text-emerald-400"
+                  ? "bg-emerald-400"
                   : connectionStatus === "error"
-                    ? "text-red-400"
-                    : "text-neutral-300"
-              }
-            >
-              {connectionStatus}
-            </strong>
-            {lastConnectionError && <span className="ml-2 text-red-400">{lastConnectionError}</span>}
-          </span>
-          <span className="flex items-center gap-4">
-            <span>World unread: {unreadWorldTotal}</span>
-            <span>DM unread: {unreadDirectTotal}</span>
-          </span>
+                    ? "bg-red-400"
+                    : "bg-neutral-500"
+              }`}
+            />
+          </button>
+          <div className="flex items-center gap-3 text-[11px]">
+            <span className={`font-semibold ${connectionIndicator}`}>{connectionStatus}</span>
+            {lastConnectionError && <span className="text-red-400 normal-case">{lastConnectionError}</span>}
+            <span className="flex items-center gap-1 normal-case">
+              World
+              <span
+                className={`${unreadBadgeClass} ${
+                  unreadWorldTotal > 0 ? "border-amber-400 text-amber-300" : "border-neutral-700 text-neutral-500"
+                }`}
+              >
+                {unreadWorldTotal}
+              </span>
+            </span>
+            <span className="flex items-center gap-1 normal-case">
+              DM
+              <span
+                className={`${unreadBadgeClass} ${
+                  unreadDirectTotal > 0 ? "border-amber-400 text-amber-300" : "border-neutral-700 text-neutral-500"
+                }`}
+              >
+                {unreadDirectTotal}
+              </span>
+            </span>
+          </div>
         </header>
-        <div className="grid flex-1 grid-cols-1 divide-y divide-neutral-800 lg:grid-cols-2 lg:divide-x lg:divide-y-0">
-          <WorldChatPanel zoneId={defaultZoneId} />
-          <DirectMessagesPanel threadId={threadId} />
-        </div>
-        {children}
+        {isExpanded ? (
+          <div className="flex flex-1 min-h-0">
+            <ThreadListPanel className="hidden xl:flex" />
+            <div className="flex flex-1 min-h-0 flex-col">
+              <div className="grid flex-1 min-h-0 grid-cols-1 divide-y divide-neutral-800 lg:grid-cols-2 lg:divide-x lg:divide-y-0">
+                <WorldChatPanel zoneId={defaultZoneId} />
+                <DirectMessagesPanel threadId={threadId} />
+              </div>
+              {children}
+            </div>
+            {showPresence && <PresenceSidebar className="hidden 2xl:flex" onSelectPlayer={handlePresenceSelect} />}
+          </div>
+        ) : (
+          <div className="flex flex-1 items-center justify-between px-4 text-[11px] text-neutral-400">
+            <span className="normal-case">Tap to open chat and catch up on conversations.</span>
+            <div className="flex items-center gap-3 normal-case">
+              <span>World unread: {unreadWorldTotal}</span>
+              <span>DM unread: {unreadDirectTotal}</span>
+            </div>
+          </div>
+        )}
       </div>
-      {showPresence && <PresenceSidebar onSelectPlayer={handlePresenceSelect} />}
     </div>
   );
 }
