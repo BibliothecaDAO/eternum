@@ -27,15 +27,29 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
   const fallbackThreadId = useRealtimeChatSelector((state) => state.activeThreadId ?? Object.keys(state.dmThreads)[0]);
   const resolvedThreadId = threadId ?? fallbackThreadId;
   const { thread } = useDirectThread(resolvedThreadId);
-  const identityId = useRealtimeChatSelector((state) => state.identity?.playerId ?? "");
+  const identity = useRealtimeChatSelector((state) => state.identity);
+  const identityId = identity?.playerId ?? "";
+  const identityWallet = identity?.walletAddress ?? null;
   const typingIndicators = useRealtimeTypingIndicators();
+
+  const selfAliases = useMemo(() => {
+    const aliases: string[] = [];
+    if (identityId) {
+      aliases.push(identityId);
+    }
+    if (identityWallet && !aliases.includes(identityWallet)) {
+      aliases.push(identityWallet);
+    }
+    return aliases;
+  }, [identityId, identityWallet]);
 
   const recipientId = useMemo(() => {
     if (!thread?.thread) return undefined;
     return (
-      thread.thread.participants.find((participant: string) => participant !== identityId) ?? thread.thread.participants[0]
+      thread.thread.participants.find((participant: string) => !selfAliases.includes(participant)) ??
+      thread.thread.participants[0]
     );
-  }, [identityId, thread]);
+  }, [selfAliases, thread]);
 
   const { sendMessage, loadHistory, markAsRead } = useDirectMessageControls(resolvedThreadId, recipientId);
 
@@ -73,7 +87,7 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
             )}
             <ul className="space-y-2">
               {thread.messages.map((message) => {
-                const isOwn = message.senderId === identityId;
+                const isOwn = selfAliases.includes(message.senderId);
                 return (
                   <li key={message.id} className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
                     <div

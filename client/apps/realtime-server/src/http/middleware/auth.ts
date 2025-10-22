@@ -4,6 +4,7 @@ export interface PlayerSession {
   playerId: string;
   walletAddress?: string;
   displayName?: string;
+  aliases: string[];
 }
 
 export type AppEnv = {
@@ -25,10 +26,27 @@ export const attachPlayerSession: MiddlewareHandler<AppEnv> = async (c, next) =>
     })();
 
   if (playerId) {
+    const normalizedPlayerId = playerId.trim();
+    if (!normalizedPlayerId) {
+      await next();
+      return;
+    }
+
+    const rawWalletHeader = c.req.header("x-wallet-address") ?? c.req.query("walletAddress") ?? undefined;
+    const walletAddress = rawWalletHeader?.trim() ? rawWalletHeader.trim() : undefined;
+    const rawDisplayName = c.req.header("x-player-name") ?? c.req.query("playerName") ?? undefined;
+    const displayName = rawDisplayName?.trim() ? rawDisplayName.trim() : undefined;
+
+    const aliases = [normalizedPlayerId];
+    if (walletAddress && !aliases.includes(walletAddress)) {
+      aliases.push(walletAddress);
+    }
+
     c.set("playerSession", {
-      playerId,
-      walletAddress: c.req.header("x-wallet-address") ?? undefined,
-      displayName: c.req.header("x-player-name") ?? undefined,
+      playerId: normalizedPlayerId,
+      walletAddress,
+      displayName,
+      aliases,
     });
   }
 

@@ -65,6 +65,7 @@ export interface RealtimeChatState {
   baseUrl?: string;
   activeZoneId?: string;
   activeThreadId?: string;
+  isShellOpen: boolean;
   worldZones: Record<string, WorldChatZoneState>;
   dmThreads: Record<string, DirectMessageThreadState>;
   unreadWorldTotal: number;
@@ -93,6 +94,7 @@ export interface RealtimeChatActions {
   joinZone(zoneId: string): void;
   leaveZone(zoneId: string): void;
   setActiveZone(zoneId: string | undefined): void;
+  setShellOpen(isOpen: boolean): void;
   ensureDirectThread(participantId: string): string | undefined;
   setActiveThread(threadId: string | undefined): void;
   receiveWorldMessage(zoneId: string, message: WorldChatMessage, options?: { clientMessageId?: string }): void;

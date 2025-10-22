@@ -20,7 +20,20 @@ export function ThreadListPanel({ onSelectThread, className }: ThreadListPanelPr
   // Select values individually to prevent infinite re-renders
   const threads = useRealtimeChatSelector((state) => state.dmThreads);
   const activeThreadId = useRealtimeChatSelector((state) => state.activeThreadId);
-  const identityId = useRealtimeChatSelector((state) => state.identity?.playerId ?? null);
+  const identity = useRealtimeChatSelector((state) => state.identity);
+  const identityId = identity?.playerId ?? null;
+  const identityWallet = identity?.walletAddress ?? null;
+
+  const selfAliases = useMemo(() => {
+    const aliases: string[] = [];
+    if (identityId) {
+      aliases.push(identityId);
+    }
+    if (identityWallet && !aliases.includes(identityWallet)) {
+      aliases.push(identityWallet);
+    }
+    return aliases;
+  }, [identityId, identityWallet]);
 
   const sortedThreads = useMemo(() => {
     return Object.values(threads)
@@ -34,7 +47,7 @@ export function ThreadListPanel({ onSelectThread, className }: ThreadListPanelPr
   };
 
   return (
-    <aside className={`flex h-full w-64 flex-col border-r border-neutral-800 bg-neutral-950 ${className ?? ""}`}>
+    <aside className={`flex h-full w-32 flex-col bg-neutral-950 ${className ?? ""}`}>
       <header className="border-b border-neutral-800 p-3">
         <h2 className="text-sm font-semibold text-neutral-200">Direct Messages</h2>
       </header>
@@ -43,7 +56,7 @@ export function ThreadListPanel({ onSelectThread, className }: ThreadListPanelPr
         <ul className="space-y-1 p-2">
           {sortedThreads.map((thread) => {
             const otherParticipant =
-              thread.thread.participants.find((participant: string) => participant !== identityId) ??
+              thread.thread.participants.find((participant: string) => !selfAliases.includes(participant)) ??
               thread.thread.participants[0];
             const isActive = thread.thread.id === activeThreadId;
             const unread = thread.unreadCount;

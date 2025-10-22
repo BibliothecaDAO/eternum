@@ -39,6 +39,10 @@ export function RealtimeChatShell({
   const zoneKey = zoneIds?.join("|") ?? "";
 
   useEffect(() => {
+    actions.setShellOpen(isExpanded);
+  }, [actions, isExpanded]);
+
+  useEffect(() => {
     if (!zoneIds || zoneIds.length === 0) {
       if (defaultZoneId) {
         actions.joinZone(defaultZoneId);
@@ -81,15 +85,15 @@ export function RealtimeChatShell({
   return (
     <div className={`w-full ${className ?? ""}`}>
       <div
-        className={`flex flex-col overflow-hidden rounded-xl border border-neutral-800 bg-neutral-950 text-neutral-100 shadow-lg transition-[height,_transform] duration-200 ${
+        className={`flex flex-col overflow-hidden transition-[height,_transform] duration-200 panel-wood  ${
           isExpanded ? "h-[60vh] max-h-[600px]" : "h-14"
         }`}
       >
-        <header className="flex items-center justify-between border-b border-neutral-800 bg-neutral-900/80 px-3 py-2 text-xs uppercase tracking-wide text-neutral-400">
+        <header className="flex items-center justify-between  bg-black px-3 py-2 text-xs uppercase tracking-wide  ">
           <button
             type="button"
             onClick={toggleExpanded}
-            className="flex items-center gap-2 rounded px-2 py-1 text-neutral-100 transition hover:bg-neutral-800"
+            className="flex items-center gap-2 px-2 py-1 text-neutral-100 transition hover:bg-neutral-800"
           >
             <span className="text-[11px] font-semibold">{isExpanded ? "Hide Chat" : "Open Chat"}</span>
             <span

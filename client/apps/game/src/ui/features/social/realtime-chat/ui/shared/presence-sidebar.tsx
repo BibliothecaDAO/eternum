@@ -28,9 +28,8 @@ export function PresenceSidebar({ onSelectPlayer, className }: PresenceSidebarPr
   }, [presence]);
 
   return (
-    <aside className={`flex h-full flex-col gap-4 border-l border-neutral-800 bg-neutral-950 p-4 ${className ?? ""}`}>
+    <aside className={`flex h-full flex-col gap-3 border-l border-neutral-800 bg-neutral-950 p-2 ${className ?? ""}`}>
       <section>
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Online</h3>
         <ul className="mt-2 space-y-1">
           {online.length === 0 && <li className="text-xs text-neutral-600">No players online.</li>}
           {online.map((player) => (
@@ -47,7 +46,6 @@ export function PresenceSidebar({ onSelectPlayer, className }: PresenceSidebarPr
         </ul>
       </section>
       <section>
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Recently Active</h3>
         <ul className="mt-2 space-y-1">
           {offline.length === 0 && <li className="text-xs text-neutral-600">No recent players.</li>}
           {offline.map((player) => (

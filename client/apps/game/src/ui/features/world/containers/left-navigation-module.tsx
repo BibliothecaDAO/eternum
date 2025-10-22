@@ -263,6 +263,7 @@ export const LeftNavigationModule = memo(() => {
   };
 
   const ConnectedAccount = useAccountStore((state) => state.account);
+  const accountName = useAccountStore((state) => state.accountName);
   const defaultZoneId = "global";
   const zoneIds = useMemo(() => [defaultZoneId], [defaultZoneId]);
   const realtimeBaseUrl = (import.meta.env.VITE_PUBLIC_REALTIME_URL as string | undefined) ?? "";
@@ -271,17 +272,25 @@ export const LeftNavigationModule = memo(() => {
     if (!realtimeBaseUrl) return null;
 
     const walletAddress = ConnectedAccount?.address ?? account.address ?? undefined;
-    const playerId = walletAddress ?? "demo-player";
+    const normalizedAccountName = accountName?.trim() ?? "";
+    const hasUsername = normalizedAccountName.length > 0;
+    const playerId = hasUsername ? normalizedAccountName : walletAddress ?? "demo-player";
+    const displayName = hasUsername ? normalizedAccountName : undefined;
 
     return {
       baseUrl: realtimeBaseUrl,
       identity: {
         playerId,
         walletAddress,
+        displayName,
+      },
+      queryParams: {
+        walletAddress,
+        playerName: displayName,
       },
       joinZones: zoneIds,
     };
-  }, [ConnectedAccount, account.address, realtimeBaseUrl, zoneIds]);
+  }, [ConnectedAccount, account.address, accountName, realtimeBaseUrl, zoneIds]);
 
   return (
     <div className="flex flex-col">

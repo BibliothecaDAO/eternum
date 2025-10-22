@@ -62,6 +62,13 @@ const createThreadState = (thread: DirectMessageThreadState["thread"]): DirectMe
   pendingMessages: [],
 });
 
+const toIsoTimestamp = (value: string | Date | null | undefined): string => {
+  if (!value) return new Date().toISOString();
+  if (value instanceof Date) return value.toISOString();
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
+};
+
 const normalizePresencePayload = (presence: PlayerPresencePayload): PlayerPresence => ({
   playerId: presence.playerId,
   displayName: presence.displayName ?? null,
@@ -73,10 +80,7 @@ const normalizePresencePayload = (presence: PlayerPresencePayload): PlayerPresen
 });
 
 const createFallbackThread = (message: DirectMessage): DirectMessageThread => {
-  const createdAt =
-    message.createdAt instanceof Date
-      ? message.createdAt.toISOString()
-      : (message.createdAt ?? new Date().toISOString());
+  const createdAt = toIsoTimestamp(message.createdAt as string | Date | undefined);
   const participants = [message.senderId, message.recipientId] as [string, string];
   participants.sort();
   return {
@@ -102,8 +106,8 @@ const normalizeWorldChatMessage = (message: WorldChatMessage): WorldChatMessage 
     walletAddress: message.sender.walletAddress ?? undefined,
     displayName: message.sender.displayName ?? undefined,
     avatarUrl: message.sender.avatarUrl ?? undefined,
-  },
-});
+    },
+  });
 
 const mapWorldChatRecordToMessage = (record: any, fallbackZoneId: string): WorldChatMessage =>
   normalizeWorldChatMessage({
@@ -121,6 +125,76 @@ const mapWorldChatRecordToMessage = (record: any, fallbackZoneId: string): World
     },
   });
 
+const normalizeDirectMessage = (message: DirectMessage): DirectMessage => ({
+  ...message,
+  createdAt: toIsoTimestamp(message.createdAt as string | Date | undefined),
+  metadata: message.metadata ?? undefined,
+});
+
+const mapDirectMessageRecord = (record: any): DirectMessage =>
+  normalizeDirectMessage({
+    id: record.id,
+    threadId: record.threadId,
+    senderId: record.senderId,
+    recipientId: record.recipientId,
+    content: record.content,
+    metadata: record.metadata ?? undefined,
+    createdAt: record.createdAt ?? new Date().toISOString(),
+  });
+
+const mapDirectThreadRecord = (record: any): DirectMessageThread => {
+  if (!record) {
+    throw new Error("Invalid direct message thread record");
+  }
+
+  let participants: [string, string] | undefined;
+  if (Array.isArray(record.participants) && record.participants.length === 2) {
+    participants = [record.participants[0], record.participants[1]];
+  } else if (typeof record.playerAId === "string" && typeof record.playerBId === "string") {
+    participants = [record.playerAId, record.playerBId];
+  } else if (typeof record.id === "string" && record.id.includes("|")) {
+    const [first, second] = record.id.split("|");
+    if (first && second) {
+      participants = [first, second];
+    }
+  }
+
+  if (!participants) {
+    throw new Error("Unable to resolve thread participants");
+  }
+
+  const sortedParticipants = [...participants].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)) as [string, string];
+
+  const createdAt = toIsoTimestamp(record.createdAt ?? record.lastMessageAt ?? new Date().toISOString());
+  const updatedAtValue = record.updatedAt ?? record.lastMessageAt ?? null;
+  const updatedAt = updatedAtValue ? toIsoTimestamp(updatedAtValue) : undefined;
+
+  return {
+    id: record.id ?? sortedParticipants.join("|"),
+    participants: sortedParticipants,
+    createdAt,
+    updatedAt,
+    lastMessageId: record.lastMessageId ?? undefined,
+    unreadCounts: record.unreadCounts ?? {},
+  };
+};
+
+const matchesIdentityAlias = (
+  identity: RealtimePlayerIdentity | undefined,
+  candidate: string | null | undefined,
+): boolean => {
+  if (!identity || !candidate) {
+    return false;
+  }
+  if (identity.playerId === candidate) {
+    return true;
+  }
+  if (identity.walletAddress && identity.walletAddress === candidate) {
+    return true;
+  }
+  return false;
+};
+
 const initialState: Omit<RealtimeChatStore, "actions"> = {
   client: null,
   connectionStatus: "idle",
@@ -129,6 +203,7 @@ const initialState: Omit<RealtimeChatStore, "actions"> = {
   baseUrl: undefined,
   activeZoneId: undefined,
   activeThreadId: undefined,
+  isShellOpen: false,
   worldZones: {},
   dmThreads: {},
   unreadWorldTotal: 0,
@@ -289,11 +364,38 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         unreadWorldTotal: nextUnreadTotal,
       });
     },
+    setShellOpen: (isOpen) => {
+      const { isShellOpen } = get();
+      if (isShellOpen === isOpen) {
+        return;
+      }
+      set({ isShellOpen: isOpen });
+    },
     ensureDirectThread: (participantId: string) => {
       const { identity, dmThreads } = get();
       const selfId = identity?.playerId;
-      if (!selfId || participantId === selfId) {
+      if (!selfId) {
         return undefined;
+      }
+
+      const selfAliases = new Set<string>([selfId]);
+      if (identity?.walletAddress) {
+        selfAliases.add(identity.walletAddress);
+      }
+
+      if (selfAliases.has(participantId)) {
+        return undefined;
+      }
+
+      const existingAliasThread = Object.entries(dmThreads).find(([, state]) => {
+        const participants = new Set(state.thread.participants);
+        const includesParticipant = participants.has(participantId);
+        const includesSelf = Array.from(selfAliases).some((alias) => participants.has(alias));
+        return includesParticipant && includesSelf;
+      });
+
+      if (existingAliasThread) {
+        return existingAliasThread[0];
       }
 
       const participants = [selfId, participantId].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)) as [string, string];
@@ -359,7 +461,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       });
     },
     receiveWorldMessage: (zoneId, message, options) => {
-      const { worldZones, activeZoneId, unreadWorldTotal, identity } = get();
+      const { worldZones, activeZoneId, unreadWorldTotal, identity, isShellOpen } = get();
       const zoneState = worldZones[zoneId] ?? createWorldZoneState(zoneId);
       const normalizedMessage = normalizeWorldChatMessage(message);
 
@@ -386,10 +488,12 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         : zoneState.pendingMessages;
 
       const isActiveZone = activeZoneId === zoneId;
-      const isOwnMessage = identity?.playerId === normalizedMessage.sender.playerId;
-      const shouldIncrement = !isActiveZone && !isOwnMessage && replacementIndex === -1;
+      const isOwnMessage = matchesIdentityAlias(identity, normalizedMessage.sender.playerId);
+      const shouldIncrement =
+        !isOwnMessage && replacementIndex === -1 && (!isShellOpen || !isActiveZone);
 
-      const unreadCount = isActiveZone ? 0 : zoneState.unreadCount + (shouldIncrement ? 1 : 0);
+      const unreadCount =
+        isShellOpen && isActiveZone ? 0 : zoneState.unreadCount + (shouldIncrement ? 1 : 0);
       const nextUnreadTotal = shouldIncrement ? unreadWorldTotal + 1 : unreadWorldTotal;
 
       set({
@@ -406,35 +510,37 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       });
     },
     receiveDirectMessage: (message, threadInfo) => {
-      const { dmThreads, identity, activeThreadId, unreadDirectTotal } = get();
-      const existingThread = dmThreads[message.threadId];
-      const baseThread = threadInfo ?? existingThread?.thread ?? createFallbackThread(message);
+      const { dmThreads, identity, activeThreadId, unreadDirectTotal, isShellOpen } = get();
+      const normalizedMessage = normalizeDirectMessage(message);
+      const existingThread = dmThreads[normalizedMessage.threadId];
+      const baseThread = threadInfo ?? existingThread?.thread ?? createFallbackThread(normalizedMessage);
       const threadState = existingThread ?? createThreadState(baseThread);
-      const messages = [...threadState.messages, message].slice(-200);
-      const isOwnMessage = identity?.playerId === message.senderId;
-      const isActiveThread = activeThreadId === message.threadId;
-      const unreadCount = isOwnMessage || isActiveThread ? threadState.unreadCount : threadState.unreadCount + 1;
+      const messages = [...threadState.messages, normalizedMessage].slice(-200);
+      const isOwnMessage = matchesIdentityAlias(identity, normalizedMessage.senderId);
+      const isActiveThread = activeThreadId === normalizedMessage.threadId;
+      const shouldIncrement = !isOwnMessage && (!isShellOpen || !isActiveThread);
+      const unreadCount = shouldIncrement ? threadState.unreadCount + 1 : threadState.unreadCount;
 
       const updatedAt =
-        message.createdAt instanceof Date
-          ? message.createdAt.toISOString()
-          : (message.createdAt ?? new Date().toISOString());
+        normalizedMessage.createdAt instanceof Date
+          ? normalizedMessage.createdAt.toISOString()
+          : (normalizedMessage.createdAt ?? new Date().toISOString());
 
       set({
         dmThreads: {
           ...dmThreads,
-          [message.threadId]: {
+          [normalizedMessage.threadId]: {
             ...threadState,
             thread: {
               ...baseThread,
-              lastMessageId: message.id,
+              lastMessageId: normalizedMessage.id,
               updatedAt,
             },
             messages,
             unreadCount,
           },
         },
-        unreadDirectTotal: isOwnMessage || isActiveThread ? unreadDirectTotal : unreadDirectTotal + 1,
+        unreadDirectTotal: shouldIncrement ? unreadDirectTotal + 1 : unreadDirectTotal,
       });
     },
     setWorldHistory: (zoneId, messages, meta) => {
@@ -815,8 +921,131 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         });
       }
     },
-    loadDirectHistory: async (_threadId: string, _cursor?: string) => {
-      // Placeholder: HTTP integration to be implemented.
+    loadDirectHistory: async (threadId: string, cursor?: string) => {
+      const { baseUrl, identity } = get();
+      if (!baseUrl) return;
+
+      set((state) => {
+        const existing = state.dmThreads[threadId];
+        if (!existing) {
+          return state;
+        }
+        return {
+          dmThreads: {
+            ...state.dmThreads,
+            [threadId]: {
+              ...existing,
+              isFetchingHistory: true,
+            },
+          },
+        };
+      });
+
+      try {
+        const url = new URL(`/api/chat/dm/threads/${threadId}/messages`, baseUrl);
+        url.searchParams.set("limit", "50");
+        if (cursor) {
+          url.searchParams.set("cursor", cursor);
+        }
+
+        const headers: Record<string, string> = {};
+        if (identity?.playerId) {
+          headers["x-player-id"] = identity.playerId;
+        }
+        if (identity?.walletAddress) {
+          headers["x-wallet-address"] = identity.walletAddress;
+        }
+        if (identity?.displayName) {
+          headers["x-player-name"] = identity.displayName;
+        }
+
+        const response = await fetch(url.toString(), { headers });
+
+        if (!response.ok) {
+          throw new Error(`Failed to load direct chat history (${response.status})`);
+        }
+
+        const data = await response.json();
+        const incoming = Array.isArray(data?.messages)
+          ? (data.messages as any[]).map((record) => mapDirectMessageRecord(record))
+          : [];
+
+        incoming.sort((a, b) => {
+          const aTime = new Date(a.createdAt as string).getTime();
+          const bTime = new Date(b.createdAt as string).getTime();
+          return aTime - bTime;
+        });
+
+        const normalizedThread = data?.thread ? mapDirectThreadRecord(data.thread) : undefined;
+
+        set((state) => {
+          const existing = state.dmThreads[threadId];
+          const baseThread =
+            existing?.thread ??
+            normalizedThread ??
+            (incoming[0] ? createFallbackThread(incoming[0]) : undefined);
+
+          if (!baseThread) {
+            if (!existing) {
+              return state;
+            }
+            return {
+              dmThreads: {
+                ...state.dmThreads,
+                [threadId]: {
+                  ...existing,
+                  isFetchingHistory: false,
+                },
+              },
+            };
+          }
+
+          const threadState = existing ?? createThreadState(baseThread);
+          const existingMessages = threadState.messages;
+          const existingIds = new Set(existingMessages.map((msg) => msg.id));
+          const dedupedIncoming = incoming.filter((msg) => !existingIds.has(msg.id));
+          const combined = [...dedupedIncoming, ...existingMessages].sort(
+            (a, b) => new Date(a.createdAt as string).getTime() - new Date(b.createdAt as string).getTime(),
+          );
+
+          const nextThread = normalizedThread
+            ? {
+                ...threadState.thread,
+                ...normalizedThread,
+                unreadCounts: normalizedThread.unreadCounts ?? threadState.thread.unreadCounts ?? {},
+              }
+            : threadState.thread;
+
+          return {
+            dmThreads: {
+              ...state.dmThreads,
+              [threadId]: {
+                ...threadState,
+                thread: nextThread,
+                messages: combined,
+                hasMoreHistory: Boolean(data?.nextCursor),
+                lastFetchedCursor: data?.nextCursor ?? null,
+                isFetchingHistory: false,
+              },
+            },
+          };
+        });
+      } catch (error) {
+        console.error("Failed to load direct chat history", error);
+        set((state) => {
+          const existing = state.dmThreads[threadId];
+          if (!existing) return state;
+          return {
+            dmThreads: {
+              ...state.dmThreads,
+              [threadId]: {
+                ...existing,
+                isFetchingHistory: false,
+              },
+            },
+          };
+        });
+      }
     },
   },
 }));

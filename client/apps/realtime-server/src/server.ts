@@ -236,10 +236,10 @@ const broadcastToZone = (
   }
 };
 
-const sendToPlayer = (playerId: string, payload: unknown) => {
+const sendToPlayer = (playerId: string, payload: unknown): boolean => {
   const sockets = playerSockets.get(playerId);
   if (!sockets || sockets.size === 0) {
-    return;
+    return false;
   }
 
   const serialized = JSON.stringify(payload);
@@ -250,15 +250,35 @@ const sendToPlayer = (playerId: string, payload: unknown) => {
       console.error(`Failed to deliver payload to player ${playerId}`, error);
     }
   }
+
+  return true;
 };
 
 const broadcastDirectMessage = (
   participants: [string, string],
   payload: { type: "direct:message"; message: DirectMessage; thread: DirectMessageThread; clientMessageId?: string },
 ) => {
+  const delivered = new Set<string>();
+  const tryDeliver = (playerId: string) => {
+    if (delivered.has(playerId)) {
+      return;
+    }
+    if (sendToPlayer(playerId, payload)) {
+      delivered.add(playerId);
+    }
+  };
+
   const targets = new Set(participants);
-  for (const playerId of targets) {
-    sendToPlayer(playerId, payload);
+  for (const participant of targets) {
+    tryDeliver(participant);
+    for (const [activePlayerId, session] of playerSessions.entries()) {
+      if (delivered.has(activePlayerId)) {
+        continue;
+      }
+      if (session.aliases.includes(participant)) {
+        tryDeliver(activePlayerId);
+      }
+    }
   }
 };
 
@@ -324,20 +344,15 @@ const handleDirectMessage = async (
 
   const payload = payloadResult.data;
 
-  if (payload.recipientId === session.playerId) {
+  const aliases = session.aliases ?? [session.playerId];
+
+  if (aliases.includes(payload.recipientId)) {
     sendError(ws, "direct_self_message", "Cannot send a message to yourself.");
     return;
   }
 
   const expectedThreadId = buildThreadId(session.playerId, payload.recipientId);
   const providedThreadId = payload.threadId ?? expectedThreadId;
-
-  if (providedThreadId !== expectedThreadId) {
-    sendError(ws, "direct_thread_mismatch", "Thread id does not match participants.");
-    return;
-  }
-
-  const participants = sortParticipants(session.playerId, payload.recipientId);
 
   try {
     let [thread] = await db
@@ -346,7 +361,38 @@ const handleDirectMessage = async (
       .where(eq(directMessageThreads.id, providedThreadId))
       .limit(1);
 
-    if (!thread) {
+    if (!thread && providedThreadId !== expectedThreadId) {
+      sendError(ws, "direct_thread_mismatch", "Thread id does not match participants.");
+      return;
+    }
+
+    let recipientId = payload.recipientId;
+
+    if (thread) {
+      const participants = [thread.playerAId, thread.playerBId];
+      const participantSet = new Set(participants);
+      const playerMatches = aliases.some((alias) => participantSet.has(alias));
+
+      if (!playerMatches) {
+        sendError(ws, "direct_access_denied", "You are not a participant in this thread.");
+        return;
+      }
+
+      if (!participantSet.has(recipientId)) {
+        const otherParticipant = participants.find((participant) => !aliases.includes(participant));
+        if (!otherParticipant) {
+          sendError(ws, "direct_recipient_unknown", "Unable to determine thread recipient.");
+          return;
+        }
+        recipientId = otherParticipant;
+      }
+
+      if (aliases.includes(recipientId)) {
+        sendError(ws, "direct_self_message", "Cannot send a message to yourself.");
+        return;
+      }
+    } else {
+      const participants = sortParticipants(session.playerId, recipientId);
       [thread] = await db
         .insert(directMessageThreads)
         .values({
@@ -368,6 +414,11 @@ const handleDirectMessage = async (
           .where(eq(directMessageThreads.id, providedThreadId))
           .limit(1);
       }
+
+      if (aliases.includes(recipientId)) {
+        sendError(ws, "direct_self_message", "Cannot send a message to yourself.");
+        return;
+      }
     }
 
     if (!thread) {
@@ -379,9 +430,9 @@ const handleDirectMessage = async (
       .insert(directMessages)
       .values({
         id: messageId,
-        threadId: providedThreadId,
+        threadId: thread.id,
         senderId: session.playerId,
-        recipientId: payload.recipientId,
+        recipientId,
         content: payload.content,
         metadata: payload.metadata ?? null,
       })
@@ -400,7 +451,7 @@ const handleDirectMessage = async (
 
     const unreadCounts = {
       ...(thread.unreadCounts ?? {}),
-      [payload.recipientId]: (thread.unreadCounts?.[payload.recipientId] ?? 0) + 1,
+      [recipientId]: (thread.unreadCounts?.[recipientId] ?? 0) + 1,
     };
 
     await db
@@ -411,12 +462,12 @@ const handleDirectMessage = async (
         lastMessageAt: createdAt,
         updatedAt: createdAt,
       })
-      .where(eq(directMessageThreads.id, providedThreadId));
+      .where(eq(directMessageThreads.id, thread.id));
 
     const [updatedThread] = await db
       .select()
       .from(directMessageThreads)
-      .where(eq(directMessageThreads.id, providedThreadId))
+      .where(eq(directMessageThreads.id, thread.id))
       .limit(1);
 
     if (!updatedThread) {
