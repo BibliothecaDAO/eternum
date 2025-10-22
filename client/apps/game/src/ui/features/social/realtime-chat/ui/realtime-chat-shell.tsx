@@ -6,10 +6,9 @@ import {
   useRealtimeConnection,
   useRealtimeTotals,
 } from "../hooks/use-realtime-chat";
-import type { InitializeRealtimeClientParams, PlayerPresence } from "../model/types";
+import type { InitializeRealtimeClientParams } from "../model/types";
 import { DirectMessagesPanel } from "./direct-messages/direct-messages-panel";
 import { ThreadListPanel } from "./direct-messages/thread-list-panel";
-import { PresenceSidebar } from "./shared/presence-sidebar";
 import { WorldChatPanel } from "./world-chat/world-chat-panel";
 
 export interface RealtimeChatShellProps {
@@ -19,7 +18,6 @@ export interface RealtimeChatShellProps {
   threadId?: string;
   className?: string;
   children?: ReactNode;
-  showPresence?: boolean;
 }
 
 export function RealtimeChatShell({
@@ -29,7 +27,6 @@ export function RealtimeChatShell({
   threadId,
   className,
   children,
-  showPresence = true,
 }: RealtimeChatShellProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const actions = useRealtimeChatActions();
@@ -55,15 +52,6 @@ export function RealtimeChatShell({
       actions.setActiveZone(defaultZoneId);
     }
   }, [actions, defaultZoneId, zoneKey]);
-
-  const handlePresenceSelect = (player: PlayerPresence) => {
-    if (!player?.playerId) return;
-    const threadId = actions.ensureDirectThread(player.playerId);
-    if (threadId) {
-      actions.setActiveThread(threadId);
-      setIsExpanded(true);
-    }
-  };
 
   const connectionIndicator = useMemo(() => {
     switch (connectionStatus) {
@@ -141,7 +129,6 @@ export function RealtimeChatShell({
               </div>
               {children}
             </div>
-            {showPresence && <PresenceSidebar className="hidden 2xl:flex" onSelectPlayer={handlePresenceSelect} />}
           </div>
         ) : (
           <div className="flex flex-1 items-center justify-between px-4 text-[11px] text-neutral-400">

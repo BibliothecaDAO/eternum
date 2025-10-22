@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import {
   useDirectMessageControls,
@@ -22,6 +22,15 @@ const toDisplayTime = (message: DirectMessage) => {
   return "Now";
 };
 
+const truncateIdentifier = (value: string, visibleChars = 4) => {
+  if (!value) return value;
+  const normalized = value.trim();
+  if (normalized.length <= visibleChars * 2 + 3) {
+    return normalized;
+  }
+  return `${normalized.slice(0, visibleChars + 2)}…${normalized.slice(-visibleChars)}`;
+};
+
 export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanelProps) {
   // Select values individually to prevent infinite re-renders
   const fallbackThreadId = useRealtimeChatSelector((state) => state.activeThreadId ?? Object.keys(state.dmThreads)[0]);
@@ -31,6 +40,7 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
   const identityId = identity?.playerId ?? "";
   const identityWallet = identity?.walletAddress ?? null;
   const typingIndicators = useRealtimeTypingIndicators();
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   const selfAliases = useMemo(() => {
     const aliases: string[] = [];
@@ -51,6 +61,11 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
     );
   }, [selfAliases, thread]);
 
+  const recipientLabel = useMemo(() => {
+    if (!recipientId) return undefined;
+    return truncateIdentifier(recipientId, 6);
+  }, [recipientId]);
+
   const { sendMessage, loadHistory, markAsRead } = useDirectMessageControls(resolvedThreadId, recipientId);
 
   useEffect(() => {
@@ -66,54 +81,78 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
     );
   }, [resolvedThreadId, typingIndicators]);
 
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+    if (isAtBottom || thread?.unreadCount === 0) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [thread?.messages.length, thread?.unreadCount]);
+
   return (
-    <section className={`flex h-full flex-1 flex-col bg-neutral-900 ${className ?? ""}`}>
+    <section className={`flex h-full min-h-0 flex-1 flex-col bg-neutral-900 ${className ?? ""}`}>
       <header className="border-b border-neutral-800 px-4 py-3">
-        <h2 className="text-sm font-semibold text-neutral-200">{recipientId ?? "Direct Messages"}</h2>
-        <p className="text-xs text-neutral-500">{typing.length > 0 ? "Typing…" : "Private conversation"}</p>
+        <div>
+          <h2 className="text-sm font-semibold text-neutral-200">{recipientLabel ?? "Direct Messages"}</h2>
+          <p className="text-xs text-neutral-500">{typing.length > 0 ? "Typing…" : "Private conversation"}</p>
+        </div>
       </header>
-      <div className="flex-1 overflow-y-auto px-4 py-3">
+      <div className="flex-1 min-h-0 px-4 py-3">
         {!thread && <p className="text-sm text-neutral-500">Select a conversation to get started.</p>}
         {thread && (
-          <>
+          <div className="flex h-full min-h-0 flex-col overflow-hidden">
             {thread.hasMoreHistory && (
               <button
                 type="button"
                 onClick={() => loadHistory(thread.lastFetchedCursor ?? undefined)}
-                className="mb-3 w-full rounded border border-neutral-700 px-2 py-1 text-xs text-neutral-300 hover:border-neutral-500"
+                className="mb-3 w-full rounded border border-neutral-700 px-2 py-1 text-xs text-neutral-300 transition hover:border-neutral-500 hover:text-neutral-100"
               >
                 Load older messages
               </button>
             )}
-            <ul className="space-y-2">
-              {thread.messages.map((message) => {
-                const isOwn = selfAliases.includes(message.senderId);
-                return (
-                  <li key={message.id} className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
-                    <div
-                      className={`max-w-xs rounded px-3 py-2 text-sm ${
-                        isOwn ? "bg-amber-500 text-neutral-900" : "bg-neutral-800 text-neutral-100"
-                      }`}
-                    >
-                      <p className="break-words">{message.content}</p>
-                      <span className="mt-1 block text-right text-[10px] uppercase tracking-wide text-neutral-300">
-                        {toDisplayTime(message)}
-                      </span>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </>
+            <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto pr-1">
+              <ul className="flex flex-col gap-1.5">
+                {thread.messages.map((message) => {
+                  const isOwn = selfAliases.includes(message.senderId);
+                  const displayLabel = isOwn ? "You" : truncateIdentifier(message.senderId);
+                  return (
+                    <li key={message.id} className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
+                      <article
+                        className={`max-w-[80%] rounded-md bg-neutral-800/70 px-3 py-1.5 text-sm text-neutral-100 shadow-sm ring-1 ring-transparent transition ${
+                          isOwn ? "ring-amber-400/60" : "hover:bg-neutral-800 hover:ring-amber-400/40"
+                        }`}
+                      >
+                        <header className="flex items-center justify-between gap-2 text-[11px] text-neutral-400">
+                          <span className="truncate font-medium text-neutral-100" title={displayLabel}>
+                            {displayLabel}
+                          </span>
+                          <span className="whitespace-nowrap text-[10px] uppercase tracking-wide text-neutral-500">
+                            {toDisplayTime(message)}
+                          </span>
+                        </header>
+                        <p className="whitespace-pre-wrap break-words text-[13px] leading-tight text-neutral-100">
+                          {message.content}
+                        </p>
+                      </article>
+                    </li>
+                  );
+                })}
+                {thread.messages.length === 0 && (
+                  <li className="text-sm text-neutral-500">No messages yet. Say hi to start the conversation!</li>
+                )}
+              </ul>
+            </div>
+          </div>
         )}
       </div>
-      <div className="border-t border-neutral-800 p-4">
+      <div>
         <MessageComposer
           onSend={async (value) => {
             if (!recipientId) return;
             await sendMessage(value);
           }}
-          placeholder={recipientId ? `Message ${recipientId}` : "Select a conversation to send a message"}
+          placeholder={recipientLabel ? `Message ${recipientLabel}` : "Select a conversation to send a message"}
           disabled={!recipientId}
         />
       </div>

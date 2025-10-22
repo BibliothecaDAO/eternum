@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import {
   useRealtimeChatActions,
@@ -43,6 +43,7 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
   const { zone, isActive } = useRealtimeWorldZone(resolvedZoneId);
   const { sendMessage, loadHistory, markAsRead, setActive } = useWorldChatControls(resolvedZoneId);
   const messages = zone?.messages ?? [];
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (resolvedZoneId) {
@@ -57,6 +58,15 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
     }
   }, [isActive, markAsRead, resolvedZoneId]);
 
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+    if (isActive || isAtBottom) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [messages.length, isActive]);
+
   const displayLabel = useMemo(() => {
     if (zoneLabel) return zoneLabel;
     if (resolvedZoneId) return `Zone ${resolvedZoneId}`;
@@ -64,7 +74,7 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
   }, [resolvedZoneId, zoneLabel]);
 
   return (
-    <section className={`flex h-full flex-1 flex-col bg-neutral-900 ${className ?? ""}`}>
+    <section className={`flex h-full min-h-0 flex-1 flex-col bg-neutral-900 ${className ?? ""}`}>
       <header className="flex items-center justify-between border-b border-neutral-800 px-4 py-3">
         <div>
           <h2 className="text-sm font-semibold text-neutral-200">{displayLabel}</h2>
@@ -78,10 +88,10 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
           Focus
         </button>
       </header>
-      <div className="flex-1 px-4 py-3">
+      <div className="flex-1 min-h-0 px-4 py-3">
         {!zone && <p className="text-sm text-neutral-500">Join a zone to view chat.</p>}
         {zone && (
-          <div className="flex h-full flex-col overflow-hidden">
+          <div className="flex h-full min-h-0 flex-col overflow-hidden">
             {zone.hasMoreHistory && (
               <button
                 type="button"
@@ -91,14 +101,14 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
                 Load older messages
               </button>
             )}
-            <div className="flex-1 overflow-y-auto pr-1">
+            <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto pr-1">
               <ul className="flex flex-col gap-1.5">
                 {messages.map((message) => {
                   const senderName = formatSenderName(message);
                   const walletBadge = truncateWallet(message.sender.walletAddress);
                   return (
                     <li key={message.id}>
-                      <article className="flex flex-col gap-1 rounded-md bg-neutral-800/70 px-3 py-1.5 text-sm text-neutral-100 shadow-sm ring-1 ring-transparent transition hover:bg-neutral-800 hover:ring-amber-400/50">
+                      <article className="flex flex-col gap-1 rounded-md py-1.5 text-sm text-neutral-100 ">
                         <header className="flex items-center justify-between gap-2 text-[11px] text-neutral-400">
                           <div className="flex min-w-0 items-center gap-2">
                             <span className="max-w-[140px] truncate font-medium text-neutral-100" title={senderName}>
@@ -132,7 +142,7 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
           </div>
         )}
       </div>
-      <div className="border-t border-neutral-800 p-4">
+      <div className="">
         <MessageComposer
           onSend={async (value) => {
             if (!resolvedZoneId) return;

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import { RealtimeClient, type PlayerPresencePayload } from "@bibliothecadao/types";
+import { RealtimeClient } from "@bibliothecadao/types";
 import type {
   DirectMessage,
   DirectMessageOutboundMessage,
@@ -11,8 +11,8 @@ import type {
   InitializeRealtimeClientParams,
   LoadWorldChatHistoryParams,
   PendingMessage,
-  RealtimeChatStore,
   PlayerPresence,
+  RealtimeChatStore,
   RealtimeConnectionStatus,
   WorldChatMessage,
   WorldChatOutboundMessage,
@@ -69,7 +69,7 @@ const toIsoTimestamp = (value: string | Date | null | undefined): string => {
   return Number.isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
 };
 
-const normalizePresencePayload = (presence: PlayerPresencePayload): PlayerPresence => ({
+const normalizePresencePayload = (presence: PlayerPresence): PlayerPresence => ({
   playerId: presence.playerId,
   displayName: presence.displayName ?? null,
   walletAddress: presence.walletAddress ?? null,
@@ -106,8 +106,8 @@ const normalizeWorldChatMessage = (message: WorldChatMessage): WorldChatMessage 
     walletAddress: message.sender.walletAddress ?? undefined,
     displayName: message.sender.displayName ?? undefined,
     avatarUrl: message.sender.avatarUrl ?? undefined,
-    },
-  });
+  },
+});
 
 const mapWorldChatRecordToMessage = (record: any, fallbackZoneId: string): WorldChatMessage =>
   normalizeWorldChatMessage({
@@ -180,7 +180,7 @@ const mapDirectThreadRecord = (record: any): DirectMessageThread => {
 };
 
 const matchesIdentityAlias = (
-  identity: RealtimePlayerIdentity | undefined,
+  identity: { playerId: string; walletAddress?: string | null } | undefined,
   candidate: string | null | undefined,
 ): boolean => {
   if (!identity || !candidate) {
@@ -248,24 +248,24 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
 
           switch (message.type) {
             case "world:message":
-              actions.receiveWorldMessage(message.zoneId, message.message, {
-                clientMessageId: message.clientMessageId,
+              actions.receiveWorldMessage(message.zoneId as string, message.message as WorldChatMessage, {
+                clientMessageId: message.clientMessageId as string | undefined,
               });
               if (message.clientMessageId) {
-                actions.resolvePendingMessage(message.clientMessageId, { status: "sent" });
+                actions.resolvePendingMessage(message.clientMessageId as string, { status: "sent" });
               }
               break;
             case "direct:message":
               actions.receiveDirectMessage(message.message, message.thread);
               if (message.clientMessageId) {
-                actions.resolvePendingMessage(message.clientMessageId, { status: "sent" });
+                actions.resolvePendingMessage(message.clientMessageId as string, { status: "sent" });
               }
               break;
             case "direct:typing":
               set((state) => ({
                 typingIndicators: {
                   ...state.typingIndicators,
-                  [message.typing.playerId]: message.typing,
+                  [(message.typing as DirectMessageTyping).playerId]: message.typing as DirectMessageTyping,
                 },
               }));
               break;
@@ -275,7 +275,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
               }));
               break;
             case "presence:sync":
-              actions.setOnlinePlayers((message.players ?? []).map(normalizePresencePayload));
+              actions.setOnlinePlayers((message.players as PlayerPresence[]).map(normalizePresencePayload));
               break;
             case "presence:update":
               if (message.player) {
@@ -285,7 +285,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
             case "error":
               set({
                 connectionStatus: "error",
-                lastConnectionError: message.message,
+                lastConnectionError: message.message as string | undefined,
               });
               break;
             default:
@@ -469,9 +469,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         ? zoneState.messages.findIndex((item) => item.id === options.clientMessageId)
         : -1;
       const serverIdIndex =
-        optimisticIndex === -1
-          ? zoneState.messages.findIndex((item) => item.id === normalizedMessage.id)
-          : -1;
+        optimisticIndex === -1 ? zoneState.messages.findIndex((item) => item.id === normalizedMessage.id) : -1;
       const replacementIndex = optimisticIndex >= 0 ? optimisticIndex : serverIdIndex;
 
       const nextMessages =
@@ -489,11 +487,9 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
 
       const isActiveZone = activeZoneId === zoneId;
       const isOwnMessage = matchesIdentityAlias(identity, normalizedMessage.sender.playerId);
-      const shouldIncrement =
-        !isOwnMessage && replacementIndex === -1 && (!isShellOpen || !isActiveZone);
+      const shouldIncrement = !isOwnMessage && replacementIndex === -1 && (!isShellOpen || !isActiveZone);
 
-      const unreadCount =
-        isShellOpen && isActiveZone ? 0 : zoneState.unreadCount + (shouldIncrement ? 1 : 0);
+      const unreadCount = isShellOpen && isActiveZone ? 0 : zoneState.unreadCount + (shouldIncrement ? 1 : 0);
       const nextUnreadTotal = shouldIncrement ? unreadWorldTotal + 1 : unreadWorldTotal;
 
       set({
@@ -981,9 +977,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         set((state) => {
           const existing = state.dmThreads[threadId];
           const baseThread =
-            existing?.thread ??
-            normalizedThread ??
-            (incoming[0] ? createFallbackThread(incoming[0]) : undefined);
+            existing?.thread ?? normalizedThread ?? (incoming[0] ? createFallbackThread(incoming[0]) : undefined);
 
           if (!baseThread) {
             if (!existing) {

@@ -1,7 +1,7 @@
 import "dotenv/config";
 
-import { randomUUID } from "crypto";
 import type { ServerWebSocket } from "bun";
+import { randomUUID } from "crypto";
 import { Hono } from "hono";
 import { createBunWebSocket } from "hono/bun";
 import { cors } from "hono/cors";
@@ -9,16 +9,16 @@ import { logger } from "hono/logger";
 
 import {
   DirectMessage,
+  directMessageCreateSchema,
   DirectMessageSendMessage,
   DirectMessageThread,
   DirectReadMessage,
   DirectTypingMessage,
   PlayerPresencePayload,
-  directMessageCreateSchema,
   WorldBroadcastMessage,
   WorldChatMessage,
-  WorldPublishMessage,
   worldChatPublishSchema,
+  WorldPublishMessage,
 } from "@bibliothecadao/types";
 import { eq } from "drizzle-orm";
 import { db } from "./db/client";
@@ -97,10 +97,8 @@ const upsertPresence = (playerId: string, updates: Partial<PlayerPresencePayload
 
   const next: PlayerPresencePayload = {
     ...base,
-    displayName:
-      updates.displayName ?? base.displayName ?? session?.displayName ?? null,
-    walletAddress:
-      updates.walletAddress ?? base.walletAddress ?? session?.walletAddress ?? null,
+    displayName: updates.displayName ?? base.displayName ?? session?.displayName ?? null,
+    walletAddress: updates.walletAddress ?? base.walletAddress ?? session?.walletAddress ?? null,
     lastSeenAt: updates.lastSeenAt ?? base.lastSeenAt ?? null,
     isOnline: updates.isOnline ?? base.isOnline,
     lastZoneId: updates.lastZoneId ?? base.lastZoneId ?? null,
@@ -130,13 +128,16 @@ const broadcastToAllPlayers = (payload: unknown, exclude?: ServerWebSocket<unkno
 const broadcastPresenceUpdate = (playerId: string, exclude?: ServerWebSocket<unknown>) => {
   const presence = playerPresence.get(playerId);
   if (!presence) return;
-  broadcastToAllPlayers({
-    type: "presence:update",
-    player: {
-      ...presence,
-      isTypingInThreadIds: presence.isTypingInThreadIds ?? [],
+  broadcastToAllPlayers(
+    {
+      type: "presence:update",
+      player: {
+        ...presence,
+        isTypingInThreadIds: presence.isTypingInThreadIds ?? [],
+      },
     },
-  }, exclude);
+    exclude,
+  );
 };
 
 const sendPresenceSnapshot = (ws: ServerWebSocket<unknown>) => {
@@ -208,11 +209,7 @@ const toDirectMessageThread = (
   typing: [],
 });
 
-const broadcastToZone = (
-  zoneId: string,
-  payload: WorldBroadcastMessage,
-  sender?: ServerWebSocket<unknown>,
-) => {
+const broadcastToZone = (zoneId: string, payload: WorldBroadcastMessage, sender?: ServerWebSocket<unknown>) => {
   const serialized = JSON.stringify(payload);
   let sentToSender = false;
 
@@ -476,15 +473,12 @@ const handleDirectMessage = async (
 
     const threadParticipants = sortParticipants(updatedThread.playerAId, updatedThread.playerBId) as [string, string];
 
-    broadcastDirectMessage(
-      threadParticipants,
-      {
-        type: "direct:message",
-        message: toDirectMessage(createdMessage),
-        thread: toDirectMessageThread(updatedThread, threadParticipants),
-        clientMessageId: message.clientMessageId,
-      },
-    );
+    broadcastDirectMessage(threadParticipants, {
+      type: "direct:message",
+      message: toDirectMessage(createdMessage),
+      thread: toDirectMessageThread(updatedThread, threadParticipants),
+      clientMessageId: message.clientMessageId,
+    });
   } catch (error) {
     console.error("Failed to process direct message", error);
     sendError(ws, "direct_message_failed", "Unable to deliver message right now.");
