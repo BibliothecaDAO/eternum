@@ -14,7 +14,7 @@ import { getIsBlitz, MAP_DATA_REFRESH_INTERVAL, MapDataStore, Position } from "@
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { ActiveResourceProductions, InventoryResources } from "@/ui/features/economy/resources";
 import { CompactDefenseDisplay } from "@/ui/features/military";
-import { useChatStore } from "@/ui/features/social";
+import { useRealtimeChatActions } from "@/ui/features/social/realtime-chat/hooks/use-realtime-chat";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
 import { displayAddress } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
@@ -169,24 +169,29 @@ export const StructureEntityDetail = memo(
     const smallTextClass = compact ? "text-xxs" : "text-xs";
     const panelClass = "bg-dark-brown/60 rounded p-2 border border-gold/20";
 
-    const openChat = useChatStore((state) => state.actions.openChat);
-    const addTab = useChatStore((state) => state.actions.addTab);
-    const getUserIdByUsername = useChatStore((state) => state.actions.getUserIdByUsername);
+    const realtimeChatActions = useRealtimeChatActions();
+
+    const targetPlayerId = useMemo(() => {
+      const trimmedName = addressName?.trim();
+      if (trimmedName) {
+        return trimmedName;
+      }
+      if (structure?.owner !== undefined) {
+        return `0x${structure.owner.toString(16).padStart(64, "0")}`;
+      }
+      return undefined;
+    }, [addressName, structure?.owner]);
 
     const handleChatClick = () => {
       if (isMine) {
-        openChat();
-      } else {
-        const userId = getUserIdByUsername(addressName || "");
-
-        if (userId) {
-          addTab({
-            type: "direct",
-            name: addressName || "",
-            recipientId: userId,
-          });
-        }
+        realtimeChatActions.setShellOpen(true);
+        return;
       }
+      if (!targetPlayerId) {
+        realtimeChatActions.setShellOpen(true);
+        return;
+      }
+      realtimeChatActions.openDirectThread(targetPlayerId);
     };
 
     const structureName = useMemo(() => {

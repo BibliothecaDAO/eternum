@@ -95,6 +95,7 @@ export interface RealtimeChatActions {
   leaveZone(zoneId: string): void;
   setActiveZone(zoneId: string | undefined): void;
   setShellOpen(isOpen: boolean): void;
+  openDirectThread(playerId: string): string | undefined;
   ensureDirectThread(participantId: string): string | undefined;
   setActiveThread(threadId: string | undefined): void;
   receiveWorldMessage(zoneId: string, message: WorldChatMessage, options?: { clientMessageId?: string }): void;

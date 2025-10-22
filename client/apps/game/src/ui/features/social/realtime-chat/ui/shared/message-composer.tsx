@@ -1,3 +1,4 @@
+import { Button } from "@/ui/design-system/atoms";
 import { FormEvent, useCallback, useState } from "react";
 
 export interface MessageComposerProps {
@@ -49,9 +50,9 @@ export function MessageComposer({
   );
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-2 p-1">
       <textarea
-        className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 outline-none focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 disabled:opacity-60"
+        className="w-full border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 outline-none focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 disabled:opacity-60"
         placeholder={placeholder}
         value={draft}
         disabled={disabled || isSending}
@@ -62,20 +63,17 @@ export function MessageComposer({
         rows={3}
         maxLength={maxLength}
       />
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs text-neutral-500">{draft.length} / {maxLength}</span>
+      <div className="flex items-center justify-between gap-2 p-1">
+        <span className="text-xs text-neutral-500">
+          {draft.length} / {maxLength}
+        </span>
         <div className="flex items-center gap-2">
           {error && <span className="text-xs text-red-400">{error}</span>}
-          <button
-            type="submit"
-            className="rounded bg-amber-500 px-3 py-1 text-sm font-semibold text-neutral-900 hover:bg-amber-400 disabled:cursor-not-allowed disabled:bg-amber-700 disabled:text-neutral-300"
-            disabled={disabled || isSending}
-          >
+          <Button type="submit" disabled={disabled || isSending}>
             {isSending ? "Sending…" : "Send"}
-          </button>
+          </Button>
         </div>
       </div>
     </form>
   );
 }
-

@@ -371,6 +371,22 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       }
       set({ isShellOpen: isOpen });
     },
+    openDirectThread: (playerId: string) => {
+      if (!playerId) {
+        return undefined;
+      }
+
+      const { actions } = get();
+      const threadId = actions.ensureDirectThread(playerId);
+
+      if (threadId) {
+        actions.setShellOpen(true);
+        actions.setActiveThread(threadId);
+        return threadId;
+      }
+
+      return undefined;
+    },
     ensureDirectThread: (participantId: string) => {
       const { identity, dmThreads } = get();
       const selfId = identity?.playerId;

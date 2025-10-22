@@ -79,9 +79,8 @@ export function ThreadListPanel({ onSelectThread, className }: ThreadListPanelPr
   };
 
   const handleSelectPlayer = (playerId: string) => {
-    const threadId = actions.ensureDirectThread(playerId);
+    const threadId = actions.openDirectThread(playerId);
     if (threadId) {
-      actions.setActiveThread(threadId);
       onSelectThread?.(threadId);
     }
   };

@@ -20,7 +20,7 @@ import {
   worldChatPublishSchema,
   WorldPublishMessage,
 } from "@bibliothecadao/types";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "./db/client";
 import {
   directMessages,
@@ -350,139 +350,158 @@ const handleDirectMessage = async (
 
   const expectedThreadId = buildThreadId(session.playerId, payload.recipientId);
   const providedThreadId = payload.threadId ?? expectedThreadId;
+  let error: { code: string; message: string } | null = null;
+  let broadcastPayload:
+    | {
+        participants: [string, string];
+        payload: {
+          type: "direct:message";
+          message: DirectMessage;
+          thread: DirectMessageThread;
+          clientMessageId?: string;
+        };
+      }
+    | null = null;
 
   try {
-    let [thread] = await db
-      .select()
-      .from(directMessageThreads)
-      .where(eq(directMessageThreads.id, providedThreadId))
-      .limit(1);
+    await db.transaction(async (tx) => {
+      const loadThreadForUpdate = async () => {
+        const result = await tx.execute(
+          sql<DirectMessageThreadRecord>`select * from ${directMessageThreads} where ${directMessageThreads.id} = ${providedThreadId} for update`,
+        );
+        return result.rows[0];
+      };
 
-    if (!thread && providedThreadId !== expectedThreadId) {
-      sendError(ws, "direct_thread_mismatch", "Thread id does not match participants.");
-      return;
-    }
+      let recipientId = payload.recipientId;
 
-    let recipientId = payload.recipientId;
+      let thread = await loadThreadForUpdate();
 
-    if (thread) {
+      if (!thread && providedThreadId !== expectedThreadId) {
+        error = { code: "direct_thread_mismatch", message: "Thread id does not match participants." };
+        return;
+      }
+
+      if (!thread) {
+        const participants = sortParticipants(session.playerId, recipientId);
+        [thread] = await tx
+          .insert(directMessageThreads)
+          .values({
+            id: providedThreadId,
+            playerAId: participants[0],
+            playerBId: participants[1],
+            unreadCounts: {
+              [participants[0]]: 0,
+              [participants[1]]: 0,
+            },
+          })
+          .onConflictDoNothing()
+          .returning();
+
+        if (!thread) {
+          thread = await loadThreadForUpdate();
+        }
+      }
+
+      if (!thread) {
+        throw new Error("Failed to resolve direct message thread");
+      }
+
       const participants = [thread.playerAId, thread.playerBId];
       const participantSet = new Set(participants);
       const playerMatches = aliases.some((alias) => participantSet.has(alias));
 
       if (!playerMatches) {
-        sendError(ws, "direct_access_denied", "You are not a participant in this thread.");
+        error = { code: "direct_access_denied", message: "You are not a participant in this thread." };
         return;
       }
 
       if (!participantSet.has(recipientId)) {
         const otherParticipant = participants.find((participant) => !aliases.includes(participant));
         if (!otherParticipant) {
-          sendError(ws, "direct_recipient_unknown", "Unable to determine thread recipient.");
+          error = { code: "direct_recipient_unknown", message: "Unable to determine thread recipient." };
           return;
         }
         recipientId = otherParticipant;
       }
 
       if (aliases.includes(recipientId)) {
-        sendError(ws, "direct_self_message", "Cannot send a message to yourself.");
+        error = { code: "direct_self_message", message: "Cannot send a message to yourself." };
         return;
       }
-    } else {
-      const participants = sortParticipants(session.playerId, recipientId);
-      [thread] = await db
-        .insert(directMessageThreads)
+
+      const messageId = randomUUID();
+      const [createdMessage] = await tx
+        .insert(directMessages)
         .values({
-          id: providedThreadId,
-          playerAId: participants[0],
-          playerBId: participants[1],
-          unreadCounts: {
-            [participants[0]]: 0,
-            [participants[1]]: 0,
-          },
+          id: messageId,
+          threadId: thread.id,
+          senderId: session.playerId,
+          recipientId,
+          content: payload.content,
+          metadata: payload.metadata ?? null,
         })
-        .onConflictDoNothing()
         .returning();
 
-      if (!thread) {
-        [thread] = await db
-          .select()
-          .from(directMessageThreads)
-          .where(eq(directMessageThreads.id, providedThreadId))
-          .limit(1);
+      if (!createdMessage) {
+        throw new Error("Direct message insert returned no record");
       }
 
-      if (aliases.includes(recipientId)) {
-        sendError(ws, "direct_self_message", "Cannot send a message to yourself.");
-        return;
+      const createdAt =
+        createdMessage.createdAt instanceof Date
+          ? createdMessage.createdAt
+          : createdMessage.createdAt
+              ? new Date(createdMessage.createdAt)
+              : new Date();
+
+      const unreadCounts = {
+        ...(thread.unreadCounts ?? {}),
+        [recipientId]: (thread.unreadCounts?.[recipientId] ?? 0) + 1,
+      };
+
+      const [updatedThread] = await tx
+        .update(directMessageThreads)
+        .set({
+          unreadCounts,
+          lastMessageId: messageId,
+          lastMessageAt: createdAt,
+          updatedAt: createdAt,
+        })
+        .where(eq(directMessageThreads.id, thread.id))
+        .returning();
+
+      if (!updatedThread) {
+        throw new Error("Failed to load updated thread");
       }
-    }
 
-    if (!thread) {
-      throw new Error("Failed to resolve direct message thread");
-    }
+      const threadParticipants = sortParticipants(updatedThread.playerAId, updatedThread.playerBId) as [string, string];
 
-    const messageId = randomUUID();
-    const [createdMessage] = await db
-      .insert(directMessages)
-      .values({
-        id: messageId,
-        threadId: thread.id,
-        senderId: session.playerId,
-        recipientId,
-        content: payload.content,
-        metadata: payload.metadata ?? null,
-      })
-      .returning();
-
-    if (!createdMessage) {
-      throw new Error("Direct message insert returned no record");
-    }
-
-    const createdAt =
-      createdMessage.createdAt instanceof Date
-        ? createdMessage.createdAt
-        : createdMessage.createdAt
-          ? new Date(createdMessage.createdAt)
-          : new Date();
-
-    const unreadCounts = {
-      ...(thread.unreadCounts ?? {}),
-      [recipientId]: (thread.unreadCounts?.[recipientId] ?? 0) + 1,
-    };
-
-    await db
-      .update(directMessageThreads)
-      .set({
-        unreadCounts,
-        lastMessageId: messageId,
-        lastMessageAt: createdAt,
-        updatedAt: createdAt,
-      })
-      .where(eq(directMessageThreads.id, thread.id));
-
-    const [updatedThread] = await db
-      .select()
-      .from(directMessageThreads)
-      .where(eq(directMessageThreads.id, thread.id))
-      .limit(1);
-
-    if (!updatedThread) {
-      throw new Error("Failed to load updated thread");
-    }
-
-    const threadParticipants = sortParticipants(updatedThread.playerAId, updatedThread.playerBId) as [string, string];
-
-    broadcastDirectMessage(threadParticipants, {
-      type: "direct:message",
-      message: toDirectMessage(createdMessage),
-      thread: toDirectMessageThread(updatedThread, threadParticipants),
-      clientMessageId: message.clientMessageId,
+      broadcastPayload = {
+        participants: threadParticipants,
+        payload: {
+          type: "direct:message",
+          message: toDirectMessage(createdMessage),
+          thread: toDirectMessageThread(updatedThread, threadParticipants),
+          clientMessageId: message.clientMessageId,
+        },
+      };
     });
   } catch (error) {
     console.error("Failed to process direct message", error);
     sendError(ws, "direct_message_failed", "Unable to deliver message right now.");
+    return;
   }
+
+  if (error) {
+    sendError(ws, error.code, error.message);
+    return;
+  }
+
+  if (!broadcastPayload) {
+    sendError(ws, "direct_message_failed", "Unable to deliver message right now.");
+    return;
+  }
+
+  broadcastDirectMessage(broadcastPayload.participants, broadcastPayload.payload);
 };
 
 app.use("*", logger());

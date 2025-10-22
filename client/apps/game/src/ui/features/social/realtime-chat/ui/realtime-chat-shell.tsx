@@ -1,8 +1,10 @@
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { ReactNode, useEffect, useMemo } from "react";
 
+import { Button } from "@/ui/design-system/atoms";
 import {
   useRealtimeChatActions,
   useRealtimeChatInitializer,
+  useRealtimeChatSelector,
   useRealtimeConnection,
   useRealtimeTotals,
 } from "../hooks/use-realtime-chat";
@@ -28,16 +30,12 @@ export function RealtimeChatShell({
   className,
   children,
 }: RealtimeChatShellProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
   const actions = useRealtimeChatActions();
+  const isExpanded = useRealtimeChatSelector((state) => state.isShellOpen);
   useRealtimeChatInitializer(initializer);
   const { connectionStatus, lastConnectionError } = useRealtimeConnection();
   const { unreadDirectTotal, unreadWorldTotal } = useRealtimeTotals();
   const zoneKey = zoneIds?.join("|") ?? "";
-
-  useEffect(() => {
-    actions.setShellOpen(isExpanded);
-  }, [actions, isExpanded]);
 
   useEffect(() => {
     if (!zoneIds || zoneIds.length === 0) {
@@ -65,7 +63,7 @@ export function RealtimeChatShell({
   }, [connectionStatus]);
 
   const toggleExpanded = () => {
-    setIsExpanded((prev) => !prev);
+    actions.setShellOpen(!isExpanded);
   };
 
   const unreadBadgeClass = "rounded-full border px-2 py-0.5 text-[11px] leading-none";
@@ -77,8 +75,8 @@ export function RealtimeChatShell({
           isExpanded ? "h-[60vh] max-h-[600px]" : "h-14"
         }`}
       >
-        <header className="flex items-center justify-between  bg-black px-3 py-2 text-xs uppercase tracking-wide  ">
-          <button
+        <header className="flex items-center justify-between  bg-black text-xs uppercase tracking-wide  ">
+          <Button
             type="button"
             onClick={toggleExpanded}
             className="flex items-center gap-2 px-2 py-1 text-neutral-100 transition hover:bg-neutral-800"
@@ -93,7 +91,7 @@ export function RealtimeChatShell({
                     : "bg-neutral-500"
               }`}
             />
-          </button>
+          </Button>
           <div className="flex items-center gap-3 text-[11px]">
             <span className={`font-semibold ${connectionIndicator}`}>{connectionStatus}</span>
             {lastConnectionError && <span className="text-red-400 normal-case">{lastConnectionError}</span>}
