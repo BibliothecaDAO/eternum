@@ -37,6 +37,9 @@ COPY --from=builder /app/client/apps/realtime-server ./client/apps/realtime-serv
 
 WORKDIR /app/client/apps/realtime-server
 
+# Set the PORT environment variable
+ENV PORT=8080
+
 # Expose the port your server runs on
 EXPOSE 8080
 
