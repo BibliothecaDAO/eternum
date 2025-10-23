@@ -351,17 +351,15 @@ const handleDirectMessage = async (
   const expectedThreadId = buildThreadId(session.playerId, payload.recipientId);
   const providedThreadId = payload.threadId ?? expectedThreadId;
   let error: { code: string; message: string } | null = null;
-  let broadcastPayload:
-    | {
-        participants: [string, string];
-        payload: {
-          type: "direct:message";
-          message: DirectMessage;
-          thread: DirectMessageThread;
-          clientMessageId?: string;
-        };
-      }
-    | null = null;
+  let broadcastPayload: {
+    participants: [string, string];
+    payload: {
+      type: "direct:message";
+      message: DirectMessage;
+      thread: DirectMessageThread;
+      clientMessageId?: string;
+    };
+  } | null = null;
 
   try {
     await db.transaction(async (tx) => {
@@ -450,8 +448,8 @@ const handleDirectMessage = async (
         createdMessage.createdAt instanceof Date
           ? createdMessage.createdAt
           : createdMessage.createdAt
-              ? new Date(createdMessage.createdAt)
-              : new Date();
+            ? new Date(createdMessage.createdAt)
+            : new Date();
 
       const unreadCounts = {
         ...(thread.unreadCounts ?? {}),

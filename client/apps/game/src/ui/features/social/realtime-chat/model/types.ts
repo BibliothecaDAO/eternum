@@ -4,14 +4,13 @@ import type {
   DirectMessageReadReceipt,
   DirectMessageThread,
   DirectMessageTyping,
-} from "../../../../../../../../../../../common/validation/realtime/direct-messages";
-import type {
+  PlayerPresencePayload,
   WorldChatHistoryQuery,
   WorldChatMessage,
   WorldChatPublishPayload,
-} from "../../../../../../../../../../../common/validation/realtime/world-chat";
-import type { PlayerPresencePayload } from "@bibliothecadao/types";
-import { RealtimeClient } from "../../../../../../../../../shared/realtime/client";
+} from "@bibliothecadao/types";
+
+import { RealtimeClient } from "@bibliothecadao/types";
 
 export type RealtimeConnectionStatus = "idle" | "connecting" | "connected" | "error";
 
@@ -140,5 +139,7 @@ export type {
   DirectMessageReadReceipt,
   DirectMessageThread,
   DirectMessageTyping,
-} from "../../../../../../../../../../../common/validation/realtime/direct-messages";
-export type { WorldChatHistoryQuery, WorldChatMessage, WorldChatPublishPayload } from "../../../../../../../../../../../common/validation/realtime/world-chat";
+  WorldChatHistoryQuery,
+  WorldChatMessage,
+  WorldChatPublishPayload,
+} from "@bibliothecadao/types";
