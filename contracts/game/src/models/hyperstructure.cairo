@@ -1,11 +1,11 @@
 use core::num::traits::Zero;
 use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
-use s1_eternum::alias::ID;
-use s1_eternum::constants::{RESOURCE_PRECISION, WORLD_CONFIG_ID};
-use s1_eternum::models::config::HyperstrtConstructConfig;
-use s1_eternum::models::guild::GuildMember;
-use s1_eternum::models::season::SeasonPrize;
+use crate::alias::ID;
+use crate::constants::{RESOURCE_PRECISION, WORLD_CONFIG_ID};
+use crate::models::config::HyperstrtConstructConfig;
+use crate::models::guild::GuildMember;
+use crate::models::season::SeasonPrize;
 use starknet::ContractAddress;
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]

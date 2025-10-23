@@ -1,21 +1,21 @@
 use core::num::traits::zero::Zero;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
-use s1_eternum::models::config::{
+use crate::constants::{RESOURCE_PRECISION, ResourceTypes};
+use crate::models::config::{
     MapConfig, TickImpl, TickInterval, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
 };
-use s1_eternum::models::map::TileOccupier;
-use s1_eternum::models::position::Coord;
-use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl};
-use s1_eternum::models::resource::production::production::{Production, ProductionImpl};
-use s1_eternum::models::resource::resource::{
+use crate::models::map::TileOccupier;
+use crate::models::position::Coord;
+use crate::models::resource::production::building::{BuildingCategory, BuildingImpl};
+use crate::models::resource::production::production::{Production, ProductionImpl};
+use crate::models::resource::resource::{
     ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
 };
-use s1_eternum::models::structure::{StructureCategory, StructureImpl};
-use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
-use s1_eternum::models::weight::Weight;
-use s1_eternum::systems::utils::structure::iStructureImpl;
-use s1_eternum::systems::utils::troop::iMercenariesImpl;
+use crate::models::structure::{StructureCategory, StructureImpl};
+use crate::models::troop::{GuardSlot, TroopTier, TroopType};
+use crate::models::weight::Weight;
+use crate::systems::utils::structure::iStructureImpl;
+use crate::systems::utils::troop::iMercenariesImpl;
 use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 use crate::system_libraries::structure_libraries::structure_creation_library::{
     IStructureCreationlibraryDispatcherTrait, structure_creation_library,

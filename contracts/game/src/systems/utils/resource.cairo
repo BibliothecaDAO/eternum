@@ -2,25 +2,25 @@ use core::array::SpanTrait;
 use core::num::traits::zero::Zero;
 use dojo::event::EventStorage;
 use dojo::world::WorldStorage;
-use s1_eternum::alias::ID;
-use s1_eternum::constants::{all_resource_ids, is_bank};
-use s1_eternum::models::config::{SpeedImpl, WorldConfigUtilImpl};
-use s1_eternum::models::events::{
+use crate::alias::ID;
+use crate::constants::{all_resource_ids, is_bank};
+use crate::models::config::{SpeedImpl, WorldConfigUtilImpl};
+use crate::models::events::{
     ResourceBurnStory, ResourceReceiveArrivalStory, ResourceTransferStory, Story, StoryEvent, TransferType,
 };
-use s1_eternum::models::resource::arrivals::ResourceArrivalImpl;
-use s1_eternum::models::resource::resource::{
+use crate::models::resource::arrivals::ResourceArrivalImpl;
+use crate::models::resource::resource::{
     ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
 };
-use s1_eternum::models::structure::{
+use crate::models::structure::{
     StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureMetadata,
     StructureMetadataStoreImpl, StructureOwnerStoreImpl,
 };
-use s1_eternum::models::troop::ExplorerTroops;
-use s1_eternum::models::weight::{Weight, WeightImpl};
-use s1_eternum::systems::utils::distance::iDistanceKmImpl;
-use s1_eternum::systems::utils::donkey::iDonkeyImpl;
-use s1_eternum::systems::utils::village::iVillageImpl;
+use crate::models::troop::ExplorerTroops;
+use crate::models::weight::{Weight, WeightImpl};
+use crate::systems::utils::distance::iDistanceKmImpl;
+use crate::systems::utils::donkey::iDonkeyImpl;
+use crate::systems::utils::village::iVillageImpl;
 
 
 #[generate_trait]

@@ -5,17 +5,17 @@
 // use dojo::world::{WorldStorage, WorldStorageTrait};
 // use dojo_cairo_test::{ContractDefTrait, NamespaceDef, TestResource};
 
-// use s1_eternum::constants::ResourceTypes;
-// use s1_eternum::models::position::{Coord, Position};
-// use s1_eternum::models::resource::resource::ResourceList;
-// use s1_eternum::systems::config::contracts::config_systems;
+// use crate::constants::ResourceTypes;
+// use crate::models::position::{Coord, Position};
+// use crate::models::resource::resource::ResourceList;
+// use crate::systems::config::contracts::config_systems;
 
-// use s1_eternum::systems::config::contracts::{
+// use crate::systems::config::contracts::{
 //     IHyperstructureConfigDispatcher, IHyperstructureConfigDispatcherTrait, ILevelingConfigDispatcher,
 //     ILevelingConfigDispatcherTrait,
 // };
 
-// use s1_eternum::utils::testing::{systems::deploy_system, world::spawn_eternum};
+// use crate::utils::testing::{systems::deploy_system, world::spawn_eternum};
 
 // use starknet::contract_address::contract_address_const;
 

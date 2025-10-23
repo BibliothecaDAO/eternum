@@ -5,27 +5,27 @@
 //     use dojo::world::IWorldDispatcherTrait;
 //     use dojo::world::{WorldStorageTrait};
 //     use dojo_cairo_test::{ContractDef, ContractDefTrait, NamespaceDef, TestResource};
-//     use s1_eternum::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
-//     use s1_eternum::models::config::{MapConfig, WorldConfigUtilImpl};
-//     use s1_eternum::models::map::{Tile, TileImpl};
-//     use s1_eternum::models::position::{Coord, CoordTrait, Direction, OccupiedBy, Occupier};
-//     use s1_eternum::models::resource::resource::{SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl};
-//     use s1_eternum::models::structure::{Structure, StructureBaseImpl, StructureCategory, StructureImpl};
-//     use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, TroopTier, TroopType};
-//     use s1_eternum::models::weight::{Weight};
-//     use s1_eternum::models::{
+//     use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
+//     use crate::models::config::{MapConfig, WorldConfigUtilImpl};
+//     use crate::models::map::{Tile, TileImpl};
+//     use crate::models::position::{Coord, CoordTrait, Direction, OccupiedBy, Occupier};
+//     use crate::models::resource::resource::{SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl};
+//     use crate::models::structure::{Structure, StructureBaseImpl, StructureCategory, StructureImpl};
+//     use crate::models::troop::{ExplorerTroops, GuardImpl, TroopTier, TroopType};
+//     use crate::models::weight::{Weight};
+//     use crate::models::{
 //         config::{m_ProductionConfig, m_WeightConfig, m_WorldConfig}, map::{m_Tile}, position::{m_Occupier},
 //         realm::{m_Realm}, resource::production::building::{m_Building, m_StructureBuildings},
 //         resource::resource::{m_Resource}, structure::{m_Structure}, troop::{m_ExplorerTroops},
 //     };
-//     use s1_eternum::systems::combat::contracts::troop_management::{
+//     use crate::systems::combat::contracts::troop_management::{
 //         ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait, troop_management_systems,
 //     };
-//     use s1_eternum::systems::combat::contracts::troop_movement::{
+//     use crate::systems::combat::contracts::troop_movement::{
 //         ITroopMovementSystemsDispatcher, ITroopMovementSystemsDispatcherTrait, troop_movement_systems,
 //     };
-//     use s1_eternum::utils::map::biomes::Biome;
-//     use s1_eternum::utils::testing::helpers::{
+//     use crate::utils::map::biomes::Biome;
+//     use crate::utils::testing::helpers::{
 //         MOCK_CAPACITY_CONFIG, MOCK_MAP_CONFIG, MOCK_TICK_CONFIG, MOCK_TROOP_DAMAGE_CONFIG, MOCK_TROOP_LIMIT_CONFIG,
 //         MOCK_TROOP_STAMINA_CONFIG, MOCK_WEIGHT_CONFIG, tgrant_resources, tspawn_simple_realm, tspawn_world,
 //         tstore_capacity_config, tstore_map_config, tstore_tick_config, tstore_troop_damage_config,

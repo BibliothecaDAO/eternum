@@ -1,5 +1,5 @@
 use starknet::ContractAddress;
-use s1_eternum::models::series_chest_reward::{SeriesChestRewardState};
+use crate::models::series_chest_reward::{SeriesChestRewardState};
 
 #[starknet::interface]
 pub trait IPrizeDistributionSystems<T> {
@@ -23,19 +23,19 @@ use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{WorldStorageTrait, WorldStorage};
-    use s1_eternum::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
-    use s1_eternum::models::config::{BlitzRegistrationConfig, BlitzRegistrationConfigImpl, SeasonConfigImpl, WorldConfigUtilImpl, BlitzRealmPlayerRegister, BlitzPreviousGame};
-    use s1_eternum::models::events::{PrizeDistributedStory, PrizeDistributionFinalStory, Story, StoryEvent};
-    use s1_eternum::models::rank::{PlayerRank, PlayersRankFinal, PlayersRankTrial, RankPrize};
-    use s1_eternum::models::season::{SeasonPrize};
-    use s1_eternum::models::record::{BlitzFeeSplitRecord, BlitzFeeSplitRecordImpl, WorldRecordImpl};
-    use s1_eternum::systems::realm::utils::contracts::{IERC20Dispatcher, IERC20DispatcherTrait};
-    use s1_eternum::systems::utils::prize::iPrizeDistributionCalcImpl;
-    use s1_eternum::{models::{hyperstructure::{PlayerRegisteredPoints}}};
-    use s1_eternum::models::series_chest_reward::{SeriesChestRewardState, GameChestReward};
-    use s1_eternum::utils::world::CustomDojoWorldImpl;
-    use s1_eternum::systems::utils::series_chest_reward::series_chest_reward_calculator;
-    use s1_eternum::systems::utils::series_chest_reward::series_chest_reward_calculator::{SeriesChestRewardStateImpl};
+    use crate::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
+    use crate::models::config::{BlitzRegistrationConfig, BlitzRegistrationConfigImpl, SeasonConfigImpl, WorldConfigUtilImpl, BlitzRealmPlayerRegister, BlitzPreviousGame};
+    use crate::models::events::{PrizeDistributedStory, PrizeDistributionFinalStory, Story, StoryEvent};
+    use crate::models::rank::{PlayerRank, PlayersRankFinal, PlayersRankTrial, RankPrize};
+    use crate::models::season::{SeasonPrize};
+    use crate::models::record::{BlitzFeeSplitRecord, BlitzFeeSplitRecordImpl, WorldRecordImpl};
+    use crate::systems::realm::utils::contracts::{IERC20Dispatcher, IERC20DispatcherTrait};
+    use crate::systems::utils::prize::iPrizeDistributionCalcImpl;
+    use crate::{models::{hyperstructure::{PlayerRegisteredPoints}}};
+    use crate::models::series_chest_reward::{SeriesChestRewardState, GameChestReward};
+    use crate::utils::world::CustomDojoWorldImpl;
+    use crate::systems::utils::series_chest_reward::series_chest_reward_calculator;
+    use crate::systems::utils::series_chest_reward::series_chest_reward_calculator::{SeriesChestRewardStateImpl};
     use starknet::ContractAddress;
     use super::{IPrizeDistributionSystems, IPrizeDistributionSystemsSafeDispatcher, IPrizeDistributionSystemsSafeDispatcherTrait};
     use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};

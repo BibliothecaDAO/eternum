@@ -62,11 +62,11 @@ pub mod guild_systems {
     use core::num::traits::Zero;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
-    use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::models::config::SeasonConfigImpl;
-    use s1_eternum::models::guild::{Guild, GuildMember, GuildWhitelist};
-    use s1_eternum::models::structure::StructureOwnerStats;
-    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
+    use crate::constants::DEFAULT_NS;
+    use crate::models::config::SeasonConfigImpl;
+    use crate::models::guild::{Guild, GuildMember, GuildWhitelist};
+    use crate::models::structure::StructureOwnerStats;
+    use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use starknet::ContractAddress;
     #[abi(embed_v0)]
     impl GuildSystemsImpl of super::IGuildSystems<ContractState> {

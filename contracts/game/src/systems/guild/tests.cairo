@@ -3,19 +3,19 @@
 // use dojo::world::{WorldStorage, WorldStorageTrait};
 // use dojo_cairo_test::{ContractDefTrait, NamespaceDef, TestResource};
 
-// use s1_eternum::models::guild::{Guild, GuildMember, GuildMemberTrait, GuildWhitelist, GuildWhitelistTrait};
-// use s1_eternum::models::name::AddressName;
-// use s1_eternum::models::owner::Owner;
-// use s1_eternum::models::position::Position;
+// use crate::models::guild::{Guild, GuildMember, GuildMemberTrait, GuildWhitelist, GuildWhitelistTrait};
+// use crate::models::name::AddressName;
+// use crate::models::owner::Owner;
+// use crate::models::position::Position;
 
-// use s1_eternum::systems::guild::contracts::{
+// use crate::systems::guild::contracts::{
 //     IGuildSystems, IGuildSystemsDispatcher, IGuildSystemsDispatcherTrait, guild_systems,
 // };
-// use s1_eternum::systems::name::contracts::{
+// use crate::systems::name::contracts::{
 //     INameSystems, INameSystemsDispatcher, INameSystemsDispatcherTrait, name_systems,
 // };
 
-// use s1_eternum::utils::testing::{systems::deploy_system, world::spawn_eternum};
+// use crate::utils::testing::{systems::deploy_system, world::spawn_eternum};
 // use starknet::contract_address_const;
 
 // const PUBLIC: felt252 = 1;

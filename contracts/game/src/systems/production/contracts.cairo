@@ -1,7 +1,7 @@
-use s1_eternum::alias::ID;
-use s1_eternum::models::position::{Coord, Direction};
-use s1_eternum::models::resource::production::building::BuildingCategory;
-use s1_eternum::models::resource::production::production::ProductionStrategyImpl;
+use crate::alias::ID;
+use crate::models::position::{Coord, Direction};
+use crate::models::resource::production::building::BuildingCategory;
+use crate::models::resource::production::production::ProductionStrategyImpl;
 
 #[starknet::interface]
 trait IProductionContract<TContractState> {
@@ -45,20 +45,20 @@ mod production_systems {
     use core::num::traits::zero::Zero;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::models::config::{SeasonConfigImpl, WonderProductionBonusConfig, WorldConfigUtilImpl};
-    use s1_eternum::models::map::{Tile, TileOccupier};
-    use s1_eternum::models::owner::OwnerAddressTrait;
-    use s1_eternum::models::position::{Coord, CoordTrait, TravelImpl};
-    use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl, BuildingProductionImpl};
-    use s1_eternum::models::resource::production::production::{ProductionBoostBonus, ProductionStrategyImpl};
-    use s1_eternum::models::structure::{
+    use crate::alias::ID;
+    use crate::constants::DEFAULT_NS;
+    use crate::models::config::{SeasonConfigImpl, WonderProductionBonusConfig, WorldConfigUtilImpl};
+    use crate::models::map::{Tile, TileOccupier};
+    use crate::models::owner::OwnerAddressTrait;
+    use crate::models::position::{Coord, CoordTrait, TravelImpl};
+    use crate::models::resource::production::building::{BuildingCategory, BuildingImpl, BuildingProductionImpl};
+    use crate::models::resource::production::production::{ProductionBoostBonus, ProductionStrategyImpl};
+    use crate::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureMetadata,
         StructureMetadataStoreImpl, StructureOwnerStoreImpl, StructureResourcesImpl, StructureResourcesPackedStoreImpl,
     };
-    use s1_eternum::systems::utils::map::IMapImpl;
-    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
+    use crate::systems::utils::map::IMapImpl;
+    use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use starknet::ContractAddress;
     use super::super::super::super::models::resource::production::building::BuildingProductionTrait;
     #[abi(embed_v0)]
@@ -66,7 +66,7 @@ mod production_systems {
         fn create_building(
             ref self: ContractState,
             structure_id: ID,
-            mut directions: Span<s1_eternum::models::position::Direction>,
+            mut directions: Span<crate::models::position::Direction>,
             building_category: BuildingCategory,
             use_simple: bool,
         ) {

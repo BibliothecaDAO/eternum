@@ -1,10 +1,10 @@
-use s1_eternum::models::config::{
+use crate::models::config::{
     BattleConfig, CapacityConfig, HyperstrtConstructConfig, MapConfig, QuestConfig, ResourceBridgeConfig,
     ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, StructureCapacityConfig, TradeConfig, TroopDamageConfig,
     TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig, VillageTokenConfig
 };
 
-use s1_eternum::models::resource::production::building::BuildingCategory;
+use crate::models::resource::production::building::BuildingCategory;
 
 #[starknet::interface]
 pub trait IWorldConfig<T> {
@@ -232,9 +232,9 @@ pub mod config_systems {
     use core::num::traits::{Bounded, Zero};
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-    use s1_eternum::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
-    use s1_eternum::models::agent::AgentConfig;
-    use s1_eternum::models::config::{
+    use crate::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
+    use crate::models::agent::AgentConfig;
+    use crate::models::config::{
         AgentControllerConfig, BankConfig, BattleConfig, BlitzHypersSettlementConfigImpl, BlitzRegistrationConfig,
         BlitzSettlementConfigImpl, BuildingCategoryConfig, BuildingConfig, CapacityConfig, HyperstrtConstructConfig,
         HyperstructureConfig, HyperstructureCostConfig, MapConfig, QuestConfig, ResourceBridgeConfig,
@@ -245,10 +245,10 @@ pub mod config_systems {
         VillageFoundResourcesConfig, VillageTokenConfig, WeightConfig, WonderProductionBonusConfig, WorldConfig,
         WorldConfigUtilImpl, BlitzRegistrationConfigImpl, BlitzPreviousGame
     };
-    use s1_eternum::models::name::AddressName;
-    use s1_eternum::models::resource::production::building::BuildingCategory;
-    use s1_eternum::models::resource::resource::{ResourceList, ResourceMinMaxList};
-    use s1_eternum::utils::achievements::index::AchievementTrait;
+    use crate::models::name::AddressName;
+    use crate::models::resource::production::building::BuildingCategory;
+    use crate::models::resource::resource::{ResourceList, ResourceMinMaxList};
+    use crate::utils::achievements::index::AchievementTrait;
 
     // Constuctor
 
@@ -759,7 +759,7 @@ pub mod config_systems {
             assert_caller_is_admin(world);
 
             // note: if we are whitelisting a NEW resource type, we WILL need to
-            // update several functions related to resources in `s1_eternum::constants`
+            // update several functions related to resources in `crate::constants`
             // so the new resource type is recognized throughout the contract.
 
             assert!(resource_bridge_whitelist_config.resource_type > 0, "resource type should be non zero");

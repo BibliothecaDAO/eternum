@@ -2,36 +2,36 @@ use core::num::traits::zero::Zero;
 use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-use s1_eternum::alias::ID;
-use s1_eternum::constants::{
+use crate::alias::ID;
+use crate::constants::{
     DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID, split_blitz_exploration_reward_and_probs,
     split_resources_and_probs,
 };
-use s1_eternum::models::agent::{AgentConfig, AgentCountImpl, AgentLordsMintedImpl, AgentOwner};
-use s1_eternum::models::config::{
+use crate::models::agent::{AgentConfig, AgentCountImpl, AgentLordsMintedImpl, AgentOwner};
+use crate::models::config::{
     AgentControllerConfig, CapacityConfig, CombatConfigImpl, MapConfig, TickImpl, TickInterval, TroopLimitConfig,
     TroopStaminaConfig, WorldConfigUtilImpl,
 };
-use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
-use s1_eternum::models::name::AddressName;
-use s1_eternum::models::owner::OwnerAddressTrait;
-use s1_eternum::models::position::{Coord, CoordImpl, Direction};
-use s1_eternum::models::resource::resource::{
+use crate::models::map::{Tile, TileImpl, TileOccupier};
+use crate::models::name::AddressName;
+use crate::models::owner::OwnerAddressTrait;
+use crate::models::position::{Coord, CoordImpl, Direction};
+use crate::models::resource::resource::{
     RelicResourceImpl, Resource, ResourceImpl, ResourceWeightImpl, SingleResource, SingleResourceImpl,
     SingleResourceStoreImpl, WeightStoreImpl,
 };
-use s1_eternum::models::stamina::StaminaImpl;
-use s1_eternum::models::structure::{
+use crate::models::stamina::StaminaImpl;
+use crate::models::structure::{
     StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureOwnerStoreImpl, StructureTroopExplorerStoreImpl,
     StructureTroopGuardStoreImpl,
 };
-use s1_eternum::models::troop::{
+use crate::models::troop::{
     ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, TroopBoosts, TroopTier, TroopType, Troops, TroopsImpl,
 };
-use s1_eternum::models::weight::{Weight, WeightImpl};
-use s1_eternum::systems::utils::map::IMapImpl;
-use s1_eternum::utils::map::biomes::Biome;
-use s1_eternum::utils::math::PercentageValueImpl;
+use crate::models::weight::{Weight, WeightImpl};
+use crate::systems::utils::map::IMapImpl;
+use crate::utils::map::biomes::Biome;
+use crate::utils::math::PercentageValueImpl;
 use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
 use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 

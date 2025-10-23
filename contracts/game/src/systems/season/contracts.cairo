@@ -26,10 +26,10 @@ pub mod season_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
-    use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::models::config::{SeasonConfigImpl, VictoryPointsWinConfig, WorldConfigUtilImpl};
-    use s1_eternum::models::hyperstructure::PlayerRegisteredPoints;
-    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
+    use crate::constants::DEFAULT_NS;
+    use crate::models::config::{SeasonConfigImpl, VictoryPointsWinConfig, WorldConfigUtilImpl};
+    use crate::models::hyperstructure::PlayerRegisteredPoints;
+    use crate::utils::achievements::index::{AchievementTrait, Tasks};
 
 
     #[derive(Copy, Drop, Serde)]

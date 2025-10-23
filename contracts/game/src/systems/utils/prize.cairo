@@ -1,6 +1,6 @@
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
-use s1_eternum::utils::fixed_constants as fc;
+use crate::utils::fixed_constants as fc;
 
 #[generate_trait]
 pub impl iPrizeDistributionCalcImpl of iPrizeDistributionCalcTrait {

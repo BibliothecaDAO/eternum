@@ -2,10 +2,10 @@ use core::num::traits::zero::Zero;
 use dojo::model::{Model, ModelStorage};
 use dojo::storage::dojo_store::DojoStore;
 use dojo::world::WorldStorage;
-use s1_eternum::alias::ID;
-use s1_eternum::constants::{WORLD_CONFIG_ID, UNIVERSAL_DEPLOYER_ADDRESS};
-use s1_eternum::models::position::{Coord, CoordImpl, Direction};
-use s1_eternum::utils::random::VRFImpl;
+use crate::alias::ID;
+use crate::constants::{WORLD_CONFIG_ID, UNIVERSAL_DEPLOYER_ADDRESS};
+use crate::models::position::{Coord, CoordImpl, Direction};
+use crate::utils::random::VRFImpl;
 use starknet::ContractAddress;
 use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
 //

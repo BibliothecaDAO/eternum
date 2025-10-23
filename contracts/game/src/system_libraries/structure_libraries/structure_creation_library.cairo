@@ -1,9 +1,9 @@
 use dojo::world::WorldStorage;
-use s1_eternum::alias::ID;
-use s1_eternum::models::config::WorldConfigUtilImpl;
-use s1_eternum::models::map::TileOccupier;
-use s1_eternum::models::position::Coord;
-use s1_eternum::models::structure::{StructureCategory, StructureMetadata};
+use crate::alias::ID;
+use crate::models::config::WorldConfigUtilImpl;
+use crate::models::map::TileOccupier;
+use crate::models::position::Coord;
+use crate::models::structure::{StructureCategory, StructureMetadata};
 
 #[starknet::interface]
 pub trait IStructureCreationlibrary<T> {
@@ -27,33 +27,33 @@ pub mod structure_creation_library {
     use core::num::traits::Zero;
     use dojo::model::ModelStorage;
     use dojo::world::{WorldStorage, WorldStorageTrait};
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes};
-    use s1_eternum::models::config::{
+    use crate::alias::ID;
+    use crate::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes};
+    use crate::models::config::{
         StartingResourcesConfig, StructureCapacityConfig, VillageTokenConfig, WorldConfigUtilImpl,
     };
-    use s1_eternum::models::hyperstructure::PlayerRegisteredPointsImpl;
-    use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
-    use s1_eternum::models::position::{Coord, CoordImpl, Direction};
-    use s1_eternum::models::resource::resource::{
+    use crate::models::hyperstructure::PlayerRegisteredPointsImpl;
+    use crate::models::map::{Tile, TileImpl, TileOccupier};
+    use crate::models::position::{Coord, CoordImpl, Direction};
+    use crate::models::resource::resource::{
         ResourceImpl, ResourceList, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl,
         WeightStoreImpl,
     };
-    use s1_eternum::models::structure::{
+    use crate::models::structure::{
         Structure, StructureBase, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
         StructureMetadataStoreImpl, StructureOwnerStoreImpl, StructureResourcesImpl, StructureTroopExplorerStoreImpl,
         StructureTroopGuardStoreImpl, StructureVillageSlots,
     };
-    use s1_eternum::models::troop::{ExplorerTroops, GuardSlot, TroopsImpl};
-    use s1_eternum::models::weight::Weight;
-    use s1_eternum::systems::combat::contracts::troop_management::{
+    use crate::models::troop::{ExplorerTroops, GuardSlot, TroopsImpl};
+    use crate::models::weight::Weight;
+    use crate::systems::combat::contracts::troop_management::{
         ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait,
     };
-    use s1_eternum::systems::utils::map::IMapImpl;
-    use s1_eternum::systems::utils::troop::iExplorerImpl;
-    use s1_eternum::systems::utils::village::iVillageImpl;
-    use s1_eternum::utils::map::biomes::{Biome, get_biome};
-    use s1_eternum::utils::village::{IVillagePassDispatcher, IVillagePassDispatcherTrait};
+    use crate::systems::utils::map::IMapImpl;
+    use crate::systems::utils::troop::iExplorerImpl;
+    use crate::systems::utils::village::iVillageImpl;
+    use crate::utils::map::biomes::{Biome, get_biome};
+    use crate::utils::village::{IVillagePassDispatcher, IVillagePassDispatcherTrait};
 
 
     #[abi(embed_v0)]

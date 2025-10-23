@@ -2,30 +2,30 @@ use cubit::f128::types::fixed::FixedTrait;
 use dojo::model::{ModelStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::{ContractDef, NamespaceDef, WorldStorageTestTrait, deploy_contract, spawn_test_world};
-use s1_eternum::alias::ID;
-use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
-use s1_eternum::models::config::{
+use crate::alias::ID;
+use crate::constants::{RESOURCE_PRECISION, ResourceTypes};
+use crate::models::config::{
     CapacityConfig, CombatConfigImpl, MapConfig, QuestConfig, ResourceFactoryConfig, StructureCapacityConfig,
     TickConfig, TickImpl, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VillageTokenConfig, WeightConfig,
     WorldConfigUtilImpl,
 };
-use s1_eternum::models::map::{Tile, TileOccupier};
-use s1_eternum::models::position::Coord;
-use s1_eternum::models::quest::{Level, QuestTile};
-use s1_eternum::models::resource::resource::{
+use crate::models::map::{Tile, TileOccupier};
+use crate::models::position::Coord;
+use crate::models::quest::{Level, QuestTile};
+use crate::models::resource::resource::{
     ResourceList, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl,
     WeightStoreImpl,
 };
-use s1_eternum::models::stamina::{StaminaImpl, StaminaTrait};
-use s1_eternum::models::structure::{
+use crate::models::stamina::{StaminaImpl, StaminaTrait};
+use crate::models::structure::{
     Structure, StructureBase, StructureCategory, StructureMetadata, StructureVillageSlots,
 };
-use s1_eternum::models::troop::{ExplorerTroops, GuardTroops, TroopTier, TroopType, Troops};
-use s1_eternum::models::weight::Weight;
-use s1_eternum::systems::quest::constants::QUEST_REWARD_BASE_MULTIPLIER;
-use s1_eternum::systems::quest::contracts::{IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait};
-use s1_eternum::systems::utils::realm::iRealmImpl;
-use s1_eternum::utils::testing::contracts::villagepassmock::EternumVillagePassMock;
+use crate::models::troop::{ExplorerTroops, GuardTroops, TroopTier, TroopType, Troops};
+use crate::models::weight::Weight;
+use crate::systems::quest::constants::QUEST_REWARD_BASE_MULTIPLIER;
+use crate::systems::quest::contracts::{IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait};
+use crate::systems::utils::realm::iRealmImpl;
+use crate::utils::testing::contracts::villagepassmock::EternumVillagePassMock;
 use starknet::ContractAddress;
 
 

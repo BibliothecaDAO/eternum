@@ -1,7 +1,7 @@
 use cubit::f128::procgen::simplex3;
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use cubit::f128::types::vec3::Vec3Trait;
-use s1_eternum::utils::fixed_constants as fc;
+use crate::utils::fixed_constants as fc;
 #[derive(Copy, Drop, Serde, Introspect, Debug, PartialEq)]
 pub enum Biome {
     None,
@@ -123,7 +123,7 @@ fn bdepth(biome: Biome) -> Fixed {
 
 mod LEVEL {
     use cubit::f128::types::fixed::Fixed;
-    use s1_eternum::utils::fixed_constants as fc;
+    use crate::utils::fixed_constants as fc;
 
     pub fn DEEP_OCEAN() -> Fixed {
         fc::_0_2()

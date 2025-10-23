@@ -6,21 +6,21 @@
 //     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 //     use dojo::world::{WorldStorage, WorldStorageTrait};
 //     use dojo_cairo_test::{ContractDefTrait, NamespaceDef, TestResource};
-//     use s1_eternum::alias::ID;
+//     use crate::alias::ID;
 
-//     use s1_eternum::constants::ResourceTypes;
-//     use s1_eternum::constants::WORLD_CONFIG_ID;
-//     use s1_eternum::models::config::WeightConfig;
-//     use s1_eternum::models::owner::{EntityOwner, Owner};
-//     use s1_eternum::models::position::Position;
-//     use s1_eternum::models::quantity::Quantity;
-//     use s1_eternum::models::resource::resource::{Resource, ResourceAllowance};
+//     use crate::constants::ResourceTypes;
+//     use crate::constants::WORLD_CONFIG_ID;
+//     use crate::models::config::WeightConfig;
+//     use crate::models::owner::{EntityOwner, Owner};
+//     use crate::models::position::Position;
+//     use crate::models::quantity::Quantity;
+//     use crate::models::resource::resource::{Resource, ResourceAllowance};
 
-//     use s1_eternum::systems::resources::contracts::resource_systems::{
+//     use crate::systems::resources::contracts::resource_systems::{
 //         IResourceSystemsDispatcher, IResourceSystemsDispatcherTrait, resource_systems,
 //     };
 
-//     use s1_eternum::utils::testing::{systems::deploy_system, world::spawn_eternum};
+//     use crate::utils::testing::{systems::deploy_system, world::spawn_eternum};
 //     use starknet::contract_address_const;
 
 //     fn setup() -> (WorldStorage, IResourceSystemsDispatcher) {
