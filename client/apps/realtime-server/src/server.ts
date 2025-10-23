@@ -3,7 +3,8 @@ import "dotenv/config";
 import type { ServerWebSocket } from "bun";
 import { randomUUID } from "crypto";
 import { Hono } from "hono";
-import { createBunWebSocket } from "hono/bun";
+import { upgradeWebSocket, websocket } from "hono/bun";
+import type { WSContext } from "hono/ws";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 
@@ -34,8 +35,6 @@ import directMessageRoutes, { buildThreadId, sortParticipants } from "./http/rou
 import notesRoutes from "./http/routes/notes";
 import worldChatRoutes from "./http/routes/world-chat";
 import { createZoneRegistry } from "./ws/zone-registry";
-
-const { upgradeWebSocket, websocket } = createBunWebSocket();
 
 const app = new Hono<AppEnv>();
 
@@ -211,20 +210,17 @@ const toDirectMessageThread = (
 
 const broadcastToZone = (zoneId: string, payload: WorldBroadcastMessage, sender?: ServerWebSocket<unknown>) => {
   const serialized = JSON.stringify(payload);
-  let sentToSender = false;
 
   for (const socket of zoneRegistry.getSocketsForZone(zoneId)) {
     try {
       socket.send(serialized);
-      if (sender && socket === sender) {
-        sentToSender = true;
-      }
     } catch (error) {
       console.error("Failed to deliver world broadcast", error);
     }
   }
 
-  if (sender && !sentToSender) {
+  // Always send to sender if provided (they might not be in the zone registry yet)
+  if (sender) {
     try {
       sender.send(serialized);
     } catch (error) {
@@ -286,7 +282,7 @@ const handleWorldPublish = async (
 ) => {
   const payloadResult = worldChatPublishSchema.safeParse(message.payload);
   if (!payloadResult.success) {
-    const firstError = payloadResult.error.errors[0]?.message ?? "Invalid world chat payload.";
+    const firstError = payloadResult.error.issues[0]?.message ?? "Invalid world chat payload.";
     sendError(ws, "invalid_world_payload", firstError);
     return;
   }
@@ -334,7 +330,7 @@ const handleDirectMessage = async (
 ) => {
   const payloadResult = directMessageCreateSchema.safeParse(message.payload);
   if (!payloadResult.success) {
-    const firstError = payloadResult.error.errors[0]?.message ?? "Invalid direct message payload.";
+    const firstError = payloadResult.error.issues[0]?.message ?? "Invalid direct message payload.";
     sendError(ws, "invalid_direct_payload", firstError);
     return;
   }
@@ -404,7 +400,7 @@ const handleDirectMessage = async (
         throw new Error("Failed to resolve direct message thread");
       }
 
-      const participants = [thread.playerAId, thread.playerBId];
+      const participants = [thread.playerAId, thread.playerBId] as string[];
       const participantSet = new Set(participants);
       const playerMatches = aliases.some((alias) => participantSet.has(alias));
 
@@ -419,7 +415,7 @@ const handleDirectMessage = async (
           error = { code: "direct_recipient_unknown", message: "Unable to determine thread recipient." };
           return;
         }
-        recipientId = otherParticipant;
+        recipientId = otherParticipant as string;
       }
 
       if (aliases.includes(recipientId)) {
@@ -432,7 +428,7 @@ const handleDirectMessage = async (
         .insert(directMessages)
         .values({
           id: messageId,
-          threadId: thread.id,
+          threadId: thread.id as string,
           senderId: session.playerId,
           recipientId,
           content: payload.content,
@@ -451,9 +447,10 @@ const handleDirectMessage = async (
             ? new Date(createdMessage.createdAt)
             : new Date();
 
+      const existingCounts = thread.unreadCounts ?? {};
       const unreadCounts = {
-        ...(thread.unreadCounts ?? {}),
-        [recipientId]: (thread.unreadCounts?.[recipientId] ?? 0) + 1,
+        ...existingCounts,
+        [recipientId]: ((existingCounts as Record<string, number>)[recipientId] ?? 0) + 1,
       };
 
       const [updatedThread] = await tx
@@ -464,7 +461,7 @@ const handleDirectMessage = async (
           lastMessageAt: createdAt,
           updatedAt: createdAt,
         })
-        .where(eq(directMessageThreads.id, thread.id))
+        .where(eq(directMessageThreads.id, thread.id as string))
         .returning();
 
       if (!updatedThread) {
@@ -490,7 +487,7 @@ const handleDirectMessage = async (
   }
 
   if (error) {
-    sendError(ws, error.code, error.message);
+    sendError(ws, (error as any).code, (error as any).message);
     return;
   }
 
@@ -499,7 +496,7 @@ const handleDirectMessage = async (
     return;
   }
 
-  broadcastDirectMessage(broadcastPayload.participants, broadcastPayload.payload);
+  broadcastDirectMessage((broadcastPayload as any).participants, (broadcastPayload as any).payload);
 };
 
 app.use("*", logger());
@@ -548,8 +545,8 @@ app.get(
     }
 
     return {
-      onOpen(_event, ws) {
-        const isFirstConnection = addPlayerSocket(session.playerId, ws);
+      onOpen(_event, ws: WSContext) {
+        const isFirstConnection = addPlayerSocket(session.playerId, ws.raw as ServerWebSocket<unknown>);
         playerSessions.set(session.playerId, session);
         upsertPresence(session.playerId, {
           isOnline: true,
@@ -563,21 +560,22 @@ app.get(
             playerId: session.playerId,
           }),
         );
-        sendPresenceSnapshot(ws);
+        sendPresenceSnapshot(ws.raw as ServerWebSocket<unknown>);
         if (isFirstConnection) {
-          broadcastPresenceUpdate(session.playerId, ws);
+          broadcastPresenceUpdate(session.playerId, ws.raw as ServerWebSocket<unknown>);
         } else {
           broadcastPresenceUpdate(session.playerId);
         }
       },
-      async onMessage(event, ws) {
+      async onMessage(event, ws: WSContext) {
+        const wsRaw = ws.raw as ServerWebSocket<unknown>;
         try {
           const message = JSON.parse(event.data.toString()) as ClientMessage;
 
           switch (message.type) {
             case "join:zone":
               if (message.zoneId) {
-                zoneRegistry.addSocketToZone(ws, message.zoneId);
+                zoneRegistry.addSocketToZone(wsRaw, message.zoneId);
                 ws.send(
                   JSON.stringify({
                     type: "joined:zone",
@@ -590,7 +588,7 @@ app.get(
               break;
             case "leave:zone":
               if (message.zoneId) {
-                zoneRegistry.removeSocketFromZone(ws, message.zoneId);
+                zoneRegistry.removeSocketFromZone(wsRaw, message.zoneId);
                 ws.send(
                   JSON.stringify({
                     type: "left:zone",
@@ -602,10 +600,10 @@ app.get(
               }
               break;
             case "world:publish":
-              await handleWorldPublish(ws, message, session);
+              await handleWorldPublish(wsRaw, message, session);
               break;
             case "direct:message":
-              await handleDirectMessage(ws, message, session);
+              await handleDirectMessage(wsRaw, message, session);
               break;
             case "direct:typing":
             case "direct:read":
@@ -616,12 +614,13 @@ app.get(
           }
         } catch (error) {
           console.error("Failed to process websocket message", error);
-          sendError(ws, "invalid_message", "Malformed realtime payload.");
+          sendError(wsRaw, "invalid_message", "Malformed realtime payload.");
         }
       },
-      onClose(_event, ws) {
-        zoneRegistry.removeSocketFromAllZones(ws);
-        const lastSocket = removePlayerSocket(session.playerId, ws);
+      onClose(_event, ws: WSContext) {
+        const wsRaw = ws.raw as ServerWebSocket<unknown>;
+        zoneRegistry.removeSocketFromAllZones(wsRaw);
+        const lastSocket = removePlayerSocket(session.playerId, wsRaw);
         if (lastSocket) {
           upsertPresence(session.playerId, {
             isOnline: false,
@@ -633,9 +632,10 @@ app.get(
           playerSessions.delete(session.playerId);
         }
       },
-      onError(_event, ws) {
-        zoneRegistry.removeSocketFromAllZones(ws);
-        const lastSocket = removePlayerSocket(session.playerId, ws);
+      onError(_event, ws: WSContext) {
+        const wsRaw = ws.raw as ServerWebSocket<unknown>;
+        zoneRegistry.removeSocketFromAllZones(wsRaw);
+        const lastSocket = removePlayerSocket(session.playerId, wsRaw);
         if (lastSocket) {
           upsertPresence(session.playerId, {
             isOnline: false,

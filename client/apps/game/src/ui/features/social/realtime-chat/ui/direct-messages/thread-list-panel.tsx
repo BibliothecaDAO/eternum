@@ -94,17 +94,16 @@ export function ThreadListPanel({ onSelectThread, className }: ThreadListPanelPr
         <section className="mb-4">
           <h3 className="px-1 pb-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Online</h3>
           <ul className="flex flex-col gap-1">
-            {onlinePlayers.length === 0 && (
-              <li className="px-1 text-xs text-neutral-600">No players online.</li>
-            )}
+            {onlinePlayers.length === 0 && <li className="px-1 text-xs text-neutral-600">No players online.</li>}
             {onlinePlayers.map((player) => {
               const aliases = [player.playerId];
               if (player.walletAddress && !aliases.includes(player.walletAddress)) {
                 aliases.push(player.walletAddress);
               }
               const threadForPlayer =
-                aliases.map((alias) => threadAliasesMap.get(alias)).find((thread): thread is DirectMessageThreadState => Boolean(thread)) ??
-                null;
+                aliases
+                  .map((alias) => threadAliasesMap.get(alias))
+                  .find((thread): thread is DirectMessageThreadState => Boolean(thread)) ?? null;
               const unreadCount = threadForPlayer?.unreadCount ?? 0;
               const isActive = threadForPlayer?.thread.id === activeThreadId;
               const displayLabel = truncateIdentifier(player.displayName ?? player.playerId, 6);

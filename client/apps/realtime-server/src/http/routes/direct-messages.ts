@@ -39,8 +39,10 @@ directMessageRoutes.get("/threads", async (c) => {
   const payload = payloadResult.data;
   const player = c.get("playerSession")!;
 
-  const identityFilters = player.aliases
-    .flatMap((alias) => [eq(directMessageThreads.playerAId, alias), eq(directMessageThreads.playerBId, alias)]);
+  const identityFilters = player.aliases.flatMap((alias) => [
+    eq(directMessageThreads.playerAId, alias),
+    eq(directMessageThreads.playerBId, alias),
+  ]);
   const participantFilter =
     identityFilters.length > 0
       ? or(...identityFilters)
@@ -59,7 +61,7 @@ directMessageRoutes.get("/threads", async (c) => {
   }
 
   let query = db.select().from(directMessageThreads);
-  query = query.where(and(...filters));
+  query = query.where(and(...filters)) as any;
 
   const limit = payload.limit ?? 50;
 

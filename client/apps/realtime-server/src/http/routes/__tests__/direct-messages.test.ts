@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { directMessageCreateSchema } from "@bibliothecadao/types";
 import { buildThreadId, sortParticipants } from "../direct-messages";
-import { directMessageCreateSchema } from "../../../../../../../common/validation/realtime/direct-messages";
 
 describe("direct message helpers", () => {
   it("builds deterministic thread ids", () => {

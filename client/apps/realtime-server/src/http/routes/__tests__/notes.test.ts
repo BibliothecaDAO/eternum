@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { noteCreateSchema } from "@bibliothecadao/types";
 import { formatZodError } from "../../utils/zod";
-import { noteCreateSchema } from "../../../../../../../common/validation/realtime/notes";
 
 describe("note validation", () => {
   it("rejects invalid payloads", () => {

@@ -70,8 +70,7 @@ notesRoutes.patch("/:id", async (c) => {
 
   const authorAliases = player.aliases ?? [player.playerId];
   const authorConditions = authorAliases.map((alias) => eq(notes.authorId, alias));
-  const authorFilter =
-    authorConditions.length > 0 ? or(...authorConditions) : eq(notes.authorId, player.playerId);
+  const authorFilter = authorConditions.length > 0 ? or(...authorConditions) : eq(notes.authorId, player.playerId);
 
   const [existing] = await db
     .select()
@@ -114,8 +113,7 @@ notesRoutes.delete("/:id", async (c) => {
 
   const authorAliases = player.aliases ?? [player.playerId];
   const authorConditions = authorAliases.map((alias) => eq(notes.authorId, alias));
-  const authorFilter =
-    authorConditions.length > 0 ? or(...authorConditions) : eq(notes.authorId, player.playerId);
+  const authorFilter = authorConditions.length > 0 ? or(...authorConditions) : eq(notes.authorId, player.playerId);
 
   const { rowCount } = await db.delete(notes).where(and(eq(notes.id, payload.id), authorFilter));
 
@@ -158,7 +156,7 @@ notesRoutes.get("/", async (c) => {
   let query = db.select().from(notes);
 
   if (filters.length > 0) {
-    query = query.where(and(...filters));
+    query = query.where(and(...filters)) as any;
   }
 
   const limit = payload.limit ?? 50;

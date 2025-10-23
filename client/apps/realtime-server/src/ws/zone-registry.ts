@@ -1,27 +1,27 @@
-import type { WSContext } from "hono/ws";
+import type { ServerWebSocket } from "bun";
 
 export interface ZoneRegistry {
-  addSocketToZone(ws: WSContext<unknown>, zoneId: string): void;
-  removeSocketFromZone(ws: WSContext<unknown>, zoneId: string): void;
-  removeSocketFromAllZones(ws: WSContext<unknown>): void;
-  getSocketsForZone(zoneId: string): ReadonlySet<WSContext<unknown>>;
-  getZonesForSocket(ws: WSContext<unknown>): ReadonlySet<string>;
+  addSocketToZone(ws: ServerWebSocket<unknown>, zoneId: string): void;
+  removeSocketFromZone(ws: ServerWebSocket<unknown>, zoneId: string): void;
+  removeSocketFromAllZones(ws: ServerWebSocket<unknown>): void;
+  getSocketsForZone(zoneId: string): ReadonlySet<ServerWebSocket<unknown>>;
+  getZonesForSocket(ws: ServerWebSocket<unknown>): ReadonlySet<string>;
 }
 
 export const createZoneRegistry = (): ZoneRegistry => {
-  const zoneRooms = new Map<string, Set<WSContext<unknown>>>();
-  const socketZones = new WeakMap<WSContext<unknown>, Set<string>>();
+  const zoneRooms = new Map<string, Set<ServerWebSocket<unknown>>>();
+  const socketZones = new WeakMap<ServerWebSocket<unknown>, Set<string>>();
 
   const getOrCreateZoneSockets = (zoneId: string) => {
     let sockets = zoneRooms.get(zoneId);
     if (!sockets) {
-      sockets = new Set<WSContext<unknown>>();
+      sockets = new Set<ServerWebSocket<unknown>>();
       zoneRooms.set(zoneId, sockets);
     }
     return sockets;
   };
 
-  const getOrCreateSocketZones = (ws: WSContext<unknown>) => {
+  const getOrCreateSocketZones = (ws: ServerWebSocket<unknown>) => {
     let zones = socketZones.get(ws);
     if (!zones) {
       zones = new Set<string>();
@@ -30,12 +30,12 @@ export const createZoneRegistry = (): ZoneRegistry => {
     return zones;
   };
 
-  const addSocketToZone = (ws: WSContext<unknown>, zoneId: string) => {
+  const addSocketToZone = (ws: ServerWebSocket<unknown>, zoneId: string) => {
     getOrCreateZoneSockets(zoneId).add(ws);
     getOrCreateSocketZones(ws).add(zoneId);
   };
 
-  const removeSocketFromZone = (ws: WSContext<unknown>, zoneId: string) => {
+  const removeSocketFromZone = (ws: ServerWebSocket<unknown>, zoneId: string) => {
     const sockets = zoneRooms.get(zoneId);
     if (sockets) {
       sockets.delete(ws);
@@ -53,7 +53,7 @@ export const createZoneRegistry = (): ZoneRegistry => {
     }
   };
 
-  const removeSocketFromAllZones = (ws: WSContext<unknown>) => {
+  const removeSocketFromAllZones = (ws: ServerWebSocket<unknown>) => {
     const zones = socketZones.get(ws);
     if (!zones) return;
 
@@ -62,11 +62,11 @@ export const createZoneRegistry = (): ZoneRegistry => {
     }
   };
 
-  const getSocketsForZone = (zoneId: string): ReadonlySet<WSContext<unknown>> => {
-    return zoneRooms.get(zoneId) ?? new Set<WSContext<unknown>>();
+  const getSocketsForZone = (zoneId: string): ReadonlySet<ServerWebSocket<unknown>> => {
+    return zoneRooms.get(zoneId) ?? new Set<ServerWebSocket<unknown>>();
   };
 
-  const getZonesForSocket = (ws: WSContext<unknown>): ReadonlySet<string> => {
+  const getZonesForSocket = (ws: ServerWebSocket<unknown>): ReadonlySet<string> => {
     return socketZones.get(ws) ?? new Set<string>();
   };
 

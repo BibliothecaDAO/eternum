@@ -45,7 +45,7 @@ worldChatRoutes.get("/", async (c) => {
 
   let query = db.select().from(worldChatMessages);
   if (filters.length > 0) {
-    query = query.where(and(...filters));
+    query = query.where(and(...filters)) as any;
   }
 
   const limit = payload.limit ?? 50;
