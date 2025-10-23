@@ -39,9 +39,10 @@ WORKDIR /app/client/apps/realtime-server
 
 # Set the PORT environment variable
 ENV PORT=8080
+ENV NODE_ENV=production
 
 # Expose the port your server runs on
 EXPOSE 8080
 
 # Start the server
-CMD ["bun", "run", "start"]
+CMD ["bun", "run", "src/server.ts"]

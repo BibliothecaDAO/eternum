@@ -37,6 +37,7 @@ import worldChatRoutes from "./http/routes/world-chat";
 import { createZoneRegistry } from "./ws/zone-registry";
 
 const app = new Hono<AppEnv>();
+const port = Number(process.env.PORT ?? 8080);
 
 const rawCorsOrigin = process.env.CORS_ORIGIN ?? "*";
 const corsOrigin =
@@ -520,7 +521,13 @@ app.use(
   }),
 );
 
-app.get("/health", (c) => c.json({ status: "ok" }));
+app.get("/health", (c) => {
+  return c.json({
+    status: "ok",
+    port: port,
+    timestamp: new Date().toISOString()
+  });
+});
 
 app.route("/api/notes", notesRoutes);
 app.route("/api/chat/world", worldChatRoutes);
@@ -651,7 +658,12 @@ app.get(
   }),
 );
 
-const port = Number(process.env.PORT ?? 4001);
+console.log("Starting realtime server...");
+console.log("Environment:", {
+  PORT: port,
+  DATABASE_URL: process.env.DATABASE_URL ? "Set" : "Not set",
+  NODE_ENV: process.env.NODE_ENV || "development",
+});
 
 Bun.serve({
   port,
