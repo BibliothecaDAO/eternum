@@ -256,7 +256,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
               }
               break;
             case "direct:message":
-              actions.receiveDirectMessage(message.message, message.thread);
+              actions.receiveDirectMessage(message.message as DirectMessage, message.thread as DirectMessageThread);
               if (message.clientMessageId) {
                 actions.resolvePendingMessage(message.clientMessageId as string, { status: "sent" });
               }
@@ -271,7 +271,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
               break;
             case "direct:read":
               set((state) => ({
-                pendingReadReceipts: [...state.pendingReadReceipts, message.receipt],
+                pendingReadReceipts: [...state.pendingReadReceipts, message.receipt as DirectMessageReadReceipt],
               }));
               break;
             case "presence:sync":
@@ -279,7 +279,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
               break;
             case "presence:update":
               if (message.player) {
-                actions.upsertOnlinePlayer(normalizePresencePayload(message.player));
+                actions.upsertOnlinePlayer(normalizePresencePayload(message.player as PlayerPresence));
               }
               break;
             case "error":

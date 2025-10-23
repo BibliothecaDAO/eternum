@@ -14,12 +14,7 @@ export interface RealtimeChatComponentDescriptor {
     | "useRealtimeTypingIndicators"
   >;
   provides: Array<
-    | "chat-layout"
-    | "world-feed"
-    | "dm-feed"
-    | "presence-summary"
-    | "thread-switcher"
-    | "compose-controls"
+    "chat-layout" | "world-feed" | "dm-feed" | "presence-summary" | "thread-switcher" | "compose-controls"
   >;
 }
 
@@ -57,7 +52,7 @@ export const realtimeChatComponentMap: RealtimeChatComponentDescriptor[] = [
     id: "thread-list",
     title: "ThreadListPanel",
     description: "Rows of DM threads with unread counts and selects active conversation.",
-    uses: ["useRealtimeChatActions", "useRealtimeChatSelector"],
+    uses: ["useRealtimePresence"],
     provides: ["thread-switcher"],
   },
   {
@@ -68,4 +63,3 @@ export const realtimeChatComponentMap: RealtimeChatComponentDescriptor[] = [
     provides: ["compose-controls"],
   },
 ];
-
