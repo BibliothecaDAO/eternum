@@ -37,7 +37,7 @@ use core::num::traits::zero::Zero;
     use s1_eternum::systems::utils::series_chest_reward::series_chest_reward_calculator;
     use s1_eternum::systems::utils::series_chest_reward::series_chest_reward_calculator::{SeriesChestRewardStateImpl};
     use starknet::ContractAddress;
-    use super::{IPrizeDistributionSystems, IPrizeDistributionSystemsDispatcher, IPrizeDistributionSystemsDispatcherTrait};
+    use super::{IPrizeDistributionSystems, IPrizeDistributionSystemsSafeDispatcher, IPrizeDistributionSystemsSafeDispatcherTrait};
     use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
     use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
 
