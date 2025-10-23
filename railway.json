@@ -2,15 +2,11 @@
   "$schema": "https://schema.railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "pnpm install --frozen-lockfile && pnpm run build:packages && cd client/apps/realtime-server && pnpm run build"
+    "buildCommand": "bun install && bun run build:packages && cd client/apps/realtime-server && bun run build"
   },
   "deploy": {
     "startCommand": "cd client/apps/realtime-server && bun run start",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 100
-  },
-  "variables": {
-    "NIXPACKS_NODE_VERSION": "20",
-    "NIXPACKS_INSTALL_CACHE_DIRS": ".pnpm-store"
   }
 }
