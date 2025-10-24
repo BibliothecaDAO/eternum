@@ -665,13 +665,12 @@ console.log("Environment:", {
   NODE_ENV: process.env.NODE_ENV || "development",
 });
 
-Bun.serve({
+const serverConfig = {
   port,
   hostname: "0.0.0.0",
   fetch: app.fetch,
   websocket,
-});
+};
 
-console.log(`Realtime server listening on port ${port}`);
-
-export default app;
+export { app };
+export default serverConfig;
