@@ -667,6 +667,7 @@ console.log("Environment:", {
 
 Bun.serve({
   port,
+  hostname: "0.0.0.0",
   fetch: app.fetch,
   websocket,
 });
