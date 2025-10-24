@@ -71,19 +71,20 @@ export function RealtimeChatShell({
   return (
     <div className={`w-full ${className ?? ""}`}>
       <div
-        className={`flex flex-col overflow-hidden transition-[height,_transform] duration-200 panel-wood  ${
+        className={`flex flex-col overflow-hidden transition-[height,_transform] duration-200 panel-wood bg-dark-wood  ${
           isExpanded ? "h-[60vh] max-h-[600px]" : "h-14"
         }`}
       >
-        <header className="flex items-center justify-between  bg-black text-xs uppercase tracking-wide  ">
+        <header className="flex items-center justify-between  bg-dark-wood text-xs uppercase tracking-wide border-b border-gold/30">
           <Button
             type="button"
+            variant="outline"
             onClick={toggleExpanded}
-            className="flex items-center gap-2 px-2 py-1 text-neutral-100 transition hover:bg-neutral-800"
+            className="flex items-center gap-2 px-2 py-1 transition hover:bg-neutral-800"
           >
             <span className="text-[11px] font-semibold">{isExpanded ? "Hide Chat" : "Open Chat"}</span>
             <span
-              className={`h-2 w-2 rounded-full ${
+              className={`h-2 w-2 rounded-full animate-pulse ${
                 connectionStatus === "connected"
                   ? "bg-emerald-400"
                   : connectionStatus === "error"
@@ -99,7 +100,7 @@ export function RealtimeChatShell({
               World
               <span
                 className={`${unreadBadgeClass} ${
-                  unreadWorldTotal > 0 ? "border-amber-400 text-amber-300" : "border-neutral-700 text-neutral-500"
+                  unreadWorldTotal > 0 ? "border-amber-400 text-amber-300" : "border-neutral-700 "
                 }`}
               >
                 {unreadWorldTotal}
@@ -109,7 +110,7 @@ export function RealtimeChatShell({
               DM
               <span
                 className={`${unreadBadgeClass} ${
-                  unreadDirectTotal > 0 ? "border-amber-400 text-amber-300" : "border-neutral-700 text-neutral-500"
+                  unreadDirectTotal > 0 ? "border-amber-400 text-amber-300" : "border-neutral-700 "
                 }`}
               >
                 {unreadDirectTotal}
@@ -129,7 +130,7 @@ export function RealtimeChatShell({
             </div>
           </div>
         ) : (
-          <div className="flex flex-1 items-center justify-between px-4 text-[11px] text-neutral-400">
+          <div className="flex flex-1 items-center justify-between px-4 text-[11px] ">
             <span className="normal-case">Tap to open chat and catch up on conversations.</span>
             <div className="flex items-center gap-3 normal-case">
               <span>World unread: {unreadWorldTotal}</span>

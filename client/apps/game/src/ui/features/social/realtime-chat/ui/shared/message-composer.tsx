@@ -52,7 +52,7 @@ export function MessageComposer({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-2 p-1">
       <textarea
-        className="w-full border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 outline-none focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 disabled:opacity-60"
+        className="w-full border-neutral-700 bg-dark-wood px-3 py-2 text-sm outline-none focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 disabled:opacity-60"
         placeholder={placeholder}
         value={draft}
         disabled={disabled || isSending}
@@ -64,7 +64,7 @@ export function MessageComposer({
         maxLength={maxLength}
       />
       <div className="flex items-center justify-between gap-2 p-1">
-        <span className="text-xs text-neutral-500">
+        <span className="text-xs ">
           {draft.length} / {maxLength}
         </span>
         <div className="flex items-center gap-2">

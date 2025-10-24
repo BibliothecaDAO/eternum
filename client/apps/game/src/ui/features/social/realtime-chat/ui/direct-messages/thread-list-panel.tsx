@@ -86,13 +86,13 @@ export function ThreadListPanel({ onSelectThread, className }: ThreadListPanelPr
   };
 
   return (
-    <aside className={`flex h-full w-64 flex-col border-r border-neutral-800 bg-neutral-950 ${className ?? ""}`}>
-      <header className="border-b border-neutral-800 px-3 py-3">
-        <h2 className="text-sm font-semibold text-neutral-200">Direct Messages</h2>
+    <aside className={`flex h-full w-64 flex-col border-r border-gold/30 ${className ?? ""}`}>
+      <header className="border-b border-gold/30 px-3 py-3">
+        <h2 className="text-sm font-semibold ">Direct Messages</h2>
       </header>
       <div className="flex-1 overflow-y-auto px-2 py-3">
         <section className="mb-4">
-          <h3 className="px-1 pb-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Online</h3>
+          <h3 className="px-1 pb-2 text-[11px] font-semibold uppercase tracking-wide ">Online</h3>
           <ul className="flex flex-col gap-1">
             {onlinePlayers.length === 0 && <li className="px-1 text-xs text-neutral-600">No players online.</li>}
             {onlinePlayers.map((player) => {
@@ -126,15 +126,13 @@ export function ThreadListPanel({ onSelectThread, className }: ThreadListPanelPr
                     {threadForPlayer ? (
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                          unreadCount > 0
-                            ? "border border-amber-400/60 text-amber-300"
-                            : "border border-neutral-700 text-neutral-400"
+                          unreadCount > 0 ? "border border-amber-400/60 text-amber-300" : "border border-neutral-700 "
                         }`}
                       >
                         {unreadCount > 0 ? unreadCount : "DM"}
                       </span>
                     ) : (
-                      <span className="text-[10px] uppercase tracking-wide text-neutral-500">New</span>
+                      <span className="text-[10px] uppercase tracking-wide ">New</span>
                     )}
                   </button>
                 </li>
@@ -142,7 +140,7 @@ export function ThreadListPanel({ onSelectThread, className }: ThreadListPanelPr
             })}
           </ul>
         </section>
-        {sortedThreads.length === 0 && <p className="px-1 py-2 text-sm text-neutral-500">No direct messages yet.</p>}
+        {sortedThreads.length === 0 && <p className="px-1 py-2 text-sm ">No direct messages yet.</p>}
         <ul className="flex flex-col gap-1">
           {sortedThreads.map((thread) => {
             const otherParticipant =

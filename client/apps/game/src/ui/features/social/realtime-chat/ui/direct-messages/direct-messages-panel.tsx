@@ -91,15 +91,14 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
   }, [thread?.messages.length, thread?.unreadCount]);
 
   return (
-    <section className={`flex h-full min-h-0 flex-1 flex-col bg-neutral-900 ${className ?? ""}`}>
-      <header className="border-b border-neutral-800 px-4 py-3">
+    <section className={`flex h-full min-h-0 flex-1 flex-col  ${className ?? ""}`}>
+      <header className="border-b border-gold/30 px-4 py-3">
         <div>
-          <h2 className="text-sm font-semibold text-neutral-200">{recipientLabel ?? "Direct Messages"}</h2>
-          <p className="text-xs text-neutral-500">{typing.length > 0 ? "Typing…" : "Private conversation"}</p>
+          <h2 className="text-sm font-semibold ">{recipientLabel ?? "Direct Messages"}</h2>
         </div>
       </header>
       <div className="flex-1 min-h-0 px-4 py-3">
-        {!thread && <p className="text-sm text-neutral-500">Select a conversation to get started.</p>}
+        {!thread && <p className="text-sm ">Select a conversation to get started.</p>}
         {thread && (
           <div className="flex h-full min-h-0 flex-col overflow-hidden">
             {thread.hasMoreHistory && (
@@ -123,11 +122,11 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
                           isOwn ? "ring-amber-400/60" : "hover:bg-neutral-800 hover:ring-amber-400/40"
                         }`}
                       >
-                        <header className="flex items-center justify-between gap-2 text-[11px] text-neutral-400">
+                        <header className="flex items-center justify-between gap-2 text-[11px] ">
                           <span className="truncate font-medium text-neutral-100" title={displayLabel}>
                             {displayLabel}
                           </span>
-                          <span className="whitespace-nowrap text-[10px] uppercase tracking-wide text-neutral-500">
+                          <span className="whitespace-nowrap text-[10px] uppercase tracking-wide ">
                             {toDisplayTime(message)}
                           </span>
                         </header>
@@ -139,7 +138,7 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
                   );
                 })}
                 {thread.messages.length === 0 && (
-                  <li className="text-sm text-neutral-500">No messages yet. Say hi to start the conversation!</li>
+                  <li className="text-sm ">No messages yet. Say hi to start the conversation!</li>
                 )}
               </ul>
             </div>

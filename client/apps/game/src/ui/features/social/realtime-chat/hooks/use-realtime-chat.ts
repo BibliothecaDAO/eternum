@@ -102,7 +102,7 @@ export const useWorldChatControls = (zoneId?: string) => {
   const loadHistory = useCallback(
     (cursor?: string) => {
       if (!zoneId) return Promise.resolve();
-      return actions.loadWorldHistory({ zoneId, cursor, limit: 10, since: new Date().toISOString() });
+      return actions.loadWorldHistory({ zoneId, cursor, limit: 10 });
     },
     [actions, zoneId],
   );

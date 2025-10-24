@@ -74,22 +74,14 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
   }, [resolvedZoneId, zoneLabel]);
 
   return (
-    <section className={`flex h-full min-h-0 flex-1 flex-col bg-neutral-900 ${className ?? ""}`}>
-      <header className="flex items-center justify-between border-b border-neutral-800 px-4 py-3">
+    <section className={`flex h-full min-h-0 flex-1 flex-col  ${className ?? ""}`}>
+      <header className="flex items-center justify-between border-b border-gold/30 px-4 py-3">
         <div>
-          <h2 className="text-sm font-semibold text-neutral-200">{displayLabel}</h2>
-          <p className="text-xs text-neutral-500">Live zone chat</p>
+          <h2 className="text-sm font-semibold ">{displayLabel}</h2>
         </div>
-        <button
-          type="button"
-          onClick={() => setActive()}
-          className="rounded border border-neutral-700 px-2 py-1 text-xs text-neutral-300 hover:border-neutral-500"
-        >
-          Focus
-        </button>
       </header>
       <div className="flex-1 min-h-0 px-4 py-3">
-        {!zone && <p className="text-sm text-neutral-500">Join a zone to view chat.</p>}
+        {!zone && <p className="text-sm ">Join a zone to view chat.</p>}
         {zone && (
           <div className="flex h-full min-h-0 flex-col overflow-hidden">
             {zone.hasMoreHistory && (
@@ -109,7 +101,7 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
                   return (
                     <li key={message.id}>
                       <article className="flex flex-col gap-1 rounded-md py-1.5 text-sm text-neutral-100 ">
-                        <header className="flex items-center justify-between gap-2 text-[11px] text-neutral-400">
+                        <header className="flex items-center justify-between gap-2 text-[11px] ">
                           <div className="flex min-w-0 items-center gap-2">
                             <span className="max-w-[140px] truncate font-medium text-neutral-100" title={senderName}>
                               {senderName}
@@ -123,7 +115,7 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
                               </span>
                             )}
                           </div>
-                          <span className="whitespace-nowrap text-[10px] uppercase tracking-wide text-neutral-500">
+                          <span className="whitespace-nowrap text-[10px] uppercase tracking-wide ">
                             {formatWorldMessageTime(message)}
                           </span>
                         </header>
@@ -134,9 +126,7 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
                     </li>
                   );
                 })}
-                {messages.length === 0 && (
-                  <li className="text-sm text-neutral-500">No messages yet. Be the first to say hello!</li>
-                )}
+                {messages.length === 0 && <li className="text-sm ">No messages yet. Be the first to say hello!</li>}
               </ul>
             </div>
           </div>
