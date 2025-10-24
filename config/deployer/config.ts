@@ -33,6 +33,7 @@ interface Config {
 export class GameConfigDeployer {
   public globalConfig: EternumConfig;
   public network: NetworkType;
+  public skipSleeps: boolean = false;
 
   constructor(config: EternumConfig, network: NetworkType) {
     this.globalConfig = config;
@@ -40,6 +41,7 @@ export class GameConfigDeployer {
   }
 
   async sleepNonLocal() {
+    if (this.skipSleeps) return;
     if (this.network.toLowerCase() === "mainnet" || this.network.toLowerCase() === "sepolia") {
       let sleepSeconds = 1;
       console.log(chalk.gray(`Sleeping for ${sleepSeconds} seconds...`));
