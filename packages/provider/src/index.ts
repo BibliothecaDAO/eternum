@@ -223,6 +223,14 @@ export const buildVrfCalls = async ({
 
 export class EternumProvider extends EnhancedDojoProvider {
   promiseQueue: PromiseQueue;
+  // Batching state (optional, used by admin/config UIs)
+  private _batchCalls?: Call[];
+  private _batchImmediate?: Set<string>;
+  private _batchSigner?: Account | AccountInterface;
+  private _batchOriginalExecute?: (
+    signer: Account | AccountInterface,
+    transactionDetails: AllowArray<Call>,
+  ) => Promise<GetTransactionReceiptResponse>;
   /**
    * Create a new EternumProvider instance
    *
@@ -242,6 +250,74 @@ export class EternumProvider extends EnhancedDojoProvider {
       return worldAddress;
     };
     this.promiseQueue = new PromiseQueue(this);
+  }
+
+  // ============ Optional client-side batching API ============
+  public beginBatch(options: { signer: Account | AccountInterface; immediateEntrypoints?: string[] }) {
+    if (this._batchCalls) return; // already batching
+    this._batchCalls = [];
+    this._batchImmediate = new Set(options?.immediateEntrypoints ?? []);
+    this._batchSigner = options.signer;
+    this._batchOriginalExecute = this.executeAndCheckTransaction.bind(this);
+
+    const self = this;
+    this.executeAndCheckTransaction = (async function (signer: any, details: AllowArray<Call>) {
+      const arr = Array.isArray(details) ? details : [details];
+      const shouldImmediate = arr.some((c) => self._batchImmediate?.has(c.entrypoint));
+      if (shouldImmediate) {
+        // passthrough
+        return await (self._batchOriginalExecute as any)(signer, details);
+      }
+      // queue
+      self._batchCalls!.push(...arr);
+      // return a minimal placeholder compatible with existing logs
+      return { statusReceipt: "QUEUED_FOR_BATCH" } as any;
+    }) as any;
+  }
+
+  public isBatching(): boolean {
+    return Array.isArray(this._batchCalls);
+  }
+
+  public markImmediateEntrypoints(entrypoints: string | string[]): void {
+    if (!this._batchImmediate) return;
+    const list = Array.isArray(entrypoints) ? entrypoints : [entrypoints];
+    list.forEach((e) => this._batchImmediate!.add(e));
+  }
+
+  public unmarkImmediateEntrypoints(entrypoints?: string | string[]): void {
+    if (!this._batchImmediate) return;
+    if (!entrypoints) {
+      this._batchImmediate = new Set();
+      return;
+    }
+    const list = Array.isArray(entrypoints) ? entrypoints : [entrypoints];
+    list.forEach((e) => this._batchImmediate!.delete(e));
+  }
+
+  public async flushBatch(): Promise<GetTransactionReceiptResponse | null> {
+    if (!this._batchCalls || !this._batchOriginalExecute) return null;
+    if (this._batchCalls.length === 0) return null;
+    const txs = [...this._batchCalls];
+    this._batchCalls = [];
+    return await this._batchOriginalExecute(this._batchSigner as any, txs as any);
+  }
+
+  public async endBatch(options?: { flush?: boolean }): Promise<GetTransactionReceiptResponse | null> {
+    const flush = options?.flush ?? true;
+    let result: GetTransactionReceiptResponse | null = null;
+    if (flush) {
+      result = await this.flushBatch();
+    }
+    if (this._batchOriginalExecute) {
+      // restore
+      this.executeAndCheckTransaction = this._batchOriginalExecute as any;
+    }
+    this._batchOriginalExecute = undefined as any;
+    this._batchCalls = undefined;
+    this._batchImmediate = undefined;
+    this._batchSigner = undefined;
+    return result;
   }
 
   /**

@@ -1,3 +1,4 @@
+// @ts-nocheck - Allow this file to work in both Node.js deployment and browser admin UI contexts
 import {
   ADMIN_BANK_ENTITY_ID,
   BRIDGE_FEE_DENOMINATOR,
@@ -15,11 +16,38 @@ import {
   type ResourceWhitelistConfig,
 } from "@bibliothecadao/types";
 
-import chalk from "chalk";
+// Browser-compatible: Make chalk optional for browser environments
+let chalk: any;
+try {
+  chalk = require("chalk");
+} catch {
+  // Fallback for browser - no-op chalk
+  const noop = (str: string) => str;
+  chalk = {
+    cyan: noop,
+    yellow: noop,
+    white: noop,
+    gray: noop,
+    green: noop,
+    red: noop,
+    blue: noop,
+  };
+}
 
 import { getContractByName, NAMESPACE, type EternumProvider } from "@bibliothecadao/provider";
-import fs from "fs";
+
+// Browser-compatible: Make fs optional for browser environments
+let fs: any;
+try {
+  fs = require("fs");
+} catch {
+  // Fallback for browser - fs not available
+  fs = null;
+}
 import { byteArray, type Account } from "starknet";
+
+// Type compatibility for browser & Node environments
+type AnyAccount = any; // Use any to avoid version conflicts between environments
 import type { NetworkType } from "utils/environment";
 import type { Chain } from "utils/utils";
 import { addCommas, hourMinutesSeconds, inGameAmount, shortHexAddress } from "../utils/formatting";
@@ -72,6 +100,9 @@ export class GameConfigDeployer {
     await this.sleepNonLocal();
 
     await setBlitzRegistrationConfig(config);
+    await this.sleepNonLocal();
+
+    await grantCollectibleMinterRole(config);
     await this.sleepNonLocal();
 
     await setWonderBonusConfig(config);
@@ -1549,23 +1580,6 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
   );
 
   // Grant MINTER_ROLE to prize_distribution_systems for loot chest minting
-  console.log(
-    chalk.cyan(`
-    ┌─ ${chalk.yellow("Granting Minter Role")}
-    │  ${chalk.gray("Granting minter role for Loot Chest Contract to prize_distribution_systems...")}
-    └────────────────────────────────`),
-  );
-
-  const prizeDistributionSystemsAddr = getContractByName(config.provider.manifest, `${NAMESPACE}-prize_distribution_systems`);
-  const grantRoleTx = await config.provider.grant_collectible_minter_role({
-    signer: config.account,
-    collectible_address: collectibles_lootchest_address,
-    minter_address: prizeDistributionSystemsAddr,
-  });
-  console.log(
-    chalk.green(`    ✔ Minter role granted `) + chalk.gray(grantRoleTx.statusReceipt) + "\n",
-  );
-
   const blitzRegistrationTx = await config.provider.set_blitz_registration_config(registrationCalldata);
   console.log(
     chalk.green(`\n    ✔ Blitz registration configured `) + chalk.gray(blitzRegistrationTx.statusReceipt) + "\n",
@@ -1620,6 +1634,45 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
 
   const setSeasonTx = await config.provider.set_season_config(seasonCalldata);
   console.log(chalk.green(`    ✔ Season configured `) + chalk.gray(setSeasonTx.statusReceipt));
+};
+
+export const grantCollectibleMinterRole = async (config: Config) => {
+  if (!config.config.blitz?.mode?.on) {
+    console.log(chalk.yellow("⏭️  Skipping minter role grant (Blitz mode is off)"));
+    return;
+  }
+
+  if (!config.config.blitz?.registration?.collectibles_lootchest_address) {
+    console.log(chalk.yellow("⏭️  Skipping minter role grant (No loot chest address configured)"));
+    return;
+  }
+
+  console.log(
+    chalk.cyan(`\n
+  🎫 Grant Collectible Minter Role
+  ═══════════════════════════════`),
+  );
+
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Granting Minter Role")}
+    │  ${chalk.gray("Granting minter role for Loot Chest Contract to prize_distribution_systems...")}
+    └────────────────────────────────`),
+  );
+
+  const collectibles_lootchest_address = config.config.blitz.registration.collectibles_lootchest_address;
+  const prizeDistributionSystemsAddr = getContractByName(
+    config.provider.manifest,
+    `${NAMESPACE}-prize_distribution_systems`,
+  );
+
+  const grantRoleTx = await config.provider.grant_collectible_minter_role({
+    signer: config.account,
+    collectible_address: collectibles_lootchest_address,
+    minter_address: prizeDistributionSystemsAddr,
+  });
+
+  console.log(chalk.green(`    ✔ Minter role granted `) + chalk.gray(grantRoleTx.statusReceipt) + "\n");
 };
 
 export const createBanks = async (config: Config) => {
@@ -1767,6 +1820,10 @@ export const addLiquidity = async (config: Config) => {
 };
 
 export const nodeReadConfig = async (chain: Chain) => {
+  if (!fs) {
+    throw new Error("nodeReadConfig is only available in Node.js environment");
+  }
+
   try {
     let path = "./environments/data";
     switch (chain) {

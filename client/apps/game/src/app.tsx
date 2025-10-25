@@ -26,6 +26,7 @@ import { ConstructionGate } from "./ui/modules/construction-gate";
 import { LoadingScreen } from "./ui/modules/loading-screen";
 import { MobileBlocker } from "./ui/modules/mobile-blocker";
 import { getRandomBackgroundImage } from "./ui/utils/utils";
+import { ConfigAdminPage } from "./ui/features/admin-config";
 
 type ReadyAppProps = {
   backgroundImage: string;
@@ -46,6 +47,22 @@ const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
             <TransactionNotification />
             <World backgroundImage={backgroundImage} />
             <WorldLoading />
+          </StoryEventToastProvider>
+        </ErrorBoundary>
+      </MetagameProvider>
+    </DojoProvider>
+  );
+};
+
+const ReadyAdminApp = ({ setupResult, account }: Omit<ReadyAppProps, "backgroundImage">) => {
+  return (
+    <DojoProvider value={setupResult} account={account}>
+      <MetagameProvider>
+        <ErrorBoundary>
+          <StoryEventToastProvider>
+            <StoryEventToastBridge />
+            <TransactionNotification />
+            <ConfigAdminPage />
           </StoryEventToastProvider>
         </ErrorBoundary>
       </MetagameProvider>
@@ -95,6 +112,30 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
   return <ReadyApp backgroundImage={backgroundImage} setupResult={readyData.setupResult} account={readyData.account} />;
 };
 
+const AdminRoute = ({ backgroundImage }: { backgroundImage: string }) => {
+  const { activeStep, steps } = usePlayFlow(backgroundImage);
+
+  if (activeStep === "bootstrap-error") {
+    return <BootstrapError error={steps.bootstrap.error} onRetry={steps.bootstrap.retry} />;
+  }
+
+  if (activeStep === "bootstrap") {
+    return <LoadingScreen backgroundImage={backgroundImage} progress={steps.bootstrap.progress} />;
+  }
+
+  if (activeStep === "account" && steps.account.fallback) {
+    return <>{steps.account.fallback}</>;
+  }
+
+  const readyData = steps.ready;
+
+  if (!readyData.setupResult || !readyData.account) {
+    return <LoadingScreen backgroundImage={backgroundImage} progress={steps.bootstrap.progress} />;
+  }
+
+  return <ReadyAdminApp setupResult={readyData.setupResult} account={readyData.account} />;
+};
+
 function App() {
   const isConstructionMode = env.VITE_PUBLIC_CONSTRUCTION_FLAG == true;
   const isMobileBlocked = !isConstructionMode && IS_MOBILE;
@@ -137,6 +178,7 @@ function App() {
               <Route path="leaderboard" element={<LandingLeaderboard />} />
             </Route>
             <Route path="/play/*" element={<GameRoute backgroundImage={backgroundImage} />} />
+            <Route path="/config-admin" element={<AdminRoute backgroundImage={backgroundImage} />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </MusicRouterProvider>
