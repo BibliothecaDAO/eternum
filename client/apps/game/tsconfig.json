@@ -5,7 +5,8 @@
       "@/*": ["src/*"],
       "@config": ["../../../config/utils/utils"],
       "@config-deployer/*": ["../../../config/deployer/*"],
-      "@contracts": ["../../../contracts/utils/utils"]
+      "@contracts": ["../../../contracts/utils/utils"],
+      "@manifests/*": ["../../../contracts/game/*"]
     },
     "target": "ESNext",
     "useDefineForClassFields": true,

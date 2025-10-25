@@ -26,7 +26,7 @@ import { ConstructionGate } from "./ui/modules/construction-gate";
 import { LoadingScreen } from "./ui/modules/loading-screen";
 import { MobileBlocker } from "./ui/modules/mobile-blocker";
 import { getRandomBackgroundImage } from "./ui/utils/utils";
-import { ConfigAdminPage } from "./ui/features/admin-config";
+import { ConfigAdminPage, ConfigAdminPage2 } from "./ui/features/admin-config";
 
 type ReadyAppProps = {
   backgroundImage: string;
@@ -62,7 +62,10 @@ const ReadyAdminApp = ({ setupResult, account }: Omit<ReadyAppProps, "background
           <StoryEventToastProvider>
             <StoryEventToastBridge />
             <TransactionNotification />
-            <ConfigAdminPage />
+            <Routes>
+              <Route path="/" element={<ConfigAdminPage />} />
+              <Route path="/factory" element={<ConfigAdminPage2 />} />
+            </Routes>
           </StoryEventToastProvider>
         </ErrorBoundary>
       </MetagameProvider>
@@ -178,7 +181,7 @@ function App() {
               <Route path="leaderboard" element={<LandingLeaderboard />} />
             </Route>
             <Route path="/play/*" element={<GameRoute backgroundImage={backgroundImage} />} />
-            <Route path="/config-admin" element={<AdminRoute backgroundImage={backgroundImage} />} />
+            <Route path="/config-admin/*" element={<AdminRoute backgroundImage={backgroundImage} />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </MusicRouterProvider>

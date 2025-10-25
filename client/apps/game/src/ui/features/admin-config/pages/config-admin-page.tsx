@@ -5,7 +5,6 @@ import { useDojo } from "@bibliothecadao/react";
 import type { Config } from "@bibliothecadao/types";
 import {
   SetResourceFactoryConfig,
-  grantCollectibleMinterRole,
   setAgentConfig,
   setBattleConfig,
   setBlitzPreviousGame,
@@ -41,9 +40,9 @@ import {
   Coins,
   Database,
   DollarSign,
+  Factory,
   HelpCircle,
   Map,
-  Search,
   Server,
   Settings,
   Shield,
@@ -56,6 +55,7 @@ import {
   Zap
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 type TxState = { status: "idle" | "running" | "success" | "error"; hash?: string; error?: string };
 
@@ -514,6 +514,7 @@ const initializeConfigState = (config: Config, masterAddress: string): AdminConf
 };
 
 export const ConfigAdminPage = () => {
+  const navigate = useNavigate();
   const dojo = useDojo();
   const {
     account: { account },
@@ -684,15 +685,36 @@ export const ConfigAdminPage = () => {
 
       setTx({ status: "success", hash: receipt?.transaction_hash });
     } catch (e: any) {
+
       console.log("=".repeat(80));
       console.error("❌ BATCH DEPLOYMENT FAILED!");
       console.error("Error:", e?.message ?? String(e));
       console.error("Full error:", e);
       console.log("=".repeat(80));
-      setTx({ status: "error", error: e?.message ?? String(e) });
+
+      // Check if it was a user cancellation
+      const errorMessage = e?.message ?? String(e);
+      const isCancelled = errorMessage.toLowerCase().includes("cancel") ||
+                         errorMessage.toLowerCase().includes("reject") ||
+                         errorMessage.toLowerCase().includes("denied") ||
+                         errorMessage.toLowerCase().includes("timeout");
+
+      const displayError = isCancelled
+        ? "Transaction cancelled by user"
+        : errorMessage;
+
+      // Always set error state first to unblock UI
+      setTx({ status: "error", error: displayError });
+
+      // Try to cancel the batch (non-blocking) - with timeout
       try {
-        await provider.endBatch({ flush: false });
-      } catch {}
+        await Promise.race([
+          provider.endBatch({ flush: false }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Cancel timeout")), 2000))
+        ]);
+      } catch (cancelError) {
+        console.warn("Failed to cancel batch (this is expected if tx was cancelled):", cancelError);
+      }
     }
   };
 
@@ -746,6 +768,14 @@ export const ConfigAdminPage = () => {
             {/* Status Indicator and Connect Button */}
             <div className="flex items-center gap-3">
               <Controller className="bg-gradient-to-br from-gold/20 to-orange/20 border-gold/30 hover:from-gold/30 hover:to-orange/30" />
+              <Button
+                variant="outline"
+                onClick={() => navigate("/config-admin/factory")}
+                className="flex items-center gap-2 text-xs"
+              >
+                <Factory className="w-4 h-4" />
+                Factory Setup
+              </Button>
               {tx.status === "idle" && (
                 <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-xl border border-white/10">
                   <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
@@ -773,7 +803,7 @@ export const ConfigAdminPage = () => {
             </div>
           </div>
 
-          {/* Stats Cards */}
+          {/* Stats Cards
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
             <div className="bg-gradient-to-br from-green-500/10 to-green-600/5 border border-green-500/20 rounded-lg p-3 hover:scale-105 transition-transform duration-300">
               <div className="flex items-center justify-between">
@@ -794,11 +824,11 @@ export const ConfigAdminPage = () => {
                 <Activity className="w-6 h-6 text-gold/30" />
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Action Bar */}
           <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="flex-1 w-full relative">
+            {/* <div className="flex-1 w-full relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
               <input
                 type="text"
@@ -807,13 +837,13 @@ export const ConfigAdminPage = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 transition-all"
               />
-            </div>
+            </div> */}
 
             <div className="flex gap-3 w-full sm:w-auto">
               <Button
                 variant="gold"
                 size="md"
-                onClick={queueAndRun}
+                onClick={tx.status === "running" ? () => setTx({ status: "idle" }) : queueAndRun}
                 isLoading={tx.status === "running"}
                 className="flex-1 sm:flex-initial shadow-lg shadow-gold/20 hover:shadow-gold/40"
               >
@@ -844,11 +874,31 @@ export const ConfigAdminPage = () => {
           )}
 
           {tx.status === "error" && tx.error && (
-            <div className="mt-4 p-4 bg-red/10 border border-red/30 rounded-xl flex items-start gap-3">
-              <XCircle className="w-5 h-5 text-red flex-shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-red mb-1">Transaction Failed</p>
-                <p className="text-xs text-red/70">{tx.error}</p>
+            <div className="mt-4 p-4 bg-red/10 border border-red/30 rounded-xl">
+              <div className="flex items-start gap-3">
+                <XCircle className="w-5 h-5 text-red flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-red mb-1">Transaction Failed</p>
+                  <p className="text-xs text-red/70">{tx.error}</p>
+                </div>
+              </div>
+              <div className="mt-3 flex gap-2">
+                <Button
+                  variant="outline"
+                  size="xs"
+                  onClick={() => setTx({ status: "idle" })}
+                  className="border-red/30 text-red hover:bg-red/10"
+                >
+                  Dismiss
+                </Button>
+                <Button
+                  variant="gold"
+                  size="xs"
+                  onClick={queueAndRun}
+                  className="shadow-sm"
+                >
+                  Retry Deployment
+                </Button>
               </div>
             </div>
           )}
