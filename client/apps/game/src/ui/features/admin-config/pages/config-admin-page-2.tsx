@@ -56,7 +56,7 @@ const generateFactoryCalldata = (
   const calldata: any[] = [];
 
   // Version (felt252)
-  calldata.push(shortString.encodeShortString(version));
+  calldata.push(version);
 
   // Max actions (u64)
   calldata.push(maxActions);
