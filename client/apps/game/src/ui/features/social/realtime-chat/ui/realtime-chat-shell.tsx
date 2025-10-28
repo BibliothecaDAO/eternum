@@ -9,6 +9,7 @@ import {
   useRealtimeTotals,
 } from "../hooks/use-realtime-chat";
 import type { InitializeRealtimeClientParams } from "../model/types";
+import { useRealtimeChatStore } from "../model/store";
 import { DirectMessagesPanel } from "./direct-messages/direct-messages-panel";
 import { TabBar } from "./shared/tab-bar";
 import { UserDropdown } from "./shared/user-dropdown";
@@ -138,7 +139,29 @@ export function RealtimeChatShell({
     let content = `Chat Export - ${activeTab.label}\n`;
     content += `Exported at: ${new Date().toLocaleString()}\n\n`;
 
-    // Export logic here - similar to old chat
+    // Get messages based on tab type
+    const state = useRealtimeChatStore.getState();
+    if (activeTab.type === "world" || activeTab.type === "zone") {
+      const zone = state.worldZones[activeTab.targetId];
+      if (zone) {
+        zone.messages.forEach((msg) => {
+          const time = msg.createdAt instanceof Date ? msg.createdAt : new Date(msg.createdAt);
+          const timeStr = time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+          const senderName = msg.sender.displayName?.trim() || msg.sender.playerId || "Unknown";
+          content += `[${timeStr}] <${senderName}> ${msg.content}\n`;
+        });
+      }
+    } else if (activeTab.type === "dm") {
+      const thread = state.dmThreads[activeTab.targetId];
+      if (thread) {
+        thread.messages.forEach((msg) => {
+          const time = msg.createdAt instanceof Date ? msg.createdAt : new Date(msg.createdAt);
+          const timeStr = time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+          content += `[${timeStr}] <${msg.senderId}> ${msg.content}\n`;
+        });
+      }
+    }
+
     const blob = new Blob([content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

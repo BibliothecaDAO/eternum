@@ -65,7 +65,7 @@ export const TabBar: React.FC<TabBarProps> = ({
                 {tab.closeable !== false && (
                   <button
                     onClick={() => onTabClose(tab.id)}
-                    className="ml-1 text-gold/50 hover:text-gold transition-colors"
+                    className="ml-1 text-gold/50 hover:text-gold transition-colors text-2xl leading-none"
                     title="Close tab"
                   >
                     ×

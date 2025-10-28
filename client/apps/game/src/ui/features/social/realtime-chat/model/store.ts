@@ -998,6 +998,24 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         const response = await fetch(url.toString(), { headers });
 
         if (!response.ok) {
+          // Handle 404 gracefully - new threads don't have history yet
+          if (response.status === 404) {
+            set((state) => {
+              const existing = state.dmThreads[threadId];
+              if (!existing) return state;
+              return {
+                dmThreads: {
+                  ...state.dmThreads,
+                  [threadId]: {
+                    ...existing,
+                    hasMoreHistory: false,
+                    isFetchingHistory: false,
+                  },
+                },
+              };
+            });
+            return;
+          }
           throw new Error(`Failed to load direct chat history (${response.status})`);
         }
 
