@@ -72,35 +72,34 @@ jobs:
           echo "$HOME/.config/.slot/bin" >> $GITHUB_PATH
           echo "Slot version: $(~/.config/.slot/bin/slot --version)"
 
-      - name: Compute Torii name (prefix + timestamp, max 29)
+      - name: Compute Torii identifiers (name prefix + timestamped folder)
         id: name
         run: |
           set -euo pipefail
-          prefix="${{ github.event.inputs.torii_prefix }}"
+          prefix_raw="${{ github.event.inputs.torii_prefix }}"
           # sanitize prefix: lowercase, allow a-z0-9-
-          prefix=$(echo "$prefix" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]//g')
-          # UTC timestamp YYMMDDHHMMSS (12 chars) for compactness
-          ts=$(date -u +%y%m%d%H%M%S)
-          max_total=29
-          # max length for prefix considering hyphen and timestamp
-          max_prefix_len=$(( max_total - 1 - ${#ts} ))
-          if [ $max_prefix_len -lt 1 ]; then
-            # worst case fallback: no prefix
-            prefix=""
-            name="$ts"
+          prefix=$(echo "$prefix_raw" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]//g')
+
+          # Torii name: prefix only (trim to max 29)
+          max_name_len=29
+          if [ ${#prefix} -gt $max_name_len ]; then
+            name=${prefix:0:$max_name_len}
           else
-            if [ ${#prefix} -gt $max_prefix_len ]; then
-              prefix=${prefix:0:$max_prefix_len}
-            fi
-            if [ -n "$prefix" ]; then
-              name="$prefix-$ts"
-            else
-              name="$ts"
-            fi
+            name=$prefix
           fi
 
-          echo "Computed Torii name: $name"
+          # Timestamped folder: prefix-YYMMDDHHMMSS (or just timestamp if prefix empty)
+          ts=$(date -u +%y%m%d%H%M%S)
+          if [ -n "$prefix" ]; then
+            folder="$prefix-$ts"
+          else
+            folder="$ts"
+          fi
+
+          echo "Computed Torii name (prefix only): $name"
+          echo "Computed Torii folder (with timestamp): $folder"
           echo "torii_name=$name" >> "$GITHUB_OUTPUT"
+          echo "torii_folder=$folder" >> "$GITHUB_OUTPUT"
 
       - name: Render torii config from template
         id: render
@@ -111,7 +110,7 @@ jobs:
           WORLD_BLOCK: ${{ github.event.inputs.world_block }}
           NAMESPACES_RAW: ${{ github.event.inputs.torii_namespaces }}
           CONTRACTS_RAW: ${{ github.event.inputs.torii_external_contracts }}
-          TORII_NAME: ${{ steps.name.outputs.torii_name }}
+          TORII_FOLDER: ${{ steps.name.outputs.torii_folder }}
         run: |
           set -euo pipefail
           template="contracts/game/torii-template.toml"
@@ -121,7 +120,7 @@ jobs:
           fi
 
           # Prepare deployment directory
-          deploy_dir="contracts/game/factory-deployments/${ENV_NAME}/${TORII_NAME}"
+          deploy_dir="contracts/game/factory-deployments/${ENV_NAME}/${TORII_FOLDER}"
           mkdir -p "$deploy_dir"
           out_file="$deploy_dir/torii.toml"
 
@@ -138,7 +137,7 @@ jobs:
           contracts_raw = os.environ.get("CONTRACTS_RAW", "").strip()
 
           template = Path("contracts/game/torii-template.toml")
-          out_file = Path(f"contracts/game/factory-deployments/{env_name}/{os.environ['TORII_NAME']}/torii.toml")
+          out_file = Path(f"contracts/game/factory-deployments/{env_name}/{os.environ['TORII_FOLDER']}/torii.toml")
 
           if not template.exists():
               print(f"Missing template: {template}", file=sys.stderr)
