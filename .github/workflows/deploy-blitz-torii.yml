@@ -3,10 +3,6 @@ name: Deploy Single Torii
 on:
   workflow_dispatch:
     inputs:
-      code_ref:
-        description: 'Git ref to checkout code from (branch or tag)'
-        required: false
-        default: 'blitz'
       env:
         description: 'Environment label (used for grouping outputs)'
         required: false
@@ -65,7 +61,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.inputs.code_ref }}
+          ref: 'blitz'
 
       - name: Install Slot CLI
         run: |
