@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   useRealtimeChatActions,
@@ -103,6 +103,31 @@ const truncateWallet = (wallet?: string, visibleChars = 4) => {
     return normalized;
   }
   return `${normalized.slice(0, visibleChars + 2)}…${normalized.slice(-visibleChars)}`;
+};
+
+// Copyable wallet address component with visual feedback
+const CopyableWalletAddress = ({ address, truncated }: { address: string; truncated: string }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy address:", err);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="text-[10px] text-amber-300 hover:text-amber-200 transition-colors cursor-pointer"
+      title={`${address} (click to copy)`}
+    >
+      └─ {copied ? "✓ Copied!" : truncated}
+    </button>
+  );
 };
 
 export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelProps) {
@@ -225,9 +250,9 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
                           ))}
                         </span>
                       </div>
-                      {walletBadge && (
-                        <div className="text-[10px] text-amber-300 ml-4 mt-0.5" title={message.sender.walletAddress ?? undefined}>
-                          └─ {walletBadge}
+                      {walletBadge && message.sender.walletAddress && (
+                        <div className="ml-4 mt-0.5">
+                          <CopyableWalletAddress address={message.sender.walletAddress} truncated={walletBadge} />
                         </div>
                       )}
                     </li>
