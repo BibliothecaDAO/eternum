@@ -201,33 +201,19 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
                 </div>
               )}
 
-              <ul className="flex flex-col gap-1.5">
+              <ul className="flex flex-col gap-0.5">
                 {messages.map((message) => {
                   const senderName = formatSenderName(message);
                   const walletBadge = truncateWallet(message.sender.walletAddress);
                   const messageParts = processMessage(message.content);
                   return (
-                    <li key={message.id}>
-                      <article className="flex flex-col gap-1 rounded-md py-1.5 text-sm text-white/90">
-                        <header className="flex items-center justify-between gap-2 text-[11px]">
-                          <div className="flex min-w-0 items-center gap-2">
-                            <span className="max-w-[140px] truncate font-medium text-gold/90" title={senderName}>
-                              {senderName}
-                            </span>
-                            {walletBadge && (
-                              <span
-                                className="max-w-[100px] truncate rounded bg-black/30 px-1.5 py-0.5 text-[10px] font-medium text-amber-300"
-                                title={message.sender.walletAddress ?? undefined}
-                              >
-                                {walletBadge}
-                              </span>
-                            )}
-                          </div>
-                          <span className="whitespace-nowrap text-[10px] uppercase tracking-wide text-white/20">
-                            {formatWorldMessageTime(message)}
-                          </span>
-                        </header>
-                        <p className="whitespace-pre-wrap break-words text-[13px] leading-tight text-white/90">
+                    <li key={message.id} className="text-[13px] leading-tight text-white/90">
+                      <div>
+                        <span className="text-white/20">[{formatWorldMessageTime(message)}]</span>
+                        {" "}
+                        <span className="text-gold/90">&lt;{senderName}&gt;</span>
+                        {" "}
+                        <span className="break-words">
                           {messageParts.map((part, i) => (
                             <span key={i}>
                               {part.type === "text" ? (
@@ -237,8 +223,13 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
                               )}
                             </span>
                           ))}
-                        </p>
-                      </article>
+                        </span>
+                      </div>
+                      {walletBadge && (
+                        <div className="text-[10px] text-amber-300 ml-4 mt-0.5" title={message.sender.walletAddress ?? undefined}>
+                          └─ {walletBadge}
+                        </div>
+                      )}
                     </li>
                   );
                 })}

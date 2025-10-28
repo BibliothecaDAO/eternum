@@ -157,27 +157,17 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
                 </div>
               )}
 
-              <ul className="flex flex-col gap-1.5">
+              <ul className="flex flex-col gap-0.5">
                 {thread.messages.map((message) => {
                   const isOwn = selfAliases.includes(message.senderId);
                   const displayLabel = isOwn ? "You" : truncateIdentifier(message.senderId);
                   return (
-                    <li key={message.id}>
-                      <article className="flex flex-col gap-1 rounded-md py-1.5 text-sm text-white/90">
-                        <header className="flex items-center justify-between gap-2 text-[11px]">
-                          <div className="flex min-w-0 items-center gap-2">
-                            <span className="max-w-[140px] truncate font-medium text-gold/90" title={displayLabel}>
-                              {displayLabel}
-                            </span>
-                          </div>
-                          <span className="whitespace-nowrap text-[10px] uppercase tracking-wide text-white/20">
-                            {toDisplayTime(message)}
-                          </span>
-                        </header>
-                        <p className="whitespace-pre-wrap break-words text-[13px] leading-tight text-white/90">
-                          {message.content}
-                        </p>
-                      </article>
+                    <li key={message.id} className="text-[13px] leading-tight text-white/90">
+                      <span className="text-white/20">[{toDisplayTime(message)}]</span>
+                      {" "}
+                      <span className="text-gold/90">&lt;{displayLabel}&gt;</span>
+                      {" "}
+                      <span className="break-words">{message.content}</span>
                     </li>
                   );
                 })}
