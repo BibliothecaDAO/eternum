@@ -203,6 +203,9 @@ jobs:
 
           echo "config_path=$out_file" >> "$GITHUB_OUTPUT"
           echo "deploy_dir=$deploy_dir" >> "$GITHUB_OUTPUT"
+          echo "----- Rendered torii.toml ($out_file) -----"
+          cat "$out_file"
+          echo "-------------------------------------------"
 
       - name: Create Torii slot instance
         env:
