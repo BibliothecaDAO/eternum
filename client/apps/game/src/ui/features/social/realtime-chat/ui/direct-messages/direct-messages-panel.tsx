@@ -143,11 +143,6 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
 
   return (
     <section className={`flex h-full min-h-0 flex-1 flex-col ${className ?? ""}`}>
-      <header className="border-b border-gold/30 px-4 py-3">
-        <div>
-          <h2 className="text-sm font-semibold text-gold">{recipientLabel ?? "Direct Messages"}</h2>
-        </div>
-      </header>
       <div className="flex-1 min-h-0 px-4 py-3">
         {!thread && <p className="text-sm text-gold/50">Select a conversation to get started.</p>}
         {thread && (

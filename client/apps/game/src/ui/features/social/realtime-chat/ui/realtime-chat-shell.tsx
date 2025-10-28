@@ -1,19 +1,18 @@
 import { ReactNode, useEffect, useMemo, useState } from "react";
 
-import { Button } from "@/ui/design-system/atoms";
 import {
   useRealtimeChatActions,
   useRealtimeChatInitializer,
   useRealtimeChatSelector,
   useRealtimeConnection,
-  useRealtimeTotals,
   useRealtimePresence,
+  useRealtimeTotals,
 } from "../hooks/use-realtime-chat";
-import type { InitializeRealtimeClientParams, ChatTab } from "../model/types";
+import type { InitializeRealtimeClientParams } from "../model/types";
 import { DirectMessagesPanel } from "./direct-messages/direct-messages-panel";
-import { WorldChatPanel } from "./world-chat/world-chat-panel";
 import { TabBar } from "./shared/tab-bar";
 import { UserDropdown } from "./shared/user-dropdown";
+import { WorldChatPanel } from "./world-chat/world-chat-panel";
 
 export interface RealtimeChatShellProps {
   initializer?: InitializeRealtimeClientParams | null;
@@ -156,27 +155,26 @@ export function RealtimeChatShell({
   return (
     <div className={`w-full ${className ?? ""}`}>
       <div
-        className={`flex flex-col overflow-hidden transition-all duration-300 bg-black/30 hover:bg-black/60 ${
-          isExpanded ? (isHeightExpanded ? "h-[600px]" : "h-72") : "h-14"
-        } w-[800px] max-w-[45vw]`}
+        className={`flex flex-col overflow-hidden transition-all duration-300 ${
+          isExpanded ? (isHeightExpanded ? "h-[600px]" : "h-72") : "h-12"
+        } w-[800px] max-w-[45vw] ${isExpanded ? "bg-black/30 hover:bg-black/60" : "bg-transparent"}`}
       >
         {/* Header - Only shown when not expanded */}
         {!isExpanded && (
-          <div className="flex items-center justify-center w-full h-full px-4">
-            <Button
+          <div className="flex items-center justify-end w-full h-full px-2">
+            <button
               type="button"
-              variant="outline"
               onClick={toggleExpanded}
-              className="flex items-center gap-2 px-4 py-2 transition text-gold hover:text-white border-gold/30 hover:border-gold bg-black/20 hover:bg-black/40"
+              className="flex items-center gap-2 px-3 py-1 mr-20 mb-3 transition text-gold/70 hover:text-gold border border-gold/30 hover:border-gold bg-black/20 hover:bg-black/40 rounded text-xs"
             >
-              <span className="text-sm font-semibold">📊 Open Chat</span>
+              <span className="font-medium">Open Chat</span>
               {(unreadWorldTotal > 0 || unreadDirectTotal > 0) && (
-                <span className="bg-red/40 text-white text-xs px-2 py-0.5 rounded-full">
-                  {unreadWorldTotal + unreadDirectTotal} unread
+                <span className="bg-red/40 text-white text-[10px] px-1.5 py-0.5 rounded-full">
+                  {unreadWorldTotal + unreadDirectTotal}
                 </span>
               )}
               <span
-                className={`h-2 w-2 rounded-full ${
+                className={`h-1.5 w-1.5 rounded-full ${
                   connectionStatus === "connected"
                     ? "bg-emerald-400 animate-pulse"
                     : connectionStatus === "error"
@@ -184,7 +182,7 @@ export function RealtimeChatShell({
                       : "bg-neutral-500"
                 }`}
               />
-            </Button>
+            </button>
           </div>
         )}
 
