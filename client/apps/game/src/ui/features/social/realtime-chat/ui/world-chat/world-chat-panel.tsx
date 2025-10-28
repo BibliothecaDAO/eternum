@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   useRealtimeChatActions,
   useRealtimeChatSelector,
+  useRealtimePresence,
   useRealtimeWorldZone,
   useWorldChatControls,
 } from "../../hooks/use-realtime-chat";
@@ -120,13 +121,13 @@ const CopyableWalletAddress = ({ address, truncated }: { address: string; trunca
   };
 
   return (
-    <button
+    <span
       onClick={handleCopy}
       className="text-[10px] text-amber-300 hover:text-amber-200 transition-colors cursor-pointer"
       title={`${address} (click to copy)`}
     >
       └─ {copied ? "✓ Copied!" : truncated}
-    </button>
+    </span>
   );
 };
 
@@ -138,9 +139,25 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
   const { zone, isActive } = useRealtimeWorldZone(resolvedZoneId);
   const { sendMessage, loadHistory, markAsRead, setActive } = useWorldChatControls(resolvedZoneId);
   const messages = zone?.messages ?? [];
+  const presence = useRealtimePresence();
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const topSentinelRef = useRef<HTMLDivElement | null>(null);
   const isLoadingRef = useRef(false);
+
+  const handleUserClick = (userId: string) => {
+    const threadId = actions.openDirectThread(userId);
+    if (threadId) {
+      const user = presence.find((p) => p.playerId === userId);
+      const displayName = user?.displayName ?? userId;
+      actions.addTab({
+        id: `dm-${threadId}`,
+        type: "dm",
+        label: displayName.slice(0, 12),
+        targetId: threadId,
+        unreadCount: 0,
+      });
+    }
+  };
 
   useEffect(() => {
     if (resolvedZoneId) {
@@ -236,7 +253,13 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
                       <div>
                         <span className="text-white/20">[{formatWorldMessageTime(message)}]</span>
                         {" "}
-                        <span className="text-gold/90">&lt;{senderName}&gt;</span>
+                        <span
+                          onClick={() => handleUserClick(message.sender.playerId)}
+                          className="text-gold/90 hover:text-gold transition-colors cursor-pointer"
+                          title={`Click to send DM to ${senderName}`}
+                        >
+                          &lt;{senderName}&gt;
+                        </span>
                         {" "}
                         <span className="break-words">
                           {messageParts.map((part, i) => (
