@@ -60,40 +60,42 @@ export const TabBar: React.FC<TabBarProps> = ({
                     </span>
                   )}
                 </button>
-                <button
-                  onClick={() => onTabClose(tab.id)}
-                  className="ml-1 text-gold/50 hover:text-gold transition-colors"
-                  title="Close tab"
-                >
-                  ×
-                </button>
+                {tab.closeable !== false && (
+                  <button
+                    onClick={() => onTabClose(tab.id)}
+                    className="ml-1 text-gold/50 hover:text-gold transition-colors"
+                    title="Close tab"
+                  >
+                    ×
+                  </button>
+                )}
               </div>
             );
           })}
         </div>
       </div>
 
-      <div className="flex items-center gap-1 flex-shrink-0">
+      <div className="flex items-center gap-1 flex-shrink-0 border-l border-gold/30 pl-2">
         <button
           onClick={onSave}
-          className="px-2 py-1 text-xs text-gold/70 hover:text-gold transition-colors"
-          title="Save chat"
+          className="px-2 py-1 text-xs text-gold/70 hover:text-gold hover:bg-gold/10 rounded transition-all"
+          title="Save chat to file"
         >
-          Save
-        </button>
-        <button
-          onClick={onMinimize}
-          className="px-2 py-1 text-xs text-gold/70 hover:text-gold transition-colors"
-          title="Minimize"
-        >
-          −
+          💾
         </button>
         <button
           onClick={onToggleExpand}
-          className="px-2 py-1 text-xs text-gold/70 hover:text-gold transition-colors"
+          className="px-2 py-1 text-xs text-gold/70 hover:text-gold hover:bg-gold/10 rounded transition-all"
           title={isExpanded ? "Collapse" : "Expand"}
         >
           ↕
+        </button>
+        <button
+          onClick={onMinimize}
+          className="px-2 py-1 text-xs text-gold/70 hover:text-gold hover:bg-gold/10 rounded transition-all"
+          title="Minimize chat"
+        >
+          −
         </button>
       </div>
     </div>

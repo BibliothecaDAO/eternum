@@ -44,6 +44,7 @@ export interface ChatTab {
   label: string;
   targetId: string; // zoneId for world/zone, threadId for dm
   unreadCount: number;
+  closeable?: boolean; // If false, tab cannot be closed (e.g., World tab)
 }
 
 export interface WorldChatZoneState {

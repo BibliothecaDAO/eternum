@@ -61,6 +61,7 @@ export function RealtimeChatShell({
             label: `World`,
             targetId: defaultZoneId,
             unreadCount: 0,
+            closeable: false, // World tab cannot be closed
           });
         }
       }
@@ -77,6 +78,7 @@ export function RealtimeChatShell({
           label: `World`,
           targetId: defaultZoneId,
           unreadCount: 0,
+          closeable: false, // World tab cannot be closed
         });
       }
     }
@@ -160,47 +162,30 @@ export function RealtimeChatShell({
       >
         {/* Header - Only shown when not expanded */}
         {!isExpanded && (
-          <header className="flex items-center justify-between bg-transparent text-xs uppercase tracking-wide border-b border-gold/30 px-2 py-1">
+          <div className="flex items-center justify-center w-full h-full px-4">
             <Button
               type="button"
               variant="outline"
               onClick={toggleExpanded}
-              className="flex items-center gap-2 px-2 py-1 transition text-gold/70 hover:text-gold border-gold/30"
+              className="flex items-center gap-2 px-4 py-2 transition text-gold hover:text-white border-gold/30 hover:border-gold bg-black/20 hover:bg-black/40"
             >
-              <span className="text-[11px] font-semibold">Open Chat</span>
+              <span className="text-sm font-semibold">📊 Open Chat</span>
+              {(unreadWorldTotal > 0 || unreadDirectTotal > 0) && (
+                <span className="bg-red/40 text-white text-xs px-2 py-0.5 rounded-full">
+                  {unreadWorldTotal + unreadDirectTotal} unread
+                </span>
+              )}
               <span
-                className={`h-2 w-2 rounded-full animate-pulse ${
+                className={`h-2 w-2 rounded-full ${
                   connectionStatus === "connected"
-                    ? "bg-emerald-400"
+                    ? "bg-emerald-400 animate-pulse"
                     : connectionStatus === "error"
                       ? "bg-red-400"
                       : "bg-neutral-500"
                 }`}
               />
             </Button>
-            <div className="flex items-center gap-3 text-[11px]">
-              <span className="flex items-center gap-1 normal-case text-gold/70">
-                World
-                <span
-                  className={`${unreadBadgeClass} ${
-                    unreadWorldTotal > 0 ? "bg-red/30 text-white animate-pulse" : "border-gold/30 text-gold/50"
-                  }`}
-                >
-                  {unreadWorldTotal}
-                </span>
-              </span>
-              <span className="flex items-center gap-1 normal-case text-gold/70">
-                DM
-                <span
-                  className={`${unreadBadgeClass} ${
-                    unreadDirectTotal > 0 ? "bg-red/30 text-white animate-pulse" : "border-gold/30 text-gold/50"
-                  }`}
-                >
-                  {unreadDirectTotal}
-                </span>
-              </span>
-            </div>
-          </header>
+          </div>
         )}
 
         {isExpanded && (

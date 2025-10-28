@@ -77,12 +77,53 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
   }, [recipientId, onlinePlayers]);
 
   const { sendMessage, loadHistory, markAsRead } = useDirectMessageControls(resolvedThreadId, recipientId);
+  const topSentinelRef = useRef<HTMLDivElement | null>(null);
+  const isLoadingRef = useRef(false);
 
   useEffect(() => {
     if (resolvedThreadId) {
       markAsRead();
     }
   }, [markAsRead, resolvedThreadId]);
+
+  // Initial load of messages
+  useEffect(() => {
+    if (resolvedThreadId && thread && thread.messages.length === 0 && thread.hasMoreHistory && !thread.isFetchingHistory) {
+      loadHistory(undefined);
+    }
+  }, [resolvedThreadId, thread, loadHistory]);
+
+  // Intersection Observer for auto-loading older messages on scroll
+  useEffect(() => {
+    const sentinel = topSentinelRef.current;
+    if (!sentinel || !thread?.hasMoreHistory) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting && !thread.isFetchingHistory && thread.hasMoreHistory && !isLoadingRef.current) {
+          isLoadingRef.current = true;
+          const currentScrollHeight = scrollContainerRef.current?.scrollHeight ?? 0;
+
+          loadHistory(thread.lastFetchedCursor ?? undefined).then(() => {
+            // Maintain scroll position after loading
+            requestAnimationFrame(() => {
+              if (scrollContainerRef.current) {
+                const newScrollHeight = scrollContainerRef.current.scrollHeight;
+                const scrollDiff = newScrollHeight - currentScrollHeight;
+                scrollContainerRef.current.scrollTop += scrollDiff;
+              }
+              isLoadingRef.current = false;
+            });
+          });
+        }
+      },
+      { threshold: 0.1, rootMargin: "100px" }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [thread?.hasMoreHistory, thread?.isFetchingHistory, thread?.lastFetchedCursor, loadHistory]);
 
   const typing = useMemo(() => {
     if (!resolvedThreadId) return [];
@@ -111,16 +152,16 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
         {!thread && <p className="text-sm text-gold/50">Select a conversation to get started.</p>}
         {thread && (
           <div className="flex h-full min-h-0 flex-col overflow-hidden">
-            {thread.hasMoreHistory && (
-              <button
-                type="button"
-                onClick={() => loadHistory(thread.lastFetchedCursor ?? undefined)}
-                className="mb-3 w-full rounded border border-gold/30 px-2 py-1 text-xs text-gold/70 transition hover:border-gold hover:text-gold"
-              >
-                Load older messages
-              </button>
-            )}
-            <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto pr-1">
+            <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto pr-1 scroll-smooth">
+              {/* Sentinel for auto-loading older messages */}
+              <div ref={topSentinelRef} className="h-1" />
+
+              {thread.isFetchingHistory && (
+                <div className="flex justify-center py-2">
+                  <span className="text-xs text-gold/50">Loading older messages...</span>
+                </div>
+              )}
+
               <ul className="flex flex-col gap-1.5">
                 {thread.messages.map((message) => {
                   const isOwn = selfAliases.includes(message.senderId);

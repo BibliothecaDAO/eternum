@@ -148,6 +148,8 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
   const messages = zone?.messages ?? [];
   const messageGroups = useMemo(() => groupMessages(messages), [messages]);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const topSentinelRef = useRef<HTMLDivElement | null>(null);
+  const isLoadingRef = useRef(false);
 
   useEffect(() => {
     if (resolvedZoneId) {
@@ -162,6 +164,14 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
     }
   }, [isActive, markAsRead, resolvedZoneId]);
 
+  // Initial load of messages
+  useEffect(() => {
+    if (resolvedZoneId && zone && messages.length === 0 && zone.hasMoreHistory && !zone.isFetchingHistory) {
+      loadHistory(undefined);
+    }
+  }, [resolvedZoneId, zone, messages.length]);
+
+  // Auto-scroll to bottom on new messages
   useEffect(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
@@ -170,6 +180,38 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
       el.scrollTop = el.scrollHeight;
     }
   }, [messages.length, isActive]);
+
+  // Intersection Observer for auto-loading older messages on scroll
+  useEffect(() => {
+    const sentinel = topSentinelRef.current;
+    if (!sentinel || !zone?.hasMoreHistory) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting && !zone.isFetchingHistory && zone.hasMoreHistory && !isLoadingRef.current) {
+          isLoadingRef.current = true;
+          const currentScrollHeight = scrollContainerRef.current?.scrollHeight ?? 0;
+
+          loadHistory(zone.lastFetchedCursor ?? undefined).then(() => {
+            // Maintain scroll position after loading
+            requestAnimationFrame(() => {
+              if (scrollContainerRef.current) {
+                const newScrollHeight = scrollContainerRef.current.scrollHeight;
+                const scrollDiff = newScrollHeight - currentScrollHeight;
+                scrollContainerRef.current.scrollTop += scrollDiff;
+              }
+              isLoadingRef.current = false;
+            });
+          });
+        }
+      },
+      { threshold: 0.1, rootMargin: "100px" }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [zone?.hasMoreHistory, zone?.isFetchingHistory, zone?.lastFetchedCursor, loadHistory]);
 
   const displayLabel = useMemo(() => {
     if (zoneLabel) return zoneLabel;
@@ -188,17 +230,17 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
         {!zone && <p className="text-sm text-gold/50">Join a zone to view chat.</p>}
         {zone && (
           <div className="flex h-full min-h-0 flex-col overflow-hidden">
-            {zone.hasMoreHistory && (
-              <button
-                type="button"
-                onClick={() => loadHistory(zone.lastFetchedCursor ?? undefined)}
-                className="mb-3 w-full rounded border border-gold/30 px-2 py-1 text-xs text-gold/70 transition hover:border-gold hover:text-gold"
-              >
-                Load older messages
-              </button>
-            )}
-            <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto pr-1">
-              {messageGroups.length === 0 && (
+            <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto pr-1 scroll-smooth">
+              {/* Sentinel for auto-loading older messages */}
+              <div ref={topSentinelRef} className="h-1" />
+
+              {zone.isFetchingHistory && (
+                <div className="flex justify-center py-2">
+                  <span className="text-xs text-gold/50">Loading older messages...</span>
+                </div>
+              )}
+
+              {messageGroups.length === 0 && !zone.isFetchingHistory && (
                 <p className="text-sm text-gold/50">No messages yet. Be the first to say hello!</p>
               )}
               {messageGroups.map((group, groupIndex) => (
