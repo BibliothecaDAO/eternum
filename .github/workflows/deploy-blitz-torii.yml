@@ -1,35 +1,28 @@
-name: 🚀 Deploy Single Torii
+name: Deploy Single Torii
 
 on:
   workflow_dispatch:
     inputs:
-      # — Environment / Template —
       env:
         description: 'Environment label (used for grouping outputs)'
-        required: true
+        required: false
         default: 'sepolia'
-
-      # — Torii Naming / Version —
       torii_prefix:
         description: 'Prefix for Torii name (will be trimmed if too long)'
-        required: true
+        required: false
         default: 'eternum-torii'
       torii_version:
         description: 'Torii version to deploy'
-        required: true
+        required: false
         default: 'v1.7.0-alpha.5'
-
-      # — Slot Deployment —
       slot_team:
         description: 'Cartridge Slot team name'
-        required: true
+        required: false
         default: 'realms-eternum'
       torii_tier:
         description: 'Cartridge Slot tier'
-        required: true
+        required: false
         default: 'pro'
-
-      # — Torii Config —
       rpc_url:
         description: 'Starknet RPC URL'
         required: true
@@ -38,11 +31,11 @@ on:
         required: true
       world_block:
         description: 'Starting world block number'
-        required: true
+        required: false
         default: '0'
       torii_namespaces:
         description: 'Comma-separated namespaces (e.g. s1_eternum,ds_v1_2_0)'
-        required: true
+        required: false
         default: 's1_eternum'
       torii_external_contracts:
         description: 'External contracts to index (one per line: erc721:0x..., erc20:0x...)'
@@ -69,7 +62,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 🎰 Install Slot CLI
+      - name: Install Slot CLI
         run: |
           set -euo pipefail
           echo "Installing Slot CLI via slotup..."
@@ -78,12 +71,11 @@ jobs:
           echo "$HOME/.config/.slot/bin" >> $GITHUB_PATH
           echo "Slot version: $(~/.config/.slot/bin/slot --version)"
 
-      - name: 🧮 Compute Torii name (prefix + timestamp, max 29)
+      - name: Compute Torii name (prefix + timestamp, max 29)
         id: name
-        shell: bash
         run: |
           set -euo pipefail
-          prefix="${{ inputs.torii_prefix }}"
+          prefix="${{ github.event.inputs.torii_prefix }}"
           # sanitize prefix: lowercase, allow a-z0-9-
           prefix=$(echo "$prefix" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]//g')
           # UTC timestamp YYMMDDHHMMSS (12 chars) for compactness
@@ -109,16 +101,15 @@ jobs:
           echo "Computed Torii name: $name"
           echo "torii_name=$name" >> "$GITHUB_OUTPUT"
 
-      - name: 🧩 Render torii config from template
+      - name: Render torii config from template
         id: render
-        shell: bash
         env:
-          ENV_NAME: ${{ inputs.env }}
-          RPC_URL: ${{ inputs.rpc_url }}
-          WORLD_ADDRESS: ${{ inputs.torii_world_address }}
-          WORLD_BLOCK: ${{ inputs.world_block }}
-          NAMESPACES_RAW: ${{ inputs.torii_namespaces }}
-          CONTRACTS_RAW: ${{ inputs.torii_external_contracts }}
+          ENV_NAME: ${{ github.event.inputs.env }}
+          RPC_URL: ${{ github.event.inputs.rpc_url }}
+          WORLD_ADDRESS: ${{ github.event.inputs.torii_world_address }}
+          WORLD_BLOCK: ${{ github.event.inputs.world_block }}
+          NAMESPACES_RAW: ${{ github.event.inputs.torii_namespaces }}
+          CONTRACTS_RAW: ${{ github.event.inputs.torii_external_contracts }}
           TORII_NAME: ${{ steps.name.outputs.torii_name }}
         run: |
           set -euo pipefail
@@ -135,88 +126,88 @@ jobs:
 
           # Render using Python for robust string munging
           python3 - << 'PY'
-import os, sys, re
-from pathlib import Path
+          import os, sys, re
+          from pathlib import Path
 
-env_name = os.environ["ENV_NAME"]
-rpc = os.environ["RPC_URL"].strip()
-world = os.environ["WORLD_ADDRESS"].strip()
-world_block_raw = os.environ.get("WORLD_BLOCK", "0").strip() or "0"
-namespaces_raw = os.environ.get("NAMESPACES_RAW", "").strip()
-contracts_raw = os.environ.get("CONTRACTS_RAW", "").strip()
+          env_name = os.environ["ENV_NAME"]
+          rpc = os.environ["RPC_URL"].strip()
+          world = os.environ["WORLD_ADDRESS"].strip()
+          world_block_raw = os.environ.get("WORLD_BLOCK", "0").strip() or "0"
+          namespaces_raw = os.environ.get("NAMESPACES_RAW", "").strip()
+          contracts_raw = os.environ.get("CONTRACTS_RAW", "").strip()
 
-template = Path("contracts/game/torii-template.toml")
-out_file = Path(f"contracts/game/factory-deployments/{env_name}/{os.environ['TORII_NAME']}/torii.toml")
+          template = Path("contracts/game/torii-template.toml")
+          out_file = Path(f"contracts/game/factory-deployments/{env_name}/{os.environ['TORII_NAME']}/torii.toml")
 
-if not template.exists():
-    print(f"Missing template: {template}", file=sys.stderr)
-    sys.exit(1)
+          if not template.exists():
+              print(f"Missing template: {template}", file=sys.stderr)
+              sys.exit(1)
 
-text = template.read_text()
+          text = template.read_text()
 
-# Validate and normalize world_block
-try:
-    world_block = str(int(world_block_raw))
-except Exception:
-    print(f"Invalid WORLD_BLOCK, expected integer got: {world_block_raw}", file=sys.stderr)
-    sys.exit(1)
+          # Validate and normalize world_block
+          try:
+              world_block = str(int(world_block_raw))
+          except Exception:
+              print(f"Invalid WORLD_BLOCK, expected integer got: {world_block_raw}", file=sys.stderr)
+              sys.exit(1)
 
-# Namespaces to TOML list string
-namespaces = []
-if namespaces_raw:
-    for part in namespaces_raw.split(','):
-        item = part.strip()
-        if item:
-            namespaces.append(item)
-namespaces_str = ", ".join(f'"{n}"' for n in namespaces) if namespaces else ''
+          # Namespaces to TOML list string
+          namespaces = []
+          if namespaces_raw:
+              for part in namespaces_raw.split(','):
+                  item = part.strip()
+                  if item:
+                      namespaces.append(item)
+          namespaces_str = ", ".join(f'"{n}"' for n in namespaces) if namespaces else ''
 
-# Contracts: multiline, one per line; we will replace the full line containing {CONTRACTS}
-contracts_list = []
-if contracts_raw:
-    for line in contracts_raw.splitlines():
-        val = line.strip().strip('"').rstrip(',')
-        if val:
-            contracts_list.append(val)
+          # Contracts: multiline, one per line; we will replace the full line containing {CONTRACTS}
+          contracts_list = []
+          if contracts_raw:
+              for line in contracts_raw.splitlines():
+                  val = line.strip().strip('"').rstrip(',')
+                  if val:
+                      contracts_list.append(val)
 
-def replace_placeholder_line(full_text, placeholder, lines):
-    out_lines = []
-    for raw in full_text.splitlines(True):  # keep newlines
-        if placeholder in raw:
-            # capture original indentation (spaces/tabs before placeholder)
-            m = re.match(r"^([\t ]*)", raw)
-            indent = m.group(1) if m else ""
-            if lines:
-                out_lines.extend([f"{indent}\"{v}\",\n" for v in lines])
-            else:
-                # leave a clean blank line with same indentation
-                out_lines.append(indent + "\n")
-        else:
-            out_lines.append(raw)
-    return "".join(out_lines)
+          def replace_placeholder_line(full_text, placeholder, lines):
+              out_lines = []
+              for raw in full_text.splitlines(True):  # keep newlines
+                  if placeholder in raw:
+                      # capture original indentation (spaces/tabs before placeholder)
+                      m = re.match(r"^([\t ]*)", raw)
+                      indent = m.group(1) if m else ""
+                      if lines:
+                          out_lines.extend([f"{indent}\"{v}\",\n" for v in lines])
+                      else:
+                          # leave a clean blank line with same indentation
+                          out_lines.append(indent + "\n")
+                  else:
+                      out_lines.append(raw)
+              return "".join(out_lines)
 
-# Basic scalar replacements
-text = (text
-    .replace("{RPC_URL}", rpc)
-    .replace("{WORLD_ADDRESS}", world)
-    .replace("{WORLD_BLOCK}", world_block)
-    .replace("{NAMESPACE}", namespaces_str)
-)
+          # Basic scalar replacements
+          text = (text
+              .replace("{RPC_URL}", rpc)
+              .replace("{WORLD_ADDRESS}", world)
+              .replace("{WORLD_BLOCK}", world_block)
+              .replace("{NAMESPACE}", namespaces_str)
+          )
 
-# Structured replacement for {CONTRACTS} preserving indentation and avoiding extra blank lines
-text = replace_placeholder_line(text, "{CONTRACTS}", contracts_list)
+          # Structured replacement for {CONTRACTS} preserving indentation and avoiding extra blank lines
+          text = replace_placeholder_line(text, "{CONTRACTS}", contracts_list)
 
-out_file.write_text(text)
-print(f"Rendered: {out_file}")
-PY
+          out_file.write_text(text)
+          print(f"Rendered: {out_file}")
+          PY
 
           echo "config_path=$out_file" >> "$GITHUB_OUTPUT"
           echo "deploy_dir=$deploy_dir" >> "$GITHUB_OUTPUT"
 
-      - name: 🆕 Create Torii slot instance
+      - name: Create Torii slot instance
         env:
-          TEAM: ${{ inputs.slot_team }}
-          TIER: ${{ inputs.torii_tier }}
-          VERSION: ${{ inputs.torii_version }}
+          TEAM: ${{ github.event.inputs.slot_team }}
+          TIER: ${{ github.event.inputs.torii_tier }}
+          VERSION: ${{ github.event.inputs.torii_version }}
           NAME: ${{ steps.name.outputs.torii_name }}
           CONFIG: ${{ steps.render.outputs.config_path }}
         run: |
@@ -231,12 +222,12 @@ PY
             --version "$VERSION" \
             --config "$CONFIG"
 
-      - name: 💾 Commit and push torii config
+      - name: Commit and push torii config
         if: success()
         env:
           DEPLOY_DIR: ${{ steps.render.outputs.deploy_dir }}
           NAME: ${{ steps.name.outputs.torii_name }}
-          ENV_NAME: ${{ inputs.env }}
+          ENV_NAME: ${{ github.event.inputs.env }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -249,13 +240,13 @@ PY
             git push
           fi
 
-      - name: 📊 Summary
+      - name: Summary
         if: always()
         env:
           NAME: ${{ steps.name.outputs.torii_name }}
-          ENV_NAME: ${{ inputs.env }}
+          ENV_NAME: ${{ github.event.inputs.env }}
           CONFIG: ${{ steps.render.outputs.config_path }}
-          VERSION: ${{ inputs.torii_version }}
+          VERSION: ${{ github.event.inputs.torii_version }}
         run: |
           {
             echo "## Torii Deployment";
