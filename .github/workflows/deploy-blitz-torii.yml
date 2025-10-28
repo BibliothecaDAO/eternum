@@ -163,12 +163,23 @@ jobs:
           namespaces_str = ", ".join(f'"{n}"' for n in namespaces) if namespaces else ''
 
           # Contracts: multiline, one per line; we will replace the full line containing {CONTRACTS}
-          contracts_list = []
-          if contracts_raw:
-              for line in contracts_raw.splitlines():
-                  val = line.strip().strip('"').rstrip(',')
-                  if val:
-                      contracts_list.append(val)
+          def parse_contracts(s: str):
+              s = s.strip()
+              if not s:
+                  return []
+              # Strip surrounding quotes if the whole payload is quoted
+              if (s.startswith('"') and s.endswith('"')) or (s.startswith("'") and s.endswith("'")):
+                  s = s[1:-1]
+              # Turn literal \n into real newlines if present
+              s = s.replace('\\n', '\n')
+              items = []
+              for part in re.split(r'[\r\n,]+', s):
+                  tok = part.strip().strip('"').strip("'")
+                  if tok:
+                      items.append(tok)
+              return items
+
+          contracts_list = parse_contracts(contracts_raw)
 
           def replace_placeholder_line(full_text, placeholder, lines):
               out_lines = []
