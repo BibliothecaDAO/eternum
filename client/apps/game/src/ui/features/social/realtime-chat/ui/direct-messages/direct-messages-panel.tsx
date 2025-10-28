@@ -141,6 +141,37 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
     }
   }, [thread?.messages.length, thread?.unreadCount]);
 
+  // Scroll to bottom when panel becomes visible or resizes
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el || !resolvedThreadId) return;
+
+    // Delay to ensure content is rendered
+    const timer = setTimeout(() => {
+      el.scrollTop = el.scrollHeight;
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [resolvedThreadId]);
+
+  // Scroll to bottom when container height changes (expand/collapse)
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      // Scroll to bottom when height increases
+      requestAnimationFrame(() => {
+        if (el) {
+          el.scrollTop = el.scrollHeight;
+        }
+      });
+    });
+
+    resizeObserver.observe(el);
+    return () => resizeObserver.disconnect();
+  }, []);
+
   return (
     <section className={`flex h-full min-h-0 flex-1 flex-col ${className ?? ""}`}>
       <div className="flex-1 min-h-0 px-4 py-3">

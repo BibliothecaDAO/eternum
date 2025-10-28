@@ -189,6 +189,37 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
     }
   }, [messages.length, isActive]);
 
+  // Scroll to bottom when panel becomes visible or resizes
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+
+    // Delay to ensure content is rendered
+    const timer = setTimeout(() => {
+      el.scrollTop = el.scrollHeight;
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [isActive]);
+
+  // Scroll to bottom when container height changes (expand/collapse)
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      // Scroll to bottom when height increases
+      requestAnimationFrame(() => {
+        if (el) {
+          el.scrollTop = el.scrollHeight;
+        }
+      });
+    });
+
+    resizeObserver.observe(el);
+    return () => resizeObserver.disconnect();
+  }, []);
+
   // Intersection Observer for auto-loading older messages on scroll
   useEffect(() => {
     const sentinel = topSentinelRef.current;

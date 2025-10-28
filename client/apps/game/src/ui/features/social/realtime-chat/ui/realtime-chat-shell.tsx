@@ -8,8 +8,8 @@ import {
   useRealtimePresence,
   useRealtimeTotals,
 } from "../hooks/use-realtime-chat";
-import type { InitializeRealtimeClientParams } from "../model/types";
 import { useRealtimeChatStore } from "../model/store";
+import type { InitializeRealtimeClientParams } from "../model/types";
 import { DirectMessagesPanel } from "./direct-messages/direct-messages-panel";
 import { TabBar } from "./shared/tab-bar";
 import { UserDropdown } from "./shared/user-dropdown";
@@ -179,7 +179,7 @@ export function RealtimeChatShell({
     <div className={`w-full ${className ?? ""}`}>
       <div
         className={`flex flex-col overflow-hidden transition-all duration-300 ${
-          isExpanded ? (isHeightExpanded ? "h-[600px]" : "h-72") : "h-12"
+          isExpanded ? (isHeightExpanded ? "h-[600px]" : "h-72") : "h-14"
         } w-[800px] max-w-[45vw] ${isExpanded ? "bg-black/30 hover:bg-black/60" : "bg-transparent"}`}
       >
         {/* Header - Only shown when not expanded */}
@@ -188,7 +188,7 @@ export function RealtimeChatShell({
             <button
               type="button"
               onClick={toggleExpanded}
-              className="flex items-center gap-2 px-3 py-1 mr-20 mb-3 transition text-gold/70 hover:text-gold border border-gold/30 hover:border-gold bg-black/20 hover:bg-black/40 rounded text-xs"
+              className="flex items-center gap-2 px-3 py-1.5 mr-20 mb-3 transition text-gold/70 hover:text-gold border border-gold/30 hover:border-gold panel-wood bg-dark/70 hover:bg-dark/60 rounded text-xs shadow-inner shadow-black/30"
             >
               <span className="font-medium">Open Chat</span>
               {(unreadWorldTotal > 0 || unreadDirectTotal > 0) && (
