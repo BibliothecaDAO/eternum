@@ -36,6 +36,16 @@ export interface PendingMessage {
   errorMessage?: string;
 }
 
+export type ChatTabType = "world" | "zone" | "dm";
+
+export interface ChatTab {
+  id: string;
+  type: ChatTabType;
+  label: string;
+  targetId: string; // zoneId for world/zone, threadId for dm
+  unreadCount: number;
+}
+
 export interface WorldChatZoneState {
   zoneId: string;
   messages: WorldChatMessage[];
@@ -72,6 +82,8 @@ export interface RealtimeChatState {
   onlinePlayers: Record<string, PlayerPresence>;
   typingIndicators: Record<string, DirectMessageTyping>;
   pendingReadReceipts: DirectMessageReadReceipt[];
+  openTabs: ChatTab[];
+  activeTabId: string | null;
 }
 
 export interface InitializeRealtimeClientParams {
@@ -115,6 +127,10 @@ export interface RealtimeChatActions {
   setDirectHistoryLoading(threadId: string, isLoading: boolean): void;
   loadWorldHistory(params: LoadWorldChatHistoryParams): Promise<void>;
   loadDirectHistory(threadId: string, cursor?: string): Promise<void>;
+  addTab(tab: ChatTab): void;
+  removeTab(tabId: string): void;
+  setActiveTab(tabId: string | null): void;
+  updateTabUnread(tabId: string, unreadCount: number): void;
 }
 
 export type RealtimeChatStore = RealtimeChatState & {

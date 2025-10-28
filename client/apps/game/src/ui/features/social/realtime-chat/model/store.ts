@@ -195,6 +195,28 @@ const matchesIdentityAlias = (
   return false;
 };
 
+// Load tabs from localStorage
+const loadTabsFromStorage = () => {
+  try {
+    const stored = localStorage.getItem("realtime-chat-tabs");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return Array.isArray(parsed) ? parsed : [];
+    }
+  } catch (e) {
+    console.warn("Failed to load tabs from localStorage", e);
+  }
+  return [];
+};
+
+const loadActiveTabIdFromStorage = () => {
+  try {
+    return localStorage.getItem("realtime-chat-active-tab") || null;
+  } catch (e) {
+    return null;
+  }
+};
+
 const initialState: Omit<RealtimeChatStore, "actions"> = {
   client: null,
   connectionStatus: "idle",
@@ -211,6 +233,8 @@ const initialState: Omit<RealtimeChatStore, "actions"> = {
   onlinePlayers: {},
   typingIndicators: {},
   pendingReadReceipts: [],
+  openTabs: loadTabsFromStorage(),
+  activeTabId: loadActiveTabIdFromStorage(),
 };
 
 export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
@@ -1056,6 +1080,56 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
           };
         });
       }
+    },
+    addTab: (tab) => {
+      const { openTabs } = get();
+      const existingIndex = openTabs.findIndex((t) => t.id === tab.id);
+
+      if (existingIndex >= 0) {
+        // Tab already exists, just set it as active
+        set({ activeTabId: tab.id });
+        localStorage.setItem("realtime-chat-active-tab", tab.id);
+        return;
+      }
+
+      const nextTabs = [...openTabs, tab];
+      set({ openTabs: nextTabs, activeTabId: tab.id });
+      localStorage.setItem("realtime-chat-tabs", JSON.stringify(nextTabs));
+      localStorage.setItem("realtime-chat-active-tab", tab.id);
+    },
+    removeTab: (tabId) => {
+      const { openTabs, activeTabId } = get();
+      const nextTabs = openTabs.filter((t) => t.id !== tabId);
+
+      let nextActiveTabId = activeTabId;
+      if (activeTabId === tabId) {
+        // If removing active tab, switch to the last tab
+        nextActiveTabId = nextTabs.length > 0 ? nextTabs[nextTabs.length - 1].id : null;
+      }
+
+      set({ openTabs: nextTabs, activeTabId: nextActiveTabId });
+      localStorage.setItem("realtime-chat-tabs", JSON.stringify(nextTabs));
+      if (nextActiveTabId) {
+        localStorage.setItem("realtime-chat-active-tab", nextActiveTabId);
+      } else {
+        localStorage.removeItem("realtime-chat-active-tab");
+      }
+    },
+    setActiveTab: (tabId) => {
+      set({ activeTabId: tabId });
+      if (tabId) {
+        localStorage.setItem("realtime-chat-active-tab", tabId);
+      } else {
+        localStorage.removeItem("realtime-chat-active-tab");
+      }
+    },
+    updateTabUnread: (tabId, unreadCount) => {
+      const { openTabs } = get();
+      const nextTabs = openTabs.map((tab) =>
+        tab.id === tabId ? { ...tab, unreadCount } : tab
+      );
+      set({ openTabs: nextTabs });
+      localStorage.setItem("realtime-chat-tabs", JSON.stringify(nextTabs));
     },
   },
 }));

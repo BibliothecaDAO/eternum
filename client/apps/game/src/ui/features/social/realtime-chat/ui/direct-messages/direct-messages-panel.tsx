@@ -17,7 +17,11 @@ interface DirectMessagesPanelProps {
 const toDisplayTime = (message: DirectMessage) => {
   const created = message.createdAt instanceof Date ? message.createdAt : new Date(message.createdAt);
   if (created instanceof Date && !Number.isNaN(created.getTime())) {
-    return created.toLocaleTimeString();
+    return created.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
   }
   return "Now";
 };
@@ -66,6 +70,12 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
     return truncateIdentifier(recipientId, 6);
   }, [recipientId]);
 
+  const onlinePlayers = useRealtimeChatSelector((state) => state.onlinePlayers);
+  const isRecipientOnline = useMemo(() => {
+    if (!recipientId) return false;
+    return onlinePlayers[recipientId]?.isOnline ?? false;
+  }, [recipientId, onlinePlayers]);
+
   const { sendMessage, loadHistory, markAsRead } = useDirectMessageControls(resolvedThreadId, recipientId);
 
   useEffect(() => {
@@ -91,21 +101,21 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
   }, [thread?.messages.length, thread?.unreadCount]);
 
   return (
-    <section className={`flex h-full min-h-0 flex-1 flex-col  ${className ?? ""}`}>
+    <section className={`flex h-full min-h-0 flex-1 flex-col ${className ?? ""}`}>
       <header className="border-b border-gold/30 px-4 py-3">
         <div>
-          <h2 className="text-sm font-semibold ">{recipientLabel ?? "Direct Messages"}</h2>
+          <h2 className="text-sm font-semibold text-gold">{recipientLabel ?? "Direct Messages"}</h2>
         </div>
       </header>
       <div className="flex-1 min-h-0 px-4 py-3">
-        {!thread && <p className="text-sm ">Select a conversation to get started.</p>}
+        {!thread && <p className="text-sm text-gold/50">Select a conversation to get started.</p>}
         {thread && (
           <div className="flex h-full min-h-0 flex-col overflow-hidden">
             {thread.hasMoreHistory && (
               <button
                 type="button"
                 onClick={() => loadHistory(thread.lastFetchedCursor ?? undefined)}
-                className="mb-3 w-full rounded border border-neutral-700 px-2 py-1 text-xs text-neutral-300 transition hover:border-neutral-500 hover:text-neutral-100"
+                className="mb-3 w-full rounded border border-gold/30 px-2 py-1 text-xs text-gold/70 transition hover:border-gold hover:text-gold"
               >
                 Load older messages
               </button>
@@ -118,19 +128,19 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
                   return (
                     <li key={message.id} className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
                       <article
-                        className={`max-w-[80%] rounded-md bg-neutral-800/70 px-3 py-1.5 text-sm text-neutral-100 shadow-sm ring-1 ring-transparent transition ${
-                          isOwn ? "ring-amber-400/60" : "hover:bg-neutral-800 hover:ring-amber-400/40"
+                        className={`max-w-[80%] rounded-md bg-black/20 px-3 py-1.5 text-sm text-white/90 shadow-sm transition hover:bg-black/30 ${
+                          isOwn ? "border border-gold/30" : "border border-gold/20"
                         }`}
                       >
-                        <header className="flex items-center justify-between gap-2 text-[11px] ">
-                          <span className="truncate font-medium text-neutral-100" title={displayLabel}>
+                        <header className="flex items-center justify-between gap-2 text-[11px]">
+                          <span className="truncate font-medium text-gold/70" title={displayLabel}>
                             {displayLabel}
                           </span>
-                          <span className="whitespace-nowrap text-[10px] uppercase tracking-wide ">
+                          <span className="whitespace-nowrap text-[10px] uppercase tracking-wide text-white/20">
                             {toDisplayTime(message)}
                           </span>
                         </header>
-                        <p className="whitespace-pre-wrap break-words text-[13px] leading-tight text-neutral-100">
+                        <p className="whitespace-pre-wrap break-words text-[13px] leading-tight text-white/90">
                           {message.content}
                         </p>
                       </article>
@@ -138,7 +148,7 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
                   );
                 })}
                 {thread.messages.length === 0 && (
-                  <li className="text-sm ">No messages yet. Say hi to start the conversation!</li>
+                  <li className="text-sm text-gold/50">No messages yet. Say hi to start the conversation!</li>
                 )}
               </ul>
             </div>
@@ -153,6 +163,8 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
           }}
           placeholder={recipientLabel ? `Message ${recipientLabel}` : "Select a conversation to send a message"}
           disabled={!recipientId}
+          isRecipientOffline={!isRecipientOnline && !!recipientId}
+          recipientName={recipientLabel}
         />
       </div>
     </section>
