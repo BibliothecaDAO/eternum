@@ -1,5 +1,7 @@
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { useNavigate } from "react-router-dom";
+
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { currencyIntlFormat, displayAddress } from "@/ui/utils/utils";
 
@@ -31,6 +33,8 @@ export const LandingLeaderboard = () => {
   const [error, setError] = useState<ErrorState>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const navigate = useNavigate();
 
   const activeRequestRef = useRef<AbortController | null>(null);
   const isFetchingRef = useRef(false);
@@ -145,6 +149,10 @@ export const LandingLeaderboard = () => {
     setSearchQuery("");
   }, []);
 
+  const handleViewScoreCard = useCallback(() => {
+    navigate("/player");
+  }, [navigate]);
+
   const lastUpdatedLabel = useMemo(() => {
     if (!lastUpdatedAt) {
       return "Waiting for data";
@@ -247,18 +255,27 @@ export const LandingLeaderboard = () => {
                 ) : null}
               </div>
             </div>
-            <div className="flex items-center gap-3 self-end sm:self-auto">
-              {error ? (
-                <span className="rounded-full bg-red-500/10 px-3 py-1 text-xs font-medium text-red-300" role="alert">
-                  {error}
-                </span>
-              ) : null}
-              <RefreshButton
-                onClick={handleManualRefresh}
-                isLoading={isLoading}
-                size="md"
-                aria-label="Refresh leaderboard"
-              />
+            <div className="flex flex-col gap-2 self-end sm:flex-row sm:items-center sm:gap-3 sm:self-auto">
+              <button
+                type="button"
+                onClick={handleViewScoreCard}
+                className="inline-flex w-full items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:border-gold/50 hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/50 sm:w-auto"
+              >
+                Check your score card
+              </button>
+              <div className="flex items-center justify-end gap-3">
+                {error ? (
+                  <span className="rounded-full bg-red-500/10 px-3 py-1 text-xs font-medium text-red-300" role="alert">
+                    {error}
+                  </span>
+                ) : null}
+                <RefreshButton
+                  onClick={handleManualRefresh}
+                  isLoading={isLoading}
+                  size="md"
+                  aria-label="Refresh leaderboard"
+                />
+              </div>
             </div>
           </div>
         </div>
