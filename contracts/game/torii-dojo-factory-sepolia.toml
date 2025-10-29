@@ -1,0 +1,34 @@
+# Please be mindful that changing the content of this file will impact the Eternum Launcher app
+
+rpc = "https://api.cartridge.gg/x/starknet/sepolia/rpc/v0_9"
+
+world_address = "0x01d492807baa08400c3c76b827a19376292bae7f52220539184e2cb339cf268d"
+
+db_dir = "torii-sepolia"
+
+[indexing]
+events_chunk_size = 1024  # Size of events page to fetch
+blocks_chunk_size = 10240 # Blocks to process before DB commit
+
+pending = true # Enable indexing pending blocks
+
+polling_interval = 500 # Polling interval in milliseconds
+
+max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
+
+transactions = true
+
+contracts = []
+
+namespaces = ["wf"]
+
+world_block = 0
+
+[sql]
+all_model_indices = false
+
+[server]
+http_cors_origins = ["*"]
+
+[events]
+raw = false
