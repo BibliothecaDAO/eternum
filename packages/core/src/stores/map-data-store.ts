@@ -23,7 +23,7 @@
  */
 
 import { ArmyMapDataRaw, SqlApi, StructureMapDataRaw } from "@bibliothecadao/torii";
-import { BuildingType, ID, StructureType, TroopTier } from "@bibliothecadao/types";
+import { BuildingType, GuardSlot, ID, StructureType, TroopTier } from "@bibliothecadao/types";
 import { shortString } from "starknet";
 import realms from "../../../../client/public/jsons/realms.json";
 import { divideByPrecision, getIsBlitz, getStructureTypeName, unpackBuildingCounts } from "../utils";
@@ -200,7 +200,7 @@ export class MapDataStore {
     // Parse alpha guard (slot 3) - push first so it ends up last
     if (structure.alpha_count && this.hexToBigInt(structure.alpha_count) > 0n) {
       guards.push({
-        slot: 3,
+        slot: GuardSlot.Alpha,
         category: this.getCategoryName(structure.alpha_category),
         tier: structure.alpha_tier ? TROOP_TIERS[structure.alpha_tier] : 1,
         count: divideByPrecision(Number(this.hexToBigInt(structure.alpha_count))),
@@ -211,7 +211,7 @@ export class MapDataStore {
     // Parse bravo guard (slot 2)
     if (structure.bravo_count && this.hexToBigInt(structure.bravo_count) > 0n) {
       guards.push({
-        slot: 2,
+        slot: GuardSlot.Bravo,
         category: this.getCategoryName(structure.bravo_category),
         tier: structure.bravo_tier ? TROOP_TIERS[structure.bravo_tier] : 1,
         count: divideByPrecision(Number(this.hexToBigInt(structure.bravo_count))),
@@ -222,7 +222,7 @@ export class MapDataStore {
     // Parse charlie guard (slot 1)
     if (structure.charlie_count && this.hexToBigInt(structure.charlie_count) > 0n) {
       guards.push({
-        slot: 1,
+        slot: GuardSlot.Charlie,
         category: this.getCategoryName(structure.charlie_category),
         tier: structure.charlie_tier ? TROOP_TIERS[structure.charlie_tier] : 1,
         count: divideByPrecision(Number(this.hexToBigInt(structure.charlie_count))),
@@ -233,7 +233,7 @@ export class MapDataStore {
     // Parse delta guard (slot 0) - push last so it ends up first
     if (structure.delta_count && this.hexToBigInt(structure.delta_count) > 0n) {
       guards.push({
-        slot: 0,
+        slot: GuardSlot.Delta,
         category: this.getCategoryName(structure.delta_category),
         tier: structure.delta_tier ? TROOP_TIERS[structure.delta_tier] : 1,
         count: divideByPrecision(Number(this.hexToBigInt(structure.delta_count))),

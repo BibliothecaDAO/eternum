@@ -35,7 +35,7 @@ export class ArmyManager {
     await this.systemCalls.guard_add({
       signer,
       for_structure_id: this.realmEntityId,
-      slot,
+      slot: slot - 1,
       category: Object.keys(TroopType).indexOf(troopType),
       tier: Object.keys(TroopTier).indexOf(troopTier),
       amount: multiplyByPrecision(troopCount),

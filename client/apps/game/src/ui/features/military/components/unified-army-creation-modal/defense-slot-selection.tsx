@@ -1,9 +1,9 @@
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules";
 import { getTroopResourceId } from "@bibliothecadao/eternum";
-import { DEFENSE_NAMES, resources, TroopTier } from "@bibliothecadao/types";
+import { GUARD_SLOT_NAMES, resources, TroopTier } from "@bibliothecadao/types";
 import clsx from "clsx";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Shield } from "lucide-react";
 
 import type { GuardSummary, SelectedTroopCombo } from "./types";
 
@@ -28,15 +28,21 @@ export const DefenseSlotSelection = ({
   defenseSlotErrorMessage,
   onSelect,
 }: DefenseSlotSelectionProps) => {
+  const activeSlotCount = guardsBySlot.size;
+
   return (
     <div className="flex-1 p-4 rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-brown/30">
       <div className="text-center mb-4">
-        <h6 className="text-gold text-lg font-bold mb-1">DEFENSE SLOT</h6>
-        <p className="text-gold/60 text-sm">Choose which defense slot to reinforce</p>
+        <h6 className="text-gold text-lg font-bold mb-1">DEFENSE SLOTS</h6>
+        <div className="flex items-center justify-center gap-2 text-gold/60 text-sm">
+          <Shield className="w-4 h-4" />
+          <p>Enemies attack highest slot first</p>
+        </div>
       </div>
+
       <div className="grid grid-cols-2 gap-3">
-        {Object.entries(DEFENSE_NAMES).map(([slotIndex, slotName]) => {
-          const slot = parseInt(slotIndex, 10);
+        {Object.entries(GUARD_SLOT_NAMES).map(([slotIndex, slotName]) => {
+          const slot = Number(slotIndex);
           const guardInfo = guardsBySlot.get(slot);
           const guardCategory = guardInfo?.troops?.category;
           const guardTier = guardInfo?.troops?.tier;
@@ -52,8 +58,8 @@ export const DefenseSlotSelection = ({
             : null;
           const hasGuard = Boolean(guardInfo?.troops);
           const isSelected = guardSlot === slot;
-          const isSlotAvailable = slot < maxDefenseSlots;
-          const isSlotSelectable = isSlotAvailable && (canCreateDefenseArmy || hasGuard);
+          const canOpenAdditionalSlot = canCreateDefenseArmy && activeSlotCount < maxDefenseSlots;
+          const isSlotSelectable = hasGuard || canOpenAdditionalSlot;
           const isSlotCompatible =
             !guardInfo || (guardCategory === selectedTroopCombo.type && guardTier === selectedTroopCombo.tier);
           const guardLabelClasses = clsx(
@@ -79,7 +85,7 @@ export const DefenseSlotSelection = ({
                 disabled={!isSlotSelectable}
                 size="lg"
                 className={clsx(
-                  "w-full min-h-[84px] p-4 flex flex-col items-center text-center transition-all duration-300 rounded-xl",
+                  "w-full min-h-[84px] p-4 flex flex-col items-center text-center transition-all duration-300 rounded-xl relative",
                   isSelected
                     ? "ring-2 ring-gold/60 shadow-xl shadow-gold/30 scale-105 bg-gradient-to-br from-gold/25 to-gold/15"
                     : isSlotSelectable
@@ -88,6 +94,9 @@ export const DefenseSlotSelection = ({
                   hasGuard && !isSlotCompatible && "border-danger/50 hover:border-danger/60",
                 )}
               >
+                <div className="absolute -top-2 -right-2 bg-gradient-to-br from-gold/90 to-gold/70 text-brown text-xs px-2 py-0.5 rounded-full border-2 border-gold shadow-lg font-bold">
+                  {slot}
+                </div>
                 <div className={slotNameClasses}>{slotName}</div>
                 {hasGuard ? (
                   <div className="flex items-center gap-3">
@@ -118,10 +127,7 @@ export const DefenseSlotSelection = ({
                 )}
               </Button>
               {!canCreateDefenseArmy && !hasGuard && (
-                <div className="text-xs text-gold/50 text-center">Occupied slots only</div>
-              )}
-              {hasGuard && !isSlotCompatible && (
-                <div className="text-xs text-danger/70 text-center">Reinforce with {warningLabel}</div>
+                <div className="text-xs text-gold/50 text-center">Cannot create new defense slot</div>
               )}
             </div>
           );

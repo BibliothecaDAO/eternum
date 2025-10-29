@@ -3,7 +3,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { ArmyManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { DEFENSE_NAMES, ID, Troops } from "@bibliothecadao/types";
+import { GUARD_SLOT_NAMES, ID, Troops } from "@bibliothecadao/types";
 import { MinusIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
@@ -124,7 +124,7 @@ export const StructureDefence = ({
             entityId: defense.slot,
             troops: defense.troops,
             isHome: true,
-            name: DEFENSE_NAMES[slot as keyof typeof DEFENSE_NAMES],
+            name: GUARD_SLOT_NAMES[slot as keyof typeof GUARD_SLOT_NAMES],
           }
         : undefined;
     },
@@ -179,7 +179,7 @@ export const StructureDefence = ({
                           <div className="w-28 flex items-center gap-1.5">
                             <div className="w-1 h-1 rounded-full bg-gold/40" />
                             <div className="text-xs text-gold/80 font-medium">
-                              {DEFENSE_NAMES[slot as keyof typeof DEFENSE_NAMES]}
+                              {GUARD_SLOT_NAMES[slot as keyof typeof GUARD_SLOT_NAMES]}
                             </div>
                           </div>
 
@@ -243,7 +243,7 @@ export const StructureDefence = ({
                         <div className="flex justify-between items-center mb-3">
                           <h3 className="text-gold font-bold text-sm">
                             {defense ? "Update Defense" : "Add Defense"}:{" "}
-                            {DEFENSE_NAMES[slot as keyof typeof DEFENSE_NAMES]}
+                            {GUARD_SLOT_NAMES[slot as keyof typeof GUARD_SLOT_NAMES]}
                           </h3>
                           <Button
                             variant="secondary"

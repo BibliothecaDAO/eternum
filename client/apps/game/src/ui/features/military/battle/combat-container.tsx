@@ -131,7 +131,11 @@ export const CombatContainer = ({
   const structureGuards = useMemo(() => {
     if (attackerType !== AttackerType.Structure) return [];
     const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(attackerEntityId)]));
-    return structure ? getGuardsByStructure(structure) : [];
+    return structure
+      ? getGuardsByStructure(structure)
+          .sort((a, b) => b.slot - a.slot)
+          .filter((guard) => guard.troops.count > 0n)
+      : [];
   }, [attackerType, attackerEntityId, Structure]);
 
   // Convert relic effects to resource IDs
