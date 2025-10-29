@@ -634,7 +634,6 @@ export const RealmAutomationPanel = ({
             {aggregatedUsageList.map(({ resourceId, percent }) => {
               const label = resolveResourceLabel(resourceId);
               const isOverBudget = percent > MAX_RESOURCE_ALLOCATION_PERCENT;
-              const isClose = percent >= MAX_RESOURCE_ALLOCATION_PERCENT - 5;
               const netPerSecond = netUsagePerSecondRecord[resourceId] ?? 0;
               const netLabel = formatSignedPerSecond(netPerSecond);
               const netClass =
@@ -643,12 +642,8 @@ export const RealmAutomationPanel = ({
                 <li
                   key={`usage-${resourceId}`}
                   className={clsx(
-                    "flex items-center gap-2 rounded px-3 py-2 text-xs border border-transparent",
-                    isOverBudget
-                      ? "border-danger/60 text-danger"
-                      : isClose
-                        ? "border-warning/60 text-warning"
-                        : "border-gold/20 text-gold/80",
+                    "flex items-center gap-2 rounded border px-3 py-2 text-xs",
+                    isOverBudget ? "border-danger/60 text-danger" : "border-gold/20 text-gold/80",
                   )}
                 >
                   <ResourceIcon resource={ResourcesIds[resourceId as ResourcesIds]} size="xs" />
