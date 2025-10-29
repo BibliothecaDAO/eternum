@@ -7,7 +7,7 @@ import { configManager, getBlockTimestamp, getIsBlitz, getStructureName, Resourc
 import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 
 const formatTimestamp = (timestamp?: number) => {
   if (!timestamp) return "Never";
@@ -80,6 +80,7 @@ export const ProductionOverviewPanel = () => {
   const upsertRealm = useAutomationStore((state) => state.upsertRealm);
   const removeRealm = useAutomationStore((state) => state.removeRealm);
   const hydrated = useAutomationStore((state) => state.hydrated);
+  const [expandedRealmId, setExpandedRealmId] = useState<string | null>(null);
 
   const playerRealms = usePlayerOwnedRealmsInfo();
   const playerVillages = usePlayerOwnedVillagesInfo();
@@ -87,6 +88,9 @@ export const ProductionOverviewPanel = () => {
     setup: { components },
   } = useDojo();
   const isBlitz = getIsBlitz();
+  const handleToggleRealm = useCallback((realmId: string) => {
+    setExpandedRealmId((current) => (current === realmId ? null : realmId));
+  }, []);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -329,101 +333,122 @@ export const ProductionOverviewPanel = () => {
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {realmCards.map((card) => (
-            <div key={card.id} className="rounded border border-gold/10 bg-black/20 p-3 text-xs text-gold/80 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-gold/90">{card.name}</span>
-                <span className="text-[10px] uppercase tracking-wide text-gold/50">{card.type}</span>
-              </div>
-
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[10px] uppercase tracking-wide text-gold/60 whitespace-nowrap">Realm preset</span>
-                  <span className="rounded border border-gold/20 bg-black/30 px-2 py-1 text-[11px] uppercase tracking-wide text-gold/80">
-                    {REALM_PRESETS.find((preset) => preset.id === card.presetId)?.label ?? "Custom"}
-                  </span>
+          {realmCards.map((card) => {
+            const isExpanded = expandedRealmId === card.id;
+            const presetLabel = REALM_PRESETS.find((preset) => preset.id === card.presetId)?.label ?? "Custom";
+            const handleKeyToggle = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                handleToggleRealm(card.id);
+              }
+            };
+            return (
+              <div
+                key={card.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => handleToggleRealm(card.id)}
+                onKeyDown={handleKeyToggle}
+                className={`rounded border border-gold/10 bg-black/20 p-3 text-xs text-gold/80 space-y-3 transition cursor-pointer focus:outline-none focus-visible:border-gold/50 ${
+                  isExpanded ? "border-gold/30 bg-black/15 shadow-[0_0_12px_rgba(255,204,102,0.15)]" : "hover:border-gold/20 hover:bg-black/25"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-3 rounded border border-transparent px-1 py-1 transition">
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-gold/90">{card.name}</span>
+                    <span className="text-[10px] uppercase tracking-wide text-gold/50">{card.type}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded border border-gold/20 bg-black/30 px-2 py-0.5 text-[10px] uppercase tracking-wide text-gold/70">
+                      {presetLabel}
+                    </span>
+                    <span className="text-[11px] text-gold/60">{isExpanded ? "Tap to hide" : "Tap to expand"}</span>
+                  </div>
                 </div>
-                <span
-                  className="text-[10px] text-gold/50 whitespace-nowrap"
-                  title={`Latest run: ${formatTimestamp(card.lastRun)}`}
-                >
-                  Latest run {formatRelative(card.lastRun)}
-                </span>
-              </div>
 
-              {card.resourceIds.length === 0 ? (
-                <span className="text-[11px] text-gold/50">No automated resources</span>
-              ) : (
-                <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                  {card.resourceIds.map((resourceId) => {
-                    const metrics = card.metrics[resourceId];
-                    const detail = card.productionLookup[resourceId];
-                    const net = metrics?.netPerSecond ?? 0;
-                    const netClass =
-                      Math.abs(net) < 0.0001 ? "text-gold/60" : net > 0 ? "text-green" : "text-red";
+                {card.resourceIds.length === 0 ? (
+                  <div className="rounded border border-gold/15 bg-black/20 px-3 py-2 text-[11px] text-gold/60">
+                    No automated resources
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                    {card.resourceIds.map((resourceId) => {
+                      const metrics = card.metrics[resourceId];
+                      const detail = card.productionLookup[resourceId];
+                      const net = metrics?.netPerSecond ?? 0;
+                      const netClass =
+                        Math.abs(net) < 0.0001 ? "text-gold/60" : net > 0 ? "text-green" : "text-red";
 
-                    return (
-                      <div
-                        key={`${card.id}-${resourceId}`}
-                        className="rounded border border-gold/20 bg-black/25 p-3 space-y-2"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            <ResourceIcon resource={ResourcesIds[resourceId]} size="sm" />
-                            <div className="flex flex-col">
+                      return (
+                        <div
+                          key={`${card.id}-${resourceId}`}
+                          className="rounded border border-gold/15 bg-black/25 p-3 space-y-2"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <ResourceIcon resource={ResourcesIds[resourceId]} size="sm" />
                               <span className="text-sm font-semibold text-gold">
                                 {ResourcesIds[resourceId]}
                               </span>
-                              <span className="text-[11px] text-gold/60">
-                                Output {formatPerSecond(metrics?.outputPerSecond ?? 0)}
-                              </span>
                             </div>
+                            <span className={`text-[11px] font-semibold ${netClass}`}>
+                              Net {formatSignedPerSecond(net)}
+                            </span>
                           </div>
-                          <div className={`text-[11px] font-semibold ${netClass}`}>
-                            Net {formatSignedPerSecond(net)}
-                          </div>
-                        </div>
 
-                        {metrics && metrics.inputs.length > 0 ? (
-                          <div className="space-y-1">
-                            <span className="text-[10px] uppercase tracking-wide text-gold/50">Inputs</span>
-                            <div className="grid grid-cols-2 gap-1">
-                              {metrics.inputs.map((input) => {
-                                const consumptionLabel =
-                                  input.perSecond > 0
-                                    ? `-${formatPerSecondValue(input.perSecond)}/s`
-                                    : "0/s";
-                                return (
-                                  <div
-                                    key={`input-${card.id}-${resourceId}-${input.resourceId}`}
-                                    className="flex items-center justify-between rounded border border-gold/15 bg-black/20 px-2 py-1 text-[10px] text-gold/70"
-                                  >
-                                    <span className="flex items-center gap-1">
-                                      <ResourceIcon resource={ResourcesIds[input.resourceId]} size="xs" />
-                                      {ResourcesIds[input.resourceId]}
-                                    </span>
-                                    <span className="text-red/70">{consumptionLabel}</span>
+                          {isExpanded && (
+                            <div className="space-y-2 text-[11px] text-gold/70">
+                              <div>Output {formatPerSecond(metrics?.outputPerSecond ?? 0)}</div>
+                              {metrics && metrics.inputs.length > 0 ? (
+                                <div className="space-y-1">
+                                  <span className="text-[10px] uppercase tracking-wide text-gold/50">Inputs</span>
+                                  <div className="grid grid-cols-2 gap-1">
+                                    {metrics.inputs.map((input) => {
+                                      const consumptionLabel =
+                                        input.perSecond > 0
+                                          ? `-${formatPerSecondValue(input.perSecond)}/s`
+                                          : "0/s";
+                                      return (
+                                        <div
+                                          key={`input-${card.id}-${resourceId}-${input.resourceId}`}
+                                          className="flex items-center justify-between rounded border border-gold/15 bg-black/20 px-2 py-1 text-[10px] text-gold/70"
+                                        >
+                                          <span className="flex items-center gap-1">
+                                            <ResourceIcon resource={ResourcesIds[input.resourceId]} size="xs" />
+                                            {ResourcesIds[input.resourceId]}
+                                          </span>
+                                          <span className="text-red/70">{consumptionLabel}</span>
+                                        </div>
+                                      );
+                                    })}
                                   </div>
-                                );
-                              })}
+                                </div>
+                              ) : (
+                                <span className="text-[10px] text-gold/60">No resource inputs required.</span>
+                              )}
+                              <div className="text-[10px] text-gold/50">
+                                {detail
+                                  ? `Last run ${formatRelative(detail.executedAt)} · ${detail.cycles} cycles`
+                                  : "Automation has not executed yet."}
+                              </div>
                             </div>
-                          </div>
-                        ) : (
-                          <span className="text-[10px] text-gold/60">No resource inputs required.</span>
-                        )}
-
-                        <div className="text-[10px] text-gold/50">
-                          {detail
-                            ? `Last run ${formatRelative(detail.executedAt)} · ${detail.cycles} cycles`
-                            : "Automation has not executed yet."}
+                          )}
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          ))}
+                      );
+                    })}
+                  </div>
+                )}
+
+                {isExpanded && (
+                  <div className="text-[10px] text-gold/50">
+                    {card.lastRun
+                      ? `Latest automation run ${formatRelative(card.lastRun)} (${formatTimestamp(card.lastRun)})`
+                      : "Automation has not executed yet."}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
