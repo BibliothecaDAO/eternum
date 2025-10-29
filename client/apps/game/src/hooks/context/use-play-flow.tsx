@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useControllerAccount } from "@/hooks/context/use-controller-account";
 import { useGameBootstrap } from "@/hooks/context/use-game-bootstrap";
+import { useWorldGate } from "@/hooks/context/use-world-gate";
 import { useSpectatorModeClick } from "@/hooks/helpers/use-navigate";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -66,6 +67,7 @@ type ReadyStep = {
 export type PlayFlowActiveStep =
   | "bootstrap"
   | "bootstrap-error"
+  | "world"
   | "account"
   | "tos"
   | "eligibility"
@@ -73,6 +75,7 @@ export type PlayFlowActiveStep =
   | "ready";
 
 type PlayFlowSteps = {
+  world: { status: "pending" | "ready"; fallback?: ReactNode };
   bootstrap: BootstrapStep;
   account: AccountStep;
   tos: TosStep;
@@ -205,7 +208,8 @@ const useAccountGate = ({
 };
 
 export const usePlayFlow = (backgroundImage: string) => {
-  const { status, setupResult, error, retry, progress } = useGameBootstrap();
+  const worldGate = useWorldGate();
+  const { status, setupResult, error, retry, progress } = useGameBootstrap(worldGate.status === "ready");
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const hasAcceptedTS = useUIStore((state) => state.hasAcceptedTS);
@@ -220,6 +224,11 @@ export const usePlayFlow = (backgroundImage: string) => {
     showBlankOverlay,
     onEnterWorld: enterWorld,
   });
+
+  const worldStep = useMemo(() => {
+    if (worldGate.status === "ready") return { status: "ready" as const };
+    return { status: "pending" as const, fallback: worldGate.fallback };
+  }, [worldGate]);
 
   const bootstrapStep: BootstrapStep = useMemo(() => {
     if (status === "error") {
@@ -311,6 +320,7 @@ export const usePlayFlow = (backgroundImage: string) => {
 
   const steps: PlayFlowSteps = useMemo(
     () => ({
+      world: worldStep,
       bootstrap: bootstrapStep,
       account: accountStep,
       tos: tosStep,
@@ -318,10 +328,14 @@ export const usePlayFlow = (backgroundImage: string) => {
       onboarding: onboardingStep,
       ready: readyStep,
     }),
-    [bootstrapStep, accountStep, tosStep, eligibilityStep, onboardingStep, readyStep],
+    [worldStep, bootstrapStep, accountStep, tosStep, eligibilityStep, onboardingStep, readyStep],
   );
 
   const activeStep: PlayFlowActiveStep = useMemo(() => {
+    if (worldStep.status !== "ready") {
+      return "world";
+    }
+
     if (bootstrapStep.status === "error") {
       return "bootstrap-error";
     }
@@ -347,7 +361,14 @@ export const usePlayFlow = (backgroundImage: string) => {
     }
 
     return "ready";
-  }, [bootstrapStep.status, accountStep.status, tosStep.accepted, eligibilityStep.status, onboardingStep.open]);
+  }, [
+    worldStep.status,
+    bootstrapStep.status,
+    accountStep.status,
+    tosStep.accepted,
+    eligibilityStep.status,
+    onboardingStep.open,
+  ]);
 
   return {
     activeStep,

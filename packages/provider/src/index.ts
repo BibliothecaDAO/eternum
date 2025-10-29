@@ -261,7 +261,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     this._batchOriginalExecute = this.executeAndCheckTransaction.bind(this);
 
     const self = this;
-    this.executeAndCheckTransaction = (async function (signer: any, details: AllowArray<Call>) {
+    this.executeAndCheckTransaction = async function (signer: any, details: AllowArray<Call>) {
       const arr = Array.isArray(details) ? details : [details];
       const shouldImmediate = arr.some((c) => self._batchImmediate?.has(c.entrypoint));
       if (shouldImmediate) {
@@ -272,7 +272,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       self._batchCalls!.push(...arr);
       // return a minimal placeholder compatible with existing logs
       return { statusReceipt: "QUEUED_FOR_BATCH" } as any;
-    }) as any;
+    } as any;
   }
 
   public isBatching(): boolean {

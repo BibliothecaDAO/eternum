@@ -34,7 +34,8 @@ export interface ToriiCosmeticAsset {
 }
 
 const DEFAULT_ACCOUNT_ADDRESS = "0x244a1fc5c84068c53c2683f9702fbcc192c0515b74f2ad0fc2070b5fd9f13fe";
-const COSMETICS_SQL_ENDPOINT = `${env.VITE_PUBLIC_TORII}/sql`;
+import { getToriiBaseUrl } from "@/services/torii-base";
+const COSMETICS_SQL_ENDPOINT = `${getToriiBaseUrl()}/sql`;
 
 const buildSqlQuery = (accountAddress: string) => `SELECT
   b.account_address,

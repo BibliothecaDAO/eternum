@@ -7,19 +7,24 @@ import { ReactComponent as DojoMark } from "@/assets/icons/dojo-mark-full-dark.s
 import { ReactComponent as RealmsWorld } from "@/assets/icons/rw-logo.svg";
 import { AudioCategory, ScrollingTrackName, useAudio, useMusicPlayer } from "@/audio";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { setActiveWorldName } from "@/runtime/world";
+import { buildWorldProfile } from "@/runtime/world/profile-builder";
 import { ToriiSetting } from "@/types";
 import { GraphicsSettings } from "@/ui/config";
 import { Avatar, Button, Checkbox, RangeInput } from "@/ui/design-system/atoms";
 import { Headline } from "@/ui/design-system/molecules";
 import { OSWindow, settings } from "@/ui/features/world";
+import { openWorldSelectorModal } from "@/ui/features/world-selector";
 import { addressToNumber, displayAddress } from "@/ui/utils/utils";
 import { DEFAULT_TORII_SETTING } from "@/utils/config";
 import { getAddressName } from "@bibliothecadao/eternum";
 import { useDojo, useGuilds, useScreenOrientation } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
+import type { Chain } from "@contracts";
 import * as platform from "platform";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { env as gameEnv } from "../../../../env";
 
 // Helper function to extract architecture from filename
 const extractArchitecture = (filename: string): string | null => {
@@ -186,6 +191,32 @@ export const SettingsWindow = () => {
 
         {/* Settings Sections */}
         <div className="flex flex-col space-y-6">
+          {/* World Selection */}
+          <section className="space-y-3">
+            <Headline>World</Headline>
+            <div className="flex items-center justify-between text-xs text-gray-gold">
+              <div>Choose a different world (Torii namespace)</div>
+              <Button
+                size="xs"
+                onClick={async () => {
+                  try {
+                    const name = await openWorldSelectorModal();
+                    const chain = gameEnv.VITE_PUBLIC_CHAIN as Chain;
+                    await buildWorldProfile(chain, name);
+                    setActiveWorldName(name);
+                    toast(`World set to ${name}. Reloading…`);
+                    setTimeout(() => {
+                      window.location.href = "/play";
+                    }, 600);
+                  } catch (e) {
+                    // cancelled
+                  }
+                }}
+              >
+                Change World
+              </Button>
+            </div>
+          </section>
           {/* Torii Section */}
           <section className="space-y-3">
             <Headline>Torii Data source</Headline>

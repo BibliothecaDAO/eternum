@@ -2,12 +2,18 @@ import { ReactComponent as EternumWordsLogo } from "@/assets/icons/blitz-words-l
 import { Button } from "@/ui/design-system/atoms";
 import { Controller } from "@/ui/modules/controller/controller";
 import { useNavigate } from "react-router-dom";
+import { useGameSelector } from "@/hooks/helpers/use-game-selector";
 
 // Served from client/public/images/landing/wooden-panel.png
 const LANDING_PANEL_IMAGE = "/borders/landing-frame-1.png";
 
 export const LandingWelcome = () => {
   const navigate = useNavigate();
+  const { activeWorld, selectGame } = useGameSelector();
+
+  const handleSelectGame = async () => {
+    await selectGame({ navigateAfter: true, navigateTo: "/play" });
+  };
 
   // shared classes for both buttons for same size
   const buttonClasses = "h-9 px-4 min-w-[96px] w-full sm:w-auto";
@@ -27,13 +33,14 @@ export const LandingWelcome = () => {
           />
           <div className="absolute inset-0 flex flex-col items-center justify-center px-4 py-8 text-center text-gold sm:px-8 sm:py-10">
             <EternumWordsLogo className="mx-auto w-44 sm:w-56 lg:w-72 xl:w-[360px]" />
-            <div className="mt-6 flex w-full flex-col items-center gap-3 sm:mt-8 sm:flex-row sm:justify-center sm:gap-4">
+            <div className="mt-12 flex w-full flex-col items-center gap-3 sm:mt-16 sm:flex-row sm:justify-center sm:gap-4">
               <Button className={buttonClasses} onClick={() => navigate("/play")}>
                 Enter Blitz
               </Button>
-              <div className="flex justify-center sm:justify-end w-full sm:w-auto">
-                <Controller className={buttonClasses} />
-              </div>
+              <Button variant="opaque" className={buttonClasses} onClick={handleSelectGame}>
+                {activeWorld ? `Game: ${activeWorld}` : "Select Game"}
+              </Button>
+              <Controller className={buttonClasses} />
             </div>
           </div>
         </div>

@@ -1410,7 +1410,9 @@ export const setBlitzPreviousGame = async (config: Config) => {
     return;
   }
   if (currentAddress && prevAddress?.toLowerCase() === currentAddress.toLowerCase()) {
-    console.log(chalk.gray("    ↪ Previous prize_distribution_systems equals current; skipping blitz previous game config"));
+    console.log(
+      chalk.gray("    ↪ Previous prize_distribution_systems equals current; skipping blitz previous game config"),
+    );
     return;
   }
 
@@ -1549,7 +1551,7 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
     collectibles_cosmetics_max,
     collectibles_cosmetics_address,
     collectibles_timelock_address,
-    collectibles_lootchest_address
+    collectibles_lootchest_address,
   };
 
   console.log(

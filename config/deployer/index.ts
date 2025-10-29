@@ -48,9 +48,14 @@ const IMMEDIATE = (process.env.CONFIG_IMMEDIATE_ENTRYPOINTS || "")
 if (BATCH) {
   // Skip inter-call sleeps when batching
   config.skipSleeps = true;
-  const flushReceipt = await withBatching(provider, account, async () => {
-    await config.setupAll(account, provider);
-  }, { immediateEntrypoints: IMMEDIATE, label: "config" });
+  const flushReceipt = await withBatching(
+    provider,
+    account,
+    async () => {
+      await config.setupAll(account, provider);
+    },
+    { immediateEntrypoints: IMMEDIATE, label: "config" },
+  );
   console.log("Batched multicall submitted:", (flushReceipt as any)?.transaction_hash ?? "<unknown>");
 } else {
   await config.setupAll(account, provider);

@@ -32,7 +32,10 @@ export async function saveConfigJsonFromConfigTsFile(chain: NetworkType) {
     if (fs.existsSync(targetPath)) {
       const prevRaw = fs.readFileSync(targetPath, "utf8");
       const prevParsed = JSON.parse(prevRaw);
-      prevSaved = prevParsed?.configuration?.prev_prize_distribution_address ?? prevParsed?.prev_prize_distribution_address ?? null;
+      prevSaved =
+        prevParsed?.configuration?.prev_prize_distribution_address ??
+        prevParsed?.prev_prize_distribution_address ??
+        null;
       const prevManifest = prevParsed?.configuration?.setup?.manifest ?? prevParsed?.setup?.manifest;
       prevCurrent = extractContractAddressFromManifest(prevManifest, "s1_eternum-prize_distribution_systems");
     }
@@ -47,7 +50,7 @@ export async function saveConfigJsonFromConfigTsFile(chain: NetworkType) {
 
   let computedPrev: string | null = null;
   if (prevCurrent) {
-    computedPrev = equal(prevCurrent, newCurrent) ? prevSaved ?? null : prevCurrent;
+    computedPrev = equal(prevCurrent, newCurrent) ? (prevSaved ?? null) : prevCurrent;
   } else {
     computedPrev = null;
   }

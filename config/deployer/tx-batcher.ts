@@ -37,7 +37,7 @@ export class TxBatcher {
     const self = this;
     (this.provider as any).__txBatcher = this; // expose for optional introspection
 
-    this.provider.executeAndCheckTransaction = (async function (signer: any, details: AllowArray<Call>) {
+    this.provider.executeAndCheckTransaction = async function (signer: any, details: AllowArray<Call>) {
       // Normalize to array of calls
       const arr = Array.isArray(details) ? details : [details];
 
@@ -53,7 +53,7 @@ export class TxBatcher {
       // Return a placeholder so existing logs don't crash
       const placeholder: BatchResultPlaceholder = { statusReceipt: "QUEUED_FOR_BATCH" };
       return placeholder as any;
-    }) as any;
+    } as any;
   }
 
   disableInterception() {

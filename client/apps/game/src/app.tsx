@@ -94,6 +94,10 @@ const BootstrapError = ({ error, onRetry }: { error?: Error | null; onRetry: () 
 const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
   const { activeStep, steps } = usePlayFlow(backgroundImage);
 
+  if (activeStep === "world") {
+    return steps.world.fallback ?? <LoadingScreen backgroundImage={backgroundImage} />;
+  }
+
   if (activeStep === "bootstrap-error") {
     return <BootstrapError error={steps.bootstrap.error} onRetry={steps.bootstrap.retry} />;
   }
@@ -181,6 +185,8 @@ function App() {
               <Route path="leaderboard" element={<LandingLeaderboard />} />
             </Route>
             <Route path="/play/*" element={<GameRoute backgroundImage={backgroundImage} />} />
+            {/* Standalone factory route that does not require game bootstrap/sync */}
+            <Route path="/config-admin/factory" element={<ConfigAdminPage2 />} />
             <Route path="/config-admin/*" element={<AdminRoute backgroundImage={backgroundImage} />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

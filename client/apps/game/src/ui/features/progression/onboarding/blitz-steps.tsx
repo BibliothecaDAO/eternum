@@ -22,11 +22,13 @@ import { getComponentValue, HasValue } from "@dojoengine/recs";
 import { cairoShortStringToFelt } from "@dojoengine/torii-wasm";
 import { useAccount, useCall } from "@starknet-react/core";
 import { motion } from "framer-motion";
-import { AlertCircle, Users } from "lucide-react";
+import { AlertCircle, Users, Home, Globe } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Abi, CallData, uint256 } from "starknet";
 import { env } from "../../../../../env";
 import { SpectateButton } from "./spectate-button";
+import { useGameSelector } from "@/hooks/helpers/use-game-selector";
 
 const formatLocalDateTime = (timestamp: number): string => {
   const date = new Date(timestamp * 1000);
@@ -744,8 +746,10 @@ const GameActiveState = ({
 
 // Main Blitz onboarding component
 export const BlitzOnboarding = () => {
+  const navigate = useNavigate();
   const [gameState, setGameState] = useState<GameState>(GameState.NO_GAME);
   const [addressNameFelt, setAddressNameFelt] = useState<string>("");
+  const { activeWorld, selectGame } = useGameSelector();
   const { setup, network, masterAccount } = useDojo();
   const {
     account: { account },
@@ -1084,6 +1088,10 @@ export const BlitzOnboarding = () => {
     await blitz_realm_create({ signer: account });
   };
 
+  const handleSelectGame = async () => {
+    await selectGame();
+  };
+
   if (!blitzConfig) {
     return (
       <motion.div
@@ -1128,6 +1136,29 @@ export const BlitzOnboarding = () => {
 
   return (
     <div className="space-y-6">
+      {/* Navigation Buttons */}
+      <div className="flex justify-between items-center -mb-2">
+        <Button
+          onClick={() => navigate("/")}
+          variant="outline"
+          size="xs"
+          className="!px-3 !py-1.5"
+          forceUppercase={false}
+        >
+          <div className="flex items-center gap-1.5">
+            <Home className="w-3.5 h-3.5" />
+            <span>Back to Home</span>
+          </div>
+        </Button>
+
+        <Button onClick={handleSelectGame} variant="outline" size="xs" className="!px-3 !py-1.5" forceUppercase={false}>
+          <div className="flex items-center gap-1.5">
+            <Globe className="w-3.5 h-3.5" />
+            <span>{activeWorld || "Select Game"}</span>
+          </div>
+        </Button>
+      </div>
+
       {gameActiveSection}
       {hasEntryTokenContract && (
         <div className="bg-brown/10 border border-brown/30 rounded-lg p-4">
