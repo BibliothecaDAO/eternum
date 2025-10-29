@@ -195,7 +195,10 @@ export const calculatePresetAllocations = (
 
   const laborPresetShare = computeLaborShare(laborEligibleCount);
 
-  const applyLaborPreset = () => {
+  const applyLaborPreset = (
+    targetMap: Map<number, { resourceToResource: number; laborToResource: number }>,
+    usageTotalsRef: Map<number, number>,
+  ) => {
     resources.forEach((setting) => {
       const { resourceId } = setting;
       const rawSimpleInputs = configManager.simpleSystemResourceInputs[resourceId] ?? [];
@@ -206,23 +209,26 @@ export const calculatePresetAllocations = (
 
       const hasSimple = laborAllowed && simpleInputs.length > 0;
       if (!hasSimple) {
-        allocations.set(resourceId, {
-          resourceToResource: allocations.get(resourceId)?.resourceToResource ?? 0,
-          laborToResource: allocations.get(resourceId)?.laborToResource ?? 0,
+        targetMap.set(resourceId, {
+          resourceToResource: targetMap.get(resourceId)?.resourceToResource ?? 0,
+          laborToResource: targetMap.get(resourceId)?.laborToResource ?? 0,
         });
         return;
       }
 
-      const targetLabor = determineLaborShare(simpleInputs, usageTotals, laborPresetShare, entityType);
-      adjustContribution(usageTotals, targetLabor, simpleInputs, "add", entityType);
-      allocations.set(resourceId, {
-        resourceToResource: allocations.get(resourceId)?.resourceToResource ?? 0,
+      const targetLabor = determineLaborShare(simpleInputs, usageTotalsRef, laborPresetShare, entityType);
+      adjustContribution(usageTotalsRef, targetLabor, simpleInputs, "add", entityType);
+      targetMap.set(resourceId, {
+        resourceToResource: targetMap.get(resourceId)?.resourceToResource ?? 0,
         laborToResource: targetLabor,
       });
     });
   };
 
-  const applyResourcePreset = () => {
+  const applyResourcePreset = (
+    targetMap: Map<number, { resourceToResource: number; laborToResource: number }>,
+    usageTotalsRef: Map<number, number>,
+  ) => {
     resources.forEach((setting) => {
       const { resourceId } = setting;
       const rawComplexInputs = configManager.complexSystemResourceInputs[resourceId] ?? [];
@@ -241,30 +247,44 @@ export const calculatePresetAllocations = (
 
       const targetResource = determineComplexShare(
         complexInputs,
-        usageTotals,
+        usageTotalsRef,
         complexUsageCounts,
         90,
         entityType,
       );
-      adjustContribution(usageTotals, targetResource, complexInputs, "add", entityType);
-      allocations.set(resourceId, {
+      adjustContribution(usageTotalsRef, targetResource, complexInputs, "add", entityType);
+      targetMap.set(resourceId, {
         resourceToResource: targetResource,
-        laborToResource: allocations.get(resourceId)?.laborToResource ?? 0,
+        laborToResource: targetMap.get(resourceId)?.laborToResource ?? 0,
       });
     });
   };
 
   switch (presetId) {
     case "labor":
-      applyLaborPreset();
+      applyLaborPreset(allocations, usageTotals);
       break;
     case "resource":
-      applyResourcePreset();
+      applyResourcePreset(allocations, usageTotals);
       break;
-    case "custom":
-      applyLaborPreset();
-      applyResourcePreset();
+    case "custom": {
+      const baselineUsageTotals = new Map(usageTotals);
+      const resourceAllocations = new Map<number, { resourceToResource: number; laborToResource: number }>();
+      const laborAllocations = new Map<number, { resourceToResource: number; laborToResource: number }>();
+
+      applyResourcePreset(resourceAllocations, new Map(baselineUsageTotals));
+      applyLaborPreset(laborAllocations, new Map(baselineUsageTotals));
+
+      resources.forEach((setting) => {
+        const resourceShare = resourceAllocations.get(setting.resourceId)?.resourceToResource ?? 0;
+        const laborShare = laborAllocations.get(setting.resourceId)?.laborToResource ?? 0;
+        allocations.set(setting.resourceId, {
+          resourceToResource: resourceShare,
+          laborToResource: laborShare,
+        });
+      });
       break;
+    }
     default:
       resources.forEach((setting) => {
         const current = allocations.get(setting.resourceId) ?? { resourceToResource: 0, laborToResource: 0 };
