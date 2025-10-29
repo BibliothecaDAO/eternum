@@ -345,7 +345,7 @@ export const WorldSelectorModal = ({
   const renderFactoryItem = (fg: FactoryGame) => {
     const isOnline = fg.status === "ok";
     const startAtText = (() => {
-      if (fg.startMainAt == null) return isOnline && fg.status !== "checking" ? "No season start found" : "";
+      if (fg.startMainAt == null) return isOnline && fg.status !== "checking" ? "Not Configured" : "";
       const endT = fg.startMainAt + GAME_DURATION_SEC;
       if (nowSec < fg.startMainAt) return `Starts in ${formatCountdown(fg.startMainAt - nowSec)}`;
       if (nowSec < endT) return `Ongoing — ${formatCountdown(endT - nowSec)} left`;
@@ -377,7 +377,7 @@ export const WorldSelectorModal = ({
             </div>
             <div className="font-mono text-xs text-gold/50 truncate">api.cartridge.gg/x/{fg.name}/torii</div>
             {startAtText && (
-              <div className="text-sm md:text-base text-gold font-semibold mt-1">Game time: {startAtText}</div>
+              <div className="text-sm md:text-base text-white font-semibold mt-1">Game time: {startAtText}</div>
             )}
           </div>
 
@@ -450,10 +450,7 @@ export const WorldSelectorModal = ({
                 <p className="text-sm text-gold/60 mt-1">Choose your world to enter the eternal conflict</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button onClick={cancel} variant="outline" size="sm">Cancel</Button>
-              <Button onClick={confirm} disabled={!selected && !nameInput} variant="gold" size="sm">Enter Game</Button>
-            </div>
+            <Button onClick={cancel} variant="outline" size="md">Cancel</Button>
           </div>
         </div>
 
@@ -468,26 +465,31 @@ export const WorldSelectorModal = ({
             </div>
 
             <div className="space-y-4">
-              <div className="relative">
-                <input
-                  className="w-full rounded-lg border-2 border-gold/30 bg-brown/60 px-4 py-3 text-gold placeholder-gold/40 outline-none focus:border-gold focus:bg-brown/80 transition-all duration-200 font-mono"
-                  placeholder="gamecode-12345"
-                  value={nameInput}
-                  onChange={(e) => setNameInput(e.target.value.trim())}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && nameInput) {
-                      confirm();
-                    }
-                  }}
-                />
-                {nameInput && (
-                  <button
-                    onClick={() => setNameInput("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded text-gold/40 hover:text-gold transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <input
+                    className="w-full rounded-lg border-2 border-gold/30 bg-brown/60 px-4 py-3 text-gold placeholder-gold/40 outline-none focus:border-gold focus:bg-brown/80 transition-all duration-200 font-mono"
+                    placeholder="gamecode-12345"
+                    value={nameInput}
+                    onChange={(e) => setNameInput(e.target.value.trim())}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && nameInput) {
+                        confirm();
+                      }
+                    }}
+                  />
+                  {nameInput && (
+                    <button
+                      onClick={() => setNameInput("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded text-gold/40 hover:text-gold transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                <Button onClick={confirm} disabled={!nameInput} variant="gold" size="md">
+                  Enter Game
+                </Button>
               </div>
 
               {/* Status */}
@@ -539,7 +541,7 @@ export const WorldSelectorModal = ({
               )}
 
               {/* Offline summary + bulk delete */}
-              {saved.length > 0 && (
+              {/* {saved.length > 0 && (
                 <div className="flex items-center justify-between mb-2">
                   <div className="text-[10px] text-gold/60">
                     Offline saved games: {saved.filter((n) => statusMap[n] === "fail").length}
@@ -551,127 +553,12 @@ export const WorldSelectorModal = ({
                     Delete Offline
                   </button>
                 </div>
-              )}
+              )} */}
 
-              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                {saved.length === 0 && (
-                  <div className="rounded-lg border-2 border-dashed border-gold/20 p-6 text-center">
-                    <Globe className="w-12 h-12 text-gold/30 mx-auto mb-2" />
-                    <p className="text-sm text-gold/60">No saved games yet</p>
-                    <p className="text-xs text-gold/40 mt-1">Enter a world name to begin your conquest</p>
-                  </div>
-                )}
-                {saved.map((s) => {
-                  const isOnline = isGameOnline(s);
-
-                  return (
-                    <div
-                      key={s}
-                      className={`group relative rounded-lg border-2 p-4 transition-all duration-200 cursor-pointer ${
-                        selected === s
-                          ? isOnline
-                            ? "border-gold bg-gold/10 shadow-lg shadow-gold/20"
-                            : "border-danger/50 bg-danger/5 shadow-lg shadow-danger/10"
-                          : isOnline
-                            ? "border-gold/20 bg-brown/40 hover:bg-brown/60 hover:border-gold/40"
-                            : "border-danger/40 bg-danger/5 hover:bg-danger/10"
-                      }`}
-                      onClick={() => setSelected(s)}
-                      onDoubleClick={() => handleDoubleClick(s)}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="truncate font-bold text-gold text-base">{s}</div>
-                            {selected === s && (
-                              <div className="flex-shrink-0 p-1 rounded-full bg-gold/20">
-                                <Check className="w-3 h-3 text-gold" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="font-mono text-xs text-gold/50 truncate">api.cartridge.gg/x/{s}/torii</div>
-                          {isOnline && savedTimes[s] != null && (
-                            (() => {
-                              const t = savedTimes[s] as number;
-                              const endT = t + GAME_DURATION_SEC;
-                              const content =
-                                nowSec < t
-                                  ? `Starts in ${formatCountdown(t - nowSec)}`
-                                  : nowSec < endT
-                                    ? `Ongoing — ${formatCountdown(endT - nowSec)} left`
-                                    : `Ended at ${new Date(endT * 1000).toLocaleString()}`;
-                              return (
-                                <div className="text-sm md:text-base text-gold font-semibold mt-1">{`Game time: ${content}`}</div>
-                              );
-                            })()
-                          )}
-                        </div>
-
-                        <div className="flex flex-col items-end gap-2">
-                          {/* Status Badge */}
-                          <span
-                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide border ${
-                              statusMap[s] === "ok"
-                                ? "bg-brilliance/10 text-brilliance border-brilliance/30"
-                                : statusMap[s] === "fail"
-                                  ? "bg-danger/10 text-danger border-danger/30"
-                                  : "bg-gold/10 text-gold/60 border-gold/20"
-                            }`}
-                          >
-                            {statusMap[s] === "ok" ? (
-                              <>
-                                <div className="w-1.5 h-1.5 rounded-full bg-brilliance animate-pulse" />
-                                Online
-                              </>
-                            ) : statusMap[s] === "fail" ? (
-                              <>
-                                <AlertCircle className="w-3 h-3" />
-                                Offline
-                              </>
-                            ) : (
-                              <>
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                                Checking
-                              </>
-                            )}
-                          </span>
-
-                          {/* Action Buttons */}
-                          <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                            {/* Enter Game Button */}
-                            {isOnline && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEnterGame(s);
-                                }}
-                                className="p-1.5 rounded-md bg-brilliance/10 text-brilliance border border-brilliance/30 hover:bg-brilliance/20 transition-all"
-                                title="Enter game"
-                              >
-                                <Play className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                            {/* Delete Button */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemoveWorld(s);
-                              }}
-                              className="p-1.5 rounded-md text-danger/60 hover:text-danger hover:bg-danger/10 border border-transparent hover:border-danger/30"
-                              title="Remove game"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+   
 
               {/* Filters */}
-              <div className="flex items-center justify-between gap-3 mb-2">
+              {/* <div className="flex items-center justify-between gap-3 mb-2">
                 <div className="text-[10px] text-gold/60">
                   {factoryLoading
                     ? "Loading factory deployments..."
@@ -680,9 +567,9 @@ export const WorldSelectorModal = ({
                       : `Found ${factoryGames.filter((g) => g.status === "ok").length} online games`}
                 </div>
                 <div className="text-[10px] text-gold/60">Ordering: Starts next</div>
-              </div>
+              </div> */}
 
-              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                 {(() => {
                   const online = factoryGames.filter((fg) => fg.status === "ok");
                   const upcoming = online
@@ -783,7 +670,7 @@ export const WorldSelectorModal = ({
                 </div>
               )}
 
-              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                 {saved.length === 0 && (
                   <div className="rounded-lg border-2 border-dashed border-gold/20 p-6 text-center">
                     <Globe className="w-12 h-12 text-gold/30 mx-auto mb-2" />
@@ -831,7 +718,7 @@ export const WorldSelectorModal = ({
                                     ? `Ongoing — ${formatCountdown(endT - nowSec)} left`
                                     : `Ended at ${new Date(endT * 1000).toLocaleString()}`;
                               return (
-                                <div className="text-sm md:text-base text-gold font-semibold mt-1">{`Game time: ${content}`}</div>
+                                <div className="text-sm md:text-base text-white font-semibold mt-1">{`Game time: ${content}`}</div>
                               );
                             })()
                           )}
