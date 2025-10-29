@@ -9,8 +9,9 @@ import {
 } from "@/hooks/store/use-automation-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import Button from "@/ui/design-system/atoms/button";
-import { configManager } from "@bibliothecadao/eternum";
+import { configManager, getBlockTimestamp, ResourceManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
+import { useDojo } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { REALM_PRESETS, RealmPresetId, calculatePresetAllocations, inferRealmPreset } from "@/utils/automation-presets";
@@ -23,6 +24,23 @@ type RealmAutomationPanelProps = {
 };
 
 const sliderStep = 5;
+
+const formatSignedPerSecond = (value: number): string => {
+  if (!Number.isFinite(value) || Math.abs(value) < 0.0001) return "0/s";
+  const abs = Math.abs(value);
+  const label =
+    abs >= 1000
+      ? Math.round(abs).toLocaleString()
+      : abs >= 100
+        ? abs.toFixed(0)
+        : abs >= 10
+          ? abs.toFixed(1)
+          : abs >= 1
+            ? abs.toFixed(2)
+            : abs.toFixed(3);
+  const sign = value > 0 ? "+" : "-";
+  return `${sign}${label}/s`;
+};
 
 const resolveResourceLabel = (resourceId: number): string => {
   const label = ResourcesIds[resourceId as ResourcesIds];
@@ -48,6 +66,9 @@ export const RealmAutomationPanel = ({
   producedResources,
   entityType = "realm",
 }: RealmAutomationPanelProps) => {
+  const {
+    setup: { components },
+  } = useDojo();
   const upsertRealm = useAutomationStore((state) => state.upsertRealm);
   const setRealmPreset = useAutomationStore((state) => state.setRealmPreset);
   const setResourcePercentages = useAutomationStore((state) => state.setResourcePercentages);
@@ -291,17 +312,99 @@ export const RealmAutomationPanel = ({
     return record;
   }, [aggregatedUsageMap]);
 
-  const lastExecution = realmAutomation?.lastExecution;
-  const lastExecutionEntries = useMemo(() => {
-    if (!lastExecution) return [];
-    return [...(lastExecution.resourceToResource ?? []), ...(lastExecution.laborToResource ?? [])].sort(
-      (a, b) => a.resourceId - b.resourceId,
-    );
-  }, [lastExecution]);
   const activePresetId = useMemo(
     () => inferRealmPreset(draftAutomation ?? realmAutomation),
     [draftAutomation, realmAutomation],
   );
+
+  const netUsagePerSecondRecord = useMemo(() => {
+    const record: Record<number, number> = {};
+    const numericRealmId = Number(realmEntityId);
+    if (!components || !Number.isFinite(numericRealmId) || numericRealmId <= 0) {
+      return record;
+    }
+
+    const manager = new ResourceManager(components, numericRealmId);
+    const resourceComponent = manager.getResource();
+    if (!resourceComponent) {
+      return record;
+    }
+
+    const { currentDefaultTick } = getBlockTimestamp();
+
+    const relevantResourceIds = new Set<ResourcesIds>();
+    realmResources.forEach((id) => relevantResourceIds.add(id));
+    aggregatedUsageList.forEach((item) => relevantResourceIds.add(item.resourceId as ResourcesIds));
+    Object.keys(realmAutomation?.resources ?? {}).forEach((key) => {
+      relevantResourceIds.add(Number(key) as ResourcesIds);
+    });
+
+    const perSecondOutputs = new Map<number, number>();
+    const perSecondConsumptionTotals = new Map<number, number>();
+
+    const addConsumption = (resourceId: number, amount: number) => {
+      if (!Number.isFinite(amount) || amount <= 0) return;
+      perSecondConsumptionTotals.set(resourceId, (perSecondConsumptionTotals.get(resourceId) ?? 0) + amount);
+    };
+
+    Array.from(relevantResourceIds).forEach((resourceId) => {
+      const typedId = resourceId as ResourcesIds;
+      let outputPerSecond = 0;
+      try {
+        const productionInfo = ResourceManager.balanceAndProduction(resourceComponent, typedId);
+        const productionData = ResourceManager.calculateResourceProductionData(
+          typedId,
+          productionInfo,
+          currentDefaultTick || 0,
+        );
+        if (Number.isFinite(productionData.productionPerSecond)) {
+          outputPerSecond = productionData.productionPerSecond;
+        }
+      } catch (_error) {
+        outputPerSecond = 0;
+      }
+
+      perSecondOutputs.set(resourceId, outputPerSecond);
+
+      if (outputPerSecond > 0) {
+        const complexOutput = configManager.complexSystemResourceOutput[resourceId]?.amount ?? 0;
+        if (complexOutput > 0) {
+          const ratio = outputPerSecond / complexOutput;
+          (configManager.complexSystemResourceInputs[resourceId] ?? []).forEach((input) => {
+            addConsumption(input.resource, ratio * input.amount);
+          });
+        }
+
+        const simpleOutput = configManager.simpleSystemResourceOutput[resourceId]?.amount ?? 0;
+        if (simpleOutput > 0) {
+          const ratio = outputPerSecond / simpleOutput;
+          (configManager.simpleSystemResourceInputs[resourceId] ?? []).forEach((input) => {
+            addConsumption(input.resource, ratio * input.amount);
+          });
+        }
+
+        const laborOutput = configManager.laborOutputPerResource[resourceId]?.amount ?? 0;
+        if (laborOutput > 0) {
+          const laborPerSecond = outputPerSecond / laborOutput;
+          addConsumption(ResourcesIds.Labor, laborPerSecond);
+        }
+      }
+    });
+
+    const finalResourceIds = new Set<number>([
+      ...perSecondOutputs.keys(),
+      ...perSecondConsumptionTotals.keys(),
+      ...aggregatedUsageList.map((item) => item.resourceId),
+    ]);
+
+    finalResourceIds.forEach((resourceId) => {
+      const produced = perSecondOutputs.get(resourceId) ?? 0;
+      const consumed = perSecondConsumptionTotals.get(resourceId) ?? 0;
+      record[resourceId] = produced - consumed;
+    });
+
+    return record;
+  }, [components, realmEntityId, realmAutomation?.resources, realmResources, aggregatedUsageList]);
 
   const handlePresetSelect = useCallback(
     (presetId: RealmPresetId) => {
@@ -514,6 +617,10 @@ export const RealmAutomationPanel = ({
               const label = resolveResourceLabel(resourceId);
               const isOverBudget = percent > MAX_RESOURCE_ALLOCATION_PERCENT;
               const isClose = percent >= MAX_RESOURCE_ALLOCATION_PERCENT - 5;
+              const netPerSecond = netUsagePerSecondRecord[resourceId] ?? 0;
+              const netLabel = formatSignedPerSecond(netPerSecond);
+              const netClass =
+                netPerSecond < 0 ? "text-danger/80" : netPerSecond > 0 ? "text-gold/70" : "text-gold/40";
               return (
                 <li
                   key={`usage-${resourceId}`}
@@ -527,7 +634,10 @@ export const RealmAutomationPanel = ({
                   )}
                 >
                   <ResourceIcon resource={ResourcesIds[resourceId as ResourcesIds]} size="xs" />
-                  <span className="flex-1">{label}</span>
+                  <span className="flex-1 flex items-center justify-between gap-2">
+                    {label}
+                    <span className={netClass}>{netLabel}</span>
+                  </span>
                   <span className="font-semibold">{Math.round(percent)}%</span>
                 </li>
               );
@@ -640,40 +750,6 @@ export const RealmAutomationPanel = ({
             </div>
           );
         })}
-      </section>
-
-      <section className="space-y-2">
-        <div className="flex items-center justify-between">
-          <h5 className="text-sm font-semibold text-gold">Last Automation Run</h5>
-          {lastExecution ? (
-            <span className="text-[11px] text-gold/60">{new Date(lastExecution.executedAt).toLocaleString()}</span>
-          ) : (
-            <span className="text-[11px] text-gold/60">Pending execution</span>
-          )}
-        </div>
-        {lastExecution ? (
-          <div className="grid grid-cols-4 gap-2">
-            {lastExecutionEntries.map((entry, index) => (
-              <div
-                key={`exec-${entry.resourceId}-${index}`}
-                className="rounded border border-gold/20 px-3 py-2 text-xs text-gold/80"
-              >
-                <div className="flex items-center gap-2">
-                  <ResourceIcon resource={ResourcesIds[entry.resourceId as ResourcesIds]} size="xs" />
-                  <span className="font-semibold text-gold">{resolveResourceLabel(entry.resourceId)}</span>
-                </div>
-                <div className="mt-1">Produced {Math.round(entry.produced).toLocaleString()}</div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-xs text-gold/60">Once automation executes, production summaries will appear here.</p>
-        )}
-        {lastExecution?.skipped.length ? (
-          <div className="text-[11px] text-warning">
-            Skipped: {lastExecution.skipped.map((item) => resolveResourceLabel(item.resourceId)).join(", ")}
-          </div>
-        ) : null}
       </section>
     </div>
   );
