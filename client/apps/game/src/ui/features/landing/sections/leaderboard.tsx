@@ -1,11 +1,11 @@
-import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 import { useNavigate } from "react-router-dom";
 
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { currencyIntlFormat, displayAddress } from "@/ui/utils/utils";
 
-import { fetchLandingLeaderboard, type LandingLeaderboardEntry } from "../lib/landing-leaderboard-service";
+import { MIN_REFRESH_INTERVAL_MS, useLandingLeaderboardStore } from "../lib/use-landing-leaderboard-store";
 
 const LEADERBOARD_LIMIT = 25;
 const REFRESH_INTERVAL_MS = 60_000;
@@ -16,96 +16,54 @@ const podiumStyles = [
   "border-orange-400/60 shadow-[0_0_42px_-20px_rgba(255,170,102,0.45)] hover:shadow-[0_0_62px_-20px_rgba(255,170,102,0.6)]",
 ] as const;
 
-type ErrorState = string | null;
-
-type LeaderboardLoadOptions = {
-  silent?: boolean;
-};
-
 const formatPoints = (points: number) =>
   Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
   }).format(points ?? 0);
 
 export const LandingLeaderboard = () => {
-  const [entries, setEntries] = useState<LandingLeaderboardEntry[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<ErrorState>(null);
-  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   const navigate = useNavigate();
 
-  const activeRequestRef = useRef<AbortController | null>(null);
-  const isFetchingRef = useRef(false);
-  const isMountedRef = useRef(true);
+  const entries = useLandingLeaderboardStore((state) => state.entries);
+  const isFetching = useLandingLeaderboardStore((state) => state.isFetching);
+  const error = useLandingLeaderboardStore((state) => state.error);
+  const lastUpdatedAt = useLandingLeaderboardStore((state) => state.lastUpdatedAt);
+  const lastFetchAt = useLandingLeaderboardStore((state) => state.lastFetchAt);
+  const fetchLeaderboard = useLandingLeaderboardStore((state) => state.fetchLeaderboard);
 
-  const loadLeaderboard = useCallback(async ({ silent = false }: LeaderboardLoadOptions = {}) => {
-    if (activeRequestRef.current) {
-      activeRequestRef.current.abort();
-    }
+  const [refreshCooldownMs, setRefreshCooldownMs] = useState(0);
 
-    const controller = new AbortController();
-    activeRequestRef.current = controller;
-    isFetchingRef.current = true;
-
-    if (!silent) {
-      setIsLoading(true);
-      setError(null);
-    }
-
-    try {
-      const result = await fetchLandingLeaderboard(LEADERBOARD_LIMIT, 0);
-
-      if (!isMountedRef.current || controller.signal.aborted || activeRequestRef.current !== controller) {
+  useEffect(() => {
+    const updateCooldown = () => {
+      if (!lastFetchAt) {
+        setRefreshCooldownMs(0);
         return;
       }
 
-      setEntries(result);
-      setLastUpdatedAt(Date.now());
-      setError(null);
-    } catch (caughtError) {
-      if (!isMountedRef.current || controller.signal.aborted || activeRequestRef.current !== controller) {
-        return;
-      }
-
-      const message = caughtError instanceof Error ? caughtError.message : "Unable to load leaderboard";
-      setError(message);
-    } finally {
-      if (activeRequestRef.current === controller) {
-        isFetchingRef.current = false;
-
-        if (!silent && isMountedRef.current) {
-          setIsLoading(false);
-        }
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadLeaderboard();
-  }, [loadLeaderboard]);
-
-  useEffect(() => {
-    isMountedRef.current = true;
-
-    return () => {
-      isMountedRef.current = false;
-      activeRequestRef.current?.abort();
+      const elapsed = Date.now() - lastFetchAt;
+      const remaining = Math.max(0, MIN_REFRESH_INTERVAL_MS - elapsed);
+      setRefreshCooldownMs(remaining);
     };
-  }, []);
+
+    updateCooldown();
+    const interval = window.setInterval(updateCooldown, 250);
+
+    return () => window.clearInterval(interval);
+  }, [lastFetchAt]);
+
+  useEffect(() => {
+    void fetchLeaderboard({ limit: LEADERBOARD_LIMIT });
+  }, [fetchLeaderboard]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
-      if (isFetchingRef.current) {
-        return;
-      }
-
-      void loadLeaderboard({ silent: true });
+      void fetchLeaderboard({ limit: LEADERBOARD_LIMIT });
     }, REFRESH_INTERVAL_MS);
 
     return () => window.clearInterval(interval);
-  }, [loadLeaderboard]);
+  }, [fetchLeaderboard]);
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
 
@@ -126,6 +84,9 @@ export const LandingLeaderboard = () => {
   }, [entries, normalizedQuery]);
 
   const isFiltering = normalizedQuery.length > 0;
+  const isInitialLoading = isFetching && entries.length === 0;
+  const isCooldownActive = refreshCooldownMs > 0;
+  const refreshSecondsLeft = Math.ceil(refreshCooldownMs / 1000);
 
   const { podiumEntries, remainingEntries } = useMemo(() => {
     const podium = filteredEntries.slice(0, 3);
@@ -138,8 +99,12 @@ export const LandingLeaderboard = () => {
   }, [filteredEntries]);
 
   const handleManualRefresh = useCallback(() => {
-    void loadLeaderboard();
-  }, [loadLeaderboard]);
+    if (isFetching || refreshCooldownMs > 0) {
+      return;
+    }
+
+    void fetchLeaderboard({ limit: LEADERBOARD_LIMIT });
+  }, [fetchLeaderboard, isFetching, refreshCooldownMs]);
 
   const handleSearchChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(event.currentTarget.value);
@@ -192,7 +157,7 @@ export const LandingLeaderboard = () => {
             Follow the most active Realms captains in Blitz. Rankings refresh automatically from live on-chain data.
           </p>
           <p className="text-xs uppercase tracking-wide text-white/50" aria-live="polite">
-            Updated {lastUpdatedLabel}
+            Updated {lastUpdatedLabel}{isFetching ? " · Refreshing…" : ""}
           </p>
         </div>
 
@@ -269,19 +234,27 @@ export const LandingLeaderboard = () => {
                     {error}
                   </span>
                 ) : null}
-                <RefreshButton
-                  onClick={handleManualRefresh}
-                  isLoading={isLoading}
-                  size="md"
-                  aria-label="Refresh leaderboard"
-                />
+                <div className="flex items-center gap-2">
+                  {isFetching ? (
+                    <span className="text-xs text-white/70" aria-live="polite">Refreshing…</span>
+                  ) : isCooldownActive ? (
+                    <span className="text-xs text-white/50" aria-live="polite">Wait {refreshSecondsLeft}s</span>
+                  ) : null}
+                  <RefreshButton
+                    onClick={handleManualRefresh}
+                    isLoading={isFetching}
+                    disabled={isCooldownActive || isFetching}
+                    size="md"
+                    aria-label="Refresh leaderboard"
+                  />
+                </div>
               </div>
             </div>
           </div>
         </div>
       </header>
 
-      {isLoading && entries.length === 0 ? (
+      {isInitialLoading ? (
         renderSkeleton()
       ) : entries.length === 0 ? (
         <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-black/35 to-black/75 p-8 text-center text-sm text-white/70 shadow-[0_25px_50px_-25px_rgba(12,10,35,0.75)]">
