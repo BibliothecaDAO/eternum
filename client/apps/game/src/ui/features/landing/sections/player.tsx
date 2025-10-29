@@ -16,6 +16,7 @@ import { Copy, Share2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
+  fetchLandingLeaderboard,
   fetchLandingLeaderboardEntryByAddress,
   type LandingLeaderboardEntry,
 } from "../lib/landing-leaderboard-service";
@@ -45,8 +46,59 @@ export const LandingPlayer = () => {
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isCopyingImage, setIsCopyingImage] = useState(false);
+  const [championEntry, setChampionEntry] = useState<LandingLeaderboardEntry | null>(null);
 
   const cardRef = useRef<SVGSVGElement | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadChampion = async () => {
+      try {
+        const [topEntry] = await fetchLandingLeaderboard(1, 0);
+        if (!isMounted) {
+          return;
+        }
+
+        if (!topEntry) {
+          setChampionEntry(null);
+          return;
+        }
+
+        let resolvedChampion = topEntry;
+
+        if (!topEntry.displayName?.trim()) {
+          try {
+            const detailedEntry = await fetchLandingLeaderboardEntryByAddress(topEntry.address);
+            if (!isMounted) {
+              return;
+            }
+
+            if (detailedEntry?.displayName?.trim()) {
+              resolvedChampion = { ...detailedEntry, rank: topEntry.rank };
+            }
+          } catch (lookupError) {
+            console.error("Failed to resolve champion display name", lookupError);
+          }
+        }
+
+        setChampionEntry(resolvedChampion);
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        setChampionEntry(null);
+        console.error("Failed to load champion entry", error);
+      }
+    };
+
+    void loadChampion();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -110,6 +162,15 @@ export const LandingPlayer = () => {
     () => (playerEntry ? toHighlightPlayer(playerEntry) : null),
     [playerEntry],
   );
+
+  const championDisplayName = useMemo(() => {
+    const name = championEntry?.displayName?.trim();
+    if (name) {
+      return name;
+    }
+
+    return null;
+  }, [championEntry]);
 
   const highlightRank = highlightPlayer?.rank ?? null;
   const highlightPoints = highlightPlayer?.points ?? null;
@@ -220,7 +281,7 @@ export const LandingPlayer = () => {
                   ref={cardRef}
                   title="Realms Blitz"
                   subtitle="Blitz Leaderboard"
-                  winnerLine={highlightPlayer.name}
+                  winnerLine={championDisplayName}
                   highlight={highlightPlayer}
                 />
               </div>
