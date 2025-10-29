@@ -1,10 +1,8 @@
-# Please be mindful that changing the content of this file will impact the Eternum Launcher app
-
 rpc = "https://api.cartridge.gg/x/eternum-blitz-slot-1/katana"
 
-world_address = "0x3d978ca16a9b85804408672b7e975fbea8ff69d374f71439cab9554edf72d5b"
+world_address = "0x516ab953094b7fe83b89fbd86200a8c0c3dddad8bae6bae52ceb70b9099d9ec"
 
-db_dir = "torii-slot"
+db_dir = "torii"
 
 [indexing]
 events_chunk_size = 1024  # Size of events page to fetch
@@ -19,20 +17,18 @@ max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
 transactions = true
 
 contracts = [
-	"erc721:0x432531b2276e32aa5b82ae095e6694d68f49a2c82f2ee8b406f681ec3826c8b",
-	"erc721:0x432531b2276e32aa5b82ae095e6694d68f49a2c82f2ee8b406f681ec3826c8b",
-	"erc721:0x56502f7cf5847c0a4d4d0d0a37fa02e104d637f278564ce2e85fcd9edd7d27a",
-	"erc721:0x5c49a7c26b90adf382572e85332865f7cc5b58bf8a17aebaabe1eba9b496489",
-	"erc20:0x3acbe76476cbf8997397878c52ce1acdf90ed1c295907f6505d3ff4c1646afa",
+	
 ]
 
 namespaces = ["s1_eternum"]
 
 world_block = 0
 
+[erc]
+max_metadata_tasks = 10
+
 [sql]
 all_model_indices = false
-# TODO(tedison): do another pass through the queries when composite indices are supported
 model_indices = [
 	{ model_tag = "s1_eternum-ResourceList", fields = ["amount"]},
 	{ model_tag = "s1_eternum-ExplorerTroops", fields = ["owner", "coord.x", "coord.y"]},
@@ -50,8 +46,8 @@ hooks = [
 	{ event = { ModelRegistered = { model_tag = "s1_eternum-Tile" } }, statement = "CREATE INDEX [idx_col_row_s1_eternum-Tile] ON [s1_eternum-Tile] (col, row)" },
 	{ event = { ModelRegistered = { model_tag = "s1_eternum-Structure" } }, statement = "CREATE INDEX [idx_x_y_s1_eternum-Structure] ON [s1_eternum-Structure] ([base.coord_x], [base.coord_y])" },
 ]
-historical = ["s1_eternum-TrophyCreation", "s1_eternum-TrophyProgression"]
-cache_size = -1_000_000 # 1024MB of cache size, we can tune this up if needed. This should account for between 30%-80% of the RAM of the slot instance.
+historical = ["s1_eternum-BurnDonkey", "s1_eternum-TrophyCreation", "s1_eternum-TrophyProgression"]
+cache_size = -78_125_000 # 10GB of cache size, we can tune this up if needed. This should account for between 30%-80% of the RAM of the slot instance. 10GB is 50% of an insane slot instance's RAM.
 page_size = 32_768
 
 [server]
