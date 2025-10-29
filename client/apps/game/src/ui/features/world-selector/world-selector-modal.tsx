@@ -37,7 +37,7 @@ export const WorldSelectorModal = ({
   const [nowSec, setNowSec] = useState<number>(() => Math.floor(Date.now() / 1000));
   const GAME_DURATION_SEC = 2 * 60 * 60; // 2 hours
 
-  // Check saved worlds availability
+  // Check saved worlds availability and auto-delete offline games
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
@@ -49,15 +49,29 @@ export const WorldSelectorModal = ({
       );
       if (!cancelled) {
         const next: Record<string, "ok" | "fail"> = {};
-        entries.forEach(([k, v]) => (next[k] = v));
+        const offlineGames: string[] = [];
+        entries.forEach(([k, v]) => {
+          next[k] = v;
+          if (v === "fail") offlineGames.push(k);
+        });
         setStatusMap(next);
+
+        // Auto-delete offline games
+        if (offlineGames.length > 0) {
+          offlineGames.forEach((n) => deleteWorldProfile(n));
+          const updatedList = listWorldNames();
+          setSaved(updatedList);
+          if (selected && offlineGames.includes(selected)) {
+            setSelected(null);
+          }
+        }
       }
     };
     void run();
     return () => {
       cancelled = true;
     };
-  }, [saved]);
+  }, [saved, selected]);
 
   // Debounced input availability check
   useEffect(() => {
@@ -309,15 +323,6 @@ export const WorldSelectorModal = ({
     deleteWorldProfile(worldName);
     setSaved(listWorldNames());
     if (selected === worldName) setSelected(null);
-  };
-
-  const handleRemoveOfflineSaved = () => {
-    const toRemove = saved.filter((n) => statusMap[n] === "fail");
-    if (toRemove.length === 0) return;
-    toRemove.forEach((n) => deleteWorldProfile(n));
-    const next = listWorldNames();
-    setSaved(next);
-    if (selected && !next.includes(selected)) setSelected(null);
   };
 
   const handleEnterGame = (worldName: string) => {
@@ -652,21 +657,6 @@ export const WorldSelectorModal = ({
                   <p className="text-[10px] text-gold/60 text-center">
                     <span className="font-semibold">Tip:</span> Double-click to enter • Hover for actions
                   </p>
-                </div>
-              )}
-
-              {/* Offline summary + bulk delete */}
-              {saved.length > 0 && (
-                <div className="flex items-center justify-between mb-2">
-                  <div className="text-[10px] text-gold/60">
-                    Offline saved games: {saved.filter((n) => statusMap[n] === "fail").length}
-                  </div>
-                  <button
-                    onClick={handleRemoveOfflineSaved}
-                    className="text-[10px] px-2 py-1 rounded border border-danger/30 text-danger hover:bg-danger/10 transition-colors"
-                  >
-                    Delete Offline
-                  </button>
                 </div>
               )}
 
