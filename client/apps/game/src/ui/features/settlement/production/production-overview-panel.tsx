@@ -3,7 +3,7 @@ import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ProductionModal } from "@/ui/features/settlement";
 import { REALM_PRESETS, RealmPresetId, inferRealmPreset } from "@/utils/automation-presets";
-import { getIsBlitz, getStructureName, ResourceManager } from "@bibliothecadao/eternum";
+import { configManager, getBlockTimestamp, getIsBlitz, getStructureName, ResourceManager } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -31,20 +31,33 @@ const formatRelative = (timestamp?: number) => {
   return `${diffDays}d ago`;
 };
 
-const formatAmount = (amount: number | undefined) => {
-  if (!amount || Number.isNaN(amount)) return "0";
-  return Math.round(amount).toLocaleString();
+const formatPerSecondValue = (value: number): string => {
+  if (!Number.isFinite(value)) return "0";
+  const abs = Math.abs(value);
+  if (abs < 0.0001) return "0";
+  if (abs >= 1000) return Math.round(abs).toLocaleString();
+  if (abs >= 100) return abs.toFixed(0);
+  if (abs >= 10) return abs.toFixed(1);
+  if (abs >= 1) return abs.toFixed(2);
+  return abs.toFixed(3);
 };
 
-const formatMethodLabel = (method?: string) => {
-  switch (method) {
-    case "resource-to-resource":
-      return "Resource burn";
-    case "labor-to-resource":
-      return "Labor burn";
-    default:
-      return "Production";
-  }
+const formatPerSecond = (value: number): string => {
+  if (!Number.isFinite(value) || Math.abs(value) < 0.0001) return "0/s";
+  return `${formatPerSecondValue(value)}/s`;
+};
+
+const formatSignedPerSecond = (value: number): string => {
+  if (!Number.isFinite(value) || Math.abs(value) < 0.0001) return "0/s";
+  const sign = value > 0 ? "+" : value < 0 ? "-" : "";
+  return `${sign}${formatPerSecondValue(value)}/s`;
+};
+
+type ResourceProductionMetrics = {
+  resourceId: ResourcesIds;
+  outputPerSecond: number;
+  netPerSecond: number;
+  inputs: { resourceId: ResourcesIds; perSecond: number }[];
 };
 
 type RealmCard = {
@@ -58,6 +71,7 @@ type RealmCard = {
     number,
     { produced: number; cycles: number; method: string; executedAt: number } | undefined
   >;
+  metrics: Record<number, ResourceProductionMetrics>;
 };
 
 export const ProductionOverviewPanel = () => {
@@ -105,11 +119,14 @@ export const ProductionOverviewPanel = () => {
   const realmCards = useMemo<RealmCard[]>(() => {
     const cards: RealmCard[] = [];
     const managedStructures = [...playerRealms, ...playerVillages];
+    const { currentDefaultTick } = getBlockTimestamp();
+
     managedStructures.forEach((realm) => {
       const automation = automationRealms[String(realm.entityId)];
       const realmName = getStructureName(realm.structure, isBlitz).name;
       const producedResources = automation?.resources ?? {};
       const entityType = automation?.entityType ?? "realm";
+      let resourceComponent: ReturnType<ResourceManager["getResource"]> | null = null;
 
       // Derive produced resources from live game state (buildings) to enable presets
       // even before any automation resources are configured.
@@ -117,8 +134,8 @@ export const ProductionOverviewPanel = () => {
       try {
         const realmIdNum = Number(realm.entityId);
         if (components && Number.isFinite(realmIdNum) && realmIdNum > 0) {
-          const resourceManager = new ResourceManager(components, realmIdNum);
-          const resourceComponent = resourceManager.getResource();
+          const manager = new ResourceManager(components, realmIdNum);
+          resourceComponent = manager.getResource();
           if (resourceComponent) {
             const ALL = Object.values(ResourcesIds).filter((v) => typeof v === "number") as ResourcesIds[];
             for (const resId of ALL) {
@@ -134,10 +151,10 @@ export const ProductionOverviewPanel = () => {
       }
 
       const configuredIds = Object.keys(producedResources).map((key) => Number(key) as ResourcesIds);
-      const unionIds = Array.from(new Set([...configuredIds, ...producedFromBuildings]))
+      const uniqueResourceIds = Array.from(new Set([...configuredIds, ...producedFromBuildings]))
         .filter((resourceId) => !isAutomationResourceBlocked(resourceId, entityType))
-        .sort((a, b) => a - b)
-        .slice(0, 8);
+        .sort((a, b) => a - b);
+      const displayedResourceIds = uniqueResourceIds.slice(0, 8);
 
       const lastExecution = automation?.lastExecution;
 
@@ -163,14 +180,102 @@ export const ProductionOverviewPanel = () => {
         });
       }
 
+      const consumptionTotals = new Map<number, number>();
+      const resourceSummaries = new Map<number, ResourceProductionMetrics>();
+
+      uniqueResourceIds.forEach((resourceId) => {
+        let outputPerSecond = 0;
+        const inputAccumulator = new Map<number, number>();
+
+        if (resourceComponent) {
+          try {
+            const productionInfo = ResourceManager.balanceAndProduction(resourceComponent, resourceId);
+            const productionData = ResourceManager.calculateResourceProductionData(
+              resourceId,
+              productionInfo,
+              currentDefaultTick || 0,
+            );
+            if (Number.isFinite(productionData.productionPerSecond)) {
+              outputPerSecond = productionData.productionPerSecond;
+            }
+          } catch (_error) {
+            outputPerSecond = 0;
+          }
+        }
+
+        if (outputPerSecond > 0) {
+          const complexOutput = configManager.complexSystemResourceOutput[resourceId]?.amount ?? 0;
+          if (complexOutput > 0) {
+            const ratio = outputPerSecond / complexOutput;
+            (configManager.complexSystemResourceInputs[resourceId] ?? []).forEach((input) => {
+              const perSecond = ratio * input.amount;
+              if (Number.isFinite(perSecond) && perSecond > 0) {
+                inputAccumulator.set(input.resource, (inputAccumulator.get(input.resource) ?? 0) + perSecond);
+              }
+            });
+          }
+
+          const simpleOutput = configManager.simpleSystemResourceOutput[resourceId]?.amount ?? 0;
+          if (simpleOutput > 0) {
+            const ratio = outputPerSecond / simpleOutput;
+            (configManager.simpleSystemResourceInputs[resourceId] ?? []).forEach((input) => {
+              const perSecond = ratio * input.amount;
+              if (Number.isFinite(perSecond) && perSecond > 0) {
+                inputAccumulator.set(input.resource, (inputAccumulator.get(input.resource) ?? 0) + perSecond);
+              }
+            });
+          }
+
+          const laborOutput = configManager.laborOutputPerResource[resourceId]?.amount ?? 0;
+          if (laborOutput > 0) {
+            const laborPerSecond = outputPerSecond / laborOutput;
+            if (Number.isFinite(laborPerSecond) && laborPerSecond > 0) {
+              inputAccumulator.set(
+                ResourcesIds.Labor,
+                (inputAccumulator.get(ResourcesIds.Labor) ?? 0) + laborPerSecond,
+              );
+            }
+          }
+        }
+
+        const inputs = Array.from(inputAccumulator.entries())
+          .filter(([, amount]) => Number.isFinite(amount) && amount > 0)
+          .map(([inputId, amount]) => ({
+            resourceId: Number(inputId) as ResourcesIds,
+            perSecond: amount,
+          }))
+          .sort((a, b) => a.resourceId - b.resourceId);
+
+        inputs.forEach((input) => {
+          consumptionTotals.set(input.resourceId, (consumptionTotals.get(input.resourceId) ?? 0) + input.perSecond);
+        });
+
+        resourceSummaries.set(resourceId, {
+          resourceId,
+          outputPerSecond,
+          netPerSecond: 0,
+          inputs,
+        });
+      });
+
+      const metrics: Record<number, ResourceProductionMetrics> = {};
+      resourceSummaries.forEach((summary) => {
+        const netPerSecond = summary.outputPerSecond - (consumptionTotals.get(summary.resourceId) ?? 0);
+        metrics[summary.resourceId] = {
+          ...summary,
+          netPerSecond,
+        };
+      });
+
       cards.push({
         id: String(realm.entityId),
         name: realmName,
         type: entityType,
-        resourceIds: unionIds,
+        resourceIds: displayedResourceIds,
         lastRun: automation?.lastExecution?.executedAt,
         presetId: inferRealmPreset(automation) ?? "custom",
         productionLookup,
+        metrics,
       });
 
       // quiet
@@ -249,27 +354,68 @@ export const ProductionOverviewPanel = () => {
               {card.resourceIds.length === 0 ? (
                 <span className="text-[11px] text-gold/50">No automated resources</span>
               ) : (
-                <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                   {card.resourceIds.map((resourceId) => {
+                    const metrics = card.metrics[resourceId];
                     const detail = card.productionLookup[resourceId];
+                    const net = metrics?.netPerSecond ?? 0;
+                    const netClass =
+                      Math.abs(net) < 0.0001 ? "text-gold/60" : net > 0 ? "text-green" : "text-red";
+
                     return (
                       <div
                         key={`${card.id}-${resourceId}`}
-                        className="flex items-start gap-2 rounded border border-gold/15 bg-black/30 px-2 py-2"
+                        className="rounded border border-gold/20 bg-black/25 p-3 space-y-2"
                       >
-                        <ResourceIcon resource={ResourcesIds[resourceId]} size="xs" />
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[11px] text-gold/80">{ResourcesIds[resourceId]}</span>
-                          <span className="text-[10px] text-gold/60">
-                            {detail ? (
-                              <>
-                                {formatAmount(detail.produced)} output &middot; {detail.cycles} cycles &middot;{" "}
-                                {formatMethodLabel(detail.method)} &middot; {formatRelative(detail.executedAt)}
-                              </>
-                            ) : (
-                              "No recent production data"
-                            )}
-                          </span>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <ResourceIcon resource={ResourcesIds[resourceId]} size="sm" />
+                            <div className="flex flex-col">
+                              <span className="text-sm font-semibold text-gold">
+                                {ResourcesIds[resourceId]}
+                              </span>
+                              <span className="text-[11px] text-gold/60">
+                                Output {formatPerSecond(metrics?.outputPerSecond ?? 0)}
+                              </span>
+                            </div>
+                          </div>
+                          <div className={`text-[11px] font-semibold ${netClass}`}>
+                            Net {formatSignedPerSecond(net)}
+                          </div>
+                        </div>
+
+                        {metrics && metrics.inputs.length > 0 ? (
+                          <div className="space-y-1">
+                            <span className="text-[10px] uppercase tracking-wide text-gold/50">Inputs</span>
+                            <div className="grid grid-cols-2 gap-1">
+                              {metrics.inputs.map((input) => {
+                                const consumptionLabel =
+                                  input.perSecond > 0
+                                    ? `-${formatPerSecondValue(input.perSecond)}/s`
+                                    : "0/s";
+                                return (
+                                  <div
+                                    key={`input-${card.id}-${resourceId}-${input.resourceId}`}
+                                    className="flex items-center justify-between rounded border border-gold/15 bg-black/20 px-2 py-1 text-[10px] text-gold/70"
+                                  >
+                                    <span className="flex items-center gap-1">
+                                      <ResourceIcon resource={ResourcesIds[input.resourceId]} size="xs" />
+                                      {ResourcesIds[input.resourceId]}
+                                    </span>
+                                    <span className="text-red/70">{consumptionLabel}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-gold/60">No resource inputs required.</span>
+                        )}
+
+                        <div className="text-[10px] text-gold/50">
+                          {detail
+                            ? `Last run ${formatRelative(detail.executedAt)} · ${detail.cycles} cycles`
+                            : "Automation has not executed yet."}
                         </div>
                       </div>
                     );
