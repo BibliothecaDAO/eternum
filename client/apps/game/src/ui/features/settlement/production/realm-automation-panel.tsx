@@ -342,50 +342,67 @@ export const RealmAutomationPanel = ({
     const perSecondOutputs = new Map<number, number>();
     const perSecondConsumptionTotals = new Map<number, number>();
 
+    const addOutput = (resourceId: number, amount: number) => {
+      if (!Number.isFinite(amount) || amount <= 0) return;
+      perSecondOutputs.set(resourceId, (perSecondOutputs.get(resourceId) ?? 0) + amount);
+    };
+
     const addConsumption = (resourceId: number, amount: number) => {
       if (!Number.isFinite(amount) || amount <= 0) return;
       perSecondConsumptionTotals.set(resourceId, (perSecondConsumptionTotals.get(resourceId) ?? 0) + amount);
     };
 
-    Array.from(relevantResourceIds).forEach((resourceId) => {
-      const typedId = resourceId as ResourcesIds;
-      let outputPerSecond = 0;
+    automationRows.forEach(({ resourceId, percentages, complexInputs, simpleInputs }) => {
+      const typedResourceId = resourceId as ResourcesIds;
+      let baseOutputPerSecond = 0;
       try {
-        const productionInfo = ResourceManager.balanceAndProduction(resourceComponent, typedId);
+        const productionInfo = ResourceManager.balanceAndProduction(resourceComponent, typedResourceId);
         const productionData = ResourceManager.calculateResourceProductionData(
-          typedId,
+          typedResourceId,
           productionInfo,
           currentDefaultTick || 0,
         );
         if (Number.isFinite(productionData.productionPerSecond)) {
-          outputPerSecond = productionData.productionPerSecond;
+          baseOutputPerSecond = productionData.productionPerSecond;
         }
       } catch (_error) {
-        outputPerSecond = 0;
+        baseOutputPerSecond = 0;
       }
 
-      perSecondOutputs.set(resourceId, outputPerSecond);
+      if (baseOutputPerSecond <= 0) {
+        return;
+      }
 
-      if (outputPerSecond > 0) {
+      const resourceRatio = Math.min(
+        1,
+        Math.max(0, percentages.resourceToResource / MAX_RESOURCE_ALLOCATION_PERCENT),
+      );
+      const laborRatio = Math.min(1, Math.max(0, percentages.laborToResource / MAX_RESOURCE_ALLOCATION_PERCENT));
+      const outputRatio = Math.min(1, resourceRatio + laborRatio);
+      const producedPerSecond = baseOutputPerSecond * outputRatio;
+
+      if (producedPerSecond > 0) {
+        addOutput(resourceId, producedPerSecond);
+      }
+
+      if (resourceRatio > 0 && complexInputs.length > 0) {
         const complexOutput = configManager.complexSystemResourceOutput[resourceId]?.amount ?? 0;
         if (complexOutput > 0) {
-          const ratio = outputPerSecond / complexOutput;
-          (configManager.complexSystemResourceInputs[resourceId] ?? []).forEach((input) => {
-            addConsumption(input.resource, ratio * input.amount);
-          });
+          const ratio = (baseOutputPerSecond / complexOutput) * resourceRatio;
+          complexInputs.forEach((input) => addConsumption(input.resource, ratio * input.amount));
         }
+      }
 
+      if (laborRatio > 0 && simpleInputs.length > 0) {
         const simpleOutput = configManager.simpleSystemResourceOutput[resourceId]?.amount ?? 0;
         if (simpleOutput > 0) {
-          const ratio = outputPerSecond / simpleOutput;
-          (configManager.simpleSystemResourceInputs[resourceId] ?? []).forEach((input) => {
-            addConsumption(input.resource, ratio * input.amount);
-          });
+          const ratio = (baseOutputPerSecond / simpleOutput) * laborRatio;
+          simpleInputs.forEach((input) => addConsumption(input.resource, ratio * input.amount));
         }
 
         const laborOutput = configManager.laborOutputPerResource[resourceId]?.amount ?? 0;
         if (laborOutput > 0) {
-          const laborPerSecond = outputPerSecond / laborOutput;
+          const laborPerSecond = (baseOutputPerSecond / laborOutput) * laborRatio;
           addConsumption(ResourcesIds.Labor, laborPerSecond);
         }
       }
@@ -394,6 +411,7 @@ export const RealmAutomationPanel = ({
     const finalResourceIds = new Set<number>([
       ...perSecondOutputs.keys(),
       ...perSecondConsumptionTotals.keys(),
+      ...Array.from(relevantResourceIds),
       ...aggregatedUsageList.map((item) => item.resourceId),
     ]);
 
@@ -404,7 +422,7 @@ export const RealmAutomationPanel = ({
     });
 
     return record;
-  }, [components, realmEntityId, realmAutomation?.resources, realmResources, aggregatedUsageList]);
+  }, [automationRows, components, realmEntityId, realmAutomation?.resources, realmResources, aggregatedUsageList]);
 
   const handlePresetSelect = useCallback(
     (presetId: RealmPresetId) => {
@@ -625,7 +643,7 @@ export const RealmAutomationPanel = ({
                 <li
                   key={`usage-${resourceId}`}
                   className={clsx(
-                    "flex items-center gap-2 rounded border px-3 py-2 text-xs",
+                    "flex items-center gap-2 rounded px-3 py-2 text-xs border border-transparent",
                     isOverBudget
                       ? "border-danger/60 text-danger"
                       : isClose
@@ -634,11 +652,14 @@ export const RealmAutomationPanel = ({
                   )}
                 >
                   <ResourceIcon resource={ResourcesIds[resourceId as ResourcesIds]} size="xs" />
-                  <span className="flex-1 flex items-center justify-between gap-2">
-                    {label}
-                    <span className={netClass}>{netLabel}</span>
-                  </span>
-                  <span className="font-semibold">{Math.round(percent)}%</span>
+                  <div className="flex-1 flex items-center justify-between gap-2">
+                    <span>{label}</span>
+                    <div className="flex items-center gap-2">
+                      <span className={netClass}>{netLabel}</span>
+                      <span className="text-gold/40">•</span>
+                      <span className="font-semibold text-gold">{Math.round(percent)}%</span>
+                    </div>
+                  </div>
                 </li>
               );
             })}
