@@ -1,11 +1,8 @@
 import { getIsBlitz } from "@bibliothecadao/eternum";
 
-import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { ArmyCapacity } from "@/ui/design-system/molecules/army-capacity";
 import { StaminaResource } from "@/ui/design-system/molecules/stamina-resource";
-import { InventoryResources } from "@/ui/features/economy/resources";
 import { TroopChip } from "@/ui/features/military";
-import { useChatStore } from "@/ui/features/social";
 import { getCharacterName } from "@/utils/agent";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
@@ -20,11 +17,11 @@ import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
 import { ContractAddress, ID, RelicRecipientType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
-import { Loader, MessageCircle, Trash2 } from "lucide-react";
+import { Loader, RefreshCw, Trash2 } from "lucide-react";
 import { memo, useCallback, useMemo, useState } from "react";
-import { toast } from "sonner";
 import { ArmyWarning } from "../armies/army-warning";
 import { ActiveRelicEffects } from "./active-relic-effects";
+import { EntityInventoryTabs } from "./entity-inventory-tabs";
 
 interface ArmyEntityDetailProps {
   armyEntityId: ID;
@@ -124,9 +121,7 @@ export const ArmyEntityDetail = memo(
       );
 
       const guild = structure ? getGuildFromPlayerAddress(ContractAddress(structure.owner), components) : undefined;
-      const userGuild = getGuildFromPlayerAddress(userAddress, components);
       const isMine = structure?.owner === userAddress;
-      const isAlly = isMine || (guild && userGuild && guild.entityId === userGuild.entityId) || false;
 
       const addressName = structure?.owner
         ? getAddressName(structure?.owner, components)
@@ -138,7 +133,6 @@ export const ArmyEntityDetail = memo(
         stamina,
         maxStamina,
         playerGuild: guild,
-        isAlly,
         addressName,
         isMine,
         structureOwnerName: structureOwnerName,
@@ -159,37 +153,15 @@ export const ArmyEntityDetail = memo(
       }
     };
 
-    const openChat = useChatStore((state) => state.actions.openChat);
-    const addTab = useChatStore((state) => state.actions.addTab);
-    const getUserIdByUsername = useChatStore((state) => state.actions.getUserIdByUsername);
-
-    const handleChatClick = () => {
-      if (derivedData?.isMine) {
-        openChat();
-      } else if (derivedData?.addressName) {
-        const userId = getUserIdByUsername(derivedData.addressName);
-        if (userId) {
-          addTab({
-            type: "direct",
-            name: derivedData.addressName,
-            recipientId: userId,
-          });
-          openChat();
-        } else {
-          // Show toast notification when user is not found
-          toast.error(`${derivedData.addressName} is not available for direct messaging`, {
-            description: "They probably offline right now, please try again later.",
-            duration: 5000,
-          });
-          // Open global chat as fallback
-          openChat();
-        }
-      }
-    };
-
-    const headerTextClass = compact ? "text-base" : "text-lg";
+    const headerTitleClass = compact ? "text-xl" : "text-2xl";
     const smallTextClass = compact ? "text-xxs" : "text-xs";
-    const panelClass = "bg-dark-brown/60 rounded p-2 border border-gold/20";
+    const sectionTitleClass = `${smallTextClass} font-semibold uppercase tracking-[0.2em] text-gold/80`;
+    const headerCardClass = `relative overflow-hidden rounded-xl border border-gold/25 bg-gradient-to-br from-dark-brown/90 via-brown/75 to-dark/80 ${compact ? "px-3 py-3" : "px-4 py-4"}`;
+    const panelClass = "rounded-lg border border-gold/20 bg-dark-brown/70 px-3 py-2 shadow-md";
+    const actionButtonBase =
+      "inline-flex min-w-[104px] items-center justify-center gap-2 rounded-md px-3 py-1 text-xs font-semibold uppercase tracking-wide transition-colors focus:outline-none focus:ring-1 disabled:cursor-not-allowed disabled:opacity-60";
+    const standardActionClasses = `${actionButtonBase} border border-gold/60 bg-gold/10 text-gold hover:bg-gold/20 focus:ring-gold/30`;
+    const dangerActionClasses = `${actionButtonBase} border border-danger/60 bg-danger/20 text-danger hover:bg-danger/40 focus:ring-danger/40`;
 
     if (isLoadingExplorer || (explorer?.owner && isLoadingStructure)) {
       return (
@@ -201,81 +173,103 @@ export const ArmyEntityDetail = memo(
 
     if (!explorer || !derivedData) return null;
 
-    const relationBadgeClass = derivedData.isAlly
-      ? "bg-ally/80 border border-ally text-lightest"
-      : "bg-enemy/80 border border-enemy text-lightest";
+    const alignmentBadge = derivedData.isMine
+      ? { label: "Your Army", className: "bg-gold/20 border border-gold/40 text-gold" }
+      : derivedData.playerGuild
+        ? {
+            label: `Guild · ${derivedData.playerGuild.name}`,
+            className: "bg-order-protection/20 border border-order-protection/40 text-order-protection",
+          }
+        : derivedData.structureOwnerName
+          ? { label: "Visiting", className: "bg-blueish/20 border border-blueish/40 text-blueish" }
+          : undefined;
 
     return (
-      <div className={`flex flex-col ${compact ? "gap-1" : "gap-2"} ${className}`}>
-        {/* Header with owner and guild info */}
-        <div className={`flex items-center justify-between border-b border-gold/30 ${compact ? "pb-1" : "pb-2"} gap-2`}>
-          <div className="flex flex-col flex-1 min-w-0">
-            <h4 className={`${headerTextClass} font-bold`}>
-              {derivedData.addressName} <span className="text-xs text-gold/80">({armyEntityId})</span>
-            </h4>
-            {derivedData.playerGuild && (
-              <div className="text-xs text-gold/80">
-                {"< "}
-                {derivedData.playerGuild.name}
-                {" >"}
-              </div>
-            )}
-            {derivedData.structureOwnerName && (
-              <div className="text-xs text-gold/70 italic">Owner: {derivedData.structureOwnerName}</div>
-            )}
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {showButtons && (
-              <RefreshButton
-                onClick={handleRefresh}
-                isLoading={isRefreshing}
-                size="sm"
-                disabled={Date.now() - lastRefresh < 10000}
-              />
-            )}
-            <div className={`px-2 py-1 rounded text-xs font-bold ${relationBadgeClass}`}>
-              {derivedData.isAlly ? "Ally" : "Enemy"}
-            </div>
-            {derivedData.addressName !== undefined && showButtons && (
-              <button onClick={handleChatClick} className="p-1 rounded hover:bg-gold/10 transition" title="Chat">
-                <MessageCircle />
-              </button>
-            )}
-            {derivedData.isMine && showButtons && (
-              <button
-                onClick={handleDeleteExplorer}
-                className={`p-1 rounded bg-danger/90 hover:bg-danger transition text-lightest flex items-center ${
-                  isLoadingDelete ? "opacity-60 cursor-not-allowed" : ""
-                }`}
-                title="Delete Army"
-                disabled={isLoadingDelete}
-              >
-                {isLoadingDelete ? (
-                  <span className="animate-spin mr-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>
-                ) : (
-                  <Trash2 size={25} />
+      <div className={`flex flex-col ${compact ? "gap-1" : "gap-3"} ${className ?? ""}`}>
+        <div className={headerCardClass}>
+          <div className="relative z-10 flex flex-col gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="flex flex-col flex-1 min-w-0 gap-1">
+                <span className={`${smallTextClass} uppercase tracking-[0.22em] text-gold/70`}>Army</span>
+                <div className="flex flex-wrap items-baseline gap-2">
+                  <h4 className={`${headerTitleClass} font-bold text-gold`}>{derivedData.addressName}</h4>
+                  <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">#{armyEntityId}</span>
+                </div>
+                {derivedData.playerGuild && (
+                  <div className={`${smallTextClass} text-gold/60`}>Guild · {derivedData.playerGuild.name}</div>
                 )}
-                {isLoadingDelete && <span className="ml-1 text-xs">Deleting...</span>}
-              </button>
-            )}
+                {derivedData.structureOwnerName && (
+                  <div className={`${smallTextClass} text-gold/60`}>
+                    Stationed at · {derivedData.structureOwnerName}
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col items-end gap-2">
+                {alignmentBadge && (
+                  <span
+                    className={`rounded-full px-3 py-1 text-xxs font-semibold uppercase tracking-[0.25em] ${alignmentBadge.className}`}
+                  >
+                    {alignmentBadge.label}
+                  </span>
+                )}
+                {showButtons && (
+                  <div className="flex flex-wrap justify-end gap-1.5">
+                    <button
+                      onClick={handleRefresh}
+                      className={standardActionClasses}
+                      disabled={isRefreshing || Date.now() - lastRefresh < 10000}
+                      title="Refresh data"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                      <span>Refresh</span>
+                    </button>
+                    {derivedData.isMine && (
+                      <button
+                        onClick={handleDeleteExplorer}
+                        className={dangerActionClasses}
+                        title="Delete Army"
+                        disabled={isLoadingDelete}
+                      >
+                        {isLoadingDelete ? (
+                          <>
+                            <Loader className="h-4 w-4 animate-spin" />
+                            <span>Deleting</span>
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 className="h-4 w-4" />
+                            <span>Delete</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-col gap-2 w-full">
-          <div className="flex flex-col w-full gap-2">
-            {/* Army warnings */}
-            {structureResources && explorerResources && (
-              <ArmyWarning
-                army={explorer}
-                explorerResources={explorerResources}
-                structureResources={structureResources}
-              />
-            )}
+        <div className={`flex flex-col ${compact ? "gap-2" : "gap-3"} w-full`}>
+          <div className={panelClass}>
+            <div className={`${sectionTitleClass} mb-2`}>Army Composition</div>
+            <TroopChip troops={explorer.troops} iconSize={compact ? "md" : "lg"} />
+          </div>
 
-            {/* Stamina and capacity - more prominent */}
-            <div className={`flex flex-col gap-1 mt-1 ${panelClass}`}>
-              <div className="flex items-center justify-between gap-2">
-                <div className={`${smallTextClass} font-bold text-gold/90 uppercase`}>STAMINA</div>
+          <div className={panelClass}>
+            <div className={`${sectionTitleClass} mb-2`}>Vitals</div>
+            <div className="flex flex-col gap-2">
+              {structureResources && explorerResources && (
+                <div className="mb-2">
+                  <ArmyWarning
+                    army={explorer}
+                    explorerResources={explorerResources}
+                    structureResources={structureResources}
+                  />
+                </div>
+              )}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className={`${smallTextClass} uppercase text-gold/70`}>Stamina</span>
                 {derivedData.stamina && derivedData.maxStamina && (
                   <StaminaResource
                     entityId={armyEntityId}
@@ -285,43 +279,42 @@ export const ArmyEntityDetail = memo(
                   />
                 )}
               </div>
-
-              <div className="flex items-center justify-between gap-2">
-                <div className={`${smallTextClass} font-bold text-gold/90 uppercase`}>CAPACITY</div>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className={`${smallTextClass} uppercase text-gold/70`}>Capacity</span>
                 <ArmyCapacity resource={explorerResources} />
               </div>
             </div>
           </div>
 
-          {/* Resources section */}
-          {explorerResources && (
-            <div className="flex flex-col gap-0.5 w-full mt-1 border-t border-gold/20 pt-1">
-              <div className={`${smallTextClass} text-gold/80 uppercase font-semibold`}>Resources & Relics</div>
-              <InventoryResources
+          {explorerResources ? (
+            <div className={panelClass}>
+              <div className={`${sectionTitleClass} mb-2`}>Inventory</div>
+              <EntityInventoryTabs
                 resources={explorerResources}
-                relicEffects={explorerData?.relicEffects.map((effect) => effect.id)}
-                max={maxInventory}
-                className="flex flex-wrap gap-1 w-full no-scrollbar"
-                resourcesIconSize={compact ? "xs" : "sm"}
-                textSize={compact ? "xxs" : "xs"}
+                activeRelicIds={explorerData?.relicEffects.map((effect) => effect.id) ?? []}
                 entityId={armyEntityId}
                 entityOwnerId={explorer.owner}
                 recipientType={RelicRecipientType.Explorer}
-                activateRelics={showButtons && derivedData.isMine}
+                maxItems={maxInventory}
+                compact={compact}
+                allowRelicActivation={showButtons && derivedData.isMine}
+                resourceLabel="Resources"
+                relicLabel="Relics"
               />
+            </div>
+          ) : (
+            <div className={panelClass}>
+              <div className={`${sectionTitleClass} mb-2`}>Inventory</div>
+              <div className={`${smallTextClass} text-gold/60 italic`}>No resources stored.</div>
             </div>
           )}
 
-          {/* Active Relic Effects section */}
-          {explorerData?.relicEffects && (
-            <ActiveRelicEffects relicEffects={explorerData.relicEffects} entityId={armyEntityId} compact={compact} />
+          {explorerData?.relicEffects && explorerData.relicEffects.length > 0 && (
+            <div className={panelClass}>
+              <div className={`${sectionTitleClass} mb-2`}>Active Relic Effects</div>
+              <ActiveRelicEffects relicEffects={explorerData.relicEffects} entityId={armyEntityId} compact={compact} />
+            </div>
           )}
-
-          {/* Troops section */}
-          <div className="flex flex-col gap-0.5 w-full mt-1 border-t border-gold/20 pt-1">
-            <div className={`${smallTextClass} text-gold/80 uppercase font-semibold`}>Army Composition</div>
-            <TroopChip troops={explorer.troops} iconSize={compact ? "md" : "lg"} />
-          </div>
         </div>
       </div>
     );

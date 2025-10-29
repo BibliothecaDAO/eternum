@@ -1,6 +1,6 @@
 import { useSyncPlayerStructures } from "@/hooks/helpers/use-sync-player-structures";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
-import { GameWinnerMessage, NotLoggedInMessage } from "@/ui/shared";
+import { EndgameModal, NotLoggedInMessage } from "@/ui/shared";
 import { PlayOverlayManager } from "./play-overlay-manager";
 import { Leva } from "leva";
 import { lazy, Suspense } from "react";
@@ -36,6 +36,10 @@ const TopCenterContainer = lazy(() => import("../shared/containers/top-center-co
 const BottomLeftContainer = lazy(() =>
   import("../shared/containers/bottom-left-container").then((module) => ({ default: module.BottomLeftContainer })),
 );
+const BottomRightContainer = lazy(() =>
+  import("../shared/containers/bottom-right-container").then((module) => ({ default: module.BottomRightContainer })),
+);
+
 const LeftMiddleContainer = lazy(() => import("../shared/containers/left-middle-container"));
 const RightMiddleContainer = lazy(() => import("../shared/containers/right-middle-container"));
 const TopLeftContainer = lazy(() => import("../shared/containers/top-left-container"));
@@ -72,6 +76,12 @@ const MiniMapNavigation = lazy(() =>
 const RealmTransferManager = lazy(() =>
   import("../features/economy/resources").then((module) => ({
     default: module.RealmTransferManager,
+  })),
+);
+
+const PlayerRelicTray = lazy(() =>
+  import("../features/relics/components/player-relic-tray").then((module) => ({
+    default: module.PlayerRelicTray,
   })),
 );
 
@@ -118,7 +128,7 @@ const WorldEffects = () => (
     <StoreManagers />
     <StructureSynchronizer />
     <NotLoggedInMessage />
-    <GameWinnerMessage />
+    <EndgameModal />
     <BlitzSetHyperstructureShareholdersTo100 />
     <AutomationManager />
     <TransferAutomationManager />
@@ -164,6 +174,10 @@ const WorldHud = () => (
     <RightMiddleContainer>
       <RightNavigationModule />
     </RightMiddleContainer>
+
+    <BottomRightContainer>
+      <PlayerRelicTray />
+    </BottomRightContainer>
 
     <TopLeftContainer>
       <TopLeftNavigation />

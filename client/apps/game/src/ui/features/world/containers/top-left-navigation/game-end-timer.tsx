@@ -77,6 +77,13 @@ export const GameEndTimer = memo(() => {
     [secondsRemaining],
   );
 
+  const hasGameEnded = useMemo(() => {
+    if (DEBUG_URGENCY_MODE) return false;
+    if (!gameEndAt) return false;
+
+    return currentBlockTimestamp >= gameEndAt || secondsForDisplay <= 0;
+  }, [currentBlockTimestamp, gameEndAt, secondsForDisplay]);
+
   const { hours, minutes } = useMemo(() => {
     const hrs = Math.floor(secondsForDisplay / 3600);
     const mins = Math.floor((secondsForDisplay % 3600) / 60);
@@ -86,11 +93,12 @@ export const GameEndTimer = memo(() => {
   const timeDisplay = useMemo(() => `${hours}h ${minutes.toString().padStart(2, "0")}m`, [hours, minutes]);
 
   const urgencyState = useMemo<UrgencyState>(() => {
+    if (hasGameEnded) return "default";
     if (secondsForDisplay <= FINAL_THRESHOLD_SECONDS) return "final";
     if (secondsForDisplay <= CRITICAL_THRESHOLD_SECONDS) return "critical";
     if (secondsForDisplay <= URGENCY_THRESHOLD_SECONDS) return "warning";
     return "default";
-  }, [secondsForDisplay]);
+  }, [hasGameEnded, secondsForDisplay]);
 
   const containerToneClass = useMemo(() => {
     switch (urgencyState) {
@@ -123,7 +131,7 @@ export const GameEndTimer = memo(() => {
     return style;
   }, [urgencyState]);
 
-  const showRing = urgencyState !== "default";
+  const showRing = !hasGameEnded && urgencyState !== "default";
   const ringRadius = 14;
   const ringCircumference = 2 * Math.PI * ringRadius;
   const progressRatio = showRing
