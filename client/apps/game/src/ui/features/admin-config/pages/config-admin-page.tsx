@@ -30,7 +30,7 @@ import {
   setWeightConfig,
   setWonderBonusConfig,
   setWorldConfig,
-  setupGlobals
+  setupGlobals,
 } from "@config-deployer/config";
 import {
   Activity,
@@ -52,7 +52,7 @@ import {
   Trophy,
   Users,
   XCircle,
-  Zap
+  Zap,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -62,7 +62,7 @@ type TxState = { status: "idle" | "running" | "success" | "error"; hash?: string
 // Helper to convert bigint/string to number safely
 const toNumber = (value: bigint | number | string | undefined, fallback: number = 0): number => {
   if (value === undefined) return fallback;
-  return typeof value === 'bigint' ? Number(value) : typeof value === 'string' ? Number(value) : value;
+  return typeof value === "bigint" ? Number(value) : typeof value === "string" ? Number(value) : value;
 };
 
 // Helper to convert hex felt to ASCII string
@@ -319,6 +319,9 @@ interface AdminConfigState {
 
 // Initialize config state from ETERNUM_CONFIG
 const initializeConfigState = (config: Config, masterAddress: string): AdminConfigState => {
+  // Compute default start of next hour (epoch seconds)
+  const nextHourSec = Math.floor(Math.ceil(Date.now() / 3600000) * 3600);
+
   return {
     // World
     worldAdminAddress: masterAddress,
@@ -330,7 +333,8 @@ const initializeConfigState = (config: Config, masterAddress: string): AdminConf
     realmsAddress: config.setup?.addresses?.realms ?? "",
     lordsAddress: config.setup?.addresses?.lords ?? "",
     seasonStartSettlingAt: config.season?.startSettlingAt ?? 0,
-    seasonStartMainAt: config.season?.startMainAt ?? 0,
+    seasonStartMainAt:
+      config.season?.startMainAt && config.season.startMainAt > 0 ? config.season.startMainAt : nextHourSec,
     seasonEndAt: (config.season?.startMainAt ?? 0) + (config.season?.durationSeconds ?? 0),
     seasonBridgeCloseAfterEnd: config.season?.bridgeCloseAfterEndSeconds ?? 0,
     seasonPointRegistrationGrace: config.season?.pointRegistrationCloseAfterEndSeconds ?? 0,
@@ -435,8 +439,18 @@ const initializeConfigState = (config: Config, masterAddress: string): AdminConf
     hypConstructionResourcesJson: JSON.stringify(config.hyperstructures?.hyperstructureConstructionCost ?? [], null, 2),
 
     // Settlement
-    settlementCenterX: typeof config.settlement?.center === 'object' && config.settlement.center !== null && 'x' in config.settlement.center ? (config.settlement.center as any).x : 0,
-    settlementCenterY: typeof config.settlement?.center === 'object' && config.settlement.center !== null && 'y' in config.settlement.center ? (config.settlement.center as any).y : 0,
+    settlementCenterX:
+      typeof config.settlement?.center === "object" &&
+      config.settlement.center !== null &&
+      "x" in config.settlement.center
+        ? (config.settlement.center as any).x
+        : 0,
+    settlementCenterY:
+      typeof config.settlement?.center === "object" &&
+      config.settlement.center !== null &&
+      "y" in config.settlement.center
+        ? (config.settlement.center as any).y
+        : 0,
     settlementBaseDistance: config.settlement?.base_distance ?? 0,
     settlementSubsequentDistance: config.settlement?.subsequent_distance ?? 0,
 
@@ -494,7 +508,7 @@ const initializeConfigState = (config: Config, masterAddress: string): AdminConf
         weight_nanogram,
       })),
       null,
-      2
+      2,
     ),
     resourceFactoryJson: "[]",
     whitelistJson: "[]",
@@ -504,7 +518,7 @@ const initializeConfigState = (config: Config, masterAddress: string): AdminConf
         cost_of_level,
       })),
       null,
-      2
+      2,
     ),
     buildingCategoryJson: "[]",
     startingResourcesJson: JSON.stringify(config.startingResources ?? [], null, 2),
@@ -527,7 +541,7 @@ export const ConfigAdminPage = () => {
 
   // Single state object for all config
   const [configState, setConfigState] = useState<AdminConfigState>(() =>
-    initializeConfigState(eternumConfig, account?.address ?? "")
+    initializeConfigState(eternumConfig, account?.address ?? ""),
   );
 
   // Transaction state
@@ -685,7 +699,6 @@ export const ConfigAdminPage = () => {
 
       setTx({ status: "success", hash: receipt?.transaction_hash });
     } catch (e: any) {
-
       console.log("=".repeat(80));
       console.error("❌ BATCH DEPLOYMENT FAILED!");
       console.error("Error:", e?.message ?? String(e));
@@ -694,14 +707,13 @@ export const ConfigAdminPage = () => {
 
       // Check if it was a user cancellation
       const errorMessage = e?.message ?? String(e);
-      const isCancelled = errorMessage.toLowerCase().includes("cancel") ||
-                         errorMessage.toLowerCase().includes("reject") ||
-                         errorMessage.toLowerCase().includes("denied") ||
-                         errorMessage.toLowerCase().includes("timeout");
+      const isCancelled =
+        errorMessage.toLowerCase().includes("cancel") ||
+        errorMessage.toLowerCase().includes("reject") ||
+        errorMessage.toLowerCase().includes("denied") ||
+        errorMessage.toLowerCase().includes("timeout");
 
-      const displayError = isCancelled
-        ? "Transaction cancelled by user"
-        : errorMessage;
+      const displayError = isCancelled ? "Transaction cancelled by user" : errorMessage;
 
       // Always set error state first to unblock UI
       setTx({ status: "error", error: displayError });
@@ -710,7 +722,7 @@ export const ConfigAdminPage = () => {
       try {
         await Promise.race([
           provider.endBatch({ flush: false }),
-          new Promise((_, reject) => setTimeout(() => reject(new Error("Cancel timeout")), 2000))
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Cancel timeout")), 2000)),
         ]);
       } catch (cancelError) {
         console.warn("Failed to cancel batch (this is expected if tx was cancelled):", cancelError);
@@ -741,7 +753,7 @@ export const ConfigAdminPage = () => {
   ];
 
   const filteredSections = configSections.filter((section) =>
-    section.title.toLowerCase().includes(searchQuery.toLowerCase())
+    section.title.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
@@ -759,9 +771,7 @@ export const ConfigAdminPage = () => {
                 <h1 className="text-xl font-bold bg-gradient-to-r from-gold via-yellow-300 to-gold bg-clip-text text-transparent">
                   Admin Control Center
                 </h1>
-                <p className="text-white/60 text-xs mt-1">
-                  Centralized configuration management for Eternum
-                </p>
+                <p className="text-white/60 text-xs mt-1">Centralized configuration management for Eternum</p>
               </div>
             </div>
 
@@ -891,12 +901,7 @@ export const ConfigAdminPage = () => {
                 >
                   Dismiss
                 </Button>
-                <Button
-                  variant="gold"
-                  size="xs"
-                  onClick={queueAndRun}
-                  className="shadow-sm"
-                >
+                <Button variant="gold" size="xs" onClick={queueAndRun} className="shadow-sm">
                   Retry Deployment
                 </Button>
               </div>
@@ -935,9 +940,7 @@ export const ConfigAdminPage = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-white/80 mb-2">
-                    Mercenaries Name (hex felt)
-                  </label>
+                  <label className="block text-sm font-medium text-white/80 mb-2">Mercenaries Name (hex felt)</label>
                   <input
                     className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-mono"
                     value={configState.mercenariesNameHex}
@@ -947,7 +950,9 @@ export const ConfigAdminPage = () => {
                   {configState.mercenariesNameHex && hexToAscii(configState.mercenariesNameHex) && (
                     <div className="mt-2 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                       <span className="text-xs text-blue-300/70">ASCII: </span>
-                      <span className="text-sm text-blue-200 font-medium">{hexToAscii(configState.mercenariesNameHex)}</span>
+                      <span className="text-sm text-blue-200 font-medium">
+                        {hexToAscii(configState.mercenariesNameHex)}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -971,99 +976,104 @@ export const ConfigAdminPage = () => {
                 </div>
               </div>
               <div className="space-y-4">
-                  <div className="bg-purple-500/5 border border-purple-500/20 rounded-xl p-4">
-                    <h3 className="text-sm font-semibold text-purple-300 mb-4 flex items-center gap-2">
-                      <Coins className="w-4 h-4" />
-                      Contract Addresses
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-white/80 mb-2">Season Pass</label>
-                        <input
-                          className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
-                          value={configState.seasonPassAddress}
-                          onChange={(e) => updateConfig("seasonPassAddress", e.target.value)}
-                          placeholder="0x..."
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-white/80 mb-2">Realms Address</label>
-                        <input
-                          className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
-                          value={configState.realmsAddress}
-                          onChange={(e) => updateConfig("realmsAddress", e.target.value)}
-                          placeholder="0x..."
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-white/80 mb-2">Lords Address</label>
-                        <input
-                          className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
-                          value={configState.lordsAddress}
-                          onChange={(e) => updateConfig("lordsAddress", e.target.value)}
-                          placeholder="0x..."
-                        />
-                      </div>
+                <div className="bg-purple-500/5 border border-purple-500/20 rounded-xl p-4">
+                  <h3 className="text-sm font-semibold text-purple-300 mb-4 flex items-center gap-2">
+                    <Coins className="w-4 h-4" />
+                    Contract Addresses
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-white/80 mb-2">Season Pass</label>
+                      <input
+                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
+                        value={configState.seasonPassAddress}
+                        onChange={(e) => updateConfig("seasonPassAddress", e.target.value)}
+                        placeholder="0x..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-white/80 mb-2">Realms Address</label>
+                      <input
+                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
+                        value={configState.realmsAddress}
+                        onChange={(e) => updateConfig("realmsAddress", e.target.value)}
+                        placeholder="0x..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-white/80 mb-2">Lords Address</label>
+                      <input
+                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
+                        value={configState.lordsAddress}
+                        onChange={(e) => updateConfig("lordsAddress", e.target.value)}
+                        placeholder="0x..."
+                      />
                     </div>
                   </div>
+                </div>
 
-                  <div className="bg-clock-500/5 border border-white/10 rounded-xl p-4">
-                    <h3 className="text-sm font-semibold text-purple-300 mb-4 flex items-center gap-2">
-                      <Clock className="w-4 h-4" />
-                      Season Timing
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-white/80 mb-2">Start Settling At</label>
-                        <input
-                          type="number"
-                          className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
-                          value={configState.seasonStartSettlingAt}
-                          onChange={(e) => updateConfig("seasonStartSettlingAt", Number(e.target.value))}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-white/80 mb-2">Start Main At</label>
-                        <input
-                          type="number"
-                          className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
-                          value={configState.seasonStartMainAt}
-                          onChange={(e) => updateConfig("seasonStartMainAt", Number(e.target.value))}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-white/80 mb-2">End At</label>
-                        <input
-                          type="number"
-                          className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
-                          value={configState.seasonEndAt}
-                          onChange={(e) => updateConfig("seasonEndAt", Number(e.target.value))}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-white/80 mb-2">
-                          Bridge Close After End (sec)
-                        </label>
-                        <input
-                          type="number"
-                          className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
-                          value={configState.seasonBridgeCloseAfterEnd}
-                          onChange={(e) => updateConfig("seasonBridgeCloseAfterEnd", Number(e.target.value))}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-white/80 mb-2">
-                          Point Registration Grace (sec)
-                        </label>
-                        <input
-                          type="number"
-                          className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
-                          value={configState.seasonPointRegistrationGrace}
-                          onChange={(e) => updateConfig("seasonPointRegistrationGrace", Number(e.target.value))}
-                        />
-                      </div>
+                <div className="bg-clock-500/5 border border-white/10 rounded-xl p-4">
+                  <h3 className="text-sm font-semibold text-purple-300 mb-4 flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    Season Timing
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-white/80 mb-2">Start Settling At</label>
+                      <input
+                        type="number"
+                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
+                        value={configState.seasonStartSettlingAt}
+                        onChange={(e) => updateConfig("seasonStartSettlingAt", Number(e.target.value))}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-white/80 mb-2">Start Main At</label>
+                      <input
+                        type="number"
+                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
+                        value={configState.seasonStartMainAt}
+                        onChange={(e) => {
+                          const v = Number(e.target.value);
+                          const nowSec = Math.floor(Date.now() / 1000);
+                          const maxAllowed = nowSec + 8 * 3600;
+                          updateConfig("seasonStartMainAt", Math.min(v, maxAllowed));
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-white/80 mb-2">End At</label>
+                      <input
+                        type="number"
+                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
+                        value={configState.seasonEndAt}
+                        onChange={(e) => updateConfig("seasonEndAt", Number(e.target.value))}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-white/80 mb-2">
+                        Bridge Close After End (sec)
+                      </label>
+                      <input
+                        type="number"
+                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
+                        value={configState.seasonBridgeCloseAfterEnd}
+                        onChange={(e) => updateConfig("seasonBridgeCloseAfterEnd", Number(e.target.value))}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-white/80 mb-2">
+                        Point Registration Grace (sec)
+                      </label>
+                      <input
+                        type="number"
+                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
+                        value={configState.seasonPointRegistrationGrace}
+                        onChange={(e) => updateConfig("seasonPointRegistrationGrace", Number(e.target.value))}
+                      />
                     </div>
                   </div>
+                </div>
               </div>
             </div>
           </section>
@@ -1657,7 +1667,9 @@ export const ConfigAdminPage = () => {
                   <span className="text-sm text-orange-300">Blitz Mode Enabled</span>
                 </label>
                 <div>
-                  <label className="text-xs text-orange-300/70 mb-1 block">Previous Game Prize Distribution Address</label>
+                  <label className="text-xs text-orange-300/70 mb-1 block">
+                    Previous Game Prize Distribution Address
+                  </label>
                   <input
                     className="w-full rounded bg-black/30 px-3 py-2 text-sm text-orange-300 outline-none ring-1 ring-orange-500/20 focus:ring-orange-500/50 font-mono"
                     value={configState.blitzPrevGameAddress}
@@ -1826,23 +1838,37 @@ export const ConfigAdminPage = () => {
                       try {
                         const resources = JSON.parse(configState.hypConstructionResourcesJson);
                         return resources.map((item: any, idx: number) => (
-                          <div key={idx} className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 border border-cyan-500/20 rounded-lg p-3 hover:bg-cyan-500/[0.15] transition-colors">
+                          <div
+                            key={idx}
+                            className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 border border-cyan-500/20 rounded-lg p-3 hover:bg-cyan-500/[0.15] transition-colors"
+                          >
                             <div className="mb-2 pb-2 border-b border-cyan-500/20 flex items-center justify-between">
                               <div className="flex-1">
-                                <div className="text-sm font-semibold text-cyan-200">{getResourceName(item.resource_type)}</div>
+                                <div className="text-sm font-semibold text-cyan-200">
+                                  {getResourceName(item.resource_type)}
+                                </div>
                                 <div className="text-[10px] text-cyan-300/50">ID: {item.resource_type}</div>
                               </div>
                               <div className="relative group/help">
                                 <HelpCircle className="w-3.5 h-3.5 text-cyan-400/50 hover:text-cyan-400 cursor-help transition-colors" />
                                 <div className="absolute right-0 top-6 hidden group-hover/help:block z-50 w-64 max-h-64 overflow-y-auto bg-black/95 border border-cyan-500/30 rounded-lg p-2 shadow-xl">
-                                  <div className="text-[10px] font-semibold text-cyan-300 mb-1.5 sticky top-0 bg-black/95 pb-1">All Resources:</div>
+                                  <div className="text-[10px] font-semibold text-cyan-300 mb-1.5 sticky top-0 bg-black/95 pb-1">
+                                    All Resources:
+                                  </div>
                                   <div className="space-y-0.5">
                                     {getAllResources().map((res) => (
-                                      <div key={res.id} className="text-[10px] text-white/70 hover:text-white hover:bg-cyan-500/20 px-1.5 py-0.5 rounded cursor-pointer transition-colors" onClick={() => {
-                                        const newResources = [...resources];
-                                        newResources[idx] = { ...item, resource_type: res.id };
-                                        updateConfig("hypConstructionResourcesJson", JSON.stringify(newResources, null, 2));
-                                      }}>
+                                      <div
+                                        key={res.id}
+                                        className="text-[10px] text-white/70 hover:text-white hover:bg-cyan-500/20 px-1.5 py-0.5 rounded cursor-pointer transition-colors"
+                                        onClick={() => {
+                                          const newResources = [...resources];
+                                          newResources[idx] = { ...item, resource_type: res.id };
+                                          updateConfig(
+                                            "hypConstructionResourcesJson",
+                                            JSON.stringify(newResources, null, 2),
+                                          );
+                                        }}
+                                      >
                                         {res.id}: {res.name}
                                       </div>
                                     ))}
@@ -1892,7 +1918,10 @@ export const ConfigAdminPage = () => {
                                     onChange={(e) => {
                                       const newResources = [...resources];
                                       newResources[idx] = { ...item, min_amount: Number(e.target.value) };
-                                      updateConfig("hypConstructionResourcesJson", JSON.stringify(newResources, null, 2));
+                                      updateConfig(
+                                        "hypConstructionResourcesJson",
+                                        JSON.stringify(newResources, null, 2),
+                                      );
                                     }}
                                   />
                                 </div>
@@ -1905,7 +1934,10 @@ export const ConfigAdminPage = () => {
                                     onChange={(e) => {
                                       const newResources = [...resources];
                                       newResources[idx] = { ...item, max_amount: Number(e.target.value) };
-                                      updateConfig("hypConstructionResourcesJson", JSON.stringify(newResources, null, 2));
+                                      updateConfig(
+                                        "hypConstructionResourcesJson",
+                                        JSON.stringify(newResources, null, 2),
+                                      );
                                     }}
                                   />
                                 </div>
@@ -1914,7 +1946,9 @@ export const ConfigAdminPage = () => {
                           </div>
                         ));
                       } catch (e) {
-                        return <div className="col-span-full text-center text-red-400 text-sm p-4">Invalid data format</div>;
+                        return (
+                          <div className="col-span-full text-center text-red-400 text-sm p-4">Invalid data format</div>
+                        );
                       }
                     })()}
                   </div>
@@ -2166,16 +2200,23 @@ export const ConfigAdminPage = () => {
                   try {
                     const weights = JSON.parse(configState.weightJson);
                     return weights.map((item: any, idx: number) => (
-                      <div key={idx} className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border border-emerald-500/20 rounded-lg p-3 hover:bg-emerald-500/[0.15] transition-colors">
+                      <div
+                        key={idx}
+                        className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border border-emerald-500/20 rounded-lg p-3 hover:bg-emerald-500/[0.15] transition-colors"
+                      >
                         <div className="mb-2 pb-2 border-b border-emerald-500/20 flex items-center justify-between">
                           <div className="flex-1">
-                            <div className="text-sm font-semibold text-emerald-200">{getResourceName(item.entity_type)}</div>
+                            <div className="text-sm font-semibold text-emerald-200">
+                              {getResourceName(item.entity_type)}
+                            </div>
                             <div className="text-[10px] text-emerald-300/50">ID: {item.entity_type}</div>
                           </div>
                           <div className="relative group/help">
                             <HelpCircle className="w-3.5 h-3.5 text-emerald-400/50 hover:text-emerald-400 cursor-help transition-colors" />
                             <div className="absolute right-0 top-6 hidden group-hover/help:block z-50 w-64 max-h-64 overflow-y-auto bg-black/95 border border-emerald-500/30 rounded-lg p-2 shadow-xl">
-                              <div className="text-[10px] font-semibold text-emerald-300 mb-1.5 sticky top-0 bg-black/95 pb-1">All Resources:</div>
+                              <div className="text-[10px] font-semibold text-emerald-300 mb-1.5 sticky top-0 bg-black/95 pb-1">
+                                All Resources:
+                              </div>
                               <div className="space-y-0.5">
                                 {getAllResources().map((res) => (
                                   <div
@@ -2230,7 +2271,9 @@ export const ConfigAdminPage = () => {
                       </div>
                     ));
                   } catch (e) {
-                    return <div className="col-span-full text-center text-red-400 text-sm p-4">Invalid data format</div>;
+                    return (
+                      <div className="col-span-full text-center text-red-400 text-sm p-4">Invalid data format</div>
+                    );
                   }
                 })()}
               </div>
@@ -2267,12 +2310,15 @@ export const ConfigAdminPage = () => {
                     return levels.map((item: any, levelIdx: number) => {
                       const costs = Array.isArray(item.cost_of_level) ? item.cost_of_level : [];
                       return (
-                        <div key={levelIdx} className="bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/[0.08] transition-colors">
+                        <div
+                          key={levelIdx}
+                          className="bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/[0.08] transition-colors"
+                        >
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
                               <span className="text-lg font-bold text-purple-300">Level {item.level}</span>
                               <span className="px-2 py-0.5 bg-purple-500/20 rounded text-xs text-purple-300">
-                                {costs.length} {costs.length === 1 ? 'Resource' : 'Resources'}
+                                {costs.length} {costs.length === 1 ? "Resource" : "Resources"}
                               </span>
                             </div>
                           </div>
@@ -2281,25 +2327,36 @@ export const ConfigAdminPage = () => {
                           ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                               {costs.map((cost: any, costIdx: number) => (
-                                <div key={costIdx} className="bg-black/30 rounded-lg p-3 border border-purple-500/20 hover:border-purple-500/40 transition-colors group">
+                                <div
+                                  key={costIdx}
+                                  className="bg-black/30 rounded-lg p-3 border border-purple-500/20 hover:border-purple-500/40 transition-colors group"
+                                >
                                   <div className="mb-2 pb-2 border-b border-purple-500/20 flex items-center justify-between">
                                     <div className="flex-1">
-                                      <div className="text-xs font-semibold text-purple-200">{getResourceName(cost.resource)}</div>
+                                      <div className="text-xs font-semibold text-purple-200">
+                                        {getResourceName(cost.resource)}
+                                      </div>
                                       <div className="text-[10px] text-purple-300/50">ID: {cost.resource}</div>
                                     </div>
                                     <div className="relative group/help">
                                       <HelpCircle className="w-3.5 h-3.5 text-purple-400/50 hover:text-purple-400 cursor-help transition-colors" />
                                       <div className="absolute right-0 top-6 hidden group-hover/help:block z-50 w-64 max-h-64 overflow-y-auto bg-black/95 border border-purple-500/30 rounded-lg p-2 shadow-xl">
-                                        <div className="text-[10px] font-semibold text-purple-300 mb-1.5 sticky top-0 bg-black/95 pb-1">All Resources:</div>
+                                        <div className="text-[10px] font-semibold text-purple-300 mb-1.5 sticky top-0 bg-black/95 pb-1">
+                                          All Resources:
+                                        </div>
                                         <div className="space-y-0.5">
                                           {getAllResources().map((res) => (
-                                            <div key={res.id} className="text-[10px] text-white/70 hover:text-white hover:bg-purple-500/20 px-1.5 py-0.5 rounded cursor-pointer transition-colors" onClick={() => {
-                                              const newLevels = [...levels];
-                                              const newCosts = [...costs];
-                                              newCosts[costIdx] = { ...cost, resource: res.id };
-                                              newLevels[levelIdx] = { ...item, cost_of_level: newCosts };
-                                              updateConfig("structureLevelJson", JSON.stringify(newLevels, null, 2));
-                                            }}>
+                                            <div
+                                              key={res.id}
+                                              className="text-[10px] text-white/70 hover:text-white hover:bg-purple-500/20 px-1.5 py-0.5 rounded cursor-pointer transition-colors"
+                                              onClick={() => {
+                                                const newLevels = [...levels];
+                                                const newCosts = [...costs];
+                                                newCosts[costIdx] = { ...cost, resource: res.id };
+                                                newLevels[levelIdx] = { ...item, cost_of_level: newCosts };
+                                                updateConfig("structureLevelJson", JSON.stringify(newLevels, null, 2));
+                                              }}
+                                            >
                                               {res.id}: {res.name}
                                             </div>
                                           ))}
@@ -2387,7 +2444,10 @@ export const ConfigAdminPage = () => {
                   try {
                     const resources = JSON.parse(configState.startingResourcesJson);
                     return resources.map((item: any, idx: number) => (
-                      <div key={idx} className="bg-gradient-to-br from-amber-500/10 to-amber-600/5 border border-amber-500/20 rounded-lg p-3 hover:bg-amber-500/[0.15] transition-colors">
+                      <div
+                        key={idx}
+                        className="bg-gradient-to-br from-amber-500/10 to-amber-600/5 border border-amber-500/20 rounded-lg p-3 hover:bg-amber-500/[0.15] transition-colors"
+                      >
                         <div className="mb-2 pb-2 border-b border-amber-500/20 flex items-center justify-between">
                           <div className="flex-1">
                             <div className="text-sm font-semibold text-amber-200">{getResourceName(item.resource)}</div>
@@ -2396,14 +2456,20 @@ export const ConfigAdminPage = () => {
                           <div className="relative group/help">
                             <HelpCircle className="w-3.5 h-3.5 text-amber-400/50 hover:text-amber-400 cursor-help transition-colors" />
                             <div className="absolute right-0 top-6 hidden group-hover/help:block z-50 w-64 max-h-64 overflow-y-auto bg-black/95 border border-amber-500/30 rounded-lg p-2 shadow-xl">
-                              <div className="text-[10px] font-semibold text-amber-300 mb-1.5 sticky top-0 bg-black/95 pb-1">All Resources:</div>
+                              <div className="text-[10px] font-semibold text-amber-300 mb-1.5 sticky top-0 bg-black/95 pb-1">
+                                All Resources:
+                              </div>
                               <div className="space-y-0.5">
                                 {getAllResources().map((res) => (
-                                  <div key={res.id} className="text-[10px] text-white/70 hover:text-white hover:bg-amber-500/20 px-1.5 py-0.5 rounded cursor-pointer transition-colors" onClick={() => {
-                                    const newResources = [...resources];
-                                    newResources[idx] = { ...item, resource: res.id };
-                                    updateConfig("startingResourcesJson", JSON.stringify(newResources, null, 2));
-                                  }}>
+                                  <div
+                                    key={res.id}
+                                    className="text-[10px] text-white/70 hover:text-white hover:bg-amber-500/20 px-1.5 py-0.5 rounded cursor-pointer transition-colors"
+                                    onClick={() => {
+                                      const newResources = [...resources];
+                                      newResources[idx] = { ...item, resource: res.id };
+                                      updateConfig("startingResourcesJson", JSON.stringify(newResources, null, 2));
+                                    }}
+                                  >
                                     {res.id}: {res.name}
                                   </div>
                                 ))}
@@ -2447,7 +2513,9 @@ export const ConfigAdminPage = () => {
                       </div>
                     ));
                   } catch (e) {
-                    return <div className="col-span-full text-center text-red-400 text-sm p-4">Invalid data format</div>;
+                    return (
+                      <div className="col-span-full text-center text-red-400 text-sm p-4">Invalid data format</div>
+                    );
                   }
                 })()}
               </div>
@@ -2482,7 +2550,10 @@ export const ConfigAdminPage = () => {
                   try {
                     const resources = JSON.parse(configState.discoverableVillageJson);
                     return resources.map((item: any, idx: number) => (
-                      <div key={idx} className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 border border-cyan-500/20 rounded-lg p-3 hover:bg-cyan-500/[0.15] transition-colors">
+                      <div
+                        key={idx}
+                        className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 border border-cyan-500/20 rounded-lg p-3 hover:bg-cyan-500/[0.15] transition-colors"
+                      >
                         <div className="mb-2 pb-2 border-b border-cyan-500/20 flex items-center justify-between">
                           <div className="flex-1">
                             <div className="text-sm font-semibold text-cyan-200">{getResourceName(item.resource)}</div>
@@ -2491,7 +2562,9 @@ export const ConfigAdminPage = () => {
                           <div className="relative group/help">
                             <HelpCircle className="w-3.5 h-3.5 text-cyan-400/50 hover:text-cyan-400 cursor-help transition-colors" />
                             <div className="absolute right-0 top-6 hidden group-hover/help:block z-50 w-64 max-h-64 overflow-y-auto bg-black/95 border border-cyan-500/30 rounded-lg p-2 shadow-xl">
-                              <div className="text-[10px] font-semibold text-cyan-300 mb-1.5 sticky top-0 bg-black/95 pb-1">All Resources:</div>
+                              <div className="text-[10px] font-semibold text-cyan-300 mb-1.5 sticky top-0 bg-black/95 pb-1">
+                                All Resources:
+                              </div>
                               <div className="space-y-0.5">
                                 {getAllResources().map((res) => (
                                   <div
@@ -2546,7 +2619,9 @@ export const ConfigAdminPage = () => {
                       </div>
                     ));
                   } catch (e) {
-                    return <div className="col-span-full text-center text-red-400 text-sm p-4">Invalid data format</div>;
+                    return (
+                      <div className="col-span-full text-center text-red-400 text-sm p-4">Invalid data format</div>
+                    );
                   }
                 })()}
               </div>
@@ -2563,8 +2638,8 @@ export const ConfigAdminPage = () => {
                 <h3 className="text-lg font-bold text-gold mb-2">Admin Control Center v2.0</h3>
                 <p className="text-white/70 text-sm leading-relaxed">
                   You now have complete control over your Eternum configuration with a beautiful, intuitive interface.
-                  All values are loaded from your config files and can be batched together for efficient deployment.
-                  Use the search bar to quickly find settings, enable/disable sections as needed, and deploy with
+                  All values are loaded from your config files and can be batched together for efficient deployment. Use
+                  the search bar to quickly find settings, enable/disable sections as needed, and deploy with
                   confidence.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
