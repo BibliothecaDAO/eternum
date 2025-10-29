@@ -6,9 +6,8 @@ import { REALM_PRESETS, RealmPresetId, inferRealmPreset } from "@/utils/automati
 import { getIsBlitz, getStructureName, ResourceManager } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
-import clsx from "clsx";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 
 const formatTimestamp = (timestamp?: number) => {
   if (!timestamp) return "Never";
@@ -66,12 +65,7 @@ export const ProductionOverviewPanel = () => {
   const automationRealms = useAutomationStore((state) => state.realms);
   const upsertRealm = useAutomationStore((state) => state.upsertRealm);
   const removeRealm = useAutomationStore((state) => state.removeRealm);
-  const setRealmPreset = useAutomationStore((state) => state.setRealmPreset);
-  const ensureResourceConfig = useAutomationStore((state) => state.ensureResourceConfig);
   const hydrated = useAutomationStore((state) => state.hydrated);
-  const [selectedProduction, setSelectedProduction] = useState<{ realmId: string; resourceId: ResourcesIds } | null>(
-    null,
-  );
 
   const playerRealms = usePlayerOwnedRealmsInfo();
   const playerVillages = usePlayerOwnedVillagesInfo();
@@ -195,97 +189,38 @@ export const ProductionOverviewPanel = () => {
     return "mixed";
   }, [realmCards]);
 
-  const handlePresetChange = useCallback(
-    (realmId: string, presetId: RealmPresetId) => {
-      // Ensure resource configs exist for resources produced by buildings,
-      // so preset allocations apply immediately.
-      try {
-        const realmIdNum = Number(realmId);
-        if (components && Number.isFinite(realmIdNum) && realmIdNum > 0) {
-          const resourceManager = new ResourceManager(components, realmIdNum);
-          const resourceComponent = resourceManager.getResource();
-          if (resourceComponent) {
-            const ALL = Object.values(ResourcesIds).filter((v) => typeof v === "number") as ResourcesIds[];
-            for (const resId of ALL) {
-              const prod = ResourceManager.balanceAndProduction(resourceComponent, resId).production;
-              if (prod && prod.building_count > 0) {
-                ensureResourceConfig(realmId, resId);
-              }
-            }
-          }
-        }
-      } catch (_e) {
-        // fall through; preset still applies and scheduler will backfill
-      }
-      setRealmPreset(realmId, presetId);
-    },
-    [components, ensureResourceConfig, setRealmPreset],
-  );
-
-  const handleGlobalPresetChange = useCallback(
-    (value: string) => {
-      if (value === "mixed") return;
-      realmCards.forEach((card) => {
-        handlePresetChange(card.id, value as RealmPresetId);
-      });
-    },
-    [handlePresetChange, realmCards],
-  );
-
-  const handleResourceClick = useCallback((realmId: string, resourceId: ResourcesIds) => {
-    setSelectedProduction((current) => {
-      if (current && current.realmId === realmId && current.resourceId === resourceId) {
-        return null;
-      }
-      return { realmId, resourceId };
-    });
-  }, []);
+  const globalPresetLabel = useMemo(() => {
+    if (globalPreset === "mixed") return "Mixed presets";
+    const preset = REALM_PRESETS.find((item) => item.id === globalPreset);
+    return preset?.label ?? "Custom";
+  }, [globalPreset]);
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-2">
-        <div>
-          <h4 className="text-sm font-semibold text-gold">Production Overview</h4>
-          <p className="text-[11px] text-gold/60">Review automation and switch production presets.</p>
-        </div>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex flex-col gap-1">
-          <span className="text-[10px] uppercase tracking-wide text-gold/60">
-            Apply production preset to all realms
-          </span>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap gap-2">
-              {REALM_PRESETS.map((preset) => {
-                const isActive = globalPreset === preset.id;
-                return (
-                  <button
-                    key={`global-${preset.id}`}
-                    type="button"
-                    className={clsx(
-                      "rounded border px-2 py-1 text-[11px] uppercase tracking-wide transition-colors",
-                      isActive
-                        ? "border-gold bg-gold/20 text-gold"
-                        : "border-gold/20 bg-black/30 text-gold/70 hover:border-gold/40 hover:bg-gold/10",
-                    )}
-                    onClick={() => handleGlobalPresetChange(preset.id)}
-                    disabled={realmCards.length === 0}
-                  >
-                    {preset.label}
-                  </button>
-                );
-              })}
-            </div>
-            <Button variant="outline" size="xs" onClick={() => toggleModal(<ProductionModal />)}>
-              Advanced
-            </Button>
-          </div>
-          {globalPreset === "mixed" && <span className="text-[10px] text-gold/60">Mixed selection across realms.</span>}
-          {/* No explicit message for custom preset */}
+          <h4 className="text-sm font-semibold text-gold">Production Overview</h4>
+          <p className="text-[11px] text-gold/60">
+            Review automation status across your realms. Use Modify to adjust allocations in the advanced panel.
+          </p>
         </div>
+        <Button variant="outline" size="xs" onClick={() => toggleModal(<ProductionModal />)}>
+          Modify
+        </Button>
+      </div>
+      <div className="flex flex-col gap-1">
+        <span className="text-[10px] uppercase tracking-wide text-gold/60">Current global preset</span>
+        <span className="inline-flex w-fit rounded border border-gold/30 bg-black/30 px-2 py-1 text-[11px] uppercase tracking-wide text-gold/80">
+          {globalPresetLabel}
+        </span>
+        {globalPreset === "mixed" && (
+          <span className="text-[10px] text-gold/60">Different presets are active across your realms.</span>
+        )}
       </div>
 
       {realmCards.length === 0 ? (
         <div className="rounded border border-gold/20 bg-black/15 p-3 text-xs text-gold/70">
-          No production configured yet. Use Advanced to get started.
+          No production configured yet. Use Modify to set up automation.
         </div>
       ) : (
         <div className="flex flex-col gap-2">
@@ -298,33 +233,10 @@ export const ProductionOverviewPanel = () => {
 
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[10px] uppercase tracking-wide text-gold/60 whitespace-nowrap">
-                    Realm preset
+                  <span className="text-[10px] uppercase tracking-wide text-gold/60 whitespace-nowrap">Realm preset</span>
+                  <span className="rounded border border-gold/20 bg-black/30 px-2 py-1 text-[11px] uppercase tracking-wide text-gold/80">
+                    {REALM_PRESETS.find((preset) => preset.id === card.presetId)?.label ?? "Custom"}
                   </span>
-                  <div className="flex flex-wrap gap-2">
-                    {REALM_PRESETS.map((preset) => {
-                      const isActive = card.presetId === preset.id;
-                      return (
-                        <button
-                          key={`${card.id}-preset-${preset.id}`}
-                          type="button"
-                          className={clsx(
-                            "rounded border px-2 py-1 text-[11px] uppercase tracking-wide transition-colors",
-                            isActive
-                              ? "border-gold bg-gold/20 text-gold"
-                              : "border-gold/20 bg-black/30 text-gold/70 hover:border-gold/40 hover:bg-gold/10",
-                            card.resourceIds.length === 0 &&
-                              "opacity-40 cursor-not-allowed hover:border-gold/20 hover:bg-black/30",
-                          )}
-                          onClick={() => handlePresetChange(card.id, preset.id)}
-                          disabled={card.resourceIds.length === 0}
-                        >
-                          {preset.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {/* No explicit message for custom preset */}
                 </div>
                 <span
                   className="text-[10px] text-gold/50 whitespace-nowrap"
@@ -334,56 +246,40 @@ export const ProductionOverviewPanel = () => {
                 </span>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                {card.resourceIds.length === 0 ? (
-                  <span className="text-[11px] text-gold/50">No automated resources</span>
-                ) : (
-                  card.resourceIds.map((resourceId) => (
-                    <button
-                      key={`${card.id}-${resourceId}`}
-                      type="button"
-                      onClick={() => handleResourceClick(card.id, resourceId)}
-                      className={clsx(
-                        "inline-flex items-center gap-1 rounded border px-2 py-1 text-[11px] transition-colors",
-                        selectedProduction?.realmId === card.id && selectedProduction.resourceId === resourceId
-                          ? "border-gold bg-gold/20 text-gold"
-                          : "border-gold/10 bg-black/40 text-gold/80 hover:border-gold/30 hover:bg-gold/10",
-                      )}
-                    >
-                      <ResourceIcon resource={ResourcesIds[resourceId]} size="xs" />
-                      {ResourcesIds[resourceId]}
-                    </button>
-                  ))
-                )}
-              </div>
-
-              {selectedProduction?.realmId === card.id && (
-                <div className="rounded border border-gold/10 bg-black/25 p-2 text-[11px] text-gold/70">
-                  {(() => {
-                    const detail = card.productionLookup[selectedProduction.resourceId];
-                    if (!detail) {
-                      return <span>No recent production data for {ResourcesIds[selectedProduction.resourceId]}.</span>;
-                    }
+              {card.resourceIds.length === 0 ? (
+                <span className="text-[11px] text-gold/50">No automated resources</span>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+                  {card.resourceIds.map((resourceId) => {
+                    const detail = card.productionLookup[resourceId];
                     return (
-                      <div className="flex flex-col gap-1">
-                        <span className="text-gold/80">
-                          {ResourcesIds[selectedProduction.resourceId]} &middot; {formatAmount(detail.produced)} output
-                        </span>
-                        <span>
-                          {detail.cycles} cycles &middot; {formatMethodLabel(detail.method)} &middot; Last run{" "}
-                          {formatRelative(detail.executedAt)}
-                        </span>
+                      <div
+                        key={`${card.id}-${resourceId}`}
+                        className="flex items-start gap-2 rounded border border-gold/15 bg-black/30 px-2 py-2"
+                      >
+                        <ResourceIcon resource={ResourcesIds[resourceId]} size="xs" />
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[11px] text-gold/80">{ResourcesIds[resourceId]}</span>
+                          <span className="text-[10px] text-gold/60">
+                            {detail ? (
+                              <>
+                                {formatAmount(detail.produced)} output &middot; {detail.cycles} cycles &middot;{" "}
+                                {formatMethodLabel(detail.method)} &middot; {formatRelative(detail.executedAt)}
+                              </>
+                            ) : (
+                              "No recent production data"
+                            )}
+                          </span>
+                        </div>
                       </div>
                     );
-                  })()}
+                  })}
                 </div>
               )}
             </div>
           ))}
         </div>
       )}
-
-      {/* Advanced button placed inline with global preset buttons */}
     </div>
   );
 };
