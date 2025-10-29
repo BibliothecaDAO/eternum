@@ -2,10 +2,12 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { BiomeInfoPanel } from "@/ui/features/world";
 import { ArmyEntityDetail } from "@/ui/features/world/components/entities/army-entity-detail";
 import { QuestEntityDetail } from "@/ui/features/world/components/entities/quest-entity-detail";
+import { RelicCrateEntityDetail } from "@/ui/features/world/components/entities/relic-crate-entity-detail";
 import { StructureEntityDetail } from "@/ui/features/world/components/entities/structure-entity-detail";
 import {
   Biome,
   getEntityIdFromKeys,
+  isTileOccupierChest,
   isTileOccupierQuest,
   isTileOccupierStructure,
   Position as PositionInterface,
@@ -50,6 +52,10 @@ export const HexEntityDetails = () => {
     return isTileOccupierStructure(tile?.occupier_type || 0);
   }, [tile]);
 
+  const isChest = useMemo(() => {
+    return isTileOccupierChest(tile?.occupier_type || 0);
+  }, [tile]);
+
   if (!selectedHex) {
     return (
       <div className="h-full flex items-center justify-center p-4">
@@ -91,7 +97,7 @@ export const HexEntityDetails = () => {
           {/* Biome panel - takes remaining space when no occupier */}
           <div className={hasOccupier ? "flex-shrink-0 mb-4" : "flex-1 min-h-0"}>
             <div className={hasOccupier ? "" : "h-full"}>
-              <BiomeInfoPanel biome={biome} />
+              <BiomeInfoPanel biome={biome} collapsed={hasOccupier} />
             </div>
           </div>
 
@@ -107,6 +113,8 @@ export const HexEntityDetails = () => {
                     showButtons={true}
                   />
                 </div>
+              ) : isChest ? (
+                <RelicCrateEntityDetail crateEntityId={tile.occupier_id} compact={false} />
               ) : isTileOccupierQuest(tile.occupier_type) ? (
                 <QuestEntityDetail questEntityId={tile.occupier_id} compact={false} className="max-w-md mx-auto" />
               ) : (

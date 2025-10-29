@@ -30,6 +30,7 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
+import { useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
 import { LockIcon, Pen } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -97,6 +98,7 @@ export const ArmyCreate = ({
     setup: { components },
     account: { account },
   } = useDojo();
+  const queryClient = useQueryClient();
 
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
@@ -187,6 +189,11 @@ export const ArmyCreate = ({
     } else {
       if (guardSlot !== undefined) {
         await armyManager.addTroopsToGuard(account, troopType, troopTier, troopCount, guardSlot);
+        await queryClient.invalidateQueries({
+          queryKey: ["guards", String(owner_entity)],
+          exact: true,
+          refetchType: "active",
+        });
       }
     }
 

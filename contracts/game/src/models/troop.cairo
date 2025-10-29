@@ -87,10 +87,10 @@ pub struct GuardTroops {
 
 #[derive(Copy, Drop, Serde, Introspect, PartialEq)]
 pub enum GuardSlot {
-    Delta,
-    Charlie,
-    Bravo,
     Alpha,
+    Bravo,
+    Charlie,
+    Delta,
 }
 
 #[generate_trait]
@@ -117,9 +117,9 @@ pub impl GuardImpl of GuardTrait {
         match max_guards {
             0 => panic!("max guards is 0"),
             1 => { array![GuardSlot::Delta] },
-            2 => { array![GuardSlot::Delta, GuardSlot::Charlie] },
-            3 => { array![GuardSlot::Delta, GuardSlot::Charlie, GuardSlot::Bravo] },
-            4 => { array![GuardSlot::Delta, GuardSlot::Charlie, GuardSlot::Bravo, GuardSlot::Alpha] },
+            2 => { array![GuardSlot::Charlie, GuardSlot::Delta] },
+            3 => { array![GuardSlot::Bravo, GuardSlot::Charlie, GuardSlot::Delta] },
+            4 => { array![GuardSlot::Alpha, GuardSlot::Bravo, GuardSlot::Charlie, GuardSlot::Delta] },
             _ => {
                 panic!("max guards is greater than 4");
             },

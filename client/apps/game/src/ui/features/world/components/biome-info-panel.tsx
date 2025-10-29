@@ -1,8 +1,10 @@
+import { useEffect, useMemo, useState } from "react";
+
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { formatBiomeBonus } from "@/ui/features/military";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, TroopType } from "@bibliothecadao/types";
-import { Info } from "lucide-react";
+import { ChevronDown, Info } from "lucide-react";
 
 enum BiomeFilenames {
   Bare = "bare.png",
@@ -63,91 +65,128 @@ const getBonusStyles = (bonus: number) => {
     return {
       containerClass: "border-green-500/60 bg-green-900/30 shadow-green-500/20",
       textClass: "text-green-300",
-      iconClass: "text-green-400",
     };
-  } else if (bonus < 1) {
+  }
+  if (bonus < 1) {
     return {
       containerClass: "border-red-500/60 bg-red-900/30 shadow-red-500/20",
       textClass: "text-red-300",
-      iconClass: "text-red-400",
     };
   }
   return {
     containerClass: "border-gold/30 bg-brown-800/60 shadow-gold/10",
     textClass: "text-gold/90",
-    iconClass: "text-gold/70",
   };
 };
 
-export const BiomeInfoPanel = ({ biome }: { biome: BiomeType }) => {
-  const troopTypes = [TroopType.Knight, TroopType.Crossbowman, TroopType.Paladin];
+interface BiomeInfoPanelProps {
+  biome: BiomeType;
+  collapsed?: boolean;
+}
+
+export const BiomeInfoPanel = ({ biome, collapsed = false }: BiomeInfoPanelProps) => {
+  const troopTypes = useMemo(() => [TroopType.Knight, TroopType.Crossbowman, TroopType.Paladin], []);
+  const [isExpanded, setIsExpanded] = useState(!collapsed);
+
+  useEffect(() => {
+    setIsExpanded(!collapsed);
+  }, [collapsed, biome]);
+
+  const troopBonuses = useMemo(
+    () =>
+      troopTypes.map((troopType) => {
+        const config = troopConfig[troopType];
+        const bonus = configManager.getBiomeCombatBonus(troopType, biome);
+        const styles = getBonusStyles(bonus);
+        return {
+          troopType,
+          config,
+          bonus,
+          styles,
+          summaryTextClass: bonus > 1 ? "text-green-300" : bonus < 1 ? "text-red-300" : "text-gold/80",
+        };
+      }),
+    [biome, troopTypes],
+  );
+
+  const handleToggle = () => {
+    setIsExpanded((prev) => !prev);
+  };
 
   return (
-    <div
-      className="p-3 rounded-xl border-2 border-gold/20 backdrop-blur-sm shadow-lg relative overflow-hidden h-full transition-all duration-300 hover:border-gold/30 hover:shadow-xl"
-      style={{
-        backgroundImage: `linear-gradient(rgba(20, 16, 13, 0.85), rgba(20, 16, 13, 0.85)), url(${getBiomeImage(biome)})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
-      {/* Wood panel border overlay */}
-      <div className="absolute inset-0 rounded-xl border-2 border-transparent bg-gradient-to-br from-gold/5 to-transparent pointer-events-none" />
+    <div className="rounded-xl border border-gold/25 bg-dark/70 backdrop-blur-sm shadow-md">
+      <button
+        type="button"
+        onClick={handleToggle}
+        className="flex w-full items-center justify-between gap-3 rounded-t-xl px-3 py-1.5 text-left transition-colors hover:bg-gold/5"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Biome</span>
+          <span className="text-sm font-semibold text-gold">{formatBiomeLabel(biome)}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {troopBonuses.map(({ troopType, config, bonus, summaryTextClass }) => (
+            <div key={troopType} className="flex items-center gap-1 rounded-md bg-dark/60 px-1.5 py-0.5">
+              <ResourceIcon resource={config.resourceName} size="xs" withTooltip={false} />
+              <span className={`text-[11px] font-semibold leading-none ${summaryTextClass}`}>
+                {formatBiomeBonus(bonus)}
+              </span>
+            </div>
+          ))}
+          <ChevronDown
+            className={`h-4 w-4 text-gold/70 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+          />
+        </div>
+      </button>
 
-      <div className="flex flex-col gap-3 h-full relative z-10">
-        {/* Biome Header */}
-        <div className="flex-shrink-0">
-          <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-lg font-bold text-gold font-cinzel">{formatBiomeLabel(biome)}</h2>
-            <div className="group relative">
-              <Info className="w-4 h-4 text-gold/60 hover:text-gold transition-colors" />
-              <div className="absolute left-6 top-0 hidden group-hover:block z-50">
-                <div className="bg-brown-900/95 border border-gold/30 rounded-lg p-3 text-sm text-gold/90 whitespace-nowrap shadow-xl">
+      {isExpanded && (
+        <div
+          className="relative overflow-hidden rounded-b-xl border-t border-gold/20 p-3 shadow-inner"
+          style={{
+            backgroundImage: `linear-gradient(rgba(20, 16, 13, 0.85), rgba(20, 16, 13, 0.85)), url(${getBiomeImage(biome)})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <div className="pointer-events-none absolute inset-0 rounded-b-xl border-2 border-transparent bg-gradient-to-br from-gold/5 to-transparent" />
+
+          <div className="relative z-10 flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <h2 className="font-cinzel text-lg font-bold text-gold">{formatBiomeLabel(biome)}</h2>
+              <div className="group relative">
+                <Info className="h-4 w-4 text-gold/60 transition-colors group-hover:text-gold" />
+                <div className="absolute left-6 top-0 hidden whitespace-nowrap rounded-lg border border-gold/30 bg-brown-900/95 p-3 text-sm text-gold/90 shadow-xl group-hover:block">
                   Terrain affects combat effectiveness
                 </div>
               </div>
             </div>
-          </div>
-          <p className="text-sm text-gold/70 font-medium">Combat effectiveness varies by troop type</p>
-        </div>
+            <p className="text-sm font-medium text-gold/70">Combat effectiveness varies by troop type</p>
 
-        {/* Troop Effectiveness Cards */}
-        <div className="flex flex-row gap-2 flex-shrink-0">
-          {troopTypes.map((troopType) => {
-            const config = troopConfig[troopType];
-            const bonus = configManager.getBiomeCombatBonus(troopType, biome);
-            const styles = getBonusStyles(bonus);
-
-            return (
-              <div
-                key={troopType}
-                className={`group relative flex-1 px-2 py-2 rounded-lg border-2 shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105  ${
-                  styles.containerClass
-                }`}
-                role="tooltip"
-                aria-label={`${config.label}: ${formatBiomeBonus(bonus)} combat effectiveness`}
-              >
-                {/* Icon */}
-                <div className="flex justify-center mb-1.5">
-                  <ResourceIcon resource={config.resourceName} size="lg" withTooltip={false} className="opacity-90" />
+            <div className="flex flex-row gap-2">
+              {troopBonuses.map(({ troopType, config, bonus, styles }) => (
+                <div
+                  key={troopType}
+                  className={`group relative flex-1 rounded-lg border-2 px-2 py-2 shadow-lg transition-all duration-200 hover:scale-105 hover:shadow-xl ${styles.containerClass}`}
+                  role="tooltip"
+                  aria-label={`${config.label}: ${formatBiomeBonus(bonus)} combat effectiveness`}
+                >
+                  <div className="mb-1.5 flex justify-center">
+                    <ResourceIcon resource={config.resourceName} size="lg" withTooltip={false} className="opacity-90" />
+                  </div>
+                  <div className={`text-sm font-bold text-center ${styles.textClass}`}>{formatBiomeBonus(bonus)}</div>
+                  {bonus !== 1 && (
+                    <div
+                      className={`pointer-events-none absolute inset-0 rounded-lg opacity-20 ${
+                        bonus > 1 ? "bg-green-400/20" : "bg-red-400/20"
+                      } animate-pulse`}
+                    />
+                  )}
                 </div>
-
-                {/* Bonus Value */}
-                <div className={`text-sm font-bold text-center ${styles.textClass}`}>{formatBiomeBonus(bonus)}</div>
-
-                {/* Subtle glow effect for active bonuses */}
-                {bonus !== 1 && (
-                  <div
-                    className={`absolute inset-0 rounded-lg opacity-20 ${
-                      bonus > 1 ? "bg-green-400/20" : "bg-red-400/20"
-                    } animate-pulse pointer-events-none`}
-                  />
-                )}
-              </div>
-            );
-          })}
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
