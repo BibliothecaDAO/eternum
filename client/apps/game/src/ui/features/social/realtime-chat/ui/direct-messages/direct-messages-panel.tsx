@@ -88,7 +88,13 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
 
   // Initial load of messages
   useEffect(() => {
-    if (resolvedThreadId && thread && thread.messages.length === 0 && thread.hasMoreHistory && !thread.isFetchingHistory) {
+    if (
+      resolvedThreadId &&
+      thread &&
+      thread.messages.length === 0 &&
+      thread.hasMoreHistory &&
+      !thread.isFetchingHistory
+    ) {
       loadHistory(undefined);
     }
   }, [resolvedThreadId, thread, loadHistory]);
@@ -118,7 +124,7 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
           });
         }
       },
-      { threshold: 0.1, rootMargin: "100px" }
+      { threshold: 0.1, rootMargin: "100px" },
     );
 
     observer.observe(sentinel);
@@ -194,10 +200,8 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
                   const displayLabel = isOwn ? "You" : truncateIdentifier(message.senderId);
                   return (
                     <li key={message.id} className="text-[13px] leading-tight text-white/90">
-                      <span className="text-white/20">[{toDisplayTime(message)}]</span>
-                      {" "}
-                      <span className="text-gold/90">&lt;{displayLabel}&gt;</span>
-                      {" "}
+                      <span className="text-white/20">[{toDisplayTime(message)}]</span>{" "}
+                      <span className="text-gold/90">&lt;{displayLabel}&gt;</span>{" "}
                       <span className="break-words">{message.content}</span>
                     </li>
                   );

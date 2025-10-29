@@ -46,15 +46,10 @@ export const TabBar: React.FC<TabBarProps> = ({
               <div
                 key={tab.id}
                 className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-all duration-200 flex-shrink-0 h-[26px] ${
-                  isActive
-                    ? "bg-gold/20 text-gold"
-                    : "text-gold/70 hover:text-gold hover:bg-gold/10"
+                  isActive ? "bg-gold/20 text-gold" : "text-gold/70 hover:text-gold hover:bg-gold/10"
                 }`}
               >
-                <button
-                  onClick={() => onTabClick(tab.id)}
-                  className="flex items-center gap-1"
-                >
+                <button onClick={() => onTabClick(tab.id)} className="flex items-center gap-1">
                   <span>{tab.label}</span>
                   {tab.unreadCount > 0 && (
                     <span className="animate-pulse bg-red-500 text-white text-xxs px-1.5 py-0.5 bg-red/30 rounded-full">

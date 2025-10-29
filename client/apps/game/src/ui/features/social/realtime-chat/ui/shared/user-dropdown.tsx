@@ -141,9 +141,7 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({
           </section>
         )}
 
-        {filteredUsers.length === 0 && (
-          <p className="px-3 py-4 text-sm text-gold/50 text-center">No users found.</p>
-        )}
+        {filteredUsers.length === 0 && <p className="px-3 py-4 text-sm text-gold/50 text-center">No users found.</p>}
       </div>
     </div>
   );

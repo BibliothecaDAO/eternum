@@ -245,7 +245,7 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
           });
         }
       },
-      { threshold: 0.1, rootMargin: "100px" }
+      { threshold: 0.1, rootMargin: "100px" },
     );
 
     observer.observe(sentinel);
@@ -282,16 +282,14 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
                   return (
                     <li key={message.id} className="text-[13px] leading-tight text-white/90">
                       <div>
-                        <span className="text-white/20">[{formatWorldMessageTime(message)}]</span>
-                        {" "}
+                        <span className="text-white/20">[{formatWorldMessageTime(message)}]</span>{" "}
                         <span
                           onClick={() => handleUserClick(message.sender.playerId)}
                           className="text-gold/90 hover:text-gold transition-colors cursor-pointer"
                           title={`Click to send DM to ${senderName}`}
                         >
                           &lt;{senderName}&gt;
-                        </span>
-                        {" "}
+                        </span>{" "}
                         <span className="break-words">
                           {messageParts.map((part, i) => (
                             <span key={i}>

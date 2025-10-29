@@ -525,7 +525,7 @@ app.get("/health", (c) => {
   return c.json({
     status: "ok",
     port: port,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 

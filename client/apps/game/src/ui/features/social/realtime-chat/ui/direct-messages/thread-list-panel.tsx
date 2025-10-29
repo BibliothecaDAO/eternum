@@ -93,19 +93,23 @@ export function ThreadListPanel({ onSelectThread, className }: ThreadListPanelPr
   }, [presence, selfAliases, searchQuery]);
 
   const onlinePlayers = useMemo(() => {
-    return filteredPresence.filter((player) => player.isOnline).sort((a, b) => {
-      const aName = a.displayName ?? a.playerId;
-      const bName = b.displayName ?? b.playerId;
-      return aName.localeCompare(bName);
-    });
+    return filteredPresence
+      .filter((player) => player.isOnline)
+      .sort((a, b) => {
+        const aName = a.displayName ?? a.playerId;
+        const bName = b.displayName ?? b.playerId;
+        return aName.localeCompare(bName);
+      });
   }, [filteredPresence]);
 
   const offlinePlayers = useMemo(() => {
-    return filteredPresence.filter((player) => !player.isOnline).sort((a, b) => {
-      const aName = a.displayName ?? a.playerId;
-      const bName = b.displayName ?? b.playerId;
-      return aName.localeCompare(bName);
-    });
+    return filteredPresence
+      .filter((player) => !player.isOnline)
+      .sort((a, b) => {
+        const aName = a.displayName ?? a.playerId;
+        const bName = b.displayName ?? b.playerId;
+        return aName.localeCompare(bName);
+      });
   }, [filteredPresence]);
 
   const threadsWithUnread = useMemo(() => {
@@ -130,14 +134,19 @@ export function ThreadListPanel({ onSelectThread, className }: ThreadListPanelPr
       aliases.push(player.walletAddress);
     }
     const threadForPlayer =
-      aliases.map((alias) => threadAliasesMap.get(alias)).find((thread): thread is DirectMessageThreadState => Boolean(thread)) ?? null;
+      aliases
+        .map((alias) => threadAliasesMap.get(alias))
+        .find((thread): thread is DirectMessageThreadState => Boolean(thread)) ?? null;
     const unreadCount = threadForPlayer?.unreadCount ?? 0;
     const isActive = threadForPlayer?.thread.id === activeThreadId;
     const displayLabel = truncateIdentifier(player.displayName ?? player.playerId, 6);
     const isPinned = pinnedUsers.has(player.playerId);
 
     return (
-      <li key={player.playerId} className={`w-full px-2 py-1 text-left hover:bg-gold/20 flex items-center ${isActive ? "bg-gold/30" : ""} ${isOffline ? "opacity-60" : ""}`}>
+      <li
+        key={player.playerId}
+        className={`w-full px-2 py-1 text-left hover:bg-gold/20 flex items-center ${isActive ? "bg-gold/30" : ""} ${isOffline ? "opacity-60" : ""}`}
+      >
         <button onClick={() => handleSelectPlayer(player.playerId)} className="flex items-center flex-1">
           <UserAvatar name={displayLabel} isOnline={!isOffline} size="sm" className="mr-2" />
           <span className="text-sm truncate text-white">{displayLabel}</span>
@@ -163,7 +172,12 @@ export function ThreadListPanel({ onSelectThread, className }: ThreadListPanelPr
             viewBox="0 0 24 24"
             stroke="currentColor"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+            />
           </svg>
         </button>
       </li>
@@ -208,9 +222,7 @@ export function ThreadListPanel({ onSelectThread, className }: ThreadListPanelPr
             <h3 className="px-1 pb-2 text-[11px] font-semibold uppercase tracking-wide text-gold/70">
               Online Lords ({onlinePlayers.length})
             </h3>
-            <ul className="flex flex-col">
-              {onlinePlayers.map((player) => renderPlayerItem(player, false))}
-            </ul>
+            <ul className="flex flex-col">{onlinePlayers.map((player) => renderPlayerItem(player, false))}</ul>
           </section>
         )}
 
@@ -219,9 +231,7 @@ export function ThreadListPanel({ onSelectThread, className }: ThreadListPanelPr
             <h3 className="px-1 pb-2 text-[11px] font-semibold uppercase tracking-wide text-gold/70">
               Offline ({offlinePlayers.length})
             </h3>
-            <ul className="flex flex-col">
-              {offlinePlayers.map((player) => renderPlayerItem(player, true))}
-            </ul>
+            <ul className="flex flex-col">{offlinePlayers.map((player) => renderPlayerItem(player, true))}</ul>
           </section>
         )}
 

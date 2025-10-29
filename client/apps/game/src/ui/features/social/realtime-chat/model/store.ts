@@ -1143,9 +1143,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
     },
     updateTabUnread: (tabId, unreadCount) => {
       const { openTabs } = get();
-      const nextTabs = openTabs.map((tab) =>
-        tab.id === tabId ? { ...tab, unreadCount } : tab
-      );
+      const nextTabs = openTabs.map((tab) => (tab.id === tabId ? { ...tab, unreadCount } : tab));
       set({ openTabs: nextTabs });
       localStorage.setItem("realtime-chat-tabs", JSON.stringify(nextTabs));
     },
