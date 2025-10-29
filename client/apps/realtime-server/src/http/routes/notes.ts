@@ -1,14 +1,9 @@
 import { randomUUID } from "crypto";
 
-import { and, desc, eq, gt, lt } from "drizzle-orm";
+import { and, desc, eq, gt, lt, or } from "drizzle-orm";
 import { Hono } from "hono";
 
-import {
-  noteCreateSchema,
-  noteDeleteSchema,
-  noteListQuerySchema,
-  noteUpdateSchema,
-} from "../../../../../../common/validation/realtime/notes";
+import { noteCreateSchema, noteDeleteSchema, noteListQuerySchema, noteUpdateSchema } from "@bibliothecadao/types";
 import { db } from "../../db/client";
 import { notes } from "../../db/schema/notes";
 import type { AppEnv } from "../middleware/auth";
@@ -73,10 +68,14 @@ notesRoutes.patch("/:id", async (c) => {
   const payload = payloadResult.data;
   const player = c.get("playerSession")!;
 
+  const authorAliases = player.aliases ?? [player.playerId];
+  const authorConditions = authorAliases.map((alias) => eq(notes.authorId, alias));
+  const authorFilter = authorConditions.length > 0 ? or(...authorConditions) : eq(notes.authorId, player.playerId);
+
   const [existing] = await db
     .select()
     .from(notes)
-    .where(and(eq(notes.id, payload.id), eq(notes.authorId, player.playerId)))
+    .where(and(eq(notes.id, payload.id), authorFilter))
     .limit(1);
 
   if (!existing) {
@@ -112,7 +111,11 @@ notesRoutes.delete("/:id", async (c) => {
   const payload = payloadResult.data;
   const player = c.get("playerSession")!;
 
-  const { rowCount } = await db.delete(notes).where(and(eq(notes.id, payload.id), eq(notes.authorId, player.playerId)));
+  const authorAliases = player.aliases ?? [player.playerId];
+  const authorConditions = authorAliases.map((alias) => eq(notes.authorId, alias));
+  const authorFilter = authorConditions.length > 0 ? or(...authorConditions) : eq(notes.authorId, player.playerId);
+
+  const { rowCount } = await db.delete(notes).where(and(eq(notes.id, payload.id), authorFilter));
 
   if (rowCount === 0) {
     return c.json({ error: "Note not found." }, 404);
@@ -153,7 +156,7 @@ notesRoutes.get("/", async (c) => {
   let query = db.select().from(notes);
 
   if (filters.length > 0) {
-    query = query.where(and(...filters));
+    query = query.where(and(...filters)) as any;
   }
 
   const limit = payload.limit ?? 50;

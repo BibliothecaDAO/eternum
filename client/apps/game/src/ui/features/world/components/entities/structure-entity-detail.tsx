@@ -17,6 +17,7 @@ import {
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 
 import { CompactDefenseDisplay } from "@/ui/features/military";
+import { useRealtimeChatActions } from "@/ui/features/social/realtime-chat/hooks/use-realtime-chat";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
 import { displayAddress } from "@/ui/utils/utils";
 
@@ -249,6 +250,31 @@ export const StructureEntityDetail = memo(
     const actionButtonBase =
       "inline-flex min-w-[104px] items-center justify-center gap-2 rounded-md px-3 py-1 text-xs font-semibold uppercase tracking-wide transition-colors focus:outline-none focus:ring-1 focus:ring-gold/30 disabled:cursor-not-allowed disabled:opacity-60";
     const standardActionClasses = `${actionButtonBase} border border-gold/60 bg-gold/10 text-gold hover:bg-gold/20`;
+
+    const realtimeChatActions = useRealtimeChatActions();
+
+    const targetPlayerId = useMemo(() => {
+      const trimmedName = addressName?.trim();
+      if (trimmedName) {
+        return trimmedName;
+      }
+      if (structure?.owner !== undefined) {
+        return `0x${structure.owner.toString(16).padStart(64, "0")}`;
+      }
+      return undefined;
+    }, [addressName, structure?.owner]);
+
+    const handleChatClick = () => {
+      if (isMine) {
+        realtimeChatActions.setShellOpen(true);
+        return;
+      }
+      if (!targetPlayerId) {
+        realtimeChatActions.setShellOpen(true);
+        return;
+      }
+      realtimeChatActions.openDirectThread(targetPlayerId);
+    };
 
     const structureName = useMemo(() => {
       return structure ? getStructureName(structure, isBlitz).name : undefined;
