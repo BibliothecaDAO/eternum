@@ -343,32 +343,32 @@ export const RightNavigationModule = () => {
                 </div>
                 <BaseContainer
                   className={clsx(
-                    "panel-wood panel-wood-corners w-full flex-1 rounded-l-2xl border-l-2 border-y-2 border-gold/20 pointer-events-auto overflow-x-auto overflow-y-auto min-h-0 max-h-full",
+                    "panel-wood panel-wood-corners w-full flex-1 rounded-l-2xl border-l-2 border-y-2 border-gold/20 pointer-events-auto min-h-0 max-h-full",
                   )}
                 >
                   <Suspense fallback={<div className="p-8">Loading...</div>}>
                     {view === RightView.ResourceTable && !!structureEntityId && (
-                      <div className="entity-resource-table-selector p-2 flex flex-col space-y-1 overflow-y-auto">
+                      <div className="entity-resource-table-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
                         <EntityResourceTable entityId={structureEntityId} />
                       </div>
                     )}
                     {view === RightView.Production && (
-                      <div className="production-selector p-2 flex flex-col space-y-1 overflow-y-auto">
+                      <div className="production-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
                         <ProductionOverviewPanel />
                       </div>
                     )}
                     {view === RightView.Bridge && (
-                      <div className="bridge-selector p-2 flex flex-col space-y-1 overflow-y-auto">
+                      <div className="bridge-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
                         <Bridge structures={structures} />
                       </div>
                     )}
                     {view === RightView.Transfer && (
-                      <div className="transfer-selector p-2 flex flex-col space-y-1 overflow-y-auto">
+                      <div className="transfer-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
                         <TransferAutomationPanel />
                       </div>
                     )}
                     {storyChroniclesActive && (
-                      <div className="story-events-selector flex h-full flex-col">
+                      <div className="story-events-selector flex h-full flex-col flex-1 overflow-y-auto">
                         <StoryEventsChronicles />
                       </div>
                     )}
