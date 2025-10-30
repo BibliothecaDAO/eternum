@@ -14,12 +14,13 @@
     "migrate:push": "drizzle-kit push --config drizzle.config.ts"
   },
   "dependencies": {
-    "@bibliothecadao/torii": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
     "@fastify/redis": "^6.0.0",
+    "@types/pg": "^8.15.5",
+    "dotenv": "^16.4.5",
     "drizzle-orm": "^0.44.6",
     "hono": "^4.9.12",
-    "pg": "^8.13.1",
+    "pg": "^8.16.1",
     "zod": "^4.1.12"
   },
   "devDependencies": {

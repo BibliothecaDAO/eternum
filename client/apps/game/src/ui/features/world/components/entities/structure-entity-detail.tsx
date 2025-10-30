@@ -17,6 +17,7 @@ import {
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 
 import { CompactDefenseDisplay } from "@/ui/features/military";
+import { useRealtimeChatActions } from "@/ui/features/social/realtime-chat/hooks/use-realtime-chat";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
 import { displayAddress } from "@/ui/utils/utils";
 
@@ -37,8 +38,8 @@ import { Eye, Loader, RefreshCw } from "lucide-react";
 import { memo, useCallback, useMemo, useState } from "react";
 import { ImmunityTimer } from "../structures/immunity-timer";
 import { ActiveRelicEffects } from "./active-relic-effects";
-import { StructureProductionPanel } from "./structure-production-panel";
 import { EntityInventoryTabs } from "./entity-inventory-tabs";
+import { StructureProductionPanel } from "./structure-production-panel";
 
 interface StructureEntityDetailProps {
   structureEntityId: ID;
@@ -105,7 +106,7 @@ export const StructureEntityDetail = memo(
 
         const isMine = structure.owner === userAddress;
         const guild = getGuildFromPlayerAddress(ContractAddress(structure.owner), components);
-        const guards = getGuardsByStructure(structure).filter((guard) => guard.troops.count > 0n);
+        const guards = getGuardsByStructure(structure);
         const userGuild = getGuildFromPlayerAddress(userAddress, components);
         const isAlly = isMine || (guild && userGuild && guild.entityId === userGuild.entityId) || false;
         const addressName = structure.owner ? getAddressName(structure.owner, components) : MERCENARIES;
@@ -250,6 +251,31 @@ export const StructureEntityDetail = memo(
       "inline-flex min-w-[104px] items-center justify-center gap-2 rounded-md px-3 py-1 text-xs font-semibold uppercase tracking-wide transition-colors focus:outline-none focus:ring-1 focus:ring-gold/30 disabled:cursor-not-allowed disabled:opacity-60";
     const standardActionClasses = `${actionButtonBase} border border-gold/60 bg-gold/10 text-gold hover:bg-gold/20`;
 
+    const realtimeChatActions = useRealtimeChatActions();
+
+    const targetPlayerId = useMemo(() => {
+      const trimmedName = addressName?.trim();
+      if (trimmedName) {
+        return trimmedName;
+      }
+      if (structure?.owner !== undefined) {
+        return `0x${structure.owner.toString(16).padStart(64, "0")}`;
+      }
+      return undefined;
+    }, [addressName, structure?.owner]);
+
+    const handleChatClick = () => {
+      if (isMine) {
+        realtimeChatActions.setShellOpen(true);
+        return;
+      }
+      if (!targetPlayerId) {
+        realtimeChatActions.setShellOpen(true);
+        return;
+      }
+      realtimeChatActions.openDirectThread(targetPlayerId);
+    };
+
     const structureName = useMemo(() => {
       return structure ? getStructureName(structure, isBlitz).name : undefined;
     }, [structure, isBlitz]);
@@ -377,17 +403,16 @@ export const StructureEntityDetail = memo(
 
           <div className={panelClass}>
             <div className={`${sectionTitleClass} mb-2`}>Defenses</div>
-            {guardSlotsUsed !== undefined && guardSlotsMax !== undefined && (
-              <div className={`${smallTextClass} text-gold/60 mb-2`}>
-                Slots: {guardSlotsUsed}/{guardSlotsMax}
-              </div>
-            )}
             {guards.length > 0 ? (
               <CompactDefenseDisplay
                 troops={guards.map((army) => ({
                   slot: army.slot,
                   troops: army.troops,
                 }))}
+                slotsUsed={guardSlotsUsed}
+                slotsMax={guardSlotsMax}
+                structureId={Number(structure.entity_id ?? 0)}
+                canManageDefense={isMine}
               />
             ) : (
               <div className={`${smallTextClass} text-gold/60 italic`}>No defenders stationed.</div>

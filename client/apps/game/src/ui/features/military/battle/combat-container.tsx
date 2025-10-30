@@ -27,6 +27,7 @@ import {
   CapacityConfig,
   ClientComponents,
   ContractAddress,
+  DISPLAYED_SLOT_NUMBER_MAP,
   getDirectionBetweenAdjacentHexes,
   ID,
   RelicEffectWithEndTick,
@@ -131,7 +132,11 @@ export const CombatContainer = ({
   const structureGuards = useMemo(() => {
     if (attackerType !== AttackerType.Structure) return [];
     const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(attackerEntityId)]));
-    return structure ? getGuardsByStructure(structure) : [];
+    return structure
+      ? getGuardsByStructure(structure)
+          .sort((a, b) => a.slot - b.slot)
+          .filter((guard) => guard.troops.count > 0n)
+      : [];
   }, [attackerType, attackerEntityId, Structure]);
 
   // Convert relic effects to resource IDs
@@ -535,7 +540,7 @@ export const CombatContainer = ({
                 selectedGuardSlot === guard.slot ? "border-gold bg-gold/10" : "border-gold/20"
               } rounded-md px-2 sm:px-3 py-1.5 sm:py-2 hover:border-gold/60 transition-colors focus:outline-none focus:ring-2 focus:ring-gold/50 min-w-0 flex-1 sm:flex-none`}
               aria-pressed={selectedGuardSlot === guard.slot}
-              aria-label={`Select ${TroopType[guard.troops.category as TroopType]} ${guard.troops.tier} troops in slot ${guard.slot}`}
+              aria-label={`Select ${TroopType[guard.troops.category as TroopType]} ${guard.troops.tier} troops in slot ${DISPLAYED_SLOT_NUMBER_MAP[guard.slot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]}`}
             >
               <ResourceIcon
                 withTooltip={false}

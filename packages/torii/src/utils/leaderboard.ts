@@ -19,7 +19,6 @@ export interface HyperstructureLeaderboardHyperstructure {
 
 export interface CalculateUnregisteredShareholderPointsCacheOptions {
   pointsPerSecondWithoutMultiplier: number;
-  realmCountPerHyperstructures?: Map<number, number>;
   seasonEnd: number;
   hyperstructureShareholders: HyperstructureShareholder[];
   hyperstructures: HyperstructureLeaderboardHyperstructure[];
@@ -30,7 +29,6 @@ export interface CalculateUnregisteredShareholderPointsCacheOptions {
  */
 export const calculateUnregisteredShareholderPointsCache = ({
   pointsPerSecondWithoutMultiplier,
-  realmCountPerHyperstructures,
   seasonEnd,
   hyperstructureShareholders,
   hyperstructures,
@@ -48,13 +46,10 @@ export const calculateUnregisteredShareholderPointsCache = ({
       (item) => item.hyperstructure_id === hyperstructureShareholder.hyperstructure_id,
     );
 
-    const hyperstructureId = Number(hyperstructureShareholder.hyperstructure_id ?? 0);
-
     const pointsMultiplier = hyperstructure ? Number(hyperstructure.points_multiplier ?? 1) : 1;
-    const realmCount = realmCountPerHyperstructures?.get(hyperstructureId) ?? hyperstructure?.realm_count ?? 0;
 
-    const pointsPerSecond =
-      hyperstructure && realmCount > 0 ? pointsPerSecondWithoutMultiplier * pointsMultiplier * realmCount : 0;
+    const pointsPerSecond = hyperstructure ? pointsPerSecondWithoutMultiplier * pointsMultiplier : 0;
+
     if (pointsPerSecond === 0) continue;
 
     const shareholders = hyperstructureShareholder.shareholders;

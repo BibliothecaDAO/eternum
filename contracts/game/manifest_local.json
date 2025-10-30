@@ -1956,8 +1956,8 @@
       ]
     },
     {
-      "address": "0x695ea664942ac137597d93bd0f6ec6581146ddde013f3fd8bdd5e4d7246dff",
-      "class_hash": "0x3e9f2f8a6325114c23744c6a814a4c93f253f06860e0d4f381940efd0a5ce5d",
+      "address": "0x759a9b16267c42c5ccb53de43f3bbb92b7c9fe55fc2a9512a3e69b31821ad19",
+      "class_hash": "0x4217c752c563eca16bb139c42058f861ef70542bd25035ab0c9b436e7ae502",
       "abi": [
         {
           "type": "impl",
@@ -2208,8 +2208,8 @@
       ]
     },
     {
-      "address": "0x31bba4cd5ee73e5421955657ed400c8120f2c11210374854e9991360aa3943b",
-      "class_hash": "0x1527c48e09612baa2c2ace19131ab597305661a4761b942c1f90063e3562a14",
+      "address": "0x652255b131468ec44c8182b2ed1c4c0e596e3c3591a056778268376bbb9d81",
+      "class_hash": "0x7cd53e657c4ba7269e0ba39fb0b8a26df37b313583b60ce8d58e5a2abc06325",
       "abi": [
         {
           "type": "impl",
@@ -4706,8 +4706,8 @@
       ]
     },
     {
-      "address": "0x413614544c97d76c83e22aef7a1e3895ccc0759f4629d86fe992d72d8fdc38b",
-      "class_hash": "0x285841825e88919d1129f37e2bf24d71eeedfddaed544754bf52a45da23dec",
+      "address": "0x45a2c58a5ba50f8babea81d5d2a934c8e31f876104732fdacc06601e4c825cb",
+      "class_hash": "0x3df793308784707f3db909e025ef99ac57a019e14e04866667cba8fa3483353",
       "abi": [
         {
           "type": "impl",
@@ -5740,8 +5740,8 @@
       ]
     },
     {
-      "address": "0x147bbc454fc89869725be149502464bd6b801ed4de58b6bfd754f9a539a805a",
-      "class_hash": "0x7d88be9d002f497cbead10bcc53c5692fe516d98b8328cc3d8c4c6d57fc34fa",
+      "address": "0x16af24be075c5059ca9f0c6f1c9c213745e1d8b54ecd5f0493999670bc347ec",
+      "class_hash": "0x1dfb68e93e4795b31e343713d42a27d5c8faa79e820e2517ed1a351da550698",
       "abi": [
         {
           "type": "impl",
@@ -9017,8 +9017,8 @@
       ]
     },
     {
-      "address": "0xcc35a92c1d3f8865b0cdb0338aba8f4d3db17a9ae5fecc9ec028ee05c7330b",
-      "class_hash": "0xda6453f689e15368c0aa9409049d1a99c08862db1a49336f9a4ed3fc6a2aa9",
+      "address": "0x7b635c67a39b9281a738ce7aa18185935dedbc5137541a3738ed54b40b758f3",
+      "class_hash": "0x4d600165473ab4262bd6ffa8b2b75be8e891b085beab32f831113aec83a38bb",
       "abi": [
         {
           "type": "impl",
@@ -10855,8 +10855,8 @@
       ]
     },
     {
-      "address": "0x7dc6fd18bef3f52229e749f082d71224cafa3f62dd1d0ccc3345e486962dbcb",
-      "class_hash": "0x6311e234cdb5616a0428d7cf9dc44c2ef2662eec2c72197d706d22a3710b420",
+      "address": "0xfbbdbe60ff2e8004c2bdada93ffc89c4652541368dee08f0d96f1f613c2229",
+      "class_hash": "0x1e6f6d0cd4a1ac3dfd9c71e2001955035b26ee0967009247248d44dd4ddc3ce",
       "abi": [
         {
           "type": "impl",
@@ -10958,11 +10958,7 @@
           "name": "s1_eternum::models::troop::GuardSlot",
           "variants": [
             {
-              "name": "Delta",
-              "type": "()"
-            },
-            {
-              "name": "Charlie",
+              "name": "Alpha",
               "type": "()"
             },
             {
@@ -10970,7 +10966,11 @@
               "type": "()"
             },
             {
-              "name": "Alpha",
+              "name": "Charlie",
+              "type": "()"
+            },
+            {
+              "name": "Delta",
               "type": "()"
             }
           ]
@@ -11175,8 +11175,8 @@
       ]
     },
     {
-      "address": "0x23319cbcffb9b2e0ac3c526c8491f52c3ac0ff1053aaf0dfb78b778683d78c9",
-      "class_hash": "0x3b55e94daeaaf67269c0d979f90a54c00b6355c2f604ded1c1d0deb17d60aa0",
+      "address": "0x2bfc8d7a34048ad82ec3bd4bd65793201f96a3c830ee9cbc52240bea315c308",
+      "class_hash": "0x45c893aa6e248df1b06e1360ee7992af5bd02cbb76aafa54615e1b208c75308",
       "abi": [
         {
           "type": "impl",
@@ -11238,11 +11238,7 @@
           "name": "s1_eternum::models::troop::GuardSlot",
           "variants": [
             {
-              "name": "Delta",
-              "type": "()"
-            },
-            {
-              "name": "Charlie",
+              "name": "Alpha",
               "type": "()"
             },
             {
@@ -11250,7 +11246,11 @@
               "type": "()"
             },
             {
-              "name": "Alpha",
+              "name": "Charlie",
+              "type": "()"
+            },
+            {
+              "name": "Delta",
               "type": "()"
             }
           ]
@@ -12429,8 +12429,8 @@
       ]
     },
     {
-      "address": "0x74d6f92852d62c78bb7e1c11862ece3d7f67eed1157459632b0b3f0c6af1b3b",
-      "class_hash": "0x3081c2782460c080662cb301c5c8791e7bf638d7ad87ee4fd3149637be416e0",
+      "address": "0x44865cb00e60f7a23260f9a69a5c2b4aa595875d5ad69f3056864dcfccfae35",
+      "class_hash": "0x5833017b6164c6310f11052e86ff28f80858a833651448bec09285f0c286553",
       "abi": [
         {
           "type": "impl",
@@ -12681,8 +12681,8 @@
       ]
     },
     {
-      "address": "0x2868afe4de47ac1fad9a4b6e5a770a28e7dabeb6274d63753cf442243902f4e",
-      "class_hash": "0x71db859274d4587ca254f08dffc59bdb2b904e9806a915b03b3cb287a892cf5",
+      "address": "0x5aa91186b233c07d4f15dfa52d3b52b538f30360051d939bc9d594608a0c8ae",
+      "class_hash": "0x238a3f689448bddc438f1c4d9fb00cd73e56ebb144d374d2eb686a5deb28282",
       "abi": [
         {
           "type": "impl",
@@ -14606,7 +14606,7 @@
       "version": "0_1_0"
     },
     {
-      "class_hash": "0x68d6fb5fce718909d5acdc77a16c2014d3b521f2b6e74b8841a02d8ef3ce02a",
+      "class_hash": "0x5a044f711de8963fa237db0c16f3e441da86709cfcb913989988de0883a22fb",
       "abi": [
         {
           "type": "impl",
@@ -15531,7 +15531,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x7c6301cb611525c3cb30886afd9c69e3fd29f0264cb8a4d96d7af132b319e9f",
+      "class_hash": "0x47759bfa4a230565459875ddb225c7de7164179d4c02e358c5d613967511a55",
       "tag": "s1_eternum-StoryEvent",
       "selector": "0x6b9bb187e0946522eb890cc2148826a81a2030e8a34dbc5607ee6dfdda50dd8"
     },

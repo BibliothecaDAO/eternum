@@ -18,10 +18,12 @@ import {
   usePlayerOwnedVillagesInfo,
 } from "@bibliothecadao/react";
 import {
-  DEFENSE_NAMES,
   Direction,
+  DISPLAYED_SLOT_NUMBER_MAP,
   getDirectionBetweenAdjacentHexes,
   getNeighborHexes,
+  GUARD_SLOT_NAMES,
+  GuardSlot,
   ID,
   resources,
   TroopTier,
@@ -45,6 +47,7 @@ interface UnifiedArmyCreationModalProps {
   maxDefenseSlots?: number;
   isExplorer?: boolean;
   direction?: Direction;
+  initialGuardSlot?: number;
 }
 
 const TROOP_TYPES: TroopType[] = [TroopType.Crossbowman, TroopType.Knight, TroopType.Paladin];
@@ -61,6 +64,7 @@ export const UnifiedArmyCreationModal = ({
   maxDefenseSlots = 4,
   isExplorer = true,
   direction,
+  initialGuardSlot,
 }: UnifiedArmyCreationModalProps) => {
   const {
     setup: { components, systemCalls },
@@ -98,7 +102,7 @@ export const UnifiedArmyCreationModal = ({
     ...DEFAULT_TROOP_COMBO,
   }));
   const [troopCount, setTroopCount] = useState(0);
-  const [guardSlot, setGuardSlot] = useState(0);
+  const [guardSlot, setGuardSlot] = useState(initialGuardSlot ?? 0);
   const [armyType, setArmyType] = useState(isExplorer);
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const previousStructureIdRef = useRef<number | null>(null);
@@ -111,6 +115,12 @@ export const UnifiedArmyCreationModal = ({
   useEffect(() => {
     setSelectedStructureId(structureId ?? null);
   }, [structureId]);
+
+  useEffect(() => {
+    if (initialGuardSlot !== undefined) {
+      setGuardSlot(initialGuardSlot);
+    }
+  }, [initialGuardSlot]);
 
   const fallbackStructureId = playerStructures[0]?.entityId ?? structureId ?? 0;
   const activeStructureId = selectedStructureId ?? fallbackStructureId;
@@ -148,7 +158,7 @@ export const UnifiedArmyCreationModal = ({
   });
 
   const currentExplorersCount = explorers.length;
-  const currentGuardsCount = guardsData?.length || 0;
+  const currentGuardsCount = guardsData?.filter((guard) => guard.troops?.count && guard.troops.count > 0n).length || 0;
   const maxExplorers = structureBase?.troop_max_explorer_count || 0;
   const resolvedMaxDefenseSlots = structureBase?.troop_max_guard_count || maxDefenseSlots;
 
@@ -200,8 +210,8 @@ export const UnifiedArmyCreationModal = ({
     setFreeDirections([]);
     setSelectedDirection(direction !== undefined ? direction : null);
     setTroopCount(0);
-    setGuardSlot(0);
-  }, [activeStructureId, direction]);
+    setGuardSlot(initialGuardSlot ?? 0);
+  }, [activeStructureId, direction, initialGuardSlot]);
 
   useEffect(() => {
     if (structureCoordX === undefined || structureCoordY === undefined || !activeStructureId) {
@@ -348,14 +358,6 @@ export const UnifiedArmyCreationModal = ({
       .map((guard) => Number(guard.slot))
       .filter((slot) => Number.isInteger(slot) && slot >= 0);
 
-    if (resolvedMaxDefenseSlots > 0 && guardSlot >= resolvedMaxDefenseSlots) {
-      const clampedSlot = Math.max(0, resolvedMaxDefenseSlots - 1);
-      if (guardSlot !== clampedSlot) {
-        setGuardSlot(clampedSlot);
-      }
-      return;
-    }
-
     if (!canCreateDefenseArmy) {
       if (occupiedSlots.length === 0) {
         if (guardSlot !== 0) {
@@ -371,7 +373,7 @@ export const UnifiedArmyCreationModal = ({
         }
       }
     }
-  }, [armyType, guardsData, guardSlot, resolvedMaxDefenseSlots, canCreateDefenseArmy]);
+  }, [armyType, guardsData, guardSlot, canCreateDefenseArmy]);
 
   useEffect(() => {
     if (armyType || !selectedGuardCategory || !selectedGuardTier) {
@@ -519,7 +521,7 @@ export const UnifiedArmyCreationModal = ({
 
   const defenseSlotErrorMessage = !armyType
     ? !isDefenseSlotCompatible && selectedGuardLabelUpper
-      ? `Slot ${guardSlot + 1} currently contains ${selectedGuardLabelUpper}. Reinforce it with the same troop type and tier.`
+      ? `Slot ${DISPLAYED_SLOT_NUMBER_MAP[guardSlot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]} currently contains ${selectedGuardLabelUpper}. Reinforce it with the same troop type and tier.`
       : isDefenseSlotCreationBlocked
         ? "All defense slots are occupied. Select an occupied slot to reinforce or remove one to free space."
         : null
@@ -535,7 +537,7 @@ export const UnifiedArmyCreationModal = ({
 
   const actionLabel = armyType
     ? "CREATE ATTACK ARMY"
-    : `ADD DEFENSE - ${DEFENSE_NAMES[guardSlot as keyof typeof DEFENSE_NAMES]?.toUpperCase()}`;
+    : `ADD DEFENSE - ${GUARD_SLOT_NAMES[guardSlot as GuardSlot]?.toUpperCase()}`;
 
   const isActionDisabled =
     activeStructureId <= 0 ||
@@ -583,7 +585,7 @@ export const UnifiedArmyCreationModal = ({
             />
           </div>
 
-          <div className="flex flex-col h-full space-y-6">
+          <div className="flex flex-col h-full space-y-2">
             <ArmyTypeToggle
               armyType={armyType}
               canCreateAttackArmy={canCreateAttackArmy}

@@ -169,6 +169,10 @@ export const PlayersPanel = ({
                   <span className="text-gold font-semibold">3000 VP</span>
                 </div>
                 <div className="flex items-center justify-between">
+                  <span className="text-gold/50">Open a Relic Crest</span>
+                  <span className="text-gold font-semibold">1000 VP</span>
+                </div>
+                <div className="flex items-center justify-between">
                   <span className="text-gold/50">
                     Control a Hyperstructure (1 point per realm settled in 8 tile radius)
                   </span>

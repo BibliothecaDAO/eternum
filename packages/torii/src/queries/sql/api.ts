@@ -1,4 +1,4 @@
-import { ContractAddress, Coord, EntityType, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { ContractAddress, Coord, EntityType, GuardSlot, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
 
 import {
   ArmyMapDataRaw,
@@ -325,7 +325,7 @@ export class SqlApi {
     // Transform the flat SQL result into structured Guard objects
     const guards: Guard[] = [
       {
-        slot: 0,
+        slot: GuardSlot.Delta,
         troops:
           guardData.delta_count && hexToBigInt(guardData.delta_count) > 0n
             ? {
@@ -342,7 +342,7 @@ export class SqlApi {
         cooldownEnd: 0, // Will be calculated by the client
       },
       {
-        slot: 1,
+        slot: GuardSlot.Charlie,
         troops:
           guardData.charlie_count && hexToBigInt(guardData.charlie_count) > 0n
             ? {
@@ -359,7 +359,7 @@ export class SqlApi {
         cooldownEnd: 0, // Will be calculated by the client
       },
       {
-        slot: 2,
+        slot: GuardSlot.Bravo,
         troops:
           guardData.bravo_count && hexToBigInt(guardData.bravo_count) > 0n
             ? {
@@ -376,7 +376,7 @@ export class SqlApi {
         cooldownEnd: 0, // Will be calculated by the client
       },
       {
-        slot: 3,
+        slot: GuardSlot.Alpha,
         troops:
           guardData.alpha_count && hexToBigInt(guardData.alpha_count) > 0n
             ? {
@@ -615,24 +615,17 @@ export class SqlApi {
       return [];
     }
 
-    const {
-      registeredRows,
-      hyperstructureShareholderRows,
-      hyperstructureRows,
-      hyperstructureConfigRow,
-      hyperstructureRealmCounts,
-    } = await fetchLeaderboardSourceData({
-      baseUrl: this.baseUrl,
-      effectiveLimit,
-      defaultHyperstructureRadius: DEFAULT_HYPERSTRUCTURE_RADIUS,
-      fetchHyperstructuresWithRealmCount: (radius) => this.fetchHyperstructuresWithRealmCount(radius),
-    });
+    const { registeredRows, hyperstructureShareholderRows, hyperstructureRows, hyperstructureConfigRow } =
+      await fetchLeaderboardSourceData({
+        baseUrl: this.baseUrl,
+        effectiveLimit,
+        defaultHyperstructureRadius: DEFAULT_HYPERSTRUCTURE_RADIUS,
+      });
 
     const unregisteredShareholderPoints = computeUnregisteredShareholderPoints({
       configRow: hyperstructureConfigRow,
       hyperstructureRows,
       hyperstructureShareholderRows,
-      hyperstructureRealmCounts,
     });
 
     const { entries: registeredEntries, processedAddresses } = buildRegisteredLeaderboardEntries({
@@ -676,14 +669,12 @@ export class SqlApi {
       baseUrl: this.baseUrl,
       effectiveLimit: 0,
       defaultHyperstructureRadius: DEFAULT_HYPERSTRUCTURE_RADIUS,
-      fetchHyperstructuresWithRealmCount: (radius) => this.fetchHyperstructuresWithRealmCount(radius),
     });
 
     const unregisteredShareholderPoints = computeUnregisteredShareholderPoints({
       configRow: leaderboardSourceData.hyperstructureConfigRow,
       hyperstructureRows: leaderboardSourceData.hyperstructureRows,
       hyperstructureShareholderRows: leaderboardSourceData.hyperstructureShareholderRows,
-      hyperstructureRealmCounts: leaderboardSourceData.hyperstructureRealmCounts,
     });
 
     const { entries: registeredEntries, processedAddresses } = buildRegisteredLeaderboardEntries({

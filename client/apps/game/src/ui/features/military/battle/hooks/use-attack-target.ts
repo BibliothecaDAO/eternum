@@ -2,10 +2,10 @@ import { sqlApi } from "@/services/api";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   getArmyRelicEffects,
+  getBlockTimestamp,
   getGuardsByStructure,
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
-  getBlockTimestamp,
   ResourceManager,
   StaminaManager,
 } from "@bibliothecadao/eternum";
@@ -116,7 +116,9 @@ export const useAttackTargetData = (
 
           if (structure) {
             const relicEffects = getStructureArmyRelicEffects(structure, currentArmiesTick);
-            const guards = getGuardsByStructure(structure).filter((guard) => guard.troops.count > 0n);
+            const guards = getGuardsByStructure(structure)
+              .filter((guard) => guard.troops.count > 0n)
+              .sort((a, b) => a.slot - b.slot);
 
             setTarget({
               info: guards.map((guard) => ({
