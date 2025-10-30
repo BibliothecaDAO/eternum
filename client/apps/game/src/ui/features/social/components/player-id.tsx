@@ -168,7 +168,7 @@ export const PlayerId = ({
             </div>
             <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
               <span className="text-xl font-bold text-gold">{structureCounts.villages}</span>
-              <span className="text-xs text-gold/80 h6">Villages</span>
+              <span className="text-xs text-gold/80 h6">Camps</span>
             </div>
             <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
               <span className="text-xl font-bold text-gold">{structureCounts.hyperstructures}</span>
@@ -176,7 +176,7 @@ export const PlayerId = ({
             </div>
             <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
               <span className="text-xl font-bold text-gold">{structureCounts.mines}</span>
-              <span className="text-xs text-gold/80 h6">Mines</span>
+              <span className="text-xs text-gold/80 h6">Essence Rifts</span>
             </div>
             {structureCounts.banks > 0 && (
               <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">

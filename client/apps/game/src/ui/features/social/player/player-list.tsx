@@ -37,6 +37,13 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
 
   const isBlitz = getIsBlitz();
   const showTribeDetails = !isBlitz;
+  const leaderboardGridTemplate = useMemo(
+    () =>
+      showTribeDetails
+        ? "grid-cols-[68px_minmax(0,_1.6fr)_minmax(0,_1.2fr)_minmax(0,_0.8fr)_minmax(0,_0.85fr)_minmax(0,_1.05fr)]"
+        : "grid-cols-[68px_minmax(0,_2.4fr)_minmax(0,_0.85fr)_minmax(0,_0.9fr)_minmax(0,_1.3fr)]",
+    [showTribeDetails],
+  );
 
   useEffect(() => {
     if (!showTribeDetails && activeSort.sortKey === "guild.name") {
@@ -107,7 +114,12 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
 
   return (
     <div className="flex flex-col h-full">
-      <PlayerListHeader activeSort={activeSort} setActiveSort={setActiveSort} showTribeDetails={showTribeDetails} />
+      <PlayerListHeader
+        activeSort={activeSort}
+        setActiveSort={setActiveSort}
+        showTribeDetails={showTribeDetails}
+        gridTemplateClass={leaderboardGridTemplate}
+      />
 
       <div className="mt-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent flex-1">
         {sortedPlayers.length > 0 ? (
@@ -119,6 +131,7 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
               whitelistPlayer={whitelistPlayer}
               isLoading={isLoading}
               showTribeDetails={showTribeDetails}
+              gridTemplateClass={leaderboardGridTemplate}
             />
           ))
         ) : (
@@ -137,49 +150,52 @@ const PlayerListHeader = ({
   activeSort,
   setActiveSort,
   showTribeDetails,
+  gridTemplateClass,
 }: {
   activeSort: SortInterface;
   setActiveSort: (sort: SortInterface) => void;
   showTribeDetails: boolean;
+  gridTemplateClass: string;
 }) => {
   const sortingParams = useMemo(() => {
     const params = [
-      { label: "Rank", sortKey: "rank", className: "col-span-1 text-center" },
-      { label: "Name", sortKey: "name", className: showTribeDetails ? "col-span-2" : "col-span-4" },
+      { label: "Rank", sortKey: "rank", align: "justify-center text-center" },
+      { label: "Name", sortKey: "name", align: "justify-start text-left" },
     ];
 
     if (showTribeDetails) {
-      params.push({ label: "Tribe", sortKey: "guild.name", className: "col-span-2" });
+      params.push({ label: "Tribe", sortKey: "guild.name", align: "justify-start text-left" });
     }
 
     params.push(
-      {
-        label: "Structures",
-        sortKey: "structures",
-        className: showTribeDetails ? "col-span-3 text-center" : "col-span-4 text-center",
-      },
-      {
-        label: "Points",
-        sortKey: "points",
-        className: showTribeDetails ? "col-span-2 text-center" : "col-span-3 text-center",
-      },
+      { label: "Realms", sortKey: "realms", align: "justify-center text-center" },
+      { label: "Hypers", sortKey: "hyperstructures", align: "justify-center text-center" },
+      { label: "Points", sortKey: "points", align: "justify-center text-center" },
     );
 
     return params;
   }, [showTribeDetails]);
 
-  const textStyle = "text-sm font-semibold tracking-wide text-gold/90 uppercase w-full";
-
   return (
-    <SortPanel className="grid grid-cols-12 pb-3 border-b panel-wood-bottom sticky top-0 z-10">
-      {sortingParams.map(({ label, sortKey, className }) => (
+    <SortPanel
+      className={clsx(
+        "grid gap-x-4 items-center pb-3 panel-wood-bottom sticky top-0 z-10 bg-brown/80 backdrop-blur-sm px-3",
+        gridTemplateClass,
+      )}
+    >
+      {sortingParams.map(({ label, sortKey, align }) => (
         <SortButton
           key={sortKey}
           label={label}
           sortKey={sortKey}
           activeSort={activeSort}
-          className={`${className} ${textStyle}`}
-          classNameCaret="w-2.5 h-2.5 ml-1"
+          className={clsx(
+            "w-full gap-2 text-[0.7rem] font-semibold uppercase tracking-[0.16em] transition-colors hover:text-amber-200",
+            align,
+          )}
+          classNameCaret="w-2.5 h-2.5"
+          activeClassName="text-amber-200"
+          inactiveClassName="text-gold/70"
           onChange={(_sortKey, _sort) => {
             setActiveSort({
               sortKey: _sortKey,
@@ -198,6 +214,7 @@ const PlayerRow = ({
   whitelistPlayer,
   isLoading,
   showTribeDetails,
+  gridTemplateClass,
 }: {
   player: PlayerCustom & {
     registeredPoints: number;
@@ -210,6 +227,7 @@ const PlayerRow = ({
   whitelistPlayer: (address: ContractAddress) => void;
   isLoading: boolean;
   showTribeDetails: boolean;
+  gridTemplateClass: string;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
 
@@ -223,51 +241,40 @@ const PlayerRow = ({
         "hover:bg-gold/10 border border-transparent hover:border-gold/20": !player.isUser,
       })}
     >
-      <div className="grid grid-cols-12 w-full py-2 cursor-pointer items-center" onClick={onClick}>
-        <p
-          className={clsx("col-span-1 text-center font-medium", {
-            "text-red-400": realTimeRank === Number.MAX_SAFE_INTEGER,
-            italic: realTimeRank !== Number.MAX_SAFE_INTEGER,
-          })}
-        >
-          {realTimeRank === Number.MAX_SAFE_INTEGER ? " - " : `#${realTimeRank}`}
-        </p>
-        <div
-          className={clsx("flex items-center gap-1", {
-            "col-span-2": showTribeDetails,
-            "col-span-4": !showTribeDetails,
-          })}
-        >
-          <h6 className="truncate text-xs">{player.name}</h6>
+      <div
+        className={clsx("grid w-full cursor-pointer items-center gap-x-4 px-3 py-2 text-xs", gridTemplateClass)}
+        onClick={onClick}
+      >
+        <div className="flex justify-center">
+          <span
+            className={clsx("font-medium", {
+              "text-red-400": realTimeRank === Number.MAX_SAFE_INTEGER,
+              "italic text-gold/90": realTimeRank !== Number.MAX_SAFE_INTEGER,
+            })}
+          >
+            {realTimeRank === Number.MAX_SAFE_INTEGER ? " - " : `#${realTimeRank}`}
+          </span>
+        </div>
+        <div className="flex min-w-0 items-center gap-2">
+          <h6 className="truncate text-sm font-medium text-gold">{player.name}</h6>
         </div>
         {showTribeDetails ? (
-          <p
-            className={clsx("col-span-2 truncate", {
+          <div
+            className={clsx("min-w-0 truncate text-xs", {
               "text-emerald-300/90": player.guild,
-              "text-gold/50 italic text-xs": !player.guild,
+              "text-gold/50 italic": !player.guild,
             })}
           >
             {player.guild ? player.guild.name : "No Tribe"}
-          </p>
+          </div>
         ) : null}
-        <p
-          className={clsx("text-center font-medium", {
-            "col-span-3": showTribeDetails,
-            "col-span-4": !showTribeDetails,
-          })}
-        >
-          {(player.banks || 0) +
-            (player.realms || 0) +
-            (player.mines || 0) +
-            (player.hyperstructures || 0) +
-            (player.villages || 0)}
-        </p>
+        <div className="flex justify-center text-sm font-medium text-gold/90">{player.realms || 0}</div>
+        <div className="flex justify-center text-sm font-medium text-gold/90">{player.hyperstructures || 0}</div>
         <div
-          className={clsx("text-center font-medium flex items-center justify-center gap-1", {
-            "col-span-2": showTribeDetails,
-            "col-span-3": !showTribeDetails,
+          className={clsx("flex items-center justify-center gap-2 text-sm font-semibold", {
             "text-amber-300": totalPoints > 1000 && !hasUnregisteredShareholderPoints, // Standard amber for high points
-            "text-order-brilliance font-bold text-shadow-glow-brilliance-xs": hasUnregisteredShareholderPoints, // Bright green 'brilliance' color with glow
+            "text-order-brilliance text-shadow-glow-brilliance-xs": hasUnregisteredShareholderPoints, // Bright green 'brilliance' color with glow
+            "text-gold/90": totalPoints <= 1000 && !hasUnregisteredShareholderPoints,
           })}
         >
           <span>{currencyIntlFormat(totalPoints)}</span>
