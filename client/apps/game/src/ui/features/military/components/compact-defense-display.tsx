@@ -105,49 +105,48 @@ export const CompactDefenseDisplay = ({
               }
             };
 
-            const slotContent =
-              isEmptySlot ? (
-                <div
-                  className={`${baseSlotClasses} justify-center border border-dashed border-gold/30 bg-brown-900/20 text-[10px] uppercase tracking-wide font-semibold whitespace-nowrap flex items-center gap-1.5 ${interactiveClasses}`}
-                  title={`Defense Slot ${slotDisplayNumber} is empty`}
-                  role={isSlotInteractive ? "button" : undefined}
-                  tabIndex={isSlotInteractive ? 0 : undefined}
-                  onClick={isSlotInteractive ? onSlotClick : undefined}
-                  onKeyDown={isSlotInteractive ? onSlotKeyDown : undefined}
+            const slotContent = isEmptySlot ? (
+              <div
+                className={`${baseSlotClasses} justify-center border border-dashed border-gold/30 bg-brown-900/20 text-[10px] uppercase tracking-wide font-semibold whitespace-nowrap flex items-center gap-1.5 ${interactiveClasses}`}
+                title={`Defense Slot ${slotDisplayNumber} is empty`}
+                role={isSlotInteractive ? "button" : undefined}
+                tabIndex={isSlotInteractive ? 0 : undefined}
+                onClick={isSlotInteractive ? onSlotClick : undefined}
+                onKeyDown={isSlotInteractive ? onSlotKeyDown : undefined}
+              >
+                {isSlotInteractive && <Plus className="h-3.5 w-3.5 text-gold" strokeWidth={2.5} />}
+                <span className={isSlotInteractive ? "text-gold" : "text-gold/60"}>
+                  {isSlotInteractive ? "Add Guard" : "Empty Slot"}
+                </span>
+              </div>
+            ) : (
+              <div
+                className={`${baseSlotClasses} bg-brown-900/90 border border-gold/20 whitespace-nowrap ${interactiveClasses}`}
+                title={`Defense Slot ${slotDisplayNumber}`}
+                role={isSlotInteractive ? "button" : undefined}
+                tabIndex={isSlotInteractive ? 0 : undefined}
+                onClick={isSlotInteractive ? onSlotClick : undefined}
+                onKeyDown={isSlotInteractive ? onSlotKeyDown : undefined}
+              >
+                <span
+                  className={`px-1 py-0.5 rounded text-[10px] font-bold border relative ${getTierStyle(defense.troops.tier)}`}
                 >
-                  {isSlotInteractive && <Plus className="h-3.5 w-3.5 text-gold" strokeWidth={2.5} />}
-                  <span className={isSlotInteractive ? "text-gold" : "text-gold/60"}>
-                    {isSlotInteractive ? "Add Guard" : "Empty Slot"}
-                  </span>
-                </div>
-              ) : (
-                <div
-                  className={`${baseSlotClasses} bg-brown-900/90 border border-gold/20 whitespace-nowrap ${interactiveClasses}`}
-                  title={`Defense Slot ${slotDisplayNumber}`}
-                  role={isSlotInteractive ? "button" : undefined}
-                  tabIndex={isSlotInteractive ? 0 : undefined}
-                  onClick={isSlotInteractive ? onSlotClick : undefined}
-                  onKeyDown={isSlotInteractive ? onSlotKeyDown : undefined}
-                >
-                  <span
-                    className={`px-1 py-0.5 rounded text-[10px] font-bold border relative ${getTierStyle(defense.troops.tier)}`}
-                  >
-                    <span className="relative z-10">{defense.troops.tier}</span>
-                  </span>
-                  <ResourceIcon
-                    withTooltip={false}
-                    resource={
-                      resources.find(
-                        (r) =>
-                          r.id ===
-                          getTroopResourceId(defense.troops.category as TroopType, defense.troops.tier as TroopTier),
-                      )?.trait || ""
-                    }
-                    size="sm"
-                  />
-                  <span className="text-[10px] text-gold/90 font-medium">{currencyFormat(troopCount, 0)}</span>
-                </div>
-              );
+                  <span className="relative z-10">{defense.troops.tier}</span>
+                </span>
+                <ResourceIcon
+                  withTooltip={false}
+                  resource={
+                    resources.find(
+                      (r) =>
+                        r.id ===
+                        getTroopResourceId(defense.troops.category as TroopType, defense.troops.tier as TroopTier),
+                    )?.trait || ""
+                  }
+                  size="sm"
+                />
+                <span className="text-[10px] text-gold/90 font-medium">{currencyFormat(troopCount, 0)}</span>
+              </div>
+            );
 
             return (
               <div key={`${rawSlot}-${guardSlotKey}`} className="flex flex-col items-center gap-1 min-w-[96px]">
