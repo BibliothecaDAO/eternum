@@ -61,6 +61,10 @@ export const TransferTroopsContainer = ({
   const [troopAmount, setTroopAmount] = useState<number>(0);
   const [guardSlot, setGuardSlot] = useState<GuardSelection>(null);
 
+  const troopMaxSizeRaw = configManager.getTroopConfig().troop_max_size;
+  const parsedTroopCap = Number(troopMaxSizeRaw ?? 0);
+  const troopCapacityLimit = Number.isFinite(parsedTroopCap) && parsedTroopCap > 0 ? parsedTroopCap : null;
+
   // Query for selected entity data
   const { data: selectedEntityData, isLoading: isSelectedLoading } = useQuery({
     queryKey: ["selectedEntity", String(selectedEntityId)],
@@ -272,6 +276,192 @@ export const TransferTroopsContainer = ({
     return null;
   })();
 
+  const { maxTroops, capacityBlocked } = useMemo<{
+    maxTroops: number;
+    capacityBlocked: { type: "explorer" } | { type: "guard"; slotIndex: number } | null;
+  }>(() => {
+    const cap = troopCapacityLimit;
+    const capLimit = cap !== null ? cap : Number.POSITIVE_INFINITY;
+
+    if (transferDirection === TransferDirection.StructureToExplorer) {
+      const targetCapacity = Math.max(0, capLimit - targetExplorerCount);
+      if (cap !== null && targetCapacity <= 0) {
+        return { maxTroops: 0, capacityBlocked: { type: "explorer" as const } };
+      }
+      const sourceAvailable = isBalanceSelected
+        ? structureBalanceCount
+        : typeof guardSlot === "number"
+          ? (() => {
+              const availableValue = Number(selectedGuards[guardSlot]?.troops.count ?? 0);
+              return Number.isFinite(availableValue) ? availableValue : 0;
+            })()
+          : 0;
+      return { maxTroops: Math.min(sourceAvailable, targetCapacity), capacityBlocked: null };
+    }
+
+    if (transferDirection === TransferDirection.ExplorerToStructure) {
+      if (typeof guardSlot !== "number") {
+        return { maxTroops: 0, capacityBlocked: null };
+      }
+      const targetGuard = targetGuards[guardSlot];
+      const targetGuardCountValue = Number(targetGuard?.troops.count ?? 0);
+      const targetGuardCount = Number.isFinite(targetGuardCountValue) ? targetGuardCountValue : 0;
+      const guardCapacity = Math.max(0, capLimit - targetGuardCount);
+      if (cap !== null && guardCapacity <= 0) {
+        return { maxTroops: 0, capacityBlocked: { type: "guard" as const, slotIndex: guardSlot } };
+      }
+      const availableFromExplorer = Math.max(0, selectedExplorerCount - 1);
+      return { maxTroops: Math.min(availableFromExplorer, guardCapacity), capacityBlocked: null };
+    }
+
+    if (transferDirection === TransferDirection.ExplorerToExplorer) {
+      const targetCapacity = Math.max(0, capLimit - targetExplorerCount);
+      if (cap !== null && targetCapacity <= 0) {
+        return { maxTroops: 0, capacityBlocked: { type: "explorer" as const } };
+      }
+      return { maxTroops: Math.min(selectedExplorerCount, targetCapacity), capacityBlocked: null };
+    }
+
+    return { maxTroops: 0, capacityBlocked: null };
+  }, [
+    troopCapacityLimit,
+    transferDirection,
+    targetExplorerCount,
+    isBalanceSelected,
+    structureBalanceCount,
+    guardSlot,
+    selectedGuards,
+    selectedExplorerCount,
+    targetGuards,
+  ]);
+
+  useEffect(() => {
+    setTroopAmount((current) => Math.max(0, Math.min(current, maxTroops)));
+  }, [maxTroops]);
+
+  const capacityRemainingTarget = useMemo(() => {
+    if (troopCapacityLimit === null) {
+      return null;
+    }
+
+    if (transferDirection === TransferDirection.StructureToExplorer) {
+      return Math.max(0, troopCapacityLimit - targetExplorerCount);
+    }
+
+    if (transferDirection === TransferDirection.ExplorerToStructure) {
+      if (typeof guardSlot === "number") {
+        const targetGuard = targetGuards[guardSlot];
+        const targetGuardCountValue = Number(targetGuard?.troops.count ?? 0);
+        const targetGuardCount = Number.isFinite(targetGuardCountValue) ? targetGuardCountValue : 0;
+        return Math.max(0, troopCapacityLimit - targetGuardCount);
+      }
+      return null;
+    }
+
+    if (transferDirection === TransferDirection.ExplorerToExplorer) {
+      return Math.max(0, troopCapacityLimit - targetExplorerCount);
+    }
+
+    return null;
+  }, [troopCapacityLimit, transferDirection, guardSlot, targetExplorerCount, targetGuards]);
+
+  const capacityRemainingDisplay =
+    capacityRemainingTarget !== null && Number.isFinite(capacityRemainingTarget)
+      ? Math.max(0, Math.floor(capacityRemainingTarget))
+      : null;
+
+  const effectiveTroopAmount = Math.max(0, Math.min(troopAmount, maxTroops));
+  const capacityRemainingAfterTransfer =
+    capacityRemainingTarget !== null && Number.isFinite(capacityRemainingTarget)
+      ? Math.max(0, capacityRemainingTarget - effectiveTroopAmount)
+      : null;
+
+  const capacityBlockedMessage = useMemo(() => {
+    if (troopCapacityLimit === null || !capacityBlocked) {
+      return null;
+    }
+
+    const limitText = troopCapacityLimit.toLocaleString();
+
+    if (capacityBlocked.type === "guard" && typeof capacityBlocked.slotIndex === "number") {
+      return `Guard slot ${capacityBlocked.slotIndex + 1} is at maximum capacity (${limitText} troops).`;
+    }
+
+    return `Target explorer is at maximum capacity (${limitText} troops).`;
+  }, [capacityBlocked, troopCapacityLimit]);
+
+  const capacityNotice = useMemo(() => {
+    if (troopCapacityLimit === null) {
+      return null;
+    }
+
+    if (capacityBlockedMessage) {
+      return { tone: "danger" as const, message: capacityBlockedMessage };
+    }
+
+    if (capacityRemainingDisplay === null) {
+      return null;
+    }
+
+    const limitText = troopCapacityLimit.toLocaleString();
+    const remainingBefore = capacityRemainingDisplay;
+    const remainingAfter =
+      capacityRemainingAfterTransfer !== null ? capacityRemainingAfterTransfer : capacityRemainingDisplay;
+
+    if (transferDirection === TransferDirection.StructureToExplorer) {
+      if (remainingAfter === 0 && effectiveTroopAmount > 0) {
+        return {
+          tone: "danger" as const,
+          message: `Destination explorer will be at maximum capacity (${limitText} troops) after this transfer.`,
+        };
+      }
+
+      return {
+        tone: "muted" as const,
+        message: `Explorer capacity after transfer: ${remainingAfter.toLocaleString()} (current remaining: ${remainingBefore.toLocaleString()}, max ${limitText})`,
+      };
+    }
+
+    if (transferDirection === TransferDirection.ExplorerToStructure && typeof guardSlot === "number") {
+      const guardName = DEFENSE_NAMES[guardSlot as keyof typeof DEFENSE_NAMES] ?? `Guard slot ${guardSlot + 1}`;
+      if (remainingAfter === 0 && effectiveTroopAmount > 0) {
+        return {
+          tone: "danger" as const,
+          message: `${guardName} will be at maximum capacity (${limitText} troops) after this transfer.`,
+        };
+      }
+
+      return {
+        tone: "muted" as const,
+        message: `${guardName} capacity after transfer: ${remainingAfter.toLocaleString()} (current remaining: ${remainingBefore.toLocaleString()}, max ${limitText})`,
+      };
+    }
+
+    if (transferDirection === TransferDirection.ExplorerToExplorer) {
+      if (remainingAfter === 0 && effectiveTroopAmount > 0) {
+        return {
+          tone: "danger" as const,
+          message: `Destination explorer will be at maximum capacity (${limitText} troops) after this transfer.`,
+        };
+      }
+
+      return {
+        tone: "muted" as const,
+        message: `Explorer capacity after transfer: ${remainingAfter.toLocaleString()} (current remaining: ${remainingBefore.toLocaleString()}, max ${limitText})`,
+      };
+    }
+
+    return null;
+  }, [
+    capacityBlockedMessage,
+    capacityRemainingAfterTransfer,
+    capacityRemainingDisplay,
+    effectiveTroopAmount,
+    guardSlot,
+    transferDirection,
+    troopCapacityLimit,
+  ]);
+
   const findDefaultGuardSlot = useCallback((): GuardSelection => {
     if (!guardSelectionRequired) {
       return null;
@@ -356,23 +546,6 @@ export const TransferTroopsContainer = ({
     selectedExplorerTroops,
     targetGuards,
   ]);
-
-  const maxTroops = (() => {
-    if (transferDirection === TransferDirection.StructureToExplorer) {
-      if (isBalanceSelected) {
-        return structureBalanceCount;
-      }
-      if (typeof guardSlot === "number") {
-        return Number(selectedGuards[guardSlot]?.troops.count || 0);
-      }
-      return 0;
-    } else if (transferDirection === TransferDirection.ExplorerToStructure) {
-      return Math.max(0, selectedExplorerCount - 1);
-    } else if (transferDirection === TransferDirection.ExplorerToExplorer) {
-      return selectedExplorerCount;
-    }
-    return 0;
-  })();
 
   // Handle troop amount change
   const handleTroopAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -839,6 +1012,13 @@ export const TransferTroopsContainer = ({
                         : "Choose the guard slot and set how many troops to send."
                       : "Troop source is fixed for this transfer. Set how many troops to send."}
                   </p>
+                  {capacityNotice && (
+                    <div
+                      className={`mt-2 text-xs ${capacityNotice.tone === "danger" ? "text-danger" : "text-gold/60"}`}
+                    >
+                      {capacityNotice.message}
+                    </div>
+                  )}
                 </div>
                 <span className={`text-xs font-medium ${stepOneReady ? "text-gold/60" : "text-danger/80"}`}>
                   {stepOneReady ? "Ready" : "Action required"}
@@ -1017,6 +1197,17 @@ export const TransferTroopsContainer = ({
                     className="w-24 rounded-md border border-gold/30 bg-dark-brown px-3 py-1 text-gold"
                   />
                 </div>
+                {capacityNotice && (
+                  <div
+                    className={`rounded-md border px-3 py-2 text-xs ${
+                      capacityNotice.tone === "danger"
+                        ? "border-danger/40 bg-danger/10 text-danger"
+                        : "border-gold/30 text-gold/60"
+                    }`}
+                  >
+                    {capacityNotice.message}
+                  </div>
+                )}
                 {quickAmountOptions.length > 0 && (
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs text-gold/60">Quick set:</span>
