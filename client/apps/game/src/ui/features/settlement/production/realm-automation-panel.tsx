@@ -418,11 +418,31 @@ export const RealmAutomationPanel = ({
       }
     });
 
+    let contractLaborPerSecond = 0;
+    try {
+      const laborProduction = ResourceManager.balanceAndProduction(resourceComponent, ResourcesIds.Labor);
+      const laborData = ResourceManager.calculateResourceProductionData(
+        ResourcesIds.Labor,
+        laborProduction,
+        currentDefaultTick || 0,
+      );
+      if (Number.isFinite(laborData.productionPerSecond)) {
+        contractLaborPerSecond = laborData.productionPerSecond;
+      }
+    } catch (_error) {
+      contractLaborPerSecond = 0;
+    }
+
+    if (contractLaborPerSecond > 0) {
+      addOutput(ResourcesIds.Labor, contractLaborPerSecond);
+    }
+
     const finalResourceIds = new Set<number>([
       ...perSecondOutputs.keys(),
       ...perSecondConsumptionTotals.keys(),
       ...Array.from(relevantResourceIds),
       ...aggregatedUsageList.map((item) => item.resourceId),
+      ResourcesIds.Labor,
     ]);
 
     finalResourceIds.forEach((resourceId) => {
