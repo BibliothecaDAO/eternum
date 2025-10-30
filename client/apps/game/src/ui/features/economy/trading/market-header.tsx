@@ -12,7 +12,7 @@ import { getGuardsByStructure } from "@bibliothecadao/eternum";
 import { useBank, useResourceManager } from "@bibliothecadao/react";
 import {
   ADMIN_BANK_ENTITY_ID,
-  DEFENSE_NAMES,
+  GUARD_SLOT_NAMES,
   ID,
   REGIONAL_BANK_FIVE_ID,
   REGIONAL_BANK_FOUR_ID,
@@ -77,7 +77,7 @@ const BankInformationHeader = () => {
       <span className="text-sm uppercase tracking-wider">Owner</span>
       <span className="text-sm uppercase tracking-wider">Treasury</span>
       <div className="col-span-5 grid grid-cols-4 gap-2">
-        {Object.values(DEFENSE_NAMES).map((name, index) => (
+        {Object.values(GUARD_SLOT_NAMES).map((name: string, index: number) => (
           <div key={index} className="flex flex-row items-center justify-center gap-1 text-sm uppercase tracking-wider">
             <div className="w-2 h-2 rounded-full bg-gold/60" />
             {name}

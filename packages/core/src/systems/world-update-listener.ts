@@ -5,6 +5,7 @@ import {
   BiomeType,
   BuildingType,
   ContractAddress,
+  GuardSlot,
   type HexPosition,
   type ID,
   ResourcesIds,
@@ -537,10 +538,10 @@ export class WorldUpdateListener {
                 });
               };
 
-              pushGuard(0, troopGuards?.delta);
-              pushGuard(1, troopGuards?.charlie);
-              pushGuard(2, troopGuards?.bravo);
-              pushGuard(3, troopGuards?.alpha);
+              pushGuard(GuardSlot.Delta, troopGuards?.delta);
+              pushGuard(GuardSlot.Charlie, troopGuards?.charlie);
+              pushGuard(GuardSlot.Bravo, troopGuards?.bravo);
+              pushGuard(GuardSlot.Alpha, troopGuards?.alpha);
 
               // Use DataEnhancer to fetch player name
               const ownerValue = currentState.owner ?? 0n;

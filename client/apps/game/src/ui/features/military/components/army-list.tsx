@@ -1,4 +1,3 @@
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
 import { getIsBlitz } from "@bibliothecadao/eternum";
@@ -8,54 +7,49 @@ import { Headline } from "@/ui/design-system/molecules/headline";
 import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { getStructureName } from "@bibliothecadao/eternum";
-import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
+import { useExplorersByStructure } from "@bibliothecadao/react";
 import { Guard } from "@bibliothecadao/torii";
 import { ClientComponents, StructureType, Troops } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { PlusIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ArmyChip } from "./army-chip";
-import { StructureDefence } from "./structure-defence";
+import { CompactDefenseDisplay } from "./compact-defense-display";
 import { UnifiedArmyCreationModal } from "./unified-army-creation-modal";
 
 export const ArmyList = ({ structure }: { structure: ComponentValue<ClientComponents["Structure"]["schema"]> }) => {
-  const dojo = useDojo();
-  const queryClient = useQueryClient();
   const setTooltip = useUIStore((state) => state.setTooltip);
   const [guards, setGuards] = useState<Guard[]>([]);
+  const structureId = Number(structure?.entity_id ?? 0);
 
   const explorers = useExplorersByStructure({
-    structureEntityId: structure?.entity_id || 0,
+    structureEntityId: structureId,
   });
 
-  const { currentBlockTimestamp } = useBlockTimestamp();
-
-  const { data: guardsData, isLoading: isLoadingGuards } = useQuery({
-    queryKey: ["guards", String(structure?.entity_id)],
+  const { data: guardsData } = useQuery({
+    queryKey: ["guards", "with-empty", String(structureId)],
     queryFn: async () => {
-      if (!structure?.entity_id) return [];
-      const guards = await sqlApi.fetchGuardsByStructure(structure.entity_id);
-      return guards.filter((guard) => guard.troops?.count && guard.troops.count > 0n);
+      if (!structureId) return [];
+      return await sqlApi.fetchGuardsByStructure(structureId);
     },
     staleTime: 10000, // 10 seconds
   });
 
+  console.log({ guards });
+
   useEffect(() => {
     if (guardsData) {
-      setGuards(guardsData);
+      setGuards(
+        guardsData.map((guard) => ({
+          ...guard,
+          troops: guard.troops
+            ? guard.troops
+            : { category: null, tier: null, count: 0n, stamina: { amount: 0n, updated_tick: 0n } },
+        })),
+      );
     }
   }, [guardsData]);
-
-  const cooldownSlots = useMemo(() => {
-    const slotsTimeLeft: { slot: number; timeLeft: number }[] = [];
-    guards.forEach((guard) => {
-      if (guard.cooldownEnd > currentBlockTimestamp) {
-        slotsTimeLeft.push({ slot: guard.slot, timeLeft: guard.cooldownEnd - currentBlockTimestamp });
-      }
-    });
-    return slotsTimeLeft;
-  }, [guards]);
 
   const totalExplorersCount = useMemo(() => {
     return explorers.length;
@@ -71,24 +65,15 @@ export const ArmyList = ({ structure }: { structure: ComponentValue<ClientCompon
   const name = useMemo(() => getStructureName(structure, getIsBlitz()).name, [structure]);
 
   const toggleModal = useUIStore((state) => state.toggleModal);
-  const handleDefenseUpdated = () => {
-    if (!structure?.entity_id) return;
-
-    queryClient.invalidateQueries({
-      queryKey: ["guards", String(structure.entity_id)],
-      exact: true,
-      refetchType: "active",
-    });
-  };
 
   const handleCreateAttack = () => {
-    toggleModal(<UnifiedArmyCreationModal structureId={structure.entity_id || 0} isExplorer={true} />);
+    toggleModal(<UnifiedArmyCreationModal structureId={structureId} isExplorer={true} />);
   };
 
   const handleCreateDefense = () => {
     toggleModal(
       <UnifiedArmyCreationModal
-        structureId={structure.entity_id || 0}
+        structureId={structureId}
         isExplorer={false}
         maxDefenseSlots={structure.base.troop_max_guard_count}
       />,
@@ -114,14 +99,13 @@ export const ArmyList = ({ structure }: { structure: ComponentValue<ClientCompon
         <div className="text-center">
           <h6>Guards</h6>
           <h5>
-            {guards.length} / {structure.base.troop_max_guard_count}
+            {guards.filter((guard) => guard.troops?.count && guard.troops.count > 0n).length} /{" "}
+            {structure.base.troop_max_guard_count}
           </h5>
         </div>
       </div>
 
       <div className="space-y-4">
-        <Headline>Armies</Headline>
-
         <div className="flex gap-2 justify-center p-4">
           <div
             onMouseEnter={() => {
@@ -178,26 +162,28 @@ export const ArmyList = ({ structure }: { structure: ComponentValue<ClientCompon
           </div>
         </div>
 
+        <div className="mt-6 space-y-4">
+          <Headline>Defenses</Headline>
+
+          <CompactDefenseDisplay
+            className="w-full"
+            slotsUsed={guards.filter((guard) => guard.troops?.count && guard.troops.count > 0n).length}
+            slotsMax={structure.base.troop_max_guard_count}
+            structureId={structureId}
+            canManageDefense={canOpenDefenseModal}
+            troops={guards.map((army) => ({
+              slot: army.slot,
+              troops: army.troops as Troops,
+            }))}
+          />
+        </div>
+
         <div className="space-y-3">
+          <Headline>Explorers</Headline>
           {explorers.map((army) => (
             <ArmyChip key={army.entityId} className="w-full" army={army} showButtons />
           ))}
         </div>
-      </div>
-
-      <div className="mt-6 space-y-4">
-        <Headline>Defenses</Headline>
-
-        <StructureDefence
-          structureId={structure.entity_id || 0}
-          maxDefenses={structure.base.troop_max_guard_count}
-          troops={guards.map((army) => ({
-            slot: army.slot,
-            troops: army.troops! as Troops,
-          }))}
-          cooldownSlots={cooldownSlots}
-          onDefenseUpdated={handleDefenseUpdated}
-        />
       </div>
     </div>
   );
