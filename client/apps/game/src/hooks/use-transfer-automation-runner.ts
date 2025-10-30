@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import { useDojo } from "@bibliothecadao/react";
 import {
-  getBlockTimestamp,
-  ResourceManager,
-  getTotalResourceWeightKg,
   calculateDonkeysNeeded,
-  isMilitaryResource,
+  configManager,
+  getBlockTimestamp,
   getEntityIdFromKeys,
+  getTotalResourceWeightKg,
+  isMilitaryResource,
+  ResourceManager,
 } from "@bibliothecadao/eternum";
 import { ClientComponents, ResourcesIds, StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
@@ -37,32 +38,69 @@ export const useTransferAutomationRunner = () => {
   const entries = useTransferAutomationStore((s) => s.entries);
   const update = useTransferAutomationStore((s) => s.update);
   const scheduleNext = useTransferAutomationStore((s) => s.scheduleNext);
+  const pruneForGame = useTransferAutomationStore((s) => s.pruneForGame);
 
   const processingRef = useRef(false);
   const processRef = useRef<() => Promise<void>>(async () => {});
+  const timeoutIdRef = useRef<number | null>(null);
 
   const activeEntries = useMemo(() => Object.values(entries).filter((e) => e.active), [entries]);
 
   useEffect(() => {
-    processRef.current = async () => {
-      if (processingRef.current) return;
-      if (!components) return;
-      if (!account || !account.address || account.address === "0x0") return;
+    if (!components) {
+      return;
+    }
+    const season = configManager.getSeasonConfig();
+    const gameId = `${season.startSettlingAt}-${season.startMainAt}-${season.endAt}`;
+    pruneForGame(gameId);
+  }, [components, pruneForGame]);
 
-      const now = Date.now();
-      const due = activeEntries.filter((e) => typeof e.nextRunAt === "number" && (e.nextRunAt as number) <= now);
-      if (!due.length) return;
+  const scheduleNextCheck = useCallback(() => {
+    if (timeoutIdRef.current !== null) {
+      window.clearTimeout(timeoutIdRef.current);
+    }
+
+    const now = Date.now();
+    const nextBlockMs = (Math.floor(now / 1000) + 1) * 1000;
+    const delay = Math.max(250, nextBlockMs - now);
+
+    timeoutIdRef.current = window.setTimeout(() => {
+      void processRef.current();
+    }, delay);
+  }, []);
+
+  useEffect(() => {
+    processRef.current = async () => {
+      if (processingRef.current) {
+        scheduleNextCheck();
+        return;
+      }
+      if (!components) {
+        scheduleNextCheck();
+        return;
+      }
+      if (!account || !account.address || account.address === "0x0") {
+        scheduleNextCheck();
+        return;
+      }
+
+      const { currentDefaultTick, currentBlockTimestamp } = getBlockTimestamp();
+      const nowMs = currentBlockTimestamp * 1000;
+      const due = activeEntries.filter((e) => typeof e.nextRunAt === "number" && (e.nextRunAt as number) <= nowMs);
+      if (!due.length) {
+        scheduleNextCheck();
+        return;
+      }
+
       processingRef.current = true;
 
       try {
-        const { currentDefaultTick } = getBlockTimestamp();
-
         for (const entry of due) {
           try {
             const sourceId = Number(entry.sourceEntityId);
             const destId = Number(entry.destinationEntityId);
             if (!Number.isFinite(sourceId) || !Number.isFinite(destId) || sourceId <= 0 || destId <= 0) {
-              scheduleNext(entry.id, now);
+              scheduleNext(entry.id, nowMs);
               continue;
             }
 
@@ -73,7 +111,7 @@ export const useTransferAutomationRunner = () => {
               const destCat = getStructureCategory(components, destId);
               if (sourceCat !== StructureType.Realm || destCat !== StructureType.Realm) {
                 toast.warning("Scheduled transfer skipped: troops can only move Realm ↔ Realm.");
-                scheduleNext(entry.id, now);
+                scheduleNext(entry.id, nowMs);
                 continue;
               }
             }
@@ -115,7 +153,7 @@ export const useTransferAutomationRunner = () => {
             }
 
             if (transferList.length === 0) {
-              scheduleNext(entry.id, now);
+              scheduleNext(entry.id, nowMs);
               continue;
             }
 
@@ -126,7 +164,7 @@ export const useTransferAutomationRunner = () => {
             const neededDonkeys = calculateDonkeysNeeded(totalKg);
             if (donkeyBalHuman < neededDonkeys) {
               toast.error("Scheduled transfer blocked: insufficient donkeys at source.");
-              scheduleNext(entry.id, now);
+              scheduleNext(entry.id, nowMs);
               continue;
             }
 
@@ -146,27 +184,29 @@ export const useTransferAutomationRunner = () => {
               ],
             });
 
-            update(entry.id, { lastRunAt: now });
-            scheduleNext(entry.id, now);
+            update(entry.id, { lastRunAt: nowMs });
+            scheduleNext(entry.id, nowMs);
             const summary = transferList
               .map((t) => `${t.humanAmount.toLocaleString()} ${ResourcesIds[t.resourceId]}`)
               .join(", ");
             toast.success(`Transfer scheduled: ${summary}`);
           } catch (err) {
             console.error("Transfer automation: execution failed", err);
-            scheduleNext(entry.id, now);
+            scheduleNext(entry.id, nowMs);
             toast.error("Scheduled transfer failed. Check console for details.");
           }
         }
       } finally {
         processingRef.current = false;
+        scheduleNextCheck();
       }
     };
-  }, [activeEntries, components, account, scheduleNext, update, systemCalls]);
+    scheduleNextCheck();
 
-  useEffect(() => {
-    const tick = () => void processRef.current();
-    const id = window.setInterval(tick, 60_000);
-    return () => window.clearInterval(id);
-  }, []);
+    return () => {
+      if (timeoutIdRef.current !== null) {
+        window.clearTimeout(timeoutIdRef.current);
+      }
+    };
+  }, [activeEntries, components, account, scheduleNext, update, systemCalls, scheduleNextCheck]);
 };

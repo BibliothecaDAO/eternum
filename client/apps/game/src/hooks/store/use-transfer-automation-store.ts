@@ -1,11 +1,22 @@
 import { ResourcesIds } from "@bibliothecadao/types";
+import { configManager, getBlockTimestamp } from "@bibliothecadao/eternum";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+
+const resolveCurrentGameId = (): string => {
+  try {
+    const season = configManager.getSeasonConfig();
+    return `${season.startSettlingAt}-${season.startMainAt}-${season.endAt}`;
+  } catch (_error) {
+    return "unknown";
+  }
+};
 
 export interface TransferAutomationEntry {
   id: string;
   active: boolean;
   createdAt: number;
+  gameId: string;
   sourceEntityId: string;
   sourceName?: string;
   destinationEntityId: string;
@@ -25,8 +36,9 @@ export interface TransferAutomationEntry {
   nextRunAt?: number | null;
 }
 
-type NewEntry = Omit<TransferAutomationEntry, "id" | "createdAt" | "lastRunAt" | "nextRunAt" | "active"> & {
+type NewEntry = Omit<TransferAutomationEntry, "id" | "createdAt" | "lastRunAt" | "nextRunAt" | "active" | "gameId"> & {
   active?: boolean;
+  gameId?: string;
 };
 
 interface TransferAutomationState {
@@ -37,6 +49,7 @@ interface TransferAutomationState {
   toggleActive: (id: string, active?: boolean) => void;
   scheduleNext: (id: string, base?: number) => void;
   clearAll: () => void;
+  pruneForGame: (gameId: string) => void;
 }
 
 const clampPercent = (value: number): number => {
@@ -47,6 +60,11 @@ const clampPercent = (value: number): number => {
 const clampInterval = (minutes: number): number => {
   if (!Number.isFinite(minutes)) return 5;
   return Math.min(60, Math.max(5, Math.round(minutes)));
+};
+
+const getBlockNowMs = (): number => {
+  const { currentBlockTimestamp } = getBlockTimestamp();
+  return currentBlockTimestamp * 1000;
 };
 
 const generateId = () => {
@@ -64,12 +82,14 @@ export const useTransferAutomationStore = create<TransferAutomationState>()(
       entries: {},
       add: (raw) => {
         const id = generateId();
-        const now = Date.now();
+        const now = getBlockNowMs();
         const active = raw.active ?? true;
+        const gameId = raw.gameId ?? resolveCurrentGameId();
         const entry: TransferAutomationEntry = {
           id,
           createdAt: now,
           active,
+          gameId,
           sourceEntityId: String(raw.sourceEntityId),
           sourceName: raw.sourceName,
           destinationEntityId: String(raw.destinationEntityId),
@@ -116,7 +136,7 @@ export const useTransferAutomationStore = create<TransferAutomationState>()(
           const prev = state.entries[id];
           if (!prev) return state;
           const isActive = active ?? !prev.active;
-          const now = Date.now();
+          const now = getBlockNowMs();
           const next: TransferAutomationEntry = {
             ...prev,
             active: isActive,
@@ -128,7 +148,7 @@ export const useTransferAutomationStore = create<TransferAutomationState>()(
         set((state) => {
           const prev = state.entries[id];
           if (!prev) return state;
-          const now = base ?? Date.now();
+          const now = base ?? getBlockNowMs();
           const next: TransferAutomationEntry = {
             ...prev,
             nextRunAt: now + clampInterval(prev.intervalMinutes) * 60_000,
@@ -136,6 +156,13 @@ export const useTransferAutomationStore = create<TransferAutomationState>()(
           return { entries: { ...state.entries, [id]: next } };
         }),
       clearAll: () => set({ entries: {} }),
+      pruneForGame: (gameId) =>
+        set((state) => {
+          const entries = Object.fromEntries(
+            Object.entries(state.entries).filter(([, entry]) => entry.gameId === gameId),
+          );
+          return { entries };
+        }),
     }),
     {
       name: "eternum-transfer-automation",
@@ -177,6 +204,7 @@ export const useTransferAutomationStore = create<TransferAutomationState>()(
             id,
             createdAt: typeof v.createdAt === "number" ? v.createdAt : Date.now(),
             active: Boolean((v as any).active),
+            gameId: typeof (v as any).gameId === "string" ? (v as any).gameId : resolveCurrentGameId(),
             sourceEntityId: String((v as any).sourceEntityId ?? "0"),
             sourceName: (v as any).sourceName,
             destinationEntityId: String((v as any).destinationEntityId ?? "0"),
