@@ -4,30 +4,30 @@ export const MERCENARIES = "Bandits";
 
 export const DAYDREAMS_AGENTS = "Daydreams Agent";
 
-// export const DEFENSE_NAMES = {
-//   0: "Watchtower",
-//   1: "Outer Wall",
-//   2: "Castle Wall",
-//   3: "Inner Wall",
-// };
-
 /**
  * Guard slot IDs - consistent with Cairo contract GuardSlot enum
- * Guards are attacked in order: Delta (1) -> Charlie (2) -> Bravo (3) -> Alpha (4)
+ * Guards are attacked in order: Alpha (0) -> Bravo (1) -> Charlie (2) -> Delta (3)
  */
 export enum GuardSlot {
-  Delta = 4,
-  Charlie = 3,
-  Bravo = 2,
-  Alpha = 1,
+  Alpha,
+  Bravo,
+  Charlie,
+  Delta,
 }
+
+export const DISPLAYED_SLOT_NUMBER_MAP: Record<GuardSlot, number> = {
+  [GuardSlot.Delta]: 1,
+  [GuardSlot.Charlie]: 2,
+  [GuardSlot.Bravo]: 3,
+  [GuardSlot.Alpha]: 4,
+};
 
 /**
  * Guard slot names mapped to their IDs
  */
 export const GUARD_SLOT_NAMES: Record<GuardSlot, string> = {
-  [GuardSlot.Delta]: "Watchtower",
-  [GuardSlot.Charlie]: "Outer Wall",
-  [GuardSlot.Bravo]: "Castle Wall",
-  [GuardSlot.Alpha]: "Inner Wall",
+  [GuardSlot.Delta]: "Inner Wall",
+  [GuardSlot.Charlie]: "Castle Wall",
+  [GuardSlot.Bravo]: "Outer Wall",
+  [GuardSlot.Alpha]: "Watchtower",
 };

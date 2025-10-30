@@ -18,6 +18,7 @@ import {
 } from "@bibliothecadao/react";
 import {
   Direction,
+  DISPLAYED_SLOT_NUMBER_MAP,
   getDirectionBetweenAdjacentHexes,
   getNeighborHexes,
   GUARD_SLOT_NAMES,
@@ -485,7 +486,7 @@ export const UnifiedArmyCreationModal = ({
 
   const defenseSlotErrorMessage = !armyType
     ? !isDefenseSlotCompatible && selectedGuardLabelUpper
-      ? `Slot ${guardSlot} currently contains ${selectedGuardLabelUpper}. Reinforce it with the same troop type and tier.`
+      ? `Slot ${DISPLAYED_SLOT_NUMBER_MAP[guardSlot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]} currently contains ${selectedGuardLabelUpper}. Reinforce it with the same troop type and tier.`
       : isDefenseSlotCreationBlocked
         ? "All defense slots are occupied. Select an occupied slot to reinforce or remove one to free space."
         : null

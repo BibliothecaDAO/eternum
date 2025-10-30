@@ -118,7 +118,7 @@ export const useAttackTargetData = (
             const relicEffects = getStructureArmyRelicEffects(structure, currentArmiesTick);
             const guards = getGuardsByStructure(structure)
               .filter((guard) => guard.troops.count > 0n)
-              .sort((a, b) => b.slot - a.slot);
+              .sort((a, b) => a.slot - b.slot);
 
             setTarget({
               info: guards.map((guard) => ({

@@ -2,7 +2,14 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getTierStyle } from "@/ui/utils/tier-styles";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getTroopResourceId } from "@bibliothecadao/eternum";
-import { GUARD_SLOT_NAMES, GuardSlot, resources, TroopTier, TroopType } from "@bibliothecadao/types";
+import {
+  DISPLAYED_SLOT_NUMBER_MAP,
+  GUARD_SLOT_NAMES,
+  GuardSlot,
+  resources,
+  TroopTier,
+  TroopType,
+} from "@bibliothecadao/types";
 import { ArrowLeft } from "lucide-react";
 import { SLOT_ICON_MAP } from "./slot-icon-map";
 import { DefenseTroop } from "./structure-defence";
@@ -43,14 +50,14 @@ export const CompactDefenseDisplay = ({ troops, className = "", slotsUsed, slots
       <div className="flex items-end gap-2 flex-nowrap overflow-x-auto">
         {troops
           .slice()
-          .sort((a, b) => a.slot - b.slot)
+          .sort((a, b) => b.slot - a.slot)
           .map((defense) => {
             const troopCount = Number(defense.troops.count || 0);
             const rawSlot = Number(defense.slot ?? 0);
             const guardSlotKey = (
               Object.prototype.hasOwnProperty.call(GUARD_SLOT_NAMES, rawSlot) ? rawSlot : rawSlot + 1
             ) as GuardSlot;
-            const slotDisplayNumber = guardSlotKey;
+            const slotDisplayNumber = DISPLAYED_SLOT_NUMBER_MAP[guardSlotKey];
             const slotIconSrc = SLOT_ICON_MAP[rawSlot] ?? SLOT_ICON_MAP[guardSlotKey];
             const slotName = GUARD_SLOT_NAMES[guardSlotKey] ?? `Slot ${slotDisplayNumber}`;
 
@@ -89,13 +96,13 @@ export const CompactDefenseDisplay = ({ troops, className = "", slotsUsed, slots
 
             return (
               <div key={`${rawSlot}-${guardSlotKey}`} className="flex flex-col items-center gap-1 min-w-[96px]">
+                {slotContent}
                 <div className="flex items-center gap-1">
                   {slotIconSrc && (
                     <img src={slotIconSrc} alt={`${slotName} icon`} className="h-8 w-8 object-contain" loading="lazy" />
                   )}
                   <span className="text-[10px] font-semibold text-gold/80">{slotDisplayNumber}</span>
                 </div>
-                {slotContent}
               </div>
             );
           })}

@@ -1,7 +1,7 @@
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules";
 import { getTroopResourceId } from "@bibliothecadao/eternum";
-import { GUARD_SLOT_NAMES, resources, TroopTier } from "@bibliothecadao/types";
+import { DISPLAYED_SLOT_NUMBER_MAP, GUARD_SLOT_NAMES, resources, TroopTier } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { AlertTriangle, Shield } from "lucide-react";
 
@@ -41,97 +41,101 @@ export const DefenseSlotSelection = ({
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        {Object.entries(GUARD_SLOT_NAMES).map(([slotIndex, slotName]) => {
-          const slot = Number(slotIndex);
-          const guardInfo = guardsBySlot.get(slot);
-          const guardCategory = guardInfo?.troops?.category;
-          const guardTier = guardInfo?.troops?.tier;
-          const guardCount = guardInfo?.troops?.count;
-          const guardCountLabel = guardCount !== undefined ? guardCount.toLocaleString() : null;
-          const guardLabel = [guardTier, guardCategory].filter(Boolean).join(" ");
-          const guardLabelText = guardLabel || "Unknown";
-          const warningLabel = guardLabel || "matching troops";
-          const troopResourceTrait = guardCategory
-            ? (resources.find(
-                (resource) => resource.id === getTroopResourceId(guardCategory, guardTier ?? TroopTier.T1),
-              )?.trait ?? null)
-            : null;
-          const hasGuard = Boolean(guardInfo?.troops);
-          const isSelected = guardSlot === slot;
-          const canOpenAdditionalSlot = canCreateDefenseArmy && activeSlotCount < maxDefenseSlots;
-          const isSlotSelectable = hasGuard || canOpenAdditionalSlot;
-          const isSlotCompatible =
-            !guardInfo || (guardCategory === selectedTroopCombo.type && guardTier === selectedTroopCombo.tier);
-          const guardLabelClasses = clsx(
-            "text-sm whitespace-nowrap font-semibold tracking-tight",
-            isSlotCompatible
-              ? isSelected
-                ? "text-gray-950"
-                : "text-gold/90"
-              : isSelected
-                ? "text-gray-800"
-                : "text-gold/60",
-          );
-          const slotNameClasses = clsx(
-            "text-base font-bold mb-1 tracking-wide",
-            isSelected ? "text-gray-950" : "text-gold/80",
-          );
+        {Object.entries(DISPLAYED_SLOT_NUMBER_MAP)
+          .sort((a, b) => a[1] - b[1])
+          .map(([slotStr, displayedSlotNumber]) => {
+            const slot = Number(slotStr);
+            const slotName = GUARD_SLOT_NAMES[slot as keyof typeof GUARD_SLOT_NAMES];
+            const guardInfo = guardsBySlot.get(slot);
+            const guardCategory = guardInfo?.troops?.category;
+            const guardTier = guardInfo?.troops?.tier;
+            const guardCount = guardInfo?.troops?.count;
+            const guardCountLabel = guardCount !== undefined ? guardCount.toLocaleString() : null;
+            const guardLabel = [guardTier, guardCategory].filter(Boolean).join(" ");
+            const guardLabelText = guardLabel || "Unknown";
+            const troopResourceTrait = guardCategory
+              ? (resources.find(
+                  (resource) => resource.id === getTroopResourceId(guardCategory, guardTier ?? TroopTier.T1),
+                )?.trait ?? null)
+              : null;
+            const hasGuard = Boolean(guardInfo?.troops);
+            const isSelected = guardSlot === slot;
+            const canOpenAdditionalSlot = canCreateDefenseArmy && activeSlotCount < maxDefenseSlots;
+            const isSlotSelectable = hasGuard || canOpenAdditionalSlot;
+            const isSlotCompatible =
+              !guardInfo || (guardCategory === selectedTroopCombo.type && guardTier === selectedTroopCombo.tier);
+            const guardLabelClasses = clsx(
+              "text-sm whitespace-nowrap font-semibold tracking-tight",
+              isSlotCompatible
+                ? isSelected
+                  ? "text-gray-950"
+                  : "text-gold/90"
+                : isSelected
+                  ? "text-gray-800"
+                  : "text-gold/60",
+            );
+            const slotNameClasses = clsx(
+              "text-base font-bold mb-1 tracking-wide",
+              isSelected ? "text-gray-950" : "text-gold/80",
+            );
 
-          return (
-            <div key={slot} className="flex flex-col items-center gap-1">
-              <Button
-                variant={isSelected ? "gold" : isSlotSelectable ? "outline" : "secondary"}
-                onClick={() => isSlotSelectable && onSelect(slot)}
-                disabled={!isSlotSelectable}
-                size="lg"
-                className={clsx(
-                  "w-full min-h-[84px] p-4 flex flex-col items-center text-center transition-all duration-300 rounded-xl relative",
-                  isSelected
-                    ? "ring-2 ring-gold/60 shadow-xl shadow-gold/30 scale-105 bg-gradient-to-br from-gold/25 to-gold/15"
-                    : isSlotSelectable
-                      ? "hover:bg-gold/10 hover:border-gold/50 hover:scale-102 hover:shadow-md"
-                      : "opacity-40 cursor-not-allowed",
-                  hasGuard && !isSlotCompatible && "border-danger/50 hover:border-danger/60",
-                )}
-              >
-                <div className="absolute -top-2 -right-2 bg-gradient-to-br from-gold/90 to-gold/70 text-brown text-xs px-2 py-0.5 rounded-full border-2 border-gold shadow-lg font-bold">
-                  {slot}
-                </div>
-                <div className={slotNameClasses}>{slotName}</div>
-                {hasGuard ? (
-                  <div className="flex items-center gap-3">
-                    {troopResourceTrait && <ResourceIcon resource={troopResourceTrait} size="sm" withTooltip={false} />}
-                    <div className="flex items-center gap-2">
-                      {guardCountLabel && (
-                        <span
-                          className={clsx(
-                            "text-base font-semibold whitespace-nowrap",
-                            isSelected ? "text-gray-950" : "text-gold",
-                          )}
-                        >
-                          {guardCountLabel}
-                        </span>
+            return (
+              <div key={slot} className="flex flex-col items-center gap-1">
+                <Button
+                  variant={isSelected ? "gold" : isSlotSelectable ? "outline" : "secondary"}
+                  onClick={() => isSlotSelectable && onSelect(slot)}
+                  disabled={!isSlotSelectable}
+                  size="lg"
+                  className={clsx(
+                    "w-full min-h-[84px] p-4 flex flex-col items-center text-center transition-all duration-300 rounded-xl relative",
+                    isSelected
+                      ? "ring-2 ring-gold/60 shadow-xl shadow-gold/30 scale-105 bg-gradient-to-br from-gold/25 to-gold/15"
+                      : isSlotSelectable
+                        ? "hover:bg-gold/10 hover:border-gold/50 hover:scale-102 hover:shadow-md"
+                        : "opacity-40 cursor-not-allowed",
+                    hasGuard && !isSlotCompatible && "border-danger/50 hover:border-danger/60",
+                  )}
+                >
+                  <div className="absolute -top-2 -right-2 bg-gradient-to-br from-gold/90 to-gold/70 text-brown text-xs px-2 py-0.5 rounded-full border-2 border-gold shadow-lg font-bold">
+                    {displayedSlotNumber}
+                  </div>
+                  <div className={slotNameClasses}>{slotName}</div>
+                  {hasGuard ? (
+                    <div className="flex items-center gap-3">
+                      {troopResourceTrait && (
+                        <ResourceIcon resource={troopResourceTrait} size="sm" withTooltip={false} />
                       )}
-                      <span className={guardLabelClasses}>{guardLabelText}</span>
+                      <div className="flex items-center gap-2">
+                        {guardCountLabel && (
+                          <span
+                            className={clsx(
+                              "text-base font-semibold whitespace-nowrap",
+                              isSelected ? "text-gray-950" : "text-gold",
+                            )}
+                          >
+                            {guardCountLabel}
+                          </span>
+                        )}
+                        <span className={guardLabelClasses}>{guardLabelText}</span>
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <div
-                    className={clsx(
-                      "flex items-center justify-center h-10 text-sm",
-                      isSelected ? "text-gray-950" : "text-gold/70",
-                    )}
-                  >
-                    {"No defense"}
-                  </div>
+                  ) : (
+                    <div
+                      className={clsx(
+                        "flex items-center justify-center h-10 text-sm",
+                        isSelected ? "text-gray-950" : "text-gold/70",
+                      )}
+                    >
+                      {"No defense"}
+                    </div>
+                  )}
+                </Button>
+                {!canCreateDefenseArmy && !hasGuard && (
+                  <div className="text-xs text-gold/50 text-center">Cannot create new defense slot</div>
                 )}
-              </Button>
-              {!canCreateDefenseArmy && !hasGuard && (
-                <div className="text-xs text-gold/50 text-center">Cannot create new defense slot</div>
-              )}
-            </div>
-          );
-        })}
+              </div>
+            );
+          })}
       </div>
       {defenseSlotInfoMessage && (
         <div className="mt-4 bg-brown/15 border border-gold/30 rounded-xl p-4 text-sm text-gold/80">

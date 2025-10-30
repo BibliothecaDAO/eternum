@@ -123,7 +123,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     return structure
       ? getGuardsByStructure(structure)
           .filter((guard) => guard.troops.count > 0n)
-          .sort((a, b) => b.slot - a.slot)
+          .sort((a, b) => a.slot - b.slot)
       : [];
   }, [attackerType, attacker.id, Structure]);
 

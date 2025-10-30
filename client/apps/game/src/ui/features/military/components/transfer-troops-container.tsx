@@ -16,6 +16,7 @@ import {
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
 import {
+  DISPLAYED_SLOT_NUMBER_MAP,
   getDirectionBetweenAdjacentHexes,
   GUARD_SLOT_NAMES,
   ID,
@@ -163,7 +164,7 @@ export const TransferTroopsContainer = ({
     }
   }, [selectedStructure, targetStructure, transferDirection]);
 
-  const orderedGuardSlots = useMemo(() => [...availableGuards].sort((a, b) => a - b), [availableGuards]);
+  const orderedGuardSlots = useMemo(() => [...availableGuards].sort((a, b) => b - a), [availableGuards]);
   const lastGuardSlot = orderedGuardSlots[0];
   const frontlineSlot = orderedGuardSlots[orderedGuardSlots.length - 1];
 
@@ -171,15 +172,16 @@ export const TransferTroopsContainer = ({
     if (slotId === undefined || slotId === null) {
       return null;
     }
-    return GUARD_SLOT_NAMES[slotId as keyof typeof GUARD_SLOT_NAMES] ?? `Slot ${slotId}`;
+    const slotDisplayNumber = DISPLAYED_SLOT_NUMBER_MAP[slotId as keyof typeof DISPLAYED_SLOT_NUMBER_MAP];
+    return GUARD_SLOT_NAMES[slotId as keyof typeof GUARD_SLOT_NAMES] ?? `Slot ${slotDisplayNumber}`;
   };
 
   // starts from highest slot to lowest slot
   const advanceLabel =
     orderedGuardSlots.length > 0
       ? availableGuards
-          .sort((a, b) => b - a)
-          .map((slotId) => `Slot ${slotId}`)
+          .sort((a, b) => a - b)
+          .map((slotId) => `Slot ${DISPLAYED_SLOT_NUMBER_MAP[slotId as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]}`)
           .join(" → ")
       : null;
   const displayAdvanceLabel = advanceLabel;
@@ -523,7 +525,7 @@ export const TransferTroopsContainer = ({
           await guard_explorer_swap({
             signer: account,
             from_structure_id: selectedEntityId,
-            from_guard_slot: guardSlot - 1,
+            from_guard_slot: guardSlot,
             to_explorer_id: targetEntityId,
             to_explorer_direction: direction,
             count: troopAmountWithPrecision,
@@ -547,7 +549,7 @@ export const TransferTroopsContainer = ({
           from_explorer_id: selectedEntityId,
           to_structure_id: targetEntityId,
           to_structure_direction: direction,
-          to_guard_slot: guardSlot - 1,
+          to_guard_slot: guardSlot,
           count: troopAmountWithPrecision,
         };
         await explorer_guard_swap(calldata);
@@ -830,7 +832,7 @@ export const TransferTroopsContainer = ({
         const guardInfo = selectedGuards.find((guard) => guard.slot === guardSlot);
         if (guardInfo) {
           pushCard(
-            `Guard slot ${guardSlot} (${GUARD_SLOT_NAMES[guardSlot as keyof typeof GUARD_SLOT_NAMES]})`,
+            `Guard slot ${DISPLAYED_SLOT_NUMBER_MAP[guardSlot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]} (${GUARD_SLOT_NAMES[guardSlot as keyof typeof GUARD_SLOT_NAMES]})`,
             guardInfo.troops?.count ?? 0,
             (guardInfo.troops?.count ?? 0) - troopAmount,
             "remaining",
@@ -858,7 +860,7 @@ export const TransferTroopsContainer = ({
         const targetGuard = targetGuards.find((guard) => guard.slot === guardSlot);
         if (targetGuard) {
           pushCard(
-            `Guard slot ${guardSlot} (${GUARD_SLOT_NAMES[guardSlot as keyof typeof GUARD_SLOT_NAMES]})`,
+            `Guard slot ${DISPLAYED_SLOT_NUMBER_MAP[guardSlot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]} (${GUARD_SLOT_NAMES[guardSlot as keyof typeof GUARD_SLOT_NAMES]})`,
             targetGuard.troops.count,
             targetGuard.troops.count + troopAmount,
             "arriving",
@@ -1016,7 +1018,9 @@ export const TransferTroopsContainer = ({
                       const guards =
                         transferDirection === TransferDirection.StructureToExplorer ? selectedGuards : targetGuards;
                       const guardData = guards.find((guard) => guard.slot === slotId);
-                      const slotLabel = getDefenseLabel(slotId) || `Slot ${slotId}`;
+                      const slotLabel =
+                        getDefenseLabel(slotId) ||
+                        `Slot ${DISPLAYED_SLOT_NUMBER_MAP[slotId as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]}`;
                       if (!guardData || !guardData.troops) {
                         return (
                           <div
@@ -1104,7 +1108,8 @@ export const TransferTroopsContainer = ({
                         >
                           <div className="flex items-center justify-between gap-2">
                             <span className="font-semibold text-gold">
-                              {slotLabel} - Slot {slotId}
+                              {slotLabel} - Slot{" "}
+                              {DISPLAYED_SLOT_NUMBER_MAP[slotId as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]}
                             </span>
                             <div className="flex items-center gap-1">
                               {orderedGuardSlots.length > 0 && (
