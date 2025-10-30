@@ -4,7 +4,6 @@ import { getIsBlitz, Position as PositionType } from "@bibliothecadao/eternum";
 
 import { Button } from "@/ui/design-system/atoms";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules";
-import { RealmResourcesIO } from "@/ui/features/economy/resources";
 import { NavigateToPositionIcon } from "@/ui/features/military/components/army-chip";
 import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import {
@@ -248,22 +247,6 @@ export const PlayerId = ({
                 playerStructures.map((structure) => {
                   const position = new PositionType({ x: structure.coord_x, y: structure.coord_y });
                   const structureName = getStructureName(structure, isBlitz);
-                  const structureResources = getStructureResources(structure);
-
-                  let structureSpecificElement: JSX.Element | null;
-                  if (structure.category === StructureType.Realm || structure.category === StructureType.Village) {
-                    structureSpecificElement = (
-                      <div key={`resources-${structure.entity_id}`}>
-                        <RealmResourcesIO
-                          className="w-full font-normal"
-                          titleClassName="font-normal text-sm"
-                          resourcesProduced={structureResources}
-                        />
-                      </div>
-                    );
-                  } else {
-                    structureSpecificElement = null;
-                  }
 
                   return (
                     <div
@@ -284,8 +267,6 @@ export const PlayerId = ({
                           Position: {position.getNormalized().x}, {position.getNormalized().y}
                         </span>
                       </div>
-
-                      {structureSpecificElement}
                     </div>
                   );
                 })}
