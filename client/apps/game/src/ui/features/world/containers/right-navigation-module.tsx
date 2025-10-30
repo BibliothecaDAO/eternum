@@ -271,9 +271,7 @@ export const RightNavigationModule = () => {
   return (
     <>
       <div
-        className={clsx(
-          "pointer-events-none right-0 flex max-h-full space-x-1 pt-16 pb-6 transition-all duration-300",
-        )}
+        className={clsx("pointer-events-none right-0 flex max-h-full space-x-1 pt-16 pb-6 transition-all duration-300")}
         style={containerStyle}
       >
         {ConnectedAccount && (
