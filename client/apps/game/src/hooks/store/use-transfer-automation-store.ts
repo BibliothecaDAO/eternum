@@ -1,4 +1,5 @@
 import { ResourcesIds } from "@bibliothecadao/types";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
@@ -49,6 +50,11 @@ const clampInterval = (minutes: number): number => {
   return Math.min(60, Math.max(5, Math.round(minutes)));
 };
 
+const getBlockNowMs = (): number => {
+  const { currentBlockTimestamp } = getBlockTimestamp();
+  return currentBlockTimestamp * 1000;
+};
+
 const generateId = () => {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     try {
@@ -64,7 +70,7 @@ export const useTransferAutomationStore = create<TransferAutomationState>()(
       entries: {},
       add: (raw) => {
         const id = generateId();
-        const now = Date.now();
+        const now = getBlockNowMs();
         const active = raw.active ?? true;
         const entry: TransferAutomationEntry = {
           id,
@@ -116,7 +122,7 @@ export const useTransferAutomationStore = create<TransferAutomationState>()(
           const prev = state.entries[id];
           if (!prev) return state;
           const isActive = active ?? !prev.active;
-          const now = Date.now();
+          const now = getBlockNowMs();
           const next: TransferAutomationEntry = {
             ...prev,
             active: isActive,
@@ -128,7 +134,7 @@ export const useTransferAutomationStore = create<TransferAutomationState>()(
         set((state) => {
           const prev = state.entries[id];
           if (!prev) return state;
-          const now = base ?? Date.now();
+          const now = base ?? getBlockNowMs();
           const next: TransferAutomationEntry = {
             ...prev,
             nextRunAt: now + clampInterval(prev.intervalMinutes) * 60_000,
