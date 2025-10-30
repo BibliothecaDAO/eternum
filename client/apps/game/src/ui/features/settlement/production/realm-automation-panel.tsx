@@ -317,6 +317,16 @@ export const RealmAutomationPanel = ({
     [draftAutomation, realmAutomation],
   );
 
+  const overallocatedEntries = useMemo(
+    () => aggregatedUsageList.filter(({ percent }) => percent > MAX_RESOURCE_ALLOCATION_PERCENT),
+    [aggregatedUsageList],
+  );
+  const isOverallocated = overallocatedEntries.length > 0;
+  const overallocatedLabels = useMemo(
+    () => overallocatedEntries.map(({ resourceId }) => resolveResourceLabel(resourceId)),
+    [overallocatedEntries],
+  );
+
   const netUsagePerSecondRecord = useMemo(() => {
     const record: Record<number, number> = {};
     const numericRealmId = Number(realmEntityId);
@@ -592,8 +602,9 @@ export const RealmAutomationPanel = ({
               variant={hasLocalChanges ? "gold" : "outline"}
               size="xs"
               onClick={handleSave}
-              disabled={!hasLocalChanges}
-              isPulsing={hasLocalChanges}
+              disabled={!hasLocalChanges || isOverallocated}
+              isPulsing={hasLocalChanges && !isOverallocated}
+              title={isOverallocated ? "Resolve over-allocation before saving changes." : undefined}
             >
               Save Changes
             </Button>
@@ -602,6 +613,11 @@ export const RealmAutomationPanel = ({
             </Button>
           </div>
         </div>
+        {isOverallocated && (
+          <div className="rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger/80">
+            Resolve over-allocation for {overallocatedLabels.join(", ")} before saving.
+          </div>
+        )}
         <div className="flex flex-wrap gap-2">
           {REALM_PRESETS.map((preset) => (
             <button
