@@ -46,6 +46,7 @@ interface UnifiedArmyCreationModalProps {
   maxDefenseSlots?: number;
   isExplorer?: boolean;
   direction?: Direction;
+  initialGuardSlot?: number;
 }
 
 const TROOP_TYPES: TroopType[] = [TroopType.Crossbowman, TroopType.Knight, TroopType.Paladin];
@@ -62,6 +63,7 @@ export const UnifiedArmyCreationModal = ({
   maxDefenseSlots = 4,
   isExplorer = true,
   direction,
+  initialGuardSlot,
 }: UnifiedArmyCreationModalProps) => {
   const {
     setup: { components, systemCalls },
@@ -99,7 +101,7 @@ export const UnifiedArmyCreationModal = ({
     ...DEFAULT_TROOP_COMBO,
   }));
   const [troopCount, setTroopCount] = useState(0);
-  const [guardSlot, setGuardSlot] = useState(0);
+  const [guardSlot, setGuardSlot] = useState(initialGuardSlot ?? 0);
   const [armyType, setArmyType] = useState(isExplorer);
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const previousStructureIdRef = useRef<number | null>(null);
@@ -107,6 +109,12 @@ export const UnifiedArmyCreationModal = ({
   useEffect(() => {
     setSelectedStructureId(structureId ?? null);
   }, [structureId]);
+
+  useEffect(() => {
+    if (initialGuardSlot !== undefined) {
+      setGuardSlot(initialGuardSlot);
+    }
+  }, [initialGuardSlot]);
 
   const fallbackStructureId = playerStructures[0]?.entityId ?? structureId ?? 0;
   const activeStructureId = selectedStructureId ?? fallbackStructureId;
@@ -144,7 +152,7 @@ export const UnifiedArmyCreationModal = ({
   });
 
   const currentExplorersCount = explorers.length;
-  const currentGuardsCount = guardsData?.length || 0;
+  const currentGuardsCount = guardsData?.filter((guard) => guard.troops?.count && guard.troops.count > 0n).length || 0;
   const maxExplorers = structureBase?.troop_max_explorer_count || 0;
   const resolvedMaxDefenseSlots = structureBase?.troop_max_guard_count || maxDefenseSlots;
 
@@ -189,8 +197,8 @@ export const UnifiedArmyCreationModal = ({
     setFreeDirections([]);
     setSelectedDirection(direction !== undefined ? direction : null);
     setTroopCount(0);
-    setGuardSlot(0);
-  }, [activeStructureId, direction]);
+    setGuardSlot(initialGuardSlot ?? 0);
+  }, [activeStructureId, direction, initialGuardSlot]);
 
   useEffect(() => {
     if (structureCoordX === undefined || structureCoordY === undefined || !activeStructureId) {
