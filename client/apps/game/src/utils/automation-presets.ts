@@ -245,13 +245,7 @@ export const calculatePresetAllocations = (
         return;
       }
 
-      const targetResource = determineComplexShare(
-        complexInputs,
-        usageTotalsRef,
-        complexUsageCounts,
-        90,
-        entityType,
-      );
+      const targetResource = determineComplexShare(complexInputs, usageTotalsRef, complexUsageCounts, 90, entityType);
       adjustContribution(usageTotalsRef, targetResource, complexInputs, "add", entityType);
       targetMap.set(resourceId, {
         resourceToResource: targetResource,

@@ -130,18 +130,15 @@ export const RealmAutomationPanel = ({
     extraResources.forEach((resourceId) => removeResourceConfig(realmEntityId, resourceId));
   }, [extraResources, realmEntityId, removeResourceConfig, hydrated]);
 
-  const createBaselinePercentages = useCallback(
-    (resourceId: ResourcesIds): ResourceAutomationPercentages => {
-      if (resourceId === ResourcesIds.Donkey) {
-        return { resourceToResource: DONKEY_DEFAULT_RESOURCE_PERCENT, laborToResource: 0 };
-      }
-      return {
-        resourceToResource: DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES.resourceToResource,
-        laborToResource: DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES.laborToResource,
-      };
-    },
-    [],
-  );
+  const createBaselinePercentages = useCallback((resourceId: ResourcesIds): ResourceAutomationPercentages => {
+    if (resourceId === ResourcesIds.Donkey) {
+      return { resourceToResource: DONKEY_DEFAULT_RESOURCE_PERCENT, laborToResource: 0 };
+    }
+    return {
+      resourceToResource: DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES.resourceToResource,
+      laborToResource: DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES.laborToResource,
+    };
+  }, []);
 
   const resolveDraftPercentages = useCallback(
     (resourceId: ResourcesIds): ResourceAutomationPercentages => {
@@ -383,10 +380,7 @@ export const RealmAutomationPanel = ({
         return;
       }
 
-      const resourceRatio = Math.min(
-        1,
-        Math.max(0, percentages.resourceToResource / MAX_RESOURCE_ALLOCATION_PERCENT),
-      );
+      const resourceRatio = Math.min(1, Math.max(0, percentages.resourceToResource / MAX_RESOURCE_ALLOCATION_PERCENT));
       const laborRatio = Math.min(1, Math.max(0, percentages.laborToResource / MAX_RESOURCE_ALLOCATION_PERCENT));
       const outputRatio = Math.min(1, resourceRatio + laborRatio);
       const producedPerSecond = baseOutputPerSecond * outputRatio;
@@ -573,9 +567,7 @@ export const RealmAutomationPanel = ({
     allResources.forEach((id) => {
       const resourceId = Number(id) as ResourcesIds;
       const source =
-        draftPercentages[resourceId] ??
-        snapshot.percentages[resourceId] ??
-        createBaselinePercentages(resourceId);
+        draftPercentages[resourceId] ?? snapshot.percentages[resourceId] ?? createBaselinePercentages(resourceId);
       normalizedPercentages[resourceId] = {
         resourceToResource: source.resourceToResource,
         laborToResource: source.laborToResource,
@@ -672,8 +664,7 @@ export const RealmAutomationPanel = ({
               const isOverBudget = percent > MAX_RESOURCE_ALLOCATION_PERCENT;
               const netPerSecond = netUsagePerSecondRecord[resourceId] ?? 0;
               const netLabel = formatSignedPerSecond(netPerSecond);
-              const netClass =
-                netPerSecond < 0 ? "text-danger/80" : netPerSecond > 0 ? "text-gold/70" : "text-gold/40";
+              const netClass = netPerSecond < 0 ? "text-danger/80" : netPerSecond > 0 ? "text-gold/70" : "text-gold/40";
               return (
                 <li
                   key={`usage-${resourceId}`}

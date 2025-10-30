@@ -224,10 +224,7 @@ export const ProductionOverviewPanel = () => {
         .sort((a, b) => a - b);
 
       const perSecondConsumptionTotals = new Map<number, number>();
-      const perSecondSummaries = new Map<
-        number,
-        { outputPerSecond: number; perSecondInputs: Map<number, number> }
-      >();
+      const perSecondSummaries = new Map<number, { outputPerSecond: number; perSecondInputs: Map<number, number> }>();
 
       uniqueResourceIds.forEach((resourceId) => {
         let outputPerSecond = 0;
@@ -410,7 +407,9 @@ export const ProductionOverviewPanel = () => {
                 onClick={() => handleToggleRealm(card.id)}
                 onKeyDown={handleKeyToggle}
                 className={`rounded border border-gold/10 bg-black/20 p-3 text-xs text-gold/80 space-y-3 transition cursor-pointer focus:outline-none focus-visible:border-gold/50 ${
-                  isExpanded ? "border-gold/30 bg-black/15 shadow-[0_0_12px_rgba(255,204,102,0.15)]" : "hover:border-gold/20 hover:bg-black/25"
+                  isExpanded
+                    ? "border-gold/30 bg-black/15 shadow-[0_0_12px_rgba(255,204,102,0.15)]"
+                    : "hover:border-gold/20 hover:bg-black/25"
                 }`}
               >
                 <div className="flex items-center justify-between gap-3 rounded border border-transparent px-1 py-1 transition">
@@ -468,11 +467,11 @@ export const ProductionOverviewPanel = () => {
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
                               <ResourceIcon resource={ResourcesIds[resourceId]} size="sm" />
-                              <span className="text-sm font-semibold text-gold">
-                                {ResourcesIds[resourceId]}
-                              </span>
+                              <span className="text-sm font-semibold text-gold">{ResourcesIds[resourceId]}</span>
                             </div>
-                            <span className={`text-[11px] font-semibold ${hasDeficit ? "text-red/80" : "text-gold/70"}`}>
+                            <span
+                              className={`text-[11px] font-semibold ${hasDeficit ? "text-red/80" : "text-gold/70"}`}
+                            >
                               {netLabel}
                             </span>
                           </div>
@@ -528,9 +527,7 @@ export const ProductionOverviewPanel = () => {
                                           <ResourceIcon resource={ResourcesIds[input.resourceId]} size="xs" />
                                           {ResourcesIds[input.resourceId]}
                                         </span>
-                                        <span className="text-red/70">
-                                          -{formatPerSecondValue(input.perSecond)}/s
-                                        </span>
+                                        <span className="text-red/70">-{formatPerSecondValue(input.perSecond)}/s</span>
                                       </div>
                                     ))}
                                   </div>

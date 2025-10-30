@@ -365,7 +365,10 @@ export const RealmAutomationSummary = ({
             );
 
             return (
-              <div key={`summary-${realmId}-${resourceId}`} className="rounded border border-gold/20 bg-black/15 p-4 space-y-3">
+              <div
+                key={`summary-${realmId}-${resourceId}`}
+                className="rounded border border-gold/20 bg-black/15 p-4 space-y-3"
+              >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <ResourceIcon resource={ResourcesIds[resourceId as ResourcesIds]} size="sm" />
