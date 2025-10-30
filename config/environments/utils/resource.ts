@@ -341,10 +341,16 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM: ResourceInputs =
   ],
   [ResourcesIds.KnightT2]: [],
   [ResourcesIds.KnightT3]: [],
-  [ResourcesIds.Crossbowman]: [],
+  [ResourcesIds.Crossbowman]: [
+    { resource: ResourcesIds.Wheat, amount: 2 },
+    { resource: ResourcesIds.Labor, amount: 0.5 },
+  ],
   [ResourcesIds.CrossbowmanT2]: [],
   [ResourcesIds.CrossbowmanT3]: [],
-  [ResourcesIds.Paladin]: [],
+  [ResourcesIds.Paladin]: [
+    { resource: ResourcesIds.Wheat, amount: 2 },
+    { resource: ResourcesIds.Labor, amount: 0.5 },
+  ],
   [ResourcesIds.PaladinT2]: [],
   [ResourcesIds.PaladinT3]: [],
   [ResourcesIds.Wheat]: [],
