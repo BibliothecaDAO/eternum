@@ -16,8 +16,8 @@ import { displayAddress } from "@/ui/utils/utils";
 import { Copy, Share2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { MIN_REFRESH_INTERVAL_MS, useLandingLeaderboardStore } from "../lib/use-landing-leaderboard-store";
 import { type LandingLeaderboardEntry } from "../lib/landing-leaderboard-service";
+import { MIN_REFRESH_INTERVAL_MS, useLandingLeaderboardStore } from "../lib/use-landing-leaderboard-store";
 
 const getDisplayName = (entry: LandingLeaderboardEntry): string => {
   const candidate = entry.displayName?.trim();
@@ -222,9 +222,13 @@ export const LandingPlayer = () => {
           <p className="mt-1 text-red-200/80">{playerError}</p>
           <div className="mt-3 flex items-center justify-end gap-2">
             {isRefreshing ? (
-              <span className="text-xs text-white/70" aria-live="polite">Refreshing…</span>
+              <span className="text-xs text-white/70" aria-live="polite">
+                Refreshing…
+              </span>
             ) : isCooldownActive ? (
-              <span className="text-xs text-white/50" aria-live="polite">Wait {refreshSecondsLeft}s</span>
+              <span className="text-xs text-white/50" aria-live="polite">
+                Wait {refreshSecondsLeft}s
+              </span>
             ) : null}
             <RefreshButton
               onClick={handleRefresh}
@@ -241,9 +245,13 @@ export const LandingPlayer = () => {
             <p>{statusMessage}</p>
             <div className="flex items-center gap-2">
               {isRefreshing ? (
-                <span className="text-xs text-white/70" aria-live="polite">Refreshing…</span>
+                <span className="text-xs text-white/70" aria-live="polite">
+                  Refreshing…
+                </span>
               ) : isCooldownActive ? (
-                <span className="text-xs text-white/50" aria-live="polite">Wait {refreshSecondsLeft}s</span>
+                <span className="text-xs text-white/50" aria-live="polite">
+                  Wait {refreshSecondsLeft}s
+                </span>
               ) : null}
               <RefreshButton
                 onClick={handleRefresh}
@@ -266,9 +274,13 @@ export const LandingPlayer = () => {
             </div>
             <div className="flex items-center justify-center gap-2 sm:justify-end">
               {isRefreshing ? (
-                <span className="text-xs text-white/70" aria-live="polite">Refreshing…</span>
+                <span className="text-xs text-white/70" aria-live="polite">
+                  Refreshing…
+                </span>
               ) : isCooldownActive ? (
-                <span className="text-xs text-white/50" aria-live="polite">Wait {refreshSecondsLeft}s</span>
+                <span className="text-xs text-white/50" aria-live="polite">
+                  Wait {refreshSecondsLeft}s
+                </span>
               ) : null}
               <RefreshButton
                 onClick={handleRefresh}

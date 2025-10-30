@@ -157,7 +157,8 @@ export const LandingLeaderboard = () => {
             Follow the most active Realms captains in Blitz. Rankings refresh automatically from live on-chain data.
           </p>
           <p className="text-xs uppercase tracking-wide text-white/50" aria-live="polite">
-            Updated {lastUpdatedLabel}{isFetching ? " · Refreshing…" : ""}
+            Updated {lastUpdatedLabel}
+            {isFetching ? " · Refreshing…" : ""}
           </p>
         </div>
 
@@ -236,9 +237,13 @@ export const LandingLeaderboard = () => {
                 ) : null}
                 <div className="flex items-center gap-2">
                   {isFetching ? (
-                    <span className="text-xs text-white/70" aria-live="polite">Refreshing…</span>
+                    <span className="text-xs text-white/70" aria-live="polite">
+                      Refreshing…
+                    </span>
                   ) : isCooldownActive ? (
-                    <span className="text-xs text-white/50" aria-live="polite">Wait {refreshSecondsLeft}s</span>
+                    <span className="text-xs text-white/50" aria-live="polite">
+                      Wait {refreshSecondsLeft}s
+                    </span>
                   ) : null}
                   <RefreshButton
                     onClick={handleManualRefresh}
@@ -270,7 +275,6 @@ export const LandingLeaderboard = () => {
             <div className="grid gap-4 md:grid-cols-3">
               {podiumEntries.map((entry, index) => {
                 const addressLabel = displayAddress(entry.address);
-
                 return (
                   <article
                     key={entry.address}
@@ -334,7 +338,6 @@ export const LandingLeaderboard = () => {
                   <tbody className="divide-y divide-white/5 text-sm">
                     {remainingEntries.map((entry) => {
                       const addressLabel = displayAddress(entry.address);
-
                       return (
                         <tr key={entry.address} className="transition-colors hover:bg-white/10">
                           <td className="px-4 py-3 text-white/70">#{entry.rank}</td>
