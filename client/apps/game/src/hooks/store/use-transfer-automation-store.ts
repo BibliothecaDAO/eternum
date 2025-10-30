@@ -36,8 +36,9 @@ export interface TransferAutomationEntry {
   nextRunAt?: number | null;
 }
 
-type NewEntry = Omit<TransferAutomationEntry, "id" | "createdAt" | "lastRunAt" | "nextRunAt" | "active"> & {
+type NewEntry = Omit<TransferAutomationEntry, "id" | "createdAt" | "lastRunAt" | "nextRunAt" | "active" | "gameId"> & {
   active?: boolean;
+  gameId?: string;
 };
 
 interface TransferAutomationState {
@@ -83,11 +84,12 @@ export const useTransferAutomationStore = create<TransferAutomationState>()(
         const id = generateId();
         const now = getBlockNowMs();
         const active = raw.active ?? true;
+        const gameId = raw.gameId ?? resolveCurrentGameId();
         const entry: TransferAutomationEntry = {
           id,
           createdAt: now,
           active,
-          gameId: resolveCurrentGameId(),
+          gameId,
           sourceEntityId: String(raw.sourceEntityId),
           sourceName: raw.sourceName,
           destinationEntityId: String(raw.destinationEntityId),
