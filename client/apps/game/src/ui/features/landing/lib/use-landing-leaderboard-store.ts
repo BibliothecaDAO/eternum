@@ -67,7 +67,12 @@ export const useLandingLeaderboardStore = create<LandingLeaderboardStore>((set, 
       return;
     }
 
-    if (!force && state.entries.length > 0 && state.lastUpdatedAt && now - state.lastUpdatedAt < MIN_REFRESH_INTERVAL_MS) {
+    if (
+      !force &&
+      state.entries.length > 0 &&
+      state.lastUpdatedAt &&
+      now - state.lastUpdatedAt < MIN_REFRESH_INTERVAL_MS
+    ) {
       return;
     }
 
