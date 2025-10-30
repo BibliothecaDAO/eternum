@@ -2,12 +2,13 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import { useDojo } from "@bibliothecadao/react";
 import {
-  getBlockTimestamp,
-  ResourceManager,
-  getTotalResourceWeightKg,
   calculateDonkeysNeeded,
-  isMilitaryResource,
+  configManager,
+  getBlockTimestamp,
   getEntityIdFromKeys,
+  getTotalResourceWeightKg,
+  isMilitaryResource,
+  ResourceManager,
 } from "@bibliothecadao/eternum";
 import { ClientComponents, ResourcesIds, StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
@@ -37,12 +38,22 @@ export const useTransferAutomationRunner = () => {
   const entries = useTransferAutomationStore((s) => s.entries);
   const update = useTransferAutomationStore((s) => s.update);
   const scheduleNext = useTransferAutomationStore((s) => s.scheduleNext);
+  const pruneForGame = useTransferAutomationStore((s) => s.pruneForGame);
 
   const processingRef = useRef(false);
   const processRef = useRef<() => Promise<void>>(async () => {});
   const timeoutIdRef = useRef<number | null>(null);
 
   const activeEntries = useMemo(() => Object.values(entries).filter((e) => e.active), [entries]);
+
+  useEffect(() => {
+    if (!components) {
+      return;
+    }
+    const season = configManager.getSeasonConfig();
+    const gameId = `${season.startSettlingAt}-${season.startMainAt}-${season.endAt}`;
+    pruneForGame(gameId);
+  }, [components, pruneForGame]);
 
   const scheduleNextCheck = useCallback(() => {
     if (timeoutIdRef.current !== null) {
