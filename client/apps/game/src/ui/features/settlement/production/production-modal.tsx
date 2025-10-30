@@ -1,8 +1,9 @@
+import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { ModalContainer } from "@/ui/shared";
-import { getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
-import { usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
+import { getIsBlitz, getStructureName, Position } from "@bibliothecadao/eternum";
+import { usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo, useQuery } from "@bibliothecadao/react";
 import { ID, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
 
@@ -27,19 +28,33 @@ const ProductionContainer = ({
 
   const [selectedRealm, setSelectedRealm] = useState<RealmInfo | undefined>(initialRealm || playerStructures[0]);
   const [selectedResource, setSelectedResource] = useState<ResourcesIds | null>(preSelectedResource ?? null);
+  const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
+  const goToStructure = useGoToStructure();
+  const { isMapView } = useQuery();
 
   useEffect(() => {
     if (preSelectedResource === undefined) return;
     setSelectedResource(preSelectedResource ?? null);
   }, [preSelectedResource]);
 
+  const focusRealm = useCallback(
+    (realm: RealmInfo | undefined) => {
+      if (!realm) return;
+      setStructureEntityId(realm.entityId);
+      const position = new Position({ x: realm.position.x, y: realm.position.y });
+      goToStructure(realm.entityId, position, isMapView);
+    },
+    [goToStructure, isMapView, setStructureEntityId],
+  );
+
   const handleSelectRealm = useCallback(
     (id: ID) => {
       const realm = playerStructures.find((structure) => structure.entityId === id);
       setSelectedRealm(realm);
       setSelectedResource(null);
+      focusRealm(realm);
     },
-    [playerStructures],
+    [playerStructures, focusRealm],
   );
 
   const handleManageResource = useCallback(
@@ -48,9 +63,10 @@ const ProductionContainer = ({
       if (realm) {
         setSelectedRealm(realm);
         setSelectedResource(resource);
+        focusRealm(realm);
       }
     },
-    [playerStructures, selectedRealm],
+    [playerStructures, selectedRealm, focusRealm],
   );
 
   return (

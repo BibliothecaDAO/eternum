@@ -1,9 +1,17 @@
+import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { isAutomationResourceBlocked, useAutomationStore } from "@/hooks/store/use-automation-store";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ProductionModal } from "@/ui/features/settlement";
-import { configManager, getBlockTimestamp, getIsBlitz, getStructureName, ResourceManager } from "@bibliothecadao/eternum";
-import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
+import {
+  Position,
+  configManager,
+  getBlockTimestamp,
+  getIsBlitz,
+  getStructureName,
+  ResourceManager,
+} from "@bibliothecadao/eternum";
+import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo, useQuery } from "@bibliothecadao/react";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useCallback, useEffect, useMemo, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
@@ -85,6 +93,7 @@ type RealmCard = {
   name: string;
   type: string;
   resourceIds: ResourcesIds[];
+  position: { x: number; y: number };
   lastRun?: number;
   statusLabel: string;
   metrics: Record<number, ResourceProductionMetrics>;
@@ -100,11 +109,12 @@ export const ProductionOverviewPanel = () => {
   const playerRealms = usePlayerOwnedRealmsInfo();
   const playerVillages = usePlayerOwnedVillagesInfo();
   const toggleModal = useUIStore((state) => state.toggleModal);
-  const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
   const {
     setup: { components },
   } = useDojo();
   const isBlitz = getIsBlitz();
+  const goToStructure = useGoToStructure();
+  const { isMapView } = useQuery();
   const handleToggleRealm = useCallback((realmId: string) => {
     setExpandedRealmId((current) => (current === realmId ? null : realmId));
   }, []);
@@ -355,7 +365,8 @@ export const ProductionOverviewPanel = () => {
       cards.push({
         id: String(realm.entityId),
         name: realmName,
-        type: entityType,
+        type: entityType === "village" ? "Village" : "Realm",
+        position: { x: realm.position.x, y: realm.position.y },
         resourceIds: displayedResourceIds,
         lastRun: automation?.lastExecution?.executedAt,
         statusLabel,
@@ -421,8 +432,9 @@ export const ProductionOverviewPanel = () => {
                       onClick={(event) => {
                         event.stopPropagation();
                         const realmIdNum = Number(card.id);
-                        if (Number.isFinite(realmIdNum)) {
-                          setStructureEntityId(realmIdNum);
+                        if (Number.isFinite(realmIdNum) && card.position) {
+                          const position = new Position({ x: card.position.x, y: card.position.y });
+                          goToStructure(realmIdNum, position, isMapView);
                         }
                         toggleModal(<ProductionModal />);
                       }}
