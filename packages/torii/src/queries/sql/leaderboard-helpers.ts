@@ -2,7 +2,6 @@ import { ContractAddress } from "@bibliothecadao/types";
 
 import {
   HyperstructureLeaderboardConfigRow,
-  HyperstructureRealmCountDataRaw,
   HyperstructureRow,
   HyperstructureShareholderRow,
   PlayerLeaderboardRow,
@@ -31,14 +30,12 @@ export interface LeaderboardSourceData {
   hyperstructureShareholderRows: HyperstructureShareholderRow[];
   hyperstructureRows: HyperstructureRow[];
   hyperstructureConfigRow?: HyperstructureLeaderboardConfigRow;
-  hyperstructureRealmCounts: HyperstructureRealmCountDataRaw[];
 }
 
 export interface FetchLeaderboardSourceDataOptions {
   baseUrl: string;
   effectiveLimit: number;
   defaultHyperstructureRadius: number;
-  fetchHyperstructuresWithRealmCount: (radius: number) => Promise<HyperstructureRealmCountDataRaw[]>;
 }
 
 export const sanitizeLeaderboardPagination = (limit: number, offset: number): LeaderboardPagination => {
@@ -55,46 +52,37 @@ export const sanitizeLeaderboardPagination = (limit: number, offset: number): Le
 export const fetchLeaderboardSourceData = async ({
   baseUrl,
   effectiveLimit,
-  defaultHyperstructureRadius,
-  fetchHyperstructuresWithRealmCount,
 }: FetchLeaderboardSourceDataOptions): Promise<LeaderboardSourceData> => {
   const leaderboardQuery =
     effectiveLimit > 0
       ? LEADERBOARD_QUERIES.PLAYER_LEADERBOARD.replace("{limit}", effectiveLimit.toString()).replace("{offset}", "0")
       : LEADERBOARD_QUERIES.PLAYER_LEADERBOARD_ALL;
 
-  const [
-    registeredRows,
-    hyperstructureShareholderRows,
-    hyperstructureRows,
-    hyperstructureConfigRows,
-    hyperstructureRealmCounts,
-  ] = await Promise.all([
-    fetchWithErrorHandling<PlayerLeaderboardRow>(
-      buildApiUrl(baseUrl, leaderboardQuery),
-      "Failed to fetch player leaderboard",
-    ),
-    fetchWithErrorHandling<HyperstructureShareholderRow>(
-      buildApiUrl(baseUrl, LEADERBOARD_QUERIES.HYPERSTRUCTURE_SHAREHOLDERS),
-      "Failed to fetch hyperstructure shareholders",
-    ),
-    fetchWithErrorHandling<HyperstructureRow>(
-      buildApiUrl(baseUrl, LEADERBOARD_QUERIES.HYPERSTRUCTURES_WITH_MULTIPLIER),
-      "Failed to fetch hyperstructure multipliers",
-    ),
-    fetchWithErrorHandling<HyperstructureLeaderboardConfigRow>(
-      buildApiUrl(baseUrl, LEADERBOARD_QUERIES.HYPERSTRUCTURE_LEADERBOARD_CONFIG),
-      "Failed to fetch hyperstructure leaderboard config",
-    ),
-    fetchHyperstructuresWithRealmCount(defaultHyperstructureRadius),
-  ]);
+  const [registeredRows, hyperstructureShareholderRows, hyperstructureRows, hyperstructureConfigRows] =
+    await Promise.all([
+      fetchWithErrorHandling<PlayerLeaderboardRow>(
+        buildApiUrl(baseUrl, leaderboardQuery),
+        "Failed to fetch player leaderboard",
+      ),
+      fetchWithErrorHandling<HyperstructureShareholderRow>(
+        buildApiUrl(baseUrl, LEADERBOARD_QUERIES.HYPERSTRUCTURE_SHAREHOLDERS),
+        "Failed to fetch hyperstructure shareholders",
+      ),
+      fetchWithErrorHandling<HyperstructureRow>(
+        buildApiUrl(baseUrl, LEADERBOARD_QUERIES.HYPERSTRUCTURES_WITH_MULTIPLIER),
+        "Failed to fetch hyperstructure multipliers",
+      ),
+      fetchWithErrorHandling<HyperstructureLeaderboardConfigRow>(
+        buildApiUrl(baseUrl, LEADERBOARD_QUERIES.HYPERSTRUCTURE_LEADERBOARD_CONFIG),
+        "Failed to fetch hyperstructure leaderboard config",
+      ),
+    ]);
 
   return {
     registeredRows,
     hyperstructureShareholderRows,
     hyperstructureRows,
     hyperstructureConfigRow: hyperstructureConfigRows[0],
-    hyperstructureRealmCounts,
   };
 };
 
@@ -160,28 +148,7 @@ const parseLeaderboardConfig = (configRow?: HyperstructureLeaderboardConfigRow):
   };
 };
 
-const buildHyperstructureRealmCountMap = (
-  hyperstructureRealmCounts: HyperstructureRealmCountDataRaw[],
-): Map<number, number> => {
-  return new Map(
-    hyperstructureRealmCounts
-      .map((row) => {
-        const hyperstructureId = Math.floor(parseNumericValue(row.hyperstructure_entity_id));
-        if (!Number.isFinite(hyperstructureId) || hyperstructureId <= 0) {
-          return null;
-        }
-
-        const realmCount = Math.max(0, Math.floor(parseNumericValue(row.realm_count_within_radius)));
-        return [hyperstructureId, realmCount] as const;
-      })
-      .filter((entry): entry is readonly [number, number] => entry !== null),
-  );
-};
-
-const buildHyperstructures = (
-  hyperstructureRows: HyperstructureRow[],
-  realmCountsById: Map<number, number>,
-): HyperstructureLeaderboardHyperstructure[] => {
+const buildHyperstructures = (hyperstructureRows: HyperstructureRow[]): HyperstructureLeaderboardHyperstructure[] => {
   return hyperstructureRows
     .map((row) => {
       const hyperstructureId = Math.floor(parseNumericValue(row.hyperstructure_id));
@@ -191,12 +158,10 @@ const buildHyperstructures = (
 
       const pointsMultiplierRaw = parseNumericValue(row.points_multiplier);
       const pointsMultiplier = pointsMultiplierRaw > 0 ? pointsMultiplierRaw : 1;
-      const realmCount = realmCountsById.get(hyperstructureId) ?? 0;
 
       return {
         hyperstructure_id: hyperstructureId,
         points_multiplier: pointsMultiplier,
-        realm_count: realmCount,
       };
     })
     .filter((item): item is HyperstructureLeaderboardHyperstructure => item !== null);
@@ -235,22 +200,19 @@ export interface ComputeUnregisteredShareholderPointsOptions {
   configRow?: HyperstructureLeaderboardConfigRow;
   hyperstructureRows: HyperstructureRow[];
   hyperstructureShareholderRows: HyperstructureShareholderRow[];
-  hyperstructureRealmCounts: HyperstructureRealmCountDataRaw[];
 }
 
 export const computeUnregisteredShareholderPoints = ({
   configRow,
   hyperstructureRows,
   hyperstructureShareholderRows,
-  hyperstructureRealmCounts,
 }: ComputeUnregisteredShareholderPointsOptions): Map<string, number> => {
   const config = parseLeaderboardConfig(configRow);
   if (!config) {
     return new Map();
   }
 
-  const realmCountsById = buildHyperstructureRealmCountMap(hyperstructureRealmCounts);
-  const hyperstructures = buildHyperstructures(hyperstructureRows, realmCountsById);
+  const hyperstructures = buildHyperstructures(hyperstructureRows);
   const hyperstructureShareholders = buildHyperstructureShareholders(hyperstructureShareholderRows);
 
   if (hyperstructures.length === 0 || hyperstructureShareholders.length === 0) {
@@ -259,9 +221,6 @@ export const computeUnregisteredShareholderPoints = ({
 
   const computed = calculateUnregisteredShareholderPointsCache({
     pointsPerSecondWithoutMultiplier: config.pointsPerSecondWithoutMultiplier,
-    realmCountPerHyperstructures: new Map(
-      hyperstructures.map((item) => [item.hyperstructure_id, item.realm_count] as const),
-    ),
     seasonEnd: config.seasonEnd,
     hyperstructureShareholders,
     hyperstructures,
@@ -271,7 +230,7 @@ export const computeUnregisteredShareholderPoints = ({
     Array.from(computed.entries())
       .map(([address, points]) => {
         const normalizedAddress = normalizeAddress(address);
-        return normalizedAddress ? [normalizedAddress.toLowerCase(), points] : null;
+        return normalizedAddress ? ([normalizedAddress.toLowerCase(), points] as const) : null;
       })
       .filter((entry): entry is readonly [string, number] => entry !== null),
   );

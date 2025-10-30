@@ -615,24 +615,17 @@ export class SqlApi {
       return [];
     }
 
-    const {
-      registeredRows,
-      hyperstructureShareholderRows,
-      hyperstructureRows,
-      hyperstructureConfigRow,
-      hyperstructureRealmCounts,
-    } = await fetchLeaderboardSourceData({
-      baseUrl: this.baseUrl,
-      effectiveLimit,
-      defaultHyperstructureRadius: DEFAULT_HYPERSTRUCTURE_RADIUS,
-      fetchHyperstructuresWithRealmCount: (radius) => this.fetchHyperstructuresWithRealmCount(radius),
-    });
+    const { registeredRows, hyperstructureShareholderRows, hyperstructureRows, hyperstructureConfigRow } =
+      await fetchLeaderboardSourceData({
+        baseUrl: this.baseUrl,
+        effectiveLimit,
+        defaultHyperstructureRadius: DEFAULT_HYPERSTRUCTURE_RADIUS,
+      });
 
     const unregisteredShareholderPoints = computeUnregisteredShareholderPoints({
       configRow: hyperstructureConfigRow,
       hyperstructureRows,
       hyperstructureShareholderRows,
-      hyperstructureRealmCounts,
     });
 
     const { entries: registeredEntries, processedAddresses } = buildRegisteredLeaderboardEntries({
@@ -676,14 +669,12 @@ export class SqlApi {
       baseUrl: this.baseUrl,
       effectiveLimit: 0,
       defaultHyperstructureRadius: DEFAULT_HYPERSTRUCTURE_RADIUS,
-      fetchHyperstructuresWithRealmCount: (radius) => this.fetchHyperstructuresWithRealmCount(radius),
     });
 
     const unregisteredShareholderPoints = computeUnregisteredShareholderPoints({
       configRow: leaderboardSourceData.hyperstructureConfigRow,
       hyperstructureRows: leaderboardSourceData.hyperstructureRows,
       hyperstructureShareholderRows: leaderboardSourceData.hyperstructureShareholderRows,
-      hyperstructureRealmCounts: leaderboardSourceData.hyperstructureRealmCounts,
     });
 
     const { entries: registeredEntries, processedAddresses } = buildRegisteredLeaderboardEntries({
