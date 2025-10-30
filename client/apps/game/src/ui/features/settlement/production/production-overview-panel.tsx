@@ -379,7 +379,7 @@ export const ProductionOverviewPanel = () => {
   return (
     <div className="flex flex-col gap-3">
       <div>
-        <h4 className="text-sm font-semibold text-gold">Production Overview</h4>
+        <h4 className="text-sm font-semibold text-gold">Production Automation Overview</h4>
         <p className="text-[11px] text-gold/60">
           Tap any realm to inspect recent production, or click Modify to update the production automation.
         </p>
@@ -456,7 +456,7 @@ export const ProductionOverviewPanel = () => {
                         ? (metrics?.netAmount ?? 0) <= 0
                         : (metrics?.netPerSecond ?? 0) <= 0;
                       const netLabel = hasLastRun
-                        ? `Net ${formatSignedAmount(metrics?.netAmount ?? 0)}`
+                        ? `Last run: ${formatSignedAmount(metrics?.netAmount ?? 0)}`
                         : `Net rate ${formatSignedPerSecond(metrics?.netPerSecond ?? 0)}`;
 
                       return (
@@ -483,7 +483,7 @@ export const ProductionOverviewPanel = () => {
                                   <div>Produced {formatAmount(metrics?.producedAmount ?? 0)}</div>
                                   <div>Consumed {formatAmount(metrics?.consumedAmount ?? 0)}</div>
                                   <div className={`${hasDeficit ? "text-red/80" : "text-gold/70"}`}>
-                                    Net {formatSignedAmount(metrics?.netAmount ?? 0)}
+                                    Last run: {formatSignedAmount(metrics?.netAmount ?? 0)}
                                   </div>
                                 </>
                               ) : (

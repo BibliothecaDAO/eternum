@@ -271,7 +271,9 @@ export const RightNavigationModule = () => {
   return (
     <>
       <div
-        className={clsx("pointer-events-none right-0 flex max-h-full space-x-1 pt-16 transition-all duration-300")}
+        className={clsx(
+          "pointer-events-none right-0 flex max-h-full space-x-1 pt-16 pb-6 transition-all duration-300",
+        )}
         style={containerStyle}
       >
         {ConnectedAccount && (
@@ -283,7 +285,7 @@ export const RightNavigationModule = () => {
               }}
               initial="hidden"
               animate="visible"
-              className={clsx("pointer-events-auto flex flex-col justify-start h-[88vh]")}
+              className={clsx("pointer-events-auto flex flex-col justify-start h-[82vh]")}
             >
               <div className="flex flex-col mb-auto">
                 {navigationItems.map((item) => (
@@ -294,7 +296,7 @@ export const RightNavigationModule = () => {
               </div>
             </motion.div>
 
-            <div className="pointer-events-auto flex h-full flex-1 flex-col gap-3 min-h-0">
+            <div className="pointer-events-auto flex h-full max-h-[82vh] flex-1 flex-col gap-3 min-h-0">
               <div className="relative flex h-full flex-1 overflow-hidden min-h-0">
                 <div className="relative group">
                   <div
