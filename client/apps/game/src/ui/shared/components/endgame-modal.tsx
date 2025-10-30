@@ -10,7 +10,7 @@ import {
   formatOrdinal,
 } from "@/ui/shared/lib/blitz-highlight";
 import { copySvgToClipboard } from "@/ui/shared/lib/copy-svg";
-import { currencyIntlFormat, displayAddress, getRealmCountPerHyperstructure } from "@/ui/utils/utils";
+import { currencyIntlFormat, getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { getAddressName, getGuildFromPlayerAddress, getIsBlitz, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
@@ -33,6 +33,7 @@ export const EndgameModal = () => {
   const [isVisible, setIsVisible] = useState(true);
   const [isAnimating, setIsAnimating] = useState(true);
   const [highlightedPlayer, setHighlightedPlayer] = useState<BlitzHighlightPlayer | null>(null);
+  const [championPlayer, setChampionPlayer] = useState<BlitzHighlightPlayer | null>(null);
   const [isCopying, setIsCopying] = useState(false);
   const [isRanked, setIsRanked] = useState<boolean>(true);
 
@@ -56,8 +57,9 @@ export const EndgameModal = () => {
 
       const rankedPlayers = manager.playersByRank;
       const createTopPlayer = (address: ContractAddress, rank: number, points: number): BlitzHighlightPlayer => {
-        const displayName =
-          getAddressName(address, components) || displayAddress(address.toString(16)) || "Unknown player";
+        const rawName = getAddressName(address, components);
+        const trimmedName = rawName?.trim();
+        const displayName = trimmedName && trimmedName.length > 0 ? trimmedName : "Unknown player";
         const guildName = getGuildFromPlayerAddress(address, components)?.name;
 
         const addressHex = address.toString(16);
@@ -71,6 +73,13 @@ export const EndgameModal = () => {
           address: normalizedAddress,
         } satisfies BlitzHighlightPlayer;
       };
+
+      if (rankedPlayers.length > 0) {
+        const [topAddress, topPoints] = rankedPlayers[0];
+        setChampionPlayer(createTopPlayer(topAddress, 1, topPoints));
+      } else {
+        setChampionPlayer(null);
+      }
 
       const playerAddress = ContractAddress(account.address);
       const myIndex = rankedPlayers.findIndex(([address]) => address === playerAddress);
@@ -88,6 +97,7 @@ export const EndgameModal = () => {
     } catch (error) {
       console.error("Failed to load final leaderboard", error);
       setHighlightedPlayer(null);
+      setChampionPlayer(null);
       setIsRanked(false);
     }
   }, [account.address, components, hasGameEnded]);
@@ -163,7 +173,12 @@ export const EndgameModal = () => {
   const cardSubtitle = isBlitz ? "Blitz Leaderboard" : "Final Leaderboard";
   const playerName = highlight?.name ?? null;
   const playerGuild = highlight?.guildName ?? null;
-  const winnerLine = playerName ? (playerGuild ? `${playerName} — ${playerGuild}` : playerName) : null;
+  const playerLine = playerName ? (playerGuild ? `${playerName} — ${playerGuild}` : playerName) : null;
+  const championLine = championPlayer
+    ? championPlayer.guildName
+      ? `${championPlayer.name} — ${championPlayer.guildName}`
+      : championPlayer.name
+    : playerLine;
   const placementLabel = highlight ? formatOrdinal(highlight.rank) : null;
   const pointsLabel = highlightPoints !== null ? currencyIntlFormat(highlightPoints, 0) : null;
 
@@ -192,8 +207,8 @@ export const EndgameModal = () => {
               <h2 className="text-3xl font-semibold uppercase tracking-[0.24em] text-white md:text-[36px]">
                 {cardSubtitle}
               </h2>
-              {isRanked && winnerLine && (
-                <p className="text-sm font-medium text-cyan-100/80 md:text-base">{winnerLine}</p>
+              {isRanked && playerLine && (
+                <p className="text-sm font-medium text-cyan-100/80 md:text-base">{playerLine}</p>
               )}
               {isRanked && placementLabel && pointsLabel && (
                 <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-200/70 md:text-sm">
@@ -217,7 +232,7 @@ export const EndgameModal = () => {
                       ref={leaderboardSvgRef}
                       title={cardTitle}
                       subtitle={cardSubtitle}
-                      winnerLine={winnerLine}
+                      winnerLine={championLine}
                       highlight={highlight}
                     />
                   ) : (
