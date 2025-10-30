@@ -192,7 +192,9 @@ export const UnifiedArmyCreationModal = ({
   const selectedGuardCount = Number.isFinite(selectedGuardCountValue) ? selectedGuardCountValue : 0;
   const capacityRemainingForSelector =
     troopCapacityLimit !== null
-      ? (armyType ? troopCapacityLimit : Math.max(troopCapacityLimit - selectedGuardCount, 0))
+      ? armyType
+        ? troopCapacityLimit
+        : Math.max(troopCapacityLimit - selectedGuardCount, 0)
       : null;
 
   const selectedGuardCategory = selectedGuard?.troops?.category as TroopType | undefined;

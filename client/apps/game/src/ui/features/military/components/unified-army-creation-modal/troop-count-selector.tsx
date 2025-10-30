@@ -72,9 +72,7 @@ export const TroopCountSelector = ({
             <span className="text-gold font-semibold">{maxAffordable.toLocaleString()}</span>
           </div>
           {shouldShowCapacityInfo && capacityLimitDisplay !== null && (
-            <div className="text-xs text-gold/60">
-              Capacity remaining: {capacityLimitDisplay.toLocaleString()}
-            </div>
+            <div className="text-xs text-gold/60">Capacity remaining: {capacityLimitDisplay.toLocaleString()}</div>
           )}
         </div>
 

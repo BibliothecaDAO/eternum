@@ -129,8 +129,7 @@ export const ArmyCreate = ({
   const currentTroopCount = Number.isFinite(currentTroopCountValue) ? currentTroopCountValue : 0;
   const remainingTroopCapacity =
     troopCapacityLimit !== null ? Math.max(troopCapacityLimit - currentTroopCount, 0) : Number.POSITIVE_INFINITY;
-  const remainingCapacityDisplay =
-    troopCapacityLimit !== null ? Math.max(0, Math.floor(remainingTroopCapacity)) : null;
+  const remainingCapacityDisplay = troopCapacityLimit !== null ? Math.max(0, Math.floor(remainingTroopCapacity)) : null;
   const isAtCapacity = troopCapacityLimit !== null && remainingTroopCapacity <= 0;
   const shouldShowCapacityInfo =
     troopCapacityLimit !== null && !isAtCapacity && remainingTroopCapacity < troopCapacityLimit;

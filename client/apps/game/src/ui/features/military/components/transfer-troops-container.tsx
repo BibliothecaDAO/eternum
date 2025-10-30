@@ -421,7 +421,7 @@ export const TransferTroopsContainer = ({
     const limitText = troopCapacityLimit.toLocaleString();
 
     if (capacityBlocked.type === "guard" && typeof capacityBlocked.slotIndex === "number") {
-      return `Guard slot ${capacityBlocked.slotIndex + 1} is at maximum capacity (${limitText} troops).`;
+      return `Guard slot ${DISPLAYED_SLOT_NUMBER_MAP[capacityBlocked.slotIndex as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]} is at maximum capacity (${limitText} troops).`;
     }
 
     return `Target explorer is at maximum capacity (${limitText} troops).`;
@@ -460,7 +460,9 @@ export const TransferTroopsContainer = ({
     }
 
     if (transferDirection === TransferDirection.ExplorerToStructure && typeof guardSlot === "number") {
-      const guardName = DEFENSE_NAMES[guardSlot as keyof typeof DEFENSE_NAMES] ?? `Guard slot ${guardSlot + 1}`;
+      const guardName =
+        GUARD_SLOT_NAMES[guardSlot as keyof typeof GUARD_SLOT_NAMES] ??
+        `Guard slot ${DISPLAYED_SLOT_NUMBER_MAP[guardSlot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]}`;
       if (remainingAfter === 0 && effectiveTroopAmount > 0) {
         return {
           tone: "danger" as const,
