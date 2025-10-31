@@ -1,52 +1,173 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getTierStyle } from "@/ui/utils/tier-styles";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getTroopResourceId } from "@bibliothecadao/eternum";
-import { resources, TroopTier, TroopType } from "@bibliothecadao/types";
+import {
+  DISPLAYED_SLOT_NUMBER_MAP,
+  GUARD_SLOT_NAMES,
+  GuardSlot,
+  resources,
+  TroopTier,
+  TroopType,
+} from "@bibliothecadao/types";
+import { ArrowLeft, Plus } from "lucide-react";
+import type { KeyboardEvent } from "react";
+import { SLOT_ICON_MAP } from "./slot-icon-map";
 import { DefenseTroop } from "./structure-defence";
+import { UnifiedArmyCreationModal } from "./unified-army-creation-modal";
 
 interface CompactDefenseDisplayProps {
   troops: DefenseTroop[];
   className?: string;
+  slotsUsed?: number;
+  slotsMax?: number;
+  structureId?: number;
+  canManageDefense?: boolean;
 }
 
-export const CompactDefenseDisplay = ({ troops, className = "" }: CompactDefenseDisplayProps) => {
+export const CompactDefenseDisplay = ({
+  troops,
+  className = "",
+  slotsUsed,
+  slotsMax,
+  structureId,
+  canManageDefense = false,
+}: CompactDefenseDisplayProps) => {
+  const toggleModal = useUIStore((state) => state.toggleModal);
   const totalTroopCount = troops.reduce((total, defense) => total + Number(defense.troops.count || 0), 0);
+  const baseSlotClasses = "flex items-center gap-1 rounded-md px-1 py-0.5 min-h-[30px] min-w-[96px] transition-colors";
+  const hasSlotInfo = slotsUsed !== undefined && slotsMax !== undefined;
+  const showHeaderRow = hasSlotInfo || totalTroopCount > 0;
+  const canOpenModal = Boolean(canManageDefense && structureId && structureId > 0);
+  const hasAvailableDefenseSlot =
+    !hasSlotInfo || (slotsUsed !== undefined && slotsMax !== undefined && slotsUsed < slotsMax);
+
+  const handleSlotOpen = (slot: GuardSlot) => {
+    if (!canOpenModal || !structureId) return;
+    toggleModal(
+      <UnifiedArmyCreationModal
+        structureId={structureId}
+        isExplorer={false}
+        maxDefenseSlots={slotsMax}
+        initialGuardSlot={Number(slot)}
+      />,
+    );
+  };
 
   return (
-    <div className={`flex gap-1 items-center flex-wrap ${className}`}>
-      {totalTroopCount > 0 && (
-        <div className="flex items-center bg-brown-900/90 border border-gold/30 rounded-md px-2 py-0.5 gap-1">
-          <span className="text-[10px] uppercase tracking-wide text-gold/70 font-semibold">Total</span>
-          <span className="text-[11px] text-gold font-bold">{currencyFormat(totalTroopCount, 0)}</span>
+    <div className={`flex flex-col gap-1 ${className}`}>
+      {showHeaderRow && (
+        <div className="flex items-center gap-1 flex-wrap">
+          {hasSlotInfo && (
+            <div className="flex items-center bg-brown-900/80 border border-gold/25 rounded-md px-2 py-0.5 gap-1">
+              <span className="text-[10px] uppercase tracking-wide text-gold/70 font-semibold">Slots</span>
+              <span className="text-[11px] text-gold font-bold">
+                {slotsUsed}/{slotsMax}
+              </span>
+            </div>
+          )}
+          {totalTroopCount > 0 && (
+            <div className="flex items-center bg-brown-900/90 border border-gold/30 rounded-md px-2 py-0.5 gap-1">
+              <span className="text-[10px] uppercase tracking-wide text-gold/70 font-semibold">Total</span>
+              <span className="text-[11px] text-gold font-bold">{currencyFormat(totalTroopCount, 0)}</span>
+            </div>
+          )}
         </div>
       )}
-      {troops.map((defense) => (
-        <div
-          key={defense.slot}
-          className="flex items-center bg-brown-900/90 border border-gold/20 rounded-md px-1.5 py-0.5"
-          title={`Defense Slot ${defense.slot}`}
-        >
-          <span
-            className={`px-1.5 py-0.5 rounded text-[11px] font-bold border relative ${getTierStyle(defense.troops.tier)}`}
-          >
-            <span className="relative z-10">{defense.troops.tier}</span>
-          </span>
-          <ResourceIcon
-            withTooltip={false}
-            resource={
-              resources.find(
-                (r) =>
-                  r.id === getTroopResourceId(defense.troops.category as TroopType, defense.troops.tier as TroopTier),
-              )?.trait || ""
-            }
-            size="md"
-          />
-          <span className="text-[10px] text-gold/90 font-medium ml-1">
-            {currencyFormat(Number(defense.troops.count || 0), 0)}
-          </span>
+      <div className="flex items-end gap-2 flex-nowrap overflow-x-auto">
+        {troops
+          .slice()
+          .sort((a, b) => b.slot - a.slot)
+          .map((defense) => {
+            const troopCount = Number(defense.troops.count || 0);
+            const rawSlot = Number(defense.slot ?? 0);
+            const guardSlotKey = (
+              Object.prototype.hasOwnProperty.call(GUARD_SLOT_NAMES, rawSlot) ? rawSlot : rawSlot + 1
+            ) as GuardSlot;
+            const slotDisplayNumber = DISPLAYED_SLOT_NUMBER_MAP[guardSlotKey];
+            const slotIconSrc = SLOT_ICON_MAP[rawSlot] ?? SLOT_ICON_MAP[guardSlotKey];
+            const slotName = GUARD_SLOT_NAMES[guardSlotKey] ?? `Slot ${slotDisplayNumber}`;
+            const isEmptySlot = troopCount === 0;
+            const isSlotInteractive = isEmptySlot ? canOpenModal && hasAvailableDefenseSlot : canOpenModal;
+            const interactiveClasses = isSlotInteractive
+              ? "cursor-pointer hover:border-gold/50 hover:bg-gold/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
+              : "cursor-default";
+            const onSlotClick = () => {
+              if (!isSlotInteractive) return;
+              handleSlotOpen(guardSlotKey);
+            };
+            const onSlotKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+              if (!isSlotInteractive) return;
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onSlotClick();
+              }
+            };
+
+            const slotContent = isEmptySlot ? (
+              <div
+                className={`${baseSlotClasses} justify-center border border-dashed border-gold/30 bg-brown-900/20 text-[10px] uppercase tracking-wide font-semibold whitespace-nowrap flex items-center gap-1.5 ${interactiveClasses}`}
+                title={`Defense Slot ${slotDisplayNumber} is empty`}
+                role={isSlotInteractive ? "button" : undefined}
+                tabIndex={isSlotInteractive ? 0 : undefined}
+                onClick={isSlotInteractive ? onSlotClick : undefined}
+                onKeyDown={isSlotInteractive ? onSlotKeyDown : undefined}
+              >
+                {isSlotInteractive && <Plus className="h-3.5 w-3.5 text-gold" strokeWidth={2.5} />}
+                <span className={isSlotInteractive ? "text-gold" : "text-gold/60"}>
+                  {isSlotInteractive ? "Add Guard" : "Empty Slot"}
+                </span>
+              </div>
+            ) : (
+              <div
+                className={`${baseSlotClasses} bg-brown-900/90 border border-gold/20 whitespace-nowrap ${interactiveClasses}`}
+                title={`Defense Slot ${slotDisplayNumber}`}
+                role={isSlotInteractive ? "button" : undefined}
+                tabIndex={isSlotInteractive ? 0 : undefined}
+                onClick={isSlotInteractive ? onSlotClick : undefined}
+                onKeyDown={isSlotInteractive ? onSlotKeyDown : undefined}
+              >
+                <span
+                  className={`px-1 py-0.5 rounded text-[10px] font-bold border relative ${getTierStyle(defense.troops.tier)}`}
+                >
+                  <span className="relative z-10">{defense.troops.tier}</span>
+                </span>
+                <ResourceIcon
+                  withTooltip={false}
+                  resource={
+                    resources.find(
+                      (r) =>
+                        r.id ===
+                        getTroopResourceId(defense.troops.category as TroopType, defense.troops.tier as TroopTier),
+                    )?.trait || ""
+                  }
+                  size="sm"
+                />
+                <span className="text-[10px] text-gold/90 font-medium">{currencyFormat(troopCount, 0)}</span>
+              </div>
+            );
+
+            return (
+              <div key={`${rawSlot}-${guardSlotKey}`} className="flex flex-col items-center gap-1 min-w-[96px]">
+                {slotContent}
+                <div className="flex items-center gap-1">
+                  {slotIconSrc && (
+                    <img src={slotIconSrc} alt={`${slotName} icon`} className="h-8 w-8 object-contain" loading="lazy" />
+                  )}
+                  <span className="text-[10px] font-semibold text-gold/80">{slotDisplayNumber}</span>
+                </div>
+              </div>
+            );
+          })}
+        <div className="flex flex-col items-center gap-1 min-w-[72px] text-center">
+          <span className="text-[10px] uppercase tracking-wide text-gold/70">Incoming</span>
+          <div className="w-10 h-10 rounded-full border border-gold/40 flex items-center justify-center bg-brown-900/50">
+            <ArrowLeft className="w-4 h-4 text-gold/80" strokeWidth={2} />
+          </div>
+          <span className="text-[9px] text-gold/60">Enemy</span>
         </div>
-      ))}
+      </div>
     </div>
   );
 };
