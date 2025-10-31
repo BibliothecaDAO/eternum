@@ -173,9 +173,6 @@ export const StructureSelectPanel = memo(
       [isBlitz],
     );
 
-    const selectedGroupColor = structureGroups[Number(structureEntityId)] ?? null;
-    const selectedGroupConfig = selectedGroupColor ? STRUCTURE_GROUP_CONFIG[selectedGroupColor] : null;
-
     const structuresWithMetadata = useMemo<StructureWithMetadata[]>(() => {
       return structures.map((structure) => {
         const { name, originalName } = getStructureName(structure.structure, isBlitz);
@@ -200,6 +197,12 @@ export const StructureSelectPanel = memo(
         };
       });
     }, [favorites, structures, isBlitz, structureTypeNameMapping, structureGroups, components.StructureBuildings]);
+    const selectedGroupColor = structureGroups[Number(structureEntityId)] ?? null;
+    const selectedGroupConfig = selectedGroupColor ? STRUCTURE_GROUP_CONFIG[selectedGroupColor] : null;
+    const selectedStructureMetadata = useMemo(
+      () => structuresWithMetadata.find((structure) => structure.entityId === Number(structureEntityId)),
+      [structuresWithMetadata, structureEntityId],
+    );
     const filteredStructures = useMemo(() => {
       const normalizedSearch = searchTerm ? normalizeSearchValue(searchTerm) : "";
 
@@ -314,9 +317,6 @@ export const StructureSelectPanel = memo(
                 <span className={selectedGroupConfig ? selectedGroupConfig.textClass : ""}>
                   {selectedStructure.structure ? getStructureName(selectedStructure.structure, isBlitz).name : ""}
                 </span>
-                <span className="text-sm text-gold/70">
-                  Lvl {Number(selectedStructure.structure?.base?.level ?? 0)}
-                </span>
               </>
             </h5>
           </div>
@@ -340,8 +340,22 @@ export const StructureSelectPanel = memo(
             }
           }}
         >
-          <SelectTrigger className="truncate" onMouseEnter={() => playHover()}>
-            <SelectValue placeholder="Select Structure" />
+          <SelectTrigger className="truncate text-base font-semibold text-gold sm:text-lg" onMouseEnter={() => playHover()}>
+            <span className="sr-only">
+              <SelectValue placeholder="Select Structure" />
+            </span>
+            <div className="flex w-full items-center justify-between gap-2">
+              <div className="flex items-center gap-2 truncate">
+                {getStructureIcon(selectedStructure)}
+                {selectedGroupConfig && <span className={`h-2 w-2 rounded-full ${selectedGroupConfig.dotClass}`} />}
+                <span
+                  className={`truncate ${selectedGroupConfig ? selectedGroupConfig.textClass : ""}`}
+                >
+                  {selectedStructureMetadata?.name ??
+                    (selectedStructure.structure ? getStructureName(selectedStructure.structure, isBlitz).name : "")}
+                </span>
+              </div>
+            </div>
           </SelectTrigger>
           <SelectContent className="panel-wood bg-dark-wood -ml-2">
             <Tabs selectedIndex={activeTab} onChange={(index: number) => setActiveTab(index)} className="w-full">
@@ -495,85 +509,97 @@ export const StructureSelectPanel = memo(
                         {searchTerm ? "No structures match your search." : tab.emptyMessage}
                       </div>
                     ) : (
-                      tab.structures.map((structure) => (
-                        <div
-                          key={structure.entityId}
-                          className="flex flex-row items-center"
-                          onMouseEnter={() => playHover()}
-                        >
-                          <button
-                            className="p-1"
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              playClick();
-                              onToggleFavorite(structure.entityId);
-                            }}
+                      tab.structures.map((structure) => {
+                        const showRealmLevelLabel =
+                          structure.category === StructureType.Realm || structure.category === StructureType.Village;
+                        const hideStructureStats =
+                          structure.category === StructureType.FragmentMine ||
+                          structure.category === StructureType.Hyperstructure;
+                        const levelLabel = showRealmLevelLabel
+                          ? structure.realmLevelLabel
+                          : `Lvl ${structure.realmLevel}`;
+
+                        return (
+                          <div
+                            key={structure.entityId}
+                            className="flex flex-row items-center"
                             onMouseEnter={() => playHover()}
                           >
-                            <Star className={structure.isFavorite ? "h-4 w-4 fill-current" : "h-4 w-4"} />
-                          </button>
-                          <button
-                            className="p-1"
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              playClick();
-                              const nextColor = getNextStructureGroupColor(structure.groupColor ?? null);
-                              onUpdateStructureGroup(structure.entityId, nextColor);
-                            }}
-                            onMouseEnter={() => playHover()}
-                            title={
-                              structure.groupColor
-                                ? `Group: ${STRUCTURE_GROUP_CONFIG[structure.groupColor].label}`
-                                : "Assign group color"
-                            }
-                          >
-                            <Palette
-                              className={`h-4 w-4 ${
-                                structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor].textClass : ""
-                              }`}
-                            />
-                          </button>
-                          <button
-                            className="p-1"
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              playClick();
-                              setSelectOpen(false);
-                              onRequestNameChange(structure.structure);
-                            }}
-                            onMouseEnter={() => playHover()}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                          <SelectItem className="flex justify-between" value={structure.entityId?.toString() || ""}>
-                            <div className="self-center flex items-baseline gap-2 text-xl">
-                              <span className="flex items-center gap-2">
-                                {structure.groupColor && (
+                            <button
+                              className="p-1"
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                playClick();
+                                onToggleFavorite(structure.entityId);
+                              }}
+                              onMouseEnter={() => playHover()}
+                            >
+                              <Star className={structure.isFavorite ? "h-4 w-4 fill-current" : "h-4 w-4"} />
+                            </button>
+                            <button
+                              className="p-1"
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                playClick();
+                                const nextColor = getNextStructureGroupColor(structure.groupColor ?? null);
+                                onUpdateStructureGroup(structure.entityId, nextColor);
+                              }}
+                              onMouseEnter={() => playHover()}
+                              title={
+                                structure.groupColor
+                                  ? `Group: ${STRUCTURE_GROUP_CONFIG[structure.groupColor].label}`
+                                  : "Assign group color"
+                              }
+                            >
+                              <Palette
+                                className={`h-4 w-4 ${
+                                  structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor].textClass : ""
+                                }`}
+                              />
+                            </button>
+                            <button
+                              className="p-1"
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                playClick();
+                                setSelectOpen(false);
+                                onRequestNameChange(structure.structure);
+                              }}
+                              onMouseEnter={() => playHover()}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <SelectItem className="flex justify-between" value={structure.entityId?.toString() || ""}>
+                              <div className="self-center flex items-baseline gap-2 text-xl">
+                                <span className="flex items-center gap-2">
+                                  {structure.groupColor && (
+                                    <span
+                                      className={`h-2 w-2 rounded-full ${STRUCTURE_GROUP_CONFIG[structure.groupColor].dotClass}`}
+                                    />
+                                  )}
                                   <span
-                                    className={`h-2 w-2 rounded-full ${STRUCTURE_GROUP_CONFIG[structure.groupColor].dotClass}`}
-                                  />
-                                )}
-                                <span
-                                  className={
-                                    structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor].textClass : ""
-                                  }
-                                >
-                                  {structure.name}
+                                    className={
+                                      structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor].textClass : ""
+                                    }
+                                  >
+                                    {structure.name}
+                                  </span>
                                 </span>
-                              </span>
-                              <span className="text-xs text-gold/70">
-                                {structure.category === StructureType.Realm
-                                  ? structure.realmLevelLabel
-                                  : `Lvl ${structure.realmLevel}`}{" "}
-                                · Pop {structure.population}
-                              </span>
-                            </div>
-                          </SelectItem>
-                        </div>
-                      ))
+                                {!hideStructureStats && (
+                                  <span className="text-xs text-gold/70">
+                                    {levelLabel}
+                                    {" · "}
+                                    Pop {structure.population}
+                                  </span>
+                                )}
+                              </div>
+                            </SelectItem>
+                          </div>
+                        );
+                      })
                     )}
                   </Tabs.Panel>
                 ))}
