@@ -1,9 +1,15 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { currencyFormat } from "@/ui/utils/utils";
 import { PlayerRelicsData } from "@bibliothecadao/torii";
 import { ID, ResourcesIds } from "@bibliothecadao/types";
 import { memo, useMemo } from "react";
+
+interface PlayerRelicTrayProps {
+  variant?: "floating" | "embedded";
+  className?: string;
+}
 
 interface AggregatedRelic {
   resourceId: ID;
@@ -85,18 +91,51 @@ const resolveResourceKey = (resourceId: ID): string => {
   return resourceId.toString();
 };
 
-export const PlayerRelicTray = memo(() => {
+export const PlayerRelicTray = memo(({ variant = "floating", className }: PlayerRelicTrayProps = {}) => {
   const playerRelics = useUIStore((state) => state.playerRelics);
   const playerRelicsLoading = useUIStore((state) => state.playerRelicsLoading);
 
   const aggregatedRelics = useMemo(() => aggregateRelics(playerRelics), [playerRelics]);
+
+  if (variant === "embedded") {
+    return (
+      <div className={cn("flex h-full min-h-0 flex-col gap-3", className)}>
+        <div className="flex-1 min-h-0 overflow-auto">
+          {aggregatedRelics.length > 0 ? (
+            <div className="grid auto-cols-[minmax(48px,80px)] grid-flow-col gap-3 pb-1">
+              {aggregatedRelics.map((relic) => {
+                const resourceKey = resolveResourceKey(relic.resourceId);
+                return (
+                  <div key={`${relic.resourceId}`} className="relative flex flex-col items-center gap-1 text-center">
+                    <ResourceIcon resource={resourceKey} size="lg" withTooltip />
+                    <span className="rounded-full bg-black/70 px-2 text-[11px] font-semibold uppercase tracking-wide text-gold/80">
+                      {relic.displayAmount}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex h-full items-center justify-center rounded-xl border border-white/10 bg-white/5 text-xs text-slate-200/60">
+              No relics discovered yet.
+            </div>
+          )}
+        </div>
+        {playerRelicsLoading && (
+          <div className="flex items-center gap-2 text-xs text-slate-200/70">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-gold/70" /> Refreshing relic data…
+          </div>
+        )}
+      </div>
+    );
+  }
 
   if (aggregatedRelics.length === 0) {
     return null;
   }
 
   return (
-    <div className="pointer-events-auto p-3 ml-auto">
+    <div className={cn("pointer-events-auto ml-auto p-3", className)}>
       <div className="relative inline-flex items-center gap-2 rounded-2xl border border-gold/30 bg-black/70 px-3 py-2 shadow-[0_10px_24px_rgba(0,0,0,0.45)] backdrop-blur-md">
         <span className="text-[10px] font-semibold uppercase tracking-[0.35em] text-gold/60">Relics</span>
         <div className="flex flex-wrap items-center justify-end gap-3">

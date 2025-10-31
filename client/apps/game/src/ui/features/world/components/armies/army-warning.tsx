@@ -69,6 +69,8 @@ export const ArmyWarning = ({ army, explorerResources, structureResources }: Arm
     return configManager.getExploreStaminaCost();
   }, []);
 
+  const hasWarnings = stamina.amount < minStaminaNeeded || notEnoughFood;
+
   return (
     <div className="flex flex-col gap-0.5 mt-1 mb-1">
       {stamina.amount < minStaminaNeeded && (
@@ -96,6 +98,14 @@ export const ArmyWarning = ({ army, explorerResources, structureResources }: Arm
               {missingWheat > 0 && missingFish > 0 && " and "}
               {missingFish > 0 && `${formatNumber(Number(missingFish), 0)} fish`}
             </span>
+          </div>
+        </div>
+      )}
+      {!hasWarnings && (
+        <div className="text-xxs font-semibold text-center bg-green/20 text-green rounded px-1 py-0.5">
+          <div className="flex">
+            <span className="w-5">✓</span>
+            <span>Enough food and stamina</span>
           </div>
         </div>
       )}
