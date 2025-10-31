@@ -51,13 +51,23 @@ export const ArmyBannerEntityDetail = memo(
 
     const smallTextClass = compact ? "text-xxs" : "text-xs";
     const sectionTitleClass = `${smallTextClass} font-semibold uppercase tracking-[0.2em] text-gold/80`;
+    const hasRelicEffects = relicEffects.length > 0;
 
     return (
-      <div className={cn("flex h-full min-h-0 flex-col gap-2 overflow-hidden", className)}>
-        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden xl:flex-row">
-          <div className="flex flex-shrink-0 flex-col gap-2 xl:max-w-sm">
+      <div className={cn("flex h-full min-h-0 flex-col gap-2 overflow-auto", className)}>
+        <div className="flex min-h-0 flex-1 flex-col gap-2  xl:flex-row">
+          <div
+            className={cn("flex flex-col gap-2", {
+              "flex-shrink-0 xl:max-w-sm": hasRelicEffects,
+              "flex-1 w-full": !hasRelicEffects,
+            })}
+          >
             {structureResources && explorerResources && (
-              <div className="rounded-lg border border-gold/20 bg-dark/60 px-3 py-2">
+              <div
+                className={cn("rounded-lg border border-gold/20 bg-dark/60 px-3 py-2", {
+                  "w-full": !hasRelicEffects,
+                })}
+              >
                 <ArmyWarning
                   army={explorer}
                   explorerResources={explorerResources}
@@ -68,13 +78,15 @@ export const ArmyBannerEntityDetail = memo(
             {bannerArmyInfo && (
               <ArmyChip
                 army={bannerArmyInfo}
-                className="border border-gold/25 bg-dark/60"
+                className={cn("border border-gold/25 bg-dark/60", {
+                  "w-full": !hasRelicEffects,
+                })}
                 showButtons={showButtons && derivedData.isMine}
               />
             )}
           </div>
 
-          {relicEffects.length > 0 && (
+          {hasRelicEffects && (
             <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
               <div className="rounded-lg border border-gold/20 bg-dark-brown/70 px-3 py-2 shadow-md">
                 <div className={`${sectionTitleClass} mb-2`}>Active Relic Effects</div>
