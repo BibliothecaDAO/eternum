@@ -1,7 +1,9 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { Tabs } from "@/ui/design-system/atoms";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import { getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import type { ClientComponents, ID, Structure } from "@bibliothecadao/types";
 import {
   BlitzStructureTypeToNameMapping,
@@ -10,9 +12,13 @@ import {
   StructureType,
 } from "@bibliothecadao/types";
 import type { ComponentValue } from "@dojoengine/recs";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
   Crown,
   EyeIcon,
+  ArrowDownWideNarrow,
+  ArrowUpWideNarrow,
   Landmark,
   Palette,
   Pencil,
@@ -26,13 +32,7 @@ import {
 
 import { useUISound } from "@/audio/hooks/useUISound";
 import type { getEntityInfo } from "@bibliothecadao/eternum";
-import {
-  STRUCTURE_GROUP_COLORS,
-  STRUCTURE_GROUP_CONFIG,
-  StructureGroupColor,
-  StructureGroupsMap,
-  getNextStructureGroupColor,
-} from "./structure-groups";
+import { STRUCTURE_GROUP_CONFIG, StructureGroupColor, StructureGroupsMap, getNextStructureGroupColor } from "./structure-groups";
 
 export type SelectedStructure = ReturnType<typeof getEntityInfo> & { isFavorite: boolean };
 
@@ -57,14 +57,31 @@ const structureIcons: Record<string, JSX.Element> = {
   ReadOnly: <EyeIcon />,
 };
 
-const SORT_OPTIONS = [
-  { value: "name" as const, label: "Name (A-Z)" },
-  { value: "realmLevel" as const, label: "Realm Level (High-Low)" },
-] as const;
+type SortMode = "id" | "realmLevelPopulation";
+type SortDirection = "asc" | "desc";
 
-type SortOptionValue = (typeof SORT_OPTIONS)[number]["value"];
-type CategoryFilterValue = "all" | `${StructureType}`;
-type GroupFilterValue = "all" | "none" | StructureGroupColor;
+type StructureTab = {
+  key: string;
+  label: string;
+  categories: StructureType[];
+  emptyMessage: string;
+};
+
+type StructureTabWithItems = StructureTab & {
+  structures: StructureWithMetadata[];
+  count: number;
+};
+
+type StructureWithMetadata = Structure & {
+  isFavorite: boolean;
+  name: string;
+  originalName: string;
+  realmLevel: number;
+  population: number;
+  populationCapacity: number;
+  categoryName: string;
+  groupColor: StructureGroupColor | null;
+};
 
 const normalizeSearchValue = (value: string) =>
   value
@@ -103,28 +120,64 @@ export const StructureSelectPanel = memo(
   }: StructureSelectPanelProps) => {
     const [selectOpen, setSelectOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
-    const [sortOption, setSortOption] = useState<SortOptionValue>("name");
-    const [categoryFilter, setCategoryFilter] = useState<CategoryFilterValue>("all");
-    const [groupFilter, setGroupFilter] = useState<GroupFilterValue>("all");
+    const [sortMode, setSortMode] = useState<SortMode>("id");
+    const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+    const [activeTab, setActiveTab] = useState(0);
     const searchInputRef = useRef<HTMLInputElement>(null);
 
     const playHover = useUISound("ui.hover");
     const playClick = useUISound("ui.click");
+    const {
+      setup: { components },
+    } = useDojo();
 
     const isBlitz = useMemo(() => getIsBlitz(), []);
     const structureTypeNameMapping = useMemo(
       () => (isBlitz ? BlitzStructureTypeToNameMapping : EternumStructureTypeToNameMapping),
       [isBlitz],
     );
+    const structureTabs = useMemo<StructureTab[]>(
+      () => [
+        {
+          key: "realms",
+          label: "Realms",
+          categories: [StructureType.Realm],
+          emptyMessage: "No realms available",
+        },
+        {
+          key: "camps",
+          label: isBlitz ? "Camps" : "Villages",
+          categories: [StructureType.Village],
+          emptyMessage: isBlitz ? "No camps available" : "No villages available",
+        },
+        {
+          key: "rifts",
+          label: isBlitz ? "Rifts" : "Fragment Mines",
+          categories: [StructureType.FragmentMine],
+          emptyMessage: isBlitz ? "No rifts available" : "No fragment mines available",
+        },
+        {
+          key: "hyperstructures",
+          label: "Hyperstructures",
+          categories: [StructureType.Hyperstructure],
+          emptyMessage: "No hyperstructures available",
+        },
+      ],
+      [isBlitz],
+    );
 
     const selectedGroupColor = structureGroups[Number(structureEntityId)] ?? null;
     const selectedGroupConfig = selectedGroupColor ? STRUCTURE_GROUP_CONFIG[selectedGroupColor] : null;
 
-    const structuresWithMetadata = useMemo(() => {
+    const structuresWithMetadata = useMemo<StructureWithMetadata[]>(() => {
       return structures.map((structure) => {
         const { name, originalName } = getStructureName(structure.structure, isBlitz);
         const rawLevel = structure.structure.base?.level;
         const realmLevel = Number(rawLevel ?? 0);
+        const structureEntity = getEntityIdFromKeys([BigInt(structure.entityId)]);
+        const structureBuildings = getComponentValue(components.StructureBuildings, structureEntity);
+        const population = Number(structureBuildings?.population.current ?? 0);
+        const populationCapacity = Number(structureBuildings?.population.max ?? 0);
 
         return {
           ...structure,
@@ -132,123 +185,91 @@ export const StructureSelectPanel = memo(
           name,
           originalName,
           realmLevel,
+          population,
+          populationCapacity,
           categoryName: structureTypeNameMapping[structure.category] ?? "Unknown",
           groupColor: structureGroups[structure.entityId] ?? null,
         };
       });
-    }, [favorites, structures, isBlitz, structureTypeNameMapping, structureGroups]);
-
-    const categoryOptions = useMemo(() => {
-      const uniqueCategories = new Set<StructureType>();
-
-      structures.forEach((structure) => {
-        if (structure.category) {
-          uniqueCategories.add(structure.category);
-        }
-      });
-
-      return [
-        { value: "all" as CategoryFilterValue, label: "All categories" },
-        ...Array.from(uniqueCategories)
-          .sort((a, b) => {
-            const nameA = structureTypeNameMapping[a] ?? "";
-            const nameB = structureTypeNameMapping[b] ?? "";
-            return nameA.localeCompare(nameB);
-          })
-          .map((category) => ({
-            value: category.toString() as CategoryFilterValue,
-            label: structureTypeNameMapping[category] ?? "Unknown",
-          })),
-      ];
-    }, [structureTypeNameMapping, structures]);
-
-    const groupOptions = useMemo(
-      () =>
-        [
-          { value: "all" as GroupFilterValue, label: "All groups", type: "meta" as const },
-          { value: "none" as GroupFilterValue, label: "No color", type: "meta" as const },
-          ...STRUCTURE_GROUP_COLORS.map((option) => ({
-            value: option.value as GroupFilterValue,
-            label: option.label,
-            type: "color" as const,
-            color: option.value,
-          })),
-        ] satisfies Array<
-          | { value: GroupFilterValue; label: string; type: "meta" }
-          | { value: GroupFilterValue; label: string; type: "color"; color: StructureGroupColor }
-        >,
-      [],
-    );
-
+    }, [favorites, structures, isBlitz, structureTypeNameMapping, structureGroups, components.StructureBuildings]);
     const filteredStructures = useMemo(() => {
       const normalizedSearch = searchTerm ? normalizeSearchValue(searchTerm) : "";
 
-      return structuresWithMetadata.filter((structure) => {
-        if (categoryFilter !== "all" && structure.category.toString() !== categoryFilter) {
-          return false;
-        }
-
-        if (groupFilter !== "all") {
-          if (groupFilter === "none" && structure.groupColor !== null) {
-            return false;
-          }
-
-          if (groupFilter !== "none" && structure.groupColor !== groupFilter) {
-            return false;
-          }
-        }
-
-        if (!normalizedSearch) {
-          return true;
-        }
-
-        return normalizeSearchValue(structure.name).includes(normalizedSearch);
-      });
-    }, [structuresWithMetadata, categoryFilter, groupFilter, searchTerm]);
-
-    const sortedStructures = useMemo(() => {
-      return [...filteredStructures].sort((a, b) => {
-        const favoriteCompare = Number(b.isFavorite) - Number(a.isFavorite);
-        if (favoriteCompare !== 0) {
-          return favoriteCompare;
-        }
-
-        if (sortOption === "realmLevel") {
-          const levelDifference = b.realmLevel - a.realmLevel;
-          if (levelDifference !== 0) {
-            return levelDifference;
-          }
-        }
-
-        return a.name.localeCompare(b.name);
-      });
-    }, [filteredStructures, sortOption]);
-
-    useEffect(() => {
-      if (categoryFilter === "all") {
-        return;
+      if (!normalizedSearch) {
+        return structuresWithMetadata;
       }
 
-      const categoryStillExists = structuresWithMetadata.some(
-        (structure) => structure.category.toString() === categoryFilter,
+      return structuresWithMetadata.filter((structure) =>
+        normalizeSearchValue(structure.name).includes(normalizedSearch),
       );
+    }, [structuresWithMetadata, searchTerm]);
 
-      if (!categoryStillExists) {
-        setCategoryFilter("all");
-      }
-    }, [categoryFilter, structuresWithMetadata]);
+    const sortStructures = useCallback(
+      (structuresList: StructureWithMetadata[]) => {
+        return [...structuresList].sort((a, b) => {
+          const favoriteCompare = Number(b.isFavorite) - Number(a.isFavorite);
+          if (favoriteCompare !== 0) {
+            return favoriteCompare;
+          }
+
+          if (sortMode === "id") {
+            const idDifference = Number(a.entityId) - Number(b.entityId);
+            if (idDifference !== 0) {
+              return sortDirection === "asc" ? idDifference : -idDifference;
+            }
+            return 0;
+          }
+
+          const levelDifference = a.realmLevel - b.realmLevel;
+          if (levelDifference !== 0) {
+            return sortDirection === "asc" ? levelDifference : -levelDifference;
+          }
+
+          const populationDifference = a.population - b.population;
+          if (populationDifference !== 0) {
+            return sortDirection === "asc" ? populationDifference : -populationDifference;
+          }
+
+          const idFallback = Number(a.entityId) - Number(b.entityId);
+          return sortDirection === "asc" ? idFallback : -idFallback;
+        });
+      },
+      [sortMode, sortDirection],
+    );
+
+    const tabbedStructures = useMemo<StructureTabWithItems[]>(() => {
+      return structureTabs.map((tab) => {
+        const tabStructures = filteredStructures.filter((structure) => tab.categories.includes(structure.category));
+        const sorted = sortStructures(tabStructures);
+        return {
+          ...tab,
+          structures: sorted,
+          count: sorted.length,
+        };
+      });
+    }, [filteredStructures, structureTabs, sortStructures]);
+
+    const activeTabStructures = useMemo(
+      () => tabbedStructures[activeTab]?.structures ?? [],
+      [activeTab, tabbedStructures],
+    );
 
     useEffect(() => {
-      if (groupFilter === "all" || groupFilter === "none") {
+      if (activeTab >= tabbedStructures.length) {
+        setActiveTab(0);
         return;
       }
 
-      const groupStillExists = structuresWithMetadata.some((structure) => structure.groupColor === groupFilter);
-
-      if (!groupStillExists) {
-        setGroupFilter("all");
+      const currentTab = tabbedStructures[activeTab];
+      if (currentTab && currentTab.structures.length > 0) {
+        return;
       }
-    }, [groupFilter, structuresWithMetadata]);
+
+      const nextAvailableIndex = tabbedStructures.findIndex((tab) => tab.structures.length > 0);
+      if (nextAvailableIndex !== -1 && nextAvailableIndex !== activeTab) {
+        setActiveTab(nextAvailableIndex);
+      }
+    }, [activeTab, tabbedStructures]);
 
     const handleSelectStructure = useCallback(
       (entityId: ID) => {
@@ -314,178 +335,213 @@ export const StructureSelectPanel = memo(
             <SelectValue placeholder="Select Structure" />
           </SelectTrigger>
           <SelectContent className="panel-wood bg-dark-wood -ml-2">
-            <div className="sticky top-0 p-2 bg-dark-wood border-b border-gold/20 z-50 space-y-2">
-              <div className="relative">
-                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gold/60" />
-                <input
-                  type="text"
-                  placeholder="Search structures..."
-                  value={searchTerm}
-                  onChange={(event) => {
-                    const { value } = event.target;
-                    setSearchTerm(value);
-                    window.requestAnimationFrame(() => {
-                      searchInputRef.current?.focus();
-                    });
-                  }}
-                  autoFocus
-                  onKeyDown={(event) => {
-                    event.stopPropagation();
-                    if (event.key === "Enter" && sortedStructures.length > 0) {
-                      handleSelectStructure(toEntityId(sortedStructures[0].entityId));
-                    }
-                  }}
-                  className="w-full pl-8 pr-3 py-1 bg-brown/20 border border-gold/30 rounded text-sm text-gold placeholder-gold/60 focus:outline-none focus:border-gold/60"
-                  onClick={(event) => event.stopPropagation()}
-                  ref={searchInputRef}
-                />
-                {searchTerm && (
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      playClick();
-                      setSearchTerm("");
-                      searchInputRef.current?.focus();
+            <Tabs selectedIndex={activeTab} onChange={(index: number) => setActiveTab(index)} className="w-full">
+              <div className="sticky top-0 z-50 space-y-3 border-b border-gold/20 bg-dark-wood p-2">
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gold/60" />
+                  <input
+                    type="text"
+                    placeholder="Search structures..."
+                    value={searchTerm}
+                    onChange={(event) => {
+                      const { value } = event.target;
+                      setSearchTerm(value);
+                      window.requestAnimationFrame(() => {
+                        searchInputRef.current?.focus();
+                      });
                     }}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gold/60 hover:text-gold"
-                    onMouseEnter={() => playHover()}
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                )}
-              </div>
-              <div
-                className="flex flex-col gap-2 sm:flex-row sm:flex-wrap"
-                onPointerDown={(event) => event.stopPropagation()}
-                onClick={(event) => event.stopPropagation()}
-                onKeyDown={(event) => event.stopPropagation()}
-              >
-                {/* Prevent nested select interactions from collapsing the main selector */}
-                <Select value={sortOption} onValueChange={(value) => setSortOption(value as SortOptionValue)}>
-                  <SelectTrigger className="h-8 bg-brown/20 border border-gold/30 rounded text-xs text-gold px-3 py-1">
-                    <SelectValue placeholder="Order by" />
-                  </SelectTrigger>
-                  <SelectContent className="panel-wood bg-dark-wood">
-                    {SORT_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value} className="text-xs">
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={categoryFilter}
-                  onValueChange={(value) => setCategoryFilter(value as CategoryFilterValue)}
-                >
-                  <SelectTrigger className="h-8 bg-brown/20 border border-gold/30 rounded text-xs text-gold px-3 py-1">
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent className="panel-wood bg-dark-wood max-h-60 overflow-y-auto">
-                    {categoryOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value} className="text-xs">
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={groupFilter} onValueChange={(value) => setGroupFilter(value as GroupFilterValue)}>
-                  <SelectTrigger className="h-8 bg-brown/20 border border-gold/30 rounded text-xs text-gold px-3 py-1">
-                    <SelectValue placeholder="Group" />
-                  </SelectTrigger>
-                  <SelectContent className="panel-wood bg-dark-wood max-h-60 overflow-y-auto">
-                    {groupOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value} className="text-xs">
-                        {option.type === "color" ? (
-                          <div className="flex items-center gap-2">
-                            <span className={`h-3 w-3 rounded-full ${STRUCTURE_GROUP_CONFIG[option.color].dotClass}`} />
-                            <span className="sr-only">{option.label}</span>
-                          </div>
-                        ) : (
-                          option.label
-                        )}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            {sortedStructures.length === 0 ? (
-              <div className="p-4 text-center text-gold/60 text-sm">
-                {searchTerm || categoryFilter !== "all" || groupFilter !== "all"
-                  ? "No structures found"
-                  : "No structures available"}
-              </div>
-            ) : (
-              sortedStructures.map((structure) => (
-                <div key={structure.entityId} className="flex flex-row items-center" onMouseEnter={() => playHover()}>
-                  <button
-                    className="p-1"
-                    type="button"
-                    onClick={(event) => {
+                    autoFocus
+                    onKeyDown={(event) => {
                       event.stopPropagation();
-                      playClick();
-                      onToggleFavorite(structure.entityId);
+                      if (event.key === "Enter" && activeTabStructures.length > 0) {
+                        handleSelectStructure(toEntityId(activeTabStructures[0].entityId));
+                      }
                     }}
-                    onMouseEnter={() => playHover()}
-                  >
-                    <Star className={structure.isFavorite ? "h-4 w-4 fill-current" : "h-4 w-4"} />
-                  </button>
-                  <button
-                    className="p-1"
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      playClick();
-                      const nextColor = getNextStructureGroupColor(structure.groupColor ?? null);
-                      onUpdateStructureGroup(structure.entityId, nextColor);
-                    }}
-                    onMouseEnter={() => playHover()}
-                    title={
-                      structure.groupColor
-                        ? `Group: ${STRUCTURE_GROUP_CONFIG[structure.groupColor].label}`
-                        : "Assign group color"
-                    }
-                  >
-                    <Palette
-                      className={`h-4 w-4 ${
-                        structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor].textClass : ""
-                      }`}
-                    />
-                  </button>
-                  <button
-                    className="p-1"
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      playClick();
-                      setSelectOpen(false);
-                      onRequestNameChange(structure.structure);
-                    }}
-                    onMouseEnter={() => playHover()}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <SelectItem className="flex justify-between" value={structure.entityId?.toString() || ""}>
-                    <div className="self-center flex items-baseline gap-2 text-xl">
-                      <span className="flex items-center gap-2">
-                        {structure.groupColor && (
-                          <span
-                            className={`h-2 w-2 rounded-full ${STRUCTURE_GROUP_CONFIG[structure.groupColor].dotClass}`}
-                          />
-                        )}
-                        <span
-                          className={structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor].textClass : ""}
-                        >
-                          {structure.name}
-                        </span>
-                      </span>
-                      <span className="text-sm text-gold/70">Lvl {structure.realmLevel}</span>
-                    </div>
-                  </SelectItem>
+                    className="w-full rounded border border-gold/30 bg-brown/20 py-1 pl-8 pr-3 text-sm text-gold placeholder-gold/60 focus:border-gold/60 focus:outline-none"
+                    onClick={(event) => event.stopPropagation()}
+                    ref={searchInputRef}
+                  />
+                  {searchTerm && (
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        playClick();
+                        setSearchTerm("");
+                        searchInputRef.current?.focus();
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gold/60 hover:text-gold"
+                      onMouseEnter={() => playHover()}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
                 </div>
-              ))
-            )}
+                <div
+                  className="flex flex-col gap-2"
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={(event) => event.stopPropagation()}
+                  onKeyDown={(event) => event.stopPropagation()}
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      className={`h-8 rounded border px-3 py-1 text-xs transition-colors ${
+                        sortMode === "id"
+                          ? "border-gold/60 bg-gold/20 text-gold"
+                          : "border-gold/30 bg-brown/20 text-gold/70 hover:border-gold/50"
+                      }`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        playClick();
+                        if (sortMode !== "id") {
+                          setSortMode("id");
+                          setSortDirection("asc");
+                        }
+                      }}
+                      onMouseEnter={() => playHover()}
+                    >
+                      ID
+                    </button>
+                    <button
+                      type="button"
+                      className={`h-8 rounded border px-3 py-1 text-xs transition-colors ${
+                        sortMode === "realmLevelPopulation"
+                          ? "border-gold/60 bg-gold/20 text-gold"
+                          : "border-gold/30 bg-brown/20 text-gold/70 hover:border-gold/50"
+                      }`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        playClick();
+                        if (sortMode !== "realmLevelPopulation") {
+                          setSortMode("realmLevelPopulation");
+                          setSortDirection("desc");
+                        }
+                      }}
+                      onMouseEnter={() => playHover()}
+                    >
+                      Realm Level & Population
+                    </button>
+                    <button
+                      type="button"
+                      className="flex h-8 items-center justify-center rounded border border-gold/40 bg-brown/20 px-2 text-gold hover:border-gold/60"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        playClick();
+                        setSortDirection((direction) => (direction === "desc" ? "asc" : "desc"));
+                      }}
+                      onMouseEnter={() => playHover()}
+                      aria-label="Toggle sort direction"
+                      title={sortDirection === "desc" ? "Sort descending" : "Sort ascending"}
+                    >
+                      {sortDirection === "desc" ? (
+                        <ArrowDownWideNarrow className="h-4 w-4" />
+                      ) : (
+                        <ArrowUpWideNarrow className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                  <Tabs.List className="flex flex-wrap gap-2">
+                    {tabbedStructures.map((tab) => (
+                      <Tabs.Tab key={tab.key}>
+                        <div className="flex items-center gap-2">
+                          <span>{tab.label}</span>
+                          <span className="text-xs text-gold/60">{tab.count}</span>
+                        </div>
+                      </Tabs.Tab>
+                    ))}
+                  </Tabs.List>
+                </div>
+              </div>
+              <Tabs.Panels className="max-h-72 overflow-y-auto">
+                {tabbedStructures.map((tab) => (
+                  <Tabs.Panel key={tab.key} className="space-y-0">
+                    {tab.structures.length === 0 ? (
+                      <div className="p-4 text-center text-sm text-gold/60">
+                        {searchTerm ? "No structures match your search." : tab.emptyMessage}
+                      </div>
+                    ) : (
+                      tab.structures.map((structure) => (
+                        <div
+                          key={structure.entityId}
+                          className="flex flex-row items-center"
+                          onMouseEnter={() => playHover()}
+                        >
+                          <button
+                            className="p-1"
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              playClick();
+                              onToggleFavorite(structure.entityId);
+                            }}
+                            onMouseEnter={() => playHover()}
+                          >
+                            <Star className={structure.isFavorite ? "h-4 w-4 fill-current" : "h-4 w-4"} />
+                          </button>
+                          <button
+                            className="p-1"
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              playClick();
+                              const nextColor = getNextStructureGroupColor(structure.groupColor ?? null);
+                              onUpdateStructureGroup(structure.entityId, nextColor);
+                            }}
+                            onMouseEnter={() => playHover()}
+                            title={
+                              structure.groupColor
+                                ? `Group: ${STRUCTURE_GROUP_CONFIG[structure.groupColor].label}`
+                                : "Assign group color"
+                            }
+                          >
+                            <Palette
+                              className={`h-4 w-4 ${
+                                structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor].textClass : ""
+                              }`}
+                            />
+                          </button>
+                          <button
+                            className="p-1"
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              playClick();
+                              setSelectOpen(false);
+                              onRequestNameChange(structure.structure);
+                            }}
+                            onMouseEnter={() => playHover()}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <SelectItem className="flex justify-between" value={structure.entityId?.toString() || ""}>
+                            <div className="self-center flex items-baseline gap-2 text-xl">
+                              <span className="flex items-center gap-2">
+                                {structure.groupColor && (
+                                  <span
+                                    className={`h-2 w-2 rounded-full ${STRUCTURE_GROUP_CONFIG[structure.groupColor].dotClass}`}
+                                  />
+                                )}
+                                <span
+                                  className={
+                                    structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor].textClass : ""
+                                  }
+                                >
+                                  {structure.name}
+                                </span>
+                              </span>
+                              <span className="text-xs text-gold/70">
+                                Lvl {structure.realmLevel} · Pop {structure.population}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        </div>
+                      ))
+                    )}
+                  </Tabs.Panel>
+                ))}
+              </Tabs.Panels>
+            </Tabs>
           </SelectContent>
         </Select>
       </div>
