@@ -16,9 +16,7 @@ export const HudPanel = ({ title, icon, actions, children, className }: HudPanel
         className ?? ""
       }`}
     >
-      <div className="flex-1 min-h-0 overflow-hidden">
-        {children}
-      </div>
+      <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
     </section>
   );
 };

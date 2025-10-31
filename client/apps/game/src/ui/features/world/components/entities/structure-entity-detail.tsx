@@ -158,7 +158,9 @@ export const StructureEntityDetail = memo(
             <div className={panelClasses()}>
               <div className="flex items-center justify-between gap-2">
                 <div className={sectionTitleClass}>Construction Progress</div>
-                <div className="rounded-full bg-gold/20 px-2 py-1 text-xs font-semibold">{progress?.percentage ?? 0}%</div>
+                <div className="rounded-full bg-gold/20 px-2 py-1 text-xs font-semibold">
+                  {progress?.percentage ?? 0}%
+                </div>
               </div>
               <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-dark/50">
                 <div

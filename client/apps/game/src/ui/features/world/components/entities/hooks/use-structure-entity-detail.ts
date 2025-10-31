@@ -18,13 +18,7 @@ import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { displayAddress } from "@/ui/utils/utils";
 import { useDojo } from "@bibliothecadao/react";
 import { getStructureFromToriiClient } from "@bibliothecadao/torii";
-import {
-  ContractAddress,
-  ID,
-  MERCENARIES,
-  RelicEffectWithEndTick,
-  StructureType,
-} from "@bibliothecadao/types";
+import { ContractAddress, ID, MERCENARIES, RelicEffectWithEndTick, StructureType } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
 
@@ -96,9 +90,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
 
       const hyperstructureRealmCount =
         structure.base.category === StructureType.Hyperstructure
-          ? MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).getHyperstructureRealmCount(
-              structure.entity_id,
-            )
+          ? MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).getHyperstructureRealmCount(structure.entity_id)
           : undefined;
 
       return {
@@ -230,11 +222,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
 
   const handleViewStructure = useCallback(() => {
     if (!structure) return;
-    goToStructure(
-      structureEntityId,
-      new Position({ x: structure.base.coord_x, y: structure.base.coord_y }),
-      false,
-    );
+    goToStructure(structureEntityId, new Position({ x: structure.base.coord_x, y: structure.base.coord_y }), false);
   }, [goToStructure, structure, structureEntityId]);
 
   return {

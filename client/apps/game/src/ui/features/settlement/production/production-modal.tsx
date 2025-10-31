@@ -70,12 +70,8 @@ const ProductionContainer = ({
   );
 
   return (
-    <div
-      className="production-modal-selector container mx-auto grid h-full grid-cols-1 gap-4 rounded-2xl bg-dark-wood lg:grid-cols-12 lg:gap-0"
-    >
-      <div
-        className="order-1 col-span-1 overflow-y-auto border-b border-gold/20 p-4 pb-8 panel-wood-right lg:order-1 lg:col-span-4 lg:border-b-0 lg:border-r lg:border-gold/20 lg:pb-36"
-      >
+    <div className="production-modal-selector container mx-auto grid h-full grid-cols-1 gap-4 rounded-2xl bg-dark-wood lg:grid-cols-12 lg:gap-0">
+      <div className="order-1 col-span-1 overflow-y-auto border-b border-gold/20 p-4 pb-8 panel-wood-right lg:order-1 lg:col-span-4 lg:border-b-0 lg:border-r lg:border-gold/20 lg:pb-36">
         <Suspense fallback={<LoadingAnimation />}>
           {playerStructures.length > 0 && (
             <ProductionSidebar

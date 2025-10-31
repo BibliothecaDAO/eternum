@@ -16,7 +16,12 @@ export const ChestBannerEntityDetail = memo(
 
     if (compact) {
       return (
-        <div className={cn("flex flex-col gap-1 rounded-lg border border-gold/30 bg-dark/60 p-3 text-xs text-gold/80", className)}>
+        <div
+          className={cn(
+            "flex flex-col gap-1 rounded-lg border border-gold/30 bg-dark/60 p-3 text-xs text-gold/80",
+            className,
+          )}
+        >
           <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">World Item</span>
           <span className="text-lg font-bold text-gold">{chestName}</span>
           <span className="text-xxs text-gold/70">Crate #{chestEntityId}</span>

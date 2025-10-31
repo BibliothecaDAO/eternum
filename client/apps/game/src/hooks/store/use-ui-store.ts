@@ -264,8 +264,7 @@ export const useUIStore = create(
     setShowMinimap: (show: boolean) => set({ showMinimap: show }),
     isBottomHudMinimized: false,
     setIsBottomHudMinimized: (minimized: boolean) => set({ isBottomHudMinimized: minimized }),
-    toggleBottomHudMinimized: () =>
-      set((state) => ({ isBottomHudMinimized: !state.isBottomHudMinimized })),
+    toggleBottomHudMinimized: () => set((state) => ({ isBottomHudMinimized: !state.isBottomHudMinimized })),
     selectedPlayer: null,
     setSelectedPlayer: (player: ContractAddress | null) => set({ selectedPlayer: player }),
     hasAcceptedTS: localStorage.getItem("hasAcceptedTS") ? localStorage.getItem("hasAcceptedTS") === "true" : false,
@@ -283,9 +282,7 @@ export const useUIStore = create(
     ...createRealmStoreSlice(set),
     ...createWorldStoreSlice(set),
     // labor
-    useSimpleCost: localStorage.getItem("useSimpleCost")
-      ? localStorage.getItem("useSimpleCost") === "true"
-      : true,
+    useSimpleCost: localStorage.getItem("useSimpleCost") ? localStorage.getItem("useSimpleCost") === "true" : true,
     setUseSimpleCost: (useSimpleCost: boolean) => {
       set({ useSimpleCost });
       localStorage.setItem("useSimpleCost", String(useSimpleCost));

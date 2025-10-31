@@ -17,7 +17,12 @@ interface QuestEntityDetailProps {
   layout?: "default" | "banner";
 }
 
-export const QuestEntityDetail = ({ questEntityId, compact = false, className, layout = "default" }: QuestEntityDetailProps) => {
+export const QuestEntityDetail = ({
+  questEntityId,
+  compact = false,
+  className,
+  layout = "default",
+}: QuestEntityDetailProps) => {
   const {
     setup: { components },
   } = useDojo();
