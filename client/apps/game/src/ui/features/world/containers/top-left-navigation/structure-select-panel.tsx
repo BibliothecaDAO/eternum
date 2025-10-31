@@ -431,27 +431,6 @@ export const StructureSelectPanel = memo(
                     <button
                       type="button"
                       className={`h-8 rounded border px-3 py-1 text-xs transition-colors ${
-                        sortMode === "population"
-                          ? "border-gold/60 bg-gold/20 text-gold"
-                          : "border-gold/30 bg-brown/20 text-gold/70 hover:border-gold/50"
-                      }`}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        playClick();
-                        if (sortMode !== "population") {
-                          setSortMode("population");
-                          setSortDirection("asc");
-                        } else {
-                          setSortDirection("asc");
-                        }
-                      }}
-                      onMouseEnter={() => playHover()}
-                    >
-                      Population
-                    </button>
-                    <button
-                      type="button"
-                      className={`h-8 rounded border px-3 py-1 text-xs transition-colors ${
                         sortMode === "realmLevel"
                           ? "border-gold/60 bg-gold/20 text-gold"
                           : "border-gold/30 bg-brown/20 text-gold/70 hover:border-gold/50"
@@ -469,6 +448,27 @@ export const StructureSelectPanel = memo(
                       onMouseEnter={() => playHover()}
                     >
                       Realm Level
+                    </button>
+                    <button
+                      type="button"
+                      className={`h-8 rounded border px-3 py-1 text-xs transition-colors ${
+                        sortMode === "population"
+                          ? "border-gold/60 bg-gold/20 text-gold"
+                          : "border-gold/30 bg-brown/20 text-gold/70 hover:border-gold/50"
+                      }`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        playClick();
+                        if (sortMode !== "population") {
+                          setSortMode("population");
+                          setSortDirection("asc");
+                        } else {
+                          setSortDirection("asc");
+                        }
+                      }}
+                      onMouseEnter={() => playHover()}
+                    >
+                      Population
                     </button>
                     <button
                       type="button"
