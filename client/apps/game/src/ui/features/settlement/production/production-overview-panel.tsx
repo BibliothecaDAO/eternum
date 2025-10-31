@@ -1,6 +1,5 @@
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { isAutomationResourceBlocked, useAutomationStore } from "@/hooks/store/use-automation-store";
-import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ProductionModal } from "@/ui/features/settlement";
 import {
@@ -15,6 +14,7 @@ import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo, useQuery
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useCallback, useEffect, useMemo, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { Search } from "lucide-react";
 
 const formatTimestamp = (timestamp?: number) => {
   if (!timestamp) return "Never";
@@ -91,7 +91,8 @@ type ResourceProductionMetrics = {
 type RealmCard = {
   id: string;
   name: string;
-  type: string;
+  typeLabel: string;
+  entityType: "realm" | "village";
   resourceIds: ResourcesIds[];
   position: { x: number; y: number };
   lastRun?: number;
@@ -100,6 +101,8 @@ type RealmCard = {
 };
 
 export const ProductionOverviewPanel = () => {
+  const [activeTab, setActiveTab] = useState<"realm" | "village">("realm");
+  const [searchTerm, setSearchTerm] = useState("");
   const automationRealms = useAutomationStore((state) => state.realms);
   const upsertRealm = useAutomationStore((state) => state.upsertRealm);
   const removeRealm = useAutomationStore((state) => state.removeRealm);
@@ -362,7 +365,8 @@ export const ProductionOverviewPanel = () => {
       cards.push({
         id: String(realm.entityId),
         name: realmName,
-        type: entityType === "village" ? "Village" : "Realm",
+        entityType,
+        typeLabel: entityType === "village" ? (isBlitz ? "Camp" : "Village") : "Realm",
         position: { x: realm.position.x, y: realm.position.y },
         resourceIds: displayedResourceIds,
         lastRun: automation?.lastExecution?.executedAt,
@@ -376,6 +380,42 @@ export const ProductionOverviewPanel = () => {
     return cards.sort((a, b) => a.name.localeCompare(b.name));
   }, [automationRealms, isBlitz, playerRealms, playerVillages]);
 
+  const filteredCards = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    const matches = realmCards.filter((card) => {
+      if (activeTab === "realm") {
+        return card.entityType === "realm";
+      }
+      if (activeTab === "village") {
+        return card.entityType === "village";
+      }
+      return true;
+    });
+
+    const byName = matches.filter((card) => {
+      if (!normalizedSearch) return true;
+      return card.name.toLowerCase().includes(normalizedSearch);
+    });
+
+    return byName;
+  }, [realmCards, activeTab, searchTerm]);
+
+  const totals = useMemo(
+    () =>
+      realmCards.reduce(
+        (acc, card) => {
+          if (card.entityType === "realm") {
+            acc.realms += 1;
+          } else if (card.entityType === "village") {
+            acc.villages += 1;
+          }
+          return acc;
+        },
+        { realms: 0, villages: 0 },
+      ),
+    [realmCards],
+  );
+
   return (
     <div className="flex flex-col gap-3">
       <div>
@@ -384,13 +424,51 @@ export const ProductionOverviewPanel = () => {
           Tap any realm to inspect recent production, or click Modify to update the production automation.
         </p>
       </div>
+      <div className="flex items-center gap-2">
+        {[
+          { value: "realm" as const, label: `Realms (${totals.realms})` },
+          {
+            value: "village" as const,
+            label: `${isBlitz ? "Camps" : "Villages"} (${totals.villages})`,
+          },
+        ].map((tab) => (
+          <button
+            key={tab.value}
+            type="button"
+            onClick={() => setActiveTab(tab.value)}
+            className={`rounded border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide transition ${
+              activeTab === tab.value
+                ? "border-gold/60 bg-black/25 text-gold"
+                : "border-gold/20 text-gold/60 hover:text-gold"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:w-48">
+          <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gold/60" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Filter by name"
+            className="w-full rounded border border-gold/30 bg-black/20 py-1 pl-7 pr-3 text-[11px] text-gold placeholder:text-gold/60 transition focus:border-gold/60 focus:outline-none"
+          />
+        </div>
+      </div>
       {realmCards.length === 0 ? (
         <div className="rounded border border-gold/20 bg-black/15 p-3 text-xs text-gold/70">
           No production configured yet. Use Modify to set up automation.
         </div>
+      ) : filteredCards.length === 0 ? (
+        <div className="rounded border border-gold/20 bg-black/15 p-3 text-xs text-gold/70">
+          No matches found. Adjust the filters to see results.
+        </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {realmCards.map((card) => {
+          {filteredCards.map((card) => {
             const isExpanded = expandedRealmId === card.id;
             const statusLabel = card.statusLabel;
             const handleKeyToggle = (event: ReactKeyboardEvent<HTMLDivElement>) => {
@@ -416,7 +494,7 @@ export const ProductionOverviewPanel = () => {
                   <div className="flex flex-col gap-1">
                     <span className="font-semibold text-gold/90">{card.name}</span>
                     <div className="flex items-center gap-2 text-[10px] uppercase tracking-wide text-gold/50">
-                      <span>{card.type}</span>
+                      <span>{card.typeLabel}</span>
                       <span className="text-gold/40">●</span>
                       <span>{isExpanded ? "Tap to hide" : "Tap to expand"}</span>
                     </div>

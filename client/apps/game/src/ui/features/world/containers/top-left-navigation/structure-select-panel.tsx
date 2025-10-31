@@ -9,6 +9,7 @@ import {
   BlitzStructureTypeToNameMapping,
   EternumStructureTypeToNameMapping,
   ID as toEntityId,
+  RealmLevels,
   StructureType,
 } from "@bibliothecadao/types";
 import type { ComponentValue } from "@dojoengine/recs";
@@ -57,7 +58,7 @@ const structureIcons: Record<string, JSX.Element> = {
   ReadOnly: <EyeIcon />,
 };
 
-type SortMode = "id" | "realmLevelPopulation";
+type SortMode = "name" | "population" | "realmLevel";
 type SortDirection = "asc" | "desc";
 
 type StructureTab = {
@@ -77,6 +78,7 @@ type StructureWithMetadata = Structure & {
   name: string;
   originalName: string;
   realmLevel: number;
+  realmLevelLabel: string;
   population: number;
   populationCapacity: number;
   categoryName: string;
@@ -89,6 +91,11 @@ const normalizeSearchValue = (value: string) =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]/g, "");
+
+const getRealmLevelLabel = (level: number): string => {
+  const labels = RealmLevels as unknown as Record<number, string>;
+  return labels[level] ?? labels[RealmLevels.Settlement];
+};
 
 const getStructureIcon = (selectedStructure: SelectedStructure) => {
   if (!selectedStructure || !selectedStructure.structure) {
@@ -120,7 +127,7 @@ export const StructureSelectPanel = memo(
   }: StructureSelectPanelProps) => {
     const [selectOpen, setSelectOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
-    const [sortMode, setSortMode] = useState<SortMode>("id");
+    const [sortMode, setSortMode] = useState<SortMode>("name");
     const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
     const [activeTab, setActiveTab] = useState(0);
     const searchInputRef = useRef<HTMLInputElement>(null);
@@ -185,6 +192,7 @@ export const StructureSelectPanel = memo(
           name,
           originalName,
           realmLevel,
+          realmLevelLabel: getRealmLevelLabel(realmLevel),
           population,
           populationCapacity,
           categoryName: structureTypeNameMapping[structure.category] ?? "Unknown",
@@ -199,9 +207,11 @@ export const StructureSelectPanel = memo(
         return structuresWithMetadata;
       }
 
-      return structuresWithMetadata.filter((structure) =>
-        normalizeSearchValue(structure.name).includes(normalizedSearch),
-      );
+      return structuresWithMetadata.filter((structure) => {
+        const normalizedName = normalizeSearchValue(structure.name);
+        const normalizedPopulation = normalizeSearchValue(structure.population.toString());
+        return normalizedName.includes(normalizedSearch) || normalizedPopulation.includes(normalizedSearch);
+      });
     }, [structuresWithMetadata, searchTerm]);
 
     const sortStructures = useCallback(
@@ -212,22 +222,21 @@ export const StructureSelectPanel = memo(
             return favoriteCompare;
           }
 
-          if (sortMode === "id") {
-            const idDifference = Number(a.entityId) - Number(b.entityId);
-            if (idDifference !== 0) {
-              return sortDirection === "asc" ? idDifference : -idDifference;
+          if (sortMode === "name") {
+            const nameComparison = a.name.localeCompare(b.name, undefined, { sensitivity: "accent" });
+            if (nameComparison !== 0) {
+              return sortDirection === "asc" ? nameComparison : -nameComparison;
             }
-            return 0;
-          }
-
-          const levelDifference = a.realmLevel - b.realmLevel;
-          if (levelDifference !== 0) {
-            return sortDirection === "asc" ? levelDifference : -levelDifference;
-          }
-
-          const populationDifference = a.population - b.population;
-          if (populationDifference !== 0) {
-            return sortDirection === "asc" ? populationDifference : -populationDifference;
+          } else if (sortMode === "population") {
+            const populationDifference = a.population - b.population;
+            if (populationDifference !== 0) {
+              return sortDirection === "asc" ? populationDifference : -populationDifference;
+            }
+          } else if (sortMode === "realmLevel") {
+            const realmLevelDifference = a.realmLevel - b.realmLevel;
+            if (realmLevelDifference !== 0) {
+              return sortDirection === "asc" ? realmLevelDifference : -realmLevelDifference;
+            }
           }
 
           const idFallback = Number(a.entityId) - Number(b.entityId);
@@ -341,7 +350,7 @@ export const StructureSelectPanel = memo(
                   <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gold/60" />
                   <input
                     type="text"
-                    placeholder="Search structures..."
+                    placeholder="Search by name or population..."
                     value={searchTerm}
                     onChange={(event) => {
                       const { value } = event.target;
@@ -387,40 +396,65 @@ export const StructureSelectPanel = memo(
                     <button
                       type="button"
                       className={`h-8 rounded border px-3 py-1 text-xs transition-colors ${
-                        sortMode === "id"
+                        sortMode === "name"
                           ? "border-gold/60 bg-gold/20 text-gold"
                           : "border-gold/30 bg-brown/20 text-gold/70 hover:border-gold/50"
                       }`}
                       onClick={(event) => {
                         event.stopPropagation();
                         playClick();
-                        if (sortMode !== "id") {
-                          setSortMode("id");
+                        if (sortMode !== "name") {
+                          setSortMode("name");
+                          setSortDirection("asc");
+                        } else {
                           setSortDirection("asc");
                         }
                       }}
                       onMouseEnter={() => playHover()}
                     >
-                      ID
+                      Name
                     </button>
                     <button
                       type="button"
                       className={`h-8 rounded border px-3 py-1 text-xs transition-colors ${
-                        sortMode === "realmLevelPopulation"
+                        sortMode === "population"
                           ? "border-gold/60 bg-gold/20 text-gold"
                           : "border-gold/30 bg-brown/20 text-gold/70 hover:border-gold/50"
                       }`}
                       onClick={(event) => {
                         event.stopPropagation();
                         playClick();
-                        if (sortMode !== "realmLevelPopulation") {
-                          setSortMode("realmLevelPopulation");
-                          setSortDirection("desc");
+                        if (sortMode !== "population") {
+                          setSortMode("population");
+                          setSortDirection("asc");
+                        } else {
+                          setSortDirection("asc");
                         }
                       }}
                       onMouseEnter={() => playHover()}
                     >
-                      Realm Level & Population
+                      Population
+                    </button>
+                    <button
+                      type="button"
+                      className={`h-8 rounded border px-3 py-1 text-xs transition-colors ${
+                        sortMode === "realmLevel"
+                          ? "border-gold/60 bg-gold/20 text-gold"
+                          : "border-gold/30 bg-brown/20 text-gold/70 hover:border-gold/50"
+                      }`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        playClick();
+                        if (sortMode !== "realmLevel") {
+                          setSortMode("realmLevel");
+                          setSortDirection("asc");
+                        } else {
+                          setSortDirection("asc");
+                        }
+                      }}
+                      onMouseEnter={() => playHover()}
+                    >
+                      Realm Level
                     </button>
                     <button
                       type="button"
@@ -531,7 +565,10 @@ export const StructureSelectPanel = memo(
                                 </span>
                               </span>
                               <span className="text-xs text-gold/70">
-                                Lvl {structure.realmLevel} · Pop {structure.population}
+                                {structure.category === StructureType.Realm
+                                  ? structure.realmLevelLabel
+                                  : `Lvl ${structure.realmLevel}`}{" "}
+                                · Pop {structure.population}
                               </span>
                             </div>
                           </SelectItem>
