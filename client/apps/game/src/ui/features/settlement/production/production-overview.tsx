@@ -1,8 +1,7 @@
-import { SparklesIcon } from "lucide-react";
 import type { RealmInfo as RealmInfoType, RelicEffectWithEndTick } from "@bibliothecadao/types";
+import { SparklesIcon } from "lucide-react";
 
 import { ActiveRelicEffects } from "../../world/components/entities/active-relic-effects";
-import { RealmInfo } from "./realm-info";
 
 interface ProductionOverviewProps {
   realm: RealmInfoType;
@@ -19,7 +18,7 @@ export const ProductionOverview = ({
 }: ProductionOverviewProps) => {
   return (
     <section className="space-y-3">
-      <RealmInfo realm={realm} />
+      {/* <RealmInfo realm={realm} /> */}
       <ActiveRelicEffects relicEffects={activeRelics} entityId={realm.entityId} />
 
       {hasActivatedWonderBonus && (
