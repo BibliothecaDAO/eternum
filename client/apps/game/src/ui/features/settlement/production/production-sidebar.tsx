@@ -374,7 +374,7 @@ export const ProductionSidebar = memo(
     };
 
     const pendingPresetLabel = pendingPreset
-      ? REALM_PRESETS.find((preset) => preset.id === pendingPreset.presetId)?.label ?? "Preset"
+      ? (REALM_PRESETS.find((preset) => preset.id === pendingPreset.presetId)?.label ?? "Preset")
       : null;
 
     return (

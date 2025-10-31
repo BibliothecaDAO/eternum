@@ -33,7 +33,12 @@ import {
 
 import { useUISound } from "@/audio/hooks/useUISound";
 import type { getEntityInfo } from "@bibliothecadao/eternum";
-import { STRUCTURE_GROUP_CONFIG, StructureGroupColor, StructureGroupsMap, getNextStructureGroupColor } from "./structure-groups";
+import {
+  STRUCTURE_GROUP_CONFIG,
+  StructureGroupColor,
+  StructureGroupsMap,
+  getNextStructureGroupColor,
+} from "./structure-groups";
 
 export type SelectedStructure = ReturnType<typeof getEntityInfo> & { isFavorite: boolean };
 
@@ -340,7 +345,10 @@ export const StructureSelectPanel = memo(
             }
           }}
         >
-          <SelectTrigger className="truncate text-base font-semibold text-gold sm:text-lg" onMouseEnter={() => playHover()}>
+          <SelectTrigger
+            className="truncate text-base font-semibold text-gold sm:text-lg"
+            onMouseEnter={() => playHover()}
+          >
             <span className="sr-only">
               <SelectValue placeholder="Select Structure" />
             </span>
@@ -348,9 +356,7 @@ export const StructureSelectPanel = memo(
               <div className="flex items-center gap-2 truncate">
                 {getStructureIcon(selectedStructure)}
                 {selectedGroupConfig && <span className={`h-2 w-2 rounded-full ${selectedGroupConfig.dotClass}`} />}
-                <span
-                  className={`truncate ${selectedGroupConfig ? selectedGroupConfig.textClass : ""}`}
-                >
+                <span className={`truncate ${selectedGroupConfig ? selectedGroupConfig.textClass : ""}`}>
                   {selectedStructureMetadata?.name ??
                     (selectedStructure.structure ? getStructureName(selectedStructure.structure, isBlitz).name : "")}
                 </span>
