@@ -1,7 +1,4 @@
-import { getIsBlitz } from "@bibliothecadao/eternum";
-
-import { getBlockTimestamp } from "@bibliothecadao/eternum";
-
+import { getBlockTimestamp, getIsBlitz } from "@bibliothecadao/eternum";
 import {
   configManager,
   getEntityIdFromKeys,
@@ -10,12 +7,15 @@ import {
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useBuildings, useDojo } from "@bibliothecadao/react";
-import { getProducedResource, ID, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
+import { getProducedResource, ID, RealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { HasValue, runQuery } from "@dojoengine/recs";
 import clsx from "clsx";
 import { SparklesIcon } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
+import Button from "@/ui/design-system/atoms/button";
+import { REALM_PRESETS, RealmPresetId } from "@/utils/automation-presets";
+import { useAutomationStore } from "@/hooks/store/use-automation-store";
 import { ProductionStatusBadge } from "@/ui/shared";
 import { formatTimeRemaining } from "../../economy/resources/entity-resource-table/utils";
 
@@ -270,19 +270,209 @@ const SidebarRealm = ({
   );
 };
 
+type AutomationTab = "realm" | "village";
+
+type PendingPresetAction = {
+  presetId: RealmPresetId;
+  realmIds: string[];
+  tab: AutomationTab;
+};
+
 export const ProductionSidebar = memo(
   ({ realms, selectedRealmEntityId, onSelectRealm, onSelectResource }: ProductionSidebarProps) => {
+    const upsertRealm = useAutomationStore((state) => state.upsertRealm);
+    const setRealmPreset = useAutomationStore((state) => state.setRealmPreset);
+    const isBlitz = getIsBlitz();
+
+    const structuresByType = useMemo(() => {
+      const realmStructures: RealmInfo[] = [];
+      const campStructures: RealmInfo[] = [];
+
+      realms.forEach((realm) => {
+        if (realm.structure?.category === StructureType.Village) {
+          campStructures.push(realm);
+        } else {
+          realmStructures.push(realm);
+        }
+      });
+
+      return { realm: realmStructures, village: campStructures };
+    }, [realms]);
+
+    const structureMap = useMemo(() => {
+      const map = new Map<string, RealmInfo>();
+      realms.forEach((realm) => {
+        map.set(realm.entityId.toString(), realm);
+      });
+      return map;
+    }, [realms]);
+
+    const realmStructures = structuresByType.realm;
+    const villageStructures = structuresByType.village;
+    const realmCount = realmStructures.length;
+    const villageCount = villageStructures.length;
+
+    const [activeTab, setActiveTab] = useState<AutomationTab>(() => (realmCount > 0 ? "realm" : "village"));
+    const [pendingPreset, setPendingPreset] = useState<PendingPresetAction | null>(null);
+
+    useEffect(() => {
+      const activeStructures = activeTab === "realm" ? realmStructures : villageStructures;
+      if (activeStructures.length === 0) {
+        if (activeTab === "realm" && villageCount > 0) {
+          setActiveTab("village");
+          setPendingPreset(null);
+        } else if (activeTab === "village" && realmCount > 0) {
+          setActiveTab("realm");
+          setPendingPreset(null);
+        }
+      }
+    }, [activeTab, realmStructures, villageStructures, realmCount, villageCount]);
+
+    useEffect(() => {
+      if (!pendingPreset) return;
+      if (pendingPreset.tab === "realm" && realmCount === 0) {
+        setPendingPreset(null);
+      }
+      if (pendingPreset.tab === "village" && villageCount === 0) {
+        setPendingPreset(null);
+      }
+    }, [pendingPreset, realmCount, villageCount]);
+
+    const activeStructures = activeTab === "realm" ? realmStructures : villageStructures;
+    const activeLabel = activeTab === "realm" ? "Realms" : isBlitz ? "Camps" : "Villages";
+    const tabButtons: { key: AutomationTab; label: string; count: number }[] = [
+      { key: "realm", label: "Realms", count: realmCount },
+      { key: "village", label: isBlitz ? "Camps" : "Villages", count: villageCount },
+    ];
+
+    const handleChangeTab = (tab: AutomationTab) => {
+      setActiveTab(tab);
+      setPendingPreset(null);
+    };
+
+    const handleStagePreset = (presetId: RealmPresetId) => {
+      if (activeStructures.length === 0) return;
+      const realmIds = activeStructures.map((realm) => realm.entityId.toString());
+      setPendingPreset({ presetId, realmIds, tab: activeTab });
+    };
+
+    const handleUndoPreset = () => {
+      setPendingPreset(null);
+    };
+
+    const handleSavePreset = () => {
+      if (!pendingPreset || pendingPreset.realmIds.length === 0) return;
+      pendingPreset.realmIds.forEach((realmId) => {
+        const realmInfo = structureMap.get(realmId);
+        if (!realmInfo) return;
+        const entityType = realmInfo.structure?.category === StructureType.Village ? "village" : "realm";
+        const realmName = getStructureName(realmInfo.structure, isBlitz).name;
+        upsertRealm(realmId, { realmName, entityType });
+        setRealmPreset(realmId, pendingPreset.presetId);
+      });
+      setPendingPreset(null);
+    };
+
+    const pendingPresetLabel = pendingPreset
+      ? REALM_PRESETS.find((preset) => preset.id === pendingPreset.presetId)?.label ?? "Preset"
+      : null;
+
     return (
       <div className="space-y-4">
-        {realms.map((realm) => (
-          <SidebarRealm
-            key={realm.entityId}
-            realm={realm}
-            isSelected={realm.entityId === selectedRealmEntityId}
-            onSelect={() => onSelectRealm(realm.entityId)}
-            onSelectResource={onSelectResource}
-          />
-        ))}
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            {tabButtons.map((tab) => {
+              const isActive = activeTab === tab.key;
+              const disabled = tab.count === 0;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => handleChangeTab(tab.key)}
+                  className={clsx(
+                    "rounded border px-4 py-2 text-xs font-semibold uppercase tracking-wide transition",
+                    disabled
+                      ? "cursor-not-allowed border-gold/10 text-gold/30"
+                      : isActive
+                        ? "border-gold/60 bg-black/25 text-gold shadow-[0_0_10px_rgba(255,204,102,0.25)]"
+                        : "border-gold/20 text-gold/60 hover:border-gold/40 hover:text-gold",
+                  )}
+                >
+                  {tab.label} ({tab.count})
+                </button>
+              );
+            })}
+          </div>
+
+          {activeStructures.length > 0 && (
+            <div className="space-y-2 rounded border border-gold/15 bg-black/10 p-3">
+              <div className="text-[10px] uppercase tracking-wide text-gold/50">
+                Apply preset to all {activeLabel.toLowerCase()}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {REALM_PRESETS.map((preset) => {
+                  const isPending =
+                    pendingPreset?.presetId === preset.id && pendingPreset?.tab === activeTab && !!pendingPreset;
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => handleStagePreset(preset.id)}
+                      className={clsx(
+                        "rounded border px-3 py-1 text-xs transition-colors",
+                        activeStructures.length === 0
+                          ? "cursor-not-allowed border-gold/10 text-gold/30"
+                          : isPending
+                            ? "border-gold text-gold bg-gold/10"
+                            : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold",
+                      )}
+                      disabled={activeStructures.length === 0}
+                      title={preset.description}
+                    >
+                      {preset.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {pendingPreset && pendingPreset.tab === activeTab && (
+                <div className="flex flex-wrap items-center gap-2 rounded border border-gold/20 bg-black/20 px-3 py-2">
+                  <span className="text-xs text-gold/70">
+                    Pending {pendingPresetLabel} for {pendingPreset.realmIds.length} {activeLabel.toLowerCase()}.
+                  </span>
+                  <div className="flex gap-2">
+                    <Button variant="gold" size="xs" onClick={handleSavePreset}>
+                      Save Changes
+                    </Button>
+                    <Button variant="outline" size="xs" onClick={handleUndoPreset}>
+                      Undo
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {activeStructures.length === 0 ? (
+          <div className="rounded-lg border border-gold/20 bg-black/15 p-4 text-sm text-gold/70">
+            {activeTab === "realm"
+              ? "You do not control any realms yet."
+              : isBlitz
+                ? "You do not control any camps yet."
+                : "You do not control any villages yet."}
+          </div>
+        ) : (
+          activeStructures.map((realm) => (
+            <SidebarRealm
+              key={realm.entityId}
+              realm={realm}
+              isSelected={realm.entityId === selectedRealmEntityId}
+              onSelect={() => onSelectRealm(realm.entityId)}
+              onSelectResource={onSelectResource}
+            />
+          ))
+        )}
       </div>
     );
   },
