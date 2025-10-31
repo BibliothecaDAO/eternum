@@ -1,31 +1,26 @@
-import { getBlockTimestamp, getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
+import { getCharacterName } from "@/utils/agent";
 import {
   getAddressName,
   getArmyRelicEffects,
+  getBlockTimestamp,
   getGuildFromPlayerAddress,
+  getIsBlitz,
+  getStructureName,
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
-import {
-  ArmyInfo,
-  ContractAddress,
-  HexPosition,
-  ID,
-  TroopTier,
-  TroopType,
-} from "@bibliothecadao/types";
+import { ArmyInfo, ContractAddress, HexPosition, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
-import { getCharacterName } from "@/utils/agent";
 
 interface UseArmyEntityDetailOptions {
   armyEntityId: ID;
 }
 
 interface DerivedArmyData {
-  stamina?: number;
-  maxStamina?: number;
+  stamina: { amount: bigint; updated_tick: bigint };
+  maxStamina: number;
   playerGuild?: { name: string } | undefined;
   addressName?: string;
   isMine: boolean;
@@ -202,18 +197,36 @@ export const useBannerArmyInfo = (
     const fallbackX = bannerPosition?.col ?? Number((explorer as any).coord_x ?? (explorer as any).position?.x ?? 0);
     const fallbackY = bannerPosition?.row ?? Number((explorer as any).coord_y ?? (explorer as any).position?.y ?? 0);
 
+    // TODO: fix this
     return {
-      ...explorer,
-      entityId: Number((explorer as any).entityId ?? armyEntityId ?? explorer?.entity_id ?? 0),
+      entityId: Number(armyEntityId),
+      troops: explorer.troops,
+      stamina: derivedData?.stamina?.amount ?? 0n,
       name: baseName,
-      entity_owner_id: explorer.owner,
+      ownerName: derivedData?.addressName ?? "",
       isMine: derivedData?.isMine ?? false,
-      isHome: (explorer as any).is_home ?? false,
-      hasAdjacentStructure: (explorer as any).has_adjacent_structure ?? false,
+      isMercenary: false,
+      isHome: false,
       position: {
         x: fallbackX,
         y: fallbackY,
       },
-    } as ArmyInfo;
-  }, [armyEntityId, bannerPosition?.col, bannerPosition?.row, derivedData?.addressName, derivedData?.isMine, explorer]);
+      owner: BigInt(explorer.owner),
+      entity_owner_id: explorer.owner,
+      totalCapacity: 0,
+      weight: 0,
+      explorer: explorer,
+      structure: undefined,
+      hasAdjacentStructure: false,
+      relicEffects: [],
+    };
+  }, [
+    armyEntityId,
+    bannerPosition?.col,
+    bannerPosition?.row,
+    derivedData?.addressName,
+    derivedData?.isMine,
+    derivedData?.stamina?.amount,
+    explorer,
+  ]);
 };

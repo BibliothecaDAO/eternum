@@ -1,15 +1,14 @@
-import { memo } from "react";
 import { Loader, RefreshCw, Trash2 } from "lucide-react";
+import { memo } from "react";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ArmyCapacity } from "@/ui/design-system/molecules/army-capacity";
 import { StaminaResource } from "@/ui/design-system/molecules/stamina-resource";
 import { TroopChip } from "@/ui/features/military";
+import { ID, RelicRecipientType } from "@bibliothecadao/types";
 import { ArmyWarning } from "../armies/army-warning";
 import { ActiveRelicEffects } from "./active-relic-effects";
 import { EntityInventoryTabs } from "./entity-inventory-tabs";
-import { ID } from "@bibliothecadao/types";
-import { RelicRecipientType } from "@bibliothecadao/types";
 
 import { useArmyEntityDetail } from "./hooks/use-army-entity-detail";
 
@@ -32,6 +31,7 @@ export const ArmyEntityDetail = memo(
     const {
       explorer,
       explorerResources,
+      structure,
       structureResources,
       relicEffects,
       derivedData,
@@ -77,7 +77,9 @@ export const ArmyEntityDetail = memo(
               <div className="min-w-0 flex flex-1 flex-col gap-1">
                 <span className={`${smallTextClass} uppercase tracking-[0.22em] text-gold/70`}>Army</span>
                 <div className="flex flex-wrap items-baseline gap-2">
-                  <h4 className={`${compact ? "text-xl" : "text-2xl"} font-bold text-gold`}>{derivedData.addressName}</h4>
+                  <h4 className={`${compact ? "text-xl" : "text-2xl"} font-bold text-gold`}>
+                    {derivedData.addressName}
+                  </h4>
                   <span className="text-xxs uppercase tracking-[0.28em] text-gold/60">#{armyEntityId}</span>
                 </div>
                 {derivedData.playerGuild && (
