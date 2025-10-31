@@ -95,8 +95,6 @@ interface UIStore {
   setGameEndAt: (seasonEndAt: number | null) => void;
   gameStartMainAt: number | null;
   setGameStartMainAt: (seasonStartMainAt: number | null) => void;
-  spectatorRealmEntityId: ID | null;
-  setSpectatorRealmEntityId: (entityId: ID | null) => void;
   theme: string;
   setTheme: (theme: string) => void;
   showBlurOverlay: boolean;
@@ -184,8 +182,6 @@ export const useUIStore = create(
     setGameEndAt: (seasonEndAt: number | null) => set({ gameEndAt: seasonEndAt }),
     gameStartMainAt: null,
     setGameStartMainAt: (seasonStartMainAt: number | null) => set({ gameStartMainAt: seasonStartMainAt }),
-    spectatorRealmEntityId: null,
-    setSpectatorRealmEntityId: (entityId: ID | null) => set({ spectatorRealmEntityId: entityId }),
     theme: "light",
     setTheme: (theme) => set({ theme }),
     showBlurOverlay: false,

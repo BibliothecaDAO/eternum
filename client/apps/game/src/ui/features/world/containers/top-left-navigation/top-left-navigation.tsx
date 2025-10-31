@@ -1,8 +1,9 @@
-import { useGoToStructure } from "@/hooks/helpers/use-navigate";
+import { useGoToStructure, useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getBlockTimestamp, getIsBlitz, Position } from "@bibliothecadao/eternum";
 
 import { useUISound } from "@/audio/hooks/useUISound";
+import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CapacityInfo, SecondaryMenuItems } from "@/ui/features/world";
 import { NameChangePopup } from "@/ui/shared";
@@ -14,6 +15,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ClientComponents, ContractAddress, ID } from "@bibliothecadao/types";
+import { useComponentValue } from "@dojoengine/react";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";
@@ -47,19 +49,23 @@ export const TopLeftNavigation = memo(() => {
   const playHover = useUISound("ui.hover");
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-  // const followArmyMoves = useUIStore((state) => state.followArmyMoves);
-  // const setFollowArmyMoves = useUIStore((state) => state.setFollowArmyMoves);
   const followArmyCombats = useUIStore((state) => state.followArmyCombats);
   const setFollowArmyCombats = useUIStore((state) => state.setFollowArmyCombats);
+  const spectatedStructureEntityId = useUIStore((state) => state.spectatedStructureEntityId);
+  const spectatorReturnPosition = useUIStore((state) => state.spectatorReturnPosition);
+  const controlledStructureEntityId = useUIStore((state) => state.controlledStructureEntityId);
+  const exitSpectatorMode = useUIStore((state) => state.exitSpectatorMode);
   const isFollowingArmy = useUIStore((state) => state.isFollowingArmy);
   const followingArmyMessage = useUIStore((state) => state.followingArmyMessage);
 
   const { favorites, toggleFavorite } = useFavoriteStructures();
   const { structureGroups, updateStructureGroup } = useStructureGroups();
 
+  // force a refresh of getEntityInfo when the structure data arrives
+  const structure = useComponentValue(setup.components.Structure, getEntityIdFromKeys([BigInt(structureEntityId)]));
   const entityInfo = useMemo(
     () => getEntityInfo(structureEntityId, ContractAddress(account.address), setup.components, getIsBlitz()),
-    [structureEntityId, currentDefaultTick, account.address],
+    [structureEntityId, currentDefaultTick, account.address, structure],
   );
 
   const selectedStructure = useMemo(() => {
@@ -70,7 +76,13 @@ export const TopLeftNavigation = memo(() => {
     return new Position(selectedStructure?.position || { x: 0, y: 0 }).getNormalized();
   }, [selectedStructure]);
 
-  const goToStructure = useGoToStructure();
+  console.log("[TopLeftNavigation] selectedStructure:", selectedStructurePosition, selectedStructure);
+
+  const isSpectating =
+    spectatedStructureEntityId !== null && String(spectatedStructureEntityId) === String(structureEntityId);
+
+  const goToStructure = useGoToStructure(setup);
+  const navigateToMapView = useNavigateToMapView();
 
   const onSelectStructure = useCallback(
     (entityId: ID) => {
@@ -83,7 +95,7 @@ export const TopLeftNavigation = memo(() => {
 
       goToStructure(entityId, new Position({ x: structurePosition.coord_x, y: structurePosition.coord_y }), isMapView);
     },
-    [isMapView, setup.components.Structure],
+    [goToStructure, isMapView, setup.components.Structure],
   );
 
   const handleNameChange = useCallback((structureEntityId: ID, newName: string) => {
@@ -95,6 +107,45 @@ export const TopLeftNavigation = memo(() => {
     deleteEntityNameLocalStorage(structureEntityId);
     setStructureNameChange(null);
   }, []);
+  const handleReturnToMyRealms = useCallback(() => {
+    const fallbackId =
+      controlledStructureEntityId !== UNDEFINED_STRUCTURE_ENTITY_ID
+        ? controlledStructureEntityId
+        : structures[0]?.entityId;
+
+    const spectatorBase =
+      spectatedStructureEntityId &&
+      getComponentValue(setup.components.Structure, getEntityIdFromKeys([BigInt(spectatedStructureEntityId)]))?.base;
+
+    const fallbackBase =
+      fallbackId !== undefined && fallbackId !== null && fallbackId !== UNDEFINED_STRUCTURE_ENTITY_ID
+        ? getComponentValue(setup.components.Structure, getEntityIdFromKeys([BigInt(fallbackId)]))?.base
+        : null;
+
+    const storedSpectatorPosition = spectatorReturnPosition;
+
+    exitSpectatorMode();
+
+    const mapTarget = spectatorBase
+      ? { x: spectatorBase.coord_x, y: spectatorBase.coord_y }
+      : storedSpectatorPosition
+        ? { x: storedSpectatorPosition.col, y: storedSpectatorPosition.row }
+        : fallbackBase
+          ? { x: fallbackBase.coord_x, y: fallbackBase.coord_y }
+          : null;
+
+    if (mapTarget) {
+      navigateToMapView(new Position({ x: mapTarget.x, y: mapTarget.y }));
+    }
+  }, [
+    controlledStructureEntityId,
+    exitSpectatorMode,
+    navigateToMapView,
+    setup.components.Structure,
+    spectatedStructureEntityId,
+    spectatorReturnPosition,
+    structures,
+  ]);
 
   const handleRequestNameChange = useCallback((structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => {
     setStructureNameChange(structure);
@@ -119,6 +170,8 @@ export const TopLeftNavigation = memo(() => {
             onSelectStructure={onSelectStructure}
             onRequestNameChange={handleRequestNameChange}
             onUpdateStructureGroup={updateStructureGroup}
+            isSpectating={isSpectating}
+            onReturnToMyRealms={handleReturnToMyRealms}
           />
         </div>
 

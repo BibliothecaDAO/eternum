@@ -1,9 +1,9 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { RightView } from "@/types";
 import { Button } from "@/ui/design-system/atoms";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { RightView } from "@/types";
 import { ProductionModal } from "@/ui/features/settlement";
 import { formatStorageValue } from "@/ui/utils/storage-utils";
 import {
@@ -135,15 +135,17 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
   const togglePopup = useUIStore((state) => state.togglePopup);
   const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
   const setRightNavigationView = useUIStore((state) => state.setRightNavigationView);
-  const goToStructure = useGoToStructure();
   const { isMapView } = useQuery();
   const {
+    setup,
     setup: {
       components,
       systemCalls: { send_resources_multiple },
     },
     account: { account },
   } = useDojo();
+
+  const goToStructure = useGoToStructure(setup);
   const { currentDefaultTick } = useBlockTimestamp();
 
   const selectedStructureId = entityId && entityId !== 0 ? Number(entityId) : null;
@@ -333,7 +335,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
       if (structure) {
         const position = new Position({ x: structure.base.coord_x, y: structure.base.coord_y });
         // Use goToStructure which handles both map view and hex view
-        goToStructure(structureId as ID, position, isMapView);
+        void goToStructure(structureId as ID, position, isMapView);
       }
     },
     [components.Structure, goToStructure, isMapView, selectedStructureId],

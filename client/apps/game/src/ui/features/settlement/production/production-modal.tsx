@@ -3,9 +3,9 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { ModalContainer } from "@/ui/shared";
 import { getIsBlitz, getStructureName, Position } from "@bibliothecadao/eternum";
-import { usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo, useQuery } from "@bibliothecadao/react";
+import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo, useQuery } from "@bibliothecadao/react";
 import { ID, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
-import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 
 const ProductionSidebar = lazy(() =>
   import("./production-sidebar").then((module) => ({ default: module.ProductionSidebar })),
@@ -20,6 +20,7 @@ const ProductionContainer = ({
   playerStructures: RealmInfo[];
   preSelectedResource?: ResourcesIds;
 }) => {
+  const { setup } = useDojo();
   const initialRealm = useMemo(() => {
     const structureEntityId = useUIStore.getState().structureEntityId;
     const selectedRealm = playerStructures.find((structure) => structure.entityId === structureEntityId);
@@ -29,7 +30,7 @@ const ProductionContainer = ({
   const [selectedRealm, setSelectedRealm] = useState<RealmInfo | undefined>(initialRealm || playerStructures[0]);
   const [selectedResource, setSelectedResource] = useState<ResourcesIds | null>(preSelectedResource ?? null);
   const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
-  const goToStructure = useGoToStructure();
+  const goToStructure = useGoToStructure(setup);
   const { isMapView } = useQuery();
 
   useEffect(() => {
@@ -42,7 +43,7 @@ const ProductionContainer = ({
       if (!realm) return;
       setStructureEntityId(realm.entityId);
       const position = new Position({ x: realm.position.x, y: realm.position.y });
-      goToStructure(realm.entityId, position, isMapView);
+      void goToStructure(realm.entityId, position, isMapView);
     },
     [goToStructure, isMapView, setStructureEntityId],
   );

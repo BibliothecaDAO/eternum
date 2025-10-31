@@ -46,6 +46,8 @@ interface StructureSelectPanelProps {
   onSelectStructure: (entityId: ID) => void;
   onRequestNameChange: (structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => void;
   onUpdateStructureGroup: (entityId: number, color: StructureGroupColor | null) => void;
+  isSpectating: boolean;
+  onReturnToMyRealms: () => void;
 }
 
 const structureIcons: Record<string, JSX.Element> = {
@@ -100,6 +102,8 @@ export const StructureSelectPanel = memo(
     onSelectStructure,
     onRequestNameChange,
     onUpdateStructureGroup,
+    isSpectating,
+    onReturnToMyRealms,
   }: StructureSelectPanelProps) => {
     const [selectOpen, setSelectOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -274,21 +278,42 @@ export const StructureSelectPanel = memo(
     }, [selectOpen]);
 
     if (!selectedStructure.isMine) {
+      const spectatorName =
+        selectedStructure.structure ? getStructureName(selectedStructure.structure, isBlitz).name : "";
+
       return (
         <div className="structure-name-selector self-center flex justify-between w-full">
-          <div className="w-full px-4 py-2">
-            <h5 className="flex items-center gap-4 truncate">
+          <div className="w-full px-4 py-2 flex flex-col gap-2">
+            <div className="flex items-center gap-3 truncate">
               <>
                 {getStructureIcon(selectedStructure)}
                 {selectedGroupConfig && <span className={`h-2 w-2 rounded-full ${selectedGroupConfig.dotClass}`} />}
-                <span className={selectedGroupConfig ? selectedGroupConfig.textClass : ""}>
-                  {selectedStructure.structure ? getStructureName(selectedStructure.structure, isBlitz).name : ""}
+                <span className={`truncate ${selectedGroupConfig ? selectedGroupConfig.textClass : ""}`}>
+                  {spectatorName}
                 </span>
                 <span className="text-sm text-gold/70">
                   Lvl {Number(selectedStructure.structure?.base?.level ?? 0)}
                 </span>
               </>
-            </h5>
+            </div>
+            {isSpectating && (
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-1 text-xxs uppercase tracking-[0.2em] text-gold/70">
+                  <EyeIcon className="h-3 w-3" /> Spectating
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    playClick();
+                    onReturnToMyRealms();
+                  }}
+                  onMouseEnter={() => playHover()}
+                  className="rounded-md border border-gold/40 px-2 py-1 text-xxs font-semibold uppercase tracking-[0.2em] text-gold transition-colors hover:bg-gold/10"
+                >
+                  Return to my realms
+                </button>
+              </div>
+            )}
           </div>
         </div>
       );

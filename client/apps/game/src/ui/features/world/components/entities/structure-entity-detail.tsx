@@ -60,6 +60,7 @@ export const StructureEntityDetail = memo(
     const {
       network: { toriiClient },
       account,
+      setup,
       setup: { components },
     } = useDojo();
 
@@ -165,7 +166,7 @@ export const StructureEntityDetail = memo(
 
     const isHyperstructure = structure?.base.category === StructureType.Hyperstructure;
 
-    const goToStructure = useGoToStructure();
+    const goToStructure = useGoToStructure(setup);
 
     const typeLabel = useMemo(() => {
       if (!structure?.base?.category) return undefined;
@@ -338,21 +339,20 @@ export const StructureEntityDetail = memo(
                       >
                         <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
                       </button>
-                      {isMine && (
-                        <button
-                          onClick={() =>
-                            goToStructure(
-                              structureEntityId,
-                              new Position({ x: structure.base.coord_x, y: structure.base.coord_y }),
-                              false,
-                            )
-                          }
-                          className={standardActionClasses}
-                          title="View structure"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                      )}
+                      <button
+                        onClick={() =>
+                          void goToStructure(
+                            structureEntityId,
+                            new Position({ x: structure.base.coord_x, y: structure.base.coord_y }),
+                            false,
+                            { spectator: !isMine },
+                          )
+                        }
+                        className={standardActionClasses}
+                        title={isMine ? "View structure" : "Spectate structure"}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
                     </div>
                     {structureEntityIdNumber > 0 && (
                       <StructureUpgradeButton

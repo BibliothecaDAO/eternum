@@ -207,7 +207,7 @@ export const StepOne = () => {
   const setShowToS = useUIStore((state) => state.setShowToS);
   const { connector } = useAccount();
 
-  const onSpectatorModeClick = useSpectatorModeClick(components);
+  const onSpectatorModeClick = useSpectatorModeClick(setup);
 
   const realmEntities = usePlayerOwnedRealmEntities();
 
@@ -250,7 +250,7 @@ export const StepOne = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const goToStructure = useGoToStructure();
+  const goToStructure = useGoToStructure(setup);
 
   const onPlayModeClick = () => {
     const randomRealmEntityOrVillageEntity =
@@ -261,7 +261,11 @@ export const StepOne = () => {
       : undefined;
 
     if (!structure) return;
-    goToStructure(structure.entity_id, new Position({ x: structure.base.coord_x, y: structure.base.coord_y }), false);
+    void goToStructure(
+      structure.entity_id,
+      new Position({ x: structure.base.coord_x, y: structure.base.coord_y }),
+      false,
+    );
   };
 
   return (
