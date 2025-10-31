@@ -276,8 +276,13 @@ export const useUIStore = create(
     ...createRealmStoreSlice(set),
     ...createWorldStoreSlice(set),
     // labor
-    useSimpleCost: true,
-    setUseSimpleCost: (useSimpleCost: boolean) => set({ useSimpleCost }),
+    useSimpleCost: localStorage.getItem("useSimpleCost")
+      ? localStorage.getItem("useSimpleCost") === "true"
+      : true,
+    setUseSimpleCost: (useSimpleCost: boolean) => {
+      set({ useSimpleCost });
+      localStorage.setItem("useSimpleCost", String(useSimpleCost));
+    },
     // camera follow
     followArmyMoves: false,
     setFollowArmyMoves: (follow: boolean) => {
