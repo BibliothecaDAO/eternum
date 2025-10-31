@@ -12,7 +12,7 @@ interface HudPanelProps {
 export const HudPanel = ({ title, icon, actions, children, className }: HudPanelProps) => {
   return (
     <section
-      className={`flex h-full min-w-0 flex-col gap-3 rounded-2xl border border-white/10 bg-black/30 p-3 shadow-[0_12px_30px_rgba(0,0,0,0.45)] overflow-hidden ${
+      className={`flex h-full min-w-0 flex-col gap-3 rounded-2xl border border-white/5 bg-black/5 p-3 shadow-[0_12px_30px_rgba(0,0,0,0.12)] overflow-hidden ${
         className ?? ""
       }`}
     >
