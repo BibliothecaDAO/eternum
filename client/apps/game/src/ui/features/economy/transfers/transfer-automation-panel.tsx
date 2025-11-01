@@ -45,8 +45,12 @@ export const TransferAutomationPanel = () => {
     if (!components) return totals;
     for (const ps of ownedSources) {
       const rm = new ResourceManager(components as any, ps.entityId);
+      const category = ps.structure?.base?.category;
       for (const rid of ALL_RESOURCE_IDS) {
         try {
+          if (isMilitaryResource(rid) && category !== StructureType.Realm) {
+            continue;
+          }
           const bal = rm.balanceWithProduction(currentDefaultTick, rid).balance ?? 0n;
           const human = Number(bal) / RESOURCE_PRECISION;
           if (human > 0) totals.set(rid, (totals.get(rid) ?? 0) + human);
@@ -70,6 +74,11 @@ export const TransferAutomationPanel = () => {
   const [interval, setIntervalMinutes] = useState(30);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  const hasMilitarySelection = useMemo(
+    () => selectedResources.some((rid) => isMilitaryResource(rid)),
+    [selectedResources],
+  );
 
   useEffect(() => {
     if (!statusMessage) return;
@@ -152,10 +161,15 @@ export const TransferAutomationPanel = () => {
     }
   }, [draft, setDraft, components, currentDefaultTick]);
 
+  const filteredOwnedSources = useMemo(() => {
+    if (!hasMilitarySelection) return ownedSources;
+    return ownedSources.filter((ps: any) => ps.structure?.base?.category === StructureType.Realm);
+  }, [ownedSources, hasMilitarySelection]);
+
   const eligibleSources = useMemo(() => {
-    if (!components) return [] as any[];
-    if (selectedResources.length === 0) return ownedSources;
-    return ownedSources
+    if (!components) return filteredOwnedSources as any[];
+    if (selectedResources.length === 0) return filteredOwnedSources as any[];
+    return filteredOwnedSources
       .filter((ps: any) => {
         const rm = new ResourceManager(components as any, ps.entityId);
         for (const rid of selectedResources) {
@@ -177,7 +191,7 @@ export const TransferAutomationPanel = () => {
         );
         return sumb - suma;
       });
-  }, [components, ownedSources, selectedResources, currentDefaultTick]);
+  }, [components, filteredOwnedSources, selectedResources, currentDefaultTick]);
 
   // Destinations: owned realms + villages (toggle does not affect source list)
   const ownedDestinations = useMemo(() => {
@@ -185,9 +199,14 @@ export const TransferAutomationPanel = () => {
     return playerStructures.filter((s: any) => allowed.has(s.structure?.base?.category));
   }, [playerStructures]);
 
+  const filteredOwnedDestinations = useMemo(() => {
+    if (!hasMilitarySelection) return ownedDestinations;
+    return ownedDestinations.filter((ps: any) => ps.structure?.base?.category === StructureType.Realm);
+  }, [ownedDestinations, hasMilitarySelection]);
+
   const [destSearch, setDestSearch] = useState("");
   const destinations = useMemo(() => {
-    const base = ownedDestOnly ? ownedDestinations : ownedDestinations; // extend later for public
+    const baseList = ownedDestOnly ? filteredOwnedDestinations : filteredOwnedDestinations; // extend later for public
     const q = destSearch.trim();
     const isNumeric = /^\d+$/.test(q);
     const norm = (s: string) =>
@@ -196,7 +215,7 @@ export const TransferAutomationPanel = () => {
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .replace(/[^a-z0-9 ]/g, "");
-    let list = base.filter((ps: any) => ps.entityId !== selectedSourceId);
+    let list = baseList.filter((ps: any) => ps.entityId !== selectedSourceId);
     if (!q) return list;
     return list.filter((ps: any) => {
       const name = getStructureName(ps.structure, isBlitz).name;
@@ -205,7 +224,7 @@ export const TransferAutomationPanel = () => {
       }
       return norm(name).includes(norm(q));
     });
-  }, [ownedDestOnly, ownedDestinations, destSearch, isBlitz, selectedSourceId]);
+  }, [ownedDestOnly, filteredOwnedDestinations, destSearch, isBlitz, selectedSourceId]);
 
   // If source equals currently selected destination, clear destination
   useEffect(() => {
@@ -213,6 +232,24 @@ export const TransferAutomationPanel = () => {
       setDestinationId(null);
     }
   }, [selectedSourceId]);
+
+  useEffect(() => {
+    if (!hasMilitarySelection) return;
+    if (!selectedSourceId) return;
+    const stillAllowed = filteredOwnedSources.some((ps: any) => ps.entityId === selectedSourceId);
+    if (!stillAllowed) {
+      setSelectedSourceId(null);
+    }
+  }, [hasMilitarySelection, selectedSourceId, filteredOwnedSources]);
+
+  useEffect(() => {
+    if (!hasMilitarySelection) return;
+    if (!destinationId) return;
+    const stillAllowed = filteredOwnedDestinations.some((ps: any) => ps.entityId === destinationId);
+    if (!stillAllowed) {
+      setDestinationId(null);
+    }
+  }, [hasMilitarySelection, destinationId, filteredOwnedDestinations]);
 
   // Ensure resourceConfigs exist for selected resources and remove stale ones
   useEffect(() => {
