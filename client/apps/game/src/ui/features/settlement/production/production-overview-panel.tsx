@@ -13,7 +13,7 @@ import {
 import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo, useQuery } from "@bibliothecadao/react";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useCallback, useEffect, useMemo, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Search } from "lucide-react";
 
 const formatTimestamp = (timestamp?: number) => {
@@ -111,6 +111,7 @@ export const ProductionOverviewPanel = () => {
 
   const playerRealms = usePlayerOwnedRealmsInfo();
   const playerVillages = usePlayerOwnedVillagesInfo();
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
   const toggleModal = useUIStore((state) => state.toggleModal);
   const {
     setup: { components },
@@ -121,6 +122,22 @@ export const ProductionOverviewPanel = () => {
   const handleToggleRealm = useCallback((realmId: string) => {
     setExpandedRealmId((current) => (current === realmId ? null : realmId));
   }, []);
+  const autoSelectionRef = useRef<string | null>(null);
+
+  const selectedStructureType = useMemo(() => {
+    if (structureEntityId === 0) {
+      return null;
+    }
+    const targetId = String(structureEntityId);
+    if (playerVillages.some((village) => String(village.entityId) === targetId)) {
+      return StructureType.Village;
+    }
+    if (playerRealms.some((realm) => String(realm.entityId) === targetId)) {
+      return StructureType.Realm;
+    }
+    return null;
+  }, [structureEntityId, playerVillages, playerRealms]);
+  const isCampSelected = selectedStructureType === StructureType.Village;
 
   useEffect(() => {
     if (!hydrated) return;
@@ -415,6 +432,40 @@ export const ProductionOverviewPanel = () => {
       ),
     [realmCards],
   );
+
+  const autoSelectionKey = useMemo(() => {
+    if (structureEntityId === 0) {
+      return "none";
+    }
+    const baseKey = `${structureEntityId}-${isCampSelected ? "village" : "realm"}`;
+    const villageFlag = totals.villages > 0 ? "v1" : "v0";
+    const realmFlag = totals.realms > 0 ? "r1" : "r0";
+    return `${baseKey}-${villageFlag}-${realmFlag}`;
+  }, [structureEntityId, isCampSelected, totals.villages, totals.realms]);
+
+  useEffect(() => {
+    if (structureEntityId === 0) {
+      autoSelectionRef.current = "none";
+      return;
+    }
+
+    if (autoSelectionRef.current === autoSelectionKey) {
+      return;
+    }
+
+    autoSelectionRef.current = autoSelectionKey;
+
+    if (isCampSelected) {
+      if (totals.villages > 0 && activeTab !== "village") {
+        setActiveTab("village");
+      }
+      return;
+    }
+
+    if (totals.realms > 0 && activeTab !== "realm") {
+      setActiveTab("realm");
+    }
+  }, [activeTab, autoSelectionKey, isCampSelected, structureEntityId, totals.realms, totals.villages]);
 
   useEffect(() => {
     if (totals.villages === 0 && activeTab === "village") {

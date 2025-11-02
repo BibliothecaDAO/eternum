@@ -12,7 +12,7 @@ import { useComponentValue } from "@dojoengine/react";
 import { HasValue, runQuery } from "@dojoengine/recs";
 import clsx from "clsx";
 import { SparklesIcon } from "lucide-react";
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import Button from "@/ui/design-system/atoms/button";
 import { REALM_PRESETS, RealmPresetId } from "@/utils/automation-presets";
 import { useAutomationStore } from "@/hooks/store/use-automation-store";
@@ -312,8 +312,21 @@ export const ProductionSidebar = memo(
     const realmCount = realmStructures.length;
     const villageCount = villageStructures.length;
 
-    const [activeTab, setActiveTab] = useState<AutomationTab>(() => (realmCount > 0 ? "realm" : "village"));
+    const selectedRealmInfo = useMemo(
+      () => realms.find((realm) => realm.entityId === selectedRealmEntityId),
+      [realms, selectedRealmEntityId],
+    );
+    const selectedEntityType: AutomationTab =
+      selectedRealmInfo?.structure?.category === StructureType.Village ? "village" : "realm";
+
+    const [activeTab, setActiveTab] = useState<AutomationTab>(() => {
+      if (selectedEntityType === "village" && villageCount > 0) {
+        return "village";
+      }
+      return realmCount > 0 ? "realm" : "village";
+    });
     const [pendingPreset, setPendingPreset] = useState<PendingPresetAction | null>(null);
+    const selectionRef = useRef<string | null>(null);
 
     useEffect(() => {
       const activeStructures = activeTab === "realm" ? realmStructures : villageStructures;
@@ -337,6 +350,31 @@ export const ProductionSidebar = memo(
         setPendingPreset(null);
       }
     }, [pendingPreset, realmCount, villageCount]);
+
+    const autoSelectionKey = useMemo(
+      () => `${selectedRealmEntityId}-${selectedEntityType}-${villageCount > 0 ? 1 : 0}-${realmCount > 0 ? 1 : 0}`,
+      [selectedRealmEntityId, selectedEntityType, villageCount, realmCount],
+    );
+
+    useEffect(() => {
+      if (selectionRef.current === autoSelectionKey) {
+        return;
+      }
+      selectionRef.current = autoSelectionKey;
+
+      if (selectedEntityType === "village") {
+        if (villageCount > 0 && activeTab !== "village") {
+          setActiveTab("village");
+          setPendingPreset(null);
+        }
+        return;
+      }
+
+      if (realmCount > 0 && activeTab !== "realm") {
+        setActiveTab("realm");
+        setPendingPreset(null);
+      }
+    }, [activeTab, autoSelectionKey, selectedEntityType, villageCount, realmCount]);
 
     const activeStructures = activeTab === "realm" ? realmStructures : villageStructures;
     const activeLabel = activeTab === "realm" ? "Realms" : isBlitz ? "Camps" : "Villages";
