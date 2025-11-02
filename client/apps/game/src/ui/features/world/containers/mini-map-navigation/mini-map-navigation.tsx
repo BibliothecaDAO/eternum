@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { getIsBlitz } from "@bibliothecadao/eternum";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -6,6 +7,11 @@ import { INITIAL_VISIBILITY_STATE, buildToggleConfig, type MiniMapToggleKey, typ
 import { MiniMapControlPanel } from "./control-panel";
 import { MiniMapCanvas } from "./minimap-canvas";
 import { MiniMapToggleList } from "./toggle-list";
+
+interface MiniMapNavigationProps {
+  variant?: "floating" | "embedded";
+  className?: string;
+}
 
 interface MiniMapInstance {
   setMinimized?: (minimized: boolean) => void;
@@ -31,7 +37,8 @@ const MINIMAP_ACTIONS: Record<MiniMapToggleKey, (minimap: MiniMapInstance, check
   quests: (minimap, checked) => minimap.toggleQuests?.(checked),
 };
 
-export const MiniMapNavigation = () => {
+export const MiniMapNavigation = ({ variant = "floating", className }: MiniMapNavigationProps = {}) => {
+  const isEmbedded = variant === "embedded";
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const setTooltip = useUIStore((state) => state.setTooltip);
@@ -121,6 +128,12 @@ export const MiniMapNavigation = () => {
       } else if (isExpanded) {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
+      } else if (isEmbedded) {
+        const parent = canvas.parentElement;
+        const width = parent?.clientWidth ?? 350;
+        const height = parent?.clientHeight ?? 200;
+        canvas.width = width;
+        canvas.height = height;
       } else {
         canvas.width = 350;
         canvas.height = 175;
@@ -140,7 +153,7 @@ export const MiniMapNavigation = () => {
     window.addEventListener("resize", handleResize);
 
     return () => window.removeEventListener("resize", handleResize);
-  }, [isExpanded, isMinimized]);
+  }, [isEmbedded, isExpanded, isMinimized]);
 
   useEffect(() => {
     const syncWithMinimap = () => {
@@ -175,12 +188,22 @@ export const MiniMapNavigation = () => {
 
   return (
     <div
-      className={` z-[1001] self-start text-xxs pointer-events-auto flex flex-col panel-wood relative transition-all duration-300 ${
-        isExpanded ? "fixed !w-full !h-full !left-0 !top-10 !scale-[0.85]" : ""
-      } ${isMinimized ? "cursor-pointer fixed bottom-2 left-2" : ""}`}
+      className={cn(
+        isEmbedded
+          ? "flex h-full min-h-0 flex-col gap-2 text-xxs pointer-events-auto"
+          : "z-[1001] self-start text-xxs pointer-events-auto flex flex-col panel-wood relative transition-all duration-300",
+        isExpanded ? "fixed !w-full !h-full !left-0 !top-10 !scale-[0.85]" : undefined,
+        isMinimized ? (isEmbedded ? "cursor-pointer" : "cursor-pointer fixed bottom-2 left-2") : undefined,
+        className,
+      )}
     >
       {showMinimap && !isMinimized && (
-        <div className="flex flex-wrap p-1 justify-between items-center gap-2 bg-black/70 border-b border-amber-900/50">
+        <div
+          className={cn(
+            "flex flex-wrap items-center justify-between gap-2",
+            isEmbedded ? "pb-2" : "rounded-xl border border-white/10 bg-black/50 px-2 py-2",
+          )}
+        >
           <MiniMapToggleList
             toggles={toggleConfigs}
             visibility={visibilityStates}
@@ -201,15 +224,18 @@ export const MiniMapNavigation = () => {
         </div>
       )}
 
-      <MiniMapCanvas
-        ref={canvasRef}
-        showMinimap={showMinimap}
-        isMinimized={isMinimized}
-        isExpanded={isExpanded}
-        onRestore={toggleMinimize}
-        onHover={showTooltip}
-        onLeave={hideTooltip}
-      />
+      <div className="flex-1 min-h-0">
+        <MiniMapCanvas
+          ref={canvasRef}
+          showMinimap={showMinimap}
+          isMinimized={isMinimized}
+          isExpanded={isExpanded}
+          onRestore={toggleMinimize}
+          onHover={showTooltip}
+          onLeave={hideTooltip}
+          mode={variant}
+        />
+      </div>
     </div>
   );
 };
