@@ -1,10 +1,9 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { MiniMapNavigation } from "@/ui/features/world/containers/mini-map-navigation";
-import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
 import { PlayerRelicTray } from "@/ui/features/relics/components/player-relic-tray";
 import { RealtimeChatShell } from "@/ui/features/social/realtime-chat/ui/realtime-chat-shell";
+import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
+import { MiniMapNavigation } from "@/ui/features/world/containers/mini-map-navigation";
 import { useQuery } from "@bibliothecadao/react";
-import { ChevronDown, ChevronUp } from "lucide-react";
 import { ReactNode } from "react";
 
 import { BottomHudShell, HudPanel } from "./";
@@ -30,18 +29,18 @@ export const BottomHud = () => {
 
   return (
     <BottomHudShell className={isMinimized ? "gap-2 py-3" : undefined}>
-      <div className="flex w-full items-center justify-end">
+      {/* <div className="flex w-full items-center justify-end">
         <button
           type="button"
           onClick={toggleMinimized}
           aria-expanded={!isMinimized}
           aria-label={isMinimized ? "Expand bottom HUD" : "Collapse bottom HUD"}
-          className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70 transition hover:border-white/20 hover:bg-black/40 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/40"
+          className="pointer-events-auto inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-black/30 text-white/70 transition hover:border-white/20 hover:bg-black/40 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/40"
         >
-          <span>{isMinimized ? "Show HUD" : "Hide HUD"}</span>
+          <span className="sr-only">{isMinimized ? "Show HUD" : "Hide HUD"}</span>
           {isMinimized ? <ChevronUp size={14} className="shrink-0" /> : <ChevronDown size={14} className="shrink-0" />}
         </button>
-      </div>
+      </div> */}
 
       {!isMinimized && (
         <div className="flex min-h-0 w-full flex-1 items-stretch gap-3 overflow-hidden">

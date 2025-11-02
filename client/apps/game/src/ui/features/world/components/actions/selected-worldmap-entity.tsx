@@ -1,9 +1,9 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { BiomeInfoPanel } from "@/ui/features/world";
 import { ArmyBannerEntityDetail } from "@/ui/features/world/components/entities/banner/army-banner-entity-detail";
+import { StructureBannerEntityDetail } from "@/ui/features/world/components/entities/banner/structure-banner-entity-detail";
 import { QuestEntityDetail } from "@/ui/features/world/components/entities/quest-entity-detail";
 import { RelicCrateEntityDetail } from "@/ui/features/world/components/entities/relic-crate-entity-detail";
-import { StructureBannerEntityDetail } from "@/ui/features/world/components/entities/banner/structure-banner-entity-detail";
 import {
   Biome,
   getEntityIdFromKeys,
@@ -75,15 +75,11 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
   }
 
   if (!hasOccupier) {
-    return (
-      <div className="h-full overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-2">
-        <BiomeInfoPanel biome={biome} collapsed={false} />
-      </div>
-    );
+    return <BiomeInfoPanel biome={biome} collapsed={false} />;
   }
 
   return (
-    <div className="h-full overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-2">
+    <div className="">
       {isStructure ? (
         <StructureBannerEntityDetail
           structureEntityId={tile?.occupier_id}
