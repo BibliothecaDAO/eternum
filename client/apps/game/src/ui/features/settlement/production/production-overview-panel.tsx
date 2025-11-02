@@ -416,6 +416,12 @@ export const ProductionOverviewPanel = () => {
     [realmCards],
   );
 
+  useEffect(() => {
+    if (totals.villages === 0 && activeTab === "village") {
+      setActiveTab("realm");
+    }
+  }, [activeTab, totals.villages]);
+
   return (
     <div className="flex flex-col gap-3">
       <div>
@@ -426,20 +432,27 @@ export const ProductionOverviewPanel = () => {
       </div>
       <div className="flex items-center gap-2">
         {[
-          { value: "realm" as const, label: `Realms (${totals.realms})` },
+          { value: "realm" as const, label: `Realms (${totals.realms})`, disabled: false },
           {
             value: "village" as const,
             label: `${isBlitz ? "Camps" : "Villages"} (${totals.villages})`,
+            disabled: totals.villages === 0,
           },
         ].map((tab) => (
           <button
             key={tab.value}
             type="button"
-            onClick={() => setActiveTab(tab.value)}
+            onClick={() => {
+              if (tab.disabled) return;
+              setActiveTab(tab.value);
+            }}
+            disabled={tab.disabled}
             className={`rounded border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide transition ${
               activeTab === tab.value
                 ? "border-gold/60 bg-black/25 text-gold"
-                : "border-gold/20 text-gold/60 hover:text-gold"
+                : tab.disabled
+                  ? "border-gold/20 text-gold/40 cursor-not-allowed"
+                  : "border-gold/20 text-gold/60 hover:text-gold"
             }`}
           >
             {tab.label}

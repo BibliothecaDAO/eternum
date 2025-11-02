@@ -255,7 +255,7 @@ export const StructureSelectPanel = memo(
     );
 
     const tabbedStructures = useMemo<StructureTabWithItems[]>(() => {
-      return structureTabs.map((tab) => {
+      const allTabs = structureTabs.map((tab) => {
         const tabStructures = filteredStructures.filter((structure) => tab.categories.includes(structure.category));
         const sorted = sortStructures(tabStructures);
         return {
@@ -264,7 +264,16 @@ export const StructureSelectPanel = memo(
           count: sorted.length,
         };
       });
+
+      const populatedTabs = allTabs.filter((tab) => tab.count > 0);
+      if (populatedTabs.length > 0) {
+        return populatedTabs;
+      }
+
+      return allTabs.filter((tab) => tab.key === "realms");
     }, [filteredStructures, structureTabs, sortStructures]);
+
+    const shouldHideTabs = tabbedStructures.length <= 1 && tabbedStructures[0]?.key === "realms";
 
     const activeTabStructures = useMemo(
       () => tabbedStructures[activeTab]?.structures ?? [],
@@ -495,7 +504,7 @@ export const StructureSelectPanel = memo(
                       )}
                     </button>
                   </div>
-                  <Tabs.List className="flex flex-wrap gap-2">
+                  <Tabs.List className={`flex flex-wrap gap-2 ${shouldHideTabs ? "hidden" : ""}`}>
                     {tabbedStructures.map((tab) => (
                       <Tabs.Tab key={tab.key}>
                         <div className="flex items-center gap-2">
