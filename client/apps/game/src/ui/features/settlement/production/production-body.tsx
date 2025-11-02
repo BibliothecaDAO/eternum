@@ -8,13 +8,7 @@ import {
   getStructureRelicEffects,
 } from "@bibliothecadao/eternum";
 import { useBuildings, useDojo } from "@bibliothecadao/react";
-import {
-  getProducedResource,
-  RealmInfo as RealmInfoType,
-  RELICS,
-  ResourcesIds,
-  StructureType,
-} from "@bibliothecadao/types";
+import { getProducedResource, RealmInfo as RealmInfoType, RELICS, ResourcesIds } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { ProductionOverview } from "./production-overview";
@@ -89,11 +83,6 @@ export const ProductionBody = ({
   const realmDisplayName = useMemo(() => {
     return getStructureName(realm.structure, getIsBlitz()).name;
   }, [realm.structure]);
-
-  const entityType = useMemo(() => {
-    const category = Number(realm.structure?.category ?? 0);
-    return category === StructureType.Village ? "village" : "realm";
-  }, [realm.structure?.category]);
 
   return (
     <div className="space-y-6">

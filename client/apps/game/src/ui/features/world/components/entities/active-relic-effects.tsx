@@ -91,12 +91,7 @@ export const ActiveRelicEffects = ({ relicEffects, entityId, compact = false, cl
   const smallTextClass = compact ? "text-xxs" : "text-xs";
 
   if (activeEffects.length === 0) {
-    return (
-      <div className={`flex flex-col gap-1 w-full mt-1 border-t border-gold/20 pt-1 ${className}`}>
-        <div className={`${smallTextClass} text-gold/80 uppercase font-semibold`}>Active Relic Effects</div>
-        <div className="text-xs text-gold/60 italic p-2 text-center">No active relic effects</div>
-      </div>
-    );
+    return null;
   }
 
   const summaryContainerClass = compact ? "flex flex-wrap gap-1.5 mt-1" : "grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2";

@@ -11,7 +11,7 @@ import { getProducedResource, ID, RealmInfo, ResourcesIds, StructureType } from 
 import { useComponentValue } from "@dojoengine/react";
 import { HasValue, runQuery } from "@dojoengine/recs";
 import clsx from "clsx";
-import { SparklesIcon } from "lucide-react";
+import { CheckCircle2Icon, SparklesIcon } from "lucide-react";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import Button from "@/ui/design-system/atoms/button";
 import { REALM_PRESETS, RealmPresetId } from "@/utils/automation-presets";
@@ -187,6 +187,7 @@ const SidebarRealm = ({
         isSelected ? "border-gold/70 bg-gold/5 shadow-[0_0_18px_rgba(255,204,102,0.45)]" : "hover:bg-gold/5",
       )}
       onClick={onSelect}
+      aria-selected={isSelected}
     >
       <div className="flex flex-col gap-2">
         <div className="flex items-start justify-between gap-3">
@@ -198,23 +199,34 @@ const SidebarRealm = ({
                 : `${buildings.size} buildings • no production`}
             </p>
           </div>
-          {(hasActivatedWonderBonus || activeRelics.length > 0) && (
-            <div className="flex gap-1 shrink-0">
-              {hasActivatedWonderBonus && (
-                <div
-                  className="bg-gold/20 p-1 rounded"
-                  title={`Wonder Bonus: +${((wonderBonus - 1) * 100).toFixed(2)}%`}
-                >
-                  <SparklesIcon className="w-4 h-4 text-gold" />
-                </div>
-              )}
-              {activeRelics.length > 0 && (
-                <div className="bg-relic-activated/20 p-1 rounded" title={`${activeRelics.length} Active Relics`}>
-                  <span className="text-xs font-bold text-relic-activated">{activeRelics.length}</span>
-                </div>
-              )}
-            </div>
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            {isSelected && (
+              <div
+                className="flex items-center gap-1 rounded bg-gold/20 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-gold shadow-[0_0_12px_rgba(255,204,102,0.25)]"
+                title="Selected structure"
+              >
+                <CheckCircle2Icon className="h-4 w-4" aria-hidden="true" />
+                <span>Selected</span>
+              </div>
+            )}
+            {(hasActivatedWonderBonus || activeRelics.length > 0) && (
+              <div className="flex gap-1 shrink-0">
+                {hasActivatedWonderBonus && (
+                  <div
+                    className="bg-gold/20 p-1 rounded"
+                    title={`Wonder Bonus: +${((wonderBonus - 1) * 100).toFixed(2)}%`}
+                  >
+                    <SparklesIcon className="w-4 h-4 text-gold" />
+                  </div>
+                )}
+                {activeRelics.length > 0 && (
+                  <div className="bg-relic-activated/20 p-1 rounded" title={`${activeRelics.length} Active Relics`}>
+                    <span className="text-xs font-bold text-relic-activated">{activeRelics.length}</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
