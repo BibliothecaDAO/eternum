@@ -182,6 +182,7 @@ export async function maintainOrchestrator(p: Params) {
     const name = entry.name as string;
     const startTs = entry.slotTimestamp as number;
     log(`World ${name} @ ${fmt(startTs)} | Deploy`);
+    log(`Account present: ${acct ? 'yes' : 'no'}, pk present: ${pk ? 'yes' : 'no'}`);
     await generateFactoryCalldata({
       chain,
       worldName: name,
