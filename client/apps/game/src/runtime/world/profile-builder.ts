@@ -20,16 +20,24 @@ export const buildWorldProfile = async (chain: Chain, name: string): Promise<Wor
 
   // 2) Resolve world address from the selected world's Torii
   let worldAddress: string | null = null;
+  const normalizeAddress = (addr: unknown): string | null => {
+    if (addr == null) return null;
+    if (typeof addr === "string") return addr;
+    if (typeof addr === "bigint") return "0x" + addr.toString(16);
+    return null;
+  };
   try {
     const sqlApi = new SqlApi(`${toriiBaseUrl}/sql`);
-    worldAddress = await sqlApi.fetchWorldAddress();
+    const fetched = await sqlApi.fetchWorldAddress();
+    worldAddress = normalizeAddress(fetched);
   } catch {
     // ignore and try factory fallback
   }
 
   if (!worldAddress) {
     // Fallback: read from factory's wf-WorldDeployed table
-    worldAddress = await resolveWorldAddressFromFactory(factorySqlBaseUrl, name);
+    const fallback = await resolveWorldAddressFromFactory(factorySqlBaseUrl, name);
+    worldAddress = normalizeAddress(fallback) ?? fallback;
   }
 
   // As a last resort, default to 0x0 so configuration can still proceed with patched contracts
