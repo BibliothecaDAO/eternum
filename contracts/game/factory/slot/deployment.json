@@ -1,12 +1,5 @@
 [
   {
-    "name": "bltz-rift-fate-31",
-    "slotTimestamp": 1762183800,
-    "deployed": true,
-    "configured": true,
-    "indexed": true
-  },
-  {
     "name": "bltz-snow-soft-11",
     "slotTimestamp": 1762198200,
     "deployed": true,
@@ -23,6 +16,13 @@
   {
     "name": "bltz-dark-zeal-18",
     "slotTimestamp": 1762248600,
+    "deployed": true,
+    "configured": true,
+    "indexed": true
+  },
+  {
+    "name": "bltz-rise-gold-30",
+    "slotTimestamp": 1762270200,
     "deployed": true,
     "configured": true,
     "indexed": true
