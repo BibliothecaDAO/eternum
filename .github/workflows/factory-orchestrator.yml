@@ -90,7 +90,7 @@ jobs:
           RPC_URL: ${{ github.event.inputs.factory_orchestrator_rpc_url || vars.FACTORY_ORCHESTRATOR_RPC_URL }}
           ADMIN_ADDRESS: ${{ github.event.inputs.factory_orchestrator_admin_address || vars.FACTORY_ORCHESTRATOR_ADMIN_ADDRESS }}
           DOJO_ACCOUNT_ADDRESS: ${{ vars.FACTORY_ORCHESTRATOR_DOJO_ACCOUNT_ADDRESS }}
-          DOJO_PRIVATE_KEY: ${{ secrets.DOJO_PRIVATE_KEY_FACTORY_DEPLOYER }}
+          DOJO_PRIVATE_KEY: ${{ secrets.FACTORY_ORCHESTRATOR_DOJO_PRIVATE_KEY }}
           TORII_CREATOR_URL: ${{ github.event.inputs.factory_orchestrator_torii_creator_url || vars.FACTORY_ORCHESTRATOR_TORII_CREATOR_URL || 'https://torii-creator.zerocredence.workers.dev/dispatch/torii' }}
           TORII_NAMESPACES: ${{ github.event.inputs.factory_orchestrator_torii_namespaces || vars.FACTORY_ORCHESTRATOR_TORII_NAMESPACES || 's1_eternum' }}
           CARTRIDGE_API_BASE: ${{ github.event.inputs.factory_orchestrator_cartridge_api_base || vars.FACTORY_ORCHESTRATOR_CARTRIDGE_API_BASE || 'https://api.cartridge.gg' }}
