@@ -1,9 +1,9 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { BiomeInfoPanel } from "@/ui/features/world";
+import { UnoccupiedTileQuadrants } from "@/ui/features/world/components/actions/unoccupied-tile-quadrants";
 import { ArmyBannerEntityDetail } from "@/ui/features/world/components/entities/banner/army-banner-entity-detail";
+import { StructureBannerEntityDetail } from "@/ui/features/world/components/entities/banner/structure-banner-entity-detail";
 import { QuestEntityDetail } from "@/ui/features/world/components/entities/quest-entity-detail";
 import { RelicCrateEntityDetail } from "@/ui/features/world/components/entities/relic-crate-entity-detail";
-import { StructureBannerEntityDetail } from "@/ui/features/world/components/entities/banner/structure-banner-entity-detail";
 import {
   Biome,
   getEntityIdFromKeys,
@@ -20,11 +20,7 @@ export const SelectedWorldmapEntity = () => {
   const selectedHex = useUIStore((state) => state.selectedHex);
 
   if (!selectedHex) {
-    return (
-      <div className="flex h-full items-center justify-center rounded-2xl border border-white/5 bg-black/40 p-4 text-sm text-slate-200/70">
-        Select a hex to inspect armies, structures, and terrain.
-      </div>
-    );
+    return null;
   }
 
   return <SelectedWorldmapEntityContent selectedHex={selectedHex} />;
@@ -34,7 +30,10 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
   const { setup } = useDojo();
   const tileComponent = setup.components.Tile;
 
-  const rawTile = useMemo(() => {
+  const gridTemplateColumns = "var(--selected-worldmap-entity-grid-cols, 1fr)";
+  const gridTemplateRows = "var(--selected-worldmap-entity-grid-rows, auto)";
+
+  const tile = useMemo(() => {
     if (!selectedHex || !tileComponent) return undefined;
     const contractPosition = {
       x: BigInt(selectedHex.col),
@@ -43,9 +42,6 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
 
     return getComponentValue(tileComponent, getEntityIdFromKeys([contractPosition.x, contractPosition.y]));
   }, [tileComponent, selectedHex?.col, selectedHex?.row]);
-
-  const tile = rawTile ?? null;
-  const isTileLoaded = rawTile !== undefined;
 
   const biome = useMemo(() => {
     return Biome.getBiome(selectedHex.col || 0, selectedHex.row || 0);
@@ -58,12 +54,8 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
   const isQuest = isTileOccupierQuest(occupierType);
   const isExplored = !!tile && Number(tile.biome) !== 0;
 
-  if (!isTileLoaded) {
-    return (
-      <div className="flex h-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-4">
-        <span className="text-xs text-slate-200/60">Fetching tile data…</span>
-      </div>
-    );
+  if (!tile) {
+    return null;
   }
 
   if (!isExplored) {
@@ -75,32 +67,39 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
   }
 
   if (!hasOccupier) {
-    return (
-      <div className="h-full overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-2">
-        <BiomeInfoPanel biome={biome} collapsed={false} />
-      </div>
-    );
+    return <UnoccupiedTileQuadrants biome={biome} />;
   }
 
+  const gridAutoRows = "var(--selected-worldmap-entity-grid-auto-rows, minmax(0, auto))";
+
+  const occupierEntityId = tile.occupier_id;
+  const sharedDetailProps = {
+    compact: true,
+    layoutVariant: "banner",
+  } as const;
+
   return (
-    <div className="h-full overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-2">
+    <div
+      className="grid h-full min-h-0 grid-cols-1 gap-2 overflow-auto"
+      style={{ gridTemplateColumns, gridTemplateRows, gridAutoRows }}
+    >
       {isStructure ? (
         <StructureBannerEntityDetail
-          structureEntityId={tile?.occupier_id}
-          compact
+          structureEntityId={occupierEntityId}
           maxInventory={12}
           showButtons={false}
+          {...sharedDetailProps}
         />
       ) : isChest ? (
-        <RelicCrateEntityDetail crateEntityId={tile?.occupier_id} layout="banner" compact />
+        <RelicCrateEntityDetail crateEntityId={occupierEntityId} {...sharedDetailProps} />
       ) : isQuest ? (
-        <QuestEntityDetail questEntityId={tile?.occupier_id} layout="banner" className="h-full" compact />
+        <QuestEntityDetail questEntityId={occupierEntityId} className="h-full" {...sharedDetailProps} />
       ) : (
         <ArmyBannerEntityDetail
-          armyEntityId={tile?.occupier_id}
-          compact
+          armyEntityId={occupierEntityId}
           showButtons={false}
           bannerPosition={selectedHex}
+          {...sharedDetailProps}
         />
       )}
     </div>

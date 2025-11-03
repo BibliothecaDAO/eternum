@@ -180,10 +180,10 @@ export function RealtimeChatShell({
   const unreadBadgeClass = "rounded-full border px-2 py-0.5 text-[11px] leading-none";
 
   return (
-    <div className={cn("w-full", className)}>
+    <div className={cn("relative w-full", className)}>
       <div
         className={cn(
-          "flex flex-col overflow-hidden transition-all duration-300 rounded-2xl bg-black/30",
+          "flex flex-col overflow-hidden transition-all duration-300 rounded-2xl bg-black/70",
           isExpanded
             ? isHeightExpanded
               ? isEmbedded
@@ -196,7 +196,7 @@ export function RealtimeChatShell({
               ? "h-16"
               : "h-14",
           isEmbedded ? "w-full" : "w-[800px] max-w-[45vw]",
-          isExpanded ? "bg-black/40" : "bg-black/20",
+          isExpanded ? "bg-black/80" : "bg-transparent",
         )}
       >
         {/* Header - Only shown when not expanded */}

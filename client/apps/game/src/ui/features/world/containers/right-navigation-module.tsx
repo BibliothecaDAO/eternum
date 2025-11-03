@@ -17,6 +17,7 @@ import { motion } from "framer-motion";
 import { GripVertical, X } from "lucide-react";
 import type { ComponentProps, ReactNode, PointerEvent as ReactPointerEvent } from "react";
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 type CircleButtonProps = ComponentProps<typeof CircleButton>;
 
@@ -139,6 +140,7 @@ export const RightNavigationModule = () => {
   const structures = useUIStore((state) => state.playerStructures);
   const isBottomHudMinimized = useUIStore((state) => state.isBottomHudMinimized);
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
+  const isModalOpen = useUIStore((state) => state.showModal);
 
   const ConnectedAccount = useAccountStore((state) => state.account);
   const accountName = useAccountStore((state) => state.accountName);
@@ -161,6 +163,12 @@ export const RightNavigationModule = () => {
     typeof window !== "undefined" ? localStorage.getItem(RESIZE_HINT_STORAGE_KEY) !== "true" : true,
   );
   const resizeState = useRef({ startX: 0, startWidth: panelWidth });
+  const [chatPortalTarget, setChatPortalTarget] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    setChatPortalTarget(document.body);
+  }, []);
 
   const navigationItems = useMemo(
     () =>
@@ -393,14 +401,23 @@ export const RightNavigationModule = () => {
         )}
       </div>
 
-      <div className="pointer-events-auto flex justify-end absolute right-0 bottom-0">
-        <RealtimeChatShell
-          initializer={realtimeInitializer}
-          zoneIds={zoneIds}
-          defaultZoneId={defaultZoneId}
-          className="w-full "
-        />
-      </div>
+      {chatPortalTarget &&
+        createPortal(
+          <div
+            className={clsx(
+              "flex justify-end fixed right-0 bottom-6 transition-opacity duration-200",
+              isModalOpen ? "pointer-events-none z-[10] opacity-0" : "pointer-events-auto z-[45] opacity-100",
+            )}
+          >
+            <RealtimeChatShell
+              initializer={realtimeInitializer}
+              zoneIds={zoneIds}
+              defaultZoneId={defaultZoneId}
+              className="w-full"
+            />
+          </div>,
+          chatPortalTarget,
+        )}
     </>
   );
 };
