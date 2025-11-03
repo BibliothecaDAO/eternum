@@ -31,16 +31,6 @@ export const LandingWelcome = () => {
           <div className="absolute inset-0 flex flex-col items-center justify-center px-4 py-8 text-center text-gold sm:px-8 sm:py-10">
             <EternumWordsLogo className="mx-auto w-44 sm:w-56 lg:w-72 xl:w-[360px]" />
 
-            {/* Current game indicator above buttons */}
-            {activeWorld && (
-              <div className="mt-6 sm:mt-8 bg-brown/80 border border-gold/30 rounded-lg px-4 py-2 backdrop-blur-sm">
-                <div className="text-xs sm:text-sm text-gold/70 uppercase tracking-widest mb-1 font-semibold">
-                  Current Game
-                </div>
-                <div className="text-base sm:text-lg text-gold font-bold">{activeWorld}</div>
-              </div>
-            )}
-
             {/* Buttons */}
             <div className="mt-10 sm:mt-14 flex w-full flex-col items-center gap-3 sm:flex-row sm:justify-center sm:gap-4">
               <Button variant={activeWorld ? "opaque" : "default"} className={buttonClasses} onClick={handleSelectGame}>
@@ -59,3 +49,4 @@ export const LandingWelcome = () => {
     </section>
   );
 };
+

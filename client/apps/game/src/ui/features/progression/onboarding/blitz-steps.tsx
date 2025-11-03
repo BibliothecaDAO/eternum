@@ -291,6 +291,7 @@ const FactoryGamesList = () => {
     const upcoming: FactoryGame[] = [];
     const ended: FactoryGame[] = [];
     const offline: FactoryGame[] = [];
+
     for (const g of games) {
       if (g.status !== "ok") {
         offline.push(g);
@@ -306,6 +307,35 @@ const FactoryGamesList = () => {
       else if (isEnded) ended.push(g);
       else offline.push(g);
     }
+
+    // Sort each section by time
+    // Upcoming: earliest start first
+    upcoming.sort((a, b) => {
+      const as = a.startMainAt ?? Number.MAX_SAFE_INTEGER;
+      const bs = b.startMainAt ?? Number.MAX_SAFE_INTEGER;
+      if (as !== bs) return as - bs;
+      return a.name.localeCompare(b.name);
+    });
+
+    // Ongoing: soonest to end first; fallback to earliest start
+    ongoing.sort((a, b) => {
+      const aEnd = a.endAt && a.endAt > nowSec ? a.endAt : Number.MAX_SAFE_INTEGER;
+      const bEnd = b.endAt && b.endAt > nowSec ? b.endAt : Number.MAX_SAFE_INTEGER;
+      if (aEnd !== bEnd) return aEnd - bEnd;
+      const as = a.startMainAt ?? Number.MAX_SAFE_INTEGER;
+      const bs = b.startMainAt ?? Number.MAX_SAFE_INTEGER;
+      if (as !== bs) return as - bs;
+      return a.name.localeCompare(b.name);
+    });
+
+    // Ended: most recent end first
+    ended.sort((a, b) => {
+      const ae = a.endAt ?? 0;
+      const be = b.endAt ?? 0;
+      if (be !== ae) return be - ae;
+      return a.name.localeCompare(b.name);
+    });
+
     return { ongoing, upcoming, ended, offline };
   };
 

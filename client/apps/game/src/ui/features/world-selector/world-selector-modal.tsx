@@ -493,7 +493,7 @@ export const WorldSelectorModal = ({
               </div>
               <div>
                 <h2 className="text-2xl font-bold tracking-tight text-gold uppercase">Select Game</h2>
-                <p className="text-sm text-gold/60 mt-1">Choose your world to enter the eternal conflict</p>
+                <p className="text-sm text-gold/60 mt-1">Choose your game </p>
               </div>
             </div>
             <Button onClick={cancel} variant="outline" size="md">

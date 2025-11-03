@@ -195,7 +195,7 @@ export const SettingsWindow = () => {
           <section className="space-y-3">
             <Headline>World</Headline>
             <div className="flex items-center justify-between text-xs text-gray-gold">
-              <div>Choose a different world (Torii namespace)</div>
+              <div>Switch Game</div>
               <Button
                 size="xs"
                 onClick={async () => {
@@ -213,7 +213,7 @@ export const SettingsWindow = () => {
                   }
                 }}
               >
-                Change World
+                Change Game
               </Button>
             </div>
           </section>

@@ -37,55 +37,51 @@ import {
   AlertTriangle,
   CheckCircle2,
   ChevronDown,
-  ChevronLeft,
   ChevronUp,
   Copy,
   Download,
   Loader2,
   RefreshCw,
   Trash2,
-  XCircle,
+  XCircle
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { shortString } from "starknet";
 import { env } from "../../../../../env";
-import { getManifestJsonString, type ChainType } from "../utils/manifest-loader";
+import { AdminHeader } from "../components/admin-header";
 import {
-  DEFAULT_VERSION,
+  CARTRIDGE_API_BASE,
   DEFAULT_MAX_ACTIONS,
   DEFAULT_NAMESPACE,
+  DEFAULT_TORII_NAMESPACE,
+  DEFAULT_VERSION,
   FACTORY_ADDRESSES,
   getExplorerTxUrl,
-  getFactorySqlBaseUrl,
-  CARTRIDGE_API_BASE,
-  getRpcUrlForChain,
-  DEFAULT_TORII_NAMESPACE,
+  getRpcUrlForChain
 } from "../constants";
-import {
-  getStoredWorldNames,
-  saveWorldNameToStorage,
-  getConfiguredWorlds,
-  markWorldAsConfigured,
-  getCurrentWorldName,
-  setCurrentWorldName,
-  getDeployedAddressMap,
-  setDeployedAddressMap,
-  cacheDeployedAddress,
-  getIndexerCooldown,
-  setIndexerCooldown,
-  isWorldOnCooldown,
-  getRemainingCooldown,
-  persistStoredWorldNames,
-} from "../utils/storage";
+import { useFactoryAdmin } from "../hooks/use-factory-admin";
+import { generateCairoOutput, generateFactoryCalldata } from "../services/factory-config";
 import {
   checkIndexerExists as checkIndexerExistsService,
   createIndexer as createIndexerService,
   getWorldDeployedAddress as getWorldDeployedAddressService,
 } from "../services/factory-indexer";
-import { generateFactoryCalldata, generateCairoOutput } from "../services/factory-config";
-import { AdminHeader } from "../components/admin-header";
-import { useFactoryAdmin } from "../hooks/use-factory-admin";
+import { getManifestJsonString, type ChainType } from "../utils/manifest-loader";
+import {
+  cacheDeployedAddress,
+  getConfiguredWorlds,
+  getCurrentWorldName,
+  getDeployedAddressMap,
+  getRemainingCooldown,
+  getStoredWorldNames,
+  isWorldOnCooldown,
+  markWorldAsConfigured,
+  persistStoredWorldNames,
+  saveWorldNameToStorage,
+  setCurrentWorldName,
+  setIndexerCooldown
+} from "../utils/storage";
 
 type TxState = { status: "idle" | "running" | "success" | "error"; hash?: string; error?: string };
 
@@ -284,6 +280,21 @@ export const FactoryPage = () => {
   const [showCairoOutput, setShowCairoOutput] = useState<boolean>(false);
   const [showFullConfig, setShowFullConfig] = useState<boolean>(false);
   const [showDevConfig, setShowDevConfig] = useState<boolean>(false);
+  const [devModeOn, setDevModeOn] = useState<boolean>(() => {
+    try {
+      return !!(ETERNUM_CONFIG()?.dev?.mode?.on);
+    } catch {
+      return false;
+    }
+  });
+  const [durationHours, setDurationHours] = useState<number>(() => {
+    try {
+      const secs = Number(ETERNUM_CONFIG()?.season?.durationSeconds || 0);
+      return Math.max(1, Math.round(secs / 3600));
+    } catch {
+      return 24;
+    }
+  });
   const [storedWorldNames, setStoredWorldNames] = useState<string[]>([]);
   const [showStoredNames, setShowStoredNames] = useState<boolean>(true); // Show by default
   const [worldIndexerStatus, setWorldIndexerStatus] = useState<Record<string, boolean>>({});
@@ -298,6 +309,9 @@ export const FactoryPage = () => {
   // Per-world season start override (epoch seconds)
   const [startMainAtOverrides, setStartMainAtOverrides] = useState<Record<string, number>>({});
   const [startMainAtErrors, setStartMainAtErrors] = useState<Record<string, string>>({});
+  // Per-world overrides
+  const [devModeOverrides, setDevModeOverrides] = useState<Record<string, boolean>>({});
+  const [durationHoursOverrides, setDurationHoursOverrides] = useState<Record<string, number>>({});
 
   // Shared Eternum config (static values), manifest will be patched per-world at runtime
   const eternumConfig: EternumConfig = useMemo(() => ETERNUM_CONFIG(), []);
@@ -1019,6 +1033,55 @@ export const FactoryPage = () => {
                                             <p className="text-[11px] text-red-600">{startMainAtErrors[name]}</p>
                                           )}
                                         </div>
+                                        <div className="space-y-1">
+                                          <label className="text-xs font-semibold text-slate-600">Dev Mode</label>
+                                          <div className="flex items-center gap-2">
+                                            <input
+                                              id={`dev-mode-${name}`}
+                                              type="checkbox"
+                                              checked={
+                                                Object.prototype.hasOwnProperty.call(devModeOverrides, name)
+                                                  ? !!devModeOverrides[name]
+                                                  : devModeOn
+                                              }
+                                              onChange={(e) =>
+                                                setDevModeOverrides((p) => ({ ...p, [name]: e.target.checked }))
+                                              }
+                                              className="h-4 w-4 accent-blue-600"
+                                            />
+                                            <label htmlFor={`dev-mode-${name}`} className="text-xs text-slate-700">
+                                              Enable developer mode for this world
+                                            </label>
+                                          </div>
+                                          <p className="text-[10px] text-slate-500">Controls in-game dev features.</p>
+                                        </div>
+                                      </div>
+
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                          <label className="text-xs font-semibold text-slate-600">
+                                            Game Duration (hours)
+                                          </label>
+                                          <input
+                                            type="number"
+                                            min={1}
+                                            value={
+                                              Object.prototype.hasOwnProperty.call(durationHoursOverrides, name)
+                                                ? Number(durationHoursOverrides[name] || 0)
+                                                : Number(durationHours || 0)
+                                            }
+                                            onChange={(e) =>
+                                              setDurationHoursOverrides((p) => ({
+                                                ...p,
+                                                [name]: Number(e.target.value || 0),
+                                              }))
+                                            }
+                                            className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md"
+                                          />
+                                          <p className="text-[10px] text-slate-500">
+                                            Applies to season.durationSeconds (hours × 3600).
+                                          </p>
+                                        </div>
                                       </div>
 
                                       <div className="flex items-center gap-2">
@@ -1057,15 +1120,32 @@ export const FactoryPage = () => {
                                               const chosenStart = sel && sel > 0 ? sel : nextHourDefault;
                                               const selectedStart = Math.max(nowSec, Math.min(chosenStart, maxAllowed));
 
-                                              const configForWorld = selectedStart
-                                                ? ({
-                                                    ...eternumConfig,
-                                                    season: {
-                                                      ...eternumConfig.season,
-                                                      startMainAt: selectedStart,
-                                                    },
-                                                  } as any)
-                                                : eternumConfig;
+                                              const selectedDevMode =
+                                                Object.prototype.hasOwnProperty.call(devModeOverrides, name)
+                                                  ? !!devModeOverrides[name]
+                                                  : devModeOn;
+                                              const selectedDurationHours = Object.prototype.hasOwnProperty.call(
+                                                durationHoursOverrides,
+                                                name,
+                                              )
+                                                ? Number(durationHoursOverrides[name] || 0)
+                                                : Number(durationHours || 0);
+
+                                              const configForWorld = ({
+                                                ...eternumConfig,
+                                                dev: {
+                                                  ...(eternumConfig as any).dev,
+                                                  mode: {
+                                                    ...((eternumConfig as any).dev?.mode || {}),
+                                                    on: selectedDevMode,
+                                                  },
+                                                },
+                                                season: {
+                                                  ...eternumConfig.season,
+                                                  startMainAt: selectedStart,
+                                                  durationSeconds: Math.max(1, selectedDurationHours) * 3600,
+                                                },
+                                              } as any);
 
                                               const ctx = {
                                                 account,
@@ -1183,6 +1263,38 @@ export const FactoryPage = () => {
                 <div className="p-6 bg-slate-50 rounded-2xl border-2 border-slate-200">
                   <h3 className="text-lg font-bold text-slate-900 mb-4">Configuration</h3>
                   <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Dev Mode</label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            id="dev-mode-toggle"
+                            type="checkbox"
+                            checked={devModeOn}
+                            onChange={(e) => setDevModeOn(e.target.checked)}
+                            className="h-4 w-4 accent-blue-600"
+                          />
+                          <label htmlFor="dev-mode-toggle" className="text-sm text-slate-700">
+                            Enable developer mode for this game
+                          </label>
+                        </div>
+                        <p className="text-[10px] text-slate-500">Controls in-game dev features and faster flows.</p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">
+                          Game Duration (hours)
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          value={durationHours}
+                          onChange={(e) => setDurationHours(Number(e.target.value || 0))}
+                          className="w-full px-4 py-3 bg-white border-2 border-slate-200 hover:border-blue-300 focus:border-blue-500 rounded-xl text-slate-900 focus:outline-none transition-all"
+                        />
+                        <p className="text-[10px] text-slate-500">Applies to season.durationSeconds (hours × 3600).</p>
+                      </div>
+                    </div>
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">
                         Factory Address
