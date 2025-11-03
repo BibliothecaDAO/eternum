@@ -1,5 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { BiomeInfoPanel } from "@/ui/features/world";
+import { UnoccupiedTileQuadrants } from "@/ui/features/world/components/actions/unoccupied-tile-quadrants";
 import { ArmyBannerEntityDetail } from "@/ui/features/world/components/entities/banner/army-banner-entity-detail";
 import { StructureBannerEntityDetail } from "@/ui/features/world/components/entities/banner/structure-banner-entity-detail";
 import { QuestEntityDetail } from "@/ui/features/world/components/entities/quest-entity-detail";
@@ -37,7 +37,7 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
   const gridTemplateColumns = "var(--selected-worldmap-entity-grid-cols, 1fr)";
   const gridTemplateRows = "var(--selected-worldmap-entity-grid-rows, auto)";
 
-  const rawTile = useMemo(() => {
+  const tile = useMemo(() => {
     if (!selectedHex || !tileComponent) return undefined;
     const contractPosition = {
       x: BigInt(selectedHex.col),
@@ -46,9 +46,6 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
 
     return getComponentValue(tileComponent, getEntityIdFromKeys([contractPosition.x, contractPosition.y]));
   }, [tileComponent, selectedHex?.col, selectedHex?.row]);
-
-  const tile = rawTile ?? null;
-  const isTileLoaded = rawTile !== undefined;
 
   const biome = useMemo(() => {
     return Biome.getBiome(selectedHex.col || 0, selectedHex.row || 0);
@@ -61,11 +58,9 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
   const isQuest = isTileOccupierQuest(occupierType);
   const isExplored = !!tile && Number(tile.biome) !== 0;
 
-  if (!isTileLoaded) {
+  if (!tile) {
     return (
-      <div className="flex h-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-4">
-        <span className="text-xs text-slate-200/60">Fetching tile data…</span>
-      </div>
+      <div className="flex h-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-4 text-center text-sm text-slate-100/80"></div>
     );
   }
 
@@ -78,7 +73,7 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
   }
 
   if (!hasOccupier) {
-    return <BiomeInfoPanel biome={biome} collapsed={false} />;
+    return <UnoccupiedTileQuadrants biome={biome} />;
   }
 
   const gridAutoRows = "var(--selected-worldmap-entity-grid-auto-rows, minmax(0, auto))";
