@@ -27,6 +27,16 @@ const ts = () => new Date().toISOString().split("T")[1].replace("Z", "Z");
 const log = (m: string) => console.log(`[${ts()}] ${m}`);
 const fmt = (epoch: number) => new Date(epoch * 1000).toISOString().replace(".000Z", "Z");
 
+function hexToAscii(hex: string): string {
+  const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
+  let s = "";
+  for (let i = 0; i < clean.length; i += 2) {
+    const byte = parseInt(clean.slice(i, i + 2), 16);
+    if (!isNaN(byte) && byte !== 0) s += String.fromCharCode(byte);
+  }
+  return s;
+}
+
 function getVersion(cmd: string, args: string[] = ["--version"]): string {
   try {
     const r = spawnSync(cmd, args, { encoding: "utf-8" });
@@ -176,15 +186,31 @@ export async function maintainOrchestrator(p: Params) {
     const args = (await Bun.file(deployPath).text()).trim().split(/\s+/);
     log(`Deploy calldata file: ${deployPath}`);
     log(`Deploy calldata: ${args.join(" ")}`);
-    const depHash = sozo([
-      "--profile", chain,
-      "--rpc-url", rpcUrl,
-      "--account-address", acct,
-      "--private-key", pk,
-      factory,
-      "deploy",
-      ...args,
-    ], { outDir: path.join(repoRoot, `contracts/game/factory/${chain}/calldata/${name}`), label: "deploy" });
+    let depHash: string | undefined;
+    try {
+      depHash = sozo([
+        "--profile", chain,
+        "--rpc-url", rpcUrl,
+        "--account-address", acct,
+        "--private-key", pk,
+        factory,
+        "deploy",
+        ...args,
+      ], { outDir: path.join(repoRoot, `contracts/game/factory/${chain}/calldata/${name}`), label: "deploy" });
+    } catch (e) {
+      // Fallback: retry with sstr if first arg is hex felt
+      if (args[0] && /^0x[0-9a-fA-F]+$/.test(args[0])) {
+        const ascii = hexToAscii(String(args[0]));
+        const retryArgs = [
+          ...["--profile", chain, "--rpc-url", rpcUrl, "--account-address", acct, "--private-key", pk],
+          factory, "deploy", `sstr:'${ascii}'`, ...args.slice(1),
+        ];
+        log(`Primary deploy failed; retrying with sstr:'${ascii}'`);
+        depHash = sozo(retryArgs, { outDir: path.join(repoRoot, `contracts/game/factory/${chain}/calldata/${name}`), label: "deploy_retry_sstr" });
+      } else {
+        throw e;
+      }
+    }
     log(`Deployed: tx=${depHash ?? '<unknown>'}`);
     entry.deployed = true; writeState(chain, state);
   }
