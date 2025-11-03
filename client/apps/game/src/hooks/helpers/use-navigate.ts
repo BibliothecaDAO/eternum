@@ -185,12 +185,7 @@ export const useGoToStructure = (setupResult: SetupResult | null) => {
     [setupResult],
   );
 
-  return async (
-    structureEntityId: ID,
-    position: Position,
-    isMapView: boolean,
-    options?: { spectator?: boolean },
-  ) => {
+  return async (structureEntityId: ID, position: Position, isMapView: boolean, options?: { spectator?: boolean }) => {
     const worldMapPosition = toWorldMapPosition(position);
 
     try {

@@ -64,11 +64,12 @@ export const createRealmStoreSlice = (set: any) => ({
   lastControlledStructureEntityId: UNDEFINED_STRUCTURE_ENTITY_ID,
   isSpectating: false,
   worldMapReturnPosition: null,
-  setStructureEntityId: (structureEntityId: ID, options?: { spectator?: boolean; worldMapPosition?: { col: number; row: number } }) =>
+  setStructureEntityId: (
+    structureEntityId: ID,
+    options?: { spectator?: boolean; worldMapPosition?: { col: number; row: number } },
+  ) =>
     set((state: RealmStore) => {
-      const ownsStructure = state.playerStructures.some((structure) =>
-        idsMatch(structure.entityId, structureEntityId),
-      );
+      const ownsStructure = state.playerStructures.some((structure) => idsMatch(structure.entityId, structureEntityId));
       const shouldSpectate = options?.spectator ?? !ownsStructure;
       const currentStructureIsOwned = state.playerStructures.some((structure) =>
         idsMatch(structure.entityId, state.structureEntityId),
