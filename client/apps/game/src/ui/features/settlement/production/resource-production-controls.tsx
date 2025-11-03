@@ -182,6 +182,20 @@ export const ResourceProductionControls = ({
   // Only show the tabs that the user can actually select
   const selectableTabs = [
     {
+      label: "Labor Production",
+      component: canUseLabor ? (
+        <LaborResourcesPanel
+          productionAmount={productionAmount}
+          setProductionAmount={setProductionAmount}
+          resourceBalances={resourceBalances}
+          onSelect={() => setUseRawResources(false)}
+          laborInputResources={laborConfig?.inputResources || []}
+          resourceOutputPerInputResources={resourceOutputPerInputResourcesWithBonus}
+        />
+      ) : null,
+      canSelect: canUseLabor,
+    },
+    {
       label: "Resource Production",
       component: (
         <RawResourcesPanel
@@ -195,20 +209,6 @@ export const ResourceProductionControls = ({
         />
       ),
       canSelect: true,
-    },
-    {
-      label: "Labor Production",
-      component: canUseLabor ? (
-        <LaborResourcesPanel
-          productionAmount={productionAmount}
-          setProductionAmount={setProductionAmount}
-          resourceBalances={resourceBalances}
-          onSelect={() => setUseRawResources(false)}
-          laborInputResources={laborConfig?.inputResources || []}
-          resourceOutputPerInputResources={resourceOutputPerInputResourcesWithBonus}
-        />
-      ) : null,
-      canSelect: canUseLabor,
     },
   ].filter((tab) => tab.canSelect);
 

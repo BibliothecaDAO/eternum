@@ -3,6 +3,8 @@ import {
   BuildingTypeToString,
   ClientComponents,
   ContractAddress,
+  DISPLAYED_SLOT_NUMBER_MAP,
+  GuardSlot,
   RESOURCE_PRECISION,
   StructureType,
   resources,
@@ -773,9 +775,9 @@ function formatEntityRef(value: unknown): string | undefined {
 
 function formatSlotLabel(value: unknown): string | undefined {
   const label = formatEnum(value);
-  if (label) return `Slot ${label}`;
+  if (label) return `Slot ${DISPLAYED_SLOT_NUMBER_MAP[GuardSlot[label as keyof typeof GuardSlot]]}`;
   const numeric = toNumber(value);
-  if (numeric !== null) return `Slot ${numeric}`;
+  if (numeric !== null) return `Slot ${DISPLAYED_SLOT_NUMBER_MAP[numeric as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]}`;
   return undefined;
 }
 

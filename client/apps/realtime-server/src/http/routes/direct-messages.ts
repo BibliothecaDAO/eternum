@@ -9,7 +9,7 @@ import {
   directMessageReadReceiptSchema,
   directMessageThreadQuerySchema,
   directMessageTypingSchema,
-} from "../../../../../../common/validation/realtime/direct-messages";
+} from "@bibliothecadao/types";
 import { db } from "../../db/client";
 import {
   directMessageReadReceipts,
@@ -39,9 +39,16 @@ directMessageRoutes.get("/threads", async (c) => {
   const payload = payloadResult.data;
   const player = c.get("playerSession")!;
 
-  const filters = [
-    or(eq(directMessageThreads.playerAId, player.playerId), eq(directMessageThreads.playerBId, player.playerId)),
-  ];
+  const identityFilters = player.aliases.flatMap((alias) => [
+    eq(directMessageThreads.playerAId, alias),
+    eq(directMessageThreads.playerBId, alias),
+  ]);
+  const participantFilter =
+    identityFilters.length > 0
+      ? or(...identityFilters)
+      : or(eq(directMessageThreads.playerAId, player.playerId), eq(directMessageThreads.playerBId, player.playerId));
+
+  const filters = [participantFilter];
 
   if (payload.since) {
     const since = payload.since instanceof Date ? payload.since : new Date(payload.since);
@@ -54,7 +61,7 @@ directMessageRoutes.get("/threads", async (c) => {
   }
 
   let query = db.select().from(directMessageThreads);
-  query = query.where(and(...filters));
+  query = query.where(and(...filters)) as any;
 
   const limit = payload.limit ?? 50;
 
@@ -98,7 +105,9 @@ directMessageRoutes.get("/threads/:threadId/messages", async (c) => {
     return c.json({ error: "Thread not found." }, 404);
   }
 
-  if (thread.playerAId !== player.playerId && thread.playerBId !== player.playerId) {
+  const participantSet = new Set([thread.playerAId, thread.playerBId]);
+  const isParticipant = player.aliases.some((alias) => participantSet.has(alias));
+  if (!isParticipant) {
     return c.json({ error: "Access denied." }, 403);
   }
 
@@ -143,16 +152,14 @@ directMessageRoutes.post("/messages", async (c) => {
   const payload = payloadResult.data;
   const player = c.get("playerSession")!;
 
-  if (payload.recipientId === player.playerId) {
+  const aliases = player.aliases ?? [player.playerId];
+
+  if (aliases.includes(payload.recipientId)) {
     return c.json({ error: "Cannot send a direct message to yourself." }, 400);
   }
 
   const expectedThreadId = buildThreadId(player.playerId, payload.recipientId);
   const providedThreadId = payload.threadId ?? expectedThreadId;
-
-  if (providedThreadId !== expectedThreadId) {
-    return c.json({ error: "Thread id does not match participants." }, 400);
-  }
 
   const [existingThread] = await db
     .select()
@@ -160,21 +167,59 @@ directMessageRoutes.post("/messages", async (c) => {
     .where(eq(directMessageThreads.id, providedThreadId))
     .limit(1);
 
-  const sortedParticipants = sortParticipants(player.playerId, payload.recipientId);
+  if (!existingThread && providedThreadId !== expectedThreadId) {
+    return c.json({ error: "Thread id does not match participants." }, 400);
+  }
 
   let thread = existingThread;
+  let recipientId = payload.recipientId;
 
-  if (!thread) {
+  if (thread) {
+    const participants = [thread.playerAId, thread.playerBId];
+    const participantSet = new Set(participants);
+    const playerMatches = aliases.some((alias) => participantSet.has(alias));
+    if (!playerMatches) {
+      return c.json({ error: "Access denied." }, 403);
+    }
+
+    if (!participantSet.has(recipientId)) {
+      const otherParticipant = participants.find((participant) => !aliases.includes(participant));
+      if (!otherParticipant) {
+        return c.json({ error: "Unable to determine thread recipient." }, 400);
+      }
+      recipientId = otherParticipant;
+    }
+
+    if (aliases.includes(recipientId)) {
+      return c.json({ error: "Cannot send a direct message to yourself." }, 400);
+    }
+  } else {
+    const participants = sortParticipants(player.playerId, recipientId);
     [thread] = await db
       .insert(directMessageThreads)
       .values({
         id: providedThreadId,
-        playerAId: sortedParticipants[0],
-        playerBId: sortedParticipants[1],
-        unreadCounts: { [payload.recipientId]: 0, [player.playerId]: 0 },
+        playerAId: participants[0],
+        playerBId: participants[1],
+        unreadCounts: {
+          [participants[0]]: 0,
+          [participants[1]]: 0,
+        },
       })
       .onConflictDoNothing()
       .returning();
+
+    if (!thread) {
+      [thread] = await db
+        .select()
+        .from(directMessageThreads)
+        .where(eq(directMessageThreads.id, providedThreadId))
+        .limit(1);
+    }
+  }
+
+  if (!thread) {
+    return c.json({ error: "Failed to resolve direct message thread." }, 500);
   }
 
   const messageId = randomUUID();
@@ -182,17 +227,17 @@ directMessageRoutes.post("/messages", async (c) => {
     .insert(directMessages)
     .values({
       id: messageId,
-      threadId: providedThreadId,
+      threadId: thread.id,
       senderId: player.playerId,
-      recipientId: payload.recipientId,
+      recipientId,
       content: payload.content,
       metadata: payload.metadata ?? null,
     })
     .returning();
 
   const unreadCounts = {
-    ...(thread?.unreadCounts ?? {}),
-    [payload.recipientId]: (thread?.unreadCounts?.[payload.recipientId] ?? 0) + 1,
+    ...(thread.unreadCounts ?? {}),
+    [recipientId]: (thread.unreadCounts?.[recipientId] ?? 0) + 1,
   };
 
   await db
@@ -203,7 +248,7 @@ directMessageRoutes.post("/messages", async (c) => {
       lastMessageAt: message.createdAt,
       updatedAt: message.createdAt,
     })
-    .where(eq(directMessageThreads.id, providedThreadId));
+    .where(eq(directMessageThreads.id, thread.id));
 
   return c.json({ message }, 201);
 });
@@ -239,6 +284,12 @@ directMessageRoutes.post("/threads/:threadId/read", async (c) => {
     return c.json({ error: "Thread not found." }, 404);
   }
 
+  const participantSet = new Set([thread.playerAId, thread.playerBId]);
+  const isParticipant = player.aliases.some((alias) => participantSet.has(alias));
+  if (!isParticipant) {
+    return c.json({ error: "Access denied." }, 403);
+  }
+
   const readAt = payload.readAt instanceof Date ? payload.readAt : new Date(payload.readAt);
 
   await db
@@ -262,10 +313,10 @@ directMessageRoutes.post("/threads/:threadId/read", async (c) => {
       },
     });
 
-  const unreadCounts = {
-    ...(thread.unreadCounts ?? {}),
-    [player.playerId]: 0,
-  };
+  const unreadCounts = { ...(thread.unreadCounts ?? {}) };
+  for (const alias of player.aliases) {
+    unreadCounts[alias] = 0;
+  }
 
   await db
     .update(directMessageThreads)

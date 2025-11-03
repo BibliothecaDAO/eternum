@@ -10,11 +10,29 @@ import { ResourcesIds } from "@bibliothecadao/types";
 export type RealmPresetId = "labor" | "resource" | "idle" | "custom";
 
 export const REALM_PRESETS: { id: RealmPresetId; label: string; description?: string }[] = [
-  { id: "labor", label: "Labor", description: "Allocate 10% labor, skip resource burn." },
+  { id: "labor", label: "Labor", description: "Distribute labor evenly (max 10% per resource)." },
   { id: "resource", label: "Resource", description: "Distribute resource burn up to 90%." },
   { id: "custom", label: "Custom", description: "Manually tuned mix of labor/resource." },
   { id: "idle", label: "Idle", description: "Pause automation (0%)." },
 ];
+
+const LABOR_PRESET_BANNED_RESOURCES = new Set<ResourcesIds>([
+  ResourcesIds.KnightT2,
+  ResourcesIds.KnightT3,
+  ResourcesIds.CrossbowmanT2,
+  ResourcesIds.CrossbowmanT3,
+  ResourcesIds.PaladinT2,
+  ResourcesIds.PaladinT3,
+]);
+
+const computeLaborShare = (eligibleCount: number): number => {
+  if (eligibleCount <= 0) return 0;
+  const raw = Math.floor(90 / eligibleCount);
+  const capped = Math.min(10, raw);
+  const normalized = Math.floor(capped / 5) * 5;
+  if (normalized > 0) return normalized;
+  return Math.min(10, 5);
+};
 
 const computeUsageTotals = (
   resources: Record<number, ResourceAutomationSettings>,
@@ -151,9 +169,10 @@ export const calculatePresetAllocations = (
       (input) => !isAutomationResourceBlocked(input.resource, entityType, "input"),
     );
     const rawSimpleInputs = configManager.simpleSystemResourceInputs[resourceId] ?? [];
-    const simpleInputs = rawSimpleInputs.filter(
-      (input) => !isAutomationResourceBlocked(input.resource, entityType, "input"),
-    );
+    const laborAllowed = !LABOR_PRESET_BANNED_RESOURCES.has(resourceId as ResourcesIds);
+    const simpleInputs = laborAllowed
+      ? rawSimpleInputs.filter((input) => !isAutomationResourceBlocked(input.resource, entityType, "input"))
+      : [];
 
     if (percentages.resourceToResource > 0) {
       adjustContribution(usageTotals, percentages.resourceToResource, complexInputs, "remove", entityType);
@@ -163,60 +182,110 @@ export const calculatePresetAllocations = (
     }
   });
 
-  resources.forEach((setting) => {
-    const { resourceId } = setting;
-    const rawComplexInputs = configManager.complexSystemResourceInputs[resourceId] ?? [];
-    const complexInputs = rawComplexInputs.filter(
+  const laborEligibleCount = resources.reduce((count, setting) => {
+    const resourceId = setting.resourceId;
+    if (LABOR_PRESET_BANNED_RESOURCES.has(resourceId as ResourcesIds)) {
+      return count;
+    }
+    const simpleInputs = (configManager.simpleSystemResourceInputs[resourceId] ?? []).filter(
       (input) => !isAutomationResourceBlocked(input.resource, entityType, "input"),
     );
-    const rawSimpleInputs = configManager.simpleSystemResourceInputs[resourceId] ?? [];
-    const simpleInputs = rawSimpleInputs.filter(
-      (input) => !isAutomationResourceBlocked(input.resource, entityType, "input"),
-    );
+    return simpleInputs.length > 0 ? count + 1 : count;
+  }, 0);
 
-    const hasComplex = rawComplexInputs.length > 0;
-    const hasSimple = rawSimpleInputs.length > 0;
+  const laborPresetShare = computeLaborShare(laborEligibleCount);
 
-    let targetResourceToResource = 0;
-    let targetLaborToResource = 0;
+  const applyLaborPreset = (
+    targetMap: Map<number, { resourceToResource: number; laborToResource: number }>,
+    usageTotalsRef: Map<number, number>,
+  ) => {
+    resources.forEach((setting) => {
+      const { resourceId } = setting;
+      const rawSimpleInputs = configManager.simpleSystemResourceInputs[resourceId] ?? [];
+      const laborAllowed = !LABOR_PRESET_BANNED_RESOURCES.has(resourceId as ResourcesIds);
+      const simpleInputs = laborAllowed
+        ? rawSimpleInputs.filter((input) => !isAutomationResourceBlocked(input.resource, entityType, "input"))
+        : [];
 
-    switch (presetId) {
-      case "labor":
-        targetLaborToResource = hasSimple ? 10 : 0;
-        break;
-      case "resource":
-        targetResourceToResource = hasComplex ? 90 : 0;
-        break;
-      case "custom":
-        targetLaborToResource = hasSimple ? 5 : 0;
-        targetResourceToResource = hasComplex ? 90 : 0;
-        break;
-      default:
-        break;
-    }
+      const hasSimple = laborAllowed && simpleInputs.length > 0;
+      if (!hasSimple) {
+        targetMap.set(resourceId, {
+          resourceToResource: targetMap.get(resourceId)?.resourceToResource ?? 0,
+          laborToResource: targetMap.get(resourceId)?.laborToResource ?? 0,
+        });
+        return;
+      }
 
-    if (targetResourceToResource > 0 && hasComplex) {
-      targetResourceToResource = determineComplexShare(
-        complexInputs,
-        usageTotals,
-        complexUsageCounts,
-        targetResourceToResource,
-        entityType,
-      );
-    }
-
-    if (targetLaborToResource > 0 && hasSimple) {
-      targetLaborToResource = determineLaborShare(simpleInputs, usageTotals, targetLaborToResource, entityType);
-    }
-
-    adjustContribution(usageTotals, targetResourceToResource, complexInputs, "add", entityType);
-    adjustContribution(usageTotals, targetLaborToResource, simpleInputs, "add", entityType);
-
-    allocations.set(resourceId, {
-      resourceToResource: targetResourceToResource,
-      laborToResource: targetLaborToResource,
+      const targetLabor = determineLaborShare(simpleInputs, usageTotalsRef, laborPresetShare, entityType);
+      adjustContribution(usageTotalsRef, targetLabor, simpleInputs, "add", entityType);
+      targetMap.set(resourceId, {
+        resourceToResource: targetMap.get(resourceId)?.resourceToResource ?? 0,
+        laborToResource: targetLabor,
+      });
     });
-  });
+  };
+
+  const applyResourcePreset = (
+    targetMap: Map<number, { resourceToResource: number; laborToResource: number }>,
+    usageTotalsRef: Map<number, number>,
+  ) => {
+    resources.forEach((setting) => {
+      const { resourceId } = setting;
+      const rawComplexInputs = configManager.complexSystemResourceInputs[resourceId] ?? [];
+      const complexInputs = rawComplexInputs.filter(
+        (input) => !isAutomationResourceBlocked(input.resource, entityType, "input"),
+      );
+      const hasComplex = rawComplexInputs.length > 0;
+
+      if (!hasComplex) {
+        allocations.set(resourceId, {
+          resourceToResource: allocations.get(resourceId)?.resourceToResource ?? 0,
+          laborToResource: allocations.get(resourceId)?.laborToResource ?? 0,
+        });
+        return;
+      }
+
+      const targetResource = determineComplexShare(complexInputs, usageTotalsRef, complexUsageCounts, 90, entityType);
+      adjustContribution(usageTotalsRef, targetResource, complexInputs, "add", entityType);
+      targetMap.set(resourceId, {
+        resourceToResource: targetResource,
+        laborToResource: targetMap.get(resourceId)?.laborToResource ?? 0,
+      });
+    });
+  };
+
+  switch (presetId) {
+    case "labor":
+      applyLaborPreset(allocations, usageTotals);
+      break;
+    case "resource":
+      applyResourcePreset(allocations, usageTotals);
+      break;
+    case "custom": {
+      const baselineUsageTotals = new Map(usageTotals);
+      const resourceAllocations = new Map<number, { resourceToResource: number; laborToResource: number }>();
+      const laborAllocations = new Map<number, { resourceToResource: number; laborToResource: number }>();
+
+      applyResourcePreset(resourceAllocations, new Map(baselineUsageTotals));
+      applyLaborPreset(laborAllocations, new Map(baselineUsageTotals));
+
+      resources.forEach((setting) => {
+        const resourceShare = resourceAllocations.get(setting.resourceId)?.resourceToResource ?? 0;
+        const laborShare = laborAllocations.get(setting.resourceId)?.laborToResource ?? 0;
+        allocations.set(setting.resourceId, {
+          resourceToResource: resourceShare,
+          laborToResource: laborShare,
+        });
+      });
+      break;
+    }
+    default:
+      resources.forEach((setting) => {
+        const current = allocations.get(setting.resourceId) ?? { resourceToResource: 0, laborToResource: 0 };
+        allocations.set(setting.resourceId, current);
+      });
+      break;
+  }
 
   return allocations;
 };

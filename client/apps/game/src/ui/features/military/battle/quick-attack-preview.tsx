@@ -120,7 +120,11 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const structureGuards = useMemo(() => {
     if (attackerType !== AttackerType.Structure) return [];
     const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(attacker.id)]));
-    return structure ? getGuardsByStructure(structure).filter((guard) => guard.troops.count > 0n) : [];
+    return structure
+      ? getGuardsByStructure(structure)
+          .filter((guard) => guard.troops.count > 0n)
+          .sort((a, b) => a.slot - b.slot)
+      : [];
   }, [attackerType, attacker.id, Structure]);
 
   const attackerStamina = useMemo(() => {
@@ -152,6 +156,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   }, [targetData]);
 
   const isStructureTarget = targetData?.targetType === TargetType.Structure;
+
   const targetArmyData: { troops: Troops } | null = useMemo(() => {
     if (!targetTroopSnapshots[0]) return null;
     return { troops: targetTroopSnapshots[0] };

@@ -4,7 +4,6 @@ import { getIsBlitz, Position as PositionType } from "@bibliothecadao/eternum";
 
 import { Button } from "@/ui/design-system/atoms";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules";
-import { RealmResourcesIO } from "@/ui/features/economy/resources";
 import { NavigateToPositionIcon } from "@/ui/features/military/components/army-chip";
 import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import {
@@ -168,7 +167,7 @@ export const PlayerId = ({
             </div>
             <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
               <span className="text-xl font-bold text-gold">{structureCounts.villages}</span>
-              <span className="text-xs text-gold/80 h6">Villages</span>
+              <span className="text-xs text-gold/80 h6">Camps</span>
             </div>
             <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
               <span className="text-xl font-bold text-gold">{structureCounts.hyperstructures}</span>
@@ -176,7 +175,7 @@ export const PlayerId = ({
             </div>
             <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
               <span className="text-xl font-bold text-gold">{structureCounts.mines}</span>
-              <span className="text-xs text-gold/80 h6">Mines</span>
+              <span className="text-xs text-gold/80 h6">Essence Rifts</span>
             </div>
             {structureCounts.banks > 0 && (
               <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
@@ -248,22 +247,6 @@ export const PlayerId = ({
                 playerStructures.map((structure) => {
                   const position = new PositionType({ x: structure.coord_x, y: structure.coord_y });
                   const structureName = getStructureName(structure, isBlitz);
-                  const structureResources = getStructureResources(structure);
-
-                  let structureSpecificElement: JSX.Element | null;
-                  if (structure.category === StructureType.Realm || structure.category === StructureType.Village) {
-                    structureSpecificElement = (
-                      <div key={`resources-${structure.entity_id}`}>
-                        <RealmResourcesIO
-                          className="w-full font-normal"
-                          titleClassName="font-normal text-sm"
-                          resourcesProduced={structureResources}
-                        />
-                      </div>
-                    );
-                  } else {
-                    structureSpecificElement = null;
-                  }
 
                   return (
                     <div
@@ -284,8 +267,6 @@ export const PlayerId = ({
                           Position: {position.getNormalized().x}, {position.getNormalized().y}
                         </span>
                       </div>
-
-                      {structureSpecificElement}
                     </div>
                   );
                 })}

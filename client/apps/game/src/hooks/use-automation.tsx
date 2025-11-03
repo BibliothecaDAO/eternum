@@ -39,7 +39,16 @@ export const useAutomation = () => {
   const playerRealms = usePlayerOwnedRealmsInfo();
   const playerVillages = usePlayerOwnedVillagesInfo();
   const realmResourcesSignatureRef = useRef<string>("");
-  const automationEnabledAtRef = useRef<number>(Date.now() + PROCESS_INTERVAL_MS);
+  const initialBlockTimestampMsRef = useRef<number | null>(null);
+  if (initialBlockTimestampMsRef.current === null) {
+    initialBlockTimestampMsRef.current = getBlockTimestamp().currentBlockTimestamp * 1000;
+  }
+  const initialBlockTimestampMs = initialBlockTimestampMsRef.current!;
+  const automationEnabledAtRef = useRef<number>(initialBlockTimestampMs + PROCESS_INTERVAL_MS);
+  const lastRunBlockTimestampRef = useRef<number>(initialBlockTimestampMs);
+  const nextRunBlockTimestampRef = useRef<number>(automationEnabledAtRef.current);
+  const scheduleNextCheckRef = useRef<() => void>();
+  const automationTimeoutIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -169,9 +178,51 @@ export const useAutomation = () => {
     return anyExecuted;
   }, [components, realms, execute_realm_production_plan, recordExecution, ensureResourceConfig, starknetSignerAccount]);
 
+  const runAutomationIfDue = useCallback(async () => {
+    const { currentBlockTimestamp } = getBlockTimestamp();
+    const blockTimestampMs = currentBlockTimestamp * 1000;
+
+    const lastRunMs = lastRunBlockTimestampRef.current ?? blockTimestampMs;
+    const nextEligibleMs = Math.max(lastRunMs + PROCESS_INTERVAL_MS, automationEnabledAtRef.current);
+
+    nextRunBlockTimestampRef.current = nextEligibleMs;
+    setNextRunTimestampRef.current(nextEligibleMs);
+
+    if (blockTimestampMs < nextEligibleMs) {
+      scheduleNextCheckRef.current?.();
+      return;
+    }
+
+    try {
+      await processRealmsRef.current();
+    } finally {
+      lastRunBlockTimestampRef.current = blockTimestampMs;
+      automationEnabledAtRef.current = blockTimestampMs + PROCESS_INTERVAL_MS;
+      nextRunBlockTimestampRef.current = automationEnabledAtRef.current;
+      setNextRunTimestampRef.current(nextRunBlockTimestampRef.current);
+      scheduleNextCheckRef.current?.();
+    }
+  }, [setNextRunTimestampRef]);
+
+  const scheduleNextCheck = useCallback(() => {
+    if (automationTimeoutIdRef.current !== null) {
+      window.clearTimeout(automationTimeoutIdRef.current);
+    }
+    const now = Date.now();
+    const nextBlockMs = (Math.floor(now / 1000) + 1) * 1000;
+    const delay = Math.max(250, nextBlockMs - now);
+    automationTimeoutIdRef.current = window.setTimeout(() => {
+      void runAutomationIfDue();
+    }, delay);
+  }, [runAutomationIfDue]);
+
   useEffect(() => {
     processRealmsRef.current = processRealms;
   }, [processRealms]);
+
+  useEffect(() => {
+    scheduleNextCheckRef.current = scheduleNextCheck;
+  }, [scheduleNextCheck]);
 
   useEffect(() => {
     setNextRunTimestampRef.current = setNextRunTimestamp;
@@ -191,25 +242,25 @@ export const useAutomation = () => {
 
     if (signature !== realmResourcesSignatureRef.current) {
       realmResourcesSignatureRef.current = signature;
-      // Do not auto-run immediately after reload; wait until the first scheduled window
-      if (Date.now() >= automationEnabledAtRef.current) {
+      const currentBlockMs = getBlockTimestamp().currentBlockTimestamp * 1000;
+      if (currentBlockMs >= automationEnabledAtRef.current) {
+        lastRunBlockTimestampRef.current = currentBlockMs;
+        automationEnabledAtRef.current = currentBlockMs + PROCESS_INTERVAL_MS;
+        nextRunBlockTimestampRef.current = automationEnabledAtRef.current;
+        setNextRunTimestampRef.current(nextRunBlockTimestampRef.current);
         void processRealmsRef.current();
       }
+      scheduleNextCheckRef.current?.();
     }
   }, [realms]);
 
   useEffect(() => {
-    // Do not fire an automation run immediately; start at the next run (1min)
-    const runAutomation = async () => {
-      const processed = await processRealmsRef.current();
-      // Update next run timestamp regardless of processed result to reflect schedule
-      setNextRunTimestampRef.current(Date.now() + PROCESS_INTERVAL_MS);
+    setNextRunTimestampRef.current(nextRunBlockTimestampRef.current);
+    scheduleNextCheck();
+    return () => {
+      if (automationTimeoutIdRef.current !== null) {
+        window.clearTimeout(automationTimeoutIdRef.current);
+      }
     };
-
-    // Set initial next run timestamp now (quiet)
-    setNextRunTimestampRef.current(automationEnabledAtRef.current);
-
-    const intervalId = window.setInterval(runAutomation, PROCESS_INTERVAL_MS);
-    return () => window.clearInterval(intervalId);
-  }, []);
+  }, [scheduleNextCheck]);
 };

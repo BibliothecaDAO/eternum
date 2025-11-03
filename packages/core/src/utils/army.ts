@@ -4,6 +4,7 @@ import {
   type ContractAddress,
   type Direction,
   getNeighborHexes,
+  GuardSlot,
   type ID,
   ResourcesIds,
   TickIds,
@@ -156,26 +157,25 @@ export const getGuardsByStructure = (structure: ComponentValue<ClientComponents[
   // Extract guard troops from the structure
   const guards = [
     {
-      slot: 0,
+      slot: GuardSlot.Delta,
       troops: structure.troop_guards.delta,
       destroyedTick: structure.troop_guards.delta_destroyed_tick,
-      // timestamp
       cooldownEnd: structure.troop_guards.delta_destroyed_tick * armiesTickInSeconds + guardResurrectionDelay,
     },
     {
-      slot: 1,
+      slot: GuardSlot.Charlie,
       troops: structure.troop_guards.charlie,
       destroyedTick: structure.troop_guards.charlie_destroyed_tick,
       cooldownEnd: structure.troop_guards.charlie_destroyed_tick * armiesTickInSeconds + guardResurrectionDelay,
     },
     {
-      slot: 2,
+      slot: GuardSlot.Bravo,
       troops: structure.troop_guards.bravo,
       destroyedTick: structure.troop_guards.bravo_destroyed_tick,
       cooldownEnd: structure.troop_guards.bravo_destroyed_tick * armiesTickInSeconds + guardResurrectionDelay,
     },
     {
-      slot: 3,
+      slot: GuardSlot.Alpha,
       troops: structure.troop_guards.alpha,
       destroyedTick: structure.troop_guards.alpha_destroyed_tick,
       cooldownEnd: structure.troop_guards.alpha_destroyed_tick * armiesTickInSeconds + guardResurrectionDelay,

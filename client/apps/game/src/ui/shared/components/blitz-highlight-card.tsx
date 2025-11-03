@@ -28,6 +28,8 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
     const highlightPointsValue = highlight ? `${currencyIntlFormat(highlight.points, 0)} pts` : "--";
     const highlightName = highlight ? truncateText(highlight.name, 30) : null;
     const highlightSecondary = highlight ? truncateText(getSecondaryLabel(highlight), 32) : null;
+    const boostedChampion = winnerLine?.trim() ?? null;
+    const championLabel = boostedChampion && boostedChampion.length > 0 ? boostedChampion : null;
     const coverImage = getBlitzCoverImage(highlight?.rank);
 
     return (
@@ -124,9 +126,9 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
           >
             {subtitle}
           </text>
-          {winnerLine ? (
+          {championLabel ? (
             <text x="108" y="122" fontSize="13" fill="rgba(198, 244, 255, 0.78)">
-              {truncateText(`Champion · ${winnerLine}`, 56)}
+              {truncateText(`Champion · ${championLabel}`, 56)}
             </text>
           ) : null}
 

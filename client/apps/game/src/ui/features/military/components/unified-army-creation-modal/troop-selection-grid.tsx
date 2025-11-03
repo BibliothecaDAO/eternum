@@ -1,8 +1,8 @@
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getTierStyle } from "@/ui/utils/tier-styles";
+import { TroopTier, TroopType } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { useMemo } from "react";
-import { TroopTier, TroopType } from "@bibliothecadao/types";
 
 import type { SelectedTroopCombo, TroopSelectionOption } from "./types";
 
@@ -32,7 +32,7 @@ export const TroopSelectionGrid = ({
   }, [isDefenseTroopLocked, selectedGuardCategory, selectedGuardTier]);
 
   return (
-    <div className="flex-1 flex flex-col justify-center">
+    <div className="rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-brown/30">
       <div className="text-center mb-6">
         <h6 className="text-gold text-lg font-bold mb-1">SELECT TROOP TYPE</h6>
         <p className="text-gold/60 text-sm">Choose your troop type and tier</p>

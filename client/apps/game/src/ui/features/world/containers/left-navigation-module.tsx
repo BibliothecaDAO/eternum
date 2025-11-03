@@ -262,7 +262,6 @@ export const LeftNavigationModule = memo(() => {
   };
 
   const ConnectedAccount = useAccountStore((state) => state.account);
-
   return (
     <div className="flex flex-col">
       <div className="flex-grow overflow-hidden">
@@ -303,10 +302,6 @@ export const LeftNavigationModule = memo(() => {
             </motion.div>
           )}
         </div>
-      </div>
-      <div className="flex">
-        {/* <Chat /> */}
-        {/* <ChatModule /> */}
       </div>
     </div>
   );

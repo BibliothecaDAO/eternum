@@ -139,6 +139,9 @@ interface UIStore {
   setRightNavigationView: (view: RightView) => void;
   showMinimap: boolean;
   setShowMinimap: (show: boolean) => void;
+  isBottomHudMinimized: boolean;
+  setIsBottomHudMinimized: (minimized: boolean) => void;
+  toggleBottomHudMinimized: () => void;
   selectedPlayer: ContractAddress | null;
   setSelectedPlayer: (player: ContractAddress | null) => void;
   hasAcceptedTS: boolean;
@@ -259,6 +262,9 @@ export const useUIStore = create(
     setRightNavigationView: (view: RightView) => set({ rightNavigationView: view, tooltip: null }),
     showMinimap: false,
     setShowMinimap: (show: boolean) => set({ showMinimap: show }),
+    isBottomHudMinimized: false,
+    setIsBottomHudMinimized: (minimized: boolean) => set({ isBottomHudMinimized: minimized }),
+    toggleBottomHudMinimized: () => set((state) => ({ isBottomHudMinimized: !state.isBottomHudMinimized })),
     selectedPlayer: null,
     setSelectedPlayer: (player: ContractAddress | null) => set({ selectedPlayer: player }),
     hasAcceptedTS: localStorage.getItem("hasAcceptedTS") ? localStorage.getItem("hasAcceptedTS") === "true" : false,
@@ -276,8 +282,11 @@ export const useUIStore = create(
     ...createRealmStoreSlice(set),
     ...createWorldStoreSlice(set),
     // labor
-    useSimpleCost: true,
-    setUseSimpleCost: (useSimpleCost: boolean) => set({ useSimpleCost }),
+    useSimpleCost: localStorage.getItem("useSimpleCost") ? localStorage.getItem("useSimpleCost") === "true" : true,
+    setUseSimpleCost: (useSimpleCost: boolean) => {
+      set({ useSimpleCost });
+      localStorage.setItem("useSimpleCost", String(useSimpleCost));
+    },
     // camera follow
     followArmyMoves: false,
     setFollowArmyMoves: (follow: boolean) => {

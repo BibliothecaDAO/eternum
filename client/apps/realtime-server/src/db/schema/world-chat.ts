@@ -1,13 +1,13 @@
 import { index, jsonb, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 
-import type { EntityMetadata, MapLocation } from "../../../../../../common/validation/realtime/shared";
+import type { EntityMetadata, MapLocation } from "@bibliothecadao/types";
 import {
   DISPLAY_NAME_MAX_LENGTH,
   ENTITY_ID_MAX_LENGTH,
   MESSAGE_MAX_LENGTH,
   PLAYER_ID_MAX_LENGTH,
   ZONE_ID_MAX_LENGTH,
-} from "../../../../../../common/validation/realtime/shared";
+} from "@bibliothecadao/types";
 
 export const worldChatMessages = pgTable(
   "world_chat_messages",

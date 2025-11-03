@@ -17,6 +17,6 @@
     "noEmitOnError": true,
     "types": ["bun-types", "node"]
   },
-  "include": ["src/**/*", "drizzle.config.ts"],
+  "include": ["src/**/*"],
   "exclude": ["dist", "node_modules"]
 }

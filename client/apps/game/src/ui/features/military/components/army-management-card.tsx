@@ -12,6 +12,7 @@ import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import {
   ArmyManager,
+  configManager,
   divideByPrecision,
   getBalance,
   getEntityIdFromKeys,
@@ -120,9 +121,18 @@ export const ArmyCreate = ({
   const [isLoadingTiles, setIsLoadingTiles] = useState(true);
   const [activeTab, setActiveTab] = useState<"troops" | "direction">("troops");
 
-  const handleTroopCountChange = (count: number) => {
-    setTroopCount(count);
-  };
+  const troopMaxSizeRaw = configManager.getTroopConfig().troop_max_size;
+  const parsedTroopCap = Number(troopMaxSizeRaw ?? 0);
+  const hasTroopCap = Number.isFinite(parsedTroopCap) && parsedTroopCap > 0;
+  const troopCapacityLimit = hasTroopCap ? parsedTroopCap : null;
+  const currentTroopCountValue = Number(army?.troops?.count ?? 0);
+  const currentTroopCount = Number.isFinite(currentTroopCountValue) ? currentTroopCountValue : 0;
+  const remainingTroopCapacity =
+    troopCapacityLimit !== null ? Math.max(troopCapacityLimit - currentTroopCount, 0) : Number.POSITIVE_INFINITY;
+  const remainingCapacityDisplay = troopCapacityLimit !== null ? Math.max(0, Math.floor(remainingTroopCapacity)) : null;
+  const isAtCapacity = troopCapacityLimit !== null && remainingTroopCapacity <= 0;
+  const shouldShowCapacityInfo =
+    troopCapacityLimit !== null && !isAtCapacity && remainingTroopCapacity < troopCapacityLimit;
 
   const handleTierChange = (tier: TroopTier) => {
     setSelectedTier(tier);
@@ -201,46 +211,30 @@ export const ArmyCreate = ({
     setIsLoading(false);
   };
 
+  const maxAffordableTroops = useMemo(() => {
+    const resourceId = getTroopResourceId(selectedTroopType, selectedTier);
+    const balance = getBalance(owner_entity, resourceId, currentDefaultTick, components).balance;
+    const available = Number(divideByPrecision(balance) || 0);
+    return Math.max(0, Math.min(available, remainingTroopCapacity));
+  }, [owner_entity, selectedTroopType, selectedTier, currentDefaultTick, components, remainingTroopCapacity]);
+
   useEffect(() => {
-    let canCreate = true;
+    setTroopCount((current) => Math.max(0, Math.min(current, maxAffordableTroops)));
+  }, [maxAffordableTroops]);
 
-    const resourceId = getTroopResourceId(selectedTroopType, selectedTier);
-    const balance = getBalance(owner_entity, resourceId, currentDefaultTick, components).balance;
+  useEffect(() => {
+    const hasTroopsSelected = troopCount > 0;
+    const withinCapacity = troopCount <= maxAffordableTroops;
+    const isExplorerAtBase = !(isExplorer && army && !army.isHome);
+    const hasSpawnSpace = !isExplorer || freeDirections.length > 0;
 
-    if (troopCount > balance) {
-      canCreate = false;
-    }
+    setCanCreate(hasTroopsSelected && withinCapacity && isExplorerAtBase && hasSpawnSpace);
+  }, [troopCount, maxAffordableTroops, isExplorer, army?.isHome, freeDirections.length]);
 
-    if (troopCount === 0) {
-      canCreate = false;
-    }
-
-    if (isExplorer && army && !army.isHome) {
-      canCreate = false;
-    }
-
-    if (isExplorer && freeDirections.length === 0) {
-      canCreate = false;
-    }
-
-    setCanCreate(canCreate);
-  }, [
-    troopCount,
-    selectedTroopType,
-    selectedTier,
-    army?.isHome,
-    owner_entity,
-    currentDefaultTick,
-    components,
-    isExplorer,
-    freeDirections.length,
-  ]);
-
-  const getMaxAffordableTroops = useMemo(() => {
-    const resourceId = getTroopResourceId(selectedTroopType, selectedTier);
-    const balance = getBalance(owner_entity, resourceId, currentDefaultTick, components).balance;
-    return divideByPrecision(balance);
-  }, [owner_entity, selectedTroopType, selectedTier, currentDefaultTick, components]);
+  const handleTroopCountChange = (count: number) => {
+    const clampedValue = Math.max(0, Math.min(count, maxAffordableTroops));
+    setTroopCount(clampedValue);
+  };
 
   const troops = [
     {
@@ -376,7 +370,7 @@ export const ArmyCreate = ({
                             className="text-xs bg-gold/20 hover:bg-gold/30 px-2 py-1 rounded w-1/2"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setTroopCount((count) => Math.min(count + 500, getMaxAffordableTroops));
+                              setTroopCount((count) => Math.min(count + 500, maxAffordableTroops));
                             }}
                           >
                             +500
@@ -385,20 +379,30 @@ export const ArmyCreate = ({
                             className="text-xs bg-gold/20 hover:bg-gold/30 px-2 py-1 rounded w-1/2"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setTroopCount(getMaxAffordableTroops);
+                              setTroopCount(maxAffordableTroops);
                             }}
                           >
                             MAX
                           </button>
                         </div>
                         <NumberInput
-                          max={divideByPrecision(balance)}
+                          max={maxAffordableTroops}
                           min={0}
                           step={100}
                           value={troopCount}
                           onChange={handleTroopCountChange}
                           className="border border-gold/30"
                         />
+                        {isAtCapacity && troopCapacityLimit !== null && (
+                          <div className="mt-2 rounded-md border border-danger/40 bg-danger/10 px-2 py-1 text-xs text-danger">
+                            Army reached the maximum capacity of {troopCapacityLimit.toLocaleString()} troops.
+                          </div>
+                        )}
+                        {shouldShowCapacityInfo && remainingCapacityDisplay !== null && (
+                          <div className="mt-2 text-xs text-gold/60">
+                            Capacity remaining: {remainingCapacityDisplay.toLocaleString()}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

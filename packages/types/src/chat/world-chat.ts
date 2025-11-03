@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+  displayNameSchema,
   entityIdSchema,
   mapLocationSchema,
   messageContentSchema,
@@ -9,7 +10,6 @@ import {
   starknetAddressSchema,
   timestampSchema,
   zoneIdSchema,
-  displayNameSchema,
 } from "./shared";
 
 const MAX_MESSAGE_BATCH = 100;

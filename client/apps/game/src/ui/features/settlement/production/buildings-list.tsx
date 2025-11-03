@@ -124,8 +124,8 @@ export const BuildingsList = ({
           backgroundPosition: "center",
         }}
       >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
             <ResourceIcon resource={ResourcesIds[selectedProduction.resource]} size="xl" />
             <div>
               <h4 className="text-xl font-semibold text-gold tracking-wide">
@@ -139,7 +139,7 @@ export const BuildingsList = ({
           </div>
           <button
             onClick={() => onSelectProduction(null)}
-            className="px-4 py-2 text-sm button button-ghost hover:button-ghost-hover"
+            className="button button-ghost hover:button-ghost-hover w-full px-4 py-2 text-sm sm:w-auto"
           >
             Change Resource
           </button>
@@ -150,7 +150,7 @@ export const BuildingsList = ({
 
   return (
     <div className="h-full pt-6">
-      <div className="grid grid-cols-2 gap-2">
+      <div className="flex flex-col gap-3">
         {productions.length === 0 ? (
           <div className="panel-wood p-6 text-center">
             <h4 className="mb-2 text-xl font-semibold text-gold">No Production Buildings</h4>
@@ -170,41 +170,46 @@ export const BuildingsList = ({
               <div
                 key={production.resource}
                 onClick={() => onSelectProduction(production.resource)}
-                className="relative cursor-pointer rounded-lg border border-gold/25 p-4 hover:border-gold/40"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onSelectProduction(production.resource);
+                  }
+                }}
+                className="relative flex cursor-pointer flex-wrap items-center gap-4 rounded-lg border border-gold/25 bg-[rgba(20,16,13,0.85)] p-4 transition hover:border-gold/40 hover:bg-[rgba(42,34,28,0.9)] focus:outline-none focus:ring-2 focus:ring-gold/60"
                 style={{
-                  backgroundImage: `linear-gradient(rgba(20, 16, 13, 0.9), rgba(20, 16, 13, 0.9)), url(${bgImage})`,
+                  backgroundImage: `linear-gradient(rgba(20, 16, 13, 0.85), rgba(20, 16, 13, 0.85)), url(${bgImage})`,
                   backgroundSize: "cover",
                   backgroundPosition: "center",
                 }}
               >
-                <div className="flex items-start justify-between space-x-2">
-                  <div className="flex-1 self-center">
-                    <div className="flex items-center gap-2">
-                      <ResourceIcon resource={ResourcesIds[production.resource]} size="lg" />
-                      <div>
-                        <h4 className="text-xl font-semibold text-gold tracking-wide">
-                          {ResourcesIds[production.resource]}
-                        </h4>
-                        <span className="text-base font-medium text-gold/70">
-                          {production.buildings.length} building{production.buildings.length !== 1 ? "s" : ""}
-                        </span>
-                      </div>
-                    </div>
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <ResourceIcon resource={ResourcesIds[production.resource]} size="lg" />
+                  <div className="min-w-0">
+                    <h4 className="truncate text-xl font-semibold text-gold tracking-wide">
+                      {ResourcesIds[production.resource]}
+                    </h4>
+                    <span className="text-base font-medium text-gold/70">
+                      {production.buildings.length} building
+                      {production.buildings.length !== 1 ? "s" : ""}
+                    </span>
                   </div>
+                </div>
 
-                  <div className="flex-shrink-0 self-center">
-                    <ResourceChip
-                      resourceId={production.resource}
-                      resourceManager={resourceManager}
-                      size="large"
-                      showTransfer={false}
-                      storageCapacity={realmInfo?.storehouses?.capacityKg}
-                      storageCapacityUsed={realmInfo?.storehouses?.capacityUsedKg}
-                      activeRelicEffects={activeRelicEffects}
-                      canOpenProduction={production.buildings.length > 0}
-                      onManageProduction={(resource) => onSelectProduction(resource)}
-                    />
-                  </div>
+                <div className="w-full min-w-[200px] flex-1 sm:w-auto sm:flex-initial">
+                  <ResourceChip
+                    resourceId={production.resource}
+                    resourceManager={resourceManager}
+                    size="large"
+                    showTransfer={false}
+                    storageCapacity={realmInfo?.storehouses?.capacityKg}
+                    storageCapacityUsed={realmInfo?.storehouses?.capacityUsedKg}
+                    activeRelicEffects={activeRelicEffects}
+                    canOpenProduction={production.buildings.length > 0}
+                    onManageProduction={(resource) => onSelectProduction(resource)}
+                  />
                 </div>
               </div>
             );
