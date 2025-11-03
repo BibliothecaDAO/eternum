@@ -1,35 +1,41 @@
+import { useEffect, useMemo, useState } from "react";
+
 import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { sqlApi } from "@/services/api";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { QuestReward } from "@/ui/features/economy/resources";
 import { formatTime, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { QuestTileData } from "@bibliothecadao/torii";
 import { ID } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { useEffect, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";
-import { QuestReward } from "@/ui/features/economy/resources";
+
+import {
+  EntityDetailLayoutProvider,
+  EntityDetailLayoutVariant,
+  EntityDetailSection,
+  EntityDetailStat,
+  EntityDetailStatList,
+  getDensityTextClasses,
+  useEntityDetailLayout,
+} from "./layout";
 
 interface QuestEntityDetailProps {
   questEntityId: ID;
   compact?: boolean;
   className?: string;
   layout?: "default" | "banner";
+  layoutVariant?: EntityDetailLayoutVariant;
 }
 
-export const QuestEntityDetail = ({
-  questEntityId,
-  compact = false,
-  className,
-  layout = "default",
-}: QuestEntityDetailProps) => {
+const QuestEntityDetailContent = ({ questEntityId, className }: Omit<QuestEntityDetailProps, "compact" | "layout" | "layoutVariant">) => {
   const {
     setup: { components },
   } = useDojo();
 
   const [quest, setQuest] = useState<QuestTileData | undefined>(undefined);
-
-  const isBanner = layout === "banner";
+  const layout = useEntityDetailLayout();
 
   useEffect(() => {
     const fetchQuest = async () => {
@@ -46,20 +52,8 @@ export const QuestEntityDetail = ({
     () => minigames?.find((miniGame) => miniGame.contract_address === addAddressPadding(quest?.game_address || 0n)),
     [minigames, quest?.game_address],
   );
-  const slotsRemaining = useMemo(
-    () => (quest?.capacity ?? 0) - (quest?.participant_count ?? 0),
-    [quest?.capacity, quest?.participant_count],
-  );
+  const slotsRemaining = useMemo(() => (quest?.capacity ?? 0) - (quest?.participant_count ?? 0), [quest?.capacity, quest?.participant_count]);
   const hasSlotsRemaining = useMemo(() => slotsRemaining > 0, [slotsRemaining]);
-
-  // Precompute common class strings for consistency with ArmyEntityDetail
-  const smallTextClass = compact ? "text-xxs" : "text-xs";
-  const panelClasses = (...extras: Array<string | false | undefined>) =>
-    cn(
-      "rounded-lg border border-gold/25 bg-dark-brown/70 px-3 py-2 shadow-md",
-      compact ? "px-3 py-2" : "px-4 py-3",
-      ...extras,
-    );
 
   const questLevelsEntity = useMemo(
     () => getComponentValue(components.QuestLevels, getEntityIdFromKeys([BigInt(quest?.game_address || 0)])),
@@ -68,61 +62,69 @@ export const QuestEntityDetail = ({
 
   const questLevel = questLevelsEntity?.levels[quest?.level ?? 0] as any;
 
+  if (!quest) return null;
+
   const containerClasses = cn(
     "flex flex-col",
-    compact ? "gap-1" : "gap-2",
-    isBanner && "md:grid md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:gap-3 items-start",
+    layout.density === "compact" ? "gap-1.5" : "gap-2",
+    layout.variant === "banner" && "md:grid md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:gap-3 items-start",
     className,
   );
-  const headerClasses = cn(
-    "flex flex-wrap items-center justify-between gap-2 border-b border-gold/30 pb-2",
-    isBanner && "md:col-span-2",
-  );
-  const descriptionClasses = cn("text-sm", isBanner && "md:col-span-2");
-  const summaryRowClasses = cn(
-    "flex flex-col gap-2",
-    isBanner && "md:col-span-2 md:flex-row md:items-stretch md:gap-3",
-  );
 
-  if (!quest) return null;
+  const labelClass = cn(
+    "font-semibold uppercase tracking-[0.2em] text-gold/70",
+    getDensityTextClasses(layout.density, "title"),
+  );
+  const bodyClass = cn("text-gold/70", getDensityTextClasses(layout.density, "body"));
+
+  const statusLabel = hasSlotsRemaining ? (layout.minimizeCopy ? "Active" : "Slots Open") : layout.minimizeCopy ? "Full" : "Ended";
+  const statusTone = hasSlotsRemaining ? "bg-ally/80 border border-ally text-lightest" : "bg-danger/80 border border-danger text-lightest";
+  const questDescription = layout.minimizeCopy
+    ? "Interact with an explorer to start."
+    : "Interact with an explorer unit to start and claim quests.";
 
   return (
     <div className={containerClasses}>
-      <div className={headerClasses}>
-        <div className="flex flex-col">
-          <h4 className={`${compact ? "text-base" : "text-lg"} font-bold`}>{game?.name}</h4>
-          <span className="text-sm">Level {(quest?.level ?? 0) + 1}</span>
+      <EntityDetailSection className={layout.variant === "banner" ? "md:col-span-2" : undefined}>
+        <div className={cn(labelClass, "mb-1")}>{game?.name}</div>
+        <div className={cn(bodyClass, "mb-2")}>{`${layout.minimizeCopy ? "Lvl" : "Level"} ${(quest?.level ?? 0) + 1}`}</div>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm text-gold/70">{questDescription}</span>
+          <div className={cn("rounded px-2 py-1 text-xs font-bold", statusTone)}>{statusLabel}</div>
         </div>
-        <div
-          className={cn(
-            "px-2 py-1 rounded text-xs font-bold",
-            hasSlotsRemaining
-              ? "bg-ally/80 border border-ally text-lightest"
-              : "bg-danger/80 border border-danger text-lightest",
-          )}
-        >
-          {hasSlotsRemaining ? "Active" : "Ended"}
-        </div>
-      </div>
+      </EntityDetailSection>
 
-      <div className={descriptionClasses}>Interact with an explorer unit to start and claim quests.</div>
+      <EntityDetailSection className={layout.variant === "banner" ? "md:col-span-2" : undefined}>
+        <div className={cn(labelClass, "mb-2")}>Reward</div>
+        <QuestReward quest={quest} />
+      </EntityDetailSection>
 
-      <div className={summaryRowClasses}>
-        <div className={panelClasses("flex-1 gap-2")}>
-          <div className={`${smallTextClass} font-bold text-gold/90 uppercase`}>Reward</div>
-          <QuestReward quest={quest} />
-        </div>
-        <div className={panelClasses("flex-1 gap-2")}>
-          <div className="grid grid-cols-2 gap-x-2 gap-y-1 items-center text-sm">
-            <span className={`${smallTextClass} font-bold text-gold/90 uppercase`}>Remaining</span>
-            <span className="text-sm text-right">{slotsRemaining}</span>
-            <span className={`${smallTextClass} font-bold text-gold/90 uppercase`}>Target</span>
-            <span className="text-sm text-right">{questLevel?.value?.target_score?.value}XP</span>
-            <span className={`${smallTextClass} font-bold text-gold/90 uppercase`}>Time Limit</span>
-            <span className="text-sm text-right">{formatTime(questLevel?.value?.time_limit?.value)}</span>
-          </div>
-        </div>
-      </div>
+      <EntityDetailSection className={layout.variant === "banner" ? "md:col-span-2" : undefined}>
+        <div className={cn(labelClass, "mb-2")}>{layout.minimizeCopy ? "Details" : "Quest Requirements"}</div>
+        <EntityDetailStatList columns={layout.variant === "banner" ? 3 : 1}>
+          <EntityDetailStat label="Slots" value={slotsRemaining} emphasizeValue={!hasSlotsRemaining} />
+          <EntityDetailStat label="Target" value={`${questLevel?.value?.target_score?.value ?? 0} XP`} />
+          <EntityDetailStat label="Time" value={formatTime(questLevel?.value?.time_limit?.value)} />
+        </EntityDetailStatList>
+      </EntityDetailSection>
     </div>
+  );
+};
+
+export const QuestEntityDetail = ({
+  questEntityId,
+  compact = false,
+  className,
+  layout = "default",
+  layoutVariant,
+}: QuestEntityDetailProps) => {
+  const resolvedVariant: EntityDetailLayoutVariant = layoutVariant ?? (layout === "banner" ? "banner" : compact ? "hud" : "default");
+  const density = compact || resolvedVariant === "hud" ? "compact" : "cozy";
+  const minimizeCopy = resolvedVariant === "hud" || compact;
+
+  return (
+    <EntityDetailLayoutProvider variant={resolvedVariant} density={density} minimizeCopy={minimizeCopy}>
+      <QuestEntityDetailContent questEntityId={questEntityId} className={className} />
+    </EntityDetailLayoutProvider>
   );
 };

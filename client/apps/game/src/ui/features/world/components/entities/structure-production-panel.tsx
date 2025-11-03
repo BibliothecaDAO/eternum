@@ -12,6 +12,7 @@ interface StructureProductionPanelProps {
   resources: ComponentValue<ClientComponents["Resource"]["schema"]>;
   compact?: boolean;
   smallTextClass: string;
+  showProductionSummary?: boolean;
 }
 
 interface ResourceProductionSummaryItem {
@@ -26,7 +27,13 @@ interface ResourceProductionSummaryItem {
 }
 
 export const StructureProductionPanel = memo(
-  ({ structure, resources, compact = false, smallTextClass }: StructureProductionPanelProps) => {
+  ({
+    structure,
+    resources,
+    compact = false,
+    smallTextClass,
+    showProductionSummary = true,
+  }: StructureProductionPanelProps) => {
     const [timerTick, setTimerTick] = useState(0);
 
     useEffect(() => {
@@ -130,9 +137,11 @@ export const StructureProductionPanel = memo(
 
     return (
       <>
-        <div className={`${smallTextClass} text-gold/60 mb-2`}>
-          {`${activeProductionBuildings}/${totalProductionBuildings} producing`}
-        </div>
+        {showProductionSummary && (
+          <div className={`${smallTextClass} text-gold/60 mb-2`}>
+            {`${activeProductionBuildings}/${totalProductionBuildings} producing`}
+          </div>
+        )}
         <div className="flex flex-wrap items-center gap-2">
           {[...resourceProductionSummary]
             .sort((a, b) => {

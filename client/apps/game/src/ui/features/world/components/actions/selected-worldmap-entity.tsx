@@ -34,6 +34,9 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
   const { setup } = useDojo();
   const tileComponent = setup.components.Tile;
 
+  const gridTemplateColumns = "var(--selected-worldmap-entity-grid-cols, 1fr)";
+  const gridTemplateRows = "var(--selected-worldmap-entity-grid-rows, auto)";
+
   const rawTile = useMemo(() => {
     if (!selectedHex || !tileComponent) return undefined;
     const contractPosition = {
@@ -78,23 +81,30 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
     return <BiomeInfoPanel biome={biome} collapsed={false} />;
   }
 
+  const gridAutoRows = "var(--selected-worldmap-entity-grid-auto-rows, minmax(0, auto))";
+
   return (
-    <div className="">
+    <div
+      className="grid h-full min-h-0 grid-cols-1 gap-2 overflow-auto"
+      style={{ gridTemplateColumns, gridTemplateRows, gridAutoRows }}
+    >
       {isStructure ? (
         <StructureBannerEntityDetail
           structureEntityId={tile?.occupier_id}
           compact
+          layoutVariant="banner"
           maxInventory={12}
           showButtons={false}
         />
       ) : isChest ? (
-        <RelicCrateEntityDetail crateEntityId={tile?.occupier_id} layout="banner" compact />
+        <RelicCrateEntityDetail crateEntityId={tile?.occupier_id} compact layoutVariant="hud" />
       ) : isQuest ? (
-        <QuestEntityDetail questEntityId={tile?.occupier_id} layout="banner" className="h-full" compact />
+        <QuestEntityDetail questEntityId={tile?.occupier_id} layoutVariant="hud" className="h-full" compact />
       ) : (
         <ArmyBannerEntityDetail
           armyEntityId={tile?.occupier_id}
           compact
+          layoutVariant="hud"
           showButtons={false}
           bannerPosition={selectedHex}
         />
