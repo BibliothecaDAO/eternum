@@ -1,10 +1,10 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Position } from "@bibliothecadao/eternum";
 import { playResourceSound } from "@/three/sound/utils";
 import { isAddressEqualToAccount } from "@/three/utils";
 import { LeftView, RightView } from "@/types";
 import { UnifiedArmyCreationModal } from "@/ui/features/military/components/unified-army-creation-modal";
 import { SetupResult } from "@bibliothecadao/dojo";
+import { Position } from "@bibliothecadao/eternum";
 import { BuildingType, HexEntityInfo, HexPosition, ResourcesIds } from "@bibliothecadao/types";
 import { SceneName } from "../../types/common";
 import { navigateToStructure } from "../../utils/navigation";
@@ -43,8 +43,8 @@ export const openStructureContextMenu = ({
 
   const selectConstructionBuilding = (building: BuildingType, view: LeftView, resource?: ResourcesIds) => {
     const contractPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
-    const col = Number(contractPosition?.col ?? contractPosition?.x);
-    const row = Number(contractPosition?.row ?? contractPosition?.y);
+    const col = Number(contractPosition?.x);
+    const row = Number(contractPosition?.y);
     const worldMapPosition = Number.isFinite(col) && Number.isFinite(row) ? { col, row } : undefined;
 
     if (!isOwner) {

@@ -46,8 +46,6 @@ interface StructureSelectPanelProps {
   onSelectStructure: (entityId: ID) => void;
   onRequestNameChange: (structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => void;
   onUpdateStructureGroup: (entityId: number, color: StructureGroupColor | null) => void;
-  isSpectating: boolean;
-  onReturnToMyRealms: () => void;
 }
 
 const structureIcons: Record<string, JSX.Element> = {
@@ -102,8 +100,6 @@ export const StructureSelectPanel = memo(
     onSelectStructure,
     onRequestNameChange,
     onUpdateStructureGroup,
-    isSpectating,
-    onReturnToMyRealms,
   }: StructureSelectPanelProps) => {
     const [selectOpen, setSelectOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -297,24 +293,6 @@ export const StructureSelectPanel = memo(
                 </span>
               </>
             </div>
-            {isSpectating && (
-              <div className="flex items-center justify-between gap-2">
-                <span className="flex items-center gap-1 text-xxs uppercase tracking-[0.2em] text-gold/70">
-                  <EyeIcon className="h-3 w-3" /> Spectating
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    playClick();
-                    onReturnToMyRealms();
-                  }}
-                  onMouseEnter={() => playHover()}
-                  className="rounded-md border border-gold/40 px-2 py-1 text-xxs font-semibold uppercase tracking-[0.2em] text-gold transition-colors hover:bg-gold/10"
-                >
-                  Return to my realms
-                </button>
-              </div>
-            )}
           </div>
         </div>
       );

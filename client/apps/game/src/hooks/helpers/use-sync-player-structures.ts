@@ -20,12 +20,12 @@ export const useSyncPlayerStructures = () => {
   useEffect(() => {
     const fetchStructures = () => {
       sqlApi.fetchStructuresByOwner(account.account.address).then((structures) => {
-        setFetchedStructures(
-          structures.map((s) => ({
-            entityId: s.entity_id,
-            position: { col: s.coord_x, row: s.coord_y },
-          })),
-        );
+        // setFetchedStructures(
+        //   structures.map((s) => ({
+        //     entityId: s.entity_id,
+        //     position: { col: s.coord_x, row: s.coord_y },
+        //   })),
+        // );
       });
     };
 

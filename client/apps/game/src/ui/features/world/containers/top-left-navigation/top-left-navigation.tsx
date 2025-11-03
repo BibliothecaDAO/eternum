@@ -169,8 +169,6 @@ export const TopLeftNavigation = memo(() => {
             onSelectStructure={onSelectStructure}
             onRequestNameChange={handleRequestNameChange}
             onUpdateStructureGroup={updateStructureGroup}
-            isSpectating={isSpectating}
-            onReturnToMyRealms={handleReturnToMyRealms}
           />
         </div>
 
@@ -231,25 +229,6 @@ export const TopLeftNavigation = memo(() => {
               World
             </span>
             <div className="relative flex gap-2">
-              {/* TODO: Add back in later if needed */}
-              {/* <button
-                type="button"
-                className={cn(
-                  "rounded-full p-2 transition-all duration-300 border-2",
-                  followArmyMoves
-                    ? "bg-gold/30 hover:bg-gold/40 border-gold shadow-lg shadow-gold/20 animate-pulse"
-                    : "bg-gold/10 hover:bg-gold/20 border-gold/30",
-                )}
-                onClick={() => setFollowArmyMoves(!followArmyMoves)}
-                aria-pressed={followArmyMoves}
-                title={followArmyMoves ? "Stop following army movement" : "Follow army movement"}
-              >
-                {followArmyMoves ? (
-                  <EyeIcon className="w-4 h-4 text-gold animate-pulse" />
-                ) : (
-                  <EyeOffIcon className="w-4 h-4 text-gold/60" />
-                )}
-              </button> */}
               <button
                 type="button"
                 className={cn(
