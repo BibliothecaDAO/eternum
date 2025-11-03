@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import { PlayerRelicsData } from "@bibliothecadao/torii";
 import { ID, ResourcesIds } from "@bibliothecadao/types";
@@ -16,6 +16,11 @@ interface AggregatedRelic {
   amount: number;
   displayAmount: string;
 }
+
+const RELIC_ITEM_CLASSES =
+  "flex h-full w-full flex-col items-center justify-center rounded-md border text-center px-1 py-0.5";
+const RELIC_ITEM_THEME = "border-relic2/40 bg-relic/10 backdrop-blur-sm";
+const RELIC_AMOUNT_CLASS = "text-[10px] font-semibold text-gold/90";
 
 const toNumber = (value: unknown): number => {
   if (typeof value === "number") {
@@ -91,6 +96,20 @@ const resolveResourceKey = (resourceId: ID): string => {
   return resourceId.toString();
 };
 
+const renderRelicGrid = (relics: AggregatedRelic[], gridClass: string, iconSize: "xs" | "sm") => (
+  <div className={gridClass}>
+    {relics.map((relic) => {
+      const resourceKey = resolveResourceKey(relic.resourceId);
+      return (
+        <div key={`${relic.resourceId}`} className={cn(RELIC_ITEM_CLASSES, RELIC_ITEM_THEME)}>
+          <ResourceIcon resource={resourceKey} size={iconSize} withTooltip />
+          <span className={RELIC_AMOUNT_CLASS}>{relic.displayAmount}</span>
+        </div>
+      );
+    })}
+  </div>
+);
+
 export const PlayerRelicTray = memo(({ variant = "floating", className }: PlayerRelicTrayProps = {}) => {
   const playerRelics = useUIStore((state) => state.playerRelics);
   const playerRelicsLoading = useUIStore((state) => state.playerRelicsLoading);
@@ -99,31 +118,23 @@ export const PlayerRelicTray = memo(({ variant = "floating", className }: Player
 
   if (variant === "embedded") {
     return (
-      <div className={cn("flex h-full min-h-0 flex-col gap-3", className)}>
-        <div className="flex-1 min-h-0 overflow-auto">
+      <div className={cn("flex h-full min-h-0 flex-col gap-1", className)}>
+        <div className="flex-1 min-h-0 overflow-auto pr-1">
           {aggregatedRelics.length > 0 ? (
-            <div className="grid auto-cols-[minmax(48px,80px)] grid-flow-col gap-3 pb-1">
-              {aggregatedRelics.map((relic) => {
-                const resourceKey = resolveResourceKey(relic.resourceId);
-                return (
-                  <div key={`${relic.resourceId}`} className="relative flex flex-col items-center gap-1 text-center">
-                    <ResourceIcon resource={resourceKey} size="lg" withTooltip />
-                    <span className="rounded-full bg-black/70 px-2 text-[11px] font-semibold uppercase tracking-wide text-gold/80">
-                      {relic.displayAmount}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+            renderRelicGrid(
+              aggregatedRelics,
+              "grid grid-cols-[repeat(auto-fit,minmax(48px,1fr))] gap-1",
+              "xs",
+            )
           ) : (
-            <div className="flex h-full items-center justify-center rounded-xl border border-white/10 bg-white/5 text-xs text-slate-200/60">
+            <div className="flex h-full items-center justify-center rounded-md border border-dashed border-gold/20 bg-dark/30 px-3 py-4 text-xxs italic text-gold/60">
               No relics discovered yet.
             </div>
           )}
         </div>
         {playerRelicsLoading && (
-          <div className="flex items-center gap-2 text-xs text-slate-200/70">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-gold/70" /> Refreshing relic data…
+          <div className="flex items-center gap-1 text-[10px] uppercase tracking-[0.2em] text-gold/60">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-gold/70" /> Updating
           </div>
         )}
       </div>
@@ -135,26 +146,23 @@ export const PlayerRelicTray = memo(({ variant = "floating", className }: Player
   }
 
   return (
-    <div className={cn("pointer-events-auto ml-auto p-3", className)}>
-      <div className="relative inline-flex items-center gap-2 rounded-2xl border border-gold/30 bg-black/70 px-3 py-2 shadow-[0_10px_24px_rgba(0,0,0,0.45)] backdrop-blur-md">
-        <span className="text-[10px] font-semibold uppercase tracking-[0.35em] text-gold/60">Relics</span>
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          {aggregatedRelics.map((relic) => {
-            const resourceKey = resolveResourceKey(relic.resourceId);
-            return (
-              <div key={`${relic.resourceId}`} className="relative">
-                <ResourceIcon resource={resourceKey} size="xl" withTooltip />
-                <span className="absolute bottom-0 right-0 translate-y-1/4 translate-x-1/4 rounded-full bg-black/85 px-1.5 text-[11px] font-bold leading-tight text-gold shadow-[0_4px_12px_rgba(0,0,0,0.45)]">
-                  {relic.displayAmount}
-                </span>
-              </div>
-            );
-          })}
+    <div className={cn("pointer-events-auto ml-auto", className)}>
+      <div className="rounded-xl border border-gold/25 bg-black/80 p-2 shadow-[0_6px_18px_rgba(0,0,0,0.45)] backdrop-blur-md">
+        <div className="mb-1 flex items-center justify-between gap-2">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-gold/60">Relics</span>
+          {playerRelicsLoading && (
+            <div className="flex items-center gap-1 text-[9px] uppercase tracking-[0.2em] text-gold/60">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-gold/70" /> Updating
+            </div>
+          )}
         </div>
-
-        {playerRelicsLoading && (
-          <div className="absolute inset-0 rounded-2xl border border-gold/20 bg-black/30 backdrop-blur pointer-events-none animate-pulse" />
-        )}
+        <div className="max-w-xs overflow-x-auto">
+          {renderRelicGrid(
+            aggregatedRelics,
+            "grid auto-cols-[minmax(56px,1fr)] grid-flow-col gap-1",
+            "sm",
+          )}
+        </div>
       </div>
     </div>
   );
