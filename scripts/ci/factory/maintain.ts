@@ -198,15 +198,31 @@ export async function maintainOrchestrator(p: Params) {
         ...args,
       ], { outDir: path.join(repoRoot, `contracts/game/factory/${chain}/calldata/${name}`), label: "deploy" });
     } catch (e) {
-      // Fallback: retry with sstr if first arg is hex felt
+      // Fallbacks for name argument formatting discrepancies across platforms/sozo builds
       if (args[0] && /^0x[0-9a-fA-F]+$/.test(args[0])) {
         const ascii = hexToAscii(String(args[0]));
-        const retryArgs = [
-          ...["--profile", chain, "--rpc-url", rpcUrl, "--account-address", acct, "--private-key", pk],
-          factory, "deploy", `sstr:'${ascii}'`, ...args.slice(1),
-        ];
-        log(`Primary deploy failed; retrying with sstr:'${ascii}'`);
-        depHash = sozo(retryArgs, { outDir: path.join(repoRoot, `contracts/game/factory/${chain}/calldata/${name}`), label: "deploy_retry_sstr" });
+        const baseFlags = ["--profile", chain, "--rpc-url", rpcUrl, "--account-address", acct, "--private-key", pk];
+        const baseTail = [...args.slice(1)];
+        const outDir = path.join(repoRoot, `contracts/game/factory/${chain}/calldata/${name}`);
+
+        // Attempt 1: sstr without quotes
+        try {
+          const retry1 = [...baseFlags, factory, "deploy", `sstr:${ascii}`, ...baseTail];
+          log(`Primary deploy failed; retrying with sstr:${ascii}`);
+          depHash = sozo(retry1, { outDir, label: "deploy_retry_sstr_noquotes" });
+        } catch (e1) {
+          // Attempt 2: str (ByteArray) without quotes
+          try {
+            const retry2 = [...baseFlags, factory, "deploy", `str:${ascii}`, ...baseTail];
+            log(`Retry failed; trying ByteArray with str:${ascii}`);
+            depHash = sozo(retry2, { outDir, label: "deploy_retry_str_noquotes" });
+          } catch (e2) {
+            // Attempt 3: sstr with quotes as last resort
+            const retry3 = [...baseFlags, factory, "deploy", `sstr:'${ascii}'`, ...baseTail];
+            log(`Retry failed; trying sstr with quotes sstr:'${ascii}'`);
+            depHash = sozo(retry3, { outDir, label: "deploy_retry_sstr_quotes" });
+          }
+        }
       } else {
         throw e;
       }
