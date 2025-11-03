@@ -238,27 +238,15 @@ export const EntityInventoryTabs = ({
     <Tabs variant="inventory" size={compact ? "small" : "medium"} className={`w-full gap-3 ${className ?? ""}`}>
       <Tabs.List className="flex w-full justify-start gap-4 border-b border-gold/20 pb-0.5">
         <Tabs.Tab className="!mx-0">
-          <span className={labelTextClass}>{resourceLabel}</span>
-          <span className={badgeClass}>{buckets.regular.length}</span>
-        </Tabs.Tab>
-        <Tabs.Tab className="!mx-0">
           <span className={labelTextClass}>{relicLabel}</span>
           <span className={badgeClass}>{buckets.relicList.length}</span>
         </Tabs.Tab>
+        <Tabs.Tab className="!mx-0">
+          <span className={labelTextClass}>{resourceLabel}</span>
+          <span className={badgeClass}>{buckets.regular.length}</span>
+        </Tabs.Tab>
       </Tabs.List>
       <Tabs.Panels className="mt-3 w-full">
-        <Tabs.Panel className="w-full">
-          <InventorySection
-            items={buckets.regular}
-            isRelicSection={false}
-            entityId={entityId}
-            entityOwnerId={entityOwnerId}
-            allowRelicActivation={false}
-            compact={compact}
-            recipientType={recipientType}
-            maxItems={maxItems}
-          />
-        </Tabs.Panel>
         <Tabs.Panel className="w-full">
           <InventorySection
             items={buckets.relicList}
@@ -266,6 +254,18 @@ export const EntityInventoryTabs = ({
             entityId={entityId}
             entityOwnerId={entityOwnerId}
             allowRelicActivation={allowRelicActivation}
+            compact={compact}
+            recipientType={recipientType}
+            maxItems={maxItems}
+          />
+        </Tabs.Panel>
+        <Tabs.Panel className="w-full">
+          <InventorySection
+            items={buckets.regular}
+            isRelicSection={false}
+            entityId={entityId}
+            entityOwnerId={entityOwnerId}
+            allowRelicActivation={false}
             compact={compact}
             recipientType={recipientType}
             maxItems={maxItems}

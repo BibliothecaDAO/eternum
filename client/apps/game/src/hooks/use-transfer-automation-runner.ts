@@ -122,7 +122,10 @@ export const useTransferAutomationRunner = () => {
 
             // compute human amounts per resource based on per-resource configs (fallback to legacy fields)
             const transferList: { resourceId: ResourcesIds; humanAmount: number }[] = [];
-            const configMap = new Map<number, { mode: "percent" | "flat"; percent?: number; flatPercent?: number }>();
+            const configMap = new Map<
+              number,
+              { mode: "percent" | "flat"; percent?: number; flatPercent?: number; flatAmount?: number }
+            >();
             if (entry.resourceConfigs && Array.isArray(entry.resourceConfigs)) {
               for (const c of entry.resourceConfigs) configMap.set(c.resourceId, c);
             }
@@ -134,10 +137,16 @@ export const useTransferAutomationRunner = () => {
               if (cfg) {
                 if (cfg.mode === "percent") {
                   const pct = Math.min(90, Math.max(5, Math.floor(cfg.percent ?? entry.percent ?? 5)));
-                  amt = Math.floor((pct / 100) * balHuman);
+                  amt = Math.max(0, Math.min(balHuman, Math.floor((pct / 100) * balHuman)));
                 } else {
-                  const fPct = Math.min(90, Math.max(1, Math.floor(cfg.flatPercent ?? 10)));
-                  amt = Math.floor((fPct / 100) * balHuman);
+                  if (typeof cfg.flatAmount === "number") {
+                    amt = Math.max(0, Math.min(balHuman, Math.floor(cfg.flatAmount)));
+                  } else if (typeof cfg.flatPercent === "number") {
+                    const fPct = Math.min(90, Math.max(1, Math.floor(cfg.flatPercent)));
+                    amt = Math.max(0, Math.min(balHuman, Math.floor((fPct / 100) * balHuman)));
+                  } else {
+                    amt = Math.max(0, Math.min(balHuman, Math.floor(entry.flatAmount ?? 0)));
+                  }
                 }
               } else {
                 // legacy fallback
@@ -146,7 +155,7 @@ export const useTransferAutomationRunner = () => {
                   amt = Math.max(0, Math.min(balHuman, Math.floor(entry.flatAmount ?? 0)));
                 } else {
                   const pct = Math.min(90, Math.max(5, Math.floor(entry.percent ?? 5)));
-                  amt = Math.floor((pct / 100) * balHuman);
+                  amt = Math.max(0, Math.min(balHuman, Math.floor((pct / 100) * balHuman)));
                 }
               }
               if (amt > 0) transferList.push({ resourceId: rid, humanAmount: amt });
