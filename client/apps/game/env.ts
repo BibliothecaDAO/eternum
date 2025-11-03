@@ -19,6 +19,15 @@ const envSchema = z.object({
   VITE_PUBLIC_TORII: z.string().url(),
   VITE_PUBLIC_NODE_URL: z.string().url(),
   VITE_PUBLIC_TORII_RELAY: z.string(),
+  // Optional external endpoints
+  VITE_PUBLIC_CARTRIDGE_API_BASE: z.string().url().optional().default("https://api.cartridge.gg"),
+  VITE_PUBLIC_TORII_CREATOR_URL: z
+    .string()
+    .url()
+    .optional()
+    .default("https://torii-creator.zerocredence.workers.dev/dispatch/torii"),
+  VITE_PUBLIC_EXPLORER_MAINNET: z.string().url().optional().default("https://voyager.online"),
+  VITE_PUBLIC_EXPLORER_SEPOLIA: z.string().url().optional().default("https://sepolia.voyager.online"),
 
   // Action Dispatcher
   VITE_PUBLIC_ACTION_DISPATCHER_URL: z.string().url().optional(),

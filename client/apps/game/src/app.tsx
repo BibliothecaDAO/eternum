@@ -22,6 +22,7 @@ import {
 import { StoryEventToastBridge, StoryEventToastProvider } from "./ui/features/story-events";
 import { LandingLayout } from "./ui/layouts/landing";
 import { World } from "./ui/layouts/world";
+import { PlayOverlayManager } from "./ui/layouts/play-overlay-manager";
 import { ConstructionGate } from "./ui/modules/construction-gate";
 import { LoadingScreen } from "./ui/modules/loading-screen";
 import { MobileBlocker } from "./ui/modules/mobile-blocker";
@@ -77,20 +78,45 @@ const BootstrapError = ({ error, onRetry }: { error?: Error | null; onRetry: () 
 const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
   const { activeStep, steps } = usePlayFlow(backgroundImage);
 
+  // Ensure modals (world selector, etc.) can render before world is ready
+  const EarlyOverlays = (
+    <PlayOverlayManager backgroundImage={backgroundImage} enableOnboarding={false} />
+  );
+
   if (activeStep === "world") {
-    return steps.world.fallback ?? <LoadingScreen backgroundImage={backgroundImage} />;
+    return (
+      <>
+        {EarlyOverlays}
+        {steps.world.fallback ?? <LoadingScreen backgroundImage={backgroundImage} />}
+      </>
+    );
   }
 
   if (activeStep === "bootstrap-error") {
-    return <BootstrapError error={steps.bootstrap.error} onRetry={steps.bootstrap.retry} />;
+    return (
+      <>
+        {EarlyOverlays}
+        <BootstrapError error={steps.bootstrap.error} onRetry={steps.bootstrap.retry} />
+      </>
+    );
   }
 
   if (activeStep === "bootstrap") {
-    return <LoadingScreen backgroundImage={backgroundImage} progress={steps.bootstrap.progress} />;
+    return (
+      <>
+        {EarlyOverlays}
+        <LoadingScreen backgroundImage={backgroundImage} progress={steps.bootstrap.progress} />
+      </>
+    );
   }
 
   if (activeStep === "account" && steps.account.fallback) {
-    return <>{steps.account.fallback}</>;
+    return (
+      <>
+        {EarlyOverlays}
+        {steps.account.fallback}
+      </>
+    );
   }
 
   const readyData = steps.ready;

@@ -13,7 +13,7 @@ import { NoAccountModal } from "../ui/layouts/no-account-modal";
 import { ETERNUM_CONFIG } from "../utils/config";
 import { initializeGameRenderer } from "./game-renderer";
 import { Chain, getGameManifest } from "@contracts";
-import { getActiveWorld, patchManifestWithFactory } from "@/runtime/world";
+import { ensureActiveWorldProfileWithUI, getActiveWorld, patchManifestWithFactory } from "@/runtime/world";
 import { setSqlApiBaseUrl } from "@/services/api";
 
 export type SetupResult = Awaited<ReturnType<typeof setup>>;
@@ -36,9 +36,10 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
 
   // 0) World profile is expected to be selected before bootstrap begins (gated in play flow)
   const chain = env.VITE_PUBLIC_CHAIN! as Chain;
-  const profile = getActiveWorld();
+  let profile = getActiveWorld();
   if (!profile) {
-    throw new Error("No active world selected");
+    // Prompt user to select a world via modal instead of throwing
+    profile = await ensureActiveWorldProfileWithUI(chain);
   }
 
   // 1) Patch manifest with factory-provided addresses and world address
