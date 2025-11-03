@@ -1,11 +1,14 @@
 import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure, useSpectatorModeClick } from "@/hooks/helpers/use-navigate";
 import { useSetAddressName } from "@/hooks/helpers/use-set-address-name";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { Position } from "@bibliothecadao/eternum";
 import { WORLD_CONFIG_ID } from "@bibliothecadao/types";
 
+import { useGameSelector } from "@/hooks/helpers/use-game-selector";
+import { buildWorldProfile, getFactorySqlBaseUrl, setActiveWorldName } from "@/runtime/world";
+import { isToriiAvailable } from "@/runtime/world/factory-resolver";
 import Button from "@/ui/design-system/atoms/button";
 import {
   configManager,
@@ -17,18 +20,18 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo, useEntryTokenBalance, usePlayerOwnedRealmEntities } from "@bibliothecadao/react";
 import { ControllerConnector } from "@cartridge/connector";
+import type { Chain } from "@contracts";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, HasValue } from "@dojoengine/recs";
 import { cairoShortStringToFelt } from "@dojoengine/torii-wasm";
 import { useAccount, useCall } from "@starknet-react/core";
 import { motion } from "framer-motion";
-import { AlertCircle, Users, Home, Globe } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { AlertCircle, Globe, Home, RefreshCw, Users } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Abi, CallData, uint256 } from "starknet";
 import { env } from "../../../../../env";
 import { SpectateButton } from "./spectate-button";
-import { useGameSelector } from "@/hooks/helpers/use-game-selector";
 
 const formatLocalDateTime = (timestamp: number): string => {
   const date = new Date(timestamp * 1000);
@@ -113,49 +116,299 @@ const PlayerCount = ({ count }: { count: number }) => {
   );
 };
 
-// No game state component
-const NoGameState = ({
-  registrationStartAt,
-  registrationEndAt,
-  creationStartAt,
-  creationEndAt,
-  spectateDisabled,
-}: {
-  registrationStartAt: number;
-  registrationEndAt: number;
-  creationStartAt: number;
-  creationEndAt: number;
-  spectateDisabled: boolean;
-}) => {
-  const registrationDuration = registrationEndAt - registrationStartAt;
+// Inline factory games list (lightweight version of the selector modal)
+type FactoryGame = {
+  name: string;
+  status: "checking" | "ok" | "fail";
+  toriiBaseUrl: string;
+  startMainAt: number | null;
+  endAt: number | null;
+};
 
-  const {
-    setup: { components },
-  } = useDojo();
-  const onSpectatorModeClick = useSpectatorModeClick(components);
+const decodePaddedFeltAscii = (hex: string): string => {
+  try {
+    if (!hex) return "";
+    const h = hex.startsWith("0x") || hex.startsWith("0X") ? hex.slice(2) : hex;
+    if (h === "0") return "";
+    // manual hex → ascii (skip leading 00 bytes)
+    let i = 0;
+    while (i + 1 < h.length && h.slice(i, i + 2) === "00") i += 2;
+    let out = "";
+    for (; i + 1 < h.length; i += 2) {
+      const byte = parseInt(h.slice(i, i + 2), 16);
+      if (byte === 0) continue;
+      out += String.fromCharCode(byte);
+    }
+    return out;
+  } catch {
+    return "";
+  }
+};
+
+const parseMaybeHexToNumber = (v: any): number | null => {
+  if (v == null) return null;
+  if (typeof v === "number") return v;
+  if (typeof v === "string") {
+    try {
+      if (v.startsWith("0x") || v.startsWith("0X")) return Number(BigInt(v));
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
+
+const FactoryGamesList = () => {
+  const [games, setGames] = useState<FactoryGame[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [nowSec, setNowSec] = useState<number>(() => Math.floor(Date.now() / 1000));
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNowSec(Math.floor(Date.now() / 1000)), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const formatCountdown = (secondsLeft: number): string => {
+    const total = Math.max(0, Math.floor(secondsLeft));
+    const d = Math.floor(total / 86400);
+    const h = Math.floor((total % 86400) / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    const hh = h.toString().padStart(2, "0");
+    const mm = m.toString().padStart(2, "0");
+    const ss = s.toString().padStart(2, "0");
+    return d > 0 ? `${d}d ${hh}:${mm}:${ss}` : `${hh}:${mm}:${ss}`;
+  };
+
+  const load = useCallback(async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const factorySqlBaseUrl = getFactorySqlBaseUrl(env.VITE_PUBLIC_CHAIN as any);
+        if (!factorySqlBaseUrl) {
+          setGames([]);
+          return;
+        }
+        const query = `SELECT name FROM [wf-WorldDeployed] LIMIT 200;`;
+        const url = `${factorySqlBaseUrl}?query=${encodeURIComponent(query)}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Factory query failed: ${res.status} ${res.statusText}`);
+        const rows = (await res.json()) as any[];
+
+        const names: string[] = [];
+        const seen = new Set<string>();
+        for (const row of rows) {
+          const feltHex: string | undefined =
+            (row && (row.name as string)) || (row && (row["data.name"] as string)) || (row && row?.data?.name);
+          if (!feltHex || typeof feltHex !== "string") continue;
+          const decoded = decodePaddedFeltAscii(feltHex);
+          if (!decoded || seen.has(decoded)) continue;
+          seen.add(decoded);
+          names.push(decoded);
+        }
+
+        const initial: FactoryGame[] = names.map((n) => ({
+          name: n,
+          status: "checking",
+          toriiBaseUrl: `https://api.cartridge.gg/x/${n}/torii`,
+          startMainAt: null,
+          endAt: null,
+        }));
+        setGames(initial);
+
+        const limit = 8;
+        let index = 0;
+        const workers: Promise<void>[] = [];
+        const work = async () => {
+          while (index < initial.length) {
+            const i = index++;
+            const item = initial[i];
+            try {
+              const online = await isToriiAvailable(item.toriiBaseUrl);
+              let startMainAt: number | null = null;
+              let endAt: number | null = null;
+              if (online) {
+                try {
+                  const q = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at FROM "s1_eternum-WorldConfig" LIMIT 1;`;
+                  const u = `${item.toriiBaseUrl}/sql?query=${encodeURIComponent(q)}`;
+                  const r = await fetch(u);
+                  if (r.ok) {
+                    const arr = (await r.json()) as any[];
+                    if (arr && arr[0]) {
+                      if (arr[0].start_main_at != null) startMainAt = parseMaybeHexToNumber(arr[0].start_main_at);
+                      if (arr[0].end_at != null) endAt = parseMaybeHexToNumber(arr[0].end_at);
+                    }
+                  }
+                } catch {
+                  // ignore per-world time errors
+                }
+              }
+              setGames((prev) => {
+                const copy = [...prev];
+                const idx = copy.findIndex((w) => w.name === item.name);
+                if (idx >= 0) copy[idx] = { ...copy[idx], status: online ? "ok" : "fail", startMainAt, endAt };
+                return copy;
+              });
+            } catch {
+              setGames((prev) => {
+                const copy = [...prev];
+                const idx = copy.findIndex((w) => w.name === item.name);
+                if (idx >= 0) copy[idx] = { ...copy[idx], status: "fail" };
+                return copy;
+              });
+            }
+          }
+        };
+        for (let k = 0; k < limit; k++) workers.push(work());
+        await Promise.all(workers);
+      } catch (e: any) {
+        setError(e?.message || String(e));
+      } finally {
+        setLoading(false);
+      }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const enterGame = async (worldName: string) => {
+    try {
+      const chain = env.VITE_PUBLIC_CHAIN as Chain;
+      await buildWorldProfile(chain, worldName);
+      setActiveWorldName(worldName);
+      window.location.href = "/play";
+    } catch (e) {
+      console.error("Failed to enter game", e);
+    }
+  };
+
+  const byCategory = () => {
+    const ongoing: FactoryGame[] = [];
+    const upcoming: FactoryGame[] = [];
+    const ended: FactoryGame[] = [];
+    const offline: FactoryGame[] = [];
+    for (const g of games) {
+      if (g.status !== "ok") {
+        offline.push(g);
+        continue;
+      }
+      const start = g.startMainAt;
+      const end = g.endAt;
+      const isEnded = start != null && end != null && end !== 0 && nowSec >= end;
+      const isOngoing = start != null && nowSec >= start && (end == null || end === 0 || nowSec < end);
+      const isUpcoming = start != null && nowSec < start;
+      if (isOngoing) ongoing.push(g);
+      else if (isUpcoming) upcoming.push(g);
+      else if (isEnded) ended.push(g);
+      else offline.push(g);
+    }
+    return { ongoing, upcoming, ended, offline };
+  };
+
+  const renderItem = (fg: FactoryGame) => {
+    const isOnline = fg.status === "ok";
+    const start = fg.startMainAt;
+    const end = fg.endAt;
+    let subtitle = "";
+    if (isOnline) {
+      if (start != null) {
+        if ((end == null || end === 0) && nowSec >= start) subtitle = "Ongoing — ∞";
+        else if (end != null && nowSec >= start && nowSec < end)
+          subtitle = `Ends in ${formatCountdown(end - nowSec)}`;
+        else if (nowSec < start) subtitle = `Starts in ${formatCountdown(start - nowSec)}`;
+        else if (end != null && nowSec >= end) subtitle = `Ended ${new Date(end * 1000).toLocaleString()}`;
+      }
+    } else {
+      subtitle = "Offline";
+    }
+    return (
+      <div
+        key={fg.name}
+        className={`flex items-center justify-between rounded-lg border p-3 ${
+          isOnline ? "border-gold/20 bg-gold/5" : "border-danger/40 bg-danger/5"
+        }`}
+      >
+        <div>
+          <div className="text-gold font-semibold">{fg.name}</div>
+          <div className="text-[11px] text-gold/60">{subtitle}</div>
+        </div>
+        <Button
+          onClick={() => enterGame(fg.name)}
+          disabled={!isOnline}
+          size="xs"
+          variant="outline"
+          forceUppercase={false}
+        >
+          Enter
+        </Button>
+      </div>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="rounded-lg border border-gold/20 bg-gold/5 p-4 text-center text-gold/70 text-sm">
+        Loading factory games…
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="rounded-lg border border-danger/40 bg-danger/5 p-4 text-center text-danger/80 text-sm">
+        {error}
+      </div>
+    );
+  }
+
+  const { ongoing, upcoming, ended } = byCategory();
+  const nothing = ongoing.length === 0 && upcoming.length === 0 && ended.length === 0;
 
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 text-center">
-      <CountdownTimer targetTime={registrationStartAt} label="Registration starts in:" />
-
-      <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 space-y-3">
-        <p className="text-sm text-gold/70">Upcoming Schedule:</p>
-        <div className="text-sm space-y-2">
-          <div>
-            <p className="text-gold font-bold">Registration Phase</p>
-            <p className="text-gold/60 text-xs">Starts: {formatLocalDateTime(registrationStartAt)}</p>
-            <p className="text-gold/60 text-xs">Duration: {formatTime(registrationDuration)}</p>
+    <div className="space-y-3">
+      <div className="flex items-center justify-end">
+        <Button onClick={load} size="xs" variant="outline" forceUppercase={false} disabled={loading}>
+          <div className="flex items-center gap-1.5">
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>{loading ? "Refreshing…" : "Refresh"}</span>
           </div>
-          <div>
-            <p className="text-gold font-bold">Game Starts</p>
-            <p className="text-gold/50 text-xs">{formatLocalDateTime(creationStartAt)}</p>
-          </div>
+        </Button>
+      </div>
+      {nothing && (
+        <div className="rounded-lg border-2 border-dashed border-gold/20 p-6 text-center">
+          <p className="text-sm text-gold/60">No factory games found</p>
         </div>
-      </div>
+      )}
+      {ongoing.length > 0 && (
+        <div className="space-y-2">
+          <div className="text-[10px] font-semibold uppercase tracking-widest text-gold/80">Ongoing</div>
+          {ongoing.map(renderItem)}
+        </div>
+      )}
+      {upcoming.length > 0 && (
+        <div className="space-y-2">
+          <div className="text-[10px] font-semibold uppercase tracking-widest text-gold/80">Upcoming</div>
+          {upcoming.map(renderItem)}
+        </div>
+      )}
+      {ended.length > 0 && (
+        <div className="space-y-2">
+          <div className="text-[10px] font-semibold uppercase tracking-widest text-gold/80">Ended</div>
+          {ended.map(renderItem)}
+        </div>
+      )}
+    </div>
+  );
+};
 
-      <div className="pt-2">
-        <SpectateButton onClick={onSpectatorModeClick} disabled={spectateDisabled} />
-      </div>
+// No game state component
+const NoGameState = () => {
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 text-center">
+      {/* Placeholder for no game state */}
     </motion.div>
   );
 };
@@ -499,7 +752,6 @@ const RegistrationState = ({
   entryTokenStatus,
   hasSufficientFeeBalance,
   isFeeBalanceLoading,
-  spectateDisabled,
 }: {
   entryTokenBalance: bigint;
   registrationCount: number;
@@ -516,14 +768,8 @@ const RegistrationState = ({
   entryTokenStatus: "idle" | "minting" | "timeout" | "error";
   hasSufficientFeeBalance: boolean;
   isFeeBalanceLoading: boolean;
-  spectateDisabled: boolean;
 }) => {
-  const {
-    setup: { components },
-  } = useDojo();
-
   const [isRegistering, setIsRegistering] = useState(false);
-  const onSpectatorModeClick = useSpectatorModeClick(components);
 
   const tokenReady = !requiresEntryToken || Boolean(availableEntryTokenId);
 
@@ -617,8 +863,6 @@ const RegistrationState = ({
             )}
           </div>
         )}
-
-        <SpectateButton onClick={onSpectatorModeClick} disabled={spectateDisabled} />
       </div>
     </motion.div>
   );
@@ -630,13 +874,11 @@ const GameActiveState = ({
   gameEndAt,
   isRegistered,
   onSettle,
-  spectateDisabled,
 }: {
   hasSettled: boolean;
   gameEndAt?: number;
   isRegistered: boolean;
   onSettle: () => Promise<void>;
-  spectateDisabled: boolean;
 }) => {
   const {
     setup: { components },
@@ -644,7 +886,6 @@ const GameActiveState = ({
 
   const goToStructure = useGoToStructure();
   const realmEntities = usePlayerOwnedRealmEntities();
-  const onSpectatorModeClick = useSpectatorModeClick(components);
   const [isSettling, setIsSettling] = useState(false);
 
   const handleSettle = async () => {
@@ -689,19 +930,16 @@ const GameActiveState = ({
         {isRegistered ? (
           <>
             {hasSettled ? (
-              <>
-                <Button
-                  onClick={handlePlay}
-                  forceUppercase={false}
-                  className="w-full h-12 !text-brown !bg-gold rounded-md "
-                >
-                  <div className="flex items-center justify-center">
-                    <Sword className="w-5 h-5 mr-2 fill-brown" />
-                    <span>Play Blitz</span>
-                  </div>
-                </Button>
-                <SpectateButton onClick={onSpectatorModeClick} disabled={spectateDisabled} />
-              </>
+              <Button
+                onClick={handlePlay}
+                forceUppercase={false}
+                className="w-full h-12 !text-brown !bg-gold rounded-md "
+              >
+                <div className="flex items-center justify-center">
+                  <Sword className="w-5 h-5 mr-2 fill-brown" />
+                  <span>Play Blitz</span>
+                </div>
+              </Button>
             ) : (
               <>
                 <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 text-center mb-4">
@@ -727,16 +965,12 @@ const GameActiveState = ({
                     </div>
                   )}
                 </Button>
-                <SpectateButton onClick={onSpectatorModeClick} disabled={spectateDisabled} />
               </>
             )}
           </>
         ) : (
-          <div className="space-y-4">
-            <div className="bg-brown/10 border border-brown/30 rounded-lg p-4 text-center">
-              <p className="text-gold/70">You are not registered for this game</p>
-            </div>
-            <SpectateButton onClick={onSpectatorModeClick} disabled={spectateDisabled} />
+          <div className="bg-brown/10 border border-brown/30 rounded-lg p-4 text-center">
+            <p className="text-gold/70">You are not registered for this game</p>
           </div>
         )}
       </div>
@@ -779,6 +1013,7 @@ export const BlitzOnboarding = () => {
     return currentBlockTimestamp > seasonEndAt;
   }, [currentBlockTimestamp, seasonEndAt]);
   const devMode = configManager.getDevModeConfig()?.dev_mode_on;
+  const onSpectatorModeClick = useSpectatorModeClick(setup.components);
   const registrationCount = useMemo(() => {
     const liveCount = worldConfigValue?.blitz_registration_config?.registration_count;
 
@@ -810,6 +1045,7 @@ export const BlitzOnboarding = () => {
   const playerSettled = useEntityQuery([HasValue(components.Structure, { owner: BigInt(account.address) })]).length > 0;
 
   useSetAddressName(setup, playerSettled ? account : null, connector);
+  const onSpectatorModeClickTop = useSpectatorModeClick(setup.components);
 
   const requiresEntryToken = useMemo(() => {
     if (!blitzConfig) return false;
@@ -1130,9 +1366,14 @@ export const BlitzOnboarding = () => {
         onSettle={handleSettle}
         hasSettled={!!playerSettled}
         gameEndAt={seasonConfig?.endAt}
-        spectateDisabled={hasGameEnded}
       />
     ) : null;
+
+  // Do not show entry-token wallet when the game is active or when player is registered
+  // - hides when Play/Settle are visible
+  // - hides when user is not registered and can only spectate
+  // - hides when player is already registered
+  const hideEntryTokenWallet = gameState === GameState.GAME_ACTIVE || playerRegistered?.registered;
 
   return (
     <div className="space-y-6">
@@ -1159,8 +1400,19 @@ export const BlitzOnboarding = () => {
         </Button>
       </div>
 
+      {activeWorld && (
+        <div className="text-center mt-1 mb-1">
+          <div className="text-gold text-lg font-extrabold tracking-wide">{activeWorld}</div>
+          <div className="mt-3 flex justify-center">
+            <div className="w-full max-w-xs">
+              <SpectateButton onClick={onSpectatorModeClickTop} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {gameActiveSection}
-      {hasEntryTokenContract && (
+      {!hasGameEnded && requiresEntryToken && !hideEntryTokenWallet && (
         <div className="bg-brown/10 border border-brown/30 rounded-lg p-4">
           <div className="flex items-center justify-between text-gold">
             <p className="text-sm text-gold/70">Entry tokens in your wallet</p>
@@ -1216,15 +1468,7 @@ export const BlitzOnboarding = () => {
           devMode={devMode || false}
         />
       )}
-      {gameState === GameState.NO_GAME && registration_start_at && (
-        <NoGameState
-          registrationStartAt={registration_start_at}
-          registrationEndAt={registration_end_at}
-          creationStartAt={creation_start_at}
-          creationEndAt={creation_end_at}
-          spectateDisabled={hasGameEnded}
-        />
-      )}
+      {gameState === GameState.NO_GAME && registration_start_at && <NoGameState />}
       {gameState === GameState.REGISTRATION && (
         <RegistrationState
           entryTokenBalance={entryTokenBalance}
@@ -1242,9 +1486,13 @@ export const BlitzOnboarding = () => {
           entryTokenStatus={entryTokenStatus}
           hasSufficientFeeBalance={hasSufficientFeeBalance}
           isFeeBalanceLoading={isFeeBalanceLoading}
-          spectateDisabled={hasGameEnded}
         />
       )}
+      {/* Always show Factory Games list */}
+      <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 space-y-3">
+        <p className="text-sm text-gold/70">Factory Games</p>
+        <FactoryGamesList />
+      </div>
     </div>
   );
 };

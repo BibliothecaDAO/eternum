@@ -26,7 +26,7 @@ import { ConstructionGate } from "./ui/modules/construction-gate";
 import { LoadingScreen } from "./ui/modules/loading-screen";
 import { MobileBlocker } from "./ui/modules/mobile-blocker";
 import { getRandomBackgroundImage } from "./ui/utils/utils";
-import { ConfigAdminPage, ConfigAdminPage2 } from "./ui/features/admin-config";
+import { FactoryPage } from "./ui/features/admin";
 
 type ReadyAppProps = {
   backgroundImage: string;
@@ -54,24 +54,7 @@ const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
   );
 };
 
-const ReadyAdminApp = ({ setupResult, account }: Omit<ReadyAppProps, "backgroundImage">) => {
-  return (
-    <DojoProvider value={setupResult} account={account}>
-      <MetagameProvider>
-        <ErrorBoundary>
-          <StoryEventToastProvider>
-            <StoryEventToastBridge />
-            <TransactionNotification />
-            <Routes>
-              <Route path="/" element={<ConfigAdminPage />} />
-              <Route path="/factory" element={<ConfigAdminPage2 />} />
-            </Routes>
-          </StoryEventToastProvider>
-        </ErrorBoundary>
-      </MetagameProvider>
-    </DojoProvider>
-  );
-};
+// Admin sub-app removed; /factory is a standalone route now
 
 const BootstrapError = ({ error, onRetry }: { error?: Error | null; onRetry: () => void }) => {
   return (
@@ -119,29 +102,7 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
   return <ReadyApp backgroundImage={backgroundImage} setupResult={readyData.setupResult} account={readyData.account} />;
 };
 
-const AdminRoute = ({ backgroundImage }: { backgroundImage: string }) => {
-  const { activeStep, steps } = usePlayFlow(backgroundImage);
-
-  if (activeStep === "bootstrap-error") {
-    return <BootstrapError error={steps.bootstrap.error} onRetry={steps.bootstrap.retry} />;
-  }
-
-  if (activeStep === "bootstrap") {
-    return <LoadingScreen backgroundImage={backgroundImage} progress={steps.bootstrap.progress} />;
-  }
-
-  if (activeStep === "account" && steps.account.fallback) {
-    return <>{steps.account.fallback}</>;
-  }
-
-  const readyData = steps.ready;
-
-  if (!readyData.setupResult || !readyData.account) {
-    return <LoadingScreen backgroundImage={backgroundImage} progress={steps.bootstrap.progress} />;
-  }
-
-  return <ReadyAdminApp setupResult={readyData.setupResult} account={readyData.account} />;
-};
+// Admin route wrapper removed
 
 function App() {
   const isConstructionMode = env.VITE_PUBLIC_CONSTRUCTION_FLAG == true;
@@ -186,8 +147,8 @@ function App() {
             </Route>
             <Route path="/play/*" element={<GameRoute backgroundImage={backgroundImage} />} />
             {/* Standalone factory route that does not require game bootstrap/sync */}
-            <Route path="/config-admin/factory" element={<ConfigAdminPage2 />} />
-            <Route path="/config-admin/*" element={<AdminRoute backgroundImage={backgroundImage} />} />
+            <Route path="/factory" element={<FactoryPage />} />
+            {/* Admin route removed; factory now lives at top-level /factory */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </MusicRouterProvider>

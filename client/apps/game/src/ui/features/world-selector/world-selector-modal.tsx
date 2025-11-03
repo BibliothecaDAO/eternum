@@ -3,7 +3,7 @@ import { getActiveWorldName, getFactorySqlBaseUrl, listWorldNames } from "@/runt
 import { isToriiAvailable } from "@/runtime/world/factory-resolver";
 import { deleteWorldProfile } from "@/runtime/world/store";
 import Button from "@/ui/design-system/atoms/button";
-import { AlertCircle, Check, Globe, Loader2, Play, Trash2, X } from "lucide-react";
+import { AlertCircle, Check, Globe, Loader2, Play, RefreshCw, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { shortString } from "starknet";
 import { env } from "../../../../env";
@@ -13,6 +13,7 @@ type FactoryGame = {
   status: "checking" | "ok" | "fail";
   toriiBaseUrl: string;
   startMainAt: number | null; // epoch seconds, if available
+  endAt: number | null; // epoch seconds, if available
 };
 
 export const WorldSelectorModal = ({
@@ -33,9 +34,12 @@ export const WorldSelectorModal = ({
   const [factoryGames, setFactoryGames] = useState<FactoryGame[]>([]);
   const [factoryLoading, setFactoryLoading] = useState(false);
   const [factoryError, setFactoryError] = useState<string | null>(null);
-  const [savedTimes, setSavedTimes] = useState<Record<string, number | null>>({});
+  const [savedTimes, setSavedTimes] = useState<Record<string, { startMainAt: number | null; endAt: number | null }>>(
+    {},
+  );
   const [nowSec, setNowSec] = useState<number>(() => Math.floor(Date.now() / 1000));
-  const GAME_DURATION_SEC = 2 * 60 * 60; // 2 hours
+  const [showEnded, setShowEnded] = useState(false);
+  const [showAwaiting, setShowAwaiting] = useState(false);
 
   // Check saved worlds availability and auto-delete offline games
   useEffect(() => {
@@ -93,7 +97,7 @@ export const WorldSelectorModal = ({
     return () => window.clearInterval(id);
   }, []);
 
-  // Fetch season start time for Saved Games that are online
+  // Fetch season start time and end time for Saved Games that are online
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
@@ -109,21 +113,27 @@ export const WorldSelectorModal = ({
           const name = toFetch[i];
           const torii = `https://api.cartridge.gg/x/${name}/torii`;
           let startMainAt: number | null = null;
+          let endAt: number | null = null;
           try {
-            const q = `SELECT "season_config.start_main_at" AS start_main_at FROM "s1_eternum-WorldConfig" LIMIT 1;`;
+            const q = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at FROM "s1_eternum-WorldConfig" LIMIT 1;`;
             const u = `${torii}/sql?query=${encodeURIComponent(q)}`;
             const r = await fetch(u);
             if (r.ok) {
               const arr = (await r.json()) as any[];
-              if (arr && arr[0] && arr[0].start_main_at != null) {
-                startMainAt = parseMaybeHexToNumber(arr[0].start_main_at);
+              if (arr && arr[0]) {
+                if (arr[0].start_main_at != null) {
+                  startMainAt = parseMaybeHexToNumber(arr[0].start_main_at);
+                }
+                if (arr[0].end_at != null) {
+                  endAt = parseMaybeHexToNumber(arr[0].end_at);
+                }
               }
             }
           } catch {
             // ignore per-world errors
           }
           if (!cancelled) {
-            setSavedTimes((prev) => ({ ...prev, [name]: startMainAt }));
+            setSavedTimes((prev) => ({ ...prev, [name]: { startMainAt, endAt } }));
           }
         }
       };
@@ -194,106 +204,106 @@ export const WorldSelectorModal = ({
   };
 
   // Fetch recent factory games (up to 1000), check Torii, then fetch season start time
-  useEffect(() => {
-    let cancelled = false;
-    const run = async () => {
-      try {
-        setFactoryLoading(true);
-        setFactoryError(null);
+  const loadFactoryGames = async () => {
+    try {
+      setFactoryLoading(true);
+      setFactoryError(null);
 
-        const factorySqlBaseUrl = getFactorySqlBaseUrl(env.VITE_PUBLIC_CHAIN as any);
-        if (!factorySqlBaseUrl) {
-          setFactoryGames([]);
-          return;
-        }
+      const factorySqlBaseUrl = getFactorySqlBaseUrl(env.VITE_PUBLIC_CHAIN as any);
+      if (!factorySqlBaseUrl) {
+        setFactoryGames([]);
+        return;
+      }
 
-        // Query last 1000 deployments; conservative ordering-less fallback
-        const query = `SELECT name FROM [wf-WorldDeployed] LIMIT 1000;`;
-        const url = `${factorySqlBaseUrl}?query=${encodeURIComponent(query)}`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`Factory query failed: ${res.status} ${res.statusText}`);
-        const rows = (await res.json()) as any[];
+      // Query last 1000 deployments; conservative ordering-less fallback
+      const query = `SELECT name FROM [wf-WorldDeployed] LIMIT 1000;`;
+      const url = `${factorySqlBaseUrl}?query=${encodeURIComponent(query)}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Factory query failed: ${res.status} ${res.statusText}`);
+      const rows = (await res.json()) as any[];
 
-        // Extract and dedupe names
-        const names: string[] = [];
-        const seen = new Set<string>();
-        for (const row of rows) {
-          const feltHex: string | undefined =
-            (row && (row.name as string)) || (row && (row["data.name"] as string)) || (row && row?.data?.name);
-          if (!feltHex || typeof feltHex !== "string") continue;
-          const decoded = decodePaddedFeltAscii(feltHex);
-          if (!decoded || seen.has(decoded)) continue;
-          seen.add(decoded);
-          names.push(decoded);
-        }
+      // Extract and dedupe names
+      const names: string[] = [];
+      const seen = new Set<string>();
+      for (const row of rows) {
+        const feltHex: string | undefined =
+          (row && (row.name as string)) || (row && (row["data.name"] as string)) || (row && row?.data?.name);
+        if (!feltHex || typeof feltHex !== "string") continue;
+        const decoded = decodePaddedFeltAscii(feltHex);
+        if (!decoded || seen.has(decoded)) continue;
+        seen.add(decoded);
+        names.push(decoded);
+      }
 
-        const initial: FactoryGame[] = names.map((n) => ({
-          name: n,
-          status: "checking",
-          toriiBaseUrl: `https://api.cartridge.gg/x/${n}/torii`,
-          startMainAt: null,
-        }));
-        if (!cancelled) setFactoryGames(initial);
+      const initial: FactoryGame[] = names.map((n) => ({
+        name: n,
+        status: "checking",
+        toriiBaseUrl: `https://api.cartridge.gg/x/${n}/torii`,
+        startMainAt: null,
+        endAt: null,
+      }));
+      setFactoryGames(initial);
 
-        // Concurrency-limited status + time fetch
-        const limit = 8;
-        let index = 0;
-        const workers: Promise<void>[] = [];
-        const work = async () => {
-          while (!cancelled && index < initial.length) {
-            const i = index++;
-            const item = initial[i];
-            try {
-              const online = await isToriiAvailable(item.toriiBaseUrl);
-              let startMainAt: number | null = null;
-              if (online) {
-                try {
-                  const q = `SELECT "season_config.start_main_at" AS start_main_at FROM "s1_eternum-WorldConfig" LIMIT 1;`;
-                  const u = `${item.toriiBaseUrl}/sql?query=${encodeURIComponent(q)}`;
-                  const r = await fetch(u);
-                  if (r.ok) {
-                    const arr = (await r.json()) as any[];
-                    if (arr && arr[0] && arr[0].start_main_at != null) {
+      // Concurrency-limited status + time fetch
+      const limit = 8;
+      let index = 0;
+      const workers: Promise<void>[] = [];
+      const work = async () => {
+        while (index < initial.length) {
+          const i = index++;
+          const item = initial[i];
+          try {
+            const online = await isToriiAvailable(item.toriiBaseUrl);
+            let startMainAt: number | null = null;
+            let endAt: number | null = null;
+            if (online) {
+              try {
+                const q = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at FROM "s1_eternum-WorldConfig" LIMIT 1;`;
+                const u = `${item.toriiBaseUrl}/sql?query=${encodeURIComponent(q)}`;
+                const r = await fetch(u);
+                if (r.ok) {
+                  const arr = (await r.json()) as any[];
+                  if (arr && arr[0]) {
+                    if (arr[0].start_main_at != null) {
                       startMainAt = parseMaybeHexToNumber(arr[0].start_main_at);
                     }
+                    if (arr[0].end_at != null) {
+                      endAt = parseMaybeHexToNumber(arr[0].end_at);
+                    }
                   }
-                } catch {
-                  // ignore per-world time errors
                 }
-              }
-              if (!cancelled) {
-                setFactoryGames((prev) => {
-                  const copy = [...prev];
-                  const idx = copy.findIndex((w) => w.name === item.name);
-                  if (idx >= 0) copy[idx] = { ...copy[idx], status: online ? "ok" : "fail", startMainAt };
-                  return copy;
-                });
-              }
-            } catch {
-              if (!cancelled) {
-                setFactoryGames((prev) => {
-                  const copy = [...prev];
-                  const idx = copy.findIndex((w) => w.name === item.name);
-                  if (idx >= 0) copy[idx] = { ...copy[idx], status: "fail" };
-                  return copy;
-                });
+              } catch {
+                // ignore per-world time errors
               }
             }
+            setFactoryGames((prev) => {
+              const copy = [...prev];
+              const idx = copy.findIndex((w) => w.name === item.name);
+              if (idx >= 0) copy[idx] = { ...copy[idx], status: online ? "ok" : "fail", startMainAt, endAt };
+              return copy;
+            });
+          } catch {
+            setFactoryGames((prev) => {
+              const copy = [...prev];
+              const idx = copy.findIndex((w) => w.name === item.name);
+              if (idx >= 0) copy[idx] = { ...copy[idx], status: "fail" };
+              return copy;
+            });
           }
-        };
+        }
+      };
 
-        for (let k = 0; k < limit; k++) workers.push(work());
-        await Promise.all(workers);
-      } catch (e: any) {
-        if (!cancelled) setFactoryError(e?.message || String(e));
-      } finally {
-        if (!cancelled) setFactoryLoading(false);
-      }
-    };
-    void run();
-    return () => {
-      cancelled = true;
-    };
+      for (let k = 0; k < limit; k++) workers.push(work());
+      await Promise.all(workers);
+    } catch (e: any) {
+      setFactoryError(e?.message || String(e));
+    } finally {
+      setFactoryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadFactoryGames();
   }, []);
 
   // Handle escape key
@@ -349,9 +359,21 @@ export const WorldSelectorModal = ({
 
   const renderFactoryItem = (fg: FactoryGame) => {
     const isOnline = fg.status === "ok";
+    const isUnconfigured = fg.startMainAt == null && isOnline;
+    const isEnded =
+      fg.startMainAt != null && fg.endAt != null && fg.endAt !== 0 && nowSec >= (fg.endAt as number);
+
     const startAtText = (() => {
       if (fg.startMainAt == null) return isOnline && fg.status !== "checking" ? "Not Configured" : "";
-      const endT = fg.startMainAt + GAME_DURATION_SEC;
+
+      // If endAt is 0 (or null) and there's a start time, show infinity
+      if ((fg.endAt === 0 || fg.endAt == null) && fg.startMainAt != null) {
+        if (nowSec < fg.startMainAt) return `Starts in ${formatCountdown(fg.startMainAt - nowSec)}`;
+        return `Ongoing — ∞`;
+      }
+
+      // Normal case with endAt
+      const endT = fg.endAt as number;
       if (nowSec < fg.startMainAt) return `Starts in ${formatCountdown(fg.startMainAt - nowSec)}`;
       if (nowSec < endT) return `Ongoing — ${formatCountdown(endT - nowSec)} left`;
       return `Ended at ${new Date(endT * 1000).toLocaleString()}`;
@@ -364,8 +386,16 @@ export const WorldSelectorModal = ({
           isOnline ? "cursor-pointer" : "cursor-default"
         } ${
           nameInput === fg.name
-            ? "border-gold bg-gold/10 shadow-lg shadow-gold/20"
-            : "border-gold/20 bg-brown/40 hover:bg-brown/60 hover:border-gold/40"
+            ? isEnded
+              ? "border-gold/40 bg-brown/20 shadow-lg shadow-gold/10 opacity-70"
+              : isUnconfigured
+                ? "border-gold/60 bg-gold/5 shadow-lg shadow-gold/10"
+                : "border-gold bg-gold/10 shadow-lg shadow-gold/20"
+            : isEnded
+              ? "border-gold/10 bg-brown/20 hover:bg-brown/30 hover:border-gold/20 opacity-60"
+              : isUnconfigured
+                ? "border-gold/30 bg-gold/5 hover:bg-gold/10 hover:border-gold/40 opacity-80"
+                : "border-gold/20 bg-brown/40 hover:bg-brown/60 hover:border-gold/40"
         }`}
         onClick={() => setNameInput(fg.name)}
         onDoubleClick={() => isOnline && handleEnterFactoryGame(fg.name)}
@@ -373,16 +403,27 @@ export const WorldSelectorModal = ({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-2">
-              <div className="truncate font-bold text-gold text-base">{fg.name}</div>
+              <div
+                className={`truncate font-bold text-base ${
+                  isEnded ? "text-gold/50" : isUnconfigured ? "text-gold/70" : "text-gold"
+                }`}
+              >
+                {fg.name}
+              </div>
               {nameInput === fg.name && (
                 <div className="flex-shrink-0 p-1 rounded-full bg-gold/20">
                   <Check className="w-3 h-3 text-gold" />
                 </div>
               )}
             </div>
-            <div className="font-mono text-xs text-gold/50 truncate">api.cartridge.gg/x/{fg.name}/torii</div>
             {startAtText && (
-              <div className="text-sm md:text-base text-white font-semibold mt-1">Game time: {startAtText}</div>
+              <div
+                className={`text-sm md:text-base font-semibold mt-1 ${
+                  isEnded ? "text-white/40" : isUnconfigured ? "text-white/60" : "text-white"
+                }`}
+              >
+                {startAtText}
+              </div>
             )}
           </div>
 
@@ -455,77 +496,15 @@ export const WorldSelectorModal = ({
                 <p className="text-sm text-gold/60 mt-1">Choose your world to enter the eternal conflict</p>
               </div>
             </div>
-            <Button onClick={cancel} variant="outline" size="md">Cancel</Button>
+            <Button onClick={cancel} variant="outline" size="md">
+              Cancel
+            </Button>
           </div>
         </div>
 
         {/* Content */}
         <div className="p-6">
           {/* Add New Game on top */}
-          <div className="space-y-3 mb-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
-              <div className="text-xs font-semibold uppercase tracking-widest text-gold/80 px-2">Add New Game</div>
-              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <input
-                    className="w-full rounded-lg border-2 border-gold/30 bg-brown/60 px-4 py-3 text-gold placeholder-gold/40 outline-none focus:border-gold focus:bg-brown/80 transition-all duration-200 font-mono"
-                    placeholder="gamecode-12345"
-                    value={nameInput}
-                    onChange={(e) => setNameInput(e.target.value.trim())}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && nameInput) {
-                        confirm();
-                      }
-                    }}
-                  />
-                  {nameInput && (
-                    <button
-                      onClick={() => setNameInput("")}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded text-gold/40 hover:text-gold transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-                <Button onClick={confirm} disabled={!nameInput} variant="gold" size="md">
-                  Enter Game
-                </Button>
-              </div>
-
-              {/* Status */}
-              {nameInput && (
-                <div className="flex items-center gap-2 p-3 rounded-lg border border-gold/20 bg-brown/40">
-                  {inputStatus === "checking" && (
-                    <>
-                      <Loader2 className="w-4 h-4 text-gold/60 animate-spin" />
-                      <span className="text-sm text-gold/60">Checking availability...</span>
-                    </>
-                  )}
-                  {inputStatus === "ok" && (
-                    <>
-                      <div className="p-1 rounded-full bg-brilliance/20">
-                        <Check className="w-3 h-3 text-brilliance" />
-                      </div>
-                      <span className="text-sm font-semibold text-brilliance">Game is online and available</span>
-                    </>
-                  )}
-                  {inputStatus === "fail" && (
-                    <>
-                      <div className="p-1 rounded-full bg-danger/20">
-                        <AlertCircle className="w-3 h-3 text-danger" />
-                      </div>
-                      <span className="text-sm font-semibold text-danger">Game is not reachable</span>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
 
           {/* Two columns: Factory left, Saved right */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -535,6 +514,14 @@ export const WorldSelectorModal = ({
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
                 <div className="text-xs font-semibold uppercase tracking-widest text-gold/80 px-2">Factory Games</div>
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
+                <button
+                  onClick={() => void loadFactoryGames()}
+                  disabled={factoryLoading}
+                  className="p-1.5 rounded-md bg-gold/10 text-gold border border-gold/30 hover:bg-gold/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Refresh factory games"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${factoryLoading ? "animate-spin" : ""}`} />
+                </button>
               </div>
 
               {saved.length > 0 && (
@@ -560,8 +547,6 @@ export const WorldSelectorModal = ({
                 </div>
               )} */}
 
-   
-
               {/* Filters */}
               {/* <div className="flex items-center justify-between gap-3 mb-2">
                 <div className="text-[10px] text-gold/60">
@@ -575,72 +560,126 @@ export const WorldSelectorModal = ({
               </div> */}
 
               <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-                {(() => {
-                  const online = factoryGames.filter((fg) => fg.status === "ok");
-                  const upcoming = online
-                    .filter((fg) => fg.startMainAt != null && nowSec < (fg.startMainAt as number))
-                    .sort((a, b) => (a.startMainAt as number) - (b.startMainAt as number));
-                  const ongoing = online
-                    .filter(
-                      (fg) =>
-                        fg.startMainAt != null &&
-                        nowSec >= (fg.startMainAt as number) &&
-                        nowSec < (fg.startMainAt as number) + GAME_DURATION_SEC,
-                    )
-                    .sort(
-                      (a, b) =>
-                        (a.startMainAt as number) + GAME_DURATION_SEC - nowSec - ((b.startMainAt as number) + GAME_DURATION_SEC - nowSec),
-                    );
-                  const ended = online
-                    .filter((fg) => fg.startMainAt != null && nowSec >= (fg.startMainAt as number) + GAME_DURATION_SEC)
-                    .sort((a, b) => (b.startMainAt as number) - (a.startMainAt as number));
-                  const unknown = online.filter((fg) => fg.startMainAt == null).sort((a, b) => a.name.localeCompare(b.name));
+                {factoryLoading && factoryGames.length === 0 ? (
+                  <div className="rounded-lg border-2 border-dashed border-gold/20 p-8 text-center">
+                    <Loader2 className="w-12 h-12 text-gold/50 mx-auto mb-3 animate-spin" />
+                    <p className="text-sm text-gold/60 font-semibold">Loading factory games...</p>
+                    <p className="text-xs text-gold/40 mt-1">Fetching available worlds from the factory</p>
+                  </div>
+                ) : factoryError ? (
+                  <div className="rounded-lg border-2 border-danger/30 bg-danger/5 p-6 text-center">
+                    <AlertCircle className="w-12 h-12 text-danger/60 mx-auto mb-2" />
+                    <p className="text-sm text-danger font-semibold">Failed to load factory games</p>
+                    <p className="text-xs text-danger/70 mt-1">{factoryError}</p>
+                    <button
+                      onClick={() => void loadFactoryGames()}
+                      className="mt-3 px-3 py-1.5 text-xs rounded-md bg-danger/10 text-danger border border-danger/30 hover:bg-danger/20 transition-all"
+                    >
+                      Try Again
+                    </button>
+                  </div>
+                ) : factoryGames.length === 0 ? (
+                  <div className="rounded-lg border-2 border-dashed border-gold/20 p-6 text-center">
+                    <Globe className="w-12 h-12 text-gold/30 mx-auto mb-2" />
+                    <p className="text-sm text-gold/60">No factory games found</p>
+                    <p className="text-xs text-gold/40 mt-1">Check back later for new worlds</p>
+                  </div>
+                ) : (
+                  (() => {
+                    const online = factoryGames.filter((fg) => fg.status === "ok");
+                    const upcoming = online
+                      .filter((fg) => fg.startMainAt != null && nowSec < (fg.startMainAt as number))
+                      .sort((a, b) => (a.startMainAt as number) - (b.startMainAt as number));
+                    const ongoing = online
+                      .filter(
+                        (fg) =>
+                          fg.startMainAt != null &&
+                          nowSec >= (fg.startMainAt as number) &&
+                          (fg.endAt === 0 || fg.endAt == null || nowSec < (fg.endAt as number)),
+                      )
+                      .sort((a, b) => {
+                        // Infinite games (endAt === 0 or null) should be sorted by start time
+                        if ((a.endAt === 0 || a.endAt == null) && (b.endAt === 0 || b.endAt == null)) {
+                          return (a.startMainAt as number) - (b.startMainAt as number);
+                        }
+                        if (a.endAt === 0 || a.endAt == null) return -1; // Infinite games first
+                        if (b.endAt === 0 || b.endAt == null) return 1;
+                        // Sort by time remaining (soonest to end first)
+                        return (a.endAt as number) - nowSec - ((b.endAt as number) - nowSec);
+                      });
+                    const ended = online
+                      .filter(
+                        (fg) =>
+                          fg.startMainAt != null &&
+                          fg.endAt != null &&
+                          fg.endAt !== 0 &&
+                          nowSec >= (fg.endAt as number),
+                      )
+                      .sort((a, b) => (b.endAt as number) - (a.endAt as number));
+                    const unknown = online
+                      .filter((fg) => fg.startMainAt == null)
+                      .sort((a, b) => a.name.localeCompare(b.name));
 
-                  return (
-                    <>
-                      {upcoming.length > 0 && (
-                        <>
-                          <div className="flex items-center gap-2 my-2">
-                            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
-                            <div className="text-[10px] font-semibold uppercase tracking-widest text-gold/80 px-2">Upcoming</div>
-                            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
-                          </div>
-                          {upcoming.map((fg) => renderFactoryItem(fg))}
-                        </>
-                      )}
-                      {ongoing.length > 0 && (
-                        <>
-                          <div className="flex items-center gap-2 my-2">
-                            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
-                            <div className="text-[10px] font-semibold uppercase tracking-widest text-gold/80 px-2">Ongoing</div>
-                            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
-                          </div>
-                          {ongoing.map((fg) => renderFactoryItem(fg))}
-                        </>
-                      )}
-                      {ended.length > 0 && (
-                        <>
-                          <div className="flex items-center gap-2 my-2">
-                            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
-                            <div className="text-[10px] font-semibold uppercase tracking-widest text-gold/80 px-2">Ended</div>
-                            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
-                          </div>
-                          {ended.map((fg) => renderFactoryItem(fg))}
-                        </>
-                      )}
-                      {unknown.length > 0 && (
-                        <>
-                          <div className="flex items-center gap-2 my-2">
-                            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
-                            <div className="text-[10px] font-semibold uppercase tracking-widest text-gold/80 px-2">Unknown</div>
-                            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
-                          </div>
-                          {unknown.map((fg) => renderFactoryItem(fg))}
-                        </>
-                      )}
-                    </>
-                  );
-                })()}
+                    return (
+                      <>
+                        {upcoming.length > 0 && (
+                          <>
+                            <div className="flex items-center gap-2 my-2">
+                              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+                              <div className="text-[10px] font-semibold uppercase tracking-widest text-gold/80 px-2">
+                                Upcoming
+                              </div>
+                              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+                            </div>
+                            {upcoming.map((fg) => renderFactoryItem(fg))}
+                          </>
+                        )}
+                        {ongoing.length > 0 && (
+                          <>
+                            <div className="flex items-center gap-2 my-2">
+                              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+                              <div className="text-[10px] font-semibold uppercase tracking-widest text-gold/80 px-2">
+                                Ongoing
+                              </div>
+                              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+                            </div>
+                            {ongoing.map((fg) => renderFactoryItem(fg))}
+                          </>
+                        )}
+                        {ended.length > 0 && (
+                          <>
+                            <button
+                              onClick={() => setShowEnded(!showEnded)}
+                              className="flex items-center gap-2 my-2 w-full hover:opacity-80 transition-opacity cursor-pointer"
+                            >
+                              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+                              <div className="text-[10px] font-semibold uppercase tracking-widest text-gold/80 px-2">
+                                Ended ({ended.length}) {showEnded ? "▲" : "▼"}
+                              </div>
+                              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+                            </button>
+                            {showEnded && ended.map((fg) => renderFactoryItem(fg))}
+                          </>
+                        )}
+                        {unknown.length > 0 && (
+                          <>
+                            <button
+                              onClick={() => setShowAwaiting(!showAwaiting)}
+                              className="flex items-center gap-2 my-2 w-full hover:opacity-80 transition-opacity cursor-pointer"
+                            >
+                              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+                              <div className="text-[10px] font-semibold uppercase tracking-widest text-gold/80 px-2">
+                                Awaiting Configuration ({unknown.length}) {showAwaiting ? "▲" : "▼"}
+                              </div>
+                              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+                            </button>
+                            {showAwaiting && unknown.map((fg) => renderFactoryItem(fg))}
+                          </>
+                        )}
+                      </>
+                    );
+                  })()
+                )}
               </div>
             </div>
 
@@ -648,7 +687,7 @@ export const WorldSelectorModal = ({
             <div className="space-y-3">
               <div className="flex items-center gap-2 mb-4">
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
-                <div className="text-xs font-semibold uppercase tracking-widest text-gold/80 px-2">Saved Games</div>
+                <div className="text-xs font-semibold uppercase tracking-widest text-gold/80 px-2">Recent Games</div>
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
               </div>
 
@@ -664,23 +703,54 @@ export const WorldSelectorModal = ({
                 {saved.length === 0 && (
                   <div className="rounded-lg border-2 border-dashed border-gold/20 p-6 text-center">
                     <Globe className="w-12 h-12 text-gold/30 mx-auto mb-2" />
-                    <p className="text-sm text-gold/60">No saved games yet</p>
+                    <p className="text-sm text-gold/60">No recent games yet</p>
                     <p className="text-xs text-gold/40 mt-1">Enter a world name to begin your conquest</p>
                   </div>
                 )}
-                {saved.map((s) => {
-                  const isOnline = isGameOnline(s);
+                {(() => {
+                  // Categorize saved games
+                  const categorized = saved.map((s) => {
+                    const isOnline = isGameOnline(s);
+                    const timeData = savedTimes[s];
+                    const isEnded =
+                      isOnline &&
+                      timeData?.startMainAt != null &&
+                      timeData?.endAt != null &&
+                      timeData.endAt !== 0 &&
+                      nowSec >= timeData.endAt;
+                    const isOngoing =
+                      isOnline &&
+                      timeData?.startMainAt != null &&
+                      nowSec >= timeData.startMainAt &&
+                      (timeData.endAt === 0 || timeData.endAt == null || nowSec < timeData.endAt);
+                    const isUpcoming =
+                      isOnline && timeData?.startMainAt != null && nowSec < timeData.startMainAt;
 
-                  return (
+                    return { name: s, isOnline, timeData, isEnded, isOngoing, isUpcoming };
+                  });
+
+                  // Sort: live (ongoing) first, then upcoming, then ended, then others
+                  const live = categorized.filter((g) => g.isOngoing);
+                  const upcoming = categorized.filter((g) => g.isUpcoming);
+                  const ended = categorized.filter((g) => g.isEnded);
+                  const others = categorized.filter((g) => !g.isOngoing && !g.isUpcoming && !g.isEnded);
+
+                  const sorted = [...live, ...upcoming, ...ended, ...others];
+
+                  return sorted.map(({ name: s, isOnline, isEnded }) => (
                     <div
                       key={s}
                       className={`group relative rounded-lg border-2 p-4 transition-all duration-200 cursor-pointer ${
                         selected === s
                           ? isOnline
-                            ? "border-gold bg-gold/10 shadow-lg shadow-gold/20"
+                            ? isEnded
+                              ? "border-gold/40 bg-brown/20 shadow-lg shadow-gold/10 opacity-70"
+                              : "border-gold bg-gold/10 shadow-lg shadow-gold/20"
                             : "border-danger/50 bg-danger/5 shadow-lg shadow-danger/10"
                           : isOnline
-                            ? "border-gold/20 bg-brown/40 hover:bg-brown/60 hover:border-gold/40"
+                            ? isEnded
+                              ? "border-gold/10 bg-brown/20 hover:bg-brown/30 hover:border-gold/20 opacity-60"
+                              : "border-gold/20 bg-brown/40 hover:bg-brown/60 hover:border-gold/40"
                             : "border-danger/40 bg-danger/5 hover:bg-danger/10"
                       }`}
                       onClick={() => setSelected(s)}
@@ -689,29 +759,47 @@ export const WorldSelectorModal = ({
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <div className="truncate font-bold text-gold text-base">{s}</div>
+                            <div
+                              className={`truncate font-bold text-base ${isEnded ? "text-gold/50" : "text-gold"}`}
+                            >
+                              {s}
+                            </div>
                             {selected === s && (
                               <div className="flex-shrink-0 p-1 rounded-full bg-gold/20">
                                 <Check className="w-3 h-3 text-gold" />
                               </div>
                             )}
                           </div>
-                          <div className="font-mono text-xs text-gold/50 truncate">api.cartridge.gg/x/{s}/torii</div>
-                          {isOnline && savedTimes[s] != null && (
+                          {isOnline &&
+                            savedTimes[s] != null &&
+                            savedTimes[s].startMainAt != null &&
                             (() => {
-                              const t = savedTimes[s] as number;
-                              const endT = t + GAME_DURATION_SEC;
-                              const content =
-                                nowSec < t
-                                  ? `Starts in ${formatCountdown(t - nowSec)}`
-                                  : nowSec < endT
-                                    ? `Ongoing — ${formatCountdown(endT - nowSec)} left`
-                                    : `Ended at ${new Date(endT * 1000).toLocaleString()}`;
+                              const timeData = savedTimes[s];
+                              const startT = timeData.startMainAt as number;
+                              const endT = timeData.endAt;
+
+                              let content: string;
+                              if (nowSec < startT) {
+                                content = `Starts in ${formatCountdown(startT - nowSec)}`;
+                              } else if (endT === 0 || endT == null) {
+                                // Infinite game
+                                content = `Ongoing — ∞`;
+                              } else if (nowSec < endT) {
+                                content = `Ongoing — ${formatCountdown(endT - nowSec)} left`;
+                              } else {
+                                content = `Ended at ${new Date(endT * 1000).toLocaleString()}`;
+                              }
+
                               return (
-                                <div className="text-sm md:text-base text-white font-semibold mt-1">{`Game time: ${content}`}</div>
+                                <div
+                                  className={`text-sm md:text-base font-semibold mt-1 ${
+                                    isEnded ? "text-white/40" : "text-white"
+                                  }`}
+                                >
+                                  {`${content}`}
+                                </div>
                               );
-                            })()
-                          )}
+                            })()}
                         </div>
 
                         <div className="flex flex-col items-end gap-2">
@@ -773,8 +861,8 @@ export const WorldSelectorModal = ({
                         </div>
                       </div>
                     </div>
-                  );
-                })}
+                  ));
+                })()}
               </div>
             </div>
           </div>

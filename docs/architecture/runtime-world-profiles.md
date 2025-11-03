@@ -46,7 +46,7 @@ Modules (client/apps/game/src/runtime/world)
   - `getActiveWorld()`, `setActiveWorld(name)`, `saveWorldProfile(profile)`, `listWorldNames()`.
 - factory-endpoints.ts
   - `getFactorySqlBaseUrl(chain)`; currently returns sepolia factory
-    `https://api.cartridge.gg/x/eternum-dojo-world-factory/torii/sql`.
+    `https://api.cartridge.gg/x/eternum-factory-sepolia/torii/sql`.
 - factory-resolver.ts
   - `resolveWorldContracts(factorySqlBaseUrl, worldName)` → fetch rows from `[wf-WorldContract]` WHERE
     `name = <padded felt>` and build `selector -> address` map.

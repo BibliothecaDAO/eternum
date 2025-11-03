@@ -1,16 +1,7 @@
 import type { Chain } from "@contracts";
+import { getFactorySqlBaseUrl as sharedFactorySqlBase } from "../../../../../../common/factory/endpoints";
+import { env } from "../../../env";
 
-// Factory SQL base endpoints by chain. Extend as needed.
-export const getFactorySqlBaseUrl = (chain: Chain): string => {
-  switch (chain) {
-    case "sepolia":
-      return "https://api.cartridge.gg/x/eternum-dojo-world-factory/torii/sql";
-    // Placeholder mappings for future support
-    case "local":
-    case "slot":
-    case "slottest":
-    case "mainnet":
-    default:
-      return "";
-  }
-};
+// Factory SQL base endpoints by chain. Delegates to shared helper.
+export const getFactorySqlBaseUrl = (chain: Chain): string =>
+  sharedFactorySqlBase(chain, env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg");

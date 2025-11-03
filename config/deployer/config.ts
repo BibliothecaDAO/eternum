@@ -19,9 +19,13 @@ import {
 // Browser-compatible: Make chalk optional for browser environments
 let chalk: any;
 try {
-  chalk = require("chalk");
+  // Support both ESM (chalk@5) and CJS resolution
+  // If require returns a namespace with .default, unwrap it
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const mod = require("chalk");
+  chalk = (mod && typeof mod === "object" && "default" in mod ? mod.default : mod) as any;
 } catch {
-  // Fallback for browser - no-op chalk
+  // Fallback for browser/ESM environments where require is unavailable
   const noop = (str: string) => str;
   chalk = {
     cyan: noop,
@@ -35,6 +39,10 @@ try {
 }
 
 import { getContractByName, NAMESPACE, type EternumProvider } from "@bibliothecadao/provider";
+import { byteArray, type Account } from "starknet";
+import type { NetworkType } from "utils/environment";
+import type { Chain } from "utils/utils";
+import { addCommas, hourMinutesSeconds, inGameAmount, shortHexAddress } from "../utils/formatting";
 
 // Browser-compatible: Make fs optional for browser environments
 let fs: any;
@@ -44,13 +52,9 @@ try {
   // Fallback for browser - fs not available
   fs = null;
 }
-import { byteArray, type Account } from "starknet";
 
 // Type compatibility for browser & Node environments
 type AnyAccount = any; // Use any to avoid version conflicts between environments
-import type { NetworkType } from "utils/environment";
-import type { Chain } from "utils/utils";
-import { addCommas, hourMinutesSeconds, inGameAmount, shortHexAddress } from "../utils/formatting";
 
 interface Config {
   account: Account;
@@ -1188,8 +1192,12 @@ export const setSeasonConfig = async (config: Config) => {
 };
 
 export const setVRFConfig = async (config: Config) => {
-  if (config.config.setup?.chain !== "mainnet" && config.config.setup?.chain !== "sepolia") {
-    console.log(chalk.yellow("    ⚠ Skipping VRF configuration for slot or local environment"));
+  if (
+    config.config.setup?.chain !== "mainnet" &&
+    config.config.setup?.chain !== "sepolia" &&
+    config.config.setup?.chain !== "slot"
+  ) {
+    console.log(chalk.yellow("    ⚠ Skipping VRF configuration for local environment"));
     return;
   }
 

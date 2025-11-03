@@ -1,26 +1,7 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  ChevronDown,
-  ChevronLeft,
-  ChevronUp,
-  Download,
-  Factory,
-  Loader2,
-  RefreshCw,
-  Trash2,
-  XCircle,
-  Copy,
-} from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { byteArray, shortString } from "starknet";
-import { env } from "../../../../../env";
-import { getManifestJsonString, type ChainType } from "../utils/manifest-loader";
-import { ETERNUM_CONFIG } from "@/utils/config";
-import { getGameManifest, type Chain } from "@contracts";
 import { buildWorldProfile, patchManifestWithFactory } from "@/runtime/world";
+import { Controller } from "@/ui/modules/controller/controller";
+import { ETERNUM_CONFIG } from "@/utils/config";
 import { EternumProvider } from "@bibliothecadao/provider";
 import type { Config as EternumConfig } from "@bibliothecadao/types";
 import {
@@ -36,7 +17,6 @@ import {
   setHyperstructureConfig,
   setRealmUpgradeConfig,
   setResourceBridgeFeesConfig,
-  setResourceBridgeWtlConfig,
   setSeasonConfig,
   setSettlementConfig,
   setSpeedConfig,
@@ -52,136 +32,185 @@ import {
   setWorldConfig,
   setupGlobals,
 } from "@config-deployer/config";
+import { getGameManifest, type Chain } from "@contracts";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronDown,
+  ChevronLeft,
+  ChevronUp,
+  Copy,
+  Download,
+  Loader2,
+  RefreshCw,
+  Trash2,
+  XCircle,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { shortString } from "starknet";
+import { env } from "../../../../../env";
+import { getManifestJsonString, type ChainType } from "../utils/manifest-loader";
+import {
+  DEFAULT_VERSION,
+  DEFAULT_MAX_ACTIONS,
+  DEFAULT_NAMESPACE,
+  FACTORY_ADDRESSES,
+  getExplorerTxUrl,
+  getFactorySqlBaseUrl,
+  CARTRIDGE_API_BASE,
+  getRpcUrlForChain,
+  DEFAULT_TORII_NAMESPACE,
+} from "../constants";
+import {
+  getStoredWorldNames,
+  saveWorldNameToStorage,
+  getConfiguredWorlds,
+  markWorldAsConfigured,
+  getCurrentWorldName,
+  setCurrentWorldName,
+  getDeployedAddressMap,
+  setDeployedAddressMap,
+  cacheDeployedAddress,
+  getIndexerCooldown,
+  setIndexerCooldown,
+  isWorldOnCooldown,
+  getRemainingCooldown,
+  persistStoredWorldNames,
+} from "../utils/storage";
+import {
+  checkIndexerExists as checkIndexerExistsService,
+  createIndexer as createIndexerService,
+  getWorldDeployedAddress as getWorldDeployedAddressService,
+} from "../services/factory-indexer";
+import { generateFactoryCalldata, generateCairoOutput } from "../services/factory-config";
+import { AdminHeader } from "../components/admin-header";
+import { useFactoryAdmin } from "../hooks/use-factory-admin";
 
 type TxState = { status: "idle" | "running" | "success" | "error"; hash?: string; error?: string };
 
-// Local storage keys
-const WORLD_NAMES_STORAGE_KEY = "eternum_world_names";
-const CURRENT_WORLD_NAME_KEY = "eternum_current_world_name";
-const INDEXER_CREATION_COOLDOWN_KEY = "eternum_indexer_cooldown";
+// Storage keys and cooldowns moved to ../constants and ../utils/storage
 
-// Indexer creation cooldown (5 minutes in milliseconds)
-const INDEXER_COOLDOWN_MS = 5 * 60 * 1000;
-// Cache of deployed world addresses: worldName -> contract_address
-const WORLD_DEPLOYED_ADDRESS_MAP_KEY = "eternum_world_deployed_address_map";
+/**
+ * Four-letter word dictionary for world name generation.
+ * Curated for memorability, uniqueness, and thematic fit.
+ */
+const FOUR_LETTER_WORDS = [
+  // Nature & Elements
+  "fire",
+  "wave",
+  "gale",
+  "mist",
+  "dawn",
+  "dusk",
+  "rain",
+  "snow",
+  "sand",
+  "clay",
+  "iron",
+  "gold",
+  "jade",
+  "ruby",
+  "opal",
+  // Actions & States
+  "rush",
+  "flow",
+  "push",
+  "pull",
+  "burn",
+  "heal",
+  "grow",
+  "fade",
+  "rise",
+  "fall",
+  "soar",
+  "dive",
+  // Objects & Places
+  "gate",
+  "keep",
+  "tomb",
+  "fort",
+  "maze",
+  "peak",
+  "vale",
+  "cave",
+  "rift",
+  "void",
+  "shard",
+  "rune",
+  // Abstract & Qualities
+  "bold",
+  "wild",
+  "vast",
+  "pure",
+  "dark",
+  "cold",
+  "warm",
+  "soft",
+  "hard",
+  "deep",
+  "high",
+  "true",
+  // Mystical & Game-themed
+  "myth",
+  "epic",
+  "sage",
+  "lore",
+  "fate",
+  "doom",
+  "fury",
+  "zeal",
+  "flux",
+  "echo",
+  "nova",
+  "apex",
+] as const;
 
-// Helper to generate world name: first 10 letters of controller name (or fallback) + - + 5 random numbers
-const generateWorldName = (controllerName?: string): string => {
-  const base = (controllerName || "world").toString();
-  const sanitizedName = base
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "")
-    .slice(0, 10) || "world";
-  const randomNumbers = Math.floor(10000 + Math.random() * 90000); // 5-digit number
-  return `${sanitizedName}-${randomNumbers}`;
+/**
+ * Generates a world name with format: ccf-xxxx-xxxx-##
+ * Example output: "ccf-fire-gate-42", "ccf-dark-void-17"
+ *
+ * @returns A world name with CCF prefix, two 4-letter words, and 2-digit number
+ */
+const generateWorldName = (): string => {
+  const getRandomWord = (): string => {
+    const randomIndex = Math.floor(Math.random() * FOUR_LETTER_WORDS.length);
+    return FOUR_LETTER_WORDS[randomIndex];
+  };
+
+  // Generate 2 unique words to avoid duplicates like "fire-fire"
+  const words = new Set<string>();
+  while (words.size < 2) {
+    words.add(getRandomWord());
+  }
+
+  // Generate random 2-digit number (10-99)
+  const randomNumber = Math.floor(Math.random() * 90) + 10;
+
+  return `ccf-${Array.from(words).join("-")}-${randomNumber}`;
 };
 
-// Helper to get stored world names
-const getStoredWorldNames = (): string[] => {
+// Helpers moved to ../utils/storage
+
+// Helper to check if a world is configured
+const isWorldConfigured = (worldName: string): boolean => {
   try {
-    const stored = localStorage.getItem(WORLD_NAMES_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
+    const configured = getConfiguredWorlds();
+    return configured.includes(worldName);
   } catch {
-    return [];
+    return false;
   }
 };
 
-// Helper to save world name after successful deployment
-const saveWorldNameToStorage = (worldName: string) => {
-  try {
-    const existing = getStoredWorldNames();
-    if (!existing.includes(worldName)) {
-      const updated = [...existing, worldName];
-      localStorage.setItem(WORLD_NAMES_STORAGE_KEY, JSON.stringify(updated));
-    }
-  } catch (err) {
-    console.error("Failed to save world name:", err);
-  }
-};
+// Current world helpers moved to ../utils/storage
 
-// Helper to get current world name
-const getCurrentWorldName = (): string | null => {
-  try {
-    return localStorage.getItem(CURRENT_WORLD_NAME_KEY);
-  } catch {
-    return null;
-  }
-};
-
-// Helper to set current world name
-const setCurrentWorldName = (worldName: string) => {
-  try {
-    localStorage.setItem(CURRENT_WORLD_NAME_KEY, worldName);
-  } catch (err) {
-    console.error("Failed to set current world name:", err);
-  }
-};
-
-// Helper to get cooldown data for a world
-const getIndexerCooldown = (worldName: string): number | null => {
-  try {
-    const stored = localStorage.getItem(`${INDEXER_CREATION_COOLDOWN_KEY}_${worldName}`);
-    return stored ? parseInt(stored, 10) : null;
-  } catch {
-    return null;
-  }
-};
+// Cooldown helpers moved to ../utils/storage
 
 // ===== World deployed address cache helpers =====
-const getDeployedAddressMap = (): Record<string, string> => {
-  try {
-    const raw = localStorage.getItem(WORLD_DEPLOYED_ADDRESS_MAP_KEY);
-    return raw ? (JSON.parse(raw) as Record<string, string>) : {};
-  } catch {
-    return {};
-  }
-};
-
-const setDeployedAddressMap = (map: Record<string, string>) => {
-  try {
-    localStorage.setItem(WORLD_DEPLOYED_ADDRESS_MAP_KEY, JSON.stringify(map));
-  } catch (err) {
-    console.error("Failed to persist deployed address map:", err);
-  }
-};
-
-const getCachedDeployedAddress = (worldName: string): string | null => {
-  const map = getDeployedAddressMap();
-  return map[worldName] ?? null;
-};
-
-const cacheDeployedAddress = (worldName: string, address: string) => {
-  const map = getDeployedAddressMap();
-  if (address) {
-    map[worldName] = address;
-    setDeployedAddressMap(map);
-  }
-};
+// Deployed address cache helpers moved to ../utils/storage
 
 // Helper to set cooldown for a world
-const setIndexerCooldown = (worldName: string) => {
-  try {
-    const cooldownUntil = Date.now() + INDEXER_COOLDOWN_MS;
-    localStorage.setItem(`${INDEXER_CREATION_COOLDOWN_KEY}_${worldName}`, cooldownUntil.toString());
-  } catch (err) {
-    console.error("Failed to set indexer cooldown:", err);
-  }
-};
-
-// Helper to check if world is on cooldown
-const isWorldOnCooldown = (worldName: string): boolean => {
-  const cooldownUntil = getIndexerCooldown(worldName);
-  if (!cooldownUntil) return false;
-  return Date.now() < cooldownUntil;
-};
-
-// Helper to get remaining cooldown time in seconds
-const getRemainingCooldown = (worldName: string): number => {
-  const cooldownUntil = getIndexerCooldown(worldName);
-  if (!cooldownUntil) return 0;
-  const remaining = Math.max(0, cooldownUntil - Date.now());
-  return Math.ceil(remaining / 1000); // Convert to seconds
-};
+// Cooldown helpers moved to ../utils/storage
 
 // Utility: Convert text to felt252
 const textToFelt = (text: string): string => {
@@ -196,58 +225,7 @@ const textToFeltPadded = (text: string): string => {
   return "0x" + withoutPrefix.padStart(64, "0");
 };
 
-// Factory addresses by chain
-const FACTORY_ADDRESSES: Record<ChainType, string> = {
-  sepolia: "0x053412958d530f1a639c6d2928f27b13cbd65b0652edfd2817fb96c69d160e4b",
-  local: "",
-  mainnet: "",
-  slot: "",
-  slottest: "",
-};
-
-// Factory Torii SQL endpoints by chain
-const FACTORY_TORII_URLS: Record<ChainType, string> = {
-  sepolia: "https://api.cartridge.gg/x/eternum-dojo-world-factory/torii/sql",
-  local: "",
-  mainnet: "",
-  slot: "",
-  slottest: "",
-};
-
-// Torii configuration by chain
-interface ToriiConfig {
-  env: string;
-  rpc_url: string;
-  torii_namespaces: string;
-  workflow_file?: string;
-  ref?: string;
-  external_contracts?: string[]; // Array of "type:address" strings
-}
-
-const TORII_CONFIGS: Record<ChainType, Partial<ToriiConfig>> = {
-  sepolia: {
-    env: "sepolia",
-    rpc_url: "https://api.cartridge.gg/x/starknet/sepolia",
-    torii_namespaces: "s1_eternum",
-    external_contracts: [],
-  },
-  slot: {
-    env: "slot",
-    rpc_url: "https://api.cartridge.gg/x/eternum-blitz-slot-1/katana",
-    torii_namespaces: "s1_eternum",
-    workflow_file: "deploy-blitz-torii.yml",
-    ref: "blitz",
-    external_contracts: [],
-  },
-  slottest: {
-    env: "slottest",
-    rpc_url: "https://api.cartridge.gg/x/eternum-blitz-slot-test/katana",
-    torii_namespaces: "s1_eternum",
-    external_contracts: [],
-  },
-  local: {},
-  mainnet: {},
-};
+// Torii configuration payload will be built from constants per chain when needed
 
 // Helper to parse manifest and generate factory config
 interface ManifestContract {
@@ -275,126 +253,29 @@ interface ManifestData {
   contracts: ManifestContract[];
   models: ManifestModel[];
   events: ManifestEvent[];
+  // Optional: libraries included in manifest
+  libraries?: Array<{
+    class_hash: string;
+    tag?: string;
+    version?: string;
+    name?: string;
+  }>;
 }
 
-// Generate factory config calldata from manifest
-const generateFactoryCalldata = (
-  manifest: ManifestData,
-  version: string,
-  namespace: string,
-  maxActions: number = 20,
-  defaultNamespaceWriterAll: boolean = true,
-): any[] => {
-  const calldata: any[] = [];
+// Calldata and Cairo generators moved to services/factory-config
 
-  // Version (felt252)
-  calldata.push(version);
-
-  // Max actions (u64)
-  calldata.push(maxActions);
-
-  // World class hash
-  calldata.push(manifest.world.class_hash);
-
-  // Default namespace (as ByteArray)
-  const namespaceByteArray = byteArray.byteArrayFromString(namespace);
-  calldata.push(namespaceByteArray);
-
-  // Default namespace writer all (bool)
-  calldata.push(defaultNamespaceWriterAll ? 1 : 0);
-
-  // Contracts count
-  calldata.push(manifest.contracts.length);
-
-  // Contracts array: selector, class_hash, init_calldata_count, ...init_calldata
-  for (const contract of manifest.contracts) {
-    calldata.push(contract.selector);
-    calldata.push(contract.class_hash);
-    const initCalldataCount = contract.init_calldata?.length || 0;
-    calldata.push(initCalldataCount);
-    if (initCalldataCount > 0) {
-      calldata.push(...(contract.init_calldata || []));
-    }
-    calldata.push(0); // writer of resources
-    calldata.push(0); // owner of resources
-  }
-
-  // Models count
-  calldata.push(manifest.models.length);
-
-  // Models array: class_hash
-  for (const model of manifest.models) {
-    calldata.push(model.class_hash);
-  }
-
-  // Events count
-  calldata.push(manifest.events.length);
-
-  // Events array: class_hash
-  for (const event of manifest.events) {
-    calldata.push(event.class_hash);
-  }
-
-  return calldata;
-};
-
-// Generate Cairo code output similar to sozo inspect --output-factory
-const generateCairoOutput = (
-  manifest: ManifestData,
-  version: string,
-  maxActions: number,
-  defaultNamespaceWriterAll: boolean,
-  namespace: string,
-): string => {
-  let output = `let factory_config = FactoryConfig {\n`;
-  output += `    version: '${version}',\n`;
-  output += `    max_actions: ${maxActions},\n`;
-  output += `    world_class_hash: TryInto::<felt252, ClassHash>::try_into(${manifest.world.class_hash}).unwrap(),\n`;
-  output += `    default_namespace: "${namespace}",\n`;
-  output += `    default_namespace_writer_all: ${defaultNamespaceWriterAll},\n`;
-  output += `    contracts: array![\n`;
-
-  for (const contract of manifest.contracts) {
-    const initArgsCount = contract.init_calldata?.length || 0;
-    output += `        (selector_from_tag!("${contract.tag}"), TryInto::<felt252, ClassHash>::try_into(${contract.class_hash}).unwrap(), array![`;
-    if (initArgsCount > 0) {
-      output += contract.init_calldata?.join(", ");
-    }
-    output += `]),\n`;
-  }
-
-  output += `    ],\n`;
-  output += `    models: array![\n`;
-
-  for (const model of manifest.models) {
-    output += `        TryInto::<felt252, ClassHash>::try_into(${model.class_hash}).unwrap(),\n`;
-  }
-
-  output += `    ],\n`;
-  output += `    events: array![\n`;
-
-  for (const event of manifest.events) {
-    output += `        TryInto::<felt252, ClassHash>::try_into(${event.class_hash}).unwrap(),\n`;
-  }
-
-  output += `    ],\n`;
-  output += `};\n`;
-
-  return output;
-};
-
-export const ConfigAdminPage2 = () => {
+export const FactoryPage = () => {
   const navigate = useNavigate();
   const { account, accountName } = useAccountStore();
 
   const currentChain = env.VITE_PUBLIC_CHAIN as ChainType;
-  const DEFAULT_VERSION = "180";
+  const { refreshStatuses } = useFactoryAdmin(currentChain);
 
   const [factoryAddress, setFactoryAddress] = useState<string>("");
   const [version, setVersion] = useState<string>(DEFAULT_VERSION);
-  const [namespace, setNamespace] = useState<string>("s1_eternum");
+  const [namespace, setNamespace] = useState<string>(DEFAULT_NAMESPACE);
   const [worldName, setWorldName] = useState<string>("");
-  const [maxActions, setMaxActions] = useState<number>(20);
+  const [maxActions, setMaxActions] = useState<number>(DEFAULT_MAX_ACTIONS);
   const [defaultNamespaceWriterAll, setDefaultNamespaceWriterAll] = useState<boolean>(true);
   const [manifestJson, setManifestJson] = useState<string>("");
   const [parsedManifest, setParsedManifest] = useState<ManifestData | null>(null);
@@ -410,6 +291,7 @@ export const ConfigAdminPage2 = () => {
   const [cooldownTimers, setCooldownTimers] = useState<Record<string, number>>({});
   const [indexerCreationCountdown, setIndexerCreationCountdown] = useState<Record<string, number>>({});
   const [worldDeployedStatus, setWorldDeployedStatus] = useState<Record<string, boolean>>({});
+  const [verifyingDeployment, setVerifyingDeployment] = useState<Record<string, boolean>>({});
   // Per-world config execution state
   const [worldConfigOpen, setWorldConfigOpen] = useState<Record<string, boolean>>({});
   const [worldConfigTx, setWorldConfigTx] = useState<Record<string, TxState>>({});
@@ -439,12 +321,7 @@ export const ConfigAdminPage2 = () => {
     const savedWorldName = getCurrentWorldName();
     if (savedWorldName) {
       setWorldName(savedWorldName);
-    } else if (accountName) {
-      const newWorldName = generateWorldName(accountName);
-      setWorldName(newWorldName);
-      setCurrentWorldName(newWorldName);
     } else {
-      // Fallback to a default world name when no accountName is present (e.g., after HMR)
       const newWorldName = generateWorldName();
       setWorldName(newWorldName);
       setCurrentWorldName(newWorldName);
@@ -454,7 +331,7 @@ export const ConfigAdminPage2 = () => {
   // Generate world name when account name changes
   useEffect(() => {
     if (accountName && !worldName) {
-      const newWorldName = generateWorldName(accountName);
+      const newWorldName = generateWorldName();
       setWorldName(newWorldName);
       setCurrentWorldName(newWorldName);
     }
@@ -530,7 +407,7 @@ export const ConfigAdminPage2 = () => {
 
   // Generate new world name
   const handleGenerateWorldName = () => {
-    const newWorldName = generateWorldName(accountName || undefined);
+    const newWorldName = generateWorldName();
     setWorldName(newWorldName);
     setCurrentWorldName(newWorldName);
   };
@@ -547,8 +424,8 @@ export const ConfigAdminPage2 = () => {
     saveWorldNameToStorage(worldName);
     setStoredWorldNames(getStoredWorldNames());
 
-    // Generate new world name for next queue item regardless of accountName
-    const newWorldName = generateWorldName(accountName || undefined);
+    // Generate new world name for next queue item
+    const newWorldName = generateWorldName();
     setWorldName(newWorldName);
     setCurrentWorldName(newWorldName);
   };
@@ -558,12 +435,11 @@ export const ConfigAdminPage2 = () => {
     try {
       const existing = getStoredWorldNames();
       const updated = existing.filter((name) => name !== worldName);
-      localStorage.setItem(WORLD_NAMES_STORAGE_KEY, JSON.stringify(updated));
+      persistStoredWorldNames(updated);
       setStoredWorldNames(updated);
-
       // Clear current world name if it matches the removed one
       if (getCurrentWorldName() === worldName) {
-        localStorage.removeItem(CURRENT_WORLD_NAME_KEY);
+        setCurrentWorldName("");
       }
     } catch (err) {
       console.error("Failed to remove world name:", err);
@@ -573,7 +449,7 @@ export const ConfigAdminPage2 = () => {
   // Check if world is deployed via factory Torii SQL
   const checkWorldDeployed = async (worldName: string): Promise<boolean> => {
     try {
-      const addr = await getWorldDeployedAddress(worldName);
+      const addr = await getWorldDeployedAddressLocal(worldName);
       return !!addr;
     } catch (error) {
       console.error(`Error checking if world ${worldName} is deployed:`, error);
@@ -583,71 +459,41 @@ export const ConfigAdminPage2 = () => {
 
   // Check if indexer exists for a world name
   const checkIndexerExists = async (worldName: string): Promise<boolean> => {
-    try {
-      const response = await fetch(`https://api.cartridge.gg/x/${worldName}/torii/sql`, {
-        method: "HEAD", // Use HEAD to avoid downloading response body
-      });
-      return response.status === 200;
-    } catch (error) {
-      console.error(`Error checking indexer for ${worldName}:`, error);
-      return false;
-    }
+    return checkIndexerExistsService(worldName);
   };
 
   // Fetch deployed world address from factory Torii (returns null if not deployed)
-  const getWorldDeployedAddress = async (worldName: string): Promise<string | null> => {
-    try {
-      // 1) check cache first
-      const cached = getCachedDeployedAddress(worldName);
-      if (cached) return cached;
+  const getCachedDeployedAddress = (worldName: string): string | null => {
+    const map = getDeployedAddressMap();
+    return map[worldName] ?? null;
+  };
 
-      const factoryToriiUrl = FACTORY_TORII_URLS[currentChain];
-      if (!factoryToriiUrl) return null;
-
-      const worldNameFeltPadded = textToFeltPadded(worldName);
-      const query = `SELECT * FROM [wf-WorldDeployed] WHERE name = "${worldNameFeltPadded}" LIMIT 1;`;
-      const encodedQuery = encodeURIComponent(query);
-
-      const response = await fetch(`${factoryToriiUrl}?query=${encodedQuery}`);
-      if (!response.ok) return null;
-
-      const data = await response.json();
-      if (!data || !Array.isArray(data) || data.length === 0) return null;
-
-      const row = data[0] as any;
-      // Prefer explicit address field; fall back to contract_address if schema differs
-      const addr = (row.address as string) || (row.contract_address as string) || null;
-      if (addr) cacheDeployedAddress(worldName, addr);
-      return addr;
-    } catch (error) {
-      console.error(`Error fetching deployed world address for ${worldName}:`, error);
-      return null;
-    }
+  const getWorldDeployedAddressLocal = async (worldName: string): Promise<string | null> => {
+    const cached = getCachedDeployedAddress(worldName);
+    if (cached) return cached;
+    const addr = await getWorldDeployedAddressService(currentChain as any, worldName);
+    if (addr) cacheDeployedAddress(worldName, addr);
+    return addr;
   };
 
   // Check indexer and deployment status for all stored worlds
   const checkAllWorldStatuses = async () => {
     const worlds = getStoredWorldNames();
-    const statusPromises = worlds.map(async (worldName) => {
-      const [indexerExists, deployedAddress] = await Promise.all([
-        checkIndexerExists(worldName),
-        getWorldDeployedAddress(worldName),
-      ]);
-      return { worldName, indexerExists, isDeployed: !!deployedAddress, deployedAddress };
-    });
-
-    const results = await Promise.all(statusPromises);
-    const indexerStatusMap: Record<string, boolean> = {};
-    const deployedStatusMap: Record<string, boolean> = {};
-
-    results.forEach(({ worldName, indexerExists, isDeployed, deployedAddress }) => {
-      indexerStatusMap[worldName] = indexerExists;
-      deployedStatusMap[worldName] = isDeployed;
-      if (deployedAddress) cacheDeployedAddress(worldName, deployedAddress);
-    });
-
+    const { indexerStatusMap, deployedStatusMap } = await refreshStatuses(worlds);
     setWorldIndexerStatus(indexerStatusMap);
     setWorldDeployedStatus(deployedStatusMap);
+  };
+
+  // Handle reload - clear all loading states and refresh data
+  const handleReload = async () => {
+    // Clear all transaction states
+    setTx({ status: "idle" });
+    setWorldConfigTx({});
+    setVerifyingDeployment({});
+    setCreatingIndexer({});
+
+    // Refresh world statuses
+    await checkAllWorldStatuses();
   };
 
   // Handle create indexer
@@ -658,13 +504,11 @@ export const ConfigAdminPage2 = () => {
     }
 
     // Get torii config for current chain
-    const toriiConfig = TORII_CONFIGS[currentChain];
-    if (!toriiConfig || Object.keys(toriiConfig).length === 0) {
-      return;
-    }
+    // Build torii config for current chain
+    const envName = currentChain;
 
     // Get deployed world address from factory (required for indexer creation)
-    const deployedWorldAddress = await getWorldDeployedAddress(worldName);
+    const deployedWorldAddress = await getWorldDeployedAddressLocal(worldName);
     if (!deployedWorldAddress) {
       console.warn("World not deployed or address not found in factory indexer; cannot create indexer.");
       return;
@@ -675,40 +519,14 @@ export const ConfigAdminPage2 = () => {
       setIndexerCooldown(worldName);
       setCooldownTimers((prev) => ({ ...prev, [worldName]: getRemainingCooldown(worldName) }));
 
-      // Build query parameters
-      const params = new URLSearchParams({
-        env: toriiConfig.env || "",
+      await createIndexerService({
+        env: envName,
+        rpc_url: getRpcUrlForChain(currentChain),
+        torii_namespaces: DEFAULT_TORII_NAMESPACE,
         torii_prefix: worldName,
-        rpc_url: toriiConfig.rpc_url || "",
-        // World contract address to follow
         torii_world_address: deployedWorldAddress,
-        torii_namespaces: toriiConfig.torii_namespaces || "",
+        external_contracts: [],
       });
-
-      // Add optional parameters if they exist
-      if (toriiConfig.workflow_file) {
-        params.append("workflow_file", toriiConfig.workflow_file);
-      }
-      if (toriiConfig.ref) {
-        params.append("ref", toriiConfig.ref);
-      }
-
-      // Add external contracts using &contract= syntax
-      if (toriiConfig.external_contracts && toriiConfig.external_contracts.length > 0) {
-        toriiConfig.external_contracts.forEach((contract) => {
-          params.append("contract", contract);
-        });
-      }
-
-      // TODO: Replace with your actual Cloudflare Worker URL
-      const workerUrl = "https://torii-creator.zerocredence.workers.dev/dispatch/torii";
-      const response = await fetch(`${workerUrl}?${params.toString()}`, {
-        method: "POST",
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to create indexer: ${response.statusText}`);
-      }
 
       // Poll for indexer status while waiting (every 10 seconds)
       const pollInterval = setInterval(async () => {
@@ -730,7 +548,7 @@ export const ConfigAdminPage2 = () => {
 
   // Execute set_config only
   const handleSetConfig = async () => {
-    if (!account || !parsedManifest || !factoryAddress) return;
+    if (!account || !parsedManifest || !factoryAddress || !worldName) return;
 
     setTx({ status: "running" });
 
@@ -743,6 +561,9 @@ export const ConfigAdminPage2 = () => {
 
       setTx({ status: "success", hash: result.transaction_hash });
       await account.waitForTransaction(result.transaction_hash);
+
+      // Mark world as configured after successful transaction
+      markWorldAsConfigured(worldName);
     } catch (err: any) {
       setTx({ status: "error", error: err.message });
     }
@@ -799,7 +620,8 @@ export const ConfigAdminPage2 = () => {
       setTx({ status: "success", hash: result.transaction_hash });
       await account.waitForTransaction(result.transaction_hash);
 
-      // Save world name to storage after successful deployment
+      // Mark world as configured and save world name to storage after successful deployment
+      markWorldAsConfigured(worldName);
       saveWorldNameToStorage(worldName);
       setStoredWorldNames(getStoredWorldNames());
     } catch (err: any) {
@@ -831,31 +653,7 @@ export const ConfigAdminPage2 = () => {
   return (
     <div className="fixed inset-0 w-full h-full overflow-y-auto overflow-x-hidden bg-gradient-to-br from-slate-200 via-blue-200 to-indigo-200">
       <div className="max-w-6xl mx-auto px-8 py-16">
-        {/* Header */}
-        <div className="mb-16">
-          <button
-            onClick={() => navigate("/config-admin")}
-            className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors mb-12 group font-medium"
-          >
-            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            Back to Admin
-          </button>
-
-          <div className="space-y-4">
-            <div className="inline-flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full">
-              <Factory className="w-5 h-5 text-white" />
-              <span className="text-sm font-semibold text-white uppercase tracking-wide">Factory Deploy</span>
-            </div>
-            <h1 className="text-6xl font-bold text-slate-900 tracking-tight leading-tight">
-              World Contract
-              <br />
-              Deployment
-            </h1>
-            <p className="text-xl text-slate-600 max-w-2xl leading-relaxed">
-              Configure and deploy your Dojo world contracts directly from the browser using the factory pattern
-            </p>
-          </div>
-        </div>
+        <AdminHeader network={currentChain} onBack={() => navigate("/")} onReload={handleReload} />
 
         {/* Unified Configuration and Deployment */}
         {parsedManifest && (
@@ -883,45 +681,19 @@ export const ConfigAdminPage2 = () => {
                   </div>
                 </div>
 
-                {/* Status Messages */}
-                {tx.status === "success" && tx.hash && (
-                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                        <span className="text-sm font-semibold text-emerald-900">Transaction Successful</span>
-                      </div>
-                      <a
-                        href={`https://${currentChain === "sepolia" ? "sepolia." : ""}voyager.online/tx/${tx.hash}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors"
-                      >
-                        View on Explorer →
-                      </a>
-                    </div>
-                  </div>
-                )}
-                {tx.status === "error" && (
-                  <div className="p-4 bg-red-50 border border-red-200 rounded-2xl">
-                    <div className="flex items-center gap-3">
-                      <XCircle className="w-5 h-5 text-red-600" />
-                      <p className="text-sm font-medium text-red-900">{tx.error}</p>
-                    </div>
-                  </div>
-                )}
-
                 {/* Connection Status */}
                 <div className="flex items-center justify-between p-6 bg-white rounded-2xl border border-slate-200">
                   <div className="space-y-1">
                     <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Connected Wallet</span>
                     <div className="flex items-center gap-2">
                       <div className={`h-2 w-2 rounded-full ${account?.address ? "bg-emerald-500" : "bg-slate-300"}`} />
-                      <span className="text-sm font-mono text-slate-900">
-                        {account?.address
-                          ? `${account.address.slice(0, 6)}...${account.address.slice(-4)}`
-                          : "Not connected"}
-                      </span>
+                      {account?.address ? (
+                        <span className="text-sm font-mono text-slate-900">
+                          {`${account.address.slice(0, 6)}...${account.address.slice(-4)}`}
+                        </span>
+                      ) : (
+                        <Controller className="h-8 px-3 min-w-0" />
+                      )}
                     </div>
                   </div>
                   <div className="px-4 py-2 bg-slate-50 rounded-xl border border-slate-200">
@@ -935,19 +707,19 @@ export const ConfigAdminPage2 = () => {
                 <div className="space-y-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-200 shadow-sm">
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700 uppercase tracking-wide">World Name</label>
+                      <label className="text-sm font-bold text-slate-700 uppercase tracking-wide">Game Name</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="text"
                           value={worldName}
                           readOnly
-                          placeholder="username-12345"
+                          placeholder="ccf-fire-gate-42"
                           className="flex-1 px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 font-mono cursor-default"
                         />
                         <button
                           onClick={handleGenerateWorldName}
                           className="p-3 bg-blue-100 hover:bg-blue-200 rounded-xl transition-colors group"
-                          title="Generate new world name"
+                          title="Generate new game name"
                         >
                           <RefreshCw className="w-5 h-5 text-blue-600 group-hover:rotate-180 transition-transform duration-500" />
                         </button>
@@ -956,15 +728,15 @@ export const ConfigAdminPage2 = () => {
                           disabled={!worldName || storedWorldNames.includes(worldName)}
                           className="px-4 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors"
                         >
-                          Queue
+                          Add
                         </button>
                       </div>
                       <p className="text-xs text-slate-500">
-                        Generate a world name and add it to the queue to deploy later
+                        Generate a game name and add it to the queue to deploy now or later
                       </p>
                     </div>
 
-                    {/* World Queue */}
+                    {/* Game Queue */}
                     {storedWorldNames.length > 0 && (
                       <div className="space-y-2">
                         <button
@@ -972,7 +744,7 @@ export const ConfigAdminPage2 = () => {
                           className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors"
                         >
                           {showStoredNames ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                          World Queue ({storedWorldNames.length})
+                          Game List ({storedWorldNames.length})
                         </button>
                         {showStoredNames && (
                           <div className="pl-4 space-y-3">
@@ -1006,20 +778,27 @@ export const ConfigAdminPage2 = () => {
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
 
-                                  {/* Deployment Status Badge */}
-                                  {worldDeployedStatus[name] ? (
+                                  {/* Divider */}
+                                  <div className="h-4 w-px bg-slate-200" />
+
+                                  {/* Verifying Deployment Status */}
+                                  {verifyingDeployment[name] && (
+                                    <span className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded border border-blue-200">
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                      Verifying...
+                                    </span>
+                                  )}
+
+                                  {/* Deployment Status Badge - Only show if deployed and not verifying */}
+                                  {worldDeployedStatus[name] && !verifyingDeployment[name] && (
                                     <span className="flex items-center gap-1.5 px-2 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded border border-emerald-200">
                                       <CheckCircle2 className="w-3 h-3" />
                                       Deployed
                                     </span>
-                                  ) : (
-                                    <span className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 text-slate-500 text-xs font-semibold rounded border border-slate-200">
-                                      Not Deployed
-                                    </span>
                                   )}
 
-                                  {/* Deploy Button - Only show if not deployed */}
-                                  {!worldDeployedStatus[name] && (
+                                  {/* Deploy Button - Only show if not deployed and not verifying */}
+                                  {!worldDeployedStatus[name] && !verifyingDeployment[name] && (
                                     <button
                                       onClick={async () => {
                                         if (!account || !factoryAddress || !name) return;
@@ -1032,15 +811,33 @@ export const ConfigAdminPage2 = () => {
                                             calldata: [worldNameFelt, version],
                                           });
                                           setTx({ status: "success", hash: result.transaction_hash });
+
+                                          // Show verifying status immediately (before waiting for tx)
+                                          setVerifyingDeployment((prev) => ({ ...prev, [name]: true }));
+
                                           await account.waitForTransaction(result.transaction_hash);
 
-                                          // Refresh deployment status after successful deploy
-                                          // Refresh deployment status and cache address post-deploy
-                                          const addr = await getWorldDeployedAddress(name);
+                                          // Poll for deployment status from indexer (with retries)
+                                          let addr: string | null = null;
+                                          let attempts = 0;
+                                          const maxAttempts = 10;
+                                          const delayMs = 2000; // 2 seconds between attempts
+
+                                          while (attempts < maxAttempts && !addr) {
+                                            await new Promise((resolve) => setTimeout(resolve, delayMs));
+                                            addr = await getWorldDeployedAddressLocal(name);
+                                            attempts++;
+                                          }
+
                                           const isDeployed = !!addr;
                                           setWorldDeployedStatus((prev) => ({ ...prev, [name]: isDeployed }));
+                                          if (addr) cacheDeployedAddress(name, addr);
+
+                                          // Hide verifying status
+                                          setVerifyingDeployment((prev) => ({ ...prev, [name]: false }));
                                         } catch (err: any) {
                                           setTx({ status: "error", error: err.message });
+                                          setVerifyingDeployment((prev) => ({ ...prev, [name]: false }));
                                         }
                                       }}
                                       disabled={!account || !factoryAddress || tx.status === "running"}
@@ -1054,38 +851,43 @@ export const ConfigAdminPage2 = () => {
                                   {/* Indexer Status/Actions - Only show if deployed */}
                                   {worldDeployedStatus[name] && (
                                     <>
-                                      {/* Step 2: Configure (can run before indexer) */}
-                                      <button
-                                        onClick={() => setWorldConfigOpen((prev) => ({ ...prev, [name]: !prev[name] }))}
-                                        className="px-3 py-1 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-md border border-slate-200 hover:border-slate-300 transition-colors"
-                                      >
-                                        {worldConfigOpen[name] ? "Hide Config" : "Configure"}
-                                      </button>
-
-                                      {/* Step 3: Indexer */}
-                                      {worldIndexerStatus[name] ? (
-                                        <a
-                                          href={`https://api.cartridge.gg/x/${name}/torii`}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-md border border-emerald-200 hover:border-emerald-300 transition-colors"
-                                        >
-                                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                          Indexer On
-                                        </a>
-                                      ) : isWorldOnCooldown(name) ? (
-                                        <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-500 text-xs font-semibold rounded-md border border-slate-200 cursor-not-allowed">
-                                          Wait {Math.floor(getRemainingCooldown(name) / 60)}m{" "}
-                                          {getRemainingCooldown(name) % 60}s
-                                        </span>
-                                      ) : (
+                                      {/* Step 2: Configure (can run before indexer) - Only show if not configured yet */}
+                                      {!isWorldConfigured(name) && (
                                         <button
-                                          onClick={() => handleCreateIndexer(name)}
-                                          className="px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-md border border-blue-200 hover:border-blue-300 transition-colors"
+                                          onClick={() =>
+                                            setWorldConfigOpen((prev) => ({ ...prev, [name]: !prev[name] }))
+                                          }
+                                          className="px-3 py-1 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-md border border-slate-200 hover:border-slate-300 transition-colors"
                                         >
-                                          Create Indexer
+                                          {worldConfigOpen[name] ? "Hide Config" : "Configure"}
                                         </button>
                                       )}
+
+                                      {/* Step 3: Indexer - Only show if world is configured */}
+                                      {isWorldConfigured(name) &&
+                                        (worldIndexerStatus[name] ? (
+                                          <a
+                                            href={`${CARTRIDGE_API_BASE}/x/${name}/torii`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-md border border-emerald-200 hover:border-emerald-300 transition-colors"
+                                          >
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                            Indexer On
+                                          </a>
+                                        ) : isWorldOnCooldown(name) ? (
+                                          <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-500 text-xs font-semibold rounded-md border border-slate-200 cursor-not-allowed">
+                                            Wait {Math.floor(getRemainingCooldown(name) / 60)}m{" "}
+                                            {getRemainingCooldown(name) % 60}s
+                                          </span>
+                                        ) : (
+                                          <button
+                                            onClick={() => handleCreateIndexer(name)}
+                                            className="px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-md border border-blue-200 hover:border-blue-300 transition-colors"
+                                          >
+                                            Create Indexer
+                                          </button>
+                                        ))}
                                     </>
                                   )}
                                 </div>
@@ -1095,33 +897,52 @@ export const ConfigAdminPage2 = () => {
                                 {/* Per-world Config Panel */}
                                 {worldConfigOpen[name] && (
                                   <div className="ml-3 pl-3 py-4 border-l-2 border-slate-200">
-                                      <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm space-y-3">
-                                        <div className="flex items-center justify-between">
-                                          <div>
-                                            <p className="text-sm font-semibold text-slate-800">Configure World</p>
-                                            <p className="text-xs text-slate-500">Runs full config using live manifest</p>
-                                          </div>
+                                    <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm space-y-3">
+                                      <div className="flex items-center justify-between">
+                                        <div>
+                                          <p className="text-sm font-semibold text-slate-800">Configure Game</p>
+                                          <p className="text-xs text-slate-500">Runs full config using live manifest</p>
+                                        </div>
                                         {worldConfigTx[name]?.status === "running" && (
                                           <span className="inline-flex items-center gap-2 text-xs text-blue-700 bg-blue-50 border border-blue-200 px-2 py-1 rounded">
                                             <Loader2 className="w-3 h-3 animate-spin" /> Running
                                           </span>
                                         )}
-                                        {worldConfigTx[name]?.status === "success" && (
-                                          <span className="inline-flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded">
-                                            <CheckCircle2 className="w-3 h-3" /> Done
-                                          </span>
+                                        {worldConfigTx[name]?.status === "success" && worldConfigTx[name]?.hash && (
+                                          <div className="inline-flex items-center gap-2">
+                                            <span className="inline-flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded">
+                                              <CheckCircle2 className="w-3 h-3" /> Success
+                                            </span>
+                                            <a
+                                              href={getExplorerTxUrl(currentChain as any, worldConfigTx[name].hash)}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="text-xs text-blue-600 hover:text-blue-700 underline"
+                                            >
+                                              View Tx
+                                            </a>
+                                          </div>
                                         )}
                                         {worldConfigTx[name]?.status === "error" && (
-                                          <span className="inline-flex items-center gap-1.5 text-xs text-red-700 bg-red-50 border border-red-200 px-2 py-1 rounded">
-                                            <XCircle className="w-3 h-3" /> Error
-                                          </span>
+                                          <div className="flex flex-col items-end gap-1">
+                                            <span className="inline-flex items-center gap-1.5 text-xs text-red-700 bg-red-50 border border-red-200 px-2 py-1 rounded">
+                                              <XCircle className="w-3 h-3" /> Error
+                                            </span>
+                                            {worldConfigTx[name]?.error && (
+                                              <p className="text-[10px] text-red-600 max-w-xs text-right">
+                                                {worldConfigTx[name].error}
+                                              </p>
+                                            )}
+                                          </div>
                                         )}
                                       </div>
 
                                       {/* startMainAt override */}
                                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div className="space-y-1">
-                                          <label className="text-xs font-semibold text-slate-600">Game Start Time</label>
+                                          <label className="text-xs font-semibold text-slate-600">
+                                            Game Start Time
+                                          </label>
                                           <input
                                             type="datetime-local"
                                             min={(() => {
@@ -1253,6 +1074,7 @@ export const ConfigAdminPage2 = () => {
                                               } as any;
 
                                               await setWorldConfig(ctx);
+                                              await setVRFConfig(ctx);
                                               await setGameModeConfig(ctx);
                                               await setBlitzPreviousGame(ctx);
                                               await setVictoryPointsConfig(ctx);
@@ -1263,7 +1085,6 @@ export const ConfigAdminPage2 = () => {
                                               await setVillageControllersConfig(ctx);
                                               await setTradeConfig(ctx);
                                               await setSeasonConfig(ctx);
-                                              await setVRFConfig(ctx);
                                               await setResourceBridgeFeesConfig(ctx);
                                               await setBattleConfig(ctx);
                                               await setStructureMaxLevelConfig(ctx);
@@ -1278,13 +1099,19 @@ export const ConfigAdminPage2 = () => {
                                               await setTroopConfig(ctx);
                                               await setBuildingConfig(ctx);
                                               await SetResourceFactoryConfig(ctx);
-                                              await setResourceBridgeWtlConfig(ctx);
+                                              // await setResourceBridgeWtlConfig(ctx);
 
                                               const receipt = await localProvider.endBatch({ flush: true });
                                               setWorldConfigTx((p) => ({
                                                 ...p,
                                                 [name]: { status: "success", hash: receipt?.transaction_hash },
                                               }));
+
+                                              // Mark world as configured after successful transaction
+                                              markWorldAsConfigured(name);
+
+                                              // Close the config panel after successful configuration
+                                              setWorldConfigOpen((prev) => ({ ...prev, [name]: false }));
                                             } catch (e: any) {
                                               const msg = e?.message ?? String(e);
                                               setWorldConfigTx((p) => ({
@@ -1299,14 +1126,18 @@ export const ConfigAdminPage2 = () => {
                                             }
                                           }}
                                           className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md disabled:bg-slate-300 disabled:cursor-not-allowed"
-                                          disabled={!account || worldConfigTx[name]?.status === "running" || !!startMainAtErrors[name]}
+                                          disabled={
+                                            !account ||
+                                            worldConfigTx[name]?.status === "running" ||
+                                            !!startMainAtErrors[name]
+                                          }
                                         >
                                           Set
                                         </button>
 
                                         {worldConfigTx[name]?.hash && (
                                           <a
-                                            href={`https://sepolia.voyager.online/tx/${worldConfigTx[name]!.hash}`}
+                                            href={getExplorerTxUrl(currentChain as any, worldConfigTx[name]!.hash)}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="text-xs text-blue-700 hover:underline ml-2"
@@ -1377,7 +1208,7 @@ export const ConfigAdminPage2 = () => {
                           <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
                           <p className="text-xs text-amber-800">
                             <span className="font-semibold">Warning:</span> This needs to be updated in the code so new
-                            deployers automatically use version {version}.
+                            deployers automatically use version {version}. For now, only you can use this version
                           </p>
                         </div>
                       )}
@@ -1401,6 +1232,37 @@ export const ConfigAdminPage2 = () => {
                       {tx.status === "running" && getTxStatusIcon()}
                       <span>Set Configuration</span>
                     </button>
+
+                    {/* Transaction Status for Set Configuration */}
+                    {tx.status === "success" && tx.hash && (
+                      <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                            <span className="text-sm font-semibold text-emerald-900">Configuration Successful</span>
+                          </div>
+                          <a
+                            href={getExplorerTxUrl(currentChain as any, tx.hash)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-semibold text-blue-600 hover:text-blue-700 underline"
+                          >
+                            View Transaction
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                    {tx.status === "error" && tx.error && (
+                      <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                        <div className="flex items-start gap-2">
+                          <XCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold text-red-900">Configuration Failed</p>
+                            <p className="text-xs text-red-700 mt-1">{tx.error}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1476,7 +1338,7 @@ export const ConfigAdminPage2 = () => {
                         </div>
                       </div>
                       <pre className="text-xs text-slate-800 overflow-x-auto leading-relaxed font-mono whitespace-pre-wrap">
-{JSON.stringify(eternumConfig, null, 2)}
+                        {JSON.stringify(eternumConfig, null, 2)}
                       </pre>
                     </div>
                   )}

@@ -1,16 +1,8 @@
 import { normalizeSelector, nameToPaddedFelt } from "./normalize";
+import { FACTORY_QUERIES, buildApiUrl, fetchWithErrorHandling } from "@bibliothecadao/torii";
 import type { FactoryContractRow } from "./types";
 
-const buildSqlUrl = (baseSqlUrl: string, query: string) => {
-  const encoded = encodeURIComponent(query);
-  return `${baseSqlUrl}?query=${encoded}`;
-};
-
-const fetchJson = async <T>(url: string): Promise<T> => {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Factory SQL failed: ${res.status} ${res.statusText}`);
-  return (await res.json()) as T;
-};
+// Use shared SQL utils from @bibliothecadao/torii
 
 /**
  * Query the factory for all contracts belonging to the given world name.
@@ -23,9 +15,9 @@ export const resolveWorldContracts = async (
   if (!factorySqlBaseUrl) throw new Error("Factory SQL base URL is not configured for this chain");
 
   const paddedName = nameToPaddedFelt(worldName);
-  const query = `SELECT contract_address, contract_selector, name FROM [wf-WorldContract] WHERE name = "${paddedName}" LIMIT 1000;`;
-  const url = buildSqlUrl(factorySqlBaseUrl, query);
-  const rows = await fetchJson<FactoryContractRow[]>(url);
+  const query = FACTORY_QUERIES.WORLD_CONTRACTS_BY_PADDED_NAME(paddedName);
+  const url = buildApiUrl(factorySqlBaseUrl, query);
+  const rows = await fetchWithErrorHandling<FactoryContractRow>(url, "Factory SQL failed");
 
   const map: Record<string, string> = {};
   for (const row of rows) {
@@ -57,11 +49,11 @@ export const resolveWorldAddressFromFactory = async (
   if (!factorySqlBaseUrl) return null;
 
   const paddedName = nameToPaddedFelt(worldName);
-  const query = `SELECT * FROM [wf-WorldDeployed] WHERE name = "${paddedName}" LIMIT 1;`;
-  const url = buildSqlUrl(factorySqlBaseUrl, query);
+  const query = FACTORY_QUERIES.WORLD_DEPLOYED_BY_PADDED_NAME(paddedName);
+  const url = buildApiUrl(factorySqlBaseUrl, query);
 
   try {
-    const rows = await fetchJson<any[]>(url);
+    const rows = await fetchWithErrorHandling<any>(url, "Factory SQL failed");
     if (!Array.isArray(rows) || rows.length === 0) return null;
     const row = rows[0] as any;
     // prefer explicit address field; keep compatibility with possible schemas

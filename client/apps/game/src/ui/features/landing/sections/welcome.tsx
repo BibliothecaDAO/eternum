@@ -1,8 +1,8 @@
 import { ReactComponent as EternumWordsLogo } from "@/assets/icons/blitz-words-logo-g.svg";
+import { useGameSelector } from "@/hooks/helpers/use-game-selector";
 import { Button } from "@/ui/design-system/atoms";
 import { Controller } from "@/ui/modules/controller/controller";
 import { useNavigate } from "react-router-dom";
-import { useGameSelector } from "@/hooks/helpers/use-game-selector";
 
 // Served from client/public/images/landing/wooden-panel.png
 const LANDING_PANEL_IMAGE = "/borders/landing-frame-1.png";
@@ -15,14 +15,11 @@ export const LandingWelcome = () => {
     await selectGame({ navigateAfter: true, navigateTo: "/play" });
   };
 
-  // shared classes for both buttons for same size
   const buttonClasses = "h-9 px-4 min-w-[96px] w-full sm:w-auto";
 
   return (
-    // Move section higher: remove mb-50, add negative mt and a little pb for balance
     <section className="flex w-full items-center justify-center px-3 sm:px-4 lg:px-6 -mt-8 sm:-mt-14 pb-4">
       <div className="flex flex-col items-center justify-center w-full max-w-2xl sm:max-w-3xl 2xl:max-w-4xl">
-        {/* Panel container with absolute logo+buttons inside */}
         <div className="relative flex items-center justify-center w-full">
           <img
             alt=""
@@ -33,13 +30,27 @@ export const LandingWelcome = () => {
           />
           <div className="absolute inset-0 flex flex-col items-center justify-center px-4 py-8 text-center text-gold sm:px-8 sm:py-10">
             <EternumWordsLogo className="mx-auto w-44 sm:w-56 lg:w-72 xl:w-[360px]" />
-            <div className="mt-12 flex w-full flex-col items-center gap-3 sm:mt-16 sm:flex-row sm:justify-center sm:gap-4">
-              <Button className={buttonClasses} onClick={() => navigate("/play")}>
-                Enter Blitz
+
+            {/* Current game indicator above buttons */}
+            {activeWorld && (
+              <div className="mt-6 sm:mt-8 bg-brown/80 border border-gold/30 rounded-lg px-4 py-2 backdrop-blur-sm">
+                <div className="text-xs sm:text-sm text-gold/70 uppercase tracking-widest mb-1 font-semibold">
+                  Current Game
+                </div>
+                <div className="text-base sm:text-lg text-gold font-bold">{activeWorld}</div>
+              </div>
+            )}
+
+            {/* Buttons */}
+            <div className="mt-10 sm:mt-14 flex w-full flex-col items-center gap-3 sm:flex-row sm:justify-center sm:gap-4">
+              <Button variant={activeWorld ? "opaque" : "default"} className={buttonClasses} onClick={handleSelectGame}>
+                {activeWorld ? "Change Game" : "Select Game"}
               </Button>
-              <Button variant="opaque" className={buttonClasses} onClick={handleSelectGame}>
-                {activeWorld ? `Game: ${activeWorld}` : "Select Game"}
-              </Button>
+              {activeWorld && (
+                <Button className={buttonClasses} onClick={() => navigate("/play")}>
+                  Enter Blitz
+                </Button>
+              )}
               <Controller className={buttonClasses} />
             </div>
           </div>

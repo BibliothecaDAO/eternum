@@ -448,12 +448,25 @@ export class EternumProvider extends EnhancedDojoProvider {
    */
   public async blitz_realm_make_hyperstructures(props: SystemProps.BlitzRealmMakeHyperstructuresProps) {
     const { count, signer } = props;
-    const call = this.createProviderCall(signer, {
+    const calls = [];
+
+    if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
+      const requestRandomCall: Call = {
+        contractAddress: this.VRF_PROVIDER_ADDRESS!,
+        entrypoint: "request_random",
+        calldata: [getContractByName(this.manifest, `${NAMESPACE}-blitz_realm_systems`), 0, signer.address],
+      };
+
+      calls.push(requestRandomCall);
+    }
+
+    const makeHyperstructureCall: Call = {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-blitz_realm_systems`),
       entrypoint: "make_hyperstructures",
       calldata: [count],
-    });
-    return await this.promiseQueue.enqueue(call);
+    };
+    calls.push(makeHyperstructureCall);
+    return await this.promiseQueue.enqueue(this.createProviderCall(signer, calls));
   }
 
   /**

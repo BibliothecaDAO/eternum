@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useControllerAccount } from "@/hooks/context/use-controller-account";
 import { useGameBootstrap } from "@/hooks/context/use-game-bootstrap";
-import { useWorldGate } from "@/hooks/context/use-world-gate";
 import { useSpectatorModeClick } from "@/hooks/helpers/use-navigate";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -164,13 +163,7 @@ const useAccountGate = ({
     onEnterWorld();
   }, [onEnterWorld, spectatorNavigate]);
 
-  if (!setupResult || (!placeholderAccount && !controllerAccount)) {
-    return {
-      status: "initializing",
-      fallback: <LoadingScreen backgroundImage={backgroundImage} />,
-    };
-  }
-
+  // Allow showing the connect overlay even before bootstrap completes
   if (!isConnected && !isConnecting && showBlankOverlay) {
     return {
       status: "connect",
@@ -182,6 +175,13 @@ const useAccountGate = ({
         />
       ),
       connectWallet,
+    };
+  }
+
+  if (!setupResult || (!placeholderAccount && !controllerAccount)) {
+    return {
+      status: "initializing",
+      fallback: <LoadingScreen backgroundImage={backgroundImage} />,
     };
   }
 
@@ -208,8 +208,7 @@ const useAccountGate = ({
 };
 
 export const usePlayFlow = (backgroundImage: string) => {
-  const worldGate = useWorldGate();
-  const { status, setupResult, error, retry, progress } = useGameBootstrap(worldGate.status === "ready");
+  const { status, setupResult, error, retry, progress } = useGameBootstrap(true);
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const hasAcceptedTS = useUIStore((state) => state.hasAcceptedTS);
@@ -225,10 +224,7 @@ export const usePlayFlow = (backgroundImage: string) => {
     onEnterWorld: enterWorld,
   });
 
-  const worldStep = useMemo(() => {
-    if (worldGate.status === "ready") return { status: "ready" as const };
-    return { status: "pending" as const, fallback: worldGate.fallback };
-  }, [worldGate]);
+  const worldStep = useMemo(() => ({ status: "ready" as const }), []);
 
   const bootstrapStep: BootstrapStep = useMemo(() => {
     if (status === "error") {
@@ -258,6 +254,15 @@ export const usePlayFlow = (backgroundImage: string) => {
   }, [status, progress, error, retry]);
 
   const accountStep: AccountStep = useMemo(() => {
+    // Surface the connect overlay even if bootstrap isn't done
+    if (accountGate.status === "connect") {
+      return {
+        status: "connect",
+        fallback: accountGate.fallback,
+        connectWallet: accountGate.connectWallet,
+      };
+    }
+
     if (status !== "ready") {
       return { status: "unavailable" };
     }
@@ -334,6 +339,11 @@ export const usePlayFlow = (backgroundImage: string) => {
   const activeStep: PlayFlowActiveStep = useMemo(() => {
     if (worldStep.status !== "ready") {
       return "world";
+    }
+
+    // Let users connect before bootstrap completes
+    if (accountStep.status === "connect") {
+      return "account";
     }
 
     if (bootstrapStep.status === "error") {

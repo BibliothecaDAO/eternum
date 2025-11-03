@@ -2,7 +2,7 @@
 
 rpc = "https://api.cartridge.gg/x/starknet/sepolia/rpc/v0_9"
 
-world_address = "0x01d492807baa08400c3c76b827a19376292bae7f52220539184e2cb339cf268d"
+world_address = "0x014b1Dd288bcC6568dA0896c18E805C501B7E38713e5cD576906FE3AE0fb8962"
 
 db_dir = "torii-sepolia"
 
