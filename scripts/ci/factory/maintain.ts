@@ -37,6 +37,15 @@ function hexToAscii(hex: string): string {
   return s;
 }
 
+function hexToDecString(hex: string): string {
+  try {
+    const s = hex.startsWith("0x") ? hex : `0x${hex}`;
+    return BigInt(s).toString();
+  } catch {
+    return hex;
+  }
+}
+
 function getVersion(cmd: string, args: string[] = ["--version"]): string {
   try {
     const r = spawnSync(cmd, args, { encoding: "utf-8" });
@@ -57,7 +66,7 @@ function redactArgs(argv: string[]): string[] {
 
 function sozo(args: string[], ctx?: { outDir?: string; label?: string }) {
   const env = { ...process.env, SCARB: process.env.SCARB || "scarb" } as NodeJS.ProcessEnv;
-  const argv = ["execute", "--manifest-path", manifestFile, "-v", ...args];
+  const argv = ["execute", "--manifest-path", manifestFile, ...args, "-vvv"];
   const res = spawnSync("sozo", argv, {
     cwd: repoRoot,
     encoding: "utf-8",
@@ -217,10 +226,25 @@ export async function maintainOrchestrator(p: Params) {
             log(`Retry failed; trying ByteArray with str:${ascii}`);
             depHash = sozo(retry2, { outDir, label: "deploy_retry_str_noquotes" });
           } catch (e2) {
-            // Attempt 3: sstr with quotes as last resort
-            const retry3 = [...baseFlags, factory, "deploy", `sstr:'${ascii}'`, ...baseTail];
-            log(`Retry failed; trying sstr with quotes sstr:'${ascii}'`);
-            depHash = sozo(retry3, { outDir, label: "deploy_retry_sstr_quotes" });
+            // Attempt 3: decimal felt value (hex -> decimal string)
+            try {
+              const dec = hexToDecString(String(args[0]));
+              const retry3 = [...baseFlags, factory, "deploy", dec, ...baseTail];
+              log(`Retry failed; trying decimal felt ${dec}`);
+              depHash = sozo(retry3, { outDir, label: "deploy_retry_decimal" });
+            } catch (e3) {
+              // Attempt 4: sstr with quotes as last resort
+              try {
+                const retry4 = [...baseFlags, factory, "deploy", `sstr:'${ascii}'`, ...baseTail];
+                log(`Retry failed; trying sstr with quotes sstr:'${ascii}'`);
+                depHash = sozo(retry4, { outDir, label: "deploy_retry_sstr_quotes" });
+              } catch (e4) {
+                // Attempt 5: swap arg order (version first, then name)
+                const swapped = [...baseFlags, factory, "deploy", ...baseTail, args[0]];
+                log(`All name format retries failed; trying swapped order (version then name)`);
+                depHash = sozo(swapped, { outDir, label: "deploy_retry_swapped" });
+              }
+            }
           }
         }
       } else {
