@@ -2,31 +2,31 @@ import { ReactNode } from "react";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
-import { EntityDetailDensity, useEntityDetailLayout } from "./entity-detail-layout-context";
+export type EntityDetailLayoutVariant = "default" | "banner";
 
-const densityPadding: Record<EntityDetailDensity, string> = {
-  loose: "px-5 py-4",
-  cozy: "px-4 py-3",
+type LayoutScale = "default" | "compact";
+
+const spacingPadding: Record<LayoutScale, string> = {
+  default: "px-4 py-3",
   compact: "px-3 py-2",
 };
 
-const densityGap: Record<EntityDetailDensity, string> = {
-  loose: "gap-4",
-  cozy: "gap-3",
+const spacingGap: Record<LayoutScale, string> = {
+  default: "gap-3",
   compact: "gap-2",
 };
 
-const titleText: Record<EntityDetailDensity, string> = {
-  loose: "text-sm",
-  cozy: "text-xs",
+const titleText: Record<LayoutScale, string> = {
+  default: "text-xs",
   compact: "text-xxs",
 };
 
-const bodyText: Record<EntityDetailDensity, string> = {
-  loose: "text-base",
-  cozy: "text-sm",
+const bodyText: Record<LayoutScale, string> = {
+  default: "text-sm",
   compact: "text-xs",
 };
+
+const getScale = (compact: boolean): LayoutScale => (compact ? "compact" : "default");
 
 export interface EntityDetailSectionProps {
   title?: ReactNode;
@@ -34,6 +34,7 @@ export interface EntityDetailSectionProps {
   className?: string;
   children?: ReactNode;
   tone?: "default" | "highlight";
+  compact?: boolean;
 }
 
 export const EntityDetailSection = ({
@@ -42,24 +43,25 @@ export const EntityDetailSection = ({
   description,
   title,
   tone = "default",
+  compact = false,
 }: EntityDetailSectionProps) => {
-  const { density } = useEntityDetailLayout();
+  const scale = getScale(compact);
   return (
     <section
       className={cn(
         "rounded-lg border bg-dark-brown/70 shadow-md",
         tone === "highlight" ? "border-gold/35" : "border-gold/25",
-        densityPadding[density],
-        densityGap[density],
+        spacingPadding[scale],
+        spacingGap[scale],
         className,
       )}
     >
       {(title || description) && (
-        <header className={cn("flex flex-col", densityGap[density])}>
+        <header className={cn("flex flex-col", spacingGap[scale])}>
           {title && (
-            <div className={cn("font-semibold uppercase tracking-[0.2em] text-gold/80", titleText[density])}>{title}</div>
+            <div className={cn("font-semibold uppercase tracking-[0.2em] text-gold/80", titleText[scale])}>{title}</div>
           )}
-          {description && <div className={cn("text-gold/70", bodyText[density])}>{description}</div>}
+          {description && <div className={cn("text-gold/70", bodyText[scale])}>{description}</div>}
         </header>
       )}
       {children}
@@ -71,10 +73,11 @@ export interface EntityDetailStatListProps {
   className?: string;
   columns?: 1 | 2 | 3;
   children: ReactNode;
+  compact?: boolean;
 }
 
-export const EntityDetailStatList = ({ children, className, columns = 1 }: EntityDetailStatListProps) => {
-  const { density } = useEntityDetailLayout();
+export const EntityDetailStatList = ({ children, className, columns = 1, compact = false }: EntityDetailStatListProps) => {
+  const scale = getScale(compact);
   const gridClass =
     columns === 3
       ? "grid-cols-3"
@@ -85,7 +88,7 @@ export const EntityDetailStatList = ({ children, className, columns = 1 }: Entit
     <div
       className={cn(
         "grid items-start",
-        densityGap[density],
+        spacingGap[scale],
         columns > 1 ? gridClass : undefined,
         columns > 1 ? "gap-x-3" : undefined,
         className,
@@ -101,17 +104,20 @@ export interface EntityDetailStatProps {
   value: ReactNode;
   emphasizeValue?: boolean;
   className?: string;
+  compact?: boolean;
 }
 
-export const EntityDetailStat = ({ label, value, emphasizeValue = false, className }: EntityDetailStatProps) => {
-  const { density } = useEntityDetailLayout();
+export const EntityDetailStat = ({ label, value, emphasizeValue = false, className, compact = false }: EntityDetailStatProps) => {
+  const scale = getScale(compact);
   return (
-    <div className={cn("flex flex-col", densityGap[density], className)}>
-      <span className={cn("font-semibold uppercase tracking-[0.18em] text-gold/70", titleText[density])}>{label}</span>
-      <span className={cn(emphasizeValue ? "text-gold" : "text-gold/80", bodyText[density])}>{value}</span>
+    <div className={cn("flex flex-col", spacingGap[scale], className)}>
+      <span className={cn("font-semibold uppercase tracking-[0.18em] text-gold/70", titleText[scale])}>{label}</span>
+      <span className={cn(emphasizeValue ? "text-gold" : "text-gold/80", bodyText[scale])}>{value}</span>
     </div>
   );
 };
 
-export const getDensityTextClasses = (density: EntityDetailDensity, weight: "title" | "body") =>
-  weight === "title" ? titleText[density] : bodyText[density];
+export const getLayoutTextClasses = (compact: boolean, weight: "title" | "body") => {
+  const scale = getScale(compact);
+  return weight === "title" ? titleText[scale] : bodyText[scale];
+};

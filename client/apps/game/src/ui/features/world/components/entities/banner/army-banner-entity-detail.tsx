@@ -10,12 +10,7 @@ import { ArmyWarning } from "../../armies/army-warning";
 import { ActiveRelicEffects } from "../active-relic-effects";
 import { CompactEntityInventory } from "../compact-entity-inventory";
 import { useArmyEntityDetail, useBannerArmyInfo } from "../hooks/use-army-entity-detail";
-import {
-  EntityDetailLayoutProvider,
-  EntityDetailLayoutVariant,
-  EntityDetailSection,
-  useEntityDetailLayout,
-} from "../layout";
+import { EntityDetailLayoutVariant, EntityDetailSection } from "../layout";
 
 export interface ArmyBannerEntityDetailProps {
   armyEntityId: ID;
@@ -27,8 +22,12 @@ export interface ArmyBannerEntityDetailProps {
   layoutVariant?: EntityDetailLayoutVariant;
 }
 
+interface ArmyBannerEntityDetailContentProps extends Omit<ArmyBannerEntityDetailProps, "layoutVariant"> {
+  variant: EntityDetailLayoutVariant;
+}
+
 const ArmyBannerEntityDetailContent = memo(
-  ({ armyEntityId, className, bannerPosition }: Omit<ArmyBannerEntityDetailProps, "compact" | "maxInventory">) => {
+  ({ armyEntityId, className, bannerPosition, compact = true, variant }: ArmyBannerEntityDetailContentProps) => {
     const {
       explorer,
       explorerResources,
@@ -38,7 +37,8 @@ const ArmyBannerEntityDetailContent = memo(
       isLoadingExplorer,
       isLoadingStructure,
     } = useArmyEntityDetail({ armyEntityId });
-    const layout = useEntityDetailLayout();
+    const isBanner = variant === "banner";
+    const isCompactLayout = compact;
 
     const bannerArmyInfo = useBannerArmyInfo(explorer, derivedData, armyEntityId, bannerPosition);
     const activeRelicIds = useMemo(() => relicEffects.map((effect) => Number(effect.id)), [relicEffects]);
@@ -55,22 +55,23 @@ const ArmyBannerEntityDetailContent = memo(
 
     const containerClass = cn(
       "flex h-full min-h-0 flex-col overflow-auto",
-      layout.density === "compact" ? "gap-1.5" : "gap-2",
+      isCompactLayout ? "gap-1.5" : "gap-2",
       className,
     );
 
-    const wantsGridLayout = layout.variant !== "sidebar";
+    const wantsGridLayout = true;
     const gridContainerClass = wantsGridLayout
       ? "grid flex-1 min-h-0 w-full grid-cols-1 gap-2 sm:grid-cols-2 sm:grid-rows-2 sm:auto-rows-fr"
       : "flex min-h-0 flex-1 flex-col gap-2";
     const cellBaseClass = wantsGridLayout ? "sm:col-span-1 sm:row-span-1" : undefined;
-    const subtleTextClass = clsx("text-gold/60", layout.density === "compact" ? "text-xxs" : "text-xs");
+    const subtleTextClass = clsx("text-gold/60", isCompactLayout ? "text-xxs" : "text-xs");
     const hasWarnings = Boolean(structureResources && explorerResources);
 
     return (
       <div className={containerClass}>
         <div className={gridContainerClass}>
           <EntityDetailSection
+            compact={compact}
             className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-1 sm:row-start-1", "min-h-0")}
             tone={hasWarnings ? "highlight" : "default"}
           >
@@ -86,6 +87,7 @@ const ArmyBannerEntityDetailContent = memo(
           </EntityDetailSection>
 
           <EntityDetailSection
+            compact={compact}
             className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-2 sm:row-start-1", "min-h-0")}
           >
             {bannerArmyInfo ? (
@@ -96,6 +98,7 @@ const ArmyBannerEntityDetailContent = memo(
           </EntityDetailSection>
 
           <EntityDetailSection
+            compact={compact}
             className={cn(
               cellBaseClass,
               "min-h-0 flex flex-col overflow-auto",
@@ -107,7 +110,7 @@ const ArmyBannerEntityDetailContent = memo(
                 resources={explorerResources}
                 activeRelicIds={activeRelicIds}
                 recipientType={RelicRecipientType.Explorer}
-                variant={layout.minimizeCopy ? "tight" : "default"}
+                variant={isBanner ? "tight" : "default"}
               />
             ) : (
               <span className={cn(subtleTextClass, "italic")}>No supplies carried.</span>
@@ -115,9 +118,10 @@ const ArmyBannerEntityDetailContent = memo(
           </EntityDetailSection>
 
           <EntityDetailSection
+            compact={compact}
             className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-2 sm:row-start-2", "min-h-0")}
           >
-            {layout.minimizeCopy ? (
+            {isBanner ? (
               <span className={cn(subtleTextClass, "italic")}>
                 {relicEffects.length > 0
                   ? `${relicEffects.length} active relic${relicEffects.length > 1 ? "s" : ""}.`
@@ -128,7 +132,7 @@ const ArmyBannerEntityDetailContent = memo(
                 <ActiveRelicEffects
                   relicEffects={relicEffects}
                   entityId={armyEntityId}
-                  compact={layout.density === "compact"}
+                  compact={isCompactLayout}
                 />
               </div>
             ) : (
@@ -151,19 +155,17 @@ export const ArmyBannerEntityDetail = memo(
     bannerPosition,
     layoutVariant,
   }: ArmyBannerEntityDetailProps) => {
-    const resolvedVariant: EntityDetailLayoutVariant = layoutVariant ?? (compact ? "hud" : "banner");
-    const density = compact ? "compact" : "cozy";
-    const minimizeCopy = resolvedVariant === "hud" || compact;
+    const resolvedVariant: EntityDetailLayoutVariant = layoutVariant ?? (compact ? "default" : "banner");
 
     return (
-      <EntityDetailLayoutProvider variant={resolvedVariant} density={density} minimizeCopy={minimizeCopy}>
-        <ArmyBannerEntityDetailContent
-          armyEntityId={armyEntityId}
-          className={className}
-          showButtons={showButtons}
-          bannerPosition={bannerPosition}
-        />
-      </EntityDetailLayoutProvider>
+      <ArmyBannerEntityDetailContent
+        armyEntityId={armyEntityId}
+        className={className}
+        compact={compact}
+        showButtons={showButtons}
+        bannerPosition={bannerPosition}
+        variant={resolvedVariant}
+      />
     );
   },
 );

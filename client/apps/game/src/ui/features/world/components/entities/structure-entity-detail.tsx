@@ -185,6 +185,7 @@ export const StructureEntityDetail = memo(
                 slotsMax={guardSlotsMax}
                 structureId={Number(structure.entity_id ?? 0)}
                 canManageDefense={isMine}
+                variant={compact ? "banner" : "default"}
               />
             ) : (
               <div className={`${smallTextClass} italic text-gold/60`}>No defenders stationed.</div>

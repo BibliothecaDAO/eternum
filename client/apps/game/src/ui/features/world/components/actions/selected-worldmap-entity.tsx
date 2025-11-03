@@ -20,11 +20,7 @@ export const SelectedWorldmapEntity = () => {
   const selectedHex = useUIStore((state) => state.selectedHex);
 
   if (!selectedHex) {
-    return (
-      <div className="flex h-full items-center justify-center rounded-2xl border border-white/5 bg-black/40 p-4 text-sm text-slate-200/70">
-        Select a hex to inspect armies, structures, and terrain.
-      </div>
-    );
+    return null;
   }
 
   return <SelectedWorldmapEntityContent selectedHex={selectedHex} />;
@@ -59,9 +55,7 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
   const isExplored = !!tile && Number(tile.biome) !== 0;
 
   if (!tile) {
-    return (
-      <div className="flex h-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-4 text-center text-sm text-slate-100/80"></div>
-    );
+    return null;
   }
 
   if (!isExplored) {
@@ -78,6 +72,12 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
 
   const gridAutoRows = "var(--selected-worldmap-entity-grid-auto-rows, minmax(0, auto))";
 
+  const occupierEntityId = tile.occupier_id;
+  const sharedDetailProps = {
+    compact: true,
+    layoutVariant: "banner",
+  } as const;
+
   return (
     <div
       className="grid h-full min-h-0 grid-cols-1 gap-2 overflow-auto"
@@ -85,23 +85,21 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
     >
       {isStructure ? (
         <StructureBannerEntityDetail
-          structureEntityId={tile?.occupier_id}
-          compact
-          layoutVariant="banner"
+          structureEntityId={occupierEntityId}
           maxInventory={12}
           showButtons={false}
+          {...sharedDetailProps}
         />
       ) : isChest ? (
-        <RelicCrateEntityDetail crateEntityId={tile?.occupier_id} compact layoutVariant="hud" />
+        <RelicCrateEntityDetail crateEntityId={occupierEntityId} {...sharedDetailProps} />
       ) : isQuest ? (
-        <QuestEntityDetail questEntityId={tile?.occupier_id} layoutVariant="hud" className="h-full" compact />
+        <QuestEntityDetail questEntityId={occupierEntityId} className="h-full" {...sharedDetailProps} />
       ) : (
         <ArmyBannerEntityDetail
-          armyEntityId={tile?.occupier_id}
-          compact
-          layoutVariant="hud"
+          armyEntityId={occupierEntityId}
           showButtons={false}
           bannerPosition={selectedHex}
+          {...sharedDetailProps}
         />
       )}
     </div>
