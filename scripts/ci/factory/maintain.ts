@@ -182,7 +182,6 @@ export async function maintainOrchestrator(p: Params) {
     const name = entry.name as string;
     const startTs = entry.slotTimestamp as number;
     log(`World ${name} @ ${fmt(startTs)} | Deploy`);
-    log(`Account present: ${acct ? 'yes' : 'no'}, pk present: ${pk ? 'yes' : 'no'}`);
     await generateFactoryCalldata({
       chain,
       worldName: name,
@@ -194,71 +193,15 @@ export async function maintainOrchestrator(p: Params) {
     const deployPath = path.join(repoRoot, `contracts/game/factory/${chain}/calldata/${name}/deploy_calldata.txt`);
     if (!fs.existsSync(deployPath)) throw new Error(`Missing deploy calldata: ${deployPath}`);
     const args = (await Bun.file(deployPath).text()).trim().split(/\s+/);
-    log(`Deploy calldata file: ${deployPath}`);
-    log(`Deploy calldata: ${args.join(" ")}`);
-    let depHash: string | undefined;
-    try {
-      depHash = sozo(
-        [
-          "--profile",
-          chain,
-          "--rpc-url",
-          rpcUrl,
-          "--account-address",
-          acct,
-          "--private-key",
-          '0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912',
-          factory,
-          "deploy",
-          ...args,
-        ],
-        { outDir: path.join(repoRoot, `contracts/game/factory/${chain}/calldata/${name}`), label: "deploy" },
-      );
-    } catch (e) {
-      // Fallbacks for name argument formatting discrepancies across platforms/sozo builds
-      if (args[0] && /^0x[0-9a-fA-F]+$/.test(args[0])) {
-        const ascii = hexToAscii(String(args[0]));
-        const baseFlags = ["--profile", chain, "--rpc-url", rpcUrl, "--account-address", acct, "--private-key", pk];
-        const baseTail = [...args.slice(1)];
-        const outDir = path.join(repoRoot, `contracts/game/factory/${chain}/calldata/${name}`);
-
-        // Attempt 1: sstr without quotes
-        try {
-          const retry1 = [...baseFlags, factory, "deploy", `sstr:${ascii}`, ...baseTail];
-          log(`Primary deploy failed; retrying with sstr:${ascii}`);
-          depHash = sozo(retry1, { outDir, label: "deploy_retry_sstr_noquotes" });
-        } catch (e1) {
-          // Attempt 2: str (ByteArray) without quotes
-          try {
-            const retry2 = [...baseFlags, factory, "deploy", `str:${ascii}`, ...baseTail];
-            log(`Retry failed; trying ByteArray with str:${ascii}`);
-            depHash = sozo(retry2, { outDir, label: "deploy_retry_str_noquotes" });
-          } catch (e2) {
-            // Attempt 3: decimal felt value (hex -> decimal string)
-            try {
-              const dec = hexToDecString(String(args[0]));
-              const retry3 = [...baseFlags, factory, "deploy", dec, ...baseTail];
-              log(`Retry failed; trying decimal felt ${dec}`);
-              depHash = sozo(retry3, { outDir, label: "deploy_retry_decimal" });
-            } catch (e3) {
-              // Attempt 4: sstr with quotes as last resort
-              try {
-                const retry4 = [...baseFlags, factory, "deploy", `sstr:'${ascii}'`, ...baseTail];
-                log(`Retry failed; trying sstr with quotes sstr:'${ascii}'`);
-                depHash = sozo(retry4, { outDir, label: "deploy_retry_sstr_quotes" });
-              } catch (e4) {
-                // Attempt 5: swap arg order (version first, then name)
-                const swapped = [...baseFlags, factory, "deploy", ...baseTail, args[0]];
-                log(`All name format retries failed; trying swapped order (version then name)`);
-                depHash = sozo(swapped, { outDir, label: "deploy_retry_swapped" });
-              }
-            }
-          }
-        }
-      } else {
-        throw e;
-      }
-    }
+    const depHash = sozo([
+      "--profile", chain,
+      "--rpc-url", rpcUrl,
+      "--account-address", acct,
+      "--private-key", pk,
+      factory,
+      "deploy",
+      ...args,
+    ]);
     log(`Deployed: tx=${depHash ?? '<unknown>'}`);
     entry.deployed = true; writeState(chain, state);
   }
