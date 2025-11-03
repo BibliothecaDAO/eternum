@@ -1,4 +1,4 @@
-name: Deploy Single Torii
+name: Factory Torii Deployer
 
 on:
   workflow_dispatch:
@@ -236,23 +236,23 @@ jobs:
             --version "$VERSION" \
             --config "$CONFIG"
 
-      - name: Commit and push torii config
-        if: success()
-        env:
-          DEPLOY_DIR: ${{ steps.render.outputs.deploy_dir }}
-          NAME: ${{ steps.name.outputs.torii_name }}
-          ENV_NAME: ${{ github.event.inputs.env }}
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$DEPLOY_DIR/torii.toml"
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "chore: save torii '${NAME}' config for ${ENV_NAME}"
-            git push
-          fi
+      # - name: Commit and push torii config
+      #   if: success()
+      #   env:
+      #     DEPLOY_DIR: ${{ steps.render.outputs.deploy_dir }}
+      #     NAME: ${{ steps.name.outputs.torii_name }}
+      #     ENV_NAME: ${{ github.event.inputs.env }}
+      #   run: |
+      #     set -euo pipefail
+      #     git config user.name "github-actions[bot]"
+      #     git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      #     git add "$DEPLOY_DIR/torii.toml"
+      #     if git diff --staged --quiet; then
+      #       echo "No changes to commit"
+      #     else
+      #       git commit -m "chore: save torii '${NAME}' config for ${ENV_NAME}"
+      #       git push
+      #     fi
 
       - name: Summary
         if: always()

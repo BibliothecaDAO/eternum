@@ -1,0 +1,73 @@
+name: Factory Cleanup
+
+on:
+  schedule:
+    - cron: '12 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      chain:
+        description: 'Chain (slot|sepolia|slottest|local|mainnet)'
+        required: false
+        default: 'slot'
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CHAIN: ${{ github.event.inputs.chain || 'slot' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: feat/factory-refactor
+          fetch-depth: 0
+
+      - name: Install Slot CLI
+        run: |
+          set -euo pipefail
+          curl -L https://slot.cartridge.sh | bash
+          /home/runner/.config/.slot/bin/slotup
+          echo "/home/runner/.config/.slot/bin" >> $GITHUB_PATH
+          slot --version || true
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
+      - name: Install deps and build packages
+        run: |
+          pnpm install
+          pnpm build:packages
+
+      - name: Install sozo (for env parity)
+        run: |
+          set -euo pipefail
+          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.7.0-alpha.2/dojo_v1.7.0-alpha.2_linux_amd64.tar.gz
+          tar -xzf dojo-linux-x86_64.tar.gz
+          sudo mv sozo /usr/local/bin/
+          sozo --version
+
+      - name: Cleanup deployments older than 10h (Torii + prune)
+        run: |
+          bun scripts/ci/ops.ts orchestrator cleanup --chain "$CHAIN" --retention-hours 10
+
+      - name: Commit pruned deployment.json
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add contracts/game/factory
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore(orchestrator): prune deployments older than ${RETENTION_HOURS}h for ${CHAIN}"
+            git push
+          fi

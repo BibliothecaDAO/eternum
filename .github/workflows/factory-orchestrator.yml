@@ -1,0 +1,109 @@
+name: Factory Orchestrator
+
+on:
+  schedule:
+    - cron: '48 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      chain:
+        description: 'Chain (slot|sepolia|slottest|local|mainnet)'
+        required: false
+        default: 'slot'
+      target_upcoming:
+        description: 'Maintain this many future worlds'
+        required: false
+        default: '4'
+      rpc_url:
+        description: 'Starknet RPC URL (public)'
+        required: false
+        default: 'https://api.cartridge.gg/x/eternum-blitz-slot-1/katana/rpc/v0_9'
+      factory_address:
+        description: 'World Factory address (public)'
+        required: false
+        default: '0x7c0da7c7b1347f31d58a6b95d29abbc0d6756f80304b9183f525b216fb50085'
+      admin_address:
+        description: 'Admin address for set_world_config (public)'
+        required: false
+        default: '0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec'
+      torii_creator_url:
+        description: 'Indexer creation endpoint (optional)'
+        required: false
+        default: 'https://torii-creator.zerocredence.workers.dev/dispatch/torii'
+      torii_namespaces:
+        description: 'Torii namespaces (comma-separated, optional)'
+        required: false
+        default: 's1_eternum'
+      cartridge_api_base:
+        description: 'Cartridge API base URL (optional)'
+        required: false
+        default: 'https://api.cartridge.gg'
+
+permissions:
+  contents: write
+
+jobs:
+  orchestrator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CHAIN: ${{ github.event.inputs.chain || 'slot' }}
+      TARGET_UPCOMING: ${{ github.event.inputs.target_upcoming || '4' }}
+      FACTORY_ADDRESS: ${{ github.event.inputs.factory_address || vars.FACTORY_ADDRESS }}
+      RPC_URL: ${{ github.event.inputs.rpc_url || vars.RPC_URL }}
+      ADMIN_ADDRESS: ${{ github.event.inputs.admin_address || vars.ADMIN_ADDRESS }}
+      DOJO_ACCOUNT_ADDRESS: ${{ vars.DOJO_ACCOUNT_ADDRESS_FACTORY_DEPLOYER }}
+      DOJO_PRIVATE_KEY: ${{ secrets.DOJO_PRIVATE_KEY_FACTORY_DEPLOYER }}
+      TORII_CREATOR_URL: ${{ github.event.inputs.torii_creator_url || vars.TORII_CREATOR_URL || 'https://torii-creator.zerocredence.workers.dev/dispatch/torii' }}
+      TORII_NAMESPACES: ${{ github.event.inputs.torii_namespaces || vars.TORII_NAMESPACES || 's1_eternum' }}
+      CARTRIDGE_API_BASE: ${{ github.event.inputs.cartridge_api_base || vars.CARTRIDGE_API_BASE || 'https://api.cartridge.gg' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: feat/factory-refactor
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
+      - name: Install deps and build packages
+        run: |
+          pnpm install
+          pnpm build:packages
+
+      - name: Install sozo
+        run: |
+          set -euo pipefail
+          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.7.0-alpha.2/dojo_v1.7.0-alpha.2_linux_amd64.tar.gz
+          tar -xzf dojo-linux-x86_64.tar.gz
+          sudo mv sozo /usr/local/bin/
+          sozo --version
+
+      - name: Orchestrate (Bun TS)
+        run: |
+          bun scripts/ci/ops.ts orchestrator maintain \
+            --chain "$CHAIN" \
+            --target-upcoming "$TARGET_UPCOMING" \
+            --rpc-url "$RPC_URL" \
+            --factory "$FACTORY_ADDRESS" \
+            --account-address "$DOJO_ACCOUNT_ADDRESS" \
+            --private-key "$DOJO_PRIVATE_KEY" \
+            --admin-address "$ADMIN_ADDRESS"
+
+      - name: Commit state changes
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add contracts/game/factory
+          if git diff --staged --quiet; then
+            echo "No state changes to commit"
+          else
+            git commit -m "chore(orchestrator): update state for ${CHAIN}"
+            git push
+          fi
