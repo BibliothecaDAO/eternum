@@ -71,13 +71,12 @@ export async function generateFactoryCalldata(p: Params) {
   const manifestPath = `contracts/game/manifest_${p.chain}.json`;
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
   const setConfig = generateSetConfigCalldataFlat(manifest, p);
-  // Use sozo's sstr: prefix for cairo short string to avoid hex parsing issues
-  const deployArgsText = `sstr:'${p.worldName}' ${p.version}`;
+  const deploy = [shortString.encodeShortString(p.worldName), p.version];
 
   const outDir = path.join("contracts/game/factory", p.chain, "calldata", p.worldName);
   fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(path.join(outDir, "set_config_calldata.txt"), setConfig.join(" "));
-  fs.writeFileSync(path.join(outDir, "deploy_calldata.txt"), deployArgsText);
+  fs.writeFileSync(path.join(outDir, "deploy_calldata.txt"), deploy.join(" "));
   fs.writeFileSync(path.join(outDir, "set_config_calldata.json"), JSON.stringify(setConfig, null, 2));
-  fs.writeFileSync(path.join(outDir, "deploy_calldata.json"), JSON.stringify(deployArgsText, null, 2));
+  fs.writeFileSync(path.join(outDir, "deploy_calldata.json"), JSON.stringify(deploy, null, 2));
 }
