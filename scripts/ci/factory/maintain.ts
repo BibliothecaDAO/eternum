@@ -27,7 +27,7 @@ const log = (m: string) => console.log(`[${ts()}] ${m}`);
 const fmt = (epoch: number) => new Date(epoch * 1000).toISOString().replace(".000Z", "Z");
 
 function sozo(args: string[]) {
-  const res = spawnSync("sozo", ["execute", ...args], {
+  const res = spawnSync("sozo", ["execute", "--manifest-path", gameDir, ...args], {
     cwd: gameDir,
     encoding: "utf-8",
     stdio: ["ignore", "pipe", "pipe"],
