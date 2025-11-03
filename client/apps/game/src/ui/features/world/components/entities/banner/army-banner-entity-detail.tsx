@@ -2,14 +2,20 @@ import { Loader } from "lucide-react";
 import { memo, useMemo } from "react";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { ArmyChip } from "@/ui/features/military/components/army-chip";
 import { HexPosition, ID, RelicRecipientType } from "@bibliothecadao/types";
 
+import { CompactArmyChip } from "@/ui/features/military/components/compact-army-chip";
+import clsx from "clsx";
 import { ArmyWarning } from "../../armies/army-warning";
 import { ActiveRelicEffects } from "../active-relic-effects";
 import { CompactEntityInventory } from "../compact-entity-inventory";
-import { EntityDetailLayoutProvider, EntityDetailLayoutVariant, EntityDetailSection, useEntityDetailLayout } from "../layout";
 import { useArmyEntityDetail, useBannerArmyInfo } from "../hooks/use-army-entity-detail";
+import {
+  EntityDetailLayoutProvider,
+  EntityDetailLayoutVariant,
+  EntityDetailSection,
+  useEntityDetailLayout,
+} from "../layout";
 
 export interface ArmyBannerEntityDetailProps {
   armyEntityId: ID;
@@ -22,12 +28,7 @@ export interface ArmyBannerEntityDetailProps {
 }
 
 const ArmyBannerEntityDetailContent = memo(
-  ({
-    armyEntityId,
-    className,
-    showButtons = false,
-    bannerPosition,
-  }: Omit<ArmyBannerEntityDetailProps, "layoutVariant" | "compact" | "maxInventory">) => {
+  ({ armyEntityId, className, bannerPosition }: Omit<ArmyBannerEntityDetailProps, "compact" | "maxInventory">) => {
     const {
       explorer,
       explorerResources,
@@ -63,7 +64,7 @@ const ArmyBannerEntityDetailContent = memo(
       ? "grid flex-1 min-h-0 w-full grid-cols-1 gap-2 sm:grid-cols-2 sm:grid-rows-2 sm:auto-rows-fr"
       : "flex min-h-0 flex-1 flex-col gap-2";
     const cellBaseClass = wantsGridLayout ? "sm:col-span-1 sm:row-span-1" : undefined;
-    const subtleTextClass = cn(layout.density === "compact" ? "text-xxs" : "text-xs", "text-gold/60");
+    const subtleTextClass = clsx("text-gold/60", layout.density === "compact" ? "text-xxs" : "text-xs");
     const hasWarnings = Boolean(structureResources && explorerResources);
 
     return (
@@ -73,21 +74,22 @@ const ArmyBannerEntityDetailContent = memo(
             className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-1 sm:row-start-1", "min-h-0")}
             tone={hasWarnings ? "highlight" : "default"}
           >
-            {hasWarnings ? (
-              <ArmyWarning army={explorer} explorerResources={explorerResources} structureResources={structureResources} />
+            {hasWarnings && explorerResources && structureResources ? (
+              <ArmyWarning
+                army={explorer}
+                explorerResources={explorerResources}
+                structureResources={structureResources}
+              />
             ) : (
               <span className={cn(subtleTextClass, "italic")}>No proximity warnings.</span>
             )}
           </EntityDetailSection>
 
-          <EntityDetailSection className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-2 sm:row-start-1", "min-h-0")}
+          <EntityDetailSection
+            className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-2 sm:row-start-1", "min-h-0")}
           >
             {bannerArmyInfo ? (
-              <ArmyChip
-                army={bannerArmyInfo}
-                className="border border-gold/25 bg-dark/60"
-                showButtons={showButtons && derivedData.isMine}
-              />
+              <CompactArmyChip army={bannerArmyInfo} className="border border-gold/25 bg-dark/60" />
             ) : (
               <span className={cn(subtleTextClass, "italic")}>Army data unavailable.</span>
             )}
@@ -112,7 +114,8 @@ const ArmyBannerEntityDetailContent = memo(
             )}
           </EntityDetailSection>
 
-          <EntityDetailSection className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-2 sm:row-start-2", "min-h-0")}
+          <EntityDetailSection
+            className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-2 sm:row-start-2", "min-h-0")}
           >
             {layout.minimizeCopy ? (
               <span className={cn(subtleTextClass, "italic")}>
