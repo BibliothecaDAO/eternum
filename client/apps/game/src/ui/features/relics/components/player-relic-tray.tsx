@@ -121,11 +121,7 @@ export const PlayerRelicTray = memo(({ variant = "floating", className }: Player
       <div className={cn("flex h-full min-h-0 flex-col gap-1", className)}>
         <div className="flex-1 min-h-0 overflow-auto pr-1">
           {aggregatedRelics.length > 0 ? (
-            renderRelicGrid(
-              aggregatedRelics,
-              "grid grid-cols-[repeat(auto-fit,minmax(48px,1fr))] gap-1",
-              "xs",
-            )
+            renderRelicGrid(aggregatedRelics, "grid grid-cols-[repeat(auto-fit,minmax(48px,1fr))] gap-1", "xs")
           ) : (
             <div className="flex h-full items-center justify-center rounded-md border border-dashed border-gold/20 bg-dark/30 px-3 py-4 text-xxs italic text-gold/60">
               No relics discovered yet.
@@ -157,11 +153,7 @@ export const PlayerRelicTray = memo(({ variant = "floating", className }: Player
           )}
         </div>
         <div className="max-w-xs overflow-x-auto">
-          {renderRelicGrid(
-            aggregatedRelics,
-            "grid auto-cols-[minmax(56px,1fr)] grid-flow-col gap-1",
-            "sm",
-          )}
+          {renderRelicGrid(aggregatedRelics, "grid auto-cols-[minmax(56px,1fr)] grid-flow-col gap-1", "sm")}
         </div>
       </div>
     </div>

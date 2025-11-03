@@ -42,11 +42,7 @@ const ChestBannerEntityDetailContent = ({
   const isBanner = variant === "banner";
   const isCompactLayout = compact;
 
-  const containerClass = cn(
-    "flex flex-col",
-    isCompactLayout ? "gap-1.5" : "gap-3",
-    className,
-  );
+  const containerClass = cn("flex flex-col", isCompactLayout ? "gap-1.5" : "gap-3", className);
 
   const bodyClass = cn("text-gold/70", isCompactLayout ? "text-xxs" : "text-xs");
 

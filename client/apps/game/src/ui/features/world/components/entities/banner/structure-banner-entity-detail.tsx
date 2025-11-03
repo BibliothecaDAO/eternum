@@ -59,11 +59,7 @@ const StructureBannerEntityDetailContent = memo(
     const isBanner = variant === "banner";
     const isCompactLayout = compact;
 
-    const containerClass = cn(
-      "flex h-full min-h-0 flex-col",
-      isCompactLayout ? "gap-2" : "gap-3",
-      className,
-    );
+    const containerClass = cn("flex h-full min-h-0 flex-col", isCompactLayout ? "gap-2" : "gap-3", className);
 
     const wantsGridLayout = true;
     const gridContainerClass = wantsGridLayout
@@ -229,11 +225,7 @@ const StructureBannerEntityDetailContent = memo(
         {relicEffects.length > 0 && !isBanner && (
           <EntityDetailSection compact={compact}>
             <div className="max-h-[240px] overflow-auto pr-1">
-                <ActiveRelicEffects
-                  relicEffects={relicEffects}
-                  entityId={structureEntityId}
-                  compact={isCompactLayout}
-                />
+              <ActiveRelicEffects relicEffects={relicEffects} entityId={structureEntityId} compact={isCompactLayout} />
             </div>
           </EntityDetailSection>
         )}

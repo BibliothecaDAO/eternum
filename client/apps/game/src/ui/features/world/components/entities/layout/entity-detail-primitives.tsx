@@ -76,14 +76,14 @@ export interface EntityDetailStatListProps {
   compact?: boolean;
 }
 
-export const EntityDetailStatList = ({ children, className, columns = 1, compact = false }: EntityDetailStatListProps) => {
+export const EntityDetailStatList = ({
+  children,
+  className,
+  columns = 1,
+  compact = false,
+}: EntityDetailStatListProps) => {
   const scale = getScale(compact);
-  const gridClass =
-    columns === 3
-      ? "grid-cols-3"
-      : columns === 2
-        ? "grid-cols-2"
-        : "grid-cols-1";
+  const gridClass = columns === 3 ? "grid-cols-3" : columns === 2 ? "grid-cols-2" : "grid-cols-1";
   return (
     <div
       className={cn(
@@ -107,7 +107,13 @@ export interface EntityDetailStatProps {
   compact?: boolean;
 }
 
-export const EntityDetailStat = ({ label, value, emphasizeValue = false, className, compact = false }: EntityDetailStatProps) => {
+export const EntityDetailStat = ({
+  label,
+  value,
+  emphasizeValue = false,
+  className,
+  compact = false,
+}: EntityDetailStatProps) => {
   const scale = getScale(compact);
   return (
     <div className={cn("flex flex-col", spacingGap[scale], className)}>

@@ -129,11 +129,7 @@ const ArmyBannerEntityDetailContent = memo(
               </span>
             ) : relicEffects.length > 0 ? (
               <div className="max-h-[200px] overflow-auto pr-1">
-                <ActiveRelicEffects
-                  relicEffects={relicEffects}
-                  entityId={armyEntityId}
-                  compact={isCompactLayout}
-                />
+                <ActiveRelicEffects relicEffects={relicEffects} entityId={armyEntityId} compact={isCompactLayout} />
               </div>
             ) : (
               <span className={cn(subtleTextClass, "italic")}>No relics assigned.</span>

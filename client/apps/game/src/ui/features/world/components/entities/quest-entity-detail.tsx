@@ -31,7 +31,12 @@ interface QuestEntityDetailContentProps extends Omit<QuestEntityDetailProps, "la
   variant: EntityDetailLayoutVariant;
 }
 
-const QuestEntityDetailContent = ({ questEntityId, className, compact = false, variant }: QuestEntityDetailContentProps) => {
+const QuestEntityDetailContent = ({
+  questEntityId,
+  className,
+  compact = false,
+  variant,
+}: QuestEntityDetailContentProps) => {
   const {
     setup: { components },
   } = useDojo();
@@ -55,7 +60,10 @@ const QuestEntityDetailContent = ({ questEntityId, className, compact = false, v
     () => minigames?.find((miniGame) => miniGame.contract_address === addAddressPadding(quest?.game_address || 0n)),
     [minigames, quest?.game_address],
   );
-  const slotsRemaining = useMemo(() => (quest?.capacity ?? 0) - (quest?.participant_count ?? 0), [quest?.capacity, quest?.participant_count]);
+  const slotsRemaining = useMemo(
+    () => (quest?.capacity ?? 0) - (quest?.participant_count ?? 0),
+    [quest?.capacity, quest?.participant_count],
+  );
   const hasSlotsRemaining = useMemo(() => slotsRemaining > 0, [slotsRemaining]);
 
   const questLevelsEntity = useMemo(
@@ -81,7 +89,9 @@ const QuestEntityDetailContent = ({ questEntityId, className, compact = false, v
   const bodyClass = cn("text-gold/70", getLayoutTextClasses(isCompactLayout, "body"));
 
   const statusLabel = hasSlotsRemaining ? (isBanner ? "Active" : "Slots Open") : isBanner ? "Full" : "Ended";
-  const statusTone = hasSlotsRemaining ? "bg-ally/80 border border-ally text-lightest" : "bg-danger/80 border border-danger text-lightest";
+  const statusTone = hasSlotsRemaining
+    ? "bg-ally/80 border border-ally text-lightest"
+    : "bg-danger/80 border border-danger text-lightest";
   const questDescription = isBanner
     ? "Interact with an explorer to start."
     : "Interact with an explorer unit to start and claim quests.";
@@ -105,8 +115,17 @@ const QuestEntityDetailContent = ({ questEntityId, className, compact = false, v
       <EntityDetailSection compact={compact} className={isBanner ? "md:col-span-2" : undefined}>
         <div className={cn(labelClass, "mb-2")}>{isBanner ? "Details" : "Quest Requirements"}</div>
         <EntityDetailStatList compact={compact} columns={isBanner ? 3 : 1}>
-          <EntityDetailStat compact={compact} label="Slots" value={slotsRemaining} emphasizeValue={!hasSlotsRemaining} />
-          <EntityDetailStat compact={compact} label="Target" value={`${questLevel?.value?.target_score?.value ?? 0} XP`} />
+          <EntityDetailStat
+            compact={compact}
+            label="Slots"
+            value={slotsRemaining}
+            emphasizeValue={!hasSlotsRemaining}
+          />
+          <EntityDetailStat
+            compact={compact}
+            label="Target"
+            value={`${questLevel?.value?.target_score?.value ?? 0} XP`}
+          />
           <EntityDetailStat compact={compact} label="Time" value={formatTime(questLevel?.value?.time_limit?.value)} />
         </EntityDetailStatList>
       </EntityDetailSection>

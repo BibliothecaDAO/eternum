@@ -178,12 +178,7 @@ export const CompactDefenseDisplay = ({
   return (
     <div className={cn("flex flex-col", containerGapClass, className)}>
       {showHeaderRow && (
-        <div
-          className={cn(
-            "flex flex-wrap items-center",
-            isBanner ? "gap-1" : "gap-1.5",
-          )}
-        >
+        <div className={cn("flex flex-wrap items-center", isBanner ? "gap-1" : "gap-1.5")}>
           {hasSlotInfo && (
             <div className="flex items-center bg-brown-900/80 border border-gold/25 rounded-md px-2 py-0.5 gap-1">
               <span className={cn(labelTextClass, "uppercase tracking-wide text-gold/70 font-semibold")}>
@@ -204,13 +199,7 @@ export const CompactDefenseDisplay = ({
           )}
         </div>
       )}
-      <div
-        className={cn(
-          "flex items-end overflow-x-auto",
-          isBanner ? "gap-1" : "gap-2",
-          isBanner ? "pb-0" : "pb-1",
-        )}
-      >
+      <div className={cn("flex items-end overflow-x-auto", isBanner ? "gap-1" : "gap-2", isBanner ? "pb-0" : "pb-1")}>
         {troops
           .slice()
           .sort((a, b) => b.slot - a.slot)
@@ -225,14 +214,9 @@ export const CompactDefenseDisplay = ({
                 height: isBanner ? "36px" : "40px",
               }}
             >
-              <ArrowLeft
-                className={cn(isBanner ? "w-4 h-4" : "w-5 h-5", "text-gold/80")}
-                strokeWidth={2}
-              />
+              <ArrowLeft className={cn(isBanner ? "w-4 h-4" : "w-5 h-5", "text-gold/80")} strokeWidth={2} />
             </div>
-            <span className={cn(isBanner ? "text-[9px]" : "text-[10px]", "text-gold/60")}>
-              Enemy
-            </span>
+            <span className={cn(isBanner ? "text-[9px]" : "text-[10px]", "text-gold/60")}>Enemy</span>
           </div>
         )}
       </div>

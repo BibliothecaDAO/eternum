@@ -80,7 +80,8 @@ const RelicCrateEntityDetailContent = memo(
 
     const containerClass = cn("flex h-full min-h-0 flex-col", compact ? "gap-2" : "gap-3", className);
     const bodyClass = cn("text-gold/70", compact ? "text-xxs" : "text-xs");
-    const gridContainerClass = "grid flex-1 min-h-0 w-full grid-cols-1 gap-2 sm:grid-cols-2 sm:grid-rows-2 sm:auto-rows-fr";
+    const gridContainerClass =
+      "grid flex-1 min-h-0 w-full grid-cols-1 gap-2 sm:grid-cols-2 sm:grid-rows-2 sm:auto-rows-fr";
 
     return (
       <div className={containerClass}>
