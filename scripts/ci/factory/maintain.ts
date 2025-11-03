@@ -27,20 +27,63 @@ const ts = () => new Date().toISOString().split("T")[1].replace("Z", "Z");
 const log = (m: string) => console.log(`[${ts()}] ${m}`);
 const fmt = (epoch: number) => new Date(epoch * 1000).toISOString().replace(".000Z", "Z");
 
-function sozo(args: string[]) {
+function getVersion(cmd: string, args: string[] = ["--version"]): string {
+  try {
+    const r = spawnSync(cmd, args, { encoding: "utf-8" });
+    return (r.stdout || r.stderr || "").trim();
+  } catch {
+    return "<unknown>";
+  }
+}
+
+function redactArgs(argv: string[]): string[] {
+  const a = [...argv];
+  for (let i = 0; i < a.length; i++) {
+    const t = a[i];
+    if (t === "--private-key" && i + 1 < a.length) a[i + 1] = "<redacted>";
+  }
+  return a;
+}
+
+function sozo(args: string[], ctx?: { outDir?: string; label?: string }) {
   const env = { ...process.env, SCARB: process.env.SCARB || "scarb" } as NodeJS.ProcessEnv;
-  const res = spawnSync("sozo", ["execute", "--manifest-path", manifestFile, ...args], {
+  const argv = ["execute", "--manifest-path", manifestFile, "-v", ...args];
+  const res = spawnSync("sozo", argv, {
     cwd: repoRoot,
     encoding: "utf-8",
     stdio: ["ignore", "pipe", "pipe"],
     env,
   });
   const out = (res.stdout || "") + (res.stderr || "");
-  // echo sanitized sozo output
-  if (out.trim()) {
-    console.log(out.trim());
+  const safeCmd = `sozo ${redactArgs(argv).join(" ")}`;
+  log(`sozo cmd: ${safeCmd}`);
+  log(`cwd: ${repoRoot}`);
+  log(`manifest: ${manifestFile}`);
+  log(`scarb: ${getVersion("scarb")}`);
+  log(`sozo: ${getVersion("sozo").split("\n")[0]}`);
+  if (out.trim()) console.log(out.trim());
+  if (res.status !== 0) {
+    if (ctx?.outDir) {
+      try {
+        fs.mkdirSync(ctx.outDir, { recursive: true });
+        fs.writeFileSync(
+          path.join(ctx.outDir, `sozo_error_${ctx.label || "execute"}.log`),
+          [
+            `cmd: ${safeCmd}`,
+            `status: ${res.status}`,
+            `cwd: ${repoRoot}`,
+            `manifest: ${manifestFile}`,
+            `scarb: ${getVersion("scarb")}`,
+            `sozo: ${getVersion("sozo").replace(/\n/g, " ")}`,
+            `env.SCARB=${env.SCARB}`,
+            "--- output ---",
+            out,
+          ].join("\n"),
+        );
+      } catch {}
+    }
+    throw new Error(`sozo failed (${res.status})`);
   }
-  if (res.status !== 0) throw new Error(`sozo failed (${res.status})`);
   const m = out.match(/0x[0-9a-fA-F]+/);
   return m ? m[0] : undefined;
 }
@@ -141,7 +184,7 @@ export async function maintainOrchestrator(p: Params) {
       factory,
       "deploy",
       ...args,
-    ]);
+    ], { outDir: path.join(repoRoot, `contracts/game/factory/${chain}/calldata/${name}`), label: "deploy" });
     log(`Deployed: tx=${depHash ?? '<unknown>'}`);
     entry.deployed = true; writeState(chain, state);
   }
@@ -170,7 +213,7 @@ export async function maintainOrchestrator(p: Params) {
       "--account-address", acct,
       "--private-key", pk,
       ...payload,
-    ]);
+    ], { outDir: path.join(repoRoot, `contracts/game/factory/${chain}/calldata/${name}`), label: "configure" });
     log(`Configured: tx=${cfgHash ?? '<unknown>'}`);
     entry.configured = true; writeState(chain, state);
   }
