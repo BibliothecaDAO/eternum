@@ -3,7 +3,7 @@ import { memo } from "react";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ID } from "@bibliothecadao/types";
 
-import { EntityDetailLayoutProvider, EntityDetailLayoutVariant, EntityDetailSection, useEntityDetailLayout } from "../layout";
+import { EntityDetailLayoutVariant, EntityDetailSection } from "../layout";
 import { useChestEntityDetail } from "../hooks/use-chest-entity-detail";
 
 export interface ChestBannerEntityDetailProps {
@@ -28,24 +28,34 @@ const infoBlocks = [
   },
 ];
 
-const ChestBannerEntityDetailContent = ({ chestEntityId, className }: Omit<ChestBannerEntityDetailProps, "compact" | "layoutVariant">) => {
+interface ChestBannerEntityDetailContentProps extends Omit<ChestBannerEntityDetailProps, "layoutVariant"> {
+  variant: EntityDetailLayoutVariant;
+}
+
+const ChestBannerEntityDetailContent = ({
+  chestEntityId,
+  className,
+  compact = true,
+  variant,
+}: ChestBannerEntityDetailContentProps) => {
   const { chestName } = useChestEntityDetail({ chestEntityId });
-  const layout = useEntityDetailLayout();
+  const isBanner = variant === "banner";
+  const isCompactLayout = compact;
 
   const containerClass = cn(
     "flex flex-col",
-    layout.density === "compact" ? "gap-1.5" : "gap-3",
+    isCompactLayout ? "gap-1.5" : "gap-3",
     className,
   );
 
-  const bodyClass = cn("text-gold/70", layout.density === "compact" ? "text-xxs" : "text-xs");
+  const bodyClass = cn("text-gold/70", isCompactLayout ? "text-xxs" : "text-xs");
 
   return (
     <div className={containerClass}>
-      <EntityDetailSection>
+      <EntityDetailSection compact={compact}>
         <div className="text-sm font-semibold text-gold">{chestName ?? "Relic Chest"}</div>
         <div className={cn(bodyClass, "mb-2 text-gold/60")}>Crate #{chestEntityId}</div>
-        {layout.variant === "hud" ? (
+        {isBanner ? (
           <div className="flex flex-wrap items-center gap-2 text-xxs text-gold/60">
             <span>Scout to discover.</span>
             <span>Contains relics.</span>
@@ -68,14 +78,15 @@ const ChestBannerEntityDetailContent = ({ chestEntityId, className }: Omit<Chest
 
 export const ChestBannerEntityDetail = memo(
   ({ chestEntityId, className, compact = true, layoutVariant }: ChestBannerEntityDetailProps) => {
-    const resolvedVariant: EntityDetailLayoutVariant = layoutVariant ?? (compact ? "hud" : "banner");
-    const density = compact || resolvedVariant === "hud" ? "compact" : "cozy";
-    const minimizeCopy = resolvedVariant === "hud" || compact;
+    const resolvedVariant: EntityDetailLayoutVariant = layoutVariant ?? (compact ? "default" : "banner");
 
     return (
-      <EntityDetailLayoutProvider variant={resolvedVariant} density={density} minimizeCopy={minimizeCopy}>
-        <ChestBannerEntityDetailContent chestEntityId={chestEntityId} className={className} />
-      </EntityDetailLayoutProvider>
+      <ChestBannerEntityDetailContent
+        chestEntityId={chestEntityId}
+        className={className}
+        compact={compact}
+        variant={resolvedVariant}
+      />
     );
   },
 );

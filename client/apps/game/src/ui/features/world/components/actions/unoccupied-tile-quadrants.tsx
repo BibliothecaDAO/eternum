@@ -2,7 +2,7 @@ import { useMemo } from "react";
 
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { formatBiomeBonus } from "@/ui/features/military";
-import { EntityDetailLayoutProvider, EntityDetailSection } from "@/ui/features/world/components/entities/layout";
+import { EntityDetailSection } from "@/ui/features/world/components/entities/layout";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, TroopType } from "@bibliothecadao/types";
 
@@ -126,15 +126,13 @@ const BiomeQuadrant = ({ biome }: { biome: BiomeType }) => {
 
 export const UnoccupiedTileQuadrants = ({ biome }: { biome: BiomeType }) => {
   return (
-    <EntityDetailLayoutProvider variant="hud" density="compact" minimizeCopy={false}>
-      <div className="grid h-full min-h-0 grid-cols-1 gap-2 overflow-auto sm:grid-cols-2 sm:grid-rows-2 sm:auto-rows-fr">
-        <EntityDetailSection className="flex h-full flex-col overflow-hidden" tone="highlight">
-          <BiomeQuadrant biome={biome} />
-        </EntityDetailSection>
-        <EntityDetailSection className="min-h-0" />
-        <EntityDetailSection className="min-h-0" />
-        <EntityDetailSection className="min-h-0" />
-      </div>
-    </EntityDetailLayoutProvider>
+    <div className="grid h-full min-h-0 grid-cols-1 gap-2 overflow-auto sm:grid-cols-2 sm:grid-rows-2 sm:auto-rows-fr">
+      <EntityDetailSection compact className="flex h-full flex-col overflow-hidden" tone="highlight">
+        <BiomeQuadrant biome={biome} />
+      </EntityDetailSection>
+      <EntityDetailSection compact className="min-h-0" />
+      <EntityDetailSection compact className="min-h-0" />
+      <EntityDetailSection compact className="min-h-0" />
+    </div>
   );
 };

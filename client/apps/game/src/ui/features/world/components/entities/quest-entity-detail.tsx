@@ -12,13 +12,11 @@ import { getComponentValue } from "@dojoengine/recs";
 import { addAddressPadding } from "starknet";
 
 import {
-  EntityDetailLayoutProvider,
   EntityDetailLayoutVariant,
   EntityDetailSection,
   EntityDetailStat,
   EntityDetailStatList,
-  getDensityTextClasses,
-  useEntityDetailLayout,
+  getLayoutTextClasses,
 } from "./layout";
 
 interface QuestEntityDetailProps {
@@ -29,13 +27,18 @@ interface QuestEntityDetailProps {
   layoutVariant?: EntityDetailLayoutVariant;
 }
 
-const QuestEntityDetailContent = ({ questEntityId, className }: Omit<QuestEntityDetailProps, "compact" | "layout" | "layoutVariant">) => {
+interface QuestEntityDetailContentProps extends Omit<QuestEntityDetailProps, "layoutVariant" | "layout"> {
+  variant: EntityDetailLayoutVariant;
+}
+
+const QuestEntityDetailContent = ({ questEntityId, className, compact = false, variant }: QuestEntityDetailContentProps) => {
   const {
     setup: { components },
   } = useDojo();
 
   const [quest, setQuest] = useState<QuestTileData | undefined>(undefined);
-  const layout = useEntityDetailLayout();
+  const isBanner = variant === "banner";
+  const isCompactLayout = compact;
 
   useEffect(() => {
     const fetchQuest = async () => {
@@ -66,45 +69,45 @@ const QuestEntityDetailContent = ({ questEntityId, className }: Omit<QuestEntity
 
   const containerClasses = cn(
     "flex flex-col",
-    layout.density === "compact" ? "gap-1.5" : "gap-2",
-    layout.variant === "banner" && "md:grid md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:gap-3 items-start",
+    isCompactLayout ? "gap-1.5" : "gap-2",
+    isBanner && "md:grid md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:gap-3 items-start",
     className,
   );
 
   const labelClass = cn(
     "font-semibold uppercase tracking-[0.2em] text-gold/70",
-    getDensityTextClasses(layout.density, "title"),
+    getLayoutTextClasses(isCompactLayout, "title"),
   );
-  const bodyClass = cn("text-gold/70", getDensityTextClasses(layout.density, "body"));
+  const bodyClass = cn("text-gold/70", getLayoutTextClasses(isCompactLayout, "body"));
 
-  const statusLabel = hasSlotsRemaining ? (layout.minimizeCopy ? "Active" : "Slots Open") : layout.minimizeCopy ? "Full" : "Ended";
+  const statusLabel = hasSlotsRemaining ? (isBanner ? "Active" : "Slots Open") : isBanner ? "Full" : "Ended";
   const statusTone = hasSlotsRemaining ? "bg-ally/80 border border-ally text-lightest" : "bg-danger/80 border border-danger text-lightest";
-  const questDescription = layout.minimizeCopy
+  const questDescription = isBanner
     ? "Interact with an explorer to start."
     : "Interact with an explorer unit to start and claim quests.";
 
   return (
     <div className={containerClasses}>
-      <EntityDetailSection className={layout.variant === "banner" ? "md:col-span-2" : undefined}>
+      <EntityDetailSection compact={compact} className={isBanner ? "md:col-span-2" : undefined}>
         <div className={cn(labelClass, "mb-1")}>{game?.name}</div>
-        <div className={cn(bodyClass, "mb-2")}>{`${layout.minimizeCopy ? "Lvl" : "Level"} ${(quest?.level ?? 0) + 1}`}</div>
+        <div className={cn(bodyClass, "mb-2")}>{`${isBanner ? "Lvl" : "Level"} ${(quest?.level ?? 0) + 1}`}</div>
         <div className="flex items-center justify-between gap-2">
           <span className="text-sm text-gold/70">{questDescription}</span>
           <div className={cn("rounded px-2 py-1 text-xs font-bold", statusTone)}>{statusLabel}</div>
         </div>
       </EntityDetailSection>
 
-      <EntityDetailSection className={layout.variant === "banner" ? "md:col-span-2" : undefined}>
+      <EntityDetailSection compact={compact} className={isBanner ? "md:col-span-2" : undefined}>
         <div className={cn(labelClass, "mb-2")}>Reward</div>
         <QuestReward quest={quest} />
       </EntityDetailSection>
 
-      <EntityDetailSection className={layout.variant === "banner" ? "md:col-span-2" : undefined}>
-        <div className={cn(labelClass, "mb-2")}>{layout.minimizeCopy ? "Details" : "Quest Requirements"}</div>
-        <EntityDetailStatList columns={layout.variant === "banner" ? 3 : 1}>
-          <EntityDetailStat label="Slots" value={slotsRemaining} emphasizeValue={!hasSlotsRemaining} />
-          <EntityDetailStat label="Target" value={`${questLevel?.value?.target_score?.value ?? 0} XP`} />
-          <EntityDetailStat label="Time" value={formatTime(questLevel?.value?.time_limit?.value)} />
+      <EntityDetailSection compact={compact} className={isBanner ? "md:col-span-2" : undefined}>
+        <div className={cn(labelClass, "mb-2")}>{isBanner ? "Details" : "Quest Requirements"}</div>
+        <EntityDetailStatList compact={compact} columns={isBanner ? 3 : 1}>
+          <EntityDetailStat compact={compact} label="Slots" value={slotsRemaining} emphasizeValue={!hasSlotsRemaining} />
+          <EntityDetailStat compact={compact} label="Target" value={`${questLevel?.value?.target_score?.value ?? 0} XP`} />
+          <EntityDetailStat compact={compact} label="Time" value={formatTime(questLevel?.value?.time_limit?.value)} />
         </EntityDetailStatList>
       </EntityDetailSection>
     </div>
@@ -118,13 +121,14 @@ export const QuestEntityDetail = ({
   layout = "default",
   layoutVariant,
 }: QuestEntityDetailProps) => {
-  const resolvedVariant: EntityDetailLayoutVariant = layoutVariant ?? (layout === "banner" ? "banner" : compact ? "hud" : "default");
-  const density = compact || resolvedVariant === "hud" ? "compact" : "cozy";
-  const minimizeCopy = resolvedVariant === "hud" || compact;
+  const resolvedVariant: EntityDetailLayoutVariant = layoutVariant ?? (layout === "banner" ? "banner" : "default");
 
   return (
-    <EntityDetailLayoutProvider variant={resolvedVariant} density={density} minimizeCopy={minimizeCopy}>
-      <QuestEntityDetailContent questEntityId={questEntityId} className={className} />
-    </EntityDetailLayoutProvider>
+    <QuestEntityDetailContent
+      questEntityId={questEntityId}
+      className={className}
+      compact={compact}
+      variant={resolvedVariant}
+    />
   );
 };
