@@ -6,18 +6,11 @@ import { Leva } from "leva";
 import { lazy, Suspense } from "react";
 import { env } from "../../../env";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
-import { StoryEventStream } from "../features/story-events";
 import { BlitzSetHyperstructureShareholdersTo100 } from "../features/world/components/hyperstructures/blitz-hyperstructure-shareholder";
 import { StoreManagers } from "../store-managers";
 import { TransferAutomationManager } from "../features/infrastructure/automation/transfer-automation-manager";
 
 // Lazy load components
-const SelectedArmy = lazy(() =>
-  import("../features/world/components/actions/selected-worldmap-entity").then((module) => ({
-    default: module.SelectedWorldmapEntity,
-  })),
-);
-
 const ActionInfo = lazy(() =>
   import("../features/world/components/actions/action-info").then((module) => ({ default: module.ActionInfo })),
 );
@@ -33,13 +26,6 @@ const WorldContextMenu = lazy(() =>
 );
 
 const TopCenterContainer = lazy(() => import("../shared/containers/top-center-container"));
-const BottomLeftContainer = lazy(() =>
-  import("../shared/containers/bottom-left-container").then((module) => ({ default: module.BottomLeftContainer })),
-);
-const BottomRightContainer = lazy(() =>
-  import("../shared/containers/bottom-right-container").then((module) => ({ default: module.BottomRightContainer })),
-);
-
 const LeftMiddleContainer = lazy(() => import("../shared/containers/left-middle-container"));
 const RightMiddleContainer = lazy(() => import("../shared/containers/right-middle-container"));
 const TopLeftContainer = lazy(() => import("../shared/containers/top-left-container"));
@@ -48,9 +34,6 @@ const Tooltip = lazy(() =>
 );
 const TopMiddleNavigation = lazy(() =>
   import("../features/world/containers/top-navigation").then((module) => ({ default: module.TopNavigation })),
-);
-const BottomMiddleContainer = lazy(() =>
-  import("../shared/containers/bottom-middle-container").then((module) => ({ default: module.BottomMiddleContainer })),
 );
 const LeftNavigationModule = lazy(() =>
   import("../features/world/containers/left-navigation-module").then((module) => ({
@@ -67,21 +50,15 @@ const TopLeftNavigation = lazy(() =>
     default: module.TopLeftNavigation,
   })),
 );
-const MiniMapNavigation = lazy(() =>
-  import("../features/world/containers/mini-map-navigation/mini-map-navigation").then((module) => ({
-    default: module.MiniMapNavigation,
+const BottomHud = lazy(() =>
+  import("../features/world/components/hud-bottom/bottom-hud").then((module) => ({
+    default: module.BottomHud,
   })),
 );
 
 const RealmTransferManager = lazy(() =>
   import("../features/economy/resources").then((module) => ({
     default: module.RealmTransferManager,
-  })),
-);
-
-const PlayerRelicTray = lazy(() =>
-  import("../features/relics/components/player-relic-tray").then((module) => ({
-    default: module.PlayerRelicTray,
   })),
 );
 
@@ -110,8 +87,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
           <RealmTransferManager zIndex={100} />
           <PlayOverlayManager backgroundImage={backgroundImage} />
           <WorldInteractiveLayers />
-
-          <StoryEventStream />
 
           <Leva hidden={!env.VITE_PUBLIC_GRAPHICS_DEV} collapsed titleBar={{ position: { x: 0, y: 50 } }} />
           <Tooltip />
@@ -163,25 +138,15 @@ const WorldHud = () => (
       <TopMiddleNavigation />
     </TopCenterContainer>
 
-    <BottomMiddleContainer>
-      <SelectedArmy />
-    </BottomMiddleContainer>
-
-    <BottomLeftContainer>
-      <MiniMapNavigation />
-    </BottomLeftContainer>
-
     <RightMiddleContainer>
       <RightNavigationModule />
     </RightMiddleContainer>
 
-    <BottomRightContainer>
-      <PlayerRelicTray />
-    </BottomRightContainer>
-
     <TopLeftContainer>
       <TopLeftNavigation />
     </TopLeftContainer>
+
+    <BottomHud />
   </div>
 );
 

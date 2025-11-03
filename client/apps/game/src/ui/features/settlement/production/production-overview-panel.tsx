@@ -13,7 +13,8 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo, useQuery } from "@bibliothecadao/react";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
-import { useCallback, useEffect, useMemo, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { Search } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 
 const formatTimestamp = (timestamp?: number) => {
   if (!timestamp) return "Never";
@@ -90,7 +91,8 @@ type ResourceProductionMetrics = {
 type RealmCard = {
   id: string;
   name: string;
-  type: string;
+  typeLabel: string;
+  entityType: "realm" | "village";
   resourceIds: ResourcesIds[];
   position: { x: number; y: number };
   lastRun?: number;
@@ -99,6 +101,8 @@ type RealmCard = {
 };
 
 export const ProductionOverviewPanel = () => {
+  const [activeTab, setActiveTab] = useState<"realm" | "village">("realm");
+  const [searchTerm, setSearchTerm] = useState("");
   const automationRealms = useAutomationStore((state) => state.realms);
   const upsertRealm = useAutomationStore((state) => state.upsertRealm);
   const removeRealm = useAutomationStore((state) => state.removeRealm);
@@ -107,6 +111,7 @@ export const ProductionOverviewPanel = () => {
 
   const playerRealms = usePlayerOwnedRealmsInfo();
   const playerVillages = usePlayerOwnedVillagesInfo();
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
   const toggleModal = useUIStore((state) => state.toggleModal);
   const {
     setup,
@@ -118,6 +123,22 @@ export const ProductionOverviewPanel = () => {
   const handleToggleRealm = useCallback((realmId: string) => {
     setExpandedRealmId((current) => (current === realmId ? null : realmId));
   }, []);
+  const autoSelectionRef = useRef<string | null>(null);
+
+  const selectedStructureType = useMemo(() => {
+    if (structureEntityId === 0) {
+      return null;
+    }
+    const targetId = String(structureEntityId);
+    if (playerVillages.some((village) => String(village.entityId) === targetId)) {
+      return StructureType.Village;
+    }
+    if (playerRealms.some((realm) => String(realm.entityId) === targetId)) {
+      return StructureType.Realm;
+    }
+    return null;
+  }, [structureEntityId, playerVillages, playerRealms]);
+  const isCampSelected = selectedStructureType === StructureType.Village;
 
   useEffect(() => {
     if (!hydrated) return;
@@ -362,7 +383,8 @@ export const ProductionOverviewPanel = () => {
       cards.push({
         id: String(realm.entityId),
         name: realmName,
-        type: entityType === "village" ? "Village" : "Realm",
+        entityType,
+        typeLabel: entityType === "village" ? (isBlitz ? "Camp" : "Village") : "Realm",
         position: { x: realm.position.x, y: realm.position.y },
         resourceIds: displayedResourceIds,
         lastRun: automation?.lastExecution?.executedAt,
@@ -376,6 +398,82 @@ export const ProductionOverviewPanel = () => {
     return cards.sort((a, b) => a.name.localeCompare(b.name));
   }, [automationRealms, isBlitz, playerRealms, playerVillages]);
 
+  const filteredCards = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    const matches = realmCards.filter((card) => {
+      if (activeTab === "realm") {
+        return card.entityType === "realm";
+      }
+      if (activeTab === "village") {
+        return card.entityType === "village";
+      }
+      return true;
+    });
+
+    const byName = matches.filter((card) => {
+      if (!normalizedSearch) return true;
+      return card.name.toLowerCase().includes(normalizedSearch);
+    });
+
+    return byName;
+  }, [realmCards, activeTab, searchTerm]);
+
+  const totals = useMemo(
+    () =>
+      realmCards.reduce(
+        (acc, card) => {
+          if (card.entityType === "realm") {
+            acc.realms += 1;
+          } else if (card.entityType === "village") {
+            acc.villages += 1;
+          }
+          return acc;
+        },
+        { realms: 0, villages: 0 },
+      ),
+    [realmCards],
+  );
+
+  const autoSelectionKey = useMemo(() => {
+    if (structureEntityId === 0) {
+      return "none";
+    }
+    const baseKey = `${structureEntityId}-${isCampSelected ? "village" : "realm"}`;
+    const villageFlag = totals.villages > 0 ? "v1" : "v0";
+    const realmFlag = totals.realms > 0 ? "r1" : "r0";
+    return `${baseKey}-${villageFlag}-${realmFlag}`;
+  }, [structureEntityId, isCampSelected, totals.villages, totals.realms]);
+
+  useEffect(() => {
+    if (structureEntityId === 0) {
+      autoSelectionRef.current = "none";
+      return;
+    }
+
+    if (autoSelectionRef.current === autoSelectionKey) {
+      return;
+    }
+
+    autoSelectionRef.current = autoSelectionKey;
+
+    if (isCampSelected) {
+      if (totals.villages > 0 && activeTab !== "village") {
+        setActiveTab("village");
+      }
+      return;
+    }
+
+    if (totals.realms > 0 && activeTab !== "realm") {
+      setActiveTab("realm");
+    }
+  }, [activeTab, autoSelectionKey, isCampSelected, structureEntityId, totals.realms, totals.villages]);
+
+  useEffect(() => {
+    if (totals.villages === 0 && activeTab === "village") {
+      setActiveTab("realm");
+    }
+  }, [activeTab, totals.villages]);
+
   return (
     <div className="flex flex-col gap-3">
       <div>
@@ -384,13 +482,58 @@ export const ProductionOverviewPanel = () => {
           Tap any realm to inspect recent production, or click Modify to update the production automation.
         </p>
       </div>
+      <div className="flex items-center gap-2">
+        {[
+          { value: "realm" as const, label: `Realms (${totals.realms})`, disabled: false },
+          {
+            value: "village" as const,
+            label: `${isBlitz ? "Camps" : "Villages"} (${totals.villages})`,
+            disabled: totals.villages === 0,
+          },
+        ].map((tab) => (
+          <button
+            key={tab.value}
+            type="button"
+            onClick={() => {
+              if (tab.disabled) return;
+              setActiveTab(tab.value);
+            }}
+            disabled={tab.disabled}
+            className={`rounded border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide transition ${
+              activeTab === tab.value
+                ? "border-gold/60 bg-black/25 text-gold"
+                : tab.disabled
+                  ? "border-gold/20 text-gold/40 cursor-not-allowed"
+                  : "border-gold/20 text-gold/60 hover:text-gold"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:w-48">
+          <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gold/60" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Filter by name"
+            className="w-full rounded border border-gold/30 bg-black/20 py-1 pl-7 pr-3 text-[11px] text-gold placeholder:text-gold/60 transition focus:border-gold/60 focus:outline-none"
+          />
+        </div>
+      </div>
       {realmCards.length === 0 ? (
         <div className="rounded border border-gold/20 bg-black/15 p-3 text-xs text-gold/70">
           No production configured yet. Use Modify to set up automation.
         </div>
+      ) : filteredCards.length === 0 ? (
+        <div className="rounded border border-gold/20 bg-black/15 p-3 text-xs text-gold/70">
+          No matches found. Adjust the filters to see results.
+        </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {realmCards.map((card) => {
+          {filteredCards.map((card) => {
             const isExpanded = expandedRealmId === card.id;
             const statusLabel = card.statusLabel;
             const handleKeyToggle = (event: ReactKeyboardEvent<HTMLDivElement>) => {
@@ -416,7 +559,7 @@ export const ProductionOverviewPanel = () => {
                   <div className="flex flex-col gap-1">
                     <span className="font-semibold text-gold/90">{card.name}</span>
                     <div className="flex items-center gap-2 text-[10px] uppercase tracking-wide text-gold/50">
-                      <span>{card.type}</span>
+                      <span>{card.typeLabel}</span>
                       <span className="text-gold/40">●</span>
                       <span>{isExpanded ? "Tap to hide" : "Tap to expand"}</span>
                     </div>
