@@ -76,6 +76,14 @@ jobs:
           sudo mv sozo /usr/local/bin/
           sozo --version
 
+      - name: Setup Scarb (for sozo metadata)
+        uses: software-mansion/setup-scarb@v1
+        with:
+          scarb-version: "dev-2025-09-05"
+      - name: Verify Scarb
+        run: |
+          scarb --version
+
       - name: Orchestrate (Bun TS)
         env:
           FACTORY_ADDRESS: ${{ github.event.inputs.factory_orchestrator_factory_address || vars.FACTORY_ORCHESTRATOR_FACTORY_ADDRESS }}
