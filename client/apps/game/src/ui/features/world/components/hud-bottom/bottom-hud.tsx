@@ -14,7 +14,7 @@ interface HudSlotProps {
 }
 
 const HudSlot = ({ children, className }: HudSlotProps) => (
-  <div className={`flex h-full min-h-0 flex-1 flex-col gap-3 overflow-hidden ${className ?? ""}`}>{children}</div>
+  <div className={`flex h-full min-h-0 flex-1 flex-col gap-3 overflow-auto ${className ?? ""}`}>{children}</div>
 );
 
 export const BottomHud = () => {
