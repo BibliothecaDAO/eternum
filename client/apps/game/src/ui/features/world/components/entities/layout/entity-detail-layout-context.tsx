@@ -35,15 +35,10 @@ export const EntityDetailLayoutProvider = ({
       resolvedDensity = density;
     } else {
       resolvedDensity =
-        resolvedVariant === "hud"
-          ? "compact"
-          : resolvedVariant === "banner"
-            ? "cozy"
-            : DEFAULT_LAYOUT.density;
+        resolvedVariant === "hud" ? "compact" : resolvedVariant === "banner" ? "cozy" : DEFAULT_LAYOUT.density;
     }
 
-    const resolvedMinimizeCopy =
-      typeof minimizeCopy === "boolean" ? minimizeCopy : resolvedVariant === "hud";
+    const resolvedMinimizeCopy = typeof minimizeCopy === "boolean" ? minimizeCopy : resolvedVariant === "hud";
 
     return {
       variant: resolvedVariant,

@@ -10,6 +10,7 @@ import {
   isRelic,
   RelicRecipientType,
   resources as resourceDefs,
+  ResourcesIds,
 } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
 import { Sparkles } from "lucide-react";
@@ -111,8 +112,6 @@ export const CompactEntityInventory = memo(
         <div className={cn(baseGrid)}>
           {effectiveItems.map((item) => {
             const resourceDef = resourceDefs.find((r) => r.id === item.resourceId);
-            const iconTrait = resourceDef?.trait ?? "";
-
             const itemClasses = cn(
               "flex h-full w-full flex-col items-center justify-center rounded-md border text-center",
               compactItemClass,
@@ -125,7 +124,7 @@ export const CompactEntityInventory = memo(
 
             return (
               <div key={`inventory-item-${item.resourceId}`} className={itemClasses}>
-                <ResourceIcon resource={iconTrait} size={iconSize} withTooltip={false} />
+                <ResourceIcon resource={ResourcesIds[item.resourceId]} size={iconSize} withTooltip={false} />
                 <span className={cn(amountClass, "font-semibold text-gold/90")}>{currencyFormat(item.amount, 0)}</span>
                 {showLabels && resourceDef && (
                   <span className="text-[9px] text-gold/60 truncate" title={resourceDef.trait}>
