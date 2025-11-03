@@ -1,12 +1,5 @@
 [
   {
-    "name": "bltz-bold-dark-94",
-    "slotTimestamp": 1762162200,
-    "deployed": true,
-    "configured": true,
-    "indexed": true
-  },
-  {
     "name": "bltz-rift-fate-31",
     "slotTimestamp": 1762183800,
     "deployed": true,
@@ -23,6 +16,13 @@
   {
     "name": "bltz-epic-rush-19",
     "slotTimestamp": 1762216200,
+    "deployed": true,
+    "configured": true,
+    "indexed": true
+  },
+  {
+    "name": "bltz-dark-zeal-18",
+    "slotTimestamp": 1762248600,
     "deployed": true,
     "configured": true,
     "indexed": true
