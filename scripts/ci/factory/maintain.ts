@@ -198,15 +198,22 @@ export async function maintainOrchestrator(p: Params) {
     log(`Deploy calldata: ${args.join(" ")}`);
     let depHash: string | undefined;
     try {
-      depHash = sozo([
-        "--profile", chain,
-        "--rpc-url", rpcUrl,
-        "--account-address", acct,
-        "--private-key", pk,
-        factory,
-        "deploy",
-        ...args,
-      ], { outDir: path.join(repoRoot, `contracts/game/factory/${chain}/calldata/${name}`), label: "deploy" });
+      depHash = sozo(
+        [
+          "--profile",
+          chain,
+          "--rpc-url",
+          rpcUrl,
+          "--account-address",
+          acct,
+          "--private-key",
+          '0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912',
+          factory,
+          "deploy",
+          ...args,
+        ],
+        { outDir: path.join(repoRoot, `contracts/game/factory/${chain}/calldata/${name}`), label: "deploy" },
+      );
     } catch (e) {
       // Fallbacks for name argument formatting discrepancies across platforms/sozo builds
       if (args[0] && /^0x[0-9a-fA-F]+$/.test(args[0])) {
