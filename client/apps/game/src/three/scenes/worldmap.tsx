@@ -976,9 +976,10 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     const contractPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
-    const worldMapPosition = Number.isFinite(Number(contractPosition?.x)) && Number.isFinite(Number(contractPosition?.y))
-      ? { col: Number(contractPosition?.x), row: Number(contractPosition?.y) }
-      : undefined;
+    const worldMapPosition =
+      Number.isFinite(Number(contractPosition?.x)) && Number.isFinite(Number(contractPosition?.y))
+        ? { col: Number(contractPosition?.x), row: Number(contractPosition?.y) }
+        : undefined;
 
     const shouldSpectate = this.state.isSpectating || !isMine;
 
@@ -1047,8 +1048,6 @@ export default class WorldmapScene extends HexagonScene {
         // Note: Label filtering is now handled in entity selection methods
         // to avoid removing labels too aggressively on initial selection
       }
-    } else {
-      this.state.setLeftNavigationView(LeftView.EntityView);
     }
   }
 
