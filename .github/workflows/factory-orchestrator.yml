@@ -68,14 +68,6 @@ jobs:
           pnpm install
           pnpm build:packages
 
-      - name: Install sozo
-        run: |
-          set -euo pipefail
-          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.7.0-alpha.2/dojo_v1.7.0-alpha.2_linux_amd64.tar.gz
-          tar -xzf dojo-linux-x86_64.tar.gz
-          sudo mv sozo /usr/local/bin/
-          sozo --version
-
       - name: Setup Scarb (for sozo metadata)
         uses: software-mansion/setup-scarb@v1
         with:
@@ -83,6 +75,14 @@ jobs:
       - name: Verify Scarb
         run: |
           scarb --version
+
+      - name: Install sozo
+        run: |
+          set -euo pipefail
+          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.7.0-alpha.2/dojo_v1.7.0-alpha.2_linux_amd64.tar.gz
+          tar -xzf dojo-linux-x86_64.tar.gz
+          sudo mv sozo /usr/local/bin/
+          sozo --version
 
       - name: Orchestrate (Bun TS)
         env:
