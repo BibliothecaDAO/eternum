@@ -1,8 +1,10 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { playResourceSound } from "@/three/sound/utils";
+import { isAddressEqualToAccount } from "@/three/utils";
 import { LeftView, RightView } from "@/types";
 import { UnifiedArmyCreationModal } from "@/ui/features/military/components/unified-army-creation-modal";
 import { SetupResult } from "@bibliothecadao/dojo";
+import { Position } from "@bibliothecadao/eternum";
 import { BuildingType, HexEntityInfo, HexPosition, ResourcesIds } from "@bibliothecadao/types";
 import { SceneName } from "../../types/common";
 import { navigateToStructure } from "../../utils/navigation";
@@ -29,14 +31,32 @@ export const openStructureContextMenu = ({
 }: OpenStructureContextMenuParams) => {
   const uiStore = useUIStore.getState();
   const idString = structure.id.toString();
+  const isOwner = isAddressEqualToAccount(structure.owner);
 
   const openArmyCreationModal = (isExplorer: boolean) => {
+    if (!isOwner) {
+      return;
+    }
     uiStore.setStructureEntityId(structure.id);
     uiStore.toggleModal(<UnifiedArmyCreationModal structureId={Number(structure.id)} isExplorer={isExplorer} />);
   };
 
   const selectConstructionBuilding = (building: BuildingType, view: LeftView, resource?: ResourcesIds) => {
-    uiStore.setStructureEntityId(structure.id);
+    const contractPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const col = Number(contractPosition?.x);
+    const row = Number(contractPosition?.y);
+    const worldMapPosition = Number.isFinite(col) && Number.isFinite(row) ? { col, row } : undefined;
+
+    if (!isOwner) {
+      uiStore.setStructureEntityId(structure.id, {
+        spectator: true,
+        worldMapPosition,
+      });
+      navigateToStructure(hexCoords.col, hexCoords.row, "hex");
+      return;
+    }
+
+    uiStore.setStructureEntityId(structure.id, { worldMapPosition });
     navigateToStructure(hexCoords.col, hexCoords.row, "hex");
     uiStore.setSelectedBuilding(building);
     uiStore.setPreviewBuilding(resource !== undefined ? { type: building, resource } : { type: building });

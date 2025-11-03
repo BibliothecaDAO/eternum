@@ -1,16 +1,19 @@
-import { memo } from "react";
 import { Eye, Loader, RefreshCw } from "lucide-react";
+import { memo } from "react";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CompactDefenseDisplay } from "@/ui/features/military";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
+import { StructureUpgradeButton } from "@/ui/modules/entity-details/components/structure-upgrade-button";
+import { ID, RelicRecipientType } from "@bibliothecadao/types";
+import { ImmunityTimer } from "../structures/immunity-timer";
 import { ActiveRelicEffects } from "./active-relic-effects";
 import { EntityInventoryTabs } from "./entity-inventory-tabs";
 import { StructureProductionPanel } from "./structure-production-panel";
-import { ImmunityTimer } from "../structures/immunity-timer";
-import { StructureUpgradeButton } from "@/ui/modules/entity-details/components/structure-upgrade-button";
-import { RelicRecipientType, ID } from "@bibliothecadao/types";
 
+import { useGoToStructure } from "@/hooks/helpers/use-navigate";
+import { Position } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { useStructureEntityDetail } from "./hooks/use-structure-entity-detail";
 
 export interface StructureEntityDetailProps {
@@ -29,6 +32,7 @@ export const StructureEntityDetail = memo(
     maxInventory = Infinity,
     showButtons = false,
   }: StructureEntityDetailProps) => {
+    const { setup } = useDojo();
     const {
       structure,
       structureDetails,
@@ -55,6 +59,7 @@ export const StructureEntityDetail = memo(
       handleViewStructure,
       structureEntityIdNumber,
     } = useStructureEntityDetail({ structureEntityId });
+    const goToStructure = useGoToStructure(setup);
 
     if (isLoadingStructure) {
       return (
@@ -123,11 +128,20 @@ export const StructureEntityDetail = memo(
                       >
                         <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
                       </button>
-                      {isMine && (
-                        <button onClick={handleViewStructure} className={standardActionClasses} title="View structure">
-                          <Eye className="h-4 w-4" />
-                        </button>
-                      )}
+                      <button
+                        onClick={() =>
+                          void goToStructure(
+                            structureEntityId,
+                            new Position({ x: structure.base.coord_x, y: structure.base.coord_y }),
+                            false,
+                            { spectator: !isMine },
+                          )
+                        }
+                        className={standardActionClasses}
+                        title={isMine ? "View structure" : "Spectate structure"}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
                     </div>
                     {structureEntityIdNumber > 0 && (
                       <StructureUpgradeButton

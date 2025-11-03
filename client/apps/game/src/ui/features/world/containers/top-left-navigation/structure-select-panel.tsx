@@ -8,18 +8,18 @@ import type { ClientComponents, ID, Structure } from "@bibliothecadao/types";
 import {
   BlitzStructureTypeToNameMapping,
   EternumStructureTypeToNameMapping,
-  ID as toEntityId,
   RealmLevels,
   StructureType,
+  ID as toEntityId,
 } from "@bibliothecadao/types";
 import type { ComponentValue } from "@dojoengine/recs";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
-  Crown,
-  EyeIcon,
   ArrowDownWideNarrow,
   ArrowUpWideNarrow,
+  Crown,
+  EyeIcon,
   Landmark,
   Palette,
   Pencil,
@@ -321,18 +321,22 @@ export const StructureSelectPanel = memo(
     }, [selectOpen]);
 
     if (!selectedStructure.isMine) {
+      const spectatorName = selectedStructure.structure
+        ? getStructureName(selectedStructure.structure, isBlitz).name
+        : "";
+
       return (
         <div className="structure-name-selector self-center flex justify-between w-full">
-          <div className="w-full px-4 py-2">
-            <h5 className="flex items-center gap-4 truncate">
+          <div className="w-full px-4 py-2 flex flex-col gap-2">
+            <div className="flex items-center gap-3 truncate">
               <>
                 {getStructureIcon(selectedStructure)}
                 {selectedGroupConfig && <span className={`h-2 w-2 rounded-full ${selectedGroupConfig.dotClass}`} />}
-                <span className={selectedGroupConfig ? selectedGroupConfig.textClass : ""}>
-                  {selectedStructure.structure ? getStructureName(selectedStructure.structure, isBlitz).name : ""}
+                <span className={`truncate ${selectedGroupConfig ? selectedGroupConfig.textClass : ""}`}>
+                  {spectatorName}
                 </span>
               </>
-            </h5>
+            </div>
           </div>
         </div>
       );
