@@ -21,16 +21,19 @@ interface Params {
 
 const repoRoot = path.resolve(__dirname ?? import.meta.dir, "../../../");
 const gameDir = path.join(repoRoot, "contracts/game");
+const manifestFile = path.join(gameDir, "Scarb.toml");
 
 const ts = () => new Date().toISOString().split("T")[1].replace("Z", "Z");
 const log = (m: string) => console.log(`[${ts()}] ${m}`);
 const fmt = (epoch: number) => new Date(epoch * 1000).toISOString().replace(".000Z", "Z");
 
 function sozo(args: string[]) {
-  const res = spawnSync("sozo", ["execute", "--manifest-path", gameDir, ...args], {
-    cwd: gameDir,
+  const env = { ...process.env, SCARB: process.env.SCARB || "scarb" } as NodeJS.ProcessEnv;
+  const res = spawnSync("sozo", ["execute", "--manifest-path", manifestFile, ...args], {
+    cwd: repoRoot,
     encoding: "utf-8",
     stdio: ["ignore", "pipe", "pipe"],
+    env,
   });
   const out = (res.stdout || "") + (res.stderr || "");
   // echo sanitized sozo output
