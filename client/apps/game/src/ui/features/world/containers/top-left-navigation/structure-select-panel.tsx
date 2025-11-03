@@ -6,8 +6,8 @@ import type { ClientComponents, ID, Structure } from "@bibliothecadao/types";
 import {
   BlitzStructureTypeToNameMapping,
   EternumStructureTypeToNameMapping,
-  ID as toEntityId,
   StructureType,
+  ID as toEntityId,
 } from "@bibliothecadao/types";
 import type { ComponentValue } from "@dojoengine/recs";
 import {
@@ -278,8 +278,9 @@ export const StructureSelectPanel = memo(
     }, [selectOpen]);
 
     if (!selectedStructure.isMine) {
-      const spectatorName =
-        selectedStructure.structure ? getStructureName(selectedStructure.structure, isBlitz).name : "";
+      const spectatorName = selectedStructure.structure
+        ? getStructureName(selectedStructure.structure, isBlitz).name
+        : "";
 
       return (
         <div className="structure-name-selector self-center flex justify-between w-full">

@@ -3,12 +3,53 @@ import { useCallback } from "react";
 import { Position } from "@bibliothecadao/eternum";
 
 import { getStructuresDataFromTorii } from "@/dojo/queries";
+import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { SetupResult } from "@bibliothecadao/dojo";
 import { useQuery } from "@bibliothecadao/react";
 import { ID } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useUIStore } from "../store/use-ui-store";
+
+const toWorldMapPosition = (position: Position): { col: number; row: number } | undefined => {
+  const positionAny = position as unknown as {
+    getContract?: () => { col?: number; row?: number; x?: number; y?: number };
+    getNormalized?: () => { x?: number; y?: number };
+    col?: number;
+    row?: number;
+    x?: number;
+    y?: number;
+  };
+
+  if (typeof positionAny.getContract === "function") {
+    const contractPosition = positionAny.getContract();
+    const col = Number(contractPosition?.col ?? contractPosition?.x);
+    const row = Number(contractPosition?.row ?? contractPosition?.y);
+
+    if (Number.isFinite(col) && Number.isFinite(row)) {
+      return { col, row };
+    }
+  }
+
+  if (typeof positionAny.getNormalized === "function") {
+    const normalized = positionAny.getNormalized();
+    const col = Number(normalized?.x);
+    const row = Number(normalized?.y);
+
+    if (Number.isFinite(col) && Number.isFinite(row)) {
+      return { col, row };
+    }
+  }
+
+  const col = Number(positionAny?.col ?? positionAny?.x);
+  const row = Number(positionAny?.row ?? positionAny?.y);
+
+  if (Number.isFinite(col) && Number.isFinite(row)) {
+    return { col, row };
+  }
+
+  return undefined;
+};
 
 const useNavigateToHexView = () => {
   const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
@@ -43,8 +84,8 @@ export const useNavigateToMapView = () => {
 };
 
 export const useSpectatorModeClick = (setupResult: SetupResult | null) => {
-  const spectatedStructureEntityId = useUIStore((state) => state.spectatedStructureEntityId);
-  const spectatorFallbackStructure = useUIStore((state) => state.spectatorFallbackStructure);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const worldMapReturnPosition = useUIStore((state) => state.worldMapReturnPosition);
   const goToStructure = useGoToStructure(setupResult);
 
   return useCallback(() => {
@@ -52,9 +93,7 @@ export const useSpectatorModeClick = (setupResult: SetupResult | null) => {
       return;
     }
 
-    const targetEntityId = spectatedStructureEntityId ?? spectatorFallbackStructure?.entityId;
-
-    if (!targetEntityId) {
+    if (!structureEntityId || structureEntityId === UNDEFINED_STRUCTURE_ENTITY_ID) {
       return;
     }
 
@@ -63,9 +102,9 @@ export const useSpectatorModeClick = (setupResult: SetupResult | null) => {
     try {
       structure =
         setupResult.components.Structure &&
-        getComponentValue(setupResult.components.Structure, getEntityIdFromKeys([BigInt(targetEntityId)]));
+        getComponentValue(setupResult.components.Structure, getEntityIdFromKeys([BigInt(structureEntityId)]));
     } catch (error) {
-      console.warn("[useSpectatorModeClick] Unable to resolve structure", targetEntityId, error);
+      console.warn("[useSpectatorModeClick] Unable to resolve structure", structureEntityId, error);
     }
 
     if (structure) {
@@ -75,15 +114,13 @@ export const useSpectatorModeClick = (setupResult: SetupResult | null) => {
       return;
     }
 
-    if (spectatorFallbackStructure && spectatorFallbackStructure.entityId === targetEntityId) {
-      const { col, row } = spectatorFallbackStructure.position;
-
-      goToStructure(spectatorFallbackStructure.entityId, new Position({ x: col, y: row }), true, {
+    if (worldMapReturnPosition) {
+      const { col, row } = worldMapReturnPosition;
+      goToStructure(structureEntityId, new Position({ x: col, y: row }), true, {
         spectator: true,
       });
-      return;
     }
-  }, [goToStructure, setupResult, spectatedStructureEntityId, spectatorFallbackStructure]);
+  }, [goToStructure, setupResult, structureEntityId, worldMapReturnPosition]);
 };
 
 export const useGoToStructure = (setupResult: SetupResult | null) => {
@@ -92,16 +129,12 @@ export const useGoToStructure = (setupResult: SetupResult | null) => {
   const navigateToMapView = useNavigateToMapView();
 
   const ensureStructureSynced = useCallback(
-    async (structureEntityId: ID, position: Position) => {
+    async (structureEntityId: ID, position: Position, worldMapPosition?: { col: number; row: number }) => {
       const components = setupResult?.components;
       const toriiClient = setupResult?.network?.toriiClient;
       const contractComponents = setupResult?.network?.contractComponents;
 
-      if (
-        !setupResult?.components?.Structure ||
-        !setupResult?.network?.toriiClient ||
-        !setupResult?.network?.contractComponents
-      ) {
+      if (!components?.Structure || !toriiClient || !contractComponents) {
         return;
       }
 
@@ -118,18 +151,14 @@ export const useGoToStructure = (setupResult: SetupResult | null) => {
         return;
       }
 
-      const rawPosition =
-        typeof (position as unknown as { getNormalized?: () => { x: number; y: number } }).getNormalized === "function"
-          ? (position as unknown as { getNormalized: () => { x: number; y: number } }).getNormalized()
-          : (position as unknown as { x?: number; y?: number; col?: number; row?: number });
+      const effectivePosition = worldMapPosition ?? toWorldMapPosition(position);
 
-      const col = Number(rawPosition?.x || 0);
-      const row = Number(rawPosition?.y || 0);
-
-      if (!Number.isFinite(col) || !Number.isFinite(row)) {
+      if (!effectivePosition) {
         console.warn("[useGoToStructure] Unable to determine structure coordinates for", structureEntityId);
         return;
       }
+
+      const { col, row } = effectivePosition;
 
       const numericId = Number(structureEntityId);
       if (!Number.isFinite(numericId)) {
@@ -156,43 +185,23 @@ export const useGoToStructure = (setupResult: SetupResult | null) => {
     [setupResult],
   );
 
-  return async (structureEntityId: ID, position: Position, isMapView: boolean, options?: { spectator?: boolean }) => {
+  return async (
+    structureEntityId: ID,
+    position: Position,
+    isMapView: boolean,
+    options?: { spectator?: boolean },
+  ) => {
+    const worldMapPosition = toWorldMapPosition(position);
+
     try {
-      await ensureStructureSynced(structureEntityId, position);
+      await ensureStructureSynced(structureEntityId, position, worldMapPosition);
     } catch (error) {
       console.error("[useGoToStructure] Unexpected error while syncing structure", error);
     }
 
-    let spectatorPosition: { col: number; row: number } | undefined;
-
-    if (options?.spectator) {
-      const positionAny = position as unknown as {
-        getContract?: () => { col?: number; row?: number; x?: number; y?: number };
-        col?: number;
-        row?: number;
-        x?: number;
-        y?: number;
-      };
-
-      if (typeof positionAny.getContract === "function") {
-        const contractPosition = positionAny.getContract();
-        const col = Number(contractPosition?.col ?? contractPosition?.x);
-        const row = Number(contractPosition?.row ?? contractPosition?.y);
-        if (Number.isFinite(col) && Number.isFinite(row)) {
-          spectatorPosition = { col, row };
-        }
-      } else {
-        const col = Number(positionAny?.col ?? positionAny?.x);
-        const row = Number(positionAny?.row ?? positionAny?.y);
-        if (Number.isFinite(col) && Number.isFinite(row)) {
-          spectatorPosition = { col, row };
-        }
-      }
-    }
-
     setStructureEntityId(structureEntityId, {
       spectator: options?.spectator ?? false,
-      spectatorPosition,
+      worldMapPosition,
     });
 
     if (isMapView) {

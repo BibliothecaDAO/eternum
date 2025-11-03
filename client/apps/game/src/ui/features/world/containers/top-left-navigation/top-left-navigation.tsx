@@ -51,9 +51,10 @@ export const TopLeftNavigation = memo(() => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const followArmyCombats = useUIStore((state) => state.followArmyCombats);
   const setFollowArmyCombats = useUIStore((state) => state.setFollowArmyCombats);
-  const spectatedStructureEntityId = useUIStore((state) => state.spectatedStructureEntityId);
-  const spectatorReturnPosition = useUIStore((state) => state.spectatorReturnPosition);
-  const controlledStructureEntityId = useUIStore((state) => state.controlledStructureEntityId);
+  const isSpectating = useUIStore((state) => state.isSpectating);
+  const worldMapReturnPosition = useUIStore((state) => state.worldMapReturnPosition);
+  const lastControlledStructureEntityId = useUIStore((state) => state.lastControlledStructureEntityId);
+
   const exitSpectatorMode = useUIStore((state) => state.exitSpectatorMode);
   const isFollowingArmy = useUIStore((state) => state.isFollowingArmy);
   const followingArmyMessage = useUIStore((state) => state.followingArmyMessage);
@@ -76,10 +77,7 @@ export const TopLeftNavigation = memo(() => {
     return new Position(selectedStructure?.position || { x: 0, y: 0 }).getNormalized();
   }, [selectedStructure]);
 
-  console.log("[TopLeftNavigation] selectedStructure:", selectedStructurePosition, selectedStructure);
-
-  const isSpectating =
-    spectatedStructureEntityId !== null && String(spectatedStructureEntityId) === String(structureEntityId);
+  console.log("[TopLeftNavigation] selectedStructure:", lastControlledStructureEntityId);
 
   const goToStructure = useGoToStructure(setup);
   const navigateToMapView = useNavigateToMapView();
@@ -109,27 +107,27 @@ export const TopLeftNavigation = memo(() => {
   }, []);
   const handleReturnToMyRealms = useCallback(() => {
     const fallbackId =
-      controlledStructureEntityId !== UNDEFINED_STRUCTURE_ENTITY_ID
-        ? controlledStructureEntityId
+      lastControlledStructureEntityId !== UNDEFINED_STRUCTURE_ENTITY_ID
+        ? lastControlledStructureEntityId
         : structures[0]?.entityId;
 
-    const spectatorBase =
-      spectatedStructureEntityId &&
-      getComponentValue(setup.components.Structure, getEntityIdFromKeys([BigInt(spectatedStructureEntityId)]))?.base;
+    const spectatedBase = isSpectating
+      ? getComponentValue(setup.components.Structure, getEntityIdFromKeys([BigInt(structureEntityId)]))?.base
+      : null;
 
     const fallbackBase =
       fallbackId !== undefined && fallbackId !== null && fallbackId !== UNDEFINED_STRUCTURE_ENTITY_ID
         ? getComponentValue(setup.components.Structure, getEntityIdFromKeys([BigInt(fallbackId)]))?.base
         : null;
 
-    const storedSpectatorPosition = spectatorReturnPosition;
+    const storedReturnPosition = worldMapReturnPosition;
 
     exitSpectatorMode();
 
-    const mapTarget = spectatorBase
-      ? { x: spectatorBase.coord_x, y: spectatorBase.coord_y }
-      : storedSpectatorPosition
-        ? { x: storedSpectatorPosition.col, y: storedSpectatorPosition.row }
+    const mapTarget = spectatedBase
+      ? { x: spectatedBase.coord_x, y: spectatedBase.coord_y }
+      : storedReturnPosition
+        ? { x: storedReturnPosition.col, y: storedReturnPosition.row }
         : fallbackBase
           ? { x: fallbackBase.coord_x, y: fallbackBase.coord_y }
           : null;
@@ -138,13 +136,14 @@ export const TopLeftNavigation = memo(() => {
       navigateToMapView(new Position({ x: mapTarget.x, y: mapTarget.y }));
     }
   }, [
-    controlledStructureEntityId,
     exitSpectatorMode,
+    isSpectating,
+    lastControlledStructureEntityId,
     navigateToMapView,
     setup.components.Structure,
-    spectatedStructureEntityId,
-    spectatorReturnPosition,
+    structureEntityId,
     structures,
+    worldMapReturnPosition,
   ]);
 
   const handleRequestNameChange = useCallback((structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => {
@@ -208,7 +207,8 @@ export const TopLeftNavigation = memo(() => {
                   const checked = e.target.checked;
                   playClick();
                   goToStructure(
-                    structureEntityId,
+                    // if there's a controlled structure, needs to go back there
+                    lastControlledStructureEntityId || structureEntityId,
                     new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
                     checked,
                   );

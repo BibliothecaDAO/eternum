@@ -42,25 +42,21 @@ export const openStructureContextMenu = ({
   };
 
   const selectConstructionBuilding = (building: BuildingType, view: LeftView, resource?: ResourcesIds) => {
+    const contractPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const col = Number(contractPosition?.col ?? contractPosition?.x);
+    const row = Number(contractPosition?.row ?? contractPosition?.y);
+    const worldMapPosition = Number.isFinite(col) && Number.isFinite(row) ? { col, row } : undefined;
+
     if (!isOwner) {
-      let spectatorPosition: { col: number; row: number } | undefined;
-      const contractPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
-      const col = Number(contractPosition?.col ?? contractPosition?.x);
-      const row = Number(contractPosition?.row ?? contractPosition?.y);
-
-      if (Number.isFinite(col) && Number.isFinite(row)) {
-        spectatorPosition = { col, row };
-      }
-
       uiStore.setStructureEntityId(structure.id, {
         spectator: true,
-        spectatorPosition,
+        worldMapPosition,
       });
       navigateToStructure(hexCoords.col, hexCoords.row, "hex");
       return;
     }
 
-    uiStore.setStructureEntityId(structure.id);
+    uiStore.setStructureEntityId(structure.id, { worldMapPosition });
     navigateToStructure(hexCoords.col, hexCoords.row, "hex");
     uiStore.setSelectedBuilding(building);
     uiStore.setPreviewBuilding(resource !== undefined ? { type: building, resource } : { type: building });

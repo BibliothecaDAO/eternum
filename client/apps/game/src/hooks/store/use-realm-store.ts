@@ -33,12 +33,14 @@ const removeRelicFromCollection = <T extends { entityId: unknown; relics?: Array
 
 export interface RealmStore {
   structureEntityId: ID;
-  controlledStructureEntityId: ID;
-  spectatedStructureEntityId: ID | null;
-  spectatorReturnPosition: { col: number; row: number } | null;
-  spectatorFallbackStructure: { entityId: ID; position: { col: number; row: number } } | null;
-  setStructureEntityId: (structureEntityId: ID, options?: { spectator?: boolean; spectatorPosition?: { col: number; row: number } }) => void;
-  setControlledStructureEntityId: (structureEntityId: ID) => void;
+  lastControlledStructureEntityId: ID;
+  isSpectating: boolean;
+  worldMapReturnPosition: { col: number; row: number } | null;
+  setStructureEntityId: (
+    structureEntityId: ID,
+    options?: { spectator?: boolean; worldMapPosition?: { col: number; row: number } },
+  ) => void;
+  setLastControlledStructureEntityId: (structureEntityId: ID) => void;
   exitSpectatorMode: () => void;
   playerStructures: Structure[];
   setPlayerStructures: (playerStructures: Structure[]) => void;
@@ -59,74 +61,76 @@ export interface RealmStore {
 
 export const createRealmStoreSlice = (set: any) => ({
   structureEntityId: UNDEFINED_STRUCTURE_ENTITY_ID,
-  controlledStructureEntityId: UNDEFINED_STRUCTURE_ENTITY_ID,
-  spectatedStructureEntityId: null,
-  spectatorReturnPosition: null,
-  spectatorFallbackStructure: null,
-  setStructureEntityId: (structureEntityId: ID, options?: { spectator?: boolean; spectatorPosition?: { col: number; row: number } }) =>
+  lastControlledStructureEntityId: UNDEFINED_STRUCTURE_ENTITY_ID,
+  isSpectating: false,
+  worldMapReturnPosition: null,
+  setStructureEntityId: (structureEntityId: ID, options?: { spectator?: boolean; worldMapPosition?: { col: number; row: number } }) =>
     set((state: RealmStore) => {
       const ownsStructure = state.playerStructures.some((structure) =>
         idsMatch(structure.entityId, structureEntityId),
       );
-      const shouldSpectate = ownsStructure ? false : options?.spectator ?? true;
+      const shouldSpectate = options?.spectator ?? !ownsStructure;
+      const currentStructureIsOwned = state.playerStructures.some((structure) =>
+        idsMatch(structure.entityId, state.structureEntityId),
+      );
 
-      const fallbackControlled =
-        state.controlledStructureEntityId !== UNDEFINED_STRUCTURE_ENTITY_ID
-          ? state.controlledStructureEntityId
-          : state.structureEntityId !== UNDEFINED_STRUCTURE_ENTITY_ID
-            ? state.structureEntityId
-            : UNDEFINED_STRUCTURE_ENTITY_ID;
-
-      const nextSpectatorPosition = shouldSpectate ? (options?.spectatorPosition ?? state.spectatorReturnPosition) : null;
-      const nextSpectatorFallbackStructure =
-        shouldSpectate && nextSpectatorPosition
-          ? { entityId: structureEntityId, position: nextSpectatorPosition }
-          : state.spectatorFallbackStructure;
-
-      return {
+      const updates: Partial<RealmStore> = {
         structureEntityId,
-        controlledStructureEntityId: shouldSpectate ? fallbackControlled : structureEntityId,
-        spectatedStructureEntityId: shouldSpectate ? structureEntityId : null,
-        spectatorReturnPosition: nextSpectatorPosition,
-        spectatorFallbackStructure: nextSpectatorFallbackStructure,
-      } as Partial<RealmStore>;
+        isSpectating: shouldSpectate,
+      };
+
+      if (options?.worldMapPosition) {
+        updates.worldMapReturnPosition = options.worldMapPosition;
+      }
+
+      if (shouldSpectate) {
+        if (
+          !state.isSpectating &&
+          currentStructureIsOwned &&
+          state.structureEntityId !== UNDEFINED_STRUCTURE_ENTITY_ID
+        ) {
+          updates.lastControlledStructureEntityId = state.structureEntityId;
+        }
+      } else {
+        updates.lastControlledStructureEntityId = structureEntityId;
+      }
+
+      return updates;
     }),
-  setControlledStructureEntityId: (structureEntityId: ID) =>
+  setLastControlledStructureEntityId: (structureEntityId: ID) =>
     set({
-      controlledStructureEntityId: structureEntityId,
+      lastControlledStructureEntityId: structureEntityId,
       structureEntityId,
-      spectatedStructureEntityId: null,
-      spectatorReturnPosition: null,
+      isSpectating: false,
     }),
   exitSpectatorMode: () =>
     set((state: RealmStore) => {
       const fallback =
-        state.controlledStructureEntityId !== UNDEFINED_STRUCTURE_ENTITY_ID
-          ? state.controlledStructureEntityId
+        state.lastControlledStructureEntityId !== UNDEFINED_STRUCTURE_ENTITY_ID
+          ? state.lastControlledStructureEntityId
           : UNDEFINED_STRUCTURE_ENTITY_ID;
 
       return {
         structureEntityId: fallback,
-        spectatedStructureEntityId: null,
-        spectatorReturnPosition: null,
+        isSpectating: false,
       } as Partial<RealmStore>;
     }),
   playerStructures: [],
   setPlayerStructures: (playerStructures: Structure[]) =>
     set((state: RealmStore) => {
-      const controlledExists = playerStructures.some((structure) =>
-        idsMatch(structure.entityId, state.controlledStructureEntityId),
+      const lastControlledExists = playerStructures.some((structure) =>
+        idsMatch(structure.entityId, state.lastControlledStructureEntityId),
       );
 
       const updates: Partial<RealmStore> = {
         playerStructures,
       };
 
-      if (!controlledExists) {
+      if (!lastControlledExists) {
         const nextControlled = playerStructures[0]?.entityId ?? UNDEFINED_STRUCTURE_ENTITY_ID;
-        updates.controlledStructureEntityId = nextControlled;
+        updates.lastControlledStructureEntityId = nextControlled;
 
-        if (state.spectatedStructureEntityId === null) {
+        if (!state.isSpectating) {
           updates.structureEntityId = nextControlled;
         }
       }

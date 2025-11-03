@@ -975,16 +975,16 @@ export default class WorldmapScene extends HexagonScene {
       console.error("[WorldmapScene] Failed to sync structure before entry", error);
     }
 
-    let spectatorPosition: { col: number; row: number } | undefined;
+    const contractPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const worldMapPosition = Number.isFinite(Number(contractPosition?.x)) && Number.isFinite(Number(contractPosition?.y))
+      ? { col: Number(contractPosition?.x), row: Number(contractPosition?.y) }
+      : undefined;
 
-    if (!isMine) {
-      const contractPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
-      spectatorPosition = { col: contractPosition.x, row: contractPosition.y };
-    }
+    const shouldSpectate = this.state.isSpectating || !isMine;
 
     this.state.setStructureEntityId(structure.id, {
-      spectator: !isMine,
-      spectatorPosition,
+      spectator: shouldSpectate,
+      worldMapPosition,
     });
 
     navigateToStructure(hexCoords.col, hexCoords.row, "hex");
@@ -3154,7 +3154,11 @@ export default class WorldmapScene extends HexagonScene {
       this.handleHexSelection({ col: structure.position.x, row: structure.position.y }, true);
       this.onStructureSelection(structure.entityId, { col: structure.position.x, row: structure.position.y });
       // Set the structure entity ID in the UI store
-      this.state.setStructureEntityId(structure.entityId);
+      const worldMapPosition = { col: Number(structure.position.x), row: Number(structure.position.y) };
+      this.state.setStructureEntityId(structure.entityId, {
+        worldMapPosition,
+        spectator: this.state.isSpectating,
+      });
       const normalizedPosition = new Position({ x: structure.position.x, y: structure.position.y }).getNormalized();
       // Use 0 duration for instant camera teleportation
       this.moveCameraToColRow(normalizedPosition.x, normalizedPosition.y, 0);
