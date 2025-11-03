@@ -131,6 +131,8 @@ export async function maintainOrchestrator(p: Params) {
     const deployPath = path.join(repoRoot, `contracts/game/factory/${chain}/calldata/${name}/deploy_calldata.txt`);
     if (!fs.existsSync(deployPath)) throw new Error(`Missing deploy calldata: ${deployPath}`);
     const args = (await Bun.file(deployPath).text()).trim().split(/\s+/);
+    log(`Deploy calldata file: ${deployPath}`);
+    log(`Deploy calldata: ${args.join(" ")}`);
     const depHash = sozo([
       "--profile", chain,
       "--rpc-url", rpcUrl,
