@@ -1,10 +1,20 @@
 import { calculatePresetAllocations, RealmPresetId } from "@/utils/automation-presets";
+import { configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 const BLOCKED_OUTPUT_RESOURCES: ResourcesIds[] = [ResourcesIds.Wheat, ResourcesIds.Labor];
 const BLOCKED_OUTPUT_RESOURCE_SET = new Set<ResourcesIds>(BLOCKED_OUTPUT_RESOURCES);
+
+const resolveCurrentGameId = (): string => {
+  try {
+    const season = configManager.getSeasonConfig();
+    return `${season.startSettlingAt}-${season.startMainAt}-${season.endAt}`;
+  } catch (_error) {
+    return "unknown";
+  }
+};
 
 export const isAutomationResourceBlocked = (
   resourceId: ResourcesIds,
@@ -86,6 +96,7 @@ interface ProductionAutomationState {
   realms: Record<string, RealmAutomationConfig>;
   nextRunTimestamp: number | null;
   hydrated: boolean;
+  gameId: string;
   upsertRealm: (realmId: string, data?: RealmAutomationInput) => void;
   setRealmPreset: (realmId: string, presetId: RealmPresetId | null) => void;
   setRealmMetadata: (
@@ -111,6 +122,7 @@ interface ProductionAutomationState {
   recordExecution: (realmId: string, summary: RealmAutomationExecutionSummary) => void;
   getRealmConfig: (realmId: string) => RealmAutomationConfig | undefined;
   setHydrated: (value: boolean) => void;
+  pruneForGame: (gameId: string) => void;
 }
 
 const clampPercent = (value: number): number => {
@@ -201,6 +213,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
       realms: {},
       nextRunTimestamp: null,
       hydrated: typeof window === "undefined",
+      gameId: resolveCurrentGameId(),
       upsertRealm: (realmId, data) =>
         set((state) => {
           const existing = state.realms[realmId];
@@ -543,18 +556,35 @@ export const useAutomationStore = create<ProductionAutomationState>()(
         };
       },
       setHydrated: (value) => set({ hydrated: value }),
+      pruneForGame: (gameId) =>
+        set((state) => {
+          if (state.gameId === gameId) return state;
+          return {
+            realms: {},
+            nextRunTimestamp: null,
+            gameId,
+          };
+        }),
     }),
     {
       name: "eternum-production-automation",
       storage: createJSONStorage(() => localStorage),
-      version: 4,
+      version: 5,
       partialize: (state) => ({
         realms: state.realms,
         nextRunTimestamp: state.nextRunTimestamp,
+        gameId: state.gameId,
       }),
       migrate: (persistedState: any) => {
-        const fallback = { realms: {}, nextRunTimestamp: null };
+        const currentGameId = resolveCurrentGameId();
+        const fallback = { realms: {}, nextRunTimestamp: null, gameId: currentGameId };
         if (!persistedState || typeof persistedState !== "object") {
+          return fallback;
+        }
+
+        const persistedGameId =
+          typeof (persistedState as any).gameId === "string" ? (persistedState as any).gameId : null;
+        if (!persistedGameId || persistedGameId !== currentGameId) {
           return fallback;
         }
 
@@ -611,6 +641,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
         const result = {
           realms: nextRealms,
           nextRunTimestamp,
+          gameId: persistedGameId,
         };
         return result;
       },

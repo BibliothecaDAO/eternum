@@ -6,7 +6,13 @@ import {
 } from "@/ui/features/infrastructure/automation/model/automation-processor";
 import { useAutomationStore } from "./store/use-automation-store";
 import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
-import { getStructureName, getIsBlitz, getBlockTimestamp, ResourceManager } from "@bibliothecadao/eternum";
+import {
+  getStructureName,
+  getIsBlitz,
+  getBlockTimestamp,
+  ResourceManager,
+  configManager,
+} from "@bibliothecadao/eternum";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
@@ -32,6 +38,7 @@ export const useAutomation = () => {
   const ensureResourceConfig = useAutomationStore((state) => state.ensureResourceConfig);
   const upsertRealm = useAutomationStore((state) => state.upsertRealm);
   const removeRealm = useAutomationStore((state) => state.removeRealm);
+  const pruneForGame = useAutomationStore((state) => state.pruneForGame);
   const hydrated = useAutomationStore((state) => state.hydrated);
   const processingRef = useRef(false);
   const processRealmsRef = useRef<() => Promise<boolean>>(async () => false);
@@ -49,6 +56,15 @@ export const useAutomation = () => {
   const nextRunBlockTimestampRef = useRef<number>(automationEnabledAtRef.current);
   const scheduleNextCheckRef = useRef<() => void>();
   const automationTimeoutIdRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!components) {
+      return;
+    }
+    const season = configManager.getSeasonConfig();
+    const gameId = `${season.startSettlingAt}-${season.startMainAt}-${season.endAt}`;
+    pruneForGame(gameId);
+  }, [components, pruneForGame]);
 
   useEffect(() => {
     if (!hydrated) return;
