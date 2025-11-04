@@ -1,8 +1,8 @@
 import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure, useSpectatorModeClick } from "@/hooks/helpers/use-navigate";
 import { useSetAddressName } from "@/hooks/helpers/use-set-address-name";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { Position } from "@bibliothecadao/eternum";
 import { WORLD_CONFIG_ID } from "@bibliothecadao/types";
 
@@ -127,10 +127,8 @@ const NoGameState = ({
 }) => {
   const registrationDuration = registrationEndAt - registrationStartAt;
 
-  const {
-    setup: { components },
-  } = useDojo();
-  const onSpectatorModeClick = useSpectatorModeClick(components);
+  const { setup } = useDojo();
+  const onSpectatorModeClick = useSpectatorModeClick(setup);
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 text-center">
@@ -516,12 +514,10 @@ const RegistrationState = ({
   isFeeBalanceLoading: boolean;
   spectateDisabled: boolean;
 }) => {
-  const {
-    setup: { components },
-  } = useDojo();
+  const { setup } = useDojo();
 
   const [isRegistering, setIsRegistering] = useState(false);
-  const onSpectatorModeClick = useSpectatorModeClick(components);
+  const onSpectatorModeClick = useSpectatorModeClick(setup);
 
   const tokenReady = !requiresEntryToken || Boolean(availableEntryTokenId);
 
@@ -637,12 +633,13 @@ const GameActiveState = ({
   spectateDisabled: boolean;
 }) => {
   const {
+    setup,
     setup: { components },
   } = useDojo();
 
-  const goToStructure = useGoToStructure();
+  const goToStructure = useGoToStructure(setup);
   const realmEntities = usePlayerOwnedRealmEntities();
-  const onSpectatorModeClick = useSpectatorModeClick(components);
+  const onSpectatorModeClick = useSpectatorModeClick(setup);
   const [isSettling, setIsSettling] = useState(false);
 
   const handleSettle = async () => {
@@ -663,7 +660,11 @@ const GameActiveState = ({
     const structure = getComponentValue(components.Structure, firstRealm);
     if (!structure) return;
 
-    goToStructure(structure.entity_id, new Position({ x: structure.base.coord_x, y: structure.base.coord_y }), false);
+    void goToStructure(
+      structure.entity_id,
+      new Position({ x: structure.base.coord_x, y: structure.base.coord_y }),
+      false,
+    );
   };
 
   return (

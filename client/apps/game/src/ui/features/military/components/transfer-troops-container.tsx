@@ -156,7 +156,7 @@ export const TransferTroopsContainer = ({
       const slots = getStructureDefenseSlots(structure.category, structure.base.level);
       // If 2 slots, return [2,3]. If 4 slots, return [2,3,4,5].
       // Start guard slots from 3 (so 3+0, 3+1, ...) up to length-1
-      return Array.from({ length: slots }, (_, i) => i + 1);
+      return Array.from({ length: slots }, (_, i) => i);
     };
 
     if (transferDirection === TransferDirection.ExplorerToStructure) {

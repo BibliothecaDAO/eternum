@@ -1,20 +1,20 @@
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { isAutomationResourceBlocked, useAutomationStore } from "@/hooks/store/use-automation-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ProductionModal } from "@/ui/features/settlement";
 import {
-  Position,
   configManager,
   getBlockTimestamp,
   getIsBlitz,
   getStructureName,
+  Position,
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo, useQuery } from "@bibliothecadao/react";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
-import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Search } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 
 const formatTimestamp = (timestamp?: number) => {
   if (!timestamp) return "Never";
@@ -114,10 +114,11 @@ export const ProductionOverviewPanel = () => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const toggleModal = useUIStore((state) => state.toggleModal);
   const {
+    setup,
     setup: { components },
   } = useDojo();
   const isBlitz = getIsBlitz();
-  const goToStructure = useGoToStructure();
+  const goToStructure = useGoToStructure(setup);
   const { isMapView } = useQuery();
   const handleToggleRealm = useCallback((realmId: string) => {
     setExpandedRealmId((current) => (current === realmId ? null : realmId));
@@ -575,7 +576,7 @@ export const ProductionOverviewPanel = () => {
                         const realmIdNum = Number(card.id);
                         if (Number.isFinite(realmIdNum) && card.position) {
                           const position = new Position({ x: card.position.x, y: card.position.y });
-                          goToStructure(realmIdNum, position, isMapView);
+                          void goToStructure(realmIdNum, position, isMapView);
                         }
                         toggleModal(<ProductionModal />);
                       }}
