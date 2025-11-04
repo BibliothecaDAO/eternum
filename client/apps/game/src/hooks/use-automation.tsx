@@ -6,7 +6,13 @@ import {
 } from "@/ui/features/infrastructure/automation/model/automation-processor";
 import { useAutomationStore } from "./store/use-automation-store";
 import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
-import { getStructureName, getIsBlitz, getBlockTimestamp, ResourceManager, configManager } from "@bibliothecadao/eternum";
+import {
+  getStructureName,
+  getIsBlitz,
+  getBlockTimestamp,
+  ResourceManager,
+  configManager,
+} from "@bibliothecadao/eternum";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
