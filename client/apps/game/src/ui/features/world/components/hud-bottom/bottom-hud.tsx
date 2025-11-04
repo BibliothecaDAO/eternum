@@ -4,6 +4,7 @@ import { PlayerRelicTray } from "@/ui/features/relics/components/player-relic-tr
 import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
 import { MiniMapNavigation } from "@/ui/features/world/containers/mini-map-navigation";
 import { useQuery } from "@bibliothecadao/react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { ReactNode } from "react";
 
 import { BottomHudShell, HudPanel } from "./";
@@ -21,36 +22,54 @@ export const BottomHud = () => {
   const { isMapView } = useQuery();
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const isMinimized = useUIStore((state) => state.isBottomHudMinimized);
+  const setIsBottomHudMinimized = useUIStore((state) => state.setIsBottomHudMinimized);
 
   if (!isMapView || showBlankOverlay) {
     return null;
   }
 
   const expandedHeight = "h-[30vh] min-h-[30vh] max-h-[30vh]";
-  const minimizedHeight = "h-[180px] min-h-[180px] max-h-[180px]";
-  const shellClassName = cn(isMinimized ? minimizedHeight : expandedHeight, isMinimized ? "gap-2 py-3" : "gap-3 py-4");
+  const minimizedHeight = "h-[40px] min-h-[40px] max-h-[40px]";
+  const shellClassName = cn(isMinimized ? minimizedHeight : expandedHeight, isMinimized ? "gap-0 pt-0" : "gap-3 pt-4");
+
+  const toggleMinimize = () => {
+    setIsBottomHudMinimized(!isMinimized);
+  };
 
   return (
     <BottomHudShell className={shellClassName}>
-      <div className="flex h-full min-h-0 w-full flex-1 items-stretch gap-3 overflow-hidden">
-        <HudSlot className="flex-[1] min-w-[280px]">
-          <HudPanel className="flex-1 min-h-0">
-            <MiniMapNavigation variant="embedded" className="h-full min-h-0" />
-          </HudPanel>
-        </HudSlot>
+      <button
+        onClick={toggleMinimize}
+        className="pointer-events-auto absolute -top-0 right-4 flex items-center justify-center rounded-lg bg-brown/80 backdrop-blur-sm px-3 py-1 transition-colors hover:bg-brown/90 border border-gold/20"
+        aria-label={isMinimized ? "Maximize HUD" : "Minimize HUD"}
+      >
+        {isMinimized ? (
+          <ChevronUp className="h-4 w-4 text-gold/70" />
+        ) : (
+          <ChevronDown className="h-4 w-4 text-gold/70" />
+        )}
+      </button>
+      {!isMinimized && (
+        <div className="flex h-full min-h-0 w-full flex-1 items-stretch gap-3 overflow-hidden">
+          <HudSlot className="flex-[1] min-w-[280px]">
+            <HudPanel className="flex-1 min-h-0">
+              <MiniMapNavigation variant="embedded" className="h-full min-h-0" />
+            </HudPanel>
+          </HudSlot>
 
-        <HudSlot className="flex-[1.9] min-w-[420px]">
-          <HudPanel className="flex-1 min-h-0">
-            <SelectedWorldmapEntity />
-          </HudPanel>
-        </HudSlot>
+          <HudSlot className="flex-[1.9] min-w-[420px]">
+            <HudPanel className="flex-1 min-h-0">
+              <SelectedWorldmapEntity />
+            </HudPanel>
+          </HudSlot>
 
-        <HudSlot className="flex-[1.2] min-w-[320px]">
-          <HudPanel className="flex-[0.5] min-h-0">
-            <PlayerRelicTray variant="embedded" className="h-full" />
-          </HudPanel>
-        </HudSlot>
-      </div>
+          <HudSlot className="flex-[1.2] min-w-[320px]">
+            <HudPanel className="flex-[0.5] min-h-0">
+              <PlayerRelicTray variant="embedded" className="h-full" />
+            </HudPanel>
+          </HudSlot>
+        </div>
+      )}
     </BottomHudShell>
   );
 };
