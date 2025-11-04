@@ -1,19 +1,5 @@
 [
   {
-    "name": "bltz-snow-soft-11",
-    "slotTimestamp": 1762198200,
-    "deployed": true,
-    "configured": true,
-    "indexed": true
-  },
-  {
-    "name": "bltz-epic-rush-19",
-    "slotTimestamp": 1762216200,
-    "deployed": true,
-    "configured": true,
-    "indexed": true
-  },
-  {
     "name": "bltz-dark-zeal-18",
     "slotTimestamp": 1762248600,
     "deployed": true,
@@ -23,6 +9,20 @@
   {
     "name": "bltz-rise-gold-30",
     "slotTimestamp": 1762270200,
+    "deployed": true,
+    "configured": true,
+    "indexed": true
+  },
+  {
+    "name": "bltz-void-sage-72",
+    "slotTimestamp": 1762284600,
+    "deployed": true,
+    "configured": true,
+    "indexed": true
+  },
+  {
+    "name": "bltz-zeal-fade-24",
+    "slotTimestamp": 1762302600,
     "deployed": true,
     "configured": true,
     "indexed": true
