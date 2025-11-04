@@ -1,6 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { BottomHudEmptyState } from "@/ui/features/world/components/hud-bottom";
 import { currencyFormat } from "@/ui/utils/utils";
 import { PlayerRelicsData } from "@bibliothecadao/torii";
 import { ID, ResourcesIds } from "@bibliothecadao/types";
@@ -119,15 +120,13 @@ export const PlayerRelicTray = memo(({ variant = "floating", className }: Player
   if (variant === "embedded") {
     return (
       <div className={cn("flex h-full min-h-0 flex-col gap-1", className)}>
-        <div className="flex-1 min-h-0 overflow-auto pr-1">
-          {aggregatedRelics.length > 0 ? (
-            renderRelicGrid(aggregatedRelics, "grid grid-cols-[repeat(auto-fit,minmax(48px,1fr))] gap-1", "xs")
-          ) : (
-            <div className="flex h-full items-center justify-center rounded-md border border-dashed border-gold/20 bg-dark/30 px-3 py-4 text-xxs italic text-gold/60">
-              No relics discovered yet.
-            </div>
-          )}
-        </div>
+        {aggregatedRelics.length > 0 ? (
+          <div className="flex-1 min-h-0 overflow-auto pr-1">
+            {renderRelicGrid(aggregatedRelics, "grid grid-cols-[repeat(auto-fit,minmax(48px,1fr))] gap-1", "xs")}
+          </div>
+        ) : (
+          <BottomHudEmptyState className="flex-1">No relics discovered yet.</BottomHudEmptyState>
+        )}
         {playerRelicsLoading && (
           <div className="flex items-center gap-1 text-[10px] uppercase tracking-[0.2em] text-gold/60">
             <span className="h-2 w-2 animate-pulse rounded-full bg-gold/70" /> Updating

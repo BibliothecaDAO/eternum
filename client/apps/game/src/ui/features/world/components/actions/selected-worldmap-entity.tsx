@@ -1,5 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { UnoccupiedTileQuadrants } from "@/ui/features/world/components/actions/unoccupied-tile-quadrants";
+import { BottomHudEmptyState } from "@/ui/features/world/components/hud-bottom";
 import { ArmyBannerEntityDetail } from "@/ui/features/world/components/entities/banner/army-banner-entity-detail";
 import { StructureBannerEntityDetail } from "@/ui/features/world/components/entities/banner/structure-banner-entity-detail";
 import { QuestEntityDetail } from "@/ui/features/world/components/entities/quest-entity-detail";
@@ -59,11 +60,7 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
   }
 
   if (!isExplored) {
-    return (
-      <div className="flex h-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-4 text-center text-sm text-slate-100/80">
-        Unexplored territory. Send an explorer to reveal this tile.
-      </div>
-    );
+    return <BottomHudEmptyState>Unexplored territory. Send an explorer to reveal this tile.</BottomHudEmptyState>;
   }
 
   if (!hasOccupier) {
