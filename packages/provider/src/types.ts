@@ -63,11 +63,7 @@ export enum TransactionType {
   BLITZ_PRIZE_PLAYER_RANK = "blitz_prize_player_rank",
 }
 
-export type ProviderHeartbeatSource =
-  | "transaction-submitted"
-  | "transaction-confirmed"
-  | "stream"
-  | "mock";
+export type ProviderHeartbeatSource = "transaction-submitted" | "transaction-confirmed" | "stream" | "mock";
 
 export interface ProviderHeartbeat {
   source: ProviderHeartbeatSource;

@@ -1,6 +1,7 @@
 # Network Desync Flow
 
-This document describes the client-side pieces that detect, surface, and recover from network desynchronisation in the desktop Blitz client.
+This document describes the client-side pieces that detect, surface, and recover from network desynchronisation in the
+desktop Blitz client.
 
 ## Signal Pipeline
 
@@ -8,7 +9,8 @@ This document describes the client-side pieces that detect, surface, and recover
    - a transaction is submitted or confirmed,
    - the Torii entity stream produces an update, or
    - debugging tools call `simulateHeartbeat`.
-2. `ProviderHeartbeatWatcher` subscribes to those events and writes each heartbeat into the Zustand store defined in `client/apps/game/src/hooks/store/use-network-status-store.ts`.
+2. `ProviderHeartbeatWatcher` subscribes to those events and writes each heartbeat into the Zustand store defined in
+   `client/apps/game/src/hooks/store/use-network-status-store.ts`.
 3. The store keeps a cached `status` object that tracks:
    - last heartbeat metadata,
    - whether a forced desync is active,
@@ -22,7 +24,8 @@ This document describes the client-side pieces that detect, surface, and recover
   - `forced` – manual toggle for QA and debugging.
   - `pending-tx` – a submitted transaction remains unconfirmed longer than the threshold.
   - `no-heartbeat` – the client has not yet heard from the network.
-- The store exposes actions for heartbeats, thresholds, forcing/clearing desync, and ticking the clock. Each action recomputes the cached status to keep selectors pure.
+- The store exposes actions for heartbeats, thresholds, forcing/clearing desync, and ticking the clock. Each action
+  recomputes the cached status to keep selectors pure.
 - `tick()` is driven by a window interval to ensure elapsed timers advance even if no new heartbeat arrives.
 
 ## Stream Integration
@@ -30,7 +33,8 @@ This document describes the client-side pieces that detect, surface, and recover
 - `client/apps/game/src/dojo/sync.ts` now:
   - Records a heartbeat whenever Torii pushes entity or event updates.
   - Stores the active subscription so it can be cancelled before resubscribing.
-  - Exposes `resubscribeEntityStream`, which reruns the full `initialSync` (without resetting the loading overlay) to refresh world state after a desync.
+  - Exposes `resubscribeEntityStream`, which reruns the full `initialSync` (without resetting the loading overlay) to
+    refresh world state after a desync.
 
 ## UI Behaviour
 
@@ -43,7 +47,8 @@ This document describes the client-side pieces that detect, surface, and recover
 ## Usage Tips
 
 - Use `window.__eternumNetworkDebug.status()` to inspect the raw status object during development.
-- Call `resubscribeEntityStream(setup, uiStore, setInitialSyncProgress, true)` when you need to fully refresh the client state without reloading the page.
+- Call `resubscribeEntityStream(setup, uiStore, setInitialSyncProgress, true)` when you need to fully refresh the client
+  state without reloading the page.
 - Mock heartbeats do not clear forced desyncs; use the “Clear” control or wait for the forced TTL to expire.
 
 ## Future Enhancements

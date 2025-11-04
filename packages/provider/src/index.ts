@@ -17,12 +17,7 @@ import {
   BigNumberish,
   uint256,
 } from "starknet";
-import {
-  TransactionType,
-  type ProviderHeartbeat,
-  type ProviderHeartbeatSource,
-  type ProviderSyncState,
-} from "./types";
+import { TransactionType, type ProviderHeartbeat, type ProviderHeartbeatSource, type ProviderSyncState } from "./types";
 export const NAMESPACE = "s1_eternum";
 export { TransactionType };
 export type { ProviderHeartbeat, ProviderHeartbeatSource, ProviderSyncState };
@@ -284,13 +279,15 @@ export class EternumProvider extends EnhancedDojoProvider {
     };
   }
 
-  public simulateHeartbeat(options: {
-    source?: ProviderHeartbeatSource;
-    timestamp?: number;
-    offsetMs?: number;
-    blockNumber?: number;
-    transactionHash?: string;
-  } = {}): ProviderHeartbeat {
+  public simulateHeartbeat(
+    options: {
+      source?: ProviderHeartbeatSource;
+      timestamp?: number;
+      offsetMs?: number;
+      blockNumber?: number;
+      transactionHash?: string;
+    } = {},
+  ): ProviderHeartbeat {
     const now = Date.now();
     const timestamp = options.timestamp ?? now - (options.offsetMs ?? 0);
     const source: ProviderHeartbeatSource = options.source ?? "mock";
