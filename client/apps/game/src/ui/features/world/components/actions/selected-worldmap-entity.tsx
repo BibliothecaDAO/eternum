@@ -60,9 +60,7 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
   }
 
   if (!isExplored) {
-    return (
-      <BottomHudEmptyState>Unexplored territory. Send an explorer to reveal this tile.</BottomHudEmptyState>
-    );
+    return <BottomHudEmptyState>Unexplored territory. Send an explorer to reveal this tile.</BottomHudEmptyState>;
   }
 
   if (!hasOccupier) {

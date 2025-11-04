@@ -106,11 +106,7 @@ const StructureBannerEntityDetailContent = memo(
                 variant={defenseDisplayVariant}
               />
             ) : (
-              <BottomHudEmptyState
-                tone="subtle"
-                className="min-h-0"
-                textClassName={emptyTextClass}
-              >
+              <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={emptyTextClass}>
                 {defenseEmptyCopy}
               </BottomHudEmptyState>
             )}
@@ -179,11 +175,7 @@ const StructureBannerEntityDetailContent = memo(
               compact={compact}
               className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-2 sm:row-start-1")}
             >
-              <BottomHudEmptyState
-                tone="subtle"
-                className="min-h-0"
-                textClassName={emptyTextClass}
-              >
+              <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={emptyTextClass}>
                 {productionFallbackCopy}
               </BottomHudEmptyState>
             </EntityDetailSection>
@@ -226,11 +218,7 @@ const StructureBannerEntityDetailContent = memo(
               compact={compact}
               className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-1 sm:row-start-2")}
             >
-              <BottomHudEmptyState
-                tone="subtle"
-                className="min-h-0"
-                textClassName={emptyTextClass}
-              >
+              <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={emptyTextClass}>
                 {inventoryFallbackCopy}
               </BottomHudEmptyState>
             </EntityDetailSection>

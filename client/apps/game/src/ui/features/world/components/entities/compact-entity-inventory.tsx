@@ -94,11 +94,7 @@ export const CompactEntityInventory = memo(
 
     if (items.length === 0) {
       return (
-        <BottomHudEmptyState
-          tone="subtle"
-          className="min-h-0"
-          textClassName="text-xxs text-gold/60 italic"
-        >
+        <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName="text-xxs text-gold/60 italic">
           No inventory.
         </BottomHudEmptyState>
       );

@@ -134,11 +134,7 @@ export const StructureProductionPanel = memo(
 
     if (!resourceProductionSummary.length) {
       return (
-        <BottomHudEmptyState
-          tone="subtle"
-          className="min-h-0"
-          textClassName={`${smallTextClass} text-gold/60 italic`}
-        >
+        <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={`${smallTextClass} text-gold/60 italic`}>
           No production buildings.
         </BottomHudEmptyState>
       );

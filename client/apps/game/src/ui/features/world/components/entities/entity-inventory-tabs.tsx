@@ -122,11 +122,7 @@ const InventorySection = ({
 
   if (!items.length) {
     return (
-      <BottomHudEmptyState
-        tone="subtle"
-        className="min-h-0"
-        textClassName={`${textSize} text-gold/60 italic`}
-      >
+      <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={`${textSize} text-gold/60 italic`}>
         {isRelicSection ? "No relics stored." : "No resources stored."}
       </BottomHudEmptyState>
     );

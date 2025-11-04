@@ -84,11 +84,7 @@ const ArmyBannerEntityDetailContent = memo(
                 structureResources={structureResources}
               />
             ) : (
-              <BottomHudEmptyState
-                tone="subtle"
-                className="min-h-0"
-                textClassName={emptyTextClass}
-              >
+              <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={emptyTextClass}>
                 No proximity warnings.
               </BottomHudEmptyState>
             )}
@@ -101,11 +97,7 @@ const ArmyBannerEntityDetailContent = memo(
             {bannerArmyInfo ? (
               <CompactArmyChip army={bannerArmyInfo} className="border border-gold/25 bg-dark/60" />
             ) : (
-              <BottomHudEmptyState
-                tone="subtle"
-                className="min-h-0"
-                textClassName={emptyTextClass}
-              >
+              <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={emptyTextClass}>
                 Army data unavailable.
               </BottomHudEmptyState>
             )}
@@ -127,11 +119,7 @@ const ArmyBannerEntityDetailContent = memo(
                 variant={isBanner ? "tight" : "default"}
               />
             ) : (
-              <BottomHudEmptyState
-                tone="subtle"
-                className="min-h-0"
-                textClassName={emptyTextClass}
-              >
+              <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={emptyTextClass}>
                 No supplies carried.
               </BottomHudEmptyState>
             )}
@@ -147,11 +135,7 @@ const ArmyBannerEntityDetailContent = memo(
                   {`${relicEffects.length} active relic${relicEffects.length > 1 ? "s" : ""}.`}
                 </span>
               ) : (
-                <BottomHudEmptyState
-                  tone="subtle"
-                  className="min-h-0"
-                  textClassName={emptyTextClass}
-                >
+                <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={emptyTextClass}>
                   No relics assigned.
                 </BottomHudEmptyState>
               )
@@ -160,11 +144,7 @@ const ArmyBannerEntityDetailContent = memo(
                 <ActiveRelicEffects relicEffects={relicEffects} entityId={armyEntityId} compact={isCompactLayout} />
               </div>
             ) : (
-              <BottomHudEmptyState
-                tone="subtle"
-                className="min-h-0"
-                textClassName={emptyTextClass}
-              >
+              <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={emptyTextClass}>
                 No relics assigned.
               </BottomHudEmptyState>
             )}
