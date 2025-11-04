@@ -10,6 +10,9 @@ import { StoryEventStream } from "../features/story-events";
 import { BlitzSetHyperstructureShareholdersTo100 } from "../features/world/components/hyperstructures/blitz-hyperstructure-shareholder";
 import { StoreManagers } from "../store-managers";
 import { TransferAutomationManager } from "../features/infrastructure/automation/transfer-automation-manager";
+import { ProviderHeartbeatWatcher } from "../shared/components/provider-heartbeat-watcher";
+import { NetworkDesyncIndicator } from "../shared/components/network-desync-indicator";
+import { NetworkDesyncDebugControls } from "../shared/components/network-desync-debug-controls";
 
 // Lazy load components
 const SelectedArmy = lazy(() =>
@@ -112,6 +115,8 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
           <WorldInteractiveLayers />
 
           <StoryEventStream />
+          <NetworkDesyncIndicator />
+          <NetworkDesyncDebugControls />
 
           <Leva hidden={!env.VITE_PUBLIC_GRAPHICS_DEV} collapsed titleBar={{ position: { x: 0, y: 50 } }} />
           <Tooltip />
@@ -127,6 +132,7 @@ const WorldEffects = () => (
   <>
     <StoreManagers />
     <StructureSynchronizer />
+    <ProviderHeartbeatWatcher />
     <NotLoggedInMessage />
     <EndgameModal />
     <BlitzSetHyperstructureShareholdersTo100 />

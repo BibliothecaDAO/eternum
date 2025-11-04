@@ -62,3 +62,24 @@ export enum TransactionType {
   BLITZ_PRIZE_CLAIM = "blitz_prize_claim",
   BLITZ_PRIZE_PLAYER_RANK = "blitz_prize_player_rank",
 }
+
+export type ProviderHeartbeatSource =
+  | "transaction-submitted"
+  | "transaction-confirmed"
+  | "stream"
+  | "mock";
+
+export interface ProviderHeartbeat {
+  source: ProviderHeartbeatSource;
+  timestamp: number;
+  blockNumber?: number;
+  transactionHash?: string;
+}
+
+export interface ProviderSyncState {
+  lastTransactionSubmittedAt: number | null;
+  lastTransactionConfirmedAt: number | null;
+  lastStreamAt: number | null;
+  lastBlockNumber: number | null;
+  lastHeartbeat: ProviderHeartbeat | null;
+}

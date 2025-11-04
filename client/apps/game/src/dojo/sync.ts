@@ -16,6 +16,8 @@ import {
 
 export const EVENT_QUERY_LIMIT = 40_000;
 
+let entityStreamSubscription: { cancel: () => void } | null = null;
+
 function isToriiDeleteNotification(entity: ToriiEntity): boolean {
   return Object.keys(entity.models).length === 0;
 }
@@ -135,6 +137,7 @@ const syncEntitiesDebounced = async <S extends Schema>(
 
     try {
       queueUpdate(data.hashed_keys, data);
+      setupResult.network.provider.recordStreamActivity();
     } catch (error) {
       console.error("Error queuing entity update:", error);
     }
@@ -146,12 +149,15 @@ const syncEntitiesDebounced = async <S extends Schema>(
 
     try {
       queueUpdate(data.hashed_keys, data);
+      setupResult.network.provider.recordStreamActivity();
     } catch (error) {
       console.error("Error queuing event message update:", error);
     }
   });
 
   // Return combined subscription that can cancel both
+  setupResult.network.provider.recordStreamActivity();
+
   return {
     cancel: () => {
       entitySub.cancel();
@@ -161,13 +167,29 @@ const syncEntitiesDebounced = async <S extends Schema>(
 };
 
 // initial sync runs before the game is playable and should sync minimal data
+type InitialSyncOptions = {
+  logging?: boolean;
+  reportProgress?: boolean;
+};
+
 export const initialSync = async (
   setup: SetupResult,
   state: AppStore,
   setInitialSyncProgress: (progress: number) => void,
+  options: InitialSyncOptions = {},
 ) => {
+  const { logging = false, reportProgress = true } = options;
   console.log("[STARTING syncEntitiesDebounced]");
-  await syncEntitiesDebounced(setup.network.toriiClient, setup, null, false);
+  if (entityStreamSubscription) {
+    entityStreamSubscription.cancel();
+    entityStreamSubscription = null;
+  }
+
+  if (reportProgress) {
+    setInitialSyncProgress(0);
+  }
+
+  entityStreamSubscription = await syncEntitiesDebounced(setup.network.toriiClient, setup, null, logging);
 
   console.log("[syncEntitiesDebounced COMPLETED]");
 
@@ -178,7 +200,9 @@ export const initialSync = async (
   await getBankStructuresFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
   end = performance.now();
   console.log("[sync] bank structures query", end - start);
-  setInitialSyncProgress(10);
+  if (reportProgress) {
+    setInitialSyncProgress(10);
+  }
 
   // // SPECTATOR REALM
   const firstNonOwnedStructure = await sqlApi.fetchFirstStructure();
@@ -193,30 +217,52 @@ export const initialSync = async (
     ]);
     end = performance.now();
     console.log("[sync] first structure query", end - start);
-    setInitialSyncProgress(25);
+    if (reportProgress) {
+      setInitialSyncProgress(25);
+    }
   }
 
   start = performance.now();
   await getConfigFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
   end = performance.now();
   console.log("[sync] config query", end - start);
-  setInitialSyncProgress(50);
+  if (reportProgress) {
+    setInitialSyncProgress(50);
+  }
 
   start = performance.now();
   await getAddressNamesFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
   end = performance.now();
   console.log("[sync] address names query", end - start);
-  setInitialSyncProgress(75);
+  if (reportProgress) {
+    setInitialSyncProgress(75);
+  }
 
   start = performance.now();
   await getGuildsFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
   end = performance.now();
   console.log("[sync] guilds query", end - start);
-  setInitialSyncProgress(90);
+  if (reportProgress) {
+    setInitialSyncProgress(90);
+  }
 
   start = performance.now();
   await MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).refresh();
   end = performance.now();
   console.log("[sync] fetching the map data store", end - start);
-  setInitialSyncProgress(100);
+  if (reportProgress) {
+    setInitialSyncProgress(100);
+  }
+};
+
+export const resubscribeEntityStream = async (
+  setup: SetupResult,
+  state: AppStore,
+  setInitialSyncProgress: (progress: number) => void,
+  logging = false,
+) => {
+  await initialSync(setup, state, setInitialSyncProgress, {
+    logging,
+    reportProgress: false,
+  });
 };
