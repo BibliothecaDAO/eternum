@@ -123,7 +123,7 @@ export const PlayerRelicTray = memo(({ variant = "floating", className }: Player
           {aggregatedRelics.length > 0 ? (
             renderRelicGrid(aggregatedRelics, "grid grid-cols-[repeat(auto-fit,minmax(48px,1fr))] gap-1", "xs")
           ) : (
-            <div className="flex h-full items-center justify-center rounded-md border border-dashed border-gold/20 bg-dark/30 px-3 py-4 text-xxs italic text-gold/60">
+            <div className="flex h-full items-start justify-start rounded-md border border-dashed border-gold/20 bg-dark/30 px-3 py-2 text-xxs italic text-gold/60">
               No relics discovered yet.
             </div>
           )}
