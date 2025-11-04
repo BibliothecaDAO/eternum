@@ -1,3 +1,4 @@
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ReactNode, useEffect, useMemo, useState } from "react";
 
 import {
@@ -22,6 +23,7 @@ export interface RealtimeChatShellProps {
   threadId?: string;
   className?: string;
   children?: ReactNode;
+  displayMode?: "floating" | "embedded";
 }
 
 export function RealtimeChatShell({
@@ -31,7 +33,9 @@ export function RealtimeChatShell({
   threadId,
   className,
   children,
+  displayMode = "floating",
 }: RealtimeChatShellProps) {
+  const isEmbedded = displayMode === "embedded";
   const actions = useRealtimeChatActions();
   const isExpanded = useRealtimeChatSelector((state) => state.isShellOpen);
   const openTabs = useRealtimeChatSelector((state) => state.openTabs);
@@ -176,11 +180,24 @@ export function RealtimeChatShell({
   const unreadBadgeClass = "rounded-full border px-2 py-0.5 text-[11px] leading-none";
 
   return (
-    <div className={`w-full ${className ?? ""}`}>
+    <div className={cn("relative w-full", className)}>
       <div
-        className={`flex flex-col overflow-hidden transition-all duration-300 ${
-          isExpanded ? (isHeightExpanded ? "h-[600px]" : "h-72") : "h-14"
-        } w-[800px] max-w-[45vw] ${isExpanded ? "bg-black/30 hover:bg-black/60" : "bg-transparent"}`}
+        className={cn(
+          "flex flex-col overflow-hidden transition-all duration-300 rounded-2xl bg-black/70",
+          isExpanded
+            ? isHeightExpanded
+              ? isEmbedded
+                ? "h-full"
+                : "h-[600px]"
+              : isEmbedded
+                ? "h-64"
+                : "h-72"
+            : isEmbedded
+              ? "h-16"
+              : "h-14",
+          isEmbedded ? "w-full" : "w-[800px] max-w-[45vw]",
+          isExpanded ? "bg-black/80" : "bg-transparent",
+        )}
       >
         {/* Header - Only shown when not expanded */}
         {!isExpanded && (

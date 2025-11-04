@@ -12,11 +12,12 @@ import { ProductionOverviewPanel } from "@/ui/features/settlement/production/pro
 import { RealtimeChatShell, type InitializeRealtimeClientParams } from "@/ui/features/social";
 import { StoryEventsChronicles } from "@/ui/features/story-events";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
-import { useDojo } from "@bibliothecadao/react";
+import { useDojo, useQuery } from "@bibliothecadao/react";
 import { motion } from "framer-motion";
 import { GripVertical, X } from "lucide-react";
 import type { ComponentProps, ReactNode, PointerEvent as ReactPointerEvent } from "react";
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 type CircleButtonProps = ComponentProps<typeof CircleButton>;
 
@@ -137,10 +138,14 @@ export const RightNavigationModule = () => {
   const toggleModal = useUIStore((state) => state.toggleModal);
   const disableButtons = useUIStore((state) => state.disableButtons);
   const structures = useUIStore((state) => state.playerStructures);
+  const isBottomHudMinimized = useUIStore((state) => state.isBottomHudMinimized);
+  const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
+  const isModalOpen = useUIStore((state) => state.showModal);
 
   const ConnectedAccount = useAccountStore((state) => state.account);
   const accountName = useAccountStore((state) => state.accountName);
   const { account } = useDojo();
+  const { isMapView } = useQuery();
 
   const isBlitz = getIsBlitz();
 
@@ -158,6 +163,12 @@ export const RightNavigationModule = () => {
     typeof window !== "undefined" ? localStorage.getItem(RESIZE_HINT_STORAGE_KEY) !== "true" : true,
   );
   const resizeState = useRef({ startX: 0, startWidth: panelWidth });
+  const [chatPortalTarget, setChatPortalTarget] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    setChatPortalTarget(document.body);
+  }, []);
 
   const navigationItems = useMemo(
     () =>
@@ -174,6 +185,14 @@ export const RightNavigationModule = () => {
   const storyChroniclesActive = view === RightView.StoryEvents;
   const resourceTableActive = view === RightView.ResourceTable;
   const isOffscreen = view === RightView.None;
+  const isBottomHudVisible = isMapView && !showBlankOverlay;
+  const navHeight = useMemo(() => {
+    if (!isBottomHudVisible) {
+      return "calc(100vh - 48px)";
+    }
+
+    return isBottomHudMinimized ? "calc(100vh - 180px)" : "calc(100vh - 30vh)";
+  }, [isBottomHudVisible, isBottomHudMinimized]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -283,7 +302,8 @@ export const RightNavigationModule = () => {
               }}
               initial="hidden"
               animate="visible"
-              className={clsx("pointer-events-auto flex flex-col justify-start h-[82vh]")}
+              className={clsx("pointer-events-auto flex flex-col justify-start")}
+              style={{ height: navHeight, maxHeight: navHeight }}
             >
               <div className="flex flex-col mb-auto">
                 {navigationItems.map((item) => (
@@ -294,7 +314,10 @@ export const RightNavigationModule = () => {
               </div>
             </motion.div>
 
-            <div className="pointer-events-auto flex h-full max-h-[82vh] flex-1 flex-col gap-3 min-h-0">
+            <div
+              className="pointer-events-auto flex h-full flex-1 flex-col gap-3 min-h-0"
+              style={{ height: navHeight, maxHeight: navHeight }}
+            >
               <div className="relative flex h-full flex-1 overflow-hidden min-h-0">
                 <div className="relative group">
                   <div
@@ -378,14 +401,23 @@ export const RightNavigationModule = () => {
         )}
       </div>
 
-      <div className="pointer-events-auto flex justify-end absolute right-0 bottom-0">
-        <RealtimeChatShell
-          initializer={realtimeInitializer}
-          zoneIds={zoneIds}
-          defaultZoneId={defaultZoneId}
-          className="w-full "
-        />
-      </div>
+      {chatPortalTarget &&
+        createPortal(
+          <div
+            className={clsx(
+              "flex justify-end fixed right-0 bottom-6 transition-opacity duration-200",
+              isModalOpen ? "pointer-events-none z-[10] opacity-0" : "pointer-events-auto z-[45] opacity-100",
+            )}
+          >
+            <RealtimeChatShell
+              initializer={realtimeInitializer}
+              zoneIds={zoneIds}
+              defaultZoneId={defaultZoneId}
+              className="w-full"
+            />
+          </div>,
+          chatPortalTarget,
+        )}
     </>
   );
 };

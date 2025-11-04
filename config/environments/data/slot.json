@@ -489,10 +489,28 @@
       ],
       "27": [],
       "28": [],
-      "29": [],
+      "29": [
+        {
+          "resource": 35,
+          "amount": 2
+        },
+        {
+          "resource": 23,
+          "amount": 0.5
+        }
+      ],
       "30": [],
       "31": [],
-      "32": [],
+      "32": [
+        {
+          "resource": 35,
+          "amount": 2
+        },
+        {
+          "resource": 23,
+          "amount": 0.5
+        }
+      ],
       "33": [],
       "34": [],
       "35": [],
@@ -1397,7 +1415,7 @@
     "startSettlingAfterSeconds": 59,
     "startSettlingAt": 0,
     "startMainAfterSeconds": 60,
-    "startMainAt": 1761852600,
+    "startMainAt": 1762284600,
     "durationSeconds": 7200,
     "bridgeCloseAfterEndSeconds": 604800,
     "pointRegistrationCloseAfterEndSeconds": 600
@@ -1730,8 +1748,8 @@
     "manifest": {
       "world": {
         "class_hash": "0x7bc7b264612d3ac261df0a6d72a6b73c84b9386ef0095dd340d42afc01bb53c",
-        "address": "0x72f99ea4e9193b8921ce4acf41cd122b262f8e5674ff94729bd04d7716b3504",
-        "seed": "s1_eternum_slot_1761847450",
+        "address": "0x301a7e1028fb5f89a5e12a600bbcc711bb081c8024c7a8fe2d6a5ef6bd5e0ff",
+        "seed": "s1_eternum_slot_1762279442",
         "name": "Realms: Eternum",
         "entrypoints": [
           "uuid",
@@ -3208,7 +3226,7 @@
       },
       "contracts": [
         {
-          "address": "0x5b57b92952413804bc35a68aaef6451723a747acc065aff3cdda6801239e4a9",
+          "address": "0x4bad5b0d2d12407a22efa9e660b7e38e80bea2af9fc7724c8e8db0abdfb57a9",
           "class_hash": "0x11afa3c21ac3b6529777149b8377c7e66f14aba74d2d1204bf070e538f61a4",
           "abi": [
             {
@@ -3685,7 +3703,7 @@
           ]
         },
         {
-          "address": "0x395a76916c4da771be3945dea8aff37be4b81c3d2f46787b9efdb8e324d90fa",
+          "address": "0x536e0738b386a9b103c7bffb075186414bae42e65c6462a7fbd4d7c35fb427",
           "class_hash": "0x4217c752c563eca16bb139c42058f861ef70542bd25035ab0c9b436e7ae502",
           "abi": [
             {
@@ -3937,7 +3955,7 @@
           ]
         },
         {
-          "address": "0x10ed47a904d37662eb9f2651d32d0dc6df8ed02385528130477eddaa39131f5",
+          "address": "0x446d921f6183e79811cd29885929f2a5c1f5cddf040ac2684785ae18c70cd94",
           "class_hash": "0x7cd53e657c4ba7269e0ba39fb0b8a26df37b313583b60ce8d58e5a2abc06325",
           "abi": [
             {
@@ -4188,7 +4206,7 @@
           ]
         },
         {
-          "address": "0x19692b08df4afc5de1196813295ebdf16c8251f86c8dd8471273fd1239ed6bb",
+          "address": "0x140e5730d8ab5f840a5a80e5642d387da0af562fbc53301cc8b3af9bbdebd3f",
           "class_hash": "0x60c230eeb0c3a4301a4b82d4ba26752c7f3265867b4df070e0be2fe544822a8",
           "abi": [
             {
@@ -5952,7 +5970,7 @@
           ]
         },
         {
-          "address": "0x557124d152014a318f9d867543104e3182bfc86712900e6979febece87e1ecf",
+          "address": "0x45c3d52eebd0ddf20349596ef280ee67906d22fcb541e30ab846c40dca9fc4a",
           "class_hash": "0x4a6d0c11782b55765d0fb1e522e2acd50f36a4860e01f48083a326b52e8a280",
           "abi": [
             {
@@ -6166,7 +6184,7 @@
           ]
         },
         {
-          "address": "0x6dd888b3c7701bb6a89ec06bd2cfbf39a36390d33041cd0eb27b24c2cac384c",
+          "address": "0x6f81b8468a44075dcf9c3e39296302391874be1488edc6fd46c09625e4d9a81",
           "class_hash": "0x4e08b04c4918701a9e99713ceac5538b1e26d31a1f297356d1128f523bcadb0",
           "abi": [
             {
@@ -6435,7 +6453,7 @@
           ]
         },
         {
-          "address": "0xd550593b79c7dbba28c46b50637e2306f4e14a08747b14994321a45e3e5d84",
+          "address": "0x6c2218cc83de8fadd9b6e347f3f190c62dfca5486377c885c627b26f7419368",
           "class_hash": "0x3df793308784707f3db909e025ef99ac57a019e14e04866667cba8fa3483353",
           "abi": [
             {
@@ -6912,7 +6930,7 @@
           ]
         },
         {
-          "address": "0x3c6b6b7161d2bb3badf13e324793525d7b154545537a6eefffe64798274b678",
+          "address": "0x127ea9ef91c543f8d5ca422952f4aa9337c3766f92ac079395af5d6120c0015",
           "class_hash": "0x5c9b43a309db0ace943f6c7a47f6188e0241dbe194d020b82fc16ffff7f8e13",
           "abi": [
             {
@@ -7228,7 +7246,7 @@
           ]
         },
         {
-          "address": "0x8c1059cfea2e1c8f8b7e0e499bb7010e7c318a26410af0f80510edae161910",
+          "address": "0x6b512d67514921dc8d307d964a60029d458e7dbd16fc60c5d03965706419625",
           "class_hash": "0x1e1ba79ac7fa5cea76109584a036b3205fdd101acaa6b1c0dcf644a824312c",
           "abi": [
             {
@@ -7469,7 +7487,7 @@
           ]
         },
         {
-          "address": "0x2687e3011c8b4e7a3af3c336af82471b5bb163a8ddafa77ad6a9e15080d287a",
+          "address": "0x7d2bb47845a06794c0e76e7d5fa0020a2274c84b7923b70d49eb07e4dbd106d",
           "class_hash": "0x1dfb68e93e4795b31e343713d42a27d5c8faa79e820e2517ed1a351da550698",
           "abi": [
             {
@@ -7946,7 +7964,7 @@
           ]
         },
         {
-          "address": "0x399759b96b85e33f7f74202e8799004b6b26b271cebe6a190e4204e08ca865f",
+          "address": "0x59a7d62908a685b3d8ef9e69836b722c3ed35053a6322bcd1759f9adc7a597c",
           "class_hash": "0x2f2e9e898349130105c403b3cba2b1ea942a69e67fd39ebe65a573936c32fda",
           "abi": [
             {
@@ -8146,7 +8164,7 @@
           ]
         },
         {
-          "address": "0x7002aef9750eab2b4ae9121a4422d5a7ae76a0e52e248e0019e69e8c22dba69",
+          "address": "0x53e12cd40122cd35b0702036018a250a013fb28a50ad2763dd8b3c5d1cd338e",
           "class_hash": "0x62f9bb4475843a269260c75eb61ca6b5cbf385e175eb7ba337c65b134ac8614",
           "abi": [
             {
@@ -8367,7 +8385,7 @@
           ]
         },
         {
-          "address": "0x6227cc5ac6d6cee1ca36e34fa1c7f522ca41d5b0e248ea4ee8e27e50474da2b",
+          "address": "0x3a698865d7116fddfe384878b487ca5f6fe61ee1513b36a57d20c45a310a309",
           "class_hash": "0x4750ed9a4073808f768f37a963b05f037674b1dd9335097a9d20695ceac002f",
           "abi": [
             {
@@ -8601,7 +8619,7 @@
           ]
         },
         {
-          "address": "0x5207efd7282ceef8d45337365277e715ac00146ab1cf7e00ef9405bebedb584",
+          "address": "0x81ab23b397d35063eca4dd181ac79e50521c180e6a165d3f7b03347a1ff58e",
           "class_hash": "0x2ea02511b59660d4e1fd7062fe7e190fdd82e448b7015af7cc616ca9b84d408",
           "abi": [
             {
@@ -9198,7 +9216,7 @@
           ]
         },
         {
-          "address": "0x782b4e137a07689a44dbeca1764e0bde688c32abadb95c93550ba5faf72b268",
+          "address": "0x7a57f9a012edeaa09ddb80033e99eeba3432d4296c590de2210db08a90fc539",
           "class_hash": "0x73b33fba72807c1ec9432f95a04b1a79d9ee3d29aea7dd8f5cc442959077e80",
           "abi": [
             {
@@ -9779,7 +9797,7 @@
           ]
         },
         {
-          "address": "0x1c371e9fee0f48d5f7bc8a5143e6aa84afc872156504e697873c56c3aa4479",
+          "address": "0x1bdcaa656219808258e6124d0c0281a3a31af3a7d42034c826fb5e1bcfb8a19",
           "class_hash": "0x12274c20ffbc975fa023cc52d8bec1993af2705b580b2d779a55a38851636ba",
           "abi": [
             {
@@ -10035,7 +10053,7 @@
           ]
         },
         {
-          "address": "0x6b0d3f020ab0d93ca057c1329aa1014ccc0edcdd0d42c43823b16745ce81538",
+          "address": "0x5c2041b21abe2f68647416a0f18081b8825b95a88487887122540f299f0a9e3",
           "class_hash": "0x6897dbcf6821841d460a819278f9006f96ab9bf6be9fd6814fcc97e35cd3ce2",
           "abi": [
             {
@@ -10269,7 +10287,7 @@
           ]
         },
         {
-          "address": "0xac740c2c52a4b3817316c7798f0e1919d9f4a04f1d4bca295810935341602a",
+          "address": "0xa5b6dfdfdfe1d5684bfc1a194d6be4613b188721821f5e2d6f037738110dea",
           "class_hash": "0x3b6e58ff2690f9894f48d8f094ec5e36f10d345c51d3741617215dbb1a31d93",
           "abi": [
             {
@@ -10746,7 +10764,7 @@
           ]
         },
         {
-          "address": "0x48ecd26bf1d933e39bc49bebc62bd371b6a7e11c40faa1bd1298b2da894e497",
+          "address": "0x5477561081a9c8483b736a9ebefb5be182f154f4da31ad9cc36fc498df87e00",
           "class_hash": "0x4d600165473ab4262bd6ffa8b2b75be8e891b085beab32f831113aec83a38bb",
           "abi": [
             {
@@ -11003,7 +11021,7 @@
           ]
         },
         {
-          "address": "0x5b7e58516b675c6b81b50b8f43977016e93f6c816d5087f622e216e94777008",
+          "address": "0x7dc3f3182f5cf169323ae98e1a62da7aaf4056010450b09a537af2ffe8b56ec",
           "class_hash": "0x1d917a501fcc09f7e93f346467d9811c84e4f557730618cd39fe24472ab785b",
           "abi": [
             {
@@ -11291,7 +11309,7 @@
           ]
         },
         {
-          "address": "0x70a5a2d82e8c48365937c1cb4da7317cd8676711d8ab0d3819cdad448ce9008",
+          "address": "0x2d24f6a1b06d8defa070a0508b204e4c7b96eb0ed4d1d4be053941cf1adbd0b",
           "class_hash": "0xd23bfa9bc8b2e8400aed633f5c48b3561fe9d6a872d5bd59b24588d893f177",
           "abi": [
             {
@@ -11686,7 +11704,7 @@
           ]
         },
         {
-          "address": "0x591bf3d901b76f47232d0737a905fb89da9d63914242a643b1c004497c6d2e6",
+          "address": "0x1227b1a1e5ffdc27268be3fa2c27705b5af717c43fbd911ad0c425e4f34b49d",
           "class_hash": "0x7831a5d86c235f0167a4ad140e5ff40bd1efb901c73971255b94a95208db96e",
           "abi": [
             {
@@ -11881,7 +11899,7 @@
           ]
         },
         {
-          "address": "0x6776a4b787bea597a5938faa354f68fd0ddfe9bf0e8e2bdaef4d7f54fc32d3a",
+          "address": "0x3c1051f73f0e59825426b9d2b9e6c18a5c832419c6e492261cecc6656f1a8fe",
           "class_hash": "0x78f70ba05b3b9afc909333edaf8cf754ac2ea5174f7f9565710baf721cf4e37",
           "abi": [
             {
@@ -12081,7 +12099,7 @@
           ]
         },
         {
-          "address": "0x6574daf0b15cd71b15b45b89d379a66b11dd01da7e6e258ddb7b0f0ae7e444f",
+          "address": "0x53d695d64824edc4850176343b99644fdd05c7850360c601f8f5c9c0227069",
           "class_hash": "0x5be03adb8a7a6ae0c79d733324959cbc5dfcc9051e0e2aacda3006dcd64b592",
           "abi": [
             {
@@ -12318,7 +12336,7 @@
           ]
         },
         {
-          "address": "0x7e86d13a7c99ba8a78336385511387258d9988b4d7a894066138f82e735fd82",
+          "address": "0x31b5afe44014b2412847ab5ef8830f407e34e644f6ccc2e7f574fa21b3897b2",
           "class_hash": "0x15f8cdd7fd24beab128f8e65af56e2261fcbc8a225dd40d14531a661a3d224d",
           "abi": [
             {
@@ -12584,7 +12602,7 @@
           ]
         },
         {
-          "address": "0xae524175d42a6852edc05eb0e4be8ddbfa89fed1e2c08b8fd0dfb16db985b4",
+          "address": "0x65f6e870643a95e9212cb5578446c773b18c58394e67185dc0c9952312d519e",
           "class_hash": "0x1e6f6d0cd4a1ac3dfd9c71e2001955035b26ee0967009247248d44dd4ddc3ce",
           "abi": [
             {
@@ -12904,7 +12922,7 @@
           ]
         },
         {
-          "address": "0x7ba0fca6f9af62aedb7307399a57e39615d83c0306e54fa0624d978ed60b8a",
+          "address": "0x6e7c3a7b066d6501a8c9f9f2f6ca7de6258ddf133746af41f6c4913f2d66434",
           "class_hash": "0x45c893aa6e248df1b06e1360ee7992af5bd02cbb76aafa54615e1b208c75308",
           "abi": [
             {
@@ -13375,7 +13393,7 @@
           ]
         },
         {
-          "address": "0x4cf64607d60f5505a18b1138d381c78863259630b1e70ea6c9ca2f78339ce05",
+          "address": "0x69469c4d912cc048327932cf74a774b3c8df31f2b806351176eadb93c07f707",
           "class_hash": "0x24c4c0ca1ad17c1541dc49230f76254d02a0144923584047508d583836ee0ad",
           "abi": [
             {
@@ -13681,7 +13699,7 @@
           ]
         },
         {
-          "address": "0x1f1a0660c4aecf641caff9ef6f142a3dfa22ab291ebfb7f871eff3dc1555",
+          "address": "0x572f52ec28cffc87ca458036041888a4f59886cb23c474badac7ecaff76414d",
           "class_hash": "0x6b649c4f5c48e4161b5e49251f47d7fa396b3074562fec488088a688f0260bd",
           "abi": [
             {
@@ -14158,7 +14176,7 @@
           ]
         },
         {
-          "address": "0x216daf93e54d9299c8b8f84be9fc59757d8b4273da62a9d2eba362c73832932",
+          "address": "0x422e375e6f59d10977e17018eaeda3c18d86399583e238821a762bb29ab7c7c",
           "class_hash": "0x5833017b6164c6310f11052e86ff28f80858a833651448bec09285f0c286553",
           "abi": [
             {
@@ -14410,7 +14428,7 @@
           ]
         },
         {
-          "address": "0x370bd1f0a17430c92455d9e79732d3de5e12977c65f1dd64602a12bcdfd44a0",
+          "address": "0x65d1ed709544332793b43f55415047608cf9b1874e13cd4e03ad8c891b39676",
           "class_hash": "0x238a3f689448bddc438f1c4d9fb00cd73e56ebb144d374d2eb686a5deb28282",
           "abi": [
             {
@@ -14887,7 +14905,7 @@
           ]
         },
         {
-          "address": "0x2dc34388a2fc63331c68ef72d4b59f9aed0683a141665cfb5b99aeda10bc713",
+          "address": "0x30857f56376b4d8a541fe1cb94d94274a33d011aacab5d5b00127a1e43bcf61",
           "class_hash": "0x69618c05c9218ddb1031167a168a6bbf398288b1eab248201953112cce0e0f9",
           "abi": [
             {

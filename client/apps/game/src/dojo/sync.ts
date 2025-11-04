@@ -208,7 +208,10 @@ export const initialSync = async (
   const firstNonOwnedStructure = await sqlApi.fetchFirstStructure();
 
   if (firstNonOwnedStructure) {
-    state.setSpectatorRealmEntityId(firstNonOwnedStructure.entity_id);
+    state.setStructureEntityId(firstNonOwnedStructure.entity_id, {
+      spectator: true,
+      worldMapPosition: { col: firstNonOwnedStructure.coord_x, row: firstNonOwnedStructure.coord_y },
+    });
     await getStructuresDataFromTorii(setup.network.toriiClient, setup.network.contractComponents as any, [
       {
         entityId: firstNonOwnedStructure.entity_id,
