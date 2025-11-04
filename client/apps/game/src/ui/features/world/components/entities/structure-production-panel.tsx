@@ -3,6 +3,7 @@ import { useBuildings } from "@bibliothecadao/react";
 import { ClientComponents, ResourcesIds, getProducedResource } from "@bibliothecadao/types";
 import { memo, useEffect, useMemo, useState } from "react";
 
+import { BottomHudEmptyState } from "@/ui/features/world/components/hud-bottom";
 import { ProductionStatusBadge } from "@/ui/shared";
 import { ComponentValue } from "@dojoengine/recs";
 import { formatTimeRemaining } from "../../../economy/resources/entity-resource-table/utils";
@@ -132,7 +133,15 @@ export const StructureProductionPanel = memo(
     );
 
     if (!resourceProductionSummary.length) {
-      return <div className={`${smallTextClass} text-gold/60 italic`}>No production buildings.</div>;
+      return (
+        <BottomHudEmptyState
+          tone="subtle"
+          className="min-h-0"
+          textClassName={`${smallTextClass} text-gold/60 italic`}
+        >
+          No production buildings.
+        </BottomHudEmptyState>
+      );
     }
 
     return (

@@ -2,6 +2,7 @@ import { Loader } from "lucide-react";
 import { memo, useMemo } from "react";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { BottomHudEmptyState } from "@/ui/features/world/components/hud-bottom";
 import { HexPosition, ID, RelicRecipientType } from "@bibliothecadao/types";
 
 import { CompactArmyChip } from "@/ui/features/military/components/compact-army-chip";
@@ -65,6 +66,7 @@ const ArmyBannerEntityDetailContent = memo(
       : "flex min-h-0 flex-1 flex-col gap-2";
     const cellBaseClass = wantsGridLayout ? "sm:col-span-1 sm:row-span-1" : undefined;
     const subtleTextClass = clsx("text-gold/60", isCompactLayout ? "text-xxs" : "text-xs");
+    const emptyTextClass = clsx(isCompactLayout ? "text-xxs" : "text-xs", "text-gold/60", "italic");
     const hasWarnings = Boolean(structureResources && explorerResources);
 
     return (
@@ -82,7 +84,13 @@ const ArmyBannerEntityDetailContent = memo(
                 structureResources={structureResources}
               />
             ) : (
-              <span className={cn(subtleTextClass, "italic")}>No proximity warnings.</span>
+              <BottomHudEmptyState
+                tone="subtle"
+                className="min-h-0"
+                textClassName={emptyTextClass}
+              >
+                No proximity warnings.
+              </BottomHudEmptyState>
             )}
           </EntityDetailSection>
 
@@ -93,7 +101,13 @@ const ArmyBannerEntityDetailContent = memo(
             {bannerArmyInfo ? (
               <CompactArmyChip army={bannerArmyInfo} className="border border-gold/25 bg-dark/60" />
             ) : (
-              <span className={cn(subtleTextClass, "italic")}>Army data unavailable.</span>
+              <BottomHudEmptyState
+                tone="subtle"
+                className="min-h-0"
+                textClassName={emptyTextClass}
+              >
+                Army data unavailable.
+              </BottomHudEmptyState>
             )}
           </EntityDetailSection>
 
@@ -113,7 +127,13 @@ const ArmyBannerEntityDetailContent = memo(
                 variant={isBanner ? "tight" : "default"}
               />
             ) : (
-              <span className={cn(subtleTextClass, "italic")}>No supplies carried.</span>
+              <BottomHudEmptyState
+                tone="subtle"
+                className="min-h-0"
+                textClassName={emptyTextClass}
+              >
+                No supplies carried.
+              </BottomHudEmptyState>
             )}
           </EntityDetailSection>
 
@@ -122,17 +142,31 @@ const ArmyBannerEntityDetailContent = memo(
             className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-2 sm:row-start-2", "min-h-0")}
           >
             {isBanner ? (
-              <span className={cn(subtleTextClass, "italic")}>
-                {relicEffects.length > 0
-                  ? `${relicEffects.length} active relic${relicEffects.length > 1 ? "s" : ""}.`
-                  : "No relics assigned."}
-              </span>
+              relicEffects.length > 0 ? (
+                <span className={cn(subtleTextClass)}>
+                  {`${relicEffects.length} active relic${relicEffects.length > 1 ? "s" : ""}.`}
+                </span>
+              ) : (
+                <BottomHudEmptyState
+                  tone="subtle"
+                  className="min-h-0"
+                  textClassName={emptyTextClass}
+                >
+                  No relics assigned.
+                </BottomHudEmptyState>
+              )
             ) : relicEffects.length > 0 ? (
               <div className="max-h-[200px] overflow-auto pr-1">
                 <ActiveRelicEffects relicEffects={relicEffects} entityId={armyEntityId} compact={isCompactLayout} />
               </div>
             ) : (
-              <span className={cn(subtleTextClass, "italic")}>No relics assigned.</span>
+              <BottomHudEmptyState
+                tone="subtle"
+                className="min-h-0"
+                textClassName={emptyTextClass}
+              >
+                No relics assigned.
+              </BottomHudEmptyState>
             )}
           </EntityDetailSection>
         </div>
