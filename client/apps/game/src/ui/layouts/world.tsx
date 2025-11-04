@@ -1,17 +1,18 @@
 import { useSyncPlayerStructures } from "@/hooks/helpers/use-sync-player-structures";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
 import { EndgameModal, NotLoggedInMessage } from "@/ui/shared";
-import { PlayOverlayManager } from "./play-overlay-manager";
 import { Leva } from "leva";
 import { lazy, Suspense } from "react";
 import { env } from "../../../env";
+import { StoryEventStream } from "../features";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
-import { BlitzSetHyperstructureShareholdersTo100 } from "../features/world/components/hyperstructures/blitz-hyperstructure-shareholder";
-import { StoreManagers } from "../store-managers";
 import { TransferAutomationManager } from "../features/infrastructure/automation/transfer-automation-manager";
-import { ProviderHeartbeatWatcher } from "../shared/components/provider-heartbeat-watcher";
-import { NetworkDesyncIndicator } from "../shared/components/network-desync-indicator";
+import { BlitzSetHyperstructureShareholdersTo100 } from "../features/world/components/hyperstructures/blitz-hyperstructure-shareholder";
 import { NetworkDesyncDebugControls } from "../shared/components/network-desync-debug-controls";
+import { NetworkDesyncIndicator } from "../shared/components/network-desync-indicator";
+import { ProviderHeartbeatWatcher } from "../shared/components/provider-heartbeat-watcher";
+import { StoreManagers } from "../store-managers";
+import { PlayOverlayManager } from "./play-overlay-manager";
 
 // Lazy load components
 const ActionInfo = lazy(() =>
