@@ -1,12 +1,5 @@
 [
   {
-    "name": "bltz-rise-gold-30",
-    "slotTimestamp": 1762270200,
-    "deployed": true,
-    "configured": true,
-    "indexed": true
-  },
-  {
     "name": "bltz-void-sage-72",
     "slotTimestamp": 1762284600,
     "deployed": true,
@@ -23,6 +16,13 @@
   {
     "name": "bltz-jade-gate-15",
     "slotTimestamp": 1762335000,
+    "deployed": true,
+    "configured": true,
+    "indexed": true
+  },
+  {
+    "name": "bltz-wild-rune-13",
+    "slotTimestamp": 1762356600,
     "deployed": true,
     "configured": true,
     "indexed": true
