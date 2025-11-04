@@ -106,7 +106,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
         hyperstructureRealmCount,
       };
     },
-    staleTime: 30000,
+    staleTime: 5000,
   });
 
   const handleRefresh = useCallback(async () => {
