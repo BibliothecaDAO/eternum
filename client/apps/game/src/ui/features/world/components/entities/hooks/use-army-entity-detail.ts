@@ -61,7 +61,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
         : [];
       return { ...explorer, relicEffects };
     },
-    staleTime: 30000,
+    staleTime: 5000,
   });
 
   const explorer = explorerData?.explorer;
@@ -79,7 +79,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
       return getStructureFromToriiClient(toriiClient, explorer.owner);
     },
     enabled: !!explorer?.owner,
-    staleTime: 30000,
+    staleTime: 5000,
   });
 
   const structure = structureData?.structure;

@@ -3,6 +3,7 @@ import { memo, useMemo } from "react";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CompactDefenseDisplay } from "@/ui/features/military";
+import { BottomHudEmptyState } from "@/ui/features/world/components/hud-bottom";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
 import { ID, RelicRecipientType } from "@bibliothecadao/types";
 
@@ -67,6 +68,7 @@ const StructureBannerEntityDetailContent = memo(
       : "flex flex-col gap-3";
 
     const subtleTextClass = cn("text-gold/60", getLayoutTextClasses(isCompactLayout, "body"));
+    const emptyTextClass = cn(getLayoutTextClasses(isCompactLayout, "body"), "text-gold/60 italic");
 
     const defenseEmptyCopy = isBanner ? "None" : "No defenders stationed.";
     const productionFallbackCopy = isBanner ? "Production unavailable" : "Buildings & Production data unavailable.";
@@ -104,7 +106,13 @@ const StructureBannerEntityDetailContent = memo(
                 variant={defenseDisplayVariant}
               />
             ) : (
-              <span className={cn(subtleTextClass, "italic")}>{defenseEmptyCopy}</span>
+              <BottomHudEmptyState
+                tone="subtle"
+                className="min-h-0"
+                textClassName={emptyTextClass}
+              >
+                {defenseEmptyCopy}
+              </BottomHudEmptyState>
             )}
           </EntityDetailSection>
 
@@ -171,7 +179,13 @@ const StructureBannerEntityDetailContent = memo(
               compact={compact}
               className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-2 sm:row-start-1")}
             >
-              <span className={cn(subtleTextClass, "italic")}>{productionFallbackCopy}</span>
+              <BottomHudEmptyState
+                tone="subtle"
+                className="min-h-0"
+                textClassName={emptyTextClass}
+              >
+                {productionFallbackCopy}
+              </BottomHudEmptyState>
             </EntityDetailSection>
           )}
 
@@ -212,7 +226,13 @@ const StructureBannerEntityDetailContent = memo(
               compact={compact}
               className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-1 sm:row-start-2")}
             >
-              <span className={cn(subtleTextClass, "italic")}>{inventoryFallbackCopy}</span>
+              <BottomHudEmptyState
+                tone="subtle"
+                className="min-h-0"
+                textClassName={emptyTextClass}
+              >
+                {inventoryFallbackCopy}
+              </BottomHudEmptyState>
             </EntityDetailSection>
           )}
 

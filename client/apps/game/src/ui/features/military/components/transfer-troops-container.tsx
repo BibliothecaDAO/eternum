@@ -329,7 +329,7 @@ export const TransferTroopsContainer = ({
         ? structureBalanceCount
         : typeof guardSlot === "number"
           ? (() => {
-              const availableValue = Number(selectedGuards[guardSlot]?.troops.count ?? 0);
+              const availableValue = selectedGuards.find((guard) => guard.slot === guardSlot)?.troops.count ?? 0;
               return Number.isFinite(availableValue) ? availableValue : 0;
             })()
           : 0;
@@ -340,8 +340,8 @@ export const TransferTroopsContainer = ({
       if (typeof guardSlot !== "number") {
         return { maxTroops: 0, capacityBlocked: null };
       }
-      const targetGuard = targetGuards[guardSlot];
-      const targetGuardCountValue = Number(targetGuard?.troops.count ?? 0);
+      const targetGuard = targetGuards.find((guard) => guard.slot === guardSlot);
+      const targetGuardCountValue = targetGuard?.troops.count ?? 0;
       const targetGuardCount = Number.isFinite(targetGuardCountValue) ? targetGuardCountValue : 0;
       const guardCapacity = Math.max(0, capLimit - targetGuardCount);
       if (cap !== null && guardCapacity <= 0) {
@@ -387,7 +387,7 @@ export const TransferTroopsContainer = ({
 
     if (transferDirection === TransferDirection.ExplorerToStructure) {
       if (typeof guardSlot === "number") {
-        const targetGuard = targetGuards[guardSlot];
+        const targetGuard = targetGuards.find((guard) => guard.slot === guardSlot);
         const targetGuardCountValue = Number(targetGuard?.troops.count ?? 0);
         const targetGuardCount = Number.isFinite(targetGuardCountValue) ? targetGuardCountValue : 0;
         return Math.max(0, troopCapacityLimit - targetGuardCount);

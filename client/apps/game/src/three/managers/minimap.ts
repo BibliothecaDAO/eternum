@@ -635,6 +635,7 @@ class Minimap {
       this.canvas.style.display = "none";
     }
     useUIStore.getState().setShowMinimap(false);
+    this.stopTilesRefreshLoop();
   }
 
   showMinimap() {
@@ -642,6 +643,9 @@ class Minimap {
       this.canvas.style.display = "block";
     }
     useUIStore.getState().setShowMinimap(true);
+    if (this.tilesRefreshIntervalId === null) {
+      this.startTilesRefreshLoop();
+    }
   }
 
   minimizeMinimap() {
@@ -922,10 +926,15 @@ class Minimap {
     if (this.context) this.draw();
   }
 
-  private startTilesRefreshLoop() {
+  private stopTilesRefreshLoop() {
     if (this.tilesRefreshIntervalId !== null) {
       window.clearInterval(this.tilesRefreshIntervalId);
+      this.tilesRefreshIntervalId = null;
     }
+  }
+
+  private startTilesRefreshLoop() {
+    this.stopTilesRefreshLoop();
 
     this.tilesRefreshIntervalId = window.setInterval(() => {
       void this.fetchTiles();
@@ -1109,10 +1118,7 @@ class Minimap {
       (window as any).minimapInstance = undefined;
     }
 
-    if (this.tilesRefreshIntervalId !== null) {
-      window.clearInterval(this.tilesRefreshIntervalId);
-      this.tilesRefreshIntervalId = null;
-    }
+    this.stopTilesRefreshLoop();
 
     console.log(`🧹 Minimap: Disposed ${imagesDisposed} images and cleaned up canvas`);
   }
