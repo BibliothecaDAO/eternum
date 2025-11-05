@@ -1,12 +1,5 @@
 [
   {
-    "name": "bltz-wild-rune-13",
-    "slotTimestamp": 1762356600,
-    "deployed": true,
-    "configured": true,
-    "indexed": true
-  },
-  {
     "name": "bltz-sage-wave-88",
     "slotTimestamp": 1762371000,
     "deployed": true,
@@ -23,6 +16,13 @@
   {
     "name": "bltz-sand-void-64",
     "slotTimestamp": 1762421400,
+    "deployed": true,
+    "configured": true,
+    "indexed": true
+  },
+  {
+    "name": "bltz-vast-zeal-25",
+    "slotTimestamp": 1762443000,
     "deployed": true,
     "configured": true,
     "indexed": true
