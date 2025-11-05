@@ -32,11 +32,6 @@ export const TroopCountSelector = ({
 
   return (
     <div className="mt-6 p-4 rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-brown/30">
-      <div className="text-center mb-4">
-        <h6 className="text-gold text-lg font-bold mb-1">TROOP COUNT</h6>
-        <p className="text-gold/60 text-sm">Select the number of troops to deploy</p>
-      </div>
-
       <div className="space-y-4">
         <div className="flex justify-center gap-3">
           <Button
