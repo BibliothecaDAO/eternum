@@ -513,6 +513,12 @@ export const WorldSelectorModal = ({
               <div className="flex items-center gap-2 mb-4">
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
                 <div className="text-xs font-semibold uppercase tracking-widest text-gold/80 px-2">Factory Games</div>
+                {factoryLoading && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide bg-gold/10 text-gold border border-gold/30">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Loading
+                  </span>
+                )}
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
                 <button
                   onClick={() => void loadFactoryGames()}
@@ -559,126 +565,142 @@ export const WorldSelectorModal = ({
                 <div className="text-[10px] text-gold/60">Ordering: Starts next</div>
               </div> */}
 
-              <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-                {factoryLoading && factoryGames.length === 0 ? (
-                  <div className="rounded-lg border-2 border-dashed border-gold/20 p-8 text-center">
-                    <Loader2 className="w-12 h-12 text-gold/50 mx-auto mb-3 animate-spin" />
-                    <p className="text-sm text-gold/60 font-semibold">Loading factory games...</p>
-                    <p className="text-xs text-gold/40 mt-1">Fetching available worlds from the factory</p>
-                  </div>
-                ) : factoryError ? (
-                  <div className="rounded-lg border-2 border-danger/30 bg-danger/5 p-6 text-center">
-                    <AlertCircle className="w-12 h-12 text-danger/60 mx-auto mb-2" />
-                    <p className="text-sm text-danger font-semibold">Failed to load factory games</p>
-                    <p className="text-xs text-danger/70 mt-1">{factoryError}</p>
-                    <button
-                      onClick={() => void loadFactoryGames()}
-                      className="mt-3 px-3 py-1.5 text-xs rounded-md bg-danger/10 text-danger border border-danger/30 hover:bg-danger/20 transition-all"
-                    >
-                      Try Again
-                    </button>
-                  </div>
-                ) : factoryGames.length === 0 ? (
-                  <div className="rounded-lg border-2 border-dashed border-gold/20 p-6 text-center">
-                    <Globe className="w-12 h-12 text-gold/30 mx-auto mb-2" />
-                    <p className="text-sm text-gold/60">No factory games found</p>
-                    <p className="text-xs text-gold/40 mt-1">Check back later for new worlds</p>
-                  </div>
-                ) : (
-                  (() => {
-                    const online = factoryGames.filter((fg) => fg.status === "ok");
-                    const upcoming = online
-                      .filter((fg) => fg.startMainAt != null && nowSec < (fg.startMainAt as number))
-                      .sort((a, b) => (a.startMainAt as number) - (b.startMainAt as number));
-                    const ongoing = online
-                      .filter(
-                        (fg) =>
-                          fg.startMainAt != null &&
-                          nowSec >= (fg.startMainAt as number) &&
-                          (fg.endAt === 0 || fg.endAt == null || nowSec < (fg.endAt as number)),
-                      )
-                      .sort((a, b) => {
-                        // Infinite games (endAt === 0 or null) should be sorted by start time
-                        if ((a.endAt === 0 || a.endAt == null) && (b.endAt === 0 || b.endAt == null)) {
-                          return (a.startMainAt as number) - (b.startMainAt as number);
-                        }
-                        if (a.endAt === 0 || a.endAt == null) return -1; // Infinite games first
-                        if (b.endAt === 0 || b.endAt == null) return 1;
-                        // Sort by time remaining (soonest to end first)
-                        return (a.endAt as number) - nowSec - ((b.endAt as number) - nowSec);
-                      });
-                    const ended = online
-                      .filter(
-                        (fg) =>
-                          fg.startMainAt != null &&
-                          fg.endAt != null &&
-                          fg.endAt !== 0 &&
-                          nowSec >= (fg.endAt as number),
-                      )
-                      .sort((a, b) => (b.endAt as number) - (a.endAt as number));
-                    const unknown = online
-                      .filter((fg) => fg.startMainAt == null)
-                      .sort((a, b) => a.name.localeCompare(b.name));
+              {/* Factory list container with visible loading overlay when refreshing */}
+              <div className="relative">
+                <div
+                  className="space-y-2 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar"
+                  aria-busy={factoryLoading ? true : undefined}
+                  aria-live="polite"
+                >
+                  {factoryLoading && factoryGames.length === 0 ? (
+                    <div className="rounded-lg border-2 border-dashed border-gold/20 p-8 text-center">
+                      <Loader2 className="w-12 h-12 text-gold/50 mx-auto mb-3 animate-spin" />
+                      <p className="text-sm text-gold/60 font-semibold">Loading factory games...</p>
+                      <p className="text-xs text-gold/40 mt-1">Fetching available worlds from the factory</p>
+                    </div>
+                  ) : factoryError ? (
+                    <div className="rounded-lg border-2 border-danger/30 bg-danger/5 p-6 text-center">
+                      <AlertCircle className="w-12 h-12 text-danger/60 mx-auto mb-2" />
+                      <p className="text-sm text-danger font-semibold">Failed to load factory games</p>
+                      <p className="text-xs text-danger/70 mt-1">{factoryError}</p>
+                      <button
+                        onClick={() => void loadFactoryGames()}
+                        className="mt-3 px-3 py-1.5 text-xs rounded-md bg-danger/10 text-danger border border-danger/30 hover:bg-danger/20 transition-all"
+                      >
+                        Try Again
+                      </button>
+                    </div>
+                  ) : factoryGames.length === 0 ? (
+                    <div className="rounded-lg border-2 border-dashed border-gold/20 p-6 text-center">
+                      <Globe className="w-12 h-12 text-gold/30 mx-auto mb-2" />
+                      <p className="text-sm text-gold/60">No factory games found</p>
+                      <p className="text-xs text-gold/40 mt-1">Check back later for new worlds</p>
+                    </div>
+                  ) : (
+                    (() => {
+                      const online = factoryGames.filter((fg) => fg.status === "ok");
+                      const upcoming = online
+                        .filter((fg) => fg.startMainAt != null && nowSec < (fg.startMainAt as number))
+                        .sort((a, b) => (a.startMainAt as number) - (b.startMainAt as number));
+                      const ongoing = online
+                        .filter(
+                          (fg) =>
+                            fg.startMainAt != null &&
+                            nowSec >= (fg.startMainAt as number) &&
+                            (fg.endAt === 0 || fg.endAt == null || nowSec < (fg.endAt as number)),
+                        )
+                        .sort((a, b) => {
+                          // Infinite games (endAt === 0 or null) should be sorted by start time
+                          if ((a.endAt === 0 || a.endAt == null) && (b.endAt === 0 || b.endAt == null)) {
+                            return (a.startMainAt as number) - (b.startMainAt as number);
+                          }
+                          if (a.endAt === 0 || a.endAt == null) return -1; // Infinite games first
+                          if (b.endAt === 0 || b.endAt == null) return 1;
+                          // Sort by time remaining (soonest to end first)
+                          return (a.endAt as number) - nowSec - ((b.endAt as number) - nowSec);
+                        });
+                      const ended = online
+                        .filter(
+                          (fg) =>
+                            fg.startMainAt != null &&
+                            fg.endAt != null &&
+                            fg.endAt !== 0 &&
+                            nowSec >= (fg.endAt as number),
+                        )
+                        .sort((a, b) => (b.endAt as number) - (a.endAt as number));
+                      const unknown = online
+                        .filter((fg) => fg.startMainAt == null)
+                        .sort((a, b) => a.name.localeCompare(b.name));
 
-                    return (
-                      <>
-                        {upcoming.length > 0 && (
-                          <>
-                            <div className="flex items-center gap-2 my-2">
-                              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
-                              <div className="text-[10px] font-semibold uppercase tracking-widest text-gold/80 px-2">
-                                Upcoming
+                      return (
+                        <>
+                          {upcoming.length > 0 && (
+                            <>
+                              <div className="flex items-center gap-2 my-2">
+                                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+                                <div className="text-[10px] font-semibold uppercase tracking-widest text-gold/80 px-2">
+                                  Upcoming
+                                </div>
+                                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
                               </div>
-                              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
-                            </div>
-                            {upcoming.map((fg) => renderFactoryItem(fg))}
-                          </>
-                        )}
-                        {ongoing.length > 0 && (
-                          <>
-                            <div className="flex items-center gap-2 my-2">
-                              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
-                              <div className="text-[10px] font-semibold uppercase tracking-widest text-gold/80 px-2">
-                                Ongoing
+                              {upcoming.map((fg) => renderFactoryItem(fg))}
+                            </>
+                          )}
+                          {ongoing.length > 0 && (
+                            <>
+                              <div className="flex items-center gap-2 my-2">
+                                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+                                <div className="text-[10px] font-semibold uppercase tracking-widest text-gold/80 px-2">
+                                  Ongoing
+                                </div>
+                                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
                               </div>
-                              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
-                            </div>
-                            {ongoing.map((fg) => renderFactoryItem(fg))}
-                          </>
-                        )}
-                        {ended.length > 0 && (
-                          <>
-                            <button
-                              onClick={() => setShowEnded(!showEnded)}
-                              className="flex items-center gap-2 my-2 w-full hover:opacity-80 transition-opacity cursor-pointer"
-                            >
-                              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
-                              <div className="text-[10px] font-semibold uppercase tracking-widest text-gold/80 px-2">
-                                Ended ({ended.length}) {showEnded ? "▲" : "▼"}
-                              </div>
-                              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
-                            </button>
-                            {showEnded && ended.map((fg) => renderFactoryItem(fg))}
-                          </>
-                        )}
-                        {unknown.length > 0 && (
-                          <>
-                            <button
-                              onClick={() => setShowAwaiting(!showAwaiting)}
-                              className="flex items-center gap-2 my-2 w-full hover:opacity-80 transition-opacity cursor-pointer"
-                            >
-                              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
-                              <div className="text-[10px] font-semibold uppercase tracking-widest text-gold/80 px-2">
-                                Awaiting Configuration ({unknown.length}) {showAwaiting ? "▲" : "▼"}
-                              </div>
-                              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
-                            </button>
-                            {showAwaiting && unknown.map((fg) => renderFactoryItem(fg))}
-                          </>
-                        )}
-                      </>
-                    );
-                  })()
+                              {ongoing.map((fg) => renderFactoryItem(fg))}
+                            </>
+                          )}
+                          {ended.length > 0 && (
+                            <>
+                              <button
+                                onClick={() => setShowEnded(!showEnded)}
+                                className="flex items-center gap-2 my-2 w-full hover:opacity-80 transition-opacity cursor-pointer"
+                              >
+                                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+                                <div className="text-[10px] font-semibold uppercase tracking-widest text-gold/80 px-2">
+                                  Ended ({ended.length}) {showEnded ? "▲" : "▼"}
+                                </div>
+                                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+                              </button>
+                              {showEnded && ended.map((fg) => renderFactoryItem(fg))}
+                            </>
+                          )}
+                          {unknown.length > 0 && (
+                            <>
+                              <button
+                                onClick={() => setShowAwaiting(!showAwaiting)}
+                                className="flex items-center gap-2 my-2 w-full hover:opacity-80 transition-opacity cursor-pointer"
+                              >
+                                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+                                <div className="text-[10px] font-semibold uppercase tracking-widest text-gold/80 px-2">
+                                  Awaiting Configuration ({unknown.length}) {showAwaiting ? "▲" : "▼"}
+                                </div>
+                                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+                              </button>
+                              {showAwaiting && unknown.map((fg) => renderFactoryItem(fg))}
+                            </>
+                          )}
+                        </>
+                      );
+                    })()
+                  )}
+                </div>
+                {factoryLoading && factoryGames.length > 0 && (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-brown/80 backdrop-blur-sm">
+                    <div className="text-center">
+                      <Loader2 className="w-10 h-10 text-gold animate-spin mx-auto mb-2" />
+                      <p className="text-sm text-gold font-semibold">Refreshing factory games…</p>
+                      <p className="text-xs text-gold/70">Updating world availability and timers</p>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
