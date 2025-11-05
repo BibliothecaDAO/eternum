@@ -1,19 +1,5 @@
 [
   {
-    "name": "bltz-void-sage-72",
-    "slotTimestamp": 1762284600,
-    "deployed": true,
-    "configured": true,
-    "indexed": true
-  },
-  {
-    "name": "bltz-zeal-fade-24",
-    "slotTimestamp": 1762302600,
-    "deployed": true,
-    "configured": true,
-    "indexed": true
-  },
-  {
     "name": "bltz-jade-gate-15",
     "slotTimestamp": 1762335000,
     "deployed": true,
@@ -23,6 +9,20 @@
   {
     "name": "bltz-wild-rune-13",
     "slotTimestamp": 1762356600,
+    "deployed": true,
+    "configured": true,
+    "indexed": true
+  },
+  {
+    "name": "bltz-sage-wave-88",
+    "slotTimestamp": 1762371000,
+    "deployed": true,
+    "configured": true,
+    "indexed": true
+  },
+  {
+    "name": "bltz-fire-myth-38",
+    "slotTimestamp": 1762389000,
     "deployed": true,
     "configured": true,
     "indexed": true
