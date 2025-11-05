@@ -396,6 +396,8 @@ const FactoryGamesList = () => {
 
   const { ongoing, upcoming, ended } = byCategory();
   const nothing = ongoing.length === 0 && upcoming.length === 0 && ended.length === 0;
+  const { setup } = useDojo();
+  const onSpectatorModeClick = useSpectatorModeClick(setup);
 
   return (
     <div className="space-y-3">
@@ -799,7 +801,10 @@ const RegistrationState = ({
   hasSufficientFeeBalance: boolean;
   isFeeBalanceLoading: boolean;
 }) => {
+  const { setup } = useDojo();
+
   const [isRegistering, setIsRegistering] = useState(false);
+  const onSpectatorModeClick = useSpectatorModeClick(setup);
 
   const tokenReady = !requiresEntryToken || Boolean(availableEntryTokenId);
 
@@ -917,7 +922,7 @@ const GameActiveState = ({
 
   const goToStructure = useGoToStructure(setup);
   const realmEntities = usePlayerOwnedRealmEntities();
-  
+  const onSpectatorModeClick = useSpectatorModeClick(setup);
   const [isSettling, setIsSettling] = useState(false);
 
   const handleSettle = async () => {
