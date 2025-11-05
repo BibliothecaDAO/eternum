@@ -100,7 +100,7 @@ const useAccountGate = ({
   const { connect, connectors } = useConnect();
   const { isConnected, isConnecting, connector } = useAccount();
   const setAccountName = useAccountStore((state) => state.setAccountName);
-  const spectatorNavigate = useSpectatorModeClick(setupResult?.components ?? null);
+  const spectatorNavigate = useSpectatorModeClick(setupResult);
 
   const [placeholderAccount, setPlaceholderAccount] = useState<Account | null>(null);
 

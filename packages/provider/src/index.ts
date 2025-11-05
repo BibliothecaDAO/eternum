@@ -17,9 +17,12 @@ import {
   GetTransactionReceiptResponse,
   uint256,
 } from "starknet";
-import { TransactionType } from "./types";
+import { ProviderHeartbeatManager, type ProviderDesyncStatus } from "./provider-heartbeat-manager";
+import { TransactionType, type ProviderHeartbeat, type ProviderHeartbeatSource, type ProviderSyncState } from "./types";
 export const NAMESPACE = "s1_eternum";
 export { TransactionType };
+export type { ProviderDesyncStatus, ProviderHeartbeat, ProviderHeartbeatSource, ProviderSyncState };
+export const PROVIDER_HEARTBEAT_EVENT = "providerHeartbeat";
 
 /**
  * Gets a contract address from the manifest by name
@@ -231,6 +234,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     signer: Account | AccountInterface,
     transactionDetails: AllowArray<Call>,
   ) => Promise<GetTransactionReceiptResponse>;
+  private heartbeatManager: ProviderHeartbeatManager;
   /**
    * Create a new EternumProvider instance
    *
@@ -250,6 +254,50 @@ export class EternumProvider extends EnhancedDojoProvider {
       return worldAddress;
     };
     this.promiseQueue = new PromiseQueue(this);
+    this.heartbeatManager = new ProviderHeartbeatManager((heartbeat) => {
+      this.emit(PROVIDER_HEARTBEAT_EVENT, heartbeat);
+    });
+  }
+
+  public getSyncState(): ProviderSyncState {
+    return this.heartbeatManager.getSyncState();
+  }
+
+  public getDesyncStatus(thresholdMs = 10_000): ProviderDesyncStatus {
+    return this.heartbeatManager.getDesyncStatus(thresholdMs);
+  }
+
+  public simulateHeartbeat(
+    options: {
+      source?: ProviderHeartbeatSource;
+      timestamp?: number;
+      offsetMs?: number;
+      blockNumber?: number;
+      transactionHash?: string;
+    } = {},
+  ): ProviderHeartbeat {
+    return this.heartbeatManager.simulateHeartbeat(options);
+  }
+
+  public recordStreamActivity(meta?: { blockNumber?: number; timestamp?: number }) {
+    this.heartbeatManager.recordStreamActivity(meta);
+  }
+
+  private recordTransactionSubmission() {
+    this.heartbeatManager.recordTransactionSubmission();
+  }
+
+  private recordTransactionConfirmation({
+    transactionHash,
+    blockNumber,
+  }: {
+    transactionHash: string;
+    blockNumber?: number | null;
+  }) {
+    this.heartbeatManager.recordTransactionConfirmation({
+      transactionHash,
+      blockNumber,
+    });
   }
 
   // ============ Optional client-side batching API ============
@@ -328,6 +376,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @returns Transaction receipt
    */
   async executeAndCheckTransaction(signer: Account | AccountInterface, transactionDetails: AllowArray<Call>) {
+    this.recordTransactionSubmission();
     if (typeof window !== "undefined") {
       console.log({ signer, transactionDetails });
     }
@@ -503,6 +552,19 @@ export class EternumProvider extends EnhancedDojoProvider {
       console.error(`Error waiting for transaction ${transactionHash}`);
       throw error;
     }
+
+    const receiptAny = receipt as any;
+    const blockNumber =
+      typeof receiptAny?.block_number === "number"
+        ? receiptAny.block_number
+        : typeof receiptAny?.blockNumber === "number"
+          ? receiptAny.blockNumber
+          : undefined;
+
+    this.recordTransactionConfirmation({
+      transactionHash,
+      blockNumber,
+    });
 
     // Check if the transaction was reverted and throw an error if it was
     if (receipt.isReverted()) {

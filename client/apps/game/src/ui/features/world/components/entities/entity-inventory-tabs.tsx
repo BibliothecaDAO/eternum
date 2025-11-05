@@ -1,6 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
+import { BottomHudEmptyState } from "@/ui/features/world/components/hud-bottom";
 import { RelicActivationPopup } from "@/ui/features/economy/resources/relic-activation-popup";
 import { divideByPrecision, getBlockTimestamp, ResourceManager } from "@bibliothecadao/eternum";
 import { ClientComponents, getRelicInfo, ID, isRelic, RelicRecipientType } from "@bibliothecadao/types";
@@ -121,9 +122,9 @@ const InventorySection = ({
 
   if (!items.length) {
     return (
-      <div className={`${textSize} text-gold/60 italic`}>
+      <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={`${textSize} text-gold/60 italic`}>
         {isRelicSection ? "No relics stored." : "No resources stored."}
-      </div>
+      </BottomHudEmptyState>
     );
   }
 
@@ -238,27 +239,15 @@ export const EntityInventoryTabs = ({
     <Tabs variant="inventory" size={compact ? "small" : "medium"} className={`w-full gap-3 ${className ?? ""}`}>
       <Tabs.List className="flex w-full justify-start gap-4 border-b border-gold/20 pb-0.5">
         <Tabs.Tab className="!mx-0">
-          <span className={labelTextClass}>{resourceLabel}</span>
-          <span className={badgeClass}>{buckets.regular.length}</span>
-        </Tabs.Tab>
-        <Tabs.Tab className="!mx-0">
           <span className={labelTextClass}>{relicLabel}</span>
           <span className={badgeClass}>{buckets.relicList.length}</span>
         </Tabs.Tab>
+        <Tabs.Tab className="!mx-0">
+          <span className={labelTextClass}>{resourceLabel}</span>
+          <span className={badgeClass}>{buckets.regular.length}</span>
+        </Tabs.Tab>
       </Tabs.List>
       <Tabs.Panels className="mt-3 w-full">
-        <Tabs.Panel className="w-full">
-          <InventorySection
-            items={buckets.regular}
-            isRelicSection={false}
-            entityId={entityId}
-            entityOwnerId={entityOwnerId}
-            allowRelicActivation={false}
-            compact={compact}
-            recipientType={recipientType}
-            maxItems={maxItems}
-          />
-        </Tabs.Panel>
         <Tabs.Panel className="w-full">
           <InventorySection
             items={buckets.relicList}
@@ -266,6 +255,18 @@ export const EntityInventoryTabs = ({
             entityId={entityId}
             entityOwnerId={entityOwnerId}
             allowRelicActivation={allowRelicActivation}
+            compact={compact}
+            recipientType={recipientType}
+            maxItems={maxItems}
+          />
+        </Tabs.Panel>
+        <Tabs.Panel className="w-full">
+          <InventorySection
+            items={buckets.regular}
+            isRelicSection={false}
+            entityId={entityId}
+            entityOwnerId={entityOwnerId}
+            allowRelicActivation={false}
             compact={compact}
             recipientType={recipientType}
             maxItems={maxItems}

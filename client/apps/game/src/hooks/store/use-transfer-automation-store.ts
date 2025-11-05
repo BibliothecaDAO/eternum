@@ -27,6 +27,7 @@ export interface TransferAutomationEntry {
     mode: "percent" | "flat";
     percent?: number; // 5..90 when mode = percent
     flatPercent?: number; // 1..90 when mode = flat (percent of current balance at execution time)
+    flatAmount?: number; // explicit human amount when mode = flat
   }>;
   amountMode?: "percent" | "flat"; // default percent for v1
   percent: number; // 5..90 when amountMode = percent

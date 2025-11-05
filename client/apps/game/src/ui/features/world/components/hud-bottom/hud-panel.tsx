@@ -1,5 +1,9 @@
 import { ReactNode } from "react";
 
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+
+import { BOTTOM_HUD_SURFACE_BASE } from "./styles";
+
 interface HudPanelProps {
   title?: string;
   icon?: ReactNode;
@@ -12,11 +16,13 @@ interface HudPanelProps {
 export const HudPanel = ({ title, icon, actions, children, className }: HudPanelProps) => {
   return (
     <section
-      className={`flex h-full min-w-0 flex-col gap-3 rounded-2xl border border-white/5 bg-black/5 p-3 shadow-[0_12px_30px_rgba(0,0,0,0.12)] overflow-hidden ${
-        className ?? ""
-      }`}
+      className={cn(
+        "flex h-full min-w-0 flex-col gap-3 overflow-hidden rounded-2xl p-3",
+        BOTTOM_HUD_SURFACE_BASE,
+        className,
+      )}
     >
-      <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
+      <div className="flex-1 min-h-0 overflow-auto">{children}</div>
     </section>
   );
 };

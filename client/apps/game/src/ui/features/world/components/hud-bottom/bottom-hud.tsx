@@ -1,8 +1,8 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { MiniMapNavigation } from "@/ui/features/world/containers/mini-map-navigation";
-import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { PlayerRelicTray } from "@/ui/features/relics/components/player-relic-tray";
-import { RealtimeChatShell } from "@/ui/features/social/realtime-chat/ui/realtime-chat-shell";
+import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
+import { MiniMapNavigation } from "@/ui/features/world/containers/mini-map-navigation";
 import { useQuery } from "@bibliothecadao/react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { ReactNode } from "react";
@@ -15,36 +15,42 @@ interface HudSlotProps {
 }
 
 const HudSlot = ({ children, className }: HudSlotProps) => (
-  <div className={`flex h-full min-h-0 flex-1 flex-col gap-3 overflow-hidden ${className ?? ""}`}>{children}</div>
+  <div className={`flex h-full min-h-0 flex-1 flex-col gap-3 overflow-auto ${className ?? ""}`}>{children}</div>
 );
 
 export const BottomHud = () => {
   const { isMapView } = useQuery();
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const isMinimized = useUIStore((state) => state.isBottomHudMinimized);
-  const toggleMinimized = useUIStore((state) => state.toggleBottomHudMinimized);
+  const setIsBottomHudMinimized = useUIStore((state) => state.setIsBottomHudMinimized);
 
   if (!isMapView || showBlankOverlay) {
     return null;
   }
 
-  return (
-    <BottomHudShell className={isMinimized ? "gap-2 py-3" : undefined}>
-      <div className="flex w-full items-center justify-end">
-        <button
-          type="button"
-          onClick={toggleMinimized}
-          aria-expanded={!isMinimized}
-          aria-label={isMinimized ? "Expand bottom HUD" : "Collapse bottom HUD"}
-          className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70 transition hover:border-white/20 hover:bg-black/40 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/40"
-        >
-          <span>{isMinimized ? "Show HUD" : "Hide HUD"}</span>
-          {isMinimized ? <ChevronUp size={14} className="shrink-0" /> : <ChevronDown size={14} className="shrink-0" />}
-        </button>
-      </div>
+  const expandedHeight = "h-[30vh] min-h-[30vh] max-h-[30vh]";
+  const minimizedHeight = "h-[40px] min-h-[40px] max-h-[40px]";
+  const shellClassName = cn(isMinimized ? minimizedHeight : expandedHeight, isMinimized ? "gap-0 pt-0" : "gap-3 pt-4");
 
+  const toggleMinimize = () => {
+    setIsBottomHudMinimized(!isMinimized);
+  };
+
+  return (
+    <BottomHudShell className={shellClassName}>
+      <button
+        onClick={toggleMinimize}
+        className="pointer-events-auto absolute -top-0 right-4 flex items-center justify-center rounded-lg bg-brown/80 backdrop-blur-sm px-3 py-1 transition-colors hover:bg-brown/90 border border-gold/20"
+        aria-label={isMinimized ? "Maximize HUD" : "Minimize HUD"}
+      >
+        {isMinimized ? (
+          <ChevronUp className="h-4 w-4 text-gold/70" />
+        ) : (
+          <ChevronDown className="h-4 w-4 text-gold/70" />
+        )}
+      </button>
       {!isMinimized && (
-        <div className="flex min-h-0 w-full flex-1 items-stretch gap-3 overflow-hidden">
+        <div className="flex h-full min-h-0 w-full flex-1 items-stretch gap-3 overflow-hidden">
           <HudSlot className="flex-[1] min-w-[280px]">
             <HudPanel className="flex-1 min-h-0">
               <MiniMapNavigation variant="embedded" className="h-full min-h-0" />
@@ -58,11 +64,8 @@ export const BottomHud = () => {
           </HudSlot>
 
           <HudSlot className="flex-[1.2] min-w-[320px]">
-            <HudPanel className="flex-[0.38] min-h-0">
+            <HudPanel className="flex-[0.5] min-h-0">
               <PlayerRelicTray variant="embedded" className="h-full" />
-            </HudPanel>
-            <HudPanel className="flex-[0.62] min-h-0">
-              <RealtimeChatShell displayMode="embedded" className="h-full" />
             </HudPanel>
           </HudSlot>
         </div>

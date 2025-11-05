@@ -1,3 +1,6 @@
+import { useGoToStructure } from "@/hooks/helpers/use-navigate";
+import { sqlApi } from "@/services/api";
+import { displayAddress } from "@/ui/utils/utils";
 import {
   MAP_DATA_REFRESH_INTERVAL,
   MapDataStore,
@@ -13,9 +16,6 @@ import {
   getStructureRelicEffects,
   getStructureTypeName,
 } from "@bibliothecadao/eternum";
-import { sqlApi } from "@/services/api";
-import { useGoToStructure } from "@/hooks/helpers/use-navigate";
-import { displayAddress } from "@/ui/utils/utils";
 import { useDojo } from "@bibliothecadao/react";
 import { getStructureFromToriiClient } from "@bibliothecadao/torii";
 import { ContractAddress, ID, MERCENARIES, RelicEffectWithEndTick, StructureType } from "@bibliothecadao/types";
@@ -33,12 +33,13 @@ interface AlignmentBadge {
 
 export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEntityDetailOptions) => {
   const {
+    setup,
     network: { toriiClient },
     account,
     setup: { components },
   } = useDojo();
 
-  const goToStructure = useGoToStructure();
+  const goToStructure = useGoToStructure(setup);
 
   const userAddress = ContractAddress(account.account.address);
   const [lastRefresh, setLastRefresh] = useState(0);
@@ -105,7 +106,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
         hyperstructureRealmCount,
       };
     },
-    staleTime: 30000,
+    staleTime: 5000,
   });
 
   const handleRefresh = useCallback(async () => {

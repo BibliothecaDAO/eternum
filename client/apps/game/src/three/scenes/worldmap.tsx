@@ -1,7 +1,7 @@
 import { AudioManager } from "@/audio/core/AudioManager";
 import { toast } from "sonner";
 
-import { getMapFromToriiExact } from "@/dojo/queries";
+import { getMapFromToriiExact, getStructuresDataFromTorii } from "@/dojo/queries";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
@@ -56,6 +56,8 @@ import {
   RelicEffect,
   Structure,
 } from "@bibliothecadao/types";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Account, AccountInterface } from "starknet";
 import { Color, Group, InstancedBufferAttribute, Matrix4, Object3D, Raycaster, Vector2, Vector3 } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
@@ -134,6 +136,57 @@ export default class WorldmapScene extends HexagonScene {
   private followCameraTimeout: ReturnType<typeof setTimeout> | null = null;
   private notifiedBattleEvents = new Set<string>();
   private previouslyHoveredHex: HexPosition | null = null;
+  private async ensureStructureSynced(structureId: ID, hexCoords: HexPosition) {
+    const components = this.dojo.components as any;
+    const toriiClient = this.dojo.network?.toriiClient;
+    const contractComponents = this.dojo.network?.contractComponents;
+
+    const contractCoords = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+
+    if (!components?.Structure || !toriiClient || !contractComponents) {
+      return;
+    }
+
+    let entityKey: any;
+    try {
+      entityKey = getEntityIdFromKeys([BigInt(structureId)]);
+    } catch (error) {
+      console.warn("[WorldmapScene] Unable to build entity key for structure", structureId, error);
+      return;
+    }
+
+    const existing = getComponentValue(components.Structure, entityKey);
+    if (existing) {
+      return;
+    }
+
+    const numericId = Number(structureId);
+    if (!Number.isFinite(hexCoords.col) || !Number.isFinite(hexCoords.row)) {
+      console.warn("[WorldmapScene] Unable to determine coordinates for structure", structureId);
+      return;
+    }
+    if (!Number.isFinite(numericId)) {
+      console.warn("[WorldmapScene] Structure id is not a finite number", structureId);
+      return;
+    }
+
+    const previousCursor = document.body.style.cursor;
+    document.body.style.cursor = "wait";
+
+    try {
+      await getStructuresDataFromTorii(toriiClient, contractComponents as any, [
+        {
+          entityId: numericId,
+          position: { col: contractCoords.x, row: contractCoords.y },
+        },
+      ]);
+    } catch (error) {
+      console.error("[WorldmapScene] Failed to fetch structure data from Torii", error);
+    } finally {
+      document.body.style.cursor = previousCursor;
+    }
+  }
+
   private cachedMatrices: Map<string, Map<string, { matrices: InstancedBufferAttribute | null; count: number }>> =
     new Map();
   private cachedMatrixOrder: string[] = [];
@@ -901,14 +954,41 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
-  // go into hex view if it's a structure you own
+  // double-click to enter hex view; spectate when the structure is not yours
   protected onHexagonDoubleClick(hexCoords: HexPosition) {
     const { structure } = this.getHexagonEntity(hexCoords);
-    if (structure && structure.owner === ContractAddress(useAccountStore.getState().account?.address || "")) {
-      this.state.setStructureEntityId(structure.id);
-      // remove this for now because not sure if best ux
-      navigateToStructure(hexCoords.col, hexCoords.row, "hex");
+    if (!structure) {
+      return;
     }
+
+    void this.enterStructureFromWorldmap(structure, hexCoords);
+  }
+
+  private async enterStructureFromWorldmap(structure: HexEntityInfo, hexCoords: HexPosition) {
+    const accountAddress = ContractAddress(useAccountStore.getState().account?.address || "");
+    const isMine = structure.owner === accountAddress;
+
+    try {
+      console.log("[WorldmapScene] Syncing structure before entry", structure.id, hexCoords);
+      await this.ensureStructureSynced(structure.id, hexCoords);
+    } catch (error) {
+      console.error("[WorldmapScene] Failed to sync structure before entry", error);
+    }
+
+    const contractPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const worldMapPosition =
+      Number.isFinite(Number(contractPosition?.x)) && Number.isFinite(Number(contractPosition?.y))
+        ? { col: Number(contractPosition?.x), row: Number(contractPosition?.y) }
+        : undefined;
+
+    const shouldSpectate = this.state.isSpectating || !isMine;
+
+    this.state.setStructureEntityId(structure.id, {
+      spectator: shouldSpectate,
+      worldMapPosition,
+    });
+
+    navigateToStructure(hexCoords.col, hexCoords.row, "hex");
   }
 
   protected getHexagonEntity(hexCoords: HexPosition) {
@@ -968,8 +1048,6 @@ export default class WorldmapScene extends HexagonScene {
         // Note: Label filtering is now handled in entity selection methods
         // to avoid removing labels too aggressively on initial selection
       }
-    } else {
-      this.state.setLeftNavigationView(LeftView.EntityView);
     }
   }
 
@@ -2750,6 +2828,7 @@ export default class WorldmapScene extends HexagonScene {
     this.resourceFXManager.destroy();
     this.stopRelicValidationTimer();
     this.clearCache();
+    this.minimap.dispose();
 
     // Clean up hover label manager
     // this.hoverLabelManager.dispose();
@@ -3075,7 +3154,11 @@ export default class WorldmapScene extends HexagonScene {
       this.handleHexSelection({ col: structure.position.x, row: structure.position.y }, true);
       this.onStructureSelection(structure.entityId, { col: structure.position.x, row: structure.position.y });
       // Set the structure entity ID in the UI store
-      this.state.setStructureEntityId(structure.entityId);
+      const worldMapPosition = { col: Number(structure.position.x), row: Number(structure.position.y) };
+      this.state.setStructureEntityId(structure.entityId, {
+        worldMapPosition,
+        spectator: this.state.isSpectating,
+      });
       const normalizedPosition = new Position({ x: structure.position.x, y: structure.position.y }).getNormalized();
       // Use 0 duration for instant camera teleportation
       this.moveCameraToColRow(normalizedPosition.x, normalizedPosition.y, 0);

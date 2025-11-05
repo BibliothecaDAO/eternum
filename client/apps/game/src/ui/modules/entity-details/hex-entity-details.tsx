@@ -114,7 +114,7 @@ export const HexEntityDetails = () => {
                   />
                 </div>
               ) : isChest ? (
-                <RelicCrateEntityDetail crateEntityId={tile.occupier_id} compact={false} />
+                <RelicCrateEntityDetail crateEntityId={tile.occupier_id} compact={false} layoutVariant="default" />
               ) : isTileOccupierQuest(tile.occupier_type) ? (
                 <QuestEntityDetail questEntityId={tile.occupier_id} compact={false} className="max-w-md mx-auto" />
               ) : (

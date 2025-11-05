@@ -1,8 +1,9 @@
-import { useGoToStructure } from "@/hooks/helpers/use-navigate";
+import { useGoToStructure, useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getBlockTimestamp, getIsBlitz, Position } from "@bibliothecadao/eternum";
 
 import { useUISound } from "@/audio/hooks/useUISound";
+import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CapacityInfo, SecondaryMenuItems } from "@/ui/features/world";
 import { NameChangePopup } from "@/ui/shared";
@@ -14,6 +15,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ClientComponents, ContractAddress, ID } from "@bibliothecadao/types";
+import { useComponentValue } from "@dojoengine/react";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";
@@ -47,19 +49,24 @@ export const TopLeftNavigation = memo(() => {
   const playHover = useUISound("ui.hover");
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-  // const followArmyMoves = useUIStore((state) => state.followArmyMoves);
-  // const setFollowArmyMoves = useUIStore((state) => state.setFollowArmyMoves);
   const followArmyCombats = useUIStore((state) => state.followArmyCombats);
   const setFollowArmyCombats = useUIStore((state) => state.setFollowArmyCombats);
+  const isSpectating = useUIStore((state) => state.isSpectating);
+  const worldMapReturnPosition = useUIStore((state) => state.worldMapReturnPosition);
+  const lastControlledStructureEntityId = useUIStore((state) => state.lastControlledStructureEntityId);
+
+  const exitSpectatorMode = useUIStore((state) => state.exitSpectatorMode);
   const isFollowingArmy = useUIStore((state) => state.isFollowingArmy);
   const followingArmyMessage = useUIStore((state) => state.followingArmyMessage);
 
   const { favorites, toggleFavorite } = useFavoriteStructures();
   const { structureGroups, updateStructureGroup } = useStructureGroups();
 
+  // force a refresh of getEntityInfo when the structure data arrives
+  const structure = useComponentValue(setup.components.Structure, getEntityIdFromKeys([BigInt(structureEntityId)]));
   const entityInfo = useMemo(
     () => getEntityInfo(structureEntityId, ContractAddress(account.address), setup.components, getIsBlitz()),
-    [structureEntityId, currentDefaultTick, account.address],
+    [structureEntityId, currentDefaultTick, account.address, structure],
   );
 
   const selectedStructure = useMemo(() => {
@@ -70,7 +77,10 @@ export const TopLeftNavigation = memo(() => {
     return new Position(selectedStructure?.position || { x: 0, y: 0 }).getNormalized();
   }, [selectedStructure]);
 
-  const goToStructure = useGoToStructure();
+  console.log("[TopLeftNavigation] selectedStructure:", lastControlledStructureEntityId);
+
+  const goToStructure = useGoToStructure(setup);
+  const navigateToMapView = useNavigateToMapView();
 
   const onSelectStructure = useCallback(
     (entityId: ID) => {
@@ -83,7 +93,7 @@ export const TopLeftNavigation = memo(() => {
 
       goToStructure(entityId, new Position({ x: structurePosition.coord_x, y: structurePosition.coord_y }), isMapView);
     },
-    [isMapView, setup.components.Structure],
+    [goToStructure, isMapView, setup.components.Structure],
   );
 
   const handleNameChange = useCallback((structureEntityId: ID, newName: string) => {
@@ -95,6 +105,46 @@ export const TopLeftNavigation = memo(() => {
     deleteEntityNameLocalStorage(structureEntityId);
     setStructureNameChange(null);
   }, []);
+  const handleReturnToMyRealms = useCallback(() => {
+    const fallbackId =
+      lastControlledStructureEntityId !== UNDEFINED_STRUCTURE_ENTITY_ID
+        ? lastControlledStructureEntityId
+        : structures[0]?.entityId;
+
+    const spectatedBase = isSpectating
+      ? getComponentValue(setup.components.Structure, getEntityIdFromKeys([BigInt(structureEntityId)]))?.base
+      : null;
+
+    const fallbackBase =
+      fallbackId !== undefined && fallbackId !== null && fallbackId !== UNDEFINED_STRUCTURE_ENTITY_ID
+        ? getComponentValue(setup.components.Structure, getEntityIdFromKeys([BigInt(fallbackId)]))?.base
+        : null;
+
+    const storedReturnPosition = worldMapReturnPosition;
+
+    exitSpectatorMode();
+
+    const mapTarget = spectatedBase
+      ? { x: spectatedBase.coord_x, y: spectatedBase.coord_y }
+      : storedReturnPosition
+        ? { x: storedReturnPosition.col, y: storedReturnPosition.row }
+        : fallbackBase
+          ? { x: fallbackBase.coord_x, y: fallbackBase.coord_y }
+          : null;
+
+    if (mapTarget) {
+      navigateToMapView(new Position({ x: mapTarget.x, y: mapTarget.y }));
+    }
+  }, [
+    exitSpectatorMode,
+    isSpectating,
+    lastControlledStructureEntityId,
+    navigateToMapView,
+    setup.components.Structure,
+    structureEntityId,
+    structures,
+    worldMapReturnPosition,
+  ]);
 
   const handleRequestNameChange = useCallback((structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => {
     setStructureNameChange(structure);
@@ -155,7 +205,8 @@ export const TopLeftNavigation = memo(() => {
                   const checked = e.target.checked;
                   playClick();
                   goToStructure(
-                    structureEntityId,
+                    // if there's a controlled structure, needs to go back there
+                    lastControlledStructureEntityId || structureEntityId,
                     new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
                     checked,
                   );
@@ -178,25 +229,6 @@ export const TopLeftNavigation = memo(() => {
               World
             </span>
             <div className="relative flex gap-2">
-              {/* TODO: Add back in later if needed */}
-              {/* <button
-                type="button"
-                className={cn(
-                  "rounded-full p-2 transition-all duration-300 border-2",
-                  followArmyMoves
-                    ? "bg-gold/30 hover:bg-gold/40 border-gold shadow-lg shadow-gold/20 animate-pulse"
-                    : "bg-gold/10 hover:bg-gold/20 border-gold/30",
-                )}
-                onClick={() => setFollowArmyMoves(!followArmyMoves)}
-                aria-pressed={followArmyMoves}
-                title={followArmyMoves ? "Stop following army movement" : "Follow army movement"}
-              >
-                {followArmyMoves ? (
-                  <EyeIcon className="w-4 h-4 text-gold animate-pulse" />
-                ) : (
-                  <EyeOffIcon className="w-4 h-4 text-gold/60" />
-                )}
-              </button> */}
               <button
                 type="button"
                 className={cn(

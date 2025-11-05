@@ -3,6 +3,7 @@ import { useBuildings } from "@bibliothecadao/react";
 import { ClientComponents, ResourcesIds, getProducedResource } from "@bibliothecadao/types";
 import { memo, useEffect, useMemo, useState } from "react";
 
+import { BottomHudEmptyState } from "@/ui/features/world/components/hud-bottom";
 import { ProductionStatusBadge } from "@/ui/shared";
 import { ComponentValue } from "@dojoengine/recs";
 import { formatTimeRemaining } from "../../../economy/resources/entity-resource-table/utils";
@@ -12,6 +13,7 @@ interface StructureProductionPanelProps {
   resources: ComponentValue<ClientComponents["Resource"]["schema"]>;
   compact?: boolean;
   smallTextClass: string;
+  showProductionSummary?: boolean;
 }
 
 interface ResourceProductionSummaryItem {
@@ -26,7 +28,13 @@ interface ResourceProductionSummaryItem {
 }
 
 export const StructureProductionPanel = memo(
-  ({ structure, resources, compact = false, smallTextClass }: StructureProductionPanelProps) => {
+  ({
+    structure,
+    resources,
+    compact = false,
+    smallTextClass,
+    showProductionSummary = true,
+  }: StructureProductionPanelProps) => {
     const [timerTick, setTimerTick] = useState(0);
 
     useEffect(() => {
@@ -125,14 +133,20 @@ export const StructureProductionPanel = memo(
     );
 
     if (!resourceProductionSummary.length) {
-      return <div className={`${smallTextClass} text-gold/60 italic`}>No production buildings.</div>;
+      return (
+        <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={`${smallTextClass} text-gold/60 italic`}>
+          No production buildings.
+        </BottomHudEmptyState>
+      );
     }
 
     return (
       <>
-        <div className={`${smallTextClass} text-gold/60 mb-2`}>
-          {`${activeProductionBuildings}/${totalProductionBuildings} producing`}
-        </div>
+        {showProductionSummary && (
+          <div className={`${smallTextClass} text-gold/60 mb-2`}>
+            {`${activeProductionBuildings}/${totalProductionBuildings} producing`}
+          </div>
+        )}
         <div className="flex flex-wrap items-center gap-2">
           {[...resourceProductionSummary]
             .sort((a, b) => {

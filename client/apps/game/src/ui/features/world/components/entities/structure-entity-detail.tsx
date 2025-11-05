@@ -1,16 +1,20 @@
-import { memo } from "react";
 import { Eye, Loader, RefreshCw } from "lucide-react";
+import { memo } from "react";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CompactDefenseDisplay } from "@/ui/features/military";
+import { BottomHudEmptyState } from "@/ui/features/world/components/hud-bottom";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
+import { StructureUpgradeButton } from "@/ui/modules/entity-details/components/structure-upgrade-button";
+import { ID, RelicRecipientType } from "@bibliothecadao/types";
+import { ImmunityTimer } from "../structures/immunity-timer";
 import { ActiveRelicEffects } from "./active-relic-effects";
 import { EntityInventoryTabs } from "./entity-inventory-tabs";
 import { StructureProductionPanel } from "./structure-production-panel";
-import { ImmunityTimer } from "../structures/immunity-timer";
-import { StructureUpgradeButton } from "@/ui/modules/entity-details/components/structure-upgrade-button";
-import { RelicRecipientType, ID } from "@bibliothecadao/types";
 
+import { useGoToStructure } from "@/hooks/helpers/use-navigate";
+import { Position } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { useStructureEntityDetail } from "./hooks/use-structure-entity-detail";
 
 export interface StructureEntityDetailProps {
@@ -29,6 +33,7 @@ export const StructureEntityDetail = memo(
     maxInventory = Infinity,
     showButtons = false,
   }: StructureEntityDetailProps) => {
+    const { setup } = useDojo();
     const {
       structure,
       structureDetails,
@@ -55,6 +60,7 @@ export const StructureEntityDetail = memo(
       handleViewStructure,
       structureEntityIdNumber,
     } = useStructureEntityDetail({ structureEntityId });
+    const goToStructure = useGoToStructure(setup);
 
     if (isLoadingStructure) {
       return (
@@ -123,11 +129,20 @@ export const StructureEntityDetail = memo(
                       >
                         <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
                       </button>
-                      {isMine && (
-                        <button onClick={handleViewStructure} className={standardActionClasses} title="View structure">
-                          <Eye className="h-4 w-4" />
-                        </button>
-                      )}
+                      <button
+                        onClick={() =>
+                          void goToStructure(
+                            structureEntityId,
+                            new Position({ x: structure.base.coord_x, y: structure.base.coord_y }),
+                            false,
+                            { spectator: !isMine },
+                          )
+                        }
+                        className={standardActionClasses}
+                        title={isMine ? "View structure" : "Spectate structure"}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
                     </div>
                     {structureEntityIdNumber > 0 && (
                       <StructureUpgradeButton
@@ -185,9 +200,16 @@ export const StructureEntityDetail = memo(
                 slotsMax={guardSlotsMax}
                 structureId={Number(structure.entity_id ?? 0)}
                 canManageDefense={isMine}
+                variant={compact ? "banner" : "default"}
               />
             ) : (
-              <div className={`${smallTextClass} italic text-gold/60`}>No defenders stationed.</div>
+              <BottomHudEmptyState
+                tone="subtle"
+                className="min-h-0"
+                textClassName={`${smallTextClass} text-gold/60 italic`}
+              >
+                No defenders stationed.
+              </BottomHudEmptyState>
             )}
           </div>
 
@@ -204,7 +226,13 @@ export const StructureEntityDetail = memo(
           ) : (
             <div className={panelClasses()}>
               <div className={`${sectionTitleClass} mb-1`}>Buildings & Production</div>
-              <div className={`${smallTextClass} italic text-gold/60`}>Buildings & Production data unavailable.</div>
+              <BottomHudEmptyState
+                tone="subtle"
+                className="min-h-0"
+                textClassName={`${smallTextClass} text-gold/60 italic`}
+              >
+                Buildings & Production data unavailable.
+              </BottomHudEmptyState>
             </div>
           )}
 
@@ -227,7 +255,13 @@ export const StructureEntityDetail = memo(
           ) : (
             <div className={panelClasses()}>
               <div className={`${sectionTitleClass} mb-2`}>Inventory</div>
-              <div className={`${smallTextClass} italic text-gold/60`}>No resources stored.</div>
+              <BottomHudEmptyState
+                tone="subtle"
+                className="min-h-0"
+                textClassName={`${smallTextClass} text-gold/60 italic`}
+              >
+                No resources stored.
+              </BottomHudEmptyState>
             </div>
           )}
 

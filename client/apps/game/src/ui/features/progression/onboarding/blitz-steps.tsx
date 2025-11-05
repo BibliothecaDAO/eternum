@@ -911,11 +911,13 @@ const GameActiveState = ({
   onSettle: () => Promise<void>;
 }) => {
   const {
+    setup,
     setup: { components },
   } = useDojo();
 
-  const goToStructure = useGoToStructure();
+  const goToStructure = useGoToStructure(setup);
   const realmEntities = usePlayerOwnedRealmEntities();
+  
   const [isSettling, setIsSettling] = useState(false);
 
   const handleSettle = async () => {
@@ -936,7 +938,11 @@ const GameActiveState = ({
     const structure = getComponentValue(components.Structure, firstRealm);
     if (!structure) return;
 
-    goToStructure(structure.entity_id, new Position({ x: structure.base.coord_x, y: structure.base.coord_y }), false);
+    void goToStructure(
+      structure.entity_id,
+      new Position({ x: structure.base.coord_x, y: structure.base.coord_y }),
+      false,
+    );
   };
 
   return (
@@ -1043,7 +1049,6 @@ export const BlitzOnboarding = () => {
     return currentBlockTimestamp > seasonEndAt;
   }, [currentBlockTimestamp, seasonEndAt]);
   const devMode = configManager.getDevModeConfig()?.dev_mode_on;
-  const onSpectatorModeClick = useSpectatorModeClick(setup.components);
   const registrationCount = useMemo(() => {
     const liveCount = worldConfigValue?.blitz_registration_config?.registration_count;
 
@@ -1075,7 +1080,7 @@ export const BlitzOnboarding = () => {
   const playerSettled = useEntityQuery([HasValue(components.Structure, { owner: BigInt(account.address) })]).length > 0;
 
   useSetAddressName(setup, playerSettled ? account : null, connector);
-  const onSpectatorModeClickTop = useSpectatorModeClick(setup.components);
+  const onSpectatorModeClickTop = useSpectatorModeClick(setup);
 
   const requiresEntryToken = useMemo(() => {
     if (!blitzConfig) return false;
