@@ -2828,6 +2828,7 @@ export default class WorldmapScene extends HexagonScene {
     this.resourceFXManager.destroy();
     this.stopRelicValidationTimer();
     this.clearCache();
+    this.minimap.dispose();
 
     // Clean up hover label manager
     // this.hoverLabelManager.dispose();

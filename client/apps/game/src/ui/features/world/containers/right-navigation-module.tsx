@@ -185,6 +185,7 @@ export const RightNavigationModule = () => {
   const storyChroniclesActive = view === RightView.StoryEvents;
   const resourceTableActive = view === RightView.ResourceTable;
   const isOffscreen = view === RightView.None;
+  const isOverlayActive = isModalOpen || showBlankOverlay;
   const isBottomHudVisible = isMapView && !showBlankOverlay;
   const navHeight = useMemo(() => {
     if (!isBottomHudVisible) {
@@ -406,7 +407,7 @@ export const RightNavigationModule = () => {
           <div
             className={clsx(
               "flex justify-end fixed right-0 bottom-6 transition-opacity duration-200",
-              isModalOpen ? "pointer-events-none z-[10] opacity-0" : "pointer-events-auto z-[45] opacity-100",
+              isOverlayActive ? "pointer-events-none z-[10] opacity-0" : "pointer-events-auto z-[45] opacity-100",
             )}
           >
             <RealtimeChatShell
