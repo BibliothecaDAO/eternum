@@ -4,8 +4,8 @@ import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { useDojo } from "@bibliothecadao/react";
-import { Loader2 } from "lucide-react";
-import { memo, useCallback, useMemo, useState } from "react";
+import { AlertCircle, Loader2, RefreshCw, WifiOff, X } from "lucide-react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 const formatElapsed = (elapsedMs: number | null) => {
@@ -22,6 +22,18 @@ export const NetworkDesyncIndicator = () => {
   const clearForcedDesync = useNetworkStatusStore((state) => state.clearForcedDesync);
   const [isResyncing, setIsResyncing] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
+  const [isDismissed, setIsDismissed] = useState(false);
+  const showRefreshAction = status.reason === "pending-tx";
+
+  useEffect(() => {
+    if (!status.isDesynced) {
+      setIsDismissed(false);
+    }
+  }, [status.isDesynced]);
+
+  useEffect(() => {
+    setIsDismissed(false);
+  }, [status.reason]);
 
   const {
     setup,
@@ -37,6 +49,7 @@ export const NetworkDesyncIndicator = () => {
       return {
         headline: "Desync forced for testing",
         body: "Clear the forced mode or wait for the timer to expire.",
+        icon: AlertCircle,
       } as const;
     }
 
@@ -44,6 +57,7 @@ export const NetworkDesyncIndicator = () => {
       return {
         headline: "Awaiting first heartbeat",
         body: "The client hasn't heard from the network yet.",
+        icon: WifiOff,
       } as const;
     }
 
@@ -53,6 +67,7 @@ export const NetworkDesyncIndicator = () => {
         headline: "Transaction pending",
         body: elapsed ? `Still waiting after ${elapsed}.` : "Transaction still pending...",
         highlight: true,
+        icon: Loader2,
       } as const;
     }
 
@@ -66,12 +81,14 @@ export const NetworkDesyncIndicator = () => {
       return {
         headline: "No recent updates",
         body: `Waiting for network activity${blockInfo}.`,
+        icon: WifiOff,
       } as const;
     }
 
     return {
       headline: "Connection behind",
       body: `Last update ${elapsed} ago${blockInfo}.`,
+      icon: WifiOff,
     } as const;
   }, [status]);
 
@@ -95,32 +112,83 @@ export const NetworkDesyncIndicator = () => {
     }
   }, [clearForcedDesync, isResyncing, provider, setup]);
 
-  if (!status.isDesynced) {
+  const handleRefreshClient = useCallback(() => {
+    if (typeof window === "undefined") return;
+    window.location.reload();
+  }, []);
+
+  const handleDismiss = useCallback(() => {
+    setIsDismissed(true);
+  }, []);
+
+  if (!status.isDesynced || !description || isDismissed) {
     return null;
   }
 
-  if (!description) {
-    return null;
-  }
+  const Icon = description.icon;
 
   return (
-    <div className="pointer-events-auto fixed left-1/2 bottom-20 z-[1100] w-full max-w-xs -translate-x-1/2 rounded-lg border border-amber-500/40 bg-[#1f1a12f0] p-4 text-left text-xs text-white shadow-lg">
-      <div className="flex items-start gap-2">
-        {isResyncing ? (
-          <Loader2 className="mt-0.5 h-4 w-4 animate-spin text-amber-200" aria-hidden />
-        ) : (
-          <StatusDot highlight={Boolean(description.highlight)} />
-        )}
-        <div className="flex-1">
-          <p className="font-semibold text-amber-200">{description.headline}</p>
-          <p className="mt-1 text-white/80">{description.body}</p>
-          {lastError ? <p className="mt-1 text-amber-400">{lastError}</p> : null}
+    <div className="pointer-events-auto fixed left-1/2 top-24 z-[1100] w-full max-w-md -translate-x-1/2 animate-in fade-in slide-in-from-bottom-4 duration-300">
+      <div className="relative rounded-xl border border-amber-500/30 bg-gradient-to-br from-[#2a2318] to-[#1f1a12] p-5 shadow-2xl backdrop-blur-sm">
+        <button
+          onClick={handleDismiss}
+          className="absolute right-3 top-3 rounded-md p-1 text-amber-200/60 transition-colors hover:bg-amber-500/10 hover:text-amber-200"
+          aria-label="Dismiss desync notice"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        <div className="flex items-start gap-3">
+          <div className="flex-shrink-0">
+            {isResyncing ? (
+              <Loader2 className="h-5 w-5 animate-spin text-amber-400" aria-hidden />
+            ) : (
+              <div className={`rounded-full p-2 ${description.highlight ? "bg-red-500/20" : "bg-amber-500/20"}`}>
+                <Icon className={`h-5 w-5 ${description.highlight ? "text-red-400" : "text-amber-400"}`} aria-hidden />
+              </div>
+            )}
+          </div>
+
+          <div className="flex-1 space-y-1">
+            <h4 className="font-semibold text-amber-100">{description.headline}</h4>
+            <p className="text-sm text-amber-200/80">{description.body}</p>
+            {lastError && (
+              <div className="mt-2 rounded-md bg-red-500/10 p-2 text-xs text-red-300">
+                <span className="font-medium">Error:</span> {lastError}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-      <div className="mt-3 flex justify-center gap-2">
-        <Button variant="secondary" size="xs" disabled={isResyncing} onClick={handleResync} aria-busy={isResyncing}>
-          {isResyncing ? "Re-syncing…" : "Resume from latest block"}
-        </Button>
+
+        <div className="mt-4 flex justify-end gap-2">
+          {showRefreshAction ? (
+            <Button variant="primary" size="xs" onClick={handleRefreshClient} className="gap-1.5">
+              <RefreshCw className="h-3.5 w-3.5" />
+              Refresh client
+            </Button>
+          ) : (
+            <Button
+              variant="secondary"
+              size="xs"
+              disabled={isResyncing}
+              onClick={handleResync}
+              aria-busy={isResyncing}
+              className="gap-1.5"
+            >
+              {isResyncing ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Re-syncing…
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Resume from latest block
+                </>
+              )}
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
