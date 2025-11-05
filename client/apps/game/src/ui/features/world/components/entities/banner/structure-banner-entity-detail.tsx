@@ -78,8 +78,6 @@ const StructureBannerEntityDetailContent = memo(
     const activeRelicIds = useMemo(() => relicEffects.map((effect) => Number(effect.id)), [relicEffects]);
     const defenseDisplayVariant: EntityDetailLayoutVariant = isBanner || isCompactLayout ? "banner" : "default";
 
-    if (!structure || !structureDetails) return null;
-
     if (isLoadingStructure) {
       return (
         <div className="mt-2 flex h-full items-center justify-center">
@@ -87,6 +85,8 @@ const StructureBannerEntityDetailContent = memo(
         </div>
       );
     }
+
+    if (!structure || !structureDetails) return null;
 
     return (
       <div className={containerClass}>
