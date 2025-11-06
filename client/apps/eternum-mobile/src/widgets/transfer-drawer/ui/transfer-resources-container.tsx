@@ -415,7 +415,8 @@ export const TransferResourcesContainer = ({
                       <div className="flex justify-between text-sm text-muted-foreground">
                         <label>Amount to Transfer:</label>
                         <span>
-                          {resourceAmounts[resource.resourceId]?.toLocaleString() || 0} /{displayAmount.toLocaleString()}
+                          {resourceAmounts[resource.resourceId]?.toLocaleString() || 0} /
+                          {displayAmount.toLocaleString()}
                         </span>
                       </div>
                       <NumericInput

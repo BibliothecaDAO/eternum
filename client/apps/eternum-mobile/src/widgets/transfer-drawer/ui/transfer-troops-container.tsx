@@ -384,7 +384,9 @@ export const TransferTroopsContainer = ({
             </div>
           </div>
           {!isStructureOwnerOfExplorer && (
-            <div className="text-destructive text-sm mb-2">Cannot use balance: Explorer not owned by this structure.</div>
+            <div className="text-destructive text-sm mb-2">
+              Cannot use balance: Explorer not owned by this structure.
+            </div>
           )}
           <p className="text-muted-foreground text-sm">
             Available: {divideByPrecision(Number(structureTroopBalance.balance)).toLocaleString()} troops
@@ -414,7 +416,7 @@ export const TransferTroopsContainer = ({
           guardSlot !== undefined &&
           selectedGuards[guardSlot] && (
             <p className="text-muted-foreground text-xs">
-              From Structure (Slot {guardSlot + 1} - {DEFENSE_NAMES[guardSlot as keyof typeof DEFENSE_NAMES]}): Tier {" "}
+              From Structure (Slot {guardSlot + 1} - {DEFENSE_NAMES[guardSlot as keyof typeof DEFENSE_NAMES]}): Tier{" "}
               {selectedGuards[guardSlot].troops.tier} {selectedGuards[guardSlot].troops.category}
             </p>
           )}
@@ -427,45 +429,43 @@ export const TransferTroopsContainer = ({
     </Card>
   );
 
-  const guardSlotCard =
-    ((transferDirection === TransferDirection.StructureToExplorer && !useStructureBalance) ||
-      transferDirection === TransferDirection.ExplorerToStructure) && (
-      <Card>
-        <CardContent className="p-4">
-          <h4 className="font-semibold mb-3">Guard Slot</h4>
-          <div className="grid grid-cols-1 gap-2">
-            {availableGuards.map((slotIndex) => {
-              const guards =
-                transferDirection === TransferDirection.StructureToExplorer ? selectedGuards : targetGuards;
-              if (!guards[slotIndex] || !guards[slotIndex].troops) {
-                return (
-                  <div key={slotIndex} className="p-2 border rounded-md bg-muted text-muted-foreground">
-                    Slot {slotIndex + 1} - Empty/Error
-                  </div>
-                );
-              }
-              const troopInfo = guards[slotIndex].troops;
-              const isActive = guardSlot === slotIndex;
+  const guardSlotCard = ((transferDirection === TransferDirection.StructureToExplorer && !useStructureBalance) ||
+    transferDirection === TransferDirection.ExplorerToStructure) && (
+    <Card>
+      <CardContent className="p-4">
+        <h4 className="font-semibold mb-3">Guard Slot</h4>
+        <div className="grid grid-cols-1 gap-2">
+          {availableGuards.map((slotIndex) => {
+            const guards = transferDirection === TransferDirection.StructureToExplorer ? selectedGuards : targetGuards;
+            if (!guards[slotIndex] || !guards[slotIndex].troops) {
               return (
-                <div
-                  key={slotIndex}
-                  onClick={() => setGuardSlot(slotIndex)}
-                  className={`p-3 border rounded-md cursor-pointer transition-all ${
-                    isActive ? "bg-primary/10 border-primary" : "hover:bg-muted"
-                  }`}
-                >
-                  <div className="font-semibold">{DEFENSE_NAMES[slotIndex as keyof typeof DEFENSE_NAMES]}</div>
-                  <div className="text-sm text-muted-foreground">
-                    Tier {troopInfo.tier} {troopInfo.category}
-                  </div>
-                  <div className="text-sm">Available: {troopInfo.count.toLocaleString()}</div>
+                <div key={slotIndex} className="p-2 border rounded-md bg-muted text-muted-foreground">
+                  Slot {slotIndex + 1} - Empty/Error
                 </div>
               );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-    );
+            }
+            const troopInfo = guards[slotIndex].troops;
+            const isActive = guardSlot === slotIndex;
+            return (
+              <div
+                key={slotIndex}
+                onClick={() => setGuardSlot(slotIndex)}
+                className={`p-3 border rounded-md cursor-pointer transition-all ${
+                  isActive ? "bg-primary/10 border-primary" : "hover:bg-muted"
+                }`}
+              >
+                <div className="font-semibold">{DEFENSE_NAMES[slotIndex as keyof typeof DEFENSE_NAMES]}</div>
+                <div className="text-sm text-muted-foreground">
+                  Tier {troopInfo.tier} {troopInfo.category}
+                </div>
+                <div className="text-sm">Available: {troopInfo.count.toLocaleString()}</div>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   const amountCard = (
     <Card>

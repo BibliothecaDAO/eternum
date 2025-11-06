@@ -89,8 +89,6 @@ export function RealtimeChatShell({
     }
   }, [actions, defaultZoneId, zoneKey]);
 
-
-
   const toggleHeightExpand = () => {
     setIsHeightExpanded(!isHeightExpanded);
   };
@@ -165,7 +163,6 @@ export function RealtimeChatShell({
 
   const activeTab = openTabs.find((t) => t.id === activeTabId);
 
-
   return (
     <div className={cn("relative w-full", className)}>
       <div
@@ -180,7 +177,9 @@ export function RealtimeChatShell({
                 ? "h-64"
                 : "h-72"
             : showInlineToggle
-              ? (isEmbedded ? "h-16" : "h-14")
+              ? isEmbedded
+                ? "h-16"
+                : "h-14"
               : "h-0 min-h-0 pointer-events-none",
           isEmbedded ? "w-full" : "w-[800px] max-w-[45vw]",
           !isExpanded && !showInlineToggle && "w-0 max-w-0",

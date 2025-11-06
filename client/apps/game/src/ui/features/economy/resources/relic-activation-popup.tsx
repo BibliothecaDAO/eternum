@@ -6,11 +6,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { ID, RelicRecipientType } from "@bibliothecadao/types";
 import React, { useState } from "react";
 
-import {
-  isRelicCompatible,
-  useRelicEssenceStatus,
-  useRelicMetadata,
-} from "../../relics/hooks/use-relic-activation";
+import { isRelicCompatible, useRelicEssenceStatus, useRelicMetadata } from "../../relics/hooks/use-relic-activation";
 import {
   RelicEssenceRequirement,
   RelicIncompatibilityNotice,
@@ -167,13 +163,8 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
       )}
 
       {!compatible && (
-        <RelicIncompatibilityNotice
-          relicInfo={relicInfo}
-          recipientType={recipientType}
-          className="mb-4"
-        />
+        <RelicIncompatibilityNotice relicInfo={relicInfo} recipientType={recipientType} className="mb-4" />
       )}
     </BasePopup>
   );
 };
-

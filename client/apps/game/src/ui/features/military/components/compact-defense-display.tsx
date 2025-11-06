@@ -24,11 +24,7 @@ import { EntityDetailLayoutVariant } from "@/ui/features/world/components/entiti
 import { SLOT_ICON_MAP } from "./slot-icon-map";
 import { DefenseTroop } from "./structure-defence";
 import { UnifiedArmyCreationModal } from "./unified-army-creation-modal";
-import {
-  getStructureDefenseSlotLimit,
-  getUnlockedGuardSlots,
-  MAX_GUARD_SLOT_COUNT,
-} from "../utils/defense-slot-utils";
+import { getStructureDefenseSlotLimit, getUnlockedGuardSlots, MAX_GUARD_SLOT_COUNT } from "../utils/defense-slot-utils";
 
 interface CompactDefenseDisplayProps {
   troops: DefenseTroop[];

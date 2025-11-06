@@ -71,8 +71,7 @@ export const ArmyWarning = ({ army, explorerResources, structureResources }: Arm
   }, []);
 
   const hasTravelStaminaWarning = stamina.amount < minStaminaNeeded;
-  const hasExploreStaminaWarning =
-    stamina.amount < minStaminaNeededExplore && stamina.amount >= minStaminaNeeded;
+  const hasExploreStaminaWarning = stamina.amount < minStaminaNeededExplore && stamina.amount >= minStaminaNeeded;
 
   const hasWarnings = hasTravelStaminaWarning || hasExploreStaminaWarning || notEnoughFood;
 

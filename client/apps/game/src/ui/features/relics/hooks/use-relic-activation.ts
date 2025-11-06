@@ -78,14 +78,10 @@ export const useRelicEssenceStatus = (entityOwnerId: ID, essenceCost: number) =>
   } as const;
 };
 
-export const isRelicCompatible = (
-  relicInfo: RelicInfoResult,
-  recipientType: RelicRecipientType,
-): boolean => {
+export const isRelicCompatible = (relicInfo: RelicInfoResult, recipientType: RelicRecipientType): boolean => {
   if (!relicInfo) {
     return false;
   }
 
   return relicInfo.recipientType === recipientType;
 };
-
