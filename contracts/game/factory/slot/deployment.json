@@ -1,12 +1,5 @@
 [
   {
-    "name": "bltz-faery-moth-66",
-    "slotTimestamp": 1762421400,
-    "deployed": true,
-    "configured": true,
-    "indexed": true
-  },
-  {
     "name": "bltz-pink-lumen-22",
     "slotTimestamp": 1762443000,
     "deployed": true,
@@ -23,6 +16,13 @@
   {
     "name": "bltz-equinox-aegis-65",
     "slotTimestamp": 1762475400,
+    "deployed": true,
+    "configured": true,
+    "indexed": true
+  },
+  {
+    "name": "bltz-serpentis-castle-39",
+    "slotTimestamp": 1762507800,
     "deployed": true,
     "configured": true,
     "indexed": true
