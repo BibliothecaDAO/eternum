@@ -12,7 +12,6 @@ import { useAccountStore } from "../store/use-account-store";
 import { buildPolicies } from "./policies";
 import { useControllerAccount } from "./use-controller-account";
 
-const preset: string = "eternum";
 const slot: string = env.VITE_PUBLIC_SLOT;
 const namespace: string = "s1_eternum";
 
@@ -70,7 +69,6 @@ const controller = new ControllerConnector({
         : env.VITE_PUBLIC_CHAIN === "mainnet"
           ? constants.StarknetChainId.SN_MAIN
           : constants.StarknetChainId.SN_SEPOLIA,
-  preset,
   policies: chain_id === constants.StarknetChainId.SN_MAIN ? undefined : buildPolicies(dojoConfig.manifest),
   slot,
   namespace,
