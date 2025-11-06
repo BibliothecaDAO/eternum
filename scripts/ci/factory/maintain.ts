@@ -4,7 +4,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { generateWorldConfigCalldata } from "./config-calldata.ts";
 import { generateFactoryCalldata } from "./factory-calldata.ts";
-import { readDeployment, writeDeployment, readArchive, writeArchive } from "./io.ts";
+import { readArchive, readDeployment, writeArchive, writeDeployment } from "./io.ts";
 
 interface Params {
   chain: string;
@@ -65,7 +65,44 @@ function slotsUTC(): number[] {
 // read/write of deployment and archive state factored into io.ts
 
 function genName(): string {
-  const WORDS = ["fire","wave","gale","mist","dawn","dusk","rain","snow","sand","clay","iron","gold","jade","ruby","opal","rush","flow","push","pull","burn","heal","grow","fade","rise","fall","soar","dive","gate","keep","tomb","fort","maze","peak","vale","cave","rift","void","shard","rune","bold","wild","vast","pure","dark","cold","warm","soft","hard","deep","high","true","myth","epic","sage","lore","fate","doom","fury","zeal","flux","echo","nova","apex"];
+  const WORDS = [
+    // original set
+    "fire","wave","gale","mist","dawn","dusk","rain","snow","sand","clay","iron","gold","jade","ruby","opal","rush","flow","push","pull","burn","heal","grow","fade","rise","fall","soar","dive","gate","keep","tomb","fort","maze","peak","vale","cave","rift","void","shard","rune","bold","wild","vast","pure","dark","cold","warm","soft","hard","deep","high","true","myth","epic","sage","lore","fate","doom","fury","zeal","flux","echo","nova","apex",
+    // expanded set (no repeats)
+    "ember","blaze","flame","spark","cinder","ash","soot","smoke","steam","vapor","cloud","storm","squall","gust","breeze","zephyr","tempest","cyclone","typhoon","monsoon","deluge","torrent","flood","surge","tide","surf","foam","spray","haze","fog","drift",
+    "river","brook","creek","spring","lake","pond","sea","ocean","bay","gulf","reef","shoal","dune","delta","fjord",
+    "stone","rock","boulder","pebble","gravel","soil","loam","mud","mire","bog","swamp","marsh","fen","moss","root","bark","leaf","thorn","bloom","bud","seed","vine","ivy","fern","grove","glade","woods","forest","jungle","thicket","copse","meadow","prairie","steppe","field","plain","plateau","ridge","cliff","bluff","crag","spire","pinnacle","pillar","arch","bridge","causeway",
+    "hill","mount","summit","crest","crown","vertex","horn","abutment",
+    "sky","star","moon","sun","aurora","comet","meteor","galaxy","nebula","cosmos","ether","aether","astral","eclipse","solstice","equinox","zenith","nadir","horizon",
+    "light","glow","gleam","glint","shine","flare","beam","ray","lumen","shadow","shade","gloom","murk","dim","glimmer","shimmer","sparkle",
+    "copper","bronze","silver","platinum","steel","nickel","cobalt","chrome","mercury","lead","tin","brass","diamond","pearl","sapphire","emerald","topaz","amethyst","onyx","obsidian","quartz","crystal","amber","garnet","tourmaline","peridot","citrine","aquamarine","beryl","agate","jasper",
+    "arcane","mystic","eldritch","sigil","ward","charm","hex","oath","boon","bane","curse","spell","spirit","wisp","ghost","specter","phantom","sprite","fae","faery","totem","relic","idol","cairn","barrow","mound","crypt","sepulcher","ossuary","catacomb","shrine","altar","temple",
+    "titan","giant","dragon","drake","wyrm","leviathan","kraken","hydra","chimera","phoenix","griffin","wyvern","basilisk","sphinx","minotaur","gorgon","pegasus","yeti",
+    "castle","citadel","bastion","bulwark","rampart","trench","moat","wall","tower","stronghold","outpost","camp","encampment","redoubt","keepfast",
+    "march","charge","leap","dash","surge","sprint","stride",
+    "hope","glory","pride","honor","valor","virtue","wrath","envy","greed","zephyrum","ire","rage","calm","peace","war","strife","truce","vigor","grit","nerve",
+    "frost","ice","glacier","tundra","polar","boreal","hail","sleet","icicle","permafrost",
+    "crimson","scarlet","amber","azure","cobalt","cyan","teal","violet","purple","indigo","magenta","pink","rose","ivory","ebony","umber","ochre","sable","vermilion","cerulean","chartreuse","turquoise","maroon","coral","peach","mint","olive","navy",
+    "wolf","fox","bear","elk","stag","deer","boar","lion","tiger","panther","lynx","hawk","falcon","eagle","raven","crow","rook","owl","dove","swan","crane","heron","lark","wren","kite","viper","adder","cobra","python","salmon","trout","shark","whale","manta","ray","otter","seal","walrus","orca","narwhal","moth","bee","wasp","ant","scarab","stagbeetle",
+    "thunder","lightning","bolt","thunderhead","boom","rumble","roar","clap",
+    "portal","nexus","breach","fissure","crack","chasm","abyss","trench","gorge","canyon","gulch","ravine","riftway","runegate",
+    "ford","crossing","pass","gap","notch","saddle",
+    "emberfall","stormwake","frostvale","shadowfen","moonveil","sunspire","starfall","dawngate","duskvale","mistwood","ironhold","goldhaven","jadecrest","opalreach","rubyshore",
+    "thornwall","vinegate","stonehearth","rockfall","riverbend","brookmere","lakewatch","seabreak","oceanreach","reefcrest","shoalside",
+    "quarry","foundry","forge","anvil","kiln","smelter","loom","mill","granary","bakery","brewery","winery","distillery",
+    "warden","keeper","watch","sentinel","vanguard","harbinger","herald","oracle","seer","prophet","sagewood",
+    "wander","roam","quest","venture","odyssey","journey","pilgrim","nomad","ranger","scout",
+    "harbor","quay","dock","pier","wharf","jetty","moorage","anchorage",
+    "aven","way","path","trail","track","road","lane","causey","byway","highway","skyway",
+    "lumenvault","gloomreach","voidspire","shardkeep","runeforge","stormgate","frostgate","flamegate",
+    "suncrest","mooncrest","starcrest","skytide","seamist","snowveil","rainfall","sandstorm",
+    "hearth","homestead","freehold","stead","manor","hall","lodge","abbey","monastery",
+    "oraclegate","zealot","paragon","arbiter","warlord","chieftain","suzerain","thane","reeve","marshal",
+    "sentience","aegis","bulwarkum","bastille","citadelum","arcanum","sanctum","nexusum","atrium","orium",
+    // terrain and niche features
+    "heath","moor","downs","wold","fell","tor","knoll","butte","mesa","badland","outwash","moraine","drumlin","esker",
+    "glen","valecrest","ravenswood","eaglecrest","liongate","wolfden","foxglove","bearclaw","tigerfang","serpentis",
+  ];
   const a = WORDS[Math.floor(Math.random() * WORDS.length)];
   let b = WORDS[Math.floor(Math.random() * WORDS.length)];
   if (b === a) b = WORDS[(WORDS.indexOf(b) + 1) % WORDS.length];
