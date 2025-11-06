@@ -43,7 +43,6 @@ import { ActionFooter } from "./action-footer";
 import { ArmyTypeToggle } from "./army-type-toggle";
 import { DefenseSlotSelection } from "./defense-slot-selection";
 import { DirectionSelection } from "./direction-selection";
-import { StructureSelectionList } from "./structure-selection-list";
 import { TroopCountSelector } from "./troop-count-selector";
 import { TroopSelectionGrid } from "./troop-selection-grid";
 import type { GuardSummary, SelectedTroopCombo, TroopSelectionOption } from "./types";
@@ -96,7 +95,6 @@ export const UnifiedArmyCreationModal = ({
       });
   }, [playerRealms, playerVillages, isBlitz]);
 
-  const [selectedStructureId, setSelectedStructureId] = useState<number | null>(structureId ?? null);
   const [isLoading, setIsLoading] = useState(false);
   const [freeDirections, setFreeDirections] = useState<Direction[]>([]);
   const [isLoadingDirections, setIsLoadingDirections] = useState(false);
@@ -119,17 +117,12 @@ export const UnifiedArmyCreationModal = ({
   const troopCapacityLimit = hasTroopCap ? parsedTroopCap : null;
 
   useEffect(() => {
-    setSelectedStructureId(structureId ?? null);
-  }, [structureId]);
-
-  useEffect(() => {
     if (initialGuardSlot !== undefined) {
       setGuardSlot(initialGuardSlot);
     }
   }, [initialGuardSlot]);
 
-  const fallbackStructureId = playerStructures[0]?.entityId ?? structureId ?? 0;
-  const activeStructureId = selectedStructureId ?? fallbackStructureId;
+  const activeStructureId = structureId ?? playerStructures[0]?.entityId ?? 0;
 
   const structureComponent = useMemo(() => {
     if (!activeStructureId) return null;
@@ -501,64 +494,32 @@ export const UnifiedArmyCreationModal = ({
     }
   };
 
-  const structureInventories = useMemo(() => {
-    const map = new Map<number, TroopSelectionOption[]>();
-
-    playerStructures.forEach((realm) => {
-      const options = TROOP_TYPES.map((type) => ({
-        type,
-        label: formatTroopTypeLabel(type),
-        tiers: TROOP_TIERS.map((tier) => {
-          const resourceId = getTroopResourceId(type, tier);
-          const balance = getBalance(realm.entityId, resourceId, currentDefaultTick, components).balance;
-          const available = Number(divideByPrecision(balance) || 0);
-          const resource = resources.find((item) => item.id === resourceId);
-
-          return {
-            tier,
-            available,
-            resourceTrait: resource?.trait ?? "",
-          };
-        }),
-      }));
-
-      map.set(realm.entityId, options);
-    });
-
-    if (activeStructureId && !map.has(activeStructureId)) {
-      const options = TROOP_TYPES.map((type) => ({
-        type,
-        label: formatTroopTypeLabel(type),
-        tiers: TROOP_TIERS.map((tier) => {
-          const resourceId = getTroopResourceId(type, tier);
-          const balance = getBalance(activeStructureId, resourceId, currentDefaultTick, components).balance;
-          const available = Number(divideByPrecision(balance) || 0);
-          const resource = resources.find((item) => item.id === resourceId);
-
-          return {
-            tier,
-            available,
-            resourceTrait: resource?.trait ?? "",
-          };
-        }),
-      }));
-
-      map.set(activeStructureId, options);
-    }
-
-    return map;
-  }, [playerStructures, activeStructureId, components, currentDefaultTick]);
-
   const troopOptions = useMemo<TroopSelectionOption[]>(() => {
-    return (
-      structureInventories.get(activeStructureId ?? 0) ??
-      TROOP_TYPES.map((type) => ({
+    if (!activeStructureId) {
+      return TROOP_TYPES.map((type) => ({
         type,
         label: formatTroopTypeLabel(type),
         tiers: TROOP_TIERS.map((tier) => ({ tier, available: 0, resourceTrait: "" })),
-      }))
-    );
-  }, [structureInventories, activeStructureId]);
+      }));
+    }
+
+    return TROOP_TYPES.map((type) => ({
+      type,
+      label: formatTroopTypeLabel(type),
+      tiers: TROOP_TIERS.map((tier) => {
+        const resourceId = getTroopResourceId(type, tier);
+        const balance = getBalance(activeStructureId, resourceId, currentDefaultTick, components).balance;
+        const available = Number(divideByPrecision(balance) || 0);
+        const resource = resources.find((item) => item.id === resourceId);
+
+        return {
+          tier,
+          available,
+          resourceTrait: resource?.trait ?? "",
+        };
+      }),
+    }));
+  }, [activeStructureId, currentDefaultTick, components]);
 
   const maxAffordable = useMemo(() => {
     if (!activeStructureId) return 0;
@@ -623,21 +584,14 @@ export const UnifiedArmyCreationModal = ({
     setGuardSlot(slot);
   };
   const handleTroopCountChange = (value: number) => setTroopCount(Math.max(0, Math.min(value, maxAffordable)));
-  const handleStructureSelect = (newStructureId: number) => setSelectedStructureId(newStructureId);
+
+  const modalBaseTitle = armyType ? "Create Attack Army" : "Create Defense Army";
+  const modalTitle = structureName ? `${structureName} - ${modalBaseTitle}` : modalBaseTitle;
 
   return (
-    <ModalContainer title={armyType ? "Create Attack Army" : "Create Defense Army"} size="full">
-      <div className="p-6 w-full h-full grid grid-cols-[320px,1fr] gap-6 bg-gradient-to-br from-brown/5 to-brown/10 rounded-lg">
-        <div className="flex flex-col gap-4 overflow-y-auto pr-2">
-          <StructureSelectionList
-            structures={playerStructures}
-            selectedStructureId={activeStructureId || null}
-            inventories={structureInventories}
-            onSelect={handleStructureSelect}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-6">
+    <ModalContainer title={modalTitle} size="full">
+      <div className="p-6 w-full h-full bg-gradient-to-br from-brown/5 to-brown/10 rounded-lg">
+        <div className="grid h-full gap-6 md:grid-cols-2">
           <div className="flex flex-col h-full">
             <TroopSelectionGrid
               options={troopOptions}
