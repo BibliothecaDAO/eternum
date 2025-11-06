@@ -360,8 +360,7 @@ export const WorldSelectorModal = ({
   const renderFactoryItem = (fg: FactoryGame) => {
     const isOnline = fg.status === "ok";
     const isUnconfigured = fg.startMainAt == null && isOnline;
-    const isEnded =
-      fg.startMainAt != null && fg.endAt != null && fg.endAt !== 0 && nowSec >= (fg.endAt as number);
+    const isEnded = fg.startMainAt != null && fg.endAt != null && fg.endAt !== 0 && nowSec >= (fg.endAt as number);
 
     const startAtText = (() => {
       if (fg.startMainAt == null) return isOnline && fg.status !== "checking" ? "Not Configured" : "";
@@ -745,8 +744,7 @@ export const WorldSelectorModal = ({
                       timeData?.startMainAt != null &&
                       nowSec >= timeData.startMainAt &&
                       (timeData.endAt === 0 || timeData.endAt == null || nowSec < timeData.endAt);
-                    const isUpcoming =
-                      isOnline && timeData?.startMainAt != null && nowSec < timeData.startMainAt;
+                    const isUpcoming = isOnline && timeData?.startMainAt != null && nowSec < timeData.startMainAt;
 
                     return { name: s, isOnline, timeData, isEnded, isOngoing, isUpcoming };
                   });
@@ -781,9 +779,7 @@ export const WorldSelectorModal = ({
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <div
-                              className={`truncate font-bold text-base ${isEnded ? "text-gold/50" : "text-gold"}`}
-                            >
+                            <div className={`truncate font-bold text-base ${isEnded ? "text-gold/50" : "text-gold"}`}>
                               {s}
                             </div>
                             {selected === s && (

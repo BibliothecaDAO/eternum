@@ -38,13 +38,9 @@ function loadManifest(chain: string): any {
 
 function findConfigSelector(manifest: any): string | undefined {
   if (!Array.isArray(manifest?.contracts)) return undefined;
-  const byExact = manifest.contracts.find(
-    (c: any) => typeof c?.tag === "string" && c.tag.endsWith("-config_systems"),
-  );
+  const byExact = manifest.contracts.find((c: any) => typeof c?.tag === "string" && c.tag.endsWith("-config_systems"));
   if (byExact?.selector) return byExact.selector;
-  const byInclude = manifest.contracts.find(
-    (c: any) => typeof c?.tag === "string" && c.tag.includes("config_systems"),
-  );
+  const byInclude = manifest.contracts.find((c: any) => typeof c?.tag === "string" && c.tag.includes("config_systems"));
   return byInclude?.selector;
 }
 
@@ -145,8 +141,7 @@ export async function generateWorldConfigCalldata(p: Params) {
   const confObj = JSON.parse(fs.readFileSync(cfgPath, "utf8"));
   const configuration = confObj.configuration || confObj;
   if (p.startMainAt && configuration?.season) configuration.season.startMainAt = p.startMainAt;
-  if (p.vrfProviderAddress && configuration?.vrf)
-    configuration.vrf.vrfProviderAddress = p.vrfProviderAddress;
+  if (p.vrfProviderAddress && configuration?.vrf) configuration.vrf.vrfProviderAddress = p.vrfProviderAddress;
 
   const account = { address: p.adminAddress } as any;
   const ctx = { account, provider, config: configuration } as any;
@@ -184,16 +179,21 @@ export async function generateWorldConfigCalldata(p: Params) {
 
   const outDir = `contracts/game/factory/${p.chain}/calldata/${p.worldName}`;
   fs.mkdirSync(outDir, { recursive: true });
-  const calls = provider.collected as Array<{ contractAddress: string; entrypoint: string; calldata: any[] }>; 
+  const calls = provider.collected as Array<{ contractAddress: string; entrypoint: string; calldata: any[] }>;
   fs.writeFileSync(`${outDir}/world_config_calls.json`, JSON.stringify(calls, null, 2));
   if (worldAddr) fs.writeFileSync(`${outDir}/world_address.txt`, String(worldAddr));
 
-  const fmtArgs = (arr: any[]) => toFeltish(arr).map((x) => String(x)).join(" ");
+  const fmtArgs = (arr: any[]) =>
+    toFeltish(arr)
+      .map((x) => String(x))
+      .join(" ");
   const segments = calls.map((c) => `${c.contractAddress} ${c.entrypoint} ${fmtArgs(c.calldata || [])}`.trim());
   const multicall = segments.join(" / ");
   fs.writeFileSync(`${outDir}/world_config_multicall.txt`, multicall);
 
-  const lines = calls.map((c) => `sozo execute --profile ${p.chain} ${c.contractAddress} ${c.entrypoint} ${fmtArgs(c.calldata || [])}`);
+  const lines = calls.map(
+    (c) => `sozo execute --profile ${p.chain} ${c.contractAddress} ${c.entrypoint} ${fmtArgs(c.calldata || [])}`,
+  );
   fs.writeFileSync(`${outDir}/world_config_calls.sh`, `#!/usr/bin/env bash\nset -euo pipefail\n${lines.join("\n")}\n`);
 
   const prettyLines: string[] = [];

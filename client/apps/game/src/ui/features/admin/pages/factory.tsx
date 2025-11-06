@@ -43,7 +43,7 @@ import {
   Loader2,
   RefreshCw,
   Trash2,
-  XCircle
+  XCircle,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -58,7 +58,7 @@ import {
   DEFAULT_VERSION,
   FACTORY_ADDRESSES,
   getExplorerTxUrl,
-  getRpcUrlForChain
+  getRpcUrlForChain,
 } from "../constants";
 import { useFactoryAdmin } from "../hooks/use-factory-admin";
 import { generateCairoOutput, generateFactoryCalldata } from "../services/factory-config";
@@ -80,7 +80,7 @@ import {
   persistStoredWorldNames,
   saveWorldNameToStorage,
   setCurrentWorldName,
-  setIndexerCooldown
+  setIndexerCooldown,
 } from "../utils/storage";
 
 type TxState = { status: "idle" | "running" | "success" | "error"; hash?: string; error?: string };
@@ -282,7 +282,7 @@ export const FactoryPage = () => {
   const [showDevConfig, setShowDevConfig] = useState<boolean>(false);
   const [devModeOn, setDevModeOn] = useState<boolean>(() => {
     try {
-      return !!(ETERNUM_CONFIG()?.dev?.mode?.on);
+      return !!ETERNUM_CONFIG()?.dev?.mode?.on;
     } catch {
       return false;
     }
@@ -1120,10 +1120,12 @@ export const FactoryPage = () => {
                                               const chosenStart = sel && sel > 0 ? sel : nextHourDefault;
                                               const selectedStart = Math.max(nowSec, Math.min(chosenStart, maxAllowed));
 
-                                              const selectedDevMode =
-                                                Object.prototype.hasOwnProperty.call(devModeOverrides, name)
-                                                  ? !!devModeOverrides[name]
-                                                  : devModeOn;
+                                              const selectedDevMode = Object.prototype.hasOwnProperty.call(
+                                                devModeOverrides,
+                                                name,
+                                              )
+                                                ? !!devModeOverrides[name]
+                                                : devModeOn;
                                               const selectedDurationHours = Object.prototype.hasOwnProperty.call(
                                                 durationHoursOverrides,
                                                 name,
@@ -1131,7 +1133,7 @@ export const FactoryPage = () => {
                                                 ? Number(durationHoursOverrides[name] || 0)
                                                 : Number(durationHours || 0);
 
-                                              const configForWorld = ({
+                                              const configForWorld = {
                                                 ...eternumConfig,
                                                 dev: {
                                                   ...(eternumConfig as any).dev,
@@ -1145,7 +1147,7 @@ export const FactoryPage = () => {
                                                   startMainAt: selectedStart,
                                                   durationSeconds: Math.max(1, selectedDurationHours) * 3600,
                                                 },
-                                              } as any);
+                                              } as any;
 
                                               const ctx = {
                                                 account,

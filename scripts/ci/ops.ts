@@ -100,7 +100,7 @@ async function main() {
       process.env.DOJO_PRIVATE_KEY || "",
       factory,
       "deploy",
-      ...await payload,
+      ...(await payload),
     ]);
     return;
   }

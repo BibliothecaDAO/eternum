@@ -1,8 +1,17 @@
 import { byteArray } from "starknet";
 
-interface ManifestContract { class_hash: string; tag: string; selector: string; init_calldata?: any[] }
-interface ManifestModel { class_hash: string }
-interface ManifestEvent { class_hash: string }
+interface ManifestContract {
+  class_hash: string;
+  tag: string;
+  selector: string;
+  init_calldata?: any[];
+}
+interface ManifestModel {
+  class_hash: string;
+}
+interface ManifestEvent {
+  class_hash: string;
+}
 interface ManifestData {
   world: { class_hash: string };
   contracts: ManifestContract[];
@@ -85,10 +94,12 @@ export const generateCairoOutput = (
   }
   output += `    ],\n`;
   output += `    models: array![\n`;
-  for (const model of manifest.models) output += `        TryInto::<felt252, ClassHash>::try_into(${model.class_hash}).unwrap(),\n`;
+  for (const model of manifest.models)
+    output += `        TryInto::<felt252, ClassHash>::try_into(${model.class_hash}).unwrap(),\n`;
   output += `    ],\n`;
   output += `    events: array![\n`;
-  for (const event of manifest.events) output += `        TryInto::<felt252, ClassHash>::try_into(${event.class_hash}).unwrap(),\n`;
+  for (const event of manifest.events)
+    output += `        TryInto::<felt252, ClassHash>::try_into(${event.class_hash}).unwrap(),\n`;
   output += `    ],\n`;
   output += `    libraries: array![\n`;
   const libs = manifest.libraries ?? [];
@@ -106,4 +117,3 @@ export const generateCairoOutput = (
   output += `};\n`;
   return output;
 };
-

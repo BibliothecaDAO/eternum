@@ -53,9 +53,7 @@ function generateSetConfigCalldataFlat(manifest: any, p: Params): any[] {
       try {
         const afterNs = lib.tag.includes("-") ? lib.tag.split("-").slice(1).join("-") : lib.tag;
         const suffix = ver ? `_v${ver}` : "";
-        name = afterNs.endsWith(suffix)
-          ? afterNs.slice(0, afterNs.length - suffix.length)
-          : afterNs;
+        name = afterNs.endsWith(suffix) ? afterNs.slice(0, afterNs.length - suffix.length) : afterNs;
       } catch {
         name = lib.tag;
       }

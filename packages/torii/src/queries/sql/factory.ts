@@ -7,4 +7,3 @@ export const FACTORY_QUERIES = {
   WORLD_DEPLOYED_BY_PADDED_NAME: (paddedName: string) =>
     `SELECT * FROM [wf-WorldDeployed] WHERE name = "${paddedName}" LIMIT 1;`,
 } as const;
-

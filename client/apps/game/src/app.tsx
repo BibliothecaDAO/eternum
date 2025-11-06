@@ -79,9 +79,7 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
   const { activeStep, steps } = usePlayFlow(backgroundImage);
 
   // Ensure modals (world selector, etc.) can render before world is ready
-  const EarlyOverlays = (
-    <PlayOverlayManager backgroundImage={backgroundImage} enableOnboarding={false} />
-  );
+  const EarlyOverlays = <PlayOverlayManager backgroundImage={backgroundImage} enableOnboarding={false} />;
 
   if (activeStep === "world") {
     return (

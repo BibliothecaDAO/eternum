@@ -188,91 +188,91 @@ const FactoryGamesList = () => {
   };
 
   const load = useCallback(async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const factorySqlBaseUrl = getFactorySqlBaseUrl(env.VITE_PUBLIC_CHAIN as any);
-        if (!factorySqlBaseUrl) {
-          setGames([]);
-          return;
-        }
-        const query = `SELECT name FROM [wf-WorldDeployed] LIMIT 200;`;
-        const url = `${factorySqlBaseUrl}?query=${encodeURIComponent(query)}`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`Factory query failed: ${res.status} ${res.statusText}`);
-        const rows = (await res.json()) as any[];
-
-        const names: string[] = [];
-        const seen = new Set<string>();
-        for (const row of rows) {
-          const feltHex: string | undefined =
-            (row && (row.name as string)) || (row && (row["data.name"] as string)) || (row && row?.data?.name);
-          if (!feltHex || typeof feltHex !== "string") continue;
-          const decoded = decodePaddedFeltAscii(feltHex);
-          if (!decoded || seen.has(decoded)) continue;
-          seen.add(decoded);
-          names.push(decoded);
-        }
-
-        const initial: FactoryGame[] = names.map((n) => ({
-          name: n,
-          status: "checking",
-          toriiBaseUrl: `https://api.cartridge.gg/x/${n}/torii`,
-          startMainAt: null,
-          endAt: null,
-        }));
-        setGames(initial);
-
-        const limit = 8;
-        let index = 0;
-        const workers: Promise<void>[] = [];
-        const work = async () => {
-          while (index < initial.length) {
-            const i = index++;
-            const item = initial[i];
-            try {
-              const online = await isToriiAvailable(item.toriiBaseUrl);
-              let startMainAt: number | null = null;
-              let endAt: number | null = null;
-              if (online) {
-                try {
-                  const q = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at FROM "s1_eternum-WorldConfig" LIMIT 1;`;
-                  const u = `${item.toriiBaseUrl}/sql?query=${encodeURIComponent(q)}`;
-                  const r = await fetch(u);
-                  if (r.ok) {
-                    const arr = (await r.json()) as any[];
-                    if (arr && arr[0]) {
-                      if (arr[0].start_main_at != null) startMainAt = parseMaybeHexToNumber(arr[0].start_main_at);
-                      if (arr[0].end_at != null) endAt = parseMaybeHexToNumber(arr[0].end_at);
-                    }
-                  }
-                } catch {
-                  // ignore per-world time errors
-                }
-              }
-              setGames((prev) => {
-                const copy = [...prev];
-                const idx = copy.findIndex((w) => w.name === item.name);
-                if (idx >= 0) copy[idx] = { ...copy[idx], status: online ? "ok" : "fail", startMainAt, endAt };
-                return copy;
-              });
-            } catch {
-              setGames((prev) => {
-                const copy = [...prev];
-                const idx = copy.findIndex((w) => w.name === item.name);
-                if (idx >= 0) copy[idx] = { ...copy[idx], status: "fail" };
-                return copy;
-              });
-            }
-          }
-        };
-        for (let k = 0; k < limit; k++) workers.push(work());
-        await Promise.all(workers);
-      } catch (e: any) {
-        setError(e?.message || String(e));
-      } finally {
-        setLoading(false);
+    try {
+      setLoading(true);
+      setError(null);
+      const factorySqlBaseUrl = getFactorySqlBaseUrl(env.VITE_PUBLIC_CHAIN as any);
+      if (!factorySqlBaseUrl) {
+        setGames([]);
+        return;
       }
+      const query = `SELECT name FROM [wf-WorldDeployed] LIMIT 200;`;
+      const url = `${factorySqlBaseUrl}?query=${encodeURIComponent(query)}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Factory query failed: ${res.status} ${res.statusText}`);
+      const rows = (await res.json()) as any[];
+
+      const names: string[] = [];
+      const seen = new Set<string>();
+      for (const row of rows) {
+        const feltHex: string | undefined =
+          (row && (row.name as string)) || (row && (row["data.name"] as string)) || (row && row?.data?.name);
+        if (!feltHex || typeof feltHex !== "string") continue;
+        const decoded = decodePaddedFeltAscii(feltHex);
+        if (!decoded || seen.has(decoded)) continue;
+        seen.add(decoded);
+        names.push(decoded);
+      }
+
+      const initial: FactoryGame[] = names.map((n) => ({
+        name: n,
+        status: "checking",
+        toriiBaseUrl: `https://api.cartridge.gg/x/${n}/torii`,
+        startMainAt: null,
+        endAt: null,
+      }));
+      setGames(initial);
+
+      const limit = 8;
+      let index = 0;
+      const workers: Promise<void>[] = [];
+      const work = async () => {
+        while (index < initial.length) {
+          const i = index++;
+          const item = initial[i];
+          try {
+            const online = await isToriiAvailable(item.toriiBaseUrl);
+            let startMainAt: number | null = null;
+            let endAt: number | null = null;
+            if (online) {
+              try {
+                const q = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at FROM "s1_eternum-WorldConfig" LIMIT 1;`;
+                const u = `${item.toriiBaseUrl}/sql?query=${encodeURIComponent(q)}`;
+                const r = await fetch(u);
+                if (r.ok) {
+                  const arr = (await r.json()) as any[];
+                  if (arr && arr[0]) {
+                    if (arr[0].start_main_at != null) startMainAt = parseMaybeHexToNumber(arr[0].start_main_at);
+                    if (arr[0].end_at != null) endAt = parseMaybeHexToNumber(arr[0].end_at);
+                  }
+                }
+              } catch {
+                // ignore per-world time errors
+              }
+            }
+            setGames((prev) => {
+              const copy = [...prev];
+              const idx = copy.findIndex((w) => w.name === item.name);
+              if (idx >= 0) copy[idx] = { ...copy[idx], status: online ? "ok" : "fail", startMainAt, endAt };
+              return copy;
+            });
+          } catch {
+            setGames((prev) => {
+              const copy = [...prev];
+              const idx = copy.findIndex((w) => w.name === item.name);
+              if (idx >= 0) copy[idx] = { ...copy[idx], status: "fail" };
+              return copy;
+            });
+          }
+        }
+      };
+      for (let k = 0; k < limit; k++) workers.push(work());
+      await Promise.all(workers);
+    } catch (e: any) {
+      setError(e?.message || String(e));
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -351,8 +351,7 @@ const FactoryGamesList = () => {
     if (isOnline) {
       if (start != null) {
         if ((end == null || end === 0) && nowSec >= start) subtitle = "Ongoing — ∞";
-        else if (end != null && nowSec >= start && nowSec < end)
-          subtitle = `Ends in ${formatCountdown(end - nowSec)}`;
+        else if (end != null && nowSec >= start && nowSec < end) subtitle = `Ends in ${formatCountdown(end - nowSec)}`;
         else if (nowSec < start) subtitle = `Starts in ${formatCountdown(start - nowSec)}`;
         else if (end != null && nowSec >= end) subtitle = `Ended ${new Date(end * 1000).toLocaleString()}`;
       }

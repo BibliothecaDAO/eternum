@@ -37,4 +37,3 @@ export const AdminHeader = ({ network, onBack, onReload }: AdminHeaderProps) => 
     </div>
   );
 };
-

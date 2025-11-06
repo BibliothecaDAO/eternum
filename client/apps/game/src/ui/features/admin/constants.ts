@@ -18,8 +18,8 @@ export const INDEXER_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
 
 // External endpoints (env-backed with safe defaults)
 export const CARTRIDGE_API_BASE = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg";
-export const TORII_CREATOR_URL = env.VITE_PUBLIC_TORII_CREATOR_URL ||
-  "https://torii-creator.zerocredence.workers.dev/dispatch/torii";
+export const TORII_CREATOR_URL =
+  env.VITE_PUBLIC_TORII_CREATOR_URL || "https://torii-creator.zerocredence.workers.dev/dispatch/torii";
 
 // Explorer helpers
 export const EXPLORER_MAINNET = env.VITE_PUBLIC_EXPLORER_MAINNET || "https://voyager.online";

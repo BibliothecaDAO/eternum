@@ -36,4 +36,3 @@ export function writeArchive(chain: string, s: any[]) {
 export function calldataDir(chain: string, worldName: string) {
   return path.join(repoRoot, `contracts/game/factory/${chain}/calldata/${worldName}`);
 }
-
