@@ -71,6 +71,6 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "chore(orchestrator): prune deployments older than ${RETENTION_HOURS}h for ${CHAIN}"
+            git commit -m "chore(orchestrator): prune deployments older than 10h for ${CHAIN}"
             git push
           fi
