@@ -6,7 +6,7 @@ import { getIsBlitz } from "@bibliothecadao/eternum";
 
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { ResourceArrivals as AllResourceArrivals, MarketModal } from "@/ui/features/economy/trading";
-import { construction, hyperstructures, military, trade } from "@/ui/features/world";
+import { construction, military, trade } from "@/ui/features/world";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
 import { getEntityInfo } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
@@ -116,16 +116,16 @@ const buildLeftNavigationItems = ({
           ? { value: pendingArrivalsNumber, color: "orange", location: "bottomright" as const }
           : undefined,
     },
-    {
-      id: MenuEnum.hyperstructures,
-      image: BuildingThumbs.hyperstructures,
-      tooltipLocation: "top",
-      label: hyperstructures,
-      size: DEFAULT_BUTTON_SIZE,
-      disabled: disableButtons,
-      active: view === LeftView.HyperstructuresView,
-      onClick: toggleView(LeftView.HyperstructuresView),
-    },
+    // {
+    //   id: MenuEnum.hyperstructures,
+    //   image: BuildingThumbs.hyperstructures,
+    //   tooltipLocation: "top",
+    //   label: hyperstructures,
+    //   size: DEFAULT_BUTTON_SIZE,
+    //   disabled: disableButtons,
+    //   active: view === LeftView.HyperstructuresView,
+    //   onClick: toggleView(LeftView.HyperstructuresView),
+    // },
     {
       id: MenuEnum.trade,
       className: "trade-selector",
@@ -137,20 +137,20 @@ const buildLeftNavigationItems = ({
       active: isTradeOpen,
       onClick: () => toggleModal(isTradeOpen ? null : <MarketModal />),
     },
-    {
-      id: MenuEnum.relics,
-      image: BuildingThumbs.relics,
-      tooltipLocation: "top",
-      label: "Relics",
-      size: DEFAULT_BUTTON_SIZE,
-      disabled: disableButtons,
-      active: view === LeftView.RelicsView,
-      onClick: toggleView(LeftView.RelicsView),
-      primaryNotification:
-        availableRelicsNumber > 0
-          ? { value: availableRelicsNumber, color: "gold", location: "topright" as const }
-          : undefined,
-    },
+    // {
+    //   id: MenuEnum.relics,
+    //   image: BuildingThumbs.relics,
+    //   tooltipLocation: "top",
+    //   label: "Relics",
+    //   size: DEFAULT_BUTTON_SIZE,
+    //   disabled: disableButtons,
+    //   active: view === LeftView.RelicsView,
+    //   onClick: toggleView(LeftView.RelicsView),
+    //   primaryNotification:
+    //     availableRelicsNumber > 0
+    //       ? { value: availableRelicsNumber, color: "gold", location: "topright" as const }
+    //       : undefined,
+    // },
   ];
 
   const allowedMenus: MenuEnum[] = [
@@ -185,11 +185,11 @@ const EternumHyperstructuresMenu = lazy(() =>
     default: module.EternumHyperstructuresMenu,
   })),
 );
-const RelicsModule = lazy(() =>
-  import("@/ui/features/relics").then((module) => ({
-    default: module.RelicsModule,
-  })),
-);
+// const RelicsModule = lazy(() =>
+//   import("@/ui/features/relics").then((module) => ({
+//     default: module.RelicsModule,
+//   })),
+// );
 
 export const LeftNavigationModule = memo(() => {
   const {
@@ -207,11 +207,22 @@ export const LeftNavigationModule = memo(() => {
   const isTradeOpen = useUIStore((state) => state.openedPopups.includes(trade));
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const isBottomHudMinimized = useUIStore((state) => state.isBottomHudMinimized);
+  const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
 
   const toggleModal = useUIStore((state) => state.toggleModal);
   const { isMapView } = useQuery();
 
   const isBlitz = getIsBlitz();
+
+  const isBottomHudVisible = isMapView && !showBlankOverlay;
+  const navHeight = useMemo(() => {
+    if (!isBottomHudVisible) {
+      return "calc(100vh - 48px)";
+    }
+
+    return isBottomHudMinimized ? "calc(100vh - 180px)" : "calc(100vh - 30vh)";
+  }, [isBottomHudVisible, isBottomHudMinimized]);
 
   const structureInfo = useMemo(
     () => getEntityInfo(structureEntityId, ContractAddress(account.address), components, isBlitz),
@@ -266,12 +277,14 @@ export const LeftNavigationModule = memo(() => {
     <div className="flex flex-col">
       <div className="flex-grow overflow-hidden">
         <div
-          className={`max-h-full transition-all duration-200 space-x-1 flex z-0 w-screen pr-2 md:pr-0 md:w-[600px] text-gold md:pt-16 pointer-events-none ${
+          className={`transition-all duration-200 space-x-1 flex z-0 w-screen pr-2 md:pr-0 md:w-[600px] text-gold md:pt-16 pointer-events-none ${
             isOffscreen(view) ? "-translate-x-[92%]" : ""
           }`}
+          style={{ height: navHeight, maxHeight: navHeight }}
         >
           <BaseContainer
-            className={`w-full panel-wood pointer-events-auto overflow-y-auto max-h-[60vh] md:max-h-[60vh] sm:max-h-[80vh] xs:max-h-[90vh] panel-wood-corners overflow-x-hidden`}
+            className="w-full panel-wood pointer-events-auto overflow-y-auto panel-wood-corners overflow-x-hidden"
+            style={{ height: navHeight, maxHeight: navHeight }}
           >
             <Suspense fallback={<div className="p-8">Loading...</div>}>
               {view === LeftView.EntityView && <EntityDetails />}
@@ -282,7 +295,7 @@ export const LeftNavigationModule = memo(() => {
               {view === LeftView.HyperstructuresView &&
                 (isBlitz ? <BlitzHyperstructuresMenu /> : <EternumHyperstructuresMenu />)}
               {view === LeftView.ResourceArrivals && <AllResourceArrivals />}
-              {view === LeftView.RelicsView && <RelicsModule />}
+              {/* {view === LeftView.RelicsView && <RelicsModule />} */}
             </Suspense>
           </BaseContainer>
           {ConnectedAccount && (
@@ -291,6 +304,7 @@ export const LeftNavigationModule = memo(() => {
               initial="hidden"
               animate="visible"
               className="flex flex-col justify-center pointer-events-auto"
+              style={{ height: navHeight, maxHeight: navHeight }}
             >
               <div className="flex flex-col mb-auto">
                 {navigationItems.map((item) => (
