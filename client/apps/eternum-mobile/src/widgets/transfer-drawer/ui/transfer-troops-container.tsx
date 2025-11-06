@@ -13,7 +13,7 @@ import {
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
 import {
-  DEFENSE_NAMES,
+  GUARD_SLOT_NAMES,
   getDirectionBetweenAdjacentHexes,
   ID,
   StructureType,
@@ -416,8 +416,8 @@ export const TransferTroopsContainer = ({
           guardSlot !== undefined &&
           selectedGuards[guardSlot] && (
             <p className="text-muted-foreground text-xs">
-              From Structure (Slot {guardSlot + 1} - {DEFENSE_NAMES[guardSlot as keyof typeof DEFENSE_NAMES]}): Tier{" "}
-              {selectedGuards[guardSlot].troops.tier} {selectedGuards[guardSlot].troops.category}
+              From Structure (Slot {guardSlot + 1} - {GUARD_SLOT_NAMES[guardSlot as keyof typeof GUARD_SLOT_NAMES]}):
+              Tier {selectedGuards[guardSlot].troops.tier} {selectedGuards[guardSlot].troops.category}
             </p>
           )}
         {transferDirection === TransferDirection.ExplorerToExplorer && selectedExplorerTroops && (
@@ -454,7 +454,7 @@ export const TransferTroopsContainer = ({
                   isActive ? "bg-primary/10 border-primary" : "hover:bg-muted"
                 }`}
               >
-                <div className="font-semibold">{DEFENSE_NAMES[slotIndex as keyof typeof DEFENSE_NAMES]}</div>
+                <div className="font-semibold">{GUARD_SLOT_NAMES[slotIndex as keyof typeof GUARD_SLOT_NAMES]}</div>
                 <div className="text-sm text-muted-foreground">
                   Tier {troopInfo.tier} {troopInfo.category}
                 </div>
