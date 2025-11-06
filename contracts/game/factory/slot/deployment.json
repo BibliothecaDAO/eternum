@@ -1,12 +1,5 @@
 [
   {
-    "name": "bltz-pink-lumen-22",
-    "slotTimestamp": 1762443000,
-    "deployed": true,
-    "configured": true,
-    "indexed": true
-  },
-  {
     "name": "bltz-nexus-vinegate-47",
     "slotTimestamp": 1762457400,
     "deployed": true,
@@ -23,6 +16,13 @@
   {
     "name": "bltz-serpentis-castle-39",
     "slotTimestamp": 1762507800,
+    "deployed": true,
+    "configured": true,
+    "indexed": true
+  },
+  {
+    "name": "bltz-fury-wave-32",
+    "slotTimestamp": 1762529400,
     "deployed": true,
     "configured": true,
     "indexed": true
