@@ -1,1 +1,18 @@
-[]
+[
+  {
+    "name": "bltz-sage-wave-88",
+    "slotTimestamp": 1762371000,
+    "deployed": true,
+    "configured": true,
+    "indexed": true,
+    "archivedAt": 1762391557
+  },
+  {
+    "name": "bltz-fire-myth-38",
+    "slotTimestamp": 1762389000,
+    "deployed": true,
+    "configured": true,
+    "indexed": true,
+    "archivedAt": 1762391557
+  }
+]

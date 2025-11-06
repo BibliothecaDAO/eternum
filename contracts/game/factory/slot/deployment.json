@@ -1,19 +1,5 @@
 [
   {
-    "name": "bltz-sage-wave-88",
-    "slotTimestamp": 1762371000,
-    "deployed": true,
-    "configured": true,
-    "indexed": true
-  },
-  {
-    "name": "bltz-fire-myth-38",
-    "slotTimestamp": 1762389000,
-    "deployed": true,
-    "configured": true,
-    "indexed": true
-  },
-  {
     "name": "bltz-sand-void-64",
     "slotTimestamp": 1762421400,
     "deployed": true,
@@ -23,6 +9,20 @@
   {
     "name": "bltz-vast-zeal-25",
     "slotTimestamp": 1762443000,
+    "deployed": true,
+    "configured": true,
+    "indexed": true
+  },
+  {
+    "name": "bltz-heal-gate-56",
+    "slotTimestamp": 1762457400,
+    "deployed": true,
+    "configured": true,
+    "indexed": true
+  },
+  {
+    "name": "bltz-high-nova-63",
+    "slotTimestamp": 1762475400,
     "deployed": true,
     "configured": true,
     "indexed": true
