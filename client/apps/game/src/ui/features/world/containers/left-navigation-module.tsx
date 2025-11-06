@@ -294,7 +294,9 @@ export const LeftNavigationModule = memo(() => {
               )}
               {view === LeftView.HyperstructuresView &&
                 (isBlitz ? <BlitzHyperstructuresMenu /> : <EternumHyperstructuresMenu />)}
-              {view === LeftView.ResourceArrivals && <AllResourceArrivals />}
+              {view === LeftView.ResourceArrivals && (
+                <AllResourceArrivals hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
+              )}
               {/* {view === LeftView.RelicsView && <RelicsModule />} */}
             </Suspense>
           </BaseContainer>

@@ -158,8 +158,6 @@ export const StructureArrivals = memo(({ structure }: { structure: Structure }) 
     void processBulkOffload();
   };
 
-  if (arrivals.length === 0) return null;
-
   return (
     <div className="border border-gold/5">
       <button
