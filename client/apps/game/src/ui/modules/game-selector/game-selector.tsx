@@ -7,7 +7,7 @@ export const GameSelector = () => {
   return (
     <div className="relative">
       <button
-        onClick={() => selectGame()}
+        onClick={() => selectGame({ navigateAfter: true, navigateTo: "/play" })}
         className="flex items-center gap-2 px-3 py-2 rounded-lg bg-brown/80 border border-gold/30 hover:bg-brown/90 hover:border-gold/50 transition-all duration-200 text-gold text-sm"
       >
         <Globe className="w-4 h-4" />

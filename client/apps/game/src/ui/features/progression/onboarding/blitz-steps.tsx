@@ -165,6 +165,10 @@ const FactoryGamesList = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [nowSec, setNowSec] = useState<number>(() => Math.floor(Date.now() / 1000));
+  // Hooks must be called unconditionally in a stable order. These are used later in UI
+  // but declared here to avoid conditional early returns changing hook count.
+  const { setup } = useDojo();
+  const onSpectatorModeClick = useSpectatorModeClick(setup);
 
   useEffect(() => {
     const id = window.setInterval(() => setNowSec(Math.floor(Date.now() / 1000)), 1000);
@@ -396,8 +400,6 @@ const FactoryGamesList = () => {
 
   const { ongoing, upcoming, ended } = byCategory();
   const nothing = ongoing.length === 0 && upcoming.length === 0 && ended.length === 0;
-  const { setup } = useDojo();
-  const onSpectatorModeClick = useSpectatorModeClick(setup);
 
   return (
     <div className="space-y-3">

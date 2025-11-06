@@ -19,15 +19,27 @@ export const useGameSelector = () => {
 
     try {
       const currentWorld = getActiveWorldName();
+      const firstSelection = !currentWorld;
+
       const name = await openWorldSelectorModal();
       const chain = gameEnv.VITE_PUBLIC_CHAIN as Chain;
       await buildWorldProfile(chain, name);
       setActiveWorldName(name);
       setActiveWorld(name);
 
-      // Only reload if a different world was selected
+      // If this is the first ever selection (after clearing storage), prefer a smooth client-side
+      // navigation to the play route so users land in the game automatically.
+      if (firstSelection) {
+        if (window.location.pathname !== navigateTo) {
+          navigate(navigateTo);
+        } else {
+          // Already on target; no-op (bootstrap/onboarding handles the rest)
+        }
+        return;
+      }
+
+      // Subsequent selections: if the world changed, force reload to reinitialize indexers/providers.
       if (name !== currentWorld) {
-        // Force a full page reload to reinitialize the indexer with new world
         if (navigateAfter) {
           window.location.href = navigateTo;
         } else {
