@@ -17,16 +17,23 @@ const log = (m: string) => console.log(`[${ts()}] ${m}`);
 
 // read/write of archive handled via shared io.ts helpers
 
-function slotDeleteTorii(projectName: string): { ok: boolean; code: number; out: string } {
+function slotDeleteTorii(projectName: string): {
+  ok: boolean;
+  code: number;
+  out: string;
+  idempotent: boolean;
+  error?: string;
+} {
   // Prefer the short form alias `slot d delete <project> torii -f`
-  const res = spawnSync("slot", ["d", "delete", projectName, "torii", "-f"], { encoding: "utf-8" });
+  const args = ["d", "delete", projectName, "torii", "-f"];
+  const res = spawnSync("slot", args, { encoding: "utf-8" });
   const code = typeof res.status === "number" ? res.status : 1;
   const out = `${res.stdout || ""}${res.stderr || ""}`.trim();
-  if (code === 0) return { ok: true, code, out };
+  if (code === 0) return { ok: true, code, out, idempotent: false };
   // Consider "not found" semantics as success to be idempotent
   const text = out.toLowerCase();
   const idempotent = text.includes("not found") || text.includes("no such") || text.includes("does not exist");
-  return { ok: idempotent, code, out };
+  return { ok: idempotent, code, out, idempotent, error: (res as any)?.error?.message };
 }
 
 export async function cleanupOrchestrator(p: Params) {
@@ -45,7 +52,14 @@ export async function cleanupOrchestrator(p: Params) {
     const name = entry?.name as string;
     if (!name) continue;
     const del = slotDeleteTorii(name);
-    log(`slot delete ${name} -> ${del.ok ? "OK" : "FAIL"} (code=${del.code})`);
+    log(
+      `slot delete ${name} -> ${del.ok ? "OK" : "FAIL"} (code=${del.code}` +
+        `${del.idempotent && del.ok ? ", idempotent-not-found" : ""})`,
+    );
+    if (!del.ok) {
+      if (del.error) log(`slot delete ${name} error: ${del.error}`);
+      if (del.out) log(`slot delete ${name} output:\n${del.out}`);
+    }
     if (del.ok) successfullyDeleted.push(entry);
   }
 
