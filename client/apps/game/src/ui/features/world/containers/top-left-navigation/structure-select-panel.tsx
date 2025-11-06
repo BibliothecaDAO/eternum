@@ -19,7 +19,7 @@ import {
   ArrowDownWideNarrow,
   ArrowUpWideNarrow,
   Crown,
-  EyeIcon,
+  Home,
   Landmark,
   Palette,
   Pencil,
@@ -55,12 +55,12 @@ interface StructureSelectPanelProps {
 }
 
 const structureIcons: Record<string, JSX.Element> = {
-  None: <ShieldQuestion />,
-  Realm: <Crown />,
-  Bank: <Landmark />,
-  Hyperstructure: <Sparkles />,
-  FragmentMine: <Pickaxe />,
-  ReadOnly: <EyeIcon />,
+  [0]: <ShieldQuestion />,
+  [StructureType.Realm]: <Crown />,
+  [StructureType.Bank]: <Landmark />,
+  [StructureType.Hyperstructure]: <Sparkles />,
+  [StructureType.FragmentMine]: <Pickaxe />,
+  [StructureType.Village]: <Home />,
 };
 
 type SortMode = "name" | "population" | "realmLevel";
@@ -103,6 +103,7 @@ const getRealmLevelLabel = (level: number): string => {
 };
 
 const getStructureIcon = (selectedStructure: SelectedStructure) => {
+  console.log("selectedStructure", selectedStructure);
   if (!selectedStructure || !selectedStructure.structure) {
     return null;
   }

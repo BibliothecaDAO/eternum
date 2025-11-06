@@ -245,7 +245,7 @@ export const TransferResourcesContainer = ({
     const displayAvailableCapacityKg = Math.max(0, availableCapacityKg);
 
     return (
-      <Card className="mb-4">
+      <Card>
         <CardContent className="p-4">
           <h4 className="text-lg font-semibold mb-3 text-center">Explorer Capacity</h4>
 
@@ -327,128 +327,130 @@ export const TransferResourcesContainer = ({
     return <Loading />;
   }
 
+  const explorerCapacityCard = renderExplorerCapacity();
+
   return (
-    <div className="space-y-4">
-      {/* Explorer capacity info */}
-      {renderExplorerCapacity()}
+    <div className="flex flex-col gap-4 md:flex-row">
+      <div className="flex flex-col gap-4 md:w-1/2">
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const newSelectedResources: ResourceTransfer[] = [];
+              const newResourceAmounts: Record<number, number> = {};
 
-      {/* Select All / Unselect All buttons */}
-      <div className="flex gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            // Simple select all - just select all available resources with default amounts
-            const newSelectedResources: ResourceTransfer[] = [];
-            const newResourceAmounts: Record<number, number> = {};
-
-            for (const resource of availableResources) {
-              let amount = divideByPrecision(resource.amount);
-              if (actorTypes?.target === ActorType.Explorer && explorerCapacity) {
-                const resourceWeight = configManager.resourceWeightsKg[resource.resourceId] || 0;
-                if (resourceWeight > 0) {
-                  const maxPossible = Math.floor(
-                    explorerCapacity.remainingCapacityKg / resourceWeight / availableResources.length,
-                  );
-                  amount = Math.min(amount, maxPossible);
+              for (const resource of availableResources) {
+                let amount = divideByPrecision(resource.amount);
+                if (actorTypes?.target === ActorType.Explorer && explorerCapacity) {
+                  const resourceWeight = configManager.resourceWeightsKg[resource.resourceId] || 0;
+                  if (resourceWeight > 0) {
+                    const maxPossible = Math.floor(
+                      explorerCapacity.remainingCapacityKg / resourceWeight / availableResources.length,
+                    );
+                    amount = Math.min(amount, maxPossible);
+                  }
+                }
+                if (amount > 0) {
+                  newSelectedResources.push({ ...resource, amount });
+                  newResourceAmounts[resource.resourceId] = amount;
                 }
               }
-              if (amount > 0) {
-                newSelectedResources.push({ ...resource, amount });
-                newResourceAmounts[resource.resourceId] = amount;
-              }
-            }
 
-            setSelectedResources(newSelectedResources);
-            setResourceAmounts(newResourceAmounts);
-          }}
-          disabled={availableResources.length === 0}
-          className="flex-1"
-        >
-          Select All
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setSelectedResources([]);
-            setResourceAmounts({});
-          }}
-          disabled={selectedResources.length === 0}
-          className="flex-1"
-        >
-          Unselect All
-        </Button>
-      </div>
+              setSelectedResources(newSelectedResources);
+              setResourceAmounts(newResourceAmounts);
+            }}
+            disabled={availableResources.length === 0}
+            className="flex-1"
+          >
+            Select All
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setSelectedResources([]);
+              setResourceAmounts({});
+            }}
+            disabled={selectedResources.length === 0}
+            className="flex-1"
+          >
+            Unselect All
+          </Button>
+        </div>
 
-      {/* Resources list */}
-      <div className="space-y-3 max-h-[400px] overflow-y-auto">
-        {availableResources.map((resource) => {
-          const isSelected = selectedResources.some((r) => r.resourceId === resource.resourceId);
-          const resourceWeight = configManager.resourceWeightsKg[resource.resourceId] || 0;
-          const displayAmount = divideByPrecision(resource.amount);
+        <div className="flex-1 overflow-y-auto space-y-3 max-h-[420px]">
+          {availableResources.map((resource) => {
+            const isSelected = selectedResources.some((r) => r.resourceId === resource.resourceId);
+            const resourceWeight = configManager.resourceWeightsKg[resource.resourceId] || 0;
+            const displayAmount = divideByPrecision(resource.amount);
 
-          return (
-            <Card
-              key={resource.resourceId}
-              className={`transition-colors ${isSelected ? "border-primary bg-primary/5" : ""}`}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <ResourceIcon resourceId={resource.resourceId} size={20} showTooltip />
-                    <span className="font-medium">{ResourcesIds[resource.resourceId]}</span>
-                  </div>
-                  <div className="text-sm text-muted-foreground">{resourceWeight} kg/unit</div>
-                  <Button
-                    size="sm"
-                    variant={isSelected ? "destructive" : "default"}
-                    onClick={() => toggleResourceSelection(resource)}
-                  >
-                    {isSelected ? "Remove" : "Select"}
-                  </Button>
-                </div>
-
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-muted-foreground text-sm">Available: {displayAmount.toLocaleString()}</span>
-                </div>
-
-                {isSelected && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm text-muted-foreground">
-                      <label>Amount to Transfer:</label>
-                      <span>
-                        {resourceAmounts[resource.resourceId]?.toLocaleString() || 0} /{displayAmount.toLocaleString()}
-                      </span>
+            return (
+              <Card
+                key={resource.resourceId}
+                className={`transition-colors ${isSelected ? "border-primary bg-primary/5" : ""}`}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <ResourceIcon resourceId={resource.resourceId} size={20} showTooltip />
+                      <span className="font-medium">{ResourcesIds[resource.resourceId]}</span>
                     </div>
-                    <NumericInput
-                      value={resourceAmounts[resource.resourceId] || 0}
-                      onChange={(value) => handleResourceAmountChange(resource.resourceId, value)}
-                      max={displayAmount}
-                      label="Amount"
-                      description={`Max: ${displayAmount.toLocaleString()}`}
-                    />
+                    <div className="text-sm text-muted-foreground">{resourceWeight} kg/unit</div>
+                    <Button
+                      size="sm"
+                      variant={isSelected ? "destructive" : "default"}
+                      onClick={() => toggleResourceSelection(resource)}
+                    >
+                      {isSelected ? "Remove" : "Select"}
+                    </Button>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
+
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-muted-foreground text-sm">Available: {displayAmount.toLocaleString()}</span>
+                  </div>
+
+                  {isSelected && (
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm text-muted-foreground">
+                        <label>Amount to Transfer:</label>
+                        <span>
+                          {resourceAmounts[resource.resourceId]?.toLocaleString() || 0} /{displayAmount.toLocaleString()}
+                        </span>
+                      </div>
+                      <NumericInput
+                        value={resourceAmounts[resource.resourceId] || 0}
+                        onChange={(value) => handleResourceAmountChange(resource.resourceId, value)}
+                        max={displayAmount}
+                        label="Amount"
+                        description={`Max: ${displayAmount.toLocaleString()}`}
+                      />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Transfer button */}
-      <Button
-        onClick={handleTransfer}
-        disabled={
-          loading ||
-          selectedResources.length === 0 ||
-          selectedResources.every((r) => (resourceAmounts[r.resourceId] || 0) === 0)
-        }
-        className="w-full"
-        size="lg"
-      >
-        {loading ? "Processing..." : "Transfer Resources"}
-      </Button>
+      <div className="flex flex-col gap-4 md:flex-1">
+        {explorerCapacityCard}
+        <div className="mt-auto">
+          <Button
+            onClick={handleTransfer}
+            disabled={
+              loading ||
+              selectedResources.length === 0 ||
+              selectedResources.every((r) => (resourceAmounts[r.resourceId] || 0) === 0)
+            }
+            className="w-full"
+            size="lg"
+          >
+            {loading ? "Processing..." : "Transfer Resources"}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };

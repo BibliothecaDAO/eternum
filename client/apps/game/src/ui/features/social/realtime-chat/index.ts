@@ -33,3 +33,4 @@ export { RealtimeChatShell } from "./ui/realtime-chat-shell";
 export { MessageComposer } from "./ui/shared/message-composer";
 export { PresenceSidebar } from "./ui/shared/presence-sidebar";
 export { WorldChatPanel } from "./ui/world-chat/world-chat-panel";
+export { RealtimeChatToggleButton } from "./ui/shared/realtime-chat-toggle-button";

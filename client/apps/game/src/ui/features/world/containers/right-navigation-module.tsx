@@ -409,6 +409,7 @@ export const RightNavigationModule = () => {
               zoneIds={zoneIds}
               defaultZoneId={defaultZoneId}
               className="w-full"
+              showInlineToggle={false}
             />
           </div>,
           chatPortalTarget,
