@@ -1,66 +1,66 @@
 [
   {
     "name": "bltz-sand-void-64",
-    "slotTimestamp": 1702443000,
+    "slotTimestamp": 1700443000,
     "deployed": true,
     "configured": true,
     "indexed": true,
-    "archivedAt": 1762396623
+    "archivedAt": 1700443000
   },
   {
     "name": "bltz-vast-zeal-25",
-    "slotTimestamp": 1702443000,
+    "slotTimestamp": 1700443000,
     "deployed": true,
     "configured": true,
     "indexed": true,
-    "archivedAt": 1762396623
+    "archivedAt": 1700443000
   },
   {
     "name": "bltz-heal-gate-56",
-    "slotTimestamp": 1702443000,
+    "slotTimestamp": 1700443000,
     "deployed": true,
     "configured": true,
     "indexed": true,
-    "archivedAt": 1762396623
+    "archivedAt": 1700443000
   },
   {
     "name": "bltz-high-nova-63",
-    "slotTimestamp": 1702443000,
+    "slotTimestamp": 1700443000,
     "deployed": true,
     "configured": true,
     "indexed": true,
-    "archivedAt": 1762396623
+    "archivedAt": 1700443000
   },
   {
     "name": "bltz-storm-manta-10",
-    "slotTimestamp": 1702443000,
+    "slotTimestamp": 1700443000,
     "deployed": true,
     "configured": true,
     "indexed": true,
-    "archivedAt": 1762398230
+    "archivedAt": 1700443000
   },
   {
     "name": "bltz-scout-eagle-51",
-    "slotTimestamp": 1702443000,
+    "slotTimestamp": 1700443000,
     "deployed": true,
     "configured": true,
     "indexed": true,
-    "archivedAt": 1762398230
+    "archivedAt": 1700443000
   },
   {
     "name": "bltz-venture-lake-58",
-    "slotTimestamp": 1702443000,
+    "slotTimestamp": 1700443000,
     "deployed": true,
     "configured": true,
     "indexed": true,
-    "archivedAt": 1762398230
+    "archivedAt": 1700443000
   },
   {
     "name": "bltz-flame-bridge-50",
-    "slotTimestamp": 1702443000,
+    "slotTimestamp": 1700443000,
     "deployed": true,
     "configured": true,
     "indexed": true,
-    "archivedAt": 1762398230
+    "archivedAt": 1700443000
   }
 ]
