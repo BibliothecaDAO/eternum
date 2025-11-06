@@ -1,7 +1,7 @@
 use alexandria_math::{BitShift, pow};
 use core::array::SpanTrait;
 use core::traits::Into;
-use s1_eternum::models::config::WorldConfigUtilImpl;
+use crate::models::config::WorldConfigUtilImpl;
 
 #[generate_trait]
 pub impl RealmNameAndAttrsDecodingImpl of RealmNameAndAttrsDecodingTrait {

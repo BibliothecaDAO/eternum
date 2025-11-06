@@ -3,23 +3,23 @@ use core::num::traits::zero::Zero;
 use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-use s1_eternum::alias::ID;
-use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
-use s1_eternum::models::config::{
+use crate::alias::ID;
+use crate::constants::{RESOURCE_PRECISION, ResourceTypes};
+use crate::models::config::{
     BuildingCategoryConfig, BuildingConfig, CapacityConfig, ResourceFactoryConfig, TickImpl, WorldConfigUtilImpl,
 };
-use s1_eternum::models::events::{BuildingPaymentStory, BuildingPlacementStory, Story, StoryEvent};
-use s1_eternum::models::position::Coord;
-use s1_eternum::models::resource::production::production::{Production, ProductionTrait};
-use s1_eternum::models::resource::resource::{
+use crate::models::events::{BuildingPaymentStory, BuildingPlacementStory, Story, StoryEvent};
+use crate::models::position::Coord;
+use crate::models::resource::production::production::{Production, ProductionTrait};
+use crate::models::resource::resource::{
     ResourceList, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl,
     WeightStoreImpl,
 };
-use s1_eternum::models::structure::{
+use crate::models::structure::{
     StructureBase, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureOwnerStoreImpl,
 };
-use s1_eternum::models::weight::{Weight, WeightImpl, WeightTrait};
-use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
+use crate::models::weight::{Weight, WeightImpl, WeightTrait};
+use crate::utils::math::{PercentageImpl, PercentageValueImpl};
 use starknet::ContractAddress;
 
 

@@ -395,6 +395,10 @@ export interface SetBlitzModeConfigProps extends SystemSigner {
   blitz_mode_on: boolean;
 }
 
+export interface SetBlitzPreviousGameProps extends SystemSigner {
+  prev_prize_distribution_systems: BigNumberish;
+}
+
 export interface SetDiscoveredVillageSpawnResourcesConfigProps extends SystemSigner {
   resources: {
     resource: ResourcesIds;
@@ -700,6 +704,7 @@ export interface SetBlitzRegistrationConfigProps extends SystemSigner {
   collectibles_cosmetics_max: BigNumberish;
   collectibles_cosmetics_address: BigNumberish;
   collectibles_timelock_address: BigNumberish;
+  collectibles_lootchest_address: BigNumberish;
   registration_count_max: BigNumberish;
   registration_start_at: BigNumberish;
   entry_token_class_hash: BigNumberish;

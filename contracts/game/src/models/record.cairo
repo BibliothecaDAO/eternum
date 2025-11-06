@@ -1,9 +1,9 @@
 use dojo::model::{Model, ModelStorage};
 use dojo::storage::dojo_store::DojoStore;
 use dojo::world::WorldStorage;
-use s1_eternum::alias::ID;
-use s1_eternum::constants::WORLD_CONFIG_ID;
-use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
+use crate::alias::ID;
+use crate::constants::WORLD_CONFIG_ID;
+use crate::utils::math::{PercentageImpl, PercentageValueImpl};
 
 //
 // GLOBAL RECORDS

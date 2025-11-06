@@ -1,6 +1,6 @@
-use s1_eternum::alias::ID;
-use s1_eternum::models::position::Direction;
-use s1_eternum::models::troop::GuardSlot;
+use crate::alias::ID;
+use crate::models::position::Direction;
+use crate::models::troop::GuardSlot;
 
 
 #[starknet::interface]
@@ -24,29 +24,29 @@ pub mod troop_battle_systems {
     use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DAYDREAMS_AGENT_ID, DEFAULT_NS};
-    use s1_eternum::models::config::{
+    use crate::alias::ID;
+    use crate::constants::{DAYDREAMS_AGENT_ID, DEFAULT_NS};
+    use crate::models::config::{
         BattleConfig, CombatConfigImpl, SeasonConfig, SeasonConfigImpl, TickImpl, TroopDamageConfig, TroopStaminaConfig,
         WorldConfigUtilImpl,
     };
-    use s1_eternum::models::events::{BattleStory, BattleType, Story, StoryEvent};
-    use s1_eternum::models::owner::OwnerAddressTrait;
-    use s1_eternum::models::position::{CoordTrait, Direction};
-    use s1_eternum::models::resource::resource::{ResourceWeightImpl, SingleResourceStoreImpl, WeightStoreImpl};
-    use s1_eternum::models::stamina::StaminaImpl;
-    use s1_eternum::models::structure::{
+    use crate::models::events::{BattleStory, BattleType, Story, StoryEvent};
+    use crate::models::owner::OwnerAddressTrait;
+    use crate::models::position::{CoordTrait, Direction};
+    use crate::models::resource::resource::{ResourceWeightImpl, SingleResourceStoreImpl, WeightStoreImpl};
+    use crate::models::stamina::StaminaImpl;
+    use crate::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
         StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
     };
-    use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, Troops, TroopsImpl};
-    use s1_eternum::models::weight::Weight;
-    use s1_eternum::systems::utils::resource::iResourceTransferImpl;
-    use s1_eternum::systems::utils::structure::iStructureImpl;
-    use s1_eternum::systems::utils::troop::{iExplorerImpl, iGuardImpl, iTroopImpl};
-    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
-    use s1_eternum::utils::map::biomes::Biome;
-    use s1_eternum::utils::random::VRFImpl;
+    use crate::models::troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, Troops, TroopsImpl};
+    use crate::models::weight::Weight;
+    use crate::systems::utils::resource::iResourceTransferImpl;
+    use crate::systems::utils::structure::iStructureImpl;
+    use crate::systems::utils::troop::{iExplorerImpl, iGuardImpl, iTroopImpl};
+    use crate::utils::achievements::index::{AchievementTrait, Tasks};
+    use crate::utils::map::biomes::Biome;
+    use crate::utils::random::VRFImpl;
     use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
     use crate::system_libraries::combat_library::{ICombatLibraryDispatcherTrait, combat_library};
     use super::super::super::super::super::models::troop::GuardTrait;

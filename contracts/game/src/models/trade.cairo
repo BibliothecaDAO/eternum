@@ -1,6 +1,6 @@
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
-use s1_eternum::alias::ID;
+use crate::alias::ID;
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]

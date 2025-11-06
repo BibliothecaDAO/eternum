@@ -16,6 +16,7 @@ import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { addAddressPadding } from "starknet";
 import { env } from "../../../../../env";
+import { getToriiBaseUrl } from "@/services/torii-base";
 import { SettlementLocation } from "../utils/settlement-types";
 
 const querySeasonPasses = async (accountAddress: string) => {
@@ -44,7 +45,7 @@ const querySeasonPasses = async (accountAddress: string) => {
     }
   `;
   try {
-    const fetchUrl = env.VITE_PUBLIC_TORII + "/graphql";
+    const fetchUrl = getToriiBaseUrl() + "/graphql";
     const response = await fetch(fetchUrl, {
       method: "POST",
       headers: {
@@ -78,7 +79,7 @@ export const queryRealmCount = async () => {
     }
   `;
   try {
-    const fetchUrl = env.VITE_PUBLIC_TORII + "/graphql";
+    const fetchUrl = getToriiBaseUrl() + "/graphql";
     const response = await fetch(fetchUrl, {
       method: "POST",
       headers: {

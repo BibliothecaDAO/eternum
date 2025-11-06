@@ -1,6 +1,6 @@
-use s1_eternum::alias::ID;
-use s1_eternum::models::position::Direction;
-use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
+use crate::alias::ID;
+use crate::models::position::Direction;
+use crate::models::troop::{GuardSlot, TroopTier, TroopType};
 
 
 #[starknet::interface]
@@ -62,34 +62,34 @@ pub mod troop_management_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcherTrait, WorldStorageTrait};
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION};
-    use s1_eternum::models::config::{
+    use crate::alias::ID;
+    use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION};
+    use crate::models::config::{
         CombatConfigImpl, SeasonConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig,
         WorldConfigUtilImpl,
     };
-    use s1_eternum::models::events::{
+    use crate::models::events::{
         ExplorerAddStory, ExplorerCreateStory, ExplorerDeleteStory, ExplorerExplorerSwapStory, ExplorerGuardSwapStory,
         GuardAddStory, GuardDeleteStory, GuardExplorerSwapStory, Story, StoryEvent,
     };
-    use s1_eternum::models::map::{Tile, TileImpl};
-    use s1_eternum::models::owner::OwnerAddressTrait;
-    use s1_eternum::models::position::{Coord, CoordTrait, Direction};
-    use s1_eternum::models::resource::resource::{
+    use crate::models::map::{Tile, TileImpl};
+    use crate::models::owner::OwnerAddressTrait;
+    use crate::models::position::{Coord, CoordTrait, Direction};
+    use crate::models::resource::resource::{
         ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl,
         WeightStoreImpl,
     };
-    use s1_eternum::models::stamina::{StaminaImpl, StaminaTrait};
-    use s1_eternum::models::structure::{
+    use crate::models::stamina::{StaminaImpl, StaminaTrait};
+    use crate::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureOwnerStoreImpl,
         StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
     };
-    use s1_eternum::models::troop::{
+    use crate::models::troop::{
         ExplorerTroops, GuardImpl, GuardSlot, GuardTrait, GuardTroops, TroopTier, TroopType, Troops,
     };
-    use s1_eternum::systems::utils::map::IMapImpl;
-    use s1_eternum::systems::utils::mine::iMineDiscoveryImpl;
-    use s1_eternum::systems::utils::troop::{iExplorerImpl, iGuardImpl, iTroopImpl};
+    use crate::systems::utils::map::IMapImpl;
+    use crate::systems::utils::mine::iMineDiscoveryImpl;
+    use crate::systems::utils::troop::{iExplorerImpl, iGuardImpl, iTroopImpl};
     use starknet::ContractAddress;
     use super::ITroopManagementSystems;
 
@@ -892,32 +892,32 @@ mod tests {
     use dojo_cairo_test::{
         ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
     };
-    use s1_eternum::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
-    use s1_eternum::models::config::{
+    use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
+    use crate::models::config::{
         CombatConfigImpl, SeasonConfig, TroopLimitConfig, WorldConfigUtilImpl, m_WeightConfig, m_WorldConfig,
     };
-    use s1_eternum::models::map::{Tile, TileTrait, m_Tile};
-    use s1_eternum::models::position::{Coord, CoordTrait, Direction};
-    use s1_eternum::models::resource::production::building::{m_Building, m_StructureBuildings};
-    use s1_eternum::models::resource::resource::{ResourceImpl, m_Resource};
-    use s1_eternum::models::structure::{
+    use crate::models::map::{Tile, TileTrait, m_Tile};
+    use crate::models::position::{Coord, CoordTrait, Direction};
+    use crate::models::resource::production::building::{m_Building, m_StructureBuildings};
+    use crate::models::resource::resource::{ResourceImpl, m_Resource};
+    use crate::models::structure::{
         StructureBaseStoreImpl, StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl, m_Structure,
         m_StructureOwnerStats, m_StructureVillageSlots,
     };
-    use s1_eternum::models::troop::{ExplorerTroops, GuardSlot, GuardTrait, TroopTier, TroopType, m_ExplorerTroops};
+    use crate::models::troop::{ExplorerTroops, GuardSlot, GuardTrait, TroopTier, TroopType, m_ExplorerTroops};
 
-    // use s1_eternum::models::weight::m_Weight; // Removed: Weight is not a model
-    use s1_eternum::systems::combat::contracts::troop_management::{
+    // use crate::models::weight::m_Weight; // Removed: Weight is not a model
+    use crate::systems::combat::contracts::troop_management::{
         ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait, troop_management_systems,
     };
-    use s1_eternum::systems::combat::contracts::troop_movement::{
+    use crate::systems::combat::contracts::troop_movement::{
         ITroopMovementSystemsDispatcher, ITroopMovementSystemsDispatcherTrait, agent_discovery_systems,
         hyperstructure_discovery_systems, mine_discovery_systems, troop_movement_systems, troop_movement_util_systems,
     };
-    use s1_eternum::systems::realm::utils::contracts::realm_internal_systems;
-    use s1_eternum::systems::resources::contracts::resource_systems::resource_systems;
-    use s1_eternum::systems::village::contracts::village_systems;
-    use s1_eternum::utils::testing::helpers::{
+    use crate::systems::realm::utils::contracts::realm_internal_systems;
+    use crate::systems::resources::contracts::resource_systems::resource_systems;
+    use crate::systems::village::contracts::village_systems;
+    use crate::utils::testing::helpers::{
         init_config, tgrant_resources, tspawn_realm_with_resources, tspawn_simple_realm,
     };
     use starknet::ContractAddress;

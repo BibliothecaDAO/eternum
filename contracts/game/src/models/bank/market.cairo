@@ -210,7 +210,7 @@ fn normalize(quantity: u128, market: @Market) -> (u128, u128, u128) {
 // #[cfg(test)]
 // mod tests {
 //     use debug::PrintTrait;
-//     use s1_eternum::alias::ID;
+//     use crate::alias::ID;
 //     use super::{Fixed, FixedTrait};
 //     // Local imports
 

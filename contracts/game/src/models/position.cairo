@@ -2,7 +2,7 @@ use core::fmt::{Display, Error, Formatter};
 use core::num::traits::zero::Zero;
 use core::option::OptionTrait;
 use core::traits::{Into, TryInto};
-use s1_eternum::utils::number::NumberTrait;
+use crate::utils::number::NumberTrait;
 
 // todo@credence revisit zone calculation
 
@@ -322,7 +322,7 @@ pub impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
 // #[cfg(test)]
 // mod tests {
 //     use debug::PrintTrait;
-//     use s1_eternum::alias::ID;
+//     use crate::alias::ID;
 //     use super::{Cube, CubeTrait, NumberTrait, Position, PositionTrait, TravelTrait};
 //     use traits::Into;
 //     use traits::TryInto;

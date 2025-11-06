@@ -1,4 +1,4 @@
-use s1_eternum::alias::ID;
+use crate::alias::ID;
 
 #[starknet::interface]
 pub trait IBlitzRealmSystems<T> {
@@ -15,37 +15,37 @@ pub mod blitz_realm_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{WorldStorage, WorldStorageTrait};
-    use s1_eternum::alias::ID;
+    use crate::alias::ID;
     
-    use s1_eternum::constants::{DEFAULT_NS, ResourceTypes, blitz_produceable_resources};
-    use s1_eternum::models::config::{
+    use crate::constants::{DEFAULT_NS, ResourceTypes, blitz_produceable_resources};
+    use crate::models::config::{
         BlitzHypersSettlementConfig, BlitzHypersSettlementConfigImpl, BlitzRealmPlayerRegister, BlitzEntryTokenRegister,
         BlitzRealmPositionRegister, BlitzRegistrationConfig, BlitzRegistrationConfigImpl, BlitzSettlementConfig,
         BlitzSettlementConfigImpl, MapConfig, RealmCountConfig, SeasonConfigImpl, TroopLimitConfig, TroopStaminaConfig,
         WorldConfigUtilImpl, BlitzCosmeticAttrsRegister
     };
-    use s1_eternum::models::events::{RealmCreatedStory, Story, StoryEvent};
-    use s1_eternum::models::map::TileImpl;
-    use s1_eternum::models::name::AddressName;
-    use s1_eternum::models::position::Coord;
-    use s1_eternum::models::realm::{RealmNameAndAttrsDecodingImpl, RealmReferenceImpl};
-    use s1_eternum::models::resource::production::building::BuildingImpl;
-    use s1_eternum::models::resource::production::production::{Production, ProductionImpl};
-    use s1_eternum::models::resource::resource::{
+    use crate::models::events::{RealmCreatedStory, Story, StoryEvent};
+    use crate::models::map::TileImpl;
+    use crate::models::name::AddressName;
+    use crate::models::position::Coord;
+    use crate::models::realm::{RealmNameAndAttrsDecodingImpl, RealmReferenceImpl};
+    use crate::models::resource::production::building::BuildingImpl;
+    use crate::models::resource::production::production::{Production, ProductionImpl};
+    use crate::models::resource::resource::{
         ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::structure::{
+    use crate::models::structure::{
         StructureBaseStoreImpl, StructureImpl, StructureMetadataStoreImpl, StructureOwnerStats, StructureOwnerStoreImpl,
         StructureReservation,
     };
-    use s1_eternum::systems::realm::utils::contracts::{
+    use crate::systems::realm::utils::contracts::{
         IERC20Dispatcher, IERC20DispatcherTrait, IRealmInternalSystemsDispatcher, IRealmInternalSystemsDispatcherTrait,
     };
-    use s1_eternum::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
-    use s1_eternum::systems::utils::realm::iRealmImpl;
-    use s1_eternum::systems::utils::structure::iStructureImpl;
-    use s1_eternum::utils::collectibles::iCollectiblesImpl;
-    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
+    use crate::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
+    use crate::systems::utils::realm::iRealmImpl;
+    use crate::systems::utils::structure::iStructureImpl;
+    use crate::utils::collectibles::iCollectiblesImpl;
+    use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use crate::systems::prize_distribution::contracts::prize_distribution_systems;
     use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
     use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};

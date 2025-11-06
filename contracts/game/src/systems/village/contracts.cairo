@@ -1,5 +1,5 @@
-use s1_eternum::alias::ID;
-use s1_eternum::models::position::Direction;
+use crate::alias::ID;
+use crate::models::position::Direction;
 
 #[starknet::interface]
 pub trait IVillageSystems<T> {
@@ -11,21 +11,21 @@ pub mod village_systems {
     use core::num::traits::zero::Zero;
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::models::config::{SeasonConfigImpl, VillageTokenConfig, WorldConfigUtilImpl};
-    use s1_eternum::models::map::TileOccupier;
-    use s1_eternum::models::position::{Coord, Direction, NUM_DIRECTIONS};
-    use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl};
-    use s1_eternum::models::structure::{
+    use crate::alias::ID;
+    use crate::constants::DEFAULT_NS;
+    use crate::models::config::{SeasonConfigImpl, VillageTokenConfig, WorldConfigUtilImpl};
+    use crate::models::map::TileOccupier;
+    use crate::models::position::{Coord, Direction, NUM_DIRECTIONS};
+    use crate::models::resource::production::building::{BuildingCategory, BuildingImpl};
+    use crate::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
         StructureMetadataStoreImpl, StructureOwnerStoreImpl, StructureVillageSlots,
     };
-    use s1_eternum::systems::utils::map::IMapImpl;
-    use s1_eternum::systems::utils::structure::iStructureImpl;
-    use s1_eternum::systems::utils::village::{iVillageImpl, iVillageResourceImpl};
-    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
-    use s1_eternum::utils::village::{IVillagePassDispatcher, IVillagePassDispatcherTrait};
+    use crate::systems::utils::map::IMapImpl;
+    use crate::systems::utils::structure::iStructureImpl;
+    use crate::systems::utils::village::{iVillageImpl, iVillageResourceImpl};
+    use crate::utils::achievements::index::{AchievementTrait, Tasks};
+    use crate::utils::village::{IVillagePassDispatcher, IVillagePassDispatcherTrait};
     use crate::system_libraries::structure_libraries::structure_creation_library::{
         IStructureCreationlibraryDispatcherTrait, structure_creation_library,
     };

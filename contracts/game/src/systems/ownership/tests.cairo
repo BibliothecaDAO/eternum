@@ -2,15 +2,15 @@
 // use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 // use dojo::world::{WorldStorage, WorldStorageTrait};
 // use dojo_cairo_test::{ContractDefTrait, NamespaceDef, TestResource, spawn_test_world};
-// use s1_eternum::alias::ID;
-// use s1_eternum::constants::{WORLD_CONFIG_ID};
-// use s1_eternum::models::owner::Owner;
-// use s1_eternum::models::position::{Coord};
-// use s1_eternum::models::season::Season;
-// use s1_eternum::systems::ownership::contracts::ownership_systems;
-// use s1_eternum::systems::ownership::contracts::{IOwnershipSystemsDispatcher, IOwnershipSystemsDispatcherTrait};
+// use crate::alias::ID;
+// use crate::constants::{WORLD_CONFIG_ID};
+// use crate::models::owner::Owner;
+// use crate::models::position::{Coord};
+// use crate::models::season::Season;
+// use crate::systems::ownership::contracts::ownership_systems;
+// use crate::systems::ownership::contracts::{IOwnershipSystemsDispatcher, IOwnershipSystemsDispatcherTrait};
 
-// use s1_eternum::utils::testing::{systems::deploy_system, world::spawn_eternum};
+// use crate::utils::testing::{systems::deploy_system, world::spawn_eternum};
 // use starknet::ContractAddress;
 // use starknet::contract_address_const;
 

@@ -1,23 +1,23 @@
 use dojo::model::ModelStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-use s1_eternum::alias::ID;
-use s1_eternum::constants::{
+use crate::alias::ID;
+use crate::constants::{
     RELICS_RESOURCE_END_ID, RELICS_RESOURCE_START_ID, RESOURCE_PRECISION, ResourceTypes, relic_level,
 };
-use s1_eternum::models::config::{MapConfig, TickImpl, WorldConfigUtilImpl};
-use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
-use s1_eternum::models::position::{Coord, CoordImpl, Direction, DirectionImpl, TravelImpl};
-use s1_eternum::models::record::RelicRecord;
-use s1_eternum::models::resource::resource::{
+use crate::models::config::{MapConfig, TickImpl, WorldConfigUtilImpl};
+use crate::models::map::{Tile, TileImpl, TileOccupier};
+use crate::models::position::{Coord, CoordImpl, Direction, DirectionImpl, TravelImpl};
+use crate::models::record::RelicRecord;
+use crate::models::resource::resource::{
     ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
 };
-use s1_eternum::models::structure::{StructureImpl, StructureReservation};
-use s1_eternum::models::weight::Weight;
-use s1_eternum::systems::utils::map::IMapImpl;
-use s1_eternum::systems::utils::structure::iStructureImpl;
-use s1_eternum::systems::utils::troop::iMercenariesImpl;
-use s1_eternum::utils::map::biomes::Biome;
-use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
+use crate::models::structure::{StructureImpl, StructureReservation};
+use crate::models::weight::Weight;
+use crate::systems::utils::map::IMapImpl;
+use crate::systems::utils::structure::iStructureImpl;
+use crate::systems::utils::troop::iMercenariesImpl;
+use crate::utils::map::biomes::Biome;
+use crate::utils::math::{PercentageImpl, PercentageValueImpl};
 use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
 use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 

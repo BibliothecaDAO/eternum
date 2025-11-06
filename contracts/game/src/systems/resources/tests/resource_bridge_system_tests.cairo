@@ -6,23 +6,23 @@
 //     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 //     use dojo::world::{WorldStorage, WorldStorageTrait};
 //     use dojo_cairo_test::{ContractDefTrait, NamespaceDef, TestResource};
-//     use s1_eternum::alias::ID;
-//     use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
-//     use s1_eternum::models::bank::{bank::Bank};
-//     use s1_eternum::models::config::{CapacityCategory, WeightConfig};
-//     use s1_eternum::models::config::{ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
+//     use crate::alias::ID;
+//     use crate::constants::{ResourceTypes, WORLD_CONFIG_ID};
+//     use crate::models::bank::{bank::Bank};
+//     use crate::models::config::{CapacityCategory, WeightConfig};
+//     use crate::models::config::{ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
 //     ResourceBridgeWhitelistConfig};
-//     use s1_eternum::models::owner::{EntityOwner, Owner};
-//     use s1_eternum::models::position::{Coord, Position};
-//     use s1_eternum::models::resource::resource::{RESOURCE_PRECISION, Resource};
-//     use s1_eternum::models::structure::{Structure, StructureCategory};
-//     use s1_eternum::systems::config::contracts::config_systems;
-//     use s1_eternum::systems::resources::contracts::resource_bridge_systems::{
+//     use crate::models::owner::{EntityOwner, Owner};
+//     use crate::models::position::{Coord, Position};
+//     use crate::models::resource::resource::{RESOURCE_PRECISION, Resource};
+//     use crate::models::structure::{Structure, StructureCategory};
+//     use crate::systems::config::contracts::config_systems;
+//     use crate::systems::resources::contracts::resource_bridge_systems::{
 //         ERC20ABIDispatcher, ERC20ABIDispatcherTrait, IResourceBridgeSystemsDispatcher,
 //         IResourceBridgeSystemsDispatcherTrait, resource_bridge_systems, resource_bridge_systems::InternalBridgeImpl,
 //     };
-//     use s1_eternum::utils::testing::mock::erc20mock::MockERC20;
-//     use s1_eternum::utils::testing::{
+//     use crate::utils::testing::mock::erc20mock::MockERC20;
+//     use crate::utils::testing::{
 //         config::set_capacity_config, systems::{deploy_contract, deploy_system}, world::spawn_eternum,
 //     };
 //     use starknet::testing::set_contract_address;

@@ -1,3 +1,4 @@
+// @ts-nocheck - Allow this file to work in both Node.js deployment and browser admin UI contexts
 import {
   ADMIN_BANK_ENTITY_ID,
   BRIDGE_FEE_DENOMINATOR,
@@ -15,14 +16,45 @@ import {
   type ResourceWhitelistConfig,
 } from "@bibliothecadao/types";
 
-import chalk from "chalk";
+// Browser-compatible: Make chalk optional for browser environments
+let chalk: any;
+try {
+  // Support both ESM (chalk@5) and CJS resolution
+  // If require returns a namespace with .default, unwrap it
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const mod = require("chalk");
+  chalk = (mod && typeof mod === "object" && "default" in mod ? mod.default : mod) as any;
+} catch {
+  // Fallback for browser/ESM environments where require is unavailable
+  const noop = (str: string) => str;
+  chalk = {
+    cyan: noop,
+    yellow: noop,
+    white: noop,
+    gray: noop,
+    green: noop,
+    red: noop,
+    blue: noop,
+  };
+}
 
 import { getContractByName, NAMESPACE, type EternumProvider } from "@bibliothecadao/provider";
-import fs from "fs";
 import { byteArray, type Account } from "starknet";
 import type { NetworkType } from "utils/environment";
 import type { Chain } from "utils/utils";
 import { addCommas, hourMinutesSeconds, inGameAmount, shortHexAddress } from "../utils/formatting";
+
+// Browser-compatible: Make fs optional for browser environments
+let fs: any;
+try {
+  fs = require("fs");
+} catch {
+  // Fallback for browser - fs not available
+  fs = null;
+}
+
+// Type compatibility for browser & Node environments
+type AnyAccount = any; // Use any to avoid version conflicts between environments
 
 interface Config {
   account: Account;
@@ -33,6 +65,7 @@ interface Config {
 export class GameConfigDeployer {
   public globalConfig: EternumConfig;
   public network: NetworkType;
+  public skipSleeps: boolean = false;
 
   constructor(config: EternumConfig, network: NetworkType) {
     this.globalConfig = config;
@@ -40,6 +73,7 @@ export class GameConfigDeployer {
   }
 
   async sleepNonLocal() {
+    if (this.skipSleeps) return;
     if (this.network.toLowerCase() === "mainnet" || this.network.toLowerCase() === "sepolia") {
       let sleepSeconds = 1;
       console.log(chalk.gray(`Sleeping for ${sleepSeconds} seconds...`));
@@ -60,6 +94,9 @@ export class GameConfigDeployer {
     await setGameModeConfig(config);
     await this.sleepNonLocal();
 
+    await setBlitzPreviousGame(config);
+    await this.sleepNonLocal();
+
     await setVictoryPointsConfig(config);
     await this.sleepNonLocal();
 
@@ -67,6 +104,9 @@ export class GameConfigDeployer {
     await this.sleepNonLocal();
 
     await setBlitzRegistrationConfig(config);
+    await this.sleepNonLocal();
+
+    await grantCollectibleMinterRole(config);
     await this.sleepNonLocal();
 
     await setWonderBonusConfig(config);
@@ -1152,8 +1192,12 @@ export const setSeasonConfig = async (config: Config) => {
 };
 
 export const setVRFConfig = async (config: Config) => {
-  if (config.config.setup?.chain !== "mainnet" && config.config.setup?.chain !== "sepolia") {
-    console.log(chalk.yellow("    ⚠ Skipping VRF configuration for slot or local environment"));
+  if (
+    config.config.setup?.chain !== "mainnet" &&
+    config.config.setup?.chain !== "sepolia" &&
+    config.config.setup?.chain !== "slot"
+  ) {
+    console.log(chalk.yellow("    ⚠ Skipping VRF configuration for local environment"));
     return;
   }
 
@@ -1355,6 +1399,50 @@ export const setGameModeConfig = async (config: Config) => {
   console.log(chalk.green(`\n    ✔ Game mode configured `) + chalk.gray(gameModeTx.statusReceipt) + "\n");
 };
 
+export const setBlitzPreviousGame = async (config: Config) => {
+  // Read previously saved address from configuration
+  const prevAddress = (config.config as any)?.prev_prize_distribution_address as string | undefined;
+  // obtain current prize_distribution_systems from the current manifest
+  let currentAddress: string | undefined = undefined;
+  try {
+    const tag = `${NAMESPACE}-prize_distribution_systems`;
+    currentAddress = getContractByName((config.config.setup as any)?.manifest, tag);
+  } catch {
+    currentAddress = undefined;
+  }
+
+  // Validate previous address exists and is different from current
+  const isNonZero = (addr?: string) => !!addr && addr !== "0x0" && addr !== "0x";
+  if (!isNonZero(prevAddress)) {
+    console.log(chalk.gray("    ↪ No previous prize_distribution_systems found; skipping blitz previous game config"));
+    return;
+  }
+  if (currentAddress && prevAddress?.toLowerCase() === currentAddress.toLowerCase()) {
+    console.log(
+      chalk.gray("    ↪ Previous prize_distribution_systems equals current; skipping blitz previous game config"),
+    );
+    return;
+  }
+
+  console.log(
+    chalk.cyan(`
+  ⚡ Blitz Previous Game
+  ═════════════════════`),
+  );
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Previous Prize Distribution Systems")}
+    │  ${chalk.gray("Address:")} ${chalk.white(prevAddress)}
+    └────────────────────────────────`),
+  );
+
+  const tx = await config.provider.set_blitz_previous_game({
+    signer: config.account,
+    prev_prize_distribution_systems: prevAddress!,
+  });
+  console.log(chalk.green(`\n    ✔ Blitz previous game set `) + chalk.gray(tx.statusReceipt) + "\n");
+};
+
 export const setVictoryPointsConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
@@ -1455,6 +1543,7 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
   const collectibles_cosmetics_max = config.config.blitz.registration.collectible_cosmetics_max_items;
   const collectibles_cosmetics_address = config.config.blitz.registration.collectible_cosmetics_address;
   const collectibles_timelock_address = config.config.blitz.registration.collectible_timelock_address;
+  const collectibles_lootchest_address = config.config.blitz.registration.collectibles_lootchest_address;
 
   const registrationCalldata = {
     signer: config.account,
@@ -1470,6 +1559,7 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
     collectibles_cosmetics_max,
     collectibles_cosmetics_address,
     collectibles_timelock_address,
+    collectibles_lootchest_address,
   };
 
   console.log(
@@ -1494,10 +1584,12 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
     │  ${chalk.gray("Collectible Cosmetics Max Items:")} ${chalk.white(registrationCalldata.collectibles_cosmetics_max)}
     │  ${chalk.gray("Collectible Cosmetics Address:")} ${chalk.white(shortHexAddress(registrationCalldata.collectibles_cosmetics_address))}
     │  ${chalk.gray("Collectible Timelock Address:")} ${chalk.white(shortHexAddress(registrationCalldata.collectibles_timelock_address))}
+    │  ${chalk.gray("Collectible LootChest Address:")} ${chalk.white(shortHexAddress(registrationCalldata.collectibles_lootchest_address))}
     │
     └────────────────────────────────`),
   );
 
+  // Grant MINTER_ROLE to prize_distribution_systems for loot chest minting
   const blitzRegistrationTx = await config.provider.set_blitz_registration_config(registrationCalldata);
   console.log(
     chalk.green(`\n    ✔ Blitz registration configured `) + chalk.gray(blitzRegistrationTx.statusReceipt) + "\n",
@@ -1552,6 +1644,45 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
 
   const setSeasonTx = await config.provider.set_season_config(seasonCalldata);
   console.log(chalk.green(`    ✔ Season configured `) + chalk.gray(setSeasonTx.statusReceipt));
+};
+
+export const grantCollectibleMinterRole = async (config: Config) => {
+  if (!config.config.blitz?.mode?.on) {
+    console.log(chalk.yellow("⏭️  Skipping minter role grant (Blitz mode is off)"));
+    return;
+  }
+
+  if (!config.config.blitz?.registration?.collectibles_lootchest_address) {
+    console.log(chalk.yellow("⏭️  Skipping minter role grant (No loot chest address configured)"));
+    return;
+  }
+
+  console.log(
+    chalk.cyan(`\n
+  🎫 Grant Collectible Minter Role
+  ═══════════════════════════════`),
+  );
+
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Granting Minter Role")}
+    │  ${chalk.gray("Granting minter role for Loot Chest Contract to prize_distribution_systems...")}
+    └────────────────────────────────`),
+  );
+
+  const collectibles_lootchest_address = config.config.blitz.registration.collectibles_lootchest_address;
+  const prizeDistributionSystemsAddr = getContractByName(
+    config.provider.manifest,
+    `${NAMESPACE}-prize_distribution_systems`,
+  );
+
+  const grantRoleTx = await config.provider.grant_collectible_minter_role({
+    signer: config.account,
+    collectible_address: collectibles_lootchest_address,
+    minter_address: prizeDistributionSystemsAddr,
+  });
+
+  console.log(chalk.green(`    ✔ Minter role granted `) + chalk.gray(grantRoleTx.statusReceipt) + "\n");
 };
 
 export const createBanks = async (config: Config) => {
@@ -1699,6 +1830,10 @@ export const addLiquidity = async (config: Config) => {
 };
 
 export const nodeReadConfig = async (chain: Chain) => {
+  if (!fs) {
+    throw new Error("nodeReadConfig is only available in Node.js environment");
+  }
+
   try {
     let path = "./environments/data";
     switch (chain) {

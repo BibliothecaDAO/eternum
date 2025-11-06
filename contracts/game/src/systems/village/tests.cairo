@@ -2,23 +2,23 @@
 // use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 // use dojo::world::{WorldStorage, WorldStorageTrait};
 // use dojo_cairo_test::{ContractDefTrait, NamespaceDef, TestResource};
-// use s1_eternum::alias::ID;
+// use crate::alias::ID;
 
-// use s1_eternum::constants::ResourceTypes;
-// use s1_eternum::models::map::Tile;
-// use s1_eternum::models::owner::Owner;
+// use crate::constants::ResourceTypes;
+// use crate::models::map::Tile;
+// use crate::models::owner::Owner;
 
-// use s1_eternum::models::position::{Coord, Position};
-// use s1_eternum::models::realm::{Realm, RealmTrait};
-// use s1_eternum::models::resource::resource::Resource;
-// use s1_eternum::models::resource::resource::ResourceList;
+// use crate::models::position::{Coord, Position};
+// use crate::models::realm::{Realm, RealmTrait};
+// use crate::models::resource::resource::Resource;
+// use crate::models::resource::resource::ResourceList;
 
-// use s1_eternum::systems::config::contracts::{IQuestConfigDispatcher, IQuestConfigDispatcherTrait, config_systems};
-// use s1_eternum::systems::realm::contracts::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait, realm_systems};
+// use crate::systems::config::contracts::{IQuestConfigDispatcher, IQuestConfigDispatcherTrait, config_systems};
+// use crate::systems::realm::contracts::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait, realm_systems};
 
-// use s1_eternum::utils::map::biomes::Biome;
+// use crate::utils::map::biomes::Biome;
 
-// use s1_eternum::utils::testing::{
+// use crate::utils::testing::{
 //     config::{set_capacity_config, set_combat_config, set_structure_level_config, set_settlement_config},
 //     general::{
 //         generate_realm_positions, get_default_hyperstructure_coord, get_default_realm_pos, spawn_hyperstructure,

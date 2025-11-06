@@ -2,13 +2,13 @@ use core::fmt::{Display, Error, Formatter};
 use core::num::traits::zero::Zero;
 use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
-use s1_eternum::alias::ID;
-use s1_eternum::constants::{
+use crate::alias::ID;
+use crate::constants::{
     RELICS_RESOURCE_END_ID, RELICS_RESOURCE_START_ID, RESOURCE_PRECISION, ResourceTypes, resource_type_name,
 };
-use s1_eternum::models::config::{TickImpl, WeightConfig};
-use s1_eternum::models::resource::production::production::{Production, ProductionImpl};
-use s1_eternum::models::weight::{Weight, WeightImpl};
+use crate::models::config::{TickImpl, WeightConfig};
+use crate::models::resource::production::production::{Production, ProductionImpl};
+use crate::models::weight::{Weight, WeightImpl};
 
 
 #[derive(Copy, Drop, Serde)]

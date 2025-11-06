@@ -1,6 +1,6 @@
-use s1_eternum::alias::ID;
-use s1_eternum::models::position::{Coord, Direction};
-use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
+use crate::alias::ID;
+use crate::models::position::{Coord, Direction};
+use crate::models::troop::{GuardSlot, TroopTier, TroopType};
 use starknet::ContractAddress;
 
 #[derive(Introspect, Copy, Drop, Serde)]

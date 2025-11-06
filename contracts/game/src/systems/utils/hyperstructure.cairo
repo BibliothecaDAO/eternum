@@ -2,18 +2,18 @@ use core::num::traits::zero::Zero;
 use cubit::f128::types::fixed::FixedTrait;
 use dojo::model::{Model, ModelStorage};
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-use s1_eternum::constants::WORLD_CONFIG_ID;
-use s1_eternum::models::config::{
+use crate::constants::WORLD_CONFIG_ID;
+use crate::models::config::{
     MapConfig, TickImpl, TickInterval, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
 };
-use s1_eternum::models::hyperstructure::{ConstructionAccess, Hyperstructure, HyperstructureGlobals};
-use s1_eternum::models::map::{Tile, TileOccupier};
-use s1_eternum::models::position::{Coord, CoordImpl, Direction, TravelImpl};
-use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl};
-use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
-use s1_eternum::systems::utils::structure::iStructureImpl;
-use s1_eternum::systems::utils::troop::iMercenariesImpl;
-use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
+use crate::models::hyperstructure::{ConstructionAccess, Hyperstructure, HyperstructureGlobals};
+use crate::models::map::{Tile, TileOccupier};
+use crate::models::position::{Coord, CoordImpl, Direction, TravelImpl};
+use crate::models::structure::{Structure, StructureCategory, StructureImpl};
+use crate::models::troop::{GuardSlot, TroopTier, TroopType};
+use crate::systems::utils::structure::iStructureImpl;
+use crate::systems::utils::troop::iMercenariesImpl;
+use crate::utils::math::{PercentageImpl, PercentageValueImpl};
 use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 use crate::system_libraries::structure_libraries::structure_creation_library::{
     IStructureCreationlibraryDispatcherTrait, structure_creation_library,

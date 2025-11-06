@@ -1,4 +1,4 @@
-use s1_eternum::alias::ID;
+use crate::alias::ID;
 
 #[starknet::interface]
 pub trait ISwapSystems<T> {
@@ -11,19 +11,19 @@ pub mod swap_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes};
-    use s1_eternum::models::bank::market::{Market, MarketTrait};
-    use s1_eternum::models::config::{BankConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl};
-    use s1_eternum::models::owner::OwnerAddressTrait;
-    use s1_eternum::models::resource::resource::{
+    use crate::alias::ID;
+    use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes};
+    use crate::models::bank::market::{Market, MarketTrait};
+    use crate::models::config::{BankConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl};
+    use crate::models::owner::OwnerAddressTrait;
+    use crate::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::structure::{
+    use crate::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
     };
-    use s1_eternum::models::weight::Weight;
-    use s1_eternum::systems::utils::resource::iResourceTransferImpl;
+    use crate::models::weight::Weight;
+    use crate::systems::utils::resource::iResourceTransferImpl;
     use starknet::ContractAddress;
 
 

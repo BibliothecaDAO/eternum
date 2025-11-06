@@ -5,6 +5,7 @@ import { confirmNonLocalDeployment } from "../utils/confirmation";
 import { logNetwork, saveConfigJsonFromConfigTsFile, type NetworkType } from "../utils/environment";
 import { type Chain } from "../utils/utils";
 import { GameConfigDeployer, nodeReadConfig } from "./config";
+import { withBatching } from "./tx-batcher";
 
 const {
   VITE_PUBLIC_MASTER_ADDRESS,
@@ -35,5 +36,28 @@ export const config = new GameConfigDeployer(configuration, VITE_PUBLIC_CHAIN! a
 
 // Deploy configurations
 logNetwork(VITE_PUBLIC_CHAIN! as NetworkType);
-await config.setupAll(account, provider);
+// Optional batching: set CONFIG_BATCH=1 to queue all config calls into a single multicall.
+// Optionally, CONFIG_IMMEDIATE_ENTRYPOINTS can be a comma-separated list of entrypoints that should execute immediately
+// even in batch mode, e.g. "set_world_config,set_blitz_previous_game".
+const BATCH = process.env.CONFIG_BATCH === "1" || process.env.CONFIG_BATCH === "true";
+const IMMEDIATE = (process.env.CONFIG_IMMEDIATE_ENTRYPOINTS || "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+if (BATCH) {
+  // Skip inter-call sleeps when batching
+  config.skipSleeps = true;
+  const flushReceipt = await withBatching(
+    provider,
+    account,
+    async () => {
+      await config.setupAll(account, provider);
+    },
+    { immediateEntrypoints: IMMEDIATE, label: "config" },
+  );
+  console.log("Batched multicall submitted:", (flushReceipt as any)?.transaction_hash ?? "<unknown>");
+} else {
+  await config.setupAll(account, provider);
+}
 logNetwork(VITE_PUBLIC_CHAIN! as NetworkType);

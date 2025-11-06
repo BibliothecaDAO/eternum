@@ -1,4 +1,4 @@
-use s1_eternum::alias::ID;
+use crate::alias::ID;
 use starknet::ContractAddress;
 
 #[starknet::interface]
@@ -11,12 +11,12 @@ trait IOwnershipSystems<T> {
 mod ownership_systems {
     use core::num::traits::Zero;
     use dojo::model::ModelStorage;
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::models::agent::AgentOwner;
-    use s1_eternum::models::config::{AgentControllerConfig, SeasonConfigImpl, WorldConfigUtilImpl};
-    use s1_eternum::models::owner::OwnerAddressTrait;
-    use s1_eternum::models::structure::{
+    use crate::alias::ID;
+    use crate::constants::DEFAULT_NS;
+    use crate::models::agent::AgentOwner;
+    use crate::models::config::{AgentControllerConfig, SeasonConfigImpl, WorldConfigUtilImpl};
+    use crate::models::owner::OwnerAddressTrait;
+    use crate::models::structure::{
         StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
     };
     use starknet::ContractAddress;

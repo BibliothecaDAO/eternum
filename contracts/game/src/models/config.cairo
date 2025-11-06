@@ -2,10 +2,10 @@ use core::num::traits::zero::Zero;
 use dojo::model::{Model, ModelStorage};
 use dojo::storage::dojo_store::DojoStore;
 use dojo::world::WorldStorage;
-use s1_eternum::alias::ID;
-use s1_eternum::constants::{WORLD_CONFIG_ID, UNIVERSAL_DEPLOYER_ADDRESS};
-use s1_eternum::models::position::{Coord, CoordImpl, Direction};
-use s1_eternum::utils::random::VRFImpl;
+use crate::alias::ID;
+use crate::constants::{WORLD_CONFIG_ID, UNIVERSAL_DEPLOYER_ADDRESS};
+use crate::models::position::{Coord, CoordImpl, Direction};
+use crate::utils::random::VRFImpl;
 use starknet::ContractAddress;
 use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
 //
@@ -565,6 +565,7 @@ pub struct BlitzRegistrationConfig {
     pub collectibles_cosmetics_max: u8,
     pub collectibles_cosmetics_address: ContractAddress,
     pub collectibles_timelock_address: ContractAddress,
+    pub collectibles_lootchest_address: ContractAddress,
     pub registration_count: u16,
     pub registration_count_max: u16,
     pub registration_start_at: u32,
@@ -623,6 +624,10 @@ pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
 
     fn entry_token_attrs_raw(self: BlitzRegistrationConfig) -> u128 {
         1
+    }
+
+    fn collectibles_lootchest_attrs_raw(self: BlitzRegistrationConfig) -> u128 {
+        0x101 // @note to be changed 
     }
 
 
@@ -966,4 +971,12 @@ pub struct BlitzCosmeticAttrsRegister {
     #[key]
     pub player: ContractAddress,
     pub attrs: Span<u128>,
+}
+
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
+pub struct BlitzPreviousGame {
+    #[key]
+    pub config_id: ID,
+    pub last_prize_distribution_systems: ContractAddress,
 }

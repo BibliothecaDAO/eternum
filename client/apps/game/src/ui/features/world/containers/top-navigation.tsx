@@ -10,6 +10,7 @@ export const TopNavigation = memo(() => {
       <div className="pointer-events-auto">
         {<Social />}
         {/* <Rewards /> */}
+        {/* GameSelector removed per request: hide current game name button */}
         <SettingsWindow />
         <ShortcutsWindow />
         <LatestFeaturesWindow />

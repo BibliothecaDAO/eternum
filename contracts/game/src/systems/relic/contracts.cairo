@@ -1,5 +1,5 @@
-use s1_eternum::alias::ID;
-use s1_eternum::models::position::Coord;
+use crate::alias::ID;
+use crate::models::position::Coord;
 
 #[derive(Copy, Drop, Serde)]
 pub enum RelicRecipientTypeParam {
@@ -20,31 +20,31 @@ pub mod relic_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes, relic_essence_cost};
-    use s1_eternum::models::config::{
+    use crate::alias::ID;
+    use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes, relic_essence_cost};
+    use crate::models::config::{
         CombatConfigImpl, MapConfig, SeasonConfig, SeasonConfigImpl, TickImpl, TroopStaminaConfig, WorldConfigUtilImpl,
     };
-    use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
-    use s1_eternum::models::owner::OwnerAddressTrait;
-    use s1_eternum::models::position::{Coord, TravelTrait};
-    use s1_eternum::models::relic::{RELIC_EFFECT, RelicEffectImpl};
-    use s1_eternum::models::resource::production::production::ProductionBoostBonus;
-    use s1_eternum::models::resource::resource::{
+    use crate::models::map::{Tile, TileImpl, TileOccupier};
+    use crate::models::owner::OwnerAddressTrait;
+    use crate::models::position::{Coord, TravelTrait};
+    use crate::models::relic::{RELIC_EFFECT, RelicEffectImpl};
+    use crate::models::resource::production::production::ProductionBoostBonus;
+    use crate::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::stamina::StaminaImpl;
-    use s1_eternum::models::structure::{
+    use crate::models::stamina::StaminaImpl;
+    use crate::models::structure::{
         StructureBase, StructureBaseStoreImpl, StructureOwnerStoreImpl, StructureTroopGuardStoreImpl,
     };
-    use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, GuardTroops};
-    use s1_eternum::models::weight::Weight;
-    use s1_eternum::systems::utils::map::IMapImpl;
-    use s1_eternum::systems::utils::relic::iRelicChestResourceFactoryImpl;
-    use s1_eternum::systems::utils::resource::iResourceTransferImpl;
-    use s1_eternum::systems::utils::structure::iStructureImpl;
-    use s1_eternum::systems::utils::troop::{iExplorerImpl, iGuardImpl, iTroopImpl};
-    use s1_eternum::utils::random::VRFImpl;
+    use crate::models::troop::{ExplorerTroops, GuardImpl, GuardTroops};
+    use crate::models::weight::Weight;
+    use crate::systems::utils::map::IMapImpl;
+    use crate::systems::utils::relic::iRelicChestResourceFactoryImpl;
+    use crate::systems::utils::resource::iResourceTransferImpl;
+    use crate::systems::utils::structure::iStructureImpl;
+    use crate::systems::utils::troop::{iExplorerImpl, iGuardImpl, iTroopImpl};
+    use crate::utils::random::VRFImpl;
     use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
     use super::RelicRecipientTypeParam;
 

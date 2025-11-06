@@ -1,8 +1,8 @@
 {
   "world": {
-    "class_hash": "0x7bc7b264612d3ac261df0a6d72a6b73c84b9386ef0095dd340d42afc01bb53c",
-    "address": "0x6bc9571d9b2cacfc1ec8731f6da8b0472efae86b654529e779cd6db7cf5fa3",
-    "seed": "s1_eternum_slot_1762365838",
+    "class_hash": "0x57994b6a75fad550ca18b41ee82e2110e158c59028c4478109a67965a0e5b1e",
+    "address": "0x78868acce2f75cdc07e38a852e6aec3d34f1a76ca3ff88627333b72c2a884ac",
+    "seed": "s1_eternum_slot_223",
     "name": "Realms: Eternum",
     "entrypoints": [
       "uuid",
@@ -1479,8 +1479,8 @@
   },
   "contracts": [
     {
-      "address": "0x12cffb724be1446e16343041ac2c63d0846e2ae20e28d5b75d70f9bf2cb6946",
-      "class_hash": "0x11afa3c21ac3b6529777149b8377c7e66f14aba74d2d1204bf070e538f61a4",
+      "address": "0x41683808b137e1204bba9decca8c65915474a2f288fc2c070c9a192f06bb610",
+      "class_hash": "0x288c5b076e72d5570f93cc9e7bba7e6757d1966c105d4c40b7dcd72e785f0ad",
       "abi": [
         {
           "type": "impl",
@@ -1535,7 +1535,7 @@
         {
           "type": "impl",
           "name": "AgentDiscoveryImpl",
-          "interface_name": "s1_eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems"
+          "interface_name": "eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems"
         },
         {
           "type": "struct",
@@ -1567,7 +1567,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::map::Tile",
+          "name": "eternum::models::map::Tile",
           "members": [
             {
               "name": "col",
@@ -1597,7 +1597,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::MapConfig",
+          "name": "eternum::models::config::MapConfig",
           "members": [
             {
               "name": "reward_resource_amount",
@@ -1659,7 +1659,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::TroopLimitConfig",
+          "name": "eternum::models::config::TroopLimitConfig",
           "members": [
             {
               "name": "explorer_max_party_count",
@@ -1693,7 +1693,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::TroopStaminaConfig",
+          "name": "eternum::models::config::TroopStaminaConfig",
           "members": [
             {
               "name": "stamina_gain_per_tick",
@@ -1755,7 +1755,7 @@
         },
         {
           "type": "enum",
-          "name": "s1_eternum::models::events::ExploreFind",
+          "name": "eternum::models::events::ExploreFind",
           "variants": [
             {
               "name": "None",
@@ -1785,7 +1785,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems",
+          "name": "eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems",
           "items": [
             {
               "type": "function",
@@ -1797,7 +1797,7 @@
                 },
                 {
                   "name": "tile",
-                  "type": "s1_eternum::models::map::Tile"
+                  "type": "eternum::models::map::Tile"
                 },
                 {
                   "name": "caller",
@@ -1805,15 +1805,15 @@
                 },
                 {
                   "name": "map_config",
-                  "type": "s1_eternum::models::config::MapConfig"
+                  "type": "eternum::models::config::MapConfig"
                 },
                 {
                   "name": "troop_limit_config",
-                  "type": "s1_eternum::models::config::TroopLimitConfig"
+                  "type": "eternum::models::config::TroopLimitConfig"
                 },
                 {
                   "name": "troop_stamina_config",
-                  "type": "s1_eternum::models::config::TroopStaminaConfig"
+                  "type": "eternum::models::config::TroopStaminaConfig"
                 },
                 {
                   "name": "current_tick",
@@ -1826,7 +1826,7 @@
               ],
               "outputs": [
                 {
-                  "type": "(core::bool, s1_eternum::models::events::ExploreFind)"
+                  "type": "(core::bool, eternum::models::events::ExploreFind)"
                 }
               ],
               "state_mutability": "view"
@@ -1932,7 +1932,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::combat::contracts::troop_movement::agent_discovery_systems::Event",
+          "name": "eternum::systems::combat::contracts::troop_movement::agent_discovery_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -1956,8 +1956,8 @@
       ]
     },
     {
-      "address": "0x422e8c6b1e21e14702dd6619d86beb93f563b617e20bf84797172a9f7adf646",
-      "class_hash": "0x4217c752c563eca16bb139c42058f861ef70542bd25035ab0c9b436e7ae502",
+      "address": "0x181fd64d84d74087dac86abe6926f9e3a8afcd3d65e678c1645cc3f65002218",
+      "class_hash": "0x78156f0791e0d568637839a8f200e1e7a1cb6b6be415e4d5bb51c6d44b86271",
       "abi": [
         {
           "type": "impl",
@@ -2012,11 +2012,11 @@
         {
           "type": "impl",
           "name": "BankSystemsImpl",
-          "interface_name": "s1_eternum::systems::bank::contracts::bank::IBankSystems"
+          "interface_name": "eternum::systems::bank::contracts::bank::IBankSystems"
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::position::Coord",
+          "name": "eternum::models::position::Coord",
           "members": [
             {
               "name": "x",
@@ -2030,7 +2030,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::systems::bank::contracts::bank::BankCreateParams",
+          "name": "eternum::systems::bank::contracts::bank::BankCreateParams",
           "members": [
             {
               "name": "name",
@@ -2038,17 +2038,17 @@
             },
             {
               "name": "coord",
-              "type": "s1_eternum::models::position::Coord"
+              "type": "eternum::models::position::Coord"
             }
           ]
         },
         {
           "type": "struct",
-          "name": "core::array::Span::<s1_eternum::systems::bank::contracts::bank::BankCreateParams>",
+          "name": "core::array::Span::<eternum::systems::bank::contracts::bank::BankCreateParams>",
           "members": [
             {
               "name": "snapshot",
-              "type": "@core::array::Array::<s1_eternum::systems::bank::contracts::bank::BankCreateParams>"
+              "type": "@core::array::Array::<eternum::systems::bank::contracts::bank::BankCreateParams>"
             }
           ]
         },
@@ -2064,7 +2064,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::bank::contracts::bank::IBankSystems",
+          "name": "eternum::systems::bank::contracts::bank::IBankSystems",
           "items": [
             {
               "type": "function",
@@ -2072,7 +2072,7 @@
               "inputs": [
                 {
                   "name": "banks",
-                  "type": "core::array::Span::<s1_eternum::systems::bank::contracts::bank::BankCreateParams>"
+                  "type": "core::array::Span::<eternum::systems::bank::contracts::bank::BankCreateParams>"
                 }
               ],
               "outputs": [
@@ -2183,7 +2183,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::bank::contracts::bank::bank_systems::Event",
+          "name": "eternum::systems::bank::contracts::bank::bank_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -2208,8 +2208,8 @@
       ]
     },
     {
-      "address": "0x1269aa05b6020c63467f3ff71f7f93b9c4a20e4dbfd3601ed28a3523c2241bc",
-      "class_hash": "0x7cd53e657c4ba7269e0ba39fb0b8a26df37b313583b60ce8d58e5a2abc06325",
+      "address": "0x1c2b1847fff2ddd3a00aacc43533f6e6269c6b263819d37c8e73b2825d07045",
+      "class_hash": "0x72632cb1ce850cdbb1b653ef7d33d97f638d674b68db109963d479167358720",
       "abi": [
         {
           "type": "impl",
@@ -2264,7 +2264,7 @@
         {
           "type": "impl",
           "name": "BlitzRealmSystemsImpl",
-          "interface_name": "s1_eternum::systems::realm::blitz::contracts::IBlitzRealmSystems"
+          "interface_name": "eternum::systems::realm::blitz::contracts::IBlitzRealmSystems"
         },
         {
           "type": "struct",
@@ -2278,7 +2278,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::realm::blitz::contracts::IBlitzRealmSystems",
+          "name": "eternum::systems::realm::blitz::contracts::IBlitzRealmSystems",
           "items": [
             {
               "type": "function",
@@ -2431,7 +2431,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::realm::blitz::contracts::blitz_realm_systems::Event",
+          "name": "eternum::systems::realm::blitz::contracts::blitz_realm_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -2459,8 +2459,8 @@
       ]
     },
     {
-      "address": "0x61938a67730ab9a1dca62d33c9ea04fa79874cadf9dd863d40414c5c2713bdd",
-      "class_hash": "0x60c230eeb0c3a4301a4b82d4ba26752c7f3265867b4df070e0be2fe544822a8",
+      "address": "0x1c3bcc7c55f8f9cc0ea261d8add66ed22d077bef1cff8001fad47a26a5542b3",
+      "class_hash": "0x4b191ce29c8b416f568ac524b15aadcacba63ca3f1a5ef3d4389b0404422fd9",
       "abi": [
         {
           "type": "impl",
@@ -2522,11 +2522,11 @@
         {
           "type": "impl",
           "name": "AgentControllerConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::IAgentControllerConfig"
+          "interface_name": "eternum::systems::config::contracts::IAgentControllerConfig"
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IAgentControllerConfig",
+          "name": "eternum::systems::config::contracts::IAgentControllerConfig",
           "items": [
             {
               "type": "function",
@@ -2561,11 +2561,11 @@
         {
           "type": "impl",
           "name": "VillageTokenConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::IVillageTokenConfig"
+          "interface_name": "eternum::systems::config::contracts::IVillageTokenConfig"
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::VillageTokenConfig",
+          "name": "eternum::models::config::VillageTokenConfig",
           "members": [
             {
               "name": "token_address",
@@ -2579,7 +2579,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IVillageTokenConfig",
+          "name": "eternum::systems::config::contracts::IVillageTokenConfig",
           "items": [
             {
               "type": "function",
@@ -2587,7 +2587,7 @@
               "inputs": [
                 {
                   "name": "village_token_config",
-                  "type": "s1_eternum::models::config::VillageTokenConfig"
+                  "type": "eternum::models::config::VillageTokenConfig"
                 }
               ],
               "outputs": [],
@@ -2598,11 +2598,11 @@
         {
           "type": "impl",
           "name": "WonderBonusConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::IWonderBonusConfig"
+          "interface_name": "eternum::systems::config::contracts::IWonderBonusConfig"
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IWonderBonusConfig",
+          "name": "eternum::systems::config::contracts::IWonderBonusConfig",
           "items": [
             {
               "type": "function",
@@ -2625,11 +2625,11 @@
         {
           "type": "impl",
           "name": "WorldConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::IWorldConfig"
+          "interface_name": "eternum::systems::config::contracts::IWorldConfig"
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IWorldConfig",
+          "name": "eternum::systems::config::contracts::IWorldConfig",
           "items": [
             {
               "type": "function",
@@ -2648,11 +2648,11 @@
         {
           "type": "impl",
           "name": "MercenariesConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::IMercenariesConfig"
+          "interface_name": "eternum::systems::config::contracts::IMercenariesConfig"
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IMercenariesConfig",
+          "name": "eternum::systems::config::contracts::IMercenariesConfig",
           "items": [
             {
               "type": "function",
@@ -2671,7 +2671,7 @@
         {
           "type": "impl",
           "name": "SeasonConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::ISeasonConfig"
+          "interface_name": "eternum::systems::config::contracts::ISeasonConfig"
         },
         {
           "type": "enum",
@@ -2689,7 +2689,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::ISeasonConfig",
+          "name": "eternum::systems::config::contracts::ISeasonConfig",
           "items": [
             {
               "type": "function",
@@ -2740,11 +2740,11 @@
         {
           "type": "impl",
           "name": "VRFConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::IVRFConfig"
+          "interface_name": "eternum::systems::config::contracts::IVRFConfig"
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IVRFConfig",
+          "name": "eternum::systems::config::contracts::IVRFConfig",
           "items": [
             {
               "type": "function",
@@ -2763,7 +2763,7 @@
         {
           "type": "impl",
           "name": "StartingResourcesConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::IStartingResourcesConfig"
+          "interface_name": "eternum::systems::config::contracts::IStartingResourcesConfig"
         },
         {
           "type": "struct",
@@ -2777,7 +2777,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IStartingResourcesConfig",
+          "name": "eternum::systems::config::contracts::IStartingResourcesConfig",
           "items": [
             {
               "type": "function",
@@ -2800,11 +2800,11 @@
         {
           "type": "impl",
           "name": "MapConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::IMapConfig"
+          "interface_name": "eternum::systems::config::contracts::IMapConfig"
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::MapConfig",
+          "name": "eternum::models::config::MapConfig",
           "members": [
             {
               "name": "reward_resource_amount",
@@ -2866,7 +2866,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IMapConfig",
+          "name": "eternum::systems::config::contracts::IMapConfig",
           "items": [
             {
               "type": "function",
@@ -2874,7 +2874,7 @@
               "inputs": [
                 {
                   "name": "map_config",
-                  "type": "s1_eternum::models::config::MapConfig"
+                  "type": "eternum::models::config::MapConfig"
                 }
               ],
               "outputs": [],
@@ -2885,11 +2885,11 @@
         {
           "type": "impl",
           "name": "CapacityConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::ICapacityConfig"
+          "interface_name": "eternum::systems::config::contracts::ICapacityConfig"
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::CapacityConfig",
+          "name": "eternum::models::config::CapacityConfig",
           "members": [
             {
               "name": "structure_capacity",
@@ -2911,7 +2911,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::StructureCapacityConfig",
+          "name": "eternum::models::config::StructureCapacityConfig",
           "members": [
             {
               "name": "realm_capacity",
@@ -2937,7 +2937,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::ICapacityConfig",
+          "name": "eternum::systems::config::contracts::ICapacityConfig",
           "items": [
             {
               "type": "function",
@@ -2945,11 +2945,11 @@
               "inputs": [
                 {
                   "name": "non_structure_capacity_config",
-                  "type": "s1_eternum::models::config::CapacityConfig"
+                  "type": "eternum::models::config::CapacityConfig"
                 },
                 {
                   "name": "structure_capacity_config",
-                  "type": "s1_eternum::models::config::StructureCapacityConfig"
+                  "type": "eternum::models::config::StructureCapacityConfig"
                 }
               ],
               "outputs": [],
@@ -2960,11 +2960,11 @@
         {
           "type": "impl",
           "name": "WeightConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::IWeightConfig"
+          "interface_name": "eternum::systems::config::contracts::IWeightConfig"
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IWeightConfig",
+          "name": "eternum::systems::config::contracts::IWeightConfig",
           "items": [
             {
               "type": "function",
@@ -2987,11 +2987,11 @@
         {
           "type": "impl",
           "name": "TickConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::ITickConfig"
+          "interface_name": "eternum::systems::config::contracts::ITickConfig"
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::ITickConfig",
+          "name": "eternum::systems::config::contracts::ITickConfig",
           "items": [
             {
               "type": "function",
@@ -3014,11 +3014,11 @@
         {
           "type": "impl",
           "name": "ResourceFactoryConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::IResourceFactoryConfig"
+          "interface_name": "eternum::systems::config::contracts::IResourceFactoryConfig"
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IResourceFactoryConfig",
+          "name": "eternum::systems::config::contracts::IResourceFactoryConfig",
           "items": [
             {
               "type": "function",
@@ -3065,11 +3065,11 @@
         {
           "type": "impl",
           "name": "TransportConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::ITransportConfig"
+          "interface_name": "eternum::systems::config::contracts::ITransportConfig"
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::ITransportConfig",
+          "name": "eternum::systems::config::contracts::ITransportConfig",
           "items": [
             {
               "type": "function",
@@ -3088,11 +3088,11 @@
         {
           "type": "impl",
           "name": "BattleConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::IBattleConfig"
+          "interface_name": "eternum::systems::config::contracts::IBattleConfig"
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::BattleConfig",
+          "name": "eternum::models::config::BattleConfig",
           "members": [
             {
               "name": "regular_immunity_ticks",
@@ -3106,7 +3106,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IBattleConfig",
+          "name": "eternum::systems::config::contracts::IBattleConfig",
           "items": [
             {
               "type": "function",
@@ -3114,7 +3114,7 @@
               "inputs": [
                 {
                   "name": "battle_config",
-                  "type": "s1_eternum::models::config::BattleConfig"
+                  "type": "eternum::models::config::BattleConfig"
                 }
               ],
               "outputs": [],
@@ -3125,11 +3125,11 @@
         {
           "type": "impl",
           "name": "HyperstructureConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::IHyperstructureConfig"
+          "interface_name": "eternum::systems::config::contracts::IHyperstructureConfig"
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::HyperstrtConstructConfig",
+          "name": "eternum::models::config::HyperstrtConstructConfig",
           "members": [
             {
               "name": "resource_type",
@@ -3151,17 +3151,17 @@
         },
         {
           "type": "struct",
-          "name": "core::array::Span::<s1_eternum::models::config::HyperstrtConstructConfig>",
+          "name": "core::array::Span::<eternum::models::config::HyperstrtConstructConfig>",
           "members": [
             {
               "name": "snapshot",
-              "type": "@core::array::Array::<s1_eternum::models::config::HyperstrtConstructConfig>"
+              "type": "@core::array::Array::<eternum::models::config::HyperstrtConstructConfig>"
             }
           ]
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IHyperstructureConfig",
+          "name": "eternum::systems::config::contracts::IHyperstructureConfig",
           "items": [
             {
               "type": "function",
@@ -3173,7 +3173,7 @@
                 },
                 {
                   "name": "construction_resources",
-                  "type": "core::array::Span::<s1_eternum::models::config::HyperstrtConstructConfig>"
+                  "type": "core::array::Span::<eternum::models::config::HyperstrtConstructConfig>"
                 }
               ],
               "outputs": [],
@@ -3184,11 +3184,11 @@
         {
           "type": "impl",
           "name": "BankConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::IBankConfig"
+          "interface_name": "eternum::systems::config::contracts::IBankConfig"
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IBankConfig",
+          "name": "eternum::systems::config::contracts::IBankConfig",
           "items": [
             {
               "type": "function",
@@ -3219,11 +3219,11 @@
         {
           "type": "impl",
           "name": "TroopConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::ITroopConfig"
+          "interface_name": "eternum::systems::config::contracts::ITroopConfig"
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::TroopDamageConfig",
+          "name": "eternum::models::config::TroopDamageConfig",
           "members": [
             {
               "name": "damage_raid_percent_num",
@@ -3269,7 +3269,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::TroopStaminaConfig",
+          "name": "eternum::models::config::TroopStaminaConfig",
           "members": [
             {
               "name": "stamina_gain_per_tick",
@@ -3331,7 +3331,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::TroopLimitConfig",
+          "name": "eternum::models::config::TroopLimitConfig",
           "members": [
             {
               "name": "explorer_max_party_count",
@@ -3365,7 +3365,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::ITroopConfig",
+          "name": "eternum::systems::config::contracts::ITroopConfig",
           "items": [
             {
               "type": "function",
@@ -3373,15 +3373,15 @@
               "inputs": [
                 {
                   "name": "troop_damage_config",
-                  "type": "s1_eternum::models::config::TroopDamageConfig"
+                  "type": "eternum::models::config::TroopDamageConfig"
                 },
                 {
                   "name": "troop_stamina_config",
-                  "type": "s1_eternum::models::config::TroopStaminaConfig"
+                  "type": "eternum::models::config::TroopStaminaConfig"
                 },
                 {
                   "name": "troop_limit_config",
-                  "type": "s1_eternum::models::config::TroopLimitConfig"
+                  "type": "eternum::models::config::TroopLimitConfig"
                 }
               ],
               "outputs": [],
@@ -3392,11 +3392,11 @@
         {
           "type": "impl",
           "name": "BuildingConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::IBuildingConfig"
+          "interface_name": "eternum::systems::config::contracts::IBuildingConfig"
         },
         {
           "type": "enum",
-          "name": "s1_eternum::models::resource::production::building::BuildingCategory",
+          "name": "eternum::models::resource::production::building::BuildingCategory",
           "variants": [
             {
               "name": "None",
@@ -3562,7 +3562,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IBuildingConfig",
+          "name": "eternum::systems::config::contracts::IBuildingConfig",
           "items": [
             {
               "type": "function",
@@ -3586,7 +3586,7 @@
               "inputs": [
                 {
                   "name": "building_category",
-                  "type": "s1_eternum::models::resource::production::building::BuildingCategory"
+                  "type": "eternum::models::resource::production::building::BuildingCategory"
                 },
                 {
                   "name": "complex_building_cost",
@@ -3613,11 +3613,11 @@
         {
           "type": "impl",
           "name": "IResourceBridgeConfig",
-          "interface_name": "s1_eternum::systems::config::contracts::IResourceBridgeConfig"
+          "interface_name": "eternum::systems::config::contracts::IResourceBridgeConfig"
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::ResourceBridgeConfig",
+          "name": "eternum::models::config::ResourceBridgeConfig",
           "members": [
             {
               "name": "deposit_paused",
@@ -3631,7 +3631,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::ResourceBridgeFeeSplitConfig",
+          "name": "eternum::models::config::ResourceBridgeFeeSplitConfig",
           "members": [
             {
               "name": "velords_fee_on_dpt_percent",
@@ -3677,7 +3677,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::ResourceBridgeWtlConfig",
+          "name": "eternum::models::config::ResourceBridgeWtlConfig",
           "members": [
             {
               "name": "token",
@@ -3691,7 +3691,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IResourceBridgeConfig",
+          "name": "eternum::systems::config::contracts::IResourceBridgeConfig",
           "items": [
             {
               "type": "function",
@@ -3699,7 +3699,7 @@
               "inputs": [
                 {
                   "name": "resource_bridge_config",
-                  "type": "s1_eternum::models::config::ResourceBridgeConfig"
+                  "type": "eternum::models::config::ResourceBridgeConfig"
                 }
               ],
               "outputs": [],
@@ -3711,7 +3711,7 @@
               "inputs": [
                 {
                   "name": "res_bridge_fee_split_config",
-                  "type": "s1_eternum::models::config::ResourceBridgeFeeSplitConfig"
+                  "type": "eternum::models::config::ResourceBridgeFeeSplitConfig"
                 }
               ],
               "outputs": [],
@@ -3723,7 +3723,7 @@
               "inputs": [
                 {
                   "name": "resource_bridge_whitelist_config",
-                  "type": "s1_eternum::models::config::ResourceBridgeWtlConfig"
+                  "type": "eternum::models::config::ResourceBridgeWtlConfig"
                 }
               ],
               "outputs": [],
@@ -3734,11 +3734,11 @@
         {
           "type": "impl",
           "name": "StructureLevelConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::IStructureLevelConfig"
+          "interface_name": "eternum::systems::config::contracts::IStructureLevelConfig"
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IStructureLevelConfig",
+          "name": "eternum::systems::config::contracts::IStructureLevelConfig",
           "items": [
             {
               "type": "function",
@@ -3777,7 +3777,7 @@
         {
           "type": "impl",
           "name": "ISettlementConfig",
-          "interface_name": "s1_eternum::systems::config::contracts::ISettlementConfig"
+          "interface_name": "eternum::systems::config::contracts::ISettlementConfig"
         },
         {
           "type": "struct",
@@ -3805,7 +3805,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::ISettlementConfig",
+          "name": "eternum::systems::config::contracts::ISettlementConfig",
           "items": [
             {
               "type": "function",
@@ -3874,6 +3874,10 @@
                 {
                   "name": "collectibles_timelock_address",
                   "type": "core::starknet::contract_address::ContractAddress"
+                },
+                {
+                  "name": "collectibles_lootchest_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
                 }
               ],
               "outputs": [],
@@ -3884,11 +3888,11 @@
         {
           "type": "impl",
           "name": "ITradeConfig",
-          "interface_name": "s1_eternum::systems::config::contracts::ITradeConfig"
+          "interface_name": "eternum::systems::config::contracts::ITradeConfig"
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::TradeConfig",
+          "name": "eternum::models::config::TradeConfig",
           "members": [
             {
               "name": "max_count",
@@ -3898,7 +3902,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::ITradeConfig",
+          "name": "eternum::systems::config::contracts::ITradeConfig",
           "items": [
             {
               "type": "function",
@@ -3906,7 +3910,7 @@
               "inputs": [
                 {
                   "name": "trade_config",
-                  "type": "s1_eternum::models::config::TradeConfig"
+                  "type": "eternum::models::config::TradeConfig"
                 }
               ],
               "outputs": [],
@@ -3917,11 +3921,11 @@
         {
           "type": "impl",
           "name": "IQuestConfig",
-          "interface_name": "s1_eternum::systems::config::contracts::IQuestConfig"
+          "interface_name": "eternum::systems::config::contracts::IQuestConfig"
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::QuestConfig",
+          "name": "eternum::models::config::QuestConfig",
           "members": [
             {
               "name": "quest_discovery_prob",
@@ -3935,7 +3939,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IQuestConfig",
+          "name": "eternum::systems::config::contracts::IQuestConfig",
           "items": [
             {
               "type": "function",
@@ -3943,7 +3947,7 @@
               "inputs": [
                 {
                   "name": "quest_config",
-                  "type": "s1_eternum::models::config::QuestConfig"
+                  "type": "eternum::models::config::QuestConfig"
                 }
               ],
               "outputs": [],
@@ -3954,11 +3958,11 @@
         {
           "type": "impl",
           "name": "IGameModeConfig",
-          "interface_name": "s1_eternum::systems::config::contracts::IGameModeConfig"
+          "interface_name": "eternum::systems::config::contracts::IGameModeConfig"
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IGameModeConfig",
+          "name": "eternum::systems::config::contracts::IGameModeConfig",
           "items": [
             {
               "type": "function",
@@ -3976,8 +3980,31 @@
         },
         {
           "type": "impl",
+          "name": "IBlitzConfig",
+          "interface_name": "eternum::systems::config::contracts::IBlitzConfig"
+        },
+        {
+          "type": "interface",
+          "name": "eternum::systems::config::contracts::IBlitzConfig",
+          "items": [
+            {
+              "type": "function",
+              "name": "set_blitz_previous_game",
+              "inputs": [
+                {
+                  "name": "prev_prize_distribution_systems",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "impl",
           "name": "IVillageFoundResourcesConfig",
-          "interface_name": "s1_eternum::systems::config::contracts::IVillageFoundResourcesConfig"
+          "interface_name": "eternum::systems::config::contracts::IVillageFoundResourcesConfig"
         },
         {
           "type": "struct",
@@ -3991,7 +4018,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IVillageFoundResourcesConfig",
+          "name": "eternum::systems::config::contracts::IVillageFoundResourcesConfig",
           "items": [
             {
               "type": "function",
@@ -4010,11 +4037,11 @@
         {
           "type": "impl",
           "name": "IVictoryPointsConfig",
-          "interface_name": "s1_eternum::systems::config::contracts::IVictoryPointsConfig"
+          "interface_name": "eternum::systems::config::contracts::IVictoryPointsConfig"
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::VictoryPointsGrantConfig",
+          "name": "eternum::models::config::VictoryPointsGrantConfig",
           "members": [
             {
               "name": "hyp_points_per_second",
@@ -4036,7 +4063,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::VictoryPointsWinConfig",
+          "name": "eternum::models::config::VictoryPointsWinConfig",
           "members": [
             {
               "name": "points_for_win",
@@ -4046,7 +4073,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IVictoryPointsConfig",
+          "name": "eternum::systems::config::contracts::IVictoryPointsConfig",
           "items": [
             {
               "type": "function",
@@ -4054,7 +4081,7 @@
               "inputs": [
                 {
                   "name": "victory_points_grant_config",
-                  "type": "s1_eternum::models::config::VictoryPointsGrantConfig"
+                  "type": "eternum::models::config::VictoryPointsGrantConfig"
                 }
               ],
               "outputs": [],
@@ -4066,7 +4093,7 @@
               "inputs": [
                 {
                   "name": "victory_points_win_config",
-                  "type": "s1_eternum::models::config::VictoryPointsWinConfig"
+                  "type": "eternum::models::config::VictoryPointsWinConfig"
                 }
               ],
               "outputs": [],
@@ -4166,7 +4193,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::config::contracts::config_systems::Event",
+          "name": "eternum::systems::config::contracts::config_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -4216,6 +4243,7 @@
         "set_trade_config",
         "set_quest_config",
         "set_game_mode_config",
+        "set_blitz_previous_game",
         "set_village_found_resources_config",
         "set_victory_points_grant_config",
         "set_victory_points_win_config",
@@ -4223,8 +4251,8 @@
       ]
     },
     {
-      "address": "0x7d25a60042ac0297b08efe3987f60d6274b954f7e97dcdf1fa327cec87263f",
-      "class_hash": "0x4a6d0c11782b55765d0fb1e522e2acd50f36a4860e01f48083a326b52e8a280",
+      "address": "0x5a0c88f9dce8f244a6b97c496d0ea1d6d172868b326610807d50adb4b63a775",
+      "class_hash": "0x160a08071276ad432ed75388f39c670540fa42be2d6ef9826cf572303224ef3",
       "abi": [
         {
           "type": "impl",
@@ -4279,7 +4307,7 @@
         {
           "type": "impl",
           "name": "ResourceSystemsImpl",
-          "interface_name": "s1_eternum::systems::dev::contracts::resource::IResourceSystems"
+          "interface_name": "eternum::systems::dev::contracts::resource::IResourceSystems"
         },
         {
           "type": "struct",
@@ -4293,7 +4321,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::dev::contracts::resource::IResourceSystems",
+          "name": "eternum::systems::dev::contracts::resource::IResourceSystems",
           "items": [
             {
               "type": "function",
@@ -4412,7 +4440,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::dev::contracts::resource::dev_resource_systems::Event",
+          "name": "eternum::systems::dev::contracts::resource::dev_resource_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -4437,8 +4465,8 @@
       ]
     },
     {
-      "address": "0x844b3a2432b026d4e9b3a7ac0fe16cd9e964333bf38830a5706f6bb9ffe0aa",
-      "class_hash": "0x4e08b04c4918701a9e99713ceac5538b1e26d31a1f297356d1128f523bcadb0",
+      "address": "0x4090cb66e552011ba89fe46e0254727d997ce8ee1b1592b49b7be40fb23ba8a",
+      "class_hash": "0x346f152862993b589c52d13344b40aeca842ae16f20e50c41c188b7a8300918",
       "abi": [
         {
           "type": "impl",
@@ -4493,7 +4521,7 @@
         {
           "type": "impl",
           "name": "GuildSystemsImpl",
-          "interface_name": "s1_eternum::systems::guild::contracts::IGuildSystems"
+          "interface_name": "eternum::systems::guild::contracts::IGuildSystems"
         },
         {
           "type": "enum",
@@ -4511,7 +4539,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::guild::contracts::IGuildSystems",
+          "name": "eternum::systems::guild::contracts::IGuildSystems",
           "items": [
             {
               "type": "function",
@@ -4677,7 +4705,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::guild::contracts::guild_systems::Event",
+          "name": "eternum::systems::guild::contracts::guild_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -4706,8 +4734,8 @@
       ]
     },
     {
-      "address": "0x31acef33bfecb7d26d0565f377c7b828932d8f38210aa2c65685c5a0f7c2643",
-      "class_hash": "0x3df793308784707f3db909e025ef99ac57a019e14e04866667cba8fa3483353",
+      "address": "0x7d80aa0d066bdbcd6184ecaa1dc0c99b4a6b1bf381674533a0c5ea6613de524",
+      "class_hash": "0x773174ab988ebfaa7f5c2cf3809da1b0e396ec2676f0a7ea4eab53aff9b43a2",
       "abi": [
         {
           "type": "impl",
@@ -4762,7 +4790,7 @@
         {
           "type": "impl",
           "name": "HyperstructureDiscoveryImpl",
-          "interface_name": "s1_eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems"
+          "interface_name": "eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems"
         },
         {
           "type": "struct",
@@ -4794,7 +4822,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::map::Tile",
+          "name": "eternum::models::map::Tile",
           "members": [
             {
               "name": "col",
@@ -4824,7 +4852,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::MapConfig",
+          "name": "eternum::models::config::MapConfig",
           "members": [
             {
               "name": "reward_resource_amount",
@@ -4886,7 +4914,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::TroopLimitConfig",
+          "name": "eternum::models::config::TroopLimitConfig",
           "members": [
             {
               "name": "explorer_max_party_count",
@@ -4920,7 +4948,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::TroopStaminaConfig",
+          "name": "eternum::models::config::TroopStaminaConfig",
           "members": [
             {
               "name": "stamina_gain_per_tick",
@@ -4982,7 +5010,7 @@
         },
         {
           "type": "enum",
-          "name": "s1_eternum::models::events::ExploreFind",
+          "name": "eternum::models::events::ExploreFind",
           "variants": [
             {
               "name": "None",
@@ -5012,7 +5040,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems",
+          "name": "eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems",
           "items": [
             {
               "type": "function",
@@ -5024,7 +5052,7 @@
                 },
                 {
                   "name": "tile",
-                  "type": "s1_eternum::models::map::Tile"
+                  "type": "eternum::models::map::Tile"
                 },
                 {
                   "name": "caller",
@@ -5032,15 +5060,15 @@
                 },
                 {
                   "name": "map_config",
-                  "type": "s1_eternum::models::config::MapConfig"
+                  "type": "eternum::models::config::MapConfig"
                 },
                 {
                   "name": "troop_limit_config",
-                  "type": "s1_eternum::models::config::TroopLimitConfig"
+                  "type": "eternum::models::config::TroopLimitConfig"
                 },
                 {
                   "name": "troop_stamina_config",
-                  "type": "s1_eternum::models::config::TroopStaminaConfig"
+                  "type": "eternum::models::config::TroopStaminaConfig"
                 },
                 {
                   "name": "current_tick",
@@ -5053,7 +5081,7 @@
               ],
               "outputs": [
                 {
-                  "type": "(core::bool, s1_eternum::models::events::ExploreFind)"
+                  "type": "(core::bool, eternum::models::events::ExploreFind)"
                 }
               ],
               "state_mutability": "view"
@@ -5159,7 +5187,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::combat::contracts::troop_movement::hyperstructure_discovery_systems::Event",
+          "name": "eternum::systems::combat::contracts::troop_movement::hyperstructure_discovery_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -5183,8 +5211,8 @@
       ]
     },
     {
-      "address": "0xd5e6476230dc5a9b3a111c698d229325b532396a4148a62ea7723ad24d57b7",
-      "class_hash": "0x5c9b43a309db0ace943f6c7a47f6188e0241dbe194d020b82fc16ffff7f8e13",
+      "address": "0x43a2a93ab0d9bf50b7c0438340273c79c30ee4966c910a71befb05ac0652638",
+      "class_hash": "0x2ff1b1a2ba7cc2cd345ae6345935932d9ca257dcf1002502e13c66b2da70f54",
       "abi": [
         {
           "type": "impl",
@@ -5239,7 +5267,7 @@
         {
           "type": "impl",
           "name": "HyperstructureSystemsImpl",
-          "interface_name": "s1_eternum::systems::hyperstructure::contracts::IHyperstructureSystems"
+          "interface_name": "eternum::systems::hyperstructure::contracts::IHyperstructureSystems"
         },
         {
           "type": "struct",
@@ -5263,7 +5291,7 @@
         },
         {
           "type": "enum",
-          "name": "s1_eternum::models::hyperstructure::ConstructionAccess",
+          "name": "eternum::models::hyperstructure::ConstructionAccess",
           "variants": [
             {
               "name": "Public",
@@ -5291,7 +5319,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::hyperstructure::contracts::IHyperstructureSystems",
+          "name": "eternum::systems::hyperstructure::contracts::IHyperstructureSystems",
           "items": [
             {
               "type": "function",
@@ -5351,7 +5379,7 @@
                 },
                 {
                   "name": "access",
-                  "type": "s1_eternum::models::hyperstructure::ConstructionAccess"
+                  "type": "eternum::models::hyperstructure::ConstructionAccess"
                 }
               ],
               "outputs": [],
@@ -5470,7 +5498,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::hyperstructure::contracts::hyperstructure_systems::Event",
+          "name": "eternum::systems::hyperstructure::contracts::hyperstructure_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -5499,8 +5527,8 @@
       ]
     },
     {
-      "address": "0x48dcc90c21821aa4641c7cd6e924210d30c96b0fcc73e4441133ef0463612d2",
-      "class_hash": "0x1e1ba79ac7fa5cea76109584a036b3205fdd101acaa6b1c0dcf644a824312c",
+      "address": "0x5129e9e8f573793d6e21995833cd7ca0dd1da9edeecdcee53736885302cfa3d",
+      "class_hash": "0x4ff0b8719479d398b0db0606263884c246a9d406964053fd2b4487c18d89683",
       "abi": [
         {
           "type": "impl",
@@ -5555,11 +5583,11 @@
         {
           "type": "impl",
           "name": "LiquiditySystemsImpl",
-          "interface_name": "s1_eternum::systems::bank::contracts::liquidity::ILiquiditySystems"
+          "interface_name": "eternum::systems::bank::contracts::liquidity::ILiquiditySystems"
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::bank::contracts::liquidity::ILiquiditySystems",
+          "name": "eternum::systems::bank::contracts::liquidity::ILiquiditySystems",
           "items": [
             {
               "type": "function",
@@ -5714,7 +5742,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::bank::contracts::liquidity::liquidity_systems::Event",
+          "name": "eternum::systems::bank::contracts::liquidity::liquidity_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -5740,8 +5768,8 @@
       ]
     },
     {
-      "address": "0x703be12386554506c8d74721259342ee1b2a74f1352d470536863db35e30bb9",
-      "class_hash": "0x1dfb68e93e4795b31e343713d42a27d5c8faa79e820e2517ed1a351da550698",
+      "address": "0x2f1df290ceff910496a9a0269915ad085e822785f24408743f4e67000907f31",
+      "class_hash": "0x70152a98db8543a22b607810e7942093f2f72f34ad29c2e74814668ea6733ba",
       "abi": [
         {
           "type": "impl",
@@ -5796,7 +5824,7 @@
         {
           "type": "impl",
           "name": "MineDiscoveryImpl",
-          "interface_name": "s1_eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems"
+          "interface_name": "eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems"
         },
         {
           "type": "struct",
@@ -5828,7 +5856,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::map::Tile",
+          "name": "eternum::models::map::Tile",
           "members": [
             {
               "name": "col",
@@ -5858,7 +5886,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::MapConfig",
+          "name": "eternum::models::config::MapConfig",
           "members": [
             {
               "name": "reward_resource_amount",
@@ -5920,7 +5948,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::TroopLimitConfig",
+          "name": "eternum::models::config::TroopLimitConfig",
           "members": [
             {
               "name": "explorer_max_party_count",
@@ -5954,7 +5982,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::TroopStaminaConfig",
+          "name": "eternum::models::config::TroopStaminaConfig",
           "members": [
             {
               "name": "stamina_gain_per_tick",
@@ -6016,7 +6044,7 @@
         },
         {
           "type": "enum",
-          "name": "s1_eternum::models::events::ExploreFind",
+          "name": "eternum::models::events::ExploreFind",
           "variants": [
             {
               "name": "None",
@@ -6046,7 +6074,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems",
+          "name": "eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems",
           "items": [
             {
               "type": "function",
@@ -6058,7 +6086,7 @@
                 },
                 {
                   "name": "tile",
-                  "type": "s1_eternum::models::map::Tile"
+                  "type": "eternum::models::map::Tile"
                 },
                 {
                   "name": "caller",
@@ -6066,15 +6094,15 @@
                 },
                 {
                   "name": "map_config",
-                  "type": "s1_eternum::models::config::MapConfig"
+                  "type": "eternum::models::config::MapConfig"
                 },
                 {
                   "name": "troop_limit_config",
-                  "type": "s1_eternum::models::config::TroopLimitConfig"
+                  "type": "eternum::models::config::TroopLimitConfig"
                 },
                 {
                   "name": "troop_stamina_config",
-                  "type": "s1_eternum::models::config::TroopStaminaConfig"
+                  "type": "eternum::models::config::TroopStaminaConfig"
                 },
                 {
                   "name": "current_tick",
@@ -6087,7 +6115,7 @@
               ],
               "outputs": [
                 {
-                  "type": "(core::bool, s1_eternum::models::events::ExploreFind)"
+                  "type": "(core::bool, eternum::models::events::ExploreFind)"
                 }
               ],
               "state_mutability": "view"
@@ -6193,7 +6221,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::combat::contracts::troop_movement::mine_discovery_systems::Event",
+          "name": "eternum::systems::combat::contracts::troop_movement::mine_discovery_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -6217,8 +6245,8 @@
       ]
     },
     {
-      "address": "0x61dbe5f8c15ea9ec0f007beda26bee50775fa5bb5e66d1cb7782a94ddce28ce",
-      "class_hash": "0x2f2e9e898349130105c403b3cba2b1ea942a69e67fd39ebe65a573936c32fda",
+      "address": "0x50c9fd27fe674d13dc0d3bd7463cf4044f5b005ccb4d7940cc5de6e19d2f4cd",
+      "class_hash": "0x4f28e339da6596dad29dff86c10872811578079c463293783b4fe5b710466dd",
       "abi": [
         {
           "type": "impl",
@@ -6273,11 +6301,11 @@
         {
           "type": "impl",
           "name": "NameSystemsImpl",
-          "interface_name": "s1_eternum::systems::name::contracts::INameSystems"
+          "interface_name": "eternum::systems::name::contracts::INameSystems"
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::name::contracts::INameSystems",
+          "name": "eternum::systems::name::contracts::INameSystems",
           "items": [
             {
               "type": "function",
@@ -6392,7 +6420,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::name::contracts::name_systems::Event",
+          "name": "eternum::systems::name::contracts::name_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -6417,8 +6445,8 @@
       ]
     },
     {
-      "address": "0x22c49c8d8129ee3ce04f6ff3c1a3506ac294f3f0f3c88330eeb95bf43b2f949",
-      "class_hash": "0x62f9bb4475843a269260c75eb61ca6b5cbf385e175eb7ba337c65b134ac8614",
+      "address": "0x14a49e9e1bc7f23f0963aea67ddcaf15831898bf0836c3638b519db51e8d3a",
+      "class_hash": "0x750c800bc2b0f9190bbb39bd513a543faaac13817d1ca983539009bd2bf4277",
       "abi": [
         {
           "type": "impl",
@@ -6473,11 +6501,11 @@
         {
           "type": "impl",
           "name": "OwnershipSystemsImpl",
-          "interface_name": "s1_eternum::systems::ownership::contracts::IOwnershipSystems"
+          "interface_name": "eternum::systems::ownership::contracts::IOwnershipSystems"
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::ownership::contracts::IOwnershipSystems",
+          "name": "eternum::systems::ownership::contracts::IOwnershipSystems",
           "items": [
             {
               "type": "function",
@@ -6612,7 +6640,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::ownership::contracts::ownership_systems::Event",
+          "name": "eternum::systems::ownership::contracts::ownership_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -6638,8 +6666,8 @@
       ]
     },
     {
-      "address": "0x2e683214b45c8374bf397385f21d828deda918d28a9b552bff7f78e7445b37",
-      "class_hash": "0x4750ed9a4073808f768f37a963b05f037674b1dd9335097a9d20695ceac002f",
+      "address": "0x6eb785a3cbfe099454481f620d071c1f564cee9e5674c1250646de5110c913e",
+      "class_hash": "0x301692a17561fdd9c09eb78c9f8f084fec4095eba1dd0b0a3004c2603cb79e2",
       "abi": [
         {
           "type": "impl",
@@ -6694,12 +6722,107 @@
         {
           "type": "impl",
           "name": "PrizeDistributionSystemsImpl",
-          "interface_name": "s1_eternum::systems::prize_distribution::contracts::IPrizeDistributionSystems"
+          "interface_name": "eternum::systems::prize_distribution::contracts::IPrizeDistributionSystems"
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::series_chest_reward::RecentRing",
+          "members": [
+            {
+              "name": "data",
+              "type": "core::array::Array::<core::integer::u128>"
+            },
+            {
+              "name": "sum",
+              "type": "core::integer::u128"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::series_chest_reward::AnchorRing",
+          "members": [
+            {
+              "name": "data",
+              "type": "core::array::Array::<core::integer::u128>"
+            },
+            {
+              "name": "sum",
+              "type": "core::integer::u128"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "core::bool",
+          "variants": [
+            {
+              "name": "False",
+              "type": "()"
+            },
+            {
+              "name": "True",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::series_chest_reward::SeriesChestRewardState",
+          "members": [
+            {
+              "name": "world_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "game_index",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "ema_players_scaled",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "recent",
+              "type": "eternum::models::series_chest_reward::RecentRing"
+            },
+            {
+              "name": "anchor",
+              "type": "eternum::models::series_chest_reward::AnchorRing"
+            },
+            {
+              "name": "has_last_rate",
+              "type": "core::bool"
+            },
+            {
+              "name": "last_rate_bps",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "soft_supply",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "overspend_remaining",
+              "type": "core::integer::u128"
+            }
+          ]
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::prize_distribution::contracts::IPrizeDistributionSystems",
+          "name": "eternum::systems::prize_distribution::contracts::IPrizeDistributionSystems",
           "items": [
+            {
+              "type": "function",
+              "name": "blitz_get_or_compute_series_chest_reward_state",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "eternum::models::series_chest_reward::SeriesChestRewardState"
+                }
+              ],
+              "state_mutability": "external"
+            },
             {
               "type": "function",
               "name": "blitz_prize_claim_no_game",
@@ -6845,7 +6968,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::prize_distribution::contracts::prize_distribution_systems::Event",
+          "name": "eternum::systems::prize_distribution::contracts::prize_distribution_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -6865,6 +6988,7 @@
       "tag": "s1_eternum-prize_distribution_systems",
       "selector": "0x42230b5f7ccc6ce02a4ecb99c31d92ddd0f24ab472896afd617a2a763cf4179",
       "systems": [
+        "blitz_get_or_compute_series_chest_reward_state",
         "blitz_prize_claim_no_game",
         "blitz_prize_claim",
         "blitz_prize_player_rank",
@@ -6872,8 +6996,8 @@
       ]
     },
     {
-      "address": "0x445d525ecc133962f69cf1a0d768a03d5d3ef5a6631adf055731f7dd62e897a",
-      "class_hash": "0x2ea02511b59660d4e1fd7062fe7e190fdd82e448b7015af7cc616ca9b84d408",
+      "address": "0x16efb118302515860dd680667d90050a17aa4535d81cd0d58d1e40895b6fd61",
+      "class_hash": "0x1e8fc19ae47aee1e86cb7a1b1d58c9927a5c5d0cee2a00bdc9bc221508fc9b7",
       "abi": [
         {
           "type": "impl",
@@ -6928,11 +7052,11 @@
         {
           "type": "impl",
           "name": "ProductionContractImpl",
-          "interface_name": "s1_eternum::systems::production::contracts::IProductionContract"
+          "interface_name": "eternum::systems::production::contracts::IProductionContract"
         },
         {
           "type": "enum",
-          "name": "s1_eternum::models::position::Direction",
+          "name": "eternum::models::position::Direction",
           "variants": [
             {
               "name": "East",
@@ -6962,17 +7086,17 @@
         },
         {
           "type": "struct",
-          "name": "core::array::Span::<s1_eternum::models::position::Direction>",
+          "name": "core::array::Span::<eternum::models::position::Direction>",
           "members": [
             {
               "name": "snapshot",
-              "type": "@core::array::Array::<s1_eternum::models::position::Direction>"
+              "type": "@core::array::Array::<eternum::models::position::Direction>"
             }
           ]
         },
         {
           "type": "enum",
-          "name": "s1_eternum::models::resource::production::building::BuildingCategory",
+          "name": "eternum::models::resource::production::building::BuildingCategory",
           "variants": [
             {
               "name": "None",
@@ -7152,7 +7276,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::position::Coord",
+          "name": "eternum::models::position::Coord",
           "members": [
             {
               "name": "x",
@@ -7186,7 +7310,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::production::contracts::IProductionContract",
+          "name": "eternum::systems::production::contracts::IProductionContract",
           "items": [
             {
               "type": "function",
@@ -7198,11 +7322,11 @@
                 },
                 {
                   "name": "directions",
-                  "type": "core::array::Span::<s1_eternum::models::position::Direction>"
+                  "type": "core::array::Span::<eternum::models::position::Direction>"
                 },
                 {
                   "name": "building_category",
-                  "type": "s1_eternum::models::resource::production::building::BuildingCategory"
+                  "type": "eternum::models::resource::production::building::BuildingCategory"
                 },
                 {
                   "name": "use_simple",
@@ -7222,7 +7346,7 @@
                 },
                 {
                   "name": "building_coord",
-                  "type": "s1_eternum::models::position::Coord"
+                  "type": "eternum::models::position::Coord"
                 }
               ],
               "outputs": [],
@@ -7238,7 +7362,7 @@
                 },
                 {
                   "name": "building_coord",
-                  "type": "s1_eternum::models::position::Coord"
+                  "type": "eternum::models::position::Coord"
                 }
               ],
               "outputs": [],
@@ -7254,7 +7378,7 @@
                 },
                 {
                   "name": "building_coord",
-                  "type": "s1_eternum::models::position::Coord"
+                  "type": "eternum::models::position::Coord"
                 }
               ],
               "outputs": [],
@@ -7437,7 +7561,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::production::contracts::production_systems::Event",
+          "name": "eternum::systems::production::contracts::production_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -7469,8 +7593,8 @@
       ]
     },
     {
-      "address": "0x22703a78c7670446fa71279969e59ea9fc5f3c9216c966d6a919032326a51ef",
-      "class_hash": "0x73b33fba72807c1ec9432f95a04b1a79d9ee3d29aea7dd8f5cc442959077e80",
+      "address": "0x3495476a24034f6e8a97fc223e9f7e9142bb0b0b84a479d60a6645b74cc431f",
+      "class_hash": "0x71e1f2a600679e8a4f5ecfb08d4286b5e4a193e22fb229570a25196521a87fc",
       "abi": [
         {
           "type": "impl",
@@ -7532,11 +7656,11 @@
         {
           "type": "impl",
           "name": "QuestSystemsImpl",
-          "interface_name": "s1_eternum::systems::quest::contracts::IQuestSystems"
+          "interface_name": "eternum::systems::quest::contracts::IQuestSystems"
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::quest::Level",
+          "name": "eternum::models::quest::Level",
           "members": [
             {
               "name": "target_score",
@@ -7554,11 +7678,11 @@
         },
         {
           "type": "struct",
-          "name": "core::array::Span::<s1_eternum::models::quest::Level>",
+          "name": "core::array::Span::<eternum::models::quest::Level>",
           "members": [
             {
               "name": "snapshot",
-              "type": "@core::array::Array::<s1_eternum::models::quest::Level>"
+              "type": "@core::array::Array::<eternum::models::quest::Level>"
             }
           ]
         },
@@ -7578,7 +7702,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::map::Tile",
+          "name": "eternum::models::map::Tile",
           "members": [
             {
               "name": "col",
@@ -7622,7 +7746,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::quest::Quest",
+          "name": "eternum::models::quest::Quest",
           "members": [
             {
               "name": "game_token_id",
@@ -7648,7 +7772,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::position::Coord",
+          "name": "eternum::models::position::Coord",
           "members": [
             {
               "name": "x",
@@ -7662,7 +7786,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::quest::QuestDetails",
+          "name": "eternum::models::quest::QuestDetails",
           "members": [
             {
               "name": "quest_tile_id",
@@ -7674,7 +7798,7 @@
             },
             {
               "name": "coord",
-              "type": "s1_eternum::models::position::Coord"
+              "type": "eternum::models::position::Coord"
             },
             {
               "name": "target_score",
@@ -7692,7 +7816,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::quest::QuestTile",
+          "name": "eternum::models::quest::QuestTile",
           "members": [
             {
               "name": "id",
@@ -7704,7 +7828,7 @@
             },
             {
               "name": "coord",
-              "type": "s1_eternum::models::position::Coord"
+              "type": "eternum::models::position::Coord"
             },
             {
               "name": "level",
@@ -7730,7 +7854,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::quest::contracts::IQuestSystems",
+          "name": "eternum::systems::quest::contracts::IQuestSystems",
           "items": [
             {
               "type": "function",
@@ -7742,7 +7866,7 @@
                 },
                 {
                   "name": "levels",
-                  "type": "core::array::Span::<s1_eternum::models::quest::Level>"
+                  "type": "core::array::Span::<eternum::models::quest::Level>"
                 },
                 {
                   "name": "overwrite",
@@ -7770,7 +7894,7 @@
               "inputs": [
                 {
                   "name": "tile",
-                  "type": "s1_eternum::models::map::Tile"
+                  "type": "eternum::models::map::Tile"
                 },
                 {
                   "name": "vrf_seed",
@@ -7853,7 +7977,7 @@
               ],
               "outputs": [
                 {
-                  "type": "s1_eternum::models::quest::Quest"
+                  "type": "eternum::models::quest::Quest"
                 }
               ],
               "state_mutability": "view"
@@ -7873,7 +7997,7 @@
               ],
               "outputs": [
                 {
-                  "type": "s1_eternum::models::quest::QuestDetails"
+                  "type": "eternum::models::quest::QuestDetails"
                 }
               ],
               "state_mutability": "view"
@@ -7889,7 +8013,7 @@
               ],
               "outputs": [
                 {
-                  "type": "s1_eternum::models::quest::QuestTile"
+                  "type": "eternum::models::quest::QuestTile"
                 }
               ],
               "state_mutability": "view"
@@ -8019,7 +8143,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::quest::contracts::quest_systems::Event",
+          "name": "eternum::systems::quest::contracts::quest_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -8050,8 +8174,8 @@
       ]
     },
     {
-      "address": "0x7adb9569c978926b772a5534ca636c45433533cb94e79a73c41a4c4613b9a6c",
-      "class_hash": "0x12274c20ffbc975fa023cc52d8bec1993af2705b580b2d779a55a38851636ba",
+      "address": "0x70bff343558fa022e65815c2455b4254be05f66203048026b613a5f37e05a0c",
+      "class_hash": "0x1f567ffb76f3bbe2eb7ab4f0ca5614e94196012f772578b9ed15a07dbbbe8b9",
       "abi": [
         {
           "type": "impl",
@@ -8106,11 +8230,11 @@
         {
           "type": "impl",
           "name": "RealmInternalSystemsImpl",
-          "interface_name": "s1_eternum::systems::realm::utils::contracts::IRealmInternalSystems"
+          "interface_name": "eternum::systems::realm::utils::contracts::IRealmInternalSystems"
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::position::Coord",
+          "name": "eternum::models::position::Coord",
           "members": [
             {
               "name": "x",
@@ -8138,7 +8262,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::realm::utils::contracts::IRealmInternalSystems",
+          "name": "eternum::systems::realm::utils::contracts::IRealmInternalSystems",
           "items": [
             {
               "type": "function",
@@ -8166,7 +8290,7 @@
                 },
                 {
                   "name": "coord",
-                  "type": "s1_eternum::models::position::Coord"
+                  "type": "eternum::models::position::Coord"
                 },
                 {
                   "name": "season",
@@ -8281,7 +8405,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::realm::utils::contracts::realm_internal_systems::Event",
+          "name": "eternum::systems::realm::utils::contracts::realm_internal_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -8306,8 +8430,8 @@
       ]
     },
     {
-      "address": "0x7d8f20b6675f987ba274ea9dabb6c8222968d04c62d59d2739add2331b8ac8f",
-      "class_hash": "0x6897dbcf6821841d460a819278f9006f96ab9bf6be9fd6814fcc97e35cd3ce2",
+      "address": "0x3ad1c330aef1e37c6512ee941f73c97a43a989bdd6322125d7a363aa26a731",
+      "class_hash": "0x4cdd208381306cc55f7de3010eb2f0983f96fd65dc2b08e1bb586c2e862680a",
       "abi": [
         {
           "type": "impl",
@@ -8362,11 +8486,11 @@
         {
           "type": "impl",
           "name": "RealmSystemsImpl",
-          "interface_name": "s1_eternum::systems::realm::season::contracts::IRealmSystems"
+          "interface_name": "eternum::systems::realm::season::contracts::IRealmSystems"
         },
         {
           "type": "struct",
-          "name": "s1_eternum::systems::realm::season::contracts::RealmSettlement",
+          "name": "eternum::systems::realm::season::contracts::RealmSettlement",
           "members": [
             {
               "name": "side",
@@ -8384,7 +8508,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::realm::season::contracts::IRealmSystems",
+          "name": "eternum::systems::realm::season::contracts::IRealmSystems",
           "items": [
             {
               "type": "function",
@@ -8404,7 +8528,7 @@
                 },
                 {
                   "name": "settlement",
-                  "type": "s1_eternum::systems::realm::season::contracts::RealmSettlement"
+                  "type": "eternum::systems::realm::season::contracts::RealmSettlement"
                 }
               ],
               "outputs": [
@@ -8515,7 +8639,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::realm::season::contracts::realm_systems::Event",
+          "name": "eternum::systems::realm::season::contracts::realm_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -8540,8 +8664,8 @@
       ]
     },
     {
-      "address": "0x389bd0b8f6c6145a9872ad92625725d7bd7986c6ca5d884de27f0a640996c83",
-      "class_hash": "0x3b6e58ff2690f9894f48d8f094ec5e36f10d345c51d3741617215dbb1a31d93",
+      "address": "0x652be5c65e49d3cd73533c661e7a4809cba08570a612ba6d834d7b241d0c388",
+      "class_hash": "0x4cc183efe185d4ad11e8553f208c5def981cc80110691853fd3b078bb1ce5ea",
       "abi": [
         {
           "type": "impl",
@@ -8596,7 +8720,7 @@
         {
           "type": "impl",
           "name": "RelicChestDiscoveryImpl",
-          "interface_name": "s1_eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems"
+          "interface_name": "eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems"
         },
         {
           "type": "struct",
@@ -8628,7 +8752,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::map::Tile",
+          "name": "eternum::models::map::Tile",
           "members": [
             {
               "name": "col",
@@ -8658,7 +8782,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::MapConfig",
+          "name": "eternum::models::config::MapConfig",
           "members": [
             {
               "name": "reward_resource_amount",
@@ -8720,7 +8844,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::TroopLimitConfig",
+          "name": "eternum::models::config::TroopLimitConfig",
           "members": [
             {
               "name": "explorer_max_party_count",
@@ -8754,7 +8878,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::TroopStaminaConfig",
+          "name": "eternum::models::config::TroopStaminaConfig",
           "members": [
             {
               "name": "stamina_gain_per_tick",
@@ -8816,7 +8940,7 @@
         },
         {
           "type": "enum",
-          "name": "s1_eternum::models::events::ExploreFind",
+          "name": "eternum::models::events::ExploreFind",
           "variants": [
             {
               "name": "None",
@@ -8846,7 +8970,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems",
+          "name": "eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems",
           "items": [
             {
               "type": "function",
@@ -8858,7 +8982,7 @@
                 },
                 {
                   "name": "tile",
-                  "type": "s1_eternum::models::map::Tile"
+                  "type": "eternum::models::map::Tile"
                 },
                 {
                   "name": "caller",
@@ -8866,15 +8990,15 @@
                 },
                 {
                   "name": "map_config",
-                  "type": "s1_eternum::models::config::MapConfig"
+                  "type": "eternum::models::config::MapConfig"
                 },
                 {
                   "name": "troop_limit_config",
-                  "type": "s1_eternum::models::config::TroopLimitConfig"
+                  "type": "eternum::models::config::TroopLimitConfig"
                 },
                 {
                   "name": "troop_stamina_config",
-                  "type": "s1_eternum::models::config::TroopStaminaConfig"
+                  "type": "eternum::models::config::TroopStaminaConfig"
                 },
                 {
                   "name": "current_tick",
@@ -8887,7 +9011,7 @@
               ],
               "outputs": [
                 {
-                  "type": "(core::bool, s1_eternum::models::events::ExploreFind)"
+                  "type": "(core::bool, eternum::models::events::ExploreFind)"
                 }
               ],
               "state_mutability": "view"
@@ -8993,7 +9117,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::combat::contracts::troop_movement::relic_chest_discovery_systems::Event",
+          "name": "eternum::systems::combat::contracts::troop_movement::relic_chest_discovery_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -9017,8 +9141,8 @@
       ]
     },
     {
-      "address": "0x1bbcb9672e42d495ca59c3938d699d3af00ddae56e7ad2d29ea62788db0d578",
-      "class_hash": "0x4d600165473ab4262bd6ffa8b2b75be8e891b085beab32f831113aec83a38bb",
+      "address": "0x22873ca922d8c9b457ba7d5f15b4cdef92c56dd114c7e8e3cf067b8fb37f57c",
+      "class_hash": "0x1d15f79fd74050ce49eb6f1479b6f5c01654d444d58b4be181997ebd3a9c9a0",
       "abi": [
         {
           "type": "impl",
@@ -9073,11 +9197,11 @@
         {
           "type": "impl",
           "name": "RelicSystemsImpl",
-          "interface_name": "s1_eternum::systems::relic::contracts::IRelicSystems"
+          "interface_name": "eternum::systems::relic::contracts::IRelicSystems"
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::position::Coord",
+          "name": "eternum::models::position::Coord",
           "members": [
             {
               "name": "x",
@@ -9091,7 +9215,7 @@
         },
         {
           "type": "enum",
-          "name": "s1_eternum::systems::relic::contracts::RelicRecipientTypeParam",
+          "name": "eternum::systems::relic::contracts::RelicRecipientTypeParam",
           "variants": [
             {
               "name": "Explorer",
@@ -9109,7 +9233,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::relic::contracts::IRelicSystems",
+          "name": "eternum::systems::relic::contracts::IRelicSystems",
           "items": [
             {
               "type": "function",
@@ -9121,7 +9245,7 @@
                 },
                 {
                   "name": "chest_coord",
-                  "type": "s1_eternum::models::position::Coord"
+                  "type": "eternum::models::position::Coord"
                 }
               ],
               "outputs": [],
@@ -9141,7 +9265,7 @@
                 },
                 {
                   "name": "recipient_type",
-                  "type": "s1_eternum::systems::relic::contracts::RelicRecipientTypeParam"
+                  "type": "eternum::systems::relic::contracts::RelicRecipientTypeParam"
                 }
               ],
               "outputs": [],
@@ -9248,7 +9372,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::relic::contracts::relic_systems::Event",
+          "name": "eternum::systems::relic::contracts::relic_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -9274,8 +9398,8 @@
       ]
     },
     {
-      "address": "0x5458c7f175f3c9bba8fe92ad4d89148f2274684308313c4b38eb38a6324f139",
-      "class_hash": "0x1d917a501fcc09f7e93f346467d9811c84e4f557730618cd39fe24472ab785b",
+      "address": "0x73a9d401ff14efb85a76dc8fedc4e3e70366ccb2ef2c8afca3009341754906a",
+      "class_hash": "0x73a71cb5fb754b53fd8e3d4fb939d91f8da4e92626b5928554c46870471fb1f",
       "abi": [
         {
           "type": "impl",
@@ -9330,7 +9454,7 @@
         {
           "type": "impl",
           "name": "ResourceBridgeImpl",
-          "interface_name": "s1_eternum::systems::resources::contracts::resource_bridge_systems::IResourceBridgeSystems"
+          "interface_name": "eternum::systems::resources::contracts::resource_bridge_systems::IResourceBridgeSystems"
         },
         {
           "type": "struct",
@@ -9348,7 +9472,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::resources::contracts::resource_bridge_systems::IResourceBridgeSystems",
+          "name": "eternum::systems::resources::contracts::resource_bridge_systems::IResourceBridgeSystems",
           "items": [
             {
               "type": "function",
@@ -9534,7 +9658,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::resources::contracts::resource_bridge_systems::resource_bridge_systems::Event",
+          "name": "eternum::systems::resources::contracts::resource_bridge_systems::resource_bridge_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -9562,8 +9686,8 @@
       ]
     },
     {
-      "address": "0x3e55079589f18e4eae3b3333918fba68d6b50f83c7df49f94f0ad3efa813523",
-      "class_hash": "0xd23bfa9bc8b2e8400aed633f5c48b3561fe9d6a872d5bd59b24588d893f177",
+      "address": "0x5bc32b6ca2a295d5f84f5410fdf6e8e63a061304938d97dea2416cc3b797ac1",
+      "class_hash": "0x3eaf3fc4898ed0fd222d375499945f0c06beb0b72c368fcef24a72b496b0fdc",
       "abi": [
         {
           "type": "impl",
@@ -9618,7 +9742,7 @@
         {
           "type": "impl",
           "name": "ResourceSystemsImpl",
-          "interface_name": "s1_eternum::systems::resources::contracts::resource_systems::IResourceSystems"
+          "interface_name": "eternum::systems::resources::contracts::resource_systems::IResourceSystems"
         },
         {
           "type": "struct",
@@ -9632,7 +9756,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::resources::contracts::resource_systems::IResourceSystems",
+          "name": "eternum::systems::resources::contracts::resource_systems::IResourceSystems",
           "items": [
             {
               "type": "function",
@@ -9923,7 +10047,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::resources::contracts::resource_systems::resource_systems::Event",
+          "name": "eternum::systems::resources::contracts::resource_systems::resource_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -9957,8 +10081,8 @@
       ]
     },
     {
-      "address": "0x2357e7c5a006b9211c90053ab0c6239381f8c2e3fbd45827c87cef0c71a1a22",
-      "class_hash": "0x7831a5d86c235f0167a4ad140e5ff40bd1efb901c73971255b94a95208db96e",
+      "address": "0x64541b99fc962431aa7c9a7793559e1ddd5b406414cdda6132e079fcffc5773",
+      "class_hash": "0x14bb0d7703482e1d70814c950ce7a16bf661d8f6a17d124ec89dd66407bc5d3",
       "abi": [
         {
           "type": "impl",
@@ -10013,11 +10137,11 @@
         {
           "type": "impl",
           "name": "SeasonSystemsImpl",
-          "interface_name": "s1_eternum::systems::season::contracts::ISeasonSystems"
+          "interface_name": "eternum::systems::season::contracts::ISeasonSystems"
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::season::contracts::ISeasonSystems",
+          "name": "eternum::systems::season::contracts::ISeasonSystems",
           "items": [
             {
               "type": "function",
@@ -10127,7 +10251,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::season::contracts::season_systems::Event",
+          "name": "eternum::systems::season::contracts::season_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -10152,8 +10276,8 @@
       ]
     },
     {
-      "address": "0x54d7c109bd6ccb1287129e038e66b04a138ae77014749bc02fa0a30404edf89",
-      "class_hash": "0x78f70ba05b3b9afc909333edaf8cf754ac2ea5174f7f9565710baf721cf4e37",
+      "address": "0x56f9a80fd72d32ee90de2db6e0baadd740e9f2209b6ff2bb678089958cb1e5c",
+      "class_hash": "0x6d6bb2e6b0fc6c56f24fa1716fd00a2d981205134ccae2a38a61af5fd6cd17",
       "abi": [
         {
           "type": "impl",
@@ -10208,11 +10332,11 @@
         {
           "type": "impl",
           "name": "StructureSystemsImpl",
-          "interface_name": "s1_eternum::systems::structure::contracts::IStructureSystems"
+          "interface_name": "eternum::systems::structure::contracts::IStructureSystems"
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::structure::contracts::IStructureSystems",
+          "name": "eternum::systems::structure::contracts::IStructureSystems",
           "items": [
             {
               "type": "function",
@@ -10327,7 +10451,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::structure::contracts::structure_systems::Event",
+          "name": "eternum::systems::structure::contracts::structure_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -10352,8 +10476,8 @@
       ]
     },
     {
-      "address": "0x4471c3894d2d6ca78579791949ad2f0cd353d5cbb9300382383ff3a5513a196",
-      "class_hash": "0x5be03adb8a7a6ae0c79d733324959cbc5dfcc9051e0e2aacda3006dcd64b592",
+      "address": "0x62f829d5e9b1452cb53b556e200b7548ec5139018608c185cb79ce359640543",
+      "class_hash": "0x42fbfbda0c6c473aadd03741a9cc1e022d58af318c52ae3f6de3677e7191c9f",
       "abi": [
         {
           "type": "impl",
@@ -10408,11 +10532,11 @@
         {
           "type": "impl",
           "name": "SwapSystemsImpl",
-          "interface_name": "s1_eternum::systems::bank::contracts::swap::ISwapSystems"
+          "interface_name": "eternum::systems::bank::contracts::swap::ISwapSystems"
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::bank::contracts::swap::ISwapSystems",
+          "name": "eternum::systems::bank::contracts::swap::ISwapSystems",
           "items": [
             {
               "type": "function",
@@ -10563,7 +10687,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::bank::contracts::swap::swap_systems::Event",
+          "name": "eternum::systems::bank::contracts::swap::swap_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -10589,8 +10713,8 @@
       ]
     },
     {
-      "address": "0x5c4fc29b45d525c4d9d83220e02321e9ef8e5e67505775cac8585bb85896aab",
-      "class_hash": "0x15f8cdd7fd24beab128f8e65af56e2261fcbc8a225dd40d14531a661a3d224d",
+      "address": "0x54a3ec59f3116396f42bbaee23ec83339a5685139dc0016479d73037670dc2f",
+      "class_hash": "0x2ae5bf8d6d1fdabf1226e036ce3fea76eb2a7aadea36e356c9f66d4b38683ba",
       "abi": [
         {
           "type": "impl",
@@ -10645,11 +10769,11 @@
         {
           "type": "impl",
           "name": "TradeSystemsImpl",
-          "interface_name": "s1_eternum::systems::trade::contracts::trade_systems::ITradeSystems"
+          "interface_name": "eternum::systems::trade::contracts::trade_systems::ITradeSystems"
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::trade::contracts::trade_systems::ITradeSystems",
+          "name": "eternum::systems::trade::contracts::trade_systems::ITradeSystems",
           "items": [
             {
               "type": "function",
@@ -10828,7 +10952,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::trade::contracts::trade_systems::trade_systems::Event",
+          "name": "eternum::systems::trade::contracts::trade_systems::trade_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -10855,8 +10979,8 @@
       ]
     },
     {
-      "address": "0x314cec537570503744521dc4ff845e359d31127c047d425520ba9e41c88a84d",
-      "class_hash": "0x1e6f6d0cd4a1ac3dfd9c71e2001955035b26ee0967009247248d44dd4ddc3ce",
+      "address": "0x5603c0cd975f1ce9cfc48e5a691a8bbe40187894a9dfbd4050464515183d125",
+      "class_hash": "0x3c26ea0667984a5fd23d5eb8ceab261a9613a4a83402ee76d65688671a379b",
       "abi": [
         {
           "type": "impl",
@@ -10911,11 +11035,11 @@
         {
           "type": "impl",
           "name": "TroopBattleSystemsImpl",
-          "interface_name": "s1_eternum::systems::combat::contracts::troop_battle::ITroopBattleSystems"
+          "interface_name": "eternum::systems::combat::contracts::troop_battle::ITroopBattleSystems"
         },
         {
           "type": "enum",
-          "name": "s1_eternum::models::position::Direction",
+          "name": "eternum::models::position::Direction",
           "variants": [
             {
               "name": "East",
@@ -10955,7 +11079,7 @@
         },
         {
           "type": "enum",
-          "name": "s1_eternum::models::troop::GuardSlot",
+          "name": "eternum::models::troop::GuardSlot",
           "variants": [
             {
               "name": "Alpha",
@@ -10977,7 +11101,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::combat::contracts::troop_battle::ITroopBattleSystems",
+          "name": "eternum::systems::combat::contracts::troop_battle::ITroopBattleSystems",
           "items": [
             {
               "type": "function",
@@ -10993,7 +11117,7 @@
                 },
                 {
                   "name": "defender_direction",
-                  "type": "s1_eternum::models::position::Direction"
+                  "type": "eternum::models::position::Direction"
                 },
                 {
                   "name": "steal_resources",
@@ -11017,7 +11141,7 @@
                 },
                 {
                   "name": "structure_direction",
-                  "type": "s1_eternum::models::position::Direction"
+                  "type": "eternum::models::position::Direction"
                 }
               ],
               "outputs": [],
@@ -11033,7 +11157,7 @@
                 },
                 {
                   "name": "structure_guard_slot",
-                  "type": "s1_eternum::models::troop::GuardSlot"
+                  "type": "eternum::models::troop::GuardSlot"
                 },
                 {
                   "name": "explorer_id",
@@ -11041,7 +11165,7 @@
                 },
                 {
                   "name": "explorer_direction",
-                  "type": "s1_eternum::models::position::Direction"
+                  "type": "eternum::models::position::Direction"
                 }
               ],
               "outputs": [],
@@ -11148,7 +11272,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::combat::contracts::troop_battle::troop_battle_systems::Event",
+          "name": "eternum::systems::combat::contracts::troop_battle::troop_battle_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -11175,8 +11299,8 @@
       ]
     },
     {
-      "address": "0x607639924a0ed8d2b3f8d955cc295c224bc1e4f8f2a72f7935b406139b39252",
-      "class_hash": "0x45c893aa6e248df1b06e1360ee7992af5bd02cbb76aafa54615e1b208c75308",
+      "address": "0x6578f5d6d28e48e22ba36eb5f969b3e46376facbeafd503a6ac2aef5e0c083d",
+      "class_hash": "0x457b240aaa96cc47e87998a82ed0b13811d8081d41e9eb07dfbd40bea734f5b",
       "abi": [
         {
           "type": "impl",
@@ -11231,11 +11355,11 @@
         {
           "type": "impl",
           "name": "TroopManagementSystemsImpl",
-          "interface_name": "s1_eternum::systems::combat::contracts::troop_management::ITroopManagementSystems"
+          "interface_name": "eternum::systems::combat::contracts::troop_management::ITroopManagementSystems"
         },
         {
           "type": "enum",
-          "name": "s1_eternum::models::troop::GuardSlot",
+          "name": "eternum::models::troop::GuardSlot",
           "variants": [
             {
               "name": "Alpha",
@@ -11257,7 +11381,7 @@
         },
         {
           "type": "enum",
-          "name": "s1_eternum::models::troop::TroopType",
+          "name": "eternum::models::troop::TroopType",
           "variants": [
             {
               "name": "Knight",
@@ -11275,7 +11399,7 @@
         },
         {
           "type": "enum",
-          "name": "s1_eternum::models::troop::TroopTier",
+          "name": "eternum::models::troop::TroopTier",
           "variants": [
             {
               "name": "T1",
@@ -11293,7 +11417,7 @@
         },
         {
           "type": "enum",
-          "name": "s1_eternum::models::position::Direction",
+          "name": "eternum::models::position::Direction",
           "variants": [
             {
               "name": "East",
@@ -11323,7 +11447,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::combat::contracts::troop_management::ITroopManagementSystems",
+          "name": "eternum::systems::combat::contracts::troop_management::ITroopManagementSystems",
           "items": [
             {
               "type": "function",
@@ -11335,15 +11459,15 @@
                 },
                 {
                   "name": "slot",
-                  "type": "s1_eternum::models::troop::GuardSlot"
+                  "type": "eternum::models::troop::GuardSlot"
                 },
                 {
                   "name": "category",
-                  "type": "s1_eternum::models::troop::TroopType"
+                  "type": "eternum::models::troop::TroopType"
                 },
                 {
                   "name": "tier",
-                  "type": "s1_eternum::models::troop::TroopTier"
+                  "type": "eternum::models::troop::TroopTier"
                 },
                 {
                   "name": "amount",
@@ -11363,7 +11487,7 @@
                 },
                 {
                   "name": "slot",
-                  "type": "s1_eternum::models::troop::GuardSlot"
+                  "type": "eternum::models::troop::GuardSlot"
                 }
               ],
               "outputs": [],
@@ -11379,11 +11503,11 @@
                 },
                 {
                   "name": "category",
-                  "type": "s1_eternum::models::troop::TroopType"
+                  "type": "eternum::models::troop::TroopType"
                 },
                 {
                   "name": "tier",
-                  "type": "s1_eternum::models::troop::TroopTier"
+                  "type": "eternum::models::troop::TroopTier"
                 },
                 {
                   "name": "amount",
@@ -11391,7 +11515,7 @@
                 },
                 {
                   "name": "spawn_direction",
-                  "type": "s1_eternum::models::position::Direction"
+                  "type": "eternum::models::position::Direction"
                 }
               ],
               "outputs": [
@@ -11415,7 +11539,7 @@
                 },
                 {
                   "name": "home_direction",
-                  "type": "s1_eternum::models::position::Direction"
+                  "type": "eternum::models::position::Direction"
                 }
               ],
               "outputs": [],
@@ -11447,7 +11571,7 @@
                 },
                 {
                   "name": "to_explorer_direction",
-                  "type": "s1_eternum::models::position::Direction"
+                  "type": "eternum::models::position::Direction"
                 },
                 {
                   "name": "count",
@@ -11471,11 +11595,11 @@
                 },
                 {
                   "name": "to_structure_direction",
-                  "type": "s1_eternum::models::position::Direction"
+                  "type": "eternum::models::position::Direction"
                 },
                 {
                   "name": "to_guard_slot",
-                  "type": "s1_eternum::models::troop::GuardSlot"
+                  "type": "eternum::models::troop::GuardSlot"
                 },
                 {
                   "name": "count",
@@ -11495,7 +11619,7 @@
                 },
                 {
                   "name": "from_guard_slot",
-                  "type": "s1_eternum::models::troop::GuardSlot"
+                  "type": "eternum::models::troop::GuardSlot"
                 },
                 {
                   "name": "to_explorer_id",
@@ -11503,7 +11627,7 @@
                 },
                 {
                   "name": "to_explorer_direction",
-                  "type": "s1_eternum::models::position::Direction"
+                  "type": "eternum::models::position::Direction"
                 },
                 {
                   "name": "count",
@@ -11614,7 +11738,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::combat::contracts::troop_management::troop_management_systems::Event",
+          "name": "eternum::systems::combat::contracts::troop_management::troop_management_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -11646,8 +11770,8 @@
       ]
     },
     {
-      "address": "0x1a4d4c43c4e11b9494f392f32fce41b583cfa8688ffa130e626e1f9ea88e78f",
-      "class_hash": "0x24c4c0ca1ad17c1541dc49230f76254d02a0144923584047508d583836ee0ad",
+      "address": "0x71a2131d99c30d7f35e4624c56668db043de2d569021d43132de6d34d206f09",
+      "class_hash": "0xe624213e2ba2a7b6e1dc121c397aade1bd3aff92573b9e35ceea3551308de6",
       "abi": [
         {
           "type": "impl",
@@ -11702,11 +11826,11 @@
         {
           "type": "impl",
           "name": "TroopMovementSystemsImpl",
-          "interface_name": "s1_eternum::systems::combat::contracts::troop_movement::ITroopMovementSystems"
+          "interface_name": "eternum::systems::combat::contracts::troop_movement::ITroopMovementSystems"
         },
         {
           "type": "enum",
-          "name": "s1_eternum::models::position::Direction",
+          "name": "eternum::models::position::Direction",
           "variants": [
             {
               "name": "East",
@@ -11736,11 +11860,11 @@
         },
         {
           "type": "struct",
-          "name": "core::array::Span::<s1_eternum::models::position::Direction>",
+          "name": "core::array::Span::<eternum::models::position::Direction>",
           "members": [
             {
               "name": "snapshot",
-              "type": "@core::array::Array::<s1_eternum::models::position::Direction>"
+              "type": "@core::array::Array::<eternum::models::position::Direction>"
             }
           ]
         },
@@ -11760,7 +11884,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::map::Tile",
+          "name": "eternum::models::map::Tile",
           "members": [
             {
               "name": "col",
@@ -11790,17 +11914,17 @@
         },
         {
           "type": "struct",
-          "name": "core::array::Span::<s1_eternum::models::map::Tile>",
+          "name": "core::array::Span::<eternum::models::map::Tile>",
           "members": [
             {
               "name": "snapshot",
-              "type": "@core::array::Array::<s1_eternum::models::map::Tile>"
+              "type": "@core::array::Array::<eternum::models::map::Tile>"
             }
           ]
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::combat::contracts::troop_movement::ITroopMovementSystems",
+          "name": "eternum::systems::combat::contracts::troop_movement::ITroopMovementSystems",
           "items": [
             {
               "type": "function",
@@ -11812,7 +11936,7 @@
                 },
                 {
                   "name": "directions",
-                  "type": "core::array::Span::<s1_eternum::models::position::Direction>"
+                  "type": "core::array::Span::<eternum::models::position::Direction>"
                 },
                 {
                   "name": "explore",
@@ -11821,7 +11945,7 @@
               ],
               "outputs": [
                 {
-                  "type": "core::array::Span::<s1_eternum::models::map::Tile>"
+                  "type": "core::array::Span::<eternum::models::map::Tile>"
                 }
               ],
               "state_mutability": "external"
@@ -11927,7 +12051,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::Event",
+          "name": "eternum::systems::combat::contracts::troop_movement::troop_movement_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -11952,8 +12076,8 @@
       ]
     },
     {
-      "address": "0x4028ad8fcaab07f1efcab5e1bb753a2fe0c498dc931a72024b9a3d74a478ced",
-      "class_hash": "0x6b649c4f5c48e4161b5e49251f47d7fa396b3074562fec488088a688f0260bd",
+      "address": "0x49d62523983e332b2094641cbb2fb2c32ccbd43bdad24b42ac08f2b59038f3e",
+      "class_hash": "0x4ed609be4fcef36530da42bfff2b009dc674bda5e220b755fafbc27321ee4fd",
       "abi": [
         {
           "type": "impl",
@@ -12008,7 +12132,7 @@
         {
           "type": "impl",
           "name": "TroopMovementUtilImpl",
-          "interface_name": "s1_eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems"
+          "interface_name": "eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems"
         },
         {
           "type": "struct",
@@ -12040,7 +12164,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::map::Tile",
+          "name": "eternum::models::map::Tile",
           "members": [
             {
               "name": "col",
@@ -12070,7 +12194,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::MapConfig",
+          "name": "eternum::models::config::MapConfig",
           "members": [
             {
               "name": "reward_resource_amount",
@@ -12132,7 +12256,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::TroopLimitConfig",
+          "name": "eternum::models::config::TroopLimitConfig",
           "members": [
             {
               "name": "explorer_max_party_count",
@@ -12166,7 +12290,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::TroopStaminaConfig",
+          "name": "eternum::models::config::TroopStaminaConfig",
           "members": [
             {
               "name": "stamina_gain_per_tick",
@@ -12228,7 +12352,7 @@
         },
         {
           "type": "enum",
-          "name": "s1_eternum::models::events::ExploreFind",
+          "name": "eternum::models::events::ExploreFind",
           "variants": [
             {
               "name": "None",
@@ -12258,7 +12382,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems",
+          "name": "eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems",
           "items": [
             {
               "type": "function",
@@ -12270,7 +12394,7 @@
                 },
                 {
                   "name": "tile",
-                  "type": "s1_eternum::models::map::Tile"
+                  "type": "eternum::models::map::Tile"
                 },
                 {
                   "name": "caller",
@@ -12278,15 +12402,15 @@
                 },
                 {
                   "name": "map_config",
-                  "type": "s1_eternum::models::config::MapConfig"
+                  "type": "eternum::models::config::MapConfig"
                 },
                 {
                   "name": "troop_limit_config",
-                  "type": "s1_eternum::models::config::TroopLimitConfig"
+                  "type": "eternum::models::config::TroopLimitConfig"
                 },
                 {
                   "name": "troop_stamina_config",
-                  "type": "s1_eternum::models::config::TroopStaminaConfig"
+                  "type": "eternum::models::config::TroopStaminaConfig"
                 },
                 {
                   "name": "current_tick",
@@ -12299,7 +12423,7 @@
               ],
               "outputs": [
                 {
-                  "type": "(core::bool, s1_eternum::models::events::ExploreFind)"
+                  "type": "(core::bool, eternum::models::events::ExploreFind)"
                 }
               ],
               "state_mutability": "view"
@@ -12405,7 +12529,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::combat::contracts::troop_movement::troop_movement_util_systems::Event",
+          "name": "eternum::systems::combat::contracts::troop_movement::troop_movement_util_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -12429,8 +12553,8 @@
       ]
     },
     {
-      "address": "0x430fa0f5eacf43cdbedee15a3707ea9c93e40588437e11fcd05cac3973b25fd",
-      "class_hash": "0x5833017b6164c6310f11052e86ff28f80858a833651448bec09285f0c286553",
+      "address": "0x1a5e51940bdb3cfffc3db40919ab0849bab83cbac8b661c6d05376ad4cb5b2",
+      "class_hash": "0x27dd4aaca2f2ba8840f48152f04817b5852fe5de1e4739e12b81b1e9dc507c1",
       "abi": [
         {
           "type": "impl",
@@ -12485,11 +12609,11 @@
         {
           "type": "impl",
           "name": "TroopRaidSystemsImpl",
-          "interface_name": "s1_eternum::systems::combat::contracts::troop_raid::ITroopRaidSystems"
+          "interface_name": "eternum::systems::combat::contracts::troop_raid::ITroopRaidSystems"
         },
         {
           "type": "enum",
-          "name": "s1_eternum::models::position::Direction",
+          "name": "eternum::models::position::Direction",
           "variants": [
             {
               "name": "East",
@@ -12529,7 +12653,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::combat::contracts::troop_raid::ITroopRaidSystems",
+          "name": "eternum::systems::combat::contracts::troop_raid::ITroopRaidSystems",
           "items": [
             {
               "type": "function",
@@ -12545,7 +12669,7 @@
                 },
                 {
                   "name": "structure_direction",
-                  "type": "s1_eternum::models::position::Direction"
+                  "type": "eternum::models::position::Direction"
                 },
                 {
                   "name": "steal_resources",
@@ -12656,7 +12780,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::combat::contracts::troop_raid::troop_raid_systems::Event",
+          "name": "eternum::systems::combat::contracts::troop_raid::troop_raid_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -12681,8 +12805,8 @@
       ]
     },
     {
-      "address": "0x2f15d9b8445a2ad8472360627adf47a95f5e34ca0d0edc3cd3cf715772d60ba",
-      "class_hash": "0x238a3f689448bddc438f1c4d9fb00cd73e56ebb144d374d2eb686a5deb28282",
+      "address": "0x48d8e306928bec0fa8d4c3c5f35ff4d4c187605bfc2ad82e6c71d99609b70de",
+      "class_hash": "0x305ef1fa399f0f2c842823844ca5133eb4d11d95b20cd8f2ecff27800ed1b9a",
       "abi": [
         {
           "type": "impl",
@@ -12737,7 +12861,7 @@
         {
           "type": "impl",
           "name": "VillageDiscoveryImpl",
-          "interface_name": "s1_eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems"
+          "interface_name": "eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems"
         },
         {
           "type": "struct",
@@ -12769,7 +12893,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::map::Tile",
+          "name": "eternum::models::map::Tile",
           "members": [
             {
               "name": "col",
@@ -12799,7 +12923,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::MapConfig",
+          "name": "eternum::models::config::MapConfig",
           "members": [
             {
               "name": "reward_resource_amount",
@@ -12861,7 +12985,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::TroopLimitConfig",
+          "name": "eternum::models::config::TroopLimitConfig",
           "members": [
             {
               "name": "explorer_max_party_count",
@@ -12895,7 +13019,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::TroopStaminaConfig",
+          "name": "eternum::models::config::TroopStaminaConfig",
           "members": [
             {
               "name": "stamina_gain_per_tick",
@@ -12957,7 +13081,7 @@
         },
         {
           "type": "enum",
-          "name": "s1_eternum::models::events::ExploreFind",
+          "name": "eternum::models::events::ExploreFind",
           "variants": [
             {
               "name": "None",
@@ -12987,7 +13111,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems",
+          "name": "eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems",
           "items": [
             {
               "type": "function",
@@ -12999,7 +13123,7 @@
                 },
                 {
                   "name": "tile",
-                  "type": "s1_eternum::models::map::Tile"
+                  "type": "eternum::models::map::Tile"
                 },
                 {
                   "name": "caller",
@@ -13007,15 +13131,15 @@
                 },
                 {
                   "name": "map_config",
-                  "type": "s1_eternum::models::config::MapConfig"
+                  "type": "eternum::models::config::MapConfig"
                 },
                 {
                   "name": "troop_limit_config",
-                  "type": "s1_eternum::models::config::TroopLimitConfig"
+                  "type": "eternum::models::config::TroopLimitConfig"
                 },
                 {
                   "name": "troop_stamina_config",
-                  "type": "s1_eternum::models::config::TroopStaminaConfig"
+                  "type": "eternum::models::config::TroopStaminaConfig"
                 },
                 {
                   "name": "current_tick",
@@ -13028,7 +13152,7 @@
               ],
               "outputs": [
                 {
-                  "type": "(core::bool, s1_eternum::models::events::ExploreFind)"
+                  "type": "(core::bool, eternum::models::events::ExploreFind)"
                 }
               ],
               "state_mutability": "view"
@@ -13134,7 +13258,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::combat::contracts::troop_movement::village_discovery_systems::Event",
+          "name": "eternum::systems::combat::contracts::troop_movement::village_discovery_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -13158,8 +13282,8 @@
       ]
     },
     {
-      "address": "0x538954a11e9bca8c1d052a06d3487c43b4e2b51d89d1654cb6d1b46f60a1b0d",
-      "class_hash": "0x69618c05c9218ddb1031167a168a6bbf398288b1eab248201953112cce0e0f9",
+      "address": "0x525515a38313adc94dad8e2aca609c6d4e65faa03c474d4e8f271c166091bdf",
+      "class_hash": "0x7ae998ffaf8e636d9fa8a3f3252f388c3d7bb92c115a0f5879afd1eb0339900",
       "abi": [
         {
           "type": "impl",
@@ -13214,11 +13338,11 @@
         {
           "type": "impl",
           "name": "VillageSystemsImpl",
-          "interface_name": "s1_eternum::systems::village::contracts::IVillageSystems"
+          "interface_name": "eternum::systems::village::contracts::IVillageSystems"
         },
         {
           "type": "enum",
-          "name": "s1_eternum::models::position::Direction",
+          "name": "eternum::models::position::Direction",
           "variants": [
             {
               "name": "East",
@@ -13248,7 +13372,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::village::contracts::IVillageSystems",
+          "name": "eternum::systems::village::contracts::IVillageSystems",
           "items": [
             {
               "type": "function",
@@ -13264,7 +13388,7 @@
                 },
                 {
                   "name": "direction",
-                  "type": "s1_eternum::models::position::Direction"
+                  "type": "eternum::models::position::Direction"
                 }
               ],
               "outputs": [
@@ -13375,7 +13499,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::systems::village::contracts::village_systems::Event",
+          "name": "eternum::systems::village::contracts::village_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -13402,7 +13526,7 @@
   ],
   "libraries": [
     {
-      "class_hash": "0x69bf2e96c3f8209e76451354ad2e3ad54329d3a2589d423722244c79050bae2",
+      "class_hash": "0xdb282dd45e87c09d3ab9cfd3f17121dd8c2f783c2be23ef8df06d8039125eb",
       "abi": [
         {
           "type": "impl",
@@ -13457,11 +13581,11 @@
         {
           "type": "impl",
           "name": "BiomeLibraryImpl",
-          "interface_name": "s1_eternum::system_libraries::biome_library::IBiomeLibrary"
+          "interface_name": "eternum::system_libraries::biome_library::IBiomeLibrary"
         },
         {
           "type": "enum",
-          "name": "s1_eternum::utils::map::biomes::Biome",
+          "name": "eternum::utils::map::biomes::Biome",
           "variants": [
             {
               "name": "None",
@@ -13535,7 +13659,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::system_libraries::biome_library::IBiomeLibrary",
+          "name": "eternum::system_libraries::biome_library::IBiomeLibrary",
           "items": [
             {
               "type": "function",
@@ -13552,7 +13676,7 @@
               ],
               "outputs": [
                 {
-                  "type": "s1_eternum::utils::map::biomes::Biome"
+                  "type": "eternum::utils::map::biomes::Biome"
                 }
               ],
               "state_mutability": "view"
@@ -13599,7 +13723,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::system_libraries::biome_library::biome_library::Event",
+          "name": "eternum::system_libraries::biome_library::biome_library::Event",
           "kind": "enum",
           "variants": [
             {
@@ -13616,7 +13740,7 @@
       "version": "0_1_0"
     },
     {
-      "class_hash": "0x2bfd61e672583d0144768f3cddde0f2ce46fe935abb78278b67d38f8fe0a63e",
+      "class_hash": "0x5215ea909c081ce6cbd6f010d3089ebc9d025a803eab28f1250ae1cbe1756dd",
       "abi": [
         {
           "type": "impl",
@@ -13671,11 +13795,11 @@
         {
           "type": "impl",
           "name": "CombatLibraryImpl",
-          "interface_name": "s1_eternum::system_libraries::combat_library::ICombatLibrary"
+          "interface_name": "eternum::system_libraries::combat_library::ICombatLibrary"
         },
         {
           "type": "enum",
-          "name": "s1_eternum::models::troop::TroopType",
+          "name": "eternum::models::troop::TroopType",
           "variants": [
             {
               "name": "Knight",
@@ -13693,7 +13817,7 @@
         },
         {
           "type": "enum",
-          "name": "s1_eternum::models::troop::TroopTier",
+          "name": "eternum::models::troop::TroopTier",
           "variants": [
             {
               "name": "T1",
@@ -13711,7 +13835,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::stamina::Stamina",
+          "name": "eternum::models::stamina::Stamina",
           "members": [
             {
               "name": "amount",
@@ -13725,7 +13849,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::troop::TroopBoosts",
+          "name": "eternum::models::troop::TroopBoosts",
           "members": [
             {
               "name": "incr_damage_dealt_percent_num",
@@ -13763,15 +13887,15 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::troop::Troops",
+          "name": "eternum::models::troop::Troops",
           "members": [
             {
               "name": "category",
-              "type": "s1_eternum::models::troop::TroopType"
+              "type": "eternum::models::troop::TroopType"
             },
             {
               "name": "tier",
-              "type": "s1_eternum::models::troop::TroopTier"
+              "type": "eternum::models::troop::TroopTier"
             },
             {
               "name": "count",
@@ -13779,11 +13903,11 @@
             },
             {
               "name": "stamina",
-              "type": "s1_eternum::models::stamina::Stamina"
+              "type": "eternum::models::stamina::Stamina"
             },
             {
               "name": "boosts",
-              "type": "s1_eternum::models::troop::TroopBoosts"
+              "type": "eternum::models::troop::TroopBoosts"
             },
             {
               "name": "battle_cooldown_end",
@@ -13793,7 +13917,7 @@
         },
         {
           "type": "enum",
-          "name": "s1_eternum::utils::map::biomes::Biome",
+          "name": "eternum::utils::map::biomes::Biome",
           "variants": [
             {
               "name": "None",
@@ -13867,7 +13991,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::TroopStaminaConfig",
+          "name": "eternum::models::config::TroopStaminaConfig",
           "members": [
             {
               "name": "stamina_gain_per_tick",
@@ -13929,7 +14053,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::config::TroopDamageConfig",
+          "name": "eternum::models::config::TroopDamageConfig",
           "members": [
             {
               "name": "damage_raid_percent_num",
@@ -13975,7 +14099,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::system_libraries::combat_library::ICombatLibrary",
+          "name": "eternum::system_libraries::combat_library::ICombatLibrary",
           "items": [
             {
               "type": "function",
@@ -13983,23 +14107,23 @@
               "inputs": [
                 {
                   "name": "attacker",
-                  "type": "s1_eternum::models::troop::Troops"
+                  "type": "eternum::models::troop::Troops"
                 },
                 {
                   "name": "defender",
-                  "type": "s1_eternum::models::troop::Troops"
+                  "type": "eternum::models::troop::Troops"
                 },
                 {
                   "name": "biome",
-                  "type": "s1_eternum::utils::map::biomes::Biome"
+                  "type": "eternum::utils::map::biomes::Biome"
                 },
                 {
                   "name": "troop_stamina_config",
-                  "type": "s1_eternum::models::config::TroopStaminaConfig"
+                  "type": "eternum::models::config::TroopStaminaConfig"
                 },
                 {
                   "name": "troop_damage_config",
-                  "type": "s1_eternum::models::config::TroopDamageConfig"
+                  "type": "eternum::models::config::TroopDamageConfig"
                 },
                 {
                   "name": "current_tick",
@@ -14012,7 +14136,7 @@
               ],
               "outputs": [
                 {
-                  "type": "(s1_eternum::models::troop::Troops, s1_eternum::models::troop::Troops)"
+                  "type": "(eternum::models::troop::Troops, eternum::models::troop::Troops)"
                 }
               ],
               "state_mutability": "view"
@@ -14059,7 +14183,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::system_libraries::combat_library::combat_library::Event",
+          "name": "eternum::system_libraries::combat_library::combat_library::Event",
           "kind": "enum",
           "variants": [
             {
@@ -14076,7 +14200,7 @@
       "version": "0_1_0"
     },
     {
-      "class_hash": "0x27ae91ec0ef0074f9827609af3ea608cb2b31d6c313acb644fa0643d3d31bbb",
+      "class_hash": "0x7bf80480de3e11eb5d00e18ff78b49898c12a58a0f5ab700f6bdb98e9379e0e",
       "abi": [
         {
           "type": "impl",
@@ -14131,7 +14255,7 @@
         {
           "type": "impl",
           "name": "RngLibraryImpl",
-          "interface_name": "s1_eternum::system_libraries::rng_library::IRNGlibrary"
+          "interface_name": "eternum::system_libraries::rng_library::IRNGlibrary"
         },
         {
           "type": "struct",
@@ -14217,7 +14341,7 @@
         },
         {
           "type": "enum",
-          "name": "s1_eternum::models::position::Direction",
+          "name": "eternum::models::position::Direction",
           "variants": [
             {
               "name": "East",
@@ -14247,17 +14371,17 @@
         },
         {
           "type": "struct",
-          "name": "core::array::Span::<s1_eternum::models::position::Direction>",
+          "name": "core::array::Span::<eternum::models::position::Direction>",
           "members": [
             {
               "name": "snapshot",
-              "type": "@core::array::Array::<s1_eternum::models::position::Direction>"
+              "type": "@core::array::Array::<eternum::models::position::Direction>"
             }
           ]
         },
         {
           "type": "enum",
-          "name": "s1_eternum::models::troop::TroopTier",
+          "name": "eternum::models::troop::TroopTier",
           "variants": [
             {
               "name": "T1",
@@ -14275,11 +14399,11 @@
         },
         {
           "type": "struct",
-          "name": "core::array::Span::<s1_eternum::models::troop::TroopTier>",
+          "name": "core::array::Span::<eternum::models::troop::TroopTier>",
           "members": [
             {
               "name": "snapshot",
-              "type": "@core::array::Array::<s1_eternum::models::troop::TroopTier>"
+              "type": "@core::array::Array::<eternum::models::troop::TroopTier>"
             }
           ]
         },
@@ -14295,7 +14419,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::system_libraries::rng_library::IRNGlibrary",
+          "name": "eternum::system_libraries::rng_library::IRNGlibrary",
           "items": [
             {
               "type": "function",
@@ -14467,7 +14591,7 @@
               "inputs": [
                 {
                   "name": "population",
-                  "type": "core::array::Span::<s1_eternum::models::position::Direction>"
+                  "type": "core::array::Span::<eternum::models::position::Direction>"
                 },
                 {
                   "name": "weights",
@@ -14488,7 +14612,7 @@
               ],
               "outputs": [
                 {
-                  "type": "core::array::Span::<s1_eternum::models::position::Direction>"
+                  "type": "core::array::Span::<eternum::models::position::Direction>"
                 }
               ],
               "state_mutability": "view"
@@ -14499,7 +14623,7 @@
               "inputs": [
                 {
                   "name": "population",
-                  "type": "core::array::Span::<s1_eternum::models::troop::TroopTier>"
+                  "type": "core::array::Span::<eternum::models::troop::TroopTier>"
                 },
                 {
                   "name": "weights",
@@ -14520,7 +14644,7 @@
               ],
               "outputs": [
                 {
-                  "type": "core::array::Span::<s1_eternum::models::troop::TroopTier>"
+                  "type": "core::array::Span::<eternum::models::troop::TroopTier>"
                 }
               ],
               "state_mutability": "view"
@@ -14589,7 +14713,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::system_libraries::rng_library::rng_library::Event",
+          "name": "eternum::system_libraries::rng_library::rng_library::Event",
           "kind": "enum",
           "variants": [
             {
@@ -14606,7 +14730,7 @@
       "version": "0_1_0"
     },
     {
-      "class_hash": "0x5a044f711de8963fa237db0c16f3e441da86709cfcb913989988de0883a22fb",
+      "class_hash": "0x4c26ce2924f41044dd9c5f49188519374bac9c076afc5716524a8887fcd7f81",
       "abi": [
         {
           "type": "impl",
@@ -14661,7 +14785,7 @@
         {
           "type": "impl",
           "name": "StructureCreationLibraryImpl",
-          "interface_name": "s1_eternum::system_libraries::structure_libraries::structure_creation_library::IStructureCreationlibrary"
+          "interface_name": "eternum::system_libraries::structure_libraries::structure_creation_library::IStructureCreationlibrary"
         },
         {
           "type": "struct",
@@ -14689,7 +14813,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::position::Coord",
+          "name": "eternum::models::position::Coord",
           "members": [
             {
               "name": "x",
@@ -14703,7 +14827,7 @@
         },
         {
           "type": "enum",
-          "name": "s1_eternum::models::structure::StructureCategory",
+          "name": "eternum::models::structure::StructureCategory",
           "variants": [
             {
               "name": "None",
@@ -14757,7 +14881,7 @@
         },
         {
           "type": "struct",
-          "name": "s1_eternum::models::structure::StructureMetadata",
+          "name": "eternum::models::structure::StructureMetadata",
           "members": [
             {
               "name": "realm_id",
@@ -14783,7 +14907,7 @@
         },
         {
           "type": "enum",
-          "name": "s1_eternum::models::map::TileOccupier",
+          "name": "eternum::models::map::TileOccupier",
           "variants": [
             {
               "name": "None",
@@ -14949,7 +15073,7 @@
         },
         {
           "type": "interface",
-          "name": "s1_eternum::system_libraries::structure_libraries::structure_creation_library::IStructureCreationlibrary",
+          "name": "eternum::system_libraries::structure_libraries::structure_creation_library::IStructureCreationlibrary",
           "items": [
             {
               "type": "function",
@@ -14961,7 +15085,7 @@
                 },
                 {
                   "name": "coord",
-                  "type": "s1_eternum::models::position::Coord"
+                  "type": "eternum::models::position::Coord"
                 },
                 {
                   "name": "owner",
@@ -14973,7 +15097,7 @@
                 },
                 {
                   "name": "category",
-                  "type": "s1_eternum::models::structure::StructureCategory"
+                  "type": "eternum::models::structure::StructureCategory"
                 },
                 {
                   "name": "resources",
@@ -14981,11 +15105,11 @@
                 },
                 {
                   "name": "metadata",
-                  "type": "s1_eternum::models::structure::StructureMetadata"
+                  "type": "eternum::models::structure::StructureMetadata"
                 },
                 {
                   "name": "tile_occupier",
-                  "type": "s1_eternum::models::map::TileOccupier"
+                  "type": "eternum::models::map::TileOccupier"
                 },
                 {
                   "name": "explore_village_coord",
@@ -15009,7 +15133,7 @@
                 },
                 {
                   "name": "structure_coord",
-                  "type": "s1_eternum::models::position::Coord"
+                  "type": "eternum::models::position::Coord"
                 }
               ],
               "outputs": [],
@@ -15047,7 +15171,7 @@
         },
         {
           "type": "event",
-          "name": "s1_eternum::system_libraries::structure_libraries::structure_creation_library::structure_creation_library::Event",
+          "name": "eternum::system_libraries::structure_libraries::structure_creation_library::structure_creation_library::Event",
           "kind": "enum",
           "variants": [
             {
@@ -15067,379 +15191,397 @@
   "models": [
     {
       "members": [],
-      "class_hash": "0x512002b2726fb00359e2991426129a68ac34eb7caad109948d704988a764342",
+      "class_hash": "0x37c1c3e9db0749e8ed0bc08803b4f285fdeec8a8ef1d8ab34a2fd4a1ca44d09",
       "tag": "s1_eternum-AddressName",
       "selector": "0x42709c94217aac1ce5900d6bb822dc5e203071e9f184165b4d32144ff0e326c"
     },
     {
       "members": [],
-      "class_hash": "0xf59544114cadbe5ee511c18d9ea91cab599d39ca34b991e9d272ae1b4dd305",
+      "class_hash": "0x714b3ac9e3a267a385cd371f799f0f5fc2c1c45c7fb3e3e1209335b02dbae97",
       "tag": "s1_eternum-AgentConfig",
       "selector": "0x289c6289f39005ef802db9f05c38d144ce4f971790be8dc9789355cf44952d3"
     },
     {
       "members": [],
-      "class_hash": "0x2956027e83c1cc6925d9e08213f9a9cf435af529532b90a9dfb2e1ce09a2b49",
+      "class_hash": "0x4a1852c45d07b1b25f95f0dd1bb021e41aae8ad8cf3511edf76408f10465994",
       "tag": "s1_eternum-AgentCount",
       "selector": "0x775c3ea779b07da3b53cb737bc3d20ec1acfdcae1066601f630acb127468115"
     },
     {
       "members": [],
-      "class_hash": "0x5f5bf3193b242c69d535ee54eb7e62bd87c4d532bb5c6223a168c23b3801944",
+      "class_hash": "0x3d34737ded3c1ecf200b8a5100118b6894d59240e0e605e7a148480445a64f2",
       "tag": "s1_eternum-AgentLifetimeCount",
       "selector": "0x60ca4e60ab28ed4a280168c6cbbededd0895e5f55743578ee5e505577c690da"
     },
     {
       "members": [],
-      "class_hash": "0x42da5e330d16cc730403826092655f41b0fa1064fc5c4c1ffb25c3adce3fe99",
+      "class_hash": "0x5455322de2ef2f86c701fc5637b366e638e20ff8eaa85bb38bf6487ac3019a6",
       "tag": "s1_eternum-AgentLordsMinted",
       "selector": "0x43fdc3ce5dd74e32996d38949f4a8fbf8570eada60cc9707c3f8df028f2685c"
     },
     {
       "members": [],
-      "class_hash": "0x786651cddcb748f8edcd8e33c960b8d576e32a01a6489d8c871916620681e73",
+      "class_hash": "0x6400d6019b3c1fc5f4cebe1a1b4ed97c35dd95e91e59b85b18ee9747f888d36",
       "tag": "s1_eternum-AgentOwner",
       "selector": "0x4b0db2589fac99b5de94eeb279e466737fdf06029e398c9d2f89fbf91ed1318"
     },
     {
       "members": [],
-      "class_hash": "0x784aea816ba697ca41074fb460fffeffddf79085d1ad41eedf708517f94e20",
+      "class_hash": "0x41fa8437ff603d3a22898ac901cf1868d467184335517d55a3cc19c65277722",
       "tag": "s1_eternum-AntiBot",
       "selector": "0x344804b2eb95394730da8909ac2aa5d50715b8ed1715e0eef00953b34345183"
     },
     {
       "members": [],
-      "class_hash": "0x70483c5b64bbbe27a240ce6bbcd23e5af2b62a72ae9b963e2ee510202abba0c",
+      "class_hash": "0x4a5fd9201b5fd3aa0fca18738ceb4eb94e190a24f5d58395a8d6afa64e2c316",
       "tag": "s1_eternum-BiomeDiscovered",
       "selector": "0x30f7247a43bd9908a15927a45887898d2926a4b68fefe9ea339d6534a3ba8b"
     },
     {
       "members": [],
-      "class_hash": "0x443b35262e0115b4b0c5c360b57b5e2724518f20462aff34c15bb06caf1ad08",
+      "class_hash": "0x16c7a085d4586659a5a5a2614bda0cebe1afda043606f1801a09372f6933d99",
       "tag": "s1_eternum-BlitzCosmeticAttrsRegister",
       "selector": "0x1efcf28bceaf0576c24d866f4bd2adcc359f07c8673862d040d1b5a9038d9a0"
     },
     {
       "members": [],
-      "class_hash": "0x4b77d417318cb86ac8bfdabc65adfd05a72b50fa3ba8c269ed64fa37f74cba1",
+      "class_hash": "0x6310d4ad6f59ce226174332347b747d3d3f35e13fb2b3cb1c069a38c34fa787",
       "tag": "s1_eternum-BlitzEntryTokenRegister",
       "selector": "0x6ddacaaa92f1e52cc203d1adb8069454364b9a3b573c73506202cc0579addd"
     },
     {
       "members": [],
-      "class_hash": "0x5b980f5becfd52c0d747892d02294ef1b3c4f8d1c5deaf5703e44233b02c474",
+      "class_hash": "0x2fdb875705e026d2498628f9150a2461529e9b6f8d5cda3d5bf5e6c1f002c7c",
+      "tag": "s1_eternum-BlitzPreviousGame",
+      "selector": "0x3b113f1b90c920fcaccc8bfae4d2169056045ea61e56f0cd3ec0bb075947c06"
+    },
+    {
+      "members": [],
+      "class_hash": "0x6a4a7401e43caa0efabb5cfe145bf188bb048e50bdcc016847bcb6820d44685",
       "tag": "s1_eternum-BlitzRealmPlayerRegister",
       "selector": "0x1a232ed9fa951f1b2cf53e4af4828cbc50e2b5487543c4d7fb73431dd2f2692"
     },
     {
       "members": [],
-      "class_hash": "0x1d7395ef9697f340ca9748da80fd022d2dfabcc535b121064ad4b57ff805710",
+      "class_hash": "0x4648987769990909fccc121f7e79f9b9f23207441792fae22c096f4a2e7a8c4",
       "tag": "s1_eternum-BlitzRealmPositionRegister",
       "selector": "0x36793f519bb40db4966acc7fd52cb2472de0c19aa14cdedaf9793ca0ceb5098"
     },
     {
       "members": [],
-      "class_hash": "0x35e05f365c9c93799368aac28eb56f140df3dbe1e6eedb725a7d5150469d7ec",
+      "class_hash": "0x710e1419f4014625b58ded99befb835521621be5c47c4959a5efe713526f978",
       "tag": "s1_eternum-Building",
       "selector": "0x383bc83e69df10c0e58ce05aef021bb904346af8b28de6dd09ed16a497fae29"
     },
     {
       "members": [],
-      "class_hash": "0x6f6419e9b71b972cc90eb8c5641ec301a0bc74ebb0f62a26ef8219d055c0fa",
+      "class_hash": "0x71aa5ebc5c59945b1596f1fbc1f3423b2f394f64f80e795eb1e3e443b348cb5",
       "tag": "s1_eternum-BuildingCategoryConfig",
       "selector": "0x437f17d96443d609b2b0172248b6a0f49b80fecaa831cf1d8c2d842cb3865c6"
     },
     {
       "members": [],
-      "class_hash": "0x5c5322b0dbdf6d9873e9f3f7b3bf6efa0b4e38bcd24586a6d0c052420480080",
+      "class_hash": "0x31f44679c92001a0003c528c35f57506a2017f9c7fd18de42d8669aac24326f",
       "tag": "s1_eternum-ExplorerTroops",
       "selector": "0x15b04275000fff7a4726d78e8083bfc8818a1b44138f368441ca8dd6fb0465f"
     },
     {
       "members": [],
-      "class_hash": "0x445d139268323ab0e7b248d0d5fae78c8bd77826819973b544e67a8d7dfbaee",
+      "class_hash": "0x5a0e7eeaa44158507252a1370f9c03c107319d9e9756a052547bfc51ffb76bc",
+      "tag": "s1_eternum-GameChestReward",
+      "selector": "0xc9af8fb39af2436a5cac5c8b1288db1504d3e70759b9e8aa6b7f776fe8a892"
+    },
+    {
+      "members": [],
+      "class_hash": "0x3c431d120684bbdf6b1762a9953be71221db0633881e6b1ab1c561a908ede0f",
       "tag": "s1_eternum-Guild",
       "selector": "0x1005f12b60fb0b9955acaa3d2ef4e839a9d9ca0de11ba53c74c3a4b5d324142"
     },
     {
       "members": [],
-      "class_hash": "0x45384b3dd193dfca8a11335522c8d650983902240487e3a9e0b8a4c9213d2dc",
+      "class_hash": "0x282df23b8a9659be8cec4428369e6acd76af8e1154dec43d956a962aed1e74b",
       "tag": "s1_eternum-GuildMember",
       "selector": "0x4e1c4b07b2c1113f22a01d146dbe1224007cd027c7681007de3828761f92c1"
     },
     {
       "members": [],
-      "class_hash": "0x33b4bb1fb88643bc2740e376367b60a8479a3bb09b226b3124faa42006f1a43",
+      "class_hash": "0x3405a70957cfb367e562544c34b59ec82542fa312cfca76a56d74915b2cf277",
       "tag": "s1_eternum-GuildWhitelist",
       "selector": "0x58ba641332348c46d0aad19ab754598e63a4d8736db7ef9654918c79d6ad071"
     },
     {
       "members": [],
-      "class_hash": "0x54da95e8cb935e3f9be2fae4141af12f41ae7c70ce7833e3ae0470448c36c79",
+      "class_hash": "0x72fcdc16c894bfe13e35dda5167bee058dfbd6aac142d3cc0c48a9f16216854",
       "tag": "s1_eternum-HyperstrtConstructConfig",
       "selector": "0x241199e1eb03dc2ba3292079cc22d03409d70cbf519bd2b4049d2e0d6ef8e5b"
     },
     {
       "members": [],
-      "class_hash": "0x74df1985d0c2ba537df284de613668326f331481963406a5c36936766229e39",
+      "class_hash": "0x71eb89fccd24ca6e6fc3c3378a3ce815bb41c867b5aa5c31ef0bcf56c2f91c6",
       "tag": "s1_eternum-Hyperstructure",
       "selector": "0x5894102a0f9c53bf2298d3bdaf4b0f8a0f92777d57ff0d585ca3b5c5b25b7bc"
     },
     {
       "members": [],
-      "class_hash": "0x6718c4787fafb5f9f12fa04d08acfe4972540b344122454cc9c246e4953bb9",
+      "class_hash": "0x72e72801fe8c11e7a6f3f2b5c2218dadd07df5bfcec1f8b6fd1494ed25be1bf",
       "tag": "s1_eternum-HyperstructureGlobals",
       "selector": "0x3c6ed56d0517959ba701c64b92562093e33ac8bfee47099acfe3822a4dd81b2"
     },
     {
       "members": [],
-      "class_hash": "0x7033d3ca9ddee0659fc1e446307c1510e61fd9b063aa106c8911c9a9681da6c",
+      "class_hash": "0x30d1a7066eb2857681fa7ac14c709638210ec0d23fc837aa09b7216b6098538",
       "tag": "s1_eternum-HyperstructureRequirements",
       "selector": "0x1e1278c034743f9c0ab03f3d5efa81a2854fbebbca4c21704aad54cf792e589"
     },
     {
       "members": [],
-      "class_hash": "0x5f04f06bc0d696a89d93e89766a965c32191893de01e4b74c99839e5c520f1e",
+      "class_hash": "0x48c12aae32572c795dea4dcb1195984288a14264c51900778d221f5f3002874",
       "tag": "s1_eternum-HyperstructureShareholders",
       "selector": "0x6463c2186d9cf77e07bb449b7b8466d987b7602325261ce48f4dc35a5049695"
     },
     {
       "members": [],
-      "class_hash": "0x17dbe6da00cc242f896c56a90e9076224cb3c50839f9c36847b2822e68a08a9",
+      "class_hash": "0x510d882aab73cc2d9d10ef1c7de2048f7ccd5d13f8bbd9c3fbe7eff71757e76",
       "tag": "s1_eternum-Liquidity",
       "selector": "0x4ba2cf13ce80401e973629d0ba586aad1cae4ac3cf68ed3140f3373d361659"
     },
     {
       "members": [],
-      "class_hash": "0x26c0db47084986798eff8acd1ab8c0ae84dd96b70981499a3e638e3365e1337",
+      "class_hash": "0x7f5246c97e5233bbfdc711f41931f6ee279ebabbe35cce54344ea0d03003982",
       "tag": "s1_eternum-Market",
       "selector": "0x1fcfb4aa02fa062c2f9fe4a658759a4cbe73fc5db42c595184e770c9076750a"
     },
     {
       "members": [],
-      "class_hash": "0x489109a9c1d2fc2ae5d7e3b8b9f14727123ee099d78131805de47edc78d457f",
+      "class_hash": "0x3b0ec3b10f8748d766802c3ca1c588c3b3360cfb76f9b943b366ba5b803d06e",
       "tag": "s1_eternum-Message",
       "selector": "0x3ce31878ad62fd485eb46bdbd403bbe7daf2e544c15d386dcc7ac519a10678a"
     },
     {
       "members": [],
-      "class_hash": "0x6db1faf0553886c71c41011e1dc34709c0a9b4d7e8a39f3522e86444920a6dd",
+      "class_hash": "0x2d9aa865231417315f075ed7005fe6193c8cf10d3a01afa565ded93e10da380",
       "tag": "s1_eternum-PlayerConstructionPoints",
       "selector": "0x49b727c54c7780c4f0e3f45284c2d13d4e192d53a70233720cb8145e552ca0c"
     },
     {
       "members": [],
-      "class_hash": "0x3012dd48fca2693d6f0373c962af131ff72d4b0a4a8b48fc6fd44fa0cf3efd5",
+      "class_hash": "0x3c1698bc1eb3837cc862eebd8f27d627120fb2b10e143670ac2cb45c5100b9b",
       "tag": "s1_eternum-PlayerRank",
       "selector": "0x340464957c892b03e57946fd4140f7e6ce58f3806fae19fb4d7bd8139443d0f"
     },
     {
       "members": [],
-      "class_hash": "0x3f09bbbd38b4f97442d7080953df599ca5bd9b1c8978e2811d2d6f57f7e34a9",
+      "class_hash": "0x259ff491984b0819abdfadcb9357572a84b21ce5b1a242d757144dd29313276",
       "tag": "s1_eternum-PlayerRegisteredPoints",
       "selector": "0xdde28691470092c95b58aada5c45433f59662861cce59f49d07f6085d357ae"
     },
     {
       "members": [],
-      "class_hash": "0x504485157f9a770a781f2fe5dde0c3fc1865eecfc04894feb7419f5aa66c082",
+      "class_hash": "0x67261fdc616f9d371828c2ba55cf8a35964b70af9a9544cd0a965fb0f74c1b2",
       "tag": "s1_eternum-PlayersRankFinal",
       "selector": "0x963c8c93e778d46a58da7d21be55f80dd69c81da27ebf75ae34ee67a2e9735"
     },
     {
       "members": [],
-      "class_hash": "0x384965a924a72a2e7aa463aea6d48a38442e33b24752555425f9a3ed9c739ec",
+      "class_hash": "0x33dfbb861c2595fddee657eb34271199b43a1c798bc2abe3b7b7399ce7fa87d",
       "tag": "s1_eternum-PlayersRankTrial",
       "selector": "0x581bc5fb791ddad41dbb2252cb52432a17cca50cbfc5573818d6e22376c72be"
     },
     {
       "members": [],
-      "class_hash": "0x430d452b7d466dde99bf3ab7ceb3780b87c194d23929d5410fd37828f950bfb",
+      "class_hash": "0x568a86221afc5f66a84c2599474fdf86e89fccd1c3419c520bc328afd2cd077",
       "tag": "s1_eternum-ProductionBoostBonus",
       "selector": "0x59ca6e91cc3da6904a5bcff622e35d33b6ba7e5415ebbbbfea016b92a745d7c"
     },
     {
       "members": [],
-      "class_hash": "0x5ed45e4ac61a2e6e20b93afd4bd01a70b33ece3c1eea336bbcc1d13f2063f5c",
+      "class_hash": "0x34ef9390d210a7331a2fd7707ec754a91c044c26858b8a80d4c593ec1458d28",
       "tag": "s1_eternum-Quantity",
       "selector": "0x8646cb000744430c5d95cf5616ce8ba4913401760158aa1ad6738475a36591"
     },
     {
       "members": [],
-      "class_hash": "0x4dcdbe6b5674f548645d5a858fd64b59e200b7e12fc2ce4eef85f94653bde0a",
+      "class_hash": "0x5a18591a0ca7aa0fc7ad34a831f86f95fe99977edbd13497a15fb4bdb26c418",
       "tag": "s1_eternum-QuantityTracker",
       "selector": "0x5f336941c172ea1a837a1c82d98ff802817688e6e5f66a32ac3a9ff320cfb18"
     },
     {
       "members": [],
-      "class_hash": "0x75098ac4cf3dce78fc9a4be6e75eeb0f2cc72ff025954e4e4f078b27ad1f890",
+      "class_hash": "0x220e760c8ef848fdb9a71b9554099788b073afbf6f7d9aeaa4c54c5206444e2",
       "tag": "s1_eternum-Quest",
       "selector": "0x5748c683cbda725287adb63a5b5c7c471d1d782f2779609d4f66efeda03ff68"
     },
     {
       "members": [],
-      "class_hash": "0x3a865db69e93be17f747ee1bf582847e42db4131344ff9492373be11efc8b83",
+      "class_hash": "0xfba2af473ca4fcc01ffa9cbf296853dfd29b7e0c1021f8f33c7063de19d4f6",
       "tag": "s1_eternum-QuestFeatureFlag",
       "selector": "0x54be5e8db46958f90ec8993939fa018995e419e009dc405f34518bb13c9bb32"
     },
     {
       "members": [],
-      "class_hash": "0x7ce458b7859b18bd0339fe5100f9b3b03ead70b8f3934f038d6f1ab24d5235e",
+      "class_hash": "0x6060aaec4248baf1c80e461bc649a31718cc05645a08dd65306e676e611c88a",
       "tag": "s1_eternum-QuestGameRegistry",
       "selector": "0x4affdc964f92a9263def6bd613b7559bef2092d4bb0d87ee70f0c5146d58739"
     },
     {
       "members": [],
-      "class_hash": "0x7b129d4d79e46ebc6e64ec4f44eda7441ebfb1e926c3c90b59a2785ff143871",
+      "class_hash": "0x4f0db39e86c173d261aaab7148b0c62b1a174d42b8e49f658ae0e91caf6a37f",
       "tag": "s1_eternum-QuestLevels",
       "selector": "0x51d8be9e564f646d370cb845c085087b55bff0301b9cf009f9360655ba5cf81"
     },
     {
       "members": [],
-      "class_hash": "0x29ed7cb765f43e04c78d2ae2cad488e6bf2e0fecd61bba7ca366ca2debbc46b",
+      "class_hash": "0x7f50dea6a7e52899b3d87a5b6930fdc373427c9126ac9a46bdbf5ecb8bd6ad",
       "tag": "s1_eternum-QuestRegistrations",
       "selector": "0x5bc94c6394a4cade60bfa2a36ce745d9495aa1f4042ff905c4368d1fff5d74c"
     },
     {
       "members": [],
-      "class_hash": "0xefd2208b927824bf6d4604bc7911e49c42f5145e5d18bc2cbb62f478bf1e76",
+      "class_hash": "0x7d8266a10609b6106285c404030576afbdb0b43f45bb3688e11ab2ec88ce524",
       "tag": "s1_eternum-QuestTile",
       "selector": "0x61f4cba350928998cf98d6fafef2b9c7da216ef013195f85c41b0f3e0d8a370"
     },
     {
       "members": [],
-      "class_hash": "0x1e926a734ac06b80abfb1c5a3f1c6c038140a7fe4f9a8c1c6577c8443d9a52c",
+      "class_hash": "0x7b88962dd5699828e55dac453101ecc7f88dbf7812e39d8c7613075914e609c",
       "tag": "s1_eternum-RankPrize",
       "selector": "0x29f7a0b33bee82d4fb19480c2a5ae36cbd1a42dbda0cabd81374bd1952f77a1"
     },
     {
       "members": [],
-      "class_hash": "0x29159c485ec249b53605f0b03a73e20ba08c2aa9fd71ce061b03eff88972472",
+      "class_hash": "0x630359be8354873d832c75d1eac70677e504e199e036bf93ee96779002d9bd1",
       "tag": "s1_eternum-Resource",
       "selector": "0x6bd14dc16a7f05252fcf2fb66630b8f05d39d75b36f55013334a4b3bb8fec57"
     },
     {
       "members": [],
-      "class_hash": "0x1dc70cc5a8e4a5b691a43d640b300a1b0c0aee9b5de1a8c08d41cecbf755ef6",
+      "class_hash": "0x177f9fde79d4716a446c67342d942041307306ee976d07b155efecf05aedfba",
       "tag": "s1_eternum-ResourceAllowance",
       "selector": "0xf21a6f41bed8651cea6e86ea4d796e7c2be9e0e798b48b971b82f489e68a3d"
     },
     {
       "members": [],
-      "class_hash": "0x5394108f4e3b6c17889eed2bcc60a71003f8ac8b982e72d3f22a5a705bc52cb",
+      "class_hash": "0x1cb5769a19f113f52bc2bb33db82ef1c344ee3f9b6648382f7cb96c55617f1b",
       "tag": "s1_eternum-ResourceArrival",
       "selector": "0x5c2225e33b8ee991f140721b0830360ed3103263c191e6880edd86011faf3e8"
     },
     {
       "members": [],
-      "class_hash": "0x756dfde8dff09a86732111f9c103483bfbd8f13e29c978bd7d5592fe8f540c1",
+      "class_hash": "0x6fe9685d7a4c9c90ffeee71dad6cd6fb8c3434e584e4281efb22ac2b6ef4416",
       "tag": "s1_eternum-ResourceBridgeWtlConfig",
       "selector": "0x931c1552285a550939611c9693caaa490926804e6b586771f411c893d74d7a"
     },
     {
       "members": [],
-      "class_hash": "0x24acfcebe199d7ece686cf9bb1e394cd4ab8a112e234f712cc8874a0513c8c2",
+      "class_hash": "0x7bf714915c3180f549886ef2c0dfe8c4cc843ddc6eefefec86d7a47697c1bd6",
       "tag": "s1_eternum-ResourceFactoryConfig",
       "selector": "0xadf4631a88b08d514ef767cfcec55f85ec9fb9bdd4392e441763958bdf612c"
     },
     {
       "members": [],
-      "class_hash": "0x92292baab7da14502c897c99a0b899e86dfbc055818b14071bb9864b2644ca",
+      "class_hash": "0x65a1a86e52f9f36b426e6f1b15569b2485d4c2906437b50c4c1f902afce9f38",
       "tag": "s1_eternum-ResourceList",
       "selector": "0x644963f1cd303a578dcf600e9f63b2149323097a827d0db46378260fc12fd44"
     },
     {
       "members": [],
-      "class_hash": "0x444a76847ed3dba25cc4358f41ae9f4cae4056539d312088710622add8a8caa",
+      "class_hash": "0x77bc1085b248d66ecb173b8620630aa4ac8f09571264c2d6289bc5697cfbdb6",
       "tag": "s1_eternum-ResourceMinMaxList",
       "selector": "0x1a425d4fc8a02c21517dc93678c528f2b6feda411e2862b354019ca5172de35"
     },
     {
       "members": [],
-      "class_hash": "0x62d720b28bee8ac2ce4c601756e1e17e838810d1d77ff6c6313a4669010065a",
+      "class_hash": "0x79e36a0f47574eb50b1cdfc5ac652b4b351a71bf06a0eda2066f0143f32ce3e",
       "tag": "s1_eternum-ResourceRevBridgeWtlConfig",
       "selector": "0x5232941d64c9d433f0ab9a22f467ace827c3ded38a1dc1ae22c8d2a40973284"
     },
     {
       "members": [],
-      "class_hash": "0x2908d08ace14ff230e9f8c893453129146fb6d9ac25e1c981dc103a227b826e",
+      "class_hash": "0x474ab889cac5391507fc3511d1757e2e2f0b1ca5b495cff327acf956b495501",
       "tag": "s1_eternum-SeasonPrize",
       "selector": "0x52494c495c466f56b0712ded319bb8d6d782e702493101057a8e093f024a368"
     },
     {
       "members": [],
-      "class_hash": "0x31a3ab0744ad05e950f315436b59306a47cedf7cd08eec411651d3e7d70ce45",
+      "class_hash": "0x7b60e328da8dd526c00892ccb5a87af45dc33e007ae1a7c3d26c502ca3ecf39",
+      "tag": "s1_eternum-SeriesChestRewardState",
+      "selector": "0x723666c48a656aa56b524d02ca4463d163b7e2e7ed9eff693d658b537508efa"
+    },
+    {
+      "members": [],
+      "class_hash": "0x28c45b98f95029f8b80505e9e709934beae93c34bfe695227298dc61be6a4ad",
       "tag": "s1_eternum-Structure",
       "selector": "0x3b407b0e3490f7044ce3870614a93f2a0fcbec02710f0975bfdb6c28fdfbecc"
     },
     {
       "members": [],
-      "class_hash": "0x7222646838e7bb4f28cddfded99de8683390d2ce27fe994988d770b9e34216b",
+      "class_hash": "0x2a1c9a94c683409242c5469dbb15bfab516c06745642356a4ae92f64841b487",
       "tag": "s1_eternum-StructureBuildings",
       "selector": "0x5e917975e7957932cf7c52fd5c0ee447ed413e0e39f9ab7fc92cd0a57a6fb9"
     },
     {
       "members": [],
-      "class_hash": "0x71749069b90d8a0a92030a707d31813ab8a2656dbbe32ebe1dc2c1b3c81cccb",
+      "class_hash": "0x2775627587a793f0083ec847c58105059b457f947ca530eaf81423937bb6cbe",
       "tag": "s1_eternum-StructureLevelConfig",
       "selector": "0x7f6fed1579394a741a2796f415fb2acc0360e9424dcc284f6205b6e255e5a12"
     },
     {
       "members": [],
-      "class_hash": "0x2c49b2679c86929bef3c13a802179e1644cfc69375246ff9083c164e021a4f",
+      "class_hash": "0x78daffdfc9003115e1a1509b390b0ead55ba7cf758a4e657a0a570c7401cfb0",
       "tag": "s1_eternum-StructureOwnerStats",
       "selector": "0x1d52c8d6f2bdc7f57662f1790b92a4900fe725cc3e8277418acdde65bb1cd5b"
     },
     {
       "members": [],
-      "class_hash": "0x8a90ca1a208f21aae559b0246010b0eff3518bf32ad163697b894e22498",
+      "class_hash": "0x1a68feda190bc61f6fefdec19a29a5d5f1d4fd6acb568806fbcf4564fe36aaf",
       "tag": "s1_eternum-StructureReservation",
       "selector": "0x34cc8f5f0dee3ca4503076679b9be23ba6782a15c6920ef0ecd7dadd70d297e"
     },
     {
       "members": [],
-      "class_hash": "0x71a046719c9483c87ba2ab3ebc5e404ad83c303ff8c52601be563acf25e0983",
+      "class_hash": "0x54f13f965a290e7b2d4da3d7580416db0ace7848eccdb7e6b5491dd436291a3",
       "tag": "s1_eternum-StructureVillageSlots",
       "selector": "0x60ced96a6248196ca67650c7943d5248807119bcf12ba7f2f90af7983c1a74a"
     },
     {
       "members": [],
-      "class_hash": "0x54b9edb8cbbb807a332d87d3457af58983f20f3c6239d53e17e3e35274e7f26",
+      "class_hash": "0x3f3647caf26c7600760db04c582e367d5bc503560ae60b3ed53c0531388a658",
       "tag": "s1_eternum-Tile",
       "selector": "0x66c306156fe0c5b2785192d61977ac8475e3cb3dbc5d68f5547ade25fe1f4f2"
     },
     {
       "members": [],
-      "class_hash": "0x1e5fa89e51be3dbfe35a57ae0f91c1099b32deb37cdb1967926525dea2e691a",
+      "class_hash": "0x1abcf92908f94b80c50f817c8dc722715a2b36d727c427edcb7904b9c4b494d",
       "tag": "s1_eternum-Trade",
       "selector": "0x6ddb8e334e9c33541fce1e72774d6c43c1057a1057a570f2eb12426f51291"
     },
     {
       "members": [],
-      "class_hash": "0x72e61d47622d9e50d2b43d7416292597201ab11125fa6988b75fb3835a2fab7",
+      "class_hash": "0x176c3e5f6da311914c11db63551eafef500733d8aa3311ac00cb046a8e7b60f",
       "tag": "s1_eternum-TradeCount",
       "selector": "0x454de0d29f67030d03a3ce195f437e388cda3f6b9a894e2aab9a5a81d06636"
     },
     {
       "members": [],
-      "class_hash": "0x86f6b0404f664698b038a5ab3180ff4df56946a21cf99c76e041be62b7732d",
+      "class_hash": "0x3bc2ea205d105a162a2fff19b15c51245357116f62b25d863629195f99a9b4",
       "tag": "s1_eternum-WeightConfig",
       "selector": "0x1198553c941fe946e251e66c8f4f3177f44e59e56ac455dbc269557b7ae4d81"
     },
     {
       "members": [],
-      "class_hash": "0x786bd65de973ef608cbe8ca1953e8cc4c2e1aef07a227924949c4fce04df2a5",
+      "class_hash": "0x57f5f3be1fdd32599b849a7207a2631e8107e1709ccdf832b07f55fb313f9a0",
       "tag": "s1_eternum-Wonder",
       "selector": "0x2a78e143b8a02f332d940ed8f0432242f17b891ad1ae5e53a813fbdb1cf3b0c"
     },
     {
       "members": [],
-      "class_hash": "0x598874d5b65a96d016e95475d6862991a59e7e3f44d3541dc0a4b3b564162b",
+      "class_hash": "0x6a69627906cea15a6d550eae59aa8e861f019749240b146e0c570f7ba058ac5",
       "tag": "s1_eternum-WorldConfig",
       "selector": "0x6212a03a10506a6661b44a6685e9d2978709dfdfc8de36fe93d947b939f200a"
     },
     {
       "members": [],
-      "class_hash": "0xa3acc4f354dd81ba9a47f35c6e6486967c89bd5eff82dda77d2e7fd926e9b2",
+      "class_hash": "0x4cae81fdd6f7d630710bebb5f0b290b9eb5c512e5d30cb0930c308ab6d3bbdb",
       "tag": "s1_eternum-WorldRecord",
       "selector": "0x5552db17f364593e8325cad73660bba16b27bbde7413f2b5dc2ae1aff7bf6e1"
     }
@@ -15447,115 +15589,115 @@
   "events": [
     {
       "members": [],
-      "class_hash": "0x5151fdbe3085872e6b7b1aa4a0bc1d0d19afcca0c0916b65104cb5f040e4e4",
+      "class_hash": "0x7f822a50a87e33a8417dea0791adf79f1bd90d786b996cb782da3134592da31",
       "tag": "s1_eternum-AcceptOrder",
       "selector": "0x30b1df6433db61c4a92580a1630c9e5126b5c82be28123a06b62f808ecd522"
     },
     {
       "members": [],
-      "class_hash": "0xbe40b6dd7e89ac98954cc3360123247ffc5a23417c7abbc32a6b044faafa1a",
+      "class_hash": "0x719ba05ff4ee821e6b110f49e77ae93005154ca0152f958830e3c44bd79c492",
       "tag": "s1_eternum-AgentCreatedEvent",
       "selector": "0x4843fbb65c717bb5ece80d635a568aa1c688f880f0519e3de18bf3bae89abf8"
     },
     {
       "members": [],
-      "class_hash": "0x3f05ca73f095d98a037e13850301c12f1878faca67b6ed6b6589ae56c38d84e",
+      "class_hash": "0x72f04a1f8aab2463429e81005d2f751d57bc28928b76e363c9894f0c3291419",
       "tag": "s1_eternum-BattleEvent",
       "selector": "0x5b576ae0561754ac01a5f26e47e72dc3ff073142585dcb5094445cb5532d2f5"
     },
     {
       "members": [],
-      "class_hash": "0x15002d58bcc11f96aec2f27d7cba5d274d5b88e12c4fc6ffc273c8bbe9ee4f8",
+      "class_hash": "0x3f57cb815400ca6f8125e8d7e0067c4e7074fbd57f340e4b6d87fa2cc35146e",
       "tag": "s1_eternum-BlitzRegistrationEvent",
       "selector": "0x25fc8ab9cb74bc43a28965993246723101f1e29ccec761bfc21dd12fb7816d2"
     },
     {
       "members": [],
-      "class_hash": "0x165c8f535c5a634fb0c269984fb94a21b70da7992ce3f0bc0b60ad8ce72d79e",
+      "class_hash": "0x728c483428e26f43785a79bf6a3c59fe1ee106b814c054ed55edbb8b2690b47",
       "tag": "s1_eternum-BurnDonkey",
       "selector": "0x4a1aac57c8cb6ec732bd40283fd1a892987d708a6b8a7d3a4dd65da6f0e7700"
     },
     {
       "members": [],
-      "class_hash": "0x79ec20c69252b375bf2a0534bbd7630bf34590e5bb3d78515e082592ea75815",
+      "class_hash": "0x374b2d592e13ddee55499d64e923bb13bd848f223682256bec9419335a59d82",
       "tag": "s1_eternum-CancelOrder",
       "selector": "0x1a522313c76bbf3297f8527f95976169c4269831fe8b337f3d19ff0fccb8c87"
     },
     {
       "members": [],
-      "class_hash": "0x2154d57ccbfb622712a5119a4bc225a1ea08a405f33bc884f49991424a0c734",
+      "class_hash": "0x742854cd8d2754f92b4f9483b43e90a4d7bf9695749ad0dfe4a3d4b156dcec",
       "tag": "s1_eternum-CreateOrder",
       "selector": "0x10edec58284a982448a15b0f37a3abc65944a16091efed6a39389b5064a6319"
     },
     {
       "members": [],
-      "class_hash": "0x345744a62597d688189488ddec88c1bab112e0bf6573fec8b6f719cb79b47c8",
+      "class_hash": "0x2ed29a3a820d0c674879ab48aecdc353568f2123c0577ed01f55079d22d7be2",
       "tag": "s1_eternum-ExplicitResourceBurn",
       "selector": "0x7d2a21953851db68ba009a2ffcd952dbb586bc2c50780b99264d238a3a3943f"
     },
     {
       "members": [],
-      "class_hash": "0x5d74107b60e1114b5b391c4688b350744a03c405e46e96f46140915a8d4265d",
+      "class_hash": "0x740ee0ce14441d29929b97f06a666430c3526391eddec2d9c788718584f560a",
       "tag": "s1_eternum-ExplorerMoveEvent",
       "selector": "0x771febd17a135066bdc92bc5cd00e8f07b39bb0e8501141c2c67e4a5287b4e9"
     },
     {
       "members": [],
-      "class_hash": "0x46546273367ded263f81d118735e5630f694e781a52f2edd508c904f1037de8",
+      "class_hash": "0x4f83d1cf2e71606e9fc8de0032a65bed0ae60d4b7b98b718f8119357891761b",
       "tag": "s1_eternum-ExplorerNewRaidEvent",
       "selector": "0x46d3b67bf9064e701e812b922f1bb4598603be7765b91d93ae562a2cd2f1afb"
     },
     {
       "members": [],
-      "class_hash": "0x18ddf0a98257272926aefd818071390683187f8b11a14b44c76fd4bbfb1eb73",
+      "class_hash": "0x41380e273fe83f86669863a1cee5f2f482cd2941f622924ced0f9477c2613bc",
       "tag": "s1_eternum-ExplorerRaidEvent",
       "selector": "0x524ff0171e1bb2aaf232b86a14fcf1f3dc78c1149bab1e87ead801ba9203c0a"
     },
     {
       "members": [],
-      "class_hash": "0x17a71db792c9215174bbab47bcb22b368495575ba1490e0b99e29e5b3b929f5",
+      "class_hash": "0x774fec357f88631ef2eef1a83c6ee7f8218a70e733204b5fce8b413ed10924",
       "tag": "s1_eternum-LiquidityEvent",
       "selector": "0x4e19f323259ff883daf1f685cfb94306159cde4c8cb46155a290a9b9c91df8c"
     },
     {
       "members": [],
-      "class_hash": "0x27c57e686e02efe5856c65fa0606f1d075f5bf05c921886187c88db21320b84",
+      "class_hash": "0x35565e4d7c58ec7c9ff5310895dd27e115407f2f1ba2d620e7b15201b09d80f",
       "tag": "s1_eternum-OpenRelicChestEvent",
       "selector": "0x2c6e059401fe3c02f6ab3d716c01567a3cfddb4ccf7b6cdc699724d9246fda0"
     },
     {
       "members": [],
-      "class_hash": "0x5df4d134e29032a280f19903170c70ebde84b7cf8d708f42c6b38f49d2f5f62",
+      "class_hash": "0x199137979a0c882250de522ad33e2ccea6df4eddf81be55b0ff98d7f4278244",
       "tag": "s1_eternum-SeasonEnded",
       "selector": "0x664d87c93359af52b6c622949d8b545e42ba56803dbb6a91718aba120904d3c"
     },
     {
       "members": [],
-      "class_hash": "0x47759bfa4a230565459875ddb225c7de7164179d4c02e358c5d613967511a55",
+      "class_hash": "0x4dddb843b0f78f4b7192181f9a9ab612b3d0c39abb371a456de443f3dd1bb88",
       "tag": "s1_eternum-StoryEvent",
       "selector": "0x6b9bb187e0946522eb890cc2148826a81a2030e8a34dbc5607ee6dfdda50dd8"
     },
     {
       "members": [],
-      "class_hash": "0x19f09d55d2f38d5ccadf40538d039f5b9a8a529fc8a90a51a2423039ebc6317",
+      "class_hash": "0x2170ee1993e64f067398fb2021e0dad51a17f3541db4f2443e1924d730fcdfd",
       "tag": "s1_eternum-SwapEvent",
       "selector": "0x1f926fcf957ccc9852cfb520498d1eac5512f8e710ffd77db1b1fcad55bfbee"
     },
     {
       "members": [],
-      "class_hash": "0x1d3b126b07bbf78ff41c04346b2aa63de20ab195231777495cbb3367b91859d",
+      "class_hash": "0x3b896a91437d5197528b19b068d2650b7f13a3594a0b6faec3d675d3de908fa",
       "tag": "s1_eternum-Transfer",
       "selector": "0x51c9cda93a0b9735874f08742333f5d601bee76457f1565f608075666678ee3"
     },
     {
       "members": [],
-      "class_hash": "0x6a1e8656fb239499aac98fa6ae26f12b5bcb19beeb1c03c7f52da2ecdfa98db",
+      "class_hash": "0x21c8f9729d91b7e385218f5d396e084137b13144227b2b53060ee7c3c72e24a",
       "tag": "s1_eternum-TrophyCreation",
       "selector": "0x730009ea3268cc71709a37a164c9ce9ca00430d63d571ad16b5b72c3f51bc9a"
     },
     {
       "members": [],
-      "class_hash": "0xc04ad52992b65d8404d629e17df64cdb425933dfa522c17ab63f9d757a3b9",
+      "class_hash": "0x10a76e791a65a86a40e9b10d175104e370746e6ad2c57a658d17468a73f403d",
       "tag": "s1_eternum-TrophyProgression",
       "selector": "0x198e5fb446b41882f55a08f8baaba4387f41637ca140b0084459ce5338f617d"
     }

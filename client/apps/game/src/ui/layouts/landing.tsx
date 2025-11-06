@@ -1,8 +1,10 @@
 import clsx from "clsx";
 import type { TransitionEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { LANDING_BACKGROUNDS } from "./landing-backgrounds";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { BlankOverlayContainer } from "../shared/containers/blank-overlay-container";
 
 interface LandingLayoutProps {
   backgroundImage: string;
@@ -163,6 +165,8 @@ export const LandingLayout = ({ backgroundImage, backgroundVideo }: LandingLayou
       </div>
 
       <div className="relative z-10 flex min-h-screen flex-col">
+        {/* Global modal container for landing routes */}
+        <LandingModalHost />
         <header className="flex flex-col gap-6 px-6 pt-0 lg:px-10">
           <nav aria-label="Landing sections" className="flex justify-center">
             <div className="relative flex w-full max-w-[720px] justify-center px-2 sm:px-4">
@@ -201,5 +205,37 @@ export const LandingLayout = ({ backgroundImage, backgroundVideo }: LandingLayou
         </main>
       </div>
     </div>
+  );
+};
+
+const LandingModalHost = () => {
+  const showModal = useUIStore((state) => state.showModal);
+  const modalContent = useUIStore((state) => state.modalContent);
+  const toggleModal = useUIStore((state) => state.toggleModal);
+
+  const onOverlayDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (e.target === e.currentTarget) toggleModal(null);
+    },
+    [toggleModal],
+  );
+
+  useEffect(() => {
+    if (!showModal) return;
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key === "Escape") {
+        ev.stopPropagation();
+        ev.preventDefault();
+        toggleModal(null);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showModal, toggleModal]);
+
+  return (
+    <BlankOverlayContainer zIndex={120} open={showModal} onPointerDown={onOverlayDown}>
+      {modalContent}
+    </BlankOverlayContainer>
   );
 };

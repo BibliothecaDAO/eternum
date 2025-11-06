@@ -376,16 +376,16 @@ Things to note:
 trait IBuildingContract<TContractState> {
     fn create(
         entity_id: ID,
-        building_coord: s1_eternum::models::position::Coord,
-        building_category: s1_eternum::models::resource::production::building::BuildingCategory,
+        building_coord: crate::models::position::Coord,
+        building_category: crate::models::resource::production::building::BuildingCategory,
         produce_resource_type: Option<u8>
     );
 }
 
 #[dojo::contract]
 mod production_systems {
-    use s1_eternum::alias::ID;
-    use s1_eternum::models::{
+    use crate::alias::ID;
+    use crate::models::{
         resource::resource::{Resource, ResourceCost}, owner::Owner, hyperstructure::HyperStructure,
         order::Orders, position::{Coord, Position, PositionTrait, Direction},
         buildings::{BuildingCategory, Building, BuildingImpl},

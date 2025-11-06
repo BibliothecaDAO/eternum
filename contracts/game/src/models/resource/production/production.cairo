@@ -4,18 +4,18 @@ use core::option::OptionTrait;
 use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
-use s1_eternum::alias::ID;
-use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
-use s1_eternum::models::config::{ResourceFactoryConfig, TickImpl, TickTrait};
-use s1_eternum::models::events::{ProductionStory, Story, StoryEvent};
-use s1_eternum::models::resource::resource::{
+use crate::alias::ID;
+use crate::constants::{RESOURCE_PRECISION, ResourceTypes};
+use crate::models::config::{ResourceFactoryConfig, TickImpl, TickTrait};
+use crate::models::events::{ProductionStory, Story, StoryEvent};
+use crate::models::resource::resource::{
     ResourceList, ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl,
     StructureSingleResourceFoodImpl, TroopResourceImpl, WeightStoreImpl,
 };
-use s1_eternum::models::structure::{StructureImpl, StructureOwnerStoreImpl};
-use s1_eternum::models::weight::Weight;
-use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
-use s1_eternum::utils::math::{PercentageValueImpl, min};
+use crate::models::structure::{StructureImpl, StructureOwnerStoreImpl};
+use crate::models::weight::Weight;
+use crate::utils::achievements::index::{AchievementTrait, Tasks};
+use crate::utils::math::{PercentageValueImpl, min};
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
