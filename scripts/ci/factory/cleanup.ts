@@ -2,6 +2,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { spawnSync } from "node:child_process";
+import { readArchive, writeArchive, calldataDir } from "./io.ts";
 
 interface Params {
   chain: string;
@@ -14,16 +15,7 @@ const repoRoot = path.resolve(__dirname ?? import.meta.dir, "../../../");
 const ts = () => new Date().toISOString().split("T")[1].replace("Z", "Z");
 const log = (m: string) => console.log(`[${ts()}] ${m}`);
 
-function readDeployment(chain: string): any[] {
-  const file = path.join(repoRoot, `contracts/game/factory/${chain}/deployment.json`);
-  try { return JSON.parse(fs.readFileSync(file, "utf8")); } catch { return []; }
-}
-
-function writeDeployment(chain: string, s: any[]) {
-  const dir = path.join(repoRoot, `contracts/game/factory/${chain}`);
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, `deployment.json`), JSON.stringify(s, null, 2));
-}
+// read/write of archive handled via shared io.ts helpers
 
 function slotDeleteTorii(projectName: string): { ok: boolean; code: number; out: string } {
   // Prefer the short form alias `slot d delete <project> torii -f`
@@ -39,42 +31,48 @@ function slotDeleteTorii(projectName: string): { ok: boolean; code: number; out:
 
 export async function cleanupOrchestrator(p: Params) {
   const chain = p.chain;
-  const cutoff = Math.floor(Date.now() / 1000) - p.retentionHours * 3600;
-  const state = readDeployment(chain);
-  if (!Array.isArray(state) || state.length === 0) {
-    log(`No deployments found for chain=${chain}`);
+  // Perform deletion using the archive (old-deployments.json) as the source of truth.
+  // Archiving of past deployments is handled by the maintain script.
+  const archive = readArchive(chain);
+  if (!Array.isArray(archive) || archive.length === 0) {
+    log("Nothing in old-deployments.json to cleanup.");
     return;
   }
-  const targets = p.deleteAll ? state : state.filter((e) => Number(e?.slotTimestamp) > 0 && Number(e.slotTimestamp) <= cutoff);
-  if (targets.length === 0) { log("No entries to delete."); return; }
 
-  log(p.deleteAll
-    ? `Found ${targets.length} entries to delete (delete-all).`
-    : `Found ${targets.length} stale entries (<= ${p.retentionHours}h ago).`);
-  const toRemove: any[] = [];
-  for (const entry of targets) {
+  log(`Cleaning up ${archive.length} archived entries from old-deployments.json`);
+  const successfullyDeleted: any[] = [];
+  for (const entry of archive) {
     const name = entry?.name as string;
     if (!name) continue;
     const del = slotDeleteTorii(name);
     log(`slot delete ${name} -> ${del.ok ? "OK" : "FAIL"} (code=${del.code})`);
-    if (del.ok) toRemove.push(entry);
+    if (del.ok) successfullyDeleted.push(entry);
   }
-  const removeSet = new Set(toRemove.map((e) => e));
-  const keep = state.filter((e) => !removeSet.has(e));
-  writeDeployment(chain, keep);
-  // Wipe calldata folders for successfully removed worlds
-  for (const entry of toRemove) {
-    const name = entry?.name as string;
-    if (!name) continue;
-    const dir = path.join(repoRoot, `contracts/game/factory/${chain}/calldata/${name}`);
-    try {
-      fs.rmSync(dir, { recursive: true, force: true });
-      log(`Removed calldata directory: ${dir}`);
-    } catch (err: any) {
-      log(`Failed to remove calldata for ${name}: ${err?.message || String(err)}`);
+
+  // Remove successfully deleted from archive
+  if (successfullyDeleted.length > 0) {
+    const successSet = new Set(successfullyDeleted.map((e) => e));
+    const remaining = archive.filter((e) => !successSet.has(e));
+    writeArchive(chain, remaining);
+
+    // Wipe calldata folders for successfully removed worlds
+    for (const entry of successfullyDeleted) {
+      const name = entry?.name as string;
+      if (!name) continue;
+      const dir = calldataDir(chain, name);
+      try {
+        fs.rmSync(dir, { recursive: true, force: true });
+        log(`Removed calldata directory: ${dir}`);
+      } catch (err: any) {
+        log(`Failed to remove calldata for ${name}: ${err?.message || String(err)}`);
+      }
     }
   }
-  log(`Cleanup done. Removed ${toRemove.length} entries; remaining ${keep.length}.`);
+
+  log(
+    `Cleanup done. Deleted ${successfullyDeleted.length} archived entries; ` +
+      `${readArchive(chain).length} archived remain.`,
+  );
 }
 
 // Allow running directly with Bun
@@ -96,4 +94,3 @@ if (import.meta.main) {
     process.exit(1);
   });
 }
-

@@ -4,6 +4,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { generateWorldConfigCalldata } from "./config-calldata.ts";
 import { generateFactoryCalldata } from "./factory-calldata.ts";
+import { readDeployment, writeDeployment, readArchive, writeArchive } from "./io.ts";
 
 interface Params {
   chain: string;
@@ -61,15 +62,7 @@ function slotsUTC(): number[] {
   return out;
 }
 
-function readState(chain: string): any[] {
-  const primary = path.join(repoRoot, `contracts/game/factory/${chain}/deployment.json`);
-  try { return JSON.parse(fs.readFileSync(primary, "utf8")); } catch {}
-  return [];
-}
-function writeState(chain: string, s: any[]) {
-  const dir = path.join(repoRoot, `contracts/game/factory/${chain}`); fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, `deployment.json`), JSON.stringify(s, null, 2));
-}
+// read/write of deployment and archive state factored into io.ts
 
 function genName(): string {
   const WORDS = ["fire","wave","gale","mist","dawn","dusk","rain","snow","sand","clay","iron","gold","jade","ruby","opal","rush","flow","push","pull","burn","heal","grow","fade","rise","fall","soar","dive","gate","keep","tomb","fort","maze","peak","vale","cave","rift","void","shard","rune","bold","wild","vast","pure","dark","cold","warm","soft","hard","deep","high","true","myth","epic","sage","lore","fate","doom","fury","zeal","flux","echo","nova","apex"];
@@ -91,7 +84,23 @@ export async function maintainOrchestrator(p: Params) {
   if (!rpcUrl || !factory || !acct || !pk) {
     throw new Error("Missing rpcUrl/factoryAddress/accountAddress/privateKey for orchestrator maintenance");
   }
-  const state0 = readState(chain).filter((e) => e.slotTimestamp >= Math.floor(Date.now()/1000));
+  const nowEpoch = Math.floor(Date.now()/1000);
+  const existing = readDeployment(chain);
+  // Move past entries to the archive instead of silently dropping them
+  const past = existing.filter((e) => Number(e?.slotTimestamp) > 0 && Number(e.slotTimestamp) < nowEpoch);
+  if (past.length > 0) {
+    const archive = readArchive(chain);
+    const byName = new Map<string, any>(archive.map((e) => [e?.name as string, e]));
+    const toAppend = past
+      .filter((e) => e && e.name && !byName.has(e.name))
+      .map((e) => ({ ...e, archivedAt: nowEpoch }));
+    if (toAppend.length > 0) {
+      writeArchive(chain, [...archive, ...toAppend]);
+      log(`Archived ${toAppend.length} past entries to old-deployments.json`);
+    }
+  }
+  // Keep only future entries in the active state file
+  const state0 = existing.filter((e) => e.slotTimestamp >= nowEpoch);
   let state = state0;
   const upcoming = slotsUTC();
   log(`Orchestrator start | chain=${chain} target=${target}`);
@@ -108,7 +117,7 @@ export async function maintainOrchestrator(p: Params) {
   }
   log(`Top-up added: ${added}, total planned: ${state.length}`);
   state.sort((a, b) => a.slotTimestamp - b.slotTimestamp);
-  writeState(chain, state);
+  writeDeployment(chain, state);
 
   // Phase 1: Deploy all that need deploying
   log(`\n--- Phase 1: Deploy ---`);
@@ -138,7 +147,7 @@ export async function maintainOrchestrator(p: Params) {
       ...args,
     ]);
     log(`Deployed: tx=${depHash ?? '<unknown>'}`);
-    entry.deployed = true; writeState(chain, state);
+    entry.deployed = true; writeDeployment(chain, state);
   }
 
   // Phase 2: Configure all deployed worlds that need it
@@ -167,7 +176,7 @@ export async function maintainOrchestrator(p: Params) {
       ...payload,
     ], { outDir: path.join(repoRoot, `contracts/game/factory/${chain}/calldata/${name}`), label: "configure" });
     log(`Configured: tx=${cfgHash ?? '<unknown>'}`);
-    entry.configured = true; writeState(chain, state);
+    entry.configured = true; writeDeployment(chain, state);
   }
 
   // Phase 3: Create Torii for all configured worlds
@@ -189,7 +198,7 @@ export async function maintainOrchestrator(p: Params) {
     } else {
       log(`World ${name} | No world address found; skipping Torii`);
     }
-    entry.indexed = true; writeState(chain, state);
+    entry.indexed = true; writeDeployment(chain, state);
   }
   log(`\nSummary: total planned=${state.length}, deployed=${state.filter(e=>e.deployed).length}, configured=${state.filter(e=>e.configured).length}, indexed=${state.filter(e=>e.indexed).length}`);
 }

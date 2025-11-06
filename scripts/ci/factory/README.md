@@ -37,6 +37,10 @@ This folder contains the Bun/TypeScript CLI and helpers that automate deploying,
   - world_config_calls.sh: one-call-per-line helper
   - world_config_execute_multiline.sh: pretty wrapped execute script
   - world_address.txt: world address (if found via factory Torii)
+  
+- factory/<chain>/old-deployments.json
+  - Archive of removed worlds. Entries are moved here during cleanup (with `archivedAt` epoch seconds).
+  - The cleanup process uses this file as the source of truth for deletion retries and post-delete artifact pruning.
 
 ## Prereqs
 
@@ -79,11 +83,11 @@ This folder contains the Bun/TypeScript CLI and helpers that automate deploying,
 
 ## Cleanup Behavior
 
-- Default policy: remove worlds older than 10 hours (configurable with `--retention-hours`).
-- For each stale world:
-  - `slot d delete <world> torii -f` (idempotent: “not found” tolerated)
-  - Remove the entry from `deployment.json`
-  - Delete its `factory/<chain>/calldata/<world>` directory
+- Maintain archives past deployments by moving them from `deployment.json` to `old-deployments.json` (with `archivedAt`).
+- Cleanup uses `old-deployments.json` as the source of truth to perform deletions:
+  - Iterate every archived entry and run `slot d delete <world> torii -f` (idempotent; “not found” tolerated).
+  - On success, remove the entry from `old-deployments.json` and delete its `factory/<chain>/calldata/<world>` directory.
+  - Retries happen from the archive; `deployment.json` is not modified by the cleanup step.
 
 ## Workflows
 

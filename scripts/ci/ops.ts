@@ -3,10 +3,10 @@
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import process from "node:process";
-import { generateFactoryCalldata } from "./factory/factory-calldata.ts";
-import { generateWorldConfigCalldata } from "./factory/config-calldata.ts";
-import { maintainOrchestrator } from "./factory/maintain.ts";
 import { cleanupOrchestrator } from "./factory/cleanup.ts";
+import { generateWorldConfigCalldata } from "./factory/config-calldata.ts";
+import { generateFactoryCalldata } from "./factory/factory-calldata.ts";
+import { maintainOrchestrator } from "./factory/maintain.ts";
 
 function parseArgs(argv: string[]) {
   const out: Record<string, string> = {};
