@@ -26,6 +26,7 @@ import {
   GuardSlot,
   ID,
   resources,
+  StructureType,
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
@@ -33,6 +34,11 @@ import { getComponentValue } from "@dojoengine/recs";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import {
+  getStructureDefenseSlotLimit,
+  getUnlockedGuardSlots,
+  MAX_GUARD_SLOT_COUNT,
+} from "../../utils/defense-slot-utils";
 import { ActionFooter } from "./action-footer";
 import { ArmyTypeToggle } from "./army-type-toggle";
 import { DefenseSlotSelection } from "./defense-slot-selection";
@@ -142,6 +148,38 @@ export const UnifiedArmyCreationModal = ({
       ? getStructureName(structureComponent, isBlitz).name
       : undefined;
 
+  const structureCategory = structureBase?.category as StructureType | undefined;
+  const structureLevel = structureBase?.level ?? null;
+  const guardCapacityFromStructureRaw = structureBase?.troop_max_guard_count ?? null;
+  const guardCapacityFromStructure =
+    guardCapacityFromStructureRaw !== null && guardCapacityFromStructureRaw !== undefined
+      ? Number(guardCapacityFromStructureRaw)
+      : null;
+
+  const structureDefenseSlotLimit = useMemo(
+    () => getStructureDefenseSlotLimit(structureCategory, structureLevel),
+    [structureCategory, structureLevel],
+  );
+
+  const fallbackDefenseSlotLimit = maxDefenseSlots ?? MAX_GUARD_SLOT_COUNT;
+
+  const resolvedMaxDefenseSlots = useMemo(() => {
+    const candidates: number[] = [Math.max(0, fallbackDefenseSlotLimit)];
+
+    if (typeof guardCapacityFromStructure === "number" && Number.isFinite(guardCapacityFromStructure)) {
+      candidates.push(Math.max(0, guardCapacityFromStructure));
+    }
+
+    if (structureDefenseSlotLimit !== null && structureDefenseSlotLimit !== undefined) {
+      candidates.push(Math.max(0, structureDefenseSlotLimit));
+    }
+
+    return Math.min(...candidates);
+  }, [fallbackDefenseSlotLimit, guardCapacityFromStructure, structureDefenseSlotLimit]);
+
+  const availableGuardSlots = useMemo(() => getUnlockedGuardSlots(resolvedMaxDefenseSlots), [resolvedMaxDefenseSlots]);
+  const availableGuardSlotSet = useMemo(() => new Set(availableGuardSlots), [availableGuardSlots]);
+
   const explorers = useExplorersByStructure({
     structureEntityId: activeStructureId || 0,
   });
@@ -158,9 +196,11 @@ export const UnifiedArmyCreationModal = ({
   });
 
   const currentExplorersCount = explorers.length;
-  const currentGuardsCount = guardsData?.filter((guard) => guard.troops?.count && guard.troops.count > 0n).length || 0;
-  const maxExplorers = structureBase?.troop_max_explorer_count || 0;
-  const resolvedMaxDefenseSlots = structureBase?.troop_max_guard_count || maxDefenseSlots;
+  const currentGuardsCount =
+    guardsData?.filter(
+      (guard) => guard.troops?.count && guard.troops.count > 0n && availableGuardSlotSet.has(Number(guard.slot)),
+    ).length || 0;
+  const maxExplorers = Number(structureBase?.troop_max_explorer_count ?? 0);
 
   const canCreateAttackArmy = currentExplorersCount < maxExplorers;
   const canCreateDefenseArmy = currentGuardsCount < resolvedMaxDefenseSlots;
@@ -170,10 +210,14 @@ export const UnifiedArmyCreationModal = ({
   const guardsBySlot = useMemo(() => {
     const map = new Map<number, GuardSummary>();
     (guardsData ?? []).forEach((guard) => {
+      const numericSlot = Number(guard.slot);
+      if (!availableGuardSlotSet.has(numericSlot)) {
+        return;
+      }
       const troops = guard.troops;
       const count = troops && troops.count !== undefined ? divideByPrecision(Number(troops.count)) : undefined;
 
-      map.set(Number(guard.slot), {
+      map.set(numericSlot, {
         slot: guard.slot,
         troops: troops
           ? {
@@ -185,7 +229,7 @@ export const UnifiedArmyCreationModal = ({
       });
     });
     return map;
-  }, [guardsData]);
+  }, [guardsData, availableGuardSlotSet]);
 
   const selectedGuard = guardsBySlot.get(guardSlot);
   const selectedGuardCountValue = Number(selectedGuard?.troops?.count ?? 0);
@@ -206,6 +250,23 @@ export const UnifiedArmyCreationModal = ({
   const isDefenseSlotCreationBlocked = !isSelectedSlotOccupied && !canCreateDefenseArmy;
   const structureCoordX = structureBase?.coord_x;
   const structureCoordY = structureBase?.coord_y;
+
+  useEffect(() => {
+    if (armyType) {
+      return;
+    }
+
+    if (availableGuardSlots.length === 0) {
+      if (guardSlot !== 0) {
+        setGuardSlot(0);
+      }
+      return;
+    }
+
+    if (!availableGuardSlots.includes(guardSlot)) {
+      setGuardSlot(availableGuardSlots[availableGuardSlots.length - 1] ?? 0);
+    }
+  }, [armyType, availableGuardSlots, guardSlot]);
 
   useEffect(() => {
     setLoadedDirectionsStructureId(null);
@@ -358,7 +419,7 @@ export const UnifiedArmyCreationModal = ({
 
     const occupiedSlots = (guardsData ?? [])
       .map((guard) => Number(guard.slot))
-      .filter((slot) => Number.isInteger(slot) && slot >= 0);
+      .filter((slot) => Number.isInteger(slot) && slot >= 0 && availableGuardSlotSet.has(slot));
 
     if (!canCreateDefenseArmy) {
       if (occupiedSlots.length === 0) {
@@ -375,7 +436,7 @@ export const UnifiedArmyCreationModal = ({
         }
       }
     }
-  }, [armyType, guardsData, guardSlot, canCreateDefenseArmy]);
+  }, [armyType, guardsData, guardSlot, canCreateDefenseArmy, availableGuardSlotSet]);
 
   useEffect(() => {
     if (armyType || !selectedGuardCategory || !selectedGuardTier) {
@@ -414,6 +475,9 @@ export const UnifiedArmyCreationModal = ({
         }
         if (isDefenseSlotCreationBlocked) {
           throw new Error("No available defense slot for new troops");
+        }
+        if (!availableGuardSlotSet.has(guardSlot)) {
+          throw new Error("Selected defense slot is locked for this structure level");
         }
         await armyManager.addTroopsToGuard(
           account,
@@ -552,7 +616,12 @@ export const UnifiedArmyCreationModal = ({
   const handleArmyTypeSelect = (isAttack: boolean) => setArmyType(isAttack);
   const handleDirectionSelect = (newDirection: Direction) => setSelectedDirection(newDirection);
   const handleTroopSelect = (type: TroopType, tier: TroopTier) => setSelectedTroopCombo({ type, tier });
-  const handleGuardSlotSelect = (slot: number) => setGuardSlot(slot);
+  const handleGuardSlotSelect = (slot: number) => {
+    if (!availableGuardSlotSet.has(slot)) {
+      return;
+    }
+    setGuardSlot(slot);
+  };
   const handleTroopCountChange = (value: number) => setTroopCount(Math.max(0, Math.min(value, maxAffordable)));
   const handleStructureSelect = (newStructureId: number) => setSelectedStructureId(newStructureId);
 
@@ -605,6 +674,7 @@ export const UnifiedArmyCreationModal = ({
                 guardSlot={guardSlot}
                 maxDefenseSlots={resolvedMaxDefenseSlots}
                 guardsBySlot={guardsBySlot}
+                availableSlots={availableGuardSlots}
                 selectedTroopCombo={selectedTroopCombo}
                 canCreateDefenseArmy={canCreateDefenseArmy}
                 defenseSlotInfoMessage={defenseSlotInfoMessage}
