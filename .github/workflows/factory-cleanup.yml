@@ -26,7 +26,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: feat/factory-refactor
+          ref: blitz
           fetch-depth: 0
 
       - name: Install Slot CLI
