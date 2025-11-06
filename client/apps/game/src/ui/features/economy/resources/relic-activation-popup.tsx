@@ -2,18 +2,20 @@ import Button from "@/ui/design-system/atoms/button";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { BasePopup } from "@/ui/design-system/molecules/base-popup";
 import { getRecipientTypeColor, getRelicTypeColor } from "@/ui/design-system/molecules/relic-colors";
-import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { divideByPrecision } from "@bibliothecadao/eternum";
-import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
+import { ID, RelicRecipientType } from "@bibliothecadao/types";
+import React, { useState } from "react";
+
 import {
-  findResourceById,
-  getRelicInfo,
-  ID,
-  RELIC_COST_PER_LEVEL,
-  RelicRecipientType,
-  ResourcesIds,
-} from "@bibliothecadao/types";
-import React, { useMemo, useState } from "react";
+  isRelicCompatible,
+  useRelicEssenceStatus,
+  useRelicMetadata,
+} from "../../relics/hooks/use-relic-activation";
+import {
+  RelicEssenceRequirement,
+  RelicIncompatibilityNotice,
+  RelicSummary,
+} from "../../relics/components/relic-activation-shared";
 
 interface RelicActivationPopupProps {
   entityId: ID;
@@ -45,25 +47,9 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
   const removeRelicFromStore = useUIStore((state) => state.removeRelicFromEntity);
   const triggerRelicsRefresh = useUIStore((state) => state.triggerRelicsRefresh);
 
-  const relicInfo = useMemo(() => {
-    return getRelicInfo(relicId as ResourcesIds);
-  }, [relicId]);
-
-  const isCompatible = recipientType === relicInfo?.recipientType;
-
-  const resourceManager = useResourceManager(entityOwnerId);
-
-  const essenceCostPerLevel = RELIC_COST_PER_LEVEL[relicInfo?.level ?? 1];
-
-  const essenceBalance = useMemo(() => {
-    return divideByPrecision(Number(resourceManager.balance(ResourcesIds.Essence)));
-  }, [resourceManager]);
-
-  const hasEnoughEssence = essenceBalance >= BigInt(essenceCostPerLevel);
-
-  const resourceName = useMemo(() => {
-    return findResourceById(relicId)?.trait || "Unknown Relic";
-  }, [relicId]);
+  const { relicInfo, resourceName, resourceKey, essenceCost } = useRelicMetadata(relicId);
+  const { essenceBalance, hasEnoughEssence, missingEssence } = useRelicEssenceStatus(entityOwnerId, essenceCost);
+  const compatible = isRelicCompatible(relicInfo, recipientType);
 
   const handleConfirm = async () => {
     if (!relicInfo) {
@@ -77,11 +63,10 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
     }
 
     if (!hasEnoughEssence) {
-      setError(`Insufficient essence. Need ${essenceCostPerLevel}, have ${essenceBalance}`);
+      setError(`Insufficient essence. Need ${essenceCost}, have ${essenceBalance}`);
       return;
     }
 
-    // Check if apply_relic system call exists
     if (!systemCalls.apply_relic) {
       setError("Relic activation is not available yet");
       return;
@@ -91,8 +76,6 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
     setError(null);
 
     try {
-      // Use type assertion to bypass TypeScript checking until proper types are available
-      // recipient_type: 0 = Explorer, 1 = Structure (based on RelicRecipientTypeParam enum)
       const applyRelicCall = systemCalls.apply_relic({
         signer: account,
         entity_id: entityId,
@@ -124,7 +107,7 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
           Cancel
         </Button>
         <Button
-          disabled={isLoading || !!error || !isCompatible || !hasEnoughEssence}
+          disabled={isLoading || !!error || !compatible || !hasEnoughEssence}
           isLoading={isLoading}
           variant="gold"
           onClick={handleConfirm}
@@ -138,43 +121,26 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
 
   return (
     <BasePopup title="Activate Relic" onClose={onClose} footer={footer} contentClassName="">
-      <div className="flex flex-col items-center mb-6">
-        <ResourceIcon resource={ResourcesIds[relicId]} size="xl" withTooltip={false} />
-        <div className="mt-3 text-center">
-          <p className="text-lg font-semibold">{resourceName}</p>
-          <p className="text-sm text-gold/60">Available: {relicBalance}</p>
-        </div>
-      </div>
+      <RelicSummary
+        resourceKey={resourceKey}
+        title={resourceName}
+        subtitle={`Available: ${relicBalance}`}
+        layout="vertical"
+        iconSize="xl"
+        className="mb-6"
+      />
 
-      {/* Essence Cost Section */}
-      <div className="w-full mb-4 p-4 bg-dark-brown/30 rounded border border-gold/20">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-semibold text-gold/80">Activation Cost:</span>
-          <div className="flex items-center gap-2">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Essence]} size="sm" withTooltip={false} />
-            <span className="text-sm font-bold">{essenceCostPerLevel.toLocaleString()}</span>
-          </div>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-semibold text-gold/80">Your Balance:</span>
-          <div className="flex items-center gap-2">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Essence]} size="sm" withTooltip={false} />
-            <span className={`text-sm font-bold ${hasEnoughEssence ? "text-green-400" : "text-red-400"}`}>
-              {essenceBalance.toLocaleString()}
-            </span>
-          </div>
-        </div>
-        {!hasEnoughEssence && (
-          <div className="mt-2 p-2 bg-red-900/30 border border-red-600/40 rounded">
-            <p className="text-xs text-red-400 text-center font-semibold">
-              ⚠️ Not enough essence! Need {(essenceCostPerLevel - essenceBalance).toLocaleString()} more
-            </p>
-          </div>
-        )}
-      </div>
+      <RelicEssenceRequirement
+        className="mb-4"
+        essenceCost={essenceCost}
+        essenceBalance={essenceBalance}
+        missingEssence={missingEssence}
+        hasEnoughEssence={hasEnoughEssence}
+        balanceLabel="Your Balance"
+      />
 
       {relicInfo && (
-        <div className="w-full mb-6 p-4 bg-dark-brown/50 rounded">
+        <div className="w-full mb-6 rounded bg-dark-brown/50 p-4">
           <p className="text-sm font-semibold mb-2">{relicInfo.name}</p>
           <p className="text-xs text-gold/80 mb-2">
             {relicInfo.effect}
@@ -200,18 +166,14 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
         </div>
       )}
 
-      {!isCompatible && (
-        <div className="w-full p-3 bg-red-900/20 border border-red-600/30 rounded mb-4">
-          <p className="text-xs text-red-400 font-semibold text-center">
-            ⚠️ This relic cannot be activated by{" "}
-            {recipientType === RelicRecipientType.Explorer ? "explorers" : "structures"}
-          </p>
-          <p className="text-xs text-red-300 text-center mt-1">
-            {relicInfo?.recipientType} relics can only be activated by{" "}
-            {relicInfo?.recipientType === RelicRecipientType.Explorer ? "explorers" : "structures"}
-          </p>
-        </div>
+      {!compatible && (
+        <RelicIncompatibilityNotice
+          relicInfo={relicInfo}
+          recipientType={recipientType}
+          className="mb-4"
+        />
       )}
     </BasePopup>
   );
 };
+
