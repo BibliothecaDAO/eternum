@@ -31,15 +31,24 @@ const fmt = (epoch: number) => new Date(epoch * 1000).toISOString().replace(".00
 function sozo(args: string[], opts?: { label?: string; outDir?: string }) {
   const env = { ...process.env, SCARB: process.env.SCARB || "scarb" } as NodeJS.ProcessEnv;
   const fullArgs = ["execute", "--manifest-path", manifestFile, ...args];
-  // Emit exact command for CI diagnostics (safe in slot/test envs)
-  log(`[SOZO${opts?.label ? ` ${opts.label}` : ""}] sozo ${fullArgs.join(" ")}`);
+  // Emit exact command for CI diagnostics (redact private key)
+  const redactedArgs = (() => {
+    const out: string[] = [];
+    for (let i = 0; i < fullArgs.length; i++) {
+      out.push(fullArgs[i]);
+      if (fullArgs[i] === "--private-key" && i + 1 < fullArgs.length) {
+        // Replace the following token with a redacted placeholder
+        out.push("***REDACTED***");
+        i++; // skip original key
+      }
+    }
+    return out;
+  })();
+  log(`[SOZO${opts?.label ? ` ${opts.label}` : ""}] sozo ${redactedArgs.join(" ")}`);
   if (opts?.outDir) {
     try {
       fs.mkdirSync(opts.outDir, { recursive: true });
-      fs.writeFileSync(
-        path.join(opts.outDir, `sozo_${opts.label || "run"}_cmd.txt`),
-        `sozo ${fullArgs.join(" ")}`,
-      );
+      fs.writeFileSync(path.join(opts.outDir, `sozo_${opts.label || "run"}_cmd.txt`), `sozo ${redactedArgs.join(" ")}`);
     } catch {}
   }
   const res = spawnSync("sozo", fullArgs, {
@@ -133,9 +142,8 @@ export async function maintainOrchestrator(p: Params) {
   if (!rpcUrl || !factory || !acct || !pk) {
     throw new Error("Missing rpcUrl/factoryAddress/accountAddress/privateKey for orchestrator maintenance");
   }
-  // Trace credentials used (slot/test env)
+  // Trace credentials used (slot/test env) — do not log private key
   log(`[CREDENTIALS] account-address=${acct}`);
-  log(`[CREDENTIALS] private-key=${pk}`);
   log(`[CREDENTIALS] admin-address=${admin}`);
   const nowEpoch = Math.floor(Date.now()/1000);
   const existing = readDeployment(chain);
