@@ -23,10 +23,16 @@ import { cairoShortStringToFelt } from "@dojoengine/torii-wasm";
 import { useAccount, useCall } from "@starknet-react/core";
 import { motion } from "framer-motion";
 import { AlertCircle, Users } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import type { MouseEvent } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Abi, CallData, uint256 } from "starknet";
 import { env } from "../../../../../env";
 import { SpectateButton } from "./spectate-button";
+
+const REGISTRATION_TOKEN_DECIMALS = 18n;
+const REGISTRATION_TOKEN_FACTOR = 10n ** REGISTRATION_TOKEN_DECIMALS;
+
+const formatTokenAmount = (value: bigint) => (value / REGISTRATION_TOKEN_FACTOR).toString();
 
 const formatLocalDateTime = (timestamp: number): string => {
   const date = new Date(timestamp * 1000);
@@ -78,7 +84,12 @@ enum GameState {
 }
 
 // Countdown timer component
-const CountdownTimer = ({ targetTime, label }: { targetTime: number; label: string }) => {
+interface CountdownTimerProps {
+  targetTime: number;
+  label: string;
+}
+
+const CountdownTimer = memo(({ targetTime, label }: CountdownTimerProps) => {
   const [timeRemaining, setTimeRemaining] = useState<string>("");
 
   useEffect(() => {
@@ -99,62 +110,67 @@ const CountdownTimer = ({ targetTime, label }: { targetTime: number; label: stri
       <p className="text-2xl font-bold text-gold">{timeRemaining}</p>
     </div>
   );
-};
+});
+CountdownTimer.displayName = "CountdownTimer";
 
 // Player count display
-const PlayerCount = ({ count }: { count: number }) => {
+interface PlayerCountProps {
+  count: number;
+}
+
+const PlayerCount = memo(({ count }: PlayerCountProps) => {
   return (
     <div className="flex items-center justify-center gap-2 text-gold">
       <Users className="w-5 h-5" />
       <span className="text-lg font-semibold">{count} players registered</span>
     </div>
   );
-};
+});
+PlayerCount.displayName = "PlayerCount";
 
 // No game state component
-const NoGameState = ({
-  registrationStartAt,
-  registrationEndAt,
-  creationStartAt,
-  creationEndAt,
-  spectateDisabled,
-}: {
+interface NoGameStateProps {
   registrationStartAt: number;
   registrationEndAt: number;
   creationStartAt: number;
   creationEndAt: number;
   spectateDisabled: boolean;
-}) => {
-  const registrationDuration = registrationEndAt - registrationStartAt;
+}
 
-  const { setup } = useDojo();
-  const onSpectatorModeClick = useSpectatorModeClick(setup);
+const NoGameState = memo(
+  ({ registrationStartAt, registrationEndAt, creationStartAt, creationEndAt, spectateDisabled }: NoGameStateProps) => {
+    const registrationDuration = registrationEndAt - registrationStartAt;
 
-  return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 text-center">
-      <CountdownTimer targetTime={registrationStartAt} label="Registration starts in:" />
+    const { setup } = useDojo();
+    const onSpectatorModeClick = useSpectatorModeClick(setup);
 
-      <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 space-y-3">
-        <p className="text-sm text-gold/70">Upcoming Schedule:</p>
-        <div className="text-sm space-y-2">
-          <div>
-            <p className="text-gold font-bold">Registration Phase</p>
-            <p className="text-gold/60 text-xs">Starts: {formatLocalDateTime(registrationStartAt)}</p>
-            <p className="text-gold/60 text-xs">Duration: {formatTime(registrationDuration)}</p>
-          </div>
-          <div>
-            <p className="text-gold font-bold">Game Starts</p>
-            <p className="text-gold/50 text-xs">{formatLocalDateTime(creationStartAt)}</p>
+    return (
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 text-center">
+        <CountdownTimer targetTime={registrationStartAt} label="Registration starts in:" />
+
+        <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 space-y-3">
+          <p className="text-sm text-gold/70">Upcoming Schedule:</p>
+          <div className="text-sm space-y-2">
+            <div>
+              <p className="text-gold font-bold">Registration Phase</p>
+              <p className="text-gold/60 text-xs">Starts: {formatLocalDateTime(registrationStartAt)}</p>
+              <p className="text-gold/60 text-xs">Duration: {formatTime(registrationDuration)}</p>
+            </div>
+            <div>
+              <p className="text-gold font-bold">Game Starts</p>
+              <p className="text-gold/50 text-xs">{formatLocalDateTime(creationStartAt)}</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="pt-2">
-        <SpectateButton onClick={onSpectatorModeClick} disabled={spectateDisabled} />
-      </div>
-    </motion.div>
-  );
-};
+        <div className="pt-2">
+          <SpectateButton onClick={onSpectatorModeClick} disabled={spectateDisabled} />
+        </div>
+      </motion.div>
+    );
+  },
+);
+NoGameState.displayName = "NoGameState";
 // Animation variants for cleaner code organization
 const buttonVariants = {
   idle: {
@@ -217,15 +233,21 @@ const rippleVariants = {
 };
 
 // Hyperstructure Forge Button Component
-const HyperstructureForgeButton = ({
-  count,
-  isLoading,
-  onClick,
-}: {
+interface HyperstructureForgeButtonProps {
   count: number;
   isLoading: boolean;
   onClick: () => void;
-}) => {
+}
+
+const HyperstructureForgeButton = memo(({ count, isLoading, onClick }: HyperstructureForgeButtonProps) => {
+  const handleMouseEnter = useCallback((event: MouseEvent<HTMLButtonElement>) => {
+    event.currentTarget.style.borderColor = "#ffffff";
+  }, []);
+
+  const handleMouseLeave = useCallback((event: MouseEvent<HTMLButtonElement>) => {
+    event.currentTarget.style.borderColor = "#fef3c7";
+  }, []);
+
   return (
     <motion.button
       onClick={onClick}
@@ -242,8 +264,8 @@ const HyperstructureForgeButton = ({
         border: "4px solid #fef3c7",
         transition: "border-color 0.3s ease",
       }}
-      onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#ffffff")}
-      onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#fef3c7")}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {/* Ripple Effect */}
       <motion.div
@@ -298,205 +320,195 @@ const HyperstructureForgeButton = ({
       )}
     </motion.button>
   );
-};
+});
+HyperstructureForgeButton.displayName = "HyperstructureForgeButton";
 
 // Make hyperstructures state component
-const MakeHyperstructuresState = ({
-  numHyperStructuresLeft,
-  onMakeHyperstructures,
-  canMake,
-}: {
+interface MakeHyperstructuresStateProps {
   numHyperStructuresLeft: number;
   onMakeHyperstructures: () => Promise<void>;
   canMake: boolean;
-}) => {
-  const [isMakingHyperstructures, setIsMakingHyperstructures] = useState(false);
-  const [rerenderTrigger, setRerenderTrigger] = useState(0);
-  const [currentNumHyperStructuresLeft, setCurrentNumHyperStructuresLeft] = useState(numHyperStructuresLeft);
+}
 
-  // Auto-rerender and check config every 3 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setRerenderTrigger((prev) => prev + 1);
+const MakeHyperstructuresState = memo(
+  ({ numHyperStructuresLeft, onMakeHyperstructures, canMake }: MakeHyperstructuresStateProps) => {
+    const [isMakingHyperstructures, setIsMakingHyperstructures] = useState(false);
+    const [currentNumHyperStructuresLeft, setCurrentNumHyperStructuresLeft] = useState(numHyperStructuresLeft);
+    const currentNumHyperStructuresLeftRef = useRef(numHyperStructuresLeft);
 
-      // Check for updated config
-      const latestBlitzConfig = configManager.getBlitzConfig();
-      const latestNumHyperStructuresLeft = latestBlitzConfig?.blitz_num_hyperstructures_left;
-      if (latestNumHyperStructuresLeft !== undefined) {
-        setCurrentNumHyperStructuresLeft(latestNumHyperStructuresLeft);
+    useEffect(() => {
+      currentNumHyperStructuresLeftRef.current = numHyperStructuresLeft;
+      setCurrentNumHyperStructuresLeft(numHyperStructuresLeft);
+    }, [numHyperStructuresLeft]);
+
+    useEffect(() => {
+      const interval = setInterval(() => {
+        const latestNumHyperStructuresLeft = configManager.getBlitzConfig()?.blitz_num_hyperstructures_left;
+        const normalisedCount =
+          typeof latestNumHyperStructuresLeft === "bigint"
+            ? Number(latestNumHyperStructuresLeft)
+            : latestNumHyperStructuresLeft;
+
+        if (
+          typeof normalisedCount === "number" &&
+          Number.isSafeInteger(normalisedCount) &&
+          normalisedCount !== currentNumHyperStructuresLeftRef.current
+        ) {
+          currentNumHyperStructuresLeftRef.current = normalisedCount;
+          setCurrentNumHyperStructuresLeft(normalisedCount);
+        }
+      }, 3000);
+
+      return () => clearInterval(interval);
+    }, []);
+
+    const handleMakeHyperstructures = useCallback(async () => {
+      setIsMakingHyperstructures(true);
+      try {
+        await onMakeHyperstructures();
+      } catch (error) {
+        console.error("Make hyperstructures failed:", error);
+      } finally {
+        setIsMakingHyperstructures(false);
       }
-    }, 3000);
+    }, [onMakeHyperstructures]);
 
-    return () => clearInterval(interval);
-  }, []);
+    return (
+      <>
+        {currentNumHyperStructuresLeft > 0 && canMake && (
+          <div className="flex flex-col items-center space-y-4">
+            {/* Title */}
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-center">
+              <h3 className="text-gold font-semibold text-sm">Forge Hyperstructures</h3>
+            </motion.div>
 
-  // Update state when prop changes
-  useEffect(() => {
-    setCurrentNumHyperStructuresLeft(numHyperStructuresLeft);
-  }, [numHyperStructuresLeft]);
+            {/* Forge Button */}
+            <HyperstructureForgeButton
+              count={currentNumHyperStructuresLeft}
+              isLoading={isMakingHyperstructures}
+              onClick={handleMakeHyperstructures}
+            />
+          </div>
+        )}
+      </>
+    );
+  },
+);
+MakeHyperstructuresState.displayName = "MakeHyperstructuresState";
 
-  const handleMakeHyperstructures = async () => {
-    setIsMakingHyperstructures(true);
-    try {
-      await onMakeHyperstructures();
-    } catch (error) {
-      console.error("Make hyperstructures failed:", error);
-    } finally {
-      setIsMakingHyperstructures(false);
-    }
-  };
-
-  return (
-    <>
-      {currentNumHyperStructuresLeft > 0 && canMake && (
-        <div className="flex flex-col items-center space-y-4">
-          {/* Title */}
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-center">
-            <h3 className="text-gold font-semibold text-sm">Forge Hyperstructures</h3>
-          </motion.div>
-
-          {/* Forge Button */}
-          <HyperstructureForgeButton
-            count={currentNumHyperStructuresLeft}
-            isLoading={isMakingHyperstructures}
-            onClick={handleMakeHyperstructures}
-          />
-        </div>
-      )}
-    </>
-  );
-};
-
-const DevOptionsState = ({
-  onDevModeRegister,
-  onDevModeSettle,
-  onDevModeObtainEntryToken,
-  devMode,
-}: {
+interface DevOptionsStateProps {
   onDevModeRegister: () => Promise<void>;
   onDevModeSettle: () => Promise<void>;
   onDevModeObtainEntryToken?: () => Promise<void>;
   devMode: boolean;
-}) => {
-  const [isDevModeRegistering, setIsDevModeRegistering] = useState(false);
-  const [isDevModeSettling, setIsDevModeSettling] = useState(false);
-  const [isDevModeObtainingToken, setIsDevModeObtainingToken] = useState(false);
+}
 
-  const handleDevModeRegister = async () => {
-    setIsDevModeRegistering(true);
-    try {
-      await onDevModeRegister();
-    } catch (error) {
-      console.error("Registration failed:", error);
-    } finally {
-      setIsDevModeRegistering(false);
-    }
-  };
+const DevOptionsState = memo(
+  ({ onDevModeRegister, onDevModeSettle, onDevModeObtainEntryToken, devMode }: DevOptionsStateProps) => {
+    const [isDevModeRegistering, setIsDevModeRegistering] = useState(false);
+    const [isDevModeSettling, setIsDevModeSettling] = useState(false);
+    const [isDevModeObtainingToken, setIsDevModeObtainingToken] = useState(false);
 
-  const handleDevModeSettle = async () => {
-    setIsDevModeSettling(true);
-    try {
-      await onDevModeSettle();
-    } catch (error) {
-      console.error("Settlement failed:", error);
-    } finally {
-      setIsDevModeSettling(false);
-    }
-  };
+    const handleDevModeRegister = useCallback(async () => {
+      setIsDevModeRegistering(true);
+      try {
+        await onDevModeRegister();
+      } catch (error) {
+        console.error("Registration failed:", error);
+      } finally {
+        setIsDevModeRegistering(false);
+      }
+    }, [onDevModeRegister]);
 
-  const handleDevModeObtainEntryToken = async () => {
-    if (!onDevModeObtainEntryToken) return;
+    const handleDevModeSettle = useCallback(async () => {
+      setIsDevModeSettling(true);
+      try {
+        await onDevModeSettle();
+      } catch (error) {
+        console.error("Settlement failed:", error);
+      } finally {
+        setIsDevModeSettling(false);
+      }
+    }, [onDevModeSettle]);
 
-    setIsDevModeObtainingToken(true);
-    try {
-      await onDevModeObtainEntryToken();
-    } catch (error) {
-      console.error("Obtain entry token failed:", error);
-    } finally {
-      setIsDevModeObtainingToken(false);
-    }
-  };
+    const handleDevModeObtainEntryToken = useCallback(async () => {
+      if (!onDevModeObtainEntryToken) return;
 
-  return (
-    <>
-      {devMode && (
-        <>
-          {onDevModeObtainEntryToken && (
-            <>
-              {isDevModeObtainingToken ? (
-                <div className="flex items-center justify-center">
-                  <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
-                  <span>Obtaining Token...</span>
-                </div>
-              ) : (
-                <Button
-                  onClick={handleDevModeObtainEntryToken}
-                  disabled={isDevModeObtainingToken || !devMode}
-                  className="w-full h-10 px-3 !text-brown !bg-gold !normal-case rounded-md animate-pulse"
-                >
-                  <div className="flex items-center justify-center text-sm">
-                    <TreasureChest className="w-4 h-4 mr-2 fill-brown" />
-                    <span>Dev Mode Obtain Entry Token</span>
+      setIsDevModeObtainingToken(true);
+      try {
+        await onDevModeObtainEntryToken();
+      } catch (error) {
+        console.error("Obtain entry token failed:", error);
+      } finally {
+        setIsDevModeObtainingToken(false);
+      }
+    }, [onDevModeObtainEntryToken]);
+
+    return (
+      <>
+        {devMode && (
+          <>
+            {onDevModeObtainEntryToken && (
+              <>
+                {isDevModeObtainingToken ? (
+                  <div className="flex items-center justify-center">
+                    <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
+                    <span>Obtaining Token...</span>
                   </div>
-                </Button>
-              )}
-            </>
-          )}
-          {isDevModeRegistering ? (
-            <div className="flex items-center justify-center">
-              <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
-              <span>Registering...</span>
-            </div>
-          ) : (
-            <Button
-              onClick={handleDevModeRegister}
-              disabled={isDevModeRegistering || !devMode}
-              forceUppercase={false}
-              className="w-full h-10 px-3 !text-brown !bg-gold rounded-md animate-pulse text-sm"
-            >
-              <span>Dev Mode Register for Blitz</span>
-            </Button>
-          )}
-          {isDevModeSettling ? (
-            <div className="flex items-center justify-center">
-              <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
-              <span>Settling...</span>
-            </div>
-          ) : (
-            <Button
-              onClick={handleDevModeSettle}
-              disabled={isDevModeSettling || !devMode}
-              forceUppercase={false}
-              className="w-full h-10 px-3 !text-brown !bg-gold rounded-md animate-pulse text-sm"
-            >
-              <span>Dev Mode Settle Realm</span>
-            </Button>
-          )}
-        </>
-      )}
-    </>
-  );
-};
+                ) : (
+                  <Button
+                    onClick={handleDevModeObtainEntryToken}
+                    disabled={isDevModeObtainingToken || !devMode}
+                    className="w-full h-10 px-3 !text-brown !bg-gold !normal-case rounded-md animate-pulse"
+                  >
+                    <div className="flex items-center justify-center text-sm">
+                      <TreasureChest className="w-4 h-4 mr-2 fill-brown" />
+                      <span>Dev Mode Obtain Entry Token</span>
+                    </div>
+                  </Button>
+                )}
+              </>
+            )}
+            {isDevModeRegistering ? (
+              <div className="flex items-center justify-center">
+                <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
+                <span>Registering...</span>
+              </div>
+            ) : (
+              <Button
+                onClick={handleDevModeRegister}
+                disabled={isDevModeRegistering || !devMode}
+                forceUppercase={false}
+                className="w-full h-10 px-3 !text-brown !bg-gold rounded-md animate-pulse text-sm"
+              >
+                <span>Dev Mode Register for Blitz</span>
+              </Button>
+            )}
+            {isDevModeSettling ? (
+              <div className="flex items-center justify-center">
+                <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
+                <span>Settling...</span>
+              </div>
+            ) : (
+              <Button
+                onClick={handleDevModeSettle}
+                disabled={isDevModeSettling || !devMode}
+                forceUppercase={false}
+                className="w-full h-10 px-3 !text-brown !bg-gold rounded-md animate-pulse text-sm"
+              >
+                <span>Dev Mode Settle Realm</span>
+              </Button>
+            )}
+          </>
+        )}
+      </>
+    );
+  },
+);
+DevOptionsState.displayName = "DevOptionsState";
 
 // Registration state component
-const RegistrationState = ({
-  entryTokenBalance,
-  registrationCount,
-  registrationStartAt,
-  registrationEndAt,
-  creationStartAt,
-  creationEndAt,
-  isRegistered,
-  onRegister,
-  requiresEntryToken,
-  onObtainEntryToken,
-  isObtainingEntryToken,
-  availableEntryTokenId,
-  entryTokenStatus,
-  hasSufficientFeeBalance,
-  isFeeBalanceLoading,
-  spectateDisabled,
-}: {
+interface RegistrationStateProps {
   entryTokenBalance: bigint;
   registrationCount: number;
   registrationStartAt: number;
@@ -513,235 +525,254 @@ const RegistrationState = ({
   hasSufficientFeeBalance: boolean;
   isFeeBalanceLoading: boolean;
   spectateDisabled: boolean;
-}) => {
-  const { setup } = useDojo();
+}
 
-  const [isRegistering, setIsRegistering] = useState(false);
-  const onSpectatorModeClick = useSpectatorModeClick(setup);
+const RegistrationState = memo(
+  ({
+    entryTokenBalance,
+    registrationCount,
+    registrationEndAt,
+    isRegistered,
+    onRegister,
+    requiresEntryToken,
+    onObtainEntryToken,
+    isObtainingEntryToken,
+    availableEntryTokenId,
+    entryTokenStatus,
+    isFeeBalanceLoading,
+    spectateDisabled,
+  }: RegistrationStateProps) => {
+    const { setup } = useDojo();
 
-  const tokenReady = !requiresEntryToken || Boolean(availableEntryTokenId);
+    const [isRegistering, setIsRegistering] = useState(false);
+    const onSpectatorModeClick = useSpectatorModeClick(setup);
 
-  const handleRegister = async () => {
-    setIsRegistering(true);
-    try {
-      await onRegister();
-    } catch (error) {
-      console.error("Registration failed:", error);
-    } finally {
-      setIsRegistering(false);
-    }
-  };
+    const tokenReady = !requiresEntryToken || Boolean(availableEntryTokenId);
 
-  return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-      <div className="text-center space-y-4">
-        <h3 className="text-xl font-bold text-gold">Registration Open</h3>
-        <PlayerCount count={registrationCount} />
-        <CountdownTimer targetTime={registrationEndAt} label="Registration closes and Game Starts in:" />
-      </div>
+    const handleRegister = useCallback(async () => {
+      setIsRegistering(true);
+      try {
+        await onRegister();
+      } catch (error) {
+        console.error("Registration failed:", error);
+      } finally {
+        setIsRegistering(false);
+      }
+    }, [onRegister]);
 
-      <div className="space-y-4">
-        {isRegistered ? (
-          <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 text-center">
-            <TreasureChest className="w-8 h-8 mx-auto mb-2 fill-gold" />
-            <p className="text-gold font-medium">You are registered!</p>
-            <p className="text-sm text-gold/70 mt-1">Wait for the game to begin</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {requiresEntryToken && (
-              <div className="space-y-2">
-                <Button
-                  onClick={() => onObtainEntryToken?.()}
-                  disabled={isObtainingEntryToken}
-                  className="w-full h-12 !text-brown !bg-gold/80 hover:!bg-gold rounded-md"
-                  forceUppercase={false}
-                >
-                  {isObtainingEntryToken ? (
-                    <div className="flex items-center justify-center">
-                      <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
-                      <span>Minting entry token...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center">
-                      <TreasureChest className="w-5 h-5 mr-2 fill-brown" />
-                      <span>Obtain Entry Token</span>
-                    </div>
-                  )}
-                </Button>
-                <p className="text-xs text-gold/60 text-center">
-                  {availableEntryTokenId
-                    ? `Token #${availableEntryTokenId.toString()} will be used for registration`
-                    : entryTokenStatus === "minting"
-                      ? "Minting your entry token..."
-                      : entryTokenStatus === "timeout"
-                        ? "Minted! Still waiting for the token to appear. If it doesn't show, try again shortly."
-                        : entryTokenStatus === "error"
-                          ? "Mint failed. Please try again."
-                          : "Mint an entry token before registering. Tokens are locked automatically during registration."}
-                </p>
-                {requiresEntryToken && entryTokenBalance < 1 && (
-                  <p className="text-xs text-red-300 text-center">
-                    Insufficient fee balance — auto top-up occurs when obtaining an entry token (non‑mainnet).
+    const handleObtainEntryToken = useCallback(() => onObtainEntryToken?.(), [onObtainEntryToken]);
+
+    return (
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+        <div className="text-center space-y-4">
+          <h3 className="text-xl font-bold text-gold">Registration Open</h3>
+          <PlayerCount count={registrationCount} />
+          <CountdownTimer targetTime={registrationEndAt} label="Registration closes and Game Starts in:" />
+        </div>
+
+        <div className="space-y-4">
+          {isRegistered ? (
+            <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 text-center">
+              <TreasureChest className="w-8 h-8 mx-auto mb-2 fill-gold" />
+              <p className="text-gold font-medium">You are registered!</p>
+              <p className="text-sm text-gold/70 mt-1">Wait for the game to begin</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {requiresEntryToken && (
+                <div className="space-y-2">
+                  <Button
+                    onClick={handleObtainEntryToken}
+                    disabled={isObtainingEntryToken}
+                    className="w-full h-12 !text-brown !bg-gold/80 hover:!bg-gold rounded-md"
+                    forceUppercase={false}
+                  >
+                    {isObtainingEntryToken ? (
+                      <div className="flex items-center justify-center">
+                        <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
+                        <span>Minting entry token...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center">
+                        <TreasureChest className="w-5 h-5 mr-2 fill-brown" />
+                        <span>Obtain Entry Token</span>
+                      </div>
+                    )}
+                  </Button>
+                  <p className="text-xs text-gold/60 text-center">
+                    {availableEntryTokenId
+                      ? `Token #${availableEntryTokenId.toString()} will be used for registration`
+                      : entryTokenStatus === "minting"
+                        ? "Minting your entry token..."
+                        : entryTokenStatus === "timeout"
+                          ? "Minted! Still waiting for the token to appear. If it doesn't show, try again shortly."
+                          : entryTokenStatus === "error"
+                            ? "Mint failed. Please try again."
+                            : "Mint an entry token before registering. Tokens are locked automatically during registration."}
                   </p>
-                )}
-              </div>
-            )}
-
-            <Button
-              onClick={handleRegister}
-              disabled={isRegistering || !tokenReady}
-              className="w-full h-12 !text-brown !bg-gold rounded-md animate-pulse"
-              forceUppercase={false}
-            >
-              {isRegistering ? (
-                <div className="flex items-center justify-center">
-                  <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
-                  <span>Registering...</span>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center">
-                  <Sword className="w-5 h-5 mr-2 fill-brown" />
-                  <span>Register for Blitz</span>
+                  {requiresEntryToken && entryTokenBalance < 1 && (
+                    <p className="text-xs text-red-300 text-center">
+                      Insufficient fee balance — auto top-up occurs when obtaining an entry token (non‑mainnet).
+                    </p>
+                  )}
                 </div>
               )}
-            </Button>
-            {requiresEntryToken && isFeeBalanceLoading && (
-              <p className="text-xs text-gold/60 text-center">Checking fee balance…</p>
-            )}
-          </div>
-        )}
 
-        <SpectateButton onClick={onSpectatorModeClick} disabled={spectateDisabled} />
-      </div>
-    </motion.div>
-  );
-};
+              <Button
+                onClick={handleRegister}
+                disabled={isRegistering || !tokenReady}
+                className="w-full h-12 !text-brown !bg-gold rounded-md animate-pulse"
+                forceUppercase={false}
+              >
+                {isRegistering ? (
+                  <div className="flex items-center justify-center">
+                    <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
+                    <span>Registering...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center">
+                    <Sword className="w-5 h-5 mr-2 fill-brown" />
+                    <span>Register for Blitz</span>
+                  </div>
+                )}
+              </Button>
+              {requiresEntryToken && isFeeBalanceLoading && (
+                <p className="text-xs text-gold/60 text-center">Checking fee balance…</p>
+              )}
+            </div>
+          )}
+
+          <SpectateButton onClick={onSpectatorModeClick} disabled={spectateDisabled} />
+        </div>
+      </motion.div>
+    );
+  },
+);
+RegistrationState.displayName = "RegistrationState";
 
 // Game active state component
-const GameActiveState = ({
-  hasSettled,
-  gameEndAt,
-  isRegistered,
-  onSettle,
-  spectateDisabled,
-}: {
+interface GameActiveStateProps {
   hasSettled: boolean;
   gameEndAt?: number;
   isRegistered: boolean;
   onSettle: () => Promise<void>;
   spectateDisabled: boolean;
-}) => {
-  const {
-    setup,
-    setup: { components },
-  } = useDojo();
+}
 
-  const goToStructure = useGoToStructure(setup);
-  const realmEntities = usePlayerOwnedRealmEntities();
-  const onSpectatorModeClick = useSpectatorModeClick(setup);
-  const [isSettling, setIsSettling] = useState(false);
+const GameActiveState = memo(
+  ({ hasSettled, gameEndAt, isRegistered, onSettle, spectateDisabled }: GameActiveStateProps) => {
+    const {
+      setup,
+      setup: { components },
+    } = useDojo();
 
-  const handleSettle = async () => {
-    setIsSettling(true);
-    try {
-      await onSettle();
-    } catch (error) {
-      console.error("Settlement failed:", error);
-    } finally {
-      setIsSettling(false);
-    }
-  };
+    const goToStructure = useGoToStructure(setup);
+    const realmEntities = usePlayerOwnedRealmEntities();
+    const firstRealmEntityId = useMemo(() => realmEntities[0], [realmEntities]);
+    const onSpectatorModeClick = useSpectatorModeClick(setup);
+    const [isSettling, setIsSettling] = useState(false);
 
-  const handlePlay = () => {
-    const firstRealm = realmEntities[0];
-    if (!firstRealm) return;
+    const handleSettle = useCallback(async () => {
+      setIsSettling(true);
+      try {
+        await onSettle();
+      } catch (error) {
+        console.error("Settlement failed:", error);
+      } finally {
+        setIsSettling(false);
+      }
+    }, [onSettle]);
 
-    const structure = getComponentValue(components.Structure, firstRealm);
-    if (!structure) return;
+    const handlePlay = useCallback(() => {
+      if (!firstRealmEntityId) return;
 
-    void goToStructure(
-      structure.entity_id,
-      new Position({ x: structure.base.coord_x, y: structure.base.coord_y }),
-      false,
-    );
-  };
+      const structure = getComponentValue(components.Structure, firstRealmEntityId);
+      if (!structure) return;
 
-  return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-      <div className="text-center space-y-4">
-        <h3 className="text-xl font-bold text-gold">Game Active</h3>
-        <p className="text-gold/70">The battle for supremacy has begun!</p>
+      void goToStructure(
+        structure.entity_id,
+        new Position({ x: structure.base.coord_x, y: structure.base.coord_y }),
+        false,
+      );
+    }, [components.Structure, firstRealmEntityId, goToStructure]);
 
-        {gameEndAt && (
-          <div className="space-y-2">
-            <CountdownTimer targetTime={gameEndAt} label="Game ends in:" />
-            <div className="bg-gold/10 border border-gold/30 rounded-lg p-3 text-sm">
-              <p className="text-gold/60 text-xs">Ends at: {formatLocalDateTime(gameEndAt)}</p>
-              <p className="text-gold font-semibold mt-2">🏆 Conquer everything</p>
+    return (
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+        <div className="text-center space-y-4">
+          <h3 className="text-xl font-bold text-gold">Game Active</h3>
+          <p className="text-gold/70">The battle for supremacy has begun!</p>
+
+          {gameEndAt && (
+            <div className="space-y-2">
+              <CountdownTimer targetTime={gameEndAt} label="Game ends in:" />
+              <div className="bg-gold/10 border border-gold/30 rounded-lg p-3 text-sm">
+                <p className="text-gold/60 text-xs">Ends at: {formatLocalDateTime(gameEndAt)}</p>
+                <p className="text-gold font-semibold mt-2">🏆 Conquer everything</p>
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
 
-      <div className="space-y-4">
-        {isRegistered ? (
-          <>
-            {hasSettled ? (
-              <>
-                <Button
-                  onClick={handlePlay}
-                  forceUppercase={false}
-                  className="w-full h-12 !text-brown !bg-gold rounded-md "
-                >
-                  <div className="flex items-center justify-center">
-                    <Sword className="w-5 h-5 mr-2 fill-brown" />
-                    <span>Play Blitz</span>
+        <div className="space-y-4">
+          {isRegistered ? (
+            <>
+              {hasSettled ? (
+                <>
+                  <Button
+                    onClick={handlePlay}
+                    forceUppercase={false}
+                    className="w-full h-12 !text-brown !bg-gold rounded-md "
+                  >
+                    <div className="flex items-center justify-center">
+                      <Sword className="w-5 h-5 mr-2 fill-brown" />
+                      <span>Play Blitz</span>
+                    </div>
+                  </Button>
+                  <SpectateButton onClick={onSpectatorModeClick} disabled={spectateDisabled} />
+                </>
+              ) : (
+                <>
+                  <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 text-center mb-4">
+                    <p className="text-gold text-sm">
+                      In Blitz mode, your settlement location will be automatically assigned for balanced gameplay
+                    </p>
                   </div>
-                </Button>
-                <SpectateButton onClick={onSpectatorModeClick} disabled={spectateDisabled} />
-              </>
-            ) : (
-              <>
-                <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 text-center mb-4">
-                  <p className="text-gold text-sm">
-                    In Blitz mode, your settlement location will be automatically assigned for balanced gameplay
-                  </p>
-                </div>
-                <Button
-                  onClick={handleSettle}
-                  disabled={isSettling}
-                  className="w-full h-12 !text-brown !bg-gold rounded-md animate-pulse"
-                  forceUppercase={false}
-                >
-                  {isSettling ? (
-                    <div className="flex items-center justify-center">
-                      <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
-                      <span>Settling...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center">
-                      <TreasureChest className="w-5 h-5 mr-2 fill-brown" />
-                      <span>Settle Realm</span>
-                    </div>
-                  )}
-                </Button>
-                <SpectateButton onClick={onSpectatorModeClick} disabled={spectateDisabled} />
-              </>
-            )}
-          </>
-        ) : (
-          <div className="space-y-4">
-            <div className="bg-brown/10 border border-brown/30 rounded-lg p-4 text-center">
-              <p className="text-gold/70">You are not registered for this game</p>
+                  <Button
+                    onClick={handleSettle}
+                    disabled={isSettling}
+                    className="w-full h-12 !text-brown !bg-gold rounded-md animate-pulse"
+                    forceUppercase={false}
+                  >
+                    {isSettling ? (
+                      <div className="flex items-center justify-center">
+                        <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-2 animate-spin" />
+                        <span>Settling...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center">
+                        <TreasureChest className="w-5 h-5 mr-2 fill-brown" />
+                        <span>Settle Realm</span>
+                      </div>
+                    )}
+                  </Button>
+                  <SpectateButton onClick={onSpectatorModeClick} disabled={spectateDisabled} />
+                </>
+              )}
+            </>
+          ) : (
+            <div className="space-y-4">
+              <div className="bg-brown/10 border border-brown/30 rounded-lg p-4 text-center">
+                <p className="text-gold/70">You are not registered for this game</p>
+              </div>
+              <SpectateButton onClick={onSpectatorModeClick} disabled={spectateDisabled} />
             </div>
-            <SpectateButton onClick={onSpectatorModeClick} disabled={spectateDisabled} />
-          </div>
-        )}
-      </div>
-    </motion.div>
-  );
-};
+          )}
+        </div>
+      </motion.div>
+    );
+  },
+);
+GameActiveState.displayName = "GameActiveState";
 
 // Main Blitz onboarding component
 export const BlitzOnboarding = () => {
@@ -759,13 +790,16 @@ export const BlitzOnboarding = () => {
     },
   } = setup;
 
+  const accountAddress = account.address;
+  const networkProvider = network?.provider;
   const { currentBlockTimestamp } = useBlockTimestamp();
 
   const worldConfigEntityId = useMemo(() => getEntityIdFromKeys([WORLD_CONFIG_ID]), []);
   const worldConfigValue = useComponentValue(components.WorldConfig, worldConfigEntityId);
 
-  const blitzConfig = configManager.getBlitzConfig()?.blitz_registration_config;
-  const blitzNumHyperStructuresLeft = configManager.getBlitzConfig()?.blitz_num_hyperstructures_left;
+  const blitzConfigData = configManager.getBlitzConfig();
+  const blitzConfig = blitzConfigData?.blitz_registration_config;
+  const blitzNumHyperStructuresLeft = blitzConfigData?.blitz_num_hyperstructures_left;
   const seasonConfig = configManager.getSeasonConfig();
   const seasonEndAt = seasonConfig?.endAt ?? null;
   const hasGameEnded = useMemo(() => {
@@ -796,15 +830,15 @@ export const BlitzOnboarding = () => {
   const [isObtainingEntryToken, setIsObtainingEntryToken] = useState(false);
   const [entryTokenStatus, setEntryTokenStatus] = useState<"idle" | "minting" | "timeout" | "error">("idle");
   const [hasQueriedEntryToken, setHasQueriedEntryToken] = useState(false);
-  const [isToppingUp, setIsToppingUp] = useState(false);
   const playerRegistered = useComponentValue(
     components.BlitzRealmPlayerRegister,
-    getEntityIdFromKeys([BigInt(account.address)]),
+    getEntityIdFromKeys([BigInt(accountAddress)]),
   );
 
   const { connector } = useAccount();
 
-  const playerSettled = useEntityQuery([HasValue(components.Structure, { owner: BigInt(account.address) })]).length > 0;
+  const playerRealmEntities = useEntityQuery([HasValue(components.Structure, { owner: BigInt(accountAddress) })]);
+  const playerSettled = playerRealmEntities.length > 0;
 
   useSetAddressName(setup, playerSettled ? account : null, connector);
 
@@ -823,24 +857,17 @@ export const BlitzOnboarding = () => {
     abi: LordsAbi as Abi,
     functionName: "balance_of",
     address: (feeTokenAddressHex ?? "0x0") as `0x${string}`,
-    args: [(account?.address as `0x${string}`) ?? "0x0"],
+    args: [(accountAddress as `0x${string}`) ?? "0x0"],
     watch: true,
     refetchInterval: 5_000,
-    enabled: Boolean(account?.address && feeTokenAddressHex),
+    enabled: Boolean(accountAddress && feeTokenAddressHex),
   });
 
   const feeTokenBalance = useMemo(() => normalizeUint256(feeTokenCall.data), [feeTokenCall.data]);
-  const refetchFeeTokenBalance = feeTokenCall.refetch ? () => feeTokenCall.refetch() : undefined;
+  const refetchFeeTokenBalance = feeTokenCall.refetch;
   const isFeeBalanceLoading = feeTokenCall.isLoading && Boolean(feeTokenAddressHex);
   const hasSufficientFeeBalance = !requiresEntryToken || feeAmount === 0n || feeTokenBalance >= feeAmount;
-  const feeBalanceShortfall = feeAmount > feeTokenBalance ? feeAmount - feeTokenBalance : 0n;
   const isNotMainnet = env.VITE_PUBLIC_CHAIN !== "mainnet";
-  const canTopUpBalance = Boolean(isNotMainnet && feeTokenAddressHex && masterAccount);
-
-  const formatTokenAmount = (value: bigint) => {
-    const decimals = 18n; // Default to 18 decimals
-    return (value / 10n ** decimals).toString();
-  };
 
   useEffect(() => {
     if (!requiresEntryToken) {
@@ -863,14 +890,14 @@ export const BlitzOnboarding = () => {
     (async () => {
       const entryTokenAddressHex = toHexString(blitzConfig?.entry_token_address!);
       console.log("Entry token random lookup", {
-        owner: account.address,
+        owner: accountAddress,
         entryTokenAddressHex,
         balance: entryTokenBalance.toString(),
         randomIndex: randomIndex.toString(),
       });
 
       const tokenId = await getEntryTokenIdByIndex(
-        account.address,
+        accountAddress,
         {
           entryTokenAddress: entryTokenAddressHex as `0x${string}`,
           validate: (candidate) => {
@@ -887,9 +914,7 @@ export const BlitzOnboarding = () => {
         },
         randomIndex,
       );
-
       console.log("Entry token lookup result", { tokenId: tokenId?.toString() });
-
       if (tokenId) {
         setAvailableEntryTokenId(tokenId);
         setEntryTokenStatus("idle");
@@ -898,7 +923,7 @@ export const BlitzOnboarding = () => {
       }
     })();
   }, [
-    account.address,
+    accountAddress,
     availableEntryTokenId,
     blitzConfig,
     components.BlitzEntryTokenRegister,
@@ -916,7 +941,6 @@ export const BlitzOnboarding = () => {
     }
 
     const { registration_start_at, registration_end_at, creation_start_at, creation_end_at } = blitzConfig;
-
     const hasValidSchedule =
       registration_start_at > 0 &&
       registration_end_at > registration_start_at &&
@@ -969,7 +993,6 @@ export const BlitzOnboarding = () => {
         }
       } catch (error) {
         console.log("No username found in controller account");
-
         if ((await connector?.chainId()) === 82743958523457n) {
           // local
           setAddressNameFelt("labubu");
@@ -979,18 +1002,15 @@ export const BlitzOnboarding = () => {
     getUsername();
   }, [connector]);
 
-  const handleObtainEntryToken = async () => {
-    if (!account?.address || !requiresEntryToken || !blitzConfig) return;
+  const handleObtainEntryToken = useCallback(async () => {
+    if (!accountAddress || !requiresEntryToken || !blitzConfig) return;
 
     setIsObtainingEntryToken(true);
     setEntryTokenStatus("minting");
     try {
-      // Auto top-up on non-mainnet if fee balance is insufficient
-      const isNonMainnet = env.VITE_PUBLIC_CHAIN !== "mainnet";
-      const feeTokenAddressHex = toHexString(blitzConfig.fee_token);
       if (
-        isNonMainnet &&
-        network?.provider &&
+        isNotMainnet &&
+        networkProvider &&
         masterAccount &&
         feeTokenAddressHex &&
         feeAmount > 0n &&
@@ -998,10 +1018,10 @@ export const BlitzOnboarding = () => {
       ) {
         const shortfall = feeAmount - feeTokenBalance;
         const amount = uint256.bnToUint256(shortfall);
-        await network.provider.executeAndCheckTransaction(masterAccount, {
+        await networkProvider.executeAndCheckTransaction(masterAccount, {
           contractAddress: feeTokenAddressHex,
           entrypoint: "transfer",
-          calldata: CallData.compile([account.address, amount.low, amount.high]),
+          calldata: CallData.compile([accountAddress, amount.low, amount.high]),
         });
         await refetchFeeTokenBalance?.();
       }
@@ -1022,33 +1042,25 @@ export const BlitzOnboarding = () => {
     } finally {
       setIsObtainingEntryToken(false);
     }
-  };
-
-  const handleTopUpFeeBalance = async () => {
-    if (!masterAccount || !network?.provider || !account?.address || !feeTokenAddressHex || feeAmount === 0n) {
-      return;
-    }
-
-    setIsToppingUp(true);
-    try {
-      const amount = uint256.bnToUint256(feeAmount);
-      await network.provider.executeAndCheckTransaction(masterAccount, {
-        contractAddress: feeTokenAddressHex,
-        entrypoint: "transfer",
-        calldata: CallData.compile([account.address, amount.low, amount.high]),
-      });
-
-      await refetchFeeTokenBalance?.();
-    } catch (error) {
-      console.error("Failed to top up registration fee balance", error);
-    } finally {
-      setIsToppingUp(false);
-    }
-  };
+  }, [
+    account,
+    accountAddress,
+    blitzConfig,
+    blitz_realm_obtain_entry_token,
+    feeAmount,
+    feeTokenAddressHex,
+    feeTokenBalance,
+    isNotMainnet,
+    masterAccount,
+    networkProvider,
+    refetchEntryTokenBalance,
+    refetchFeeTokenBalance,
+    requiresEntryToken,
+  ]);
 
   // Registration handler
-  const handleRegister = async () => {
-    if (!account?.address) return;
+  const handleRegister = useCallback(async () => {
+    if (!accountAddress) return;
 
     if (requiresEntryToken && blitzConfig) {
       if (!availableEntryTokenId) {
@@ -1072,18 +1084,28 @@ export const BlitzOnboarding = () => {
     }
 
     await blitz_realm_register({ signer: account, name: addressNameFelt, tokenId: 0 });
-  };
+  }, [
+    account,
+    accountAddress,
+    addressNameFelt,
+    availableEntryTokenId,
+    blitzConfig,
+    blitz_realm_register,
+    refetchEntryTokenBalance,
+    refetchFeeTokenBalance,
+    requiresEntryToken,
+  ]);
 
-  const handleMakeHyperstructures = async () => {
-    if (!account?.address) return;
+  const handleMakeHyperstructures = useCallback(async () => {
+    if (!accountAddress) return;
     await blitz_realm_make_hyperstructures({ count: 4, signer: account });
-  };
+  }, [account, accountAddress, blitz_realm_make_hyperstructures]);
 
   // Settlement handler
-  const handleSettle = async () => {
-    if (!account?.address) return;
+  const handleSettle = useCallback(async () => {
+    if (!accountAddress) return;
     await blitz_realm_create({ signer: account });
-  };
+  }, [account, accountAddress, blitz_realm_create]);
 
   if (!blitzConfig) {
     return (
@@ -1110,8 +1132,6 @@ export const BlitzOnboarding = () => {
   }
 
   const { registration_start_at, registration_end_at, creation_start_at, creation_end_at } = blitzConfig;
-  console.log("blitzConfig", blitzConfig);
-
   // Determine if we are in registration phase
   const now = Date.now() / 1000;
   const canMakeHyperstructures = now >= registration_start_at;
@@ -1157,16 +1177,6 @@ export const BlitzOnboarding = () => {
                   your balance will be auto-topped up when you attempt to obtain entry token.
                 </p>
               )}
-              {/* {false && canTopUpBalance && !hasSufficientFeeBalance && (
-                <Button
-                  onClick={handleTopUpFeeBalance}
-                  disabled={isToppingUp}
-                  className="w-full h-10 !bg-gold/80 hover:!bg-gold !text-brown"
-                  forceUppercase={false}
-                >
-                  {isToppingUp ? "Topping up…" : "Top up balance"}
-                </Button>
-              )} */}
             </div>
           )}
         </div>
