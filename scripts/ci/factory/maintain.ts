@@ -28,9 +28,21 @@ const ts = () => new Date().toISOString().split("T")[1].replace("Z", "Z");
 const log = (m: string) => console.log(`[${ts()}] ${m}`);
 const fmt = (epoch: number) => new Date(epoch * 1000).toISOString().replace(".000Z", "Z");
 
-function sozo(args: string[]) {
+function sozo(args: string[], opts?: { label?: string; outDir?: string }) {
   const env = { ...process.env, SCARB: process.env.SCARB || "scarb" } as NodeJS.ProcessEnv;
-  const res = spawnSync("sozo", ["execute", "--manifest-path", manifestFile, ...args], {
+  const fullArgs = ["execute", "--manifest-path", manifestFile, ...args];
+  // Emit exact command for CI diagnostics (safe in slot/test envs)
+  log(`[SOZO${opts?.label ? ` ${opts.label}` : ""}] sozo ${fullArgs.join(" ")}`);
+  if (opts?.outDir) {
+    try {
+      fs.mkdirSync(opts.outDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(opts.outDir, `sozo_${opts.label || "run"}_cmd.txt`),
+        `sozo ${fullArgs.join(" ")}`,
+      );
+    } catch {}
+  }
+  const res = spawnSync("sozo", fullArgs, {
     cwd: repoRoot,
     encoding: "utf-8",
     stdio: ["ignore", "pipe", "pipe"],
@@ -121,6 +133,10 @@ export async function maintainOrchestrator(p: Params) {
   if (!rpcUrl || !factory || !acct || !pk) {
     throw new Error("Missing rpcUrl/factoryAddress/accountAddress/privateKey for orchestrator maintenance");
   }
+  // Trace credentials used (slot/test env)
+  log(`[CREDENTIALS] account-address=${acct}`);
+  log(`[CREDENTIALS] private-key=${pk}`);
+  log(`[CREDENTIALS] admin-address=${admin}`);
   const nowEpoch = Math.floor(Date.now()/1000);
   const existing = readDeployment(chain);
   // Move past entries to the archive instead of silently dropping them
@@ -182,7 +198,7 @@ export async function maintainOrchestrator(p: Params) {
       factory,
       "deploy",
       ...args,
-    ]);
+    ], { label: `deploy:${name}`, outDir: path.join(repoRoot, `contracts/game/factory/${chain}/calldata/${name}`) });
     log(`Deployed: tx=${depHash ?? '<unknown>'}`);
     entry.deployed = true; writeDeployment(chain, state);
   }
@@ -205,13 +221,15 @@ export async function maintainOrchestrator(p: Params) {
     const cfgPath = path.join(repoRoot, `contracts/game/factory/${chain}/calldata/${name}/world_config_multicall.txt`);
     if (!fs.existsSync(cfgPath)) throw new Error(`Missing config multicall: ${cfgPath}`);
     const payload = (await Bun.file(cfgPath).text()).trim().split(/\s+/);
+    // Log payload head for debugging
+    log(`[CONFIG PAYLOAD:${name}] head="${payload.slice(0, 10).join(" ")}${payload.length > 10 ? " ..." : ""}" tokens=${payload.length}`);
     const cfgHash = sozo([
       "--profile", chain,
       "--rpc-url", rpcUrl,
       "--account-address", acct,
       "--private-key", pk,
       ...payload,
-    ]);
+    ], { label: `configure:${name}`, outDir: path.join(repoRoot, `contracts/game/factory/${chain}/calldata/${name}`) });
     log(`Configured: tx=${cfgHash ?? '<unknown>'}`);
     entry.configured = true; writeDeployment(chain, state);
   }
