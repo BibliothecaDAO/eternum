@@ -1,5 +1,5 @@
-use s1_eternum::models::config::{TroopDamageConfig, TroopStaminaConfig};
-use s1_eternum::models::troop::Troops;
+use crate::models::config::{TroopDamageConfig, TroopStaminaConfig};
+use crate::models::troop::Troops;
 use crate::utils::map::biomes::Biome;
 
 #[starknet::interface]
@@ -19,8 +19,8 @@ pub trait ICombatLibrary<T> {
 #[dojo::library]
 mod combat_library {
     use dojo::world::{WorldStorage, WorldStorageTrait};
-    use s1_eternum::models::config::{TroopDamageConfig, TroopStaminaConfig};
-    use s1_eternum::models::troop::{Troops, TroopsTrait};
+    use crate::models::config::{TroopDamageConfig, TroopStaminaConfig};
+    use crate::models::troop::{Troops, TroopsTrait};
     use crate::utils::map::biomes::Biome;
 
     #[abi(embed_v0)]

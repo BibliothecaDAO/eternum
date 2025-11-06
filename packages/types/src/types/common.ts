@@ -621,6 +621,7 @@ export interface Config {
       collectible_cosmetics_max_items: number;
       collectible_cosmetics_address: string;
       collectible_timelock_address: string;
+      collectibles_lootchest_address: string;
     };
   };
 
@@ -630,6 +631,9 @@ export interface Config {
     addresses: SeasonAddresses;
     manifest: any;
   };
+
+  // Previous prize distribution systems address (carried between runs)
+  prev_prize_distribution_address?: string | null;
 }
 
 export interface RealmInfo {

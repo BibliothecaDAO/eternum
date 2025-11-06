@@ -1,4 +1,4 @@
-use s1_eternum::alias::ID;
+use crate::alias::ID;
 
 #[starknet::interface]
 pub trait IResourceSystems<T> {
@@ -8,14 +8,14 @@ pub trait IResourceSystems<T> {
 #[dojo::contract]
 pub mod dev_resource_systems {
     use dojo::world::WorldStorage;
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::models::resource::resource::{
+    use crate::alias::ID;
+    use crate::constants::DEFAULT_NS;
+    use crate::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::structure::{StructureBase, StructureBaseImpl, StructureBaseStoreImpl};
-    use s1_eternum::models::weight::{Weight, WeightImpl};
-    use s1_eternum::systems::config::contracts::config_systems::assert_caller_is_admin;
+    use crate::models::structure::{StructureBase, StructureBaseImpl, StructureBaseStoreImpl};
+    use crate::models::weight::{Weight, WeightImpl};
+    use crate::systems::config::contracts::config_systems::assert_caller_is_admin;
 
 
     #[abi(embed_v0)]

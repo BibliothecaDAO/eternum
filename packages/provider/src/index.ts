@@ -11,17 +11,17 @@ import {
   Account,
   AccountInterface,
   AllowArray,
+  BigNumberish,
   Call,
   CallData,
   GetTransactionReceiptResponse,
-  BigNumberish,
   uint256,
 } from "starknet";
-import { TransactionType, type ProviderHeartbeat, type ProviderHeartbeatSource, type ProviderSyncState } from "./types";
 import { ProviderHeartbeatManager, type ProviderDesyncStatus } from "./provider-heartbeat-manager";
+import { TransactionType, type ProviderHeartbeat, type ProviderHeartbeatSource, type ProviderSyncState } from "./types";
 export const NAMESPACE = "s1_eternum";
 export { TransactionType };
-export type { ProviderHeartbeat, ProviderHeartbeatSource, ProviderSyncState, ProviderDesyncStatus };
+export type { ProviderDesyncStatus, ProviderHeartbeat, ProviderHeartbeatSource, ProviderSyncState };
 export const PROVIDER_HEARTBEAT_EVENT = "providerHeartbeat";
 
 /**
@@ -226,6 +226,14 @@ export const buildVrfCalls = async ({
 
 export class EternumProvider extends EnhancedDojoProvider {
   promiseQueue: PromiseQueue;
+  // Batching state (optional, used by admin/config UIs)
+  private _batchCalls?: Call[];
+  private _batchImmediate?: Set<string>;
+  private _batchSigner?: Account | AccountInterface;
+  private _batchOriginalExecute?: (
+    signer: Account | AccountInterface,
+    transactionDetails: AllowArray<Call>,
+  ) => Promise<GetTransactionReceiptResponse>;
   private heartbeatManager: ProviderHeartbeatManager;
   /**
    * Create a new EternumProvider instance
@@ -290,6 +298,74 @@ export class EternumProvider extends EnhancedDojoProvider {
       transactionHash,
       blockNumber,
     });
+  }
+
+  // ============ Optional client-side batching API ============
+  public beginBatch(options: { signer: Account | AccountInterface; immediateEntrypoints?: string[] }) {
+    if (this._batchCalls) return; // already batching
+    this._batchCalls = [];
+    this._batchImmediate = new Set(options?.immediateEntrypoints ?? []);
+    this._batchSigner = options.signer;
+    this._batchOriginalExecute = this.executeAndCheckTransaction.bind(this);
+
+    const self = this;
+    this.executeAndCheckTransaction = async function (signer: any, details: AllowArray<Call>) {
+      const arr = Array.isArray(details) ? details : [details];
+      const shouldImmediate = arr.some((c) => self._batchImmediate?.has(c.entrypoint));
+      if (shouldImmediate) {
+        // passthrough
+        return await (self._batchOriginalExecute as any)(signer, details);
+      }
+      // queue
+      self._batchCalls!.push(...arr);
+      // return a minimal placeholder compatible with existing logs
+      return { statusReceipt: "QUEUED_FOR_BATCH" } as any;
+    } as any;
+  }
+
+  public isBatching(): boolean {
+    return Array.isArray(this._batchCalls);
+  }
+
+  public markImmediateEntrypoints(entrypoints: string | string[]): void {
+    if (!this._batchImmediate) return;
+    const list = Array.isArray(entrypoints) ? entrypoints : [entrypoints];
+    list.forEach((e) => this._batchImmediate!.add(e));
+  }
+
+  public unmarkImmediateEntrypoints(entrypoints?: string | string[]): void {
+    if (!this._batchImmediate) return;
+    if (!entrypoints) {
+      this._batchImmediate = new Set();
+      return;
+    }
+    const list = Array.isArray(entrypoints) ? entrypoints : [entrypoints];
+    list.forEach((e) => this._batchImmediate!.delete(e));
+  }
+
+  public async flushBatch(): Promise<GetTransactionReceiptResponse | null> {
+    if (!this._batchCalls || !this._batchOriginalExecute) return null;
+    if (this._batchCalls.length === 0) return null;
+    const txs = [...this._batchCalls];
+    this._batchCalls = [];
+    return await this._batchOriginalExecute(this._batchSigner as any, txs as any);
+  }
+
+  public async endBatch(options?: { flush?: boolean }): Promise<GetTransactionReceiptResponse | null> {
+    const flush = options?.flush ?? true;
+    let result: GetTransactionReceiptResponse | null = null;
+    if (flush) {
+      result = await this.flushBatch();
+    }
+    if (this._batchOriginalExecute) {
+      // restore
+      this.executeAndCheckTransaction = this._batchOriginalExecute as any;
+    }
+    this._batchOriginalExecute = undefined as any;
+    this._batchCalls = undefined;
+    this._batchImmediate = undefined;
+    this._batchSigner = undefined;
+    return result;
   }
 
   /**
@@ -421,12 +497,25 @@ export class EternumProvider extends EnhancedDojoProvider {
    */
   public async blitz_realm_make_hyperstructures(props: SystemProps.BlitzRealmMakeHyperstructuresProps) {
     const { count, signer } = props;
-    const call = this.createProviderCall(signer, {
+    const calls = [];
+
+    if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
+      const requestRandomCall: Call = {
+        contractAddress: this.VRF_PROVIDER_ADDRESS!,
+        entrypoint: "request_random",
+        calldata: [getContractByName(this.manifest, `${NAMESPACE}-blitz_realm_systems`), 0, signer.address],
+      };
+
+      calls.push(requestRandomCall);
+    }
+
+    const makeHyperstructureCall: Call = {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-blitz_realm_systems`),
       entrypoint: "make_hyperstructures",
       calldata: [count],
-    });
-    return await this.promiseQueue.enqueue(call);
+    };
+    calls.push(makeHyperstructureCall);
+    return await this.promiseQueue.enqueue(this.createProviderCall(signer, calls));
   }
 
   /**
@@ -2260,6 +2349,16 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async set_blitz_previous_game(props: SystemProps.SetBlitzPreviousGameProps) {
+    const { prev_prize_distribution_systems, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_blitz_previous_game",
+      calldata: [prev_prize_distribution_systems],
+    });
+  }
+
   public async set_travel_food_cost_config(props: SystemProps.SetTravelFoodCostConfigProps) {
     const {
       config_id,
@@ -2828,6 +2927,20 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async grant_collectible_minter_role(props: {
+    collectible_address: string;
+    minter_address: string;
+    signer: Account | AccountInterface;
+  }) {
+    const { collectible_address, minter_address, signer } = props;
+    const MINTER_ROLE = "0x032df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6";
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: collectible_address,
+      entrypoint: "grant_role",
+      calldata: [MINTER_ROLE, minter_address],
+    });
+  }
+
   public async set_blitz_registration_config(props: SystemProps.SetBlitzRegistrationConfigProps) {
     const {
       fee_token,
@@ -2841,6 +2954,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       collectibles_cosmetics_max,
       collectibles_cosmetics_address,
       collectibles_timelock_address,
+      collectibles_lootchest_address,
       signer,
     } = props;
     return await this.executeAndCheckTransaction(signer, {
@@ -2861,6 +2975,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         collectibles_cosmetics_max,
         collectibles_cosmetics_address,
         collectibles_timelock_address,
+        collectibles_lootchest_address,
       ],
     });
   }

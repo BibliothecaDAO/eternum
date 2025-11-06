@@ -4,10 +4,9 @@ version = 1
 [[package]]
 name = "achievement"
 version = "0.0.0"
-source = "git+https://github.com/credence0x/arcade?rev=d7b81b7#d7b81b79ccc548a946ed79176dfd00c496028f9f"
+source = "git+https://github.com/cartridge-gg/arcade?rev=817a0ef#817a0efa7667cfe72cf3ecec316676cdae40637e"
 dependencies = [
  "dojo",
- "dojo_macros",
 ]
 
 [[package]]
@@ -27,24 +26,41 @@ source = "git+https://github.com/edisontim/cubit.git?branch=feat%2Fcairo-2.9.2#3
 
 [[package]]
 name = "dojo"
-version = "1.7.0-alpha.2"
-source = "git+https://github.com/credence0x/dojo?rev=13937cc#13937cca6d6093e33de0b060838600e7bf55f879"
+version = "1.7.1"
+source = "registry+https://scarbs.xyz/"
+checksum = "sha256:b792d9c526269f5265dd89f063da5db8daebb461f2dec2cdb712f420187b39a8"
 dependencies = [
- "dojo_macros",
+ "dojo_cairo_macros",
 ]
 
 [[package]]
+name = "dojo_cairo_macros"
+version = "1.7.1"
+source = "registry+https://scarbs.xyz/"
+checksum = "sha256:18059a9ac9ec2c0c708baad382728a99970b621b1eaab780fd9a8ec2dc975c98"
+
+[[package]]
 name = "dojo_cairo_test"
-version = "1.7.0-alpha.2"
-source = "git+https://github.com/credence0x/dojo?rev=13937cc#13937cca6d6093e33de0b060838600e7bf55f879"
+version = "1.7.1"
+source = "registry+https://scarbs.xyz/"
+checksum = "sha256:93fba9557e34d0aa0903092e8f32560b0ce72b66dceea2a51fd571b1217351e3"
 dependencies = [
  "dojo",
 ]
 
 [[package]]
-name = "dojo_macros"
-version = "1.7.0-alpha.2"
-source = "git+https://github.com/credence0x/dojo?rev=13937cc#13937cca6d6093e33de0b060838600e7bf55f879"
+name = "eternum"
+version = "1.0.0"
+dependencies = [
+ "achievement",
+ "alexandria_data_structures",
+ "alexandria_math",
+ "cubit",
+ "dojo",
+ "dojo_cairo_test",
+ "openzeppelin",
+ "openzeppelin_token",
+]
 
 [[package]]
 name = "openzeppelin"
@@ -163,18 +179,3 @@ name = "openzeppelin_utils"
 version = "2.0.0"
 source = "registry+https://scarbs.xyz/"
 checksum = "sha256:bf799c794139837f397975ffdf6a7ed5032d198bbf70e87a8f44f144a9dfc505"
-
-[[package]]
-name = "s1_eternum"
-version = "1.0.0"
-dependencies = [
- "achievement",
- "alexandria_data_structures",
- "alexandria_math",
- "cubit",
- "dojo",
- "dojo_cairo_test",
- "dojo_macros",
- "openzeppelin",
- "openzeppelin_token",
-]

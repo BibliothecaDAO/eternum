@@ -5,11 +5,12 @@ import { Connector, StarknetConfig, jsonRpcProvider, paymasterRpcProvider, voyag
 import type React from "react";
 import { useCallback, useEffect, useRef } from "react";
 import { constants, shortString } from "starknet";
+import { dojoConfig } from "../../../dojo-config";
 import { env } from "../../../env";
-import { policies } from "./policies";
-import { useControllerAccount } from "./use-controller-account";
-import { useAccountStore } from "../store/use-account-store";
 import { bootstrapGame } from "../../init/bootstrap";
+import { useAccountStore } from "../store/use-account-store";
+import { buildPolicies } from "./policies";
+import { useControllerAccount } from "./use-controller-account";
 
 const preset: string = "eternum";
 const slot: string = env.VITE_PUBLIC_SLOT;
@@ -70,7 +71,7 @@ const controller = new ControllerConnector({
           ? constants.StarknetChainId.SN_MAIN
           : constants.StarknetChainId.SN_SEPOLIA,
   preset,
-  policies: chain_id === constants.StarknetChainId.SN_MAIN ? undefined : policies,
+  policies: chain_id === constants.StarknetChainId.SN_MAIN ? undefined : buildPolicies(dojoConfig.manifest),
   slot,
   namespace,
 });
@@ -152,6 +153,11 @@ const useBootstrapPrefetch = () => {
   const hasPrefetchedRef = useRef(false);
 
   useEffect(() => {
+    // Skip bootstrap entirely on factory route so it can operate without sync
+    if (typeof window !== "undefined" && window.location.pathname.startsWith("/factory")) {
+      return;
+    }
+
     if (!account || hasPrefetchedRef.current) {
       return;
     }

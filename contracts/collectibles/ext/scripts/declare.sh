@@ -13,11 +13,13 @@
 #   ./declare.sh [network]  - Builds and declares the Realms Collectible contracts
 #                           where [network] is optional and defaults to 'local'
 #   Examples:
-#   ./declare.sh      - Declares to local
+#   ./declare.sh           - Declares to local
 #   ./declare.sh local     - Declares to local
 #   ./declare.sh slot      - Declares to slot
 #   ./declare.sh sepolia   - Declares to sepolia
 #   ./declare.sh mainnet   - Declares to mainnet
+#
+#   Note: This declare script is network-only and does not require a collectible type
 #
 # PROCESS:
 #   1. Builds the contracts using Scarb in release mode

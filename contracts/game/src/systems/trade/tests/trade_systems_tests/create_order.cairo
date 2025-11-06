@@ -3,27 +3,27 @@
 // use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 // use dojo::world::{WorldStorage, WorldStorageTrait};
 // use dojo_cairo_test::{ContractDefTrait, NamespaceDef, TestResource};
-// use s1_eternum::alias::ID;
+// use crate::alias::ID;
 
-// use s1_eternum::constants::{DONKEY_ENTITY_TYPE, ResourceTypes};
+// use crate::constants::{DONKEY_ENTITY_TYPE, ResourceTypes};
 
-// use s1_eternum::models::{
+// use crate::models::{
 //     config::CapacityCategory, config::CapacityConfig, movable::Movable, owner::Owner, position::Position,
 //     resource::resource::{Resource, ResourceImpl}, trade::{Trade, TradeStatus}, weight::Weight,
 // };
 
-// use s1_eternum::systems::config::contracts::{
+// use crate::systems::config::contracts::{
 //     ICapacityConfigDispatcher, ICapacityConfigDispatcherTrait, ITransportConfigDispatcher,
 //     ITransportConfigDispatcherTrait, IWeightConfigDispatcher, IWeightConfigDispatcherTrait, config_systems,
 // };
 
-// use s1_eternum::systems::dev::contracts::resource::IResourceSystemsDispatcherTrait;
+// use crate::systems::dev::contracts::resource::IResourceSystemsDispatcherTrait;
 
-// use s1_eternum::systems::trade::contracts::trade_systems::{
+// use crate::systems::trade::contracts::trade_systems::{
 //     ITradeSystemsDispatcher, ITradeSystemsDispatcherTrait, trade_systems,
 // };
 
-// use s1_eternum::utils::testing::{
+// use crate::utils::testing::{
 //     config::{set_capacity_config, set_resource_weight_config, set_settlement_config},
 //     general::{get_default_realm_pos, spawn_realm},
 //     systems::{deploy_dev_resource_systems, deploy_realm_systems, deploy_system}, world::spawn_eternum,

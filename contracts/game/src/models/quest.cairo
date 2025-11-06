@@ -1,5 +1,5 @@
-use s1_eternum::alias::ID;
-use s1_eternum::models::position::Coord;
+use crate::alias::ID;
+use crate::models::position::Coord;
 use starknet::ContractAddress;
 
 

@@ -1,5 +1,5 @@
-use s1_eternum::alias::ID;
-use s1_eternum::models::position::Coord;
+use crate::alias::ID;
+use crate::models::position::Coord;
 use starknet::ContractAddress;
 
 
@@ -29,10 +29,10 @@ pub trait IRealmInternalSystems<T> {
 #[dojo::contract]
 pub mod realm_internal_systems {
     use dojo::world::{WorldStorage, WorldStorageTrait};
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::models::position::Coord;
-    use s1_eternum::systems::utils::realm::iRealmImpl;
+    use crate::alias::ID;
+    use crate::constants::DEFAULT_NS;
+    use crate::models::position::Coord;
+    use crate::systems::utils::realm::iRealmImpl;
     use starknet::ContractAddress;
 
     #[abi(embed_v0)]

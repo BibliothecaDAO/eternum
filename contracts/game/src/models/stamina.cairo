@@ -1,7 +1,7 @@
 use core::num::traits::zero::Zero;
-use s1_eternum::models::config::TroopStaminaConfig;
-use s1_eternum::models::troop::{TroopBoosts, TroopTier, TroopType};
-use s1_eternum::utils::math::PercentageImpl;
+use crate::models::config::TroopStaminaConfig;
+use crate::models::troop::{TroopBoosts, TroopTier, TroopType};
+use crate::utils::math::PercentageImpl;
 
 #[derive(Introspect, Copy, Drop, Serde, Default, DojoStore)]
 pub struct Stamina {

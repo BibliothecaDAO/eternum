@@ -1,26 +1,26 @@
 use core::num::traits::Zero;
 use dojo::model::ModelStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-use s1_eternum::alias::ID;
-use s1_eternum::constants::{ResourceTypes, blitz_produceable_resources};
-use s1_eternum::models::config::{
+use crate::alias::ID;
+use crate::constants::{ResourceTypes, blitz_produceable_resources};
+use crate::models::config::{
     MapConfig, TickImpl, TickInterval, TroopLimitConfig, TroopStaminaConfig, VillageFoundResourcesConfig,
     WorldConfigUtilImpl,
 };
-use s1_eternum::models::map::TileOccupier;
-use s1_eternum::models::position::{Coord, TravelImpl};
-use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl};
-use s1_eternum::models::resource::production::production::ProductionImpl;
-use s1_eternum::models::resource::resource::{
+use crate::models::map::TileOccupier;
+use crate::models::position::{Coord, TravelImpl};
+use crate::models::resource::production::building::{BuildingCategory, BuildingImpl};
+use crate::models::resource::production::production::ProductionImpl;
+use crate::models::resource::resource::{
     ResourceMinMaxList, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
 };
-use s1_eternum::models::structure::{
+use crate::models::structure::{
     StructureBaseImpl, StructureCategory, StructureImpl, StructureMetadata, StructureOwnerStoreImpl,
 };
-use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
-use s1_eternum::models::weight::Weight;
-use s1_eternum::systems::utils::structure::iStructureImpl;
-use s1_eternum::systems::utils::troop::iMercenariesImpl;
+use crate::models::troop::{GuardSlot, TroopTier, TroopType};
+use crate::models::weight::Weight;
+use crate::systems::utils::structure::iStructureImpl;
+use crate::systems::utils::troop::iMercenariesImpl;
 use starknet::ContractAddress;
 use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 use crate::system_libraries::structure_libraries::structure_creation_library::{

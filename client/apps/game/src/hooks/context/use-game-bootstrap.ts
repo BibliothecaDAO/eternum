@@ -14,7 +14,7 @@ export type GameBootstrapState = {
   retry: () => void;
 };
 
-export const useGameBootstrap = (): GameBootstrapState => {
+export const useGameBootstrap = (enabled: boolean = true): GameBootstrapState => {
   const progress = useSyncStore((state) => state.initialSyncProgress);
   const [status, setStatus] = useState<BootstrapStatus>("idle");
   const [setupResult, setSetupResult] = useState<SetupResult | null>(null);
@@ -49,10 +49,10 @@ export const useGameBootstrap = (): GameBootstrapState => {
   }, []);
 
   useEffect(() => {
-    if (status === "idle") {
+    if (status === "idle" && enabled) {
       beginBootstrap();
     }
-  }, [beginBootstrap, status]);
+  }, [beginBootstrap, status, enabled]);
 
   const retry = useCallback(() => {
     if (status === "loading") {
