@@ -1,5 +1,8 @@
 name: Factory Cleanup
 
+env:
+  SLOT_AUTH: ${{ secrets.SLOT_AUTH }}
+
 on:
   schedule:
     - cron: '12 */6 * * *'
