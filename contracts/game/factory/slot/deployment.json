@@ -1,0 +1,30 @@
+[
+  {
+    "name": "bltz-sand-void-64",
+    "slotTimestamp": 1702443000,
+    "deployed": true,
+    "configured": true,
+    "indexed": true
+  },
+  {
+    "name": "bltz-vast-zeal-25",
+    "slotTimestamp": 1702443000,
+    "deployed": true,
+    "configured": true,
+    "indexed": true
+  },
+  {
+    "name": "bltz-heal-gate-56",
+    "slotTimestamp": 1702443000,
+    "deployed": true,
+    "configured": true,
+    "indexed": true
+  },
+  {
+    "name": "bltz-high-nova-63",
+    "slotTimestamp": 1702443000,
+    "deployed": true,
+    "configured": true,
+    "indexed": true
+  }
+]
