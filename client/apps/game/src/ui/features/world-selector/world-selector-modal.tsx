@@ -634,18 +634,6 @@ export const WorldSelectorModal = ({
 
                       return (
                         <>
-                          {upcoming.length > 0 && (
-                            <>
-                              <div className="flex items-center gap-2 my-2">
-                                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
-                                <div className="text-[10px] font-semibold uppercase tracking-widest text-gold/80 px-2">
-                                  Upcoming
-                                </div>
-                                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
-                              </div>
-                              {upcoming.map((fg) => renderFactoryItem(fg))}
-                            </>
-                          )}
                           {ongoing.length > 0 && (
                             <>
                               <div className="flex items-center gap-2 my-2">
@@ -656,6 +644,18 @@ export const WorldSelectorModal = ({
                                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
                               </div>
                               {ongoing.map((fg) => renderFactoryItem(fg))}
+                            </>
+                          )}
+                          {upcoming.length > 0 && (
+                            <>
+                              <div className="flex items-center gap-2 my-2">
+                                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+                                <div className="text-[10px] font-semibold uppercase tracking-widest text-gold/80 px-2">
+                                  Upcoming
+                                </div>
+                                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+                              </div>
+                              {upcoming.map((fg) => renderFactoryItem(fg))}
                             </>
                           )}
                           {ended.length > 0 && (
