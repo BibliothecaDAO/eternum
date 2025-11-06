@@ -1,8 +1,8 @@
 // Generate per-game world configuration calls (sozo-ready) using addresses from factory Torii
 import * as fs from "node:fs";
-import * as Torii from "../../../packages/torii/dist/index.js";
 import { getFactorySqlBaseUrl as sharedFactorySqlBase } from "../../../common/factory/endpoints.ts";
 import { EternumProvider } from "../../../packages/provider/dist/index.js";
+import * as Torii from "../../../packages/torii/dist/index.js";
 
 interface Params {
   chain: string;
@@ -176,6 +176,10 @@ export async function generateWorldConfigCalldata(p: Params) {
   await C.setRealmUpgradeConfig(ctx);
   await C.setTroopConfig(ctx);
   await C.setBuildingConfig(ctx);
+  // Ensure resource factory parameters are configured (enables production)
+  if (typeof C.SetResourceFactoryConfig === "function") {
+    await C.SetResourceFactoryConfig(ctx);
+  }
 
   const outDir = `contracts/game/factory/${p.chain}/calldata/${p.worldName}`;
   fs.mkdirSync(outDir, { recursive: true });
