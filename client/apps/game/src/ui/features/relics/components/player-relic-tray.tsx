@@ -108,12 +108,11 @@ const RelicGrid = ({ relics, gridClass, iconSize, onRelicClick }: RelicGridProps
       const resourceKey = resolveRelicResourceKey(relic.resourceId);
       return (
         <div
-          type="button"
           key={`${relic.resourceId}`}
           className={cn(RELIC_ITEM_CLASSES, RELIC_ITEM_THEME, RELIC_ITEM_INTERACTIVE)}
           onClick={() => onRelicClick(relic)}
         >
-          <ResourceIcon resource={resourceKey} size={iconSize} withTooltip />
+          <ResourceIcon resource={resourceKey} size={iconSize} />
           <span className={RELIC_AMOUNT_CLASS}>{relic.displayAmount}</span>
         </div>
       );

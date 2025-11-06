@@ -13,6 +13,8 @@ import { isRelicCompatible, useRelicEssenceStatus, useRelicMetadata } from "../h
 import type { RelicHolderPreview } from "./player-relic-tray";
 import { RelicEssenceRequirement, RelicIncompatibilityNotice, RelicSummary } from "./relic-activation-shared";
 
+const ZERO_CONTRACT_ADDRESS = ContractAddress("0x0");
+
 interface RelicActivationSelectorProps {
   resourceId: ID;
   displayAmount: string;
@@ -174,6 +176,7 @@ export const RelicActivationSelector = ({
     setup: { components, systemCalls },
     account: { account },
   } = useDojo();
+  const isBlitz = getIsBlitz();
 
   const removeRelicFromStore = useUIStore((state) => state.removeRelicFromEntity);
   const triggerRelicsRefresh = useUIStore((state) => state.triggerRelicsRefresh);
@@ -188,8 +191,6 @@ export const RelicActivationSelector = ({
 
   const structureNameMap = useMemo(() => {
     const map = new Map<string, string>();
-    const blitz = getIsBlitz();
-
     playerStructures.forEach((structure) => {
       const id = Number(structure.entityId);
       if (Number.isNaN(id)) {
@@ -197,7 +198,7 @@ export const RelicActivationSelector = ({
       }
 
       try {
-        const name = getStructureName(structure.structure, blitz).name;
+        const name = getStructureName(structure.structure, isBlitz).name;
         map.set(String(id), name);
       } catch {
         map.set(String(id), `Realm #${id}`);
@@ -205,7 +206,7 @@ export const RelicActivationSelector = ({
     });
 
     return map;
-  }, [playerStructures]);
+  }, [playerStructures, isBlitz]);
 
   const { relicInfo, resourceName, resourceKey, essenceCost } = useRelicMetadata(resourceId);
 
@@ -222,8 +223,26 @@ export const RelicActivationSelector = ({
   }, [relicInfo]);
 
   const enrichedHolders = useMemo<EnrichedHolder[]>(() => {
+    const resolveParentStructureName = (structureId: ID | null): string | null => {
+      if (structureId == null) {
+        return null;
+      }
+
+      const cachedName = structureNameMap.get(String(structureId));
+      if (cachedName) {
+        return cachedName;
+      }
+
+      try {
+        const parentInfo = getEntityInfo(structureId, ZERO_CONTRACT_ADDRESS, components, isBlitz);
+        return parentInfo?.name?.name ?? null;
+      } catch {
+        return null;
+      }
+    };
+
     return holders.map((holder) => {
-      const entityInfo = getEntityInfo(holder.entityId, ContractAddress("0x0"), components, getIsBlitz());
+      const entityInfo = getEntityInfo(holder.entityId, ZERO_CONTRACT_ADDRESS, components, isBlitz);
       const entityName = entityInfo?.name?.name ?? `Entity ${holder.entityId}`;
       const selfId = toEntityId(holder.entityId, holder.entityId);
       const isArmy = holder.entityType === EntityType.ARMY || holder.recipientType === RelicRecipientType.Explorer;
@@ -231,12 +250,7 @@ export const RelicActivationSelector = ({
       const entityOwnerId = isArmy ? toEntityId(explorerOwnerRaw, selfId) : selfId;
       const hasParentStructure = isArmy && entityOwnerId !== selfId;
       const parentStructureId = hasParentStructure ? entityOwnerId : null;
-      const parentStructureName = hasParentStructure
-        ? (entityInfo?.explorer?.ownerStructureName ??
-          entityInfo?.explorer?.ownerName ??
-          structureNameMap.get(String(parentStructureId)) ??
-          null)
-        : null;
+      const parentStructureName = hasParentStructure ? resolveParentStructureName(parentStructureId) : null;
       const troops = isArmy ? ((entityInfo?.explorer?.troops as Troops | undefined) ?? null) : null;
 
       return {
@@ -248,7 +262,7 @@ export const RelicActivationSelector = ({
         troops,
       };
     });
-  }, [components, holders, structureNameMap]);
+  }, [components, holders, structureNameMap, isBlitz]);
 
   const visibleHolders = useMemo(() => {
     return enrichedHolders.filter((holder) => !removedHolderIds.includes(String(holder.entityId)));
