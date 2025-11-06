@@ -4,6 +4,7 @@ import { getTroopResourceId } from "@bibliothecadao/eternum";
 import { DISPLAYED_SLOT_NUMBER_MAP, GUARD_SLOT_NAMES, resources, TroopTier } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { AlertTriangle, Shield } from "lucide-react";
+import { useMemo } from "react";
 
 import type { GuardSummary, SelectedTroopCombo } from "./types";
 
@@ -11,6 +12,7 @@ interface DefenseSlotSelectionProps {
   guardSlot: number;
   maxDefenseSlots: number;
   guardsBySlot: Map<number, GuardSummary>;
+  availableSlots: number[];
   selectedTroopCombo: SelectedTroopCombo;
   canCreateDefenseArmy: boolean;
   defenseSlotInfoMessage: string | null;
@@ -22,13 +24,28 @@ export const DefenseSlotSelection = ({
   guardSlot,
   maxDefenseSlots,
   guardsBySlot,
+  availableSlots,
   selectedTroopCombo,
   canCreateDefenseArmy,
   defenseSlotInfoMessage,
   defenseSlotErrorMessage,
   onSelect,
 }: DefenseSlotSelectionProps) => {
-  const activeSlotCount = guardsBySlot.size;
+  const sortedSlots = useMemo(
+    () =>
+      [...availableSlots].sort(
+        (a, b) =>
+          DISPLAYED_SLOT_NUMBER_MAP[a as keyof typeof DISPLAYED_SLOT_NUMBER_MAP] -
+          DISPLAYED_SLOT_NUMBER_MAP[b as keyof typeof DISPLAYED_SLOT_NUMBER_MAP],
+      ),
+    [availableSlots],
+  );
+
+  const activeSlotCount = useMemo(() => {
+    return sortedSlots.filter((slot) => guardsBySlot.has(slot)).length;
+  }, [sortedSlots, guardsBySlot]);
+
+  const unlockedCapacity = Math.min(sortedSlots.length, maxDefenseSlots);
 
   return (
     <div className="flex-1 p-4 rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-brown/30">
@@ -41,10 +58,8 @@ export const DefenseSlotSelection = ({
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        {Object.entries(DISPLAYED_SLOT_NUMBER_MAP)
-          .sort((a, b) => a[1] - b[1])
-          .map(([slotStr, displayedSlotNumber]) => {
-            const slot = Number(slotStr);
+        {sortedSlots.map((slot) => {
+            const displayedSlotNumber = DISPLAYED_SLOT_NUMBER_MAP[slot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP];
             const slotName = GUARD_SLOT_NAMES[slot as keyof typeof GUARD_SLOT_NAMES];
             const guardInfo = guardsBySlot.get(slot);
             const guardCategory = guardInfo?.troops?.category;
@@ -60,7 +75,7 @@ export const DefenseSlotSelection = ({
               : null;
             const hasGuard = Boolean(guardInfo?.troops);
             const isSelected = guardSlot === slot;
-            const canOpenAdditionalSlot = canCreateDefenseArmy && activeSlotCount < maxDefenseSlots;
+            const canOpenAdditionalSlot = canCreateDefenseArmy && activeSlotCount < unlockedCapacity;
             const isSlotSelectable = hasGuard || canOpenAdditionalSlot;
             const isSlotCompatible =
               !guardInfo || (guardCategory === selectedTroopCombo.type && guardTier === selectedTroopCombo.tier);
@@ -92,7 +107,7 @@ export const DefenseSlotSelection = ({
                       ? "ring-2 ring-gold/60 shadow-xl shadow-gold/30 scale-105 bg-gradient-to-br from-gold/25 to-gold/15"
                       : isSlotSelectable
                         ? "hover:bg-gold/10 hover:border-gold/50 hover:scale-102 hover:shadow-md"
-                        : "opacity-40 cursor-not-allowed",
+                        : "opacity-50 cursor-not-allowed",
                     hasGuard && !isSlotCompatible && "border-danger/50 hover:border-danger/60",
                   )}
                 >
@@ -137,6 +152,11 @@ export const DefenseSlotSelection = ({
             );
           })}
       </div>
+      {sortedSlots.length === 0 && (
+        <div className="mt-4 text-xs text-center text-gold/60 uppercase tracking-wide">
+          Upgrade this structure to unlock defense slots
+        </div>
+      )}
       {defenseSlotInfoMessage && (
         <div className="mt-4 bg-brown/15 border border-gold/30 rounded-xl p-4 text-sm text-gold/80">
           {defenseSlotInfoMessage}

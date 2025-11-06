@@ -27,6 +27,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, ArrowRight, Timer } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { getStructureDefenseSlotLimit, getUnlockedGuardSlots, MAX_GUARD_SLOT_COUNT } from "../utils/defense-slot-utils";
 import { TransferDirection } from "./help-container";
 import { TransferBalanceCardData, TransferBalanceCards } from "./transfer-troops/transfer-balance-cards";
 import { TroopBadge } from "./transfer-troops/transfer-troop-badge";
@@ -129,44 +130,59 @@ export const TransferTroopsContainer = ({
 
   const isBalanceSelected = guardSlot === BALANCE_SLOT;
 
-  const getStructureDefenseSlots = useCallback(
-    (structureType: StructureType, structureLevel: number) => {
-      const config = configManager.getWorldStructureDefenseSlotsConfig();
-      switch (structureType) {
-        case StructureType.FragmentMine:
-          return config[structureType];
-        case StructureType.Hyperstructure:
-          return config[structureType];
-        case StructureType.Bank:
-          return config[structureType];
-        case StructureType.Village:
-          return structureLevel + 1;
-        case StructureType.Realm:
-          return structureLevel + 1;
-        default:
-          return 0;
-      }
-    },
-    [configManager],
-  );
-
-  const availableGuards = useMemo<number[]>(() => {
-    const getGuardsArray = (structure?: typeof targetStructure | typeof selectedStructure) => {
-      if (!structure) return [];
-      const slots = getStructureDefenseSlots(structure.category, structure.base.level);
-      // If 2 slots, return [2,3]. If 4 slots, return [2,3,4,5].
-      // Start guard slots from 3 (so 3+0, 3+1, ...) up to length-1
-      return Array.from({ length: slots }, (_, i) => i);
-    };
-
-    if (transferDirection === TransferDirection.ExplorerToStructure) {
-      return getGuardsArray(targetStructure);
-    } else if (transferDirection === TransferDirection.StructureToExplorer) {
-      return getGuardsArray(selectedStructure);
-    } else {
+  const resolveUnlockedSlotsForStructure = (structure?: typeof selectedStructure) => {
+    if (!structure?.base) {
       return [];
     }
-  }, [selectedStructure, targetStructure, transferDirection]);
+
+    const { base, category } = structure;
+    const limits: number[] = [];
+    const derivedLimit = getStructureDefenseSlotLimit(category as StructureType | undefined, base.level ?? null);
+    if (typeof derivedLimit === "number" && Number.isFinite(derivedLimit)) {
+      limits.push(derivedLimit);
+    }
+
+    const baseLimitRaw = base.troop_max_guard_count;
+    if (baseLimitRaw !== undefined && baseLimitRaw !== null) {
+      const baseLimit = Number(baseLimitRaw);
+      if (Number.isFinite(baseLimit)) {
+        limits.push(baseLimit);
+      }
+    }
+
+    if (limits.length === 0) {
+      return [];
+    }
+
+    const resolvedLimit = Math.max(0, Math.min(Math.min(...limits), MAX_GUARD_SLOT_COUNT));
+    if (resolvedLimit === 0) {
+      return [];
+    }
+
+    return getUnlockedGuardSlots(resolvedLimit);
+  };
+
+  const selectedStructureGuardSlots = useMemo(
+    () => resolveUnlockedSlotsForStructure(selectedStructure),
+    [selectedStructure],
+  );
+
+  const targetStructureGuardSlots = useMemo(() => resolveUnlockedSlotsForStructure(targetStructure), [targetStructure]);
+
+  const availableGuards = useMemo<number[]>(() => {
+    if (transferDirection === TransferDirection.ExplorerToStructure) {
+      return targetStructureGuardSlots;
+    }
+
+    if (transferDirection === TransferDirection.StructureToExplorer) {
+      return selectedStructureGuardSlots;
+    }
+
+    return [];
+  }, [selectedStructureGuardSlots, targetStructureGuardSlots, transferDirection]);
+
+  const selectedGuardSlotSet = useMemo(() => new Set(selectedStructureGuardSlots), [selectedStructureGuardSlots]);
+  const targetGuardSlotSet = useMemo(() => new Set(targetStructureGuardSlots), [targetStructureGuardSlots]);
 
   const orderedGuardSlots = useMemo(() => [...availableGuards].sort((a, b) => b - a), [availableGuards]);
   const lastGuardSlot = orderedGuardSlots[0];
@@ -183,7 +199,7 @@ export const TransferTroopsContainer = ({
   // starts from highest slot to lowest slot
   const advanceLabel =
     orderedGuardSlots.length > 0
-      ? availableGuards
+      ? [...availableGuards]
           .sort((a, b) => a - b)
           .map((slotId) => `Slot ${DISPLAYED_SLOT_NUMBER_MAP[slotId as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]}`)
           .join(" → ")
@@ -200,7 +216,7 @@ export const TransferTroopsContainer = ({
   // list of guards
   const targetGuards = useMemo(() => {
     if (!targetStructure) return [];
-    const guards = getGuardsByStructure(targetStructure);
+    const guards = getGuardsByStructure(targetStructure).filter((guard) => targetGuardSlotSet.has(Number(guard.slot)));
     return guards.map((guard) => {
       const cooldownEnd = guard.cooldownEnd !== undefined && guard.cooldownEnd !== null ? Number(guard.cooldownEnd) : 0;
 
@@ -215,12 +231,14 @@ export const TransferTroopsContainer = ({
         },
       };
     });
-  }, [targetStructure]);
+  }, [targetStructure, targetGuardSlotSet]);
 
   // list of guards
   const selectedGuards = useMemo(() => {
     if (!selectedStructure) return [];
-    const guards = getGuardsByStructure(selectedStructure);
+    const guards = getGuardsByStructure(selectedStructure).filter((guard) =>
+      selectedGuardSlotSet.has(Number(guard.slot)),
+    );
     return guards.map((guard) => {
       const cooldownEnd = guard.cooldownEnd !== undefined && guard.cooldownEnd !== null ? Number(guard.cooldownEnd) : 0;
 
@@ -235,7 +253,7 @@ export const TransferTroopsContainer = ({
         },
       };
     });
-  }, [selectedStructure]);
+  }, [selectedStructure, selectedGuardSlotSet]);
 
   const selectedTroop = useMemo(() => {
     if (transferDirection === TransferDirection.StructureToExplorer) {
