@@ -5,6 +5,40 @@
     "deployed": true,
     "configured": true,
     "indexed": true,
-    "archivedAt": 1762455633
+    "archivedAt": 1702455633
+  },
+  {
+    "name": "bltz-equinox-aegis-65",
+    "slotTimestamp": 1762475400,
+    "deployed": true,
+    "configured": true,
+    "indexed": true,
+    "archivedAt": 1702455633
+
+  },
+  {
+    "name": "bltz-nexus-vinegate-47",
+    "slotTimestamp": 1762457400,
+    "deployed": true,
+    "configured": true,
+    "indexed": true,
+    "archivedAt": 1702455633
+  },
+
+  {
+    "name": "bltz-serpentis-castle-39",
+    "slotTimestamp": 1762507800,
+    "deployed": true,
+    "configured": true,
+    "indexed": true,
+    "archivedAt": 1702455633
+  },
+  {
+    "name": "bltz-fury-wave-32",
+    "slotTimestamp": 1762529400,
+    "deployed": true,
+    "configured": true,
+    "indexed": true,
+    "archivedAt": 1702455633
   }
 ]
