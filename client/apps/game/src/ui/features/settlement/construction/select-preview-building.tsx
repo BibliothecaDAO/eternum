@@ -40,11 +40,17 @@ import {
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
-import { ChevronDown, ChevronUp, InfoIcon } from "lucide-react";
-import React, { useMemo, useState } from "react";
+import { InfoIcon } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
 
 const ARMY_TYPES = ["Archery", "Stable", "Barracks"] as const;
 type ArmyTypeLabel = (typeof ARMY_TYPES)[number];
+type ArmyGroup = {
+  armyType: ArmyTypeLabel;
+  buildings: string[];
+  isRecommended: boolean;
+  bonus?: number;
+};
 
 const formatBiomeLabel = (biome: BiomeType | string | null | undefined) => {
   if (!biome) return "";
@@ -127,19 +133,73 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
   const { playResourceSound } = usePlayResourceSound();
 
-  const buildingTypes = Object.keys(BuildingType).filter(
-    (key) =>
-      isNaN(Number(key)) &&
-      key !== "Resource" &&
-      key !== "Castle" &&
-      key !== "Bank" &&
-      key !== "FragmentMine" &&
-      key !== "None" &&
-      key !== "Settlement" &&
-      key !== "Hyperstructure" &&
-      key !== "Storehouse" &&
-      (getIsBlitz() ? key !== "ResourceFish" : true),
+  const isBlitz = getIsBlitz();
+
+  const buildingTypes = useMemo(
+    () =>
+      Object.keys(BuildingType).filter(
+        (key) =>
+          isNaN(Number(key)) &&
+          key !== "Resource" &&
+          key !== "Castle" &&
+          key !== "Bank" &&
+          key !== "FragmentMine" &&
+          key !== "None" &&
+          key !== "Settlement" &&
+          key !== "Hyperstructure" &&
+          key !== "Storehouse" &&
+          (isBlitz ? key !== "ResourceFish" : true),
+      ),
+    [isBlitz],
   );
+
+  const armyGroups = useMemo<ArmyGroup[]>(
+    () =>
+      ARMY_TYPES.reduce<ArmyGroup[]>((acc, armyType) => {
+        const buildings = buildingTypes.filter((a) => {
+          const building = BuildingType[a as keyof typeof BuildingType];
+          const info = getMilitaryBuildingInfo(building);
+          return info && info.type === armyType;
+        });
+
+        if (buildings.length === 0) {
+          return acc;
+        }
+
+        const match = biomeRecommendation?.options.find((option) => option.armyType === armyType);
+        const isRecommended = Boolean(
+          biomeRecommendation?.hasDistinctBest &&
+            biomeRecommendation.best.some((option) => option.armyType === armyType),
+        );
+
+        acc.push({ armyType, buildings, isRecommended, bonus: match?.bonus });
+        return acc;
+      }, []),
+    [buildingTypes, biomeRecommendation],
+  );
+
+  const recommendedArmyType = useMemo<ArmyTypeLabel | null>(() => {
+    const recommended = armyGroups.find((group) => group.isRecommended);
+    return recommended ? recommended.armyType : null;
+  }, [armyGroups]);
+
+  const [selectedTab, setSelectedTab] = useState(1);
+  const [selectedArmyType, setSelectedArmyType] = useState<ArmyTypeLabel | null>(null);
+
+  useEffect(() => {
+    if (armyGroups.length === 0) {
+      if (selectedArmyType !== null) {
+        setSelectedArmyType(null);
+      }
+      return;
+    }
+
+    if (selectedArmyType && armyGroups.some((group) => group.armyType === selectedArmyType)) {
+      return;
+    }
+
+    setSelectedArmyType(recommendedArmyType ?? armyGroups[0].armyType);
+  }, [armyGroups, recommendedArmyType, selectedArmyType]);
 
   const checkBalance = (cost: any) =>
     Object.keys(cost).every((resourceId) => {
@@ -148,17 +208,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       return divideByPrecision(balance.balance) >= resourceCost.amount;
     });
 
-  const [selectedTab, setSelectedTab] = useState(1);
-
-  // Add this state for expanded sections
-  const [expandedTypes, setExpandedTypes] = useState<Record<string, boolean>>({});
-
-  const toggleArmyType = (armyType: string) => {
-    setExpandedTypes((prev) => ({
-      ...prev,
-      [armyType]: !prev[armyType],
-    }));
-  };
+  const activeArmyType = selectedArmyType ?? recommendedArmyType ?? (armyGroups[0]?.armyType ?? null);
 
   const tabs = useMemo(
     () => [
@@ -312,156 +362,175 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
           </div>
         ),
         component: (
-          <div className="p-2 space-y-2">
-            {ARMY_TYPES.map((armyType) => {
-              const militaryBuildings = buildingTypes.filter((a) => {
-                const building = BuildingType[a as keyof typeof BuildingType];
-                const info = getMilitaryBuildingInfo(building);
-                return info && info.type === armyType;
-              });
+          (() => {
+            if (armyGroups.length === 0) {
+              return <div className="p-2 text-xs text-gold/60">No military buildings available.</div>;
+            }
 
-              if (militaryBuildings.length === 0) return null;
+            const visibleGroups =
+              activeArmyType !== null
+                ? armyGroups.filter((group) => group.armyType === activeArmyType)
+                : armyGroups;
 
-              const match = biomeRecommendation?.options.find((option) => option.armyType === armyType);
-              const isRecommended = Boolean(
-                biomeRecommendation?.hasDistinctBest &&
-                  biomeRecommendation.best.some((option) => option.armyType === armyType),
-              );
+            return (
+              <div className="p-2 space-y-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  {armyGroups.map((group) => {
+                    const isActive = activeArmyType === group.armyType;
+                    return (
+                      <button
+                        key={group.armyType}
+                        type="button"
+                        className={clsx(
+                          "h-8 rounded border px-3 py-1 text-xs transition-colors",
+                          isActive
+                            ? "border-gold/60 bg-gold/20 text-gold"
+                            : "border-gold/30 bg-brown/20 text-gold/70 hover:border-gold/50",
+                          group.isRecommended && !isActive && "border-emerald-500/40 text-emerald-200",
+                        )}
+                        onClick={() => setSelectedArmyType(group.armyType)}
+                      >
+                        {group.armyType}
+                      </button>
+                    );
+                  })}
+                </div>
 
-              return (
-                <div
-                  key={armyType}
-                  className={clsx(
-                    "border border-gold/20 rounded-md",
-                    isRecommended && "border-emerald-500/40 shadow-emerald-500/10",
-                  )}
-                >
-                  <button
-                    className={clsx(
-                      "flex w-full justify-between items-center p-2 bg-gold/5 cursor-pointer hover:bg-gold/20 transition-colors",
-                      isRecommended && "bg-emerald-900/20 hover:bg-emerald-900/30",
-                    )}
-                    onClick={() => toggleArmyType(armyType)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium">{armyType}</h4>
-                      {isRecommended && (
-                        <span className="text-[10px] uppercase tracking-wider text-emerald-200 border border-emerald-500/40 bg-emerald-900/40 rounded px-2 py-0.5">
-                          Recommended
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {match && (
-                        <span
-                          className={clsx("text-xs font-semibold", isRecommended ? "text-emerald-200" : "text-gold/60")}
+                <div className="space-y-3">
+                  {visibleGroups.map((group) => {
+                    const resourceTrait = (() => {
+                      const first = group.buildings[0];
+                      if (!first) return "";
+                      const buildingEnum = BuildingType[first as keyof typeof BuildingType];
+                      const info = getMilitaryBuildingInfo(buildingEnum);
+                      if (info?.resourceId) {
+                        return findResourceById(info.resourceId)?.trait || "";
+                      }
+                      return "";
+                    })();
+
+                    return (
+                      <div
+                        key={group.armyType}
+                        className={clsx(
+                          "border border-gold/15 rounded-md",
+                          group.isRecommended && "border-emerald-500/40 shadow-emerald-500/10",
+                        )}
+                      >
+                        <div
+                          className={clsx(
+                            "flex justify-between items-center px-2 py-2 rounded-t-md bg-gold/5",
+                            group.isRecommended && "bg-emerald-900/20",
+                          )}
                         >
-                          {formatBiomeBonus(match.bonus)}
-                        </span>
-                      )}
-                      <div className="flex items-center text-xs text-gold/70 bg-gold/5 rounded-md px-2 py-0.5">
-                        {militaryBuildings[0] &&
-                          (() => {
-                            const building = BuildingType[militaryBuildings[0] as keyof typeof BuildingType];
-                            const info = getMilitaryBuildingInfo(building);
-                            if (info?.resourceId) {
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-medium">{group.armyType}</h4>
+                            {group.isRecommended && (
+                              <span className="text-[10px] uppercase tracking-wider text-emerald-200 border border-emerald-500/40 bg-emerald-900/40 rounded px-2 py-0.5">
+                                Recommended
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {group.bonus !== undefined && (
+                              <span
+                                className={clsx(
+                                  "text-xs font-semibold",
+                                  group.isRecommended ? "text-emerald-200" : "text-gold/60",
+                                )}
+                              >
+                                {formatBiomeBonus(group.bonus)}
+                              </span>
+                            )}
+                            <div className="flex items-center gap-2 text-xs text-gold/70 bg-gold/5 rounded-md px-2 py-0.5">
+                              {resourceTrait && <ResourceIcon resource={resourceTrait} size="xs" className="mr-1" />}
+                              {group.buildings.length} buildings
+                            </div>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 p-2">
+                          {group.buildings
+                            .slice()
+                            .sort((a, b) => {
+                              const buildingA = BuildingType[a as keyof typeof BuildingType];
+                              const buildingB = BuildingType[b as keyof typeof BuildingType];
+                              const infoA = getMilitaryBuildingInfo(buildingA);
+                              const infoB = getMilitaryBuildingInfo(buildingB);
+                              return (infoA?.tier || 0) - (infoB?.tier || 0);
+                            })
+                            .map((buildingType, index) => {
+                              const building = BuildingType[buildingType as keyof typeof BuildingType];
+                              const buildingCost =
+                                getBuildingCosts(entityId, dojo.setup.components, building, useSimpleCost) ?? [];
+                              const info = getMilitaryBuildingInfo(building);
+
+                              const hasBalance = checkBalance(buildingCost);
+                              const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
+                              const isTierLockedInSimpleMode = useSimpleCost && (info?.tier ?? 0) > 1;
+                              const canBuild =
+                                !isTierLockedInSimpleMode && hasBalance && realm?.hasCapacity && hasEnoughPopulation;
+                              const disabledReason =
+                                isTierLockedInSimpleMode && info?.tier
+                                  ? `Switch to Resource mode to build Tier ${info.tier} military buildings.`
+                                  : undefined;
+
                               return (
-                                <ResourceIcon
-                                  resource={findResourceById(info.resourceId)?.trait || ""}
-                                  size="xs"
-                                  className="mr-1"
+                                <BuildingCard
+                                  className={clsx("border border-gold/10", {
+                                    "bg-emerald-900/5": canBuild,
+                                    "border-emerald-700/5": canBuild,
+                                    "ring-1 ring-emerald-500/30": group.isRecommended,
+                                  })}
+                                  key={index}
+                                  buildingId={building}
+                                  onClick={() => {
+                                    if (!canBuild) return;
+                                    if (previewBuilding?.type === building) {
+                                      setPreviewBuilding(null);
+                                    } else {
+                                      setPreviewBuilding({ type: building });
+                                    }
+                                  }}
+                                  active={previewBuilding?.type === building}
+                                  buildingName={`${BuildingTypeToString[building]}`}
+                                  resourceName={
+                                    ResourcesIds[
+                                      configManager.getResourceBuildingProduced(building)
+                                    ] as keyof typeof ResourcesIds
+                                  }
+                                  toolTip={
+                                    <BuildingInfo
+                                      buildingId={building}
+                                      entityId={entityId}
+                                      useSimpleCost={useSimpleCost}
+                                    />
+                                  }
+                                  hasFunds={hasBalance}
+                                  hasPopulation={hasEnoughPopulation}
+                                  disabled={isTierLockedInSimpleMode}
+                                  disabledReason={disabledReason}
+                                  badge={
+                                    info?.tier ? (
+                                      <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wider bg-brown/90 text-gold rounded px-2 py-[2px]">
+                                        Tier {info.tier}
+                                      </span>
+                                    ) : undefined
+                                  }
                                 />
                               );
-                            }
-                            return null;
-                          })()}
-                        {militaryBuildings.length} buildings
+                            })}
+                        </div>
                       </div>
-                      <div className="ml-2">
-                        {expandedTypes[armyType] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                      </div>
-                    </div>
-                  </button>
-
-                  {expandedTypes[armyType] && (
-                    <div className="grid grid-cols-2 gap-2 p-2">
-                      {militaryBuildings
-                        .sort((a, b) => {
-                          const buildingA = BuildingType[a as keyof typeof BuildingType];
-                          const buildingB = BuildingType[b as keyof typeof BuildingType];
-                          const infoA = getMilitaryBuildingInfo(buildingA);
-                          const infoB = getMilitaryBuildingInfo(buildingB);
-                          return (infoA?.tier || 0) - (infoB?.tier || 0);
-                        })
-                        .map((buildingType, index) => {
-                          const building = BuildingType[buildingType as keyof typeof BuildingType];
-                          const buildingCost =
-                            getBuildingCosts(entityId, dojo.setup.components, building, useSimpleCost) ?? [];
-                          const info = getMilitaryBuildingInfo(building);
-
-                          const hasBalance = checkBalance(buildingCost);
-                          const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
-                          const isTierLockedInSimpleMode = useSimpleCost && (info?.tier ?? 0) > 1;
-                          const canBuild =
-                            !isTierLockedInSimpleMode && hasBalance && realm?.hasCapacity && hasEnoughPopulation;
-                          const disabledReason =
-                            isTierLockedInSimpleMode && info?.tier
-                              ? `Switch to Resource mode to build Tier ${info.tier} military buildings.`
-                              : undefined;
-
-                          return (
-                            <BuildingCard
-                              className={clsx("border border-gold/10", {
-                                "bg-emerald-900/5": canBuild,
-                                "border-emerald-700/5": canBuild,
-                                "ring-1 ring-emerald-500/30": isRecommended,
-                              })}
-                              key={index}
-                              buildingId={building}
-                              onClick={() => {
-                                if (!canBuild) return;
-                                if (previewBuilding?.type === building) {
-                                  setPreviewBuilding(null);
-                                } else {
-                                  setPreviewBuilding({ type: building });
-                                }
-                              }}
-                              active={previewBuilding?.type === building}
-                              buildingName={`${BuildingTypeToString[building]}`}
-                              resourceName={
-                                ResourcesIds[
-                                  configManager.getResourceBuildingProduced(building)
-                                ] as keyof typeof ResourcesIds
-                              }
-                              toolTip={
-                                <BuildingInfo buildingId={building} entityId={entityId} useSimpleCost={useSimpleCost} />
-                              }
-                              hasFunds={hasBalance}
-                              hasPopulation={hasEnoughPopulation}
-                              disabled={isTierLockedInSimpleMode}
-                              disabledReason={disabledReason}
-                            />
-                          );
-                        })}
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })()
         ),
       },
     ],
-    [
-      realm,
-      entityId,
-      selectedTab,
-      previewBuilding,
-      playResourceSound,
-      useSimpleCost,
-      expandedTypes,
-      biomeRecommendation,
-    ],
+    [realm, entityId, previewBuilding, playResourceSound, useSimpleCost, armyGroups, activeArmyType],
   );
 
   return (
@@ -522,6 +591,7 @@ const BuildingCard = ({
   className,
   disabled = false,
   disabledReason,
+  badge,
 }: {
   buildingId: BuildingType;
   onClick: () => void;
@@ -535,6 +605,7 @@ const BuildingCard = ({
   className?: string;
   disabled?: boolean;
   disabledReason?: string;
+  badge?: React.ReactNode;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const isDisabled = disabled;
@@ -567,6 +638,7 @@ const BuildingCard = ({
         alt={buildingName}
         className="absolute inset-0 w-full h-full object-contain"
       />
+      {badge && <div className="absolute top-2 left-2 z-10">{badge}</div>}
       {(lacksRequirements || showDisabledMessage) && (
         <div className="absolute inset-0 bg-brown/60 p-4 text-xs flex justify-center text-center">
           {showDisabledMessage ? (
