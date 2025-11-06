@@ -30,5 +30,37 @@
     "configured": true,
     "indexed": true,
     "archivedAt": 1762396623
+  },
+  {
+    "name": "bltz-storm-manta-10",
+    "slotTimestamp": 1702443000,
+    "deployed": true,
+    "configured": true,
+    "indexed": true,
+    "archivedAt": 1762398230
+  },
+  {
+    "name": "bltz-scout-eagle-51",
+    "slotTimestamp": 1702443000,
+    "deployed": true,
+    "configured": true,
+    "indexed": true,
+    "archivedAt": 1762398230
+  },
+  {
+    "name": "bltz-venture-lake-58",
+    "slotTimestamp": 1702443000,
+    "deployed": true,
+    "configured": true,
+    "indexed": true,
+    "archivedAt": 1762398230
+  },
+  {
+    "name": "bltz-flame-bridge-50",
+    "slotTimestamp": 1702443000,
+    "deployed": true,
+    "configured": true,
+    "indexed": true,
+    "archivedAt": 1762398230
   }
 ]
