@@ -29,7 +29,6 @@ import {
   BiomeType,
   BuildingType,
   BuildingTypeToString,
-  CapacityConfig,
   findResourceById,
   getBuildingFromResource,
   ID,
@@ -138,6 +137,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       key !== "None" &&
       key !== "Settlement" &&
       key !== "Hyperstructure" &&
+      key !== "Storehouse" &&
       (getIsBlitz() ? key !== "ResourceFish" : true),
   );
 
@@ -244,8 +244,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 const building = BuildingType[buildingType as keyof typeof BuildingType];
 
                 const isWorkersHut = building === BuildingType.WorkersHut;
-                const isStorehouse = building === BuildingType.Storehouse;
-
                 const buildingCosts = getBuildingCosts(entityId, dojo.setup.components, building, useSimpleCost);
 
                 if (!buildingCosts) return;
@@ -269,7 +267,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                       "fish-card-selector": isFishingVillage,
                       "workers-hut-card-selector": isWorkersHut,
                       "market-card-selector": isMarket,
-                      "storehouse-card-selector": isStorehouse,
                     })}
                     key={index}
                     buildingId={building}
@@ -798,9 +795,6 @@ export const BuildingInfo = ({
   const population = buildingPopCapacityConfig.population_cost;
   const capacity = buildingPopCapacityConfig.capacity_grant;
 
-  const extraStorehouseCapacityKg =
-    buildingId === BuildingType.Storehouse ? configManager.getCapacityConfigKg(CapacityConfig.Storehouse) : 0;
-
   let ongoingCost: any[] = [];
   if (resourceProduced !== undefined) {
     const costs = useSimpleCost
@@ -861,12 +855,6 @@ export const BuildingInfo = ({
           )}
         </div>
         <div>
-          {extraStorehouseCapacityKg !== 0 && (
-            <div className="mb-2">
-              <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Max Resource Capacity</h6>
-              <span className="text-gold text-lg font-semibold">+{extraStorehouseCapacityKg.toLocaleString()} kg</span>
-            </div>
-          )}
           {resourceProducedName && perTick !== 0 && (
             <div>
               <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Produced</h6>
