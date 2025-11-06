@@ -153,9 +153,10 @@ export class TileManager {
     // because the resource cost increase when adding more buildings
     const resourceChange = getBuildingCosts(entityId, this.components, buildingType, useSimpleCost);
 
-    let removeResourceOverride: () => void;
+    const removeResourceOverrides: Array<() => void> = [];
     resourceChange?.forEach((resource) => {
-      removeResourceOverride = this._overrideResource(entityId, resource.resource, -resource.amount);
+      const removeOverride = this._overrideResource(entityId, resource.resource, -resource.amount);
+      removeResourceOverrides.push(removeOverride);
     });
 
     const realmEntity = getEntityIdFromKeys([BigInt(entityId)]);
@@ -202,7 +203,7 @@ export class TileManager {
     return () => {
       this.components.Building.removeOverride(buildingOverrideId);
       this.components.StructureBuildings.removeOverride(quantityOverrideId);
-      removeResourceOverride();
+      removeResourceOverrides.forEach((removeOverride) => removeOverride());
     };
   };
 
@@ -402,9 +403,10 @@ export class TileManager {
         },
       });
     } catch (error) {
-      this.components.Building.removeOverride(overrideId);
       console.error(error);
       throw error;
+    } finally {
+      this.components.Building.removeOverride(overrideId);
     }
   };
 
@@ -421,9 +423,10 @@ export class TileManager {
         },
       });
     } catch (error) {
-      this.components.Building.removeOverride(overrideId);
       console.error(error);
       throw error;
+    } finally {
+      this.components.Building.removeOverride(overrideId);
     }
   };
 }

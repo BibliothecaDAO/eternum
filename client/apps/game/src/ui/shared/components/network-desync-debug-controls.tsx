@@ -3,7 +3,7 @@ import Button from "@/ui/design-system/atoms/button";
 import { useDojo } from "@bibliothecadao/react";
 import { env } from "../../../../env";
 
-const isDebugEnabled = import.meta.env.DEV || env.VITE_PUBLIC_GRAPHICS_DEV === true;
+const isDebugEnabled = env.VITE_PUBLIC_GRAPHICS_DEV === true;
 
 export const NetworkDesyncDebugControls = () => {
   const forceDesync = useNetworkStatusStore((state) => state.forceDesync);

@@ -1,4 +1,5 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { BlitzHighlightCard } from "@/ui/shared/components/blitz-highlight-card";
@@ -25,10 +26,13 @@ export const EndgameModal = () => {
   } = useDojo();
 
   const { currentBlockTimestamp } = useBlockTimestamp();
+  const currentPlayerData = usePlayerStore((state) => state.currentPlayerData);
+  const playerDataLoading = usePlayerStore((state) => state.isLoading);
 
   const gameEndAt = useUIStore((state) => state.gameEndAt);
 
   const isBlitz = getIsBlitz();
+  const realmCountPerHyperstructure = useMemo(() => getRealmCountPerHyperstructure(), []);
 
   const [isVisible, setIsVisible] = useState(true);
   const [isAnimating, setIsAnimating] = useState(true);
@@ -36,6 +40,8 @@ export const EndgameModal = () => {
   const [championPlayer, setChampionPlayer] = useState<BlitzHighlightPlayer | null>(null);
   const [isCopying, setIsCopying] = useState(false);
   const [isRanked, setIsRanked] = useState<boolean>(true);
+  const [totalPoints, setTotalPoints] = useState(0);
+  const [hasEvaluatedEligibility, setHasEvaluatedEligibility] = useState(false);
 
   const leaderboardSvgRef = useRef<SVGSVGElement | null>(null);
 
@@ -49,10 +55,26 @@ export const EndgameModal = () => {
   }, [currentBlockTimestamp, gameEndAt]);
 
   useEffect(() => {
-    if (!hasGameEnded) return;
+    if (!hasGameEnded) {
+      setTotalPoints(0);
+      setHasEvaluatedEligibility(false);
+      setHighlightedPlayer(null);
+      setChampionPlayer(null);
+      setIsRanked(false);
+      return;
+    }
+
+    if (!account?.address || account.address === "0x0") {
+      setTotalPoints(0);
+      setHasEvaluatedEligibility(true);
+      setHighlightedPlayer(null);
+      setChampionPlayer(null);
+      setIsRanked(false);
+      return;
+    }
 
     try {
-      const manager = LeaderboardManager.instance(components, getRealmCountPerHyperstructure());
+      const manager = LeaderboardManager.instance(components, realmCountPerHyperstructure);
       manager.updatePoints();
 
       const rankedPlayers = manager.playersByRank;
@@ -82,25 +104,60 @@ export const EndgameModal = () => {
       }
 
       const playerAddress = ContractAddress(account.address);
-      const myIndex = rankedPlayers.findIndex(([address]) => address === playerAddress);
-      let myPlayer: BlitzHighlightPlayer | null = null;
+      const registeredPoints = manager.getPlayerRegisteredPoints(playerAddress);
+      const unregisteredPoints = manager.getPlayerHyperstructureUnregisteredShareholderPoints(playerAddress);
+      const combinedPoints = registeredPoints + unregisteredPoints;
 
-      if (myIndex >= 0) {
-        const [address, points] = rankedPlayers[myIndex];
-        myPlayer = createTopPlayer(address, myIndex + 1, points);
-        setIsRanked(true);
-      } else {
+      setTotalPoints(combinedPoints);
+      setHasEvaluatedEligibility(true);
+
+      if (combinedPoints <= 0) {
+        setHighlightedPlayer(null);
         setIsRanked(false);
+        return;
       }
 
-      setHighlightedPlayer(myPlayer ?? null);
+      const myIndex = rankedPlayers.findIndex(([address]) => address === playerAddress);
+      if (myIndex >= 0) {
+        const [address, points] = rankedPlayers[myIndex];
+        setHighlightedPlayer(createTopPlayer(address, myIndex + 1, points));
+        setIsRanked(true);
+      } else {
+        setHighlightedPlayer(null);
+        setIsRanked(false);
+      }
     } catch (error) {
       console.error("Failed to load final leaderboard", error);
+      setTotalPoints(0);
+      setHasEvaluatedEligibility(true);
       setHighlightedPlayer(null);
       setChampionPlayer(null);
       setIsRanked(false);
     }
-  }, [account.address, components, hasGameEnded]);
+  }, [account.address, components, hasGameEnded, realmCountPerHyperstructure]);
+
+  const hasPlayerActivity = useMemo(() => {
+    if (!currentPlayerData) return false;
+    return (
+      currentPlayerData.explorerIds.length > 0 ||
+      currentPlayerData.structureIds.length > 0 ||
+      currentPlayerData.realmsCount > 0 ||
+      currentPlayerData.hyperstructuresCount > 0 ||
+      currentPlayerData.bankCount > 0 ||
+      currentPlayerData.mineCount > 0 ||
+      currentPlayerData.villageCount > 0
+    );
+  }, [currentPlayerData]);
+
+  const hasEligiblePlayer = useMemo(() => {
+    if (!hasEvaluatedEligibility) return false;
+    if (!account?.address || account.address === "0x0") return false;
+    if (totalPoints <= 0) return false;
+    if (!(playerDataLoading || hasPlayerActivity || !currentPlayerData)) return false;
+    return true;
+  }, [account?.address, currentPlayerData, hasEvaluatedEligibility, hasPlayerActivity, playerDataLoading, totalPoints]);
+
+  const shouldDisplayModal = hasGameEnded && hasEligiblePlayer;
 
   const highlight = highlightedPlayer;
 
@@ -167,7 +224,7 @@ export const EndgameModal = () => {
     window.location.href = leaderboardUrl;
   }, [leaderboardUrl]);
 
-  if (!hasGameEnded || !isVisible) return null;
+  if (!shouldDisplayModal || !isVisible) return null;
 
   const cardTitle = isBlitz ? "Realms Blitz" : "Realms";
   const cardSubtitle = isBlitz ? "Blitz Leaderboard" : "Final Leaderboard";

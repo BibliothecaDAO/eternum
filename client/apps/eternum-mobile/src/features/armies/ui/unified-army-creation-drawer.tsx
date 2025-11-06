@@ -21,7 +21,7 @@ import {
   getTroopResourceId,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { DEFENSE_NAMES, Direction, ID, TroopTier, TroopType } from "@bibliothecadao/types";
+import { GUARD_SLOT_NAMES, Direction, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { AlertTriangle, Plus, Shield, Swords } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -242,7 +242,7 @@ export function UnifiedArmyCreationDrawer({
             <div>
               <h4 className="text-sm font-medium mb-2">Defense Slot</h4>
               <div className="grid grid-cols-2 gap-2">
-                {Object.entries(DEFENSE_NAMES).map(([slotIndex, slotName]) => {
+                {Object.entries(GUARD_SLOT_NAMES).map(([slotIndex, slotName]) => {
                   const slot = parseInt(slotIndex);
                   const isSelected = guardSlot === slot;
                   const isSlotAvailable = slot < maxDefenseSlots;

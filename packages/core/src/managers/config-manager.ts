@@ -266,6 +266,10 @@ export class ClientConfigManager {
     this.structureCosts[StructureType.Hyperstructure] = [this.getHyperstructureConstructionCosts()];
   }
 
+  public getResourceProductionResourceInputs(resourceId: ResourcesIds) {
+    return this.complexSystemResourceInputs[resourceId] ?? this.simpleSystemResourceInputs[resourceId] ?? [];
+  }
+
   public getRefillPerTick() {
     const staminaRefillConfig = getComponentValue(
       this.components.WorldConfig,

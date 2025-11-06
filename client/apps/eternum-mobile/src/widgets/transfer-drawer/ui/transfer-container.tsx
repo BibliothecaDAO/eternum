@@ -1,8 +1,6 @@
 import { useStore } from "@/shared/store";
-import { Button } from "@/shared/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { ActorType } from "@bibliothecadao/types";
-import { ArrowLeftRight } from "lucide-react";
 import { useState } from "react";
 import { TransferDirection, TransferEntity, TransferType } from "../model/types";
 import { TransferResourcesContainer } from "./transfer-resources-container";
@@ -50,35 +48,10 @@ export const TransferContainer = ({ selected, target, allowBothDirections = fals
 
   // Handle swapping selected and target entities
   const handleSwapEntities = () => {
-    setSwapped(!swapped);
-  };
-
-  // Render transfer direction options
-  const renderTransferDirectionOptions = () => {
-    return (
-      <div className="flex flex-col space-y-3 mb-4 p-4 bg-white/5 rounded-md">
-        <div className="flex justify-between items-center">
-          <span className="text-sm font-semibold text-gold">Transfer Direction</span>
-        </div>
-        <div className="flex flex-wrap gap-2 items-center">
-          <div className="flex items-center gap-2 flex-1">
-            <div className="px-4 py-2 rounded-md bg-primary/20 border border-primary/40 text-sm">
-              {transferDirection === TransferDirection.ExplorerToStructure
-                ? "Explorer → Structure"
-                : transferDirection === TransferDirection.StructureToExplorer
-                  ? "Structure → Explorer"
-                  : "Explorer → Explorer"}
-            </div>
-            {allowBothDirections && (
-              <Button variant="outline" size="sm" onClick={handleSwapEntities} className="flex items-center gap-1">
-                <ArrowLeftRight size={14} />
-                Swap
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-    );
+    if (!allowBothDirections) {
+      return;
+    }
+    setSwapped((previous) => !previous);
   };
 
   return (
@@ -103,9 +76,6 @@ export const TransferContainer = ({ selected, target, allowBothDirections = fals
           </p>
         </div>
 
-        {/* Transfer Direction Selection */}
-        {renderTransferDirectionOptions()}
-
         {/* Transfer Content */}
         <TabsContent value={TransferType.Resources.toString()}>
           <TransferResourcesContainer
@@ -124,6 +94,8 @@ export const TransferContainer = ({ selected, target, allowBothDirections = fals
             targetHex={currentTarget.hex}
             transferDirection={transferDirection}
             onTransferComplete={handleTransferComplete}
+            onToggleDirection={handleSwapEntities}
+            canToggleDirection={allowBothDirections}
           />
         </TabsContent>
       </Tabs>

@@ -13,10 +13,14 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
-import { ActorType, ID, resources, ResourcesIds } from "@bibliothecadao/types";
+import { ActorType, ID, RelicRecipientType, RELICS, resources, ResourcesIds } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { getActorTypes, TransferDirection } from "./help-container";
+
+const STRUCTURE_RELIC_IDS = new Set<number>(
+  RELICS.filter(({ recipientType }) => recipientType === RelicRecipientType.Structure).map(({ id }) => id),
+);
 
 // Define the Resource type to match what the system calls expect
 interface ResourceTransfer {
@@ -83,6 +87,7 @@ export const TransferResourcesContainer = ({
           : await getStructureFromToriiClient(toriiClient, selectedEntityId);
       if (!resourcesData) return [];
       return resources
+        .filter(({ id }) => STRUCTURE_RELIC_IDS.has(id))
         .map(({ id }) => ({
           resourceId: id,
           amount: ResourceManager.balanceWithProduction(resourcesData, currentDefaultTick, id).balance,
@@ -537,7 +542,7 @@ export const TransferResourcesContainer = ({
   };
 
   if (availableResources.length === 0) {
-    return <p className="text-gold/60">No resources available to transfer.</p>;
+    return <p className="text-gold/60">No relics available to transfer.</p>;
   }
 
   return (
@@ -598,7 +603,7 @@ export const TransferResourcesContainer = ({
               isLoading={loading}
               className="w-full sm:w-auto"
             >
-              {loading ? "Processing..." : "Transfer Resources"}
+              {loading ? "Processing..." : "Transfer Relics"}
             </Button>
           </div>
         </>

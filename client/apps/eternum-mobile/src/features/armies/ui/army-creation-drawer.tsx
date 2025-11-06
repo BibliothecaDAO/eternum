@@ -15,7 +15,7 @@ import { ResourceAmount } from "@/shared/ui/resource-amount";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { ArmyManager, divideByPrecision, getBalance, getTroopName, getTroopResourceId } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { DEFENSE_NAMES, ID, TroopTier, TroopType } from "@bibliothecadao/types";
+import { GUARD_SLOT_NAMES, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { Plus, Shield } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -53,7 +53,7 @@ export function ArmyCreationDrawer({
     (existingDefense?.troops?.tier as TroopTier) || TroopTier.T1,
   );
 
-  const defenseName = DEFENSE_NAMES[defenseSlot as keyof typeof DEFENSE_NAMES];
+  const defenseName = GUARD_SLOT_NAMES[defenseSlot as keyof typeof GUARD_SLOT_NAMES];
   const isUpdate = !!existingDefense && !!existingDefense.troops && existingDefense.troops.count > 0n;
 
   useEffect(() => {

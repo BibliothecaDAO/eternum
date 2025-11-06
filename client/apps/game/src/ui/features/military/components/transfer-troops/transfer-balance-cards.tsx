@@ -24,7 +24,7 @@ export const TransferBalanceCards = ({ cards }: TransferBalanceCardsProps) => {
   if (!cards.length) return null;
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
+    <div className="grid gap-3 sm:grid-rows-2">
       {cards.map(({ label, before, after, tone, changeLabel, troop }) => {
         const toneClass = tone === "positive" ? "text-gold" : tone === "negative" ? "text-danger" : "text-gold/60";
 

@@ -3,7 +3,7 @@ import { getTierStyle } from "@/shared/lib/tier-styles";
 import { cn } from "@/shared/lib/utils";
 import { ResourceAmount } from "@/shared/ui/resource-amount";
 import { divideByPrecision, getTroopResourceId } from "@bibliothecadao/eternum";
-import { DEFENSE_NAMES, ID, TroopTier, TroopType } from "@bibliothecadao/types";
+import { GUARD_SLOT_NAMES, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { Clock, Edit, Plus, Shield } from "lucide-react";
 import { useState } from "react";
 
@@ -84,7 +84,7 @@ export function DefenseSlots({
         {Array.from({ length: maxDefenses }).map((_, index) => {
           const defense = troops.find((t) => t.slot === index);
           const cooldown = cooldownSlots.find((c) => c.slot === index);
-          const defenseName = DEFENSE_NAMES[index as keyof typeof DEFENSE_NAMES];
+          const defenseName = GUARD_SLOT_NAMES[index as keyof typeof GUARD_SLOT_NAMES];
 
           return (
             <div
