@@ -8,6 +8,12 @@ export interface BlitzHighlightPlayer {
   points: number;
   address: string;
   guildName?: string;
+  exploredTiles?: number | null;
+  exploredTilePoints?: number | null;
+  riftsTaken?: number | null;
+  riftPoints?: number | null;
+  hyperstructuresConquered?: number | null;
+  hyperstructurePoints?: number | null;
 }
 
 export const BLITZ_CARD_DIMENSIONS = {

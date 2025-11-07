@@ -31,6 +31,75 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
     const boostedChampion = winnerLine?.trim() ?? null;
     const championLabel = boostedChampion && boostedChampion.length > 0 ? boostedChampion : null;
     const coverImage = getBlitzCoverImage(highlight?.rank);
+    const numberFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+    const formatCountLabel = (value: number | null | undefined, singularLabel: string, pluralLabel: string): string => {
+      if (value === null || value === undefined) {
+        return "--";
+      }
+
+      const label = Math.abs(value) === 1 ? singularLabel : pluralLabel;
+      return `${numberFormatter.format(value)} ${label}`;
+    };
+    const formatPointsLabel = (value: number | null | undefined): string => {
+      if (value === null || value === undefined) {
+        return "--";
+      }
+
+      return `${currencyIntlFormat(value, 0)} pts`;
+    };
+
+    const statBreakdown = [
+      {
+        label: "Tiles Explored",
+        count: highlight?.exploredTiles,
+        singular: "tile",
+        plural: "tiles",
+        points: highlight?.exploredTilePoints,
+      },
+      {
+        label: "Rifts Taken",
+        count: highlight?.riftsTaken,
+        singular: "rift",
+        plural: "rifts",
+        points: highlight?.riftPoints,
+      },
+      {
+        label: "Hyperstructures Conquered",
+        count: highlight?.hyperstructuresConquered,
+        singular: "hyperstructure",
+        plural: "hyperstructures",
+        points: highlight?.hyperstructurePoints,
+      },
+    ].map((stat) => {
+      const countLabel = formatCountLabel(stat.count ?? null, stat.singular, stat.plural);
+      const pointsLabel = formatPointsLabel(stat.points ?? null);
+      const hasCount = countLabel !== "--";
+      const hasPoints = pointsLabel !== "--";
+      const combinedValue =
+        hasCount && hasPoints
+          ? `${countLabel} · ${pointsLabel}`
+          : hasCount
+            ? countLabel
+            : hasPoints
+              ? pointsLabel
+              : "--";
+
+      return {
+        label: stat.label,
+        countLabel,
+        pointsLabel,
+        combinedValue,
+      };
+    });
+    const statGroupHeight = 34;
+    const pointsPanel = {
+      x: 350,
+      y: 108,
+      width: 264,
+      height: 200,
+      radius: 30,
+    } as const;
+    const statsRowStartY = pointsPanel.y + 100;
 
     return (
       <svg
@@ -48,15 +117,6 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
         }}
       >
         <defs>
-          <linearGradient id="blitz-cover-overlay" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="rgba(4, 17, 25, 0.82)" />
-            <stop offset="52%" stopColor="rgba(4, 17, 25, 0.44)" />
-            <stop offset="100%" stopColor="rgba(4, 17, 25, 0.24)" />
-          </linearGradient>
-          <radialGradient id="blitz-radial-glow" cx="0.22" cy="0.2" r="0.9">
-            <stop offset="0%" stopColor="rgba(118, 255, 242, 0.45)" />
-            <stop offset="100%" stopColor="rgba(118, 255, 242, 0)" />
-          </radialGradient>
           <linearGradient id="blitz-rank-gradient" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#f7fffe" />
             <stop offset="100%" stopColor="#b8fff2" />
@@ -86,27 +146,28 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
           <image
             href={eternumLogoWhite}
             x="40"
-            y="64"
-            width="60"
-            height="60"
+            y="50"
+            width="50"
+            height="50"
             preserveAspectRatio="xMidYMid meet"
             opacity="0.96"
           />
 
+          <rect x="42" y="40" width="8" height="260" fill="url(#blitz-radial-glow)" opacity="0.66" />
+
           <rect
-            x="404"
-            y="134"
-            width="192"
-            height="130"
-            rx="26"
-            fill="rgba(6, 22, 30, 0.58)"
-            stroke="rgba(120, 255, 242, 0.34)"
+            x={pointsPanel.x}
+            y={pointsPanel.y}
+            width={pointsPanel.width}
+            height={pointsPanel.height}
+            rx={pointsPanel.radius}
+            fill="rgba(6, 22, 30, 0.7)"
+            stroke="rgba(120, 255, 242, 0.38)"
             strokeWidth="1.4"
           />
-
           <text
-            x="108"
-            y="70"
+            x="95"
+            y="54"
             fontSize="12"
             letterSpacing="0.32em"
             fontWeight="600"
@@ -116,8 +177,8 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
             {title}
           </text>
           <text
-            x="108"
-            y="98"
+            x="95"
+            y="80"
             fontSize="24"
             fontWeight="600"
             letterSpacing="0.18em"
@@ -127,17 +188,17 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
             {subtitle}
           </text>
           {championLabel ? (
-            <text x="108" y="122" fontSize="13" fill="rgba(198, 244, 255, 0.78)">
+            <text x="95" y="100" fontSize="13" fill="rgba(198, 244, 255, 0.78)">
               {truncateText(`Champion · ${championLabel}`, 56)}
             </text>
           ) : null}
 
-          <text x="86" y="242" fontSize="104" fontWeight="600" fill="url(#blitz-rank-gradient)">
+          <text x="42" y="215" fontSize="104" fontWeight="600" fill="url(#blitz-rank-gradient)">
             {highlightOrdinal}
           </text>
           <text
-            x="94"
-            y="272"
+            x="50"
+            y="241"
             fontSize="14"
             letterSpacing="0.28em"
             fill="rgba(190, 240, 255, 0.74)"
@@ -147,55 +208,79 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
           </text>
 
           <text
-            x="500"
-            y="170"
-            fontSize="13"
-            letterSpacing="0.3em"
+            x={pointsPanel.x + pointsPanel.width / 2}
+            y={pointsPanel.y + 20}
+            fontSize="11"
+            letterSpacing="0.32em"
             fill="rgba(198, 248, 255, 0.78)"
             textAnchor="middle"
             style={{ textTransform: "uppercase" }}
           >
             Points Secured
           </text>
-          <text x="500" y="214" fontSize="46" fontWeight="600" fill="#7bffe6" textAnchor="middle">
+          <text
+            x={pointsPanel.x + pointsPanel.width / 2}
+            y={pointsPanel.y + 62}
+            fontSize="48"
+            fontWeight="600"
+            fill="#7bffe6"
+            textAnchor="middle"
+          >
             {highlightPointsValue}
           </text>
-          <text x="500" y="244" fontSize="14" fill="rgba(178, 234, 247, 0.78)" textAnchor="middle">
-            Blitz Performance
-          </text>
+          {statBreakdown.map((stat, index) => {
+            const baseY = statsRowStartY + index * statGroupHeight;
+            const valueY = baseY + 18;
+
+            return (
+              <g key={stat.label}>
+                <text
+                  x={pointsPanel.x + 30}
+                  y={baseY}
+                  fontSize="9.5"
+                  letterSpacing="0.3em"
+                  fill="rgba(180, 236, 247, 0.7)"
+                  style={{ textTransform: "uppercase" }}
+                >
+                  {stat.label}
+                </text>
+                <text x={pointsPanel.x + 30} y={valueY} fontSize="13.5" fontWeight="500" fill="#fdfefe">
+                  {stat.countLabel}
+                </text>
+                <text
+                  x={pointsPanel.x + pointsPanel.width - 30}
+                  y={valueY}
+                  fontSize="12.5"
+                  fill="rgba(160, 235, 240, 0.9)"
+                  textAnchor="end"
+                >
+                  {stat.pointsLabel}
+                </text>
+              </g>
+            );
+          })}
 
           {highlightName ? (
-            <text x="94" y="308" fontSize="20" fontWeight="600" fill="#f1fffb">
+            <text x="50" y="280" fontSize="20" fontWeight="600" fill="#f1fffb">
               {highlightName}
             </text>
           ) : null}
           {highlightSecondary ? (
-            <text x="94" y={highlightName ? 330 : 308} fontSize="14" fill="rgba(200, 242, 255, 0.78)">
+            <text x="50" y={highlightName ? 304 : 280} fontSize="14" fill="rgba(200, 242, 255, 0.78)">
               {highlightSecondary}
             </text>
           ) : null}
 
-          <text
-            x="585"
-            y="312"
-            fontSize="12"
-            fill="rgba(160, 236, 255, 0.58)"
-            textAnchor="end"
-            letterSpacing="0.28em"
-            style={{ textTransform: "uppercase" }}
-          >
-            Realms Blitz
-          </text>
           <image
             href="/images/logos/starknet-logo.png"
-            x="560"
-            y="322"
-            width="30"
-            height="30"
+            x="590"
+            y="326"
+            width="24"
+            height="24"
             preserveAspectRatio="xMidYMid meet"
             opacity="0.9"
           />
-          <text x="560" y="340" fontSize="12" fill="rgba(144, 224, 255, 0.72)" textAnchor="end" letterSpacing="0.1em">
+          <text x="590" y="342" fontSize="12" fill="rgba(144, 224, 255, 0.72)" textAnchor="end" letterSpacing="0.1em">
             Powered by Starknet
           </text>
         </g>

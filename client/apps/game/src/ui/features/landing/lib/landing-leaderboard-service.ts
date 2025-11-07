@@ -15,6 +15,12 @@ export interface PlayerLeaderboardData {
   /** Unregistered (shareholder) contribution if available */
   unregisteredPoints?: number;
   prizeClaimed: boolean;
+  exploredTiles?: number;
+  exploredTilePoints?: number;
+  riftsTaken?: number;
+  riftPoints?: number;
+  hyperstructuresConquered?: number;
+  hyperstructurePoints?: number;
 }
 
 export type LandingLeaderboardEntry = PlayerLeaderboardData;
@@ -62,6 +68,23 @@ const normaliseAddress = (value: string | null): string | null => {
   }
 
   return trimmed.startsWith("0x") ? trimmed : `0x${trimmed}`;
+};
+
+const pickStatValue = (row: Record<string, unknown>, ...keys: string[]): number | undefined => {
+  for (const key of keys) {
+    if (!key || !Object.prototype.hasOwnProperty.call(row, key)) {
+      continue;
+    }
+
+    const rawValue = row[key] as NumericLike;
+    if (rawValue === null || rawValue === undefined) {
+      return undefined;
+    }
+
+    return parseNumeric(rawValue);
+  }
+
+  return undefined;
 };
 
 const decodePlayerName = (value: string | null): string | null => {
@@ -174,6 +197,18 @@ const transformLandingLeaderboardRow = (rawRow: PlayerLeaderboardRow, rank: numb
       ? (row["prizeClaimed"] as boolean)
       : Boolean(parseNumeric(row["prize_claimed"] as NumericLike));
 
+  const exploredTiles = pickStatValue(row, "explored_tiles", "exploredTiles");
+  const exploredTilePoints = pickStatValue(row, "explored_tiles_points", "exploredTilePoints");
+  const riftsTaken = pickStatValue(row, "rifts_taken", "riftsTaken", "riftsCaptured");
+  const riftPoints = pickStatValue(row, "rifts_points", "riftPoints");
+  const hyperstructuresConquered = pickStatValue(
+    row,
+    "hyperstructures_conquered",
+    "hyperstructuresConquered",
+    "hyperstructuresClaimed",
+  );
+  const hyperstructurePoints = pickStatValue(row, "hyperstructures_points", "hyperstructurePoints");
+
   return {
     rank,
     address,
@@ -182,6 +217,12 @@ const transformLandingLeaderboardRow = (rawRow: PlayerLeaderboardRow, rank: numb
     registeredPoints,
     unregisteredPoints,
     prizeClaimed: prizeClaimedRaw,
+    exploredTiles,
+    exploredTilePoints,
+    riftsTaken,
+    riftPoints,
+    hyperstructuresConquered,
+    hyperstructurePoints,
   } satisfies PlayerLeaderboardData;
 };
 

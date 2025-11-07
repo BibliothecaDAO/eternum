@@ -53,6 +53,7 @@ export const EndgameModal = () => {
   const hasGameEnded = useMemo(() => {
     return currentBlockTimestamp > (gameEndAt ?? 0);
   }, [currentBlockTimestamp, gameEndAt]);
+  // const hasGameEnded = true;
 
   useEffect(() => {
     if (!hasGameEnded) {
@@ -257,27 +258,6 @@ export const EndgameModal = () => {
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_-12%,rgba(64,200,233,0.35),transparent_65%)]" />
 
           <div className="relative flex flex-col gap-6 px-6 pb-8 pt-12 md:px-12 md:pt-16">
-            <div className="flex flex-col items-center gap-2 text-center">
-              <p className="text-xs font-semibold uppercase tracking-[0.42em] text-cyan-200/70 md:text-sm">
-                {cardTitle}
-              </p>
-              <h2 className="text-3xl font-semibold uppercase tracking-[0.24em] text-white md:text-[36px]">
-                {cardSubtitle}
-              </h2>
-              {isRanked && playerLine && (
-                <p className="text-sm font-medium text-cyan-100/80 md:text-base">{playerLine}</p>
-              )}
-              {isRanked && placementLabel && pointsLabel && (
-                <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-200/70 md:text-sm">
-                  {placementLabel} • {pointsLabel} pts
-                </p>
-              )}
-              {!isRanked && (
-                <p className="mt-2 text-sm font-medium text-cyan-100/80 md:text-base">
-                  You are not ranked in the leaderboard.
-                </p>
-              )}
-            </div>
             <div className="flex flex-col gap-6 rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[3px] md:px-8 md:py-7">
               <p className="text-center text-[11px] uppercase tracking-[0.28em] text-white/60 md:text-xs">
                 Copy the Blitz highlight card or take the share link straight to X.
