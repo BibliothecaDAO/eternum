@@ -163,7 +163,7 @@ const BankDefense = ({ maxDefenses, troops, cooldownSlots = [] }: BankDefensePro
                 <CooldownTimer slot={index} time={24 * 60 * 60} />
               ) : defense ? (
                 <div className="relative w-full flex items-center justify-center border border-gold/40 rounded-md bg-brown-900/40 p-1 shadow-sm">
-                  <TroopChip troops={defense.troops} iconSize="lg" />
+                  <TroopChip troops={defense.troops} size="lg" />
                 </div>
               ) : (
                 <div

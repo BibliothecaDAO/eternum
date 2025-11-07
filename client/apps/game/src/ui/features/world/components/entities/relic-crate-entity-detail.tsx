@@ -88,7 +88,7 @@ const RelicCrateEntityDetailContent = memo(
         <div className={gridContainerClass}>
           <EntityDetailSection compact tone="highlight" className="flex min-h-0 flex-col gap-2">
             <div className="flex flex-col gap-1">
-              <div className="text-sm font-semibold text-gold">Crate #{crateEntityId}</div>
+              <div className="text-sm font-semibold text-gold">Relic Crate #{crateEntityId}</div>
               {isBanner ? (
                 <div className="flex flex-wrap items-center gap-1 text-xxs text-gold/60">
                   <span>Contains 3 relics.</span>

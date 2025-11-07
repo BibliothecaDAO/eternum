@@ -81,8 +81,7 @@ export const HelpContainer = ({
     return TransferDirection.ExplorerToStructure;
   })();
 
-  const transferDirection =
-    transferType === TransferType.Relics ? TransferDirection.ExplorerToStructure : derivedTransferDirection;
+  const transferDirection = derivedTransferDirection;
 
   // Handle transfer completion
   const handleTransferComplete = () => {

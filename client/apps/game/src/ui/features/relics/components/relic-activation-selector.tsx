@@ -104,7 +104,7 @@ const RelicActivationHolderCard = ({
 
       {isArmyHolder && holder.troops && (
         <div className="mt-2">
-          <TroopChip troops={holder.troops} iconSize="sm" />
+          <TroopChip troops={holder.troops} size="sm" />
         </div>
       )}
 
