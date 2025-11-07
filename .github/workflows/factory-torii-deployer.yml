@@ -4,49 +4,49 @@ on:
   workflow_dispatch:
     inputs:
       env:
-        description: 'Environment label (used for grouping outputs)'
+        description: "Environment label (used for grouping outputs)"
         required: false
-        default: 'sepolia'
+        default: "sepolia"
       torii_prefix:
-        description: 'Prefix for Torii name (will be trimmed if too long)'
+        description: "Prefix for Torii name (will be trimmed if too long)"
         required: false
-        default: 'eternum-torii'
+        default: "eternum-torii"
       torii_version:
-        description: 'Torii version to deploy'
+        description: "Torii version to deploy"
         required: false
-        default: 'v1.7.0-alpha.5'
+        default: "v1.7.0-alpha.5"
       slot_team:
-        description: 'Cartridge Slot team name'
+        description: "Cartridge Slot team name"
         required: false
-        default: 'realms-eternum'
+        default: "realms-eternum"
       torii_tier:
-        description: 'Cartridge Slot tier'
+        description: "Cartridge Slot tier"
         required: false
-        default: 'pro'
+        default: "pro"
       rpc_url:
-        description: 'Starknet RPC URL'
+        description: "Starknet RPC URL"
         required: true
       torii_world_address:
-        description: 'Torii world address (0x...)'
+        description: "Torii world address (0x...)"
         required: true
       world_block:
-        description: 'Starting world block number'
+        description: "Starting world block number"
         required: false
-        default: '0'
+        default: "0"
       torii_namespaces:
-        description: 'Comma-separated namespaces (e.g. s1_eternum,ds_v1_2_0)'
+        description: "Comma-separated namespaces (e.g. s1_eternum,ds_v1_2_0)"
         required: false
-        default: 's1_eternum'
+        default: "s1_eternum"
       torii_external_contracts:
-        description: 'External contracts to index (one per line: erc721:0x..., erc20:0x...)'
+        description: "External contracts to index (one per line: erc721:0x..., erc20:0x...)"
         required: false
-        default: ''
+        default: ""
 
 permissions:
   contents: write
 
 env:
-  CI: 'true'
+  CI: "true"
 
 jobs:
   deploy-torii:
@@ -61,7 +61,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: 'blitz'
+          ref: "blitz"
 
       - name: Install Slot CLI
         run: |

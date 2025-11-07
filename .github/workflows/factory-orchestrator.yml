@@ -2,41 +2,41 @@ name: Factory Orchestrator
 
 on:
   schedule:
-    - cron: '48 */6 * * *'
+    - cron: "48 */6 * * *"
   workflow_dispatch:
     inputs:
       chain:
-        description: 'Chain (slot|sepolia|slottest|local|mainnet)'
+        description: "Chain (slot|sepolia|slottest|local|mainnet)"
         required: false
-        default: 'slot'
+        default: "slot"
       target_upcoming:
-        description: 'Maintain this many future worlds'
+        description: "Maintain this many future worlds"
         required: false
-        default: '4'
+        default: "4"
       factory_orchestrator_rpc_url:
-        description: 'Starknet RPC URL (public)'
+        description: "Starknet RPC URL (public)"
         required: false
-        default: 'https://api.cartridge.gg/x/eternum-blitz-slot-1/katana/rpc/v0_9'
+        default: "https://api.cartridge.gg/x/eternum-blitz-slot-1/katana/rpc/v0_9"
       factory_orchestrator_factory_address:
-        description: 'World Factory address (public)'
+        description: "World Factory address (public)"
         required: false
-        default: '0x7c0da7c7b1347f31d58a6b95d29abbc0d6756f80304b9183f525b216fb50085'
+        default: "0x7c0da7c7b1347f31d58a6b95d29abbc0d6756f80304b9183f525b216fb50085"
       factory_orchestrator_admin_address:
-        description: 'Admin address for set_world_config (public)'
+        description: "Admin address for set_world_config (public)"
         required: false
-        default: '0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec'
+        default: "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
       factory_orchestrator_torii_creator_url:
-        description: 'Indexer creation endpoint (optional)'
+        description: "Indexer creation endpoint (optional)"
         required: false
-        default: 'https://torii-creator.zerocredence.workers.dev/dispatch/torii'
+        default: "https://torii-creator.zerocredence.workers.dev/dispatch/torii"
       factory_orchestrator_torii_namespaces:
-        description: 'Torii namespaces (comma-separated, optional)'
+        description: "Torii namespaces (comma-separated, optional)"
         required: false
-        default: 's1_eternum'
+        default: "s1_eternum"
       factory_orchestrator_cartridge_api_base:
-        description: 'Cartridge API base URL (optional)'
+        description: "Cartridge API base URL (optional)"
         required: false
-        default: 'https://api.cartridge.gg'
+        default: "https://api.cartridge.gg"
 
 permissions:
   contents: write
@@ -86,14 +86,23 @@ jobs:
 
       - name: Orchestrate (Bun TS)
         env:
-          FACTORY_ADDRESS: ${{ github.event.inputs.factory_orchestrator_factory_address || vars.FACTORY_ORCHESTRATOR_FACTORY_ADDRESS }}
+          FACTORY_ADDRESS:
+            ${{ github.event.inputs.factory_orchestrator_factory_address || vars.FACTORY_ORCHESTRATOR_FACTORY_ADDRESS }}
           RPC_URL: ${{ github.event.inputs.factory_orchestrator_rpc_url || vars.FACTORY_ORCHESTRATOR_RPC_URL }}
-          ADMIN_ADDRESS: ${{ github.event.inputs.factory_orchestrator_admin_address || vars.FACTORY_ORCHESTRATOR_ADMIN_ADDRESS }}
+          ADMIN_ADDRESS:
+            ${{ github.event.inputs.factory_orchestrator_admin_address || vars.FACTORY_ORCHESTRATOR_ADMIN_ADDRESS }}
           DOJO_ACCOUNT_ADDRESS: ${{ vars.FACTORY_ORCHESTRATOR_DOJO_ACCOUNT_ADDRESS }}
           DOJO_PRIVATE_KEY: ${{ secrets.FACTORY_ORCHESTRATOR_DOJO_PRIVATE_KEY }}
-          TORII_CREATOR_URL: ${{ github.event.inputs.factory_orchestrator_torii_creator_url || vars.FACTORY_ORCHESTRATOR_TORII_CREATOR_URL || 'https://torii-creator.zerocredence.workers.dev/dispatch/torii' }}
-          TORII_NAMESPACES: ${{ github.event.inputs.factory_orchestrator_torii_namespaces || vars.FACTORY_ORCHESTRATOR_TORII_NAMESPACES || 's1_eternum' }}
-          CARTRIDGE_API_BASE: ${{ github.event.inputs.factory_orchestrator_cartridge_api_base || vars.FACTORY_ORCHESTRATOR_CARTRIDGE_API_BASE || 'https://api.cartridge.gg' }}
+          TORII_CREATOR_URL:
+            ${{ github.event.inputs.factory_orchestrator_torii_creator_url ||
+            vars.FACTORY_ORCHESTRATOR_TORII_CREATOR_URL ||
+            'https://torii-creator.zerocredence.workers.dev/dispatch/torii' }}
+          TORII_NAMESPACES:
+            ${{ github.event.inputs.factory_orchestrator_torii_namespaces || vars.FACTORY_ORCHESTRATOR_TORII_NAMESPACES
+            || 's1_eternum' }}
+          CARTRIDGE_API_BASE:
+            ${{ github.event.inputs.factory_orchestrator_cartridge_api_base ||
+            vars.FACTORY_ORCHESTRATOR_CARTRIDGE_API_BASE || 'https://api.cartridge.gg' }}
         run: |
           bun scripts/ci/ops.ts orchestrator maintain \
             --chain "$CHAIN" \
