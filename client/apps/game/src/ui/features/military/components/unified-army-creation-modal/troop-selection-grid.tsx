@@ -54,9 +54,7 @@ export const TroopSelectionGrid = ({
           <div key={option.type} className="flex flex-col gap-2">
             {/* Header */}
             <div className="text-center py-1 border-b border-gold/30">
-              <span className="text-gold text-xs font-bold uppercase tracking-wider">
-                {option.label}
-              </span>
+              <span className="text-gold text-xs font-bold uppercase tracking-wider">{option.label}</span>
             </div>
 
             {/* Tier Cards */}
@@ -131,10 +129,7 @@ export const TroopSelectionGrid = ({
 
                       {/* Count */}
                       <div
-                        className={clsx(
-                          "text-sm font-bold flex-shrink-0",
-                          isSelected ? "text-gold" : "text-gold/90",
-                        )}
+                        className={clsx("text-sm font-bold flex-shrink-0", isSelected ? "text-gold" : "text-gold/90")}
                       >
                         {tierOption.available > 999
                           ? `${Math.floor(tierOption.available / 1000)}k`

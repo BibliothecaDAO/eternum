@@ -60,13 +60,24 @@ export const TroopCountSelector = ({
               MAX
             </Button>
           </div>
-          <NumberInput max={maxAffordable} min={0} step={100} value={troopCount} onChange={onChange} className="w-24 h-7 text-sm" />
+          <NumberInput
+            max={maxAffordable}
+            min={0}
+            step={100}
+            value={troopCount}
+            onChange={onChange}
+            className="w-24 h-7 text-sm"
+          />
         </div>
 
         <div className="flex justify-between items-center text-xs">
-          <span className="text-gold/60">Available: <span className="text-gold font-bold">{maxAffordable.toLocaleString()}</span></span>
+          <span className="text-gold/60">
+            Available: <span className="text-gold font-bold">{maxAffordable.toLocaleString()}</span>
+          </span>
           {shouldShowCapacityInfo && capacityLimitDisplay !== null && (
-            <span className="text-gold/60">Capacity: <span className="text-gold/80 font-semibold">{capacityLimitDisplay.toLocaleString()}</span></span>
+            <span className="text-gold/60">
+              Capacity: <span className="text-gold/80 font-semibold">{capacityLimitDisplay.toLocaleString()}</span>
+            </span>
           )}
         </div>
 

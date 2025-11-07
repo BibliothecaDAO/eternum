@@ -105,9 +105,7 @@ export const DefenseSlotSelection = ({
                     {guardCountLabel}
                   </div>
                 ) : (
-                  <div className={clsx("text-xxs", isSelected ? "text-gold" : "text-gold/60")}>
-                    Empty
-                  </div>
+                  <div className={clsx("text-xxs", isSelected ? "text-gold" : "text-gold/60")}>Empty</div>
                 )}
               </div>
             </button>
@@ -115,9 +113,7 @@ export const DefenseSlotSelection = ({
         })}
       </div>
       {sortedSlots.length === 0 && (
-        <div className="mt-1 text-xxs text-center text-gold/60 uppercase">
-          Upgrade to unlock slots
-        </div>
+        <div className="mt-1 text-xxs text-center text-gold/60 uppercase">Upgrade to unlock slots</div>
       )}
       {defenseSlotInfoMessage && (
         <div className="mt-1 bg-brown/15 border-l-2 border-gold rounded px-2 py-0.5 text-xxs text-gold/80 font-medium">

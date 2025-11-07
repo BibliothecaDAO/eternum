@@ -599,7 +599,15 @@ button {
   /* Subtle gradient borders on top and bottom - slightly brighter for gold variant */
   border-top: 1px solid transparent;
   border-bottom: 1px solid transparent;
-  border-image: linear-gradient(to right, transparent, rgba(223, 170, 84, 0.5), rgba(243, 201, 159, 0.5), rgba(223, 170, 84, 0.5), transparent) 1;
+  border-image: linear-gradient(
+      to right,
+      transparent,
+      rgba(223, 170, 84, 0.5),
+      rgba(243, 201, 159, 0.5),
+      rgba(223, 170, 84, 0.5),
+      transparent
+    )
+    1;
   border-image-slice: 1 0 1 0; /* Only apply to top and bottom */
 }
 

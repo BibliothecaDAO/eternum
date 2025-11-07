@@ -67,8 +67,8 @@ export const BottomHud = () => {
           </HudPanel>
         </HudSlot>
 
-        <HudSlot className="flex-[1.2] min-w-[320px]">
-          <HudPanel className="flex-[0.5] min-h-0">
+        <HudSlot className="flex-[0.6] min-w-[160px]">
+          <HudPanel className="flex-1 min-h-0">
             <PlayerRelicTray variant="embedded" className="h-full" />
           </HudPanel>
         </HudSlot>
