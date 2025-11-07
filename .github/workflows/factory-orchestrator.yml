@@ -1,8 +1,8 @@
 name: Factory Orchestrator
 
 on:
-  schedule:
-    - cron: "48 */6 * * *"
+  # schedule:
+  #   - cron: "48 */6 * * *"
   workflow_dispatch:
     inputs:
       chain:
