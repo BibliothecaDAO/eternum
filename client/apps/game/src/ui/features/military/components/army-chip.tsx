@@ -265,7 +265,7 @@ export const ArmyChip = ({
               )}
             </div>
             <div className="flex flex-col w-[45%] gap-2">
-              <TroopChip troops={army.troops} className="h-auto" iconSize="lg" />
+              <TroopChip troops={army.troops} className="h-auto" size="lg" />
               {army.troops.count > 0n && resources && (
                 <InventoryResources
                   resources={resources}

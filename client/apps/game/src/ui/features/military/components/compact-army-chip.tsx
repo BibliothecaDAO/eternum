@@ -47,7 +47,7 @@ export const CompactArmyChip = ({ army, className }: { army: ArmyInfo; className
         </div>
       </div>
       <div className="flex flex-col w-[45%] gap-1">
-        <TroopChip troops={army.troops} className="h-auto" iconSize="sm" />
+        <TroopChip troops={army.troops} className="h-auto" size="sm" />
       </div>
     </div>
   );
