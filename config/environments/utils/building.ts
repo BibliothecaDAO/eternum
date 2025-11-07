@@ -148,19 +148,19 @@ export const COMPLEX_BUILDING_COSTS: ResourceInputs = {
   [BuildingType.ResourceSilver]: [],
   [BuildingType.ResourceIronwood]: [
     { resource: ResourcesIds.Labor, amount: 120 },
-    { resource: ResourcesIds.Wood, amount: 120 },
+    { resource: ResourcesIds.Wood, amount: 90 },
     { resource: ResourcesIds.Coal, amount: 60 },
     { resource: ResourcesIds.Copper, amount: 30 },
   ], // Ironwood Mill
   [BuildingType.ResourceColdIron]: [
     { resource: ResourcesIds.Labor, amount: 120 },
-    { resource: ResourcesIds.Wood, amount: 120 },
+    { resource: ResourcesIds.Wood, amount: 90 },
     { resource: ResourcesIds.Coal, amount: 60 },
     { resource: ResourcesIds.Copper, amount: 30 },
   ], // Cold Iron Foundry
   [BuildingType.ResourceGold]: [
     { resource: ResourcesIds.Labor, amount: 120 },
-    { resource: ResourcesIds.Wood, amount: 120 },
+    { resource: ResourcesIds.Wood, amount: 90 },
     { resource: ResourcesIds.Coal, amount: 60 },
     { resource: ResourcesIds.Copper, amount: 30 },
   ], // Gold Mine
@@ -175,85 +175,85 @@ export const COMPLEX_BUILDING_COSTS: ResourceInputs = {
   [BuildingType.ResourceTwilightQuartz]: [],
   [BuildingType.ResourceAlchemicalSilver]: [],
   [BuildingType.ResourceAdamantine]: [
-    { resource: ResourcesIds.Labor, amount: 240 },
-    { resource: ResourcesIds.Wood, amount: 240 },
-    { resource: ResourcesIds.Copper, amount: 120 },
-    { resource: ResourcesIds.Ironwood, amount: 60 },
-    { resource: ResourcesIds.Essence, amount: 600 },
+    { resource: ResourcesIds.Labor, amount: 180 },
+    { resource: ResourcesIds.Wood, amount: 120 },
+    { resource: ResourcesIds.Copper, amount: 90 },
+    { resource: ResourcesIds.Ironwood, amount: 30 },
+    { resource: ResourcesIds.Essence, amount: 500 },
   ], // Adamantine Mine
   [BuildingType.ResourceMithral]: [
-    { resource: ResourcesIds.Labor, amount: 240 },
-    { resource: ResourcesIds.Wood, amount: 240 },
-    { resource: ResourcesIds.Copper, amount: 120 },
-    { resource: ResourcesIds.ColdIron, amount: 60 },
-    { resource: ResourcesIds.Essence, amount: 600 },
+    { resource: ResourcesIds.Labor, amount: 180 },
+    { resource: ResourcesIds.Wood, amount: 120 },
+    { resource: ResourcesIds.Copper, amount: 90 },
+    { resource: ResourcesIds.ColdIron, amount: 30 },
+    { resource: ResourcesIds.Essence, amount: 500 },
   ], // Mithral Forge
   [BuildingType.ResourceDragonhide]: [
-    { resource: ResourcesIds.Labor, amount: 240 },
-    { resource: ResourcesIds.Wood, amount: 240 },
-    { resource: ResourcesIds.Copper, amount: 120 },
-    { resource: ResourcesIds.Gold, amount: 60 },
-    { resource: ResourcesIds.Essence, amount: 600 },
+    { resource: ResourcesIds.Labor, amount: 180 },
+    { resource: ResourcesIds.Wood, amount: 120 },
+    { resource: ResourcesIds.Copper, amount: 90 },
+    { resource: ResourcesIds.Gold, amount: 30 },
+    { resource: ResourcesIds.Essence, amount: 500 },
   ], // Dragonhide Tannery
   // T1 Military Buildings
   [BuildingType.ResourceKnightT1]: [
     { resource: ResourcesIds.Labor, amount: 180 },
     { resource: ResourcesIds.Wood, amount: 180 },
-    { resource: ResourcesIds.Copper, amount: 90 },
+    { resource: ResourcesIds.Copper, amount: 120 },
   ], // T1 Barracks
   [BuildingType.ResourceCrossbowmanT1]: [
     { resource: ResourcesIds.Labor, amount: 180 },
     { resource: ResourcesIds.Wood, amount: 180 },
-    { resource: ResourcesIds.Copper, amount: 90 },
+    { resource: ResourcesIds.Copper, amount: 120 },
   ], // T1 Archery Range
   [BuildingType.ResourcePaladinT1]: [
     { resource: ResourcesIds.Labor, amount: 180 },
     { resource: ResourcesIds.Wood, amount: 180 },
-    { resource: ResourcesIds.Copper, amount: 90 },
+    { resource: ResourcesIds.Copper, amount: 120 },
   ], // T1 Stables
   // T2 Military Buildings
   [BuildingType.ResourceKnightT2]: [
-    { resource: ResourcesIds.Labor, amount: 360 },
-    { resource: ResourcesIds.Wood, amount: 360 },
+    { resource: ResourcesIds.Labor, amount: 300 },
+    { resource: ResourcesIds.Wood, amount: 240 },
     { resource: ResourcesIds.Copper, amount: 180 },
-    { resource: ResourcesIds.ColdIron, amount: 90 },
-    { resource: ResourcesIds.Essence, amount: 600 },
+    { resource: ResourcesIds.ColdIron, amount: 60 },
+    { resource: ResourcesIds.Essence, amount: 500 },
   ], // T2 Barracks
   [BuildingType.ResourceCrossbowmanT2]: [
-    { resource: ResourcesIds.Labor, amount: 360 },
-    { resource: ResourcesIds.Wood, amount: 360 },
+    { resource: ResourcesIds.Labor, amount: 300 },
+    { resource: ResourcesIds.Wood, amount: 240 },
     { resource: ResourcesIds.Copper, amount: 180 },
-    { resource: ResourcesIds.Ironwood, amount: 90 },
-    { resource: ResourcesIds.Essence, amount: 600 },
+    { resource: ResourcesIds.Ironwood, amount: 60 },
+    { resource: ResourcesIds.Essence, amount: 500 },
   ], // T2 Archery Range
   [BuildingType.ResourcePaladinT2]: [
-    { resource: ResourcesIds.Labor, amount: 360 },
-    { resource: ResourcesIds.Wood, amount: 360 },
+    { resource: ResourcesIds.Labor, amount: 300 },
+    { resource: ResourcesIds.Wood, amount: 240 },
     { resource: ResourcesIds.Copper, amount: 180 },
-    { resource: ResourcesIds.Gold, amount: 90 },
-    { resource: ResourcesIds.Essence, amount: 600 },
+    { resource: ResourcesIds.Gold, amount: 60 },
+    { resource: ResourcesIds.Essence, amount: 500 },
   ], // T2 Stables
   // T3 Military Buildings
   [BuildingType.ResourceKnightT3]: [
-    { resource: ResourcesIds.Labor, amount: 720 },
-    { resource: ResourcesIds.Wood, amount: 720 },
-    { resource: ResourcesIds.ColdIron, amount: 360 },
-    { resource: ResourcesIds.Mithral, amount: 180 },
-    { resource: ResourcesIds.Essence, amount: 1200 },
+    { resource: ResourcesIds.Labor, amount: 420 },
+    { resource: ResourcesIds.Wood, amount: 300 },
+    { resource: ResourcesIds.ColdIron, amount: 240 },
+    { resource: ResourcesIds.Mithral, amount: 90 },
+    { resource: ResourcesIds.Essence, amount: 1000 },
   ], // T3 Barracks
   [BuildingType.ResourceCrossbowmanT3]: [
-    { resource: ResourcesIds.Labor, amount: 720 },
-    { resource: ResourcesIds.Wood, amount: 720 },
-    { resource: ResourcesIds.Ironwood, amount: 360 },
-    { resource: ResourcesIds.Adamantine, amount: 180 },
-    { resource: ResourcesIds.Essence, amount: 1200 },
+    { resource: ResourcesIds.Labor, amount: 420 },
+    { resource: ResourcesIds.Wood, amount: 300 },
+    { resource: ResourcesIds.Ironwood, amount: 240 },
+    { resource: ResourcesIds.Adamantine, amount: 90 },
+    { resource: ResourcesIds.Essence, amount: 1000 },
   ], // T3 Archery Range
   [BuildingType.ResourcePaladinT3]: [
-    { resource: ResourcesIds.Labor, amount: 720 },
-    { resource: ResourcesIds.Wood, amount: 720 },
-    { resource: ResourcesIds.Gold, amount: 360 },
-    { resource: ResourcesIds.Dragonhide, amount: 180 },
-    { resource: ResourcesIds.Essence, amount: 1200 },
+    { resource: ResourcesIds.Labor, amount: 420 },
+    { resource: ResourcesIds.Wood, amount: 300 },
+    { resource: ResourcesIds.Gold, amount: 240 },
+    { resource: ResourcesIds.Dragonhide, amount: 90 },
+    { resource: ResourcesIds.Essence, amount: 1000 },
   ], // T3 Stables
   // Economic Buildings
   [BuildingType.WorkersHut]: [
@@ -279,9 +279,9 @@ export const SIMPLE_BUILDING_COSTS: ResourceInputs = {
   [BuildingType.ResourceCopper]: [{ resource: ResourcesIds.Labor, amount: 300 }], // Copper Smelter
   [BuildingType.ResourceObsidian]: [],
   [BuildingType.ResourceSilver]: [],
-  [BuildingType.ResourceIronwood]: [{ resource: ResourcesIds.Labor, amount: 720 }], // Ironwood Mill
-  [BuildingType.ResourceColdIron]: [{ resource: ResourcesIds.Labor, amount: 720 }], // Cold Iron Foundry
-  [BuildingType.ResourceGold]: [{ resource: ResourcesIds.Labor, amount: 720 }], // Gold Mine
+  [BuildingType.ResourceIronwood]: [{ resource: ResourcesIds.Labor, amount: 600 }], // Ironwood Mill
+  [BuildingType.ResourceColdIron]: [{ resource: ResourcesIds.Labor, amount: 600 }], // Cold Iron Foundry
+  [BuildingType.ResourceGold]: [{ resource: ResourcesIds.Labor, amount: 600 }], // Gold Mine
   [BuildingType.ResourceHartwood]: [],
   [BuildingType.ResourceDiamonds]: [],
   [BuildingType.ResourceSapphire]: [],
@@ -296,9 +296,9 @@ export const SIMPLE_BUILDING_COSTS: ResourceInputs = {
   [BuildingType.ResourceMithral]: [],
   [BuildingType.ResourceDragonhide]: [],
   // T1 Military Buildings - only available in simple mode
-  [BuildingType.ResourceKnightT1]: [{ resource: ResourcesIds.Labor, amount: 900 }], // T1 Barracks
-  [BuildingType.ResourceCrossbowmanT1]: [{ resource: ResourcesIds.Labor, amount: 900 }], // T1 Archery Range
-  [BuildingType.ResourcePaladinT1]: [{ resource: ResourcesIds.Labor, amount: 900 }], // T1 Stables
+  [BuildingType.ResourceKnightT1]: [{ resource: ResourcesIds.Labor, amount: 1200 }], // T1 Barracks
+  [BuildingType.ResourceCrossbowmanT1]: [{ resource: ResourcesIds.Labor, amount: 1200 }], // T1 Archery Range
+  [BuildingType.ResourcePaladinT1]: [{ resource: ResourcesIds.Labor, amount: 1200 }], // T1 Stables
 
   // T2 Military Buildings - not available in simple mode
   [BuildingType.ResourceKnightT2]: [],
