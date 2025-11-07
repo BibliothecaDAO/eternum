@@ -1,1 +1,18 @@
-[]
+[
+  {
+    "name": "bltz-cliff-sapphire-44",
+    "slotTimestamp": 1762507800,
+    "deployed": true,
+    "configured": true,
+    "indexed": true,
+    "archivedAt": 1762541729
+  },
+  {
+    "name": "bltz-seal-liongate-33",
+    "slotTimestamp": 1762529400,
+    "deployed": true,
+    "configured": true,
+    "indexed": true,
+    "archivedAt": 1762541729
+  }
+]
