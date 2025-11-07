@@ -43,7 +43,7 @@ export const BottomHud = () => {
     <BottomHudShell className={shellClassName}>
       <button
         onClick={toggleMinimize}
-        className="pointer-events-auto absolute -top-0 right-4 flex items-center justify-center rounded-lg bg-brown/80 backdrop-blur-sm px-3 py-1 transition-colors hover:bg-brown/90 border border-gold/20"
+        className="pointer-events-auto absolute -top-0 right-4 flex items-center justify-center rounded-lg bg-brown/80 px-3 py-1 transition-colors hover:bg-brown/90 border border-gold/20"
         aria-label={isMinimized ? "Maximize HUD" : "Minimize HUD"}
       >
         {isMinimized ? (
