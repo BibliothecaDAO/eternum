@@ -1,5 +1,5 @@
 import { sqlApi } from "@/services/api";
-import { ModalContainer } from "@/ui/shared/components/modal-container";
+import { SecondaryPopup } from "@/ui/design-system/molecules/secondary-popup";
 import {
   ArmyManager,
   configManager,
@@ -53,6 +53,7 @@ interface UnifiedArmyCreationModalProps {
   isExplorer?: boolean;
   direction?: Direction;
   initialGuardSlot?: number;
+  onClose?: () => void;
 }
 
 const TROOP_TYPES: TroopType[] = [TroopType.Crossbowman, TroopType.Knight, TroopType.Paladin];
@@ -70,6 +71,7 @@ export const UnifiedArmyCreationModal = ({
   isExplorer = true,
   direction,
   initialGuardSlot,
+  onClose,
 }: UnifiedArmyCreationModalProps) => {
   const {
     setup: { components, systemCalls },
@@ -589,73 +591,78 @@ export const UnifiedArmyCreationModal = ({
   const modalTitle = structureName ? `${structureName} - ${modalBaseTitle}` : modalBaseTitle;
 
   return (
-    <ModalContainer title={modalTitle} size="full">
-      <div className="p-6 w-full h-full bg-gradient-to-br from-brown/5 to-brown/10 rounded-lg">
-        <div className="grid h-full gap-6 md:grid-cols-2">
-          <div className="flex flex-col h-full">
-            <TroopSelectionGrid
-              options={troopOptions}
-              selected={selectedTroopCombo}
-              isDefenseTroopLocked={isDefenseTroopLocked}
-              selectedGuardCategory={selectedGuardCategory}
-              selectedGuardTier={selectedGuardTier}
-              onSelect={handleTroopSelect}
-            />
-            <TroopCountSelector
-              troopCount={troopCount}
-              maxAffordable={maxAffordable}
-              onChange={handleTroopCountChange}
-              capacityRemaining={capacityRemainingForSelector}
-              troopMaxSize={troopCapacityLimit ?? undefined}
-            />
-          </div>
+    <SecondaryPopup width="800" name="unified-army-creation-modal" containerClassName="absolute left-0 top-0">
+      <SecondaryPopup.Head onClose={onClose}>{modalTitle}</SecondaryPopup.Head>
+      <SecondaryPopup.Body width="100%" height="auto">
+        <div className="p-3">
+          <div className="flex gap-2">
+            <div className="flex flex-col w-[420px]">
+              <TroopSelectionGrid
+                options={troopOptions}
+                selected={selectedTroopCombo}
+                isDefenseTroopLocked={isDefenseTroopLocked}
+                selectedGuardCategory={selectedGuardCategory}
+                selectedGuardTier={selectedGuardTier}
+                onSelect={handleTroopSelect}
+              />
+              <TroopCountSelector
+                troopCount={troopCount}
+                maxAffordable={maxAffordable}
+                onChange={handleTroopCountChange}
+                capacityRemaining={capacityRemainingForSelector}
+                troopMaxSize={troopCapacityLimit ?? undefined}
+              />
+            </div>
 
-          <div className="flex flex-col h-full space-y-2">
-            <ArmyTypeToggle
-              armyType={armyType}
-              canCreateAttackArmy={canCreateAttackArmy}
-              canCreateDefenseArmy={canCreateDefenseArmy}
-              canInteractWithDefense={canInteractWithDefense}
-              currentExplorersCount={currentExplorersCount}
-              maxExplorers={maxExplorers}
-              currentGuardsCount={currentGuardsCount}
-              maxGuards={resolvedMaxDefenseSlots}
-              onSelect={handleArmyTypeSelect}
-            />
-
-            {!armyType && (
-              <DefenseSlotSelection
-                guardSlot={guardSlot}
-                maxDefenseSlots={resolvedMaxDefenseSlots}
-                guardsBySlot={guardsBySlot}
-                availableSlots={availableGuardSlots}
-                selectedTroopCombo={selectedTroopCombo}
+            <div className="flex flex-col space-y-1.5 w-[340px]">
+              <ArmyTypeToggle
+                armyType={armyType}
+                canCreateAttackArmy={canCreateAttackArmy}
                 canCreateDefenseArmy={canCreateDefenseArmy}
-                defenseSlotInfoMessage={defenseSlotInfoMessage}
-                defenseSlotErrorMessage={defenseSlotErrorMessage}
-                onSelect={handleGuardSlotSelect}
+                canInteractWithDefense={canInteractWithDefense}
+                currentExplorersCount={currentExplorersCount}
+                maxExplorers={maxExplorers}
+                currentGuardsCount={currentGuardsCount}
+                maxGuards={resolvedMaxDefenseSlots}
+                onSelect={handleArmyTypeSelect}
               />
-            )}
 
-            {armyType && (
-              <DirectionSelection
-                availableDirections={freeDirections}
-                selectedDirection={selectedDirection}
-                isLoading={isLoadingDirections}
-                onSelect={handleDirectionSelect}
+              <div className="flex-1 min-h-[140px]">
+                {!armyType && (
+                  <DefenseSlotSelection
+                    guardSlot={guardSlot}
+                    maxDefenseSlots={resolvedMaxDefenseSlots}
+                    guardsBySlot={guardsBySlot}
+                    availableSlots={availableGuardSlots}
+                    selectedTroopCombo={selectedTroopCombo}
+                    canCreateDefenseArmy={canCreateDefenseArmy}
+                    defenseSlotInfoMessage={defenseSlotInfoMessage}
+                    defenseSlotErrorMessage={defenseSlotErrorMessage}
+                    onSelect={handleGuardSlotSelect}
+                  />
+                )}
+
+                {armyType && (
+                  <DirectionSelection
+                    availableDirections={freeDirections}
+                    selectedDirection={selectedDirection}
+                    isLoading={isLoadingDirections}
+                    onSelect={handleDirectionSelect}
+                  />
+                )}
+              </div>
+
+              <ActionFooter
+                armyType={armyType}
+                label={actionLabel}
+                isLoading={isLoading}
+                isDisabled={isActionDisabled}
+                onSubmit={handleCreate}
               />
-            )}
-
-            <ActionFooter
-              armyType={armyType}
-              label={actionLabel}
-              isLoading={isLoading}
-              isDisabled={isActionDisabled}
-              onSubmit={handleCreate}
-            />
+            </div>
           </div>
         </div>
-      </div>
-    </ModalContainer>
+      </SecondaryPopup.Body>
+    </SecondaryPopup>
   );
 };

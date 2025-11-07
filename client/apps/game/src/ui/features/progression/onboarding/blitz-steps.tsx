@@ -1530,7 +1530,7 @@ export const BlitzOnboarding = () => {
         />
       )}
       {/* Always show Factory Games list */}
-      <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 space-y-3">
+      <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 space-y-3 overflow-auto max-h-[400px]">
         <p className="text-sm text-gold/70">Factory Games</p>
         <FactoryGamesList />
       </div>

@@ -36,55 +36,58 @@ export const ArmyTypeToggle = ({
   const shouldShowLimitWarning = (armyType && !canCreateAttackArmy) || (!armyType && !canCreateDefenseArmy);
 
   return (
-    <div className="rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-brown/30">
-      <div className="flex gap-3">
-        <Button
-          variant={armyType ? "gold" : "outline"}
+    <div className="space-y-2">
+      {/* Tab Bar */}
+      <div className="flex border-b border-gold/20">
+        <button
           onClick={() => onSelect(true)}
-          size="lg"
           disabled={!canCreateAttackArmy}
           className={clsx(
-            "flex-1 py-4 font-bold transition-all duration-300 relative rounded-xl",
-            "flex flex-col items-center gap-2",
-            armyType ? "ring-2 ring-gold/60 shadow-xl shadow-gold/30 scale-105" : "hover:bg-gold/10 hover:scale-102",
-            !canCreateAttackArmy && "opacity-50 cursor-not-allowed",
+            "flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 transition-all duration-150",
+            "border-b-2 -mb-[1px]",
+            armyType
+              ? "border-gold text-gold bg-gold/5"
+              : "border-transparent text-gold/60 hover:text-gold/80 hover:bg-gold/5",
+            !canCreateAttackArmy && "opacity-40 cursor-not-allowed",
           )}
         >
-          <Users className="w-5 h-5" />
-          <span>ATTACK</span>
-          <div className="absolute -top-3 -right-3 bg-gradient-to-br from-gold/90 to-gold/70 text-brown text-xs px-2 py-1 rounded-full border-2 border-gold shadow-lg font-bold">
+          <Users className="w-3.5 h-3.5" />
+          <span className="text-xs font-bold uppercase">Attack</span>
+          <span className={clsx(
+            "text-xxs px-1 py-0.5 rounded font-bold",
+            armyType ? "bg-gold/20 text-gold" : "bg-brown/30 text-gold/70"
+          )}>
             {currentExplorersCount}/{maxExplorers}
-          </div>
-        </Button>
-        <Button
-          variant={!armyType ? "gold" : "outline"}
+          </span>
+        </button>
+        <button
           onClick={() => onSelect(false)}
-          size="lg"
           disabled={!canInteractWithDefense}
           className={clsx(
-            "flex-1 py-4 font-bold transition-all duration-300 relative rounded-xl",
-            "flex flex-col items-center gap-2",
-            !armyType ? "ring-2 ring-gold/60 shadow-xl shadow-gold/30 scale-105" : "hover:bg-gold/10 hover:scale-102",
-            !canInteractWithDefense && "opacity-50 cursor-not-allowed",
+            "flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 transition-all duration-150",
+            "border-b-2 -mb-[1px]",
+            !armyType
+              ? "border-gold text-gold bg-gold/5"
+              : "border-transparent text-gold/60 hover:text-gold/80 hover:bg-gold/5",
+            !canInteractWithDefense && "opacity-40 cursor-not-allowed",
           )}
         >
-          <Shield className="w-5 h-5" />
-          <span>DEFENSE</span>
-          <div className="absolute -top-3 -right-3 bg-gradient-to-br from-gold/90 to-gold/70 text-brown text-xs px-2 py-1 rounded-full border-2 border-gold shadow-lg font-bold">
+          <Shield className="w-3.5 h-3.5" />
+          <span className="text-xs font-bold uppercase">Defense</span>
+          <span className={clsx(
+            "text-xxs px-1 py-0.5 rounded font-bold",
+            !armyType ? "bg-gold/20 text-gold" : "bg-brown/30 text-gold/70"
+          )}>
             {currentGuardsCount}/{maxGuards}
-          </div>
-        </Button>
+          </span>
+        </button>
       </div>
 
+      {/* Warning Message */}
       {shouldShowLimitWarning && (
-        <div className="bg-gradient-to-r from-light-danger/15 to-light-danger/10 border-2 border-gold/40 rounded-xl p-4 mt-4 shadow-lg">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-1 rounded-full bg-danger/20">
-              <AlertTriangle className="w-5 h-5 text-danger" />
-            </div>
-            <span className="text-danger font-bold text-base">Army Limit Reached</span>
-          </div>
-          <p className="text-sm text-danger/90 ml-8">{limitMessage}</p>
+        <div className="bg-danger/10 border-l-2 border-danger rounded px-2 py-1 flex items-center gap-1.5">
+          <AlertTriangle className="w-3.5 h-3.5 text-danger flex-shrink-0" />
+          <span className="text-xxs text-danger font-semibold">{limitMessage}</span>
         </div>
       )}
     </div>

@@ -317,64 +317,103 @@ canvas {
 }
 
 .panel-wood {
-  border: 5px solid transparent;
-  border-image: url("/borders/straight-wood.png") 12 round; /* Seamless rope image */
-  /* background-color: #3b2b18; */
-  border-radius: 20px;
-  /* box-shadow: inset 0 0 5px #00000066; */
+  /* Modern style matching entity-detail-primitives.tsx */
+  background-color: rgba(12, 10, 8, 0.7); /* bg-dark-brown/70 */
+  border-radius: 0.5rem; /* rounded-lg (8px) */
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1); /* shadow-md */
+  /* Subtle gradient borders on top and bottom */
+  border-top: 1px solid transparent;
+  border-bottom: 1px solid transparent;
+  border-image: linear-gradient(to right, transparent, rgba(243, 201, 159, 0.4), transparent) 1;
+  border-image-slice: 1 0 1 0; /* Only apply to top and bottom */
 }
 
 .panel-wood-small {
-  border: 4px solid transparent;
-  border-image: url("/borders/straight-wood.png") 12 round; /* Seamless rope image */
-  /* background-color: #3b2b18; */
-  border-radius: 20px;
-  /* box-shadow: inset 0 0 5px #00000066; */
+  /* Modern style matching entity-detail-primitives.tsx - compact variant */
+  background-color: rgba(12, 10, 8, 0.7); /* bg-dark-brown/70 */
+  border-radius: 0.375rem; /* rounded-md (6px) - smaller than regular */
+  box-shadow:
+    0 2px 4px -1px rgb(0 0 0 / 0.1),
+    0 1px 2px -1px rgb(0 0 0 / 0.1); /* shadow-sm */
+  /* Subtle gradient borders on top and bottom */
+  border-top: 1px solid transparent;
+  border-bottom: 1px solid transparent;
+  border-image: linear-gradient(to right, transparent, rgba(243, 201, 159, 0.3), transparent) 1;
+  border-image-slice: 1 0 1 0; /* Only apply to top and bottom */
 }
 
 .panel-wood-top {
-  border-top: 6px solid transparent;
-  border-image: url("/borders/straight-wood.png") 12 round;
-  border-image-slice: 12 0 0 0;
+  /* Modern style - top border only */
+  border-top: 1px solid rgba(223, 170, 84, 0.25); /* border-gold/25 */
 }
 
 .panel-wood-right {
-  border-right: 6px solid transparent;
-  border-image: url("/borders/straight-wood.png") 12 round;
-  border-image-slice: 0 12 0 0;
+  /* Modern style - right border only */
+  border-right: 1px solid rgba(223, 170, 84, 0.25); /* border-gold/25 */
 }
 
 .panel-wood-bottom {
-  border-bottom: 6px solid transparent;
-  border-image: url("/borders/straight-wood.png") 12 round;
-  border-image-slice: 0 0 12 0;
+  /* Modern style - bottom border only */
+  border-bottom: 1px solid rgba(223, 170, 84, 0.25); /* border-gold/25 */
 }
 
 .panel-wood-left {
-  border-left: 6px solid transparent;
-  border-image: url("/borders/straight-wood.png") 12 round;
-  border-image-slice: 0 0 0 12;
+  /* Modern style - left border only */
+  border-left: 1px solid rgba(223, 170, 84, 0.25); /* border-gold/25 */
 }
 
 .button-wood {
-  /* padding: 6px 14px; */
-  border: 3px solid transparent;
-  border-image: url("/borders/straight-wood.png") 12 round;
-  /* background: #14100d url("/images/straight-wood.png"); */
-  border-radius: 6px;
+  /* Modern button border/shadow style - backgrounds controlled by variants */
+  border: 1px solid rgba(223, 170, 84, 0.25); /* border-gold/25 - default */
+  border-radius: 0.375rem; /* rounded-md (6px) */
   box-shadow:
-    inset 0 0 4px #00000066,
-    0 1px 2px #000000aa;
-
-  transition: all 0.2s ease;
+    0 2px 4px -1px rgb(0 0 0 / 0.1),
+    0 1px 2px -1px rgb(0 0 0 / 0.1); /* shadow-sm */
+  transition: all 0.15s ease;
+  /* NOTE: No background - variants control that */
 }
-.button-wood:hover {
-  background-color: #4a3015;
-  box-shadow: 0 0 6px #d4aa7044;
+
+/* Hover state - brighter border and enhanced shadow */
+.button-wood:hover:not(:disabled) {
+  border-color: rgba(223, 170, 84, 0.45); /* border-gold/45 - brighter */
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.2),
+    0 2px 4px -2px rgb(0 0 0 / 0.15); /* shadow-md - stronger */
   cursor: pointer;
+  /* Brightness filter to enhance whatever background the variant set */
+  filter: brightness(1.1);
 }
 
-/* Wood ornate corner classes */
+/* Active/Pressed state - brightest border with press effect */
+.button-wood:active:not(:disabled) {
+  border-color: rgba(223, 170, 84, 0.6); /* border-gold/60 - very bright */
+  box-shadow:
+    0 1px 3px 0 rgb(0 0 0 / 0.3) inset,
+    0 1px 2px 0 rgb(0 0 0 / 0.2); /* inset shadow for pressed feel */
+  transform: translateY(1px); /* Slight press effect */
+  filter: brightness(1.15); /* Slightly brighter when pressed */
+}
+
+/* Focus state - visible outline for accessibility */
+.button-wood:focus-visible {
+  outline: 2px solid rgba(223, 170, 84, 0.6);
+  outline-offset: 2px;
+}
+
+/* Disabled state - grayed out and reduced opacity */
+.button-wood:disabled {
+  border-color: rgba(119, 103, 86, 0.3) !important; /* gray-gold with low opacity */
+  color: rgba(119, 103, 86, 0.6) !important; /* gray-gold text */
+  cursor: not-allowed !important;
+  opacity: 0.4;
+  box-shadow: none !important;
+  filter: grayscale(0.5) !important; /* Desaturate disabled buttons */
+  /* NOTE: Background stays as variant defines it, just grayed out */
+}
+
+/* Wood ornate corner classes - KEPT for decorative purposes */
 .panel-wood-corner-tl {
   position: relative;
 }
@@ -462,6 +501,7 @@ canvas {
   background-size: contain;
   background-repeat: no-repeat;
   pointer-events: none;
+  z-index: 100;
 }
 .panel-wood-corners::before {
   top: -14px;
@@ -492,28 +532,66 @@ button {
 }
 
 .button-gold {
-  /* padding: 6px 14px; */
-  border: 3px solid transparent;
-  border-image: url("/borders/gold-border.png") 12 round;
-  background: #d4b61e;
-  border-radius: 6px;
+  /* Modern gold button border/shadow style - backgrounds controlled by variants */
+  border: 1px solid rgba(223, 170, 84, 0.55); /* border-gold/55 - brighter than wood */
+  border-radius: 0.375rem; /* rounded-md (6px) */
   box-shadow:
-    inset 0 0 4px #00000066,
-    0 1px 2px #000000aa;
-  transition: all 0.2s ease;
+    0 2px 4px -1px rgb(0 0 0 / 0.1),
+    0 1px 2px -1px rgb(0 0 0 / 0.1); /* shadow-sm */
+  transition: all 0.15s ease;
+  /* NOTE: No background override - variant bg-gold controls that */
 }
-.button-gold:hover {
-  background-color: #4a3015;
-  box-shadow: 0 0 6px #d4aa7044;
+
+/* Hover state - brighter border and enhanced shadow */
+.button-gold:hover:not(:disabled) {
+  border-color: rgba(223, 170, 84, 0.75); /* border-gold/75 - bright */
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.2),
+    0 2px 4px -2px rgb(0 0 0 / 0.15); /* shadow-md - stronger */
   cursor: pointer;
+  /* Brightness filter to enhance the gold background */
+  filter: brightness(1.1);
+}
+
+/* Active/Pressed state - brightest border with press effect */
+.button-gold:active:not(:disabled) {
+  border-color: rgba(223, 170, 84, 0.9); /* border-gold/90 - very bright */
+  box-shadow:
+    0 1px 3px 0 rgb(0 0 0 / 0.3) inset,
+    0 1px 2px 0 rgb(0 0 0 / 0.2); /* inset shadow for pressed feel */
+  transform: translateY(1px); /* Slight press effect */
+  filter: brightness(1.2); /* Brighter when pressed */
+}
+
+/* Focus state - visible outline for accessibility */
+.button-gold:focus-visible {
+  outline: 2px solid rgba(223, 170, 84, 0.8);
+  outline-offset: 2px;
+}
+
+/* Disabled state - grayed out */
+.button-gold:disabled {
+  border-color: rgba(119, 103, 86, 0.3) !important; /* gray-gold with low opacity */
+  color: rgba(119, 103, 86, 0.6) !important; /* gray-gold text */
+  cursor: not-allowed !important;
+  opacity: 0.4;
+  box-shadow: none !important;
+  filter: grayscale(0.5) !important; /* Desaturate disabled buttons */
+  /* NOTE: Background stays as variant defines it, just grayed out */
 }
 
 .panel-gold {
-  border: 3px solid transparent;
-  border-image: url("/borders/gold-border.png") 12 round; /* Seamless rope image */
-  /* background-color: #3b2b18; */
-  border-radius: 20px;
-  /* box-shadow: inset 0 0 5px #00000066; */
+  /* Modern gold panel style with highlight tone (matching entity-detail-primitives.tsx) */
+  background-color: rgba(12, 10, 8, 0.7); /* bg-dark-brown/70 */
+  border-radius: 0.5rem; /* rounded-lg (8px) */
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1); /* shadow-md */
+  /* Subtle gradient borders on top and bottom - slightly brighter for gold variant */
+  border-top: 1px solid transparent;
+  border-bottom: 1px solid transparent;
+  border-image: linear-gradient(to right, transparent, rgba(223, 170, 84, 0.5), rgba(243, 201, 159, 0.5), rgba(223, 170, 84, 0.5), transparent) 1;
+  border-image-slice: 1 0 1 0; /* Only apply to top and bottom */
 }
 
 /* Battle Logs Component Styles */

@@ -145,7 +145,7 @@ export default {
       backgroundImage: {
         map: "url(/images/map.svg)",
         "old-map": "url(public/textures/paper/worldmap-bg.png)",
-        "dark-wood": "url(/images/textures/dark-wood.png)",
+        "dark-wood": "linear-gradient(rgba(12, 10, 8, 0.7), rgba(12, 10, 8, 0.7))", // Modern: solid dark-brown/70 instead of texture
       },
       fontSize: {
         xs: ".975rem",
