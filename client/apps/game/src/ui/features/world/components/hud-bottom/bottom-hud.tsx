@@ -49,27 +49,30 @@ export const BottomHud = () => {
           <ChevronDown className="h-4 w-4 text-gold/70" />
         )}
       </button>
-      {!isMinimized && (
-        <div className="flex h-full min-h-0 w-full flex-1 items-stretch gap-3 overflow-hidden">
-          <HudSlot className="flex-[1] min-w-[280px]">
-            <HudPanel className="flex-1 min-h-0">
-              <MiniMapNavigation variant="embedded" className="h-full min-h-0" />
-            </HudPanel>
-          </HudSlot>
+      <div
+        className={cn(
+          "flex h-full min-h-0 w-full flex-1 items-stretch gap-3 overflow-hidden",
+          isMinimized && "hidden",
+        )}
+      >
+        <HudSlot className="flex-[1] min-w-[280px]">
+          <HudPanel className="flex-1 min-h-0">
+            <MiniMapNavigation variant="embedded" className="h-full min-h-0" />
+          </HudPanel>
+        </HudSlot>
 
-          <HudSlot className="flex-[1.9] min-w-[420px]">
-            <HudPanel className="flex-1 min-h-0">
-              <SelectedWorldmapEntity />
-            </HudPanel>
-          </HudSlot>
+        <HudSlot className="flex-[1.9] min-w-[420px]">
+          <HudPanel className="flex-1 min-h-0">
+            <SelectedWorldmapEntity />
+          </HudPanel>
+        </HudSlot>
 
-          <HudSlot className="flex-[1.2] min-w-[320px]">
-            <HudPanel className="flex-[0.5] min-h-0">
-              <PlayerRelicTray variant="embedded" className="h-full" />
-            </HudPanel>
-          </HudSlot>
-        </div>
-      )}
+        <HudSlot className="flex-[1.2] min-w-[320px]">
+          <HudPanel className="flex-[0.5] min-h-0">
+            <PlayerRelicTray variant="embedded" className="h-full" />
+          </HudPanel>
+        </HudSlot>
+      </div>
     </BottomHudShell>
   );
 };
