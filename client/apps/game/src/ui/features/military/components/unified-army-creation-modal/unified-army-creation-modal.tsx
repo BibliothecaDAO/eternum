@@ -590,9 +590,9 @@ export const UnifiedArmyCreationModal = ({
 
   return (
     <ModalContainer title={modalTitle} size="full">
-      <div className="p-6 w-full h-full bg-gradient-to-br from-brown/5 to-brown/10 rounded-lg">
-        <div className="grid h-full gap-6 md:grid-cols-2">
-          <div className="flex flex-col h-full">
+      <div className="p-6 h-full bg-gradient-to-br from-brown/5 to-brown/10 rounded-lg">
+        <div className="grid h-full gap-6 md:grid-cols-2 2xl:grid-cols-3 max-w-[2400px] mx-auto">
+          <div className="flex flex-col h-full 2xl:col-span-2">
             <TroopSelectionGrid
               options={troopOptions}
               selected={selectedTroopCombo}
