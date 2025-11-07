@@ -9,13 +9,8 @@ interface BottomHudShellProps {
 // Provides the shared backdrop and spacing for the bottom HUD banner
 export const BottomHudShell = ({ children, className }: BottomHudShellProps) => {
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex px-0">
-      <div
-        className={cn(
-          "pointer-events-auto flex w-full flex-col gap-2 rounded-3xl backdrop-blur-sm overflow-hidden",
-          className,
-        )}
-      >
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-40 flex px-0">
+      <div className={cn("pointer-events-auto flex w-full flex-col gap-2 rounded-3xl overflow-hidden", className)}>
         {children}
       </div>
     </div>

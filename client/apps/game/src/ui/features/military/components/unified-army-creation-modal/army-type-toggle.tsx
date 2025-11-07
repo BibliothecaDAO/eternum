@@ -53,10 +53,12 @@ export const ArmyTypeToggle = ({
         >
           <Users className="w-3.5 h-3.5" />
           <span className="text-xs font-bold uppercase">Attack</span>
-          <span className={clsx(
-            "text-xxs px-1 py-0.5 rounded font-bold",
-            armyType ? "bg-gold/20 text-gold" : "bg-brown/30 text-gold/70"
-          )}>
+          <span
+            className={clsx(
+              "text-xxs px-1 py-0.5 rounded font-bold",
+              armyType ? "bg-gold/20 text-gold" : "bg-brown/30 text-gold/70",
+            )}
+          >
             {currentExplorersCount}/{maxExplorers}
           </span>
         </button>
@@ -74,10 +76,12 @@ export const ArmyTypeToggle = ({
         >
           <Shield className="w-3.5 h-3.5" />
           <span className="text-xs font-bold uppercase">Defense</span>
-          <span className={clsx(
-            "text-xxs px-1 py-0.5 rounded font-bold",
-            !armyType ? "bg-gold/20 text-gold" : "bg-brown/30 text-gold/70"
-          )}>
+          <span
+            className={clsx(
+              "text-xxs px-1 py-0.5 rounded font-bold",
+              !armyType ? "bg-gold/20 text-gold" : "bg-brown/30 text-gold/70",
+            )}
+          >
             {currentGuardsCount}/{maxGuards}
           </span>
         </button>

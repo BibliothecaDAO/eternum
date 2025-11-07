@@ -36,6 +36,15 @@ body {
   @apply bg-gold/50;
 }
 
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
 .clip-angled {
   clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px));
 }
@@ -590,7 +599,15 @@ button {
   /* Subtle gradient borders on top and bottom - slightly brighter for gold variant */
   border-top: 1px solid transparent;
   border-bottom: 1px solid transparent;
-  border-image: linear-gradient(to right, transparent, rgba(223, 170, 84, 0.5), rgba(243, 201, 159, 0.5), rgba(223, 170, 84, 0.5), transparent) 1;
+  border-image: linear-gradient(
+      to right,
+      transparent,
+      rgba(223, 170, 84, 0.5),
+      rgba(243, 201, 159, 0.5),
+      rgba(223, 170, 84, 0.5),
+      transparent
+    )
+    1;
   border-image-slice: 1 0 1 0; /* Only apply to top and bottom */
 }
 

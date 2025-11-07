@@ -4,6 +4,9 @@ import { configManager } from "@bibliothecadao/eternum";
 import { inject } from "@vercel/analytics";
 import { ReactNode } from "react";
 
+import { ensureActiveWorldProfileWithUI, getActiveWorld, patchManifestWithFactory } from "@/runtime/world";
+import { setSqlApiBaseUrl } from "@/services/api";
+import { Chain, getGameManifest } from "@contracts";
 import { dojoConfig } from "../../dojo-config";
 import { env } from "../../env";
 import { initialSync } from "../dojo/sync";
@@ -12,9 +15,6 @@ import { useUIStore } from "../hooks/store/use-ui-store";
 import { NoAccountModal } from "../ui/layouts/no-account-modal";
 import { ETERNUM_CONFIG } from "../utils/config";
 import { initializeGameRenderer } from "./game-renderer";
-import { Chain, getGameManifest } from "@contracts";
-import { ensureActiveWorldProfileWithUI, getActiveWorld, patchManifestWithFactory } from "@/runtime/world";
-import { setSqlApiBaseUrl } from "@/services/api";
 
 export type SetupResult = Awaited<ReturnType<typeof setup>>;
 
@@ -52,11 +52,18 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
 
   // 2) Update global dojoConfig in place (shared object reference)
   //    - Torii base URL and manifest are used by setup() downstream
-  (dojoConfig as any).toriiUrl = profile.toriiBaseUrl;
+  //    - For local chain, use environment variables directly
+  if (chain === "local") {
+    (dojoConfig as any).toriiUrl = env.VITE_PUBLIC_TORII;
+    (dojoConfig as any).rpcUrl = env.VITE_PUBLIC_NODE_URL;
+  } else {
+    (dojoConfig as any).toriiUrl = profile.toriiBaseUrl;
+  }
   (dojoConfig as any).manifest = patchedManifest;
 
   // 3) Point SQL API to the active world's Torii
-  setSqlApiBaseUrl(`${profile.toriiBaseUrl}/sql`);
+  const toriiUrl = chain === "local" ? env.VITE_PUBLIC_TORII : profile.toriiBaseUrl;
+  setSqlApiBaseUrl(`${toriiUrl}/sql`);
 
   const setupResult = await setup(
     { ...dojoConfig },

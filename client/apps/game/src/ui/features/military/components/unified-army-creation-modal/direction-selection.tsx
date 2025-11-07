@@ -18,7 +18,7 @@ const getHexPath = (cx: number, cy: number, size: number) => {
     const y = cy + size * Math.sin(angle);
     points.push([x, y]);
   }
-  return `M ${points.map(p => p.join(',')).join(' L ')} Z`;
+  return `M ${points.map((p) => p.join(",")).join(" L ")} Z`;
 };
 
 // Map directions to hex positions around center
@@ -53,24 +53,11 @@ export const DirectionSelection = ({
           <div className="w-5 h-5 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
         </div>
       ) : availableDirections.length > 0 ? (
-        <svg
-          viewBox={`0 0 ${viewBoxSize} ${viewBoxSize}`}
-          className="w-full h-auto max-w-[200px] mx-auto"
-        >
+        <svg viewBox={`0 0 ${viewBoxSize} ${viewBoxSize}`} className="w-full h-auto max-w-[200px] mx-auto">
           {/* Center hexagon (castle) */}
           <g>
-            <path
-              d={getHexPath(centerX, centerY, hexSize)}
-              className="fill-brown/20 stroke-gold/40"
-              strokeWidth="2"
-            />
-            <text
-              x={centerX}
-              y={centerY}
-              textAnchor="middle"
-              dominantBaseline="central"
-              fontSize="32"
-            >
+            <path d={getHexPath(centerX, centerY, hexSize)} className="fill-brown/20 stroke-gold/40" strokeWidth="2" />
+            <text x={centerX} y={centerY} textAnchor="middle" dominantBaseline="central" fontSize="32">
               🏰
             </text>
           </g>
@@ -86,7 +73,7 @@ export const DirectionSelection = ({
                 key={direction}
                 className={clsx(
                   "transition-all duration-150",
-                  isAvailable ? "cursor-pointer" : "cursor-not-allowed opacity-30"
+                  isAvailable ? "cursor-pointer" : "cursor-not-allowed opacity-30",
                 )}
                 onClick={() => isAvailable && onSelect(direction)}
               >
@@ -98,18 +85,11 @@ export const DirectionSelection = ({
                       ? "fill-gold/20 stroke-gold"
                       : isAvailable
                         ? "fill-brown/10 stroke-gold/40 hover:fill-gold/10 hover:stroke-gold/60"
-                        : "fill-brown/5 stroke-brown/30"
+                        : "fill-brown/5 stroke-brown/30",
                   )}
                   strokeWidth={isSelected ? "3" : "2"}
                 />
-                {isSelected && (
-                  <circle
-                    cx={centerX + pos.x}
-                    cy={centerY + pos.y}
-                    r="4"
-                    className="fill-gold"
-                  />
-                )}
+                {isSelected && <circle cx={centerX + pos.x} cy={centerY + pos.y} r="4" className="fill-gold" />}
               </g>
             );
           })}

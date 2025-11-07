@@ -200,27 +200,31 @@ export const MiniMapNavigation = ({ variant = "floating", className }: MiniMapNa
       {showMinimap && !isMinimized && (
         <div
           className={cn(
-            "flex flex-wrap items-center justify-between gap-2",
+            "flex items-center justify-between gap-2",
             isEmbedded ? "pb-2" : "rounded-xl border border-white/10 bg-black/50 px-2 py-2",
           )}
         >
-          <MiniMapToggleList
-            toggles={toggleConfigs}
-            visibility={visibilityStates}
-            isExpanded={isExpanded}
-            onToggle={handleToggle}
-            onHover={showTooltip}
-            onLeave={hideTooltip}
-          />
-          <MiniMapControlPanel
-            isExpanded={isExpanded}
-            onCenter={handleCenter}
-            onMinimize={toggleMinimize}
-            onToggleExpand={toggleExpand}
-            onScreenshot={handleScreenshot}
-            onHover={showTooltip}
-            onLeave={hideTooltip}
-          />
+          <div className="flex w-1/2 min-w-0 max-w-full justify-start overflow-x-auto overflow-y-hidden whitespace-nowrap scrollbar-hide">
+            <MiniMapToggleList
+              toggles={toggleConfigs}
+              visibility={visibilityStates}
+              isExpanded={isExpanded}
+              onToggle={handleToggle}
+              onHover={showTooltip}
+              onLeave={hideTooltip}
+            />
+          </div>
+          <div className="flex w-1/2 justify-end">
+            <MiniMapControlPanel
+              isExpanded={isExpanded}
+              onCenter={handleCenter}
+              onMinimize={toggleMinimize}
+              onToggleExpand={toggleExpand}
+              onScreenshot={handleScreenshot}
+              onHover={showTooltip}
+              onLeave={hideTooltip}
+            />
+          </div>
         </div>
       )}
 
