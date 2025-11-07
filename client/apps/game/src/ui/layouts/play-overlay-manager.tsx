@@ -1,5 +1,5 @@
-import { Suspense, lazy, useCallback, useEffect } from "react";
 import type { PointerEvent } from "react";
+import { Suspense, lazy, useCallback, useEffect } from "react";
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";

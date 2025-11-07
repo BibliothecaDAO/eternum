@@ -49,7 +49,7 @@ export const StepContainer = ({
   return (
     <motion.div className="flex h-screen w-full z-50 justify-end" {...motionProps}>
       <div
-        className={`bg-black/20 border-r border-[0.5px] border-gradient p-3 text-gold overflow-hidden relative z-50 backdrop-filter backdrop-blur-[32px] my-8 mr-8 panel-wood panel-wood-corners ${
+        className={`bg-black/20 border-r border-[0.5px] border-gradient p-3 text-gold relative z-50 backdrop-filter backdrop-blur-[32px] my-8 mr-8 panel-wood panel-wood-corners ${
           expandedWidth
         }`}
       >

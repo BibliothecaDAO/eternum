@@ -23,18 +23,16 @@ export const DirectionButton = ({
   return (
     <Button
       variant={isSelected ? "gold" : isAvailable ? "outline" : "secondary"}
-      size="md"
       onClick={() => isAvailable && onSelect(direction)}
       disabled={!isAvailable}
       className={clsx(
-        "aspect-square text-2xl lg:text-3xl font-bold transition-all duration-300 transform rounded-xl",
-        "min-h-[56px] lg:min-h-[64px]",
-        "min-w-[56px] lg:min-w-[64px]",
+        "aspect-square text-xl font-extrabold transition-all duration-200 transform rounded-lg p-0",
+        "min-h-[32px] min-w-[32px]",
         isSelected
-          ? "ring-2 ring-gold/60 shadow-xl shadow-gold/30 scale-110 bg-gradient-to-br from-gold/25 to-gold/15"
+          ? "ring-2 ring-gold shadow-xl shadow-gold/40 scale-110 bg-gradient-to-br from-gold/25 to-gold/15"
           : isAvailable
-            ? "hover:bg-gold/15 hover:border-gold/60 hover:scale-105 hover:shadow-lg cursor-pointer hover:-translate-y-0.5"
-            : "cursor-not-allowed opacity-40",
+            ? "hover:bg-gold/15 hover:border-gold/60 hover:scale-105 hover:shadow-md cursor-pointer"
+            : "cursor-not-allowed opacity-30",
         "border-2 backdrop-blur-sm",
       )}
     >

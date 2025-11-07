@@ -1,19 +1,5 @@
 [
   {
-    "name": "bltz-cliff-sapphire-44",
-    "slotTimestamp": 1762507800,
-    "deployed": true,
-    "configured": true,
-    "indexed": true
-  },
-  {
-    "name": "bltz-seal-liongate-33",
-    "slotTimestamp": 1762529400,
-    "deployed": true,
-    "configured": true,
-    "indexed": true
-  },
-  {
     "name": "bltz-cerulean-polar-31",
     "slotTimestamp": 1762543800,
     "deployed": true,
@@ -23,6 +9,20 @@
   {
     "name": "bltz-stone-ivory-28",
     "slotTimestamp": 1762561800,
+    "deployed": true,
+    "configured": true,
+    "indexed": true
+  },
+  {
+    "name": "bltz-spirit-moor-83",
+    "slotTimestamp": 1762594200,
+    "deployed": true,
+    "configured": true,
+    "indexed": true
+  },
+  {
+    "name": "bltz-lynx-mistwood-39",
+    "slotTimestamp": 1762615800,
     "deployed": true,
     "configured": true,
     "indexed": true

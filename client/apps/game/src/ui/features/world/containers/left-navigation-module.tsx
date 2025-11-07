@@ -308,7 +308,7 @@ export const LeftNavigationModule = memo(() => {
               className="flex flex-col justify-center pointer-events-auto"
               style={{ height: navHeight, maxHeight: navHeight }}
             >
-              <div className="flex flex-col mb-auto">
+              <div className="flex flex-col mb-auto space-y-1">
                 {navigationItems.map((item) => (
                   <div key={item.id}>
                     <CircleButton {...item} />
