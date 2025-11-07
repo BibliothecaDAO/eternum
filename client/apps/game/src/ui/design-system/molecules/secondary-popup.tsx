@@ -9,11 +9,18 @@ import Draggable from "react-draggable";
 type FilterPopupProps = {
   children: React.ReactNode;
   className?: string;
+  containerClassName?: string;
   name?: string;
   width?: string;
 };
 
-export const SecondaryPopup = ({ children, className, name, width = "400px" }: FilterPopupProps) => {
+export const SecondaryPopup = ({
+  children,
+  className,
+  containerClassName,
+  name,
+  width = "400px",
+}: FilterPopupProps) => {
   const nodeRef = useRef<any>(null);
 
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -74,7 +81,7 @@ export const SecondaryPopup = ({ children, className, name, width = "400px" }: F
 
   return (
     <motion.div
-      className="flex justify-center  "
+      className={clsx("flex justify-center", containerClassName)}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1, width }}
       exit={{ opacity: 0 }}
@@ -123,7 +130,7 @@ SecondaryPopup.Head = ({
 }) => (
   <div
     className={clsx(
-      "items-center relative cursor-move z-30 px-4 py-3 bg-dark-brown/70 w-full whitespace-nowrap handle flex justify-between border-gradient border",
+      "items-center relative cursor-move z-30 px-4 py-3 bg-dark-brown/70 w-full whitespace-nowrap handle flex justify-between border-b border-gold/25",
       className,
     )}
     onKeyDown={(e) => {
