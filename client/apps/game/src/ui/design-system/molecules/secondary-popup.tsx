@@ -123,7 +123,7 @@ SecondaryPopup.Head = ({
 }) => (
   <div
     className={clsx(
-      "items-center relative cursor-move z-30 px-4 py-3 bg-dark-brown/70 w-full whitespace-nowrap handle flex justify-between border-b border-gold/25",
+      "items-center relative cursor-move z-30 px-4 py-3 bg-dark-brown/70 w-full whitespace-nowrap handle flex justify-between border-gradient border",
       className,
     )}
     onKeyDown={(e) => {
