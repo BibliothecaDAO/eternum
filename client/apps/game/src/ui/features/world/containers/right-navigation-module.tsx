@@ -306,7 +306,7 @@ export const RightNavigationModule = () => {
               className={clsx("pointer-events-auto flex flex-col justify-start")}
               style={{ height: navHeight, maxHeight: navHeight }}
             >
-              <div className="flex flex-col mb-auto">
+              <div className="flex flex-col mb-auto space-y-1">
                 {navigationItems.map((item) => (
                   <div key={item.id}>
                     <CircleButton {...item} />
