@@ -1,4 +1,3 @@
-import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { Direction } from "@bibliothecadao/types";
 import { AlertTriangle } from "lucide-react";
 
@@ -20,8 +19,8 @@ export const DirectionSelection = ({
   return (
     <div className="flex-1 p-1.5 rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-gold/20">
       {isLoading ? (
-        <div className="flex justify-center py-4">
-          <LoadingAnimation />
+        <div className="flex justify-center py-1">
+          <div className="w-5 h-5 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
         </div>
       ) : availableDirections.length > 0 ? (
         <div className="grid grid-cols-3 gap-1.5 mx-auto w-full max-w-[180px]">

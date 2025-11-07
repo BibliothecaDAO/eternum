@@ -591,8 +591,8 @@ export const UnifiedArmyCreationModal = ({
   return (
     <ModalContainer title={modalTitle} size="auto">
       <div className="p-2 rounded-lg">
-        <div className="grid gap-2 md:grid-cols-2">
-          <div className="flex flex-col">
+        <div className="flex gap-2">
+          <div className="flex flex-col w-[420px]">
             <TroopSelectionGrid
               options={troopOptions}
               selected={selectedTroopCombo}
@@ -610,7 +610,7 @@ export const UnifiedArmyCreationModal = ({
             />
           </div>
 
-          <div className="flex flex-col space-y-1.5">
+          <div className="flex flex-col space-y-1.5 w-[340px]">
             <ArmyTypeToggle
               armyType={armyType}
               canCreateAttackArmy={canCreateAttackArmy}
@@ -623,28 +623,30 @@ export const UnifiedArmyCreationModal = ({
               onSelect={handleArmyTypeSelect}
             />
 
-            {!armyType && (
-              <DefenseSlotSelection
-                guardSlot={guardSlot}
-                maxDefenseSlots={resolvedMaxDefenseSlots}
-                guardsBySlot={guardsBySlot}
-                availableSlots={availableGuardSlots}
-                selectedTroopCombo={selectedTroopCombo}
-                canCreateDefenseArmy={canCreateDefenseArmy}
-                defenseSlotInfoMessage={defenseSlotInfoMessage}
-                defenseSlotErrorMessage={defenseSlotErrorMessage}
-                onSelect={handleGuardSlotSelect}
-              />
-            )}
+            <div className="flex-1 min-h-[140px]">
+              {!armyType && (
+                <DefenseSlotSelection
+                  guardSlot={guardSlot}
+                  maxDefenseSlots={resolvedMaxDefenseSlots}
+                  guardsBySlot={guardsBySlot}
+                  availableSlots={availableGuardSlots}
+                  selectedTroopCombo={selectedTroopCombo}
+                  canCreateDefenseArmy={canCreateDefenseArmy}
+                  defenseSlotInfoMessage={defenseSlotInfoMessage}
+                  defenseSlotErrorMessage={defenseSlotErrorMessage}
+                  onSelect={handleGuardSlotSelect}
+                />
+              )}
 
-            {armyType && (
-              <DirectionSelection
-                availableDirections={freeDirections}
-                selectedDirection={selectedDirection}
-                isLoading={isLoadingDirections}
-                onSelect={handleDirectionSelect}
-              />
-            )}
+              {armyType && (
+                <DirectionSelection
+                  availableDirections={freeDirections}
+                  selectedDirection={selectedDirection}
+                  isLoading={isLoadingDirections}
+                  onSelect={handleDirectionSelect}
+                />
+              )}
+            </div>
 
             <ActionFooter
               armyType={armyType}

@@ -36,47 +36,57 @@ export const ArmyTypeToggle = ({
   const shouldShowLimitWarning = (armyType && !canCreateAttackArmy) || (!armyType && !canCreateDefenseArmy);
 
   return (
-    <div className="rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-gold/20 p-1.5">
-      <div className="flex gap-1.5">
-        <Button
-          variant={armyType ? "gold" : "outline"}
+    <div className="space-y-2">
+      {/* Tab Bar */}
+      <div className="flex border-b border-gold/20">
+        <button
           onClick={() => onSelect(true)}
           disabled={!canCreateAttackArmy}
           className={clsx(
-            "flex-1 py-2 font-bold transition-all duration-200 rounded-lg",
-            "flex items-center justify-center gap-2",
-            armyType ? "ring-2 ring-gold shadow-xl shadow-gold/40 scale-105" : "hover:bg-gold/10 hover:scale-102",
-            !canCreateAttackArmy && "opacity-50 cursor-not-allowed",
+            "flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 transition-all duration-150",
+            "border-b-2 -mb-[1px]",
+            armyType
+              ? "border-gold text-gold bg-gold/5"
+              : "border-transparent text-gold/60 hover:text-gold/80 hover:bg-gold/5",
+            !canCreateAttackArmy && "opacity-40 cursor-not-allowed",
           )}
         >
-          <Users className="w-4 h-4" />
-          <span className="text-xs">ATTACK</span>
-          <span className="text-xxs bg-gold/20 text-gold px-1.5 py-0.5 rounded-full font-extrabold ml-1">
+          <Users className="w-3.5 h-3.5" />
+          <span className="text-xs font-bold uppercase">Attack</span>
+          <span className={clsx(
+            "text-xxs px-1 py-0.5 rounded font-bold",
+            armyType ? "bg-gold/20 text-gold" : "bg-brown/30 text-gold/70"
+          )}>
             {currentExplorersCount}/{maxExplorers}
           </span>
-        </Button>
-        <Button
-          variant={!armyType ? "gold" : "outline"}
+        </button>
+        <button
           onClick={() => onSelect(false)}
           disabled={!canInteractWithDefense}
           className={clsx(
-            "flex-1 py-2 font-bold transition-all duration-200 rounded-lg",
-            "flex items-center justify-center gap-2",
-            !armyType ? "ring-2 ring-gold shadow-xl shadow-gold/40 scale-105" : "hover:bg-gold/10 hover:scale-102",
-            !canInteractWithDefense && "opacity-50 cursor-not-allowed",
+            "flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 transition-all duration-150",
+            "border-b-2 -mb-[1px]",
+            !armyType
+              ? "border-gold text-gold bg-gold/5"
+              : "border-transparent text-gold/60 hover:text-gold/80 hover:bg-gold/5",
+            !canInteractWithDefense && "opacity-40 cursor-not-allowed",
           )}
         >
-          <Shield className="w-4 h-4" />
-          <span className="text-xs">DEFENSE</span>
-          <span className="text-xxs bg-gold/20 text-gold px-1.5 py-0.5 rounded-full font-extrabold ml-1">
+          <Shield className="w-3.5 h-3.5" />
+          <span className="text-xs font-bold uppercase">Defense</span>
+          <span className={clsx(
+            "text-xxs px-1 py-0.5 rounded font-bold",
+            !armyType ? "bg-gold/20 text-gold" : "bg-brown/30 text-gold/70"
+          )}>
             {currentGuardsCount}/{maxGuards}
           </span>
-        </Button>
+        </button>
       </div>
 
+      {/* Warning Message */}
       {shouldShowLimitWarning && (
-        <div className="bg-danger/10 border-l-2 border-danger rounded px-2 py-1.5 mt-1.5 flex items-center gap-1.5">
-          <AlertTriangle className="w-4 h-4 text-danger flex-shrink-0" />
+        <div className="bg-danger/10 border-l-2 border-danger rounded px-2 py-1 flex items-center gap-1.5">
+          <AlertTriangle className="w-3.5 h-3.5 text-danger flex-shrink-0" />
           <span className="text-xxs text-danger font-semibold">{limitMessage}</span>
         </div>
       )}

@@ -49,7 +49,7 @@ export const DefenseSlotSelection = ({
 
   return (
     <div className="p-1.5 rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-gold/20">
-      <div className="grid grid-cols-4 gap-1.5">
+      <div className="grid grid-cols-2 gap-1.5">
         {sortedSlots.map((slot) => {
           const displayedSlotNumber = DISPLAYED_SLOT_NUMBER_MAP[slot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP];
           const slotName = GUARD_SLOT_NAMES[slot as keyof typeof GUARD_SLOT_NAMES];
@@ -72,56 +72,60 @@ export const DefenseSlotSelection = ({
           const isSlotCompatible =
             !guardInfo || (guardCategory === selectedTroopCombo.type && guardTier === selectedTroopCombo.tier);
           return (
-            <Button
+            <button
               key={slot}
-              variant={isSelected ? "gold" : isSlotSelectable ? "outline" : "secondary"}
               onClick={() => isSlotSelectable && onSelect(slot)}
               disabled={!isSlotSelectable}
               className={clsx(
-                "w-full p-1.5 flex flex-col items-center text-center transition-all duration-200 rounded-lg relative aspect-square",
+                "p-2 flex items-center gap-2 text-left transition-all duration-150 rounded border-2 relative",
                 isSelected
-                  ? "ring-2 ring-gold shadow-xl shadow-gold/40 scale-105 bg-gradient-to-br from-gold/25 to-gold/15"
+                  ? "border-gold bg-gold/10"
                   : isSlotSelectable
-                    ? "hover:bg-gold/10 hover:border-gold/50 hover:scale-105 hover:shadow-md"
-                    : "opacity-40 cursor-not-allowed",
+                    ? "border-gold/30 bg-brown/5 hover:bg-gold/5 hover:border-gold/50"
+                    : "border-brown/20 bg-brown/5 opacity-40 cursor-not-allowed",
                 hasGuard && !isSlotCompatible && "border-danger/50 hover:border-danger/60",
-                hasGuard && "border-2 border-gold/40",
               )}
             >
-              <div className="absolute top-0.5 right-0.5 bg-gradient-to-br from-gold to-gold/80 text-brown text-xxs px-1 py-0.5 rounded-full border border-gold font-extrabold">
+              <div className="absolute top-0.5 right-0.5 bg-gold/30 text-gold text-xxs px-1 rounded font-bold">
                 {displayedSlotNumber}
               </div>
-              <div className={clsx("text-xxs font-bold truncate w-full", isSelected ? "text-gray-950" : "text-gold/80")}>
-                {slotName}
-              </div>
-              {hasGuard ? (
-                <div className="flex-1 flex flex-col items-center justify-center gap-0.5 w-full">
-                  {troopResourceTrait && <ResourceIcon resource={troopResourceTrait} size="xs" withTooltip={false} />}
-                  <div className={clsx("text-xxs font-bold", isSelected ? "text-gray-950" : "text-gold")}>
-                    {guardCountLabel}
-                  </div>
-                </div>
-              ) : (
-                <div className={clsx("flex-1 flex items-center justify-center text-xxs", isSelected ? "text-gray-950" : "text-gold/70")}>
-                  Empty
+
+              {hasGuard && troopResourceTrait && (
+                <div className="flex-shrink-0">
+                  <ResourceIcon resource={troopResourceTrait} size="sm" withTooltip={false} />
                 </div>
               )}
-            </Button>
+
+              <div className="flex-1 min-w-0">
+                <div className={clsx("text-xs font-bold truncate", isSelected ? "text-gold" : "text-gold/80")}>
+                  {slotName}
+                </div>
+                {hasGuard ? (
+                  <div className={clsx("text-xs font-bold", isSelected ? "text-gold" : "text-gold/90")}>
+                    {guardCountLabel}
+                  </div>
+                ) : (
+                  <div className={clsx("text-xxs", isSelected ? "text-gold" : "text-gold/60")}>
+                    Empty
+                  </div>
+                )}
+              </div>
+            </button>
           );
         })}
       </div>
       {sortedSlots.length === 0 && (
-        <div className="mt-2 text-xxs text-center text-gold/60 uppercase">
+        <div className="mt-1 text-xxs text-center text-gold/60 uppercase">
           Upgrade to unlock slots
         </div>
       )}
       {defenseSlotInfoMessage && (
-        <div className="mt-1.5 bg-brown/15 border-l-2 border-gold rounded px-2 py-1 text-xxs text-gold/80 font-medium">
+        <div className="mt-1 bg-brown/15 border-l-2 border-gold rounded px-2 py-0.5 text-xxs text-gold/80 font-medium">
           {defenseSlotInfoMessage}
         </div>
       )}
       {defenseSlotErrorMessage && (
-        <div className="mt-1.5 bg-danger/10 border-l-2 border-danger rounded px-2 py-1 flex items-center gap-1.5">
+        <div className="mt-1 bg-danger/10 border-l-2 border-danger rounded px-2 py-0.5 flex items-center gap-1.5">
           <AlertTriangle className="w-3 h-3 text-danger flex-shrink-0" />
           <span className="text-xxs text-danger font-semibold">{defenseSlotErrorMessage}</span>
         </div>
