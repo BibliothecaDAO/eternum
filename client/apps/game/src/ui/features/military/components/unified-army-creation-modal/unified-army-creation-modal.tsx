@@ -589,10 +589,10 @@ export const UnifiedArmyCreationModal = ({
   const modalTitle = structureName ? `${structureName} - ${modalBaseTitle}` : modalBaseTitle;
 
   return (
-    <ModalContainer title={modalTitle} size="full">
-      <div className="p-6 w-full h-full bg-gradient-to-br from-brown/5 to-brown/10 rounded-lg">
-        <div className="grid h-full gap-6 md:grid-cols-2">
-          <div className="flex flex-col h-full">
+    <ModalContainer title={modalTitle} size="auto">
+      <div className="p-2 rounded-lg">
+        <div className="grid gap-2 md:grid-cols-2">
+          <div className="flex flex-col">
             <TroopSelectionGrid
               options={troopOptions}
               selected={selectedTroopCombo}
@@ -610,7 +610,7 @@ export const UnifiedArmyCreationModal = ({
             />
           </div>
 
-          <div className="flex flex-col h-full space-y-2">
+          <div className="flex flex-col space-y-1.5">
             <ArmyTypeToggle
               armyType={armyType}
               canCreateAttackArmy={canCreateAttackArmy}

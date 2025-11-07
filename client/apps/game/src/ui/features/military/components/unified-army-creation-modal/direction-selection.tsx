@@ -18,17 +18,13 @@ export const DirectionSelection = ({
   onSelect,
 }: DirectionSelectionProps) => {
   return (
-    <div className="flex-1 p-4 rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-brown/30">
-      <div className="text-center mb-4">
-        <h6 className="text-gold text-lg font-bold mb-1">SPAWN DIRECTION</h6>
-        <p className="text-gold/60 text-sm">Select where your army will deploy</p>
-      </div>
+    <div className="flex-1 p-1.5 rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-gold/20">
       {isLoading ? (
-        <div className="flex justify-center py-8">
+        <div className="flex justify-center py-4">
           <LoadingAnimation />
         </div>
       ) : availableDirections.length > 0 ? (
-        <div className="grid grid-cols-3 gap-4 mx-auto w-full max-w-[320px]">
+        <div className="grid grid-cols-3 gap-1.5 mx-auto w-full max-w-[180px]">
           <DirectionButton
             direction={Direction.SOUTH_WEST}
             label="↖"
@@ -51,7 +47,7 @@ export const DirectionSelection = ({
             selectedDirection={selectedDirection}
             onSelect={onSelect}
           />
-          <div className="flex items-center justify-center text-5xl lg:text-6xl drop-shadow-lg filter brightness-110">
+          <div className="flex items-center justify-center text-4xl drop-shadow-xl filter brightness-110">
             🏰
           </div>
           <DirectionButton
@@ -78,12 +74,11 @@ export const DirectionSelection = ({
           />
         </div>
       ) : (
-        <div className="text-center p-4 bg-gradient-to-r from-danger/15 to-danger/10 border-2 border-danger/40 rounded-xl shadow-lg">
-          <div className="p-2 rounded-full bg-danger/20 w-fit mx-auto mb-2">
-            <AlertTriangle className="w-6 h-6 text-danger" />
+        <div className="text-center p-2 bg-danger/10 border-l-2 border-danger rounded">
+          <div className="p-1 rounded-full bg-danger/20 w-fit mx-auto mb-1">
+            <AlertTriangle className="w-4 h-4 text-danger" />
           </div>
-          <p className="text-danger font-semibold">No adjacent tiles available</p>
-          <p className="text-danger/80 text-sm mt-1">All surrounding tiles are occupied</p>
+          <p className="text-danger font-bold text-xxs">No adjacent tiles</p>
         </div>
       )}
     </div>

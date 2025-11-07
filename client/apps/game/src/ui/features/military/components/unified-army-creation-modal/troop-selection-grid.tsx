@@ -1,5 +1,4 @@
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { getTierStyle } from "@/ui/utils/tier-styles";
 import { TroopTier, TroopType } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { useMemo } from "react";
@@ -14,6 +13,23 @@ interface TroopSelectionGridProps {
   selectedGuardTier?: TroopTier;
   onSelect: (type: TroopType, tier: TroopTier) => void;
 }
+
+// Match tier badge styling from label-preview.html
+const getTierClasses = (tier: TroopTier, isActive = false) => {
+  // Convert TroopTier enum ("T1", "T2", "T3") to number
+  const tierNumber = typeof tier === "string" ? parseInt(tier.replace("T", ""), 10) : tier;
+
+  switch (tierNumber) {
+    case 1:
+      return "bg-gradient-to-b from-blue-500/30 to-blue-500/10 border-blue-400/40 text-blue-300";
+    case 2:
+      return "bg-gradient-to-b from-emerald-500/30 to-emerald-500/10 border-emerald-400/40 text-emerald-300";
+    case 3:
+      return `bg-purple-600 text-[#f6f1e5] border-purple-400 ${isActive ? "animate-pulse" : ""}`;
+    default:
+      return "bg-gradient-to-b from-gold/30 to-gold/10 border-gold/40 text-gold";
+  }
+};
 
 export const TroopSelectionGrid = ({
   options,
@@ -32,98 +48,125 @@ export const TroopSelectionGrid = ({
   }, [isDefenseTroopLocked, selectedGuardCategory, selectedGuardTier]);
 
   return (
-    <div className="rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-brown/30">
-      <div className="grid grid-cols-3 gap-4">
+    <div className="rounded-lg bg-brown/5 border border-gold/30 p-2.5 shadow-sm">
+      <div className="grid grid-cols-3 gap-3">
         {options.map((option) => (
-          <div key={option.type} className="space-y-3">
-            <div className="text-center">
-              <div className="text-gold/90 text-sm font-bold uppercase tracking-wide mb-2 border-b border-gold/30 pb-1">
+          <div key={option.type} className="flex flex-col gap-2">
+            {/* Header */}
+            <div className="text-center py-1 border-b border-gold/30">
+              <span className="text-gold text-xs font-bold uppercase tracking-wider">
                 {option.label}
-              </div>
+              </span>
             </div>
-            {option.tiers.map((tierOption) => {
-              const isSelected = selected.type === option.type && selected.tier === tierOption.tier;
-              const hasResources = tierOption.available > 0;
-              const lockedKey = `${option.type}-${tierOption.tier}`;
-              const isLockedOption = Boolean(lockedMap && lockedMap !== lockedKey);
-              const canSelect = hasResources && !isLockedOption;
 
-              return (
-                <div
-                  key={`${option.type}-${tierOption.tier}`}
-                  className={clsx(
-                    "p-3 flex flex-col cursor-pointer transition-all duration-300 rounded-xl border-2 relative group transform",
-                    "backdrop-blur-sm",
-                    isSelected
-                      ? "border-gold bg-gradient-to-br from-gold/25 to-gold/15 ring-2 ring-gold/40 shadow-xl shadow-gold/30 scale-105"
-                      : canSelect
-                        ? "border-brown/40 bg-gradient-to-br from-brown/15 to-brown/5 hover:border-gold/50 hover:bg-gradient-to-br hover:from-gold/20 hover:to-gold/10 hover:shadow-lg hover:scale-102 hover:-translate-y-0.5"
-                        : "border-gray/20 bg-gray/5 opacity-50 cursor-not-allowed",
-                    isLockedOption && "pointer-events-none",
-                    "hover:z-10 relative",
-                  )}
-                  onClick={() => canSelect && onSelect(option.type, tierOption.tier)}
-                >
-                  <div className="absolute -top-2 -right-2 z-10">
+            {/* Tier Cards */}
+            <div className="flex flex-col gap-1.5">
+              {option.tiers.map((tierOption) => {
+                const isSelected = selected.type === option.type && selected.tier === tierOption.tier;
+                const hasResources = tierOption.available > 0;
+                const lockedKey = `${option.type}-${tierOption.tier}`;
+                const isLockedOption = Boolean(lockedMap && lockedMap !== lockedKey);
+                const canSelect = hasResources && !isLockedOption;
+                const isCollapsed = tierOption.available === 0;
+
+                if (isCollapsed) {
+                  // Collapsed Mini Card
+                  return (
                     <div
+                      key={`${option.type}-${tierOption.tier}`}
                       className={clsx(
-                        "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 shadow-lg",
-                        "transition-all duration-300 bg-brown",
-                        hasResources ? getTierStyle(`T${tierOption.tier}`) : "bg-gray/50  border-gray-400",
-                        isSelected && "scale-110 shadow-gold/50",
+                        "flex items-center gap-2 px-2 py-1.5 rounded-md border transition-all duration-200",
+                        "bg-brown/10 border-brown/30 opacity-50",
+                        !isLockedOption && "cursor-pointer hover:opacity-70",
                       )}
+                      onClick={() => !isLockedOption && onSelect(option.type, tierOption.tier)}
                     >
-                      {tierOption.tier}
+                      <div
+                        className={clsx(
+                          "flex items-center justify-center px-1 py-0.5 rounded border text-xxs font-bold",
+                          getTierClasses(tierOption.tier),
+                        )}
+                      >
+                        {tierOption.tier}
+                      </div>
+                      <ResourceIcon resource={tierOption.resourceTrait} size="xs" withTooltip={false} />
+                      <span className="text-xs text-gray-600 font-semibold ml-auto">0</span>
                     </div>
-                  </div>
+                  );
+                }
 
+                // Normal Card - Horizontal Layout
+                return (
                   <div
+                    key={`${option.type}-${tierOption.tier}`}
                     className={clsx(
-                      "flex items-center justify-center p-3 rounded-lg mb-3 transition-all duration-300",
+                      "relative flex flex-col gap-1 p-2 rounded-lg border-2 transition-all duration-200",
+                      "cursor-pointer select-none",
                       isSelected
-                        ? "bg-gold/20 shadow-inner"
-                        : hasResources
-                          ? "bg-brown/20 group-hover:bg-gold/15"
-                          : "bg-gray/10",
+                        ? "border-gold bg-gradient-to-br from-gold/20 to-gold/10 shadow-lg shadow-gold/30 scale-105"
+                        : canSelect
+                          ? "border-brown/40 bg-gradient-to-br from-brown/10 to-brown/5 hover:border-gold/50 hover:shadow-md hover:scale-102"
+                          : "border-brown/20 bg-brown/5 opacity-60 cursor-not-allowed",
+                      isLockedOption && "pointer-events-none",
                     )}
+                    onClick={() => canSelect && onSelect(option.type, tierOption.tier)}
                   >
-                    <ResourceIcon resource={tierOption.resourceTrait} size="md" withTooltip={false} />
-                  </div>
+                    {/* Top Row: Badge + Icon + Count */}
+                    <div className="flex items-center justify-between gap-2">
+                      {/* Tier Badge */}
+                      <div
+                        className={clsx(
+                          "flex items-center justify-center px-1 py-0.5 rounded border text-xs font-bold shadow-sm flex-shrink-0",
+                          getTierClasses(tierOption.tier, isSelected),
+                          isSelected && "shadow-md",
+                        )}
+                      >
+                        {tierOption.tier}
+                      </div>
 
-                  <div className="space-y-1">
-                    <div
-                      className={clsx(
-                        "text-center text-base font-bold transition-colors duration-300",
-                        isSelected ? "text-gold" : hasResources ? "text-gold/90" : "",
-                      )}
-                    >
-                      {hasResources
-                        ? tierOption.available > 999
+                      {/* Resource Icon */}
+                      <div className="flex-shrink-0">
+                        <ResourceIcon resource={tierOption.resourceTrait} size="sm" withTooltip={false} />
+                      </div>
+
+                      {/* Count */}
+                      <div
+                        className={clsx(
+                          "text-sm font-bold flex-shrink-0",
+                          isSelected ? "text-gold" : "text-gold/90",
+                        )}
+                      >
+                        {tierOption.available > 999
                           ? `${Math.floor(tierOption.available / 1000)}k`
-                          : tierOption.available.toLocaleString()
-                        : "0"}
+                          : tierOption.available.toLocaleString()}
+                      </div>
                     </div>
+
+                    {/* Bottom Row: Troop Name */}
                     <div
                       className={clsx(
-                        "text-center text-xs font-medium transition-colors duration-300",
-                        isSelected ? "text-gold/80" : "text-gold/50",
+                        "text-center text-xxs font-bold uppercase tracking-wide",
+                        isSelected ? "text-gold" : "text-gold/80",
                       )}
                     >
-                      available
+                      {option.type}
                     </div>
-                  </div>
 
-                  {isSelected && (
-                    <div className="absolute inset-0 rounded-xl bg-gold/5 animate-pulse pointer-events-none" />
-                  )}
-                  {isLockedOption && (
-                    <div className="absolute inset-0 rounded-xl bg-brown/70 backdrop-blur-sm flex items-center justify-center text-xs font-semibold text-gold/80 uppercase tracking-wide">
-                      Locked
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                    {/* Selected Pulse Effect */}
+                    {isSelected && (
+                      <div className="absolute inset-0 rounded-lg bg-gold/5 animate-pulse pointer-events-none" />
+                    )}
+
+                    {/* Locked Overlay */}
+                    {isLockedOption && (
+                      <div className="absolute inset-0 rounded-lg bg-brown/80 backdrop-blur-sm flex items-center justify-center">
+                        <span className="text-xxs font-bold text-gold/80 uppercase tracking-wide">Locked</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         ))}
       </div>
