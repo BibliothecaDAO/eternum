@@ -44,6 +44,7 @@ mod rng_library {
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use starknet::ContractAddress;
     use crate::models::config::WorldConfigUtilImpl;
+    use crate::models::rng::RNGImpl;
     use crate::utils::random;
     use crate::utils::random::VRFImpl;
 
@@ -58,7 +59,10 @@ mod rng_library {
             let vrf_provider: ContractAddress = WorldConfigUtilImpl::get_member(
                 world, selector!("vrf_provider_address"),
             );
-            VRFImpl::seed(player, vrf_provider)
+            let tx_seed = VRFImpl::seed(player, vrf_provider);
+            let tx_hash = starknet::get_tx_info().unbox().transaction_hash;
+            let mut world = world;
+            RNGImpl::ensure_unique_tx_seed(ref world, tx_hash, tx_seed).seed
         }
 
         /// Get a random number in [0, upper_bound) derived from the provided seed and salt.

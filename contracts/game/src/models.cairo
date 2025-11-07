@@ -34,3 +34,4 @@ pub mod resource {
 }
 pub mod quest;
 pub mod rank;
+pub mod rng;
