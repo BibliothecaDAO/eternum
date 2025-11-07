@@ -183,7 +183,7 @@ const generateWorldName = (): string => {
   // Generate random 2-digit number (10-99)
   const randomNumber = Math.floor(Math.random() * 90) + 10;
 
-  return `ccf-${Array.from(words).join("-")}-${randomNumber}`;
+  return `test-${Array.from(words).join("-")}-${randomNumber}`;
 };
 
 // Helpers moved to ../utils/storage
@@ -1265,38 +1265,6 @@ export const FactoryPage = () => {
                 <div className="p-6 bg-slate-50 rounded-2xl border-2 border-slate-200">
                   <h3 className="text-lg font-bold text-slate-900 mb-4">Configuration</h3>
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Dev Mode</label>
-                        <div className="flex items-center gap-3">
-                          <input
-                            id="dev-mode-toggle"
-                            type="checkbox"
-                            checked={devModeOn}
-                            onChange={(e) => setDevModeOn(e.target.checked)}
-                            className="h-4 w-4 accent-blue-600"
-                          />
-                          <label htmlFor="dev-mode-toggle" className="text-sm text-slate-700">
-                            Enable developer mode for this game
-                          </label>
-                        </div>
-                        <p className="text-[10px] text-slate-500">Controls in-game dev features and faster flows.</p>
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">
-                          Game Duration (hours)
-                        </label>
-                        <input
-                          type="number"
-                          min={1}
-                          value={durationHours}
-                          onChange={(e) => setDurationHours(Number(e.target.value || 0))}
-                          className="w-full px-4 py-3 bg-white border-2 border-slate-200 hover:border-blue-300 focus:border-blue-500 rounded-xl text-slate-900 focus:outline-none transition-all"
-                        />
-                        <p className="text-[10px] text-slate-500">Applies to season.durationSeconds (hours × 3600).</p>
-                      </div>
-                    </div>
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">
                         Factory Address
