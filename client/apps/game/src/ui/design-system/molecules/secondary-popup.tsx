@@ -94,11 +94,14 @@ export const SecondaryPopup = ({ children, className, name, width = "400px" }: F
             onClick={handleClick}
             ref={nodeRef}
             className={clsx(
-              "fixed popup z-50 flex flex-col translate-x-6 top-[200px] left-[450px] panel-wood bg-dark-wood",
+              "fixed popup z-50 flex flex-col translate-x-6 top-[200px] left-[450px] panel-wood panel-wood-corners bg-dark-wood",
               className,
             )}
             style={{ width: `${width}px` }}
           >
+            {/* Ornate corner elements for panel-wood-corners */}
+            <div className="corner-bl z-100"></div>
+            <div className="corner-br z-100"></div>
             {children}
           </div>
         </Draggable>
@@ -120,7 +123,7 @@ SecondaryPopup.Head = ({
 }) => (
   <div
     className={clsx(
-      " items-center relative cursor-move z-30 p-2  bg-dark-wood  w-full whitespace-nowrap handle flex justify-between  border-gradient border",
+      "items-center relative cursor-move z-30 px-4 py-3 bg-dark-brown/70 w-full whitespace-nowrap handle flex justify-between border-b border-gold/25",
       className,
     )}
     onKeyDown={(e) => {
@@ -130,13 +133,13 @@ SecondaryPopup.Head = ({
     }}
     tabIndex={0}
   >
-    <h4>{children}</h4>
-    <div className="flex flex-row">
-      {hintSection && <HintModalButton className="mr-2" section={hintSection} />}
+    <h4 className="font-semibold text-sm uppercase tracking-wider text-gold/90">{children}</h4>
+    <div className="flex flex-row gap-2">
+      {hintSection && <HintModalButton section={hintSection} />}
 
       {onClose && (
-        <Button variant="default" onClick={onClose}>
-          <X className="w-5 h-5" />
+        <Button variant="default" onClick={onClose} size="xs">
+          <X className="w-4 h-4" />
         </Button>
       )}
     </div>
@@ -185,7 +188,7 @@ SecondaryPopup.Body = ({
         width ? "" : "min-w-[438px]",
         height ? "" : "min-h-[438px]",
         withWrapper ? "p-3" : "",
-        `relative z-10 flex flex-col bg-dark-wood border-gradient border overflow-auto bg-hex-bg bg-repeat`,
+        `relative z-10 flex flex-col bg-dark-brown/50 overflow-auto bg-hex-bg bg-repeat`,
       )}
       style={{
         width: width ? width : "",
@@ -194,7 +197,9 @@ SecondaryPopup.Body = ({
       }}
     >
       {withWrapper ? (
-        <div className="relative z-10 border flex flex-col border-gray-gold overflow-auto ">{children}</div>
+        <div className="relative z-10 border flex flex-col border-gold/20 rounded-md overflow-auto shadow-sm">
+          {children}
+        </div>
       ) : (
         children
       )}
