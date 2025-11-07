@@ -5,13 +5,13 @@ env:
 
 on:
   schedule:
-    - cron: '12 */6 * * *'
+    - cron: "12 */6 * * *"
   workflow_dispatch:
     inputs:
       chain:
-        description: 'Chain (slot|sepolia|slottest|local|mainnet)'
+        description: "Chain (slot|sepolia|slottest|local|mainnet)"
         required: false
-        default: 'slot'
+        default: "slot"
 
 permissions:
   contents: write
