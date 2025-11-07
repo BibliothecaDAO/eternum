@@ -19,9 +19,8 @@ pub impl RNGImpl of RNGTrait {
         let mut rng: RNG = world.read_model(tx_hash);
         if rng.seed.is_zero() {
             rng.seed = seed;
-        } else {
-            rng.seed += 1431; // random number
         }
+        rng.seed += 1431; // random number
         world.write_model(@rng);
         rng
     }
