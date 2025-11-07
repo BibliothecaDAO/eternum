@@ -189,7 +189,7 @@ function CollectionPage() {
     });
   }, [tokens]);
 
-  console.log({tokens})
+  console.log({ tokens });
 
   // --- Event Handlers ---
   const handlePageChange = (page: number) => {
@@ -453,7 +453,7 @@ function CollectionPage() {
                     value={pageInput}
                     onChange={(e) => setPageInput(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
+                      if (e.key === "Enter") {
                         commitPageInput();
                       }
                     }}
@@ -462,7 +462,9 @@ function CollectionPage() {
                     title="Go to page"
                   />
                   <span className="opacity-70">/</span>
-                  <span className="text-foreground text-sm leading-none px-1.5 py-0.5 rounded bg-background/60 border border-gold/30">{Math.max(totalPages, 1)}</span>
+                  <span className="text-foreground text-sm leading-none px-1.5 py-0.5 rounded bg-background/60 border border-gold/30">
+                    {Math.max(totalPages, 1)}
+                  </span>
                 </div>
               </div>
             </div>
@@ -502,18 +504,20 @@ function CollectionPage() {
                 {!tokensQuery.isLoading && tokens.length === 0 && Object.keys(selectedFilters).length > 0 && (
                   <div className="text-center py-6 text-muted-foreground">No items match the selected filters.</div>
                 )}
-                {!tokensQuery.isLoading && tokens.length === 0 && Object.keys(selectedFilters).length === 0 && (
-                  totalItems > 0 ? (
+                {!tokensQuery.isLoading &&
+                  tokens.length === 0 &&
+                  Object.keys(selectedFilters).length === 0 &&
+                  (totalItems > 0 ? (
                     <div className="text-center py-6 text-muted-foreground">
-                      No items on this page. Try a lower page number or{' '}
+                      No items on this page. Try a lower page number or{" "}
                       <button className="underline" onClick={() => handlePageChange(Math.max(1, totalPages))}>
                         go to last page
-                      </button>.
+                      </button>
+                      .
                     </div>
                   ) : (
                     <div className="text-center py-6 text-muted-foreground">No items available.</div>
-                  )
-                )}
+                  ))}
               </Suspense>
             </div>
           </div>
@@ -651,7 +655,8 @@ function CollectionPage() {
               </Pagination>
               <div className="flex items-center justify-center gap-2 py-2 text-sm">
                 <span>
-                  Page <span className="font-semibold">{currentPage}</span> of <span className="font-semibold">{totalPages}</span>
+                  Page <span className="font-semibold">{currentPage}</span> of{" "}
+                  <span className="font-semibold">{totalPages}</span>
                 </span>
                 <span className="text-muted-foreground">|</span>
                 <span>Go to:</span>
@@ -676,12 +681,14 @@ function CollectionPage() {
                     defaultValue={currentPage}
                     className="h-8 w-16"
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
+                      if (e.key === "Enter") {
                         // let onSubmit handle it
                       }
                     }}
                   />
-                  <Button type="submit" size="sm" variant="outline">Go</Button>
+                  <Button type="submit" size="sm" variant="outline">
+                    Go
+                  </Button>
                 </form>
               </div>
             </div>

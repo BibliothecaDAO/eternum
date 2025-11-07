@@ -28,7 +28,7 @@ and establish the size of the game world. Each wallet address can only be regist
 ## Settling
 
 Realms can be settled as soon as the game officially starts. This will confirm a Lord's participation in the game and
-place their Realms in a randomised spawn position. If a Lord fails to settle their Realms, their spawn position will
+place their Realms in a randomized spawn position. If a Lord fails to settle their Realms, their spawn position will
 remain empty throughout the game and any entry fee paid during registration will be forfeit. Lords should settle their
 Realms as soon as possible after the game starts to avoid falling behind their neighbors.
 
@@ -40,7 +40,7 @@ Hyperstructure 'rings' are spawned every 15 hexes until all players are accommod
 spawns are explained in greater detail in the [World Map](/blitz/worldmap-movement/worldmap) section.
 
 When the game starts, the size of the map and the number of Hyperstructures are finalized. Player positions are
-randomised within the bounds of the Hyperstructure rings, following a rotational pattern to distribute Lords as evenly
+randomized within the bounds of the Hyperstructure rings, following a rotational pattern to distribute Lords as evenly
 as possible to ensure equal opportunity in accessing the Hyperstructure objectives. The map structure and placement
 sequence for an example of 24 players is visualized below:
 
@@ -60,7 +60,7 @@ sequence for an example of 24 players is visualized below:
 
 ## Realm Details
 
-### Starting Resources
+### Starting Materials
 
 <div style={table.container}>
   <div style={table.wrapper}>
@@ -72,6 +72,15 @@ sequence for an example of 24 players is visualized below:
         </tr>
       </thead>
       <tbody>
+        <tr style={table.tableRow}>
+          <td style={table.cell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <ResourceIcon id={35} name="Wheat" size="md" />
+              Wheat
+            </div>
+          </td>
+          <td style={table.cell}>1,000</td>
+        </tr>
         <tr style={table.tableRow}>
           <td style={table.cell}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>

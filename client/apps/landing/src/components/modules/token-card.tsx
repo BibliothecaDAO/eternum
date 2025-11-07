@@ -45,7 +45,8 @@ export const TokenCard = ({
   const normalizedOrderOwner = token.order_owner ? trimAddress(token.order_owner)?.toLowerCase() : undefined;
   const isOwner = normalizedTokenOwner ? normalizedTokenOwner === normalizedAccountAddress : true;
   const listingActive = token.expiration !== null && token.best_price_hex !== null;
-  const listingOwnerMismatch = listingActive && normalizedOrderOwner && normalizedTokenOwner && normalizedOrderOwner !== normalizedTokenOwner;
+  const listingOwnerMismatch =
+    listingActive && normalizedOrderOwner && normalizedTokenOwner && normalizedOrderOwner !== normalizedTokenOwner;
   const isActuallyListed = listingActive && !listingOwnerMismatch;
   const isDisabledCard = listingOwnerMismatch;
   const collection = getCollectionByAddress(contract_address);
@@ -244,17 +245,11 @@ export const TokenCard = ({
             ) : (
               <Button
                 disabled={isSelected}
-                variant={isOwner ? "outline" : (isActuallyListed ? "default" : "ghost")}
+                variant={isOwner ? "outline" : isActuallyListed ? "default" : "ghost"}
                 className="w-full"
                 onClick={handleCardClick}
               >
-                {isOwner
-                  ? "Manage"
-                  : isSelected
-                    ? "Selected"
-                    : !isActuallyListed
-                      ? "Show Details"
-                      : "Buy Now"}
+                {isOwner ? "Manage" : isSelected ? "Selected" : !isActuallyListed ? "Show Details" : "Buy Now"}
               </Button>
             )}
 

@@ -6,4 +6,3 @@ export const STORAGE_KEYS = {
   // Toggle for hiding invalid listings (where order owner != token owner)
   hideInvalid: (collectionAddress: string) => `mp:hideInvalid:${collectionAddress}`,
 } as const;
-

@@ -233,15 +233,11 @@ export function TraitFilterUI({
   return (
     <div className="flex flex-col gap-3 w-full">
       {hasActiveFilters && (
-        <div className="flex flex-wrap gap-2 items-center pb-2 border-b border-border/50">
-          {renderFilterBadges()}
-        </div>
+        <div className="flex flex-wrap gap-2 items-center pb-2 border-b border-border/50">{renderFilterBadges()}</div>
       )}
 
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-        {allTraits["Wonder"] && (
-          <WonderFilter isChecked={!!selectedFilters["Wonder"]} onToggle={handleWonderToggle} />
-        )}
+        {allTraits["Wonder"] && <WonderFilter isChecked={!!selectedFilters["Wonder"]} onToggle={handleWonderToggle} />}
         {renderTraitSelects()}
       </div>
     </div>
