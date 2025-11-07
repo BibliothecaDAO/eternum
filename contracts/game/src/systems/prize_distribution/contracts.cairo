@@ -336,8 +336,14 @@ use core::num::traits::zero::Zero;
                 if !blitz_fee_split_record.already_split_fees() {
                     // split the fees
                     let this = starknet::get_contract_address();
+                    let entry_token = ICollectibleDispatcher {contract_address: blitz_registration_config.entry_token_address};
                     let reward_token = IERC20Dispatcher { contract_address: blitz_registration_config.fee_token };
-                    blitz_fee_split_record.split_fees(reward_token.balance_of(this).try_into().unwrap());
+                
+                    let single_player_entry_cost_amount: u128 = blitz_registration_config.fee_amount.try_into().unwrap();
+                    let total_player_entry_cost_amount: u128 = single_player_entry_cost_amount * entry_token.total_supply().try_into().unwrap();
+                    let total_prize_balance: u128 = reward_token.balance_of(this).try_into().unwrap();
+                    let total_bonus_amount: u128 = total_prize_balance - total_player_entry_cost_amount;
+                    blitz_fee_split_record.split_fees(total_player_entry_cost_amount, total_bonus_amount);
 
                     // send the creator fees
                     assert!(
@@ -356,19 +362,13 @@ use core::num::traits::zero::Zero;
 
             // loop through the player list and assign ranks
             let registered_player_count: u16 = blitz_registration_config.registration_count;
-            let entry_cost_amount: u128 = blitz_registration_config.fee_amount.try_into().unwrap();
             let prize_pool_amount: u128 = trial.total_prize_amount;
-            let calc_entry_cost: Fixed = FixedTrait::new(entry_cost_amount, false);
             let calc_prize_pool: Fixed = FixedTrait::new(prize_pool_amount, false);
             let calc_winner_count: u16 = iPrizeDistributionCalcImpl::get_winner_count(
                 registered_player_count, trial.total_player_count_committed,
             )
                 .into();
             let calc_s_parameter: Fixed = iPrizeDistributionCalcImpl::get_s_parameter(registered_player_count);
-            let calc_total_baseline: Fixed = iPrizeDistributionCalcImpl::get_total_baseline(
-                calc_entry_cost, calc_winner_count.into(),
-            );
-            let calc_remainder: Fixed = iPrizeDistributionCalcImpl::get_remainder(calc_prize_pool, calc_total_baseline);
             let calc_sum_position_weights: Fixed = iPrizeDistributionCalcImpl::get_sum_rank_weights(
                 calc_winner_count, calc_s_parameter,
             );
@@ -402,9 +402,8 @@ use core::num::traits::zero::Zero;
 
                 // calculate and assign prize for the player's position
                 let mut position_prize_amount = iPrizeDistributionCalcImpl::get_position_prize_amount(
-                            calc_entry_cost,
+                            calc_prize_pool,
                             trial.total_player_count_revealed, // not player.rank
-                            calc_remainder,
                             calc_sum_position_weights,
                             calc_s_parameter,
                             calc_winner_count
@@ -413,18 +412,6 @@ use core::num::traits::zero::Zero;
 
                 // prevent over-distributing funds due to tiny rounding errors
                 if trial.total_prize_amount_calculated > trial.total_prize_amount {
-
-                    // e.g this setup will result in a rounding error
-                    //       let _1e18: u128 = 1_000_000_000_000_000_000;
-                    //       let entry_cost_amount: u128 = 10 * _1e18;
-                    //       let prize_pool_amount: u128 = 16 * _1e18 ;
-                    //       let registered_player_count: u16 = 6;
-                    //       let total_players_with_non_zero_points: u16 = 6;
-                    //
-                    //   
-                    //   assert_eq!(p1, 7428694895990680191);
-                    //   assert_eq!(p2, 8571305104009319810); // sum = 16,000,000,000,000,000,001
-
                     let difference = trial.total_prize_amount_calculated - trial.total_prize_amount;
                     position_prize_amount -= difference;
                     trial.total_prize_amount_calculated -= difference;
