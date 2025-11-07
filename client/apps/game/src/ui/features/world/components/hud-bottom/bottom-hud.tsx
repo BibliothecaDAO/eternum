@@ -31,7 +31,7 @@ export const BottomHud = () => {
     return null;
   }
 
-  const expandedHeight = "h-[30vh] min-h-[30vh] max-h-[30vh]";
+  const expandedHeight = "h-[20vh] min-h-[20vh] max-h-[20vh]";
   const minimizedHeight = "h-[40px] min-h-[40px] max-h-[40px]";
   const shellClassName = cn(isMinimized ? minimizedHeight : expandedHeight, isMinimized ? "gap-0 pt-0" : "gap-3 pt-4");
 
@@ -68,8 +68,8 @@ export const BottomHud = () => {
             </HudPanel>
           </HudSlot>
 
-          <HudSlot className="flex-[1.2] min-w-[320px]">
-            <HudPanel className="flex-[0.5] min-h-0">
+          <HudSlot className="flex-[0.6] min-w-[160px]">
+            <HudPanel className="flex-1 min-h-0">
               <PlayerRelicTray variant="embedded" className="h-full" />
             </HudPanel>
           </HudSlot>

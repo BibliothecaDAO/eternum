@@ -4,16 +4,16 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getTierStyle } from "@/ui/utils/tier-styles";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getEntityIdFromKeys, getTroopResourceId } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import {
   DISPLAYED_SLOT_NUMBER_MAP,
   GUARD_SLOT_NAMES,
   GuardSlot,
-  StructureType,
   resources,
+  StructureType,
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
-import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { ArrowLeft, Plus } from "lucide-react";
 import type { KeyboardEvent } from "react";
@@ -21,10 +21,10 @@ import { useMemo } from "react";
 
 import { EntityDetailLayoutVariant } from "@/ui/features/world/components/entities/layout";
 
+import { getStructureDefenseSlotLimit, getUnlockedGuardSlots, MAX_GUARD_SLOT_COUNT } from "../utils/defense-slot-utils";
 import { SLOT_ICON_MAP } from "./slot-icon-map";
 import { DefenseTroop } from "./structure-defence";
 import { UnifiedArmyCreationModal } from "./unified-army-creation-modal";
-import { getStructureDefenseSlotLimit, getUnlockedGuardSlots, MAX_GUARD_SLOT_COUNT } from "../utils/defense-slot-utils";
 
 interface CompactDefenseDisplayProps {
   troops: DefenseTroop[];
@@ -235,6 +235,37 @@ export const CompactDefenseDisplay = ({
   };
 
   const containerGapClass = isBanner ? "gap-1" : "gap-2";
+
+  if (isBanner) {
+    return (
+      <div className={cn("flex items-start", containerGapClass, className)}>
+        {showHeaderRow && (
+          <div className="flex flex-col gap-1 bg-brown-900/80 border border-gold/25 rounded-md px-2">
+            {hasSlotInfo && (
+              <div className="flex items-center gap-1">
+                <span className={cn(labelTextClass, "uppercase tracking-wide text-gold/70 font-semibold")}>Slots</span>
+                <span className={cn(valueTextClass, "text-gold font-bold")}>
+                  {effectiveSlotsUsed}/{slotCapForDisplay}
+                </span>
+              </div>
+            )}
+            {totalTroopCount > 0 && (
+              <div className="flex items-center ">
+                <span className={cn(labelTextClass, "uppercase tracking-wide text-gold/70 font-semibold")}>Total</span>
+                <span className={cn(valueTextClass, "text-gold font-bold")}>{currencyFormat(totalTroopCount, 0)}</span>
+              </div>
+            )}
+          </div>
+        )}
+        <div className={cn("flex items-end overflow-x-auto", "gap-2", "pb-1")}>
+          {displayedTroops
+            .slice()
+            .sort((a, b) => b.slot - a.slot)
+            .map((defense) => renderSlot(defense))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn("flex flex-col", containerGapClass, className)}>

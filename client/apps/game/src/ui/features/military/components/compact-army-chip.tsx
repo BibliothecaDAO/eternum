@@ -25,11 +25,11 @@ export const CompactArmyChip = ({ army, className }: { army: ArmyInfo; className
   const statusEmoji = army.isMine ? "🟢" : "🔴";
 
   return (
-    <div className="flex w-full h-full justify-between p-2 gap-4">
+    <div className="flex w-full h-full justify-between gap-2">
       <div className="flex flex-col justify-between w-[55%]">
         <div className="flex flex-col items-start">
           <div
-            className="text-base mr-2 truncate cursor-default max-w-full"
+            className="text-xxs mr-1 truncate cursor-default max-w-full"
             onMouseEnter={() =>
               setTooltip({
                 content: `Army ID: ${army.entityId}`,
@@ -38,16 +38,16 @@ export const CompactArmyChip = ({ army, className }: { army: ArmyInfo; className
             }
             onMouseLeave={() => setTooltip(null)}
           >
-            <span className="mr-1">{statusEmoji}</span>
+            <span className="mr-0.5">{statusEmoji}</span>
             <span className="truncate">{army.name}</span>
           </div>
-          <div className="flex flex-col items-end gap-1">
+          <div className="flex flex-col items-end gap-0.5">
             <StaminaResource entityId={army.entityId} stamina={stamina} maxStamina={maxStamina} />
           </div>
         </div>
       </div>
-      <div className="flex flex-col w-[45%] gap-2">
-        <TroopChip troops={army.troops} className="h-auto" iconSize="lg" />
+      <div className="flex flex-col w-[45%] gap-1">
+        <TroopChip troops={army.troops} className="h-auto" iconSize="sm" />
       </div>
     </div>
   );
