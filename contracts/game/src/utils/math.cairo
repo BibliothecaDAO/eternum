@@ -155,6 +155,10 @@ pub impl PercentageValueImpl of PercentageValueTrait {
     }
 
 
+    fn _15() -> u64 {
+        1_500
+    }
+    
     fn _20() -> u64 {
         2_000
     }

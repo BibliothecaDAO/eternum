@@ -336,8 +336,14 @@ use core::num::traits::zero::Zero;
                 if !blitz_fee_split_record.already_split_fees() {
                     // split the fees
                     let this = starknet::get_contract_address();
+                    let entry_token = ICollectibleDispatcher {contract_address: blitz_registration_config.entry_token_address};
                     let reward_token = IERC20Dispatcher { contract_address: blitz_registration_config.fee_token };
-                    blitz_fee_split_record.split_fees(reward_token.balance_of(this).try_into().unwrap());
+                
+                    let single_player_entry_cost_amount: u128 = blitz_registration_config.fee_amount.try_into().unwrap();
+                    let total_player_entry_cost_amount: u128 = single_player_entry_cost_amount * entry_token.total_supply().try_into().unwrap();
+                    let total_prize_balance: u128 = reward_token.balance_of(this).try_into().unwrap();
+                    let total_bonus_amount: u128 = total_prize_balance - total_player_entry_cost_amount;
+                    blitz_fee_split_record.split_fees(total_player_entry_cost_amount, total_bonus_amount);
 
                     // send the creator fees
                     assert!(
