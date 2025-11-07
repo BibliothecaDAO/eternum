@@ -85,6 +85,9 @@ import {
 
 type TxState = { status: "idle" | "running" | "success" | "error"; hash?: string; error?: string };
 
+// Maximum hours in the future that a game start time can be set
+const MAX_START_TIME_HOURS = 50_000;
+
 // Storage keys and cooldowns moved to ../constants and ../utils/storage
 
 /**
@@ -726,9 +729,13 @@ export const FactoryPage = () => {
                         <input
                           type="text"
                           value={worldName}
-                          readOnly
+                          onChange={(e) => {
+                            const newName = e.target.value;
+                            setWorldName(newName);
+                            setCurrentWorldName(newName);
+                          }}
                           placeholder="ccf-fire-gate-42"
-                          className="flex-1 px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 font-mono cursor-default"
+                          className="flex-1 px-4 py-3 bg-white border-2 border-slate-200 hover:border-blue-300 focus:border-blue-500 rounded-xl text-slate-900 placeholder-slate-400 font-mono focus:outline-none transition-all"
                         />
                         <button
                           onClick={handleGenerateWorldName}
@@ -970,7 +977,7 @@ export const FactoryPage = () => {
                                               return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
                                             })()}
                                             max={(() => {
-                                              const d = new Date(Date.now() + 8 * 3600 * 1000);
+                                              const d = new Date(Date.now() + MAX_START_TIME_HOURS * 3600 * 1000);
                                               const pad = (n: number) => n.toString().padStart(2, "0");
                                               const yyyy = d.getFullYear();
                                               const mm = pad(d.getMonth() + 1);
@@ -1010,7 +1017,7 @@ export const FactoryPage = () => {
                                               }
                                               const selected = Math.floor(new Date(val).getTime() / 1000);
                                               const now = Math.floor(Date.now() / 1000);
-                                              const maxAllowed = now + 8 * 3600;
+                                              const maxAllowed = now + MAX_START_TIME_HOURS * 3600;
                                               if (selected < now) {
                                                 setStartMainAtErrors((p) => ({
                                                   ...p,
@@ -1019,7 +1026,7 @@ export const FactoryPage = () => {
                                               } else if (selected > maxAllowed) {
                                                 setStartMainAtErrors((p) => ({
                                                   ...p,
-                                                  [name]: "Start time cannot be more than 8 hours ahead",
+                                                  [name]: `Start time cannot be more than ${MAX_START_TIME_HOURS.toLocaleString()} hours ahead`,
                                                 }));
                                               } else {
                                                 setStartMainAtErrors((p) => ({ ...p, [name]: "" }));
@@ -1028,7 +1035,7 @@ export const FactoryPage = () => {
                                             }}
                                             className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md"
                                           />
-                                          <p className="text-[10px] text-slate-500">Optional. Max +8h from now.</p>
+                                          <p className="text-[10px] text-slate-500">Optional. Max +{MAX_START_TIME_HOURS.toLocaleString()}h from now.</p>
                                           {startMainAtErrors[name] && (
                                             <p className="text-[11px] text-red-600">{startMainAtErrors[name]}</p>
                                           )}
@@ -1107,9 +1114,9 @@ export const FactoryPage = () => {
                                               // 2) Batch and run all config functions (same order as config-admin-page)
                                               await localProvider.beginBatch({ signer: account });
 
-                                              // prepare optional override for startMainAt (clamped to +8h)
+                                              // prepare optional override for startMainAt (clamped to +MAX_START_TIME_HOURS)
                                               const nowSec = Math.floor(Date.now() / 1000);
-                                              const maxAllowed = nowSec + 8 * 3600;
+                                              const maxAllowed = nowSec + MAX_START_TIME_HOURS * 3600;
                                               const sel = startMainAtOverrides[name];
                                               // default to start of next hour if not provided
                                               const nextHourDefault = (() => {
