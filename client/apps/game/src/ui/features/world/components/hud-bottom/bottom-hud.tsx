@@ -5,17 +5,20 @@ import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/s
 import { MiniMapNavigation } from "@/ui/features/world/containers/mini-map-navigation";
 import { useQuery } from "@bibliothecadao/react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { ReactNode } from "react";
+import { CSSProperties, ReactNode } from "react";
 
 import { BottomHudShell, HudPanel } from "./";
 
 interface HudSlotProps {
   children: ReactNode;
   className?: string;
+  style?: CSSProperties;
 }
 
-const HudSlot = ({ children, className }: HudSlotProps) => (
-  <div className={`flex h-full min-h-0 flex-1 flex-col gap-3 overflow-auto ${className ?? ""}`}>{children}</div>
+const HudSlot = ({ children, className, style }: HudSlotProps) => (
+  <div className={cn("flex h-full min-h-0 flex-1 flex-col gap-3 overflow-auto", className)} style={style}>
+    {children}
+  </div>
 );
 
 export const BottomHud = () => {
@@ -51,9 +54,11 @@ export const BottomHud = () => {
       </button>
       {!isMinimized && (
         <div className="flex h-full min-h-0 w-full flex-1 items-stretch gap-3 overflow-hidden">
-          <HudSlot className="flex-[1] min-w-[280px]">
+          <HudSlot className="min-w-0" style={{ flex: "0.5 0.5 0%", minWidth: "140px" }}>
             <HudPanel className="flex-1 min-h-0">
-              <MiniMapNavigation variant="embedded" className="h-full min-h-0" />
+              <div className="h-full min-h-0">
+                <MiniMapNavigation variant="embedded" className="h-full min-h-0" />
+              </div>
             </HudPanel>
           </HudSlot>
 
