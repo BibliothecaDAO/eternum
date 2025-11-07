@@ -318,22 +318,30 @@ canvas {
 
 .panel-wood {
   /* Modern style matching entity-detail-primitives.tsx */
-  border: 1px solid rgba(223, 170, 84, 0.25); /* border-gold/25 */
   background-color: rgba(12, 10, 8, 0.7); /* bg-dark-brown/70 */
   border-radius: 0.5rem; /* rounded-lg (8px) */
   box-shadow:
     0 4px 6px -1px rgb(0 0 0 / 0.1),
     0 2px 4px -2px rgb(0 0 0 / 0.1); /* shadow-md */
+  /* Subtle gradient borders on top and bottom */
+  border-top: 1px solid transparent;
+  border-bottom: 1px solid transparent;
+  border-image: linear-gradient(to right, transparent, rgba(243, 201, 159, 0.4), transparent) 1;
+  border-image-slice: 1 0 1 0; /* Only apply to top and bottom */
 }
 
 .panel-wood-small {
   /* Modern style matching entity-detail-primitives.tsx - compact variant */
-  border: 1px solid rgba(223, 170, 84, 0.2); /* border-gold/20 - slightly more subtle */
   background-color: rgba(12, 10, 8, 0.7); /* bg-dark-brown/70 */
   border-radius: 0.375rem; /* rounded-md (6px) - smaller than regular */
   box-shadow:
     0 2px 4px -1px rgb(0 0 0 / 0.1),
     0 1px 2px -1px rgb(0 0 0 / 0.1); /* shadow-sm */
+  /* Subtle gradient borders on top and bottom */
+  border-top: 1px solid transparent;
+  border-bottom: 1px solid transparent;
+  border-image: linear-gradient(to right, transparent, rgba(243, 201, 159, 0.3), transparent) 1;
+  border-image-slice: 1 0 1 0; /* Only apply to top and bottom */
 }
 
 .panel-wood-top {
@@ -574,12 +582,16 @@ button {
 
 .panel-gold {
   /* Modern gold panel style with highlight tone (matching entity-detail-primitives.tsx) */
-  border: 1px solid rgba(223, 170, 84, 0.35); /* border-gold/35 - highlight tone */
   background-color: rgba(12, 10, 8, 0.7); /* bg-dark-brown/70 */
   border-radius: 0.5rem; /* rounded-lg (8px) */
   box-shadow:
     0 4px 6px -1px rgb(0 0 0 / 0.1),
     0 2px 4px -2px rgb(0 0 0 / 0.1); /* shadow-md */
+  /* Subtle gradient borders on top and bottom - slightly brighter for gold variant */
+  border-top: 1px solid transparent;
+  border-bottom: 1px solid transparent;
+  border-image: linear-gradient(to right, transparent, rgba(223, 170, 84, 0.5), rgba(243, 201, 159, 0.5), rgba(223, 170, 84, 0.5), transparent) 1;
+  border-image-slice: 1 0 1 0; /* Only apply to top and bottom */
 }
 
 /* Battle Logs Component Styles */
