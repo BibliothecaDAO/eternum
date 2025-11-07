@@ -82,7 +82,7 @@ export const SecondaryPopup = ({ children, className, name, width = "400px" }: F
     >
       {loaded && (
         <Draggable
-          grid={[50, 50]}
+          grid={[1, 1]}
           handle=".handle"
           defaultPosition={position}
           nodeRef={nodeRef}
