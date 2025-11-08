@@ -1,6 +1,8 @@
+import { getCollectionByAddress, marketplaceCollections } from "@/config";
 import { useMarketplace } from "@/hooks/use-marketplace";
+import { useRoyalties } from "@/hooks/use-royalties";
 import { ArrowLeft } from "lucide-react";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { formatUnits } from "viem";
 import { Button } from "../ui/button";
 import {
