@@ -884,31 +884,30 @@ export const FactoryPage = () => {
                                         </button>
                                       )}
 
-                                      {/* Step 3: Indexer - Only show if world is configured */}
-                                      {isWorldConfigured(name) &&
-                                        (worldIndexerStatus[name] ? (
-                                          <a
-                                            href={`${CARTRIDGE_API_BASE}/x/${name}/torii`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-md border border-emerald-200 hover:border-emerald-300 transition-colors"
-                                          >
-                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                            Indexer On
-                                          </a>
-                                        ) : isWorldOnCooldown(name) ? (
-                                          <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-500 text-xs font-semibold rounded-md border border-slate-200 cursor-not-allowed">
-                                            Wait {Math.floor(getRemainingCooldown(name) / 60)}m{" "}
-                                            {getRemainingCooldown(name) % 60}s
-                                          </span>
-                                        ) : (
-                                          <button
-                                            onClick={() => handleCreateIndexer(name)}
-                                            className="px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-md border border-blue-200 hover:border-blue-300 transition-colors"
-                                          >
-                                            Create Indexer
-                                          </button>
-                                        ))}
+                                      {/* Step 3: Indexer - Always show if no indexer exists (regardless of config status) */}
+                                      {worldIndexerStatus[name] ? (
+                                        <a
+                                          href={`${CARTRIDGE_API_BASE}/x/${name}/torii`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-md border border-emerald-200 hover:border-emerald-300 transition-colors"
+                                        >
+                                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                          Indexer On
+                                        </a>
+                                      ) : isWorldOnCooldown(name) ? (
+                                        <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-500 text-xs font-semibold rounded-md border border-slate-200 cursor-not-allowed">
+                                          Wait {Math.floor(getRemainingCooldown(name) / 60)}m{" "}
+                                          {getRemainingCooldown(name) % 60}s
+                                        </span>
+                                      ) : (
+                                        <button
+                                          onClick={() => handleCreateIndexer(name)}
+                                          className="px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-md border border-blue-200 hover:border-blue-300 transition-colors"
+                                        >
+                                          Create Indexer
+                                        </button>
+                                      )}
                                     </>
                                   )}
                                 </div>
