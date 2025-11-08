@@ -1,12 +1,137 @@
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getActiveWorldName, getFactorySqlBaseUrl, listWorldNames } from "@/runtime/world";
 import { isToriiAvailable } from "@/runtime/world/factory-resolver";
 import { deleteWorldProfile } from "@/runtime/world/store";
 import Button from "@/ui/design-system/atoms/button";
-import { AlertCircle, Check, Globe, Loader2, Play, RefreshCw, Trash2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { AlertCircle, Check, Globe, Loader2, Play, RefreshCw, Trash2, UserCheck, UserX, Users } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { shortString } from "starknet";
 import { env } from "../../../../env";
+
+const WORLD_CONFIG_QUERY = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "blitz_registration_config.registration_count" AS registration_count FROM "s1_eternum-WorldConfig" LIMIT 1;`;
+
+const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
+
+const formatCountdown = (secondsLeft: number): string => {
+  const total = Math.max(0, Math.floor(secondsLeft));
+  const d = Math.floor(total / 86400);
+  const h = Math.floor((total % 86400) / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const hh = h.toString().padStart(2, "0");
+  const mm = m.toString().padStart(2, "0");
+  const ss = s.toString().padStart(2, "0");
+  return d > 0 ? `${d}d ${hh}:${mm}:${ss}` : `${hh}:${mm}:${ss}`;
+};
+
+const decodePaddedFeltAscii = (hex: string): string => {
+  try {
+    if (!hex) return "";
+    const h = hex.startsWith("0x") || hex.startsWith("0X") ? hex.slice(2) : hex;
+    if (h === "0") return "";
+    try {
+      const asDec = BigInt("0x" + h).toString();
+      const decoded = shortString.decodeShortString(asDec);
+      if (decoded && decoded.trim().length > 0) return decoded;
+    } catch {
+      // ignore and fallback to manual decode
+    }
+    let i = 0;
+    while (i + 1 < h.length && h.slice(i, i + 2) === "00") i += 2;
+    let out = "";
+    for (; i + 1 < h.length; i += 2) {
+      const byte = parseInt(h.slice(i, i + 2), 16);
+      if (byte === 0) continue;
+      out += String.fromCharCode(byte);
+    }
+    return out;
+  } catch {
+    return "";
+  }
+};
+
+const parseMaybeHexToNumber = (v: any): number | null => {
+  if (v == null) return null;
+  if (typeof v === "number") return v;
+  if (typeof v === "string") {
+    try {
+      if (v.startsWith("0x") || v.startsWith("0X")) return Number(BigInt(v));
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
+
+const parseMaybeBool = (v: any): boolean | null => {
+  if (v == null) return null;
+  if (typeof v === "boolean") return v;
+  if (typeof v === "string") {
+    const trimmed = v.trim().toLowerCase();
+    if (trimmed === "true") return true;
+    if (trimmed === "false") return false;
+  }
+  const numeric = parseMaybeHexToNumber(v);
+  if (numeric == null) return null;
+  return numeric !== 0;
+};
+
+const fetchWorldConfigMeta = async (
+  toriiBaseUrl: string,
+): Promise<{ startMainAt: number | null; endAt: number | null; registrationCount: number | null }> => {
+  const meta: { startMainAt: number | null; endAt: number | null; registrationCount: number | null } = {
+    startMainAt: null,
+    endAt: null,
+    registrationCount: null,
+  };
+  try {
+    const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(WORLD_CONFIG_QUERY)}`;
+    const response = await fetch(url);
+    if (!response.ok) return meta;
+    const [row] = (await response.json()) as any[];
+    if (row) {
+      if (row.start_main_at != null) meta.startMainAt = parseMaybeHexToNumber(row.start_main_at) ?? null;
+      if (row.end_at != null) meta.endAt = parseMaybeHexToNumber(row.end_at);
+      if (row.registration_count != null) meta.registrationCount = parseMaybeHexToNumber(row.registration_count);
+    }
+  } catch {
+    // ignore fetch errors; caller handles defaults
+  }
+  return meta;
+};
+
+const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
+
+const fetchPlayerRegistrationStatus = async (
+  toriiBaseUrl: string,
+  playerLiteral: string | null,
+): Promise<boolean | null> => {
+  if (!playerLiteral) return null;
+  try {
+    const query = `SELECT registered FROM "s1_eternum-BlitzRealmPlayerRegister" WHERE player = "${playerLiteral}" LIMIT 1;`;
+    const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(query)}`;
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const [row] = (await response.json()) as any[];
+    if (row && row.registered != null) {
+      return parseMaybeBool(row.registered);
+    }
+  } catch {
+    // ignore fetch errors; caller handles defaults
+  }
+  return null;
+};
+
+type WorldMeta = {
+  startMainAt: number | null;
+  endAt: number | null;
+  registrationCount: number | null;
+  isRegistered: boolean | null;
+  registrationCheckedFor: string | null;
+};
 
 type FactoryGame = {
   name: string;
@@ -14,6 +139,8 @@ type FactoryGame = {
   toriiBaseUrl: string;
   startMainAt: number | null; // epoch seconds, if available
   endAt: number | null; // epoch seconds, if available
+  registrationCount: number | null;
+  isRegistered: boolean | null;
 };
 
 export const WorldSelectorModal = ({
@@ -34,12 +161,27 @@ export const WorldSelectorModal = ({
   const [factoryGames, setFactoryGames] = useState<FactoryGame[]>([]);
   const [factoryLoading, setFactoryLoading] = useState(false);
   const [factoryError, setFactoryError] = useState<string | null>(null);
-  const [savedTimes, setSavedTimes] = useState<Record<string, { startMainAt: number | null; endAt: number | null }>>(
-    {},
-  );
+  const [savedWorldMeta, setSavedWorldMeta] = useState<Record<string, WorldMeta>>({});
   const [nowSec, setNowSec] = useState<number>(() => Math.floor(Date.now() / 1000));
   const [showEnded, setShowEnded] = useState(false);
   const [showAwaiting, setShowAwaiting] = useState(false);
+  const account = useAccountStore((state) => state.account);
+  const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
+  const playerCacheKey = playerAddress ? playerAddress.toLowerCase() : null;
+  const playerFeltLiteral = playerAddress ? toPaddedFeltAddress(playerAddress) : null;
+
+  const fetchWorldMeta = useCallback(
+    async (toriiBaseUrl: string): Promise<WorldMeta> => {
+      const baseMeta = await fetchWorldConfigMeta(toriiBaseUrl);
+      const playerStatus = await fetchPlayerRegistrationStatus(toriiBaseUrl, playerFeltLiteral);
+      return {
+        ...baseMeta,
+        isRegistered: playerStatus,
+        registrationCheckedFor: playerCacheKey,
+      };
+    },
+    [playerCacheKey, playerFeltLiteral],
+  );
 
   // Check saved worlds availability and auto-delete offline games
   useEffect(() => {
@@ -97,11 +239,18 @@ export const WorldSelectorModal = ({
     return () => window.clearInterval(id);
   }, []);
 
-  // Fetch season start time and end time for Saved Games that are online
+  // Fetch season metadata and registration info for saved games that are online
   useEffect(() => {
     let cancelled = false;
+    const currentPlayerKey = playerCacheKey;
+
     const run = async () => {
-      const toFetch = saved.filter((n) => statusMap[n] === "ok" && !(n in savedTimes));
+      const toFetch = saved.filter((n) => {
+        if (statusMap[n] !== "ok") return false;
+        const meta = savedWorldMeta[n];
+        if (!meta) return true;
+        return meta.registrationCheckedFor !== currentPlayerKey;
+      });
       if (toFetch.length === 0) return;
 
       const limit = 6;
@@ -111,100 +260,29 @@ export const WorldSelectorModal = ({
         while (!cancelled && index < toFetch.length) {
           const i = index++;
           const name = toFetch[i];
-          const torii = `https://api.cartridge.gg/x/${name}/torii`;
-          let startMainAt: number | null = null;
-          let endAt: number | null = null;
-          try {
-            const q = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at FROM "s1_eternum-WorldConfig" LIMIT 1;`;
-            const u = `${torii}/sql?query=${encodeURIComponent(q)}`;
-            const r = await fetch(u);
-            if (r.ok) {
-              const arr = (await r.json()) as any[];
-              if (arr && arr[0]) {
-                if (arr[0].start_main_at != null) {
-                  startMainAt = parseMaybeHexToNumber(arr[0].start_main_at);
-                }
-                if (arr[0].end_at != null) {
-                  endAt = parseMaybeHexToNumber(arr[0].end_at);
-                }
-              }
-            }
-          } catch {
-            // ignore per-world errors
-          }
+          const torii = buildToriiBaseUrl(name);
+          const meta = await fetchWorldMeta(torii);
+
           if (!cancelled) {
-            setSavedTimes((prev) => ({ ...prev, [name]: { startMainAt, endAt } }));
+            setSavedWorldMeta((prev) => ({
+              ...prev,
+              [name]: meta,
+            }));
           }
         }
       };
       for (let k = 0; k < limit; k++) workers.push(work());
       await Promise.all(workers);
     };
+
     void run();
     return () => {
       cancelled = true;
     };
-  }, [saved, statusMap, savedTimes]);
-
-  const formatCountdown = (secondsLeft: number): string => {
-    const total = Math.max(0, Math.floor(secondsLeft));
-    const d = Math.floor(total / 86400);
-    const h = Math.floor((total % 86400) / 3600);
-    const m = Math.floor((total % 3600) / 60);
-    const s = total % 60;
-    const hh = h.toString().padStart(2, "0");
-    const mm = m.toString().padStart(2, "0");
-    const ss = s.toString().padStart(2, "0");
-    return d > 0 ? `${d}d ${hh}:${mm}:${ss}` : `${hh}:${mm}:${ss}`;
-  };
-
-  // Helpers for factory world listing
-  const decodePaddedFeltAscii = (hex: string): string => {
-    try {
-      if (!hex) return "";
-      const h = hex.startsWith("0x") || hex.startsWith("0X") ? hex.slice(2) : hex;
-      if (h === "0") return "";
-      // prefer starknet shortString if possible
-      try {
-        const asDec = BigInt("0x" + h).toString();
-        const decoded = shortString.decodeShortString(asDec);
-        if (decoded && decoded.trim().length > 0) return decoded;
-      } catch {
-        // ignore and fallback to manual decode
-      }
-      // manual hex → ascii (skip leading 00 bytes)
-      let i = 0;
-      while (i + 1 < h.length && h.slice(i, i + 2) === "00") i += 2;
-      let out = "";
-      for (; i + 1 < h.length; i += 2) {
-        const byte = parseInt(h.slice(i, i + 2), 16);
-        if (byte === 0) continue;
-        out += String.fromCharCode(byte);
-      }
-      return out;
-    } catch {
-      return "";
-    }
-  };
-
-  const parseMaybeHexToNumber = (v: any): number | null => {
-    if (v == null) return null;
-    if (typeof v === "number") return v;
-    if (typeof v === "string") {
-      try {
-        if (v.startsWith("0x") || v.startsWith("0X")) return Number(BigInt(v));
-        // decimal string
-        const n = Number(v);
-        return Number.isFinite(n) ? n : null;
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  };
+  }, [fetchWorldMeta, playerCacheKey, saved, savedWorldMeta, statusMap]);
 
   // Fetch recent factory games (up to 1000), check Torii, then fetch season start time
-  const loadFactoryGames = async () => {
+  const loadFactoryGames = useCallback(async () => {
     try {
       setFactoryLoading(true);
       setFactoryError(null);
@@ -238,9 +316,11 @@ export const WorldSelectorModal = ({
       const initial: FactoryGame[] = names.map((n) => ({
         name: n,
         status: "checking",
-        toriiBaseUrl: `https://api.cartridge.gg/x/${n}/torii`,
+        toriiBaseUrl: buildToriiBaseUrl(n),
         startMainAt: null,
         endAt: null,
+        registrationCount: null,
+        isRegistered: null,
       }));
       setFactoryGames(initial);
 
@@ -254,39 +334,32 @@ export const WorldSelectorModal = ({
           const item = initial[i];
           try {
             const online = await isToriiAvailable(item.toriiBaseUrl);
-            let startMainAt: number | null = null;
-            let endAt: number | null = null;
-            if (online) {
-              try {
-                const q = `SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at FROM "s1_eternum-WorldConfig" LIMIT 1;`;
-                const u = `${item.toriiBaseUrl}/sql?query=${encodeURIComponent(q)}`;
-                const r = await fetch(u);
-                if (r.ok) {
-                  const arr = (await r.json()) as any[];
-                  if (arr && arr[0]) {
-                    if (arr[0].start_main_at != null) {
-                      startMainAt = parseMaybeHexToNumber(arr[0].start_main_at);
-                    }
-                    if (arr[0].end_at != null) {
-                      endAt = parseMaybeHexToNumber(arr[0].end_at);
-                    }
-                  }
-                }
-              } catch {
-                // ignore per-world time errors
-              }
-            }
+            const meta = online ? await fetchWorldMeta(item.toriiBaseUrl) : null;
             setFactoryGames((prev) => {
               const copy = [...prev];
               const idx = copy.findIndex((w) => w.name === item.name);
-              if (idx >= 0) copy[idx] = { ...copy[idx], status: online ? "ok" : "fail", startMainAt, endAt };
+              if (idx >= 0)
+                copy[idx] = {
+                  ...copy[idx],
+                  status: online ? "ok" : "fail",
+                  startMainAt: meta?.startMainAt ?? null,
+                  endAt: meta?.endAt ?? null,
+                  registrationCount: meta?.registrationCount ?? null,
+                  isRegistered: meta?.isRegistered ?? null,
+                };
               return copy;
             });
           } catch {
             setFactoryGames((prev) => {
               const copy = [...prev];
               const idx = copy.findIndex((w) => w.name === item.name);
-              if (idx >= 0) copy[idx] = { ...copy[idx], status: "fail" };
+              if (idx >= 0)
+                copy[idx] = {
+                  ...copy[idx],
+                  status: "fail",
+                  registrationCount: null,
+                  isRegistered: null,
+                };
               return copy;
             });
           }
@@ -300,11 +373,25 @@ export const WorldSelectorModal = ({
     } finally {
       setFactoryLoading(false);
     }
-  };
+  }, [fetchWorldMeta]);
 
   useEffect(() => {
     void loadFactoryGames();
-  }, []);
+  }, [loadFactoryGames]);
+
+  useEffect(() => {
+    setSavedWorldMeta((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      Object.keys(next).forEach((key) => {
+        if (!saved.includes(key)) {
+          delete next[key];
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [saved]);
 
   // Handle escape key
   useEffect(() => {
@@ -355,6 +442,61 @@ export const WorldSelectorModal = ({
 
   const isGameOnline = (worldName: string) => {
     return statusMap[worldName] === "ok";
+  };
+
+  const renderRegistrationSummary = ({
+    registrationCount,
+    isRegistered,
+    isOnline,
+    isLoading,
+    className = "mt-3",
+  }: {
+    registrationCount: number | null;
+    isRegistered: boolean | null;
+    isOnline: boolean;
+    isLoading: boolean;
+    className?: string;
+  }) => {
+    const countLabel =
+      isLoading && registrationCount == null ? "Checking players…" : `${registrationCount ?? "—"} registered`;
+    return (
+      <div className={`${className} flex flex-wrap items-center gap-3 text-[10px] text-white/70`}>
+        <span className="inline-flex items-center gap-1.5">
+          <Users className="w-3 h-3" />
+          {countLabel}
+        </span>
+        {playerAddress ? (
+          isLoading ? (
+            <span className="inline-flex items-center gap-1 text-white/60">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Checking…
+            </span>
+          ) : !isOnline ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-white/5 px-2 py-0.5 text-white/60">
+              <UserX className="w-3 h-3" />
+              Offline
+            </span>
+          ) : isRegistered == null ? (
+            <span className="inline-flex items-center gap-1 text-white/60">
+              <AlertCircle className="w-3 h-3" />
+              Unavailable
+            </span>
+          ) : isRegistered ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-brilliance/10 px-2 py-0.5 font-semibold text-brilliance">
+              <UserCheck className="w-3 h-3" />
+              Registered
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-full bg-white/5 px-2 py-0.5 font-semibold text-white/80">
+              <UserX className="w-3 h-3" />
+              Not registered
+            </span>
+          )
+        ) : (
+          <span className="text-white/60">Connect wallet to check</span>
+        )}
+      </div>
+    );
   };
 
   const renderFactoryItem = (fg: FactoryGame) => {
@@ -424,6 +566,12 @@ export const WorldSelectorModal = ({
                 {startAtText}
               </div>
             )}
+            {renderRegistrationSummary({
+              registrationCount: fg.registrationCount,
+              isRegistered: fg.isRegistered,
+              isOnline,
+              isLoading: fg.status === "checking",
+            })}
           </div>
 
           <div className="flex flex-col items-end gap-2">
@@ -732,21 +880,18 @@ export const WorldSelectorModal = ({
                   // Categorize saved games
                   const categorized = saved.map((s) => {
                     const isOnline = isGameOnline(s);
-                    const timeData = savedTimes[s];
-                    const isEnded =
-                      isOnline &&
-                      timeData?.startMainAt != null &&
-                      timeData?.endAt != null &&
-                      timeData.endAt !== 0 &&
-                      nowSec >= timeData.endAt;
+                    const meta = savedWorldMeta[s];
+                    const startMainAt = meta?.startMainAt ?? null;
+                    const endAt = meta?.endAt ?? null;
+                    const isEnded = isOnline && startMainAt != null && endAt != null && endAt !== 0 && nowSec >= endAt;
                     const isOngoing =
                       isOnline &&
-                      timeData?.startMainAt != null &&
-                      nowSec >= timeData.startMainAt &&
-                      (timeData.endAt === 0 || timeData.endAt == null || nowSec < timeData.endAt);
-                    const isUpcoming = isOnline && timeData?.startMainAt != null && nowSec < timeData.startMainAt;
+                      startMainAt != null &&
+                      nowSec >= startMainAt &&
+                      (endAt === 0 || endAt == null || nowSec < (endAt as number));
+                    const isUpcoming = isOnline && startMainAt != null && nowSec < startMainAt;
 
-                    return { name: s, isOnline, timeData, isEnded, isOngoing, isUpcoming };
+                    return { name: s, isOnline, meta, isEnded, isOngoing, isUpcoming };
                   });
 
                   // Sort: live (ongoing) first, then upcoming, then ended, then others
@@ -757,7 +902,7 @@ export const WorldSelectorModal = ({
 
                   const sorted = [...live, ...upcoming, ...ended, ...others];
 
-                  return sorted.map(({ name: s, isOnline, isEnded }) => (
+                  return sorted.map(({ name: s, isOnline, isEnded, meta }) => (
                     <div
                       key={s}
                       className={`group relative rounded-lg border-2 p-4 transition-all duration-200 cursor-pointer ${
@@ -789,12 +934,11 @@ export const WorldSelectorModal = ({
                             )}
                           </div>
                           {isOnline &&
-                            savedTimes[s] != null &&
-                            savedTimes[s].startMainAt != null &&
+                            meta != null &&
+                            meta.startMainAt != null &&
                             (() => {
-                              const timeData = savedTimes[s];
-                              const startT = timeData.startMainAt as number;
-                              const endT = timeData.endAt;
+                              const startT = meta.startMainAt as number;
+                              const endT = meta.endAt;
 
                               let content: string;
                               if (nowSec < startT) {
@@ -818,6 +962,13 @@ export const WorldSelectorModal = ({
                                 </div>
                               );
                             })()}
+                          {renderRegistrationSummary({
+                            registrationCount: meta?.registrationCount ?? null,
+                            isRegistered: meta?.isRegistered ?? null,
+                            isOnline,
+                            isLoading: statusMap[s] === "checking" || (isOnline && !meta),
+                            className: "mt-2",
+                          })}
                         </div>
 
                         <div className="flex flex-col items-end gap-2">
