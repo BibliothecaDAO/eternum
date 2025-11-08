@@ -1,4 +1,4 @@
-use s1_eternum::alias::ID;
+use crate::alias::ID;
 use starknet::ContractAddress;
 
 #[starknet::interface]
@@ -24,27 +24,27 @@ pub mod resource_bridge_systems {
     use core::num::traits::Zero;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS, ResourceTypes};
-    use s1_eternum::models::config::{
+    use crate::alias::ID;
+    use crate::constants::{DEFAULT_NS, ResourceTypes};
+    use crate::models::config::{
         ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, ResourceRevBridgeWtlConfig, SeasonConfigImpl,
         WorldConfigUtilImpl,
     };
-    use s1_eternum::models::owner::OwnerAddressImpl;
-    use s1_eternum::models::resource::arrivals::ResourceArrivalImpl;
-    use s1_eternum::models::resource::resource::{
+    use crate::models::owner::OwnerAddressImpl;
+    use crate::models::resource::arrivals::ResourceArrivalImpl;
+    use crate::models::resource::resource::{
         ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::structure::{
+    use crate::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureMetadataStoreImpl,
         StructureOwnerStoreImpl,
     };
-    use s1_eternum::models::weight::Weight;
-    use s1_eternum::systems::utils::bridge::{BridgeTxType, iBridgeImpl};
-    use s1_eternum::systems::utils::erc20::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
-    use s1_eternum::systems::utils::resource::iResourceTransferImpl;
-    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
-    use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
+    use crate::models::weight::Weight;
+    use crate::systems::utils::bridge::{BridgeTxType, iBridgeImpl};
+    use crate::systems::utils::erc20::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
+    use crate::systems::utils::resource::iResourceTransferImpl;
+    use crate::utils::achievements::index::{AchievementTrait, Tasks};
+    use crate::utils::math::{PercentageImpl, PercentageValueImpl};
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
 
     #[abi(embed_v0)]

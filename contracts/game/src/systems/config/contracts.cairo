@@ -1,14 +1,17 @@
-use s1_eternum::models::config::{
+use crate::models::config::{
     BattleConfig, CapacityConfig, HyperstrtConstructConfig, MapConfig, QuestConfig, ResourceBridgeConfig,
     ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, StructureCapacityConfig, TradeConfig, TroopDamageConfig,
-    TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig, VillageTokenConfig,
+    TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig, VillageTokenConfig
 };
-use s1_eternum::models::resource::production::building::BuildingCategory;
+
+use crate::models::resource::production::building::BuildingCategory;
 
 #[starknet::interface]
 pub trait IWorldConfig<T> {
     fn set_world_config(ref self: T, admin_address: starknet::ContractAddress);
 }
+
+
 #[starknet::interface]
 pub trait IMercenariesConfig<T> {
     fn set_mercenaries_name_config(ref self: T, name: felt252);
@@ -130,6 +133,11 @@ pub trait IGameModeConfig<T> {
 }
 
 #[starknet::interface]
+pub trait IBlitzConfig<T> {
+    fn set_blitz_previous_game(ref self: T, prev_prize_distribution_systems: starknet::ContractAddress);
+}
+
+#[starknet::interface]
 pub trait IVillageFoundResourcesConfig<T> {
     fn set_village_found_resources_config(ref self: T, village_found_resources: Span<(u8, u128, u128)>);
 }
@@ -195,6 +203,7 @@ pub trait ISettlementConfig<T> {
         collectibles_cosmetics_max: u8,
         collectibles_cosmetics_address: starknet::ContractAddress,
         collectibles_timelock_address: starknet::ContractAddress,
+        collectibles_lootchest_address:  starknet::ContractAddress,
     );
 }
 
@@ -223,9 +232,9 @@ pub mod config_systems {
     use core::num::traits::{Bounded, Zero};
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-    use s1_eternum::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
-    use s1_eternum::models::agent::AgentConfig;
-    use s1_eternum::models::config::{
+    use crate::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
+    use crate::models::agent::AgentConfig;
+    use crate::models::config::{
         AgentControllerConfig, BankConfig, BattleConfig, BlitzHypersSettlementConfigImpl, BlitzRegistrationConfig,
         BlitzSettlementConfigImpl, BuildingCategoryConfig, BuildingConfig, CapacityConfig, HyperstrtConstructConfig,
         HyperstructureConfig, HyperstructureCostConfig, MapConfig, QuestConfig, ResourceBridgeConfig,
@@ -234,12 +243,12 @@ pub mod config_systems {
         StructureCapacityConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig, TradeConfig,
         TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig,
         VillageFoundResourcesConfig, VillageTokenConfig, WeightConfig, WonderProductionBonusConfig, WorldConfig,
-        WorldConfigUtilImpl, BlitzRegistrationConfigImpl
+        WorldConfigUtilImpl, BlitzRegistrationConfigImpl, BlitzPreviousGame
     };
-    use s1_eternum::models::name::AddressName;
-    use s1_eternum::models::resource::production::building::BuildingCategory;
-    use s1_eternum::models::resource::resource::{ResourceList, ResourceMinMaxList};
-    use s1_eternum::utils::achievements::index::AchievementTrait;
+    use crate::models::name::AddressName;
+    use crate::models::resource::production::building::BuildingCategory;
+    use crate::models::resource::resource::{ResourceList, ResourceMinMaxList};
+    use crate::utils::achievements::index::AchievementTrait;
 
     // Constuctor
 
@@ -750,7 +759,7 @@ pub mod config_systems {
             assert_caller_is_admin(world);
 
             // note: if we are whitelisting a NEW resource type, we WILL need to
-            // update several functions related to resources in `s1_eternum::constants`
+            // update several functions related to resources in `crate::constants`
             // so the new resource type is recognized throughout the contract.
 
             assert!(resource_bridge_whitelist_config.resource_type > 0, "resource type should be non zero");
@@ -846,6 +855,8 @@ pub mod config_systems {
             collectibles_cosmetics_max: u8,
             collectibles_cosmetics_address: starknet::ContractAddress,
             collectibles_timelock_address: starknet::ContractAddress,
+
+            collectibles_lootchest_address:  starknet::ContractAddress,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -861,6 +872,7 @@ pub mod config_systems {
             blitz_registration_config.collectibles_cosmetics_max = collectibles_cosmetics_max;
             blitz_registration_config.collectibles_cosmetics_address = collectibles_cosmetics_address;
             blitz_registration_config.collectibles_timelock_address = collectibles_timelock_address;
+            blitz_registration_config.collectibles_lootchest_address = collectibles_lootchest_address;
 
             if fee_amount > 0 {
                 let entry_token_address = blitz_registration_config.deploy_entry_token(
@@ -905,6 +917,24 @@ pub mod config_systems {
             assert_caller_is_admin(world);
             WorldConfigUtilImpl::set_member(ref world, selector!("blitz_mode_on"), blitz_mode_on);
         }
+    }
+
+    #[abi(embed_v0)]
+    impl IBlitzConfig of super::IBlitzConfig<ContractState> {
+
+        fn set_blitz_previous_game(
+            ref self: ContractState, prev_prize_distribution_systems: starknet::ContractAddress
+        ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+            
+            world.write_model(
+                @BlitzPreviousGame{
+                    config_id: WORLD_CONFIG_ID,
+                    last_prize_distribution_systems: prev_prize_distribution_systems
+                })
+        }
+
     }
 
     #[abi(embed_v0)]

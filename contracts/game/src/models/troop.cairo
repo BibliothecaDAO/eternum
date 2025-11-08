@@ -1,12 +1,12 @@
 use core::num::traits::zero::Zero;
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
-use s1_eternum::alias::ID;
-use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
-use s1_eternum::models::config::{TroopDamageConfig, TroopStaminaConfig};
-use s1_eternum::models::position::Coord;
-use s1_eternum::models::stamina::{Stamina, StaminaImpl, StaminaTrait};
-use s1_eternum::utils::map::biomes::Biome;
-use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
+use crate::alias::ID;
+use crate::constants::{RESOURCE_PRECISION, ResourceTypes};
+use crate::models::config::{TroopDamageConfig, TroopStaminaConfig};
+use crate::models::position::Coord;
+use crate::models::stamina::{Stamina, StaminaImpl, StaminaTrait};
+use crate::utils::map::biomes::Biome;
+use crate::utils::math::{PercentageImpl, PercentageValueImpl};
 
 
 #[derive(PartialEq, Debug, Copy, Drop, Serde, Introspect, Default, DojoStore)]
@@ -757,11 +757,11 @@ pub impl TroopsImpl of TroopsTrait {
 // #[cfg(test)]
 // mod tests {
 //     use cubit::f128::types::fixed::{FixedTrait};
-//     use s1_eternum::constants::{RESOURCE_PRECISION};
-//     use s1_eternum::models::config::{TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig};
-//     use s1_eternum::models::stamina::{Stamina, StaminaImpl};
-//     use s1_eternum::models::troop::{TroopTier, TroopType, Troops, TroopsTrait};
-//     use s1_eternum::utils::map::biomes::{Biome};
+//     use crate::constants::{RESOURCE_PRECISION};
+//     use crate::models::config::{TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig};
+//     use crate::models::stamina::{Stamina, StaminaImpl};
+//     use crate::models::troop::{TroopTier, TroopType, Troops, TroopsTrait};
+//     use crate::utils::map::biomes::{Biome};
 
 //     const KNIGHT_MAX_STAMINA: u16 = 120;
 //     const CROSSBOWMAN_MAX_STAMINA: u16 = 120;

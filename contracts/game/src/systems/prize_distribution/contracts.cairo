@@ -1,7 +1,9 @@
 use starknet::ContractAddress;
+use crate::models::series_chest_reward::{SeriesChestRewardState};
 
 #[starknet::interface]
 pub trait IPrizeDistributionSystems<T> {
+    fn blitz_get_or_compute_series_chest_reward_state(ref self: T) -> SeriesChestRewardState;
     fn blitz_prize_claim_no_game(ref self: T, registered_player: ContractAddress);
     fn blitz_prize_claim(ref self: T, players: Array<ContractAddress>);
     fn blitz_prize_player_rank(
@@ -14,28 +16,105 @@ pub trait IPrizeDistributionSystems<T> {
 // todo: release entry token
 #[dojo::contract]
 pub mod prize_distribution_systems {
-    use core::num::traits::zero::Zero;
+    use series_chest_reward_calculator::SeriesChestRewardStateTrait;
+    use core::result::ResultTrait;
+use core::num::traits::zero::Zero;
     use cubit::f128::types::fixed::{Fixed, FixedTrait};
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{WorldStorageTrait, WorldStorage};
-    use s1_eternum::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
-    use s1_eternum::models::config::{BlitzRegistrationConfig, SeasonConfigImpl, WorldConfigUtilImpl, BlitzRealmPlayerRegister};
-    use s1_eternum::models::events::{PrizeDistributedStory, PrizeDistributionFinalStory, Story, StoryEvent};
-    use s1_eternum::models::rank::{PlayerRank, PlayersRankFinal, PlayersRankTrial, RankPrize};
-    use s1_eternum::models::season::{SeasonPrize};
-    use s1_eternum::models::record::{BlitzFeeSplitRecord, BlitzFeeSplitRecordImpl, WorldRecordImpl};
-    use s1_eternum::systems::realm::utils::contracts::{IERC20Dispatcher, IERC20DispatcherTrait};
-    use s1_eternum::systems::utils::prize::iPrizeDistributionCalcImpl;
-    use s1_eternum::{models::{hyperstructure::{PlayerRegisteredPoints}}};
+    use crate::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
+    use crate::models::config::{BlitzRegistrationConfig, BlitzRegistrationConfigImpl, SeasonConfigImpl, WorldConfigUtilImpl, BlitzRealmPlayerRegister, BlitzPreviousGame};
+    use crate::models::events::{PrizeDistributedStory, PrizeDistributionFinalStory, Story, StoryEvent};
+    use crate::models::rank::{PlayerRank, PlayersRankFinal, PlayersRankTrial, RankPrize};
+    use crate::models::season::{SeasonPrize};
+    use crate::models::record::{BlitzFeeSplitRecord, BlitzFeeSplitRecordImpl, WorldRecordImpl};
+    use crate::systems::realm::utils::contracts::{IERC20Dispatcher, IERC20DispatcherTrait};
+    use crate::systems::utils::prize::iPrizeDistributionCalcImpl;
+    use crate::{models::{hyperstructure::{PlayerRegisteredPoints}}};
+    use crate::models::series_chest_reward::{SeriesChestRewardState, GameChestReward};
+    use crate::utils::world::CustomDojoWorldImpl;
+    use crate::systems::utils::series_chest_reward::series_chest_reward_calculator;
+    use crate::systems::utils::series_chest_reward::series_chest_reward_calculator::{SeriesChestRewardStateImpl};
     use starknet::ContractAddress;
-
+    use super::{IPrizeDistributionSystems, IPrizeDistributionSystemsSafeDispatcher, IPrizeDistributionSystemsSafeDispatcherTrait};
+    use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
+    use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
 
     const SYSTEM_TRIAL_ID: u128 = 1000;
 
 
     #[abi(embed_v0)]
-    pub impl PrizeDistributionSystemsImpl of super::IPrizeDistributionSystems<ContractState> {
+    pub impl PrizeDistributionSystemsImpl of IPrizeDistributionSystems<ContractState> {
+
+        fn blitz_get_or_compute_series_chest_reward_state(ref self: ContractState) -> SeriesChestRewardState {
+
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+
+            // return early if the new state has already been calculated
+            let mut current_game_series_chest_reward_state: SeriesChestRewardState 
+                = world.read_model(WORLD_CONFIG_ID);
+            if current_game_series_chest_reward_state.game_index.is_non_zero() {
+                return current_game_series_chest_reward_state;
+            }
+
+            // ensure the main game has started (so registration has closed)
+            let mut season_config = SeasonConfigImpl::get(world);
+            season_config.assert_started_main();
+
+            // ensure blitz game mode is on
+            let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
+            assert!(blitz_mode_on == true, "Eternum: Not a blitz game");
+
+            let last_game: BlitzPreviousGame = world.read_model(WORLD_CONFIG_ID);
+            let mut last_game_series_chest_reward_state : SeriesChestRewardState 
+                = if last_game.last_prize_distribution_systems.is_non_zero() {
+                    IPrizeDistributionSystemsSafeDispatcher{
+                        contract_address: last_game.last_prize_distribution_systems
+                    }.blitz_get_or_compute_series_chest_reward_state().unwrap_or(SeriesChestRewardStateImpl::new())
+            } else {
+                SeriesChestRewardStateImpl::new()
+            };
+
+            // intialize if not previously initialized
+            if last_game_series_chest_reward_state.game_index.is_zero() {
+                last_game_series_chest_reward_state = SeriesChestRewardStateImpl::new();
+            };
+
+
+            if current_game_series_chest_reward_state.game_index > last_game_series_chest_reward_state.game_index {
+                return current_game_series_chest_reward_state;
+            } else {
+                current_game_series_chest_reward_state = last_game_series_chest_reward_state;
+                let mut blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
+                    world, selector!("blitz_registration_config"),
+                );
+
+                // return early if there were less than 2 players in the game
+                let n_obs = blitz_registration_config.registration_count;
+                if n_obs < 2 {
+                    world.write_model(@current_game_series_chest_reward_state);
+                    return current_game_series_chest_reward_state;
+                }
+
+
+                let num_chests_allocated 
+                    = current_game_series_chest_reward_state
+                        .allocate_chests(n_obs.into());
+            
+                // save the series_chest_reward_state in this world so it can be used in future worlds
+                world.write_model(@current_game_series_chest_reward_state);
+                world.write_model(
+                    @GameChestReward {
+                        world_id: WORLD_CONFIG_ID,
+                        allocated_chests: num_chests_allocated.try_into().unwrap(),
+                        distributed_chests: 0
+                    });
+
+                return current_game_series_chest_reward_state;
+            }
+        }
+
 
         fn blitz_prize_claim_no_game(ref self: ContractState, registered_player: ContractAddress) {
             // ensure the main game has started (so registration has closed)
@@ -142,6 +221,15 @@ pub mod prize_distribution_systems {
             let reward_token_decimals = reward_token.decimals();
 
             let final_trial_id = players_rank_final.trial_id;
+            let caller = starknet::get_caller_address();
+            let mut game_chest_reward: GameChestReward = world.read_model(WORLD_CONFIG_ID);
+            let lootchest_erc721_dispatcher = ICollectibleDispatcher {
+                contract_address: blitz_registration_config.collectibles_lootchest_address,
+            };
+            let season_prize: SeasonPrize = world.read_model(WORLD_CONFIG_ID);
+
+            let rng_library_dispatcher = rng_library::get_dispatcher(@world);
+            let mut random_number = rng_library_dispatcher.get_random_number(caller, world);
             for player in players {
                 // ensure player is eligible for prize
                 let mut player_rank: PlayerRank = world.read_model((final_trial_id, player));
@@ -158,8 +246,26 @@ pub mod prize_distribution_systems {
                 let rank_prize: RankPrize = world.read_model((final_trial_id, player_rank.rank));
                 let amount: u128 = rank_prize.total_prize_amount / rank_prize.total_players_same_rank_count.into();
 
-                // transfer prize to player
+                // transfer ERC20 prize to player
                 assert!(reward_token.transfer(player, amount.into()), "Eternum: Failed to transfer prize");
+
+                // transfer ERC721 prize to player
+                if game_chest_reward.allocated_chests > game_chest_reward.distributed_chests {
+
+                    let mut player_points: PlayerRegisteredPoints = world.read_model(player);
+                    let success: bool = rng_library_dispatcher
+                        .get_weighted_choice_bool_simple(
+                            player_points.registered_points.into(), 
+                            season_prize.total_registered_points.into(), 
+                            random_number
+                        );
+                    random_number += 1;
+
+                    if success {
+                        game_chest_reward.distributed_chests += 1;
+                        lootchest_erc721_dispatcher.mint(player, blitz_registration_config.collectibles_lootchest_attrs_raw());
+                    }
+                }
 
                 // emit event
                 world
@@ -177,6 +283,9 @@ pub mod prize_distribution_systems {
                         },
                     );
             }
+
+            world.write_model(@game_chest_reward);
+
         }
 
         // Permissionless
@@ -227,8 +336,14 @@ pub mod prize_distribution_systems {
                 if !blitz_fee_split_record.already_split_fees() {
                     // split the fees
                     let this = starknet::get_contract_address();
+                    let entry_token = ICollectibleDispatcher {contract_address: blitz_registration_config.entry_token_address};
                     let reward_token = IERC20Dispatcher { contract_address: blitz_registration_config.fee_token };
-                    blitz_fee_split_record.split_fees(reward_token.balance_of(this).try_into().unwrap());
+                
+                    let single_player_entry_cost_amount: u128 = blitz_registration_config.fee_amount.try_into().unwrap();
+                    let total_player_entry_cost_amount: u128 = single_player_entry_cost_amount * entry_token.total_supply().try_into().unwrap();
+                    let total_prize_balance: u128 = reward_token.balance_of(this).try_into().unwrap();
+                    let total_bonus_amount: u128 = total_prize_balance - total_player_entry_cost_amount;
+                    blitz_fee_split_record.split_fees(total_player_entry_cost_amount, total_bonus_amount);
 
                     // send the creator fees
                     assert!(
@@ -247,19 +362,13 @@ pub mod prize_distribution_systems {
 
             // loop through the player list and assign ranks
             let registered_player_count: u16 = blitz_registration_config.registration_count;
-            let entry_cost_amount: u128 = blitz_registration_config.fee_amount.try_into().unwrap();
             let prize_pool_amount: u128 = trial.total_prize_amount;
-            let calc_entry_cost: Fixed = FixedTrait::new(entry_cost_amount, false);
             let calc_prize_pool: Fixed = FixedTrait::new(prize_pool_amount, false);
             let calc_winner_count: u16 = iPrizeDistributionCalcImpl::get_winner_count(
                 registered_player_count, trial.total_player_count_committed,
             )
                 .into();
             let calc_s_parameter: Fixed = iPrizeDistributionCalcImpl::get_s_parameter(registered_player_count);
-            let calc_total_baseline: Fixed = iPrizeDistributionCalcImpl::get_total_baseline(
-                calc_entry_cost, calc_winner_count.into(),
-            );
-            let calc_remainder: Fixed = iPrizeDistributionCalcImpl::get_remainder(calc_prize_pool, calc_total_baseline);
             let calc_sum_position_weights: Fixed = iPrizeDistributionCalcImpl::get_sum_rank_weights(
                 calc_winner_count, calc_s_parameter,
             );
@@ -293,9 +402,8 @@ pub mod prize_distribution_systems {
 
                 // calculate and assign prize for the player's position
                 let mut position_prize_amount = iPrizeDistributionCalcImpl::get_position_prize_amount(
-                            calc_entry_cost,
+                            calc_prize_pool,
                             trial.total_player_count_revealed, // not player.rank
-                            calc_remainder,
                             calc_sum_position_weights,
                             calc_s_parameter,
                             calc_winner_count
@@ -304,18 +412,6 @@ pub mod prize_distribution_systems {
 
                 // prevent over-distributing funds due to tiny rounding errors
                 if trial.total_prize_amount_calculated > trial.total_prize_amount {
-
-                    // e.g this setup will result in a rounding error
-                    //       let _1e18: u128 = 1_000_000_000_000_000_000;
-                    //       let entry_cost_amount: u128 = 10 * _1e18;
-                    //       let prize_pool_amount: u128 = 16 * _1e18 ;
-                    //       let registered_player_count: u16 = 6;
-                    //       let total_players_with_non_zero_points: u16 = 6;
-                    //
-                    //   
-                    //   assert_eq!(p1, 7428694895990680191);
-                    //   assert_eq!(p2, 8571305104009319810); // sum = 16,000,000,000,000,000,001
-
                     let difference = trial.total_prize_amount_calculated - trial.total_prize_amount;
                     position_prize_amount -= difference;
                     trial.total_prize_amount_calculated -= difference;
@@ -345,6 +441,13 @@ pub mod prize_distribution_systems {
                 // finalize the rankings
                 players_rank_final.trial_id = trial.trial_id;
                 world.write_model(@players_rank_final);
+
+                //////////////////////////////////////////
+                ///  finalize allocation of chests
+                //////////////////////////////////////////
+                 
+                // compute reward chest allocations for this game
+                self.blitz_get_or_compute_series_chest_reward_state();
 
                 // emit event
                 world

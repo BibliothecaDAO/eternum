@@ -3,20 +3,25 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getTierStyle } from "@/ui/utils/tier-styles";
 import { currencyFormat } from "@/ui/utils/utils";
-import { getTroopResourceId } from "@bibliothecadao/eternum";
+import { getEntityIdFromKeys, getTroopResourceId } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import {
   DISPLAYED_SLOT_NUMBER_MAP,
   GUARD_SLOT_NAMES,
   GuardSlot,
   resources,
+  StructureType,
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
+import { getComponentValue } from "@dojoengine/recs";
 import { ArrowLeft, Plus } from "lucide-react";
 import type { KeyboardEvent } from "react";
+import { useMemo } from "react";
 
 import { EntityDetailLayoutVariant } from "@/ui/features/world/components/entities/layout";
 
+import { getStructureDefenseSlotLimit, getUnlockedGuardSlots, MAX_GUARD_SLOT_COUNT } from "../utils/defense-slot-utils";
 import { SLOT_ICON_MAP } from "./slot-icon-map";
 import { DefenseTroop } from "./structure-defence";
 import { UnifiedArmyCreationModal } from "./unified-army-creation-modal";
@@ -41,13 +46,64 @@ export const CompactDefenseDisplay = ({
   variant = "default",
 }: CompactDefenseDisplayProps) => {
   const toggleModal = useUIStore((state) => state.toggleModal);
+  const {
+    setup: { components },
+  } = useDojo();
   const isBanner = variant === "banner";
-  const totalTroopCount = troops.reduce((total, defense) => total + Number(defense.troops.count || 0), 0);
-  const hasSlotInfo = slotsUsed !== undefined && slotsMax !== undefined;
-  const showHeaderRow = hasSlotInfo || totalTroopCount > 0;
   const canOpenModal = Boolean(canManageDefense && structureId && structureId > 0);
-  const hasAvailableDefenseSlot =
-    !hasSlotInfo || (slotsUsed !== undefined && slotsMax !== undefined && slotsUsed < slotsMax);
+  const structureComponent = useMemo(() => {
+    if (!structureId || !components?.Structure) {
+      return null;
+    }
+
+    return getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(structureId)]));
+  }, [components, structureId]);
+
+  const structureCategory = structureComponent?.base?.category as StructureType | undefined;
+  const structureLevel = structureComponent?.base?.level as number | bigint | undefined;
+
+  const structureSlotLimit = useMemo(() => {
+    return getStructureDefenseSlotLimit(structureCategory, structureLevel ?? null);
+  }, [structureCategory, structureLevel]);
+
+  const fallbackSlotLimit = slotsMax ?? undefined;
+  const resolvedSlotLimit = useMemo(() => {
+    if (structureSlotLimit === null || structureSlotLimit === undefined) {
+      return fallbackSlotLimit ?? MAX_GUARD_SLOT_COUNT;
+    }
+    if (fallbackSlotLimit === undefined || fallbackSlotLimit === null) {
+      return structureSlotLimit;
+    }
+    return Math.min(structureSlotLimit, fallbackSlotLimit);
+  }, [structureSlotLimit, fallbackSlotLimit]);
+
+  const unlockedSlots = useMemo(() => getUnlockedGuardSlots(resolvedSlotLimit), [resolvedSlotLimit]);
+  const unlockedSlotSet = useMemo(() => new Set(unlockedSlots), [unlockedSlots]);
+
+  const displayedTroops = useMemo(
+    () => troops.filter((defense) => unlockedSlotSet.has(Number(defense.slot ?? -1))),
+    [troops, unlockedSlotSet],
+  );
+
+  const totalTroopCount = useMemo(
+    () => displayedTroops.reduce((total, defense) => total + Number(defense.troops.count || 0), 0),
+    [displayedTroops],
+  );
+
+  const unlockedActiveSlotCount = useMemo(() => {
+    return troops.filter((defense) => {
+      const slotId = Number(defense.slot ?? -1);
+      const troopCount = Number(defense.troops.count ?? 0);
+      return unlockedSlotSet.has(slotId) && troopCount > 0;
+    }).length;
+  }, [troops, unlockedSlotSet]);
+
+  const effectiveSlotsUsed = slotsUsed !== undefined ? Math.min(slotsUsed, resolvedSlotLimit) : unlockedActiveSlotCount;
+  const hasAvailableDefenseSlot = effectiveSlotsUsed < resolvedSlotLimit;
+
+  const slotCapForDisplay = resolvedSlotLimit ?? slotsMax;
+  const hasSlotInfo = slotCapForDisplay !== undefined;
+  const showHeaderRow = hasSlotInfo || totalTroopCount > 0;
 
   const labelTextClass = isBanner ? "text-[9px]" : "text-[10px]";
   const valueTextClass = isBanner ? "text-[10px]" : "text-[11px]";
@@ -67,7 +123,7 @@ export const CompactDefenseDisplay = ({
       <UnifiedArmyCreationModal
         structureId={structureId}
         isExplorer={false}
-        maxDefenseSlots={slotsMax}
+        maxDefenseSlots={resolvedSlotLimit}
         initialGuardSlot={Number(slot)}
       />,
     );
@@ -83,6 +139,11 @@ export const CompactDefenseDisplay = ({
     const slotIconSrc = SLOT_ICON_MAP[rawSlot] ?? SLOT_ICON_MAP[guardSlotKey];
     const slotName = GUARD_SLOT_NAMES[guardSlotKey] ?? `Slot ${slotDisplayNumber}`;
     const isEmptySlot = troopCount === 0;
+    const isSlotUnlocked = unlockedSlotSet.has(rawSlot);
+    if (!isSlotUnlocked) {
+      return null;
+    }
+
     const isSlotInteractive = isEmptySlot ? canOpenModal && hasAvailableDefenseSlot : canOpenModal;
     const interactiveClasses = isSlotInteractive
       ? "cursor-pointer hover:border-gold/50 hover:bg-gold/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
@@ -175,6 +236,37 @@ export const CompactDefenseDisplay = ({
 
   const containerGapClass = isBanner ? "gap-1" : "gap-2";
 
+  if (isBanner) {
+    return (
+      <div className={cn("flex items-start", containerGapClass, className)}>
+        {showHeaderRow && (
+          <div className="flex flex-col gap-1 bg-brown-900/80 border border-gold/25 rounded-md px-2">
+            {hasSlotInfo && (
+              <div className="flex items-center gap-1">
+                <span className={cn(labelTextClass, "uppercase tracking-wide text-gold/70 font-semibold")}>Slots</span>
+                <span className={cn(valueTextClass, "text-gold font-bold")}>
+                  {effectiveSlotsUsed}/{slotCapForDisplay}
+                </span>
+              </div>
+            )}
+            {totalTroopCount > 0 && (
+              <div className="flex items-center ">
+                <span className={cn(labelTextClass, "uppercase tracking-wide text-gold/70 font-semibold")}>Total</span>
+                <span className={cn(valueTextClass, "text-gold font-bold")}>{currencyFormat(totalTroopCount, 0)}</span>
+              </div>
+            )}
+          </div>
+        )}
+        <div className={cn("flex items-end overflow-x-auto", "gap-2", "pb-1")}>
+          {displayedTroops
+            .slice()
+            .sort((a, b) => b.slot - a.slot)
+            .map((defense) => renderSlot(defense))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cn("flex flex-col", containerGapClass, className)}>
       {showHeaderRow && (
@@ -185,7 +277,7 @@ export const CompactDefenseDisplay = ({
                 {isBanner ? "Slots" : "Defense Slots"}
               </span>
               <span className={cn(valueTextClass, "text-gold font-bold")}>
-                {slotsUsed}/{slotsMax}
+                {effectiveSlotsUsed}/{slotCapForDisplay}
               </span>
             </div>
           )}
@@ -200,7 +292,7 @@ export const CompactDefenseDisplay = ({
         </div>
       )}
       <div className={cn("flex items-end overflow-x-auto", isBanner ? "gap-1" : "gap-2", isBanner ? "pb-0" : "pb-1")}>
-        {troops
+        {displayedTroops
           .slice()
           .sort((a, b) => b.slot - a.slot)
           .map((defense) => renderSlot(defense))}

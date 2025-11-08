@@ -1,6 +1,6 @@
 use achievement::types::task::Task as BushidoTask;
-use s1_eternum::utils::tasks::index::{Task, TaskImpl};
-use s1_eternum::utils::trophies::interface::TrophyTrait;
+use crate::utils::tasks::index::{Task, TaskImpl};
+use crate::utils::trophies::interface::TrophyTrait;
 
 pub impl Squire of TrophyTrait {
     #[inline]

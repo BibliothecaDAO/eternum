@@ -4,6 +4,9 @@ import { configManager } from "@bibliothecadao/eternum";
 import { inject } from "@vercel/analytics";
 import { ReactNode } from "react";
 
+import { ensureActiveWorldProfileWithUI, getActiveWorld, patchManifestWithFactory } from "@/runtime/world";
+import { setSqlApiBaseUrl } from "@/services/api";
+import { Chain, getGameManifest } from "@contracts";
 import { dojoConfig } from "../../dojo-config";
 import { env } from "../../env";
 import { initialSync } from "../dojo/sync";
@@ -30,6 +33,37 @@ const runBootstrap = async (): Promise<BootstrapResult> => {
   const syncingStore = useSyncStore.getState();
 
   console.log("[STARTING DOJO SETUP]");
+
+  // 0) World profile is expected to be selected before bootstrap begins (gated in play flow)
+  const chain = env.VITE_PUBLIC_CHAIN! as Chain;
+  let profile = getActiveWorld();
+  if (!profile) {
+    // Prompt user to select a world via modal instead of throwing
+    profile = await ensureActiveWorldProfileWithUI(chain);
+  }
+
+  // 1) Patch manifest with factory-provided addresses and world address
+  const baseManifest = getGameManifest(chain);
+  const patchedManifest = patchManifestWithFactory(
+    baseManifest as any,
+    profile.worldAddress,
+    profile.contractsBySelector,
+  );
+
+  // 2) Update global dojoConfig in place (shared object reference)
+  //    - Torii base URL and manifest are used by setup() downstream
+  //    - For local chain, use environment variables directly
+  if (chain === "local") {
+    (dojoConfig as any).toriiUrl = env.VITE_PUBLIC_TORII;
+    (dojoConfig as any).rpcUrl = env.VITE_PUBLIC_NODE_URL;
+  } else {
+    (dojoConfig as any).toriiUrl = profile.toriiBaseUrl;
+  }
+  (dojoConfig as any).manifest = patchedManifest;
+
+  // 3) Point SQL API to the active world's Torii
+  const toriiUrl = chain === "local" ? env.VITE_PUBLIC_TORII : profile.toriiBaseUrl;
+  setSqlApiBaseUrl(`${toriiUrl}/sql`);
 
   const setupResult = await setup(
     { ...dojoConfig },

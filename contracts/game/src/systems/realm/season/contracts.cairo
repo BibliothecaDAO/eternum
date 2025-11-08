@@ -1,4 +1,4 @@
-use s1_eternum::alias::ID;
+use crate::alias::ID;
 use starknet::ContractAddress;
 
 #[derive(Copy, Drop, Serde)]
@@ -24,29 +24,29 @@ pub mod realm_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{WorldStorage, WorldStorageTrait};
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::models::config::{
+    use crate::alias::ID;
+    use crate::constants::DEFAULT_NS;
+    use crate::models::config::{
         RealmCountConfig, SeasonAddressesConfig, SeasonConfigImpl, SettlementConfig, SettlementConfigImpl,
         WorldConfigUtilImpl,
     };
-    use s1_eternum::models::events::{RealmCreatedStory, Story, StoryEvent};
-    use s1_eternum::models::map::TileImpl;
-    use s1_eternum::models::position::Coord;
-    use s1_eternum::models::realm::{RealmNameAndAttrsDecodingImpl, RealmReferenceImpl};
-    use s1_eternum::models::resource::production::building::BuildingImpl;
-    use s1_eternum::models::resource::resource::{
+    use crate::models::events::{RealmCreatedStory, Story, StoryEvent};
+    use crate::models::map::TileImpl;
+    use crate::models::position::Coord;
+    use crate::models::realm::{RealmNameAndAttrsDecodingImpl, RealmReferenceImpl};
+    use crate::models::resource::production::building::BuildingImpl;
+    use crate::models::resource::resource::{
         ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::structure::{
+    use crate::models::structure::{
         StructureBaseStoreImpl, StructureImpl, StructureMetadataStoreImpl, StructureOwnerStoreImpl,
     };
-    use s1_eternum::systems::realm::utils::contracts::{
+    use crate::systems::realm::utils::contracts::{
         IRealmInternalSystemsDispatcher, IRealmInternalSystemsDispatcherTrait,
     };
-    use s1_eternum::systems::utils::realm::iRealmImpl;
-    use s1_eternum::systems::utils::structure::iStructureImpl;
-    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
+    use crate::systems::utils::realm::iRealmImpl;
+    use crate::systems::utils::structure::iStructureImpl;
+    use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use starknet::{ContractAddress, TxInfo};
     use super::RealmSettlement;
 

@@ -10,14 +10,15 @@
 #   deployment using Bun.
 #
 # USAGE:
-#   ./deploy.sh [network]  - Builds and deploys the Realms Collectible contracts
-#                           where [network] is optional and defaults to 'local'
+#   ./deploy.sh [type] [network]  - Builds and deploys the Realms Collectible contracts
+#                                   where [type] is required (cosmetics or loot-chests)
+#                                   and [network] is optional and defaults to 'local'
 #   Examples:
-#   ./deploy.sh      - Deploys to local
-#   ./deploy.sh local     - Deploys to local
-#   ./deploy.sh slot      - Deploys to slot
-#   ./deploy.sh sepolia   - Deploys to sepolia
-#   ./deploy.sh mainnet   - Deploys to mainnet
+#   ./deploy.sh cosmetics           - Deploys cosmetics to local
+#   ./deploy.sh cosmetics local     - Deploys cosmetics to local
+#   ./deploy.sh loot-chests slot    - Deploys loot-chests to slot
+#   ./deploy.sh cosmetics sepolia   - Deploys cosmetics to sepolia
+#   ./deploy.sh loot-chests mainnet - Deploys loot-chests to mainnet
 #
 # PROCESS:
 #   1. Builds the contracts using Scarb in release mode
@@ -80,13 +81,30 @@ echo -e "${GREEN}► Installing realms collectible deployment dependencies...${N
 cd deployment
 bun install
 
-# Get network parameter, default to 'local' if not provided
-NETWORK=${1:-local}
+# Get collectible type parameter (required)
+TYPE=$1
 
-echo -e "${BLUE}► Deploying to ${NETWORK}${NC}"
+# Validate collectible type
+if [ -z "$TYPE" ]; then
+    echo -e "${RED}Error: Collectible type is required${NC}"
+    echo -e "Usage: ./deploy.sh [type] [network]"
+    echo -e "Valid types: cosmetics, loot-chests"
+    exit 1
+fi
+
+if [ "$TYPE" != "cosmetics" ] && [ "$TYPE" != "loot-chests" ]; then
+    echo -e "${RED}Error: Invalid collectible type '${TYPE}'${NC}"
+    echo -e "Valid types: cosmetics, loot-chests"
+    exit 1
+fi
+
+# Get network parameter, default to 'local' if not provided
+NETWORK=${2:-local}
+
+echo -e "${BLUE}► Deploying ${TYPE} to ${NETWORK}${NC}"
 
 # Execute deployment
 echo -e "${GREEN}► Executing realms collectible deployment script...${NC}"
-bun run deploy:${NETWORK}
+bun run deploy:${TYPE}:${NETWORK}
 
-echo -e "\n${GREEN}✔ Realms Collectible deployment process completed on ${NETWORK}${NC}\n"
+echo -e "\n${GREEN}✔ Realms Collectible (${TYPE}) deployment process completed on ${NETWORK}${NC}\n"

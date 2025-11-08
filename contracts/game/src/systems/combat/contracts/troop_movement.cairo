@@ -1,5 +1,5 @@
-use s1_eternum::alias::ID;
-use s1_eternum::models::position::Direction;
+use crate::alias::ID;
+use crate::models::position::Direction;
 
 #[starknet::interface]
 pub trait ITroopMovementSystems<TContractState> {
@@ -14,29 +14,29 @@ pub mod troop_movement_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorageTrait;
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::models::config::{
+    use crate::alias::ID;
+    use crate::constants::DEFAULT_NS;
+    use crate::models::config::{
         CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig,
         VictoryPointsGrantConfig, WorldConfigUtilImpl,
     };
-    use s1_eternum::models::events::{ExploreFind, ExplorerMoveStory, Story, StoryEvent};
-    use s1_eternum::models::hyperstructure::PlayerRegisteredPointsImpl;
-    use s1_eternum::models::map::{BiomeDiscovered, Tile, TileImpl, TileOccupier};
-    use s1_eternum::models::position::{CoordTrait, Direction};
-    use s1_eternum::models::resource::resource::{
+    use crate::models::events::{ExploreFind, ExplorerMoveStory, Story, StoryEvent};
+    use crate::models::hyperstructure::PlayerRegisteredPointsImpl;
+    use crate::models::map::{BiomeDiscovered, Tile, TileImpl, TileOccupier};
+    use crate::models::position::{CoordTrait, Direction};
+    use crate::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::structure::{StructureBaseStoreImpl, StructureOwnerStoreImpl};
-    use s1_eternum::models::troop::{ExplorerTroops, GuardImpl};
-    use s1_eternum::models::weight::Weight;
-    use s1_eternum::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
-    use s1_eternum::systems::utils::map::IMapImpl;
-    use s1_eternum::systems::utils::mine::iMineDiscoveryImpl;
-    use s1_eternum::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
-    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
-    use s1_eternum::utils::map::biomes::Biome;
-    use s1_eternum::utils::random::VRFImpl;
+    use crate::models::structure::{StructureBaseStoreImpl, StructureOwnerStoreImpl};
+    use crate::models::troop::{ExplorerTroops, GuardImpl};
+    use crate::models::weight::Weight;
+    use crate::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
+    use crate::systems::utils::map::IMapImpl;
+    use crate::systems::utils::mine::iMineDiscoveryImpl;
+    use crate::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
+    use crate::utils::achievements::index::{AchievementTrait, Tasks};
+    use crate::utils::map::biomes::Biome;
+    use crate::utils::random::VRFImpl;
     use starknet::ContractAddress;
     use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
     use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
@@ -326,9 +326,9 @@ pub mod troop_movement_systems {
         }
     }
 }
-use s1_eternum::models::config::{MapConfig, TroopLimitConfig, TroopStaminaConfig};
-use s1_eternum::models::events::ExploreFind;
-use s1_eternum::models::map::Tile;
+use crate::models::config::{MapConfig, TroopLimitConfig, TroopStaminaConfig};
+use crate::models::events::ExploreFind;
+use crate::models::map::Tile;
 
 #[starknet::interface]
 pub trait ITroopMovementUtilSystems<T> {
@@ -349,23 +349,23 @@ pub trait ITroopMovementUtilSystems<T> {
 pub mod troop_movement_util_systems {
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorageTrait;
-    use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::models::config::{
+    use crate::constants::DEFAULT_NS;
+    use crate::models::config::{
         CombatConfigImpl, MapConfig, QuestConfig, SeasonConfigImpl, TickImpl, TroopLimitConfig, TroopStaminaConfig,
         WorldConfigUtilImpl,
     };
-    use s1_eternum::models::events::ExploreFind;
-    use s1_eternum::models::map::Tile;
-    use s1_eternum::models::position::Coord;
-    use s1_eternum::models::quest::{QuestFeatureFlag, QuestGameRegistry};
-    use s1_eternum::models::structure::StructureReservation;
-    use s1_eternum::systems::quest::constants::VERSION;
-    use s1_eternum::systems::quest::contracts::{
+    use crate::models::events::ExploreFind;
+    use crate::models::map::Tile;
+    use crate::models::position::Coord;
+    use crate::models::quest::{QuestFeatureFlag, QuestGameRegistry};
+    use crate::models::structure::StructureReservation;
+    use crate::systems::quest::constants::VERSION;
+    use crate::systems::quest::contracts::{
         IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait, iQuestDiscoveryImpl,
     };
-    use s1_eternum::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
-    use s1_eternum::systems::utils::mine::iMineDiscoveryImpl;
-    use s1_eternum::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
+    use crate::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
+    use crate::systems::utils::mine::iMineDiscoveryImpl;
+    use crate::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
     use super::{
         ITroopMovementUtilSystems, ITroopMovementUtilSystemsDispatcher, ITroopMovementUtilSystemsDispatcherTrait,
     };
@@ -535,16 +535,16 @@ pub mod troop_movement_util_systems {
 #[dojo::contract]
 pub mod hyperstructure_discovery_systems {
     use dojo::world::WorldStorageTrait;
-    use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::models::config::{
+    use crate::constants::DEFAULT_NS;
+    use crate::models::config::{
         CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TroopLimitConfig, TroopStaminaConfig,
         WorldConfigUtilImpl,
     };
-    use s1_eternum::models::events::ExploreFind;
-    use s1_eternum::models::map::Tile;
-    use s1_eternum::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
-    use s1_eternum::systems::utils::mine::iMineDiscoveryImpl;
-    use s1_eternum::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
+    use crate::models::events::ExploreFind;
+    use crate::models::map::Tile;
+    use crate::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
+    use crate::systems::utils::mine::iMineDiscoveryImpl;
+    use crate::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
     use super::ITroopMovementUtilSystems;
 
     #[abi(embed_v0)]
@@ -596,16 +596,16 @@ pub mod hyperstructure_discovery_systems {
 #[dojo::contract]
 pub mod mine_discovery_systems {
     use dojo::world::WorldStorageTrait;
-    use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::models::config::{
+    use crate::constants::DEFAULT_NS;
+    use crate::models::config::{
         CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TroopLimitConfig, TroopStaminaConfig,
         WorldConfigUtilImpl,
     };
-    use s1_eternum::models::events::ExploreFind;
-    use s1_eternum::models::map::Tile;
-    use s1_eternum::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
-    use s1_eternum::systems::utils::mine::iMineDiscoveryImpl;
-    use s1_eternum::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
+    use crate::models::events::ExploreFind;
+    use crate::models::map::Tile;
+    use crate::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
+    use crate::systems::utils::mine::iMineDiscoveryImpl;
+    use crate::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
     use super::ITroopMovementUtilSystems;
 
     #[abi(embed_v0)]
@@ -653,17 +653,17 @@ pub mod mine_discovery_systems {
 #[dojo::contract]
 pub mod village_discovery_systems {
     use dojo::world::WorldStorageTrait;
-    use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::models::config::{
+    use crate::constants::DEFAULT_NS;
+    use crate::models::config::{
         CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TroopLimitConfig, TroopStaminaConfig,
         WorldConfigUtilImpl,
     };
-    use s1_eternum::models::events::ExploreFind;
-    use s1_eternum::models::map::Tile;
-    use s1_eternum::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
-    use s1_eternum::systems::utils::mine::iMineDiscoveryImpl;
-    use s1_eternum::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
-    use s1_eternum::systems::utils::village::iVillageDiscoveryImpl;
+    use crate::models::events::ExploreFind;
+    use crate::models::map::Tile;
+    use crate::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
+    use crate::systems::utils::mine::iMineDiscoveryImpl;
+    use crate::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
+    use crate::systems::utils::village::iVillageDiscoveryImpl;
     use super::ITroopMovementUtilSystems;
 
     #[abi(embed_v0)]
@@ -705,17 +705,17 @@ pub mod village_discovery_systems {
 #[dojo::contract]
 pub mod agent_discovery_systems {
     use dojo::world::WorldStorageTrait;
-    use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::models::agent::AgentCountImpl;
-    use s1_eternum::models::config::{
+    use crate::constants::DEFAULT_NS;
+    use crate::models::agent::AgentCountImpl;
+    use crate::models::config::{
         CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TroopLimitConfig, TroopStaminaConfig,
         WorldConfigUtilImpl,
     };
-    use s1_eternum::models::events::ExploreFind;
-    use s1_eternum::models::map::Tile;
-    use s1_eternum::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
-    use s1_eternum::systems::utils::mine::iMineDiscoveryImpl;
-    use s1_eternum::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
+    use crate::models::events::ExploreFind;
+    use crate::models::map::Tile;
+    use crate::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
+    use crate::systems::utils::mine::iMineDiscoveryImpl;
+    use crate::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
     use super::ITroopMovementUtilSystems;
 
     #[abi(embed_v0)]
@@ -760,16 +760,16 @@ pub mod agent_discovery_systems {
 #[dojo::contract]
 pub mod relic_chest_discovery_systems {
     use dojo::world::WorldStorageTrait;
-    use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::models::agent::AgentCountImpl;
-    use s1_eternum::models::config::{
+    use crate::constants::DEFAULT_NS;
+    use crate::models::agent::AgentCountImpl;
+    use crate::models::config::{
         CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TroopLimitConfig, TroopStaminaConfig,
         WorldConfigUtilImpl,
     };
-    use s1_eternum::models::events::ExploreFind;
-    use s1_eternum::models::map::Tile;
-    use s1_eternum::models::record::{RelicRecord, WorldRecordImpl};
-    use s1_eternum::systems::utils::relic::iRelicChestDiscoveryImpl;
+    use crate::models::events::ExploreFind;
+    use crate::models::map::Tile;
+    use crate::models::record::{RelicRecord, WorldRecordImpl};
+    use crate::systems::utils::relic::iRelicChestDiscoveryImpl;
     use super::ITroopMovementUtilSystems;
 
     #[abi(embed_v0)]

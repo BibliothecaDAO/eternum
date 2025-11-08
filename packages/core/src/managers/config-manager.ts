@@ -266,6 +266,10 @@ export class ClientConfigManager {
     this.structureCosts[StructureType.Hyperstructure] = [this.getHyperstructureConstructionCosts()];
   }
 
+  public getResourceProductionResourceInputs(resourceId: ResourcesIds) {
+    return this.complexSystemResourceInputs[resourceId] ?? this.simpleSystemResourceInputs[resourceId] ?? [];
+  }
+
   public getRefillPerTick() {
     const staminaRefillConfig = getComponentValue(
       this.components.WorldConfig,
@@ -829,6 +833,7 @@ export class ClientConfigManager {
             collectibles_cosmetics_max: BigInt(blitzRegistrationConfig.collectibles_cosmetics_max || 0),
             collectibles_cosmetics_address: BigInt(blitzRegistrationConfig.collectibles_cosmetics_address || 0),
             collectibles_timelock_address: BigInt(blitzRegistrationConfig.collectibles_timelock_address || 0),
+            collectibles_lootchest_address: BigInt(blitzRegistrationConfig.collectibles_lootchest_address || 0),
             registration_count: Number(blitzRegistrationConfig.registration_count),
             registration_count_max: Number(blitzRegistrationConfig.registration_count_max),
             registration_start_at: Number(blitzRegistrationConfig.registration_start_at),
@@ -856,6 +861,7 @@ export class ClientConfigManager {
           collectibles_cosmetics_max: BigInt(0),
           collectibles_cosmetics_address: BigInt(0),
           collectibles_timelock_address: BigInt(0),
+          collectibles_lootchest_address: BigInt(0),
           registration_count: 0,
           registration_count_max: 0,
           registration_start_at: 0,

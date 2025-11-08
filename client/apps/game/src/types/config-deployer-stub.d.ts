@@ -1,0 +1,28 @@
+declare module "@config-deployer/config" {
+  export const setupGlobals: any;
+  export const setWorldConfig: any;
+  export const setSeasonConfig: any;
+  export const setSettlementConfig: any;
+  export const setStartingResourcesConfig: any;
+  export const setStructureMaxLevelConfig: any;
+  export const setTradeConfig: any;
+  export const setTroopConfig: any;
+  export const setVRFConfig: any;
+  export const setVictoryPointsConfig: any;
+  export const setVillageControllersConfig: any;
+  export const setWeightConfig: any;
+  export const setWonderBonusConfig: any;
+  export const setGameModeConfig: any;
+  export const setHyperstructureConfig: any;
+  export const setRealmUpgradeConfig: any;
+  export const setResourceBridgeFeesConfig: any;
+  export const setSpeedConfig: any;
+  export const setBlitzPreviousGame: any;
+  export const setBlitzRegistrationConfig: any;
+  export const setBuildingConfig: any;
+  export const setCapacityConfig: any;
+  export const setDiscoverableVillageSpawnResourcesConfig: any;
+  export const setAgentConfig: any;
+  export const setBattleConfig: any;
+  export const SetResourceFactoryConfig: any;
+}

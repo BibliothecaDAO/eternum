@@ -3,11 +3,18 @@ import type { FC } from "react";
 import clsx from "clsx";
 
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { configManager } from "@bibliothecadao/eternum";
+import { ResourcesIds } from "@bibliothecadao/types";
 
 const PRODUCTION_DEPLETION_WINDOW_SECONDS = 10 * 60;
 const PRODUCTION_PULSE_THRESHOLD_SECONDS = 2 * 60;
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+
+const resolveResourceIdFromLabel = (label: string): ResourcesIds | undefined => {
+  const maybeId = (ResourcesIds as unknown as Record<string, ResourcesIds | string>)[label];
+  return typeof maybeId === "number" ? maybeId : undefined;
+};
 
 interface ProductionStatusBadgeProps {
   resourceLabel: string;
@@ -17,6 +24,8 @@ interface ProductionStatusBadgeProps {
   totalCount?: number;
   size?: "sm" | "xs";
   onClick?: () => void;
+  resourceId?: ResourcesIds;
+  showInputIcons?: boolean;
 }
 
 export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
@@ -27,6 +36,8 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
   totalCount = 0,
   size = "sm",
   onClick,
+  resourceId,
+  showInputIcons = false,
 }) => {
   const effectiveRemaining = timeRemainingSeconds === null ? null : Math.max(timeRemainingSeconds, 0);
   const progressPercent = !isProducing
@@ -54,11 +65,44 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
       }
     : undefined;
 
+  const resolvedResourceId = showInputIcons ? (resourceId ?? resolveResourceIdFromLabel(resourceLabel)) : undefined;
+  const inputDefinitions =
+    resolvedResourceId !== undefined ? configManager.getResourceProductionResourceInputs(resolvedResourceId) : [];
+  const iconRadius = size === "sm" ? 28 : 24;
+  const arcSpan = Math.PI / 2;
+  const angleStep = inputDefinitions.length <= 1 ? 0 : arcSpan / (inputDefinitions.length - 1);
+  const inputIconPositions = showInputIcons
+    ? inputDefinitions.map((input, index) => {
+        const angle = Math.PI + index * angleStep;
+        const x = Math.cos(angle) * iconRadius;
+        const y = Math.sin(angle) * iconRadius;
+        return { input, x, y };
+      })
+    : [];
+
   return (
     <div
       className={clsx("relative inline-flex items-center justify-center", wrapperSize, onClick ? "cursor-pointer" : "")}
       onClick={onClick}
     >
+      {showInputIcons && inputIconPositions.length > 0 && (
+        <div className="pointer-events-none absolute left-1/2 top-1/2 z-[2]">
+          {inputIconPositions.map(({ input, x, y }) => (
+            <span
+              key={`${resolvedResourceId}-${input.resource}`}
+              className="absolute flex h-4 w-4 items-center justify-center rounded-full border border-black/30 bg-[#120b07]/90 shadow-[0_0_6px_rgba(0,0,0,0.45)]"
+              style={{ transform: `translate(-50%, -50%) translate(${x}px, ${y}px)` }}
+            >
+              <ResourceIcon
+                resource={ResourcesIds[input.resource]}
+                size="xs"
+                withTooltip={false}
+                className="!h-3 !w-3"
+              />
+            </span>
+          ))}
+        </div>
+      )}
       {shouldPulse && (
         <span
           className={clsx("absolute pointer-events-none rounded-full bg-emerald-400/20", ringOffset, "animate-ping")}

@@ -1,5 +1,5 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 
 import {
   useRealtimeChatActions,
@@ -7,7 +7,6 @@ import {
   useRealtimeChatSelector,
   useRealtimeConnection,
   useRealtimePresence,
-  useRealtimeTotals,
 } from "../hooks/use-realtime-chat";
 import { useRealtimeChatStore } from "../model/store";
 import type { InitializeRealtimeClientParams } from "../model/types";
@@ -15,6 +14,7 @@ import { DirectMessagesPanel } from "./direct-messages/direct-messages-panel";
 import { TabBar } from "./shared/tab-bar";
 import { UserDropdown } from "./shared/user-dropdown";
 import { WorldChatPanel } from "./world-chat/world-chat-panel";
+import { RealtimeChatToggleButton } from "./shared/realtime-chat-toggle-button";
 
 export interface RealtimeChatShellProps {
   initializer?: InitializeRealtimeClientParams | null;
@@ -24,6 +24,7 @@ export interface RealtimeChatShellProps {
   className?: string;
   children?: ReactNode;
   displayMode?: "floating" | "embedded";
+  showInlineToggle?: boolean;
 }
 
 export function RealtimeChatShell({
@@ -34,6 +35,7 @@ export function RealtimeChatShell({
   className,
   children,
   displayMode = "floating",
+  showInlineToggle = true,
 }: RealtimeChatShellProps) {
   const isEmbedded = displayMode === "embedded";
   const actions = useRealtimeChatActions();
@@ -42,7 +44,6 @@ export function RealtimeChatShell({
   const activeTabId = useRealtimeChatSelector((state) => state.activeTabId);
   useRealtimeChatInitializer(initializer);
   const { connectionStatus, lastConnectionError } = useRealtimeConnection();
-  const { unreadDirectTotal, unreadWorldTotal } = useRealtimeTotals();
   const presence = useRealtimePresence();
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [isHeightExpanded, setIsHeightExpanded] = useState(true);
@@ -87,21 +88,6 @@ export function RealtimeChatShell({
       }
     }
   }, [actions, defaultZoneId, zoneKey]);
-
-  const connectionIndicator = useMemo(() => {
-    switch (connectionStatus) {
-      case "connected":
-        return "text-emerald-400";
-      case "error":
-        return "text-red-400";
-      default:
-        return "text-neutral-300";
-    }
-  }, [connectionStatus]);
-
-  const toggleExpanded = () => {
-    actions.setShellOpen(!isExpanded);
-  };
 
   const toggleHeightExpand = () => {
     setIsHeightExpanded(!isHeightExpanded);
@@ -177,8 +163,6 @@ export function RealtimeChatShell({
 
   const activeTab = openTabs.find((t) => t.id === activeTabId);
 
-  const unreadBadgeClass = "rounded-full border px-2 py-0.5 text-[11px] leading-none";
-
   return (
     <div className={cn("relative w-full", className)}>
       <div
@@ -192,37 +176,20 @@ export function RealtimeChatShell({
               : isEmbedded
                 ? "h-64"
                 : "h-72"
-            : isEmbedded
-              ? "h-16"
-              : "h-14",
+            : showInlineToggle
+              ? isEmbedded
+                ? "h-16"
+                : "h-14"
+              : "h-0 min-h-0 pointer-events-none",
           isEmbedded ? "w-full" : "w-[800px] max-w-[45vw]",
+          !isExpanded && !showInlineToggle && "w-0 max-w-0",
           isExpanded ? "bg-black/80" : "bg-transparent",
         )}
       >
         {/* Header - Only shown when not expanded */}
-        {!isExpanded && (
+        {!isExpanded && showInlineToggle && (
           <div className="flex items-center justify-end w-full h-full px-2">
-            <button
-              type="button"
-              onClick={toggleExpanded}
-              className="flex items-center gap-2 px-3 py-1.5 mr-20 mb-3 transition text-gold/70 hover:text-gold border border-gold/30 hover:border-gold panel-wood bg-dark/70 hover:bg-dark/60 rounded text-xs shadow-inner shadow-black/30"
-            >
-              <span className="font-medium">Open Chat</span>
-              {(unreadWorldTotal > 0 || unreadDirectTotal > 0) && (
-                <span className="bg-red/40 text-white text-[10px] px-1.5 py-0.5 rounded-full">
-                  {unreadWorldTotal + unreadDirectTotal}
-                </span>
-              )}
-              <span
-                className={`h-1.5 w-1.5 rounded-full ${
-                  connectionStatus === "connected"
-                    ? "bg-emerald-400 animate-pulse"
-                    : connectionStatus === "error"
-                      ? "bg-red-400"
-                      : "bg-neutral-500"
-                }`}
-              />
-            </button>
+            <RealtimeChatToggleButton />
           </div>
         )}
 

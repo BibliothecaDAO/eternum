@@ -1,17 +1,17 @@
 use dojo::model::ModelStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-use s1_eternum::alias::ID;
-use s1_eternum::models::config::{MapConfig, QuestConfig, TickImpl, TickTrait, WorldConfigUtilImpl};
-use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
-use s1_eternum::models::position::Coord;
-use s1_eternum::models::quest::{Level, Quest, QuestDetails, QuestGameRegistry, QuestLevels, QuestTile};
-use s1_eternum::systems::quest::constants::{
+use crate::alias::ID;
+use crate::models::config::{MapConfig, QuestConfig, TickImpl, TickTrait, WorldConfigUtilImpl};
+use crate::models::map::{Tile, TileImpl, TileOccupier};
+use crate::models::position::Coord;
+use crate::models::quest::{Level, Quest, QuestDetails, QuestGameRegistry, QuestLevels, QuestTile};
+use crate::systems::quest::constants::{
     CAPACITY_SELECTOR_SALT, GAME_SELECTOR_SALT, LEVEL_SELECTOR_SALT, MAXIMUM_QUEST_CAPACITY, MINIMUM_QUEST_CAPACITY,
     QUEST_REWARD_BASE_MULTIPLIER, VERSION, VRF_OFFSET,
 };
-use s1_eternum::systems::utils::map::IMapImpl;
-use s1_eternum::systems::utils::troop::iExplorerImpl;
-use s1_eternum::utils::map::biomes::Biome;
+use crate::systems::utils::map::IMapImpl;
+use crate::systems::utils::troop::iExplorerImpl;
+use crate::utils::map::biomes::Biome;
 use starknet::ContractAddress;
 use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
 use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
@@ -57,20 +57,20 @@ pub mod quest_systems {
     use core::array::ArrayTrait;
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS, ErrorMessages, resource_type_name};
-    use s1_eternum::models::map::Tile;
-    use s1_eternum::models::position::TravelTrait;
-    use s1_eternum::models::quest::{
+    use crate::alias::ID;
+    use crate::constants::{DEFAULT_NS, ErrorMessages, resource_type_name};
+    use crate::models::map::Tile;
+    use crate::models::position::TravelTrait;
+    use crate::models::quest::{
         Level, Quest, QuestDetails, QuestFeatureFlag, QuestGameRegistry, QuestLevels, QuestTile,
     };
-    use s1_eternum::models::resource::resource::{
+    use crate::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::structure::{StructureMetadataStoreImpl, StructureOwnerStoreImpl};
-    use s1_eternum::models::troop::ExplorerTroops;
-    use s1_eternum::models::weight::Weight;
-    use s1_eternum::systems::quest::constants::VERSION;
+    use crate::models::structure::{StructureMetadataStoreImpl, StructureOwnerStoreImpl};
+    use crate::models::troop::ExplorerTroops;
+    use crate::models::weight::Weight;
+    use crate::systems::quest::constants::VERSION;
     use starknet::ContractAddress;
     use super::{IBudokanGameDispatcher, IBudokanGameDispatcherTrait, iQuestDiscoveryImpl};
 
@@ -492,42 +492,42 @@ mod tests {
     use dojo::world::{IWorldDispatcherTrait, WorldStorageTrait};
     use dojo_cairo_test::{ContractDef, ContractDefTrait, NamespaceDef, TestResource};
     use openzeppelin_token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
-    use s1_eternum::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
-    use s1_eternum::models::config::{CombatConfigImpl, WorldConfigUtilImpl, m_WeightConfig, m_WorldConfig};
-    use s1_eternum::models::map::{Tile, TileImpl, TileOccupier, m_BiomeDiscovered, m_Tile};
-    use s1_eternum::models::position::{Coord, Direction, TravelTrait};
-    use s1_eternum::models::quest::{
+    use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
+    use crate::models::config::{CombatConfigImpl, WorldConfigUtilImpl, m_WeightConfig, m_WorldConfig};
+    use crate::models::map::{Tile, TileImpl, TileOccupier, m_BiomeDiscovered, m_Tile};
+    use crate::models::position::{Coord, Direction, TravelTrait};
+    use crate::models::quest::{
         Level, Quest, QuestGameRegistry, QuestLevels, QuestTile, m_Quest, m_QuestFeatureFlag, m_QuestGameRegistry,
         m_QuestLevels, m_QuestRegistrations, m_QuestTile,
     };
-    use s1_eternum::models::resource::production::building::{m_Building, m_StructureBuildings};
-    use s1_eternum::models::resource::resource::{
+    use crate::models::resource::production::building::{m_Building, m_StructureBuildings};
+    use crate::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl, m_Resource,
     };
-    use s1_eternum::models::stamina::StaminaImpl;
-    use s1_eternum::models::structure::{
+    use crate::models::stamina::StaminaImpl;
+    use crate::models::structure::{
         StructureBaseImpl, StructureBaseStoreImpl, StructureImpl, StructureTroopExplorerStoreImpl, m_Structure,
         m_StructureOwnerStats, m_StructureVillageSlots,
     };
-    use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, TroopTier, TroopType, m_ExplorerTroops};
-    use s1_eternum::models::weight::Weight;
-    use s1_eternum::systems::combat::contracts::troop_management::{
+    use crate::models::troop::{ExplorerTroops, GuardImpl, TroopTier, TroopType, m_ExplorerTroops};
+    use crate::models::weight::Weight;
+    use crate::systems::combat::contracts::troop_management::{
         ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait, troop_management_systems,
     };
-    use s1_eternum::systems::combat::contracts::troop_movement::{
+    use crate::systems::combat::contracts::troop_movement::{
         ITroopMovementSystemsDispatcher, ITroopMovementSystemsDispatcherTrait, agent_discovery_systems,
         hyperstructure_discovery_systems, mine_discovery_systems, troop_movement_systems, troop_movement_util_systems,
     };
-    use s1_eternum::systems::quest::constants::{
+    use crate::systems::quest::constants::{
         MAXIMUM_QUEST_CAPACITY, MINIMUM_QUEST_CAPACITY, QUEST_REWARD_BASE_MULTIPLIER, VERSION,
     };
-    use s1_eternum::systems::quest::contracts::{
+    use crate::systems::quest::contracts::{
         IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait, iQuestDiscoveryImpl, quest_systems,
     };
-    use s1_eternum::systems::resources::contracts::resource_systems::resource_systems;
-    use s1_eternum::systems::village::contracts::village_systems;
-    use s1_eternum::utils::map::biomes::Biome;
-    use s1_eternum::utils::testing::helpers::{
+    use crate::systems::resources::contracts::resource_systems::resource_systems;
+    use crate::systems::village::contracts::village_systems;
+    use crate::utils::map::biomes::Biome;
+    use crate::utils::testing::helpers::{
         MOCK_MAP_CONFIG, MOCK_TICK_CONFIG, MOCK_TROOP_LIMIT_CONFIG, init_config, tgrant_resources, tspawn_explorer,
         tspawn_quest_tile, tspawn_realm_with_resources, tspawn_simple_realm, tspawn_village, tspawn_village_explorer,
         tspawn_world,
@@ -1750,7 +1750,7 @@ mod tests {
 
         // --- Test get_quest_details ---
         let retrieved_details = quest_system.get_quest_details(game_token_id, game_mock_addr);
-        let expected_resource_name = s1_eternum::constants::resource_type_name(resource_type);
+        let expected_resource_name = crate::constants::resource_type_name(resource_type);
         assert!(retrieved_details.quest_tile_id == quest_tile_id, "Details: Quest tile ID mismatch");
         assert!(retrieved_details.game_address == game_mock_addr, "Details: Game address mismatch");
         assert!(retrieved_details.coord == quest_coord, "Details: Coordinate mismatch");

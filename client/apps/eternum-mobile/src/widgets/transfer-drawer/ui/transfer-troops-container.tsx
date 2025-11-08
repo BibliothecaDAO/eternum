@@ -13,7 +13,7 @@ import {
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
 import {
-  DEFENSE_NAMES,
+  GUARD_SLOT_NAMES,
   getDirectionBetweenAdjacentHexes,
   ID,
   StructureType,
@@ -22,6 +22,7 @@ import {
 } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowLeftRight } from "lucide-react";
 import { TransferDirection } from "../model/types";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
@@ -32,6 +33,8 @@ interface TransferTroopsContainerProps {
   targetHex: { x: number; y: number };
   transferDirection: TransferDirection;
   onTransferComplete: () => void;
+  onToggleDirection?: () => void;
+  canToggleDirection?: boolean;
 }
 
 export const TransferTroopsContainer = ({
@@ -41,6 +44,8 @@ export const TransferTroopsContainer = ({
   targetHex,
   transferDirection,
   onTransferComplete,
+  onToggleDirection,
+  canToggleDirection = false,
 }: TransferTroopsContainerProps) => {
   const {
     account: { account },
@@ -112,6 +117,16 @@ export const TransferTroopsContainer = ({
   const selectedExplorerTroops = selectedEntityData?.explorer;
   const targetStructure = targetEntityData?.structure;
   const targetExplorerTroops = targetEntityData?.explorer;
+
+  const directionLabel = useMemo(() => {
+    if (transferDirection === TransferDirection.ExplorerToStructure) {
+      return "Explorer → Structure";
+    }
+    if (transferDirection === TransferDirection.StructureToExplorer) {
+      return "Structure → Explorer";
+    }
+    return "Explorer → Explorer";
+  }, [transferDirection]);
 
   const getStructureDefenseSlots = useCallback(
     (structureType: StructureType, structureLevel: number) => {
@@ -322,150 +337,184 @@ export const TransferTroopsContainer = ({
     return <Loading />;
   }
 
-  return (
-    <div className="space-y-4">
-      {/* Structure Troop Balance Section - Only show for StructureToExplorer */}
-      {transferDirection === TransferDirection.StructureToExplorer && structureTroopBalance && (
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="font-semibold">Structure Troop Balance</h4>
-              <div className="flex items-center gap-2">
-                <span className={`text-xs ${useStructureBalance ? "text-muted-foreground" : ""}`}>Guards</span>
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={useStructureBalance}
-                    onChange={() => isStructureOwnerOfExplorer && setUseStructureBalance(!useStructureBalance)}
-                    disabled={!isStructureOwnerOfExplorer}
-                  />
-                  <div
-                    className={`w-9 h-5 bg-muted rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-primary after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary/30 ${!isStructureOwnerOfExplorer ? "opacity-50" : ""}`}
-                  />
-                </div>
-                <span className={`text-xs ${useStructureBalance ? "" : "text-muted-foreground"}`}>Balance</span>
-              </div>
-            </div>
-            {!isStructureOwnerOfExplorer && (
-              <div className="text-destructive text-sm mb-2">
-                Cannot use balance: Explorer not owned by this structure.
-              </div>
-            )}
-            <p className="text-muted-foreground text-sm">
-              Available: {divideByPrecision(Number(structureTroopBalance.balance)).toLocaleString()} troops
-            </p>
-            {targetExplorerTroops && (
-              <p className="text-muted-foreground text-xs">
-                Matching Explorer Type: Tier {targetExplorerTroops.troops.tier} {targetExplorerTroops.troops.category}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Available Troops Section */}
-      <Card>
-        <CardContent className="p-4">
-          <h4 className="font-semibold mb-2">Available for Transfer</h4>
-          <p className="text-lg font-medium">{maxTroops.toLocaleString()} troops</p>
-          {transferDirection === TransferDirection.ExplorerToStructure && selectedExplorerTroops && (
-            <p className="text-muted-foreground text-xs">
-              From Explorer: Tier {selectedExplorerTroops.troops.tier} {selectedExplorerTroops.troops.category}
-            </p>
-          )}
-          {transferDirection === TransferDirection.StructureToExplorer &&
-            !useStructureBalance &&
-            selectedGuards.length > 0 &&
-            guardSlot !== undefined &&
-            selectedGuards[guardSlot] && (
-              <p className="text-muted-foreground text-xs">
-                From Structure (Slot {guardSlot + 1} - {DEFENSE_NAMES[guardSlot as keyof typeof DEFENSE_NAMES]}): Tier{" "}
-                {selectedGuards[guardSlot].troops.tier} {selectedGuards[guardSlot].troops.category}
-              </p>
-            )}
-          {transferDirection === TransferDirection.ExplorerToExplorer && selectedExplorerTroops && (
-            <p className="text-muted-foreground text-xs">
-              From Explorer: Tier {selectedExplorerTroops.troops.tier} {selectedExplorerTroops.troops.category}
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Guard Slot Selection */}
-      {((transferDirection === TransferDirection.StructureToExplorer && !useStructureBalance) ||
-        transferDirection === TransferDirection.ExplorerToStructure) && (
-        <Card>
-          <CardContent className="p-4">
-            <h4 className="font-semibold mb-3">Guard Slot</h4>
-            <div className="grid grid-cols-1 gap-2">
-              {availableGuards.map((slotIndex) => {
-                const guards =
-                  transferDirection === TransferDirection.StructureToExplorer ? selectedGuards : targetGuards;
-                if (!guards[slotIndex] || !guards[slotIndex].troops) {
-                  return (
-                    <div key={slotIndex} className="p-2 border rounded-md bg-muted text-muted-foreground">
-                      Slot {slotIndex + 1} - Empty/Error
-                    </div>
-                  );
-                }
-                const troopInfo = guards[slotIndex].troops;
-                const isActive = guardSlot === slotIndex;
-                return (
-                  <div
-                    key={slotIndex}
-                    onClick={() => setGuardSlot(slotIndex)}
-                    className={`p-3 border rounded-md cursor-pointer transition-all ${
-                      isActive ? "bg-primary/10 border-primary" : "hover:bg-muted"
-                    }`}
-                  >
-                    <div className="font-semibold">{DEFENSE_NAMES[slotIndex as keyof typeof DEFENSE_NAMES]}</div>
-                    <div className="text-sm text-muted-foreground">
-                      Tier {troopInfo.tier} {troopInfo.category}
-                    </div>
-                    <div className="text-sm">Available: {troopInfo.count.toLocaleString()}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Troop Amount Input */}
-      <Card>
-        <CardContent className="p-4">
-          <h4 className="font-semibold mb-3">Set Amount to Transfer</h4>
-          <NumericInput
-            value={troopAmount}
-            onChange={setTroopAmount}
-            max={maxTroops}
-            label="Troop amount"
-            description={`Max: ${maxTroops.toLocaleString()}`}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Transfer Button */}
-      <Button onClick={handleTransfer} disabled={loading || isTroopsTransferDisabled} className="w-full" size="lg">
-        {loading ? "Processing..." : "Transfer Troops"}
-      </Button>
-
-      {/* Error messages */}
-      {isTroopsTransferDisabled && troopAmount > 0 && (
-        <div className="text-destructive text-sm text-center">
-          {transferDirection === TransferDirection.StructureToExplorer &&
-            useStructureBalance &&
-            !isStructureOwnerOfExplorer &&
-            "Cannot use structure balance: Explorer is not owned by this structure"}
-          {transferDirection === TransferDirection.ExplorerToExplorer &&
-            selectedExplorerTroops?.troops.category !== targetExplorerTroops?.troops.category &&
-            `Cannot transfer troops: Category mismatch (${selectedExplorerTroops?.troops.category} ≠ ${targetExplorerTroops?.troops.category})`}
-          {transferDirection === TransferDirection.ExplorerToExplorer &&
-            selectedExplorerTroops?.troops.tier !== targetExplorerTroops?.troops.tier &&
-            `Cannot transfer troops: Tier mismatch (Tier ${selectedExplorerTroops?.troops.tier} ≠ Tier ${targetExplorerTroops?.troops.tier})`}
+  const directionCard = (
+    <Card>
+      <CardContent className="flex items-center justify-between gap-3 p-4">
+        <div>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">Transfer direction</p>
+          <p className="text-base font-semibold text-foreground">{directionLabel}</p>
         </div>
-      )}
+        {onToggleDirection ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onToggleDirection}
+            disabled={!canToggleDirection}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeftRight className="h-4 w-4" />
+            Swap
+          </Button>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+
+  const structureBalanceCard =
+    transferDirection === TransferDirection.StructureToExplorer && structureTroopBalance ? (
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-semibold">Structure Troop Balance</h4>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs ${useStructureBalance ? "text-muted-foreground" : ""}`}>Guards</span>
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={useStructureBalance}
+                  onChange={() => isStructureOwnerOfExplorer && setUseStructureBalance(!useStructureBalance)}
+                  disabled={!isStructureOwnerOfExplorer}
+                />
+                <div
+                  className={`w-9 h-5 bg-muted rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-primary after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary/30 ${!isStructureOwnerOfExplorer ? "opacity-50" : ""}`}
+                />
+              </div>
+              <span className={`text-xs ${useStructureBalance ? "" : "text-muted-foreground"}`}>Balance</span>
+            </div>
+          </div>
+          {!isStructureOwnerOfExplorer && (
+            <div className="text-destructive text-sm mb-2">
+              Cannot use balance: Explorer not owned by this structure.
+            </div>
+          )}
+          <p className="text-muted-foreground text-sm">
+            Available: {divideByPrecision(Number(structureTroopBalance.balance)).toLocaleString()} troops
+          </p>
+          {targetExplorerTroops && (
+            <p className="text-muted-foreground text-xs">
+              Matching Explorer Type: Tier {targetExplorerTroops.troops.tier} {targetExplorerTroops.troops.category}
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    ) : null;
+
+  const availableTroopsCard = (
+    <Card>
+      <CardContent className="p-4">
+        <h4 className="font-semibold mb-2">Available for Transfer</h4>
+        <p className="text-lg font-medium">{maxTroops.toLocaleString()} troops</p>
+        {transferDirection === TransferDirection.ExplorerToStructure && selectedExplorerTroops && (
+          <p className="text-muted-foreground text-xs">
+            From Explorer: Tier {selectedExplorerTroops.troops.tier} {selectedExplorerTroops.troops.category}
+          </p>
+        )}
+        {transferDirection === TransferDirection.StructureToExplorer &&
+          !useStructureBalance &&
+          selectedGuards.length > 0 &&
+          guardSlot !== undefined &&
+          selectedGuards[guardSlot] && (
+            <p className="text-muted-foreground text-xs">
+              From Structure (Slot {guardSlot + 1} - {GUARD_SLOT_NAMES[guardSlot as keyof typeof GUARD_SLOT_NAMES]}):
+              Tier {selectedGuards[guardSlot].troops.tier} {selectedGuards[guardSlot].troops.category}
+            </p>
+          )}
+        {transferDirection === TransferDirection.ExplorerToExplorer && selectedExplorerTroops && (
+          <p className="text-muted-foreground text-xs">
+            From Explorer: Tier {selectedExplorerTroops.troops.tier} {selectedExplorerTroops.troops.category}
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+
+  const guardSlotCard = ((transferDirection === TransferDirection.StructureToExplorer && !useStructureBalance) ||
+    transferDirection === TransferDirection.ExplorerToStructure) && (
+    <Card>
+      <CardContent className="p-4">
+        <h4 className="font-semibold mb-3">Guard Slot</h4>
+        <div className="grid grid-cols-1 gap-2">
+          {availableGuards.map((slotIndex) => {
+            const guards = transferDirection === TransferDirection.StructureToExplorer ? selectedGuards : targetGuards;
+            if (!guards[slotIndex] || !guards[slotIndex].troops) {
+              return (
+                <div key={slotIndex} className="p-2 border rounded-md bg-muted text-muted-foreground">
+                  Slot {slotIndex + 1} - Empty/Error
+                </div>
+              );
+            }
+            const troopInfo = guards[slotIndex].troops;
+            const isActive = guardSlot === slotIndex;
+            return (
+              <div
+                key={slotIndex}
+                onClick={() => setGuardSlot(slotIndex)}
+                className={`p-3 border rounded-md cursor-pointer transition-all ${
+                  isActive ? "bg-primary/10 border-primary" : "hover:bg-muted"
+                }`}
+              >
+                <div className="font-semibold">{GUARD_SLOT_NAMES[slotIndex as keyof typeof GUARD_SLOT_NAMES]}</div>
+                <div className="text-sm text-muted-foreground">
+                  Tier {troopInfo.tier} {troopInfo.category}
+                </div>
+                <div className="text-sm">Available: {troopInfo.count.toLocaleString()}</div>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const amountCard = (
+    <Card>
+      <CardContent className="p-4">
+        <h4 className="font-semibold mb-3">Set Amount to Transfer</h4>
+        <NumericInput
+          value={troopAmount}
+          onChange={setTroopAmount}
+          max={maxTroops}
+          label="Troop amount"
+          description={`Max: ${maxTroops.toLocaleString()}`}
+        />
+      </CardContent>
+    </Card>
+  );
+
+  const actionButton = (
+    <Button onClick={handleTransfer} disabled={loading || isTroopsTransferDisabled} className="w-full" size="lg">
+      {loading ? "Processing..." : "Transfer Troops"}
+    </Button>
+  );
+
+  const errorNotice =
+    isTroopsTransferDisabled && troopAmount > 0 ? (
+      <div className="text-destructive text-sm text-center">
+        {transferDirection === TransferDirection.StructureToExplorer &&
+          useStructureBalance &&
+          !isStructureOwnerOfExplorer &&
+          "Cannot use structure balance: Explorer is not owned by this structure"}
+        {transferDirection === TransferDirection.ExplorerToExplorer &&
+          selectedExplorerTroops?.troops.category !== targetExplorerTroops?.troops.category &&
+          `Cannot transfer troops: Category mismatch (${selectedExplorerTroops?.troops.category} ≠ ${targetExplorerTroops?.troops.category})`}
+        {transferDirection === TransferDirection.ExplorerToExplorer &&
+          selectedExplorerTroops?.troops.tier !== targetExplorerTroops?.troops.tier &&
+          `Cannot transfer troops: Tier mismatch (Tier ${selectedExplorerTroops?.troops.tier} ≠ Tier ${targetExplorerTroops?.troops.tier})`}
+      </div>
+    ) : null;
+
+  return (
+    <div className={`flex flex-col gap-4 ${guardSlotCard ? "md:flex-row" : ""}`}>
+      {guardSlotCard && <div className="flex flex-col gap-4 md:w-2/5">{guardSlotCard}</div>}
+      <div className={`flex flex-col gap-4 ${guardSlotCard ? "md:flex-1" : ""}`}>
+        {directionCard}
+        {structureBalanceCard}
+        {availableTroopsCard}
+        {amountCard}
+        {actionButton}
+        {errorNotice}
+      </div>
     </div>
   );
 };

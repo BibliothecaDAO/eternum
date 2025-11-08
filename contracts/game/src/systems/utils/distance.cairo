@@ -1,5 +1,5 @@
 use dojo::world::WorldStorage;
-use s1_eternum::models::position::{Coord, TravelTrait};
+use crate::models::position::{Coord, TravelTrait};
 
 
 #[generate_trait]

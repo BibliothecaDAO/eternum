@@ -4,7 +4,7 @@ export const LoadingOroborus = ({ loading }: { loading: boolean }) => {
   return (
     <div
       className={clsx(
-        "absolute bottom-0 left-0 z-20 w-full pointer-events-none flex items-center  justify-center text-3xl h-full bg-dark-wood panel-wood panel-wood-corners duration-300 transition-opacity",
+        "absolute bottom-0 left-0 right-0 top-0 z-[10000] w-screen h-screen pointer-events-none flex items-center  justify-center text-3xl !bg-black/95 panel-wood panel-wood-corners duration-300 transition-opacity",
         loading ? "opacity-100" : "opacity-0",
       )}
     >

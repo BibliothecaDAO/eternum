@@ -1,5 +1,5 @@
-import { Suspense, lazy, useCallback, useEffect } from "react";
 import type { PointerEvent } from "react";
+import { Suspense, lazy, useCallback, useEffect } from "react";
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
@@ -16,9 +16,11 @@ const Onboarding = lazy(() =>
 
 interface PlayOverlayManagerProps {
   backgroundImage: string;
+  // When false, suppresses the Onboarding overlay (which requires Dojo context)
+  enableOnboarding?: boolean;
 }
 
-export const PlayOverlayManager = ({ backgroundImage }: PlayOverlayManagerProps) => {
+export const PlayOverlayManager = ({ backgroundImage, enableOnboarding = true }: PlayOverlayManagerProps) => {
   const showModal = useUIStore((state) => state.showModal);
   const modalContent = useUIStore((state) => state.modalContent);
   const toggleModal = useUIStore((state) => state.toggleModal);
@@ -61,11 +63,13 @@ export const PlayOverlayManager = ({ backgroundImage }: PlayOverlayManagerProps)
         </BlankOverlayContainer>
       </Suspense>
 
-      <Suspense fallback={null}>
-        <BlankOverlayContainer zIndex={110} open={showBlankOverlay}>
-          <Onboarding backgroundImage={backgroundImage} />
-        </BlankOverlayContainer>
-      </Suspense>
+      {enableOnboarding ? (
+        <Suspense fallback={null}>
+          <BlankOverlayContainer zIndex={110} open={showBlankOverlay}>
+            <Onboarding backgroundImage={backgroundImage} />
+          </BlankOverlayContainer>
+        </Suspense>
+      ) : null}
 
       <LoadingOroborus loading={isLoadingScreenEnabled} />
     </>

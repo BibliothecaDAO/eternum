@@ -1,5 +1,5 @@
 use core::num::traits::Bounded;
-use s1_eternum::alias::ID;
+use crate::alias::ID;
 
 // take an address of a real network contract
 pub const UNIVERSAL_DEPLOYER_ADDRESS: felt252 =

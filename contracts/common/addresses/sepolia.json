@@ -1,6 +1,7 @@
 {
-  "Collectibles: Realms: Cosmetic Items": "",
-  "Collectibles: Timelock Maker": "",
+  "Collectibles: Realms: Loot Chest": "0x576ee0d5dfe431ddb56c97c30f92a88c6b4c1d43c2319965f2829bd510b4d22",
+  "Collectibles: Realms: Cosmetic Items": "0x4bd487ac7542700cb966406be3fbf5f4b80647e6c64ca7a7cbb7f9e4516d1c3",
+  "Collectibles: Timelock Maker": "0x4e847f9abd36c5f91eaaf51699934b7a5dd44ff9dc8d3d78d97710df1e152f",
   "collectiblesClassHash": "0x181c70595dd7db697c37ceb35c74fab69a037836b99cc80c17fd92a16289e26",
   "seasonPass": "0x7740bb27e547db8cf7ed3d9995f686a85e76eb211f12a2985783bd5a7cef85a",
   "realms": "0x2eae33ae6098b3c046bde05bf861ea8e34507bf8c8779eeba8d175193cef5c0",

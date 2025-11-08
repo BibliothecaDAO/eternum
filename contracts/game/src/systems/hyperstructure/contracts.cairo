@@ -1,5 +1,5 @@
-use s1_eternum::alias::ID;
-use s1_eternum::models::hyperstructure::ConstructionAccess;
+use crate::alias::ID;
+use crate::models::hyperstructure::ConstructionAccess;
 use starknet::ContractAddress;
 
 /// # Hyperstructure Systems Interface
@@ -148,33 +148,33 @@ pub mod hyperstructure_systems {
     use core::num::traits::zero::Zero;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
-    use s1_eternum::models::config::{
+    use crate::alias::ID;
+    use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
+    use crate::models::config::{
         HyperstructureConfig, HyperstructureCostConfig, SeasonConfigImpl, VictoryPointsGrantConfig, WorldConfigUtilImpl,
     };
-    use s1_eternum::models::guild::GuildMember;
-    use s1_eternum::models::hyperstructure::{
+    use crate::models::guild::GuildMember;
+    use crate::models::hyperstructure::{
         ConstructionAccess, Hyperstructure, HyperstructureConstructionAccessImpl, HyperstructureGlobals,
         HyperstructureRequirementsImpl, HyperstructureShareholders, PlayerRegisteredPoints,
     };
-    use s1_eternum::models::map::Tile;
-    use s1_eternum::models::owner::{OwnerAddressImpl, OwnerAddressTrait};
-    use s1_eternum::models::position::Coord;
-    use s1_eternum::models::resource::resource::{
+    use crate::models::map::Tile;
+    use crate::models::owner::{OwnerAddressImpl, OwnerAddressTrait};
+    use crate::models::position::Coord;
+    use crate::models::resource::resource::{
         ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::season::SeasonPrize;
-    use s1_eternum::models::structure::{
+    use crate::models::season::SeasonPrize;
+    use crate::models::structure::{
         StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
     };
-    use s1_eternum::models::weight::{Weight, WeightImpl};
-    use s1_eternum::systems::utils::hyperstructure::iHyperstructureBlitzImpl;
-    use s1_eternum::systems::utils::map::IMapImpl;
-    use s1_eternum::systems::utils::structure::iStructureImpl;
-    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
-    use s1_eternum::utils::math::PercentageValueImpl;
-    use s1_eternum::utils::random::VRFImpl;
+    use crate::models::weight::{Weight, WeightImpl};
+    use crate::systems::utils::hyperstructure::iHyperstructureBlitzImpl;
+    use crate::systems::utils::map::IMapImpl;
+    use crate::systems::utils::structure::iStructureImpl;
+    use crate::utils::achievements::index::{AchievementTrait, Tasks};
+    use crate::utils::math::PercentageValueImpl;
+    use crate::utils::random::VRFImpl;
     use starknet::ContractAddress;
 
 

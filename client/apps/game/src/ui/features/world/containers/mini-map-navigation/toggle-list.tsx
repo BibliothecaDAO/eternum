@@ -18,14 +18,14 @@ export const MiniMapToggleList = ({
   onLeave,
 }: MiniMapToggleListProps) => {
   return (
-    <div className="flex flex-wrap justify-start gap-2">
+    <div className="flex w-full min-w-0 flex-nowrap overflow-x-auto overflow-y-hidden whitespace-nowrap scrollbar-hide">
       {toggles.map((toggle) => {
         const isActive = visibility[toggle.id];
 
         return (
           <div
             key={toggle.id}
-            className="flex items-center gap-1"
+            className="flex items-center gap-1 flex-shrink-0"
             onMouseEnter={() => onHover(`Toggle ${toggle.label}`)}
             onMouseLeave={onLeave}
           >

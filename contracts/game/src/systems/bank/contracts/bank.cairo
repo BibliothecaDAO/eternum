@@ -1,5 +1,5 @@
-use s1_eternum::alias::ID;
-use s1_eternum::models::position::Coord;
+use crate::alias::ID;
+use crate::models::position::Coord;
 
 #[derive(Copy, Drop, Serde)]
 struct BankCreateParams {
@@ -16,22 +16,22 @@ pub trait IBankSystems<T> {
 pub mod bank_systems {
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::{
+    use crate::alias::ID;
+    use crate::constants::{
         DEFAULT_NS, REGIONAL_BANK_FIVE_ID, REGIONAL_BANK_FOUR_ID, REGIONAL_BANK_ONE_ID, REGIONAL_BANK_SIX_ID,
         REGIONAL_BANK_THREE_ID, REGIONAL_BANK_TWO_ID,
     };
-    use s1_eternum::models::config::{CombatConfigImpl, TickImpl, WorldConfigUtilImpl};
-    use s1_eternum::models::map::TileOccupier;
-    use s1_eternum::models::name::AddressName;
-    use s1_eternum::models::resource::resource::{
+    use crate::models::config::{CombatConfigImpl, TickImpl, WorldConfigUtilImpl};
+    use crate::models::map::TileOccupier;
+    use crate::models::name::AddressName;
+    use crate::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::structure::{StructureCategory, StructureImpl, StructureOwnerStoreImpl};
-    use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
-    use s1_eternum::systems::config::contracts::config_systems::assert_caller_is_admin;
-    use s1_eternum::systems::utils::structure::iStructureImpl;
-    use s1_eternum::systems::utils::troop::iMercenariesImpl;
+    use crate::models::structure::{StructureCategory, StructureImpl, StructureOwnerStoreImpl};
+    use crate::models::troop::{GuardSlot, TroopTier, TroopType};
+    use crate::systems::config::contracts::config_systems::assert_caller_is_admin;
+    use crate::systems::utils::structure::iStructureImpl;
+    use crate::systems::utils::troop::iMercenariesImpl;
     use crate::system_libraries::structure_libraries::structure_creation_library::{
         IStructureCreationlibraryDispatcherTrait, structure_creation_library,
     };

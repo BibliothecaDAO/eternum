@@ -193,7 +193,7 @@ export const StructureDefence = ({
                               <div className="relative flex gap-4">
                                 <TroopChip
                                   troops={defense.troops}
-                                  iconSize="sm"
+                                  size="sm"
                                   className="flex-1 hover:border-gold/40 transition-colors"
                                 />
                                 <div className="flex items-center justify-center">

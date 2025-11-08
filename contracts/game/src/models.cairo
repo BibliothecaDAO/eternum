@@ -22,6 +22,7 @@ pub mod bank {
 }
 pub mod record;
 pub mod relic;
+pub mod series_chest_reward;
 
 pub mod resource {
     pub mod arrivals;
@@ -33,3 +34,4 @@ pub mod resource {
 }
 pub mod quest;
 pub mod rank;
+pub mod rng;

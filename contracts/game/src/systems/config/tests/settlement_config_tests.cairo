@@ -4,12 +4,12 @@
 //     use dojo::model::ModelStorage;
 //     use dojo::world::WorldStorage;
 //     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-//     use s1_eternum::models::config::{SettlementConfig, SettlementConfigImpl};
-//     use s1_eternum::models::position::{Coord};
-//     use s1_eternum::models::structure::{StructureCount};
-//     use s1_eternum::systems::realm::contracts::realm_systems::InternalRealmLogicImpl;
+//     use crate::models::config::{SettlementConfig, SettlementConfigImpl};
+//     use crate::models::position::{Coord};
+//     use crate::models::structure::{StructureCount};
+//     use crate::systems::realm::contracts::realm_systems::InternalRealmLogicImpl;
 
-//     use s1_eternum::utils::testing::{config::set_settlement_config, systems::deploy_system, world::spawn_eternum};
+//     use crate::utils::testing::{config::set_settlement_config, systems::deploy_system, world::spawn_eternum};
 
 //     #[test]
 //     fn config_test_get_next_settlement_coord() {

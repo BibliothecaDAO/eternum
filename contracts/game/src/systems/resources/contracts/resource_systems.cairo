@@ -1,4 +1,4 @@
-use s1_eternum::alias::ID;
+use crate::alias::ID;
 
 #[starknet::interface]
 pub trait IResourceSystems<T> {
@@ -27,24 +27,24 @@ pub mod resource_systems {
     use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::models::config::{SeasonConfigImpl, SpeedImpl};
-    use s1_eternum::models::owner::OwnerAddressTrait;
-    use s1_eternum::models::position::TravelTrait;
-    use s1_eternum::models::resource::arrivals::ResourceArrivalImpl;
-    use s1_eternum::models::resource::resource::{
+    use crate::alias::ID;
+    use crate::constants::DEFAULT_NS;
+    use crate::models::config::{SeasonConfigImpl, SpeedImpl};
+    use crate::models::owner::OwnerAddressTrait;
+    use crate::models::position::TravelTrait;
+    use crate::models::resource::arrivals::ResourceArrivalImpl;
+    use crate::models::resource::resource::{
         ResourceAllowance, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::structure::{
+    use crate::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureImpl, StructureOwnerStoreImpl,
     };
-    use s1_eternum::models::troop::ExplorerTroops;
-    use s1_eternum::models::weight::Weight;
-    use s1_eternum::systems::utils::distance::iDistanceKmImpl;
-    use s1_eternum::systems::utils::donkey::iDonkeyImpl;
-    use s1_eternum::systems::utils::resource::iResourceTransferImpl;
-    use s1_eternum::systems::utils::troop::iExplorerImpl;
+    use crate::models::troop::ExplorerTroops;
+    use crate::models::weight::Weight;
+    use crate::systems::utils::distance::iDistanceKmImpl;
+    use crate::systems::utils::donkey::iDonkeyImpl;
+    use crate::systems::utils::resource::iResourceTransferImpl;
+    use crate::systems::utils::troop::iExplorerImpl;
     use starknet::ContractAddress;
 
 

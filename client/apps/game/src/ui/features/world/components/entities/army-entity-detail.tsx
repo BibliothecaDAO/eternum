@@ -4,8 +4,8 @@ import { memo } from "react";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ArmyCapacity } from "@/ui/design-system/molecules/army-capacity";
 import { StaminaResource } from "@/ui/design-system/molecules/stamina-resource";
-import { BottomHudEmptyState } from "@/ui/features/world/components/hud-bottom";
 import { TroopChip } from "@/ui/features/military";
+import { BottomHudEmptyState } from "@/ui/features/world/components/hud-bottom";
 import { ID, RelicRecipientType } from "@bibliothecadao/types";
 import { ArmyWarning } from "../armies/army-warning";
 import { ActiveRelicEffects } from "./active-relic-effects";
@@ -141,7 +141,7 @@ export const ArmyEntityDetail = memo(
         <div className={sectionsLayoutClass}>
           <div className={panelClasses()}>
             <div className={`${sectionTitleClass} mb-2`}>Army Composition</div>
-            <TroopChip troops={explorer.troops} iconSize={compact ? "md" : "lg"} />
+            <TroopChip troops={explorer.troops} size={compact ? "md" : "lg"} />
           </div>
 
           <div className={panelClasses()}>

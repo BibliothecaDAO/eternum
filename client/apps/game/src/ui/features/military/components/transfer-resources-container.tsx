@@ -13,10 +13,20 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
-import { ActorType, ID, resources, ResourcesIds } from "@bibliothecadao/types";
+import { ActorType, ID, RelicRecipientType, RELICS, resources, ResourcesIds } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { getActorTypes, TransferDirection } from "./help-container";
+
+const STRUCTURE_RELIC_IDS = new Set<number>(
+  RELICS.filter(({ recipientType }) => recipientType === RelicRecipientType.Structure).map(({ id }) => id),
+);
+
+const EXPLORER_RELIC_IDS = new Set<number>(
+  RELICS.filter(({ recipientType }) => recipientType === RelicRecipientType.Explorer).map(({ id }) => id),
+);
+
+const ALL_RELIC_IDS = new Set<number>([...STRUCTURE_RELIC_IDS, ...EXPLORER_RELIC_IDS]);
 
 // Define the Resource type to match what the system calls expect
 interface ResourceTransfer {
@@ -75,21 +85,25 @@ export const TransferResourcesContainer = ({
   const { data: availableResourcesData, isLoading: isResourcesLoading } = useQuery({
     queryKey: ["availableResources", String(selectedEntityId), String(actorTypes?.selected)],
     queryFn: async () => {
-      if (!selectedEntityId || !actorTypes?.selected) return [];
+      if (!selectedEntityId || !actorTypes) return [];
+      const targetActorType = actorTypes.target;
       const { currentDefaultTick } = getBlockTimestamp();
       const { resources: resourcesData } =
         actorTypes.selected === ActorType.Explorer
           ? await getExplorerFromToriiClient(toriiClient, selectedEntityId)
           : await getStructureFromToriiClient(toriiClient, selectedEntityId);
       if (!resourcesData) return [];
+      const allowedRelicIds = targetActorType === ActorType.Structure ? STRUCTURE_RELIC_IDS : ALL_RELIC_IDS;
+
       return resources
+        .filter(({ id }) => allowedRelicIds.has(id))
         .map(({ id }) => ({
           resourceId: id,
           amount: ResourceManager.balanceWithProduction(resourcesData, currentDefaultTick, id).balance,
         }))
         .filter(({ amount }) => amount > 0);
     },
-    staleTime: 10000, // 10 seconds
+    staleTime: 3000, // 3 seconds
   });
 
   // Query for explorer capacity
@@ -537,7 +551,7 @@ export const TransferResourcesContainer = ({
   };
 
   if (availableResources.length === 0) {
-    return <p className="text-gold/60">No resources available to transfer.</p>;
+    return <p className="text-gold/60">No relics available to transfer.</p>;
   }
 
   return (
@@ -598,7 +612,7 @@ export const TransferResourcesContainer = ({
               isLoading={loading}
               className="w-full sm:w-auto"
             >
-              {loading ? "Processing..." : "Transfer Resources"}
+              {loading ? "Processing..." : "Transfer Relics"}
             </Button>
           </div>
         </>

@@ -328,11 +328,14 @@ cd -
 
 ```bash
 # Build and deploy with trait data (automatic build)
-./deploy.sh sepolia
+# Specify collectible type: cosmetics or loot-chests
+./deploy.sh cosmetics sepolia
 
 # Or use Bun directly (REQUIRES manual build first!)
 cd deployment
-bun run deploy:sepolia data/example.json
+bun run deploy:cosmetics:sepolia
+# or for loot-chests
+bun run deploy:loot-chests:sepolia
 ```
 
 **Deployment Process:**
@@ -352,7 +355,9 @@ Update existing contracts without redeployment:
 ```bash
 # Update existing contract
 cd deployment
-bun run update:sepolia data/updates.json
+bun run update:cosmetics:sepolia
+# or for loot-chests
+bun run update:loot-chests:sepolia
 ```
 
 **Update Requirements:**
@@ -368,7 +373,9 @@ Mint additional tokens after deployment:
 ```bash
 # Mint new tokens
 cd deployment
-bun run mint:sepolia data/mint_batch.json
+bun run mint:cosmetics:sepolia
+# or for loot-chests
+bun run mint:loot-chests:sepolia
 ```
 
 **Minting Requirements:**
@@ -444,7 +451,8 @@ try {
 
 ```bash
 # Deploy to sepolia testnet first
-./deploy.sh sepolia
+# Choose collectible type: cosmetics or loot-chests
+./deploy.sh cosmetics sepolia
 ```
 
 #### Step 4: Verify Deployment
@@ -478,8 +486,8 @@ Check the deployed contract using block explorers:
 # Set mainnet environment
 export STARKNET_NETWORK=mainnet
 
-# Deploy to mainnet
-./deploy.sh mainnet
+# Deploy to mainnet with collectible type
+./deploy.sh cosmetics mainnet
 ```
 
 ### Incremental Updates
@@ -521,7 +529,9 @@ Modify your JSON file for updates:
 
 ```bash
 cd deployment
-bun run update:sepolia data/collection_update.json
+bun run update:cosmetics:sepolia
+# or for loot-chests
+bun run update:loot-chests:sepolia
 ```
 
 **Update Processing:**
@@ -559,7 +569,9 @@ bun run update:sepolia data/collection_update.json
 
 ```bash
 cd deployment
-bun run mint:sepolia data/mint_batch.json
+bun run mint:cosmetics:sepolia
+# or for loot-chests
+bun run mint:loot-chests:sepolia
 ```
 
 **Minting Requirements:**
@@ -578,14 +590,16 @@ The deployment system supports multiple Starknet networks:
 
 ```bash
 # Local development
-bun run deploy:local
+bun run deploy:cosmetics:local
+bun run deploy:loot-chests:local
 
 # Testnet deployment
-bun run deploy:sepolia
-bun run deploy:slot
+bun run deploy:cosmetics:sepolia
+bun run deploy:loot-chests:slot
 
 # Mainnet deployment
-bun run deploy:mainnet
+bun run deploy:cosmetics:mainnet
+bun run deploy:loot-chests:mainnet
 ```
 
 ### Environment Configuration
@@ -905,7 +919,7 @@ Enable detailed logging during deployment:
 
 ```bash
 # Add debug flag
-STARKNET_DEBUG=1 bun run deploy:sepolia data/example.json
+STARKNET_DEBUG=1 bun run deploy:cosmetics:sepolia
 ```
 
 #### 2. Data Validation

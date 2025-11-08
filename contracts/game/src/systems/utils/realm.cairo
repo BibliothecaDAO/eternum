@@ -1,23 +1,23 @@
 use core::num::traits::zero::Zero;
 use dojo::model::ModelStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-use s1_eternum::alias::ID;
-use s1_eternum::models::config::{
+use crate::alias::ID;
+use crate::models::config::{
     SeasonConfigImpl, SettlementConfigImpl, WonderProductionBonusConfig, WorldConfigUtilImpl,
 };
-use s1_eternum::models::map::{TileImpl, TileOccupier};
-use s1_eternum::models::position::Coord;
-use s1_eternum::models::realm::{RealmNameAndAttrsDecodingImpl, RealmReferenceImpl};
-use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl};
-use s1_eternum::models::resource::production::production::ProductionBoostBonus;
-use s1_eternum::models::resource::resource::{
+use crate::models::map::{TileImpl, TileOccupier};
+use crate::models::position::Coord;
+use crate::models::realm::{RealmNameAndAttrsDecodingImpl, RealmReferenceImpl};
+use crate::models::resource::production::building::{BuildingCategory, BuildingImpl};
+use crate::models::resource::production::production::ProductionBoostBonus;
+use crate::models::resource::resource::{
     ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
 };
-use s1_eternum::models::structure::{
+use crate::models::structure::{
     StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata, StructureMetadataStoreImpl,
     StructureOwnerStoreImpl, Wonder,
 };
-use s1_eternum::systems::utils::structure::iStructureImpl;
+use crate::systems::utils::structure::iStructureImpl;
 use starknet::ContractAddress;
 use crate::system_libraries::structure_libraries::structure_creation_library::{
     IStructureCreationlibraryDispatcherTrait, structure_creation_library,

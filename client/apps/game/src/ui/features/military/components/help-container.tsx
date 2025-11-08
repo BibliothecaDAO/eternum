@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ActorType, ID } from "@bibliothecadao/types";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { TransferResourcesContainer } from "./transfer-resources-container";
 import { TransferTroopsContainer } from "./transfer-troops-container";
 
@@ -21,7 +21,7 @@ export const getActorTypes = (direction: TransferDirection) => {
 };
 
 enum TransferType {
-  Resources,
+  Relics,
   Troops,
 }
 
@@ -45,15 +45,27 @@ export const HelpContainer = ({
   const [transferType, setTransferType] = useState<TransferType>(TransferType.Troops);
   const [swapped, setSwapped] = useState<boolean>(false);
 
+  useEffect(() => {
+    if (transferType === TransferType.Relics) {
+      setSwapped(false);
+    }
+  }, [transferType]);
+
   const updateSelectedEntityId = useUIStore((state) => state.updateEntityActionSelectedEntityId);
   const toggleModal = useUIStore((state) => state.toggleModal);
 
   // Get the current entities we're working with based on direction state
-  const currentSelected = swapped ? target : selected;
-  const currentTarget = swapped ? selected : target;
+  const baseSelected = swapped ? target : selected;
+  const baseTarget = swapped ? selected : target;
+  const explorerEntity =
+    selected.type === ActorType.Explorer ? selected : target.type === ActorType.Explorer ? target : null;
+  const structureEntity =
+    selected.type === ActorType.Structure ? selected : target.type === ActorType.Structure ? target : null;
+  const currentSelected = transferType === TransferType.Relics && explorerEntity ? explorerEntity : baseSelected;
+  const currentTarget = transferType === TransferType.Relics && structureEntity ? structureEntity : baseTarget;
 
   // Determine the transfer direction based on entity types
-  const transferDirection = (() => {
+  const derivedTransferDirection = (() => {
     if (currentSelected.type === ActorType.Explorer && currentTarget.type === ActorType.Structure) {
       return TransferDirection.ExplorerToStructure;
     }
@@ -69,6 +81,8 @@ export const HelpContainer = ({
     return TransferDirection.ExplorerToStructure;
   })();
 
+  const transferDirection = derivedTransferDirection;
+
   // Handle transfer completion
   const handleTransferComplete = () => {
     updateSelectedEntityId(null);
@@ -77,48 +91,15 @@ export const HelpContainer = ({
 
   // Handle toggling transfer direction when both entities support it
   const handleToggleDirection = () => {
-    if (!allowBothDirections) {
+    if (!allowBothDirections || transferType === TransferType.Relics) {
       return;
     }
 
     setSwapped((previous) => !previous);
   };
 
-  // Render transfer direction options
-  const renderTransferDirectionOptions = () => {
-    return (
-      <div className="flex flex-col space-y-2 mb-4">
-        <div className="flex justify-between items-center">
-          <label className="text-gold font-semibold">Transfer Direction</label>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleToggleDirection}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md border bg-gold/20 border-gold transition-colors ${
-                allowBothDirections ? "cursor-pointer hover:bg-gold/30 hover:border-gold" : "cursor-default"
-              }`}
-              aria-disabled={!allowBothDirections}
-              title={allowBothDirections ? "Tap to switch direction" : undefined}
-            >
-              <span className="font-semibold">
-                {transferDirection === TransferDirection.ExplorerToStructure
-                  ? "Explorer → Structure"
-                  : transferDirection === TransferDirection.StructureToExplorer
-                    ? "Structure → Explorer"
-                    : "Explorer → Explorer"}
-              </span>
-              {allowBothDirections && <span className="text-lg">🔄</span>}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
-    <div className="flex h-full flex-col items-center justify-center  max-w-4xl mx-auto mb-4">
+    <div className="flex h-full flex-col items-center justify-center mx-auto mb-4">
       <div className="px-6 h-full backdrop-blur-sm w-full flex flex-col">
         {/* Transfer Type Selection */}
         <div className="flex justify-center mb-6 mx-auto mt-4">
@@ -138,35 +119,23 @@ export const HelpContainer = ({
             </button>
             <button
               className={`px-8 py-3 text-lg font-semibold transition-all duration-200 ${
-                transferType === TransferType.Resources
+                transferType === TransferType.Relics
                   ? "bg-gold/20 text-gold border-b-2 border-gold"
                   : "bg-dark-brown text-gold/70 hover:text-gold hover:bg-brown-900/50"
               }`}
-              onClick={() => setTransferType(TransferType.Resources)}
+              onClick={() => setTransferType(TransferType.Relics)}
             >
               <div className="flex items-center">
                 <span className="mr-2">💰</span>
-                Transfer Resources
+                Transfer Relics
               </div>
             </button>
           </div>
         </div>
 
-        {/* Transfer Type Description */}
-        <div className="text-center mb-4 px-6">
-          <p className="text-gold/70 text-sm">
-            {transferType === TransferType.Resources
-              ? "Transfer resources between your explorers and structures."
-              : "Transfer troops between your explorers and structures."}
-          </p>
-        </div>
-
-        {/* Transfer Direction Selection */}
-        {renderTransferDirectionOptions()}
-
         {/* Transfer Content - Use flex-grow to fill available space */}
         <div className="flex-grow overflow-y-auto">
-          {transferType === TransferType.Resources ? (
+          {transferType === TransferType.Relics ? (
             <TransferResourcesContainer
               selectedEntityId={currentSelected.id}
               targetEntityId={currentTarget.id}
@@ -181,6 +150,8 @@ export const HelpContainer = ({
               targetHex={currentTarget.hex}
               transferDirection={transferDirection}
               onTransferComplete={handleTransferComplete}
+              onToggleDirection={handleToggleDirection}
+              canToggleDirection={allowBothDirections}
             />
           )}
         </div>

@@ -7,6 +7,7 @@ import { BottomHudEmptyState } from "@/ui/features/world/components/hud-bottom";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
 import { ID, RelicRecipientType } from "@bibliothecadao/types";
 
+import { CompactStructureInfo } from "@/ui/features/military/components/compact-structure-info";
 import { ActiveRelicEffects } from "../active-relic-effects";
 import { CompactEntityInventory } from "../compact-entity-inventory";
 import { EntityInventoryTabs } from "../entity-inventory-tabs";
@@ -44,6 +45,7 @@ const StructureBannerEntityDetailContent = memo(
   }: StructureBannerEntityDetailContentProps) => {
     const {
       structure,
+      ownerDisplayName,
       structureDetails,
       resources,
       relicEffects,
@@ -78,8 +80,6 @@ const StructureBannerEntityDetailContent = memo(
     const activeRelicIds = useMemo(() => relicEffects.map((effect) => Number(effect.id)), [relicEffects]);
     const defenseDisplayVariant: EntityDetailLayoutVariant = isBanner || isCompactLayout ? "banner" : "default";
 
-    if (!structure || !structureDetails) return null;
-
     if (isLoadingStructure) {
       return (
         <div className="mt-2 flex h-full items-center justify-center">
@@ -87,6 +87,8 @@ const StructureBannerEntityDetailContent = memo(
         </div>
       );
     }
+
+    if (!structure || !structureDetails) return null;
 
     return (
       <div className={containerClass}>
@@ -96,20 +98,23 @@ const StructureBannerEntityDetailContent = memo(
             className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-1 sm:row-start-1", "min-h-0")}
             tone={guards.length > 0 ? "default" : "highlight"}
           >
-            {guards.length > 0 ? (
-              <CompactDefenseDisplay
-                troops={guards.map((army) => ({ slot: army.slot, troops: army.troops }))}
-                slotsUsed={guardSlotsUsed}
-                slotsMax={guardSlotsMax}
-                structureId={Number(structure.entity_id ?? 0)}
-                canManageDefense={isMine}
-                variant={defenseDisplayVariant}
-              />
-            ) : (
-              <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={emptyTextClass}>
-                {defenseEmptyCopy}
-              </BottomHudEmptyState>
-            )}
+            <div className="flex flex-row gap-2">
+              <CompactStructureInfo isMine={isMine} ownerDisplayName={ownerDisplayName} structure={structure} />
+              {guards.length > 0 ? (
+                <CompactDefenseDisplay
+                  troops={guards.map((army) => ({ slot: army.slot, troops: army.troops }))}
+                  slotsUsed={guardSlotsUsed}
+                  slotsMax={guardSlotsMax}
+                  structureId={Number(structure.entity_id ?? 0)}
+                  canManageDefense={isMine}
+                  variant={defenseDisplayVariant}
+                />
+              ) : (
+                <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={emptyTextClass}>
+                  {defenseEmptyCopy}
+                </BottomHudEmptyState>
+              )}
+            </div>
           </EntityDetailSection>
 
           {isHyperstructure ? (

@@ -1,11 +1,11 @@
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
-use s1_eternum::alias::ID;
-use s1_eternum::constants::DAYDREAMS_AGENT_ID;
-use s1_eternum::models::map::{Tile, TileOccupier};
-use s1_eternum::models::position::{Coord, CoordTrait};
-use s1_eternum::models::troop::{TroopTier, TroopType};
-use s1_eternum::utils::map::biomes::Biome;
+use crate::alias::ID;
+use crate::constants::DAYDREAMS_AGENT_ID;
+use crate::models::map::{Tile, TileOccupier};
+use crate::models::position::{Coord, CoordTrait};
+use crate::models::troop::{TroopTier, TroopType};
+use crate::utils::map::biomes::Biome;
 use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
 
 #[generate_trait]

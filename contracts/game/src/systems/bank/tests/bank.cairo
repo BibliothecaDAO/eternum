@@ -3,16 +3,16 @@
 // use dojo::world::{WorldStorage, WorldStorageTrait};
 // use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
 
-// use s1_eternum::alias::ID;
+// use crate::alias::ID;
 
-// use s1_eternum::models::position::{Coord};
+// use crate::models::position::{Coord};
 
-// use s1_eternum::systems::bank::contracts::bank::bank_systems;
-// use s1_eternum::systems::bank::contracts::bank::{IBankSystemsDispatcher, IBankSystemsDispatcherTrait,};
+// use crate::systems::bank::contracts::bank::bank_systems;
+// use crate::systems::bank::contracts::bank::{IBankSystemsDispatcher, IBankSystemsDispatcherTrait,};
 
-// use s1_eternum::systems::config::contracts::config_systems;
-// use s1_eternum::systems::config::contracts::{IBankConfigDispatcher, IBankConfigDispatcherTrait,};
-// use s1_eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
+// use crate::systems::config::contracts::config_systems;
+// use crate::systems::config::contracts::{IBankConfigDispatcher, IBankConfigDispatcherTrait,};
+// use crate::utils::testing::{world::spawn_eternum, systems::deploy_system};
 
 // use starknet::contract_address_const;
 

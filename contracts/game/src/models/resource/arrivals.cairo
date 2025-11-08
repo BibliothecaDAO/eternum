@@ -2,8 +2,8 @@ use core::dict::Felt252Dict;
 use core::num::traits::Zero;
 use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
-use s1_eternum::alias::ID;
-use s1_eternum::models::config::TickImpl;
+use crate::alias::ID;
+use crate::models::config::TickImpl;
 
 
 #[derive(Introspect, PartialEq, Copy, Drop, Serde)]

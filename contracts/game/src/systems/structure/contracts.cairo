@@ -1,4 +1,4 @@
-use s1_eternum::alias::ID;
+use crate::alias::ID;
 
 #[starknet::interface]
 pub trait IStructureSystems<T> {
@@ -10,24 +10,24 @@ pub mod structure_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
-    use s1_eternum::alias::ID;
-    use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::models::config::{SeasonConfigImpl, SettlementConfigImpl, StructureLevelConfig, WorldConfigUtilImpl};
-    use s1_eternum::models::events::{Story, StoryEvent, StructureLevelUpStory};
-    use s1_eternum::models::map::Tile;
-    use s1_eternum::models::owner::OwnerAddressTrait;
-    use s1_eternum::models::resource::production::building::BuildingImpl;
-    use s1_eternum::models::resource::production::production::ProductionBoostBonus;
-    use s1_eternum::models::resource::resource::{
+    use crate::alias::ID;
+    use crate::constants::DEFAULT_NS;
+    use crate::models::config::{SeasonConfigImpl, SettlementConfigImpl, StructureLevelConfig, WorldConfigUtilImpl};
+    use crate::models::events::{Story, StoryEvent, StructureLevelUpStory};
+    use crate::models::map::Tile;
+    use crate::models::owner::OwnerAddressTrait;
+    use crate::models::resource::production::building::BuildingImpl;
+    use crate::models::resource::production::production::ProductionBoostBonus;
+    use crate::models::resource::resource::{
         ResourceList, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::structure::{
+    use crate::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
         StructureMetadataStoreImpl, StructureOwnerStoreImpl,
     };
-    use s1_eternum::models::weight::Weight;
-    use s1_eternum::systems::utils::map::IMapImpl;
-    use s1_eternum::utils::achievements::index::{AchievementTrait, Tasks};
+    use crate::models::weight::Weight;
+    use crate::systems::utils::map::IMapImpl;
+    use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use starknet::ContractAddress;
 
     #[abi(embed_v0)]

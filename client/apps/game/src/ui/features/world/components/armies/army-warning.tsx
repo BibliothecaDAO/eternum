@@ -70,11 +70,14 @@ export const ArmyWarning = ({ army, explorerResources, structureResources }: Arm
     return configManager.getExploreStaminaCost();
   }, []);
 
-  const hasWarnings = stamina.amount < minStaminaNeeded || notEnoughFood;
+  const hasTravelStaminaWarning = stamina.amount < minStaminaNeeded;
+  const hasExploreStaminaWarning = stamina.amount < minStaminaNeededExplore && stamina.amount >= minStaminaNeeded;
+
+  const hasWarnings = hasTravelStaminaWarning || hasExploreStaminaWarning || notEnoughFood;
 
   return (
     <div className="flex flex-col gap-0.5 mt-1 mb-1">
-      {stamina.amount < minStaminaNeeded && (
+      {hasTravelStaminaWarning && (
         <div className="text-xxs font-semibold text-center bg-danger rounded px-1 py-0.5">
           <div className="flex">
             <span className="w-5">⚠️</span>
@@ -82,7 +85,7 @@ export const ArmyWarning = ({ army, explorerResources, structureResources }: Arm
           </div>
         </div>
       )}
-      {stamina.amount < minStaminaNeededExplore && stamina.amount >= minStaminaNeeded && (
+      {hasExploreStaminaWarning && (
         <div className="text-xxs font-semibold text-center bg-danger rounded px-1 py-0.5">
           <div className="flex">
             <span className="w-5">⚠️</span>

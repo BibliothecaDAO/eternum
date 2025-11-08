@@ -74,7 +74,7 @@ const ArmyBannerEntityDetailContent = memo(
         <div className={gridContainerClass}>
           <EntityDetailSection
             compact={compact}
-            className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-1 sm:row-start-1", "min-h-0")}
+            className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-2 sm:row-start-1", "min-h-0")}
             tone={hasWarnings ? "highlight" : "default"}
           >
             {hasWarnings && explorerResources && structureResources ? (
@@ -92,7 +92,7 @@ const ArmyBannerEntityDetailContent = memo(
 
           <EntityDetailSection
             compact={compact}
-            className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-2 sm:row-start-1", "min-h-0")}
+            className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-1 sm:row-start-1", "min-h-0")}
           >
             {bannerArmyInfo ? (
               <CompactArmyChip army={bannerArmyInfo} className="border border-gold/25 bg-dark/60" />
