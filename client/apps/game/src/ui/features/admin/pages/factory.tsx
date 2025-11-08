@@ -1035,7 +1035,9 @@ export const FactoryPage = () => {
                                             }}
                                             className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md"
                                           />
-                                          <p className="text-[10px] text-slate-500">Optional. Max +{MAX_START_TIME_HOURS.toLocaleString()}h from now.</p>
+                                          <p className="text-[10px] text-slate-500">
+                                            Optional. Max +{MAX_START_TIME_HOURS.toLocaleString()}h from now.
+                                          </p>
                                           {startMainAtErrors[name] && (
                                             <p className="text-[11px] text-red-600">{startMainAtErrors[name]}</p>
                                           )}
