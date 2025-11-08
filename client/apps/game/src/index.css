@@ -328,7 +328,6 @@ canvas {
 .panel-wood {
   /* Modern style matching entity-detail-primitives.tsx */
   background-color: rgba(12, 10, 8, 0.7); /* bg-dark-brown/70 */
-  border-radius: 0.5rem; /* rounded-lg (8px) */
   box-shadow:
     0 4px 6px -1px rgb(0 0 0 / 0.1),
     0 2px 4px -2px rgb(0 0 0 / 0.1); /* shadow-md */
