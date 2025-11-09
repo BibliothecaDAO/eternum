@@ -332,9 +332,7 @@ export const LandingLeaderboard = () => {
                     <button
                       type="button"
                       onClick={() =>
-                        setExpandedScoreToBeatAddress((current) =>
-                          current === entry.address ? null : entry.address,
-                        )
+                        setExpandedScoreToBeatAddress((current) => (current === entry.address ? null : entry.address))
                       }
                       aria-expanded={isExpanded}
                       aria-controls={panelId}
@@ -372,9 +370,7 @@ export const LandingLeaderboard = () => {
                             >
                               <div className="flex items-center justify-between text-[11px] uppercase tracking-wide text-white/60">
                                 <span>Run #{runIndex + 1}</span>
-                                <span className="text-sm font-semibold text-white">
-                                  {formatPoints(run.points)} pts
-                                </span>
+                                <span className="text-sm font-semibold text-white">{formatPoints(run.points)} pts</span>
                               </div>
                               <p className="mt-1 text-[11px] uppercase tracking-wide text-white/50">
                                 {describeEndpoint(run.endpoint)}
