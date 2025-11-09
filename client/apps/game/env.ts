@@ -19,6 +19,7 @@ const envSchema = z.object({
   VITE_PUBLIC_TORII: z.string().url(),
   VITE_PUBLIC_NODE_URL: z.string().url(),
   VITE_PUBLIC_TORII_RELAY: z.string(),
+  VITE_PUBLIC_SCORE_TO_BEAT_TORII_ENDPOINTS: z.string().optional().default(""),
   // Optional external endpoints
   VITE_PUBLIC_CARTRIDGE_API_BASE: z.string().url().optional().default("https://api.cartridge.gg"),
   VITE_PUBLIC_TORII_CREATOR_URL: z

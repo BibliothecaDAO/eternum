@@ -6,6 +6,7 @@ import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { currencyIntlFormat, displayAddress } from "@/ui/utils/utils";
 
 import { MIN_REFRESH_INTERVAL_MS, useLandingLeaderboardStore } from "../lib/use-landing-leaderboard-store";
+import { useScoreToBeat } from "../lib/use-score-to-beat";
 
 const LEADERBOARD_LIMIT = 25;
 const REFRESH_INTERVAL_MS = 60_000;
@@ -21,6 +22,49 @@ const formatPoints = (points: number) =>
     maximumFractionDigits: 0,
   }).format(points ?? 0);
 
+const getRelativeTimeLabel = (timestamp: number | null, fallback: string) => {
+  if (!timestamp) {
+    return fallback;
+  }
+
+  const relative = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+  const secondsAgo = Math.round((Date.now() - timestamp) / 1000);
+
+  if (Math.abs(secondsAgo) < 60) {
+    return relative.format(-secondsAgo, "second");
+  }
+
+  const minutesAgo = Math.round(secondsAgo / 60);
+  return relative.format(-minutesAgo, "minute");
+};
+
+const SCORE_TO_BEAT_ENDPOINTS: string[] = [
+  "https://api.cartridge.gg/x/war-game-1/torii/sql",
+  "https://api.cartridge.gg/x/war-game-2/torii/sql",
+  "https://api.cartridge.gg/x/war-game-3/torii/sql",
+  "https://api.cartridge.gg/x/war-game-4/torii/sql",
+  // "https://api.cartridge.gg/x/war-game-5/torii/sql",
+  // "https://api.cartridge.gg/x/war-game-6/torii/sql",
+  // "https://api.cartridge.gg/x/war-game-7/torii/sql",
+  // "https://api.cartridge.gg/x/war-game-8/torii/sql",
+  // "https://api.cartridge.gg/x/war-game-9/torii/sql",
+];
+
+const describeEndpoint = (endpoint: string) => {
+  if (!endpoint) {
+    return "";
+  }
+
+  const trimmed = endpoint.replace(/\/?sql$/i, "");
+
+  try {
+    const url = new URL(trimmed);
+    return url.hostname.replace(/^www\./, "");
+  } catch {
+    return trimmed;
+  }
+};
+
 export const LandingLeaderboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -32,6 +76,17 @@ export const LandingLeaderboard = () => {
   const lastUpdatedAt = useLandingLeaderboardStore((state) => state.lastUpdatedAt);
   const lastFetchAt = useLandingLeaderboardStore((state) => state.lastFetchAt);
   const fetchLeaderboard = useLandingLeaderboardStore((state) => state.fetchLeaderboard);
+
+  const {
+    entries: scoreToBeatEntries,
+    endpoints: scoreToBeatEndpoints,
+    failedEndpoints: scoreToBeatFailedEndpoints,
+    lastUpdatedAt: scoreToBeatLastUpdatedAt,
+    isLoading: isScoreToBeatLoading,
+    error: scoreToBeatError,
+    refresh: refreshScoreToBeat,
+    hasEndpointsConfigured: hasScoreToBeatConfiguration,
+  } = useScoreToBeat(SCORE_TO_BEAT_ENDPOINTS);
 
   const [refreshCooldownMs, setRefreshCooldownMs] = useState(0);
 
@@ -118,21 +173,26 @@ export const LandingLeaderboard = () => {
     navigate("/player");
   }, [navigate]);
 
-  const lastUpdatedLabel = useMemo(() => {
-    if (!lastUpdatedAt) {
-      return "Waiting for data";
-    }
+  const lastUpdatedLabel = useMemo(() => getRelativeTimeLabel(lastUpdatedAt, "Waiting for data"), [lastUpdatedAt]);
 
-    const relative = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
-    const secondsAgo = Math.round((Date.now() - lastUpdatedAt) / 1000);
+  const scoreToBeatUpdatedLabel = useMemo(
+    () => getRelativeTimeLabel(scoreToBeatLastUpdatedAt, "Awaiting sync"),
+    [scoreToBeatLastUpdatedAt],
+  );
 
-    if (Math.abs(secondsAgo) < 60) {
-      return relative.format(-secondsAgo, "second");
-    }
-
-    const minutesAgo = Math.round(secondsAgo / 60);
-    return relative.format(-minutesAgo, "minute");
-  }, [lastUpdatedAt]);
+  const scoreToBeatTopTen = scoreToBeatEntries.slice(0, 10);
+  const topScoreToBeat = scoreToBeatTopTen[0] ?? null;
+  const scoreToBeatRuns = topScoreToBeat?.runs ?? [];
+  const topScoreToBeatLabel = topScoreToBeat
+    ? (topScoreToBeat.displayName ?? displayAddress(topScoreToBeat.address))
+    : null;
+  const topScoreToBeatAddressLabel = topScoreToBeat ? displayAddress(topScoreToBeat.address) : null;
+  const totalScoreArenas = scoreToBeatEndpoints.length;
+  const failedScoreArenas = scoreToBeatFailedEndpoints.length;
+  const syncedScoreArenas = Math.max(0, totalScoreArenas - failedScoreArenas);
+  const scoreArenaLabel =
+    totalScoreArenas > 0 ? `${syncedScoreArenas}/${totalScoreArenas} arenas syncing` : "Waiting for arenas";
+  const showScoreToBeatSection = hasScoreToBeatConfiguration;
 
   const renderSkeleton = () => (
     <div className="space-y-6" aria-hidden>
@@ -258,6 +318,133 @@ export const LandingLeaderboard = () => {
           </div>
         </div>
       </header>
+
+      {showScoreToBeatSection ? (
+        <div className="space-y-5 rounded-3xl border border-amber-200/25 bg-gradient-to-br from-amber-500/10 via-black/40 to-black/80 p-6 text-white shadow-[0_30px_65px_-30px_rgba(255,196,86,0.55)]">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-amber-100/70">Score to beat</p>
+              {topScoreToBeat ? (
+                <>
+                  <p className="mt-2 flex items-baseline gap-2 text-4xl font-extrabold leading-tight text-white">
+                    {formatPoints(topScoreToBeat.combinedPoints)}
+                    <span className="text-base font-semibold text-white/70">pts</span>
+                  </p>
+                  <p className="mt-2 text-sm text-white/70">
+                    {(topScoreToBeatLabel ?? "Unknown captain").trim()} owns the bragging rights with the best two runs
+                    in Blitz.
+                  </p>
+                  {topScoreToBeatAddressLabel &&
+                  topScoreToBeatLabel &&
+                  topScoreToBeatLabel.toLowerCase() !== topScoreToBeatAddressLabel.toLowerCase() ? (
+                    <p className="text-xs text-white/50">{topScoreToBeatAddressLabel}</p>
+                  ) : null}
+                </>
+              ) : (
+                <p className="mt-2 text-sm text-white/70">
+                  Chain two monster runs back-to-back and you become the number everyone else has to chase.
+                </p>
+              )}
+            </div>
+            <div className="flex flex-col items-end gap-2 text-right">
+              {scoreToBeatError ? (
+                <span className="rounded-full bg-red-500/10 px-3 py-1 text-xs font-medium text-red-200" role="alert">
+                  {scoreToBeatError}
+                </span>
+              ) : null}
+              <div className="flex items-center gap-2">
+                {isScoreToBeatLoading ? (
+                  <span className="text-xs text-white/70" aria-live="polite">
+                    Syncing…
+                  </span>
+                ) : null}
+                <RefreshButton
+                  onClick={refreshScoreToBeat}
+                  isLoading={isScoreToBeatLoading}
+                  disabled={isScoreToBeatLoading}
+                  size="sm"
+                  aria-label="Refresh score to beat"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            {scoreToBeatRuns.length ? (
+              scoreToBeatRuns.map((run, index) => (
+                <div
+                  key={`${run.endpoint}-${index}`}
+                  className="rounded-2xl border border-white/10 bg-black/30 p-4 backdrop-blur-sm"
+                >
+                  <p className="text-xs uppercase tracking-wide text-white/60">Run #{index + 1}</p>
+                  <p className="mt-1 text-2xl font-semibold text-white">{formatPoints(run.points)} pts</p>
+                  <p className="text-xs text-white/50">{describeEndpoint(run.endpoint)}</p>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-2 rounded-2xl border border-dashed border-white/20 bg-black/20 p-4 text-sm text-white/60">
+                Waiting for back-to-back runs before we crown a pace setter.
+              </div>
+            )}
+          </div>
+
+          {scoreToBeatTopTen.length ? (
+            <div>
+              <p className="text-xs uppercase tracking-wide text-white/50">Top 10 two-run totals</p>
+              <ol className="mt-3 divide-y divide-white/10 rounded-2xl border border-white/10 bg-black/30 text-sm">
+                {scoreToBeatTopTen.map((entry, index) => {
+                  const rank = index + 1;
+                  const challengerLabel = displayAddress(entry.address);
+                  const isLeader = rank === 1;
+                  return (
+                    <li
+                      key={entry.address}
+                      className={`flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${
+                        isLeader ? "bg-amber-500/5" : ""
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold ${
+                            isLeader ? "bg-amber-400/30 text-amber-200" : "bg-white/10 text-white/60"
+                          }`}
+                        >
+                          {rank}
+                        </span>
+                        <div>
+                          <p className="font-semibold text-white">{entry.displayName ?? challengerLabel}</p>
+                          <p className="text-xs text-white/50">{entry.displayName ? challengerLabel : entry.address}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-base font-semibold text-white">{formatPoints(entry.combinedPoints)}</p>
+                        <p className="text-[11px] uppercase tracking-wide text-white/50">
+                          {entry.runs.length >= 2 ? "Best two runs" : "Best run"}
+                        </p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          ) : null}
+
+          <div className="flex flex-wrap items-center gap-2 text-xs text-white/60">
+            <span>{scoreArenaLabel}</span>
+            {scoreToBeatUpdatedLabel ? (
+              <>
+                <span>·</span>
+                <span>{scoreToBeatUpdatedLabel}</span>
+              </>
+            ) : null}
+            {failedScoreArenas > 0 ? (
+              <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold text-red-200">
+                {failedScoreArenas} down
+              </span>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       {isInitialLoading ? (
         renderSkeleton()
