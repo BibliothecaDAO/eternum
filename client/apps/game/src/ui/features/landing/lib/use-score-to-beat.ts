@@ -26,22 +26,6 @@ const buildInitialState = (): ScoreToBeatState => ({
   error: null,
 });
 
-const sanitizeInputEndpoints = (endpoints: string[]): string[] => {
-  const seen = new Set<string>();
-  const sanitized: string[] = [];
-
-  endpoints.forEach((endpoint) => {
-    const trimmed = endpoint.trim();
-    if (!trimmed || seen.has(trimmed)) {
-      return;
-    }
-    seen.add(trimmed);
-    sanitized.push(trimmed);
-  });
-
-  return sanitized;
-};
-
 export const useScoreToBeat = (endpoints: string[], refreshIntervalMs: number = SCORE_TO_BEAT_REFRESH_INTERVAL_MS) => {
   const [scoreToBeatState, setScoreToBeatState] = useState<ScoreToBeatState>(buildInitialState);
 
