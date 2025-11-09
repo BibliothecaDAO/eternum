@@ -79,6 +79,7 @@ const LEADERBOARD_TABS: Array<{ id: LeaderboardTab; label: string }> = [
 const TAB_PANEL_ID = "landing-leaderboard-tabpanel";
 
 const getTabButtonId = (tab: LeaderboardTab) => `landing-leaderboard-tab-${tab}`;
+const getScoreToBeatRunsPanelId = (address: string) => `landing-score-to-beat-runs-${address}`;
 
 export const LandingLeaderboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -209,6 +210,16 @@ export const LandingLeaderboard = () => {
     totalScoreArenas > 0 ? `${syncedScoreArenas}/${totalScoreArenas} arenas syncing` : "Waiting for arenas";
   const showScoreToBeatSection = hasScoreToBeatConfiguration;
   const [activeTab, setActiveTab] = useState<LeaderboardTab>(showScoreToBeatSection ? "score-to-beat" : "leaderboard");
+  const [expandedScoreToBeatAddress, setExpandedScoreToBeatAddress] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (
+      expandedScoreToBeatAddress &&
+      !scoreToBeatTopTen.some((entry) => entry.address === expandedScoreToBeatAddress)
+    ) {
+      setExpandedScoreToBeatAddress(null);
+    }
+  }, [expandedScoreToBeatAddress, scoreToBeatTopTen]);
 
   const renderSkeleton = () => (
     <div className="space-y-6" aria-hidden>
@@ -309,32 +320,70 @@ export const LandingLeaderboard = () => {
                 const rank = index + 1;
                 const challengerLabel = displayAddress(entry.address);
                 const isLeader = rank === 1;
+                const isExpanded = expandedScoreToBeatAddress === entry.address;
+                const runSummaryLabel = entry.runs.length >= 2 ? "Best two runs" : "Best run";
+                const panelId = getScoreToBeatRunsPanelId(entry.address);
+
                 return (
                   <li
                     key={entry.address}
-                    className={`flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${
-                      isLeader ? "bg-amber-500/5" : ""
-                    }`}
+                    className={`${isLeader ? "bg-amber-500/5" : ""} ${isExpanded ? "bg-white/5" : ""}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold ${
-                          isLeader ? "bg-amber-400/30 text-amber-200" : "bg-white/10 text-white/60"
-                        }`}
-                      >
-                        {rank}
-                      </span>
-                      <div>
-                        <p className="font-semibold text-white">{entry.displayName ?? challengerLabel}</p>
-                        <p className="text-xs text-white/50">{entry.displayName ? challengerLabel : entry.address}</p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpandedScoreToBeatAddress((current) =>
+                          current === entry.address ? null : entry.address,
+                        )
+                      }
+                      aria-expanded={isExpanded}
+                      aria-controls={panelId}
+                      className="flex w-full flex-col gap-1 px-4 py-3 text-left sm:flex-row sm:items-center sm:justify-between focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200/60"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold ${
+                            isLeader ? "bg-amber-400/30 text-amber-200" : "bg-white/10 text-white/60"
+                          }`}
+                        >
+                          {rank}
+                        </span>
+                        <div>
+                          <p className="font-semibold text-white">{entry.displayName ?? challengerLabel}</p>
+                          <p className="text-xs text-white/50">{entry.displayName ? challengerLabel : entry.address}</p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-base font-semibold text-white">{formatPoints(entry.combinedPoints)}</p>
-                      <p className="text-[11px] uppercase tracking-wide text-white/50">
-                        {entry.runs.length >= 2 ? "Best two runs" : "Best run"}
-                      </p>
-                    </div>
+                      <div className="text-right">
+                        <p className="text-base font-semibold text-white">{formatPoints(entry.combinedPoints)}</p>
+                        <p className="text-[11px] uppercase tracking-wide text-white/50">{runSummaryLabel}</p>
+                      </div>
+                    </button>
+                    {isExpanded ? (
+                      <div
+                        id={panelId}
+                        className="space-y-2 border-t border-white/10 px-4 pb-4 pt-3 text-sm text-white/80 sm:text-xs"
+                      >
+                        <p className="text-[11px] uppercase tracking-[0.2em] text-white/60">{runSummaryLabel}</p>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {entry.runs.map((run, runIndex) => (
+                            <div
+                              key={`${run.endpoint}-${runIndex}`}
+                              className="rounded-2xl border border-white/10 bg-black/30 p-3"
+                            >
+                              <div className="flex items-center justify-between text-[11px] uppercase tracking-wide text-white/60">
+                                <span>Run #{runIndex + 1}</span>
+                                <span className="text-sm font-semibold text-white">
+                                  {formatPoints(run.points)} pts
+                                </span>
+                              </div>
+                              <p className="mt-1 text-[11px] uppercase tracking-wide text-white/50">
+                                {describeEndpoint(run.endpoint)}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
                   </li>
                 );
               })}
