@@ -7,6 +7,7 @@ import { ProductionModal } from "@/ui/features/settlement";
 import { formatStorageValue } from "@/ui/utils/storage-utils";
 import {
   calculateDonkeysNeeded,
+  divideByPrecision,
   getBuildingQuantity,
   getEntityIdFromKeys,
   getIsBlitz,
@@ -14,6 +15,7 @@ import {
   getStructureTypeName,
   getTotalResourceWeightKg,
   isMilitaryResource,
+  multiplyByPrecision,
   Position,
   ResourceManager,
 } from "@bibliothecadao/eternum";
@@ -24,7 +26,6 @@ import {
   getBuildingFromResource,
   getResourceTiers,
   ID,
-  RESOURCE_PRECISION,
   ResourcesIds,
   StructureType,
 } from "@bibliothecadao/types";
@@ -412,7 +413,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
           calls: transfers.map((transfer) => ({
             sender_entity_id: transfer.fromStructureId,
             recipient_entity_id: transfer.toStructureId,
-            resources: [transfer.resourceId, BigInt(Math.round(transfer.amount * RESOURCE_PRECISION))],
+            resources: [transfer.resourceId, BigInt(Math.round(multiplyByPrecision(transfer.amount)))],
           })),
         });
 
@@ -459,6 +460,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
 
   const handleTransferSelected = useCallback(async () => {
     const draftsToSend = transferDrafts.filter((draft) => (draft.isSelected ?? true) && !draft.isProcessing);
+    console.log("draftsToSend", draftsToSend);
     if (draftsToSend.length === 0) return;
 
     setIsBatchProcessing(true);
@@ -496,7 +498,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
             fromStructureId: currentDragData.structureId,
             toStructureId: targetStructureId,
             resourceId: currentDragData.resourceId,
-            maxAmount: currentDragData.amount / RESOURCE_PRECISION,
+            maxAmount: divideByPrecision(currentDragData.amount),
           };
 
           setDragState({ isDragging: false });
@@ -559,7 +561,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
           fromStructureId: currentDragData.structureId,
           toStructureId: targetStructureId,
           resourceId: currentDragData.resourceId,
-          maxAmount: currentDragData.amount / RESOURCE_PRECISION,
+          maxAmount: divideByPrecision(currentDragData.amount),
         };
 
         // Use requestAnimationFrame to ensure dialog is set after drag end
@@ -592,7 +594,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
       if (!inlineEditState) return;
 
       const balance = getResourceBalance(inlineEditState.structureId, inlineEditState.resourceId);
-      const maxAmount = balance ? Number(balance) / RESOURCE_PRECISION : 0;
+      const maxAmount = balance ? divideByPrecision(Number(balance)) : 0;
 
       // Close inline edit and open drag-drop dialog
       setInlineEditState(null);
@@ -1307,8 +1309,14 @@ const TransferCartModal = React.memo(
     const selectedCount = drafts.filter((draft) => draft.isSelected ?? true).length;
     const readyCount = drafts.filter((draft) => (draft.isSelected ?? true) && !draft.isProcessing).length;
 
+    const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
+      if (event.target === event.currentTarget) {
+        onClose();
+      }
+    };
+
     return (
-      <div className="fixed inset-0 bg-brown/70 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-brown/70 flex items-center justify-center z-50" onMouseDown={handleOverlayClick}>
         <div className="w-full max-w-xl rounded-lg border border-gold/30 bg-brown p-6 shadow-xl">
           <div className="mb-4 flex items-start gap-3">
             <div className="flex items-center gap-2">
@@ -1407,7 +1415,7 @@ const TransferCartItem = React.memo(
         <div className="flex-1 space-y-1">
           <div className="flex items-center gap-2 text-sm text-gold">
             <ResourceIcon resource={resourceKey} size="sm" />
-            <span className="font-semibold">{formatResourceAmount(draft.amount)}</span>
+            <span className="font-semibold">{draft.amount.toLocaleString()}</span>
             <span className="text-xs text-gold/60">{resourceKey}</span>
           </div>
           <p className="text-[11px] text-gold/60">
@@ -1482,13 +1490,13 @@ const DragDropAmountDialog = React.memo(
     const availableDonkeys = useMemo(() => {
       const resourceManager = new ResourceManager(components, dragData.fromStructureId);
       const donkeyBalance = resourceManager.balance(ResourcesIds.Donkey);
-      return donkeyBalance ? Number(donkeyBalance) / RESOURCE_PRECISION : 0;
+      return donkeyBalance ? divideByPrecision(Number(donkeyBalance)) : 0;
     }, [components, dragData.fromStructureId]);
 
     const recipientBalance = useMemo(() => {
       const resourceManager = new ResourceManager(components, dragData.toStructureId);
       const balance = resourceManager.balance(dragData.resourceId);
-      return balance ? Number(balance) / RESOURCE_PRECISION : 0;
+      return balance ? divideByPrecision(Number(balance)) : 0;
     }, [components, dragData.toStructureId, dragData.resourceId]);
 
     const canCarry = availableDonkeys >= neededDonkeys;
@@ -1519,8 +1527,14 @@ const DragDropAmountDialog = React.memo(
       }
     };
 
+    const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
+      if (event.target === event.currentTarget) {
+        onCancel();
+      }
+    };
+
     return (
-      <div className="fixed inset-0 bg-brown/70 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-brown/70 flex items-center justify-center z-50" onMouseDown={handleOverlayClick}>
         <div className="bg-brown border border-gold/30 rounded-lg p-6 shadow-xl min-w-[400px]">
           <div className="mb-4 flex items-start gap-3">
             <div className="flex items-center gap-2">
