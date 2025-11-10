@@ -2,7 +2,7 @@ import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
-import { BlitzHighlightCard } from "@/ui/shared/components/blitz-highlight-card";
+import { BlitzHighlightCardWithSelector } from "@/ui/shared/components/blitz-highlight-card";
 import {
   BLITZ_CARD_DIMENSIONS,
   BLITZ_DEFAULT_SHARE_ORIGIN,
@@ -250,7 +250,7 @@ export const EndgameModal = () => {
       />
 
       <div
-        className={`relative z-10 w-full max-w-[760px] transform transition-all duration-500 ${
+        className={`relative z-10 w-full max-w-[980px] transform transition-all duration-500 ${
           isAnimating ? "pointer-events-none -translate-y-4 opacity-0" : "pointer-events-auto translate-y-0 opacity-100"
         }`}
       >
@@ -265,13 +265,15 @@ export const EndgameModal = () => {
               <div className="flex justify-center">
                 {isRanked ? (
                   highlight ? (
-                    <BlitzHighlightCard
-                      ref={leaderboardSvgRef}
-                      title={cardTitle}
-                      subtitle={cardSubtitle}
-                      winnerLine={championLine}
-                      highlight={highlight}
-                    />
+                    <div className="w-full max-w-[940px]">
+                      <BlitzHighlightCardWithSelector
+                        cardRef={leaderboardSvgRef}
+                        title={cardTitle}
+                        subtitle={cardSubtitle}
+                        winnerLine={championLine}
+                        highlight={highlight}
+                      />
+                    </div>
                   ) : (
                     <div className="flex h-[220px] w-full max-w-[720px] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-sm text-white/60">
                       Your Blitz standings are syncing…

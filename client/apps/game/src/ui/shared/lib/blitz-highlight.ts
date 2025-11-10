@@ -29,7 +29,7 @@ export const BLITZ_CARD_DIMENSIONS = {
 
 export const BLITZ_CARD_RADII = [40, 88, 136, 184, 232];
 
-const BLITZ_COVER_IMAGES = [
+export const BLITZ_COVER_IMAGES = [
   "/images/covers/blitz/01.png",
   "/images/covers/blitz/02.png",
   "/images/covers/blitz/03.png",
@@ -38,7 +38,7 @@ const BLITZ_COVER_IMAGES = [
   "/images/covers/blitz/06.png",
   "/images/covers/blitz/07.png",
   "/images/covers/blitz/08.png",
-];
+] as const;
 
 export const getBlitzCoverImage = (rank: number | null | undefined): string => {
   if (!rank || rank < 1) {

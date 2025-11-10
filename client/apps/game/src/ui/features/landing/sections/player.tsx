@@ -4,7 +4,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 
 import { Button } from "@/ui/design-system/atoms";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
-import { BlitzHighlightCard } from "@/ui/shared/components/blitz-highlight-card";
+import { BlitzHighlightCardWithSelector } from "@/ui/shared/components/blitz-highlight-card";
 import {
   BLITZ_CARD_DIMENSIONS,
   BLITZ_DEFAULT_SHARE_ORIGIN,
@@ -306,9 +306,9 @@ export const LandingPlayer = () => {
 
           <div className="mt-4 flex justify-center sm:mt-5 xl:mt-6">
             {highlightPlayer ? (
-              <div className="w-full max-w-[420px] sm:max-w-[520px] xl:max-w-[580px] 2xl:max-w-[720px]">
-                <BlitzHighlightCard
-                  ref={cardRef}
+              <div className="w-full max-w-[420px] sm:max-w-[620px] xl:max-w-[780px] 2xl:max-w-[940px]">
+                <BlitzHighlightCardWithSelector
+                  cardRef={cardRef}
                   title="Realms Blitz"
                   subtitle="Blitz Leaderboard"
                   winnerLine={championLabel}

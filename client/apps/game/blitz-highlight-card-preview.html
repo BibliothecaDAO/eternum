@@ -49,7 +49,7 @@
       }
 
       .preview-shell {
-        width: min(720px, 100%);
+        width: min(960px, 100%);
         background: radial-gradient(circle at top left, rgba(15, 111, 148, 0.4), rgba(2, 8, 14, 0.95));
         border-radius: 40px;
         border: 1px solid rgba(148, 248, 255, 0.2);
@@ -71,6 +71,92 @@
         font-family: "JetBrains Mono", "Fira Mono", "SFMono-Regular", Consolas, monospace;
         font-size: 0.85rem;
         color: #86fff3;
+      }
+
+      .card-preview-layout {
+        display: flex;
+        flex-direction: row;
+        gap: 24px;
+        align-items: flex-start;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .card-stage {
+        flex: 0 0 auto;
+      }
+
+      .cover-banner {
+        width: 170px;
+        max-height: 360px;
+        padding: 18px 16px;
+        border-radius: 28px;
+        border: 1px solid rgba(148, 248, 255, 0.3);
+        background: rgba(4, 19, 31, 0.85);
+        box-shadow: inset 0 0 30px rgba(123, 255, 230, 0.1);
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        color: #d2f7ff;
+        overflow-y: auto;
+      }
+
+      .cover-banner-title {
+        margin: 0;
+        font-size: 0.9rem;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: #7bffe6;
+      }
+
+      .cover-options {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        flex: 1;
+        overflow-y: auto;
+        padding-right: 4px;
+      }
+
+      .cover-option {
+        border: 1px solid rgba(137, 246, 255, 0.2);
+        border-radius: 18px;
+        background: rgba(8, 24, 34, 0.8);
+        padding: 6px;
+        cursor: pointer;
+        transition: border-color 0.2s ease, transform 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        color: inherit;
+        font: inherit;
+        text-align: center;
+        width: 100%;
+        outline: none;
+      }
+
+      .cover-option:hover {
+        border-color: rgba(137, 246, 255, 0.6);
+        transform: translateY(-2px);
+      }
+
+      .cover-option.active {
+        border-color: #7bffe6;
+        box-shadow: 0 0 15px rgba(123, 255, 230, 0.2);
+      }
+
+      .cover-option img {
+        width: 100%;
+        height: 72px;
+        border-radius: 12px;
+        object-fit: cover;
+      }
+
+      .cover-option span {
+        font-size: 0.75rem;
+        letter-spacing: 0.08em;
+        color: rgba(210, 247, 255, 0.85);
+        text-align: center;
       }
     </style>
   </head>
@@ -94,7 +180,7 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <script type="text/babel">
-      const { forwardRef } = React;
+      const { forwardRef, useState } = React;
 
       const BLITZ_CARD_DIMENSIONS = { width: 640, height: 360 };
       const BLITZ_CARD_RADII = [40, 88, 136, 184, 232];
@@ -158,7 +244,7 @@
       };
 
       const BlitzHighlightCard = forwardRef(function BlitzHighlightCard(
-        { title, subtitle, winnerLine, highlight },
+        { title, subtitle, winnerLine, highlight, coverOverride },
         ref,
       ) {
         const highlightOrdinal = highlight ? formatOrdinal(highlight.rank).toUpperCase() : "--";
@@ -167,7 +253,7 @@
         const highlightSecondary = highlight ? truncateText(highlight.guildName ?? highlight.address, 32) : null;
         const boostedChampion = winnerLine?.trim() ?? null;
         const championLabel = boostedChampion && boostedChampion.length > 0 ? boostedChampion : null;
-        const coverImage = getBlitzCoverImage(highlight?.rank ?? null);
+        const coverImage = coverOverride ?? getBlitzCoverImage(highlight?.rank ?? null);
         const numberFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 
         const statBreakdown = [
@@ -439,6 +525,31 @@
         );
       });
 
+      const CoverBanner = ({ covers, selectedIndex, onSelect }) => (
+        <aside className="cover-banner" aria-label="Cover selector">
+          <p className="cover-banner-title">Choose your cover</p>
+          <div className="cover-options">
+            {covers.map((src, index) => {
+              const isActive = index === selectedIndex;
+              return (
+                <button
+                  key={src}
+                  type="button"
+                  className={`cover-option${isActive ? " active" : ""}`}
+                  onClick={() => onSelect(index)}
+                  aria-pressed={isActive}
+                  aria-label={`Select cover ${index + 1}`}
+                >
+                  <img src={src} alt={`Blitz cover option ${index + 1}`} />
+                  <span>{index === 0 ? "Default Cover" : `Cover ${index + 1}`}</span>
+                </button>
+              );
+            })}
+          </div>
+        </aside>
+      );
+
+
       const mockHighlight = {
         rank: 1,
         name: "Lady Nyx of Iridescent Vale",
@@ -457,14 +568,25 @@
         hyperstructuresHeldPoints: 1800000,
       };
 
-      const App = () => (
-        <BlitzHighlightCard
-          title="Realms Blitz"
-          subtitle="Season 6 Finals"
-          winnerLine="Boosted by Aurora Prime"
-          highlight={mockHighlight}
-        />
-      );
+      const App = () => {
+        const [coverIndex, setCoverIndex] = useState(0);
+        const activeCover = BLITZ_COVER_IMAGES[coverIndex] ?? BLITZ_COVER_IMAGES[0];
+
+        return (
+          <div className="card-preview-layout">
+            <div className="card-stage">
+              <BlitzHighlightCard
+                title="Realms Blitz"
+                subtitle="Season 6 Finals"
+                winnerLine="Boosted by Aurora Prime"
+                highlight={mockHighlight}
+                coverOverride={activeCover}
+              />
+            </div>
+            <CoverBanner covers={BLITZ_COVER_IMAGES} selectedIndex={coverIndex} onSelect={setCoverIndex} />
+          </div>
+        );
+      };
 
       const root = ReactDOM.createRoot(document.getElementById("root"));
       root.render(<App />);

@@ -1,4 +1,4 @@
-import { forwardRef } from "react";
+import { forwardRef, type Ref, useState } from "react";
 
 // Using the eternum.svg logo from the game's public directory
 const eternumLogoWhite = "/images/logos/eternum-new.svg";
@@ -8,6 +8,7 @@ import { currencyIntlFormat } from "@/ui/utils/utils";
 import {
   BLITZ_CARD_DIMENSIONS,
   BLITZ_CARD_RADII,
+  BLITZ_COVER_IMAGES,
   BlitzHighlightPlayer,
   formatOrdinal,
   getBlitzCoverImage,
@@ -20,17 +21,18 @@ interface BlitzHighlightCardProps {
   subtitle: string;
   winnerLine?: string | null;
   highlight?: BlitzHighlightPlayer | null;
+  coverOverride?: string;
 }
 
 export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardProps>(
-  ({ title, subtitle, winnerLine, highlight }, ref) => {
+  ({ title, subtitle, winnerLine, highlight, coverOverride }, ref) => {
     const highlightOrdinal = highlight ? formatOrdinal(highlight.rank).toUpperCase() : "--";
     const highlightPointsValue = highlight ? `${currencyIntlFormat(highlight.points, 0)} pts` : "--";
     const highlightName = highlight ? truncateText(highlight.name, 30) : null;
     const highlightSecondary = highlight ? truncateText(getSecondaryLabel(highlight), 32) : null;
     const boostedChampion = winnerLine?.trim() ?? null;
     const championLabel = boostedChampion && boostedChampion.length > 0 ? boostedChampion : null;
-    const coverImage = getBlitzCoverImage(highlight?.rank);
+    const coverImage = coverOverride ?? getBlitzCoverImage(highlight?.rank);
     const numberFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
     const formatCountLabel = (value: number | null | undefined, singularLabel: string, pluralLabel: string): string => {
       if (value === null || value === undefined) {
@@ -314,3 +316,89 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
 );
 
 BlitzHighlightCard.displayName = "BlitzHighlightCard";
+
+const formatCoverLabel = (index: number): string => (index === 0 ? "Default Cover" : `Cover ${index + 1}`);
+
+interface CoverBannerProps {
+  covers: readonly string[];
+  selectedIndex: number;
+  onSelect: (index: number) => void;
+}
+
+const CoverBanner = ({ covers, selectedIndex, onSelect }: CoverBannerProps) => {
+  return (
+    <aside
+      className="flex max-h-[360px] w-full max-w-full flex-col gap-3 rounded-[28px] border border-[#8ff8ff]/30 bg-[#04131f]/80 p-4 text-white/80 shadow-[inset_0_0_35px_rgba(123,255,230,0.12)] lg:max-w-[200px]"
+      aria-label="Choose your cover"
+    >
+      <p className="text-center text-[11px] font-semibold uppercase tracking-[0.32em] text-[#7bffe6] lg:text-left">Choose your cover</p>
+      <div className="flex flex-1 flex-col gap-3 overflow-y-auto pr-1">
+        {covers.map((src, index) => {
+          const label = formatCoverLabel(index);
+          const isActive = index === selectedIndex;
+
+          return (
+            <button
+              key={src}
+              type="button"
+              onClick={() => onSelect(index)}
+              className={`group flex flex-col gap-2 rounded-2xl border px-3 py-2 text-left transition duration-200 focus:outline-none ${
+                isActive
+                  ? "border-[#7bffe6] bg-white/10 shadow-[0_0_20px_rgba(123,255,230,0.25)]"
+                  : "border-white/10 bg-white/[0.04] hover:border-white/40 hover:bg-white/[0.08]"
+              }`}
+              aria-pressed={isActive}
+              aria-label={`Select ${label}`}
+            >
+              <img src={src} alt={label} className="h-16 w-full rounded-xl object-cover" />
+              <span className="text-center text-[0.72rem] font-medium tracking-[0.08em] text-white/75">{label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </aside>
+  );
+};
+
+interface BlitzHighlightCardWithSelectorProps extends Omit<BlitzHighlightCardProps, "coverOverride"> {
+  className?: string;
+  cardRef?: Ref<SVGSVGElement>;
+  initialCoverIndex?: number;
+  onCoverChange?: (index: number, coverUrl: string) => void;
+  coverImages?: readonly string[];
+}
+
+export const BlitzHighlightCardWithSelector = ({
+  className,
+  cardRef,
+  initialCoverIndex = 0,
+  onCoverChange,
+  coverImages = BLITZ_COVER_IMAGES,
+  ...cardProps
+}: BlitzHighlightCardWithSelectorProps) => {
+  const resolvedCovers = coverImages.length > 0 ? coverImages : BLITZ_COVER_IMAGES;
+  const normalizedIndex = Math.min(Math.max(initialCoverIndex, 0), resolvedCovers.length - 1);
+  const [coverIndex, setCoverIndex] = useState(() => normalizedIndex);
+  const activeCover = resolvedCovers[coverIndex] ?? resolvedCovers[0];
+  const containerClasses = [
+    "flex w-full flex-col items-center gap-4 lg:flex-row lg:items-start",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const handleSelect = (index: number) => {
+    setCoverIndex(index);
+    const nextCover = resolvedCovers[index] ?? resolvedCovers[0];
+    onCoverChange?.(index, nextCover);
+  };
+
+  return (
+    <div className={containerClasses}>
+      <div className="flex w-full justify-center">
+        <BlitzHighlightCard {...cardProps} ref={cardRef} coverOverride={activeCover} />
+      </div>
+      <CoverBanner covers={resolvedCovers} selectedIndex={coverIndex} onSelect={handleSelect} />
+    </div>
+  );
+};
