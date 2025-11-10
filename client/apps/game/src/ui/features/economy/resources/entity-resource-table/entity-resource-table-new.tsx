@@ -7,6 +7,7 @@ import { ProductionModal } from "@/ui/features/settlement";
 import { formatStorageValue } from "@/ui/utils/storage-utils";
 import {
   calculateDonkeysNeeded,
+  configManager,
   divideByPrecision,
   getBuildingQuantity,
   getEntityIdFromKeys,
@@ -21,6 +22,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import {
+  CapacityConfig,
   ClientComponents,
   findResourceById,
   getBuildingFromResource,
@@ -1493,6 +1495,33 @@ const DragDropAmountDialog = React.memo(
       return donkeyBalance ? divideByPrecision(Number(donkeyBalance)) : 0;
     }, [components, dragData.fromStructureId]);
 
+    const maxTransferableAmount = useMemo(() => {
+      if (dragData.maxAmount <= 0) {
+        return 0;
+      }
+
+      const resourceWeightKg = configManager.getResourceWeightKg(dragData.resourceId) || 0;
+      const donkeyCapacityKg = configManager.getCapacityConfigKg(CapacityConfig.Donkey) || 0;
+
+      if (resourceWeightKg <= 0 || donkeyCapacityKg <= 0) {
+        return dragData.maxAmount;
+      }
+
+      if (availableDonkeys <= 0) {
+        return 0;
+      }
+
+      const epsilon = 1e-6;
+      const capacityWeightKg = Math.max(availableDonkeys * donkeyCapacityKg - epsilon, 0);
+      const donkeyLimitedAmount = capacityWeightKg / resourceWeightKg;
+
+      if (!Number.isFinite(donkeyLimitedAmount)) {
+        return dragData.maxAmount;
+      }
+
+      return Math.min(dragData.maxAmount, Math.max(0, donkeyLimitedAmount));
+    }, [availableDonkeys, dragData.maxAmount, dragData.resourceId]);
+
     const recipientBalance = useMemo(() => {
       const resourceManager = new ResourceManager(components, dragData.toStructureId);
       const balance = resourceManager.balance(dragData.resourceId);
@@ -1504,6 +1533,15 @@ const DragDropAmountDialog = React.memo(
 
     const isValidTransfer = amount > 0 && amount <= dragData.maxAmount && canCarry;
     const [isLoading, setIsLoading] = useState(false);
+
+    const handleQuickSelect = useCallback(
+      (percentage: number) => {
+        const baseAmount = Number.isFinite(maxTransferableAmount) ? maxTransferableAmount : dragData.maxAmount;
+        const nextAmount = baseAmount * percentage;
+        setAmount(Number(nextAmount.toFixed(2)));
+      },
+      [dragData.maxAmount, maxTransferableAmount],
+    );
 
     const handleAddToCart = async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
@@ -1553,7 +1591,12 @@ const DragDropAmountDialog = React.memo(
 
           <form onSubmit={handleAddToCart} className="space-y-4">
             <div>
-              <label className="block text-sm text-gold/80 mb-2">Amount to transfer (max: {dragData.maxAmount})</label>
+              <label className="block text-sm text-gold/80 mb-2">
+                Amount to transfer
+                <span className="block text-[11px] text-gold/60">
+                  Max transportable: {formatResourceAmount(maxTransferableAmount)} / Available: {formatResourceAmount(dragData.maxAmount)}
+                </span>
+              </label>
               <input
                 type="number"
                 value={amount}
@@ -1628,7 +1671,7 @@ const DragDropAmountDialog = React.memo(
                 <button
                   key={percentage}
                   type="button"
-                  onClick={() => setAmount(Number((dragData.maxAmount * percentage).toFixed(2)))}
+                  onClick={() => handleQuickSelect(percentage)}
                   className="px-3 py-1 text-xs bg-gold/20 text-gold rounded hover:bg-gold/30 transition-colors"
                 >
                   {percentage === 1 ? "All" : `${percentage * 100}%`}
