@@ -38,7 +38,12 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
       }
 
       const label = Math.abs(value) === 1 ? singularLabel : pluralLabel;
-      return `${numberFormatter.format(value)} ${label}`;
+      const trimmedLabel = label.trim();
+      if (!trimmedLabel.length) {
+        return numberFormatter.format(value);
+      }
+
+      return `${numberFormatter.format(value)} ${trimmedLabel}`;
     };
     const formatPointsLabel = (value: number | null | undefined): string => {
       if (value === null || value === undefined) {
@@ -52,23 +57,44 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
       {
         label: "Tiles Explored",
         count: highlight?.exploredTiles,
-        singular: "tile",
-        plural: "tiles",
+        singular: "",
+        plural: "",
         points: highlight?.exploredTilePoints,
+      },
+      {
+        label: "Crates Opened",
+        count: highlight?.relicCratesOpened,
+        singular: "",
+        plural: "",
+        points: highlight?.relicCratePoints,
       },
       {
         label: "Rifts Taken",
         count: highlight?.riftsTaken,
-        singular: "rift",
-        plural: "rifts",
+        singular: "",
+        plural: "",
         points: highlight?.riftPoints,
       },
       {
-        label: "Hyperstructures Conquered",
+        label: "Camps Taken",
+        count: highlight?.campsTaken,
+        singular: "",
+        plural: "",
+        points: highlight?.campPoints,
+      },
+      {
+        label: "HS Taken",
         count: highlight?.hyperstructuresConquered,
-        singular: "hyperstructure",
-        plural: "hyperstructures",
+        singular: "",
+        plural: "",
         points: highlight?.hyperstructurePoints,
+      },
+      {
+        label: "HS Held",
+        count: highlight?.hyperstructuresHeld,
+        singular: "",
+        plural: "",
+        points: highlight?.hyperstructuresHeldPoints,
       },
     ].map((stat) => {
       const countLabel = formatCountLabel(stat.count ?? null, stat.singular, stat.plural);
@@ -91,15 +117,14 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
         combinedValue,
       };
     });
-    const statGroupHeight = 34;
     const pointsPanel = {
       x: 350,
       y: 108,
       width: 264,
-      height: 200,
+      height: 180,
       radius: 30,
     } as const;
-    const statsRowStartY = pointsPanel.y + 100;
+    const statsRowStartY = pointsPanel.y + 96;
 
     return (
       <svg
@@ -145,7 +170,7 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
 
           <image
             href={eternumLogoWhite}
-            x="40"
+            x="30"
             y="50"
             width="50"
             height="50"
@@ -161,7 +186,7 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
             width={pointsPanel.width}
             height={pointsPanel.height}
             rx={pointsPanel.radius}
-            fill="rgba(6, 22, 30, 0.7)"
+            fill="rgba(6, 22, 30, 0.4)"
             stroke="rgba(120, 255, 242, 0.38)"
             strokeWidth="1.4"
           />
@@ -193,11 +218,11 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
             </text>
           ) : null}
 
-          <text x="42" y="215" fontSize="104" fontWeight="600" fill="url(#blitz-rank-gradient)">
+          <text x="30" y="215" fontSize="104" fontWeight="600" fill="#7bffe6">
             {highlightOrdinal}
           </text>
           <text
-            x="50"
+            x="38"
             y="241"
             fontSize="14"
             letterSpacing="0.28em"
@@ -229,44 +254,41 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
             {highlightPointsValue}
           </text>
           {statBreakdown.map((stat, index) => {
-            const baseY = statsRowStartY + index * statGroupHeight;
-            const valueY = baseY + 18;
+            const row = Math.floor(index / 2);
+            const col = index % 2;
+            const colWidth = pointsPanel.width / 2;
+            const rowHeight = 28;
+            const centerX = pointsPanel.x + col * colWidth + colWidth / 2;
+            const baseY = statsRowStartY + row * rowHeight;
+            const valueY = baseY + 14;
 
             return (
               <g key={stat.label}>
                 <text
-                  x={pointsPanel.x + 30}
+                  x={centerX}
                   y={baseY}
-                  fontSize="9.5"
-                  letterSpacing="0.3em"
+                  fontSize="8"
+                  letterSpacing="0.2em"
                   fill="rgba(180, 236, 247, 0.7)"
+                  textAnchor="middle"
                   style={{ textTransform: "uppercase" }}
                 >
                   {stat.label}
                 </text>
-                <text x={pointsPanel.x + 30} y={valueY} fontSize="13.5" fontWeight="500" fill="#fdfefe">
-                  {stat.countLabel}
-                </text>
-                <text
-                  x={pointsPanel.x + pointsPanel.width - 30}
-                  y={valueY}
-                  fontSize="12.5"
-                  fill="rgba(160, 235, 240, 0.9)"
-                  textAnchor="end"
-                >
-                  {stat.pointsLabel}
+                <text x={centerX} y={valueY} fontSize="11" fontWeight="500" fill="#fdfefe" textAnchor="middle">
+                  {stat.combinedValue}
                 </text>
               </g>
             );
           })}
 
           {highlightName ? (
-            <text x="50" y="280" fontSize="20" fontWeight="600" fill="#f1fffb">
+            <text x="38" y="280" fontSize="20" fontWeight="600" fill="#7bffe6">
               {highlightName}
             </text>
           ) : null}
           {highlightSecondary ? (
-            <text x="50" y={highlightName ? 304 : 280} fontSize="14" fill="rgba(200, 242, 255, 0.78)">
+            <text x="38" y={highlightName ? 304 : 280} fontSize="14" fill="rgba(200, 242, 255, 0.78)">
               {highlightSecondary}
             </text>
           ) : null}

@@ -52,21 +52,27 @@ export interface TokenTransfer {
   symbol: string;
 }
 
-export interface PlayerLeaderboardRow {
+export interface RawPlayerLeaderboardRow {
   player_address: string | null;
   player_name: string | null;
   prize_claimed: number | string | null;
   registered_points: number | string | null;
-  playerAddress?: string | null;
-  playerName?: string | null;
-  prizeClaimed?: number | string | boolean | null;
-  registeredPoints?: number | string | null;
-  total_points?: number | string | null;
-  totalPoints?: number | string | null;
-  unregisteredPoints?: number | string | null;
-  registeredPointsRaw?: number | string | null;
-  registeredPointsRegistered?: number | string | null;
-  rank?: number | string | null;
+  tiles_explored?: number | string | null;
+  camps_taken?: number | string | null;
+}
+
+export interface PlayerLeaderboardRow {
+  playerAddress: string | null;
+  playerName: string | null;
+  prizeClaimed: boolean;
+  registeredPoints: number;
+  registeredPointsRegistered: number;
+  registeredPointsRaw: number;
+  totalPoints: number;
+  unregisteredPoints: number;
+  tilesExplored: number;
+  campsTaken: number;
+  rank?: number | null;
 }
 
 export interface HyperstructureLeaderboardConfigRow {

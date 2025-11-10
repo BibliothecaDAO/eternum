@@ -61,6 +61,27 @@ const PLAYER_LEADERBOARD_BASE = `
           points AS registered_points
         FROM decoded
         WHERE idx = hex_length
+      ),
+      explorer_tiles AS (
+        SELECT
+          lower("owner.Some") AS player_address,
+          COUNT(*) AS tiles_explored
+        FROM "s1_eternum-StoryEvent"
+        WHERE story = 'ExplorerMoveStory'
+          AND "owner.Some" IS NOT NULL
+        GROUP BY lower("owner.Some")
+      ),
+      camp_victories AS (
+        SELECT
+          lower("owner.Some") AS player_address,
+          COUNT(*) AS camps_taken
+        FROM "s1_eternum-StoryEvent"
+        WHERE story = 'BattleStory'
+          AND "owner.Some" IS NOT NULL
+          AND lower("owner.Some") = lower("story.BattleStory.attacker_owner_address")
+          AND "story.BattleStory.battle_type" = 'ExplorerVsGuard'
+          AND "story.BattleStory.winner_id" = "story.BattleStory.attacker_owner_id"
+        GROUP BY lower("owner.Some")
       )
     SELECT
       totals.player_address,
@@ -70,7 +91,9 @@ const PLAYER_LEADERBOARD_BASE = `
         NULLIF("name", 'name'),
         NULLIF("address_name.name", 'address_name.name'),
         ''
-      ) AS player_name
+      ) AS player_name,
+      COALESCE(explorer_tiles.tiles_explored, 0) AS tiles_explored,
+      COALESCE(camp_victories.camps_taken, 0) AS camps_taken
     FROM totals
     LEFT JOIN "s1_eternum-AddressName"
       ON lower(COALESCE(
@@ -78,6 +101,10 @@ const PLAYER_LEADERBOARD_BASE = `
         NULLIF("address_name.address", 'address_name.address'),
         ''
       )) = totals.player_address
+    LEFT JOIN explorer_tiles
+      ON explorer_tiles.player_address = totals.player_address
+    LEFT JOIN camp_victories
+      ON camp_victories.player_address = totals.player_address
 `;
 
 export const LEADERBOARD_QUERIES = {

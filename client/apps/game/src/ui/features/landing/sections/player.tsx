@@ -39,6 +39,12 @@ const toHighlightPlayer = (entry: LandingLeaderboardEntry): BlitzHighlightPlayer
   riftPoints: entry.riftPoints ?? null,
   hyperstructuresConquered: entry.hyperstructuresConquered ?? null,
   hyperstructurePoints: entry.hyperstructurePoints ?? null,
+  relicCratesOpened: entry.relicCratesOpened ?? null,
+  relicCratePoints: entry.relicCratePoints ?? null,
+  campsTaken: entry.campsTaken ?? null,
+  campPoints: entry.campPoints ?? null,
+  hyperstructuresHeld: entry.hyperstructuresHeld ?? null,
+  hyperstructuresHeldPoints: entry.hyperstructuresHeldPoints ?? null,
 });
 
 export const LandingPlayer = () => {

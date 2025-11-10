@@ -14,6 +14,12 @@ export interface BlitzHighlightPlayer {
   riftPoints?: number | null;
   hyperstructuresConquered?: number | null;
   hyperstructurePoints?: number | null;
+  relicCratesOpened?: number | null;
+  relicCratePoints?: number | null;
+  campsTaken?: number | null;
+  campPoints?: number | null;
+  hyperstructuresHeld?: number | null;
+  hyperstructuresHeldPoints?: number | null;
 }
 
 export const BLITZ_CARD_DIMENSIONS = {

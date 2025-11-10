@@ -717,10 +717,7 @@ export class SqlApi {
     }
 
     const match = rankedEntries.find((entry) => {
-      const entryCandidates = [
-        typeof entry.player_address === "string" ? entry.player_address.toLowerCase() : null,
-        typeof entry.playerAddress === "string" ? entry.playerAddress.toLowerCase() : null,
-      ];
+    const entryCandidates = [typeof entry.playerAddress === "string" ? entry.playerAddress.toLowerCase() : null];
 
       return entryCandidates.some((value) => value !== null && candidateAddresses.has(value));
     });
