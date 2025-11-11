@@ -12,5 +12,12 @@
     "deployed": true,
     "configured": true,
     "indexed": true
+  },
+  {
+    "name": "bltz-river-scarab-81",
+    "slotTimestamp": 1762889400,
+    "deployed": true,
+    "configured": true,
+    "indexed": true
   }
 ]
