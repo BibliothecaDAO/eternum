@@ -1,5 +1,5 @@
 use cubit::f128::procgen::simplex3;
-use cubit::f128::types::fixed::{Fixed, FixedTrait};
+use cubit::f128::types::fixed::Fixed;
 use cubit::f128::types::vec3::Vec3Trait;
 use crate::utils::fixed_constants as fc;
 #[derive(Copy, Drop, Serde, Introspect, Debug, PartialEq)]
@@ -126,42 +126,46 @@ mod LEVEL {
     use crate::utils::fixed_constants as fc;
 
     pub fn DEEP_OCEAN() -> Fixed {
-        fc::_0_2()
+        fc::_0_17()
     }
 
     pub fn OCEAN() -> Fixed {
-        fc::_0_3()
+        fc::_0_26()
     }
 
     pub fn SAND() -> Fixed {
-        fc::_0_35()
+        fc::_0_31()
     }
 
     pub fn FOREST() -> Fixed {
-        fc::_0_45()
+        fc::_0_42()
     }
 
     pub fn DESERT() -> Fixed {
-        fc::_0_53()
+        fc::_0_5()
     }
 
     pub fn MOUNTAIN() -> Fixed {
-        fc::_0_6()
+        fc::_0_56()
     }
 }
 
 
 fn MAP_AMPLITUDE() -> Fixed {
-    FixedTrait::new_unscaled(60, false)
+    FixedTrait::new_unscaled(24, false)
 }
 
 
 fn MOISTURE_OCTAVE() -> Fixed {
-    fc::_2()
+    FixedTrait::new_unscaled(5, false)
 }
 
 fn ELEVATION_OCTAVES() -> Array<Fixed> {
-    array![fc::_1(), fc::_0_25(), fc::_0_1()]
+    array![
+        fc::_1(),
+        fc::_0_2(),
+        fc::_0_083333(),
+    ]
 }
 
 
