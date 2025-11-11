@@ -52,6 +52,8 @@ const SCORE_TO_BEAT_ENDPOINTS: string[] = [
   "https://api.cartridge.gg/x/war-game-9/torii/sql",
 ];
 
+const SCORE_TO_BEAT_TAB_ENABLED = false; // Temporarily hide the Score to Beat tab until it's ready again.
+
 const describeEndpoint = (endpoint: string) => {
   if (!endpoint) {
     return "";
@@ -270,9 +272,13 @@ export const LandingLeaderboard = () => {
   const syncedScoreArenas = Math.max(0, totalScoreArenas - failedScoreArenas);
   const scoreArenaLabel =
     totalScoreArenas > 0 ? `${syncedScoreArenas}/${totalScoreArenas} arenas syncing` : "Waiting for arenas";
-  const showScoreToBeatSection = hasScoreToBeatConfiguration;
+  const showScoreToBeatSection = SCORE_TO_BEAT_TAB_ENABLED && hasScoreToBeatConfiguration;
   const [activeTab, setActiveTab] = useState<LeaderboardTab>(showScoreToBeatSection ? "score-to-beat" : "leaderboard");
   const [expandedScoreToBeatAddress, setExpandedScoreToBeatAddress] = useState<string | null>(null);
+  const visibleTabs = useMemo(
+    () => (showScoreToBeatSection ? LEADERBOARD_TABS : LEADERBOARD_TABS.filter((tab) => tab.id === "leaderboard")),
+    [showScoreToBeatSection],
+  );
 
   useEffect(() => {
     if (
@@ -724,7 +730,7 @@ export const LandingLeaderboard = () => {
           aria-orientation="horizontal"
           className="flex gap-2 rounded-3xl border border-white/10 bg-white/5 p-1 text-sm font-semibold"
         >
-          {LEADERBOARD_TABS.map((tab) => {
+          {visibleTabs.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
               <button
@@ -754,7 +760,9 @@ export const LandingLeaderboard = () => {
           aria-labelledby={getTabButtonId(activeTab)}
           className="focus-visible:outline-none"
         >
-          {activeTab === "score-to-beat" ? renderScoreToBeatContent() : renderLeaderboardContent()}
+          {activeTab === "score-to-beat" && showScoreToBeatSection
+            ? renderScoreToBeatContent()
+            : renderLeaderboardContent()}
         </div>
       </div>
     </section>
