@@ -398,8 +398,8 @@ pub fn get_blitz_exploration_reward() -> Span<(u8, u128, u128)> {
     return array![
         (ResourceTypes::ESSENCE, 100, 3_000), (ResourceTypes::ESSENCE, 250, 2_000),
         (ResourceTypes::ESSENCE, 500, 1_500), (ResourceTypes::LABOR, 250, 1_500), (ResourceTypes::LABOR, 500, 800),
-        (ResourceTypes::DONKEY, 100, 600), (ResourceTypes::KNIGHT_T1, 2_500, 200),
-        (ResourceTypes::CROSSBOWMAN_T1, 2_500, 200), (ResourceTypes::PALADIN_T1, 2_500, 200),
+        (ResourceTypes::DONKEY, 100, 600), (ResourceTypes::KNIGHT_T1, 1_000, 200),
+        (ResourceTypes::CROSSBOWMAN_T1, 1_000, 200), (ResourceTypes::PALADIN_T1, 1_000, 200),
     ]
         .span();
 }

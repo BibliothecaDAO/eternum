@@ -1,41 +1,41 @@
 [
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_world_config",
     "calldata": [
       "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_mercenaries_name_config",
     "calldata": [
       "0x5468652056616e6775617264"
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_vrf_config",
     "calldata": [
       "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f"
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_game_mode_config",
     "calldata": [
       true
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_blitz_previous_game",
     "calldata": [
       "0x4cbcb0361850f6b0fcfd330a07080dee3eb5cc688a775a6333053f615069c8"
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_victory_points_grant_config",
     "calldata": [
       "1000000",
@@ -45,14 +45,14 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_victory_points_win_config",
     "calldata": [
       "0"
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_village_found_resources_config",
     "calldata": [
       2,
@@ -65,7 +65,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_blitz_registration_config",
     "calldata": [
       "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
@@ -73,7 +73,7 @@
       "10000000000000000000",
       0,
       5000,
-      1762460999,
+      1762770599,
       "0x181c70595dd7db697c37ceb35c74fab69a037836b99cc80c17fd92a16289e26",
       19,
       "0x0",
@@ -89,10 +89,10 @@
       "0x4c6f6f7420436865737420666f72205265616c6d73",
       "0x15",
       "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
-      "0x06acd25c8a8176cc17e143fb9466eaed064754bd07f47a5e015fa47f5e156b39",
+      "0x063032e13b6efbb1a76708e6f9c22fbd63769c78236d876a93ec8ce19257cb14",
       "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
-      "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
-      "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+      "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
+      "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
       "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
       "0x1f4",
       {
@@ -107,22 +107,22 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_season_config",
     "calldata": [
       false,
       "0x0",
       "0x0",
       "0x3acbe76476cbf8997397878c52ce1acdf90ed1c295907f6505d3ff4c1646afa",
-      1762460999,
-      1762543799,
-      1762550999,
+      1762770599,
+      1762853399,
+      1762860599,
       0,
       600
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_wonder_bonus_config",
     "calldata": [
       12,
@@ -130,7 +130,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_agent_config",
     "calldata": [
       "0x0277eE04e3f82D4E805Ab0e2044C53fB6d61ABd00a2a7f44B78410e9b43E1344",
@@ -141,7 +141,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_village_token_config",
     "calldata": [
       "0x432531b2276e32aa5b82ae095e6694d68f49a2c82f2ee8b406f681ec3826c8b",
@@ -149,14 +149,14 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_trade_config",
     "calldata": [
       10
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_bridge_fee_split_config",
     "calldata": [
       250,
@@ -172,7 +172,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_battle_config",
     "calldata": [
       0,
@@ -180,7 +180,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_structure_max_level_config",
     "calldata": [
       3,
@@ -188,7 +188,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_bank_config",
     "calldata": [
       15,
@@ -198,7 +198,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_tick_config",
     "calldata": [
       60,
@@ -206,7 +206,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_map_config",
     "calldata": [
       750,
@@ -226,7 +226,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_quest_config",
     "calldata": [
       1,
@@ -234,7 +234,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_capacity_config",
     "calldata": [
       0,
@@ -249,14 +249,14 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_donkey_speed_config",
     "calldata": [
       9
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_hyperstructure_config",
     "calldata": [
       0,
@@ -264,7 +264,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_settlement_config",
     "calldata": [
       2147483646,
@@ -273,7 +273,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_starting_resources_config",
     "calldata": [
       9,
@@ -299,7 +299,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "1",
@@ -307,7 +307,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "2",
@@ -315,7 +315,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "3",
@@ -323,7 +323,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "4",
@@ -331,7 +331,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "5",
@@ -339,7 +339,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "6",
@@ -347,7 +347,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "7",
@@ -355,7 +355,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "8",
@@ -363,7 +363,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "9",
@@ -371,7 +371,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "10",
@@ -379,7 +379,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "11",
@@ -387,7 +387,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "12",
@@ -395,7 +395,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "13",
@@ -403,7 +403,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "14",
@@ -411,7 +411,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "15",
@@ -419,7 +419,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "16",
@@ -427,7 +427,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "17",
@@ -435,7 +435,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "18",
@@ -443,7 +443,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "19",
@@ -451,7 +451,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "20",
@@ -459,7 +459,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "21",
@@ -467,7 +467,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "22",
@@ -475,7 +475,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "23",
@@ -483,7 +483,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "24",
@@ -491,7 +491,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "25",
@@ -499,7 +499,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "26",
@@ -507,7 +507,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "27",
@@ -515,7 +515,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "28",
@@ -523,7 +523,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "29",
@@ -531,7 +531,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "30",
@@ -539,7 +539,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "31",
@@ -547,7 +547,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "32",
@@ -555,7 +555,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "33",
@@ -563,7 +563,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "34",
@@ -571,7 +571,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "35",
@@ -579,7 +579,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "36",
@@ -587,7 +587,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "37",
@@ -595,7 +595,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_weight_config",
     "calldata": [
       "38",
@@ -603,7 +603,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_structure_level_config",
     "calldata": [
       "1",
@@ -617,7 +617,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_structure_level_config",
     "calldata": [
       "2",
@@ -633,7 +633,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_structure_level_config",
     "calldata": [
       "3",
@@ -653,7 +653,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_troop_config",
     "calldata": [
       1000,
@@ -690,7 +690,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_config",
     "calldata": [
       5,
@@ -698,7 +698,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "0",
@@ -709,7 +709,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "1",
@@ -726,7 +726,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "3",
@@ -737,7 +737,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "4",
@@ -754,7 +754,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "5",
@@ -769,7 +769,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "6",
@@ -788,7 +788,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "7",
@@ -809,7 +809,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "8",
@@ -820,7 +820,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "9",
@@ -841,7 +841,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "10",
@@ -852,7 +852,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "11",
@@ -873,7 +873,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "12",
@@ -884,7 +884,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "13",
@@ -905,7 +905,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "14",
@@ -916,7 +916,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "15",
@@ -927,7 +927,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "16",
@@ -938,7 +938,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "17",
@@ -949,7 +949,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "18",
@@ -960,7 +960,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "19",
@@ -971,7 +971,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "20",
@@ -982,7 +982,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "21",
@@ -1003,7 +1003,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "22",
@@ -1014,7 +1014,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "23",
@@ -1025,7 +1025,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "24",
@@ -1046,7 +1046,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "25",
@@ -1057,7 +1057,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "26",
@@ -1068,7 +1068,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "27",
@@ -1085,7 +1085,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "28",
@@ -1104,7 +1104,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "29",
@@ -1125,7 +1125,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "30",
@@ -1146,7 +1146,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "31",
@@ -1165,7 +1165,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "32",
@@ -1186,7 +1186,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "33",
@@ -1207,7 +1207,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "34",
@@ -1226,7 +1226,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "35",
@@ -1247,7 +1247,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "36",
@@ -1268,7 +1268,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "37",
@@ -1283,7 +1283,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_building_category_config",
     "calldata": [
       "38",
@@ -1294,7 +1294,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "1",
@@ -1308,7 +1308,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "2",
@@ -1332,7 +1332,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "3",
@@ -1356,7 +1356,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "4",
@@ -1380,7 +1380,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "5",
@@ -1404,7 +1404,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "6",
@@ -1418,7 +1418,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "7",
@@ -1442,7 +1442,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "8",
@@ -1456,7 +1456,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "9",
@@ -1480,7 +1480,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "10",
@@ -1494,7 +1494,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "11",
@@ -1518,7 +1518,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "12",
@@ -1532,7 +1532,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "13",
@@ -1546,7 +1546,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "14",
@@ -1560,7 +1560,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "15",
@@ -1574,7 +1574,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "16",
@@ -1588,7 +1588,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "17",
@@ -1602,7 +1602,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "18",
@@ -1616,7 +1616,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "19",
@@ -1640,7 +1640,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "20",
@@ -1654,7 +1654,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "21",
@@ -1668,7 +1668,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "22",
@@ -1692,7 +1692,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "23",
@@ -1706,7 +1706,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "24",
@@ -1720,7 +1720,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "25",
@@ -1736,7 +1736,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "26",
@@ -1758,7 +1758,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "27",
@@ -1782,7 +1782,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "28",
@@ -1806,7 +1806,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "29",
@@ -1828,7 +1828,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "30",
@@ -1852,7 +1852,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "31",
@@ -1876,7 +1876,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "32",
@@ -1898,7 +1898,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "33",
@@ -1922,7 +1922,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "34",
@@ -1946,7 +1946,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "35",
@@ -1960,7 +1960,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "36",
@@ -1974,7 +1974,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "37",
@@ -1988,7 +1988,7 @@
     ]
   },
   {
-    "contractAddress": "0x055a0e02454d7e4835ad3c42347b89fcef18b5bee33e55979b60ca4b44ec843f",
+    "contractAddress": "0x0169fb55934c5aab8f278981850ee2208ece2ad1c05f7461d8192433f107f06f",
     "entrypoint": "set_resource_factory_config",
     "calldata": [
       "38",

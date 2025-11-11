@@ -27,20 +27,24 @@ export const BottomHud = () => {
   const isMinimized = useUIStore((state) => state.isBottomHudMinimized);
   const setIsBottomHudMinimized = useUIStore((state) => state.setIsBottomHudMinimized);
 
-  if (!isMapView || showBlankOverlay) {
-    return null;
-  }
+  const shouldShowHud = isMapView && !showBlankOverlay;
+
+  // Keep the HUD mounted so the minimap canvas survives scene switches.
 
   const expandedHeight = "h-[20vh] min-h-[20vh] max-h-[20vh]";
   const minimizedHeight = "h-[40px] min-h-[40px] max-h-[40px]";
-  const shellClassName = cn(isMinimized ? minimizedHeight : expandedHeight, isMinimized ? "gap-0 pt-0" : "gap-3 pt-4");
+  const shellClassName = cn(
+    isMinimized ? minimizedHeight : expandedHeight,
+    isMinimized ? "gap-0 pt-0" : "gap-3 pt-4",
+    !shouldShowHud && "pointer-events-none opacity-0 invisible",
+  );
 
   const toggleMinimize = () => {
     setIsBottomHudMinimized(!isMinimized);
   };
 
   return (
-    <BottomHudShell className={shellClassName}>
+    <BottomHudShell className={shellClassName} aria-hidden={!shouldShowHud} data-visible={shouldShowHud}>
       <button
         onClick={toggleMinimize}
         className="pointer-events-auto absolute -top-0 right-4 flex items-center justify-center rounded-lg bg-brown/80 px-3 py-1 transition-colors hover:bg-brown/90 border border-gold/20"

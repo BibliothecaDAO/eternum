@@ -1,7 +1,21 @@
 [
   {
-    "name": "bltz-cerulean-polar-31",
-    "slotTimestamp": 1762543800,
+    "name": "bltz-hearth-portal-84",
+    "slotTimestamp": 1762853400,
+    "deployed": true,
+    "configured": true,
+    "indexed": true
+  },
+  {
+    "name": "bltz-nova-ranger-92",
+    "slotTimestamp": 1762875000,
+    "deployed": true,
+    "configured": true,
+    "indexed": true
+  },
+  {
+    "name": "bltz-river-scarab-81",
+    "slotTimestamp": 1762889400,
     "deployed": true,
     "configured": true,
     "indexed": true

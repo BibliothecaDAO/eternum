@@ -1,13 +1,13 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { RightView } from "@/types";
 import { Button } from "@/ui/design-system/atoms";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ProductionModal } from "@/ui/features/settlement";
-import { formatStorageValue } from "@/ui/utils/storage-utils";
 import {
   calculateDonkeysNeeded,
+  configManager,
+  divideByPrecision,
   getBuildingQuantity,
   getEntityIdFromKeys,
   getIsBlitz,
@@ -15,24 +15,25 @@ import {
   getStructureTypeName,
   getTotalResourceWeightKg,
   isMilitaryResource,
+  multiplyByPrecision,
   Position,
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import {
+  CapacityConfig,
   ClientComponents,
   findResourceById,
   getBuildingFromResource,
   getResourceTiers,
   ID,
-  RESOURCE_PRECISION,
   ResourcesIds,
   StructureType,
 } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { ComponentValue, getComponentValue, Has } from "@dojoengine/recs";
 import clsx from "clsx";
-import { ArrowDown, ArrowLeftRight, ArrowUp, Factory, Target, X, Zap } from "lucide-react";
+import { ArrowDown, ArrowLeftRight, ArrowUp, Factory, ShoppingCart, Target, Trash2, X, Zap } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
 import {
   ALWAYS_SHOW_RESOURCES,
@@ -68,12 +69,23 @@ interface ResourceSummary {
 }
 
 interface TransferDraft {
+  id: string;
   fromStructureId: number;
   toStructureId: number;
   resourceId: ResourcesIds;
   amount: number;
   isProcessing?: boolean;
+  isSelected?: boolean;
 }
+
+const createTransferDraft = (transfer: Omit<TransferDraft, "id" | "isProcessing" | "isSelected">): TransferDraft => ({
+  ...transfer,
+  id: `${transfer.fromStructureId}-${transfer.toStructureId}-${transfer.resourceId}-${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2, 8)}`,
+  isSelected: true,
+  isProcessing: false,
+});
 
 interface InlineEditState {
   structureId: number;
@@ -121,6 +133,8 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
     }
   });
   const [transferDrafts, setTransferDrafts] = useState<TransferDraft[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isBatchProcessing, setIsBatchProcessing] = useState(false);
   const [inlineEditState, setInlineEditState] = useState<InlineEditState | null>(null);
   const [dragState, setDragState] = useState<DragState>({ isDragging: false });
   const [dragDropDialog, setDragDropDialog] = useState<DragDropAmountDialog>({ isOpen: false });
@@ -134,7 +148,6 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
   const toggleModal = useUIStore((state) => state.toggleModal);
   const togglePopup = useUIStore((state) => state.togglePopup);
   const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
-  const setRightNavigationView = useUIStore((state) => state.setRightNavigationView);
   const { isMapView } = useQuery();
   const {
     setup,
@@ -258,45 +271,6 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
     return summaries;
   }, [resourcesByStructure, currentDefaultTick]);
 
-  const storageOverview = useMemo(() => {
-    if (structureColumns.length === 0) return null;
-
-    let capacityKg = 0;
-    let capacityUsedKg = 0;
-    let storehouseCount = 0;
-
-    structureColumns.forEach((structure) => {
-      if (!resourcesByStructure.has(structure.entityId)) {
-        return;
-      }
-
-      try {
-        const {
-          capacityKg: capacity,
-          capacityUsedKg: used,
-          quantity,
-        } = new ResourceManager(components, structure.entityId as ID).getStoreCapacityKg();
-
-        capacityKg += capacity;
-        capacityUsedKg += used;
-        storehouseCount += quantity;
-      } catch {
-        // Ignore structures without resource data
-      }
-    });
-
-    if (capacityKg === 0 && capacityUsedKg === 0 && storehouseCount === 0) {
-      return null;
-    }
-
-    return {
-      capacityKg,
-      capacityUsedKg,
-      remainingKg: Math.max(0, capacityKg - capacityUsedKg),
-      storehouseCount,
-    };
-  }, [components, resourcesByStructure, structureColumns]);
-
   const tiers = useMemo(() => Object.entries(getResourceTiers(getIsBlitz())), []);
 
   if (structureColumns.length === 0) {
@@ -305,17 +279,6 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
 
   const highlightedStructure = structureColumns.find((structure) => structure.isSelected)?.label;
   const isBlitz = getIsBlitz();
-
-  const storageWarning =
-    storageOverview && storageOverview.capacityKg > 0
-      ? storageOverview.remainingKg / storageOverview.capacityKg <= 0.15
-      : false;
-  const formattedStorageCapacity = storageOverview ? formatStorageValue(storageOverview.capacityKg) : null;
-  const formattedStorageUsed = storageOverview ? formatStorageValue(storageOverview.capacityUsedKg) : null;
-  const formattedStorageRemaining =
-    storageOverview && formattedStorageCapacity
-      ? formatStorageValue(storageOverview.remainingKg, { forceInfinite: formattedStorageCapacity.isInfinite })
-      : null;
 
   const handleToggleTierVisibility = useCallback((tierKey: string) => {
     setCollapsedTiers((prev) => {
@@ -382,53 +345,84 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
     [components],
   );
 
-  const matchesTransfer = useCallback(
-    (t: TransferDraft, transfer: TransferDraft) =>
-      t.fromStructureId === transfer.fromStructureId &&
-      t.toStructureId === transfer.toStructureId &&
-      t.resourceId === transfer.resourceId,
-    [],
-  );
+  const executeTransferBatch = useCallback(
+    async (transfers: TransferDraft[]) => {
+      if (!account || transfers.length === 0) return;
 
-  const executeTransfer = useCallback(
-    async (transfer: TransferDraft) => {
-      if (!account) return;
+      const ids = new Set(transfers.map((transfer) => transfer.id));
+      const animationKeys = transfers.map(
+        (transfer) => `${transfer.fromStructureId}-${transfer.toStructureId}-${transfer.resourceId}`,
+      );
 
-      setTransferDrafts((prev) => prev.map((t) => (matchesTransfer(t, transfer) ? { ...t, isProcessing: true } : t)));
+      setTransferDrafts((prev) => prev.map((t) => (ids.has(t.id) ? { ...t, isProcessing: true } : t)));
 
-      const animationKey = `${transfer.fromStructureId}-${transfer.toStructureId}-${transfer.resourceId}`;
-      setTransferAnimations((prev) => new Set([...prev, animationKey]));
+      setTransferAnimations((prev) => new Set([...prev, ...animationKeys]));
 
       try {
         await send_resources_multiple({
           signer: account,
-          calls: [
-            {
-              sender_entity_id: transfer.fromStructureId,
-              recipient_entity_id: transfer.toStructureId,
-              resources: [transfer.resourceId, BigInt(Math.round(transfer.amount * RESOURCE_PRECISION))],
-            },
-          ],
+          calls: transfers.map((transfer) => ({
+            sender_entity_id: transfer.fromStructureId,
+            recipient_entity_id: transfer.toStructureId,
+            resources: [transfer.resourceId, BigInt(Math.round(multiplyByPrecision(transfer.amount)))],
+          })),
         });
 
-        setTransferDrafts((prev) => prev.filter((t) => !matchesTransfer(t, transfer)));
+        setTransferDrafts((prev) => prev.filter((t) => !ids.has(t.id)));
       } catch (error) {
         console.error("Transfer failed:", error);
-        setTransferDrafts((prev) =>
-          prev.map((t) => (matchesTransfer(t, transfer) ? { ...t, isProcessing: false } : t)),
-        );
+        setTransferDrafts((prev) => prev.map((t) => (ids.has(t.id) ? { ...t, isProcessing: false } : t)));
+        throw error;
       } finally {
         setTimeout(() => {
           setTransferAnimations((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(animationKey);
-            return newSet;
+            const next = new Set(prev);
+            animationKeys.forEach((key) => next.delete(key));
+            return next;
           });
         }, 2000);
       }
     },
-    [account, send_resources_multiple, matchesTransfer],
+    [account, send_resources_multiple],
   );
+
+  const executeTransfer = useCallback(
+    async (transfer: TransferDraft) => {
+      await executeTransferBatch([transfer]);
+    },
+    [executeTransferBatch],
+  );
+
+  const addTransferToCart = useCallback((transfer: TransferDraft) => {
+    setTransferDrafts((prev) => [...prev, transfer]);
+  }, []);
+
+  const removeTransferFromCart = useCallback((id: string) => {
+    setTransferDrafts((prev) => prev.filter((draft) => draft.id !== id));
+  }, []);
+
+  const toggleTransferSelection = useCallback((id: string) => {
+    setTransferDrafts((prev) =>
+      prev.map((draft) => (draft.id === id ? { ...draft, isSelected: !(draft.isSelected ?? true) } : draft)),
+    );
+  }, []);
+
+  const clearTransferCart = useCallback(() => setTransferDrafts([]), []);
+
+  const handleTransferSelected = useCallback(async () => {
+    const draftsToSend = transferDrafts.filter((draft) => (draft.isSelected ?? true) && !draft.isProcessing);
+    console.log("draftsToSend", draftsToSend);
+    if (draftsToSend.length === 0) return;
+
+    setIsBatchProcessing(true);
+    try {
+      await executeTransferBatch(draftsToSend);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsBatchProcessing(false);
+    }
+  }, [executeTransferBatch, transferDrafts]);
 
   const handleDragStart = (structureId: number, resourceId: ResourcesIds, amount: number) => {
     setDragState({
@@ -455,7 +449,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
             fromStructureId: currentDragData.structureId,
             toStructureId: targetStructureId,
             resourceId: currentDragData.resourceId,
-            maxAmount: currentDragData.amount / RESOURCE_PRECISION,
+            maxAmount: divideByPrecision(currentDragData.amount),
           };
 
           setDragState({ isDragging: false });
@@ -518,7 +512,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
           fromStructureId: currentDragData.structureId,
           toStructureId: targetStructureId,
           resourceId: currentDragData.resourceId,
-          maxAmount: currentDragData.amount / RESOURCE_PRECISION,
+          maxAmount: divideByPrecision(currentDragData.amount),
         };
 
         // Use requestAnimationFrame to ensure dialog is set after drag end
@@ -551,7 +545,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
       if (!inlineEditState) return;
 
       const balance = getResourceBalance(inlineEditState.structureId, inlineEditState.resourceId);
-      const maxAmount = balance ? Number(balance) / RESOURCE_PRECISION : 0;
+      const maxAmount = balance ? divideByPrecision(Number(balance)) : 0;
 
       // Close inline edit and open drag-drop dialog
       setInlineEditState(null);
@@ -581,24 +575,24 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
     async (amount: number, sendNow?: boolean) => {
       if (!dragDropDialog.dragData) return;
 
-      const transfer: TransferDraft = {
+      const transfer = createTransferDraft({
         fromStructureId: dragDropDialog.dragData.fromStructureId,
         toStructureId: dragDropDialog.dragData.toStructureId,
         resourceId: dragDropDialog.dragData.resourceId,
         amount,
-      };
+      });
 
       if (sendNow) {
         // Execute transfer immediately
         await executeTransfer(transfer);
       } else {
-        // Add to queue
-        setTransferDrafts((prev) => [...prev, transfer]);
+        // Add to cart for later processing
+        addTransferToCart(transfer);
       }
 
       setDragDropDialog({ isOpen: false });
     },
-    [dragDropDialog.dragData, executeTransfer],
+    [addTransferToCart, dragDropDialog.dragData, executeTransfer],
   );
 
   const handleDragDropCancel = () => setDragDropDialog({ isOpen: false });
@@ -612,21 +606,21 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
     <div className="flex h-full flex-col gap-4 p-2">
       {/* Help Banner */}
       {showHelpBanner && (
-        <div className="rounded-xl border border-blue/30 bg-blue/10 p-3 shadow-lg">
+        <div className="rounded-xl border border-blueish/30 bg-blueish/10 p-3 shadow-lg">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 space-y-1">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-blue">💡 Quick Tips</span>
+                <span className="text-sm font-semibold text-blueish">💡 Quick Tips</span>
               </div>
-              <ul className="space-y-1 text-xs text-blue/90">
+              <ul className="space-y-1 text-xs text-blueish/90">
                 <li className="flex items-start gap-2">
-                  <span className="text-blue/70">•</span>
+                  <span className="text-blueish/70">•</span>
                   <span>
                     <strong>Drag & Drop:</strong> Drag resources between columns to transfer them across realms
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-blue/70">•</span>
+                  <span className="text-blueish/70">•</span>
                   <span>
                     <strong>Cycle Realms:</strong> Click column headers to navigate between realms in{" "}
                     {isMapView ? "world" : "local"} view
@@ -636,7 +630,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
             </div>
             <button
               onClick={handleDismissHelp}
-              className="text-blue/60 hover:text-blue transition-colors"
+              className="text-blueish/60 hover:text-blueish transition-colors"
               title="Dismiss"
             >
               <X className="h-4 w-4" />
@@ -645,8 +639,8 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
         </div>
       )}
 
-      <div className="rounded-2xl border border-gold/25 bg-dark-wood/80 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.4)]">
-        <div className="sticky top-0 z-20 -mx-4 -mt-4 px-4 pt-4 pb-3 bg-dark-wood/95 backdrop-blur border-b border-gold/15">
+      <div className="rounded-2xl border border-gold/25 bg-brown/80 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.4)]">
+        <div className="sticky top-0 z-20 -mx-4 -mt-4 px-4 pt-4 pb-3 bg-brown/95 backdrop-blur border-b border-gold/15">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-1">
               <h4 className="text-sm font-semibold uppercase tracking-wide text-gold">Resource overview</h4>
@@ -655,160 +649,103 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                 {highlightedStructure ? ` • ${highlightedStructure} highlighted` : " • select a structure to manage"}
               </p>
             </div>
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <label className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1 text-[11px] text-gold/70">
-                <span className={clsx(pinSelectedColumn && "text-gold")}>Pin Selected Realm</span>
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    className="peer sr-only"
-                    checked={pinSelectedColumn}
-                    onChange={() => {
-                      const newValue = !pinSelectedColumn;
-                      setPinSelectedColumn(newValue);
-                      localStorage.setItem("pinSelectedColumn", String(newValue));
-                    }}
-                  />
-                  <div className="h-5 w-9 rounded-full bg-brown/50 transition peer-checked:bg-gold/30">
-                    <div className="absolute top-[2px] left-[2px] h-4 w-4 rounded-full bg-gold transition peer-checked:translate-x-4" />
+            <div className="flex w-full flex-wrap items-center gap-2 text-[11px] text-gold/70 sm:w-auto sm:justify-end">
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1">
+                  <span className={clsx(pinSelectedColumn && "text-gold")}>Pin Selected Realm</span>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      className="peer sr-only"
+                      checked={pinSelectedColumn}
+                      onChange={() => {
+                        const newValue = !pinSelectedColumn;
+                        setPinSelectedColumn(newValue);
+                        localStorage.setItem("pinSelectedColumn", String(newValue));
+                      }}
+                    />
+                    <div className="h-5 w-9 rounded-full bg-brown/50 transition peer-checked:bg-gold/30">
+                      <div className="absolute top-[2px] left-[2px] h-4 w-4 rounded-full bg-gold transition peer-checked:translate-x-4" />
+                    </div>
                   </div>
-                </div>
-              </label>
-              <label className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1 text-[11px] text-gold/70">
-                <span className={clsx(!showAllResources && "text-gold")}>Hide empty</span>
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    className="peer sr-only"
-                    checked={!showAllResources}
-                    onChange={() => setShowAllResources((prev) => !prev)}
-                  />
-                  <div className="h-5 w-9 rounded-full bg-brown/50 transition peer-checked:bg-gold/30">
-                    <div className="absolute top-[2px] left-[2px] h-4 w-4 rounded-full bg-gold transition peer-checked:translate-x-4" />
+                </label>
+                <label className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1">
+                  <span className={clsx(!showAllResources && "text-gold")}>Hide empty</span>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      className="peer sr-only"
+                      checked={!showAllResources}
+                      onChange={() => setShowAllResources((prev) => !prev)}
+                    />
+                    <div className="h-5 w-9 rounded-full bg-brown/50 transition peer-checked:bg-gold/30">
+                      <div className="absolute top-[2px] left-[2px] h-4 w-4 rounded-full bg-gold transition peer-checked:translate-x-4" />
+                    </div>
                   </div>
-                </div>
-              </label>
-              <label className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1 text-[11px] text-gold/70">
-                <span className={clsx(showProductionOnly && "text-gold")}>Production only</span>
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    className="peer sr-only"
-                    checked={showProductionOnly}
-                    onChange={() => {
-                      const nextValue = !showProductionOnly;
-                      setShowProductionOnly(nextValue);
-                      localStorage.setItem("entityResourceTableShowProductionOnly", String(nextValue));
-                    }}
-                  />
-                  <div className="h-5 w-9 rounded-full bg-brown/50 transition peer-checked:bg-gold/30">
-                    <div className="absolute top-[2px] left-[2px] h-4 w-4 rounded-full bg-gold transition peer-checked:translate-x-4" />
+                </label>
+                <label className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1">
+                  <span className={clsx(showProductionOnly && "text-gold")}>Production only</span>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      className="peer sr-only"
+                      checked={showProductionOnly}
+                      onChange={() => {
+                        const nextValue = !showProductionOnly;
+                        setShowProductionOnly(nextValue);
+                        localStorage.setItem("entityResourceTableShowProductionOnly", String(nextValue));
+                      }}
+                    />
+                    <div className="h-5 w-9 rounded-full bg-brown/50 transition peer-checked:bg-gold/30">
+                      <div className="absolute top-[2px] left-[2px] h-4 w-4 rounded-full bg-gold transition peer-checked:translate-x-4" />
+                    </div>
                   </div>
-                </div>
-              </label>
-              <label className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1 text-[11px] text-gold/70">
-                <span className={clsx(showMilitaryOnly && "text-gold")}>Military only</span>
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    className="peer sr-only"
-                    checked={showMilitaryOnly}
-                    onChange={() => {
-                      const nextValue = !showMilitaryOnly;
-                      setShowMilitaryOnly(nextValue);
-                      localStorage.setItem("entityResourceTableShowMilitaryOnly", String(nextValue));
-                    }}
-                  />
-                  <div className="h-5 w-9 rounded-full bg-brown/50 transition peer-checked:bg-gold/30">
-                    <div className="absolute top-[2px] left-[2px] h-4 w-4 rounded-full bg-gold transition peer-checked:translate-x-4" />
+                </label>
+                <label className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1">
+                  <span className={clsx(showMilitaryOnly && "text-gold")}>Military only</span>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      className="peer sr-only"
+                      checked={showMilitaryOnly}
+                      onChange={() => {
+                        const nextValue = !showMilitaryOnly;
+                        setShowMilitaryOnly(nextValue);
+                        localStorage.setItem("entityResourceTableShowMilitaryOnly", String(nextValue));
+                      }}
+                    />
+                    <div className="h-5 w-9 rounded-full bg-brown/50 transition peer-checked:bg-gold/30">
+                      <div className="absolute top-[2px] left-[2px] h-4 w-4 rounded-full bg-gold transition peer-checked:translate-x-4" />
+                    </div>
                   </div>
-                </div>
-              </label>
-            </div>
-          </div>
-          {storageOverview && (
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-[11px] text-gold/70">
-              <div className="flex items-center gap-2">
-                <span className="uppercase font-semibold text-gold/80">Remaining Storage</span>
-                <span className={clsx("font-semibold", storageWarning ? "text-red" : "text-green")}>
-                  {formattedStorageRemaining?.isInfinite
-                    ? formattedStorageRemaining.display
-                    : `${formattedStorageRemaining?.display ?? "0"} kg`}
-                </span>
+                </label>
               </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="flex items-center gap-1">
-                  <span className="text-gold/50">Used</span>
-                  <span className="text-gold">
-                    {formattedStorageUsed?.isInfinite
-                      ? formattedStorageUsed.display
-                      : `${formattedStorageUsed?.display ?? "0"} kg`}
-                  </span>
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="text-gold/50">Total</span>
-                  <span className="text-gold">
-                    {formattedStorageCapacity?.isInfinite
-                      ? formattedStorageCapacity.display
-                      : `${formattedStorageCapacity?.display ?? "0"} kg`}
-                  </span>
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="text-gold/50">Storehouses</span>
-                  <span className="text-gold">{storageOverview.storehouseCount}</span>
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Transfer Queue */}
-        {transferDrafts.length > 0 && (
-          <div className="mt-4 rounded-2xl border border-gold/25 bg-dark-wood/80 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.4)]">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-base font-semibold uppercase tracking-wide text-gold">
-                Transfer Queue ({transferDrafts.length})
-              </h4>
               <button
-                onClick={() => setTransferDrafts([])}
-                className="text-xs text-gold/60 hover:text-gold transition-colors"
+                type="button"
+                onClick={() => setIsCartOpen(true)}
+                className={clsx(
+                  "ml-auto flex items-center gap-1 rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gold transition hover:bg-gold/20 sm:ml-4",
+                  transferDrafts.length === 0 && "opacity-70",
+                )}
+                aria-label="Open transfer cart"
               >
-                Clear all
+                <ShoppingCart className="h-4 w-4" />
+                <span>Cart</span>
+                {transferDrafts.length > 0 && (
+                  <span className="ml-1 rounded-full bg-gold px-1.5 text-[10px] font-bold text-brown">
+                    {transferDrafts.length}
+                  </span>
+                )}
               </button>
             </div>
-            <div className="space-y-2 max-h-32 overflow-y-auto">
-              {transferDrafts.map((draft, index) => (
-                <TransferQueueItem
-                  key={`${draft.fromStructureId}-${draft.toStructureId}-${draft.resourceId}`}
-                  draft={draft}
-                  structureColumns={structureColumns}
-                  onExecute={() => executeTransfer(draft)}
-                  onRemove={() => setTransferDrafts((prev) => prev.filter((_, i) => i !== index))}
-                />
-              ))}
-            </div>
-            <div className="mt-3 pt-2 border-t border-gold/10">
-              <div className="flex gap-2">
-                <button
-                  onClick={() => transferDrafts.filter((d) => !d.isProcessing).forEach(executeTransfer)}
-                  disabled={transferDrafts.every((d) => d.isProcessing)}
-                  className="px-3 py-1 text-xs bg-gold/20 text-gold rounded hover:bg-gold/30 transition-colors disabled:opacity-50"
-                >
-                  Send All
-                </button>
-                <span className="text-xs text-gold/60 flex items-center">
-                  {transferDrafts.filter((d) => !d.isProcessing).length} pending
-                </span>
-              </div>
-            </div>
           </div>
-        )}
+        </div>
 
-        <div className="mt-4 overflow-x-auto rounded-xl border border-gold/15 bg-dark-wood/60">
+        <div className="mt-4 overflow-x-auto rounded-xl border border-gold/15 bg-brown/60">
           <table className="min-w-full text-left text-xxs">
-            <thead className="sticky top-0 bg-dark-wood/80 backdrop-blur">
+            <thead className="sticky top-0 bg-brown/80 backdrop-blur">
               <tr className="border-b border-gold/15 text-[10px] uppercase text-gold/70">
-                <th className="px-3 py-2 font-semibold border-r border-gold/[0.07] sticky left-0 bg-dark-wood/95 backdrop-blur z-10 shadow-sm">
+                <th className="px-3 py-2 font-semibold border-r border-gold/[0.07] sticky left-0 bg-brown/95 backdrop-blur z-10 shadow-sm">
                   <div className="flex items-center gap-1.5">
                     <span>Resource</span>
                   </div>
@@ -897,7 +834,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                             key={resourceId}
                             className="border-b border-gold/10 last:border-b-0 hover:bg-gold/[0.02] transition-colors"
                           >
-                            <td className="px-3 py-2 border-r border-gold/[0.07] sticky left-0 bg-dark-wood/95 backdrop-blur z-10 shadow-sm">
+                            <td className="px-3 py-2 border-r border-gold/[0.07] sticky left-0 bg-brown/95 backdrop-blur z-10 shadow-sm">
                               <div className="flex items-center gap-2">
                                 <ResourceIcon resource={resourceKey} size="md" />
                                 <span className="text-[11px] font-semibold text-gold/90">{resourceKey}</span>
@@ -1019,9 +956,21 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
           onConfirm={handleDragDropConfirm}
           onCancel={handleDragDropCancel}
           structureColumns={structureColumns}
-          onQueued={() => setRightNavigationView(RightView.Transfer)}
         />
       )}
+
+      <TransferCartModal
+        isOpen={isCartOpen}
+        drafts={transferDrafts}
+        structureColumns={structureColumns}
+        onClose={() => setIsCartOpen(false)}
+        onRemove={removeTransferFromCart}
+        onToggleSelect={toggleTransferSelection}
+        onSendSingle={executeTransfer}
+        onSendSelected={handleTransferSelected}
+        onClear={clearTransferCart}
+        isBatchProcessing={isBatchProcessing}
+      />
     </div>
   );
 });
@@ -1131,7 +1080,7 @@ const TransferCell = React.memo((props: TransferCellProps) => {
             {(pendingOutgoing.length > 0 || pendingIncoming.length > 0) && (
               <div className="flex items-center gap-0.5">
                 {pendingOutgoing.length > 0 && (
-                  <span className="text-[10px] text-red/70 flex items-center gap-0.5">
+                  <span className="text-[10px] text-danger/70 flex items-center gap-0.5">
                     <ArrowDown className="h-2.5 w-2.5" />-{totalOutgoing}
                   </span>
                 )}
@@ -1147,13 +1096,13 @@ const TransferCell = React.memo((props: TransferCellProps) => {
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] text-gold/60">{formatProductionPerHour(cell.productionPerSecond)}</span>
               {cell.outputRemaining > 0 && !cell.isStorageCapped && !HIDE_TIME_REMAINING_FOR.includes(resourceId) && (
-                <span className="text-[10px] text-blue/60" title="Time until production runs out">
+                <span className="text-[10px] text-blueish/60" title="Time until production runs out">
                   ({formatTimeRemaining(cell.timeRemainingSeconds)})
                 </span>
               )}
             </div>
           )}
-          {cell.isStorageCapped && <span className="text-[10px] text-red/70">Storage full</span>}
+          {cell.isStorageCapped && <span className="text-[10px] text-danger/70">Storage full</span>}
         </div>
 
         {/* Right: Action Buttons */}
@@ -1229,7 +1178,7 @@ const TransferCell = React.memo((props: TransferCellProps) => {
                 e.stopPropagation();
                 onInlineEditChange(null);
               }}
-              className="w-full flex items-center justify-center gap-1 px-2 py-1 text-[10px] bg-red/20 text-red rounded hover:bg-red/30"
+              className="w-full flex items-center justify-center gap-1 px-2 py-1 text-[10px] bg-danger/20 text-danger rounded hover:bg-danger/30"
             >
               <X className="h-2.5 w-2.5" />
               Cancel
@@ -1248,54 +1197,167 @@ const TransferCell = React.memo((props: TransferCellProps) => {
   );
 });
 
-const TransferQueueItem = React.memo(
+const TransferCartModal = React.memo(
+  ({
+    isOpen,
+    drafts,
+    structureColumns,
+    onClose,
+    onRemove,
+    onToggleSelect,
+    onSendSingle,
+    onSendSelected,
+    onClear,
+    isBatchProcessing,
+  }: {
+    isOpen: boolean;
+    drafts: TransferDraft[];
+    structureColumns: StructureColumn[];
+    onClose: () => void;
+    onRemove: (id: string) => void;
+    onToggleSelect: (id: string) => void;
+    onSendSingle: (draft: TransferDraft) => void;
+    onSendSelected: () => Promise<void> | void;
+    onClear: () => void;
+    isBatchProcessing: boolean;
+  }) => {
+    if (!isOpen) return null;
+
+    const selectedCount = drafts.filter((draft) => draft.isSelected ?? true).length;
+    const readyCount = drafts.filter((draft) => (draft.isSelected ?? true) && !draft.isProcessing).length;
+
+    const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
+      if (event.target === event.currentTarget) {
+        onClose();
+      }
+    };
+
+    return (
+      <div className="fixed inset-0 bg-brown/70 flex items-center justify-center z-50" onMouseDown={handleOverlayClick}>
+        <div className="w-full max-w-xl rounded-lg border border-gold/30 bg-brown p-6 shadow-xl">
+          <div className="mb-4 flex items-start gap-3">
+            <div className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5 text-gold" />
+              <div>
+                <h3 className="text-base font-semibold uppercase tracking-wide text-gold">Transfer Cart</h3>
+                <p className="text-xs text-gold/60">
+                  {drafts.length} staged transfer{drafts.length === 1 ? "" : "s"}
+                </p>
+              </div>
+            </div>
+            <button type="button" onClick={onClose} className="ml-auto text-gold/60 transition hover:text-gold">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          {drafts.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-gold/30 p-6 text-center text-sm text-gold/70">
+              Your cart is empty. Drag a resource to another structure and tap Add to Cart to queue it here.
+            </div>
+          ) : (
+            <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
+              {drafts.map((draft) => (
+                <TransferCartItem
+                  key={draft.id}
+                  draft={draft}
+                  structureColumns={structureColumns}
+                  onToggleSelect={onToggleSelect}
+                  onRemove={onRemove}
+                  onSendSingle={onSendSingle}
+                />
+              ))}
+            </div>
+          )}
+
+          <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-gold/20 pt-3 text-xs text-gold/70">
+            <span>{selectedCount} selected</span>
+            <div className="ml-auto flex gap-2">
+              <button
+                type="button"
+                onClick={onClear}
+                disabled={drafts.length === 0}
+                className="rounded-full border border-danger/30 px-3 py-1 text-danger transition hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                onClick={onSendSelected}
+                disabled={readyCount === 0 || isBatchProcessing}
+                className="rounded-full border border-gold/40 bg-gold/10 px-4 py-1 font-semibold uppercase tracking-wide text-gold transition hover:bg-gold/20 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isBatchProcessing ? "Transferring..." : "Transfer All"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  },
+);
+
+const TransferCartItem = React.memo(
   ({
     draft,
     structureColumns,
-    onExecute,
+    onToggleSelect,
     onRemove,
+    onSendSingle,
   }: {
     draft: TransferDraft;
     structureColumns: StructureColumn[];
-    onExecute: () => void;
-    onRemove: () => void;
+    onToggleSelect: (id: string) => void;
+    onRemove: (id: string) => void;
+    onSendSingle: (draft: TransferDraft) => void;
   }) => {
     const fromStructure = structureColumns.find((s) => s.entityId === draft.fromStructureId);
     const toStructure = structureColumns.find((s) => s.entityId === draft.toStructureId);
     const resourceKey = ResourcesIds[draft.resourceId];
+    const isSelected = draft.isSelected ?? true;
 
     return (
       <div
         className={clsx(
-          "flex items-center justify-between gap-3 p-2 rounded border",
-          draft.isProcessing ? "border-blue/30 bg-blue/10 animate-pulse" : "border-gold/20 bg-gold/5",
+          "flex items-start gap-3 rounded-2xl border p-3",
+          draft.isProcessing ? "border-blueish/40 bg-blueish/10" : "border-gold/20 bg-gold/5",
         )}
       >
-        <div className="flex items-center gap-2 min-w-0">
-          <ResourceIcon resource={resourceKey} size="sm" />
-          <span className="text-xs text-gold/90 truncate">
-            {draft.amount} {resourceKey}
-          </span>
-          <span className="text-xs text-gold/60">
-            {fromStructure?.label} → {toStructure?.label}
-          </span>
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={() => onToggleSelect(draft.id)}
+          disabled={draft.isProcessing}
+          className="mt-1 h-4 w-4 accent-gold"
+        />
+        <div className="flex-1 space-y-1">
+          <div className="flex items-center gap-2 text-sm text-gold">
+            <ResourceIcon resource={resourceKey} size="sm" />
+            <span className="font-semibold">{draft.amount.toLocaleString()}</span>
+            <span className="text-xs text-gold/60">{resourceKey}</span>
+          </div>
+          <p className="text-[11px] text-gold/60">
+            {fromStructure?.label ?? `#${draft.fromStructureId}`} → {toStructure?.label ?? `#${draft.toStructureId}`}
+          </p>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex flex-col gap-1 text-xs">
           {draft.isProcessing ? (
-            <span className="text-xs text-blue/80">Processing...</span>
+            <span className="text-blueish/70">Processing…</span>
           ) : (
             <>
               <button
-                onClick={onExecute}
-                className="px-2 py-1 text-xs bg-gold/20 text-gold rounded hover:bg-gold/30 transition-colors"
+                type="button"
+                onClick={() => onSendSingle(draft)}
+                className="rounded border border-gold/30 px-2 py-1 text-gold transition hover:bg-gold/20"
               >
                 Send
               </button>
               <button
-                onClick={onRemove}
-                className="px-2 py-1 text-xs bg-red/20 text-red rounded hover:bg-red/30 transition-colors"
+                type="button"
+                onClick={() => onRemove(draft.id)}
+                className="rounded border border-danger/40 px-2 py-1 text-danger transition hover:bg-danger/20"
+                aria-label="Remove from cart"
               >
-                ×
+                <Trash2 className="h-3.5 w-3.5" />
               </button>
             </>
           )}
@@ -1312,7 +1374,6 @@ const DragDropAmountDialog = React.memo(
     onConfirm,
     onCancel,
     structureColumns,
-    onQueued,
   }: {
     dragData: {
       fromStructureId: number;
@@ -1323,7 +1384,6 @@ const DragDropAmountDialog = React.memo(
     onConfirm: (amount: number, sendNow?: boolean) => Promise<void> | void;
     onCancel: () => void;
     structureColumns: Array<{ entityId: number; label: string }>;
-    onQueued?: () => void;
   }) => {
     const [amount, setAmount] = useState(() => {
       const defaultAmount = Math.min(dragData.maxAmount * 0.1, 100);
@@ -1347,13 +1407,40 @@ const DragDropAmountDialog = React.memo(
     const availableDonkeys = useMemo(() => {
       const resourceManager = new ResourceManager(components, dragData.fromStructureId);
       const donkeyBalance = resourceManager.balance(ResourcesIds.Donkey);
-      return donkeyBalance ? Number(donkeyBalance) / RESOURCE_PRECISION : 0;
+      return donkeyBalance ? divideByPrecision(Number(donkeyBalance)) : 0;
     }, [components, dragData.fromStructureId]);
+
+    const maxTransferableAmount = useMemo(() => {
+      if (dragData.maxAmount <= 0) {
+        return 0;
+      }
+
+      const resourceWeightKg = configManager.getResourceWeightKg(dragData.resourceId) || 0;
+      const donkeyCapacityKg = configManager.getCapacityConfigKg(CapacityConfig.Donkey) || 0;
+
+      if (resourceWeightKg <= 0 || donkeyCapacityKg <= 0) {
+        return dragData.maxAmount;
+      }
+
+      if (availableDonkeys <= 0) {
+        return 0;
+      }
+
+      const epsilon = 1e-6;
+      const capacityWeightKg = Math.max(availableDonkeys * donkeyCapacityKg - epsilon, 0);
+      const donkeyLimitedAmount = capacityWeightKg / resourceWeightKg;
+
+      if (!Number.isFinite(donkeyLimitedAmount)) {
+        return dragData.maxAmount;
+      }
+
+      return Math.min(dragData.maxAmount, Math.max(0, donkeyLimitedAmount));
+    }, [availableDonkeys, dragData.maxAmount, dragData.resourceId]);
 
     const recipientBalance = useMemo(() => {
       const resourceManager = new ResourceManager(components, dragData.toStructureId);
       const balance = resourceManager.balance(dragData.resourceId);
-      return balance ? Number(balance) / RESOURCE_PRECISION : 0;
+      return balance ? divideByPrecision(Number(balance)) : 0;
     }, [components, dragData.toStructureId, dragData.resourceId]);
 
     const canCarry = availableDonkeys >= neededDonkeys;
@@ -1362,13 +1449,21 @@ const DragDropAmountDialog = React.memo(
     const isValidTransfer = amount > 0 && amount <= dragData.maxAmount && canCarry;
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleQueue = async (e: React.FormEvent<HTMLFormElement>) => {
+    const handleQuickSelect = useCallback(
+      (percentage: number) => {
+        const baseAmount = Number.isFinite(maxTransferableAmount) ? maxTransferableAmount : dragData.maxAmount;
+        const nextAmount = baseAmount * percentage;
+        setAmount(Number(nextAmount.toFixed(2)));
+      },
+      [dragData.maxAmount, maxTransferableAmount],
+    );
+
+    const handleAddToCart = async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       if (isLoading || !isValidTransfer) return;
 
       try {
         await onConfirm(amount);
-        onQueued?.();
       } catch (error) {
         console.error(error);
       }
@@ -1385,22 +1480,39 @@ const DragDropAmountDialog = React.memo(
       }
     };
 
+    const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
+      if (event.target === event.currentTarget) {
+        onCancel();
+      }
+    };
+
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-dark-wood border border-gold/30 rounded-lg p-6 shadow-xl min-w-[400px]">
-          <div className="flex items-center gap-3 mb-4">
-            <ResourceIcon resource={resourceKey} size="lg" />
-            <div>
-              <h3 className="text-gold font-semibold">Transfer {resourceKey}</h3>
-              <p className="text-xs text-gold/60">
-                {fromStructure?.label} → {toStructure?.label}
-              </p>
+      <div className="fixed inset-0 bg-brown/70 flex items-center justify-center z-50" onMouseDown={handleOverlayClick}>
+        <div className="bg-brown border border-gold/30 rounded-lg p-6 shadow-xl min-w-[400px]">
+          <div className="mb-4 flex items-start gap-3">
+            <div className="flex items-center gap-2">
+              <ResourceIcon resource={resourceKey} size="lg" />
+              <div>
+                <h3 className="text-gold font-semibold">Transfer {resourceKey}</h3>
+                <p className="text-xs text-gold/60">
+                  {fromStructure?.label} → {toStructure?.label}
+                </p>
+              </div>
             </div>
+            <button type="button" onClick={onCancel} className="ml-auto text-gold/60 transition hover:text-gold">
+              <X className="h-4 w-4" />
+            </button>
           </div>
 
-          <form onSubmit={handleQueue} className="space-y-4">
+          <form onSubmit={handleAddToCart} className="space-y-4">
             <div>
-              <label className="block text-sm text-gold/80 mb-2">Amount to transfer (max: {dragData.maxAmount})</label>
+              <label className="block text-sm text-gold/80 mb-2">
+                Amount to transfer
+                <span className="block text-[11px] text-gold/60">
+                  Max transportable: {formatResourceAmount(maxTransferableAmount)} / Available:{" "}
+                  {formatResourceAmount(dragData.maxAmount)}
+                </span>
+              </label>
               <input
                 type="number"
                 value={amount}
@@ -1451,19 +1563,19 @@ const DragDropAmountDialog = React.memo(
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gold/70">Required:</span>
-                  <span className={clsx("font-medium", canCarry ? "text-green" : "text-red")}>
+                  <span className={clsx("font-medium", canCarry ? "text-progress-bar-good" : "text-danger")}>
                     {neededDonkeys.toLocaleString()} 🐴
                   </span>
                 </div>
               </div>
 
               {!canCarry && (
-                <div className="mt-3 p-2 bg-red/10 border border-red/20 rounded text-xs text-red">
+                <div className="mt-3 p-2 bg-danger/10 border border-danger/20 rounded text-xs text-danger">
                   ❌ Need {(neededDonkeys - availableDonkeys).toLocaleString()} more donkeys
                 </div>
               )}
               {canCarry && neededDonkeys > 0 && (
-                <div className="mt-3 p-2 bg-green/10 border border-green/20 rounded text-xs text-green">
+                <div className="mt-3 p-2 bg-progress-bar-good/10 border border-progress-bar-good/20 rounded text-xs text-progress-bar-good">
                   Sufficient Donkey Capacity
                 </div>
               )}
@@ -1475,7 +1587,7 @@ const DragDropAmountDialog = React.memo(
                 <button
                   key={percentage}
                   type="button"
-                  onClick={() => setAmount(Number((dragData.maxAmount * percentage).toFixed(2)))}
+                  onClick={() => handleQuickSelect(percentage)}
                   className="px-3 py-1 text-xs bg-gold/20 text-gold rounded hover:bg-gold/30 transition-colors"
                 >
                   {percentage === 1 ? "All" : `${percentage * 100}%`}
@@ -1487,9 +1599,9 @@ const DragDropAmountDialog = React.memo(
               <button
                 type="submit"
                 disabled={!isValidTransfer || isLoading}
-                className="flex-1 px-4 py-2 bg-blue/20 text-blue rounded hover:bg-blue/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-blueish/20 text-blueish rounded hover:bg-blueish/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {!canCarry ? "Insufficient Donkeys" : "Queue"}
+                {!canCarry ? "Insufficient Donkeys" : "Add to Cart"}
               </button>
               <Button
                 type="button"
@@ -1500,14 +1612,6 @@ const DragDropAmountDialog = React.memo(
               >
                 Send
               </Button>
-              <button
-                type="button"
-                onClick={onCancel}
-                disabled={isLoading}
-                className="px-4 py-2 bg-red/20 text-red rounded hover:bg-red/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </button>
             </div>
           </form>
         </div>
