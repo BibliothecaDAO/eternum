@@ -5,5 +5,12 @@
     "deployed": true,
     "configured": true,
     "indexed": true
+  },
+  {
+    "name": "bltz-nova-ranger-92",
+    "slotTimestamp": 1762875000,
+    "deployed": true,
+    "configured": true,
+    "indexed": true
   }
 ]
