@@ -2,6 +2,8 @@ import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from "rea
 
 import { useNavigate } from "react-router-dom";
 
+import { Download } from "lucide-react";
+
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { currencyIntlFormat, displayAddress } from "@/ui/utils/utils";
 
@@ -203,6 +205,66 @@ export const LandingLeaderboard = () => {
     ? (topScoreToBeat.displayName ?? displayAddress(topScoreToBeat.address))
     : null;
   const topScoreToBeatAddressLabel = topScoreToBeat ? displayAddress(topScoreToBeat.address) : null;
+  const handleDownloadScoreToBeatData = useCallback(() => {
+    if (scoreToBeatTopTen.length === 0 || typeof window === "undefined") {
+      return;
+    }
+
+    const rows = [
+      ["Rank", "Display name", "Address", "Score"],
+      ...scoreToBeatTopTen.map((entry, index) => [
+        `${index + 1}`,
+        entry.displayName ?? displayAddress(entry.address),
+        entry.address,
+        `${entry.combinedPoints ?? 0}`,
+      ]),
+    ];
+
+    const csvContent = rows
+      .map((row) => row.map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = window.URL.createObjectURL(blob);
+    const downloadLink = document.createElement("a");
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    downloadLink.href = url;
+    downloadLink.setAttribute("download", `score-to-beat-${timestamp}.csv`);
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+    window.URL.revokeObjectURL(url);
+  }, [scoreToBeatTopTen]);
+  const handleDownloadLeaderboardData = useCallback(() => {
+    if (filteredEntries.length === 0 || typeof window === "undefined") {
+      return;
+    }
+
+    const rows = [
+      ["Rank", "Display name", "Address", "Points"],
+      ...filteredEntries.map((entry) => [
+        `${entry.rank ?? ""}`,
+        entry.displayName ?? displayAddress(entry.address),
+        entry.address,
+        `${entry.points ?? 0}`,
+      ]),
+    ];
+
+    const csvContent = rows
+      .map((row) => row.map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = window.URL.createObjectURL(blob);
+    const downloadLink = document.createElement("a");
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    downloadLink.href = url;
+    downloadLink.setAttribute("download", `leaderboard-${timestamp}.csv`);
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+    window.URL.revokeObjectURL(url);
+  }, [filteredEntries]);
   const totalScoreArenas = scoreToBeatEndpoints.length;
   const failedScoreArenas = scoreToBeatFailedEndpoints.length;
   const syncedScoreArenas = Math.max(0, totalScoreArenas - failedScoreArenas);
@@ -276,19 +338,30 @@ export const LandingLeaderboard = () => {
                 {scoreToBeatError}
               </span>
             ) : null}
-            <div className="flex items-center gap-2">
-              {isScoreToBeatLoading ? (
-                <span className="text-xs text-white/70" aria-live="polite">
-                  Syncing…
-                </span>
-              ) : null}
-              <RefreshButton
-                onClick={refreshScoreToBeat}
-                isLoading={isScoreToBeatLoading}
-                disabled={isScoreToBeatLoading}
-                size="sm"
-                aria-label="Refresh score to beat"
-              />
+            <div className="flex flex-wrap items-center justify-end gap-2 sm:flex-nowrap">
+              <button
+                type="button"
+                onClick={handleDownloadScoreToBeatData}
+                disabled={scoreToBeatTopTen.length === 0}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white transition hover:border-amber-200/60 hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200/70 disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="Download score to beat scores"
+              >
+                <Download className="h-4 w-4" aria-hidden="true" />
+              </button>
+              <div className="flex items-center gap-2">
+                {isScoreToBeatLoading ? (
+                  <span className="text-xs text-white/70" aria-live="polite">
+                    Syncing…
+                  </span>
+                ) : null}
+                <RefreshButton
+                  onClick={refreshScoreToBeat}
+                  isLoading={isScoreToBeatLoading}
+                  disabled={isScoreToBeatLoading}
+                  size="sm"
+                  aria-label="Refresh score to beat"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -428,6 +501,18 @@ export const LandingLeaderboard = () => {
 
     return (
       <div className="space-y-6">
+        <div className="flex flex-col gap-2 rounded-3xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-white/70 sm:flex-row sm:items-center sm:justify-between">
+          <span className="tracking-wide">Download the current view (filters included).</span>
+          <button
+            type="button"
+            onClick={handleDownloadLeaderboardData}
+            disabled={filteredEntries.length === 0}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-sm font-medium text-white transition hover:border-gold/50 hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/50 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
+            aria-label="Download current leaderboard"
+          >
+            <Download className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
         {podiumEntries.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-3">
             {podiumEntries.map((entry, index) => {
