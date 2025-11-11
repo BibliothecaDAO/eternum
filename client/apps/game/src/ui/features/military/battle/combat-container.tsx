@@ -532,37 +532,40 @@ export const CombatContainer = ({
       <div className="p-3 sm:p-4 border border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm mb-4 overflow-hidden">
         <h2 className="text-lg font-semibold text-gold mb-3">Select Attacking Troops</h2>
         <div className="flex flex-wrap gap-2 sm:gap-3" role="group" aria-label="Select troop to attack with">
-          {structureGuards.map((guard) => (
-            <button
-              key={guard.slot}
-              onClick={() => setSelectedGuardSlot(guard.slot)}
-              className={`flex items-center bg-brown-900/90 border ${
-                selectedGuardSlot === guard.slot ? "border-gold bg-gold/10" : "border-gold/20"
-              } rounded-md px-2 sm:px-3 py-1.5 sm:py-2 hover:border-gold/60 transition-colors focus:outline-none focus:ring-2 focus:ring-gold/50 min-w-0 flex-1 sm:flex-none`}
-              aria-pressed={selectedGuardSlot === guard.slot}
-              aria-label={`Select ${TroopType[guard.troops.category as TroopType]} ${guard.troops.tier} troops in slot ${DISPLAYED_SLOT_NUMBER_MAP[guard.slot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]}`}
-            >
-              <ResourceIcon
-                withTooltip={false}
-                resource={
-                  resources.find(
-                    (r) =>
-                      r.id === getTroopResourceId(guard.troops.category as TroopType, guard.troops.tier as TroopTier),
-                  )?.trait || ""
-                }
-                size="sm"
-                className="w-4 h-4 mr-2"
-              />
-              <div className="flex flex-col text-left min-w-0 flex-1">
-                <span className="text-xs sm:text-sm text-gold/90 font-medium truncate">
-                  {TroopType[guard.troops.category as TroopType]} {guard.troops.tier as TroopTier} (Slot {guard.slot})
-                </span>
-                <span className="text-sm sm:text-base text-gold font-bold">
-                  {currencyFormat(Number(guard.troops.count || 0), 0)}
-                </span>
-              </div>
-            </button>
-          ))}
+          {structureGuards
+            .sort((a, b) => b.slot - a.slot)
+            .map((guard) => (
+              <button
+                key={guard.slot}
+                onClick={() => setSelectedGuardSlot(guard.slot)}
+                className={`flex items-center bg-brown-900/90 border ${
+                  selectedGuardSlot === guard.slot ? "border-gold bg-gold/10" : "border-gold/20"
+                } rounded-md px-2 sm:px-3 py-1.5 sm:py-2 hover:border-gold/60 transition-colors focus:outline-none focus:ring-2 focus:ring-gold/50 min-w-0 flex-1 sm:flex-none`}
+                aria-pressed={selectedGuardSlot === guard.slot}
+                aria-label={`Select ${TroopType[guard.troops.category as TroopType]} ${guard.troops.tier} troops in slot ${DISPLAYED_SLOT_NUMBER_MAP[guard.slot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]}`}
+              >
+                <ResourceIcon
+                  withTooltip={false}
+                  resource={
+                    resources.find(
+                      (r) =>
+                        r.id === getTroopResourceId(guard.troops.category as TroopType, guard.troops.tier as TroopTier),
+                    )?.trait || ""
+                  }
+                  size="sm"
+                  className="w-4 h-4 mr-2"
+                />
+                <div className="flex flex-col text-left min-w-0 flex-1">
+                  <span className="text-xs sm:text-sm text-gold/90 font-medium truncate">
+                    {TroopType[guard.troops.category as TroopType]} {guard.troops.tier as TroopTier} (Slot{" "}
+                    {DISPLAYED_SLOT_NUMBER_MAP[guard.slot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]})
+                  </span>
+                  <span className="text-sm sm:text-base text-gold font-bold">
+                    {currencyFormat(Number(guard.troops.count || 0), 0)}
+                  </span>
+                </div>
+              </button>
+            ))}
         </div>
       </div>
     );
