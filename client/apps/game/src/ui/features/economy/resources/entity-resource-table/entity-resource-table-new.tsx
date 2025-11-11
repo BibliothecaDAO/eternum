@@ -4,7 +4,6 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Button } from "@/ui/design-system/atoms";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ProductionModal } from "@/ui/features/settlement";
-import { formatStorageValue } from "@/ui/utils/storage-utils";
 import {
   calculateDonkeysNeeded,
   configManager,
@@ -272,45 +271,6 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
     return summaries;
   }, [resourcesByStructure, currentDefaultTick]);
 
-  const storageOverview = useMemo(() => {
-    if (structureColumns.length === 0) return null;
-
-    let capacityKg = 0;
-    let capacityUsedKg = 0;
-    let storehouseCount = 0;
-
-    structureColumns.forEach((structure) => {
-      if (!resourcesByStructure.has(structure.entityId)) {
-        return;
-      }
-
-      try {
-        const {
-          capacityKg: capacity,
-          capacityUsedKg: used,
-          quantity,
-        } = new ResourceManager(components, structure.entityId as ID).getStoreCapacityKg();
-
-        capacityKg += capacity;
-        capacityUsedKg += used;
-        storehouseCount += quantity;
-      } catch {
-        // Ignore structures without resource data
-      }
-    });
-
-    if (capacityKg === 0 && capacityUsedKg === 0 && storehouseCount === 0) {
-      return null;
-    }
-
-    return {
-      capacityKg,
-      capacityUsedKg,
-      remainingKg: Math.max(0, capacityKg - capacityUsedKg),
-      storehouseCount,
-    };
-  }, [components, resourcesByStructure, structureColumns]);
-
   const tiers = useMemo(() => Object.entries(getResourceTiers(getIsBlitz())), []);
 
   if (structureColumns.length === 0) {
@@ -319,17 +279,6 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
 
   const highlightedStructure = structureColumns.find((structure) => structure.isSelected)?.label;
   const isBlitz = getIsBlitz();
-
-  const storageWarning =
-    storageOverview && storageOverview.capacityKg > 0
-      ? storageOverview.remainingKg / storageOverview.capacityKg <= 0.15
-      : false;
-  const formattedStorageCapacity = storageOverview ? formatStorageValue(storageOverview.capacityKg) : null;
-  const formattedStorageUsed = storageOverview ? formatStorageValue(storageOverview.capacityUsedKg) : null;
-  const formattedStorageRemaining =
-    storageOverview && formattedStorageCapacity
-      ? formatStorageValue(storageOverview.remainingKg, { forceInfinite: formattedStorageCapacity.isInfinite })
-      : null;
 
   const handleToggleTierVisibility = useCallback((tierKey: string) => {
     setCollapsedTiers((prev) => {
@@ -790,40 +739,6 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
               </button>
             </div>
           </div>
-          {storageOverview && (
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-[11px] text-gold/70">
-              <div className="flex items-center gap-2">
-                <span className="uppercase font-semibold text-gold/80">Remaining Storage</span>
-                <span className={clsx("font-semibold", storageWarning ? "text-danger" : "text-green")}>
-                  {formattedStorageRemaining?.isInfinite
-                    ? formattedStorageRemaining.display
-                    : `${formattedStorageRemaining?.display ?? "0"} kg`}
-                </span>
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="flex items-center gap-1">
-                  <span className="text-gold/50">Used</span>
-                  <span className="text-gold">
-                    {formattedStorageUsed?.isInfinite
-                      ? formattedStorageUsed.display
-                      : `${formattedStorageUsed?.display ?? "0"} kg`}
-                  </span>
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="text-gold/50">Total</span>
-                  <span className="text-gold">
-                    {formattedStorageCapacity?.isInfinite
-                      ? formattedStorageCapacity.display
-                      : `${formattedStorageCapacity?.display ?? "0"} kg`}
-                  </span>
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="text-gold/50">Storehouses</span>
-                  <span className="text-gold">{storageOverview.storehouseCount}</span>
-                </span>
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="mt-4 overflow-x-auto rounded-xl border border-gold/15 bg-brown/60">

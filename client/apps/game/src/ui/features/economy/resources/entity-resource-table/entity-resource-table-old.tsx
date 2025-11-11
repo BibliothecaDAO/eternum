@@ -1,11 +1,9 @@
 import { ResourceChip } from "@/ui/features/economy/resources";
-import { formatStorageValue } from "@/ui/utils/storage-utils";
 import {
   getBlockTimestamp,
   getBuildingCount,
   getEntityIdFromKeys,
   getIsBlitz,
-  getRealmInfo,
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
   isMilitaryResource,
@@ -53,11 +51,6 @@ export const EntityResourceTableOld = React.memo(({ entityId }: EntityResourceTa
     getEntityIdFromKeys([BigInt(entityId)]),
   );
 
-  const realmInfo = useMemo(
-    () => getRealmInfo(getEntityIdFromKeys([BigInt(entityId)]), setup.components),
-    [entityId, structureBuildings, resources, setup.components],
-  );
-
   const productionBoostBonus = useComponentValue(
     setup.components.ProductionBoostBonus,
     getEntityIdFromKeys([BigInt(entityId)]),
@@ -77,36 +70,6 @@ export const EntityResourceTableOld = React.memo(({ entityId }: EntityResourceTa
   }, [currentArmiesTick, productionBoostBonus, structure]);
 
   const resourceManager = useResourceManager(entityId);
-
-  const storageOverview = useMemo(() => {
-    if (!realmInfo?.storehouses) return null;
-
-    const capacityKg = realmInfo.storehouses.capacityKg || 0;
-    const capacityUsedKg = realmInfo.storehouses.capacityUsedKg || 0;
-    const storehouseCount = realmInfo.storehouses.quantity || 0;
-
-    if (capacityKg === 0 && capacityUsedKg === 0 && storehouseCount === 0) {
-      return null;
-    }
-
-    return {
-      capacityKg,
-      capacityUsedKg,
-      remainingKg: Math.max(0, capacityKg - capacityUsedKg),
-      storehouseCount,
-    };
-  }, [realmInfo?.storehouses]);
-
-  const storageWarning =
-    storageOverview && storageOverview.capacityKg > 0
-      ? storageOverview.remainingKg / storageOverview.capacityKg <= 0.15
-      : false;
-  const formattedStorageCapacity = storageOverview ? formatStorageValue(storageOverview.capacityKg) : null;
-  const formattedStorageUsed = storageOverview ? formatStorageValue(storageOverview.capacityUsedKg) : null;
-  const formattedStorageRemaining =
-    storageOverview && formattedStorageCapacity
-      ? formatStorageValue(storageOverview.remainingKg, { forceInfinite: formattedStorageCapacity.isInfinite })
-      : null;
 
   const handleToggleTierVisibility = useCallback((tierKey: string) => {
     setCollapsedTiers((prev) => {
@@ -177,40 +140,6 @@ export const EntityResourceTableOld = React.memo(({ entityId }: EntityResourceTa
             </label>
           </div>
         </div>
-        {storageOverview && (
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-[11px] text-gold/70">
-            <div className="flex items-center gap-2">
-              <span className="uppercase font-semibold text-gold/80">Remaining Storage</span>
-              <span className={clsx("font-semibold", storageWarning ? "text-red" : "text-green")}>
-                {formattedStorageRemaining?.isInfinite
-                  ? formattedStorageRemaining.display
-                  : `${formattedStorageRemaining?.display ?? "0"} kg`}
-              </span>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="flex items-center gap-1">
-                <span className="text-gold/50">Used</span>
-                <span className="text-gold">
-                  {formattedStorageUsed?.isInfinite
-                    ? formattedStorageUsed.display
-                    : `${formattedStorageUsed?.display ?? "0"} kg`}
-                </span>
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="text-gold/50">Total</span>
-                <span className="text-gold">
-                  {formattedStorageCapacity?.isInfinite
-                    ? formattedStorageCapacity.display
-                    : `${formattedStorageCapacity?.display ?? "0"} kg`}
-                </span>
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="text-gold/50">Storehouses</span>
-                <span className="text-gold">{storageOverview.storehouseCount}</span>
-              </span>
-            </div>
-          </div>
-        )}
       </div>
 
       <div className="space-y-4 pt-2">
@@ -289,8 +218,6 @@ export const EntityResourceTableOld = React.memo(({ entityId }: EntityResourceTa
                         resourceId={resourceId}
                         resourceManager={resourceManager}
                         hideZeroBalance={!showAllResources && !ALWAYS_SHOW_RESOURCES.includes(resourceId)}
-                        storageCapacity={realmInfo?.storehouses.capacityKg}
-                        storageCapacityUsed={realmInfo?.storehouses.capacityUsedKg}
                         activeRelicEffects={activeRelicEffects}
                         canOpenProduction={hasProductionBuilding}
                       />

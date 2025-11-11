@@ -127,14 +127,6 @@ export const ResourceChip = ({
     return getTotalResourceWeightKg([{ resourceId, amount: Number(amountProduced) }]);
   }, [amountProduced, resourceId]);
 
-  const storageRemaining = useMemo(() => {
-    return storageCapacity - storageCapacityUsed;
-  }, [storageCapacity, storageCapacityUsed]);
-
-  const isStorageFull = useMemo(() => {
-    return storageRemaining <= 0;
-  }, [storageRemaining]);
-
   const handleMouseEnter = useCallback(
     (event: MouseEvent<HTMLDivElement>) => {
       setIsHovered(true);
@@ -201,17 +193,7 @@ export const ResourceChip = ({
       //   ),
       // });
     },
-    [
-      actualBalance,
-      amountProduced,
-      resourceId,
-      setTooltip,
-      isStorageFull,
-      storageRemaining,
-      producedWeight,
-      setIsHovered,
-      setDisplayBalance,
-    ],
+    [actualBalance, amountProduced, resourceId, setTooltip, producedWeight, setIsHovered, setDisplayBalance],
   );
 
   const handleMouseLeave = useCallback(() => {
@@ -339,7 +321,7 @@ export const ResourceChip = ({
               <div className="flex  gap-4 w-full col-span-12">
                 {isProducing && !hasReachedMaxCap ? (
                   <div className={`self-center flex ${size === "large" ? "text-base" : "text-xs"} justify-end`}>
-                    <div className={!isStorageFull ? "text-green" : "text-red"}>
+                    <div className="text-green">
                       +
                       {showPerHour
                         ? `${currencyIntlFormat(productionRate * 60 * 60, 4)}/h`
