@@ -1594,7 +1594,8 @@ const DragDropAmountDialog = React.memo(
               <label className="block text-sm text-gold/80 mb-2">
                 Amount to transfer
                 <span className="block text-[11px] text-gold/60">
-                  Max transportable: {formatResourceAmount(maxTransferableAmount)} / Available: {formatResourceAmount(dragData.maxAmount)}
+                  Max transportable: {formatResourceAmount(maxTransferableAmount)} / Available:{" "}
+                  {formatResourceAmount(dragData.maxAmount)}
                 </span>
               </label>
               <input
