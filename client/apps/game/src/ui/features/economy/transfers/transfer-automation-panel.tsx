@@ -14,7 +14,14 @@ import {
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { CapacityConfig, RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import {
+  CapacityConfig,
+  ClientComponents,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  Structure,
+  StructureType,
+} from "@bibliothecadao/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { TransferAutomationAdvancedModal } from "./transfer-automation-modal";
@@ -22,16 +29,26 @@ import { TransferAutomationAdvancedModal } from "./transfer-automation-modal";
 const ALL_RESOURCE_IDS = Object.values(ResourcesIds).filter((v) => typeof v === "number") as ResourcesIds[];
 const ESSENCE_SITE_ALLOWED_RESOURCES = new Set<ResourcesIds>([ResourcesIds.Donkey, ResourcesIds.Essence]);
 
+const SOURCE_ALLOWED_CATEGORIES = new Set<StructureType>([
+  StructureType.Realm,
+  StructureType.Village,
+  StructureType.FragmentMine,
+]);
+const DEST_ALLOWED_CATEGORIES = SOURCE_ALLOWED_CATEGORIES;
+
+const isFragmentMine = (structure: Structure | undefined) => structure?.category === StructureType.FragmentMine;
+const isRealm = (structure: Structure | undefined) => structure?.category === StructureType.Realm;
+const isAllowedSource = (structure: Structure) => SOURCE_ALLOWED_CATEGORIES.has(structure.category);
+const isAllowedDestination = (structure: Structure) => DEST_ALLOWED_CATEGORIES.has(structure.category);
+
 export const TransferAutomationPanel = () => {
   const playerStructures = useUIStore((s) => s.playerStructures);
   const toggleModal = useUIStore((s) => s.toggleModal);
   const { currentDefaultTick } = useBlockTimestamp();
   const isBlitz = getIsBlitz();
 
-  const ownedSources = useMemo(() => {
-    // Allow Realm, Village, FragmentMine as sources
-    const allowed = new Set<StructureType>([StructureType.Realm, StructureType.Village, StructureType.FragmentMine]);
-    return playerStructures.filter((s: any) => allowed.has(s.structure?.base?.category));
+  const ownedSources = useMemo<Structure[]>(() => {
+    return playerStructures.filter((structure) => isAllowedSource(structure));
   }, [playerStructures]);
 
   // Aggregate available resources across owned sources (balance > 0)
@@ -43,9 +60,10 @@ export const TransferAutomationPanel = () => {
   const resourceTotals = useMemo(() => {
     const totals = new Map<ResourcesIds, number>();
     if (!components) return totals;
+    const clientComponents = components as ClientComponents;
     for (const ps of ownedSources) {
-      const rm = new ResourceManager(components as any, ps.entityId);
-      const category = ps.structure?.base?.category;
+      const rm = new ResourceManager(clientComponents, ps.entityId);
+      const category = ps.category;
       for (const rid of ALL_RESOURCE_IDS) {
         try {
           if (isMilitaryResource(rid) && category !== StructureType.Realm) {
@@ -54,13 +72,15 @@ export const TransferAutomationPanel = () => {
           const bal = rm.balanceWithProduction(currentDefaultTick, rid).balance ?? 0n;
           const human = Number(bal) / RESOURCE_PRECISION;
           if (human > 0) totals.set(rid, (totals.get(rid) ?? 0) + human);
-        } catch (_) {}
+        } catch {
+          // ignore structures missing balance data
+        }
       }
     }
     return totals;
   }, [components, ownedSources, currentDefaultTick]);
 
-  const availableResources = useMemo(() => new Set(resourceTotals.keys() as any), [resourceTotals]);
+  const availableResources = useMemo(() => new Set(resourceTotals.keys()), [resourceTotals]);
 
   // UI state
   const [selectedResources, setSelectedResources] = useState<ResourcesIds[]>([]);
@@ -103,14 +123,12 @@ export const TransferAutomationPanel = () => {
     setRepeat(true);
     setIntervalMinutes(draft.intervalMinutes);
 
-    if (!components) return;
-
     try {
       const next: Record<number, { amount: number }> = {};
       if (Array.isArray(draft.resourceConfigs) && draft.resourceConfigs.length > 0) {
         draft.resourceConfigs.forEach((cfg) => {
           const rid = cfg.resourceId as ResourcesIds;
-          next[rid] = { amount: Math.max(0, Math.floor((cfg as any).amount ?? 0)) };
+          next[rid] = { amount: Math.max(0, Math.floor(cfg.amount ?? 0)) };
         });
       } else {
         (draft.resourceIds || []).forEach((rid) => {
@@ -131,24 +149,25 @@ export const TransferAutomationPanel = () => {
 
   const filteredOwnedSources = useMemo(() => {
     if (!hasMilitarySelection) return ownedSources;
-    return ownedSources.filter((ps: any) => ps.structure?.base?.category === StructureType.Realm);
+    return ownedSources.filter((ps) => isRealm(ps));
   }, [ownedSources, hasMilitarySelection]);
 
   const eligibleSources = useMemo(() => {
-    if (!components) return filteredOwnedSources as any[];
-    if (selectedResources.length === 0) return filteredOwnedSources as any[];
+    if (!components) return filteredOwnedSources;
+    if (selectedResources.length === 0) return filteredOwnedSources;
+    const clientComponents = components as ClientComponents;
     return filteredOwnedSources
-      .filter((ps: any) => {
-        const rm = new ResourceManager(components as any, ps.entityId);
+      .filter((ps) => {
+        const rm = new ResourceManager(clientComponents, ps.entityId);
         for (const rid of selectedResources) {
           const bal = rm.balanceWithProduction(currentDefaultTick, rid).balance ?? 0n;
           if (Number(bal) <= 0) return false;
         }
         return true;
       })
-      .sort((a: any, b: any) => {
-        const rma = new ResourceManager(components as any, a.entityId);
-        const rmb = new ResourceManager(components as any, b.entityId);
+      .sort((a, b) => {
+        const rma = new ResourceManager(clientComponents, a.entityId);
+        const rmb = new ResourceManager(clientComponents, b.entityId);
         const suma = selectedResources.reduce(
           (acc, rid) => acc + Number(rma.balanceWithProduction(currentDefaultTick, rid).balance ?? 0n),
           0,
@@ -163,25 +182,23 @@ export const TransferAutomationPanel = () => {
 
   const selectedSource = useMemo(() => {
     if (!selectedSourceId) return null;
-    return ownedSources.find((ps: any) => ps.entityId === selectedSourceId) ?? null;
+    return ownedSources.find((ps) => Number(ps.entityId) === Number(selectedSourceId)) ?? null;
   }, [ownedSources, selectedSourceId]);
 
   // Destinations: owned realms + villages (toggle does not affect source list)
-  const ownedDestinations = useMemo(() => {
-    // Essence rifts share the FragmentMine category, so include it to enable donkey transfers to rifts.
-    const allowed = new Set<StructureType>([StructureType.Realm, StructureType.Village, StructureType.FragmentMine]);
-    return playerStructures.filter((s: any) => allowed.has(s.structure?.base?.category));
+  const ownedDestinations = useMemo<Structure[]>(() => {
+    return playerStructures.filter((structure) => isAllowedDestination(structure));
   }, [playerStructures]);
 
   const filteredOwnedDestinations = useMemo(() => {
     if (!hasMilitarySelection) return ownedDestinations;
-    return ownedDestinations.filter((ps: any) => ps.structure?.base?.category === StructureType.Realm);
+    return ownedDestinations.filter((ps) => isRealm(ps));
   }, [ownedDestinations, hasMilitarySelection]);
 
   const destinationLookup = useMemo(() => {
-    const map = new Map<number, any>();
-    ownedDestinations.forEach((ps: any) => {
-      map.set(ps.entityId, ps);
+    const map = new Map<number, Structure>();
+    ownedDestinations.forEach((ps) => {
+      map.set(Number(ps.entityId), ps);
     });
     return map;
   }, [ownedDestinations]);
@@ -193,7 +210,7 @@ export const TransferAutomationPanel = () => {
   );
 
   const destinations = useMemo(() => {
-    const baseList = ownedDestOnly ? filteredOwnedDestinations : filteredOwnedDestinations; // extend later for public
+    const baseList = ownedDestOnly ? filteredOwnedDestinations : filteredOwnedDestinations; // placeholder for future public list
     const q = destSearch.trim();
     const isNumeric = /^\d+$/.test(q);
     const norm = (s: string) =>
@@ -202,13 +219,11 @@ export const TransferAutomationPanel = () => {
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .replace(/[^a-z0-9 ]/g, "");
-    let list = baseList
-      .filter((ps: any) => ps.entityId !== selectedSourceId)
-      .filter((ps: any) =>
-        allowEssenceDestinationPayload ? true : ps.structure?.base?.category !== StructureType.FragmentMine,
-      );
+    const list = baseList
+      .filter((ps) => Number(ps.entityId) !== Number(selectedSourceId))
+      .filter((ps) => (allowEssenceDestinationPayload ? true : !isFragmentMine(ps)));
     if (!q) return list;
-    return list.filter((ps: any) => {
+    return list.filter((ps) => {
       const name = getStructureName(ps.structure, isBlitz).name;
       if (isNumeric) {
         return String(ps.entityId).includes(q);
@@ -237,30 +252,28 @@ export const TransferAutomationPanel = () => {
 
   useEffect(() => {
     if (!hasMilitarySelection) return;
+    const allowedIds = new Set(filteredOwnedDestinations.map((ps) => Number(ps.entityId)));
+    setDestinationIds((prev) => prev.filter((id) => allowedIds.has(id)));
+  }, [hasMilitarySelection, filteredOwnedDestinations]);
+
+  useEffect(() => {
+    if (!hasMilitarySelection) return;
     if (!selectedSourceId) return;
-    const stillAllowed = filteredOwnedSources.some((ps: any) => ps.entityId === selectedSourceId);
+    const stillAllowed = filteredOwnedSources.some((ps) => Number(ps.entityId) === Number(selectedSourceId));
     if (!stillAllowed) {
       setSelectedSourceId(null);
     }
   }, [hasMilitarySelection, selectedSourceId, filteredOwnedSources]);
 
   useEffect(() => {
-    if (!hasMilitarySelection && allowEssenceDestinationPayload) return;
-    const allowedIds = new Set(
-      filteredOwnedDestinations
-        .filter((ps: any) => {
-          const category = ps.structure?.base?.category;
-          if (hasMilitarySelection && category !== StructureType.Realm) return false;
-          if (!allowEssenceDestinationPayload && category === StructureType.FragmentMine) return false;
-          return true;
-        })
-        .map((ps: any) => ps.entityId),
+    if (allowEssenceDestinationPayload) return;
+    setDestinationIds((prev) =>
+      prev.filter((id) => {
+        const destination = destinationLookup.get(id);
+        return destination ? !isFragmentMine(destination) : false;
+      }),
     );
-    setDestinationIds((prev) => {
-      const next = prev.filter((id) => allowedIds.has(id));
-      return next.length === prev.length ? prev : next;
-    });
-  }, [hasMilitarySelection, allowEssenceDestinationPayload, filteredOwnedDestinations]);
+  }, [allowEssenceDestinationPayload, destinationLookup]);
 
   // Ensure resourceConfigs exist for selected resources and remove stale ones
   useEffect(() => {
@@ -283,12 +296,14 @@ export const TransferAutomationPanel = () => {
     const map = new Map<number, number>();
     if (!components || !selectedSourceId) return map;
     try {
-      const rm = new ResourceManager(components as any, selectedSourceId);
+      const rm = new ResourceManager(components as ClientComponents, selectedSourceId);
       for (const rid of selectedResources) {
         const bal = rm.balanceWithProduction(currentDefaultTick, rid).balance ?? 0n;
         map.set(rid, Math.max(0, Math.floor(Number(bal) / RESOURCE_PRECISION)));
       }
-    } catch {}
+    } catch {
+      // ignore balance fetch errors
+    }
     return map;
   }, [components, selectedSourceId, selectedResources, currentDefaultTick]);
 
@@ -296,7 +311,7 @@ export const TransferAutomationPanel = () => {
   const donkeyAvailable = useMemo(() => {
     if (!components || !selectedSourceId) return 0;
     try {
-      const rm = new ResourceManager(components as any, selectedSourceId);
+      const rm = new ResourceManager(components as ClientComponents, selectedSourceId);
       const raw = rm.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey).balance ?? 0n;
       return Math.max(0, Math.floor(Number(raw) / RESOURCE_PRECISION));
     } catch {
@@ -312,7 +327,7 @@ export const TransferAutomationPanel = () => {
     }
   }, []);
 
-  const restrictToEssencePayload = selectedSource?.structure?.base?.category === StructureType.FragmentMine;
+  const restrictToEssencePayload = selectedSource?.category === StructureType.FragmentMine;
 
   const hasRestrictedResourcesSelected = useMemo(
     () =>
@@ -417,7 +432,9 @@ export const TransferAutomationPanel = () => {
       return;
     }
 
-    const resolvedDestinations = resolvedDestinationIds.map((id) => destinationLookup.get(id)).filter(Boolean) as any[];
+    const resolvedDestinations = resolvedDestinationIds
+      .map((id) => destinationLookup.get(id))
+      .filter((structure): structure is Structure => Boolean(structure));
 
     if (resolvedDestinations.length !== resolvedDestinationIds.length) {
       toast.error("Selected destination is no longer available.");
@@ -427,14 +444,11 @@ export const TransferAutomationPanel = () => {
     const hasMilitary = selectedResources.some((rid) => isMilitaryResource(rid));
 
     if (hasMilitary) {
-      const src = ownedSources.find((s: any) => s.entityId === selectedSourceId);
-      const invalid = resolvedDestinations.some(
-        (dst: any) =>
-          !dst ||
-          !src ||
-          src.structure?.base?.category !== StructureType.Realm ||
-          dst.structure?.base?.category !== StructureType.Realm,
-      );
+      const src = ownedSources.find((structure) => Number(structure.entityId) === Number(selectedSourceId));
+      const invalid =
+        !src ||
+        src.category !== StructureType.Realm ||
+        resolvedDestinations.some((dst) => dst.category !== StructureType.Realm);
       if (invalid) {
         toast.error("Troops can only be transferred Realm ↔ Realm.");
         return;
@@ -442,8 +456,7 @@ export const TransferAutomationPanel = () => {
     }
 
     const essenceDestinationInvalid =
-      !allowEssenceDestinationPayload &&
-      resolvedDestinations.some((dst: any) => dst.structure?.base?.category === StructureType.FragmentMine);
+      !allowEssenceDestinationPayload && resolvedDestinations.some((dst) => isFragmentMine(dst));
     if (essenceDestinationInvalid) {
       toast.error("Essence rifts only accept Donkeys and Essence.");
       return;
@@ -502,7 +515,7 @@ export const TransferAutomationPanel = () => {
       return;
     }
 
-    const src = ownedSources.find((s: any) => s.entityId === selectedSourceId);
+    const src = ownedSources.find((structure) => Number(structure.entityId) === Number(selectedSourceId));
 
     let immediateRunTimestamp: number | undefined;
     try {
@@ -646,7 +659,7 @@ export const TransferAutomationPanel = () => {
         )}
         <div className="flex flex-wrap gap-2">
           {Array.from(availableResources)
-            .filter((rid: any) => {
+            .filter((rid) => {
               if (restrictToEssencePayload && !ESSENCE_SITE_ALLOWED_RESOURCES.has(rid as ResourcesIds)) {
                 return false;
               }
@@ -654,24 +667,26 @@ export const TransferAutomationPanel = () => {
               if (resourceFilter === "production") return !isMilitaryResource(rid as ResourcesIds);
               return true;
             })
-            .sort((a: any, b: any) => a - b)
-            .map((rid: any) => {
-              const sel = selectedResources.includes(rid);
+            .sort((a, b) => Number(a) - Number(b))
+            .map((rid) => {
+              const resourceId = rid as ResourcesIds;
+              const sel = selectedResources.includes(resourceId);
               const totalHuman = resourceTotals.get(rid) ?? 0;
               return (
                 <button
-                  key={rid}
+                  key={resourceId}
                   type="button"
                   onClick={() =>
                     setSelectedResources((prev) =>
-                      prev.includes(rid) ? prev.filter((r) => r !== rid) : [...prev, rid],
+                      prev.includes(resourceId) ? prev.filter((r) => r !== resourceId) : [...prev, resourceId],
                     )
                   }
                   className={`px-2 py-1 rounded border text-xs flex items-center gap-1 ${sel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
-                  title={ResourcesIds[rid] as string}
+                  title={ResourcesIds[resourceId] as string}
                 >
-                  <ResourceIcon resource={ResourcesIds[rid]} size="xs" />
-                  {ResourcesIds[rid]} <span className="text-[10px] text-gold/60">({totalHuman.toLocaleString()})</span>
+                  <ResourceIcon resource={ResourcesIds[resourceId]} size="xs" />
+                  {ResourcesIds[resourceId]}{" "}
+                  <span className="text-[10px] text-gold/60">({totalHuman.toLocaleString()})</span>
                 </button>
               );
             })}
@@ -690,7 +705,7 @@ export const TransferAutomationPanel = () => {
           />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {eligibleSources
-              .filter((ps: any) => {
+              .filter((ps) => {
                 const q = sourceSearch.trim();
                 if (!q) return true;
                 const isNumeric = /^\d+$/.test(q);
@@ -703,18 +718,19 @@ export const TransferAutomationPanel = () => {
                     .replace(/[\u0300-\u036f]/g, "");
                 return norm(name).includes(norm(q));
               })
-              .map((ps: any) => {
+              .map((ps) => {
                 const name = getStructureName(ps.structure, isBlitz).name;
-                const isSel = selectedSourceId === ps.entityId;
+                const entityId = Number(ps.entityId);
+                const isSel = selectedSourceId === entityId;
                 return (
                   <button
                     key={ps.entityId}
                     type="button"
                     className={`text-left px-2 py-2 rounded border ${isSel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
-                    onClick={() => setSelectedSourceId(selectedSourceId === ps.entityId ? null : ps.entityId)}
+                    onClick={() => setSelectedSourceId(isSel ? null : entityId)}
                   >
                     <div className="text-sm font-semibold">{name}</div>
-                    <div className="text-xxs uppercase text-gold/60">{StructureType[ps.structure?.base?.category]}</div>
+                    <div className="text-xxs uppercase text-gold/60">{StructureType[ps.category]}</div>
                   </button>
                 );
               })}
@@ -744,18 +760,19 @@ export const TransferAutomationPanel = () => {
             className="w-full px-2 py-1 text-xs rounded border border-gold/30 bg-black/30 text-gold/80 placeholder:text-gold/40 focus:border-gold/60 outline-none mb-2"
           />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {destinations.map((ps: any) => {
+            {destinations.map((ps) => {
               const name = getStructureName(ps.structure, isBlitz).name;
-              const isSel = destinationIds.includes(ps.entityId);
+              const entityId = Number(ps.entityId);
+              const isSel = destinationIds.includes(entityId);
               return (
                 <button
                   key={`dst-${ps.entityId}`}
                   type="button"
                   className={`text-left px-2 py-2 rounded border ${isSel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
-                  onClick={() => toggleDestinationSelection(ps.entityId)}
+                  onClick={() => toggleDestinationSelection(entityId)}
                 >
                   <div className="text-sm font-semibold">{name}</div>
-                  <div className="text-xxs uppercase text-gold/60">{StructureType[ps.structure?.base?.category]}</div>
+                  <div className="text-xxs uppercase text-gold/60">{StructureType[ps.category]}</div>
                 </button>
               );
             })}

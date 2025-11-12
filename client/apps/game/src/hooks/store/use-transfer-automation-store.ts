@@ -33,9 +33,10 @@ export interface TransferAutomationEntry {
   nextRunAt?: number | null;
 }
 
-type NewEntry = Omit<TransferAutomationEntry, "id" | "createdAt" | "lastRunAt" | "nextRunAt" | "active" | "gameId"> & {
+type NewEntry = Omit<TransferAutomationEntry, "id" | "createdAt" | "nextRunAt" | "active" | "gameId"> & {
   active?: boolean;
   gameId?: string;
+  lastRunAt?: number;
 };
 
 interface TransferAutomationState {
@@ -65,17 +66,17 @@ const generateId = () => {
   return `ta_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
 };
 
-const sanitizeResourceConfigs = (raw: unknown): TransferAutomationEntry["resourceConfigs"] => {
+const sanitizeResourceConfigs = (raw: unknown, fallbackAmount?: number): TransferAutomationEntry["resourceConfigs"] => {
   if (!Array.isArray(raw) || raw.length === 0) return undefined;
   const sanitized: TransferAutomationResourceConfig[] = [];
   raw.forEach((item) => {
     if (!item || typeof item !== "object") return;
     const candidate = item as { resourceId?: unknown; amount?: unknown };
     if (typeof candidate.resourceId !== "number") return;
+    const sourceAmount =
+      typeof candidate.amount === "number" && Number.isFinite(candidate.amount) ? candidate.amount : fallbackAmount;
     const normalizedAmount =
-      typeof candidate.amount === "number" && Number.isFinite(candidate.amount)
-        ? Math.max(0, Math.floor(candidate.amount))
-        : 0;
+      typeof sourceAmount === "number" && Number.isFinite(sourceAmount) ? Math.max(0, Math.floor(sourceAmount)) : 0;
     sanitized.push({
       resourceId: candidate.resourceId,
       amount: normalizedAmount,
@@ -121,7 +122,7 @@ export const useTransferAutomationStore = create<TransferAutomationState>()(
           resourceConfigs:
             sanitizeResourceConfigs(raw.resourceConfigs) ?? buildConfigsFromResources(resourceIdsArray, undefined),
           intervalMinutes: Math.max(1, Math.round(raw.intervalMinutes ?? 1)),
-          lastRunAt: undefined,
+          lastRunAt: raw.lastRunAt,
           nextRunAt: active ? now + Math.max(1, Math.round(raw.intervalMinutes ?? 1)) * 60_000 : null,
         };
         set((state) => ({ entries: { ...state.entries, [id]: entry } }));

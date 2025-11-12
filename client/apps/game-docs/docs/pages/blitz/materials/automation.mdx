@@ -122,12 +122,12 @@ automation and is stored per season (localStorage key `eternum-transfer-automati
 
 ### Runner Basics
 
-- **Interval-based**: Each entry stores a source, destination, resource list, and interval. Intervals are clamped between
-  1 and 30 minutes (default 5). The runner wakes roughly once per second to check whether an entry’s `nextRunAt` has
-  elapsed.
+- **Interval-based**: Each entry stores a source, destination, resource list, and interval. Intervals are clamped
+  between 1 and 30 minutes (default 5). The runner wakes roughly once per second to check whether an entry’s `nextRunAt`
+  has elapsed.
 - **Immediate send + schedule**: When you enable “Repeat” in the transfer panel, Blitz sends the payload once (if
-  possible) and also creates one entry per destination. The immediate send time is recorded as `lastRunAt`, and the first
-  automated run occurs after the selected interval.
+  possible) and also creates one entry per destination. The immediate send time is recorded as `lastRunAt`, and the
+  first automated run occurs after the selected interval.
 - **Resource locking**: Every entry keeps per-resource amounts. Each execution clamps those amounts to live balances and
   available donkey capacity so partial shipments still happen safely.
 - **Safety checks**: Military resources can only move Realm ↔ Realm. Fragment mines can only send Donkeys/Essence. The
@@ -147,8 +147,8 @@ automation and is stored per season (localStorage key `eternum-transfer-automati
    - Military payloads auto-filter destinations to Realms only.
 4. **Set frequency**:
    - `One-off` fires a single `send_resources_multiple` call (no automation entry).
-   - `Repeat` executes immediately and schedules future runs at the chosen 1‑30 minute interval (slider defaults to
-     5 minutes).
+   - `Repeat` executes immediately and schedules future runs at the chosen 1‑30 minute interval (slider defaults to 5
+     minutes).
 5. **Create transfers**: Confirm to send the immediate shipment (if possible) and persist the scheduled entries.
 
 ### Managing Scheduled Transfers
@@ -164,8 +164,8 @@ Open the **Scheduled Transfers** (Advanced) modal to control saved entries:
 
 ### Transfer Requirements & Safeguards
 
-- Sources and destinations must be structures you own. The UI only lists owned entities and the runner double-checks
-  IDs before calling `send_resources_multiple`.
+- Sources and destinations must be structures you own. The UI only lists owned entities and the runner double-checks IDs
+  before calling `send_resources_multiple`.
 - Donkey supply is mandatory. The runner converts the requested payload into kilograms, calls `calculateDonkeysNeeded`,
   and skips the entry if the source lacks enough Donkeys.
 - Entries reschedule themselves even when a run transacts zero resources (e.g., source empty). Keep an eye on toasts to
@@ -204,8 +204,8 @@ Open the **Scheduled Transfers** (Advanced) modal to control saved entries:
 - **Entity Ownership**: You can only set up transfers between entities you own.
 - **Interval Limits**: Every scheduled entry enforces a 1‑30 minute interval. Values below 1 minute are raised to 1 and
   anything above 30 minutes is clamped down by the UI slider.
-- **Resource & Donkey Checks**: Each run clamps requested amounts to the source’s current balance and donkey capacity. If
-  either requirement fails, the entry is skipped and rescheduled.
+- **Resource & Donkey Checks**: Each run clamps requested amounts to the source’s current balance and donkey capacity.
+  If either requirement fails, the entry is skipped and rescheduled.
 - **Payload Restrictions**: Military resources require Realm ↔ Realm routes. Fragment mines may only ship Donkeys and
   Essence.
 - **Per-Route Tracking**: Multi-destination setups become discrete entries. Pausing or deleting one route does not
