@@ -1,8 +1,10 @@
+use dojo::world::WorldStorage;
 use core::fmt::{Display, Error, Formatter};
 use core::num::traits::zero::Zero;
 use core::option::OptionTrait;
 use core::traits::{Into, TryInto};
 use crate::utils::number::NumberTrait;
+use crate::models::config::WorldConfigUtilImpl;
 
 // todo@credence revisit zone calculation
 
@@ -14,8 +16,8 @@ const LOWEST_COL: u32 = 2147483647;
 const HIGHEST_ROW: u32 = 2147483947;
 const LOWEST_ROW: u32 = 2147483647;
 
-const CENTER_ROW: u32 = 2147483646;
-const CENTER_COL: u32 = CENTER_ROW;
+pub const CENTER_ROW: u32 = 2147483646;
+pub const CENTER_COL: u32 = CENTER_ROW;
 
 
 // multiplier to convert hex distance to km
@@ -193,8 +195,9 @@ pub impl CoordDisplay of Display<Coord> {
 
 #[generate_trait]
 pub impl CoordImpl of CoordTrait {
-    fn center() -> Coord {
-        Coord { x: CENTER_COL, y: CENTER_ROW }
+    fn center(ref world: WorldStorage) -> Coord {
+        let map_center_offset = WorldConfigUtilImpl::get_member(world, selector!("map_center_offset"));
+        Coord { x: CENTER_COL - map_center_offset, y: CENTER_ROW - map_center_offset }
     }
     fn neighbor(self: Coord, direction: Direction) -> Coord {
         // https://www.redblobgames.com/grids/hexagons/#neighbors-offset

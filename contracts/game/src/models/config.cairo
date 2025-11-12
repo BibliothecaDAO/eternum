@@ -19,6 +19,7 @@ pub struct WorldConfig {
     pub config_id: ID,
     pub admin_address: ContractAddress,
     pub vrf_provider_address: ContractAddress,
+    pub map_center_offset: u32,
     pub season_addresses_config: SeasonAddressesConfig,
     pub hyperstructure_config: HyperstructureConfig,
     pub hyperstructure_cost_config: HyperstructureCostConfig,
@@ -378,13 +379,13 @@ pub impl SettlementConfigImpl of SettlementConfigTrait {
     }
 
     // todo: test aggresively
-    fn generate_coord(self: SettlementConfig, max_layer: u32, side: u32, layer: u32, point: u32) -> Coord {
+    fn generate_coord(self: SettlementConfig, max_layer: u32, side: u32, layer: u32, point: u32, map_center: Coord) -> Coord {
         assert!(side < 6, "Side must be less than 6"); // 0 - 5
         assert!(layer > 0, "Layer must be greater than 0");
         assert!(layer <= max_layer, "Layer must be less than max layer");
         assert!(point <= Self::max_points(layer), "Point must be less than max side points");
 
-        let mut start_coord: Coord = CoordImpl::center();
+        let mut start_coord: Coord = map_center;
         let start_directions: Array<(Direction, Direction)> = array![
             (Direction::East, Direction::NorthWest), (Direction::East, Direction::SouthWest),
             (Direction::West, Direction::NorthEast), (Direction::West, Direction::SouthEast),
@@ -458,8 +459,8 @@ pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
 
     // Html & JS interactive implementation reference: contracts/game/ext/formulas/blitz_hex_map.html
 
-    fn generate_coords(ref self: BlitzSettlementConfig) -> Array<Coord> {
-        let mut start_coord: Coord = CoordImpl::center();
+    fn generate_coords(ref self: BlitzSettlementConfig, map_center: Coord) -> Array<Coord> {
+        let mut start_coord: Coord = map_center;
         let start_directions: Array<(Direction, Direction)> = array![
             (Direction::NorthEast, Direction::West), (Direction::West, Direction::SouthEast),
             (Direction::SouthEast, Direction::NorthEast), (Direction::NorthWest, Direction::SouthWest),
@@ -541,8 +542,8 @@ pub impl BlitzHypersSettlementConfigImpl of BlitzHypersSettlementConfigTrait {
     }
 
     // Html & JS interactive implementation reference: contracts/game/ext/formulas/blitz_hex_map.html
-    fn next_coord(self: BlitzHypersSettlementConfig) -> Coord {
-        let mut start_coord: Coord = CoordImpl::center();
+    fn next_coord(self: BlitzHypersSettlementConfig, map_center: Coord) -> Coord {
+        let mut start_coord: Coord = map_center;
         let start_directions: Array<(Direction, Direction)> = array![
             (Direction::East, Direction::NorthWest), (Direction::SouthEast, Direction::NorthEast),
             (Direction::SouthWest, Direction::East), (Direction::West, Direction::SouthEast),

@@ -246,6 +246,7 @@ pub mod config_systems {
         WorldConfigUtilImpl, BlitzRegistrationConfigImpl, BlitzPreviousGame
     };
     use crate::models::name::AddressName;
+    use crate::models::position::{CoordImpl, CENTER_COL};
     use crate::models::resource::production::building::BuildingCategory;
     use crate::models::resource::resource::{ResourceList, ResourceMinMaxList};
     use crate::utils::achievements::index::AchievementTrait;
@@ -339,6 +340,11 @@ pub mod config_systems {
             }
 
             world_config.admin_address = admin_address;
+            
+
+            let tx_hash: u256 = starknet::get_tx_info().unbox().transaction_hash.into();
+            let half_map: u256 = (CENTER_COL / 2).into();
+            world_config.map_center_offset = (tx_hash % half_map).try_into().unwrap();
             world.write_model(@world_config);
         }
     }

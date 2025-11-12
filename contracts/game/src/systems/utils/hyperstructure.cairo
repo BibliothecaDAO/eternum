@@ -23,7 +23,8 @@ use crate::system_libraries::structure_libraries::structure_creation_library::{
 pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
     fn lottery(world: WorldStorage, coord: Coord, map_config: MapConfig, vrf_seed: u256) -> bool {
         // get hyperstructure foundation find probabilities
-        let tile_distance_count: u128 = coord.tile_distance(CoordImpl::center());
+        let mut world = world;
+        let tile_distance_count: u128 = coord.tile_distance(CoordImpl::center(ref world));
         let hyps_fail_prob_increase_p_hex: u128 = map_config.hyps_fail_prob_increase_p_hex.into();
         let mut hyps_win_prob: u128 = map_config.hyps_win_prob.into();
         let hyps_probs_original_sum: u128 = map_config.hyps_win_prob.into() + map_config.hyps_fail_prob.into();
