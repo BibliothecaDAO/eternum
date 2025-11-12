@@ -2317,6 +2317,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       points_for_hyperstructure_claim_against_bandits,
       points_for_non_hyperstructure_claim_against_bandits,
       points_for_tile_exploration,
+      points_for_relic_open,
       signer,
     } = props;
 
@@ -2329,6 +2330,7 @@ export class EternumProvider extends EnhancedDojoProvider {
           points_for_hyperstructure_claim_against_bandits,
           points_for_non_hyperstructure_claim_against_bandits,
           points_for_tile_exploration,
+          points_for_relic_open
         ],
       },
       {

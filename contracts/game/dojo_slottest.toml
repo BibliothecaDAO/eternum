@@ -9,7 +9,7 @@ rpc_url = "https://api.cartridge.gg/x/eternum-blitz-slot-test/katana"
 
 [lib_versions]
 "s1_eternum-combat_library" = "0_1_0"
-"s1_eternum-rng_library" = "0_1_2"
+"s1_eternum-rng_library" = "0_1_3"
 "s1_eternum-biome_library" = "0_1_0"
 "s1_eternum-structure_creation_library" = "0_1_0"
 
