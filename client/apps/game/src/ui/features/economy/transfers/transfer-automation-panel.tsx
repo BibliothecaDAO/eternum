@@ -187,6 +187,11 @@ export const TransferAutomationPanel = () => {
   }, [ownedDestinations]);
 
   const [destSearch, setDestSearch] = useState("");
+  const allowEssenceDestinationPayload = useMemo(
+    () => selectedResources.every((rid) => ESSENCE_SITE_ALLOWED_RESOURCES.has(rid)),
+    [selectedResources],
+  );
+
   const destinations = useMemo(() => {
     const baseList = ownedDestOnly ? filteredOwnedDestinations : filteredOwnedDestinations; // extend later for public
     const q = destSearch.trim();
@@ -197,7 +202,11 @@ export const TransferAutomationPanel = () => {
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .replace(/[^a-z0-9 ]/g, "");
-    let list = baseList.filter((ps: any) => ps.entityId !== selectedSourceId);
+    let list = baseList
+      .filter((ps: any) => ps.entityId !== selectedSourceId)
+      .filter((ps: any) =>
+        allowEssenceDestinationPayload ? true : ps.structure?.base?.category !== StructureType.FragmentMine,
+      );
     if (!q) return list;
     return list.filter((ps: any) => {
       const name = getStructureName(ps.structure, isBlitz).name;
@@ -206,7 +215,7 @@ export const TransferAutomationPanel = () => {
       }
       return norm(name).includes(norm(q));
     });
-  }, [ownedDestOnly, filteredOwnedDestinations, destSearch, isBlitz, selectedSourceId]);
+  }, [ownedDestOnly, filteredOwnedDestinations, destSearch, isBlitz, selectedSourceId, allowEssenceDestinationPayload]);
 
   // Force single destination selection when multiple resources are selected
   useEffect(() => {
@@ -236,13 +245,22 @@ export const TransferAutomationPanel = () => {
   }, [hasMilitarySelection, selectedSourceId, filteredOwnedSources]);
 
   useEffect(() => {
-    if (!hasMilitarySelection) return;
-    const allowedIds = new Set(filteredOwnedDestinations.map((ps: any) => ps.entityId));
+    if (!hasMilitarySelection && allowEssenceDestinationPayload) return;
+    const allowedIds = new Set(
+      filteredOwnedDestinations
+        .filter((ps: any) => {
+          const category = ps.structure?.base?.category;
+          if (hasMilitarySelection && category !== StructureType.Realm) return false;
+          if (!allowEssenceDestinationPayload && category === StructureType.FragmentMine) return false;
+          return true;
+        })
+        .map((ps: any) => ps.entityId),
+    );
     setDestinationIds((prev) => {
       const next = prev.filter((id) => allowedIds.has(id));
       return next.length === prev.length ? prev : next;
     });
-  }, [hasMilitarySelection, filteredOwnedDestinations]);
+  }, [hasMilitarySelection, allowEssenceDestinationPayload, filteredOwnedDestinations]);
 
   // Ensure resourceConfigs exist for selected resources and remove stale ones
   useEffect(() => {
@@ -423,6 +441,14 @@ export const TransferAutomationPanel = () => {
       }
     }
 
+    const essenceDestinationInvalid =
+      !allowEssenceDestinationPayload &&
+      resolvedDestinations.some((dst: any) => dst.structure?.base?.category === StructureType.FragmentMine);
+    if (essenceDestinationInvalid) {
+      toast.error("Essence rifts only accept Donkeys and Essence.");
+      return;
+    }
+
     if (!transferPreview) {
       toast.error("Unable to compute transfer amounts.");
       return;
@@ -547,6 +573,7 @@ export const TransferAutomationPanel = () => {
     systemCalls,
     destinationLookup,
     allowMultiDestination,
+    allowEssenceDestinationPayload,
   ]);
 
   const perTransferDonkeyNeed = transferPreview?.donkeys.need ?? 0;

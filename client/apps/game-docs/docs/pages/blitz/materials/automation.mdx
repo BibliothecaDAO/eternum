@@ -123,10 +123,11 @@ automation and is stored per season (localStorage key `eternum-transfer-automati
 ### Runner Basics
 
 - **Interval-based**: Each entry stores a source, destination, resource list, and interval. Intervals are clamped between
-  5 and 60 minutes (default 30). The runner wakes roughly once per second to check whether an entry’s `nextRunAt` has
+  1 and 30 minutes (default 5). The runner wakes roughly once per second to check whether an entry’s `nextRunAt` has
   elapsed.
 - **Immediate send + schedule**: When you enable “Repeat” in the transfer panel, Blitz sends the payload once (if
-  possible) and also creates one entry per destination. The first automated run occurs after the selected interval.
+  possible) and also creates one entry per destination. The immediate send time is recorded as `lastRunAt`, and the first
+  automated run occurs after the selected interval.
 - **Resource locking**: Every entry keeps per-resource amounts. Each execution clamps those amounts to live balances and
   available donkey capacity so partial shipments still happen safely.
 - **Safety checks**: Military resources can only move Realm ↔ Realm. Fragment mines can only send Donkeys/Essence. The
@@ -146,7 +147,8 @@ automation and is stored per season (localStorage key `eternum-transfer-automati
    - Military payloads auto-filter destinations to Realms only.
 4. **Set frequency**:
    - `One-off` fires a single `send_resources_multiple` call (no automation entry).
-   - `Repeat` executes immediately and schedules future runs at the chosen 5‑60 minute interval.
+   - `Repeat` executes immediately and schedules future runs at the chosen 1‑30 minute interval (slider defaults to
+     5 minutes).
 5. **Create transfers**: Confirm to send the immediate shipment (if possible) and persist the scheduled entries.
 
 ### Managing Scheduled Transfers
@@ -154,9 +156,11 @@ automation and is stored per season (localStorage key `eternum-transfer-automati
 Open the **Scheduled Transfers** (Advanced) modal to control saved entries:
 
 - Filter by source/destination, run any entry immediately, or delete it.
+- Inspect per-entry stats, including the configured interval and a “last run” timestamp (immediate runs show as “just
+  now”).
 - Pause/resume individual entries; pausing clears `nextRunAt` until you resume.
-- Bulk actions let you pause all, resume all, or run every active entry once. Manual runs obey the same donkey and
-  resource checks as the automated loop.
+- Bulk actions (pause/resume/run active now) operate on the currently filtered list so you can target specific routes.
+  Manual runs obey the same donkey and resource checks as the automated loop.
 
 ### Transfer Requirements & Safeguards
 
@@ -178,7 +182,7 @@ Open the **Scheduled Transfers** (Advanced) modal to control saved entries:
 - **Browser Must Be Open**: Automation processing occurs in your browser. If you close the game tab or your browser,
   automated processes will stop.
 - **Loop Cadence**: Production automation evaluates every ~60 seconds. The transfer runner polls roughly once per second
-  but only fires entries whose 5‑60 minute interval has elapsed.
+  but only fires entries whose 1‑30 minute interval has elapsed.
 - **Transaction Costs**: Each successful automation cycle that results in production or transfer will involve a
   blockchain transaction, which incurs network transaction fees.
 - **Processing Time**: On-chain confirmation time plus wallet prompts can add delay after an automation cycle triggers.
@@ -198,8 +202,8 @@ Open the **Scheduled Transfers** (Advanced) modal to control saved entries:
 ### Transfer Automation Considerations
 
 - **Entity Ownership**: You can only set up transfers between entities you own.
-- **Interval Limits**: Every scheduled entry enforces a 5‑60 minute interval. Values below 5 minutes are raised to 5 and
-  anything above 60 minutes is clamped down.
+- **Interval Limits**: Every scheduled entry enforces a 1‑30 minute interval. Values below 1 minute are raised to 1 and
+  anything above 30 minutes is clamped down by the UI slider.
 - **Resource & Donkey Checks**: Each run clamps requested amounts to the source’s current balance and donkey capacity. If
   either requirement fails, the entry is skipped and rescheduled.
 - **Payload Restrictions**: Military resources require Realm ↔ Realm routes. Fragment mines may only ship Donkeys and
