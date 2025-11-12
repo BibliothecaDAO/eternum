@@ -297,7 +297,8 @@ export const TransferAutomationPanel = () => {
   const restrictToEssencePayload = selectedSource?.structure?.base?.category === StructureType.FragmentMine;
 
   const hasRestrictedResourcesSelected = useMemo(
-    () => Boolean(restrictToEssencePayload && selectedResources.some((rid) => !ESSENCE_SITE_ALLOWED_RESOURCES.has(rid))),
+    () =>
+      Boolean(restrictToEssencePayload && selectedResources.some((rid) => !ESSENCE_SITE_ALLOWED_RESOURCES.has(rid))),
     [restrictToEssencePayload, selectedResources],
   );
 
@@ -338,13 +339,7 @@ export const TransferAutomationPanel = () => {
       }
       return mutated ? next : prev;
     });
-  }, [
-    selectedResources,
-    sourceBalances,
-    donkeyAvailable,
-    donkeyCapacityKgPerUnit,
-    destinationCountForLimits,
-  ]);
+  }, [selectedResources, sourceBalances, donkeyAvailable, donkeyCapacityKgPerUnit, destinationCountForLimits]);
 
   // Computed preview for absolute amounts and donkey capacity (fast path)
   const transferPreview = useMemo(() => {
@@ -404,9 +399,7 @@ export const TransferAutomationPanel = () => {
       return;
     }
 
-    const resolvedDestinations = resolvedDestinationIds
-      .map((id) => destinationLookup.get(id))
-      .filter(Boolean) as any[];
+    const resolvedDestinations = resolvedDestinationIds.map((id) => destinationLookup.get(id)).filter(Boolean) as any[];
 
     if (resolvedDestinations.length !== resolvedDestinationIds.length) {
       toast.error("Selected destination is no longer available.");
@@ -419,7 +412,10 @@ export const TransferAutomationPanel = () => {
       const src = ownedSources.find((s: any) => s.entityId === selectedSourceId);
       const invalid = resolvedDestinations.some(
         (dst: any) =>
-          !dst || !src || src.structure?.base?.category !== StructureType.Realm || dst.structure?.base?.category !== StructureType.Realm,
+          !dst ||
+          !src ||
+          src.structure?.base?.category !== StructureType.Realm ||
+          dst.structure?.base?.category !== StructureType.Realm,
       );
       if (invalid) {
         toast.error("Troops can only be transferred Realm ↔ Realm.");
@@ -552,9 +548,12 @@ export const TransferAutomationPanel = () => {
 
   const perTransferDonkeyNeed = transferPreview?.donkeys.need ?? 0;
   const aggregatedDonkeyNeed =
-    transferPreview && actualDestinationCount > 0 ? transferPreview.donkeys.need * actualDestinationCount : perTransferDonkeyNeed;
-  const donkeyShortage =
-    Boolean(transferPreview && actualDestinationCount > 0 && transferPreview.donkeys.have < aggregatedDonkeyNeed);
+    transferPreview && actualDestinationCount > 0
+      ? transferPreview.donkeys.need * actualDestinationCount
+      : perTransferDonkeyNeed;
+  const donkeyShortage = Boolean(
+    transferPreview && actualDestinationCount > 0 && transferPreview.donkeys.have < aggregatedDonkeyNeed,
+  );
 
   const resetPanel = useCallback(() => {
     setSelectedResources([]);
@@ -813,7 +812,8 @@ export const TransferAutomationPanel = () => {
           {transferPreview && (
             <div className="space-y-1 text-xxs text-gold/60">
               <span className={donkeyShortage ? "text-danger/80" : "text-gold/70"}>
-                Donkeys {aggregatedDonkeyNeed.toLocaleString()} used / {transferPreview.donkeys.have.toLocaleString()} available
+                Donkeys {aggregatedDonkeyNeed.toLocaleString()} used / {transferPreview.donkeys.have.toLocaleString()}{" "}
+                available
               </span>
             </div>
           )}
@@ -821,7 +821,8 @@ export const TransferAutomationPanel = () => {
           {transferPreview && donkeyShortage && (
             <div className="flex items-start gap-2 rounded-md border border-danger/40 bg-danger/10 p-2 text-xs text-danger/80">
               <span>
-                Insufficient donkeys to cover all selected destinations. Reduce the load or add more donkeys at the source.
+                Insufficient donkeys to cover all selected destinations. Reduce the load or add more donkeys at the
+                source.
               </span>
             </div>
           )}

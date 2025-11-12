@@ -70,10 +70,7 @@ const generateId = () => {
   return `ta_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
 };
 
-const sanitizeResourceConfigs = (
-  raw: unknown,
-  fallbackAmount?: number,
-): TransferAutomationEntry["resourceConfigs"] => {
+const sanitizeResourceConfigs = (raw: unknown, fallbackAmount?: number): TransferAutomationEntry["resourceConfigs"] => {
   if (!Array.isArray(raw) || raw.length === 0) return undefined;
   const fallback = Number.isFinite(fallbackAmount) ? Math.max(0, Math.floor(fallbackAmount as number)) : 0;
   const sanitized: TransferAutomationResourceConfig[] = [];
@@ -147,7 +144,9 @@ export const useTransferAutomationStore = create<TransferAutomationState>()(
             intervalMinutes:
               patch.intervalMinutes !== undefined ? clampInterval(patch.intervalMinutes) : prev.intervalMinutes,
             resourceConfigs:
-              patch.resourceConfigs !== undefined ? sanitizeResourceConfigs(patch.resourceConfigs) : prev.resourceConfigs,
+              patch.resourceConfigs !== undefined
+                ? sanitizeResourceConfigs(patch.resourceConfigs)
+                : prev.resourceConfigs,
           };
 
           return { entries: { ...state.entries, [id]: next } };
@@ -211,7 +210,9 @@ export const useTransferAutomationStore = create<TransferAutomationState>()(
             typeof persistedEntry.intervalMinutes === "number" ? persistedEntry.intervalMinutes : 5,
           );
           const fallbackAmount =
-            typeof persistedEntry.flatAmount === "number" ? Math.max(0, Math.floor(persistedEntry.flatAmount)) : undefined;
+            typeof persistedEntry.flatAmount === "number"
+              ? Math.max(0, Math.floor(persistedEntry.flatAmount))
+              : undefined;
           const resourceConfigs =
             sanitizeResourceConfigs(persistedEntry.resourceConfigs, fallbackAmount) ??
             buildConfigsFromResources(resourceIds, fallbackAmount);

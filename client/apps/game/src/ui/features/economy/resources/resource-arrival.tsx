@@ -1,6 +1,12 @@
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 
-import { divideByPrecision, formatTime, getBlockTimestamp, getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
+import {
+  divideByPrecision,
+  formatTime,
+  getBlockTimestamp,
+  getIsBlitz,
+  getStructureName,
+} from "@bibliothecadao/eternum";
 import { useArrivalsByStructure } from "@bibliothecadao/react";
 import { ResourcesIds, Structure } from "@bibliothecadao/types";
 import { Loader2, Clock3 } from "lucide-react";
@@ -36,12 +42,10 @@ export const StructureArrivals = memo(({ structure }: { structure: Structure }) 
 
   const arrivalSummaries = useMemo(() => {
     return arrivalsWithResources.map((arrival) => {
-      const resources = arrival.resources
-        .filter(Boolean)
-        .map((resource) => ({
-          resourceId: resource.resourceId as ResourcesIds,
-          amount: divideByPrecision(resource.amount),
-        }));
+      const resources = arrival.resources.filter(Boolean).map((resource) => ({
+        resourceId: resource.resourceId as ResourcesIds,
+        amount: divideByPrecision(resource.amount),
+      }));
 
       const secondsUntilArrival = Math.max(0, Number(arrival.arrivesAt) - now);
       const isReady = secondsUntilArrival === 0;
