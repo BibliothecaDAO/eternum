@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { TransferAutomationAdvancedModal } from "./transfer-automation-modal";
 
 const ALL_RESOURCE_IDS = Object.values(ResourcesIds).filter((v) => typeof v === "number") as ResourcesIds[];
+const ESSENCE_SITE_ALLOWED_RESOURCES = new Set<ResourcesIds>([ResourcesIds.Donkey, ResourcesIds.Essence]);
 
 export const TransferAutomationPanel = () => {
   const playerStructures = useUIStore((s) => s.playerStructures);
@@ -193,9 +194,15 @@ export const TransferAutomationPanel = () => {
       });
   }, [components, filteredOwnedSources, selectedResources, currentDefaultTick]);
 
+  const selectedSource = useMemo(() => {
+    if (!selectedSourceId) return null;
+    return ownedSources.find((ps: any) => ps.entityId === selectedSourceId) ?? null;
+  }, [ownedSources, selectedSourceId]);
+
   // Destinations: owned realms + villages (toggle does not affect source list)
   const ownedDestinations = useMemo(() => {
-    const allowed = new Set<StructureType>([StructureType.Realm, StructureType.Village]);
+    // Essence rifts share the FragmentMine category, so include it to enable donkey transfers to rifts.
+    const allowed = new Set<StructureType>([StructureType.Realm, StructureType.Village, StructureType.FragmentMine]);
     return playerStructures.filter((s: any) => allowed.has(s.structure?.base?.category));
   }, [playerStructures]);
 
@@ -300,6 +307,21 @@ export const TransferAutomationPanel = () => {
       return 0;
     }
   }, []);
+
+  const restrictToEssencePayload = selectedSource?.structure?.base?.category === StructureType.FragmentMine;
+
+  const hasRestrictedResourcesSelected = useMemo(
+    () => Boolean(restrictToEssencePayload && selectedResources.some((rid) => !ESSENCE_SITE_ALLOWED_RESOURCES.has(rid))),
+    [restrictToEssencePayload, selectedResources],
+  );
+
+  useEffect(() => {
+    if (!hasRestrictedResourcesSelected) return;
+    setSelectedResources((prev) => {
+      const filtered = prev.filter((rid) => ESSENCE_SITE_ALLOWED_RESOURCES.has(rid));
+      return filtered.length === prev.length ? prev : filtered;
+    });
+  }, [hasRestrictedResourcesSelected]);
 
   useEffect(() => {
     if (selectedResources.length === 0) return;
@@ -542,9 +564,15 @@ export const TransferAutomationPanel = () => {
             </button>
           </div>
         </div>
+        {restrictToEssencePayload && (
+          <p className="text-xxs text-gold/60">Essence rifts can only transfer Donkeys and Essence.</p>
+        )}
         <div className="flex flex-wrap gap-2">
           {Array.from(availableResources)
             .filter((rid: any) => {
+              if (restrictToEssencePayload && !ESSENCE_SITE_ALLOWED_RESOURCES.has(rid as ResourcesIds)) {
+                return false;
+              }
               if (resourceFilter === "military") return isMilitaryResource(rid as ResourcesIds);
               if (resourceFilter === "production") return !isMilitaryResource(rid as ResourcesIds);
               return true;
