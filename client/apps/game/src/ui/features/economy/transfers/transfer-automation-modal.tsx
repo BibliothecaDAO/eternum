@@ -18,6 +18,18 @@ const formatResourceSummary = (entry: TransferAutomationEntry): string => {
   return entry.resourceIds.map((rid) => ResourcesIds[rid] ?? `Resource ${rid}`).join(", ");
 };
 
+const formatLastRun = (timestamp: number) => {
+  const now = Date.now();
+  const diffMs = Math.max(0, now - timestamp);
+  if (diffMs < 60_000) return "just now";
+  const minutes = Math.floor(diffMs / 60_000);
+  if (minutes < 60) return `${minutes} min${minutes === 1 ? "" : "s"} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
+};
+
 export const TransferAutomationAdvancedModal = () => {
   const entries = useTransferAutomationStore((s) => s.entries);
   const toggleActive = useTransferAutomationStore((s) => s.toggleActive);
@@ -114,7 +126,7 @@ export const TransferAutomationAdvancedModal = () => {
 
   const pauseAll = useCallback(() => {
     let paused = 0;
-    Object.values(entries).forEach((entry) => {
+    filtered.forEach((entry) => {
       if (entry.active) {
         paused += 1;
         toggleActive(entry.id, false);
@@ -125,11 +137,11 @@ export const TransferAutomationAdvancedModal = () => {
     } else {
       toast.info("No active transfers to pause.");
     }
-  }, [entries, toggleActive]);
+  }, [filtered, toggleActive]);
 
   const resumeAll = useCallback(() => {
     let resumed = 0;
-    Object.values(entries).forEach((entry) => {
+    filtered.forEach((entry) => {
       if (!entry.active) {
         resumed += 1;
         toggleActive(entry.id, true);
@@ -140,7 +152,7 @@ export const TransferAutomationAdvancedModal = () => {
     } else {
       toast.info("No paused transfers to resume.");
     }
-  }, [entries, toggleActive]);
+  }, [filtered, toggleActive]);
 
   const runActiveNow = useCallback(async () => {
     if (isRunningAll) return;
@@ -205,6 +217,9 @@ export const TransferAutomationAdvancedModal = () => {
                   <div>
                     {formatResourceSummary(e)}
                     {e.active ? ` • every ${e.intervalMinutes}m` : " • paused"}
+                    {typeof e.lastRunAt === "number" && (
+                      <span className="text-gold/60"> • last run {formatLastRun(e.lastRunAt)}</span>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

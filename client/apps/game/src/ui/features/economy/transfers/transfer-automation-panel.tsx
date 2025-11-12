@@ -71,7 +71,7 @@ export const TransferAutomationPanel = () => {
   const [sourceSearch, setSourceSearch] = useState("");
   const [destinationIds, setDestinationIds] = useState<number[]>([]);
   const [repeat, setRepeat] = useState(false);
-  const [interval, setIntervalMinutes] = useState(30);
+  const [interval, setIntervalMinutes] = useState(5);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const allowMultiDestination = selectedResources.length === 1;
@@ -478,6 +478,7 @@ export const TransferAutomationPanel = () => {
 
     const src = ownedSources.find((s: any) => s.entityId === selectedSourceId);
 
+    let immediateRunTimestamp: number | undefined;
     try {
       if (currentAmounts.length > 0) {
         const baseResources = buildResourcePayload();
@@ -490,6 +491,7 @@ export const TransferAutomationPanel = () => {
           signer: account,
           calls,
         });
+        immediateRunTimestamp = Date.now();
         toast.success(
           resolvedDestinationIds.length > 1 ? "Transfers sent and scheduled." : "Transfer sent and scheduled.",
         );
@@ -524,6 +526,7 @@ export const TransferAutomationPanel = () => {
         resourceConfigs: configsForEntry,
         intervalMinutes: interval,
         active: true,
+        lastRunAt: immediateRunTimestamp,
       });
     });
     toast.success(resolvedDestinationIds.length > 1 ? "Scheduled transfers created." : "Scheduled transfer created.");

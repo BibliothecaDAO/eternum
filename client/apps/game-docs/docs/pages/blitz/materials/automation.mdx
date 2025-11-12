@@ -84,125 +84,92 @@ Use this view to verify slider settings or debug why a resource is not being aut
 
 ---
 
-## Transfer Automation (unchanged)
+## Production Inputs
 
-Transfer automation allows you to automatically move resources between your entities. There are three transfer modes:
+Automation currently runs two recipe families:
 
-### Transfer Order Processing
+1. **Complex (Resource → Resource)**:
+   - Burns existing resources to craft another output.
+   - Uses the `Resource → Resource` slider for each resource entry.
+   - Example: Converting Wood + Stone into Tools.
+2. **Simple (Labor → Resource)**:
+   - Spends Labor to produce a resource.
+   - Uses the `Labor → Resource` slider.
+   - Example: Spending Labor to harvest Food.
 
-- **Schedule Check**: For recurring transfers, checks if enough time has passed since the last transfer.
-- **Threshold Check**: For conditional transfers, checks if resource levels meet the specified conditions.
-- **Resource Availability**: Verifies the source entity has sufficient resources for the transfer.
-- **Transaction**: If conditions are met, initiates a transfer transaction between entities.
+`Resource → Labor` conversions and any recipe that would output Wheat or Labor are blocked from automation entirely.
+Those actions must be run manually from the production UI.
 
-## Production Types
+## Allocation & Execution Rules
 
-There are three types of production automation:
+- **Percentages replace orders**: There are no longer bespoke “produce once/maintain” orders. Every loop recomputes
+  usage based on your sliders, entity type, and building activity.
+- **Per-resource budgets**: Each resource receives a budget equal to 90% of its simulated balance. The complex and labor
+  sliders consume that budget; if either slider is zero the loop skips that recipe.
+- **5% increments & clamping**: UI sliders move in 5% increments and are clamped between 0% and 90%. Donkeys are
+  additionally capped at 10% resource burn and 0% labor.
+- **Auto-managed lists**: Any resource with active production is auto-added to the automation list so presets keep
+  working when new buildings finish. Removing the building later prunes the entry.
+- **Single transaction per entity**: If at least one recipe has cycles, Blitz submits a single
+  `execute_realm_production_plan` transaction for that realm/village and records the execution summary.
 
-1. **Standard (Resource-to-Resource)**:
-   - Converts one or more input resources into a different output resource.
-   - Example: Using Wood and Stone to produce Tools.
-2. **Simple (Labor-to-Resource)**:
-   - Utilizes Labor from the realm to produce a specific resource.
-   - Example: Using Labor to harvest Food.
-3. **Resource-to-Labor**:
-   - Converts a specified resource into Labor for the realm.
-   - Example: Burning Food to generate Labor.
+---
 
-## Production Order Modes
+## Transfer Automation
 
-Production orders can operate in two different modes:
+Transfer automation schedules recurring shipments between structures you own. It runs in-browser alongside production
+automation and is stored per season (localStorage key `eternum-transfer-automation`).
 
-1. **Produce Once**:
-   - Produces resources until the target amount is reached, then stops.
-   - Shows progress as "Produced / Target" (e.g., "1,500 / 5,000").
-   - Can be set to "Infinite" to produce continuously without a limit.
+### Runner Basics
 
-2. **Maintain Balance**:
-   - Keeps resource balance at the target level.
-   - Production triggers when balance drops below target minus buffer percentage.
-   - Example: Target 10,000 with 10% buffer = production starts when balance drops below 9,000.
-   - Useful for maintaining steady resource levels.
+- **Interval-based**: Each entry stores a source, destination, resource list, and interval. Intervals are clamped between
+  5 and 60 minutes (default 30). The runner wakes roughly once per second to check whether an entry’s `nextRunAt` has
+  elapsed.
+- **Immediate send + schedule**: When you enable “Repeat” in the transfer panel, Blitz sends the payload once (if
+  possible) and also creates one entry per destination. The first automated run occurs after the selected interval.
+- **Resource locking**: Every entry keeps per-resource amounts. Each execution clamps those amounts to live balances and
+  available donkey capacity so partial shipments still happen safely.
+- **Safety checks**: Military resources can only move Realm ↔ Realm. Fragment mines can only send Donkeys/Essence. The
+  runner enforces donkey weight limits and ownership checks before submitting Starknet calls. Failed runs are skipped,
+  rescheduled, and surfaced via toasts.
+- **Season pruning**: Switching seasons automatically prunes stored entries that do not match the current game ID.
 
-## Transfer Types
+### Creating a Scheduled Transfer
 
-Transfer automation allows you to automatically move resources between your entities. There are three transfer modes:
+1. **Choose a source**: Realms, Villages, and Fragment Mines you own appear in the “Transfer” panel. Fragment Mines are
+   restricted to Donkeys + Essence payloads.
+2. **Pick resources & amounts**: Select up to the resources currently held at the source. Amount inputs are whole-number
+   units and the panel previews donkey demand so you can stay within available capacity.
+3. **Select destinations**:
+   - When only one resource is selected you may multi-select destinations; Blitz creates one entry per destination.
+   - With multiple resources the panel enforces a single destination.
+   - Military payloads auto-filter destinations to Realms only.
+4. **Set frequency**:
+   - `One-off` fires a single `send_resources_multiple` call (no automation entry).
+   - `Repeat` executes immediately and schedules future runs at the chosen 5‑60 minute interval.
+5. **Create transfers**: Confirm to send the immediate shipment (if possible) and persist the scheduled entries.
 
-1. **Recurring Transfers**:
-   - Transfers resources at regular intervals.
-   - Minimum interval: 1 minute (due to automation cycle).
-   - Example: Transfer 1,000 Food from Realm A to Realm B every 2 hours.
+### Managing Scheduled Transfers
 
-2. **Maintain Stock Transfers**:
-   - Transfers when the destination entity falls below a threshold.
-   - Example: Transfer 500 Wood to Realm B when it has less than 1,000 Wood.
-   - Helps keep important entities well-supplied.
+Open the **Scheduled Transfers** (Advanced) modal to control saved entries:
 
-3. **Depletion Transfers**:
-   - Transfers when the source entity exceeds a threshold.
-   - Example: Transfer excess Stone when Realm has more than 5,000 Stone.
-   - Prevents resource overflow and distributes surplus.
+- Filter by source/destination, run any entry immediately, or delete it.
+- Pause/resume individual entries; pausing clears `nextRunAt` until you resume.
+- Bulk actions let you pause all, resume all, or run every active entry once. Manual runs obey the same donkey and
+  resource checks as the automated loop.
 
-## Managing Transfer Automation (UI)
+### Transfer Requirements & Safeguards
 
-Transfer automation allows you to move resources between any of your entities.
-
-#### Adding a New Transfer Order
-
-1. **Select Source Entity**:
-   - Choose entity type (Your Realms, Your Villages, etc.)
-   - Search and select the specific source entity
-2. **Configure Transfer**:
-   - **Transfer Mode**:
-     - `Recurring`: Transfer at regular intervals
-     - `Maintain Stock`: Transfer when destination is low
-     - `Depletion Transfer`: Transfer when source is high
-   - **Destination Entity**:
-     - Choose entity type and select specific destination
-   - **Resources to Transfer**:
-     - Add multiple resources with specific amounts
-   - **Schedule/Conditions**:
-     - For Recurring: Set interval in minutes (minimum 1 minute)
-     - For conditional transfers: Set threshold amounts
-
-3. Click "Add Transfer Automation".
-
-#### Transfer Interval Guidelines
-
-- **Minimum Interval**: TBC (matches automation processing cycle)
-- **Custom Intervals**: Custom intervals can be set in minutes
-- **Effective Timing**: Transfers occur when automation cycles align with your interval
-
-### Viewing and Managing Orders
-
-#### Individual Entity View
-
-Each entity shows its automation orders in a table with:
-
-- **Priority**: Order execution priority
-- **Mode**: "Once", "Maintain", or transfer mode ("Recurring", "Stock", "Depletion")
-- **Resource**: Visual representation of resource flow
-- **Target/Balance**: Target amounts or transfer schedules
-- **Produced**: Amount produced (production orders only)
-- **Type**: Order type (production or transfer)
-- **Actions**: Remove button
-
-#### Global Automation View
-
-The "All Automations" view shows orders from all entities:
-
-- **Realm Filter**: Filter by specific realm or view all
-- **Order Status**: Visual indicators for completed, paused, or active orders
-- **Countdown Timer**: Shows time until next automation cycle
-- **Bulk Actions**: Pause/resume or delete orders
-
-### Pausing Automation
-
-You can pause automation at different levels:
-
-1. **Individual Entity**: Pause all automation for a specific entity
-2. **Individual Order**: Remove specific orders
-3. **Global Control**: Manage all orders from the global view
+- Sources and destinations must be structures you own. The UI only lists owned entities and the runner double-checks
+  IDs before calling `send_resources_multiple`.
+- Donkey supply is mandatory. The runner converts the requested payload into kilograms, calls `calculateDonkeysNeeded`,
+  and skips the entry if the source lacks enough Donkeys.
+- Entries reschedule themselves even when a run transacts zero resources (e.g., source empty). Keep an eye on toasts to
+  know when an entry is repeatedly skipped.
+- Resource amounts are integer units; decimals are rounded down. Each run clamps to the current balance, so you can
+  safely request more than is presently available.
+- Multi-destination setups are represented internally as one entry per destination so each route tracks its own
+  `lastRunAt`/`nextRunAt`.
 
 ## Important Considerations
 
@@ -210,11 +177,12 @@ You can pause automation at different levels:
 
 - **Browser Must Be Open**: Automation processing occurs in your browser. If you close the game tab or your browser,
   automated processes will stop.
-- **10-Minute Processing Cycle**: All automation is processed every minute. This affects timing for all orders.
+- **Loop Cadence**: Production automation evaluates every ~60 seconds. The transfer runner polls roughly once per second
+  but only fires entries whose 5‑60 minute interval has elapsed.
 - **Transaction Costs**: Each successful automation cycle that results in production or transfer will involve a
   blockchain transaction, which incurs network transaction fees.
-- **Processing Time**: Due to the 10-minute processing interval and potential network conditions, there might be a delay
-  before an order is executed or its results are visible.
+- **Processing Time**: On-chain confirmation time plus wallet prompts can add delay after an automation cycle triggers.
+  Keep notifications enabled so you can approve transactions promptly.
 
 ### Production Automation Considerations
 
@@ -224,25 +192,29 @@ You can pause automation at different levels:
   valid recipes.
 - **Storage Limits**: Produced resources will increase your realm's balance and may cause resource loss if storage is
   full.
+- **Season Reset**: Production allocations are saved locally per season. When a new Blitz season starts your old
+  configurations are pruned to avoid stale data.
 
 ### Transfer Automation Considerations
 
 - **Entity Ownership**: You can only set up transfers between entities you own.
-- **Transfer Timing**:
-  - Minimum effective interval is 1 minute due to processing cycle
-  - Intervals shorter than 1 minute will effectively transfer every minute
-  - Non-10-minute multiples may have irregular timing based on when transfers align with processing cycles
-- **Resource Availability**: Transfers will only execute if the source entity has sufficient resources at processing
-  time.
-- **Multiple Resources**: You can transfer multiple different resources in a single transfer order.
-- **Conditional Logic**: Maintain Stock and Depletion transfers check conditions each cycle and only transfer when
-  thresholds are met.
+- **Interval Limits**: Every scheduled entry enforces a 5‑60 minute interval. Values below 5 minutes are raised to 5 and
+  anything above 60 minutes is clamped down.
+- **Resource & Donkey Checks**: Each run clamps requested amounts to the source’s current balance and donkey capacity. If
+  either requirement fails, the entry is skipped and rescheduled.
+- **Payload Restrictions**: Military resources require Realm ↔ Realm routes. Fragment mines may only ship Donkeys and
+  Essence.
+- **Per-Route Tracking**: Multi-destination setups become discrete entries. Pausing or deleting one route does not
+  affect the others.
 
 ### Best Practices
 
-1. **Start Simple**: Begin with basic production orders or simple recurring transfers to understand the system.
-2. **Monitor Initially**: Watch your first few automation cycles to ensure orders work as expected.
-3. **Use Priorities**: Set appropriate priorities when you have multiple orders to control execution sequence.
-4. **Plan for Delays**: Account for the 10-minute processing cycle when planning time-sensitive operations.
-5. **Check Resource Flows**: Regularly verify that your automated transfers are maintaining desired resource
-   distributions.
+1. **Start Simple**: Begin with conservative production percentages or a single transfer route to validate your setup.
+2. **Monitor Initially**: Watch the first few executions (and wallet prompts) to confirm inputs, outputs, and donkey
+   usage match expectations.
+3. **Leverage Presets**: Use the Labor/Resource/Idle presets to quickly reset entities instead of dragging dozens of
+   sliders.
+4. **Use the Advanced Modal**: Pause/resume or run transfer entries from the Scheduled Transfers modal before leaving
+   the game idle.
+5. **Audit Resource Flows**: Review execution summaries and transfer toasts periodically to ensure automation is still
+   aligned with your current goals.

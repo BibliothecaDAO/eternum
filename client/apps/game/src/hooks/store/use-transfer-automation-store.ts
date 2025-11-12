@@ -49,11 +49,6 @@ interface TransferAutomationState {
   pruneForGame: (gameId: string) => void;
 }
 
-const clampInterval = (minutes: number): number => {
-  if (!Number.isFinite(minutes)) return 5;
-  return Math.min(60, Math.max(5, Math.round(minutes)));
-};
-
 const getBlockNowMs = (): number => {
   const { currentBlockTimestamp } = getBlockTimestamp();
   return currentBlockTimestamp * 1000;
@@ -70,22 +65,20 @@ const generateId = () => {
   return `ta_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
 };
 
-const sanitizeResourceConfigs = (raw: unknown, fallbackAmount?: number): TransferAutomationEntry["resourceConfigs"] => {
+const sanitizeResourceConfigs = (raw: unknown): TransferAutomationEntry["resourceConfigs"] => {
   if (!Array.isArray(raw) || raw.length === 0) return undefined;
-  const fallback = Number.isFinite(fallbackAmount) ? Math.max(0, Math.floor(fallbackAmount as number)) : 0;
   const sanitized: TransferAutomationResourceConfig[] = [];
   raw.forEach((item) => {
     if (!item || typeof item !== "object") return;
-    const candidate = item as { resourceId?: unknown; amount?: unknown; flatAmount?: unknown };
+    const candidate = item as { resourceId?: unknown; amount?: unknown };
     if (typeof candidate.resourceId !== "number") return;
-    let amountSource: unknown = candidate.amount;
-    if (typeof amountSource !== "number") {
-      amountSource = candidate.flatAmount;
-    }
-    const normalizedAmount = Number.isFinite(amountSource as number) ? (amountSource as number) : fallback;
+    const normalizedAmount =
+      typeof candidate.amount === "number" && Number.isFinite(candidate.amount)
+        ? Math.max(0, Math.floor(candidate.amount))
+        : 0;
     sanitized.push({
       resourceId: candidate.resourceId,
-      amount: Math.max(0, Math.floor(normalizedAmount)),
+      amount: normalizedAmount,
     });
   });
   return sanitized.length > 0 ? sanitized : undefined;
@@ -127,9 +120,9 @@ export const useTransferAutomationStore = create<TransferAutomationState>()(
           resourceIds: resourceIdsArray,
           resourceConfigs:
             sanitizeResourceConfigs(raw.resourceConfigs) ?? buildConfigsFromResources(resourceIdsArray, undefined),
-          intervalMinutes: clampInterval(raw.intervalMinutes),
+          intervalMinutes: Math.max(1, Math.round(raw.intervalMinutes ?? 1)),
           lastRunAt: undefined,
-          nextRunAt: active ? now + clampInterval(raw.intervalMinutes) * 60_000 : null,
+          nextRunAt: active ? now + Math.max(1, Math.round(raw.intervalMinutes ?? 1)) * 60_000 : null,
         };
         set((state) => ({ entries: { ...state.entries, [id]: entry } }));
         return id;
@@ -138,11 +131,14 @@ export const useTransferAutomationStore = create<TransferAutomationState>()(
         set((state) => {
           const prev = state.entries[id];
           if (!prev) return state;
+          const updatedInterval =
+            patch.intervalMinutes !== undefined
+              ? Math.max(1, Math.round(patch.intervalMinutes))
+              : Math.max(1, Math.round(prev.intervalMinutes || 1));
           const next: TransferAutomationEntry = {
             ...prev,
             ...patch,
-            intervalMinutes:
-              patch.intervalMinutes !== undefined ? clampInterval(patch.intervalMinutes) : prev.intervalMinutes,
+            intervalMinutes: updatedInterval,
             resourceConfigs:
               patch.resourceConfigs !== undefined
                 ? sanitizeResourceConfigs(patch.resourceConfigs)
@@ -164,10 +160,11 @@ export const useTransferAutomationStore = create<TransferAutomationState>()(
           if (!prev) return state;
           const isActive = active ?? !prev.active;
           const now = getBlockNowMs();
+          const intervalMinutes = Math.max(1, Math.round(prev.intervalMinutes || 1));
           const next: TransferAutomationEntry = {
             ...prev,
             active: isActive,
-            nextRunAt: isActive ? now + clampInterval(prev.intervalMinutes) * 60_000 : null,
+            nextRunAt: isActive ? now + intervalMinutes * 60_000 : null,
           };
           return { entries: { ...state.entries, [id]: next } };
         }),
@@ -176,9 +173,10 @@ export const useTransferAutomationStore = create<TransferAutomationState>()(
           const prev = state.entries[id];
           if (!prev) return state;
           const now = base ?? getBlockNowMs();
+          const intervalMinutes = Math.max(1, Math.round(prev.intervalMinutes || 1));
           const next: TransferAutomationEntry = {
             ...prev,
-            nextRunAt: now + clampInterval(prev.intervalMinutes) * 60_000,
+            nextRunAt: now + intervalMinutes * 60_000,
           };
           return { entries: { ...state.entries, [id]: next } };
         }),
@@ -206,9 +204,10 @@ export const useTransferAutomationStore = create<TransferAutomationState>()(
           const persistedEntry = value as Record<string, unknown>;
           const resourceIdsRaw = Array.isArray(persistedEntry.resourceIds) ? persistedEntry.resourceIds : [];
           const resourceIds = resourceIdsRaw.filter((r): r is ResourcesIds => typeof r === "number");
-          const intervalMinutes = clampInterval(
-            typeof persistedEntry.intervalMinutes === "number" ? persistedEntry.intervalMinutes : 5,
-          );
+          const intervalMinutes =
+            typeof persistedEntry.intervalMinutes === "number"
+              ? Math.max(1, Math.round(persistedEntry.intervalMinutes))
+              : 5;
           const fallbackAmount =
             typeof persistedEntry.flatAmount === "number"
               ? Math.max(0, Math.floor(persistedEntry.flatAmount))
