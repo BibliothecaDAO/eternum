@@ -30,8 +30,6 @@ pub enum Story {
     PointsRegisteredStory: PointsRegisteredStory,
     // Troop Movement
     ExplorerMoveStory: ExplorerMoveStory,
-    // Chest Opening
-    OpenChestStory: OpenChestStory,
     // Troop Battle
     BattleStory: BattleStory,
     // Resource Transfer
@@ -128,20 +126,6 @@ pub struct PointsRegisteredStory {
     pub owner_address: ContractAddress,
     pub activity: PointsActivity,
     pub points: u128,
-}
-
-///////////////////////////////////////////////
-///  Open Chest
-///
-///////////////////////////////////////////////
-
-
-#[derive(Introspect, Copy, Drop, Serde)]
-pub struct OpenChestStory {
-    pub explorer_id: ID,
-    pub explorer_owner: ContractAddress,
-    pub chest_coord: Coord,
-    pub relics: Span<u8>
 }
 
 ///////////////////////////////////////////////
