@@ -1,13 +1,13 @@
-import { DEFENSE_NAMES } from "@bibliothecadao/types";
+import { GUARD_SLOT_NAMES } from "@bibliothecadao/types";
 import { section, table } from "./styles";
 
 // Component 2: Defense Slots by Realm Level
 export const RealmDefenseSlotsTable = () => {
   const defenseSlots = [
-    { level: "Settlement", slots: 1, slotName: DEFENSE_NAMES[0] },
-    { level: "City", slots: 2, slotName: DEFENSE_NAMES[1] },
-    { level: "Kingdom", slots: 3, slotName: DEFENSE_NAMES[2] },
-    { level: "Empire", slots: 4, slotName: DEFENSE_NAMES[3] },
+    { level: "Settlement", slots: 1, slotName: GUARD_SLOT_NAMES[0] },
+    { level: "City", slots: 2, slotName: GUARD_SLOT_NAMES[1] },
+    { level: "Kingdom", slots: 3, slotName: GUARD_SLOT_NAMES[2] },
+    { level: "Empire", slots: 4, slotName: GUARD_SLOT_NAMES[3] },
   ];
 
   return (
@@ -44,10 +44,10 @@ export const RealmDefenseSlotsTable = () => {
 // Component 2b: Blitz Defense Slots by Realm Level
 export const BlitzRealmDefenseSlotsTable = () => {
   const defenseSlots = [
-    { level: "Settlement", slots: 1, slotName: DEFENSE_NAMES[0] },
-    { level: "City", slots: 2, slotName: DEFENSE_NAMES[1] },
-    { level: "Kingdom", slots: 3, slotName: DEFENSE_NAMES[2] },
-    { level: "Empire", slots: 4, slotName: DEFENSE_NAMES[3] },
+    { level: "Settlement", slots: 1, slotName: GUARD_SLOT_NAMES[0] },
+    { level: "City", slots: 2, slotName: GUARD_SLOT_NAMES[1] },
+    { level: "Kingdom", slots: 3, slotName: GUARD_SLOT_NAMES[2] },
+    { level: "Empire", slots: 4, slotName: GUARD_SLOT_NAMES[3] },
   ];
 
   return (
