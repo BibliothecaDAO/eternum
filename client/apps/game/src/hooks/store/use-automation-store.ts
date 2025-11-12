@@ -454,11 +454,20 @@ export const useAutomationStore = create<ProductionAutomationState>()(
 
           const current = realm.resources[resourceId] ?? createDefaultResourceSettings(resourceId);
           const updatedPercentages = normalizePercentages({ ...current.percentages, ...percentages }, resourceId);
+          const changed =
+            updatedPercentages.resourceToResource !== current.percentages.resourceToResource ||
+            updatedPercentages.laborToResource !== current.percentages.laborToResource;
+
+          if (!changed && realm.resources[resourceId]) {
+            return state;
+          }
+
           const nextState = {
             realms: {
               ...state.realms,
               [realmId]: {
                 ...realm,
+                presetId: realm.presetId !== null ? null : realm.presetId,
                 resources: sanitizeRealmResources(
                   {
                     ...realm.resources,
