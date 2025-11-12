@@ -17,6 +17,7 @@ pub trait IRelicSystems<T> {
 
 #[dojo::contract]
 pub mod relic_systems {
+    use starknet::ContractAddress;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
@@ -24,9 +25,12 @@ pub mod relic_systems {
     use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes, relic_essence_cost};
     use crate::models::config::{
         CombatConfigImpl, MapConfig, SeasonConfig, SeasonConfigImpl, TickImpl, TroopStaminaConfig, WorldConfigUtilImpl,
+        VictoryPointsGrantConfig
     };
+    use crate::models::events::{PointsRegisteredStory, Story, StoryEvent, PointsActivity};
     use crate::models::map::{Tile, TileImpl, TileOccupier};
     use crate::models::owner::OwnerAddressTrait;
+    use crate::models::hyperstructure::PlayerRegisteredPointsImpl;
     use crate::models::position::{Coord, TravelTrait};
     use crate::models::relic::{RELIC_EFFECT, RelicEffectImpl};
     use crate::models::resource::production::production::ProductionBoostBonus;
@@ -92,10 +96,36 @@ pub mod relic_systems {
                 ref world, explorer_id, ref explorer_weight, map_config, vrf_seed,
             );
 
+            // give points
+            // note: todo: this assumes non-agent address
+            let explorer_owner_address: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, explorer.owner);
+            let victory_points_grant_config: VictoryPointsGrantConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("victory_points_grant_config"),
+            );
+            PlayerRegisteredPointsImpl::register_points(
+                ref world, explorer_owner_address, victory_points_grant_config.relic_open_points.into(),
+            );
             world
                 .emit_event(
                     @OpenRelicChestEvent {
                         explorer_id, chest_coord, relics, timestamp: starknet::get_block_timestamp(),
+                    },
+                );
+
+            // emit story events
+            let points_registered_story = PointsRegisteredStory {
+                owner_address: explorer_owner_address,
+                activity: PointsActivity::OpenRelicChest,
+                points: victory_points_grant_config.relic_open_points.into(),
+            };
+            world
+                .emit_event(
+                    @StoryEvent {
+                        owner: Option::Some(explorer_owner_address),
+                        entity_id: Option::Some(explorer_id),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: Story::PointsRegisteredStory(points_registered_story),
+                        timestamp: starknet::get_block_timestamp(),
                     },
                 );
         }

@@ -26,8 +26,12 @@ pub enum Story {
     ProductionStory: ProductionStory,
     // Structure Upgrade
     StructureLevelUpStory: StructureLevelUpStory,
+    // Points Registration
+    PointsRegisteredStory: PointsRegisteredStory,
     // Troop Movement
     ExplorerMoveStory: ExplorerMoveStory,
+    // Chest Opening
+    OpenChestStory: OpenChestStory,
     // Troop Battle
     BattleStory: BattleStory,
     // Resource Transfer
@@ -104,6 +108,43 @@ pub struct StructureLevelUpStory {
 }
 
 ///////////////////////////////////////////////
+///  Points Registration
+///
+///////////////////////////////////////////////
+
+
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub enum PointsActivity {
+    Exploration,
+    OpenRelicChest,
+    HyperstructureSharePoints,
+    HyperStructureBanditsDefeat,
+    OtherStructureBanditsDefeat
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct PointsRegisteredStory {
+    pub owner_address: ContractAddress,
+    pub activity: PointsActivity,
+    pub points: u128,
+}
+
+///////////////////////////////////////////////
+///  Open Chest
+///
+///////////////////////////////////////////////
+
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct OpenChestStory {
+    pub explorer_id: ID,
+    pub explorer_owner: ContractAddress,
+    pub chest_coord: Coord,
+    pub relics: Span<u8>
+}
+
+///////////////////////////////////////////////
 ///  Troop Movement
 ///
 ///////////////////////////////////////////////
@@ -120,6 +161,7 @@ pub enum ExploreFind {
 
 #[derive(Introspect, Copy, Drop, Serde)]
 pub struct ExplorerMoveStory {
+    pub explorer_owner: ContractAddress,
     pub explorer_id: ID,
     pub explorer_structure_id: ID,
     pub start_coord: Coord,
@@ -143,10 +185,18 @@ pub enum BattleType {
     GuardVsExplorer,
 }
 
+
+#[derive(Introspect, Copy, Drop, Serde, Default)]
+pub struct BattleStructureType {
+    pub structure_category: u8,
+    pub structure_taken: bool
+}
+
 #[derive(Introspect, Copy, Drop, Serde)]
 pub struct BattleStory {
     pub battle_type: BattleType,
     pub attacker_id: ID,
+    pub attacker_structure: BattleStructureType,
     pub attacker_owner_id: ID,
     pub attacker_owner_address: ContractAddress,
     pub attacker_troops_type: TroopType,
@@ -154,6 +204,7 @@ pub struct BattleStory {
     pub attacker_troops_before: u128,
     pub attacker_troops_lost: u128,
     pub defender_id: ID,
+    pub defender_structure: BattleStructureType,
     pub defender_owner_id: ID,
     pub defender_owner_address: ContractAddress,
     pub defender_troops_type: TroopType,

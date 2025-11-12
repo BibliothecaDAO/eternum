@@ -30,7 +30,7 @@ pub mod troop_battle_systems {
         BattleConfig, CombatConfigImpl, SeasonConfig, SeasonConfigImpl, TickImpl, TroopDamageConfig, TroopStaminaConfig,
         WorldConfigUtilImpl,
     };
-    use crate::models::events::{BattleStory, BattleType, Story, StoryEvent};
+    use crate::models::events::{BattleStory, BattleType, BattleStructureType, Story, StoryEvent};
     use crate::models::owner::OwnerAddressTrait;
     use crate::models::position::{CoordTrait, Direction};
     use crate::models::resource::resource::{ResourceWeightImpl, SingleResourceStoreImpl, WeightStoreImpl};
@@ -301,6 +301,10 @@ pub mod troop_battle_systems {
             let battle_story = BattleStory {
                 battle_type: BattleType::ExplorerVsExplorer,
                 attacker_id: explorer_aggressor.explorer_id,
+                attacker_structure: BattleStructureType {
+                    structure_category: StructureCategory::None.into(),
+                    structure_taken: false,
+                },
                 attacker_owner_id: explorer_aggressor.owner,
                 attacker_owner_address: explorer_aggressor_owner_address,
                 attacker_troops_type: explorer_aggressor.troops.category,
@@ -308,6 +312,10 @@ pub mod troop_battle_systems {
                 attacker_troops_before: explorer_aggressor_troop_count_before_attack,
                 attacker_troops_lost: explorer_aggressor_troop_count_before_attack - explorer_aggressor_troops.count,
                 defender_id: explorer_defender.explorer_id,
+                defender_structure: BattleStructureType {
+                    structure_category: StructureCategory::None.into(),
+                    structure_taken: false,
+                },
                 defender_owner_id: explorer_defender.owner,
                 defender_owner_address: explorer_defender_owner_address,
                 defender_troops_type: explorer_defender.troops.category,
@@ -371,6 +379,8 @@ pub mod troop_battle_systems {
             // ensure aggressor has troops
             assert!(explorer_aggressor.troops.count.is_non_zero(), "aggressor has no troops");
 
+            let mut structure_claimed_after_battle: bool = false;
+
             // ensure structure id is for a structure
             let mut guarded_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
             assert!(guarded_structure.category != StructureCategory::None.into(), "defender is not a structure");
@@ -396,6 +406,7 @@ pub mod troop_battle_systems {
             // claim structure if there are no guard troops. it is tried again after the attack
             if guard_slot.is_none() {
                 // claim structure
+                structure_claimed_after_battle = true;
                 iStructureImpl::battle_claim(
                     ref world, ref guard_defender, ref guarded_structure, ref explorer_aggressor, structure_id,
                 );
@@ -498,6 +509,7 @@ pub mod troop_battle_systems {
                         .next_attack_slot(guarded_structure.troop_max_guard_count.into());
                     if guard_slot.is_none() {
                         // claim structure
+                        structure_claimed_after_battle = true;
                         iStructureImpl::battle_claim(
                             ref world, ref guard_defender, ref guarded_structure, ref explorer_aggressor, structure_id,
                         );
@@ -552,6 +564,10 @@ pub mod troop_battle_systems {
             let battle_story = BattleStory {
                 battle_type: BattleType::ExplorerVsGuard,
                 attacker_id: explorer_id,
+                attacker_structure: BattleStructureType {
+                    structure_category: StructureCategory::None.into(),
+                    structure_taken: false,
+                },
                 attacker_owner_id: explorer_aggressor.owner,
                 attacker_owner_address: explorer_aggressor_owner_address,
                 attacker_troops_type: explorer_aggressor.troops.category,
@@ -559,6 +575,10 @@ pub mod troop_battle_systems {
                 attacker_troops_before: explorer_aggressor_troop_count_before_attack,
                 attacker_troops_lost: explorer_aggressor_troop_count_before_attack - explorer_aggressor_troops.count,
                 defender_id: structure_id,
+                defender_structure: BattleStructureType {
+                    structure_category: guarded_structure.category.into(),
+                    structure_taken: structure_claimed_after_battle,
+                },
                 defender_owner_id: structure_id,
                 defender_owner_address: guarded_structure_owner,
                 defender_troops_type: guard_troops.category,
@@ -627,6 +647,8 @@ pub mod troop_battle_systems {
 
             // ensure explorer has troops
             assert!(explorer_defender.troops.count.is_non_zero(), "defender has no troops");
+
+            let mut structure_claimed_after_battle: bool = false;
 
             // ensure structure is allowed to use guard slot
             let mut structure_guards_aggressor: GuardTroops = StructureTroopGuardStoreImpl::retrieve(
@@ -746,6 +768,7 @@ pub mod troop_battle_systems {
                         .next_attack_slot(structure_aggressor_base.troop_max_guard_count.into());
                     if guard_slot.is_none() {
                         // claim structure
+                        structure_claimed_after_battle = true;
                         iStructureImpl::battle_claim(
                             ref world,
                             ref structure_guards_aggressor,
@@ -799,6 +822,10 @@ pub mod troop_battle_systems {
             let battle_story = BattleStory {
                 battle_type: BattleType::GuardVsExplorer,
                 attacker_id: structure_id,
+                attacker_structure: BattleStructureType {
+                    structure_category: structure_aggressor_base.category.into(),
+                    structure_taken: structure_claimed_after_battle,
+                },
                 attacker_owner_id: structure_id,
                 attacker_owner_address: structure_aggressor_owner,
                 attacker_troops_type: structure_guard_aggressor_troops.category,
@@ -807,6 +834,10 @@ pub mod troop_battle_systems {
                 attacker_troops_lost: structure_guard_aggressor_troop_count_before_attack
                     - structure_guard_aggressor_troops.count,
                 defender_id: explorer_id,
+                defender_structure: BattleStructureType {
+                    structure_category: StructureCategory::None.into(),
+                    structure_taken: false,
+                },
                 defender_owner_id: explorer_defender.owner,
                 defender_owner_address: explorer_defender_owner_address,
                 defender_troops_type: explorer_defender.troops.category,
