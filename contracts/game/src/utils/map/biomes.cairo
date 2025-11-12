@@ -1,5 +1,5 @@
 use cubit::f128::procgen::simplex3;
-use cubit::f128::types::fixed::Fixed;
+use cubit::f128::types::fixed::{Fixed,FixedTrait};
 use cubit::f128::types::vec3::Vec3Trait;
 use crate::utils::fixed_constants as fc;
 #[derive(Copy, Drop, Serde, Introspect, Debug, PartialEq)]
