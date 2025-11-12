@@ -1,43 +1,92 @@
 # 🤖 Resource Automation
 
-Resource automation allows players to set up continuous production processes and automated transfers within their realms
-and between entities. This system helps manage resource generation and distribution efficiently without constant manual
-intervention.
+Resource automation covers two loops in Blitz: **production automation** (continuous realm/village crafting) and
+**transfer automation** (recurring shipments between your entities). This update focuses on the production side, which
+recently moved away from “orders” in favor of preset-driven allocations.
 
-## Overview
+## Production Automation at a Glance
 
-The automation system works by processing two types of "orders" that you define:
+- **Global loop**: Every 60 seconds the client evaluates all of your realms/villages and executes any valid production
+  plan.
+- **Per-resource percentages**: Instead of one-off jobs, each resource has sliders that describe how much of its inputs
+  you are willing to burn through complex (resource→resource) or simple (labor→resource) recipes.
+- **Safety rails**: Inputs are capped at 90% of their current balance, Wheat/Labor outputs are blocked entirely, and
+  Donkeys are automatically limited to 10% for complex crafting.
+- **Presets**: “Labor”, “Resource”, “Custom”, and “Idle” presets instantly distribute percentages across every resource
+  that has active buildings, respecting entity type (realm vs village) and recipe availability.
+- **Local persistence**: Configurations are saved per season in your browser. Refreshing or closing the tab keeps the
+  latest sliders and last execution summary.
 
-1. **Production Orders**: Automate resource production within your realms
-2. **Transfer Orders**: Automate resource transfers between your entities (realms, villages, hyperstructures, etc.)
+> ⚠️ The automation loop runs inside your browser. Keep the Blitz tab in the foreground (or at least open) whenever you
+> expect automation to fire; closing the tab stops both production and transfer processing.
 
-Both types of orders specify what you want to automate, the method or conditions, target amounts or schedules, and
-priorities.
+## How the Loop Works
 
-**Key Features:**
+1. **Realm discovery**: On load the client pulls every realm/village you own and ensures each has an automation config.
+2. **Resource scan**: Any resource with buildings or active production is auto-added (unless it’s blocked) so its inputs
+   are tracked even if you never touched the sliders.
+3. **Budgeting**: For each resource the system computes a “budget” equal to 90% of its simulated balance at the current
+   tick. Percentages merely describe how much of that budget to dedicate to complex vs simple recipes.
+4. **Plan generation**:
+   - Complex recipes reserve inputs based on your percentage cap and the recipe’s per-cycle requirement.
+   - Labor recipes do the same with their listed inputs. If not enough inputs are available the recipe is skipped and
+     appears in the summary.
+5. **Execution**: If at least one recipe has non-zero cycles, Blitz submits a single `execute_realm_production_plan`
+   Starknet transaction for that realm/village.
+6. **Feedback loop**: The store records how many cycles ran, total inputs consumed, outputs produced, and any skipped
+   resources so the UI can show “last run” stats.
 
-- **Order-Based**: Define specific production and transfer tasks.
-- **Priority System**: Control the sequence of execution for multiple orders.
-- **Multiple Automation Types**: Choose between production automation and transfer automation.
-- **Entity-Specific**: Automation is configured on a per-entity basis.
-- **Browser Dependent**: Automation processes run in your browser; the game tab must remain open for automation to
-  function.
+### Entity Coverage
 
-## How It Works
+- **Realms and Villages** are supported. Hyperstructures and other entity types are ignored by the production loop.
+- Each entity gets its own automation profile. Removing ownership (selling, conquest) causes the profile to be pruned.
 
-The automation system periodically checks and processes active orders for each entity.
+### Blocked or Special Resources
 
-1. **Processing Interval**: All orders are evaluated every minute.
-2. **Order Prioritization**: For each entity, orders are sorted by their priority number (1 being the highest).
-3. **Pause Functionality**: You can pause all automation for any entity, which will skip all orders for that entity.
-4. **Order Processing**: The system also processes different order types.
+- **Wheat and Labor outputs** are blocked from automation to prevent runaway feedback loops.
+- **Donkeys** default to 10% resource→resource and 0% labor→resource. The slider enforces these caps so you always have
+  beasts of burden for transfers/military.
+- **Input-only restrictions**: Even if an output is blocked, it can still be consumed as an input for other recipes.
 
-### Production Order Processing
+## Configuring Production Automation
 
-- **Balance Check**: Before executing, the system checks if the realm has sufficient input resources or labor.
-- **Recipe-Based Production**: Production follows predefined recipes from the game's configuration.
-- **Cycle Calculation**: Determines the maximum number of production cycles possible based on available inputs.
-- **Transaction**: If conditions are met, a blockchain transaction is initiated to perform the production.
+1. **Open a realm/village** and select the **Automation** panel in the production sidebar.
+2. **Review auto-added resources**. Any resource that currently has buildings is already listed with baseline
+   percentages. You can remove extras if you want to keep the panel tidy.
+3. **Adjust percentages**:
+   - `Resource → Resource`: How much of that resource’s complex inputs you are willing to burn per loop.
+   - `Labor → Resource`: How much labor-based production to run. (Disabled for Donkeys and military-only recipes.)
+   - Values are rounded to 5% increments and clamped between 0 and 90%.
+4. **Apply presets** (optional):
+   - `Labor`: Evenly spreads up to 10% labor burn across eligible outputs while respecting shared inputs.
+   - `Resource`: Pushes complex crafting as high as possible (still honoring input caps and blocked resources).
+   - `Custom`: Keeps whatever manual sliders you set.
+   - `Idle`: Sets every slider to 0%, effectively pausing production for that entity.
+5. **Save & repeat** for your other entities. Any slider change is saved immediately and will be used in the next loop.
+
+### Auto-balancing & Maintenance
+
+- When a resource starts producing (new buildings finish) the automation store ensures it has a slider entry so presets
+  continue to work. Removing the building later automatically drops the extra entry.
+- If you reset an entity the store wipes its allocations but keeps the entity record so you can reconfigure quickly.
+- Per-season pruning means you get a clean slate when a new Blitz season launches, avoiding stale configs.
+
+## Execution Summaries
+
+After each successful loop the realm panel shows:
+
+- **Timestamp** of the last run.
+- **Produced/Consumed totals** grouped by resource so you can see net flows.
+- **Skipped recipes** with reasons (missing inputs, missing labor recipe, etc.).
+- **Total cycles** executed across complex and simple recipes.
+
+Use this view to verify slider settings or debug why a resource is not being automated (e.g., labor inputs depleted).
+
+---
+
+## Transfer Automation (unchanged)
+
+Transfer automation allows you to automatically move resources between your entities. There are three transfer modes:
 
 ### Transfer Order Processing
 
@@ -94,39 +143,7 @@ Transfer automation allows you to automatically move resources between your enti
    - Example: Transfer excess Stone when Realm has more than 5,000 Stone.
    - Prevents resource overflow and distributes surplus.
 
-## Managing Automation Orders (UI)
-
-You can manage automation orders through the "Automation" tab within any entity's interface, or through the global "All
-Automations" view.
-
-### Production Automation
-
-Production automation is managed within individual realm interfaces.
-
-#### Adding a New Production Order
-
-1. Click the "Add New Automation" button.
-2. Configure the following:
-   - **Order Mode**:
-     - `Produce Once`: Produce up to target amount then stop
-     - `Maintain Balance`: Keep resource balance at target level
-   - **Production Type**:
-     - `Standard (Resource-based)`
-     - `Simple (Labor-based)`
-     - `Resource to Labor`
-   - **Priority (1-9)**:
-     - Set the execution priority. `1` is the highest priority, `9` is the lowest.
-   - **Resource to Produce / Resource Input for Labor**:
-     - Select the resource you want to produce or consume.
-     - The UI shows required input resources for Resource-to-Resource recipes.
-   - **Target Amount**:
-     - For "Produce Once": Set total quantity to produce, or check "Infinite" for continuous production.
-     - For "Maintain Balance": Set the balance level to maintain.
-   - **Buffer Percentage** (Maintain Balance only):
-     - Production starts when balance drops below target minus buffer percentage.
-3. Click "Add Automation".
-
-### Transfer Automation
+## Managing Transfer Automation (UI)
 
 Transfer automation allows you to move resources between any of your entities.
 

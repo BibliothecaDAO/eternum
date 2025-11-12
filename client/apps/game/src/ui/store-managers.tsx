@@ -11,24 +11,62 @@ import {
   getEntityInfo,
   getGuildFromPlayerAddress,
   getIsBlitz,
+  ResourceArrivalManager,
   SelectableArmy,
+  configManager,
 } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { SeasonEnded } from "@bibliothecadao/torii";
-import { ContractAddress, WORLD_CONFIG_ID } from "@bibliothecadao/types";
+import { ContractAddress, ResourceArrivalInfo, TickIds, WORLD_CONFIG_ID } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
 import { useGameSettingsMetadata, useMiniGames } from "metagame-sdk";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { env } from "../../env";
 
+const getArrivalKey = (arrival: ResourceArrivalInfo) =>
+  `${arrival.structureEntityId}-${arrival.day}-${arrival.slot.toString()}`;
+
 const ResourceArrivalsStoreManager = () => {
   const setArrivedArrivalsNumber = useUIStore((state) => state.setArrivedArrivalsNumber);
   const setPendingArrivalsNumber = useUIStore((state) => state.setPendingArrivalsNumber);
   const playerStructures = useUIStore((state) => state.playerStructures);
   const {
-    setup: { components },
+    account: { account },
+    setup: { components, systemCalls },
   } = useDojo();
+  const autoClaimedArrivals = useRef<Set<string>>(new Set());
+  const lastFailureRef = useRef<Map<string, number>>(new Map());
+  const isAutoClaimingRef = useRef(false);
+  const autoClaimTimeoutIdRef = useRef<number | null>(null);
+  const processAutoClaimRef = useRef<() => Promise<void>>(async () => {});
+
+  const updateArrivalIndicators = useCallback(
+    (arrivals: ResourceArrivalInfo[], nowOverride?: number) => {
+      const now = nowOverride ?? getBlockTimestamp().currentBlockTimestamp;
+      const filteredArrivals = arrivals.filter((arrival) => !autoClaimedArrivals.current.has(getArrivalKey(arrival)));
+      const arrived = filteredArrivals.filter((arrival) => arrival.arrivesAt <= now);
+      const pending = Math.max(filteredArrivals.length - arrived.length, 0);
+
+      setArrivedArrivalsNumber(arrived.length);
+      setPendingArrivalsNumber(pending);
+    },
+    [setArrivedArrivalsNumber, setPendingArrivalsNumber],
+  );
+
+  const scheduleNextAutoClaim = useCallback(() => {
+    if (autoClaimTimeoutIdRef.current !== null) {
+      window.clearTimeout(autoClaimTimeoutIdRef.current);
+    }
+
+    const now = Date.now();
+    const nextBlockMs = (Math.floor(now / 1000) + 1) * 1000;
+    const delay = Math.max(250, nextBlockMs - now);
+
+    autoClaimTimeoutIdRef.current = window.setTimeout(() => {
+      void processAutoClaimRef.current();
+    }, delay);
+  }, []);
 
   useEffect(() => {
     const updateArrivals = () => {
@@ -36,9 +74,7 @@ const ResourceArrivalsStoreManager = () => {
         playerStructures.map((structure) => structure.entityId),
         components,
       );
-      const arrived = arrivals.filter((arrival) => arrival.arrivesAt <= getBlockTimestamp().currentBlockTimestamp);
-      setArrivedArrivalsNumber(arrived.length);
-      setPendingArrivalsNumber(arrivals.length - arrived.length);
+      updateArrivalIndicators(arrivals);
     };
 
     // Initial update
@@ -49,7 +85,116 @@ const ResourceArrivalsStoreManager = () => {
 
     // Cleanup interval on unmount
     return () => clearInterval(intervalId);
-  }, [playerStructures, components, setArrivedArrivalsNumber, setPendingArrivalsNumber]);
+  }, [playerStructures, components, updateArrivalIndicators]);
+
+  useEffect(() => {
+    processAutoClaimRef.current = async () => {
+      if (isAutoClaimingRef.current) {
+        scheduleNextAutoClaim();
+        return;
+      }
+
+      if (!account || !account.address || account.address === "0x0") {
+        autoClaimedArrivals.current.clear();
+        lastFailureRef.current.clear();
+        updateArrivalIndicators([]);
+        scheduleNextAutoClaim();
+        return;
+      }
+
+      if (playerStructures.length === 0) {
+        autoClaimedArrivals.current.clear();
+        lastFailureRef.current.clear();
+        updateArrivalIndicators([]);
+        scheduleNextAutoClaim();
+        return;
+      }
+
+      const structureIds = playerStructures.map((structure) => structure.entityId);
+      const arrivals = getAllArrivals(structureIds, components);
+
+      if (arrivals.length === 0) {
+        autoClaimedArrivals.current.clear();
+        lastFailureRef.current.clear();
+        updateArrivalIndicators([]);
+        scheduleNextAutoClaim();
+        return;
+      }
+
+      const activeArrivalKeys = new Set(arrivals.map((arrival) => getArrivalKey(arrival)));
+      const staleClaimedKeys: string[] = [];
+      autoClaimedArrivals.current.forEach((key) => {
+        if (!activeArrivalKeys.has(key)) {
+          staleClaimedKeys.push(key);
+        }
+      });
+      staleClaimedKeys.forEach((key) => autoClaimedArrivals.current.delete(key));
+
+      const staleFailureKeys: string[] = [];
+      lastFailureRef.current.forEach((_, key) => {
+        if (!activeArrivalKeys.has(key)) {
+          staleFailureKeys.push(key);
+        }
+      });
+      staleFailureKeys.forEach((key) => lastFailureRef.current.delete(key));
+
+      const blockDelaySeconds = Number(configManager.getTick(TickIds.Default));
+      const retryDelaySeconds = Math.max(blockDelaySeconds, 1);
+      const now = getBlockTimestamp().currentBlockTimestamp;
+      updateArrivalIndicators(arrivals, now);
+      const readyArrivals = arrivals
+        .filter((arrival) => arrival.resources.length > 0)
+        .filter((arrival) => now >= Number(arrival.arrivesAt) + blockDelaySeconds);
+
+      if (readyArrivals.length === 0) {
+        scheduleNextAutoClaim();
+        return;
+      }
+
+      isAutoClaimingRef.current = true;
+
+      try {
+        readyArrivals.sort((a, b) => Number(a.arrivesAt) - Number(b.arrivesAt));
+
+        for (const arrival of readyArrivals) {
+          const arrivalKey = getArrivalKey(arrival);
+
+          if (autoClaimedArrivals.current.has(arrivalKey)) {
+            continue;
+          }
+
+          const lastFailure = lastFailureRef.current.get(arrivalKey);
+          if (lastFailure && now - lastFailure < retryDelaySeconds) {
+            continue;
+          }
+
+          try {
+            const resourceArrivalManager = new ResourceArrivalManager(components, systemCalls, arrival);
+            await resourceArrivalManager.offload(account, arrival.resources.length);
+            autoClaimedArrivals.current.add(arrivalKey);
+            lastFailureRef.current.delete(arrivalKey);
+          } catch (error) {
+            console.error("Auto-claim arrival failed", { arrival, error });
+            lastFailureRef.current.set(arrivalKey, now);
+          }
+        }
+      } finally {
+        isAutoClaimingRef.current = false;
+        updateArrivalIndicators(arrivals, now);
+        scheduleNextAutoClaim();
+      }
+    };
+
+    scheduleNextAutoClaim();
+
+    return () => {
+      if (autoClaimTimeoutIdRef.current !== null) {
+        window.clearTimeout(autoClaimTimeoutIdRef.current);
+      }
+      isAutoClaimingRef.current = false;
+    };
+  }, [account?.address, components, systemCalls, playerStructures, scheduleNextAutoClaim]);
+
   return null;
 };
 
