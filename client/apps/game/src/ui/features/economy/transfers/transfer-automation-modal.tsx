@@ -5,8 +5,6 @@ import { ClientComponents, ResourcesIds, RESOURCE_PRECISION } from "@bibliotheca
 import { ResourceManager, getTotalResourceWeightKg, calculateDonkeysNeeded } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { toast } from "sonner";
-import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useTransferPanelDraftStore } from "@/hooks/store/use-transfer-panel-draft-store";
 import { ModalContainer } from "@/ui/shared";
 const formatResourceSummary = (entry: TransferAutomationEntry): string => {
   if (Array.isArray(entry.resourceConfigs) && entry.resourceConfigs.length > 0) {
@@ -25,8 +23,6 @@ export const TransferAutomationAdvancedModal = () => {
   const toggleActive = useTransferAutomationStore((s) => s.toggleActive);
   const remove = useTransferAutomationStore((s) => s.remove);
   const update = useTransferAutomationStore((s) => s.update);
-  const toggleModal = useUIStore((s) => s.toggleModal);
-  const setDraft = useTransferPanelDraftStore((s) => s.setDraft);
 
   const list = useMemo(() => Object.values(entries).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)), [entries]);
 
@@ -94,14 +90,6 @@ export const TransferAutomationAdvancedModal = () => {
       }
     },
     [components, systemCalls, account, update],
-  );
-
-  const handleEdit = useCallback(
-    (entry: TransferAutomationEntry) => {
-      setDraft(entry);
-      toggleModal(null);
-    },
-    [setDraft, toggleModal],
   );
 
   const [filter, setFilter] = useState("");
@@ -185,19 +173,19 @@ export const TransferAutomationAdvancedModal = () => {
             onChange={(e) => setFilter(e.target.value)}
           />
           <div className="flex flex-wrap items-center gap-2">
-            <Button size="xs" variant="outline" onClick={pauseAll}>
-              Pause all
-            </Button>
-            <Button size="xs" variant="outline" onClick={resumeAll}>
-              Resume all
-            </Button>
             <Button
               size="xs"
               onClick={runActiveNow}
               disabled={isRunningAll || !hasActiveFiltered}
               isLoading={isRunningAll}
             >
-              Run active now
+              Run active transfers now
+            </Button>
+            <Button size="xs" variant="outline" onClick={pauseAll}>
+              Pause all
+            </Button>
+            <Button size="xs" variant="outline" onClick={resumeAll}>
+              Resume all
             </Button>
           </div>
         </div>
@@ -220,14 +208,11 @@ export const TransferAutomationAdvancedModal = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button size="xs" variant="outline" onClick={() => toggleActive(e.id, !e.active)}>
-                    {e.active ? "Pause" : "Resume"}
-                  </Button>
                   <Button size="xs" onClick={() => runNow(e)}>
                     Run now
                   </Button>
-                  <Button size="xs" variant="outline" onClick={() => handleEdit(e)}>
-                    Edit
+                  <Button size="xs" variant="outline" onClick={() => toggleActive(e.id, !e.active)}>
+                    {e.active ? "Pause" : "Resume"}
                   </Button>
                   <Button size="xs" variant="danger" onClick={() => remove(e.id)}>
                     Delete
