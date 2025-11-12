@@ -1,4 +1,8 @@
-import { calculatePresetAllocations, RealmPresetId } from "@/utils/automation-presets";
+import {
+  calculatePresetAllocations,
+  calculateResourceBootstrapAllocation,
+  RealmPresetId,
+} from "@/utils/automation-presets";
 import { configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { create } from "zustand";
@@ -382,11 +386,32 @@ export const useAutomationStore = create<ProductionAutomationState>()(
           return existing;
         }
 
-        const newConfig = createDefaultResourceSettings(
+        const baseConfig = createDefaultResourceSettings(
           resourceId,
           { autoManaged: options?.autoManaged ?? true, label: options?.label },
           options?.defaults,
         );
+
+        let newConfig = baseConfig;
+        if (realm && realm.presetId === null) {
+          const configWithResource: RealmAutomationConfig = {
+            ...realm,
+            resources: {
+              ...realm.resources,
+              [resourceId]: baseConfig,
+            },
+          };
+          const bootstrapAllocation = calculateResourceBootstrapAllocation(configWithResource, resourceId);
+          if (bootstrapAllocation && bootstrapAllocation.resourceToResource > 0) {
+            newConfig = {
+              ...baseConfig,
+              percentages: {
+                resourceToResource: bootstrapAllocation.resourceToResource,
+                laborToResource: bootstrapAllocation.laborToResource,
+              },
+            };
+          }
+        }
 
         set((state) => {
           const realmConfig = state.realms[realmId];
