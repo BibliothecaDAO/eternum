@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import { ETERNUM_CONFIG } from "@/utils/config";
+import { Fragment } from "react";
 import { colors, icon, modifiers, section, table } from "./styles";
 
 // Biome types enum to match the provided code
@@ -106,7 +107,7 @@ export const BiomeStamina = () => {
       case BiomeType.Taiga:
         return baseStaminaCost + (troopType === TroopType.Paladin ? biomeBonus : 0);
       case BiomeType.Snow:
-        return baseStaminaCost + (troopType !== TroopType.Paladin ? biomeBonus : 0);
+        return baseStaminaCost; // No modifier
       case BiomeType.Scorched:
         return baseStaminaCost + biomeBonus; // +10 for all troops
       default:

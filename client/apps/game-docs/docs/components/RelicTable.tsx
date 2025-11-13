@@ -114,22 +114,6 @@ const RELIC_DATA = [
     discoveryChance: "4.0%",
   },
   {
-    relic: "Labor Production Relic",
-    level: 1,
-    effect: "Increases labor production rate by 20% for 6 Eternum Days.",
-    activatedBy: "Realm",
-    essenceCost: 250,
-    discoveryChance: "7.5%",
-  },
-  {
-    relic: "Labor Production Relic",
-    level: 2,
-    effect: "Increases labor production rate by 20% for 12 Eternum Days.",
-    activatedBy: "Realm",
-    essenceCost: 500,
-    discoveryChance: "4.0%",
-  },
-  {
     relic: "Troop Production Relic",
     level: 1,
     effect: "Increases troop production rate by 20% for 6 Eternum Days.",
