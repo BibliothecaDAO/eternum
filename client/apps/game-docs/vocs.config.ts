@@ -74,10 +74,10 @@ export default defineConfig({
           link: "/blitz/materials/resources",
           items: [
             { text: "Production", link: "/blitz/materials/production" },
+            { text: "Production Automation", link: "/blitz/materials/automation" },
             { text: "Transfers & Trade", link: "/blitz/materials/transfers-and-trade" },
             { text: "Bridging", link: "/blitz/materials/bridging" },
             { text: "Relics", link: "/blitz/materials/relics" },
-            { text: "Automation", link: "/blitz/materials/automation" },
           ],
         },
         {
