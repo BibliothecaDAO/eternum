@@ -88,6 +88,10 @@ pub impl iRelicChestResourceFactoryImpl of iRelicChestResourceFactoryTrait {
             relic_ids.append(relic_id);
             if relic_id == ResourceTypes::RELIC_E18 {
                 chances.append(200);
+            } else if relic_id == ResourceTypes::RELIC_E15 {
+                chances.append(0); // LaborProductionRelic1
+            } else if relic_id == ResourceTypes::RELIC_E16 {
+                chances.append(0); // LaborProductionRelic2
             } else if relic_id == ResourceTypes::RELIC_E17 {
                 chances.append(600);
             } else if relic_level(relic_id) == 2 {
