@@ -1464,6 +1464,7 @@ export function defineContractComponents(world: World) {
           config_id: RecsType.Number,
           admin_address: RecsType.BigInt,
           vrf_provider_address: RecsType.BigInt,
+          map_center_offset: RecsType.Number,
           season_addresses_config: {
             season_pass_address: RecsType.BigInt,
             realms_address: RecsType.BigInt,
@@ -1672,6 +1673,7 @@ export function defineContractComponents(world: World) {
               "u32", // config_id
               "ContractAddress", // admin_address
               "ContractAddress", // vrf_provider_address
+              "u32", // map_center_offset
               "ContractAddress", // season_pass_address
               "ContractAddress", // realms_address
               "ContractAddress", // lords_address

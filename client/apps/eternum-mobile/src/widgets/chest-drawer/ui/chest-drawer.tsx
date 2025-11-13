@@ -1,7 +1,7 @@
 import { Button } from "@/shared/ui/button";
 import { Drawer, DrawerContent, DrawerHeader } from "@/shared/ui/drawer";
+import { getFeltCenterOffset } from "@bibliothecadao/eternum";
 import { useComponentSystem, useDojo } from "@bibliothecadao/react";
-import { FELT_CENTER } from "@bibliothecadao/types";
 import { isComponentUpdate } from "@dojoengine/recs";
 import { useCallback, useState } from "react";
 import { ChestDrawerProps, ChestState } from "../model/types";
@@ -25,7 +25,7 @@ export const ChestDrawer = ({ explorerEntityId, chestHex, open, onOpenChange }: 
     isOpening: false,
     revealedCards: [],
   });
-
+  const FELT_CENTER = getFeltCenterOffset();
   const chestName = `Chest at (${chestHex.x - FELT_CENTER}, ${chestHex.y - FELT_CENTER})`;
 
   // Event listener for OpenRelicChestEvent

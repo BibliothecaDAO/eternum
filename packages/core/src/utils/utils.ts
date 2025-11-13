@@ -4,6 +4,9 @@ import { ClientConfigManager, configManager } from "..";
 
 export { getEntityIdFromKeys };
 
+const RAW_FELT_CENTER = 2147483646;
+export const getFeltCenterOffset = () => RAW_FELT_CENTER - configManager.getMapCenterOffset();
+
 export const toHexString = (num: bigint) => {
   return `0x${num.toString(16)}`;
 };

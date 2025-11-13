@@ -3,12 +3,12 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/shared/ui/dr
 import {
   Biome,
   getEntityIdFromKeys,
+  getFeltCenterOffset,
   isTileOccupierQuest,
   isTileOccupierStructure,
   Position as PositionInterface,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { FELT_CENTER } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { ArmyEntityDetail } from "./army-entity-detail";
@@ -55,6 +55,7 @@ export const HexEntityDetailsDrawer = ({ open, onOpenChange }: HexEntityDetailsD
     return isTileOccupierStructure(tile?.occupier_type || 0);
   }, [tile]);
 
+  const FELT_CENTER = getFeltCenterOffset();
   const displayCoordinates = useMemo(() => {
     if (!selectedHex) return null;
     return {

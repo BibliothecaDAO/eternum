@@ -5,9 +5,9 @@ import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { SelectStructureDrawer } from "@/shared/ui/select-structure-drawer";
-import { getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
+import { getFeltCenterOffset, getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 import { usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
-import { FELT_CENTER, getLevelName } from "@bibliothecadao/types";
+import { getLevelName } from "@bibliothecadao/types";
 import { ChevronDown, Copy, Eye, EyeOff, Map, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
 import { RefObject, useEffect, useMemo, useState } from "react";
 import { ThreeCanvasRef } from "./three-canvas";
@@ -39,6 +39,8 @@ const CompactRealmHeader = () => {
       setSelectedStructure(playerRealmsAndVillages[0]);
     }
   }, [selectedRealm, playerRealmsAndVillages, setSelectedStructure]);
+
+  const FELT_CENTER = getFeltCenterOffset();
 
   const adjustedCoords = useMemo(() => {
     if (!selectedRealm) return null;

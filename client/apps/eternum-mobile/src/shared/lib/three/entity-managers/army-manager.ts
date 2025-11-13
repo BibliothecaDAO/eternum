@@ -7,11 +7,12 @@ import {
   ExplorerTroopsSystemUpdate,
   ExplorerTroopsTileSystemUpdate,
   getBlockTimestamp,
+  getFeltCenterOffset,
   Position,
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
-import { FELT_CENTER, HexEntityInfo, RelicEffect, TroopTier, TroopType } from "@bibliothecadao/types";
+import { HexEntityInfo, RelicEffect, TroopTier, TroopType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { UnitTilePosition, UnitTileRenderer } from "../tiles/unit-tile-renderer";
@@ -700,6 +701,7 @@ export class ArmyManager extends EntityManager<ArmyObject> {
     const army = this.getObject(armyId);
     if (!army || actionPath.length < 2) return;
 
+    const FELT_CENTER = getFeltCenterOffset();
     const targetHex = actionPath[actionPath.length - 1].hex;
     const targetCol = targetHex.col - FELT_CENTER;
     const targetRow = targetHex.row - FELT_CENTER;

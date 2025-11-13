@@ -1,12 +1,7 @@
 import { sqlApi } from "@/services/api";
+import { FELT_CENTER as SETTLEMENT_CENTER } from "@/ui/config";
 import { Coord, Position } from "@bibliothecadao/eternum";
-import {
-  ClientComponents,
-  ContractAddress,
-  Direction,
-  FELT_CENTER as SETTLEMENT_CENTER,
-  StructureType,
-} from "@bibliothecadao/types";
+import { ClientComponents, ContractAddress, Direction, StructureType } from "@bibliothecadao/types";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import { SETTLEMENT_BASE_DISTANCE, SETTLEMENT_SUBSEQUENT_DISTANCE } from "../constants/settlement-constants";
 import { SettlementLocation } from "./settlement-types";
