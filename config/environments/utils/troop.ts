@@ -32,7 +32,7 @@ export const TROOP_TRAVEL_FISH_COST = 0;
 export const TROOP_TRAVEL_STAMINA_COST = 20;
 
 // Troop exploration
-export const TROOP_EXPLORE_WHEAT_COST = 0.06;
+export const TROOP_EXPLORE_WHEAT_COST = 0.03;
 export const TROOP_EXPLORE_FISH_COST = 0;
 export const TROOP_EXPLORE_STAMINA_COST = 30;
 

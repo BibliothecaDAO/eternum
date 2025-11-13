@@ -158,7 +158,7 @@ export const PlayersPanel = ({
               <div className="flex flex-col gap-1 text-xs">
                 <div className="flex items-center justify-between">
                   <span className="text-gold/50">Explore a tile</span>
-                  <span className="text-gold font-semibold">50 VP</span>
+                  <span className="text-gold font-semibold">25 VP</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gold/50">Claim an Essence Rift or Camp from bandits</span>
