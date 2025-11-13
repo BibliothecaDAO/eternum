@@ -131,7 +131,7 @@ export const COMPLEX_BUILDING_COSTS: ResourceInputs = {
   [BuildingType.ResourceLabor]: [],
   [BuildingType.ResourceAncientFragment]: [],
   // Basic Buildings
-  [BuildingType.ResourceWheat]: [{ resource: ResourcesIds.Labor, amount: 30 }], // Farm
+  [BuildingType.ResourceWheat]: [{ resource: ResourcesIds.Labor, amount: 10 }], // Farm
   [BuildingType.ResourceFish]: [],
   [BuildingType.ResourceWood]: [{ resource: ResourcesIds.Labor, amount: 30 }], // Wood Mill
   [BuildingType.ResourceStone]: [],
@@ -179,21 +179,21 @@ export const COMPLEX_BUILDING_COSTS: ResourceInputs = {
     { resource: ResourcesIds.Wood, amount: 120 },
     { resource: ResourcesIds.Copper, amount: 90 },
     { resource: ResourcesIds.Ironwood, amount: 30 },
-    { resource: ResourcesIds.Essence, amount: 500 },
+    { resource: ResourcesIds.Essence, amount: 600 },
   ], // Adamantine Mine
   [BuildingType.ResourceMithral]: [
     { resource: ResourcesIds.Labor, amount: 180 },
     { resource: ResourcesIds.Wood, amount: 120 },
     { resource: ResourcesIds.Copper, amount: 90 },
     { resource: ResourcesIds.ColdIron, amount: 30 },
-    { resource: ResourcesIds.Essence, amount: 500 },
+    { resource: ResourcesIds.Essence, amount: 600 },
   ], // Mithral Forge
   [BuildingType.ResourceDragonhide]: [
     { resource: ResourcesIds.Labor, amount: 180 },
     { resource: ResourcesIds.Wood, amount: 120 },
     { resource: ResourcesIds.Copper, amount: 90 },
     { resource: ResourcesIds.Gold, amount: 30 },
-    { resource: ResourcesIds.Essence, amount: 500 },
+    { resource: ResourcesIds.Essence, amount: 600 },
   ], // Dragonhide Tannery
   // T1 Military Buildings
   [BuildingType.ResourceKnightT1]: [
@@ -217,21 +217,21 @@ export const COMPLEX_BUILDING_COSTS: ResourceInputs = {
     { resource: ResourcesIds.Wood, amount: 240 },
     { resource: ResourcesIds.Copper, amount: 180 },
     { resource: ResourcesIds.ColdIron, amount: 60 },
-    { resource: ResourcesIds.Essence, amount: 500 },
+    { resource: ResourcesIds.Essence, amount: 600 },
   ], // T2 Barracks
   [BuildingType.ResourceCrossbowmanT2]: [
     { resource: ResourcesIds.Labor, amount: 300 },
     { resource: ResourcesIds.Wood, amount: 240 },
     { resource: ResourcesIds.Copper, amount: 180 },
     { resource: ResourcesIds.Ironwood, amount: 60 },
-    { resource: ResourcesIds.Essence, amount: 500 },
+    { resource: ResourcesIds.Essence, amount: 600 },
   ], // T2 Archery Range
   [BuildingType.ResourcePaladinT2]: [
     { resource: ResourcesIds.Labor, amount: 300 },
     { resource: ResourcesIds.Wood, amount: 240 },
     { resource: ResourcesIds.Copper, amount: 180 },
     { resource: ResourcesIds.Gold, amount: 60 },
-    { resource: ResourcesIds.Essence, amount: 500 },
+    { resource: ResourcesIds.Essence, amount: 600 },
   ], // T2 Stables
   // T3 Military Buildings
   [BuildingType.ResourceKnightT3]: [
@@ -239,31 +239,31 @@ export const COMPLEX_BUILDING_COSTS: ResourceInputs = {
     { resource: ResourcesIds.Wood, amount: 300 },
     { resource: ResourcesIds.ColdIron, amount: 240 },
     { resource: ResourcesIds.Mithral, amount: 90 },
-    { resource: ResourcesIds.Essence, amount: 1000 },
+    { resource: ResourcesIds.Essence, amount: 1200 },
   ], // T3 Barracks
   [BuildingType.ResourceCrossbowmanT3]: [
     { resource: ResourcesIds.Labor, amount: 420 },
     { resource: ResourcesIds.Wood, amount: 300 },
     { resource: ResourcesIds.Ironwood, amount: 240 },
     { resource: ResourcesIds.Adamantine, amount: 90 },
-    { resource: ResourcesIds.Essence, amount: 1000 },
+    { resource: ResourcesIds.Essence, amount: 1200 },
   ], // T3 Archery Range
   [BuildingType.ResourcePaladinT3]: [
     { resource: ResourcesIds.Labor, amount: 420 },
     { resource: ResourcesIds.Wood, amount: 300 },
     { resource: ResourcesIds.Gold, amount: 240 },
     { resource: ResourcesIds.Dragonhide, amount: 90 },
-    { resource: ResourcesIds.Essence, amount: 1000 },
+    { resource: ResourcesIds.Essence, amount: 1200 },
   ], // T3 Stables
   // Economic Buildings
   [BuildingType.WorkersHut]: [
-    { resource: ResourcesIds.Labor, amount: 30 },
-    { resource: ResourcesIds.Wood, amount: 30 },
+    { resource: ResourcesIds.Labor, amount: 20 },
+    { resource: ResourcesIds.Wood, amount: 20 },
   ], // Worker Hut
   [BuildingType.ResourceDonkey]: [
     { resource: ResourcesIds.Labor, amount: 60 },
     { resource: ResourcesIds.Wood, amount: 60 },
-  ],
+  ], // Market
 };
 
 export const SIMPLE_BUILDING_COSTS: ResourceInputs = {
@@ -271,7 +271,7 @@ export const SIMPLE_BUILDING_COSTS: ResourceInputs = {
   [BuildingType.ResourceLabor]: [],
   [BuildingType.ResourceAncientFragment]: [],
   // Basic Buildings
-  [BuildingType.ResourceWheat]: [{ resource: ResourcesIds.Labor, amount: 30 }], // Farm
+  [BuildingType.ResourceWheat]: [{ resource: ResourcesIds.Labor, amount: 10 }], // Farm
   [BuildingType.ResourceFish]: [],
   [BuildingType.ResourceWood]: [{ resource: ResourcesIds.Labor, amount: 30 }], // Wood Mill
   [BuildingType.ResourceStone]: [],
@@ -312,5 +312,5 @@ export const SIMPLE_BUILDING_COSTS: ResourceInputs = {
 
   // Economic Buildings
   [BuildingType.ResourceDonkey]: [{ resource: ResourcesIds.Labor, amount: 180 }],
-  [BuildingType.WorkersHut]: [{ resource: ResourcesIds.Labor, amount: 90 }], // Worker Hut
+  [BuildingType.WorkersHut]: [{ resource: ResourcesIds.Labor, amount: 60 }], // Worker Hut
 };

@@ -90,12 +90,12 @@ export const BANK_OWNER_FEES_DENOMINATOR = 100;
 
 // ----- Population Capacity ----- //
 export const WORKER_HUTS_CAPACITY = 5;
-export const BASE_POPULATION_CAPACITY = 5;
+export const BASE_POPULATION_CAPACITY = 6;
 
 // ----- Exploration ----- //
 export const EXPLORATION_REWARD = 750;
-export const SHARDS_MINES_WIN_PROBABILITY = 3; // 3/100 = 3%
-export const SHARDS_MINES_FAIL_PROBABILITY = 97; // 97/100 = 97%
+export const SHARDS_MINES_WIN_PROBABILITY = 2; // 2/100 = 2% (1/50)
+export const SHARDS_MINES_FAIL_PROBABILITY = 98; // 98/100 = 98%
 export const SHARDS_MINE_INITIAL_WHEAT_BALANCE = 1000;
 export const SHARDS_MINE_INITIAL_FISH_BALANCE = 1000;
 
