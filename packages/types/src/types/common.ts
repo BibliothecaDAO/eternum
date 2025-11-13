@@ -583,6 +583,7 @@ export interface Config {
     pointsForHyperstructureClaimAgainstBandits: bigint;
     pointsForNonHyperstructureClaimAgainstBandits: bigint;
     pointsForTileExploration: bigint;
+    pointsForRelicDiscovery: bigint;
   };
   wonderProductionBonus: {
     within_tile_distance: number;

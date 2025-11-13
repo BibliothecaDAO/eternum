@@ -83,10 +83,10 @@ export const RESOURCE_PRODUCTION_OUTPUT_AMOUNTS: ResourceOutputs = {
   [ResourcesIds.PaladinT2]: 5,
   [ResourcesIds.PaladinT3]: 5,
   [ResourcesIds.Lords]: 0,
-  [ResourcesIds.Wheat]: 5,
+  [ResourcesIds.Wheat]: 6,
   [ResourcesIds.Fish]: 0,
   [ResourcesIds.AncientFragment]: 3,
-  [ResourcesIds.Essence]: 5,
+  [ResourcesIds.Essence]: 10,
   [ResourcesIds.Labor]: 1,
 };
 
@@ -156,14 +156,14 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
     { resource: ResourcesIds.Copper, amount: 0.4 },
   ],
   [ResourcesIds.KnightT2]: [
-    { resource: ResourcesIds.Wheat, amount: 4 },
+    { resource: ResourcesIds.Wheat, amount: 3 },
     { resource: ResourcesIds.Knight, amount: 10 },
     { resource: ResourcesIds.Copper, amount: 0.2 },
     { resource: ResourcesIds.ColdIron, amount: 0.4 },
     { resource: ResourcesIds.Essence, amount: 1 },
   ],
   [ResourcesIds.KnightT3]: [
-    { resource: ResourcesIds.Wheat, amount: 7 },
+    { resource: ResourcesIds.Wheat, amount: 4 },
     { resource: ResourcesIds.KnightT2, amount: 10 },
     { resource: ResourcesIds.ColdIron, amount: 0.2 },
     { resource: ResourcesIds.Mithral, amount: 0.6 },
@@ -174,14 +174,14 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
     { resource: ResourcesIds.Copper, amount: 0.4 },
   ],
   [ResourcesIds.CrossbowmanT2]: [
-    { resource: ResourcesIds.Wheat, amount: 4 },
+    { resource: ResourcesIds.Wheat, amount: 3 },
     { resource: ResourcesIds.Crossbowman, amount: 10 },
     { resource: ResourcesIds.Copper, amount: 0.2 },
     { resource: ResourcesIds.Ironwood, amount: 0.4 },
     { resource: ResourcesIds.Essence, amount: 1 },
   ],
   [ResourcesIds.CrossbowmanT3]: [
-    { resource: ResourcesIds.Wheat, amount: 7 },
+    { resource: ResourcesIds.Wheat, amount: 4 },
     { resource: ResourcesIds.CrossbowmanT2, amount: 10 },
     { resource: ResourcesIds.Ironwood, amount: 0.2 },
     { resource: ResourcesIds.Adamantine, amount: 0.6 },
@@ -192,14 +192,14 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
     { resource: ResourcesIds.Copper, amount: 0.4 },
   ],
   [ResourcesIds.PaladinT2]: [
-    { resource: ResourcesIds.Wheat, amount: 4 },
+    { resource: ResourcesIds.Wheat, amount: 3 },
     { resource: ResourcesIds.Paladin, amount: 10 },
     { resource: ResourcesIds.Copper, amount: 0.2 },
     { resource: ResourcesIds.Gold, amount: 0.4 },
     { resource: ResourcesIds.Essence, amount: 1 },
   ],
   [ResourcesIds.PaladinT3]: [
-    { resource: ResourcesIds.Wheat, amount: 7 },
+    { resource: ResourcesIds.Wheat, amount: 4 },
     { resource: ResourcesIds.PaladinT2, amount: 10 },
     { resource: ResourcesIds.Gold, amount: 0.2 },
     { resource: ResourcesIds.Dragonhide, amount: 0.6 },

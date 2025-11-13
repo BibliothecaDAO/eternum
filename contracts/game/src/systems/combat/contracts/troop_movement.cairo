@@ -20,7 +20,7 @@ pub mod troop_movement_systems {
         CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig,
         VictoryPointsGrantConfig, WorldConfigUtilImpl,
     };
-    use crate::models::events::{ExploreFind, ExplorerMoveStory, Story, StoryEvent};
+    use crate::models::events::{ExploreFind, ExplorerMoveStory, Story, StoryEvent, PointsRegisteredStory, PointsActivity};
     use crate::models::hyperstructure::PlayerRegisteredPointsImpl;
     use crate::models::map::{BiomeDiscovered, Tile, TileImpl, TileOccupier};
     use crate::models::position::{CoordTrait, Direction};
@@ -290,6 +290,7 @@ pub mod troop_movement_systems {
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
                         story: Story::ExplorerMoveStory(
                             ExplorerMoveStory {
+                                explorer_owner,
                                 explorer_id,
                                 explorer_structure_id: explorer.owner,
                                 start_coord,
@@ -304,6 +305,25 @@ pub mod troop_movement_systems {
                         timestamp: starknet::get_block_timestamp(),
                     },
                 );
+            if explore {
+                // emit story events
+                let points_registered_story = PointsRegisteredStory {
+                    owner_address: explorer_owner,
+                    activity: PointsActivity::Exploration,
+                    points: victory_points_grant_config.explore_tiles_points.into(),
+                };
+                world
+                    .emit_event(
+                        @StoryEvent {
+                            owner: Option::Some(explorer_owner),
+                            entity_id: Option::Some(explorer_id),
+                            tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                            story: Story::PointsRegisteredStory(points_registered_story),
+                            timestamp: starknet::get_block_timestamp(),
+                        },
+                    );
+            }
+
 
             // to be removed
             world

@@ -144,6 +144,7 @@ trait IHyperstructureSystems<T> {
 
 #[dojo::contract]
 pub mod hyperstructure_systems {
+    use dojo::event::EventStorage;
     use core::num::traits::Bounded;
     use core::num::traits::zero::Zero;
     use dojo::model::ModelStorage;
@@ -153,6 +154,8 @@ pub mod hyperstructure_systems {
     use crate::models::config::{
         HyperstructureConfig, HyperstructureCostConfig, SeasonConfigImpl, VictoryPointsGrantConfig, WorldConfigUtilImpl,
     };
+    use crate::models::events::{Story, StoryEvent, PointsRegisteredStory, PointsActivity};
+
     use crate::models::guild::GuildMember;
     use crate::models::hyperstructure::{
         ConstructionAccess, Hyperstructure, HyperstructureConstructionAccessImpl, HyperstructureGlobals,
@@ -544,7 +547,23 @@ pub mod hyperstructure_systems {
                             victory_points_for_achievement_u32,
                             starknet::get_block_timestamp(),
                         );
-                    }
+
+                        let points_registered_story = PointsRegisteredStory {
+                            owner_address: *shareholder_address,
+                            activity: PointsActivity::HyperstructureSharePoints,
+                            points: victory_points_grant_config.hyp_points_per_second.into(),
+                        };
+                        world
+                            .emit_event(
+                                @StoryEvent {
+                                    owner: Option::Some(*shareholder_address),
+                                    entity_id: Option::Some(hyperstructure_id),
+                                    tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                                    story: Story::PointsRegisteredStory(points_registered_story),
+                                    timestamp: starknet::get_block_timestamp(),
+                                },
+                            );
+                        }
                 }
 
                 // update global total registered points

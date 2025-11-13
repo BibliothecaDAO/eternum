@@ -1,8 +1,9 @@
 import { sqlApi } from "@/services/api";
-import type { PlayerLeaderboardRow } from "@bibliothecadao/torii";
+import { SqlApi, type PlayerLeaderboardRow } from "@bibliothecadao/torii";
 
 const DEFAULT_LIMIT = 20;
 const REGISTERED_POINTS_PRECISION = 1_000_000;
+const SCORE_TO_BEAT_ENDPOINT_TIMEOUT_MS = 10_000;
 
 export interface PlayerLeaderboardData {
   rank: number;
@@ -30,6 +31,33 @@ export interface PlayerLeaderboardData {
 }
 
 export type LandingLeaderboardEntry = PlayerLeaderboardData;
+
+export interface ScoreToBeatRun {
+  endpoint: string;
+  points: number;
+  rank: number;
+}
+
+export interface ScoreToBeatEntrySummary {
+  address: string;
+  displayName: string | null;
+  combinedPoints: number;
+  runs: ScoreToBeatRun[];
+  totalRuns: number;
+}
+
+export interface ScoreToBeatResult {
+  entries: ScoreToBeatEntrySummary[];
+  endpoints: string[];
+  failedEndpoints: string[];
+  generatedAt: number;
+}
+
+export interface ScoreToBeatOptions {
+  perEndpointLimit?: number;
+  runsToAggregate?: number;
+  maxPlayers?: number;
+}
 
 type NumericLike = string | number | bigint | null | undefined;
 
@@ -191,18 +219,7 @@ const transformLandingLeaderboardRow = (row: PlayerLeaderboardRow, rank: number)
   } satisfies PlayerLeaderboardData;
 };
 
-export const fetchLandingLeaderboard = async (
-  limit: number = DEFAULT_LIMIT,
-  offset: number = 0,
-): Promise<PlayerLeaderboardData[]> => {
-  const safeLimit = Math.max(0, limit);
-  const safeOffset = Math.max(0, offset);
-
-  if (safeLimit === 0) {
-    return [];
-  }
-
-  const rows = await sqlApi.fetchPlayerLeaderboard(safeLimit, safeOffset);
+const buildLeaderboardEntries = (rows: PlayerLeaderboardRow[], safeOffset: number): PlayerLeaderboardData[] => {
   const entries: PlayerLeaderboardData[] = [];
 
   rows.forEach((rawRow, index) => {
@@ -214,6 +231,27 @@ export const fetchLandingLeaderboard = async (
 
   return entries.sort((a, b) => b.points - a.points).map((entry, index) => ({ ...entry, rank: index + 1 }));
 };
+
+const fetchLeaderboardWithClient = async (
+  client: SqlApi,
+  limit: number = DEFAULT_LIMIT,
+  offset: number = 0,
+): Promise<PlayerLeaderboardData[]> => {
+  const safeLimit = Math.max(0, limit);
+  const safeOffset = Math.max(0, offset);
+
+  if (safeLimit === 0) {
+    return [];
+  }
+
+  const rows = await client.fetchPlayerLeaderboard(safeLimit, safeOffset);
+  return buildLeaderboardEntries(rows, safeOffset);
+};
+
+export const fetchLandingLeaderboard = async (
+  limit: number = DEFAULT_LIMIT,
+  offset: number = 0,
+): Promise<PlayerLeaderboardData[]> => fetchLeaderboardWithClient(sqlApi, limit, offset);
 
 export const fetchLandingLeaderboardEntryByAddress = async (
   playerAddress: string,
@@ -232,4 +270,158 @@ export const fetchLandingLeaderboardEntryByAddress = async (
   const rank = typeof rawRow.rank === "number" && rawRow.rank > 0 ? Math.floor(rawRow.rank) : 1;
 
   return transformLandingLeaderboardRow(rawRow, rank);
+};
+
+const trimTrailingSlash = (value: string): string => value.replace(/\/+$/, "");
+
+const normaliseToriiEndpoint = (value: string): string | null => {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed.length) {
+    return null;
+  }
+
+  try {
+    const url = new URL(trimmed);
+    url.hash = "";
+    url.search = "";
+    const base = trimTrailingSlash(url.toString());
+    return base.endsWith("/sql") ? base : `${base}/sql`;
+  } catch {
+    return null;
+  }
+};
+
+const sanitiseToriiEndpoints = (endpoints: string[]): string[] => {
+  const seen = new Set<string>();
+  const sanitized: string[] = [];
+
+  endpoints.forEach((candidate) => {
+    const normalized = normaliseToriiEndpoint(candidate);
+    if (normalized && !seen.has(normalized)) {
+      seen.add(normalized);
+      sanitized.push(normalized);
+    }
+  });
+
+  return sanitized;
+};
+
+type EndpointSnapshot = {
+  endpoint: string;
+  entries: PlayerLeaderboardData[];
+};
+
+const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, timeoutMessage: string): Promise<T> => {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(timeoutMessage));
+    }, timeoutMs);
+
+    promise
+      .then((value) => {
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+  });
+};
+
+const fetchLeaderboardForEndpoint = async (
+  endpoint: string,
+  limit: number,
+  offset: number = 0,
+): Promise<EndpointSnapshot> => ({
+  endpoint,
+  entries: await withTimeout(
+    fetchLeaderboardWithClient(new SqlApi(endpoint), limit, offset),
+    SCORE_TO_BEAT_ENDPOINT_TIMEOUT_MS,
+    `Score to beat request timed out for ${endpoint}`,
+  ),
+});
+
+export const fetchScoreToBeatAcrossEndpoints = async (
+  toriiEndpoints: string[],
+  { perEndpointLimit = 50, runsToAggregate = 2, maxPlayers = 10 }: ScoreToBeatOptions = {},
+): Promise<ScoreToBeatResult> => {
+  const safePerEndpointLimit = perEndpointLimit > 0 ? perEndpointLimit : DEFAULT_LIMIT;
+  const safeRunsToAggregate = runsToAggregate > 0 ? runsToAggregate : 2;
+  const safeMaxPlayers = maxPlayers > 0 ? maxPlayers : 10;
+
+  const sanitizedEndpoints = sanitiseToriiEndpoints(toriiEndpoints);
+
+  if (sanitizedEndpoints.length === 0) {
+    return {
+      entries: [],
+      endpoints: [],
+      failedEndpoints: [],
+      generatedAt: Date.now(),
+    };
+  }
+
+  const settledSnapshots = await Promise.allSettled(
+    sanitizedEndpoints.map((endpoint) => fetchLeaderboardForEndpoint(endpoint, safePerEndpointLimit)),
+  );
+
+  const successfulSnapshots: EndpointSnapshot[] = [];
+  const failedEndpoints: string[] = [];
+
+  settledSnapshots.forEach((result, index) => {
+    if (result.status === "fulfilled") {
+      successfulSnapshots.push(result.value);
+    } else {
+      failedEndpoints.push(sanitizedEndpoints[index]);
+      console.error("Failed to fetch Torii leaderboard", sanitizedEndpoints[index], result.reason);
+    }
+  });
+
+  const perPlayer = new Map<string, { address: string; displayName: string | null; runs: ScoreToBeatRun[] }>();
+
+  successfulSnapshots.forEach(({ endpoint, entries }) => {
+    entries.forEach((entry) => {
+      const key = entry.address.toLowerCase();
+      const snapshot = perPlayer.get(key) ?? {
+        address: entry.address,
+        displayName: entry.displayName ?? null,
+        runs: [],
+      };
+
+      if (!snapshot.displayName && entry.displayName) {
+        snapshot.displayName = entry.displayName;
+      }
+
+      snapshot.runs.push({ endpoint, points: entry.points, rank: entry.rank });
+      perPlayer.set(key, snapshot);
+    });
+  });
+
+  const aggregatedEntries = Array.from(perPlayer.values())
+    .map((player) => {
+      const sortedRuns = [...player.runs].sort((a, b) => b.points - a.points).slice(0, safeRunsToAggregate);
+      const combinedPoints = sortedRuns.reduce((sum, run) => sum + run.points, 0);
+
+      return {
+        address: player.address,
+        displayName: player.displayName,
+        combinedPoints,
+        runs: sortedRuns,
+        totalRuns: player.runs.length,
+      } satisfies ScoreToBeatEntrySummary;
+    })
+    .filter((entry) => entry.runs.length > 0)
+    .sort((a, b) => b.combinedPoints - a.combinedPoints)
+    .slice(0, safeMaxPlayers);
+
+  return {
+    entries: aggregatedEntries,
+    endpoints: sanitizedEndpoints,
+    failedEndpoints,
+    generatedAt: Date.now(),
+  } satisfies ScoreToBeatResult;
 };

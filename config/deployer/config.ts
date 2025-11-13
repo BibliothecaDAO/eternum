@@ -1459,6 +1459,7 @@ export const setVictoryPointsConfig = async (config: Config) => {
     points_for_non_hyperstructure_claim_against_bandits:
       config.config.victoryPoints.pointsForNonHyperstructureClaimAgainstBandits,
     points_for_tile_exploration: config.config.victoryPoints.pointsForTileExploration,
+    points_for_relic_open: config.config.victoryPoints.pointsForRelicDiscovery,
   });
   console.log(chalk.green(`\n    ✔ Victory points configured `) + chalk.gray(victoryPointsTx.statusReceipt) + "\n");
 };
