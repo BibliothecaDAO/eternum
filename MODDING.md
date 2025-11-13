@@ -49,6 +49,7 @@ To run the game locally:
 2. Make a copy of `.env.local.sample` and rename it to `.env.local`.
 
 3. Update the following environment variables in `.env.local` based on your target environment:
+
    - `VITE_PUBLIC_TORII="http://127.0.0.1:8080"`
    - `VITE_PUBLIC_NODE_URL="http://127.0.0.1:5050"`
 
