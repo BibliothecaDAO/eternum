@@ -49,13 +49,13 @@ buildings.
 
 All Realms start the game with a structure in the center of the buildable hexes, known as the Keep. This structure
 represents the central point of governance of the Realm, and facilitates key functions such as Realm upgrades and labor
-production. This building cannot be destroyed and provides a baseline population capacity of 5.
+production. This building cannot be destroyed and provides a baseline population capacity of 6.
 
 <BuildingCard
   title="Keep"
   image="/images/buildings/construction/castleZero.png"
   buildingType={25}
-  description={["Produces labor", "Provides a baseline population capacity of 5", "Cannot be constructed or destroyed"]}
+  description={["Produces labor", "Provides a baseline population capacity of 6", "Cannot be constructed or destroyed"]}
 />
 
 ### Resource Buildings
@@ -165,7 +165,7 @@ have the same requirements in labor and resource mode.
     { resource: ResourcesIds.Wood, amount: 120 }, // Wood
     { resource: ResourcesIds.Copper, amount: 90 }, // Copper
     { resource: ResourcesIds.Ironwood, amount: 30 }, // Ironwood
-    { resource: ResourcesIds.Essence, amount: 500 }, // Essence
+    { resource: ResourcesIds.Essence, amount: 600 }, // Essence
   ]}
   standardOnly={true}
 />
@@ -180,7 +180,7 @@ have the same requirements in labor and resource mode.
     { resource: ResourcesIds.Wood, amount: 120 }, // Wood
     { resource: ResourcesIds.Copper, amount: 90 }, // Copper
     { resource: ResourcesIds.ColdIron, amount: 30 }, // Cold Iron
-    { resource: ResourcesIds.Essence, amount: 500 }, // Essence
+    { resource: ResourcesIds.Essence, amount: 600 }, // Essence
   ]}
   standardOnly={true}
 />
@@ -198,7 +198,7 @@ have the same requirements in labor and resource mode.
     { resource: ResourcesIds.Wood, amount: 120 }, // Wood
     { resource: ResourcesIds.Copper, amount: 90 }, // Copper
     { resource: ResourcesIds.Gold, amount: 30 }, // Gold
-    { resource: ResourcesIds.Essence, amount: 500 }, // Essence
+    { resource: ResourcesIds.Essence, amount: 600 }, // Essence
   ]}
   standardOnly={true}
 />
@@ -217,10 +217,10 @@ population requirements:
   buildingType={37}
   description={["Produces Wheat (food)"]}
   simpleCosts={[
-    { resource: 23, amount: 30 } // Labor
+    { resource: 23, amount: 10 } // Labor
   ]}
   standardCosts={[
-    { resource: 23, amount: 30 } // Labor
+    { resource: 23, amount: 10 } // Labor
   ]}
 />
 
@@ -228,13 +228,13 @@ population requirements:
   title="Worker's Hut"
   image="/images/buildings/construction/workers_hut.png"
   buildingType={1}
-  description={["Increases population capacity by 5"]}
+  description={["Increases population capacity by 6"]}
   simpleCosts={[
-    { resource: 23, amount: 90 }, // Labor
+    { resource: 23, amount: 60 }, // Labor
   ]}
   standardCosts={[
-    { resource: 23, amount: 30 }, // Labor
-    { resource: 3, amount: 30 }, // Wood
+    { resource: 23, amount: 20 }, // Labor
+    { resource: 3, amount: 20 }, // Wood
   ]}
 />
 
@@ -293,7 +293,7 @@ available for construction in resource mode.
     { resource: ResourcesIds.Wood, amount: 240 }, // Wood
     { resource: ResourcesIds.Copper, amount: 180 }, // Copper
     { resource: ResourcesIds.ColdIron, amount: 60 }, // Cold Iron
-    { resource: ResourcesIds.Essence, amount: 500 }, // Essence
+    { resource: ResourcesIds.Essence, amount: 600 }, // Essence
   ]}
 />
 
@@ -307,7 +307,7 @@ available for construction in resource mode.
     { resource: ResourcesIds.Wood, amount: 300 }, // Wood
     { resource: ResourcesIds.ColdIron, amount: 240 }, // Cold Iron
     { resource: ResourcesIds.Mithral, amount: 90 }, // Mithral
-    { resource: ResourcesIds.Essence, amount: 1000 }, // Essence
+    { resource: ResourcesIds.Essence, amount: 1200 }, // Essence
   ]}
 />
 
@@ -346,7 +346,7 @@ available for construction in resource mode.
     { resource: ResourcesIds.Wood, amount: 240 }, // Wood
     { resource: ResourcesIds.Copper, amount: 180 }, // Copper
     { resource: ResourcesIds.Ironwood, amount: 60 }, // Ironwood
-    { resource: ResourcesIds.Essence, amount: 500 }, // Essence
+    { resource: ResourcesIds.Essence, amount: 600 }, // Essence
   ]}
 />
 
@@ -360,7 +360,7 @@ available for construction in resource mode.
     { resource: ResourcesIds.Wood, amount: 300 }, // Wood
     { resource: ResourcesIds.Ironwood, amount: 240 }, // Ironwood
     { resource: ResourcesIds.Adamantine, amount: 90 }, // Adamantine
-    { resource: ResourcesIds.Essence, amount: 1000 }, // Essence
+    { resource: ResourcesIds.Essence, amount: 1200 }, // Essence
   ]}
 />
 
@@ -399,7 +399,7 @@ available for construction in resource mode.
     { resource: ResourcesIds.Wood, amount: 240 }, // Wood
     { resource: ResourcesIds.Copper, amount: 180 }, // Copper
     { resource: ResourcesIds.Gold, amount: 60 }, // Gold
-    { resource: ResourcesIds.Essence, amount: 500 }, // Essence
+    { resource: ResourcesIds.Essence, amount: 600 }, // Essence
   ]}
 />
 
@@ -413,7 +413,7 @@ available for construction in resource mode.
     { resource: ResourcesIds.Wood, amount: 300 }, // Wood
     { resource: ResourcesIds.Gold, amount: 240 }, // Gold
     { resource: ResourcesIds.Dragonhide, amount: 90 }, // Dragonhide
-    { resource: ResourcesIds.Essence, amount: 1000 } // Essence 
+    { resource: ResourcesIds.Essence, amount: 1200 } // Essence 
   ]}
 />
 </div>
