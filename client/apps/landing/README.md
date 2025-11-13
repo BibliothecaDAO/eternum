@@ -69,7 +69,6 @@ landing/
 ### Key Features
 
 - **NFT Marketplace**: Full-featured marketplace for trading Eternum NFTs
-
   - Realm NFTs with detailed attributes
   - Season passes for game access
   - Listing creation and management
@@ -77,13 +76,11 @@ landing/
   - Activity feed and trading history
 
 - **Minting Interface**: Direct minting for new NFTs
-
   - Realm minting with randomized attributes
   - Season pass purchases
   - Test realm creation for development
 
 - **Game Entry**: Multiple entry points to the game
-
   - Direct launch from owned NFTs
   - Season pass validation
   - Controller wallet connection
