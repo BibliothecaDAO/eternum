@@ -16,7 +16,7 @@ export const REALM_PRESETS: { id: RealmPresetId; label: string; description?: st
   { id: "idle", label: "Idle", description: "Pause automation (0%)." },
 ];
 
-const LABOR_PRESET_BANNED_RESOURCES = new Set<ResourcesIds>([
+export const LABOR_PRESET_BANNED_RESOURCES = new Set<ResourcesIds>([
   ResourcesIds.KnightT2,
   ResourcesIds.KnightT3,
   ResourcesIds.CrossbowmanT2,
@@ -288,6 +288,35 @@ export const calculatePresetAllocations = (
   }
 
   return allocations;
+};
+
+export const calculateResourceBootstrapAllocation = (
+  automation: RealmAutomationConfig | undefined,
+  resourceId: ResourcesIds,
+): { resourceToResource: number; laborToResource: number } | null => {
+  if (!automation) {
+    return null;
+  }
+
+  const entityType = automation.entityType ?? "realm";
+  if (isAutomationResourceBlocked(resourceId, entityType)) {
+    return null;
+  }
+
+  if (!automation.resources?.[resourceId]) {
+    return null;
+  }
+
+  const resourcePresetAllocations = calculatePresetAllocations(automation, "resource");
+  const allocation = resourcePresetAllocations.get(resourceId);
+  if (!allocation) {
+    return null;
+  }
+
+  return {
+    resourceToResource: allocation.resourceToResource,
+    laborToResource: allocation.laborToResource ?? 0,
+  };
 };
 
 export const inferRealmPreset = (automation?: RealmAutomationConfig): RealmPresetId => {

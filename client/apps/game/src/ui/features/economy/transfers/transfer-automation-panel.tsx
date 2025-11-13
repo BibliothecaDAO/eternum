@@ -14,24 +14,41 @@ import {
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { CapacityConfig, RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import {
+  CapacityConfig,
+  ClientComponents,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  Structure,
+  StructureType,
+} from "@bibliothecadao/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { TransferAutomationAdvancedModal } from "./transfer-automation-modal";
 
 const ALL_RESOURCE_IDS = Object.values(ResourcesIds).filter((v) => typeof v === "number") as ResourcesIds[];
+const ESSENCE_SITE_ALLOWED_RESOURCES = new Set<ResourcesIds>([ResourcesIds.Donkey, ResourcesIds.Essence]);
+
+const SOURCE_ALLOWED_CATEGORIES = new Set<StructureType>([
+  StructureType.Realm,
+  StructureType.Village,
+  StructureType.FragmentMine,
+]);
+const DEST_ALLOWED_CATEGORIES = SOURCE_ALLOWED_CATEGORIES;
+
+const isFragmentMine = (structure: Structure | undefined) => structure?.category === StructureType.FragmentMine;
+const isRealm = (structure: Structure | undefined) => structure?.category === StructureType.Realm;
+const isAllowedSource = (structure: Structure) => SOURCE_ALLOWED_CATEGORIES.has(structure.category);
+const isAllowedDestination = (structure: Structure) => DEST_ALLOWED_CATEGORIES.has(structure.category);
 
 export const TransferAutomationPanel = () => {
   const playerStructures = useUIStore((s) => s.playerStructures);
-  const setRightView = useUIStore((s) => s.setRightNavigationView);
   const toggleModal = useUIStore((s) => s.toggleModal);
   const { currentDefaultTick } = useBlockTimestamp();
   const isBlitz = getIsBlitz();
 
-  const ownedSources = useMemo(() => {
-    // Allow Realm, Village, FragmentMine as sources
-    const allowed = new Set<StructureType>([StructureType.Realm, StructureType.Village, StructureType.FragmentMine]);
-    return playerStructures.filter((s: any) => allowed.has(s.structure?.base?.category));
+  const ownedSources = useMemo<Structure[]>(() => {
+    return playerStructures.filter((structure) => isAllowedSource(structure));
   }, [playerStructures]);
 
   // Aggregate available resources across owned sources (balance > 0)
@@ -43,9 +60,10 @@ export const TransferAutomationPanel = () => {
   const resourceTotals = useMemo(() => {
     const totals = new Map<ResourcesIds, number>();
     if (!components) return totals;
+    const clientComponents = components as ClientComponents;
     for (const ps of ownedSources) {
-      const rm = new ResourceManager(components as any, ps.entityId);
-      const category = ps.structure?.base?.category;
+      const rm = new ResourceManager(clientComponents, ps.entityId);
+      const category = ps.category;
       for (const rid of ALL_RESOURCE_IDS) {
         try {
           if (isMilitaryResource(rid) && category !== StructureType.Realm) {
@@ -54,13 +72,15 @@ export const TransferAutomationPanel = () => {
           const bal = rm.balanceWithProduction(currentDefaultTick, rid).balance ?? 0n;
           const human = Number(bal) / RESOURCE_PRECISION;
           if (human > 0) totals.set(rid, (totals.get(rid) ?? 0) + human);
-        } catch (_) {}
+        } catch {
+          // ignore structures missing balance data
+        }
       }
     }
     return totals;
   }, [components, ownedSources, currentDefaultTick]);
 
-  const availableResources = useMemo(() => new Set(resourceTotals.keys() as any), [resourceTotals]);
+  const availableResources = useMemo(() => new Set(resourceTotals.keys()), [resourceTotals]);
 
   // UI state
   const [selectedResources, setSelectedResources] = useState<ResourcesIds[]>([]);
@@ -69,11 +89,14 @@ export const TransferAutomationPanel = () => {
   const [selectedSourceId, setSelectedSourceId] = useState<number | null>(null);
   const [ownedDestOnly, setOwnedDestOnly] = useState(true);
   const [sourceSearch, setSourceSearch] = useState("");
-  const [destinationId, setDestinationId] = useState<number | null>(null);
+  const [destinationIds, setDestinationIds] = useState<number[]>([]);
   const [repeat, setRepeat] = useState(false);
-  const [interval, setIntervalMinutes] = useState(30);
+  const [interval, setIntervalMinutes] = useState(5);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const allowMultiDestination = selectedResources.length === 1;
+  const actualDestinationCount = allowMultiDestination ? destinationIds.length : Math.min(destinationIds.length, 1);
+  const destinationCountForLimits = allowMultiDestination ? Math.max(1, destinationIds.length || 1) : 1;
 
   const hasMilitarySelection = useMemo(
     () => selectedResources.some((rid) => isMilitaryResource(rid)),
@@ -94,93 +117,57 @@ export const TransferAutomationPanel = () => {
 
     const sourceId = Number(draft.sourceEntityId);
     setSelectedSourceId(sourceId);
-    setDestinationId(Number(draft.destinationEntityId));
+    const draftDestinationId = Number(draft.destinationEntityId);
+    setDestinationIds(Number.isFinite(draftDestinationId) ? [draftDestinationId] : []);
     setSelectedResources(draft.resourceIds || []);
     setRepeat(true);
     setIntervalMinutes(draft.intervalMinutes);
 
-    if (!components) return;
-
     try {
-      const rm = new ResourceManager(components as any, sourceId);
       const next: Record<number, { amount: number }> = {};
-      const fallbackPercent = Math.min(90, Math.max(5, Math.floor(draft.percent ?? 10)));
-      const fallbackFlatAmount = typeof draft.flatAmount === "number" ? Math.max(0, Math.floor(draft.flatAmount)) : 0;
-
-      const resolveAvailable = (rid: ResourcesIds) => {
-        try {
-          const bal = rm.balanceWithProduction(currentDefaultTick, rid).balance ?? 0n;
-          return Math.max(0, Math.floor(Number(bal) / RESOURCE_PRECISION));
-        } catch {
-          return 0;
-        }
-      };
-
       if (Array.isArray(draft.resourceConfigs) && draft.resourceConfigs.length > 0) {
         draft.resourceConfigs.forEach((cfg) => {
           const rid = cfg.resourceId as ResourcesIds;
-          let amount = 0;
-          if (cfg.mode === "flat") {
-            if (typeof (cfg as any).flatAmount === "number") {
-              amount = Math.max(0, Math.floor((cfg as any).flatAmount));
-            } else if (typeof cfg.flatPercent === "number") {
-              const available = resolveAvailable(rid);
-              const flatPercent = Math.min(90, Math.max(1, Math.floor(cfg.flatPercent)));
-              amount = Math.floor((flatPercent / 100) * available);
-            }
-          } else {
-            const available = resolveAvailable(rid);
-            const pct = Math.min(90, Math.max(5, Math.floor(cfg.percent ?? fallbackPercent)));
-            amount = Math.floor((pct / 100) * available);
-          }
-          next[rid] = { amount };
+          next[rid] = { amount: Math.max(0, Math.floor(cfg.amount ?? 0)) };
         });
       } else {
         (draft.resourceIds || []).forEach((rid) => {
-          const resourceId = rid as ResourcesIds;
-          const available = resolveAvailable(resourceId);
-          let amount = 0;
-          if ((draft.amountMode ?? "percent") === "flat") {
-            amount = Math.max(0, Math.min(available, fallbackFlatAmount));
-          } else {
-            amount = Math.floor((fallbackPercent / 100) * available);
-          }
-          next[resourceId] = { amount };
+          next[rid as ResourcesIds] = { amount: 0 };
         });
       }
-
       setResourceConfigs(next);
     } catch {
       const next: Record<number, { amount: number }> = {};
       (draft.resourceIds || []).forEach((rid) => {
-        next[rid] = { amount: 0 };
+        next[rid as ResourcesIds] = { amount: 0 };
       });
       setResourceConfigs(next);
     } finally {
       setDraft(null);
     }
-  }, [draft, setDraft, components, currentDefaultTick]);
+  }, [draft, setDraft]);
 
   const filteredOwnedSources = useMemo(() => {
     if (!hasMilitarySelection) return ownedSources;
-    return ownedSources.filter((ps: any) => ps.structure?.base?.category === StructureType.Realm);
+    return ownedSources.filter((ps) => isRealm(ps));
   }, [ownedSources, hasMilitarySelection]);
 
   const eligibleSources = useMemo(() => {
-    if (!components) return filteredOwnedSources as any[];
-    if (selectedResources.length === 0) return filteredOwnedSources as any[];
+    if (!components) return filteredOwnedSources;
+    if (selectedResources.length === 0) return filteredOwnedSources;
+    const clientComponents = components as ClientComponents;
     return filteredOwnedSources
-      .filter((ps: any) => {
-        const rm = new ResourceManager(components as any, ps.entityId);
+      .filter((ps) => {
+        const rm = new ResourceManager(clientComponents, ps.entityId);
         for (const rid of selectedResources) {
           const bal = rm.balanceWithProduction(currentDefaultTick, rid).balance ?? 0n;
           if (Number(bal) <= 0) return false;
         }
         return true;
       })
-      .sort((a: any, b: any) => {
-        const rma = new ResourceManager(components as any, a.entityId);
-        const rmb = new ResourceManager(components as any, b.entityId);
+      .sort((a, b) => {
+        const rma = new ResourceManager(clientComponents, a.entityId);
+        const rmb = new ResourceManager(clientComponents, b.entityId);
         const suma = selectedResources.reduce(
           (acc, rid) => acc + Number(rma.balanceWithProduction(currentDefaultTick, rid).balance ?? 0n),
           0,
@@ -193,20 +180,37 @@ export const TransferAutomationPanel = () => {
       });
   }, [components, filteredOwnedSources, selectedResources, currentDefaultTick]);
 
+  const selectedSource = useMemo(() => {
+    if (!selectedSourceId) return null;
+    return ownedSources.find((ps) => Number(ps.entityId) === Number(selectedSourceId)) ?? null;
+  }, [ownedSources, selectedSourceId]);
+
   // Destinations: owned realms + villages (toggle does not affect source list)
-  const ownedDestinations = useMemo(() => {
-    const allowed = new Set<StructureType>([StructureType.Realm, StructureType.Village]);
-    return playerStructures.filter((s: any) => allowed.has(s.structure?.base?.category));
+  const ownedDestinations = useMemo<Structure[]>(() => {
+    return playerStructures.filter((structure) => isAllowedDestination(structure));
   }, [playerStructures]);
 
   const filteredOwnedDestinations = useMemo(() => {
     if (!hasMilitarySelection) return ownedDestinations;
-    return ownedDestinations.filter((ps: any) => ps.structure?.base?.category === StructureType.Realm);
+    return ownedDestinations.filter((ps) => isRealm(ps));
   }, [ownedDestinations, hasMilitarySelection]);
 
+  const destinationLookup = useMemo(() => {
+    const map = new Map<number, Structure>();
+    ownedDestinations.forEach((ps) => {
+      map.set(Number(ps.entityId), ps);
+    });
+    return map;
+  }, [ownedDestinations]);
+
   const [destSearch, setDestSearch] = useState("");
+  const allowEssenceDestinationPayload = useMemo(
+    () => selectedResources.every((rid) => ESSENCE_SITE_ALLOWED_RESOURCES.has(rid)),
+    [selectedResources],
+  );
+
   const destinations = useMemo(() => {
-    const baseList = ownedDestOnly ? filteredOwnedDestinations : filteredOwnedDestinations; // extend later for public
+    const baseList = ownedDestOnly ? filteredOwnedDestinations : filteredOwnedDestinations; // placeholder for future public list
     const q = destSearch.trim();
     const isNumeric = /^\d+$/.test(q);
     const norm = (s: string) =>
@@ -215,41 +219,61 @@ export const TransferAutomationPanel = () => {
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .replace(/[^a-z0-9 ]/g, "");
-    let list = baseList.filter((ps: any) => ps.entityId !== selectedSourceId);
+    const list = baseList
+      .filter((ps) => Number(ps.entityId) !== Number(selectedSourceId))
+      .filter((ps) => (allowEssenceDestinationPayload ? true : !isFragmentMine(ps)));
     if (!q) return list;
-    return list.filter((ps: any) => {
+    return list.filter((ps) => {
       const name = getStructureName(ps.structure, isBlitz).name;
       if (isNumeric) {
         return String(ps.entityId).includes(q);
       }
       return norm(name).includes(norm(q));
     });
-  }, [ownedDestOnly, filteredOwnedDestinations, destSearch, isBlitz, selectedSourceId]);
+  }, [ownedDestOnly, filteredOwnedDestinations, destSearch, isBlitz, selectedSourceId, allowEssenceDestinationPayload]);
 
-  // If source equals currently selected destination, clear destination
+  // Force single destination selection when multiple resources are selected
   useEffect(() => {
-    if (destinationId && selectedSourceId === destinationId) {
-      setDestinationId(null);
-    }
+    if (allowMultiDestination) return;
+    setDestinationIds((prev) => {
+      if (prev.length <= 1) return prev;
+      return prev.slice(0, 1);
+    });
+  }, [allowMultiDestination]);
+
+  // If source equals currently selected destination, clear that destination
+  useEffect(() => {
+    if (!selectedSourceId) return;
+    setDestinationIds((prev) => {
+      if (!prev.includes(selectedSourceId)) return prev;
+      return prev.filter((id) => id !== selectedSourceId);
+    });
   }, [selectedSourceId]);
 
   useEffect(() => {
     if (!hasMilitarySelection) return;
+    const allowedIds = new Set(filteredOwnedDestinations.map((ps) => Number(ps.entityId)));
+    setDestinationIds((prev) => prev.filter((id) => allowedIds.has(id)));
+  }, [hasMilitarySelection, filteredOwnedDestinations]);
+
+  useEffect(() => {
+    if (!hasMilitarySelection) return;
     if (!selectedSourceId) return;
-    const stillAllowed = filteredOwnedSources.some((ps: any) => ps.entityId === selectedSourceId);
+    const stillAllowed = filteredOwnedSources.some((ps) => Number(ps.entityId) === Number(selectedSourceId));
     if (!stillAllowed) {
       setSelectedSourceId(null);
     }
   }, [hasMilitarySelection, selectedSourceId, filteredOwnedSources]);
 
   useEffect(() => {
-    if (!hasMilitarySelection) return;
-    if (!destinationId) return;
-    const stillAllowed = filteredOwnedDestinations.some((ps: any) => ps.entityId === destinationId);
-    if (!stillAllowed) {
-      setDestinationId(null);
-    }
-  }, [hasMilitarySelection, destinationId, filteredOwnedDestinations]);
+    if (allowEssenceDestinationPayload) return;
+    setDestinationIds((prev) =>
+      prev.filter((id) => {
+        const destination = destinationLookup.get(id);
+        return destination ? !isFragmentMine(destination) : false;
+      }),
+    );
+  }, [allowEssenceDestinationPayload, destinationLookup]);
 
   // Ensure resourceConfigs exist for selected resources and remove stale ones
   useEffect(() => {
@@ -272,12 +296,14 @@ export const TransferAutomationPanel = () => {
     const map = new Map<number, number>();
     if (!components || !selectedSourceId) return map;
     try {
-      const rm = new ResourceManager(components as any, selectedSourceId);
+      const rm = new ResourceManager(components as ClientComponents, selectedSourceId);
       for (const rid of selectedResources) {
         const bal = rm.balanceWithProduction(currentDefaultTick, rid).balance ?? 0n;
         map.set(rid, Math.max(0, Math.floor(Number(bal) / RESOURCE_PRECISION)));
       }
-    } catch {}
+    } catch {
+      // ignore balance fetch errors
+    }
     return map;
   }, [components, selectedSourceId, selectedResources, currentDefaultTick]);
 
@@ -285,7 +311,7 @@ export const TransferAutomationPanel = () => {
   const donkeyAvailable = useMemo(() => {
     if (!components || !selectedSourceId) return 0;
     try {
-      const rm = new ResourceManager(components as any, selectedSourceId);
+      const rm = new ResourceManager(components as ClientComponents, selectedSourceId);
       const raw = rm.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey).balance ?? 0n;
       return Math.max(0, Math.floor(Number(raw) / RESOURCE_PRECISION));
     } catch {
@@ -300,6 +326,22 @@ export const TransferAutomationPanel = () => {
       return 0;
     }
   }, []);
+
+  const restrictToEssencePayload = selectedSource?.category === StructureType.FragmentMine;
+
+  const hasRestrictedResourcesSelected = useMemo(
+    () =>
+      Boolean(restrictToEssencePayload && selectedResources.some((rid) => !ESSENCE_SITE_ALLOWED_RESOURCES.has(rid))),
+    [restrictToEssencePayload, selectedResources],
+  );
+
+  useEffect(() => {
+    if (!hasRestrictedResourcesSelected) return;
+    setSelectedResources((prev) => {
+      const filtered = prev.filter((rid) => ESSENCE_SITE_ALLOWED_RESOURCES.has(rid));
+      return filtered.length === prev.length ? prev : filtered;
+    });
+  }, [hasRestrictedResourcesSelected]);
 
   useEffect(() => {
     if (selectedResources.length === 0) return;
@@ -318,7 +360,9 @@ export const TransferAutomationPanel = () => {
         }
         const totalCarryKg = donkeyCapacityKgPerUnit * donkeyAvailable;
         const donkeyLimited = weightPerUnit > 0 ? Math.floor(totalCarryKg / weightPerUnit) : available;
-        const maxAmount = Math.max(0, Math.min(available, donkeyLimited));
+        const perDestinationResourceCap = Math.floor(available / destinationCountForLimits);
+        const perDestinationDonkeyCap = Math.floor(donkeyLimited / destinationCountForLimits);
+        const maxAmount = Math.max(0, Math.min(perDestinationResourceCap, perDestinationDonkeyCap));
         const desired = Math.max(0, Math.floor(existing.amount ?? 0));
         const clamped = Math.max(0, Math.min(maxAmount, desired));
         if (clamped !== desired) {
@@ -328,7 +372,7 @@ export const TransferAutomationPanel = () => {
       }
       return mutated ? next : prev;
     });
-  }, [selectedResources, sourceBalances, donkeyAvailable, donkeyCapacityKgPerUnit]);
+  }, [selectedResources, sourceBalances, donkeyAvailable, donkeyCapacityKgPerUnit, destinationCountForLimits]);
 
   // Computed preview for absolute amounts and donkey capacity (fast path)
   const transferPreview = useMemo(() => {
@@ -353,6 +397,19 @@ export const TransferAutomationPanel = () => {
 
   const addScheduled = useTransferAutomationStore((s) => s.add);
 
+  const toggleDestinationSelection = useCallback(
+    (entityId: number) => {
+      setDestinationIds((prev) => {
+        const exists = prev.includes(entityId);
+        if (allowMultiDestination) {
+          return exists ? prev.filter((id) => id !== entityId) : [...prev, entityId];
+        }
+        return exists ? [] : [entityId];
+      });
+    },
+    [allowMultiDestination],
+  );
+
   const submit = useCallback(async () => {
     if (!components) return;
     if (!account || !account.address || account.address === "0x0") {
@@ -367,31 +424,41 @@ export const TransferAutomationPanel = () => {
       toast.error("Select a source location.");
       return;
     }
-    if (!destinationId) {
-      toast.error("Select a destination.");
+
+    const resolvedDestinationIds = allowMultiDestination ? destinationIds : destinationIds.slice(0, 1);
+
+    if (resolvedDestinationIds.length === 0) {
+      toast.error("Select at least one destination.");
       return;
     }
 
-    // Military rule: if any military, enforce Realm->Realm
+    const resolvedDestinations = resolvedDestinationIds
+      .map((id) => destinationLookup.get(id))
+      .filter((structure): structure is Structure => Boolean(structure));
+
+    if (resolvedDestinations.length !== resolvedDestinationIds.length) {
+      toast.error("Selected destination is no longer available.");
+      return;
+    }
+
     const hasMilitary = selectedResources.some((rid) => isMilitaryResource(rid));
 
     if (hasMilitary) {
-      const src = ownedSources.find((s: any) => s.entityId === selectedSourceId);
-      const dst = destinations.find((d: any) => d.entityId === destinationId);
-      if (
+      const src = ownedSources.find((structure) => Number(structure.entityId) === Number(selectedSourceId));
+      const invalid =
         !src ||
-        !dst ||
-        src.structure?.base?.category !== StructureType.Realm ||
-        dst.structure?.base?.category !== StructureType.Realm
-      ) {
+        src.category !== StructureType.Realm ||
+        resolvedDestinations.some((dst) => dst.category !== StructureType.Realm);
+      if (invalid) {
         toast.error("Troops can only be transferred Realm ↔ Realm.");
         return;
       }
     }
 
-    // donkey block
-    if (transferPreview && transferPreview.donkeys.have < transferPreview.donkeys.need) {
-      toast.error("Insufficient donkeys at source.");
+    const essenceDestinationInvalid =
+      !allowEssenceDestinationPayload && resolvedDestinations.some((dst) => isFragmentMine(dst));
+    if (essenceDestinationInvalid) {
+      toast.error("Essence rifts only accept Donkeys and Essence.");
       return;
     }
 
@@ -400,34 +467,44 @@ export const TransferAutomationPanel = () => {
       return;
     }
 
+    const perTransferDonkeyNeed = transferPreview.donkeys.need;
+    const totalDonkeysNeeded = perTransferDonkeyNeed * resolvedDestinationIds.length;
+    if (resolvedDestinationIds.length > 0 && transferPreview.donkeys.have < totalDonkeysNeeded) {
+      toast.error("Insufficient donkeys at source.");
+      return;
+    }
+
     const currentAmounts = transferPreview.perResource;
+    if (currentAmounts.length === 0) {
+      toast.error("Nothing to send.");
+      return;
+    }
+
+    const buildResourcePayload = () => {
+      const payload: (bigint | number)[] = [];
+      currentAmounts.forEach((p) => {
+        payload.push(p.id, BigInt(p.humanAmount * RESOURCE_PRECISION));
+      });
+      return payload;
+    };
 
     setIsSubmitting(true);
     setStatusMessage(null);
 
     if (!repeat) {
-      // one-off: call send_resources_multiple
       try {
-        if (currentAmounts.length === 0) {
-          toast.error("Nothing to send.");
-          return;
-        }
-        const resources: (bigint | number)[] = [];
-        currentAmounts.forEach((p) => {
-          resources.push(p.id, BigInt(p.humanAmount * RESOURCE_PRECISION));
-        });
+        const baseResources = buildResourcePayload();
+        const calls = resolvedDestinationIds.map((id) => ({
+          sender_entity_id: BigInt(selectedSourceId),
+          recipient_entity_id: BigInt(id),
+          resources: [...baseResources],
+        }));
         await systemCalls.send_resources_multiple({
           signer: account,
-          calls: [
-            {
-              sender_entity_id: BigInt(selectedSourceId),
-              recipient_entity_id: BigInt(destinationId),
-              resources,
-            },
-          ],
+          calls,
         });
-        toast.success("Transfer sent.");
-        setStatusMessage("Transfer started");
+        toast.success(resolvedDestinationIds.length > 1 ? "Transfers sent." : "Transfer sent.");
+        setStatusMessage(resolvedDestinationIds.length > 1 ? "Transfers started" : "Transfer started");
       } catch (e) {
         console.error(e);
         toast.error("Transfer failed.");
@@ -438,26 +515,28 @@ export const TransferAutomationPanel = () => {
       return;
     }
 
-    // repeat: execute now, then persist entry
-    const src = ownedSources.find((s: any) => s.entityId === selectedSourceId);
-    const dst = destinations.find((d: any) => d.entityId === destinationId);
+    const src = ownedSources.find((structure) => Number(structure.entityId) === Number(selectedSourceId));
 
+    let immediateRunTimestamp: number | undefined;
     try {
       if (currentAmounts.length > 0) {
-        const resourcesNow: (bigint | number)[] = [];
-        currentAmounts.forEach((p) => resourcesNow.push(p.id, BigInt(p.humanAmount * RESOURCE_PRECISION)));
+        const baseResources = buildResourcePayload();
+        const calls = resolvedDestinationIds.map((id) => ({
+          sender_entity_id: BigInt(selectedSourceId),
+          recipient_entity_id: BigInt(id),
+          resources: [...baseResources],
+        }));
         await systemCalls.send_resources_multiple({
           signer: account,
-          calls: [
-            {
-              sender_entity_id: BigInt(selectedSourceId),
-              recipient_entity_id: BigInt(destinationId),
-              resources: resourcesNow,
-            },
-          ],
+          calls,
         });
-        toast.success("Transfer sent and scheduled.");
-        setStatusMessage("Transfer started and scheduled");
+        immediateRunTimestamp = Date.now();
+        toast.success(
+          resolvedDestinationIds.length > 1 ? "Transfers sent and scheduled." : "Transfer sent and scheduled.",
+        );
+        setStatusMessage(
+          resolvedDestinationIds.length > 1 ? "Transfers started and scheduled" : "Transfer started and scheduled",
+        );
       } else {
         toast.warning("Nothing to send now. Scheduling for later.");
         setStatusMessage("Scheduled for later");
@@ -468,52 +547,85 @@ export const TransferAutomationPanel = () => {
       setStatusMessage("Scheduled; immediate run failed");
     }
 
-    addScheduled({
-      sourceEntityId: String(selectedSourceId),
-      sourceName: src ? getStructureName(src.structure, isBlitz).name : undefined,
-      destinationEntityId: String(destinationId),
-      destinationName: dst ? getStructureName(dst.structure, isBlitz).name : undefined,
-      resourceIds: selectedResources,
-      resourceConfigs: selectedResources.map((rid) => ({
+    const configsForEntry = selectedResources
+      .map((rid) => ({
         resourceId: rid,
-        mode: "flat",
-        flatAmount: Math.max(0, Math.floor(resourceConfigs[rid]?.amount ?? 0)),
-      })),
-      amountMode: "flat",
-      percent: 5,
-      flatAmount: 0,
-      intervalMinutes: interval,
-      active: true,
+        amount: Math.max(0, Math.floor(resourceConfigs[rid]?.amount ?? 0)),
+      }))
+      .filter((cfg) => cfg.amount > 0);
+
+    resolvedDestinationIds.forEach((id) => {
+      const dst = destinationLookup.get(id);
+      addScheduled({
+        sourceEntityId: String(selectedSourceId),
+        sourceName: src ? getStructureName(src.structure, isBlitz).name : undefined,
+        destinationEntityId: String(id),
+        destinationName: dst ? getStructureName(dst.structure, isBlitz).name : undefined,
+        resourceIds: configsForEntry.map((cfg) => cfg.resourceId),
+        resourceConfigs: configsForEntry,
+        intervalMinutes: interval,
+        active: true,
+        lastRunAt: immediateRunTimestamp,
+      });
     });
-    toast.success("Scheduled transfer created.");
+    toast.success(resolvedDestinationIds.length > 1 ? "Scheduled transfers created." : "Scheduled transfer created.");
     setIsSubmitting(false);
   }, [
     components,
     account,
     selectedResources,
     selectedSourceId,
-    destinationId,
+    destinationIds,
     repeat,
     interval,
     ownedSources,
-    destinations,
     addScheduled,
-    currentDefaultTick,
     transferPreview,
     isBlitz,
     resourceConfigs,
     systemCalls,
+    destinationLookup,
+    allowMultiDestination,
+    allowEssenceDestinationPayload,
   ]);
 
+  const perTransferDonkeyNeed = transferPreview?.donkeys.need ?? 0;
+  const aggregatedDonkeyNeed =
+    transferPreview && actualDestinationCount > 0
+      ? transferPreview.donkeys.need * actualDestinationCount
+      : perTransferDonkeyNeed;
+  const donkeyShortage = Boolean(
+    transferPreview && actualDestinationCount > 0 && transferPreview.donkeys.have < aggregatedDonkeyNeed,
+  );
+
+  const resetPanel = useCallback(() => {
+    setSelectedResources([]);
+    setResourceConfigs({});
+    setResourceFilter("all");
+    setSelectedSourceId(null);
+    setOwnedDestOnly(true);
+    setSourceSearch("");
+    setDestinationIds([]);
+    setDestSearch("");
+    setRepeat(false);
+    setIntervalMinutes(30);
+    setStatusMessage(null);
+  }, []);
+
   const openAdvanced = useCallback(() => {
-    toggleModal(<TransferAutomationAdvancedModal onClose={() => toggleModal(null)} />);
+    toggleModal(<TransferAutomationAdvancedModal />);
   }, [toggleModal]);
 
   return (
     <div className="p-3 md:p-4 space-y-3">
-      <div>
-        <h4 className="text-gold font-semibold">Transfer</h4>
-        <p className="text-xxs text-gold/60">Select resources, source, destination and frequency.</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h4 className="text-gold font-semibold">Transfer</h4>
+          <p className="text-xxs text-gold/60">Select resources, source, destination and frequency.</p>
+        </div>
+        <Button variant="outline" size="xs" forceUppercase={false} onClick={resetPanel}>
+          Reset
+        </Button>
       </div>
 
       <section className="space-y-2">
@@ -542,31 +654,39 @@ export const TransferAutomationPanel = () => {
             </button>
           </div>
         </div>
+        {restrictToEssencePayload && (
+          <p className="text-xxs text-gold/60">Essence rifts can only transfer Donkeys and Essence.</p>
+        )}
         <div className="flex flex-wrap gap-2">
           {Array.from(availableResources)
-            .filter((rid: any) => {
+            .filter((rid) => {
+              if (restrictToEssencePayload && !ESSENCE_SITE_ALLOWED_RESOURCES.has(rid as ResourcesIds)) {
+                return false;
+              }
               if (resourceFilter === "military") return isMilitaryResource(rid as ResourcesIds);
               if (resourceFilter === "production") return !isMilitaryResource(rid as ResourcesIds);
               return true;
             })
-            .sort((a: any, b: any) => a - b)
-            .map((rid: any) => {
-              const sel = selectedResources.includes(rid);
+            .sort((a, b) => Number(a) - Number(b))
+            .map((rid) => {
+              const resourceId = rid as ResourcesIds;
+              const sel = selectedResources.includes(resourceId);
               const totalHuman = resourceTotals.get(rid) ?? 0;
               return (
                 <button
-                  key={rid}
+                  key={resourceId}
                   type="button"
                   onClick={() =>
                     setSelectedResources((prev) =>
-                      prev.includes(rid) ? prev.filter((r) => r !== rid) : [...prev, rid],
+                      prev.includes(resourceId) ? prev.filter((r) => r !== resourceId) : [...prev, resourceId],
                     )
                   }
                   className={`px-2 py-1 rounded border text-xs flex items-center gap-1 ${sel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
-                  title={ResourcesIds[rid] as string}
+                  title={ResourcesIds[resourceId] as string}
                 >
-                  <ResourceIcon resource={ResourcesIds[rid]} size="xs" />
-                  {ResourcesIds[rid]} <span className="text-[10px] text-gold/60">({totalHuman.toLocaleString()})</span>
+                  <ResourceIcon resource={ResourcesIds[resourceId]} size="xs" />
+                  {ResourcesIds[resourceId]}{" "}
+                  <span className="text-[10px] text-gold/60">({totalHuman.toLocaleString()})</span>
                 </button>
               );
             })}
@@ -585,7 +705,7 @@ export const TransferAutomationPanel = () => {
           />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {eligibleSources
-              .filter((ps: any) => {
+              .filter((ps) => {
                 const q = sourceSearch.trim();
                 if (!q) return true;
                 const isNumeric = /^\d+$/.test(q);
@@ -598,18 +718,19 @@ export const TransferAutomationPanel = () => {
                     .replace(/[\u0300-\u036f]/g, "");
                 return norm(name).includes(norm(q));
               })
-              .map((ps: any) => {
+              .map((ps) => {
                 const name = getStructureName(ps.structure, isBlitz).name;
-                const isSel = selectedSourceId === ps.entityId;
+                const entityId = Number(ps.entityId);
+                const isSel = selectedSourceId === entityId;
                 return (
                   <button
                     key={ps.entityId}
                     type="button"
                     className={`text-left px-2 py-2 rounded border ${isSel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
-                    onClick={() => setSelectedSourceId(selectedSourceId === ps.entityId ? null : ps.entityId)}
+                    onClick={() => setSelectedSourceId(isSel ? null : entityId)}
                   >
                     <div className="text-sm font-semibold">{name}</div>
-                    <div className="text-xxs uppercase text-gold/60">{StructureType[ps.structure?.base?.category]}</div>
+                    <div className="text-xxs uppercase text-gold/60">{StructureType[ps.category]}</div>
                   </button>
                 );
               })}
@@ -619,12 +740,17 @@ export const TransferAutomationPanel = () => {
 
       {selectedResources.length > 0 && selectedSourceId && (
         <section className="space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="text-xs text-gold/70">Destination</div>
-            <label className="text-xxs text-gold/60 flex items-center gap-2">
-              <input type="checkbox" checked={ownedDestOnly} onChange={(e) => setOwnedDestOnly(e.target.checked)} />
-              Owned only
-            </label>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-xs text-gold/70">
+              Destination
+              {allowMultiDestination && actualDestinationCount > 0 ? ` (${actualDestinationCount} selected)` : ""}
+            </div>
+            <div className="flex flex-wrap items-center gap-3 text-xxs text-gold/60">
+              <label className="flex items-center gap-2">
+                <input type="checkbox" checked={ownedDestOnly} onChange={(e) => setOwnedDestOnly(e.target.checked)} />
+                Owned only
+              </label>
+            </div>
           </div>
           <input
             type="text"
@@ -634,18 +760,19 @@ export const TransferAutomationPanel = () => {
             className="w-full px-2 py-1 text-xs rounded border border-gold/30 bg-black/30 text-gold/80 placeholder:text-gold/40 focus:border-gold/60 outline-none mb-2"
           />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {destinations.map((ps: any) => {
+            {destinations.map((ps) => {
               const name = getStructureName(ps.structure, isBlitz).name;
-              const isSel = destinationId === ps.entityId;
+              const entityId = Number(ps.entityId);
+              const isSel = destinationIds.includes(entityId);
               return (
                 <button
                   key={`dst-${ps.entityId}`}
                   type="button"
                   className={`text-left px-2 py-2 rounded border ${isSel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
-                  onClick={() => setDestinationId(destinationId === ps.entityId ? null : ps.entityId)}
+                  onClick={() => toggleDestinationSelection(entityId)}
                 >
                   <div className="text-sm font-semibold">{name}</div>
-                  <div className="text-xxs uppercase text-gold/60">{StructureType[ps.structure?.base?.category]}</div>
+                  <div className="text-xxs uppercase text-gold/60">{StructureType[ps.category]}</div>
                 </button>
               );
             })}
@@ -655,8 +782,15 @@ export const TransferAutomationPanel = () => {
 
       {selectedResources.length > 0 && selectedSourceId && (
         <section className="space-y-2">
-          <div className="text-xs text-gold/70">Per-resource Amounts</div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="flex flex-col gap-1 text-xs text-gold/70">
+            <div>
+              Per-resource Amounts
+              {allowMultiDestination && actualDestinationCount > 1 && (
+                <span className="ml-1 text-xxs text-gold/50">(per destination)</span>
+              )}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {selectedResources.map((rid) => {
               const cfg = resourceConfigs[rid] ?? { amount: 0 };
               const available = sourceBalances.get(rid) ?? 0;
@@ -668,7 +802,9 @@ export const TransferAutomationPanel = () => {
               }
               const totalCarryKg = donkeyCapacityKgPerUnit * donkeyAvailable;
               const donkeyLimited = weightPerUnit > 0 ? Math.floor(totalCarryKg / weightPerUnit) : available;
-              const maxAmount = Math.max(0, Math.min(available, donkeyLimited));
+              const perDestinationResourceCap = Math.floor(available / destinationCountForLimits);
+              const perDestinationDonkeyCap = Math.floor(donkeyLimited / destinationCountForLimits);
+              const maxAmount = Math.max(0, Math.min(perDestinationResourceCap, perDestinationDonkeyCap));
               const selectedAmount = Math.max(0, Math.min(maxAmount, Math.floor(cfg.amount ?? 0)));
               return (
                 <div key={`cfg-${rid}`} className="rounded border border-gold/20 bg-black/20 p-2">
@@ -680,28 +816,38 @@ export const TransferAutomationPanel = () => {
                     <div className="text-xxs text-gold/60">Avail: {available.toLocaleString()}</div>
                   </div>
                   <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="text-xxs text-gold/60">Selected: {selectedAmount.toLocaleString()}</div>
-                      <div className="text-xxs text-gold/60">Max: {maxAmount.toLocaleString()}</div>
+                    <div className="flex items-center justify-between mb-1 text-xxs text-gold/60">
+                      <span>
+                        Selected: {selectedAmount.toLocaleString()} / {maxAmount.toLocaleString()}
+                      </span>
+                      <button
+                        type="button"
+                        className="text-gold hover:text-white"
+                        onClick={() =>
+                          setResourceConfigs((prev) => ({
+                            ...prev,
+                            [rid]: { amount: maxAmount },
+                          }))
+                        }
+                        disabled={maxAmount === 0}
+                      >
+                        Max
+                      </button>
                     </div>
                     <input
                       type="range"
                       min={0}
-                      max={maxAmount}
+                      max={Math.max(0, maxAmount)}
                       step={1}
                       value={selectedAmount}
-                      onChange={(e) =>
-                        setResourceConfigs((prev) => {
-                          const rawValue = Number.parseInt(e.target.value, 10);
-                          const nextValue = Number.isFinite(rawValue) ? rawValue : 0;
-                          return {
-                            ...prev,
-                            [rid]: {
-                              amount: Math.max(0, Math.min(maxAmount, nextValue)),
-                            },
-                          };
-                        })
-                      }
+                      onChange={(e) => {
+                        const rawValue = Number.parseInt(e.target.value, 10);
+                        const nextValue = Number.isFinite(rawValue) ? rawValue : 0;
+                        setResourceConfigs((prev) => ({
+                          ...prev,
+                          [rid]: { amount: Math.max(0, Math.min(maxAmount, nextValue)) },
+                        }));
+                      }}
                       className="w-full accent-gold"
                       disabled={maxAmount === 0}
                     />
@@ -711,21 +857,20 @@ export const TransferAutomationPanel = () => {
             })}
           </div>
           {transferPreview && (
-            <div className="text-xxs text-gold/60">
-              <span
-                className={
-                  transferPreview.donkeys.need > transferPreview.donkeys.have ? "text-danger/80" : "text-gold/70"
-                }
-              >
-                Donkeys {transferPreview.donkeys.need.toLocaleString()} used /{" "}
-                {transferPreview.donkeys.have.toLocaleString()} available
+            <div className="space-y-1 text-xxs text-gold/60">
+              <span className={donkeyShortage ? "text-danger/80" : "text-gold/70"}>
+                Donkeys {aggregatedDonkeyNeed.toLocaleString()} used / {transferPreview.donkeys.have.toLocaleString()}{" "}
+                available
               </span>
             </div>
           )}
 
-          {transferPreview && transferPreview.donkeys.need > transferPreview.donkeys.have && (
+          {transferPreview && donkeyShortage && (
             <div className="flex items-start gap-2 rounded-md border border-danger/40 bg-danger/10 p-2 text-xs text-danger/80">
-              <span>Insufficient donkeys at source to carry this transfer. Reduce the load or add more donkeys.</span>
+              <span>
+                Insufficient donkeys to cover all selected destinations. Reduce the load or add more donkeys at the
+                source.
+              </span>
             </div>
           )}
         </section>
@@ -733,31 +878,30 @@ export const TransferAutomationPanel = () => {
 
       {selectedResources.length > 0 && selectedSourceId && (
         <section className="space-y-2">
-          <div className="flex items-center gap-4 text-xs text-gold/70">
+          <div className="flex flex-wrap items-center gap-3 text-xs text-gold/70">
             <label className="flex items-center gap-2">
               <input type="radio" name="freq" checked={!repeat} onChange={() => setRepeat(false)} /> One-off
             </label>
-            <label className="flex items-center gap-2">
-              <input type="radio" name="freq" checked={repeat} onChange={() => setRepeat(true)} /> Repeat
-            </label>
-          </div>
-          {repeat && (
-            <div>
-              <div className="flex items-center justify-between">
-                <div className="text-xs text-gold/70">Interval</div>
-                <div className="text-xxs text-gold/60">{interval} min</div>
-              </div>
-              <input
-                type="range"
-                min={5}
-                max={60}
-                step={5}
-                value={interval}
-                onChange={(e) => setIntervalMinutes(parseInt(e.target.value))}
-                className="w-full accent-gold"
-              />
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-2">
+                <input type="radio" name="freq" checked={repeat} onChange={() => setRepeat(true)} /> Repeat
+              </label>
+              {repeat && (
+                <>
+                  <input
+                    type="range"
+                    min={1}
+                    max={30}
+                    step={1}
+                    value={interval}
+                    onChange={(e) => setIntervalMinutes(parseInt(e.target.value, 10))}
+                    className="w-32 accent-gold"
+                  />
+                  <span className="text-xxs text-gold/60 w-12 text-right">{interval} min</span>
+                </>
+              )}
             </div>
-          )}
+          </div>
         </section>
       )}
 
@@ -774,8 +918,8 @@ export const TransferAutomationPanel = () => {
                   isSubmitting ||
                   selectedResources.length === 0 ||
                   !selectedSourceId ||
-                  !destinationId ||
-                  (transferPreview ? transferPreview.donkeys.need > transferPreview.donkeys.have : false)
+                  actualDestinationCount === 0 ||
+                  donkeyShortage
                 }
               >
                 {repeat ? "Schedule" : "Transfer"}

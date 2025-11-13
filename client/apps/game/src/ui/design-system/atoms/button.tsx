@@ -84,8 +84,8 @@ const Button: React.FC<ButtonProps> = ({
       {...props}
     >
       {isLoading ? (
-        <div className={`w-full inset-0 flex flex-col items-center justify-center h-full `}>
-          <div className="w-4 h-4 border-t-2 border-b-2 border-gray-900 rounded-full animate-spin"></div>{" "}
+        <div className="w-full inset-0 flex flex-col items-center justify-center h-full">
+          <div className="w-4 h-4 border-t-2 border-b-2 border-gold rounded-full animate-spin"></div>
         </div>
       ) : (
         children
