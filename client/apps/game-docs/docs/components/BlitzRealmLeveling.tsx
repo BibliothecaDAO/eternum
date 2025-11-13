@@ -37,7 +37,7 @@ export const BlitzRealmLeveling = () => {
       resources: [
         { id: 23, amount: 180 }, // Labor
         { id: 35, amount: 1200 }, // Wheat
-        { id: 38, amount: 200 }, // Essence
+        { id: 38, amount: 250 }, // Essence
       ],
     },
     {

@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { Fragment } from "react";
 import { colors, icon, modifiers, section, table } from "./styles";
