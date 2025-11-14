@@ -8,7 +8,6 @@ const RAW_FELT_CENTER = 2147483646;
 export const getFeltCenterOffset = () => {
   const offset = configManager.getMapCenterOffset();
   const feltCenter = RAW_FELT_CENTER - offset;
-  console.log("FELT_CENTER:", feltCenter, "offset:", offset);
   return feltCenter;
 };
 

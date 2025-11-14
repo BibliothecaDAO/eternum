@@ -1,4 +1,4 @@
-import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState, type ChangeEvent, type KeyboardEvent } from "react";
 
 import { useNavigate } from "react-router-dom";
 
@@ -7,6 +7,7 @@ import { Download } from "lucide-react";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { currencyIntlFormat, displayAddress } from "@/ui/utils/utils";
 
+import { type LandingLeaderboardEntry } from "../lib/landing-leaderboard-service";
 import { MIN_REFRESH_INTERVAL_MS, useLandingLeaderboardStore } from "../lib/use-landing-leaderboard-store";
 import { useScoreToBeat } from "../lib/use-score-to-beat";
 
@@ -84,6 +85,120 @@ const TAB_PANEL_ID = "landing-leaderboard-tabpanel";
 
 const getTabButtonId = (tab: LeaderboardTab) => `landing-leaderboard-tab-${tab}`;
 const getScoreToBeatRunsPanelId = (address: string) => `landing-score-to-beat-runs-${address}`;
+const getActivityPanelId = (address: string) => `landing-leaderboard-activity-${address}`;
+
+type ActivityField = keyof Pick<
+  LandingLeaderboardEntry,
+  | "exploredTiles"
+  | "exploredTilePoints"
+  | "relicCratesOpened"
+  | "relicCratePoints"
+  | "riftsTaken"
+  | "riftPoints"
+  | "campsTaken"
+  | "campPoints"
+  | "hyperstructuresConquered"
+  | "hyperstructurePoints"
+  | "hyperstructuresHeld"
+  | "hyperstructuresHeldPoints"
+>;
+
+type ActivityCategory = {
+  id: string;
+  label: string;
+  countKey?: ActivityField;
+  pointsKey?: ActivityField;
+  singularLabel?: string;
+  pluralLabel?: string;
+  helper?: string;
+};
+
+const ACTIVITY_COUNT_FORMATTER = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+
+const ACTIVITY_CATEGORIES: readonly ActivityCategory[] = [
+  {
+    id: "exploration",
+    label: "Tiles explored",
+    countKey: "exploredTiles",
+    pointsKey: "exploredTilePoints",
+    singularLabel: "tile",
+    pluralLabel: "tiles",
+  },
+  {
+    id: "crates",
+    label: "Relic crates",
+    countKey: "relicCratesOpened",
+    pointsKey: "relicCratePoints",
+    singularLabel: "crate",
+    pluralLabel: "crates",
+  },
+  {
+    id: "rifts-camps",
+    label: "Rifts/camps taken",
+    countKey: "riftsTaken",
+    pointsKey: "riftPoints",
+    singularLabel: "rift/camp",
+    pluralLabel: "rifts/camps",
+  },
+  {
+    id: "hyperstructures-captured",
+    label: "Hyperstructures captured",
+    countKey: "hyperstructuresConquered",
+    pointsKey: "hyperstructurePoints",
+    singularLabel: "structure",
+    pluralLabel: "structures",
+  },
+  {
+    id: "hyperstructures-held",
+    label: "Hyperstructures held",
+    countKey: "hyperstructuresHeld",
+    pointsKey: "hyperstructuresHeldPoints",
+    singularLabel: "structure",
+    pluralLabel: "structures",
+  },
+];
+
+const formatCountMetric = (value: number | null | undefined, singularLabel?: string, pluralLabel?: string) => {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    return null;
+  }
+
+  if (!singularLabel || !pluralLabel) {
+    return ACTIVITY_COUNT_FORMATTER.format(value);
+  }
+
+  const label = Math.abs(value) === 1 ? singularLabel : pluralLabel;
+  return `${ACTIVITY_COUNT_FORMATTER.format(value)} ${label}`.trim();
+};
+
+const formatPointsMetric = (value: number | null | undefined) => {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    return null;
+  }
+
+  return `${formatPoints(value)} pts`;
+};
+
+const buildActivityBreakdown = (entry: LandingLeaderboardEntry) => {
+  return ACTIVITY_CATEGORIES.map((category) => {
+    const countValue = category.countKey ? (entry[category.countKey] as number | undefined) : null;
+    const pointsValue = category.pointsKey ? (entry[category.pointsKey] as number | undefined) : null;
+    const countLabel = formatCountMetric(countValue, category.singularLabel, category.pluralLabel);
+    const pointsLabel = formatPointsMetric(pointsValue);
+
+    if (!countLabel && !pointsLabel) {
+      return null;
+    }
+
+    return {
+      id: category.id,
+      label: category.label,
+      countLabel,
+      pointsLabel,
+      helper: category.helper ?? null,
+    };
+  }).filter((item): item is NonNullable<typeof item> => Boolean(item));
+};
 
 export const LandingLeaderboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -91,11 +206,16 @@ export const LandingLeaderboard = () => {
   const navigate = useNavigate();
 
   const entries = useLandingLeaderboardStore((state) => state.entries);
+
   const isFetching = useLandingLeaderboardStore((state) => state.isFetching);
   const error = useLandingLeaderboardStore((state) => state.error);
   const lastUpdatedAt = useLandingLeaderboardStore((state) => state.lastUpdatedAt);
   const lastFetchAt = useLandingLeaderboardStore((state) => state.lastFetchAt);
   const fetchLeaderboard = useLandingLeaderboardStore((state) => state.fetchLeaderboard);
+
+  useEffect(() => {
+    console.log("entries", entries);
+  }, [entries]);
 
   const {
     entries: scoreToBeatEntries,
@@ -275,6 +395,7 @@ export const LandingLeaderboard = () => {
   const showScoreToBeatSection = SCORE_TO_BEAT_TAB_ENABLED && hasScoreToBeatConfiguration;
   const [activeTab, setActiveTab] = useState<LeaderboardTab>(showScoreToBeatSection ? "score-to-beat" : "leaderboard");
   const [expandedScoreToBeatAddress, setExpandedScoreToBeatAddress] = useState<string | null>(null);
+  const [expandedEntryAddress, setExpandedEntryAddress] = useState<string | null>(null);
   const visibleTabs = useMemo(
     () => (showScoreToBeatSection ? LEADERBOARD_TABS : LEADERBOARD_TABS.filter((tab) => tab.id === "leaderboard")),
     [showScoreToBeatSection],
@@ -288,6 +409,31 @@ export const LandingLeaderboard = () => {
       setExpandedScoreToBeatAddress(null);
     }
   }, [expandedScoreToBeatAddress, scoreToBeatTopTen]);
+
+  useEffect(() => {
+    if (!expandedEntryAddress) {
+      return;
+    }
+
+    const isVisible = filteredEntries.some((entry) => entry.address === expandedEntryAddress);
+    if (!isVisible) {
+      setExpandedEntryAddress(null);
+    }
+  }, [expandedEntryAddress, filteredEntries]);
+
+  const toggleEntryExpansion = useCallback((address: string) => {
+    setExpandedEntryAddress((current) => (current === address ? null : address));
+  }, []);
+
+  const handleEntryToggleKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLElement>, address: string) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        toggleEntryExpansion(address);
+      }
+    },
+    [toggleEntryExpansion],
+  );
 
   const renderSkeleton = () => (
     <div className="space-y-6" aria-hidden>
@@ -505,6 +651,8 @@ export const LandingLeaderboard = () => {
       );
     }
 
+    const expandedPodiumEntry = podiumEntries.find((entry) => entry.address === expandedEntryAddress) ?? null;
+
     return (
       <div className="space-y-6">
         <div className="flex flex-col gap-2 rounded-3xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-white/70 sm:flex-row sm:items-center sm:justify-between">
@@ -520,49 +668,91 @@ export const LandingLeaderboard = () => {
           </button>
         </div>
         {podiumEntries.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-3">
-            {podiumEntries.map((entry, index) => {
-              const addressLabel = displayAddress(entry.address);
-              return (
-                <article
-                  key={entry.address}
-                  className={`group relative flex h-full flex-col justify-between overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-black/35 to-black/80 p-6 backdrop-blur-sm transition-transform duration-300 hover:-translate-y-1 ${podiumStyles[index] ?? podiumStyles[2]}`}
-                >
-                  <div className="flex items-center justify-between text-xs font-medium uppercase tracking-wide text-white/60">
-                    <span>Rank</span>
-                    <span className="text-2xl font-semibold text-gold">#{entry.rank}</span>
-                  </div>
+          <div className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-3">
+              {podiumEntries.map((entry, index) => {
+                const addressLabel = displayAddress(entry.address);
+                const isExpanded = expandedEntryAddress === entry.address;
+                const panelId = getActivityPanelId(entry.address);
+                const handleToggle = () => toggleEntryExpansion(entry.address);
+                const handleCardKeyDown = (event: KeyboardEvent<HTMLElement>) =>
+                  handleEntryToggleKeyDown(event, entry.address);
 
-                  <div className="mt-4 space-y-1">
-                    <p className="text-lg font-semibold text-white" title={entry.displayName ?? addressLabel}>
-                      {entry.displayName ?? addressLabel}
-                    </p>
-                    <p className="text-xs text-white/60" title={entry.address}>
-                      {entry.displayName ? addressLabel : entry.address}
-                    </p>
-                  </div>
-
-                  <div className="mt-4 space-y-1">
-                    <p className="text-3xl font-bold text-white">{formatPoints(entry.points)}</p>
-                    <p className="text-xs text-white/60">{currencyIntlFormat(entry.points, 1)} pts</p>
-                  </div>
-
-                  <div className="mt-5 flex items-center justify-between text-xs font-medium uppercase tracking-wide text-white/60">
-                    <span>Status</span>
-                    <span
-                      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
-                        entry.prizeClaimed ? "bg-emerald-500/15 text-emerald-300" : "bg-white/10 text-white/70"
-                      }`}
+                return (
+                  <div key={entry.address} className="flex flex-col gap-2">
+                    <article
+                      role="button"
+                      tabIndex={0}
+                      aria-expanded={isExpanded}
+                      aria-controls={panelId}
+                      onClick={handleToggle}
+                      onKeyDown={handleCardKeyDown}
+                      className={`group relative flex h-full cursor-pointer flex-col justify-between overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-black/35 to-black/80 p-6 backdrop-blur-sm transition-transform duration-300 hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold/60 ${
+                        podiumStyles[index] ?? podiumStyles[2]
+                      } ${isExpanded ? "ring-1 ring-gold/50" : ""}`}
                     >
-                      {entry.prizeClaimed ? "Prize claimed" : "Unclaimed"}
-                    </span>
+                      <div className="flex items-center justify-between text-xs font-medium uppercase tracking-wide text-white/60">
+                        <span>Rank</span>
+                        <span className="text-2xl font-semibold text-gold">#{entry.rank}</span>
+                      </div>
+
+                      <div className="mt-4 space-y-1">
+                        <p className="text-lg font-semibold text-white" title={entry.displayName ?? addressLabel}>
+                          {entry.displayName ?? addressLabel}
+                        </p>
+                        <p className="text-xs text-white/60" title={entry.address}>
+                          {entry.displayName ? addressLabel : entry.address}
+                        </p>
+                      </div>
+
+                      <div className="mt-4 space-y-1">
+                        <p className="text-3xl font-bold text-white">{formatPoints(entry.points)}</p>
+                        <p className="text-xs text-white/60">{currencyIntlFormat(entry.points, 1)} pts</p>
+                      </div>
+
+                      <div className="mt-5 flex items-center justify-between text-xs font-medium uppercase tracking-wide text-white/60">
+                        <span>Status</span>
+                        <span
+                          className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+                            entry.prizeClaimed ? "bg-emerald-500/15 text-emerald-300" : "bg-white/10 text-white/70"
+                          }`}
+                        >
+                          {entry.prizeClaimed ? "Prize claimed" : "Unclaimed"}
+                        </span>
+                      </div>
+
+                      <div className="mt-4 flex items-center justify-between text-[11px] uppercase tracking-[0.35em] text-white/50">
+                        <span>{isExpanded ? "Hide activity" : "View activity"}</span>
+                        <svg
+                          className={`h-3.5 w-3.5 text-white/60 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                          viewBox="0 0 16 16"
+                          fill="none"
+                          aria-hidden
+                        >
+                          <path
+                            d="M4 6l4 4 4-4"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </div>
+                    </article>
                   </div>
-                </article>
-              );
-            })}
+                );
+              })}
+            </div>
+            {expandedPodiumEntry ? (
+              <div
+                id={getActivityPanelId(expandedPodiumEntry.address)}
+                className="rounded-3xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white/80 shadow-[0_15px_35px_-25px_rgba(10,12,30,0.9)]"
+              >
+                <PlayerActivityBreakdown entry={expandedPodiumEntry} />
+              </div>
+            ) : null}
           </div>
         ) : null}
-
         {remainingEntries.length > 0 ? (
           <div className="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-black/35 to-black/80 shadow-[0_25px_50px_-25px_rgba(10,12,30,0.75)] backdrop-blur-sm">
             <div className="overflow-x-auto">
@@ -586,32 +776,73 @@ export const LandingLeaderboard = () => {
                 <tbody className="divide-y divide-white/5 text-sm">
                   {remainingEntries.map((entry) => {
                     const addressLabel = displayAddress(entry.address);
+                    const isExpanded = expandedEntryAddress === entry.address;
+                    const panelId = getActivityPanelId(entry.address);
+                    const handleToggle = () => toggleEntryExpansion(entry.address);
+                    const handleRowKeyDown = (event: KeyboardEvent<HTMLElement>) =>
+                      handleEntryToggleKeyDown(event, entry.address);
+
                     return (
-                      <tr key={entry.address} className="transition-colors hover:bg-white/10">
-                        <td className="px-4 py-3 text-white/70">#{entry.rank}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex flex-col">
-                            <span className="font-medium text-white" title={entry.displayName ?? addressLabel}>
-                              {entry.displayName ?? addressLabel}
-                            </span>
-                            <span className="text-xs text-white/50" title={entry.address}>
-                              {entry.displayName ? addressLabel : entry.address}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-right text-white">
-                          <span className="font-semibold">{formatPoints(entry.points)}</span>
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <span
-                            className={`inline-flex items-center justify-end rounded-full px-2.5 py-1 text-xs font-medium ${
-                              entry.prizeClaimed ? "bg-emerald-500/15 text-emerald-300" : "bg-white/10 text-white/60"
-                            }`}
-                          >
-                            {entry.prizeClaimed ? "Prize claimed" : "In play"}
-                          </span>
-                        </td>
-                      </tr>
+                      <Fragment key={entry.address}>
+                        <tr
+                          className={`transition-colors hover:bg-white/10 ${isExpanded ? "bg-white/10" : ""}`}
+                          role="button"
+                          tabIndex={0}
+                          aria-expanded={isExpanded}
+                          aria-controls={panelId}
+                          onClick={handleToggle}
+                          onKeyDown={handleRowKeyDown}
+                        >
+                          <td className="px-4 py-3 text-white/70">#{entry.rank}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex flex-col">
+                              <span className="font-medium text-white" title={entry.displayName ?? addressLabel}>
+                                {entry.displayName ?? addressLabel}
+                              </span>
+                              <span className="text-xs text-white/50" title={entry.address}>
+                                {entry.displayName ? addressLabel : entry.address}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-right text-white">
+                            <span className="font-semibold">{formatPoints(entry.points)}</span>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="ml-auto flex max-w-full items-center justify-end gap-2">
+                              <span
+                                className={`inline-flex items-center justify-end rounded-full px-2.5 py-1 text-xs font-medium ${
+                                  entry.prizeClaimed
+                                    ? "bg-emerald-500/15 text-emerald-300"
+                                    : "bg-white/10 text-white/60"
+                                }`}
+                              >
+                                {entry.prizeClaimed ? "Prize claimed" : "In play"}
+                              </span>
+                              <svg
+                                className={`h-3 w-3 text-white/50 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                                viewBox="0 0 16 16"
+                                fill="none"
+                                aria-hidden
+                              >
+                                <path
+                                  d="M4 6l4 4 4-4"
+                                  stroke="currentColor"
+                                  strokeWidth="1.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            </div>
+                          </td>
+                        </tr>
+                        {isExpanded ? (
+                          <tr>
+                            <td colSpan={4} id={panelId} className="bg-black/40 px-4 pb-4 pt-1">
+                              <PlayerActivityBreakdown entry={entry} />
+                            </td>
+                          </tr>
+                        ) : null}
+                      </Fragment>
                     );
                   })}
                 </tbody>
@@ -699,23 +930,28 @@ export const LandingLeaderboard = () => {
                     {error}
                   </span>
                 ) : null}
-                <div className="flex items-center gap-2">
-                  {isFetching ? (
-                    <span className="text-xs text-white/70" aria-live="polite">
-                      Refreshing…
-                    </span>
-                  ) : isCooldownActive ? (
-                    <span className="text-xs text-white/50" aria-live="polite">
-                      Wait {refreshSecondsLeft}s
-                    </span>
-                  ) : null}
-                  <RefreshButton
-                    onClick={handleManualRefresh}
-                    isLoading={isFetching}
-                    disabled={isCooldownActive || isFetching}
-                    size="md"
-                    aria-label="Refresh leaderboard"
-                  />
+                <div className="flex flex-col items-end gap-1 text-right">
+                  <div className="flex items-center gap-2">
+                    {isFetching ? (
+                      <span className="text-xs text-white/70" aria-live="polite">
+                        Refreshing…
+                      </span>
+                    ) : isCooldownActive ? (
+                      <span className="text-xs text-white/50" aria-live="polite">
+                        Wait {refreshSecondsLeft}s
+                      </span>
+                    ) : null}
+                    <RefreshButton
+                      onClick={handleManualRefresh}
+                      isLoading={isFetching}
+                      disabled={isCooldownActive || isFetching}
+                      size="md"
+                      aria-label="Refresh leaderboard"
+                    />
+                  </div>
+                  <span className="text-[11px] uppercase tracking-[0.28em] text-white/40">
+                    Last updated {lastUpdatedLabel}
+                  </span>
                 </div>
               </div>
             </div>
@@ -766,5 +1002,46 @@ export const LandingLeaderboard = () => {
         </div>
       </div>
     </section>
+  );
+};
+
+interface PlayerActivityBreakdownProps {
+  entry: LandingLeaderboardEntry;
+}
+
+const PlayerActivityBreakdown = ({ entry }: PlayerActivityBreakdownProps) => {
+  const breakdown = buildActivityBreakdown(entry);
+  const hasBreakdown = breakdown.length > 0;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2 text-xs text-white/60">
+        <span className="font-semibold text-white">{formatPoints(entry.points)} pts</span>
+        <span>Total points</span>
+      </div>
+      {hasBreakdown ? (
+        <div className="grid gap-2 sm:grid-cols-2">
+          {breakdown.map((item) => (
+            <div
+              key={item.id}
+              className="rounded-2xl border border-white/10 bg-black/40 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+            >
+              <div className="flex items-center justify-between text-[11px] uppercase tracking-wide text-white/60">
+                <span>{item.label}</span>
+                {item.pointsLabel ? <span className="text-sm font-semibold text-white">{item.pointsLabel}</span> : null}
+              </div>
+              {item.countLabel ? <p className="mt-1 text-sm text-white/80">{item.countLabel}</p> : null}
+              {item.helper ? (
+                <p className="text-[10px] uppercase tracking-[0.35em] text-white/35">{item.helper}</p>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-dashed border-white/20 bg-black/30 px-4 py-3 text-xs text-white/70">
+          Blitz activity for this player is still syncing.
+        </div>
+      )}
+    </div>
   );
 };
