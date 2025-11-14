@@ -44,6 +44,8 @@ import { shortString } from "starknet";
 import { MemoryMonitor } from "../utils/memory-monitor";
 import { findShortestPath } from "../utils/pathfinding";
 import { FXManager } from "./fx-manager";
+import { PointsLabelRenderer } from "./points-label-renderer";
+import * as THREE from "three";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
@@ -118,6 +120,12 @@ export class ArmyManager {
   private armyRelicEffects: Map<ID, Array<{ relicNumber: number; effect: RelicEffect; fx: RelicFxHandle }>> = new Map();
   private applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>;
   private clearPendingRelicEffectsCallback?: (entityId: ID) => void;
+  private pointsRenderers?: {
+    player: PointsLabelRenderer;
+    enemy: PointsLabelRenderer;
+    ally: PointsLabelRenderer;
+    agent: PointsLabelRenderer;
+  };
   private pendingExplorerTroopsUpdate: Map<ID, PendingExplorerTroopsUpdate> = new Map();
   private lastKnownArmiesTick: number = 0;
   private tickCheckTimeout: NodeJS.Timeout | null = null;
@@ -172,6 +180,9 @@ export class ArmyManager {
     if (hexagonScene) {
       hexagonScene.addCameraViewListener(this.handleCameraViewChange);
     }
+
+    // Initialize points-based icon renderers
+    this.initializePointsRenderers();
 
     const createArmyFolder = GUIManager.addFolder("Create Army");
     const createArmyParams = { entityId: 0, col: 0, row: 0, isMine: false };
@@ -627,6 +638,28 @@ export class ArmyManager {
         activeLabel.position.y += 1.5;
       }
 
+      // Add point icon for this army (always visible)
+      if (this.pointsRenderers) {
+        const iconPosition = position.clone();
+        iconPosition.y += 2.1; // Match CSS2D label height
+        const renderer = army.isDaydreamsAgent
+          ? this.pointsRenderers.agent
+          : army.isMine
+            ? this.pointsRenderers.player
+            : this.pointsRenderers.enemy; // TODO: Add ally check when implemented
+        renderer.setPoint({
+          entityId: army.entityId,
+          position: iconPosition,
+        });
+        console.log(
+          `[ArmyManager] Added point icon for army ${army.entityId} at position`,
+          iconPosition,
+          `renderer type: ${army.isDaydreamsAgent ? "agent" : army.isMine ? "player" : "enemy"}, count: ${renderer.getCount()}`,
+        );
+      } else {
+        console.warn(`[ArmyManager] pointsRenderers not initialized yet for army ${army.entityId}`);
+      }
+
       currentCount++;
     });
 
@@ -637,6 +670,23 @@ export class ArmyManager {
         this.removeEntityIdLabel(entityId);
       }
     });
+
+    // Remove points for armies no longer visible
+    if (this.pointsRenderers) {
+      const visibleArmyIds = new Set(updatedVisibleArmies.map((a) => a.entityId));
+      [
+        this.pointsRenderers.player,
+        this.pointsRenderers.enemy,
+        this.pointsRenderers.ally,
+        this.pointsRenderers.agent,
+      ].forEach((renderer) => {
+        this.armies.forEach((_, entityId) => {
+          if (!visibleArmyIds.has(entityId) && renderer.hasPoint(entityId)) {
+            renderer.removePoint(entityId);
+          }
+        });
+      });
+    }
 
     this.visibleArmies = updatedVisibleArmies;
     this.syncVisibleArmyAttachments(updatedVisibleArmies);
@@ -1145,6 +1195,34 @@ export class ArmyManager {
     this.armyModel.updateMovements(deltaTime);
     this.armyModel.updateAnimations(deltaTime);
 
+    // Update point icon positions for moving armies
+    if (this.pointsRenderers) {
+      const instanceDataMap = (this.armyModel as unknown as { instanceData?: Map<number, ArmyInstanceData> })
+        .instanceData as Map<number, ArmyInstanceData> | undefined;
+
+      if (instanceDataMap) {
+        this.visibleArmies.forEach((army) => {
+          const instanceData = instanceDataMap.get(army.entityId);
+          if (instanceData && instanceData.isMoving) {
+            // Get current interpolated position
+            const iconPosition = instanceData.position.clone();
+            iconPosition.y += 2.1; // Match CSS2D label height
+
+            // Update point in appropriate renderer
+            const renderer = army.isDaydreamsAgent
+              ? this.pointsRenderers!.agent
+              : army.isMine
+                ? this.pointsRenderers!.player
+                : this.pointsRenderers!.enemy;
+            renderer.setPoint({
+              entityId: army.entityId,
+              position: iconPosition,
+            });
+          }
+        });
+      }
+    }
+
     // Update relic effect positions to follow moving armies
     this.updateArmyAttachmentTransforms();
     this.updateRelicEffectPositions();
@@ -1203,18 +1281,58 @@ export class ArmyManager {
       label.position.copy(position);
       label.position.y += 1.5;
       this.updateArmyLabelData(entityId, army, label);
+
+      // Highlight point icon on hover
+      if (this.pointsRenderers) {
+        const renderer = army.isDaydreamsAgent
+          ? this.pointsRenderers.agent
+          : army.isMine
+            ? this.pointsRenderers.player
+            : this.pointsRenderers.enemy;
+        renderer.setHover(entityId);
+      }
       return;
     }
 
     this.addEntityIdLabel(army, position);
+
+    // Highlight point icon on hover
+    if (this.pointsRenderers) {
+      const renderer = army.isDaydreamsAgent
+        ? this.pointsRenderers.agent
+        : army.isMine
+          ? this.pointsRenderers.player
+          : this.pointsRenderers.enemy;
+      renderer.setHover(entityId);
+    }
   }
 
   public hideLabel(entityId: ID): void {
     this.removeEntityIdLabel(entityId);
+
+    // Remove hover highlight from point icon
+    if (this.pointsRenderers) {
+      [
+        this.pointsRenderers.player,
+        this.pointsRenderers.enemy,
+        this.pointsRenderers.ally,
+        this.pointsRenderers.agent,
+      ].forEach((renderer) => renderer.clearHover());
+    }
   }
 
   public hideAllLabels(): void {
     Array.from(this.entityIdLabels.keys()).forEach((armyId) => this.removeEntityIdLabel(armyId));
+
+    // Clear hover highlight from all points
+    if (this.pointsRenderers) {
+      [
+        this.pointsRenderers.player,
+        this.pointsRenderers.enemy,
+        this.pointsRenderers.ally,
+        this.pointsRenderers.agent,
+      ].forEach((renderer) => renderer.clearHover());
+    }
   }
 
   removeLabelsFromScene() {
@@ -1252,6 +1370,65 @@ export class ArmyManager {
     element.onmouseleave = () => {
       label.renderOrder = baseRenderOrder;
     };
+  }
+
+  private initializePointsRenderers(): void {
+    const textureLoader = new THREE.TextureLoader();
+
+    // Load all 3 army icon textures (agent uses player texture as fallback)
+    const texturePaths = {
+      player: "/images/labels/army.png",
+      enemy: "/images/labels/enemy_army.png",
+      ally: "/images/labels/allies_army.png",
+    };
+
+    const loadedTextures: Partial<Record<keyof typeof texturePaths, THREE.Texture>> = {};
+    let loadedCount = 0;
+    const totalTextures = Object.keys(texturePaths).length;
+
+    Object.entries(texturePaths).forEach(([key, path]) => {
+      textureLoader.load(
+        path,
+        (texture) => {
+          texture.minFilter = THREE.LinearFilter;
+          texture.magFilter = THREE.LinearFilter;
+          texture.colorSpace = THREE.SRGBColorSpace;
+          texture.flipY = false;
+
+          loadedTextures[key as keyof typeof texturePaths] = texture;
+          loadedCount++;
+
+          // When all textures are loaded, create the renderers
+          if (loadedCount === totalTextures) {
+            // Use player texture for agent as fallback
+            this.pointsRenderers = {
+              player: new PointsLabelRenderer(this.scene, loadedTextures.player!, 1000, 5, 0, 1.3, true),
+              enemy: new PointsLabelRenderer(this.scene, loadedTextures.enemy!, 1000, 5, 0, 1.3, true),
+              ally: new PointsLabelRenderer(this.scene, loadedTextures.ally!, 1000, 5, 0, 1.3, true),
+              agent: new PointsLabelRenderer(this.scene, loadedTextures.player!, 1000, 5, 0, 1.3, true),
+            };
+
+            console.log("[ArmyManager] Points-based icon renderers initialized with params:", {
+              maxPoints: 1000,
+              pointSize: 5,
+              hoverScale: 0,
+              hoverBrightness: 1.3,
+              sizeAttenuation: true,
+            });
+
+            // Re-render visible armies to populate points
+            if (this.currentChunkKey) {
+              console.log("[ArmyManager] Re-rendering armies after points renderer init, chunk:", this.currentChunkKey);
+              this.renderVisibleArmies(this.currentChunkKey);
+            }
+          }
+        },
+        undefined,
+        (error) => {
+          console.error(`[ArmyManager] Failed to load army icon texture (${key}):`, error);
+        },
+      );
+    });
   }
 
   private handleCameraViewChange = (view: CameraView) => {
@@ -1649,6 +1826,14 @@ ${
     this.attachmentManager.clear();
     this.activeArmyAttachmentEntities.clear();
     this.armyAttachmentSignatures.clear();
+
+    // Clean up points renderers
+    if (this.pointsRenderers) {
+      this.pointsRenderers.player.dispose();
+      this.pointsRenderers.enemy.dispose();
+      this.pointsRenderers.ally.dispose();
+      this.pointsRenderers.agent.dispose();
+    }
 
     // Clean up any other resources...
   }
