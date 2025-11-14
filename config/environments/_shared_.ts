@@ -90,7 +90,6 @@ export const BANK_OWNER_FEES_NUMERATOR = 15;
 export const BANK_OWNER_FEES_DENOMINATOR = 100;
 
 // ----- Population Capacity ----- //
-export const WORKER_HUTS_CAPACITY = 6;
 export const BASE_POPULATION_CAPACITY = 6;
 
 // ----- Exploration ----- //
