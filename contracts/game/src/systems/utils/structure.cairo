@@ -1,3 +1,4 @@
+use dojo::event::EventStorage;
 use core::num::traits::Zero;
 use dojo::model::ModelStorage;
 use dojo::world::{WorldStorage, WorldStorageTrait};
@@ -20,6 +21,7 @@ use crate::models::structure::{
 };
 use crate::models::troop::{ExplorerTroops, GuardSlot, GuardTrait, GuardTroops, TroopsImpl};
 use crate::models::weight::Weight;
+use crate::models::events::{PointsActivity, PointsRegisteredStory, Story, StoryEvent};
 use crate::systems::combat::contracts::troop_management::{
     ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait,
 };
@@ -227,6 +229,21 @@ pub impl iStructureImpl of IStructureTrait {
                 PlayerRegisteredPointsImpl::register_points(
                     ref world, explorer_owner_address, victory_points_grant_config.claim_hyperstructure_points.into(),
                 );
+                let points_registered_story = PointsRegisteredStory {
+                    owner_address: explorer_owner_address,
+                    activity: PointsActivity::HyperStructureBanditsDefeat,
+                    points: victory_points_grant_config.claim_hyperstructure_points.into(),
+                };
+                world
+                    .emit_event(
+                        @StoryEvent {
+                            owner: Option::Some(explorer_owner_address),
+                            entity_id: Option::Some(structure_id),
+                            tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                            story: Story::PointsRegisteredStory(points_registered_story),
+                            timestamp: starknet::get_block_timestamp(),
+                        },
+                    );
             }
 
             // grant victory points to player for conquering other structures
@@ -237,6 +254,22 @@ pub impl iStructureImpl of IStructureTrait {
                 PlayerRegisteredPointsImpl::register_points(
                     ref world, explorer_owner_address, victory_points_grant_config.claim_otherstructure_points.into(),
                 );
+
+                let points_registered_story = PointsRegisteredStory {
+                    owner_address: explorer_owner_address,
+                    activity: PointsActivity::OtherStructureBanditsDefeat,
+                    points: victory_points_grant_config.claim_otherstructure_points.into(),
+                };
+                world
+                    .emit_event(
+                        @StoryEvent {
+                            owner: Option::Some(explorer_owner_address),
+                            entity_id: Option::Some(structure_id),
+                            tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                            story: Story::PointsRegisteredStory(points_registered_story),
+                            timestamp: starknet::get_block_timestamp(),
+                        },
+                    );
             }
         }
     }

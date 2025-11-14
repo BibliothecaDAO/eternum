@@ -389,6 +389,7 @@ export interface SetVictoryPointsConfigProps extends SystemSigner {
   points_for_hyperstructure_claim_against_bandits: BigNumberish;
   points_for_non_hyperstructure_claim_against_bandits: BigNumberish;
   points_for_tile_exploration: BigNumberish;
+  points_for_relic_open: BigNumberish;
 }
 
 export interface SetBlitzModeConfigProps extends SystemSigner {

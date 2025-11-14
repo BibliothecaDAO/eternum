@@ -649,6 +649,7 @@ pub struct VictoryPointsGrantConfig {
     // Only granted when claim non hyperstructure from bandits
     pub claim_otherstructure_points: u32,
     pub explore_tiles_points: u32,
+    pub relic_open_points: u32,
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]

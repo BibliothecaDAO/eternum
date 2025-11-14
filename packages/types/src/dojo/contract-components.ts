@@ -1660,6 +1660,7 @@ export function defineContractComponents(world: World) {
             claim_hyperstructure_points: RecsType.BigInt,
             claim_otherstructure_points: RecsType.BigInt,
             explore_tiles_points: RecsType.BigInt,
+            relic_open_points: RecsType.BigInt,
           },
           victory_points_win_config: {
             points_for_win: RecsType.BigInt,
@@ -1810,6 +1811,7 @@ export function defineContractComponents(world: World) {
               "u32", // VictoryPointsGrantConfig claim_hyperstructure_points
               "u32", // VictoryPointsGrantConfig claim_otherstructure_points
               "u32", // VictoryPointsGrantConfig explore_tiles_points
+              "u32", // VictoryPointsGrantConfig relic_open_points
               "u128", // VictoryPointsWinConfig points_for_win
             ],
             customTypes: [],
