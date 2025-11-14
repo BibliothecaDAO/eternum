@@ -1,7 +1,8 @@
 import { getFeltCenterOffset } from "@bibliothecadao/eternum";
 import { BuildingType, ResourceMiningTypes } from "@bibliothecadao/types";
 
-export const FELT_CENTER = (() => getFeltCenterOffset())();
+export const FELT_CENTER = () => getFeltCenterOffset();
+// console.log("FELT_CENTER_CLIENT:", FELT_CENTER);
 
 export enum GraphicsSettings {
   LOW = "LOW",

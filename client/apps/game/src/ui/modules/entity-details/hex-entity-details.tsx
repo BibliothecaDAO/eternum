@@ -1,10 +1,10 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { FELT_CENTER } from "@/ui/config";
 import { BiomeInfoPanel } from "@/ui/features/world";
 import { ArmyEntityDetail } from "@/ui/features/world/components/entities/army-entity-detail";
 import { QuestEntityDetail } from "@/ui/features/world/components/entities/quest-entity-detail";
 import { RelicCrateEntityDetail } from "@/ui/features/world/components/entities/relic-crate-entity-detail";
 import { StructureEntityDetail } from "@/ui/features/world/components/entities/structure-entity-detail";
-import { FELT_CENTER } from "@/ui/config";
 import {
   Biome,
   getEntityIdFromKeys,
@@ -73,7 +73,7 @@ export const HexEntityDetails = () => {
       {selectedHex && (
         <div className="mb-2 flex-shrink-0 text-center text-sm font-medium">
           <span className="rounded-md bg-slate-800/80 px-2 py-1  ring-1 ring-slate-600/40">
-            Hex coords: ({selectedHex.col - FELT_CENTER}, {selectedHex.row - FELT_CENTER})
+            Hex coords: ({selectedHex.col - FELT_CENTER()}, {selectedHex.row - FELT_CENTER()})
           </span>
         </div>
       )}

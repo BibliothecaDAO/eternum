@@ -324,7 +324,7 @@ export class StructureManager {
       return;
     }
     await this.ensureStructureModels(structureType);
-    const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
+    const normalizedCoord = { col: hexCoords.col - FELT_CENTER(), row: hexCoords.row - FELT_CENTER() };
     const position = getWorldPositionForHex(normalizedCoord);
     position.y += 0.05;
     this.dummy.position.copy(position);

@@ -32,7 +32,7 @@ export const ActionInfo = memo(() => {
     if (!hoveredHex) return undefined;
     return useUIStore
       .getState()
-      .entityActions.actionPaths.get(`${hoveredHex.col + FELT_CENTER},${hoveredHex.row + FELT_CENTER}`);
+      .entityActions.actionPaths.get(`${hoveredHex.col + FELT_CENTER()},${hoveredHex.row + FELT_CENTER()}`);
   }, [hoveredHex]);
 
   const showTooltip = useMemo(() => {

@@ -119,7 +119,7 @@ export class ChestManager {
 
   async onUpdate(update: ChestSystemUpdate) {
     const { occupierId, hexCoords } = update;
-    const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
+    const normalizedCoord = { col: hexCoords.col - FELT_CENTER(), row: hexCoords.row - FELT_CENTER() };
     // Add the chest to the map
     const position = new Position({ x: hexCoords.col, y: hexCoords.row });
 

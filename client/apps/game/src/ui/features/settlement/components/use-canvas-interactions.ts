@@ -37,7 +37,7 @@ export const useCanvasInteractions = ({
 
   // Map view state
   const [mapViewState, setMapViewState] = useState<MapViewState>({
-    mapCenter: { x: SETTLEMENT_CENTER, y: SETTLEMENT_CENTER },
+    mapCenter: { x: SETTLEMENT_CENTER(), y: SETTLEMENT_CENTER() },
     mapSize: { width: MINIMAP_WIDTH, height: MINIMAP_HEIGHT },
     zoomLevel: 1,
   });
@@ -128,7 +128,7 @@ export const useCanvasInteractions = ({
   // Reset map to center
   const resetMapCenter = useCallback(() => {
     setMapViewState({
-      mapCenter: { x: SETTLEMENT_CENTER, y: SETTLEMENT_CENTER },
+      mapCenter: { x: SETTLEMENT_CENTER(), y: SETTLEMENT_CENTER() },
       mapSize: { width: MINIMAP_WIDTH, height: MINIMAP_HEIGHT },
       zoomLevel: 1,
     });

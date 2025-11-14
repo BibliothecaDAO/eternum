@@ -117,7 +117,7 @@ export class QuestManager {
 
   async onUpdate(update: QuestSystemUpdate) {
     const { entityId, occupierId, hexCoords } = update;
-    const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
+    const normalizedCoord = { col: hexCoords.col - FELT_CENTER(), row: hexCoords.row - FELT_CENTER() };
     // Add the quest to the map with the complete owner info
     const position = new Position({ x: hexCoords.col, y: hexCoords.row });
     const questType = QuestType.DarkShuffle;
