@@ -78,6 +78,7 @@ export class PointsLabelRenderer {
     // Create Points object
     this.points = new THREE.Points(this.geometry, this.material);
     this.points.frustumCulled = false; // Disable frustum culling for consistent rendering
+    this.points.renderOrder = 999; // Render after everything else (on top)
     scene.add(this.points);
 
     // Setup raycaster for hover detection

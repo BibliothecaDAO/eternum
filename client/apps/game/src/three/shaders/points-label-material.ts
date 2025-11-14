@@ -108,7 +108,7 @@ export function createPointsLabelMaterial(
       sizeAttenuation: { value: sizeAttenuation ? 1.0 : 0.0 },
     },
     transparent: true,
-    depthTest: true,
-    depthWrite: true, // Enable depth writing to prevent z-fighting
+    depthTest: false, // Disable depth test to always render on top
+    depthWrite: false, // Disable depth writing when rendering on top
   });
 }
