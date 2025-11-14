@@ -4,7 +4,6 @@ import {
   BuildingType,
   ClientComponents,
   Direction,
-  FELT_CENTER,
   HexPosition,
   ID,
   RealmLevels,
@@ -17,12 +16,13 @@ import {
 import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
-import { ResourceManager, getBuildingCosts, getBuildingCount, setBuildingCount } from "..";
+import { ResourceManager, getBuildingCosts, getBuildingCount, getFeltCenterOffset, setBuildingCount } from "..";
 import { configManager } from "./config-manager";
 
 export class TileManager {
   private col: number;
   private row: number;
+  private FELT_CENTER: number;
 
   constructor(
     private readonly components: ClientComponents,
@@ -31,6 +31,7 @@ export class TileManager {
   ) {
     this.col = hexCoords.col;
     this.row = hexCoords.row;
+    this.FELT_CENTER = getFeltCenterOffset();
   }
 
   getHexCoords = () => {
@@ -38,8 +39,8 @@ export class TileManager {
   };
 
   setTile(hexCoords: HexPosition) {
-    this.col = hexCoords.col + FELT_CENTER;
-    this.row = hexCoords.row + FELT_CENTER;
+    this.col = hexCoords.col + this.FELT_CENTER;
+    this.row = hexCoords.row + this.FELT_CENTER;
   }
 
   getRealmLevel = (realmEntityId: number): RealmLevels => {

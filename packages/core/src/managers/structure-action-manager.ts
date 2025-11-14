@@ -2,7 +2,6 @@ import {
   BiomeType,
   ClientComponents,
   ContractAddress,
-  FELT_CENTER,
   getNeighborHexes,
   HexEntityInfo,
   ID,
@@ -10,6 +9,7 @@ import {
 import { getComponentValue, type Entity } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
+import { getFeltCenterOffset } from "../utils/utils";
 
 export class StructureActionManager {
   private readonly entity: Entity;
@@ -40,6 +40,7 @@ export class StructureActionManager {
   ): ActionPaths {
     const actionPaths = new ActionPaths();
     const startPos = this._getCurrentPosition();
+    const FELT_CENTER = getFeltCenterOffset();
 
     // Get the structure owner to determine which armies can be attacked
     const structure = getComponentValue(this.components.Structure, this.entity);

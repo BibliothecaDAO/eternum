@@ -1,4 +1,4 @@
-import { FELT_CENTER as SETTLEMENT_CENTER } from "@bibliothecadao/types";
+import { FELT_CENTER as SETTLEMENT_CENTER } from "@/ui/config";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   MAX_ZOOM_LEVEL,

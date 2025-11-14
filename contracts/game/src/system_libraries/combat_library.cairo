@@ -51,7 +51,7 @@ mod combat_library {
     }
 
     pub fn get_dispatcher(world: @WorldStorage) -> super::ICombatLibraryLibraryDispatcher {
-        let (_, class_hash) = world.dns(@"combat_library_v0_1_0").expect('combat_library not found');
+        let (_, class_hash) = world.dns(@"combat_library_v0_1_4").expect('combat_library not found');
         super::ICombatLibraryLibraryDispatcher { class_hash }
     }
 }

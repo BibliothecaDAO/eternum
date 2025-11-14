@@ -1,9 +1,9 @@
 import { CameraView } from "@/three/scenes/hexagon-scene";
 import { gltfLoader } from "@/three/utils/utils";
-import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
+import { FELT_CENTER, GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
 import { getCharacterModel } from "@/utils/agent";
 import { Biome } from "@bibliothecadao/eternum";
-import { BiomeType, FELT_CENTER, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
 import {
   AnimationAction,
   AnimationMixer,

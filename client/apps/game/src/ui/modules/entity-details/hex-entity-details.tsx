@@ -4,6 +4,7 @@ import { ArmyEntityDetail } from "@/ui/features/world/components/entities/army-e
 import { QuestEntityDetail } from "@/ui/features/world/components/entities/quest-entity-detail";
 import { RelicCrateEntityDetail } from "@/ui/features/world/components/entities/relic-crate-entity-detail";
 import { StructureEntityDetail } from "@/ui/features/world/components/entities/structure-entity-detail";
+import { FELT_CENTER } from "@/ui/config";
 import {
   Biome,
   getEntityIdFromKeys,
@@ -13,7 +14,6 @@ import {
   Position as PositionInterface,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { FELT_CENTER } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 
