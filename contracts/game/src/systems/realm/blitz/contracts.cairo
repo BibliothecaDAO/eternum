@@ -27,7 +27,7 @@ pub mod blitz_realm_systems {
     use crate::models::events::{RealmCreatedStory, Story, StoryEvent};
     use crate::models::map::TileImpl;
     use crate::models::name::AddressName;
-    use crate::models::position::Coord;
+    use crate::models::position::{Coord, CoordImpl};
     use crate::models::realm::{RealmNameAndAttrsDecodingImpl, RealmReferenceImpl};
     use crate::models::resource::production::building::BuildingImpl;
     use crate::models::resource::production::production::{Production, ProductionImpl};
@@ -212,7 +212,8 @@ pub mod blitz_realm_systems {
             let mut blitz_settlement_config: BlitzSettlementConfig = WorldConfigUtilImpl::get_member(
                 world, selector!("blitz_settlement_config"),
             );
-            let mut coords: Array<Coord> = blitz_settlement_config.generate_coords();
+            let map_center: Coord = CoordImpl::center(ref world);
+            let mut coords: Array<Coord> = blitz_settlement_config.generate_coords(map_center);
             // let player_position_spot_number: u16 = blitz_registration_config.registration_count;
 
             // this allows dev mode registration as opposed to the previous line
@@ -315,12 +316,14 @@ pub mod blitz_realm_systems {
                 world, selector!("blitz_hypers_settlement_config"),
             );
 
+            let map_center: Coord = CoordImpl::center(ref world);
+
             for i in 0..count {
                 if !blitz_hyperstructure_settlement_config.is_valid_ring() {
                     break;
                 }
 
-                let next_coord: Coord = blitz_hyperstructure_settlement_config.next_coord();
+                let next_coord: Coord = blitz_hyperstructure_settlement_config.next_coord(map_center);
                 iHyperstructureDiscoveryImpl::create(
                     ref world,
                     next_coord,

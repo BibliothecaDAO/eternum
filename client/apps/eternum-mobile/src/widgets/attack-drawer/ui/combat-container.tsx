@@ -12,6 +12,7 @@ import {
   getArmy,
   getBlockTimestamp,
   getEntityIdFromKeys,
+  getFeltCenterOffset,
   getGuardsByStructure,
   getRemainingCapacityInKg,
   StaminaManager,
@@ -20,7 +21,6 @@ import { useDojo } from "@bibliothecadao/react";
 import {
   CapacityConfig,
   ContractAddress,
-  FELT_CENTER,
   getDirectionBetweenAdjacentHexes,
   ID,
   RESOURCE_PRECISION,
@@ -411,6 +411,7 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
     console.log("selectedHex:", selectedHex);
     console.log("targetHex:", targetHex);
 
+    const FELT_CENTER = getFeltCenterOffset();
     // Convert selectedHex to match coordinate system of targetHex
     const normalizedSelectedHex = {
       col: selectedHex.col + FELT_CENTER,
@@ -456,6 +457,7 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
       return;
     }
 
+    const FELT_CENTER = getFeltCenterOffset();
     // Convert selectedHex to match coordinate system of targetHex
     const normalizedSelectedHex = {
       col: selectedHex.col + FELT_CENTER,
@@ -495,6 +497,7 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
       return;
     }
 
+    const FELT_CENTER = getFeltCenterOffset();
     // Convert selectedHex to match coordinate system of targetHex
     const normalizedSelectedHex = {
       col: selectedHex.col + FELT_CENTER,
