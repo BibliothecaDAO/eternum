@@ -215,7 +215,15 @@ export class StructureManager {
               myRealm: new PointsLabelRenderer(this.scene, loadedTextures.myRealm!, 1000, 5, 0, 1.3, true),
               enemyRealm: new PointsLabelRenderer(this.scene, loadedTextures.enemyRealm!, 1000, 5, 0, 1.3, true),
               allyRealm: new PointsLabelRenderer(this.scene, loadedTextures.allyRealm!, 1000, 5, 0, 1.3, true),
-              hyperstructure: new PointsLabelRenderer(this.scene, loadedTextures.hyperstructure!, 1000, 5, 0, 1.3, true),
+              hyperstructure: new PointsLabelRenderer(
+                this.scene,
+                loadedTextures.hyperstructure!,
+                1000,
+                5,
+                0,
+                1.3,
+                true,
+              ),
               bank: new PointsLabelRenderer(this.scene, loadedTextures.bank!, 1000, 5, 0, 1.3, true),
               fragmentMine: new PointsLabelRenderer(this.scene, loadedTextures.fragmentMine!, 1000, 5, 0, 1.3, true),
             };
@@ -914,10 +922,18 @@ export class StructureManager {
     const { structureType, isMine, isAlly } = structure;
 
     if (structureType === StructureType.Village) {
-      return isMine ? this.pointsRenderers.myVillage : isAlly ? this.pointsRenderers.allyVillage : this.pointsRenderers.enemyVillage;
+      return isMine
+        ? this.pointsRenderers.myVillage
+        : isAlly
+          ? this.pointsRenderers.allyVillage
+          : this.pointsRenderers.enemyVillage;
     }
     if (structureType === StructureType.Realm) {
-      return isMine ? this.pointsRenderers.myRealm : isAlly ? this.pointsRenderers.allyRealm : this.pointsRenderers.enemyRealm;
+      return isMine
+        ? this.pointsRenderers.myRealm
+        : isAlly
+          ? this.pointsRenderers.allyRealm
+          : this.pointsRenderers.enemyRealm;
     }
     if (structureType === StructureType.Hyperstructure) {
       return this.pointsRenderers.hyperstructure;

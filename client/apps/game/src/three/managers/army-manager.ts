@@ -651,7 +651,11 @@ export class ArmyManager {
           entityId: army.entityId,
           position: iconPosition,
         });
-        console.log(`[ArmyManager] Added point icon for army ${army.entityId} at position`, iconPosition, `renderer type: ${army.isDaydreamsAgent ? 'agent' : army.isMine ? 'player' : 'enemy'}, count: ${renderer.getCount()}`);
+        console.log(
+          `[ArmyManager] Added point icon for army ${army.entityId} at position`,
+          iconPosition,
+          `renderer type: ${army.isDaydreamsAgent ? "agent" : army.isMine ? "player" : "enemy"}, count: ${renderer.getCount()}`,
+        );
       } else {
         console.warn(`[ArmyManager] pointsRenderers not initialized yet for army ${army.entityId}`);
       }
