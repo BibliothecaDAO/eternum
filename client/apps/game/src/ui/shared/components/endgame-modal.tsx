@@ -1,48 +1,105 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
-import { BlitzHighlightCard } from "@/ui/shared/components/blitz-highlight-card";
+import { type LandingLeaderboardEntry } from "@/ui/features/landing/lib/landing-leaderboard-service";
+import { useLandingLeaderboardStore } from "@/ui/features/landing/lib/use-landing-leaderboard-store";
+import { BlitzHighlightCardWithSelector } from "@/ui/shared/components/blitz-highlight-card";
 import {
   BLITZ_CARD_DIMENSIONS,
   BLITZ_DEFAULT_SHARE_ORIGIN,
   BlitzHighlightPlayer,
   buildBlitzShareMessage,
-  formatOrdinal,
 } from "@/ui/shared/lib/blitz-highlight";
 import { copySvgToClipboard } from "@/ui/shared/lib/copy-svg";
-import { currencyIntlFormat, getRealmCountPerHyperstructure } from "@/ui/utils/utils";
-import { getAddressName, getGuildFromPlayerAddress, getIsBlitz, LeaderboardManager } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
-import { ContractAddress } from "@bibliothecadao/types";
+import { displayAddress } from "@/ui/utils/utils";
+import { getIsBlitz } from "@bibliothecadao/eternum";
 import { Copy, Share2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-export const EndgameModal = () => {
-  const {
-    account: { account },
-    setup: { components },
-  } = useDojo();
+const getDisplayName = (entry: LandingLeaderboardEntry): string => {
+  const candidate = entry.displayName?.trim();
+  if (candidate) {
+    return candidate;
+  }
 
-  const { currentBlockTimestamp } = useBlockTimestamp();
+  return displayAddress(entry.address);
+};
+
+const toHighlightPlayer = (entry: LandingLeaderboardEntry): BlitzHighlightPlayer => ({
+  rank: entry.rank,
+  name: getDisplayName(entry),
+  points: entry.points,
+  address: entry.address,
+  exploredTiles: entry.exploredTiles ?? null,
+  exploredTilePoints: entry.exploredTilePoints ?? null,
+  riftsTaken: entry.riftsTaken ?? null,
+  riftPoints: entry.riftPoints ?? null,
+  hyperstructuresConquered: entry.hyperstructuresConquered ?? null,
+  hyperstructurePoints: entry.hyperstructurePoints ?? null,
+  relicCratesOpened: entry.relicCratesOpened ?? null,
+  relicCratePoints: entry.relicCratePoints ?? null,
+  campsTaken: entry.campsTaken ?? null,
+  campPoints: entry.campPoints ?? null,
+  hyperstructuresHeld: entry.hyperstructuresHeld ?? null,
+  hyperstructuresHeldPoints: entry.hyperstructuresHeldPoints ?? null,
+});
+
+export const EndgameModal = () => {
+  const account = useAccountStore((state) => state.account);
+  const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
+  const normalizedPlayerAddress = playerAddress?.toLowerCase() ?? null;
+
   const currentPlayerData = usePlayerStore((state) => state.currentPlayerData);
   const playerDataLoading = usePlayerStore((state) => state.isLoading);
 
   const gameEndAt = useUIStore((state) => state.gameEndAt);
 
-  const isBlitz = getIsBlitz();
-  const realmCountPerHyperstructure = useMemo(() => getRealmCountPerHyperstructure(), []);
+  const fetchLeaderboard = useLandingLeaderboardStore((state) => state.fetchLeaderboard);
+  const fetchPlayerEntry = useLandingLeaderboardStore((state) => state.fetchPlayerEntry);
+  const championEntry = useLandingLeaderboardStore((state) => state.championEntry);
+  const isLeaderboardFetching = useLandingLeaderboardStore((state) => state.isFetching);
+  const playerEntryState = useLandingLeaderboardStore((state) =>
+    normalizedPlayerAddress ? state.playerEntries[normalizedPlayerAddress] : undefined,
+  );
+
+  const playerEntry = playerEntryState?.data ?? null;
+  const playerEntryLoading = Boolean(playerEntryState?.isFetching);
+
+  const highlight = useMemo(() => (playerEntry ? toHighlightPlayer(playerEntry) : null), [playerEntry]);
+  const championPlayer = useMemo(() => (championEntry ? toHighlightPlayer(championEntry) : null), [championEntry]);
+
+  const { currentBlockTimestamp } = useBlockTimestamp();
+
+  const hasGameEnded = useMemo(() => {
+    if (!gameEndAt) {
+      return false;
+    }
+
+    return currentBlockTimestamp > gameEndAt;
+  }, [currentBlockTimestamp, gameEndAt]);
+
+  useEffect(() => {
+    if (!hasGameEnded) {
+      return;
+    }
+
+    void fetchLeaderboard({ force: true });
+  }, [fetchLeaderboard, hasGameEnded]);
+
+  useEffect(() => {
+    if (!hasGameEnded || !playerAddress) {
+      return;
+    }
+
+    void fetchPlayerEntry(playerAddress, { force: true });
+  }, [fetchPlayerEntry, hasGameEnded, playerAddress]);
 
   const [isVisible, setIsVisible] = useState(true);
   const [isAnimating, setIsAnimating] = useState(true);
-  const [highlightedPlayer, setHighlightedPlayer] = useState<BlitzHighlightPlayer | null>(null);
-  const [championPlayer, setChampionPlayer] = useState<BlitzHighlightPlayer | null>(null);
   const [isCopying, setIsCopying] = useState(false);
-  const [isRanked, setIsRanked] = useState<boolean>(true);
-  const [totalPoints, setTotalPoints] = useState(0);
-  const [hasEvaluatedEligibility, setHasEvaluatedEligibility] = useState(false);
-
   const leaderboardSvgRef = useRef<SVGSVGElement | null>(null);
 
   useEffect(() => {
@@ -50,94 +107,13 @@ export const EndgameModal = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  const hasGameEnded = useMemo(() => {
-    return currentBlockTimestamp > (gameEndAt ?? 0);
-  }, [currentBlockTimestamp, gameEndAt]);
-
-  useEffect(() => {
-    if (!hasGameEnded) {
-      setTotalPoints(0);
-      setHasEvaluatedEligibility(false);
-      setHighlightedPlayer(null);
-      setChampionPlayer(null);
-      setIsRanked(false);
-      return;
-    }
-
-    if (!account?.address || account.address === "0x0") {
-      setTotalPoints(0);
-      setHasEvaluatedEligibility(true);
-      setHighlightedPlayer(null);
-      setChampionPlayer(null);
-      setIsRanked(false);
-      return;
-    }
-
-    try {
-      const manager = LeaderboardManager.instance(components, realmCountPerHyperstructure);
-      manager.updatePoints();
-
-      const rankedPlayers = manager.playersByRank;
-      const createTopPlayer = (address: ContractAddress, rank: number, points: number): BlitzHighlightPlayer => {
-        const rawName = getAddressName(address, components);
-        const trimmedName = rawName?.trim();
-        const displayName = trimmedName && trimmedName.length > 0 ? trimmedName : "Unknown player";
-        const guildName = getGuildFromPlayerAddress(address, components)?.name;
-
-        const addressHex = address.toString(16);
-        const normalizedAddress = addressHex.startsWith("0x") ? addressHex : `0x${addressHex}`;
-
-        return {
-          rank,
-          name: displayName,
-          guildName: guildName || undefined,
-          points,
-          address: normalizedAddress,
-        } satisfies BlitzHighlightPlayer;
-      };
-
-      if (rankedPlayers.length > 0) {
-        const [topAddress, topPoints] = rankedPlayers[0];
-        setChampionPlayer(createTopPlayer(topAddress, 1, topPoints));
-      } else {
-        setChampionPlayer(null);
-      }
-
-      const playerAddress = ContractAddress(account.address);
-      const registeredPoints = manager.getPlayerRegisteredPoints(playerAddress);
-      const unregisteredPoints = manager.getPlayerHyperstructureUnregisteredShareholderPoints(playerAddress);
-      const combinedPoints = registeredPoints + unregisteredPoints;
-
-      setTotalPoints(combinedPoints);
-      setHasEvaluatedEligibility(true);
-
-      if (combinedPoints <= 0) {
-        setHighlightedPlayer(null);
-        setIsRanked(false);
-        return;
-      }
-
-      const myIndex = rankedPlayers.findIndex(([address]) => address === playerAddress);
-      if (myIndex >= 0) {
-        const [address, points] = rankedPlayers[myIndex];
-        setHighlightedPlayer(createTopPlayer(address, myIndex + 1, points));
-        setIsRanked(true);
-      } else {
-        setHighlightedPlayer(null);
-        setIsRanked(false);
-      }
-    } catch (error) {
-      console.error("Failed to load final leaderboard", error);
-      setTotalPoints(0);
-      setHasEvaluatedEligibility(true);
-      setHighlightedPlayer(null);
-      setChampionPlayer(null);
-      setIsRanked(false);
-    }
-  }, [account.address, components, hasGameEnded, realmCountPerHyperstructure]);
+  const isBlitz = getIsBlitz();
 
   const hasPlayerActivity = useMemo(() => {
-    if (!currentPlayerData) return false;
+    if (!currentPlayerData) {
+      return false;
+    }
+
     return (
       currentPlayerData.explorerIds.length > 0 ||
       currentPlayerData.structureIds.length > 0 ||
@@ -149,17 +125,23 @@ export const EndgameModal = () => {
     );
   }, [currentPlayerData]);
 
+  const totalPoints = playerEntry?.points ?? 0;
+  const isRanked = totalPoints > 0;
+  const isLoadingLeaderboard = isLeaderboardFetching || playerEntryLoading;
+
   const hasEligiblePlayer = useMemo(() => {
-    if (!hasEvaluatedEligibility) return false;
-    if (!account?.address || account.address === "0x0") return false;
-    if (totalPoints <= 0) return false;
-    if (!(playerDataLoading || hasPlayerActivity || !currentPlayerData)) return false;
-    return true;
-  }, [account?.address, currentPlayerData, hasEvaluatedEligibility, hasPlayerActivity, playerDataLoading, totalPoints]);
+    if (!playerAddress) {
+      return false;
+    }
+
+    if (!(playerDataLoading || hasPlayerActivity || !currentPlayerData)) {
+      return false;
+    }
+
+    return isLoadingLeaderboard || isRanked;
+  }, [currentPlayerData, hasPlayerActivity, isLoadingLeaderboard, isRanked, playerAddress, playerDataLoading]);
 
   const shouldDisplayModal = hasGameEnded && hasEligiblePlayer;
-
-  const highlight = highlightedPlayer;
 
   const copyLeaderboardImage = useCallback(async () => {
     if (!highlight || !leaderboardSvgRef.current) {
@@ -178,13 +160,11 @@ export const EndgameModal = () => {
         unsupportedMessage: "Copying images is not supported in this environment.",
       });
     } catch {
-      // Errors are surfaced via toast inside copySvgToClipboard
+      // Errors are surfaced via toast inside copySvgToClipboard.
     } finally {
       setIsCopying(false);
     }
   }, [highlight]);
-
-  const highlightPoints = highlight?.points ?? null;
 
   const leaderboardUrl = useMemo(() => {
     if (typeof window !== "undefined") {
@@ -224,20 +204,14 @@ export const EndgameModal = () => {
     window.location.href = leaderboardUrl;
   }, [leaderboardUrl]);
 
-  if (!shouldDisplayModal || !isVisible) return null;
+  if (!shouldDisplayModal || !isVisible) {
+    return null;
+  }
 
   const cardTitle = isBlitz ? "Realms Blitz" : "Realms";
   const cardSubtitle = isBlitz ? "Blitz Leaderboard" : "Final Leaderboard";
   const playerName = highlight?.name ?? null;
-  const playerGuild = highlight?.guildName ?? null;
-  const playerLine = playerName ? (playerGuild ? `${playerName} — ${playerGuild}` : playerName) : null;
-  const championLine = championPlayer
-    ? championPlayer.guildName
-      ? `${championPlayer.name} — ${championPlayer.guildName}`
-      : championPlayer.name
-    : playerLine;
-  const placementLabel = highlight ? formatOrdinal(highlight.rank) : null;
-  const pointsLabel = highlightPoints !== null ? currencyIntlFormat(highlightPoints, 0) : null;
+  const championLine = championPlayer?.name ?? playerName;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-center px-4 pt-[54px]">
@@ -249,7 +223,7 @@ export const EndgameModal = () => {
       />
 
       <div
-        className={`relative z-10 w-full max-w-[760px] transform transition-all duration-500 ${
+        className={`relative z-10 w-full max-w-[980px] transform transition-all duration-500 ${
           isAnimating ? "pointer-events-none -translate-y-4 opacity-0" : "pointer-events-auto translate-y-0 opacity-100"
         }`}
       >
@@ -257,57 +231,36 @@ export const EndgameModal = () => {
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_-12%,rgba(64,200,233,0.35),transparent_65%)]" />
 
           <div className="relative flex flex-col gap-6 px-6 pb-8 pt-12 md:px-12 md:pt-16">
-            <div className="flex flex-col items-center gap-2 text-center">
-              <p className="text-xs font-semibold uppercase tracking-[0.42em] text-cyan-200/70 md:text-sm">
-                {cardTitle}
-              </p>
-              <h2 className="text-3xl font-semibold uppercase tracking-[0.24em] text-white md:text-[36px]">
-                {cardSubtitle}
-              </h2>
-              {isRanked && playerLine && (
-                <p className="text-sm font-medium text-cyan-100/80 md:text-base">{playerLine}</p>
-              )}
-              {isRanked && placementLabel && pointsLabel && (
-                <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-200/70 md:text-sm">
-                  {placementLabel} • {pointsLabel} pts
-                </p>
-              )}
-              {!isRanked && (
-                <p className="mt-2 text-sm font-medium text-cyan-100/80 md:text-base">
-                  You are not ranked in the leaderboard.
-                </p>
-              )}
-            </div>
             <div className="flex flex-col gap-6 rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[3px] md:px-8 md:py-7">
               <p className="text-center text-[11px] uppercase tracking-[0.28em] text-white/60 md:text-xs">
                 Copy the Blitz highlight card or take the share link straight to X.
               </p>
               <div className="flex justify-center">
-                {isRanked ? (
-                  highlight ? (
-                    <BlitzHighlightCard
-                      ref={leaderboardSvgRef}
+                {isRanked && highlight ? (
+                  <div className="w-full max-w-[940px]">
+                    <BlitzHighlightCardWithSelector
+                      cardRef={leaderboardSvgRef}
                       title={cardTitle}
                       subtitle={cardSubtitle}
                       winnerLine={championLine}
                       highlight={highlight}
                     />
-                  ) : (
-                    <div className="flex h-[220px] w-full max-w-[720px] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-sm text-white/60">
-                      Your Blitz standings are syncing…
-                    </div>
-                  )
+                  </div>
+                ) : isLoadingLeaderboard ? (
+                  <div className="flex h-[220px] w-full max-w-[720px] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-sm text-white/60">
+                    Your Blitz standings are syncing…
+                  </div>
                 ) : (
                   <div className="flex h-[180px] w-full max-w-[720px] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-base text-white/70">
                     Sorry, you are not ranked in the final leaderboard.
                   </div>
                 )}
               </div>
-              {isRanked && (
+              {isRanked && highlight ? (
                 <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:gap-4">
                   <Button
                     onClick={copyLeaderboardImage}
-                    disabled={isCopying || !highlight}
+                    disabled={isCopying}
                     className="w-full md:flex-1 min-w-[180px] justify-center gap-2 !px-4 !py-3 md:!px-5"
                     variant="gold"
                     aria-busy={isCopying}
@@ -337,9 +290,8 @@ export const EndgameModal = () => {
                     <span className="text-sm font-semibold leading-tight text-center">View leaderboard</span>
                   </Button>
                 </div>
-              )}
-              {!isRanked && (
-                <div className="flex justify-center mt-2">
+              ) : (
+                <div className="flex justify-center">
                   <Button
                     onClick={handleViewLeaderboard}
                     className="w-full md:flex-1 min-w-[180px] justify-center !px-4 !py-3 md:!px-5"

@@ -16,6 +16,18 @@ export interface PlayerLeaderboardData {
   /** Unregistered (shareholder) contribution if available */
   unregisteredPoints?: number;
   prizeClaimed: boolean;
+  exploredTiles?: number;
+  exploredTilePoints?: number;
+  riftsTaken?: number;
+  riftPoints?: number;
+  hyperstructuresConquered?: number;
+  hyperstructurePoints?: number;
+  relicCratesOpened?: number;
+  relicCratePoints?: number;
+  campsTaken?: number;
+  campPoints?: number;
+  hyperstructuresHeld?: number;
+  hyperstructuresHeldPoints?: number;
 }
 
 export type LandingLeaderboardEntry = PlayerLeaderboardData;
@@ -129,78 +141,41 @@ const decodePlayerName = (value: string | null): string | null => {
   }
 };
 
-const transformLandingLeaderboardRow = (rawRow: PlayerLeaderboardRow, rank: number): PlayerLeaderboardData | null => {
-  const row = rawRow as unknown as Record<string, unknown>;
-
-  const rawAddress =
-    (typeof row["player_address"] === "string" ? (row["player_address"] as string) : undefined) ??
-    (typeof row["playerAddress"] === "string" ? (row["playerAddress"] as string) : undefined) ??
-    null;
-
-  const address = normaliseAddress(rawAddress);
+const transformLandingLeaderboardRow = (row: PlayerLeaderboardRow, rank: number): PlayerLeaderboardData | null => {
+  const address = normaliseAddress(row.playerAddress ?? null);
   if (!address) {
     return null;
   }
 
-  const rawName =
-    (typeof row["player_name"] === "string" ? (row["player_name"] as string) : undefined) ??
-    (typeof row["playerName"] === "string" ? (row["playerName"] as string) : undefined) ??
-    null;
+  const displayName = decodePlayerName(row.playerName ?? null);
 
-  const displayName = decodePlayerName(rawName);
-
-  const baseRegistered = parseNumeric(
-    (row["registered_points"] as NumericLike) ??
-      (row["registeredPointsRegistered"] as NumericLike) ??
-      (row["registeredPointsBase"] as NumericLike) ??
-      0,
-  );
-
-  const totalPointsCandidate = parseNumeric(
-    (row["registeredPoints"] as NumericLike) ??
-      (row["total_points"] as NumericLike) ??
-      (row["points"] as NumericLike) ??
-      (row["registered_points"] as NumericLike) ??
-      0,
-  );
-
-  let totalRaw = totalPointsCandidate;
-  let registeredRaw = baseRegistered;
-
-  if (totalRaw <= 0 && registeredRaw > 0) {
-    totalRaw = registeredRaw;
-  }
-
-  const hasExplicitRegisteredField =
-    Object.prototype.hasOwnProperty.call(row, "registered_points") ||
-    Object.prototype.hasOwnProperty.call(row, "registeredPointsRegistered") ||
-    Object.prototype.hasOwnProperty.call(row, "registeredPointsBase");
-
-  if (registeredRaw <= 0) {
-    registeredRaw = hasExplicitRegisteredField ? 0 : totalRaw;
-  }
-
-  if (totalRaw <= 0) {
-    totalRaw = registeredRaw;
-  }
-
-  if (registeredRaw > totalRaw) {
-    registeredRaw = totalRaw;
-  }
-
-  let unregisteredRaw = totalRaw - registeredRaw;
-  if (unregisteredRaw < 0) {
-    unregisteredRaw = 0;
-  }
-
+  const totalRaw = parseNumeric(row.registeredPoints);
+  const registeredRaw = Math.min(parseNumeric(row.registeredPointsRegistered), totalRaw);
   const registeredPoints = registeredRaw / REGISTERED_POINTS_PRECISION;
   const totalPoints = totalRaw / REGISTERED_POINTS_PRECISION;
-  const unregisteredPoints = unregisteredRaw / REGISTERED_POINTS_PRECISION;
+  const unregisteredPoints = row.unregisteredPoints ?? Math.max(totalPoints - registeredPoints, 0);
+  const prizeClaimedRaw = Boolean(row.prizeClaimed);
 
-  const prizeClaimedRaw =
-    typeof row["prizeClaimed"] === "boolean"
-      ? (row["prizeClaimed"] as boolean)
-      : Boolean(parseNumeric(row["prize_claimed"] as NumericLike));
+  const activity = row.activityBreakdown;
+  const exploredTiles = activity.exploration.count;
+  const exploredTilePoints = activity.exploration.points;
+  const relicCratesOpened = activity.openRelicChest.count;
+  const relicCratePoints = activity.openRelicChest.points;
+  const structureBattlesCount = activity.otherStructureBanditsDefeat.count;
+  const structureBattlesPoints = activity.otherStructureBanditsDefeat.points;
+  const hyperstructureBattlesCount = activity.hyperStructureBanditsDefeat.count;
+  const hyperstructureBattlesPoints = activity.hyperStructureBanditsDefeat.points;
+  const hyperstructureSharePoints = activity.hyperstructureShare.points;
+  const hyperstructureShareCount = activity.hyperstructureShare.count;
+
+  const riftsTaken = structureBattlesCount;
+  const riftPoints = structureBattlesPoints;
+  const campsTaken = structureBattlesCount;
+  const campPoints = structureBattlesPoints;
+  const hyperstructuresConquered = hyperstructureBattlesCount;
+  const hyperstructurePoints = hyperstructureBattlesPoints;
+  const hyperstructuresHeld = hyperstructureShareCount > 0 ? hyperstructureShareCount : null;
+  const hyperstructuresHeldPoints = hyperstructureSharePoints;
 
   return {
     rank,
@@ -210,6 +185,17 @@ const transformLandingLeaderboardRow = (rawRow: PlayerLeaderboardRow, rank: numb
     registeredPoints,
     unregisteredPoints,
     prizeClaimed: prizeClaimedRaw,
+    exploredTiles,
+    exploredTilePoints,
+    riftsTaken,
+    riftPoints,
+    hyperstructuresConquered,
+    hyperstructurePoints,
+    relicCratesOpened,
+    relicCratePoints,
+    campsTaken,
+    campPoints,
+    hyperstructuresHeldPoints,
   } satisfies PlayerLeaderboardData;
 };
 
@@ -256,13 +242,12 @@ export const fetchLandingLeaderboardEntryByAddress = async (
   }
 
   const rawRow = await sqlApi.fetchPlayerLeaderboardByAddress(normalizedAddress);
+
   if (!rawRow) {
     return null;
   }
 
-  const row = rawRow as unknown as Record<string, unknown>;
-  const rawRank = parseNumeric(row["rank"] as NumericLike);
-  const rank = rawRank > 0 ? Math.floor(rawRank) : 1;
+  const rank = typeof rawRow.rank === "number" && rawRow.rank > 0 ? Math.floor(rawRow.rank) : 1;
 
   return transformLandingLeaderboardRow(rawRow, rank);
 };

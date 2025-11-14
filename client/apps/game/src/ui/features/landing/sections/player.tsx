@@ -4,7 +4,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 
 import { Button } from "@/ui/design-system/atoms";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
-import { BlitzHighlightCard } from "@/ui/shared/components/blitz-highlight-card";
+import { BlitzHighlightCardWithSelector } from "@/ui/shared/components/blitz-highlight-card";
 import {
   BLITZ_CARD_DIMENSIONS,
   BLITZ_DEFAULT_SHARE_ORIGIN,
@@ -33,6 +33,18 @@ const toHighlightPlayer = (entry: LandingLeaderboardEntry): BlitzHighlightPlayer
   name: getDisplayName(entry),
   points: entry.points,
   address: entry.address,
+  exploredTiles: entry.exploredTiles ?? null,
+  exploredTilePoints: entry.exploredTilePoints ?? null,
+  riftsTaken: entry.riftsTaken ?? null,
+  riftPoints: entry.riftPoints ?? null,
+  hyperstructuresConquered: entry.hyperstructuresConquered ?? null,
+  hyperstructurePoints: entry.hyperstructurePoints ?? null,
+  relicCratesOpened: entry.relicCratesOpened ?? null,
+  relicCratePoints: entry.relicCratePoints ?? null,
+  campsTaken: entry.campsTaken ?? null,
+  campPoints: entry.campPoints ?? null,
+  hyperstructuresHeld: entry.hyperstructuresHeld ?? null,
+  hyperstructuresHeldPoints: entry.hyperstructuresHeldPoints ?? null,
 });
 
 export const LandingPlayer = () => {
@@ -294,9 +306,9 @@ export const LandingPlayer = () => {
 
           <div className="mt-4 flex justify-center sm:mt-5 xl:mt-6">
             {highlightPlayer ? (
-              <div className="w-full max-w-[420px] sm:max-w-[520px] xl:max-w-[580px] 2xl:max-w-[720px]">
-                <BlitzHighlightCard
-                  ref={cardRef}
+              <div className="w-full max-w-[420px] sm:max-w-[620px] xl:max-w-[780px] 2xl:max-w-[940px]">
+                <BlitzHighlightCardWithSelector
+                  cardRef={cardRef}
                   title="Realms Blitz"
                   subtitle="Blitz Leaderboard"
                   winnerLine={championLabel}

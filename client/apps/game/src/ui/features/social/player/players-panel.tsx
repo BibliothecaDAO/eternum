@@ -1,16 +1,29 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getIsBlitz } from "@bibliothecadao/eternum";
-
 import Button from "@/ui/design-system/atoms/button";
+import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import TextInput from "@/ui/design-system/atoms/text-input";
+import type { LandingLeaderboardEntry } from "@/ui/features/landing/lib/landing-leaderboard-service";
+import {
+  MIN_REFRESH_INTERVAL_MS,
+  useLandingLeaderboardStore,
+} from "@/ui/features/landing/lib/use-landing-leaderboard-store";
 import { EndSeasonButton, PlayerCustom, PlayerList, RegisterPointsButton } from "@/ui/features/social";
 import { getEntityIdFromKeys, normalizeDiacriticalMarks } from "@/ui/utils/utils";
-import { getGuildFromPlayerAddress, getStructureName, toHexString } from "@bibliothecadao/eternum";
+import { getGuildFromPlayerAddress, getIsBlitz, getStructureName, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
-import { Search } from "lucide-react";
-import { KeyboardEvent, useEffect, useMemo, useState } from "react";
+import { ChevronDown, ChevronUp, Search } from "lucide-react";
+import { KeyboardEvent, useCallback, useEffect, useMemo, useState } from "react";
+
+// TODO: big limit for now, we need to paginate this
+const SOCIAL_LEADERBOARD_LIMIT = 1000;
+
+const normalizeAddress = (address: bigint | string): string => {
+  return toHexString(typeof address === "string" ? BigInt(address) : address)
+    .toLowerCase()
+    .padStart(66, "0");
+};
 
 export const PlayersPanel = ({
   players,
@@ -31,12 +44,17 @@ export const PlayersPanel = ({
 
   const userGuild = getGuildFromPlayerAddress(ContractAddress(account.address), components);
 
+  const leaderboardEntries = useLandingLeaderboardStore((state) => state.entries);
+  const fetchLeaderboardEntries = useLandingLeaderboardStore((state) => state.fetchLeaderboard);
+  const lastLeaderboardFetchAt = useLandingLeaderboardStore((state) => state.lastFetchAt);
+  const isLeaderboardFetching = useLandingLeaderboardStore((state) => state.isFetching);
+
+  const [refreshCooldownMs, setRefreshCooldownMs] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [showPointsBreakdown, setShowPointsBreakdown] = useState(false);
   const seasonWinner = useUIStore((state) => state.gameWinner);
-
-  const isSeasonOver = Boolean(seasonWinner);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -47,6 +65,28 @@ export const PlayersPanel = ({
       clearTimeout(handler);
     };
   }, [inputValue]);
+
+  useEffect(() => {
+    const updateCooldown = () => {
+      if (!lastLeaderboardFetchAt) {
+        setRefreshCooldownMs(0);
+        return;
+      }
+
+      const elapsed = Date.now() - lastLeaderboardFetchAt;
+      const remaining = Math.max(0, MIN_REFRESH_INTERVAL_MS - elapsed);
+      setRefreshCooldownMs(remaining);
+    };
+
+    updateCooldown();
+    const interval = window.setInterval(updateCooldown, 250);
+
+    return () => window.clearInterval(interval);
+  }, [lastLeaderboardFetchAt]);
+
+  useEffect(() => {
+    void fetchLeaderboardEntries({ limit: SOCIAL_LEADERBOARD_LIMIT });
+  }, [fetchLeaderboardEntries]);
 
   const playersWithStructures: PlayerCustom[] = useMemo(() => {
     // Sort players by points in descending order
@@ -87,18 +127,41 @@ export const PlayersPanel = ({
     return playersWithStructures;
   }, [isLoading, players, components, account.address]);
 
+  const leaderboardEntryMap = useMemo(() => {
+    const map = new Map<string, LandingLeaderboardEntry>();
+
+    leaderboardEntries.forEach((entry) => {
+      console.log("setting for address", entry.address.toLowerCase(), "name", entry.displayName);
+      map.set(normalizeAddress(entry.address), entry);
+    });
+
+    return map;
+  }, [leaderboardEntries]);
+
+  const playersWithLeaderboardStats = useMemo(() => {
+    return playersWithStructures.map((player) => {
+      const normalizedAddress = normalizeAddress(player.address);
+      console.log("getting for address", normalizedAddress);
+      const entry = leaderboardEntryMap.get(normalizedAddress) ?? null;
+
+      return {
+        ...player,
+        leaderboardEntry: entry,
+      };
+    });
+  }, [playersWithStructures, leaderboardEntryMap]);
+
   const filteredPlayers = useMemo(() => {
     const normalizedTerm = normalizeDiacriticalMarks(searchTerm.toLowerCase());
 
-    let filteredList = playersWithStructures;
+    let filteredList = playersWithLeaderboardStats;
 
-    // Apply search term filter
     if (searchTerm !== "") {
       filteredList = filteredList.filter((player) => {
         const nameMatch = normalizeDiacriticalMarks(player.name.toLowerCase()).includes(normalizedTerm);
         if (nameMatch) return true;
 
-        const addressMatch = toHexString(player.address).toLowerCase().includes(normalizedTerm);
+        const addressMatch = normalizeAddress(player.address).includes(normalizedTerm);
         if (addressMatch) return true;
 
         return player.structures.some(
@@ -108,7 +171,19 @@ export const PlayersPanel = ({
     }
 
     return filteredList;
-  }, [playersWithStructures, searchTerm]);
+  }, [playersWithLeaderboardStats, searchTerm]);
+
+  const isRefreshingLeaderboard = isLeaderboardFetching;
+  const isCooldownActive = refreshCooldownMs > 0;
+  const refreshSecondsLeft = Math.ceil(refreshCooldownMs / 1000);
+
+  const handleRefreshLeaderboard = useCallback(() => {
+    if (isRefreshingLeaderboard || isCooldownActive) {
+      return;
+    }
+
+    void fetchLeaderboardEntries({ limit: SOCIAL_LEADERBOARD_LIMIT, force: true });
+  }, [fetchLeaderboardEntries, isRefreshingLeaderboard, isCooldownActive]);
 
   const whitelistPlayer = (address: ContractAddress) => {
     setIsLoading(true);
@@ -132,17 +207,33 @@ export const PlayersPanel = ({
   return (
     <div className="flex flex-col min-h-72 p-2 h-full w-full overflow-hidden">
       <div className="flex flex-col gap-2 mb-4">
-        <div className="flex items-center gap-2">
-          <TextInput
-            placeholder="Search players/realms/structures..."
-            onChange={(value) => setInputValue(value)}
-            onKeyDown={handleKeyDown}
-            className="flex-1 button-wood"
-          />
-          <Button onClick={handleSearch} variant="primary" className="flex items-center gap-1 px-4">
-            <Search size={14} />
-            <span>Search</span>
-          </Button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-1 items-center gap-2">
+            <TextInput
+              placeholder="Search players/realms/structures..."
+              onChange={(value) => setInputValue(value)}
+              onKeyDown={handleKeyDown}
+              className="flex-1 button-wood"
+            />
+            <Button onClick={handleSearch} variant="primary" className="flex items-center gap-1 px-4">
+              <Search size={14} />
+              <span>Search</span>
+            </Button>
+          </div>
+          <div className="flex items-center gap-2 text-[0.7rem] uppercase tracking-[0.16em] text-gold/70">
+            {isRefreshingLeaderboard ? (
+              <span aria-live="polite">Refreshing…</span>
+            ) : isCooldownActive ? (
+              <span aria-live="polite">Wait {refreshSecondsLeft}s</span>
+            ) : null}
+            <RefreshButton
+              onClick={handleRefreshLeaderboard}
+              isLoading={isRefreshingLeaderboard}
+              disabled={isRefreshingLeaderboard || isCooldownActive}
+              size="md"
+              aria-label="Refresh leaderboard"
+            />
+          </div>
         </div>
 
         {userGuild?.isOwner && (
@@ -152,8 +243,21 @@ export const PlayersPanel = ({
             </div>
           </div>
         )}
-        {!isSeasonOver ? (
-          <>
+        <>
+          <button
+            onClick={() => setShowPointsBreakdown(!showPointsBreakdown)}
+            className="bg-gradient-to-r from-gold/5 via-gold/10 to-gold/5 rounded-lg p-3 mb-3 border border-gold/20 hover:border-gold/40 transition-colors cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-gold font-semibold text-sm">Points Breakdown</span>
+              {showPointsBreakdown ? (
+                <ChevronUp size={16} className="text-gold" />
+              ) : (
+                <ChevronDown size={16} className="text-gold" />
+              )}
+            </div>
+          </button>
+          {showPointsBreakdown && (
             <div className="bg-gradient-to-r from-gold/5 via-gold/10 to-gold/5 rounded-lg p-3 mb-3 border border-gold/20">
               <div className="flex flex-col gap-1 text-xs">
                 <div className="flex items-center justify-between">
@@ -180,23 +284,12 @@ export const PlayersPanel = ({
                 </div>
               </div>
             </div>
-            <div className="flex gap-2 justify-center">
-              <RegisterPointsButton className="flex-1" />
-              {!getIsBlitz() && <EndSeasonButton className="flex-1" />}
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="my-2 py-2 px-3 border-2 border-gold-600/70 rounded-lg bg-slate-900/70 shadow-lg shadow-gold-500/20 text-center">
-              <p className="font-serif text-lg text-amber-400 animate-pulse tracking-wider leading-relaxed uppercase">
-                the season is over. {seasonWinner?.name} and the {seasonWinner?.guildName} tribe have conquered eternum
-              </p>
-            </div>
-            <div className="flex justify-center">
-              <RegisterPointsButton />
-            </div>
-          </>
-        )}
+          )}
+          <div className="flex gap-2 justify-center">
+            <RegisterPointsButton className="flex-1" />
+            {!getIsBlitz() && <EndSeasonButton className="flex-1" />}
+          </div>
+        </>
       </div>
 
       <div className="flex-1 min-h-0">

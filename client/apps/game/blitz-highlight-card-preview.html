@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blitz Highlight Card Preview</title>
+    <style>
+      :root {
+        font-family:
+          "Space Grotesk",
+          "Inter",
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        color: #f5fbff;
+        background-color: #050b10;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 32px;
+        padding: 32px 16px 64px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(1.5rem, 2vw, 2rem);
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: #9deaf6;
+      }
+
+      p {
+        margin: 0;
+        color: rgba(213, 247, 255, 0.78);
+        text-align: center;
+        max-width: 720px;
+      }
+
+      .preview-shell {
+        width: min(960px, 100%);
+        background: radial-gradient(circle at top left, rgba(15, 111, 148, 0.4), rgba(2, 8, 14, 0.95));
+        border-radius: 40px;
+        border: 1px solid rgba(148, 248, 255, 0.2);
+        padding: 32px 24px;
+        box-shadow: 0 40px 90px rgba(0, 0, 0, 0.6);
+      }
+
+      .mock-data-hint {
+        margin-top: 24px;
+        padding: 16px;
+        border-radius: 20px;
+        border: 1px dashed rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.02);
+        font-size: 0.9rem;
+        text-align: left;
+      }
+
+      code {
+        font-family: "JetBrains Mono", "Fira Mono", "SFMono-Regular", Consolas, monospace;
+        font-size: 0.85rem;
+        color: #86fff3;
+      }
+
+      .card-preview-layout {
+        display: flex;
+        flex-direction: row;
+        gap: 24px;
+        align-items: flex-start;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .card-stage {
+        flex: 0 0 auto;
+      }
+
+      .cover-banner {
+        width: 170px;
+        max-height: 360px;
+        padding: 18px 16px;
+        border-radius: 28px;
+        border: 1px solid rgba(148, 248, 255, 0.3);
+        background: rgba(4, 19, 31, 0.85);
+        box-shadow: inset 0 0 30px rgba(123, 255, 230, 0.1);
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        color: #d2f7ff;
+        overflow-y: auto;
+      }
+
+      .cover-banner-title {
+        margin: 0;
+        font-size: 0.9rem;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: #7bffe6;
+      }
+
+      .cover-options {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        flex: 1;
+        overflow-y: auto;
+        padding-right: 4px;
+      }
+
+      .cover-option {
+        border: 1px solid rgba(137, 246, 255, 0.2);
+        border-radius: 18px;
+        background: rgba(8, 24, 34, 0.8);
+        padding: 6px;
+        cursor: pointer;
+        transition:
+          border-color 0.2s ease,
+          transform 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        color: inherit;
+        font: inherit;
+        text-align: center;
+        width: 100%;
+        outline: none;
+      }
+
+      .cover-option:hover {
+        border-color: rgba(137, 246, 255, 0.6);
+        transform: translateY(-2px);
+      }
+
+      .cover-option.active {
+        border-color: #7bffe6;
+        box-shadow: 0 0 15px rgba(123, 255, 230, 0.2);
+      }
+
+      .cover-option img {
+        width: 100%;
+        height: 72px;
+        border-radius: 12px;
+        object-fit: cover;
+      }
+
+      .cover-option span {
+        font-size: 0.75rem;
+        letter-spacing: 0.08em;
+        color: rgba(210, 247, 255, 0.85);
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Blitz Highlight Card Preview</h1>
+    <p>
+      This standalone preview mounts the Blitz highlight card with mock leaderboard data so you can iterate on the SVG
+      design without running the full app.
+    </p>
+
+    <div class="preview-shell">
+      <div id="root"></div>
+      <div class="mock-data-hint">
+        Mock data lives in this file. Update the <code>mockHighlight</code> object inside the script to experiment with
+        different values.
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel">
+      const { forwardRef, useState } = React;
+
+      const BLITZ_CARD_DIMENSIONS = { width: 640, height: 360 };
+      const BLITZ_CARD_RADII = [40, 88, 136, 184, 232];
+      const BLITZ_COVER_IMAGES = [
+        "../../public/images/covers/blitz/01.png",
+        "../../public/images/covers/blitz/02.png",
+        "../../public/images/covers/blitz/03.png",
+        "../../public/images/covers/blitz/04.png",
+        "../../public/images/covers/blitz/05.png",
+        "../../public/images/covers/blitz/06.png",
+        "../../public/images/covers/blitz/07.png",
+        "../../public/images/covers/blitz/08.png",
+      ];
+      const eternumLogoWhite = "../../public/images/logos/eternum-new.svg";
+
+      const currencyIntlFormat = (num, decimals = 2) =>
+        new Intl.NumberFormat("en-US", {
+          notation: "compact",
+          maximumFractionDigits: decimals,
+        }).format(num || 0);
+
+      const truncateText = (value, maxLength = 32) => {
+        if (!value || value.length <= maxLength) return value;
+        return `${value.slice(0, Math.max(1, maxLength - 1))}…`;
+      };
+
+      const formatOrdinal = (rank) => {
+        const positiveRank = Math.max(1, Math.trunc(rank));
+        const remainder = positiveRank % 100;
+
+        if (remainder >= 11 && remainder <= 13) {
+          return `${positiveRank}th`;
+        }
+
+        switch (positiveRank % 10) {
+          case 1:
+            return `${positiveRank}st`;
+          case 2:
+            return `${positiveRank}nd`;
+          case 3:
+            return `${positiveRank}rd`;
+          default:
+            return `${positiveRank}th`;
+        }
+      };
+
+      const getBlitzCoverImage = (rank) => {
+        if (!rank || rank < 1) return BLITZ_COVER_IMAGES[0];
+        return BLITZ_COVER_IMAGES[(rank - 1) % BLITZ_COVER_IMAGES.length];
+      };
+
+      const formatCountLabel = (value, singularLabel, pluralLabel, formatter) => {
+        if (value === null || value === undefined) return "--";
+        const label = Math.abs(value) === 1 ? singularLabel : pluralLabel;
+        return `${formatter.format(value)} ${label}`;
+      };
+
+      const formatPointsLabel = (value) => {
+        if (value === null || value === undefined) return "--";
+        return `${currencyIntlFormat(value, 0)} pts`;
+      };
+
+      const BlitzHighlightCard = forwardRef(function BlitzHighlightCard(
+        { title, subtitle, winnerLine, highlight, coverOverride },
+        ref,
+      ) {
+        const highlightOrdinal = highlight ? formatOrdinal(highlight.rank).toUpperCase() : "--";
+        const highlightPointsValue = highlight ? `${currencyIntlFormat(highlight.points, 0)} pts` : "--";
+        const highlightName = highlight ? truncateText(highlight.name, 30) : null;
+        const highlightSecondary = highlight ? truncateText(highlight.guildName ?? highlight.address, 32) : null;
+        const boostedChampion = winnerLine?.trim() ?? null;
+        const championLabel = boostedChampion && boostedChampion.length > 0 ? boostedChampion : null;
+        const coverImage = coverOverride ?? getBlitzCoverImage(highlight?.rank ?? null);
+        const numberFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+
+        const statBreakdown = [
+          {
+            label: "Tiles Explored",
+            count: highlight?.exploredTiles,
+            singular: "",
+            plural: "",
+            points: highlight?.exploredTilePoints,
+          },
+          {
+            label: "Crates Opened",
+            count: highlight?.relicCratesOpened,
+            singular: "",
+            plural: "",
+            points: highlight?.relicCratePoints,
+          },
+          {
+            label: "Rifts & Camps",
+            count: highlight?.riftsTaken,
+            singular: "",
+            plural: "",
+            points: highlight?.riftPoints,
+          },
+          {
+            label: "HS Taken",
+            count: highlight?.hyperstructuresConquered,
+            singular: "",
+            plural: "",
+            points: highlight?.hyperstructurePoints,
+          },
+          {
+            label: "HS Held",
+            count: null,
+            singular: "",
+            plural: "",
+            points: highlight?.hyperstructuresHeldPoints,
+          },
+        ].map((stat) => {
+          const countLabel = formatCountLabel(stat.count ?? null, stat.singular, stat.plural, numberFormatter);
+          const pointsLabel = formatPointsLabel(stat.points ?? null);
+          const hasCount = countLabel !== "--";
+          const hasPoints = pointsLabel !== "--";
+          const combinedValue =
+            hasCount && hasPoints
+              ? `${countLabel} · ${pointsLabel}`
+              : hasCount
+                ? countLabel
+                : hasPoints
+                  ? pointsLabel
+                  : "--";
+
+          return {
+            label: stat.label,
+            countLabel,
+            pointsLabel,
+            combinedValue,
+          };
+        });
+
+        const statGroupHeight = 28;
+        const pointsPanel = {
+          x: 350,
+          y: 108,
+          width: 264,
+          height: 180,
+          radius: 30,
+        };
+        const statsRowStartY = pointsPanel.y + 96;
+
+        return (
+          <svg
+            ref={ref}
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox={`0 0 ${BLITZ_CARD_DIMENSIONS.width} ${BLITZ_CARD_DIMENSIONS.height}`}
+            width={BLITZ_CARD_DIMENSIONS.width}
+            height={BLITZ_CARD_DIMENSIONS.height}
+            className="h-auto w-full max-w-[720px]"
+            role="img"
+            aria-label={`${subtitle} highlight card`}
+            style={{
+              fontFamily: '"Space Grotesk", sans-serif',
+              filter: "drop-shadow(0 32px 70px rgba(1, 11, 18, 0.64))",
+            }}
+          >
+            <defs>
+              <linearGradient id="blitz-rank-gradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#f7fffe" />
+                <stop offset="100%" stopColor="#b8fff2" />
+              </linearGradient>
+              <clipPath id="blitz-card-clip">
+                <rect width="640" height="360" rx="44" />
+              </clipPath>
+            </defs>
+
+            <g clipPath="url(#blitz-card-clip)">
+              <rect width="640" height="360" fill="#04131f" />
+              <image href={coverImage} x="0" y="0" width="640" height="360" preserveAspectRatio="xMidYMid slice" />
+              <rect width="640" height="360" fill="url(#blitz-cover-overlay)" />
+              <rect width="640" height="360" fill="url(#blitz-radial-glow)" opacity="0.68" />
+              {BLITZ_CARD_RADII.map((radius, index) => (
+                <circle
+                  key={radius}
+                  cx="320"
+                  cy="180"
+                  r={radius}
+                  fill="none"
+                  stroke="rgba(111, 250, 255, 0.18)"
+                  strokeWidth={index === 0 ? 1.6 : 1}
+                />
+              ))}
+
+              <image
+                href={eternumLogoWhite}
+                x="34"
+                y="50"
+                width="50"
+                height="50"
+                preserveAspectRatio="xMidYMid meet"
+                opacity="0.96"
+              />
+
+              <rect x="42" y="40" width="8" height="260" fill="url(#blitz-radial-glow)" opacity="0.66" />
+
+              <rect
+                x={pointsPanel.x}
+                y={pointsPanel.y}
+                width={pointsPanel.width}
+                height={pointsPanel.height}
+                rx={pointsPanel.radius}
+                fill="rgba(6, 22, 30, 0.4)"
+                stroke="rgba(120, 255, 242, 0.38)"
+                strokeWidth="1.4"
+              />
+              <text
+                x="95"
+                y="54"
+                fontSize="12"
+                letterSpacing="0.32em"
+                fontWeight="600"
+                fill="rgba(202, 255, 255, 0.78)"
+                style={{ textTransform: "uppercase" }}
+              >
+                {title}
+              </text>
+              <text
+                x="95"
+                y="80"
+                fontSize="24"
+                fontWeight="600"
+                letterSpacing="0.18em"
+                fill="#efffff"
+                style={{ textTransform: "uppercase" }}
+              >
+                {subtitle}
+              </text>
+              {championLabel ? (
+                <text x="95" y="100" fontSize="13" fill="rgba(198, 244, 255, 0.78)">
+                  {truncateText(`Champion · ${championLabel}`, 56)}
+                </text>
+              ) : null}
+
+              <text x="34" y="215" fontSize="104" fontWeight="600" fill="#7bffe6">
+                {highlightOrdinal}
+              </text>
+              <text
+                x="38"
+                y="241"
+                fontSize="14"
+                letterSpacing="0.28em"
+                fill="rgba(190, 240, 255, 0.74)"
+                style={{ textTransform: "uppercase" }}
+              >
+                Leaderboard Spot
+              </text>
+
+              <text
+                x={pointsPanel.x + pointsPanel.width / 2}
+                y={pointsPanel.y + 20}
+                fontSize="11"
+                letterSpacing="0.32em"
+                fill="rgba(198, 248, 255, 0.78)"
+                textAnchor="middle"
+                style={{ textTransform: "uppercase" }}
+              >
+                Points Secured
+              </text>
+              <text
+                x={pointsPanel.x + pointsPanel.width / 2}
+                y={pointsPanel.y + 62}
+                fontSize="48"
+                fontWeight="600"
+                fill="#7bffe6"
+                textAnchor="middle"
+              >
+                {highlightPointsValue}
+              </text>
+
+              {statBreakdown.map((stat, index) => {
+                const row = Math.floor(index / 2);
+                const col = index % 2;
+                const colWidth = pointsPanel.width / 2;
+                const rowHeight = 28;
+                const centerX = pointsPanel.x + col * colWidth + colWidth / 2;
+                const baseY = statsRowStartY + row * rowHeight;
+                const valueY = baseY + 14;
+
+                return (
+                  <g key={stat.label}>
+                    <text
+                      x={centerX}
+                      y={baseY}
+                      fontSize="8"
+                      letterSpacing="0.2em"
+                      fill="rgba(180, 236, 247, 0.7)"
+                      textAnchor="middle"
+                      style={{ textTransform: "uppercase" }}
+                    >
+                      {stat.label}
+                    </text>
+                    <text x={centerX} y={valueY} fontSize="11" fontWeight="500" fill="#fdfefe" textAnchor="middle">
+                      {stat.combinedValue}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {highlightName ? (
+                <text x="38" y="280" fontSize="20" fontWeight="600" fill="#7bffe6">
+                  {highlightName}
+                </text>
+              ) : null}
+              {highlightSecondary ? (
+                <text x="38" y={highlightName ? 304 : 280} fontSize="14" fill="rgba(200, 242, 255, 0.78)">
+                  {highlightSecondary}
+                </text>
+              ) : null}
+
+              <image
+                href="../../public/images/logos/starknet-logo.png"
+                x="590"
+                y="326"
+                width="24"
+                height="24"
+                preserveAspectRatio="xMidYMid meet"
+                opacity="0.9"
+              />
+              <text
+                x="590"
+                y="342"
+                fontSize="12"
+                fill="rgba(144, 224, 255, 0.72)"
+                textAnchor="end"
+                letterSpacing="0.1em"
+              >
+                Powered by Starknet
+              </text>
+            </g>
+
+            <rect width="640" height="360" rx="44" fill="none" stroke="rgba(115, 244, 255, 0.38)" strokeWidth="1.5" />
+          </svg>
+        );
+      });
+
+      const CoverBanner = ({ covers, selectedIndex, onSelect }) => (
+        <aside className="cover-banner" aria-label="Cover selector">
+          <p className="cover-banner-title">Choose your cover</p>
+          <div className="cover-options">
+            {covers.map((src, index) => {
+              const isActive = index === selectedIndex;
+              return (
+                <button
+                  key={src}
+                  type="button"
+                  className={`cover-option${isActive ? " active" : ""}`}
+                  onClick={() => onSelect(index)}
+                  aria-pressed={isActive}
+                  aria-label={`Select cover ${index + 1}`}
+                >
+                  <img src={src} alt={`Blitz cover option ${index + 1}`} />
+                  <span>{index === 0 ? "Default Cover" : `Cover ${index + 1}`}</span>
+                </button>
+              );
+            })}
+          </div>
+        </aside>
+      );
+
+      const mockHighlight = {
+        rank: 1,
+        name: "Lady Nyx of Iridescent Vale",
+        guildName: "Aurora Syndicate",
+        points: 9876543,
+        address: "0x1234...cafe",
+        exploredTiles: 312,
+        exploredTilePoints: 1560,
+        riftsTaken: 28,
+        riftPoints: 5600,
+        hyperstructuresConquered: 3,
+        hyperstructurePoints: 4200000,
+        relicCratesOpened: 9,
+        relicCratePoints: 3200,
+        hyperstructuresHeld: 2,
+        hyperstructuresHeldPoints: 1800000,
+      };
+
+      const App = () => {
+        const [coverIndex, setCoverIndex] = useState(0);
+        const activeCover = BLITZ_COVER_IMAGES[coverIndex] ?? BLITZ_COVER_IMAGES[0];
+
+        return (
+          <div className="card-preview-layout">
+            <div className="card-stage">
+              <BlitzHighlightCard
+                title="Realms Blitz"
+                subtitle="Season 6 Finals"
+                winnerLine="Boosted by Aurora Prime"
+                highlight={mockHighlight}
+                coverOverride={activeCover}
+              />
+            </div>
+            <CoverBanner covers={BLITZ_COVER_IMAGES} selectedIndex={coverIndex} onSelect={setCoverIndex} />
+          </div>
+        );
+      };
+
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(<App />);
+    </script>
+  </body>
+</html>

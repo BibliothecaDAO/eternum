@@ -1,4 +1,4 @@
-import { forwardRef } from "react";
+import { forwardRef, type Ref, useState } from "react";
 
 // Using the eternum.svg logo from the game's public directory
 const eternumLogoWhite = "/images/logos/eternum-new.svg";
@@ -8,6 +8,7 @@ import { currencyIntlFormat } from "@/ui/utils/utils";
 import {
   BLITZ_CARD_DIMENSIONS,
   BLITZ_CARD_RADII,
+  BLITZ_COVER_IMAGES,
   BlitzHighlightPlayer,
   formatOrdinal,
   getBlitzCoverImage,
@@ -20,17 +21,105 @@ interface BlitzHighlightCardProps {
   subtitle: string;
   winnerLine?: string | null;
   highlight?: BlitzHighlightPlayer | null;
+  coverOverride?: string;
 }
 
 export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardProps>(
-  ({ title, subtitle, winnerLine, highlight }, ref) => {
+  ({ title, subtitle, winnerLine, highlight, coverOverride }, ref) => {
     const highlightOrdinal = highlight ? formatOrdinal(highlight.rank).toUpperCase() : "--";
     const highlightPointsValue = highlight ? `${currencyIntlFormat(highlight.points, 0)} pts` : "--";
     const highlightName = highlight ? truncateText(highlight.name, 30) : null;
     const highlightSecondary = highlight ? truncateText(getSecondaryLabel(highlight), 32) : null;
     const boostedChampion = winnerLine?.trim() ?? null;
     const championLabel = boostedChampion && boostedChampion.length > 0 ? boostedChampion : null;
-    const coverImage = getBlitzCoverImage(highlight?.rank);
+    const coverImage = coverOverride ?? getBlitzCoverImage(highlight?.rank);
+    const numberFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+    const formatCountLabel = (value: number | null | undefined, singularLabel: string, pluralLabel: string): string => {
+      if (value === null || value === undefined) {
+        return "--";
+      }
+
+      const label = Math.abs(value) === 1 ? singularLabel : pluralLabel;
+      const trimmedLabel = label.trim();
+      if (!trimmedLabel.length) {
+        return numberFormatter.format(value);
+      }
+
+      return `${numberFormatter.format(value)} ${trimmedLabel}`;
+    };
+    const formatPointsLabel = (value: number | null | undefined): string => {
+      if (value === null || value === undefined) {
+        return "--";
+      }
+
+      return `${currencyIntlFormat(value, 0)} pts`;
+    };
+
+    const statBreakdown = [
+      {
+        label: "Tiles Explored",
+        count: highlight?.exploredTiles,
+        singular: "",
+        plural: "",
+        points: highlight?.exploredTilePoints,
+      },
+      {
+        label: "Crates Opened",
+        count: highlight?.relicCratesOpened,
+        singular: "",
+        plural: "",
+        points: highlight?.relicCratePoints,
+      },
+      {
+        label: "Rifts & Camps",
+        count: highlight?.riftsTaken,
+        singular: "",
+        plural: "",
+        points: highlight?.riftPoints,
+      },
+      {
+        label: "HS Taken",
+        count: highlight?.hyperstructuresConquered,
+        singular: "",
+        plural: "",
+        points: highlight?.hyperstructurePoints,
+      },
+      {
+        label: "HS Held",
+        count: null,
+        singular: "",
+        plural: "",
+        points: highlight?.hyperstructuresHeldPoints,
+      },
+    ].map((stat) => {
+      const countLabel = formatCountLabel(stat.count ?? null, stat.singular, stat.plural);
+      const pointsLabel = formatPointsLabel(stat.points ?? null);
+      const hasCount = countLabel !== "--";
+      const hasPoints = pointsLabel !== "--";
+      const combinedValue =
+        hasCount && hasPoints
+          ? `${countLabel} · ${pointsLabel}`
+          : hasCount
+            ? countLabel
+            : hasPoints
+              ? pointsLabel
+              : "--";
+
+      return {
+        label: stat.label,
+        countLabel,
+        pointsLabel,
+        combinedValue,
+      };
+    });
+    const pointsPanel = {
+      x: 350,
+      y: 108,
+      width: 264,
+      height: 180,
+      radius: 30,
+    } as const;
+    const statsRowStartY = pointsPanel.y + 96;
 
     return (
       <svg
@@ -48,15 +137,6 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
         }}
       >
         <defs>
-          <linearGradient id="blitz-cover-overlay" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="rgba(4, 17, 25, 0.82)" />
-            <stop offset="52%" stopColor="rgba(4, 17, 25, 0.44)" />
-            <stop offset="100%" stopColor="rgba(4, 17, 25, 0.24)" />
-          </linearGradient>
-          <radialGradient id="blitz-radial-glow" cx="0.22" cy="0.2" r="0.9">
-            <stop offset="0%" stopColor="rgba(118, 255, 242, 0.45)" />
-            <stop offset="100%" stopColor="rgba(118, 255, 242, 0)" />
-          </radialGradient>
           <linearGradient id="blitz-rank-gradient" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#f7fffe" />
             <stop offset="100%" stopColor="#b8fff2" />
@@ -85,28 +165,29 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
 
           <image
             href={eternumLogoWhite}
-            x="40"
-            y="64"
-            width="60"
-            height="60"
+            x="34"
+            y="50"
+            width="50"
+            height="50"
             preserveAspectRatio="xMidYMid meet"
             opacity="0.96"
           />
 
+          <rect x="42" y="40" width="8" height="260" fill="url(#blitz-radial-glow)" opacity="0.66" />
+
           <rect
-            x="404"
-            y="134"
-            width="192"
-            height="130"
-            rx="26"
-            fill="rgba(6, 22, 30, 0.58)"
-            stroke="rgba(120, 255, 242, 0.34)"
+            x={pointsPanel.x}
+            y={pointsPanel.y}
+            width={pointsPanel.width}
+            height={pointsPanel.height}
+            rx={pointsPanel.radius}
+            fill="rgba(6, 22, 30, 0.4)"
+            stroke="rgba(120, 255, 242, 0.38)"
             strokeWidth="1.4"
           />
-
           <text
-            x="108"
-            y="70"
+            x="95"
+            y="54"
             fontSize="12"
             letterSpacing="0.32em"
             fontWeight="600"
@@ -116,8 +197,8 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
             {title}
           </text>
           <text
-            x="108"
-            y="98"
+            x="95"
+            y="80"
             fontSize="24"
             fontWeight="600"
             letterSpacing="0.18em"
@@ -127,17 +208,17 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
             {subtitle}
           </text>
           {championLabel ? (
-            <text x="108" y="122" fontSize="13" fill="rgba(198, 244, 255, 0.78)">
+            <text x="95" y="100" fontSize="13" fill="rgba(198, 244, 255, 0.78)">
               {truncateText(`Champion · ${championLabel}`, 56)}
             </text>
           ) : null}
 
-          <text x="86" y="242" fontSize="104" fontWeight="600" fill="url(#blitz-rank-gradient)">
+          <text x="34" y="215" fontSize="104" fontWeight="600" fill="#7bffe6">
             {highlightOrdinal}
           </text>
           <text
-            x="94"
-            y="272"
+            x="38"
+            y="241"
             fontSize="14"
             letterSpacing="0.28em"
             fill="rgba(190, 240, 255, 0.74)"
@@ -147,55 +228,76 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
           </text>
 
           <text
-            x="500"
-            y="170"
-            fontSize="13"
-            letterSpacing="0.3em"
+            x={pointsPanel.x + pointsPanel.width / 2}
+            y={pointsPanel.y + 20}
+            fontSize="11"
+            letterSpacing="0.32em"
             fill="rgba(198, 248, 255, 0.78)"
             textAnchor="middle"
             style={{ textTransform: "uppercase" }}
           >
             Points Secured
           </text>
-          <text x="500" y="214" fontSize="46" fontWeight="600" fill="#7bffe6" textAnchor="middle">
+          <text
+            x={pointsPanel.x + pointsPanel.width / 2}
+            y={pointsPanel.y + 62}
+            fontSize="48"
+            fontWeight="600"
+            fill="#7bffe6"
+            textAnchor="middle"
+          >
             {highlightPointsValue}
           </text>
-          <text x="500" y="244" fontSize="14" fill="rgba(178, 234, 247, 0.78)" textAnchor="middle">
-            Blitz Performance
-          </text>
+          {statBreakdown.map((stat, index) => {
+            const row = Math.floor(index / 2);
+            const col = index % 2;
+            const colWidth = pointsPanel.width / 2;
+            const rowHeight = 28;
+            const centerX = pointsPanel.x + col * colWidth + colWidth / 2;
+            const baseY = statsRowStartY + row * rowHeight;
+            const valueY = baseY + 14;
+
+            return (
+              <g key={stat.label}>
+                <text
+                  x={centerX}
+                  y={baseY}
+                  fontSize="8"
+                  letterSpacing="0.2em"
+                  fill="rgba(180, 236, 247, 0.7)"
+                  textAnchor="middle"
+                  style={{ textTransform: "uppercase" }}
+                >
+                  {stat.label}
+                </text>
+                <text x={centerX} y={valueY} fontSize="11" fontWeight="500" fill="#fdfefe" textAnchor="middle">
+                  {stat.combinedValue}
+                </text>
+              </g>
+            );
+          })}
 
           {highlightName ? (
-            <text x="94" y="308" fontSize="20" fontWeight="600" fill="#f1fffb">
+            <text x="38" y="280" fontSize="20" fontWeight="600" fill="#7bffe6">
               {highlightName}
             </text>
           ) : null}
           {highlightSecondary ? (
-            <text x="94" y={highlightName ? 330 : 308} fontSize="14" fill="rgba(200, 242, 255, 0.78)">
+            <text x="38" y={highlightName ? 304 : 280} fontSize="14" fill="rgba(200, 242, 255, 0.78)">
               {highlightSecondary}
             </text>
           ) : null}
 
-          <text
-            x="585"
-            y="312"
-            fontSize="12"
-            fill="rgba(160, 236, 255, 0.58)"
-            textAnchor="end"
-            letterSpacing="0.28em"
-            style={{ textTransform: "uppercase" }}
-          >
-            Realms Blitz
-          </text>
           <image
             href="/images/logos/starknet-logo.png"
-            x="560"
-            y="322"
-            width="30"
-            height="30"
+            x="590"
+            y="326"
+            width="24"
+            height="24"
             preserveAspectRatio="xMidYMid meet"
             opacity="0.9"
           />
-          <text x="560" y="340" fontSize="12" fill="rgba(144, 224, 255, 0.72)" textAnchor="end" letterSpacing="0.1em">
+          <text x="590" y="342" fontSize="12" fill="rgba(144, 224, 255, 0.72)" textAnchor="end" letterSpacing="0.1em">
             Powered by Starknet
           </text>
         </g>
@@ -207,3 +309,88 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
 );
 
 BlitzHighlightCard.displayName = "BlitzHighlightCard";
+
+const formatCoverLabel = (index: number): string => (index === 0 ? "Default Cover" : `Cover ${index + 1}`);
+
+interface CoverBannerProps {
+  covers: readonly string[];
+  selectedIndex: number;
+  onSelect: (index: number) => void;
+}
+
+const CoverBanner = ({ covers, selectedIndex, onSelect }: CoverBannerProps) => {
+  return (
+    <aside
+      className="flex max-h-[360px] w-full max-w-full flex-col gap-3 rounded-[28px] border border-[#8ff8ff]/30 bg-[#04131f]/80 p-4 text-white/80 shadow-[inset_0_0_35px_rgba(123,255,230,0.12)] lg:max-w-[200px]"
+      aria-label="Choose your cover"
+    >
+      <p className="text-center text-[11px] font-semibold uppercase tracking-[0.32em] text-[#7bffe6] lg:text-left">
+        Choose your cover
+      </p>
+      <div className="flex flex-1 flex-col gap-3 overflow-y-auto pr-1">
+        {covers.map((src, index) => {
+          const label = formatCoverLabel(index);
+          const isActive = index === selectedIndex;
+
+          return (
+            <button
+              key={src}
+              type="button"
+              onClick={() => onSelect(index)}
+              className={`group flex flex-col gap-2 rounded-2xl border px-3 py-2 text-left transition duration-200 focus:outline-none ${
+                isActive
+                  ? "border-[#7bffe6] bg-white/10 shadow-[0_0_20px_rgba(123,255,230,0.25)]"
+                  : "border-white/10 bg-white/[0.04] hover:border-white/40 hover:bg-white/[0.08]"
+              }`}
+              aria-pressed={isActive}
+              aria-label={`Select ${label}`}
+            >
+              <img src={src} alt={label} className="h-16 w-full rounded-xl object-cover" />
+              <span className="text-center text-[0.72rem] font-medium tracking-[0.08em] text-white/75">{label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </aside>
+  );
+};
+
+interface BlitzHighlightCardWithSelectorProps extends Omit<BlitzHighlightCardProps, "coverOverride"> {
+  className?: string;
+  cardRef?: Ref<SVGSVGElement>;
+  initialCoverIndex?: number;
+  onCoverChange?: (index: number, coverUrl: string) => void;
+  coverImages?: readonly string[];
+}
+
+export const BlitzHighlightCardWithSelector = ({
+  className,
+  cardRef,
+  initialCoverIndex = 0,
+  onCoverChange,
+  coverImages = BLITZ_COVER_IMAGES,
+  ...cardProps
+}: BlitzHighlightCardWithSelectorProps) => {
+  const resolvedCovers = coverImages.length > 0 ? coverImages : BLITZ_COVER_IMAGES;
+  const normalizedIndex = Math.min(Math.max(initialCoverIndex, 0), resolvedCovers.length - 1);
+  const [coverIndex, setCoverIndex] = useState(() => normalizedIndex);
+  const activeCover = resolvedCovers[coverIndex] ?? resolvedCovers[0];
+  const containerClasses = ["flex w-full flex-col items-center gap-4 lg:flex-row lg:items-start", className]
+    .filter(Boolean)
+    .join(" ");
+
+  const handleSelect = (index: number) => {
+    setCoverIndex(index);
+    const nextCover = resolvedCovers[index] ?? resolvedCovers[0];
+    onCoverChange?.(index, nextCover);
+  };
+
+  return (
+    <div className={containerClasses}>
+      <div className="flex w-full justify-center">
+        <BlitzHighlightCard {...cardProps} ref={cardRef} coverOverride={activeCover} />
+      </div>
+      <CoverBanner covers={resolvedCovers} selectedIndex={coverIndex} onSelect={handleSelect} />
+    </div>
+  );
+};

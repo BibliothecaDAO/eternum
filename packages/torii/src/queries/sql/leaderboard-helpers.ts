@@ -4,7 +4,10 @@ import {
   HyperstructureLeaderboardConfigRow,
   HyperstructureRow,
   HyperstructureShareholderRow,
+  PlayerActivityBreakdown,
+  PlayerActivityStat,
   PlayerLeaderboardRow,
+  RawPlayerLeaderboardRow,
 } from "../../types/sql";
 import {
   calculateUnregisteredShareholderPointsCache,
@@ -19,6 +22,64 @@ export const REGISTERED_POINTS_PRECISION = 1_000_000;
 
 type NumericLike = string | number | bigint | null | undefined;
 
+interface ParsedActivityStat {
+  pointsRaw: number;
+  count: number;
+}
+
+const parseActivityStat = (pointsValue: NumericLike, countValue: NumericLike): ParsedActivityStat => {
+  const pointsRaw = Math.max(0, Math.floor(parseNumericValue(pointsValue)));
+  const count = Math.max(0, Math.floor(parseNumericValue(countValue)));
+
+  return { pointsRaw, count };
+};
+
+const toPlayerActivityStat = (value: ParsedActivityStat): PlayerActivityStat => {
+  return {
+    points: value.pointsRaw / REGISTERED_POINTS_PRECISION,
+    count: value.count,
+  };
+};
+
+const buildActivityBreakdown = (
+  row: Partial<RawPlayerLeaderboardRow> | undefined,
+  totalRaw: number,
+): PlayerActivityBreakdown => {
+  const totalRawSafe = Math.max(0, Math.floor(Number.isFinite(totalRaw) ? totalRaw : 0));
+  const source = row ?? {};
+
+  const exploration = parseActivityStat(source.exploration_points, source.exploration_count);
+  const openRelicChest = parseActivityStat(source.open_relic_chest_points, source.open_relic_chest_count);
+  const hyperStructureBanditsDefeat = parseActivityStat(
+    source.hyperstructure_bandits_defeat_points,
+    source.hyperstructure_bandits_defeat_count,
+  );
+  const otherStructureBanditsDefeat = parseActivityStat(
+    source.other_structure_bandits_defeat_points,
+    source.other_structure_bandits_defeat_count,
+  );
+
+  const recordedPointsRaw =
+    exploration.pointsRaw +
+    openRelicChest.pointsRaw +
+    hyperStructureBanditsDefeat.pointsRaw +
+    otherStructureBanditsDefeat.pointsRaw;
+
+  const hyperstructureShareRaw = Math.max(0, totalRawSafe - recordedPointsRaw);
+  const hyperstructureShare: ParsedActivityStat = {
+    pointsRaw: hyperstructureShareRaw,
+    count: 0,
+  };
+
+  return {
+    exploration: toPlayerActivityStat(exploration),
+    openRelicChest: toPlayerActivityStat(openRelicChest),
+    hyperStructureBanditsDefeat: toPlayerActivityStat(hyperStructureBanditsDefeat),
+    otherStructureBanditsDefeat: toPlayerActivityStat(otherStructureBanditsDefeat),
+    hyperstructureShare: toPlayerActivityStat(hyperstructureShare),
+  };
+};
+
 export interface LeaderboardPagination {
   safeLimit: number;
   safeOffset: number;
@@ -26,7 +87,7 @@ export interface LeaderboardPagination {
 }
 
 export interface LeaderboardSourceData {
-  registeredRows: PlayerLeaderboardRow[];
+  registeredRows: RawPlayerLeaderboardRow[];
   hyperstructureShareholderRows: HyperstructureShareholderRow[];
   hyperstructureRows: HyperstructureRow[];
   hyperstructureConfigRow?: HyperstructureLeaderboardConfigRow;
@@ -60,7 +121,7 @@ export const fetchLeaderboardSourceData = async ({
 
   const [registeredRows, hyperstructureShareholderRows, hyperstructureRows, hyperstructureConfigRows] =
     await Promise.all([
-      fetchWithErrorHandling<PlayerLeaderboardRow>(
+      fetchWithErrorHandling<RawPlayerLeaderboardRow>(
         buildApiUrl(baseUrl, leaderboardQuery),
         "Failed to fetch player leaderboard",
       ),
@@ -94,7 +155,7 @@ export interface FetchRegisteredLeaderboardRowOptions {
 export const fetchRegisteredLeaderboardRow = async ({
   baseUrl,
   playerAddress,
-}: FetchRegisteredLeaderboardRowOptions): Promise<PlayerLeaderboardRow | null> => {
+}: FetchRegisteredLeaderboardRowOptions): Promise<RawPlayerLeaderboardRow | null> => {
   const trimmed = playerAddress.trim().toLowerCase();
   if (!trimmed) {
     return null;
@@ -114,7 +175,7 @@ export const fetchRegisteredLeaderboardRow = async ({
 
   const query = LEADERBOARD_QUERIES.PLAYER_LEADERBOARD_BY_ADDRESS.replace("{playerAddress}", canonicalAddress);
 
-  const results = await fetchWithErrorHandling<PlayerLeaderboardRow>(
+  const results = await fetchWithErrorHandling<RawPlayerLeaderboardRow>(
     buildApiUrl(baseUrl, query),
     "Failed to fetch player leaderboard entry",
   );
@@ -237,7 +298,7 @@ export const computeUnregisteredShareholderPoints = ({
 };
 
 export interface BuildRegisteredLeaderboardEntriesOptions {
-  registeredRows: PlayerLeaderboardRow[];
+  registeredRows: RawPlayerLeaderboardRow[];
   unregisteredShareholderPoints: Map<string, number>;
 }
 
@@ -266,21 +327,18 @@ export const buildRegisteredLeaderboardEntries = ({
     const bonusPoints = unregisteredShareholderPoints.get(canonicalAddress) ?? 0;
     const bonusRaw = Math.round(bonusPoints * REGISTERED_POINTS_PRECISION);
     const totalRaw = registeredRaw + bonusRaw;
+    const activityBreakdown = buildActivityBreakdown(row, totalRaw);
 
     entries.push({
-      player_address: normalizedAddress,
       playerAddress: normalizedAddress,
-      player_name: row.player_name ?? null,
       playerName: row.player_name ?? null,
-      prize_claimed: row.prize_claimed ?? 0,
       prizeClaimed: Boolean(parseNumericValue(row.prize_claimed)),
-      registered_points: registeredRaw,
+      registeredPoints: totalRaw,
       registeredPointsRegistered: registeredRaw,
       registeredPointsRaw: totalRaw,
-      registeredPoints: totalRaw,
-      total_points: totalRaw,
       totalPoints: totalRaw / REGISTERED_POINTS_PRECISION,
       unregisteredPoints: bonusPoints,
+      activityBreakdown,
     });
   }
 
@@ -304,21 +362,18 @@ export const buildAdditionalLeaderboardEntries = ({
     }
 
     const totalRaw = Math.round(points * REGISTERED_POINTS_PRECISION);
+    const activityBreakdown = buildActivityBreakdown(undefined, totalRaw);
 
     additionalEntries.push({
-      player_address: address,
       playerAddress: address,
-      player_name: null,
       playerName: null,
-      prize_claimed: 0,
       prizeClaimed: false,
-      registered_points: 0,
+      registeredPoints: totalRaw,
       registeredPointsRegistered: 0,
       registeredPointsRaw: totalRaw,
-      registeredPoints: totalRaw,
-      total_points: totalRaw,
       totalPoints: totalRaw / REGISTERED_POINTS_PRECISION,
       unregisteredPoints: points,
+      activityBreakdown,
     });
   }
 
@@ -327,8 +382,8 @@ export const buildAdditionalLeaderboardEntries = ({
 
 export const sortLeaderboardEntries = (entries: PlayerLeaderboardRow[]): PlayerLeaderboardRow[] => {
   return entries.sort((a, b) => {
-    const aTotal = parseNumericValue(a.registeredPoints ?? a.total_points ?? a.registered_points);
-    const bTotal = parseNumericValue(b.registeredPoints ?? b.total_points ?? b.registered_points);
+    const aTotal = parseNumericValue(a.registeredPoints);
+    const bTotal = parseNumericValue(b.registeredPoints);
 
     return bTotal - aTotal;
   });
@@ -339,7 +394,7 @@ export const addLeaderboardRanks = (entries: PlayerLeaderboardRow[]): PlayerLead
   let currentRank = 0;
 
   return entries.map((entry, index) => {
-    const total = parseNumericValue(entry.registeredPoints ?? entry.total_points ?? entry.registered_points);
+    const total = parseNumericValue(entry.registeredPoints);
     const normalizedTotal = Number.isFinite(total) ? total : 0;
 
     if (lastTotal === null || normalizedTotal !== lastTotal) {
