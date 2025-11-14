@@ -22,7 +22,7 @@ export default function BuildingCard({ title, image, buildingType, description }
   let populationCapacity = ETERNUM_CONFIG().buildings.buildingCapacity[buildingType] || 0;
   const isLaborBuilding = buildingType === BuildingType.ResourceLabor;
   if (isLaborBuilding) {
-    populationCapacity = 5;
+    populationCapacity = ETERNUM_CONFIG().populationCapacity.basePopulation;
   }
 
   // Determine if this building produces a resource
