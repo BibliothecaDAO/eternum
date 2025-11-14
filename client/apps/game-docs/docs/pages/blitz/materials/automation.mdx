@@ -1,235 +1,123 @@
-import { importantNote } from "@/components/styles";
+# 🤖 Production Automation
 
-# 🤖 Resource Automation
-
-Resource automation allows players to set up continuous production processes and automated transfers within their realms
-and between entities. This system helps manage resource generation and distribution efficiently without constant manual
-intervention.
-
-<div style={importantNote.container}>
-  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
-  <p style={importantNote.content}>
-    Automation is currently undergoing an overhaul to bring simple and seamless production systems to the Realms. This
-    section is currently outdated and will be updated with new information soon.
-  </p>
-</div>
+Resource automation allows players to set up continuous production processes within their entities. This system helps
+manage resource generation and distribution efficiently without constant manual intervention.
 
 ## Overview
 
-The automation system works by processing two types of "orders" that you define:
-
-1. **Production Orders**: Automate resource production within your realms
-2. **Transfer Orders**: Automate resource transfers between your entities (realms, villages, hyperstructures, etc.)
-
-Both types of orders specify what you want to automate, the method or conditions, target amounts or schedules, and
-priorities.
+Instead of micromanaging multiple production orders, the automation now runs off a single set of sliders per entity,
+recomputing the entire plan from those percentages every loop.
 
 **Key Features:**
 
-- **Order-Based**: Define specific production and transfer tasks.
-- **Priority System**: Control the sequence of execution for multiple orders.
-- **Multiple Automation Types**: Choose between production automation and transfer automation.
-- **Entity-Specific**: Automation is configured on a per-entity basis.
-- **Browser Dependent**: Automation processes run in your browser; the game tab must remain open for automation to
-  function.
+- **Every minute**: the client starts up production plans for any owned entity with a valid setup.
+- **Per-resource percentages**: Each tracked resource has sliders for complex and simple recipes.
+- **Presets**: “Labor”, “Resource”, “Custom”, and “Idle” presets instantly distribute percentages across every resource
+  with active buildings, respecting entity type and recipe availability.
+- **Safety rails**: Inputs are capped at 90% of the live balance.
+- **Local persistence**: Configurations are saved per game in your browser so refreshes keep the latest sliders and
+  last-run summaries.
 
 ## How It Works
 
-The automation system periodically checks and processes active orders for each entity.
+Production automation runs a global loop that goes through every owned realm and camp.
 
-1. **Processing Interval**: All orders are evaluated every 10 minutes.
-2. **Order Prioritization**: For each entity, orders are sorted by their priority number (1 being the highest).
-3. **Pause Functionality**: You can pause all automation for any entity, which will skip all orders for that entity.
-4. **Order Processing**: The system also processes different order types.
+1. **Realm discovery**: On execution, the client fetches every owned entity and ensures it has an automation profile.
+2. **Resource scan**: Any resource with buildings or an active recipe is auto-added to bootstrap production, even if you
+   never touch the sliders.
+3. **Budgeting**: Each resource receives 90% of its current balance as a budget. Sliders dictate how much of that budget
+   the loop can spend on complex vs. simple recipes.
+4. **Plan generation**: Recipes reserve inputs according to your percentages and their per-cycle requirements. Recipes
+   without enough inputs are skipped and reported in the summary.
+5. **Execution**: If at least one recipe has non-zero cycles, the automation is submitted for that entity.
+6. **Feedback loop**: The store records cycles, inputs, outputs, and skipped resources so the UI can show fresh "last
+   run" stats.
 
-### Production Order Processing
+### Entity Coverage
 
-- **Balance Check**: Before executing, the system checks if the realm has sufficient input resources or labor.
-- **Recipe-Based Production**: Production follows predefined recipes from the game's configuration.
-- **Cycle Calculation**: Determines the maximum number of production cycles possible based on available inputs.
-- **Transaction**: If conditions are met, a blockchain transaction is initiated to perform the production.
-
-### Transfer Order Processing
-
-- **Schedule Check**: For recurring transfers, checks if enough time has passed since the last transfer.
-- **Threshold Check**: For conditional transfers, checks if resource levels meet the specified conditions.
-- **Resource Availability**: Verifies the source entity has sufficient resources for the transfer.
-- **Transaction**: If conditions are met, initiates a transfer transaction between entities.
+- **Realms and Camps** are supported; other entity types are ignored for production automation.
+- Losing ownership of a realm automatically prunes the associated automation profile.
 
 ## Production Types
 
-There are two types of production automation:
+There are still two production paths, now governed by slider percentages:
 
-1. **Standard (Resource-to-Resource)**:
-   - Converts one or more input resources into a different output resource.
-   - Example: Using Wood and Stone to produce Tools.
-2. **Simple (Labor-to-Resource)**:
-   - Utilizes Labor from the realm to produce a specific resource.
-   - Example: Using Labor to harvest Food.
+1. **Complex (Resource → Resource)**:
+   - Burns existing resources to craft another according to the `Resource → Resource` slider.
+   - Example: Spend Wood + Coal to produce Copper.
+2. **Simple (Labor → Resource)**:
+   - Spends Labor to produce a resource using the `Labor → Resource` slider.
+   - Example: Spending Labor to produce Stone.
 
-## Production Order Modes
+## Allocation & Execution Rules
 
-Production orders can operate in two different modes:
+- **Percentages replace orders**: Every loop recomputes usage based on sliders, entity type, and building activity.
+- **Per-resource budgets**: Complex and labor sliders consume independent portions of the 90% resource budget; zeroing a
+  slider skips that recipe.
+- **5% increments & clamping**: Sliders move in 5% increments and stay within the 0–90% range.
+- **Auto-managed lists**: Any resource with active production is auto-added so presets work the moment new buildings are
+  created. Removing the building later prunes the entry automatically.
 
-1. **Produce Once**:
-   - Produces resources until the target amount is reached, then stops.
-   - Shows progress as "Produced / Target" (e.g., "1,500 / 5,000").
-   - Can be set to "Infinite" to produce continuously without a limit.
+## Presets
 
-2. **Maintain Balance**:
-   - Keeps resource balance at the target level.
-   - Production triggers when balance drops below target minus buffer percentage.
-   - Example: Target 10,000 with 10% buffer = production starts when balance drops below 9,000.
-   - Useful for maintaining steady resource levels.
-
-## Transfer Types
-
-Transfer automation allows you to automatically move resources between your entities. There are three transfer modes:
-
-1. **Recurring Transfers**:
-   - Transfers resources at regular intervals.
-   - Minimum interval: 10 minutes (due to automation cycle).
-   - Example: Transfer 1,000 Food from Realm A to Realm B every 2 hours.
-
-2. **Maintain Stock Transfers**:
-   - Transfers when the destination entity falls below a threshold.
-   - Example: Transfer 500 Wood to Realm B when it has less than 1,000 Wood.
-   - Helps keep important entities well-supplied.
-
-3. **Depletion Transfers**:
-   - Transfers when the source entity exceeds a threshold.
-   - Example: Transfer excess Stone when Realm has more than 5,000 Stone.
-   - Prevents resource overflow and distributes surplus.
+- `Labor:` Spreads up to 10% labor burn across eligible outputs while respecting shared inputs.
+- `Resource:` Pushes complex crafting to the ceiling.
+- `Custom:` Combines resource + labor preset.
+- `Idle:` Drops every slider to 0%, effectively pausing production for that entity.
 
 ## Managing Automation Orders (UI)
 
-You can manage automation orders through the "Automation" tab within any entity's interface, or through the global "All
-Automations" view.
+![Managing Automation Orders](/gifs/produce-from-automation.gif)
 
-### Production Automation
+1. **Open a realm or camp** and select the **Automation** panel in the right side navigation menu.
+2. **Click modify** to open up the production setup.
+3. **Adjust percentages**:
+   - `Resource → Resource`: How much of that resource’s complex inputs to burn per loop.
+   - `Labor → Resource`: How much labor-based production to run (disabled for Donkeys and military-only recipes).
+4. **Apply presets** (optional): Labor, Resource, Custom, and Idle presets instantly redistribute sliders across the
+   entity.
+5. **Repeat for other entities**. Changes save instantly and feed into the next global loop.
 
-Production automation is managed within individual realm interfaces.
+#### Auto-balancing & Maintenance
 
-#### Adding a New Production Order
-
-1. Click the "Add New Automation" button.
-2. Configure the following:
-   - **Order Mode**:
-     - `Produce Once`: Produce up to target amount then stop
-     - `Maintain Balance`: Keep resource balance at target level
-   - **Production Type**:
-     - `Standard (Resource-based)`
-     - `Simple (Labor-based)`
-   - **Priority (1-9)**:
-     - Set the execution priority. `1` is the highest priority, `9` is the lowest.
-   - **Resource to Produce**:
-     - Select the resource you want to produce or consume.
-     - The UI shows required input resources for Resource-to-Resource recipes.
-   - **Target Amount**:
-     - For "Produce Once": Set total quantity to produce, or check "Infinite" for continuous production.
-     - For "Maintain Balance": Set the balance level to maintain.
-   - **Buffer Percentage** (Maintain Balance only):
-     - Production starts when balance drops below target minus buffer percentage.
-3. Click "Add Automation".
-
-### Transfer Automation
-
-Transfer automation allows you to move resources between any of your entities.
-
-#### Adding a New Transfer Order
-
-1. **Select Source Entity**:
-   - Choose entity type (Your Realms, Your Villages, etc.)
-   - Search and select the specific source entity
-2. **Configure Transfer**:
-   - **Transfer Mode**:
-     - `Recurring`: Transfer at regular intervals
-     - `Maintain Stock`: Transfer when destination is low
-     - `Depletion Transfer`: Transfer when source is high
-   - **Destination Entity**:
-     - Choose entity type and select specific destination
-   - **Resources to Transfer**:
-     - Add multiple resources with specific amounts
-   - **Schedule/Conditions**:
-     - For Recurring: Set interval in minutes (minimum 10 minutes)
-     - For conditional transfers: Set threshold amounts
-
-3. Click "Add Transfer Automation".
-
-#### Transfer Interval Guidelines
-
-- **Minimum Interval**: TBC (matches automation processing cycle)
-- **Custom Intervals**: Custom intervals can be set in minutes
-- **Effective Timing**: Transfers occur when automation cycles align with your interval
-
-### Viewing and Managing Orders
-
-#### Individual Entity View
-
-Each entity shows its automation orders in a table with:
-
-- **Priority**: Order execution priority
-- **Mode**: "Once", "Maintain", or transfer mode ("Recurring", "Stock", "Depletion")
-- **Resource**: Visual representation of resource flow
-- **Target/Balance**: Target amounts or transfer schedules
-- **Produced**: Amount produced (production orders only)
-- **Type**: Order type (production or transfer)
-- **Actions**: Remove button
-
-#### Global Automation View
-
-The "All Automations" view shows orders from all entities:
-
-- **Realm Filter**: Filter by specific realm or view all
-- **Order Status**: Visual indicators for completed, paused, or active orders
-- **Countdown Timer**: Shows time until next automation cycle
-- **Bulk Actions**: Pause/resume or delete orders
+- When new buildings finish, their resources auto-insert into the automation list so presets continue to work.
+- Resetting an entity wipes its allocations but keeps the entity record for fast reconfiguration.
+- At the start of a new Blitz season, stored configs are cleared to avoid stale setups.
 
 ### Pausing Automation
 
-You can pause automation at different levels:
+You can pause production at different levels:
 
-1. **Individual Entity**: Pause all automation for a specific entity
-2. **Individual Order**: Remove specific orders
-3. **Global Control**: Manage all orders from the global view
+1. **Individual Resource**: Set both sliders to 0% for a single resource.
+2. **Entity-wide**: Apply the Idle preset to drop all sliders to 0% until you are ready to resume.
+
+## Execution Summaries
+
+After each loop the realm panel shows:
+
+- **Timestamp** of the last run.
+- **Produced/Consumed totals** grouped by resource so you can see net flows.
+- **Skipped recipes** plus reasons (missing inputs, missing labor recipe, etc.).
+- **Total cycles** executed across complex and simple recipes.
+
+Use this view to verify slider settings or debug why a resource isn’t running (e.g., depleted labor inputs).
 
 ## Important Considerations
 
 ### General Requirements
 
-- **Browser Must Be Open**: Automation processing occurs in your browser. If you close the game tab or your browser,
-  automated processes will stop.
-- **10-Minute Processing Cycle**: All automation is processed every 10 minutes. This affects timing for all orders.
-- **Transaction Costs**: Each successful automation cycle that results in production or transfer will involve a
-  blockchain transaction, which incurs network transaction fees.
-- **Processing Time**: Due to the 10-minute processing interval and potential network conditions, there might be a delay
-  before an order is executed or its results are visible.
+- **Browser must stay open**: The automation store lives in your browser. Closing the Blitz tab pauses every loop.
+- **Loop cadence**: Production automation evaluates roughly every 60 seconds; it won’t react faster even if you change a
+  slider immediately.
 
 ### Production Automation Considerations
 
-- **Resource Availability**: Production orders will only execute if the required input resources are available in the
-  realm at the time of processing.
-- **Recipe Dependencies**: Production follows predefined game recipes. You cannot produce resources that don't have
-  valid recipes.
-
-### Transfer Automation Considerations
-
-- **Entity Ownership**: You can only set up transfers between entities you own.
-- **Transfer Timing**:
-  - Minimum effective interval is 10 minutes due to processing cycle
-  - Intervals shorter than 10 minutes will effectively transfer every 10 minutes
-  - Non-10-minute multiples may have irregular timing based on when transfers align with processing cycles
-- **Resource Availability**: Transfers will only execute if the source entity has sufficient resources at processing
-  time.
-- **Multiple Resources**: You can transfer multiple different resources in a single transfer order.
-- **Conditional Logic**: Maintain Stock and Depletion transfers check conditions each cycle and only transfer when
-  thresholds are met.
+- **Resource availability**: Production only executes if the realm has the required inputs at processing time.
+- **Recipe dependencies**: You can’t produce outputs that lack valid recipes or buildings.
 
 ### Best Practices
 
-1. **Start Simple**: Begin with basic production orders or simple recurring transfers to understand the system.
-2. **Monitor Initially**: Watch your first few automation cycles to ensure orders work as expected.
-3. **Use Priorities**: Set appropriate priorities when you have multiple orders to control execution sequence.
-4. **Plan for Delays**: Account for the 10-minute processing cycle when planning time-sensitive operations.
-5. **Check Resource Flows**: Regularly verify that your automated transfers are maintaining desired resource
-   distributions.
+1. **Start conservative**: Begin with low percentages to watch how inputs drain.
+2. **Monitor early loops**: Use execution summaries after the first few runs to confirm cycle counts and skips.
+3. **Lean on presets**: Labor/Resource/Idle presets are the fastest way to reorient an entity without endless slider
+   drags.
