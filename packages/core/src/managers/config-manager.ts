@@ -1144,6 +1144,13 @@ export class ClientConfigManager {
       return Object.values(configManager.laborOutputPerResource).some((x) => x.amount > 0);
     }, false);
   }
+
+  getMapCenterOffset() {
+    return this.getValueOrDefault(() => {
+      const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+      return Number(worldConfig?.map_center_offset ?? 0);
+    }, 0);
+  }
 }
 
 export const configManager = ClientConfigManager.instance();

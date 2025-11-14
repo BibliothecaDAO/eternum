@@ -3,11 +3,12 @@ import {
   ActionPaths,
   ActionType,
   ExplorerMoveSystemUpdate,
+  getFeltCenterOffset,
   Position,
   WorldUpdateListener,
 } from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
-import { ActorType, FELT_CENTER, findResourceById, getDirectionBetweenAdjacentHexes } from "@bibliothecadao/types";
+import { ActorType, findResourceById, getDirectionBetweenAdjacentHexes } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { getMapFromTorii } from "../../../../../app/dojo/queries";
 import { ArmyManager, BiomesManager, ChestManager, QuestManager, StructureManager } from "../../entity-managers";
@@ -842,6 +843,7 @@ export class HexagonMap {
   }
 
   private async computeTileEntities(chunkKey: string) {
+    const FELT_CENTER = getFeltCenterOffset();
     const startCol = parseInt(chunkKey.split(",")[1]) + FELT_CENTER;
     const startRow = parseInt(chunkKey.split(",")[0]) + FELT_CENTER;
 

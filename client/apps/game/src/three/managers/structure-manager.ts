@@ -3,9 +3,10 @@ import { getStructureModelPaths } from "@/three/constants";
 import InstancedModel from "@/three/managers/instanced-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
+import { FELT_CENTER } from "@/ui/config";
 import type { SetupResult } from "@bibliothecadao/dojo";
 import { getIsBlitz, StructureTileSystemUpdate } from "@bibliothecadao/eternum";
-import { BuildingType, ClientComponents, FELT_CENTER, ID, RelicEffect, StructureType } from "@bibliothecadao/types";
+import { BuildingType, ClientComponents, ID, RelicEffect, StructureType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
@@ -27,6 +28,8 @@ import { createStructureLabel, updateStructureLabel } from "../utils/labels/labe
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { FXManager } from "./fx-manager";
+import { PointsLabelRenderer } from "./points-label-renderer";
+import * as THREE from "three";
 
 const INITIAL_STRUCTURE_CAPACITY = 64;
 const WONDER_MODEL_INDEX = 4;
@@ -114,6 +117,17 @@ export class StructureManager {
   private readonly tempCosmeticPosition: Vector3 = new Vector3();
   private readonly tempCosmeticRotation: Euler = new Euler();
   private readonly structureAttachmentTransformScratch = new Map<string, AttachmentTransform>();
+  private pointsRenderers?: {
+    myVillage: PointsLabelRenderer;
+    enemyVillage: PointsLabelRenderer;
+    allyVillage: PointsLabelRenderer;
+    myRealm: PointsLabelRenderer;
+    enemyRealm: PointsLabelRenderer;
+    allyRealm: PointsLabelRenderer;
+    hyperstructure: PointsLabelRenderer;
+    bank: PointsLabelRenderer;
+    fragmentMine: PointsLabelRenderer;
+  };
   private readonly handleStructureRecordRemoved = (structure: StructureInfo) => {
     const entityNumericId = Number(structure.entityId);
     this.attachmentManager.removeAttachments(entityNumericId);
@@ -156,8 +170,77 @@ export class StructureManager {
       this.updateVisibleStructures();
     });
 
+    // Initialize points-based icon renderers
+    this.initializePointsRenderers();
+
     // Start battle timer updates
     this.startBattleTimerUpdates();
+  }
+
+  private initializePointsRenderers(): void {
+    const textureLoader = new THREE.TextureLoader();
+    const texturePaths = {
+      myVillage: "/images/labels/village.png",
+      enemyVillage: "/images/labels/enemy_village.png",
+      allyVillage: "/images/labels/allies_village.png",
+      myRealm: "/images/labels/realm.png",
+      enemyRealm: "/images/labels/enemy_realm.png",
+      allyRealm: "/images/labels/allies_realm.png",
+      hyperstructure: "/images/labels/hyperstructure.png",
+      bank: "/images/labels/chest.png", // Using chest as placeholder for bank
+      fragmentMine: this.isBlitz ? "/images/labels/essence_rift.png" : "/images/labels/fragment_mine.png",
+    };
+
+    const loadedTextures: Partial<Record<keyof typeof texturePaths, THREE.Texture>> = {};
+    let loadedCount = 0;
+    const totalTextures = Object.keys(texturePaths).length;
+
+    Object.entries(texturePaths).forEach(([key, path]) => {
+      textureLoader.load(
+        path,
+        (texture) => {
+          texture.minFilter = THREE.LinearFilter;
+          texture.magFilter = THREE.LinearFilter;
+          texture.colorSpace = THREE.SRGBColorSpace;
+          texture.flipY = false;
+
+          loadedTextures[key as keyof typeof texturePaths] = texture;
+          loadedCount++;
+
+          if (loadedCount === totalTextures) {
+            this.pointsRenderers = {
+              myVillage: new PointsLabelRenderer(this.scene, loadedTextures.myVillage!, 1000, 5, 0, 1.3, true),
+              enemyVillage: new PointsLabelRenderer(this.scene, loadedTextures.enemyVillage!, 1000, 5, 0, 1.3, true),
+              allyVillage: new PointsLabelRenderer(this.scene, loadedTextures.allyVillage!, 1000, 5, 0, 1.3, true),
+              myRealm: new PointsLabelRenderer(this.scene, loadedTextures.myRealm!, 1000, 5, 0, 1.3, true),
+              enemyRealm: new PointsLabelRenderer(this.scene, loadedTextures.enemyRealm!, 1000, 5, 0, 1.3, true),
+              allyRealm: new PointsLabelRenderer(this.scene, loadedTextures.allyRealm!, 1000, 5, 0, 1.3, true),
+              hyperstructure: new PointsLabelRenderer(
+                this.scene,
+                loadedTextures.hyperstructure!,
+                1000,
+                5,
+                0,
+                1.3,
+                true,
+              ),
+              bank: new PointsLabelRenderer(this.scene, loadedTextures.bank!, 1000, 5, 0, 1.3, true),
+              fragmentMine: new PointsLabelRenderer(this.scene, loadedTextures.fragmentMine!, 1000, 5, 0, 1.3, true),
+            };
+
+            console.log("[StructureManager] Points-based icon renderers initialized");
+
+            if (this.currentChunk) {
+              this.updateVisibleStructures();
+            }
+          }
+        },
+        undefined,
+        (error) => {
+          console.error(`[StructureManager] Failed to load structure icon texture (${key}):`, error);
+        },
+      );
+    });
   }
 
   private handleCameraViewChange = (view: CameraView) => {
@@ -247,6 +330,11 @@ export class StructureManager {
     this.structureUpdateTimestamps.clear();
     this.structureUpdateSources.clear();
 
+    // Clean up points renderers
+    if (this.pointsRenderers) {
+      Object.values(this.pointsRenderers).forEach((renderer) => renderer.dispose());
+    }
+
     console.log("StructureManager: Destroyed and cleaned up");
   }
 
@@ -323,7 +411,7 @@ export class StructureManager {
       return;
     }
     await this.ensureStructureModels(structureType);
-    const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
+    const normalizedCoord = { col: hexCoords.col - FELT_CENTER(), row: hexCoords.row - FELT_CENTER() };
     const position = getWorldPositionForHex(normalizedCoord);
     position.y += 0.05;
     this.dummy.position.copy(position);
@@ -713,6 +801,20 @@ export class StructureManager {
         }
         this.dummy.updateMatrix();
 
+        // Add point icon for this structure (always visible)
+        if (this.pointsRenderers) {
+          const iconPosition = position.clone();
+          iconPosition.y += 2; // Match CSS2D label height
+
+          const renderer = this.getRendererForStructure(structure);
+          if (renderer) {
+            renderer.setPoint({
+              entityId: structure.entityId,
+              position: iconPosition,
+            });
+          }
+        }
+
         const entityNumericId = Number(structure.entityId);
         const templates = this.resolveStructureAttachmentsForRender(structure);
         if (templates.length > 0) {
@@ -799,6 +901,50 @@ export class StructureManager {
     labelsToRemove.forEach((entityId) => {
       this.removeEntityIdLabel(entityId);
     });
+
+    // Remove points for structures no longer visible
+    if (this.pointsRenderers) {
+      Object.values(this.pointsRenderers).forEach((renderer) => {
+        structuresMap.forEach((structures) => {
+          structures.forEach((structure) => {
+            if (!visibleStructureIds.has(structure.entityId) && renderer.hasPoint(structure.entityId)) {
+              renderer.removePoint(structure.entityId);
+            }
+          });
+        });
+      });
+    }
+  }
+
+  private getRendererForStructure(structure: StructureInfo): PointsLabelRenderer | null {
+    if (!this.pointsRenderers) return null;
+
+    const { structureType, isMine, isAlly } = structure;
+
+    if (structureType === StructureType.Village) {
+      return isMine
+        ? this.pointsRenderers.myVillage
+        : isAlly
+          ? this.pointsRenderers.allyVillage
+          : this.pointsRenderers.enemyVillage;
+    }
+    if (structureType === StructureType.Realm) {
+      return isMine
+        ? this.pointsRenderers.myRealm
+        : isAlly
+          ? this.pointsRenderers.allyRealm
+          : this.pointsRenderers.enemyRealm;
+    }
+    if (structureType === StructureType.Hyperstructure) {
+      return this.pointsRenderers.hyperstructure;
+    }
+    if (structureType === StructureType.Bank) {
+      return this.pointsRenderers.bank;
+    }
+    if (structureType === StructureType.FragmentMine) {
+      return this.pointsRenderers.fragmentMine;
+    }
+    return null;
   }
 
   private getAttachmentSignature(templates: CosmeticAttachmentTemplate[]): string {
@@ -984,18 +1130,44 @@ export class StructureManager {
       newPosition.y += 2;
       existingLabel.position.copy(newPosition);
       this.updateStructureLabelData(structure, existingLabel);
+
+      // Highlight point icon on hover
+      if (this.pointsRenderers) {
+        const renderer = this.getRendererForStructure(structure);
+        if (renderer) {
+          renderer.setHover(normalizedEntityId);
+        }
+      }
       return;
     }
 
     this.addEntityIdLabel(structure, position);
+
+    // Highlight point icon on hover
+    if (this.pointsRenderers) {
+      const renderer = this.getRendererForStructure(structure);
+      if (renderer) {
+        renderer.setHover(normalizedEntityId);
+      }
+    }
   }
 
   public hideLabel(entityId: ID): void {
     this.removeEntityIdLabel(entityId);
+
+    // Remove hover highlight from point icon
+    if (this.pointsRenderers) {
+      Object.values(this.pointsRenderers).forEach((renderer) => renderer.clearHover());
+    }
   }
 
   public hideAllLabels(): void {
     Array.from(this.entityIdLabels.keys()).forEach((structureId) => this.removeEntityIdLabel(structureId));
+
+    // Clear hover highlight from all points
+    if (this.pointsRenderers) {
+      Object.values(this.pointsRenderers).forEach((renderer) => renderer.clearHover());
+    }
   }
 
   // Relic effect management methods

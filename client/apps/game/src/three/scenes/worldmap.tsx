@@ -1127,7 +1127,10 @@ export default class WorldmapScene extends HexagonScene {
 
       // Get the target position for the effect
       const targetHex = actionPath[actionPath.length - 1].hex;
-      const position = getWorldPositionForHex({ col: targetHex.col - FELT_CENTER, row: targetHex.row - FELT_CENTER });
+      const position = getWorldPositionForHex({
+        col: targetHex.col - FELT_CENTER(),
+        row: targetHex.row - FELT_CENTER(),
+      });
 
       // Play effect based on action type: compass for exploring, travel for moving
       const key = `${targetHex.col},${targetHex.row}`;
@@ -2400,10 +2403,10 @@ export default class WorldmapScene extends HexagonScene {
       await getMapFromToriiExact(
         this.dojo.network.toriiClient,
         this.dojo.network.contractComponents as any,
-        minCol + FELT_CENTER,
-        maxCol + FELT_CENTER,
-        minRow + FELT_CENTER,
-        maxRow + FELT_CENTER,
+        minCol + FELT_CENTER(),
+        maxCol + FELT_CENTER(),
+        minRow + FELT_CENTER(),
+        maxRow + FELT_CENTER(),
       );
       // Only add to fetched chunks on success
       this.fetchedChunks.add(chunkKey);

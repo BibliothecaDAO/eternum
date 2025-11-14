@@ -1,9 +1,10 @@
 import { ChestModelPath } from "@/three/constants";
 import InstancedModel from "@/three/managers/instanced-model";
+import { FELT_CENTER } from "@/ui/config";
 import { Position } from "@bibliothecadao/eternum";
 
 import { ChestData, ChestSystemUpdate } from "@bibliothecadao/eternum";
-import { FELT_CENTER, ID } from "@bibliothecadao/types";
+import { ID } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
@@ -12,6 +13,7 @@ import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { createChestLabel } from "../utils/labels/label-factory";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { gltfLoader } from "../utils/utils";
+import { PointsLabelRenderer } from "./points-label-renderer";
 
 const MAX_INSTANCES = 1000;
 
@@ -33,6 +35,7 @@ export class ChestManager {
   private animations: Map<number, THREE.AnimationMixer> = new Map();
   private animationClips: THREE.AnimationClip[] = [];
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
+  private pointsRenderer?: PointsLabelRenderer; // Points-based icon renderer
 
   constructor(
     scene: THREE.Scene,
@@ -50,6 +53,9 @@ export class ChestManager {
         this.renderVisibleChests(this.currentChunkKey);
       }
     });
+
+    // Initialize points-based icon renderer
+    this.initializePointsRenderer();
 
     if (hexagonScene) {
       hexagonScene.addCameraViewListener(this.handleCameraViewChange);
@@ -75,6 +81,43 @@ export class ChestManager {
     applyLabelTransitions(this.entityIdLabels, view);
   };
 
+  private initializePointsRenderer(): void {
+    // Load chest icon texture
+    const textureLoader = new THREE.TextureLoader();
+    textureLoader.load(
+      "/images/labels/chest.png",
+      (texture) => {
+        // Texture loaded successfully
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.flipY = false; // Prevent vertical flip for point sprites
+
+        // Create points renderer with loaded texture
+        this.pointsRenderer = new PointsLabelRenderer(
+          this.scene,
+          texture,
+          MAX_INSTANCES, // Max points same as max chest instances
+          5, // Point size in pixels (increased from 32)
+          0, // Hover scale multiplier
+          1.3, // Hover brightness multiplier
+          true, // sizeAttenuation: false = fixed screen size, true = scales with distance
+        );
+
+        console.log("[ChestManager] Points-based icon renderer initialized");
+
+        // Re-render visible chests to populate points
+        if (this.currentChunkKey) {
+          this.renderVisibleChests(this.currentChunkKey);
+        }
+      },
+      undefined,
+      (error) => {
+        console.error("[ChestManager] Failed to load chest icon texture:", error);
+      },
+    );
+  }
+
   public destroy() {
     // Clean up camera view listener
     if (this.hexagonScene) {
@@ -84,6 +127,11 @@ export class ChestManager {
     // Clean up animations
     this.animations.forEach((mixer) => mixer.stopAllAction());
     this.animations.clear();
+
+    // Clean up points renderer
+    if (this.pointsRenderer) {
+      this.pointsRenderer.dispose();
+    }
   }
 
   private async loadModel(): Promise<void> {
@@ -118,7 +166,7 @@ export class ChestManager {
 
   async onUpdate(update: ChestSystemUpdate) {
     const { occupierId, hexCoords } = update;
-    const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
+    const normalizedCoord = { col: hexCoords.col - FELT_CENTER(), row: hexCoords.row - FELT_CENTER() };
     // Add the chest to the map
     const position = new Position({ x: hexCoords.col, y: hexCoords.row });
 
@@ -238,17 +286,36 @@ export class ChestManager {
         this.chestModel.setMatrixAt(currentCount, this.dummy.matrix);
         this.chestModel.setCount(currentCount + 1);
         this.entityIdMap.set(currentCount, chest.entityId);
+
+        // Add point icon for this chest (always visible)
+        if (this.pointsRenderer) {
+          const iconPosition = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
+          iconPosition.y += 2; // Same height as CSS2D labels
+          this.pointsRenderer.setPoint({
+            entityId: chest.entityId,
+            position: iconPosition,
+          });
+        }
       });
 
       this.chestModel.needsUpdate();
     }
 
-    // Remove labels for chests that are no longer visible
+    // Remove labels and points for chests that are no longer visible
     this.entityIdLabels.forEach((label, entityId) => {
       if (!this.visibleChests.find((chest) => chest.entityId === entityId)) {
         this.removeEntityIdLabel(entityId);
       }
     });
+
+    // Remove points for chests no longer visible
+    if (this.pointsRenderer) {
+      _chests.forEach((chest, entityId) => {
+        if (!visibleChestIds.has(entityId) && this.pointsRenderer!.hasPoint(entityId)) {
+          this.pointsRenderer!.removePoint(entityId);
+        }
+      });
+    }
   }
 
   private removeEntityIdLabel(entityId: number) {
@@ -300,18 +367,37 @@ export class ChestManager {
       const updatedPosition = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
       updatedPosition.y += 1.5;
       existingLabel.position.copy(updatedPosition);
+      // Highlight point icon on hover
+      if (this.pointsRenderer) {
+        this.pointsRenderer.setHover(entityId);
+      }
       return;
     }
 
     this.addEntityIdLabel(chest, position);
+
+    // Highlight point icon on hover
+    if (this.pointsRenderer) {
+      this.pointsRenderer.setHover(entityId);
+    }
   }
 
   public hideLabel(entityId: ID): void {
     this.removeEntityIdLabel(entityId);
+
+    // Remove hover highlight from point icon
+    if (this.pointsRenderer) {
+      this.pointsRenderer.clearHover();
+    }
   }
 
   public hideAllLabels(): void {
     Array.from(this.entityIdLabels.keys()).forEach((chestId) => this.removeEntityIdLabel(chestId));
+
+    // Clear hover highlight from points
+    if (this.pointsRenderer) {
+      this.pointsRenderer.clearHover();
+    }
   }
 
   public removeLabelsFromScene(): void {
@@ -345,6 +431,11 @@ export class ChestManager {
     this.chests.removeChest(entityId);
 
     this.removeEntityIdLabel(entityId);
+
+    // Remove point icon
+    if (this.pointsRenderer) {
+      this.pointsRenderer.removePoint(entityId);
+    }
 
     // Re-render visible chests
     if (this.currentChunkKey) {

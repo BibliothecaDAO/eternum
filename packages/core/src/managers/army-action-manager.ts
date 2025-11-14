@@ -3,7 +3,6 @@ import {
   type ClientComponents,
   type ContractAddress,
   type DojoAccount,
-  FELT_CENTER,
   getDirectionBetweenAdjacentHexes,
   getNeighborHexes,
   type HexEntityInfo,
@@ -16,7 +15,7 @@ import {
 import { type Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import type { Account, AccountInterface } from "starknet";
-import { divideByPrecision, getRemainingCapacityInKg } from "..";
+import { divideByPrecision, getFeltCenterOffset, getRemainingCapacityInKg } from "..";
 import { type ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
 import { configManager } from "./config-manager";
 import { ResourceManager } from "./resource-manager";
@@ -151,6 +150,7 @@ export class ArmyActionManager {
       path: ActionPath[];
     }> = [];
 
+    const FELT_CENTER = getFeltCenterOffset();
     // Process initial neighbors instead of start position
     const neighbors = getNeighborHexes(startPos.col, startPos.row);
     for (const { col, row } of neighbors) {

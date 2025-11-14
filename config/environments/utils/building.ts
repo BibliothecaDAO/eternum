@@ -2,7 +2,7 @@ import { BuildingType, getProducedResource, ResourcesIds, type ResourceInputs } 
 
 export const BUILDING_CAPACITY: { [key in BuildingType]: number } = {
   [BuildingType.None]: 0,
-  [BuildingType.WorkersHut]: 5,
+  [BuildingType.WorkersHut]: 6,
   [BuildingType.Storehouse]: 0,
   [BuildingType.ResourceStone]: 0,
   [BuildingType.ResourceCoal]: 0,

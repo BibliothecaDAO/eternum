@@ -1,8 +1,9 @@
 import { QuestModelPaths } from "@/three/constants";
 import InstancedModel from "@/three/managers/instanced-model";
+import { FELT_CENTER } from "@/ui/config";
 import { Position, QuestData, QuestSystemUpdate } from "@bibliothecadao/eternum";
 
-import { FELT_CENTER, ID, QuestType } from "@bibliothecadao/types";
+import { ID, QuestType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
@@ -116,7 +117,7 @@ export class QuestManager {
 
   async onUpdate(update: QuestSystemUpdate) {
     const { entityId, occupierId, hexCoords } = update;
-    const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
+    const normalizedCoord = { col: hexCoords.col - FELT_CENTER(), row: hexCoords.row - FELT_CENTER() };
     // Add the quest to the map with the complete owner info
     const position = new Position({ x: hexCoords.col, y: hexCoords.row });
     const questType = QuestType.DarkShuffle;

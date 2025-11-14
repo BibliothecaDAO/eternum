@@ -1,9 +1,9 @@
 import { CameraView } from "@/three/scenes/hexagon-scene";
 import { gltfLoader } from "@/three/utils/utils";
-import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
+import { FELT_CENTER, GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
 import { getCharacterModel } from "@/utils/agent";
 import { Biome } from "@bibliothecadao/eternum";
-import { BiomeType, FELT_CENTER, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
 import {
   AnimationAction,
   AnimationMixer,
@@ -20,6 +20,7 @@ import {
   Vector3,
 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
+import { env } from "../../../env";
 import {
   ANIMATION_STATE_IDLE,
   ANIMATION_STATE_MOVING,
@@ -31,7 +32,6 @@ import { AnimatedInstancedMesh, ArmyInstanceData, ModelData, ModelType, Movement
 import { getHexForWorldPosition } from "../utils";
 import { applyEasing, EasingType } from "../utils/easing";
 import { MaterialPool } from "../utils/material-pool";
-import { env } from "../../../env";
 import { MemoryMonitor } from "../utils/memory-monitor";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
@@ -763,7 +763,7 @@ export class ArmyModel {
 
   private updateModelTypeForPosition(entityId: number, position: Vector3, category: TroopType, tier: TroopTier): void {
     const { col, row } = getHexForWorldPosition(position);
-    const biome = Biome.getBiome(col + FELT_CENTER, row + FELT_CENTER);
+    const biome = Biome.getBiome(col + FELT_CENTER(), row + FELT_CENTER());
 
     const modelType = this.getModelTypeForEntity(entityId, category, tier, biome);
     if (this.entityModelMap.get(entityId) !== modelType) {

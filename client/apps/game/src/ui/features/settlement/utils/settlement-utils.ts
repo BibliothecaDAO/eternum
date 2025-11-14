@@ -1,12 +1,7 @@
 import { sqlApi } from "@/services/api";
+import { FELT_CENTER as SETTLEMENT_CENTER } from "@/ui/config";
 import { Coord, Position } from "@bibliothecadao/eternum";
-import {
-  ClientComponents,
-  ContractAddress,
-  Direction,
-  FELT_CENTER as SETTLEMENT_CENTER,
-  StructureType,
-} from "@bibliothecadao/types";
+import { ClientComponents, ContractAddress, Direction, StructureType } from "@bibliothecadao/types";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import { SETTLEMENT_BASE_DISTANCE, SETTLEMENT_SUBSEQUENT_DISTANCE } from "../constants/settlement-constants";
 import { SettlementLocation } from "./settlement-types";
@@ -30,7 +25,7 @@ const sideLayerXFirstCoord = (side: number, layer: number): Coord => {
 };
 
 const sideLayerOneFirstCoord = (side: number): Coord => {
-  const center = new Coord(SETTLEMENT_CENTER, SETTLEMENT_CENTER);
+  const center = new Coord(SETTLEMENT_CENTER(), SETTLEMENT_CENTER());
   const start_direction = sideDirections(side)[0];
   const triangle_direction = sideDirections(side)[1];
   let side_first_coord_layer_0 = center;
@@ -147,8 +142,8 @@ export const getOccupiedLocations = async (
  */
 const coordinatesToSettlementLocation = (x: number, y: number): SettlementLocation => {
   // Calculate distance from center
-  const dx = x - SETTLEMENT_CENTER;
-  const dy = y - SETTLEMENT_CENTER;
+  const dx = x - SETTLEMENT_CENTER();
+  const dy = y - SETTLEMENT_CENTER();
   const distance = Math.sqrt(dx * dx + dy * dy);
 
   // Calculate layer based on distance

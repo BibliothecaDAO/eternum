@@ -32,7 +32,7 @@ pub mod realm_systems {
     };
     use crate::models::events::{RealmCreatedStory, Story, StoryEvent};
     use crate::models::map::TileImpl;
-    use crate::models::position::Coord;
+    use crate::models::position::{Coord, CoordImpl};
     use crate::models::realm::{RealmNameAndAttrsDecodingImpl, RealmReferenceImpl};
     use crate::models::resource::production::building::BuildingImpl;
     use crate::models::resource::resource::{
@@ -119,8 +119,9 @@ pub mod realm_systems {
                 world, selector!("settlement_config"),
             );
             let settlement_max_layer: u32 = SettlementConfigImpl::max_layer(realm_count.count.into());
+            let map_center: Coord = CoordImpl::center(ref world);
             let coord: Coord = settlement_config
-                .generate_coord(settlement_max_layer, settlement.side, settlement.layer, settlement.point);
+                .generate_coord(settlement_max_layer, settlement.side, settlement.layer, settlement.point, map_center);
 
             // create realm
             let (realm_internal_systems_address, _) = world.dns(@"realm_internal_systems").unwrap();
