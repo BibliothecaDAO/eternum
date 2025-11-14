@@ -267,7 +267,6 @@ export const EternumGlobalConfig: Config = {
     lordsLiquidityPerResource: LORDS_LIQUIDITY_PER_RESOURCE,
   },
   populationCapacity: {
-    workerHuts: WORKER_HUTS_CAPACITY,
     basePopulation: BASE_POPULATION_CAPACITY,
   },
   exploration: {

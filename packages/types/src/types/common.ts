@@ -452,7 +452,6 @@ export interface Config {
     lordsLiquidityPerResource: number;
   };
   populationCapacity: {
-    workerHuts: number;
     basePopulation: number;
   };
   exploration: {
