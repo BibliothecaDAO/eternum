@@ -104,23 +104,6 @@ const normaliseAddress = (value: string | null): string | null => {
   return trimmed.startsWith("0x") ? trimmed : `0x${trimmed}`;
 };
 
-const pickStatValue = (row: Record<string, unknown>, ...keys: string[]): number | undefined => {
-  for (const key of keys) {
-    if (!key || !Object.prototype.hasOwnProperty.call(row, key)) {
-      continue;
-    }
-
-    const rawValue = row[key] as NumericLike;
-    if (rawValue === null || rawValue === undefined) {
-      return undefined;
-    }
-
-    return parseNumeric(rawValue);
-  }
-
-  return undefined;
-};
-
 const decodePlayerName = (value: string | null): string | null => {
   if (!value) {
     return null;
@@ -173,28 +156,26 @@ const transformLandingLeaderboardRow = (row: PlayerLeaderboardRow, rank: number)
   const unregisteredPoints = row.unregisteredPoints ?? Math.max(totalPoints - registeredPoints, 0);
   const prizeClaimedRaw = Boolean(row.prizeClaimed);
 
-  const dynamicRow = row as unknown as Record<string, unknown>;
-  const exploredTiles = row.tilesExplored ?? pickStatValue(dynamicRow, "explored_tiles", "exploredTiles");
-  const exploredTilePoints = pickStatValue(dynamicRow, "explored_tiles_points", "exploredTilePoints");
-  const riftsTaken = pickStatValue(dynamicRow, "rifts_taken", "riftsTaken", "riftsCaptured");
-  const riftPoints = pickStatValue(dynamicRow, "rifts_points", "riftPoints");
-  const hyperstructuresConquered = pickStatValue(
-    dynamicRow,
-    "hyperstructures_conquered",
-    "hyperstructuresConquered",
-    "hyperstructuresClaimed",
-  );
-  const hyperstructurePoints = pickStatValue(dynamicRow, "hyperstructures_points", "hyperstructurePoints");
-  const relicCratesOpened = pickStatValue(dynamicRow, "relic_crates_opened", "relicCratesOpened");
-  const relicCratePoints = pickStatValue(dynamicRow, "relic_crates_points", "relicCratePoints");
-  const campsTaken = pickStatValue(dynamicRow, "camps_taken", "campsCaptured", "campsTaken");
-  const campPoints = pickStatValue(dynamicRow, "camps_points", "campPoints");
-  const hyperstructuresHeld = pickStatValue(dynamicRow, "hyperstructures_held", "hyperstructuresHeld");
-  const hyperstructuresHeldPoints = pickStatValue(
-    dynamicRow,
-    "hyperstructures_held_points",
-    "hyperstructuresHeldPoints",
-  );
+  const activity = row.activityBreakdown;
+  const exploredTiles = activity.exploration.count;
+  const exploredTilePoints = activity.exploration.points;
+  const relicCratesOpened = activity.openRelicChest.count;
+  const relicCratePoints = activity.openRelicChest.points;
+  const structureBattlesCount = activity.otherStructureBanditsDefeat.count;
+  const structureBattlesPoints = activity.otherStructureBanditsDefeat.points;
+  const hyperstructureBattlesCount = activity.hyperStructureBanditsDefeat.count;
+  const hyperstructureBattlesPoints = activity.hyperStructureBanditsDefeat.points;
+  const hyperstructureSharePoints = activity.hyperstructureShare.points;
+  const hyperstructureShareCount = activity.hyperstructureShare.count;
+
+  const riftsTaken = structureBattlesCount;
+  const riftPoints = structureBattlesPoints;
+  const campsTaken = structureBattlesCount;
+  const campPoints = structureBattlesPoints;
+  const hyperstructuresConquered = hyperstructureBattlesCount;
+  const hyperstructurePoints = hyperstructureBattlesPoints;
+  const hyperstructuresHeld = hyperstructureShareCount > 0 ? hyperstructureShareCount : null;
+  const hyperstructuresHeldPoints = hyperstructureSharePoints;
 
   return {
     rank,

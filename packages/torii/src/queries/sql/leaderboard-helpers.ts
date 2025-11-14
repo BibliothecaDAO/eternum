@@ -4,6 +4,8 @@ import {
   HyperstructureLeaderboardConfigRow,
   HyperstructureRow,
   HyperstructureShareholderRow,
+  PlayerActivityBreakdown,
+  PlayerActivityStat,
   PlayerLeaderboardRow,
   RawPlayerLeaderboardRow,
 } from "../../types/sql";
@@ -19,6 +21,64 @@ import { LEADERBOARD_QUERIES } from "./leaderboard";
 export const REGISTERED_POINTS_PRECISION = 1_000_000;
 
 type NumericLike = string | number | bigint | null | undefined;
+
+interface ParsedActivityStat {
+  pointsRaw: number;
+  count: number;
+}
+
+const parseActivityStat = (pointsValue: NumericLike, countValue: NumericLike): ParsedActivityStat => {
+  const pointsRaw = Math.max(0, Math.floor(parseNumericValue(pointsValue)));
+  const count = Math.max(0, Math.floor(parseNumericValue(countValue)));
+
+  return { pointsRaw, count };
+};
+
+const toPlayerActivityStat = (value: ParsedActivityStat): PlayerActivityStat => {
+  return {
+    points: value.pointsRaw / REGISTERED_POINTS_PRECISION,
+    count: value.count,
+  };
+};
+
+const buildActivityBreakdown = (
+  row: Partial<RawPlayerLeaderboardRow> | undefined,
+  totalRaw: number,
+): PlayerActivityBreakdown => {
+  const totalRawSafe = Math.max(0, Math.floor(Number.isFinite(totalRaw) ? totalRaw : 0));
+  const source = row ?? {};
+
+  const exploration = parseActivityStat(source.exploration_points, source.exploration_count);
+  const openRelicChest = parseActivityStat(source.open_relic_chest_points, source.open_relic_chest_count);
+  const hyperStructureBanditsDefeat = parseActivityStat(
+    source.hyperstructure_bandits_defeat_points,
+    source.hyperstructure_bandits_defeat_count,
+  );
+  const otherStructureBanditsDefeat = parseActivityStat(
+    source.other_structure_bandits_defeat_points,
+    source.other_structure_bandits_defeat_count,
+  );
+
+  const recordedPointsRaw =
+    exploration.pointsRaw +
+    openRelicChest.pointsRaw +
+    hyperStructureBanditsDefeat.pointsRaw +
+    otherStructureBanditsDefeat.pointsRaw;
+
+  const hyperstructureShareRaw = Math.max(0, totalRawSafe - recordedPointsRaw);
+  const hyperstructureShare: ParsedActivityStat = {
+    pointsRaw: hyperstructureShareRaw,
+    count: 0,
+  };
+
+  return {
+    exploration: toPlayerActivityStat(exploration),
+    openRelicChest: toPlayerActivityStat(openRelicChest),
+    hyperStructureBanditsDefeat: toPlayerActivityStat(hyperStructureBanditsDefeat),
+    otherStructureBanditsDefeat: toPlayerActivityStat(otherStructureBanditsDefeat),
+    hyperstructureShare: toPlayerActivityStat(hyperstructureShare),
+  };
+};
 
 export interface LeaderboardPagination {
   safeLimit: number;
@@ -267,8 +327,7 @@ export const buildRegisteredLeaderboardEntries = ({
     const bonusPoints = unregisteredShareholderPoints.get(canonicalAddress) ?? 0;
     const bonusRaw = Math.round(bonusPoints * REGISTERED_POINTS_PRECISION);
     const totalRaw = registeredRaw + bonusRaw;
-    const tilesExplored = Math.max(0, Math.floor(parseNumericValue(row.tiles_explored)));
-    const campsTaken = Math.max(0, Math.floor(parseNumericValue(row.camps_taken)));
+    const activityBreakdown = buildActivityBreakdown(row, totalRaw);
 
     entries.push({
       playerAddress: normalizedAddress,
@@ -279,8 +338,7 @@ export const buildRegisteredLeaderboardEntries = ({
       registeredPointsRaw: totalRaw,
       totalPoints: totalRaw / REGISTERED_POINTS_PRECISION,
       unregisteredPoints: bonusPoints,
-      tilesExplored,
-      campsTaken,
+      activityBreakdown,
     });
   }
 
@@ -304,6 +362,7 @@ export const buildAdditionalLeaderboardEntries = ({
     }
 
     const totalRaw = Math.round(points * REGISTERED_POINTS_PRECISION);
+    const activityBreakdown = buildActivityBreakdown(undefined, totalRaw);
 
     additionalEntries.push({
       playerAddress: address,
@@ -314,8 +373,7 @@ export const buildAdditionalLeaderboardEntries = ({
       registeredPointsRaw: totalRaw,
       totalPoints: totalRaw / REGISTERED_POINTS_PRECISION,
       unregisteredPoints: points,
-      tilesExplored: 0,
-      campsTaken: 0,
+      activityBreakdown,
     });
   }
 

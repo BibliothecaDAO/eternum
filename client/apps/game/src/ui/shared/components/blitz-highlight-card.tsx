@@ -71,18 +71,11 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
         points: highlight?.relicCratePoints,
       },
       {
-        label: "Rifts Taken",
+        label: "Rifts & Camps",
         count: highlight?.riftsTaken,
         singular: "",
         plural: "",
         points: highlight?.riftPoints,
-      },
-      {
-        label: "Camps Taken",
-        count: highlight?.campsTaken,
-        singular: "",
-        plural: "",
-        points: highlight?.campPoints,
       },
       {
         label: "HS Taken",
@@ -93,7 +86,7 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
       },
       {
         label: "HS Held",
-        count: highlight?.hyperstructuresHeld,
+        count: null,
         singular: "",
         plural: "",
         points: highlight?.hyperstructuresHeldPoints,
@@ -172,7 +165,7 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
 
           <image
             href={eternumLogoWhite}
-            x="30"
+            x="34"
             y="50"
             width="50"
             height="50"
@@ -220,7 +213,7 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
             </text>
           ) : null}
 
-          <text x="30" y="215" fontSize="104" fontWeight="600" fill="#7bffe6">
+          <text x="34" y="215" fontSize="104" fontWeight="600" fill="#7bffe6">
             {highlightOrdinal}
           </text>
           <text
@@ -331,7 +324,9 @@ const CoverBanner = ({ covers, selectedIndex, onSelect }: CoverBannerProps) => {
       className="flex max-h-[360px] w-full max-w-full flex-col gap-3 rounded-[28px] border border-[#8ff8ff]/30 bg-[#04131f]/80 p-4 text-white/80 shadow-[inset_0_0_35px_rgba(123,255,230,0.12)] lg:max-w-[200px]"
       aria-label="Choose your cover"
     >
-      <p className="text-center text-[11px] font-semibold uppercase tracking-[0.32em] text-[#7bffe6] lg:text-left">Choose your cover</p>
+      <p className="text-center text-[11px] font-semibold uppercase tracking-[0.32em] text-[#7bffe6] lg:text-left">
+        Choose your cover
+      </p>
       <div className="flex flex-1 flex-col gap-3 overflow-y-auto pr-1">
         {covers.map((src, index) => {
           const label = formatCoverLabel(index);
@@ -380,10 +375,7 @@ export const BlitzHighlightCardWithSelector = ({
   const normalizedIndex = Math.min(Math.max(initialCoverIndex, 0), resolvedCovers.length - 1);
   const [coverIndex, setCoverIndex] = useState(() => normalizedIndex);
   const activeCover = resolvedCovers[coverIndex] ?? resolvedCovers[0];
-  const containerClasses = [
-    "flex w-full flex-col items-center gap-4 lg:flex-row lg:items-start",
-    className,
-  ]
+  const containerClasses = ["flex w-full flex-col items-center gap-4 lg:flex-row lg:items-start", className]
     .filter(Boolean)
     .join(" ");
 

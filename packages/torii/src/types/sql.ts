@@ -57,8 +57,27 @@ export interface RawPlayerLeaderboardRow {
   player_name: string | null;
   prize_claimed: number | string | null;
   registered_points: number | string | null;
-  tiles_explored?: number | string | null;
-  camps_taken?: number | string | null;
+  exploration_points?: number | string | null;
+  exploration_count?: number | string | null;
+  open_relic_chest_points?: number | string | null;
+  open_relic_chest_count?: number | string | null;
+  hyperstructure_bandits_defeat_points?: number | string | null;
+  hyperstructure_bandits_defeat_count?: number | string | null;
+  other_structure_bandits_defeat_points?: number | string | null;
+  other_structure_bandits_defeat_count?: number | string | null;
+}
+
+export interface PlayerActivityStat {
+  points: number;
+  count: number;
+}
+
+export interface PlayerActivityBreakdown {
+  exploration: PlayerActivityStat;
+  openRelicChest: PlayerActivityStat;
+  hyperStructureBanditsDefeat: PlayerActivityStat;
+  otherStructureBanditsDefeat: PlayerActivityStat;
+  hyperstructureShare: PlayerActivityStat;
 }
 
 export interface PlayerLeaderboardRow {
@@ -70,8 +89,7 @@ export interface PlayerLeaderboardRow {
   registeredPointsRaw: number;
   totalPoints: number;
   unregisteredPoints: number;
-  tilesExplored: number;
-  campsTaken: number;
+  activityBreakdown: PlayerActivityBreakdown;
   rank?: number | null;
 }
 
