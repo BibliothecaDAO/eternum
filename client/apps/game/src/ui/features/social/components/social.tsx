@@ -5,10 +5,10 @@ import { PlayerDataTransformed } from "@/three/managers/player-data-store";
 import { LEADERBOARD_UPDATE_INTERVAL } from "@/ui/constants";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
+import { PrizePanel } from "@/ui/features/prize";
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { GuildMembers, Guilds, PlayersPanel } from "@/ui/features/social";
 import { ExpandableOSWindow, leaderboard } from "@/ui/features/world";
-import { PrizePanel } from "@/ui/features/prize";
 import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { getIsBlitz, getPlayerInfo, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo, usePlayers } from "@bibliothecadao/react";
@@ -223,7 +223,7 @@ export const Social = () => {
 
   return (
     <ExpandableOSWindow
-      width="900px"
+      width="1100px"
       widthExpanded="400px"
       onClick={() => togglePopup(leaderboard)}
       show={isOpen}

@@ -2,19 +2,22 @@ import { ReactComponent as Invite } from "@/assets/icons/common/envelope.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { SortButton, SortInterface } from "@/ui/design-system/atoms/sort-button";
 import { SortPanel } from "@/ui/design-system/molecules/sort-panel";
-import { currencyIntlFormat, getRealmCountPerHyperstructure, sortItems } from "@/ui/utils/utils";
-import { getIsBlitz, LeaderboardManager } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { type LandingLeaderboardEntry } from "@/ui/features/landing/lib/landing-leaderboard-service";
+import { currencyIntlFormat, sortItems } from "@/ui/utils/utils";
+import { getIsBlitz } from "@bibliothecadao/eternum";
 import { ContractAddress, GuildInfo, PlayerInfo } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { User } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+
+const COUNT_FORMATTER = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 
 export interface PlayerCustom extends PlayerInfo {
   structures: string[];
   isUser: boolean;
   isInvited: boolean;
   guild: GuildInfo | undefined;
+  leaderboardEntry?: LandingLeaderboardEntry | null;
 }
 
 interface PlayerListProps {
@@ -24,16 +27,45 @@ interface PlayerListProps {
   isLoading: boolean;
 }
 
-export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading }: PlayerListProps) => {
-  const {
-    setup: { components },
-  } = useDojo();
+interface PlayerWithStats extends PlayerCustom {
+  leaderboardEntry: LandingLeaderboardEntry | null;
+  leaderboardRank: number;
+  leaderboardPoints: number;
+  tilesExplored: number;
+  tilesExploredPoints: number;
+  cratesOpened: number;
+  cratesOpenedPoints: number;
+  riftsTaken: number;
+  riftsTakenPoints: number;
+  hyperstructuresTaken: number;
+  hyperstructuresTakenPoints: number;
+  hyperstructuresHeldPoints: number;
+}
 
+const formatActivityValue = (count?: number | null, points?: number | null): string => {
+  const hasCount = typeof count === "number" && count > 0;
+  const hasPoints = typeof points === "number" && points > 0;
+
+  if (hasCount && hasPoints) {
+    return `${COUNT_FORMATTER.format(count!)} · ${currencyIntlFormat(points!, 0)} pts`;
+  }
+
+  if (hasCount) {
+    return COUNT_FORMATTER.format(count!);
+  }
+
+  if (hasPoints) {
+    return `${currencyIntlFormat(points!, 0)} pts`;
+  }
+
+  return "—";
+};
+
+export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading }: PlayerListProps) => {
   const [activeSort, setActiveSort] = useState<SortInterface>({
-    sortKey: "rank",
+    sortKey: "leaderboardRank",
     sort: "asc",
   });
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedPlayerAddress, setSelectedPlayerAddress] = useState<string | null>(null);
 
   const isBlitz = getIsBlitz();
@@ -41,16 +73,16 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
   const leaderboardGridTemplate = useMemo(
     () =>
       showTribeDetails
-        ? "grid-cols-[68px_minmax(0,_1.6fr)_minmax(0,_1.2fr)_minmax(0,_0.8fr)_minmax(0,_0.85fr)_minmax(0,_1.05fr)]"
-        : "grid-cols-[68px_minmax(0,_2.4fr)_minmax(0,_0.85fr)_minmax(0,_0.9fr)_minmax(0,_1.3fr)]",
+        ? "grid-cols-[68px_minmax(0,_1.25fr)_minmax(0,_1.1fr)_minmax(0,_0.8fr)_minmax(0,_0.8fr)_minmax(0,_0.85fr)_minmax(0,_0.9fr)_minmax(0,_0.95fr)_minmax(0,_1fr)]"
+        : "grid-cols-[68px_minmax(0,_1.7fr)_minmax(0,_0.9fr)_minmax(0,_0.9fr)_minmax(0,_0.95fr)_minmax(0,_0.95fr)_minmax(0,_1.05fr)_minmax(0,_1.1fr)]",
     [showTribeDetails],
   );
 
   useEffect(() => {
     if (!showTribeDetails && activeSort.sortKey === "guild.name") {
-      setActiveSort({ sortKey: "rank", sort: "asc" });
+      setActiveSort({ sortKey: "leaderboardRank", sort: "asc" });
     }
-  }, [showTribeDetails, activeSort.sortKey, setActiveSort]);
+  }, [showTribeDetails, activeSort.sortKey]);
 
   useEffect(() => {
     if (!selectedPlayerAddress) {
@@ -64,66 +96,57 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
     }
   }, [players, selectedPlayerAddress]);
 
-  // Calculate real-time points for all players including unregistered shareholder points
-  const playersWithRealTimePoints = useMemo(() => {
-    const leaderboardManager = LeaderboardManager.instance(components, getRealmCountPerHyperstructure());
-
+  const playersWithStats = useMemo<PlayerWithStats[]>(() => {
     return players.map((player) => {
-      // Get only registered points to avoid double-counting
-      const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(ContractAddress(player.address));
-      const unregisteredShareholderPoints = leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(
-        ContractAddress(player.address),
-      );
-      const totalPoints = registeredPoints + unregisteredShareholderPoints;
+      const entry = player.leaderboardEntry ?? null;
+
+      const tilesExplored = entry?.exploredTiles ?? 0;
+      const tilesExploredPoints = entry?.exploredTilePoints ?? 0;
+      const cratesOpened = entry?.relicCratesOpened ?? 0;
+      const cratesOpenedPoints = entry?.relicCratePoints ?? 0;
+      const riftsTaken = entry?.riftsTaken ?? entry?.campsTaken ?? 0;
+      const riftsTakenPoints = entry?.riftPoints ?? entry?.campPoints ?? 0;
+      const hyperstructuresTaken = entry?.hyperstructuresConquered ?? 0;
+      const hyperstructuresTakenPoints = entry?.hyperstructurePoints ?? 0;
+      const hyperstructuresHeldPoints = entry?.hyperstructuresHeldPoints ?? 0;
 
       return {
         ...player,
-        registeredPoints,
-        totalPoints,
-        unregisteredShareholderPoints,
-        hasUnregisteredShareholderPoints: unregisteredShareholderPoints > 0,
-      };
+        leaderboardEntry: entry,
+        leaderboardRank: entry?.rank ?? player.rank ?? Number.MAX_SAFE_INTEGER,
+        leaderboardPoints: entry?.points ?? player.points ?? 0,
+        tilesExplored,
+        tilesExploredPoints,
+        cratesOpened,
+        cratesOpenedPoints,
+        riftsTaken,
+        riftsTakenPoints,
+        hyperstructuresTaken,
+        hyperstructuresTakenPoints,
+        hyperstructuresHeldPoints,
+      } satisfies PlayerWithStats;
     });
-  }, [players, components]);
+  }, [players]);
 
-  // Sort players by real-time total points and assign real-time ranks
-  const playersWithRealTimeRanks = useMemo(() => {
-    // First sort by total points to get real-time rankings
-    const sortedByPoints = [...playersWithRealTimePoints].sort((a, b) => b.totalPoints - a.totalPoints);
-
-    // Assign real-time ranks
-    return sortedByPoints.map((player, index) => ({
-      ...player,
-      realTimeRank: player.totalPoints > 0 ? index + 1 : Number.MAX_SAFE_INTEGER,
-    }));
-  }, [playersWithRealTimePoints]);
-
-  const sortedPlayers = useMemo(() => {
-    // First filter out system players
-    const filteredPlayers = playersWithRealTimeRanks.filter(
+  const filteredPlayers = useMemo(() => {
+    return playersWithStats.filter(
       (player) => !player.name.includes("Daydreams") && !player.name.includes("Central Bank"),
     );
+  }, [playersWithStats]);
 
-    // Then filter by search query if present
-    const normalizedQuery = searchQuery.toLowerCase();
-    const searchFiltered = searchQuery
-      ? filteredPlayers.filter((player) => {
-          const matchesName = player.name.toLowerCase().includes(normalizedQuery);
-          const matchesGuild = showTribeDetails ? player.guild?.name?.toLowerCase().includes(normalizedQuery) : false;
-
-          return matchesName || matchesGuild;
-        })
-      : filteredPlayers;
-
-    // For sorting, map rank to realTimeRank and points to totalPoints
-    const playersForSorting = searchFiltered.map((player) => ({
+  const sortedPlayers = useMemo(() => {
+    const playersForSorting = filteredPlayers.map((player) => ({
       ...player,
-      rank: player.realTimeRank,
-      points: player.totalPoints,
+      rank: player.leaderboardRank,
+      points: player.leaderboardPoints,
     }));
 
-    return sortItems(playersForSorting, activeSort, { sortKey: "rank", sort: "asc" });
-  }, [playersWithRealTimeRanks, activeSort, searchQuery, showTribeDetails]);
+    return sortItems(playersForSorting, activeSort, { sortKey: "leaderboardRank", sort: "asc" });
+  }, [filteredPlayers, activeSort]);
+
+  useEffect(() => {
+    console.log({ players });
+  }, [players]);
 
   const handleSelectPlayer = (address: PlayerCustom["address"]) => {
     const normalized = String(address);
@@ -163,7 +186,6 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
           <div className="flex flex-col items-center justify-center h-32 text-gold/60">
             <User className="w-8 h-8 mb-2 opacity-50" />
             <p className="text-sm">No players found</p>
-            {searchQuery && <p className="text-xs mt-1">Try adjusting your search query</p>}
           </div>
         )}
       </div>
@@ -183,8 +205,8 @@ const PlayerListHeader = ({
   gridTemplateClass: string;
 }) => {
   const sortingParams = useMemo(() => {
-    const params = [
-      { label: "Rank", sortKey: "rank", align: "justify-center text-center" },
+    const params: Array<{ label: string; sortKey: string; align: string }> = [
+      { label: "Rank", sortKey: "leaderboardRank", align: "justify-center text-center" },
       { label: "Name", sortKey: "name", align: "justify-start text-left" },
     ];
 
@@ -193,9 +215,12 @@ const PlayerListHeader = ({
     }
 
     params.push(
-      { label: "Realms", sortKey: "realms", align: "justify-center text-center" },
-      { label: "Hypers", sortKey: "hyperstructures", align: "justify-center text-center" },
-      { label: "Points", sortKey: "points", align: "justify-center text-center" },
+      { label: "Tiles", sortKey: "tilesExplored", align: "justify-center text-center" },
+      { label: "Crates", sortKey: "cratesOpened", align: "justify-center text-center" },
+      { label: "Rifts/Camps", sortKey: "riftsTaken", align: "justify-center text-center" },
+      { label: "HS Taken", sortKey: "hyperstructuresTaken", align: "justify-center text-center" },
+      { label: "HS Held", sortKey: "hyperstructuresHeldPoints", align: "justify-center text-center" },
+      { label: "Points", sortKey: "leaderboardPoints", align: "justify-center text-center" },
     );
 
     return params;
@@ -242,13 +267,7 @@ const PlayerRow = ({
   gridTemplateClass,
   isSelected,
 }: {
-  player: PlayerCustom & {
-    registeredPoints: number;
-    totalPoints: number;
-    unregisteredShareholderPoints: number;
-    hasUnregisteredShareholderPoints: boolean;
-    realTimeRank: number;
-  };
+  player: PlayerWithStats;
   onSelect: () => void;
   whitelistPlayer: (address: ContractAddress) => void;
   isLoading: boolean;
@@ -258,9 +277,14 @@ const PlayerRow = ({
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  // Use pre-calculated values from parent component
-  const { totalPoints, hasUnregisteredShareholderPoints, realTimeRank } = player;
-  const isUnranked = realTimeRank === Number.MAX_SAFE_INTEGER;
+  const { leaderboardPoints, leaderboardRank, leaderboardEntry } = player;
+  const isUnranked = leaderboardRank === Number.MAX_SAFE_INTEGER;
+  const tilesLabel = formatActivityValue(player.tilesExplored, player.tilesExploredPoints);
+  const cratesLabel = formatActivityValue(player.cratesOpened, player.cratesOpenedPoints);
+  const riftsLabel = formatActivityValue(player.riftsTaken, player.riftsTakenPoints);
+  const hyperstructuresTakenLabel = formatActivityValue(player.hyperstructuresTaken, player.hyperstructuresTakenPoints);
+  const hyperstructuresHeldLabel = formatActivityValue(null, player.hyperstructuresHeldPoints);
+  const hasShareholderPoints = (leaderboardEntry?.unregisteredPoints ?? 0) > 0;
 
   return (
     <div
@@ -295,7 +319,7 @@ const PlayerRow = ({
               isUnranked ? "text-red-400" : isSelected ? "text-lightest" : "text-gold/90",
             )}
           >
-            {isUnranked ? " - " : `#${realTimeRank}`}
+            {isUnranked ? " - " : `#${leaderboardRank}`}
           </span>
         </div>
         <div className="flex min-w-0 items-center gap-2">
@@ -336,7 +360,7 @@ const PlayerRow = ({
             "text-gold/90": !isSelected,
           })}
         >
-          {player.realms || 0}
+          {tilesLabel}
         </div>
         <div
           className={clsx("flex justify-center text-sm font-medium transition-colors", {
@@ -344,19 +368,41 @@ const PlayerRow = ({
             "text-gold/90": !isSelected,
           })}
         >
-          {player.hyperstructures || 0}
+          {cratesLabel}
+        </div>
+        <div
+          className={clsx("flex justify-center text-sm font-medium transition-colors", {
+            "text-lightest": isSelected,
+            "text-gold/90": !isSelected,
+          })}
+        >
+          {riftsLabel}
+        </div>
+        <div
+          className={clsx("flex justify-center text-sm font-medium transition-colors", {
+            "text-lightest": isSelected,
+            "text-gold/90": !isSelected,
+          })}
+        >
+          {hyperstructuresTakenLabel}
+        </div>
+        <div
+          className={clsx("flex justify-center text-sm font-medium transition-colors", {
+            "text-lightest": isSelected,
+            "text-gold/90": !isSelected,
+          })}
+        >
+          {hyperstructuresHeldLabel}
         </div>
         <div
           className={clsx("flex items-center justify-center gap-2 text-sm font-semibold", {
-            "text-amber-200": isSelected && totalPoints > 1000 && !hasUnregisteredShareholderPoints,
-            "text-amber-300": !isSelected && totalPoints > 1000 && !hasUnregisteredShareholderPoints,
-            "text-order-brilliance text-shadow-glow-brilliance-xs": hasUnregisteredShareholderPoints,
-            "text-lightest": isSelected && totalPoints <= 1000 && !hasUnregisteredShareholderPoints,
-            "text-gold/90": !isSelected && totalPoints <= 1000 && !hasUnregisteredShareholderPoints,
+            "text-amber-200": leaderboardPoints > 1000,
+            "text-lightest": isSelected && leaderboardPoints <= 1000,
+            "text-gold/90": !isSelected && leaderboardPoints <= 1000,
           })}
         >
-          <span>{currencyIntlFormat(totalPoints)}</span>
-          {hasUnregisteredShareholderPoints && (
+          <span>{currencyIntlFormat(leaderboardPoints)}</span>
+          {hasShareholderPoints && (
             <span
               className="text-order-brilliance text-xs"
               onMouseEnter={() =>

@@ -195,7 +195,6 @@ const transformLandingLeaderboardRow = (row: PlayerLeaderboardRow, rank: number)
     relicCratePoints,
     campsTaken,
     campPoints,
-    hyperstructuresHeld,
     hyperstructuresHeldPoints,
   } satisfies PlayerLeaderboardData;
 };
