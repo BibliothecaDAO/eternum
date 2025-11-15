@@ -18,6 +18,8 @@ import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { getTotalResourceWeightKg, gramToKg } from "../utils";
 
+const MAP_CENTER = 2147483646;
+
 type LaborConfig = {
   laborProductionPerResource: number;
   laborBurnPerResourceOutput: number;
@@ -48,6 +50,7 @@ export class ClientConfigManager {
   simpleBuildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   structureCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   resourceWeightsKg: Record<number, number> = {};
+  mapCenter: number = MAP_CENTER;
 
   public setDojo(components: ContractComponents, config: Config) {
     this.components = components;
@@ -59,6 +62,7 @@ export class ClientConfigManager {
     this.initializeBuildingCosts();
     this.initializeStructureCosts();
     this.initializeResourceWeights();
+    this.initializeMapCenter();
   }
 
   public static instance(): ClientConfigManager {
@@ -80,6 +84,13 @@ export class ClientConfigManager {
     } catch (error) {
       console.warn("ClientConfigManager fallback due to error", error);
       return defaultValue;
+    }
+  }
+
+  private initializeMapCenter() {
+    const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+    if (worldConfig) {
+      this.mapCenter = MAP_CENTER - Number(worldConfig.map_center_offset ?? 0);
     }
   }
 
@@ -1145,11 +1156,8 @@ export class ClientConfigManager {
     }, false);
   }
 
-  getMapCenterOffset() {
-    return this.getValueOrDefault(() => {
-      const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-      return Number(worldConfig?.map_center_offset ?? 0);
-    }, 0);
+  getMapCenter() {
+    return this.mapCenter;
   }
 }
 
