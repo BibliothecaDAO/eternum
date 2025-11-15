@@ -1,6 +1,7 @@
 import { ID } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { createPointsLabelMaterial } from "../shaders/points-label-material";
+import { FrustumManager } from "../utils/frustum-manager";
 
 /**
  * Configuration for a single point label
@@ -41,6 +42,9 @@ export class PointsLabelRenderer {
   private sizesArray: Float32Array;
   private colorIndicesArray: Float32Array;
   private hoverArray: Float32Array;
+  private frustumManager?: FrustumManager;
+  private unsubscribeFrustum?: () => void;
+  private boundsDirty = true;
 
   constructor(
     scene: THREE.Scene,
@@ -50,6 +54,7 @@ export class PointsLabelRenderer {
     hoverScale = 1.2,
     hoverBrightness = 1.3,
     sizeAttenuation = false,
+    frustumManager?: FrustumManager,
   ) {
     this.maxPoints = maxPoints;
 
@@ -77,7 +82,6 @@ export class PointsLabelRenderer {
 
     // Create Points object
     this.points = new THREE.Points(this.geometry, this.material);
-    this.points.frustumCulled = false; // Disable frustum culling for consistent rendering
     this.points.renderOrder = 999; // Render after everything else (on top)
     scene.add(this.points);
 
@@ -86,6 +90,33 @@ export class PointsLabelRenderer {
     this.raycaster.params.Points = {
       threshold: pointSize / 1.5, // Adjusted threshold for better hit detection
     };
+
+    this.frustumManager = frustumManager;
+    if (this.frustumManager) {
+      this.unsubscribeFrustum = this.frustumManager.onChange(() => {
+        this.refreshFrustumVisibility();
+      });
+      this.refreshFrustumVisibility();
+    }
+  }
+
+  private refreshFrustumVisibility(): void {
+    if (!this.frustumManager) {
+      this.points.visible = this.currentCount > 0;
+      return;
+    }
+
+    if (this.currentCount === 0) {
+      this.points.visible = false;
+      return;
+    }
+
+    if (this.boundsDirty || !this.geometry.boundingSphere) {
+      this.geometry.computeBoundingSphere();
+      this.boundsDirty = false;
+    }
+
+    this.points.visible = this.frustumManager.isSphereVisible(this.geometry.boundingSphere);
   }
 
   /**
@@ -129,6 +160,8 @@ export class PointsLabelRenderer {
 
     // Update draw range
     this.geometry.setDrawRange(0, this.currentCount);
+    this.boundsDirty = true;
+    this.refreshFrustumVisibility();
   }
 
   /**
@@ -189,6 +222,9 @@ export class PointsLabelRenderer {
     if (this.hoveredEntityId === entityId) {
       this.hoveredEntityId = null;
     }
+
+    this.boundsDirty = true;
+    this.refreshFrustumVisibility();
   }
 
   /**
@@ -202,6 +238,8 @@ export class PointsLabelRenderer {
     this.geometry.setDrawRange(0, 0);
     this.hoverArray.fill(0);
     this.geometry.attributes.hover.needsUpdate = true;
+    this.boundsDirty = true;
+    this.refreshFrustumVisibility();
   }
 
   /**
@@ -299,6 +337,10 @@ export class PointsLabelRenderer {
    * Dispose resources
    */
   public dispose(): void {
+    if (this.unsubscribeFrustum) {
+      this.unsubscribeFrustum();
+      this.unsubscribeFrustum = undefined;
+    }
     this.geometry.dispose();
     this.material.dispose();
     this.points.parent?.remove(this.points);

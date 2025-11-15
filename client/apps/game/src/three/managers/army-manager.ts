@@ -3,6 +3,7 @@ import { ArmyModel } from "@/three/managers/army-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { ModelType } from "@/three/types/army";
 import { GUIManager, LABEL_STYLES } from "@/three/utils/";
+import { FrustumManager } from "@/three/utils/frustum-manager";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
 import type { SetupResult } from "@bibliothecadao/dojo";
 import { Position } from "@bibliothecadao/eternum";
@@ -126,6 +127,9 @@ export class ArmyManager {
     ally: PointsLabelRenderer;
     agent: PointsLabelRenderer;
   };
+  private frustumManager?: FrustumManager;
+  private frustumVisibilityDirty = false;
+  private unsubscribeFrustum?: () => void;
   private pendingExplorerTroopsUpdate: Map<ID, PendingExplorerTroopsUpdate> = new Map();
   private lastKnownArmiesTick: number = 0;
   private tickCheckTimeout: NodeJS.Timeout | null = null;
@@ -150,12 +154,20 @@ export class ArmyManager {
     dojoContext?: SetupResult,
     applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>,
     clearPendingRelicEffectsCallback?: (entityId: ID) => void,
+    frustumManager?: FrustumManager,
   ) {
     this.scene = scene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.armyModel = new ArmyModel(scene, labelsGroup, this.currentCameraView);
     this.scale = new Vector3(0.3, 0.3, 0.3);
     this.renderChunkSize = renderChunkSize;
+    this.frustumManager = frustumManager;
+    if (this.frustumManager) {
+      this.frustumVisibilityDirty = true;
+      this.unsubscribeFrustum = this.frustumManager.onChange(() => {
+        this.frustumVisibilityDirty = true;
+      });
+    }
     this.onMouseMove = this.onMouseMove.bind(this);
     this.onRightClick = this.onRightClick.bind(this);
     this.labelsGroup = labelsGroup || new Group();
@@ -695,6 +707,7 @@ export class ArmyManager {
     // Update all model instances
     this.armyModel.updateAllInstances();
     this.armyModel.computeBoundingSphere();
+    this.frustumVisibilityDirty = true;
   }
 
   private isArmyVisible(
@@ -1226,6 +1239,22 @@ export class ArmyManager {
     // Update relic effect positions to follow moving armies
     this.updateArmyAttachmentTransforms();
     this.updateRelicEffectPositions();
+
+    if (this.frustumVisibilityDirty) {
+      this.applyFrustumVisibilityToLabels();
+      this.frustumVisibilityDirty = false;
+    }
+  }
+
+  private applyFrustumVisibilityToLabels() {
+    if (!this.frustumManager) {
+      return;
+    }
+
+    this.entityIdLabels.forEach((label) => {
+      const isVisible = this.frustumManager!.isPointVisible(label.position);
+      label.element.style.display = isVisible ? "" : "none";
+    });
   }
 
   private getArmyWorldPosition = (_armyEntityId: ID, hexCoords: Position, isIntermediatePosition: boolean = false) => {
@@ -1267,6 +1296,7 @@ export class ArmyManager {
     this.armyModel.addLabel(army.entityId, label);
 
     this.updateArmyLabelData(army.entityId, army, label);
+    this.frustumVisibilityDirty = true;
   }
 
   public showLabel(entityId: ID): void {
@@ -1305,6 +1335,7 @@ export class ArmyManager {
           : this.pointsRenderers.enemy;
       renderer.setHover(entityId);
     }
+    this.frustumVisibilityDirty = true;
   }
 
   public hideLabel(entityId: ID): void {
@@ -1319,6 +1350,7 @@ export class ArmyManager {
         this.pointsRenderers.agent,
       ].forEach((renderer) => renderer.clearHover());
     }
+    this.frustumVisibilityDirty = true;
   }
 
   public hideAllLabels(): void {
@@ -1333,6 +1365,7 @@ export class ArmyManager {
         this.pointsRenderers.agent,
       ].forEach((renderer) => renderer.clearHover());
     }
+    this.frustumVisibilityDirty = true;
   }
 
   removeLabelsFromScene() {
@@ -1356,6 +1389,7 @@ export class ArmyManager {
     this.armyModel.removeLabel(Number(entityId));
     this.labelPool.release(label);
     this.entityIdLabels.delete(entityId);
+    this.frustumVisibilityDirty = true;
   }
 
   private configureArmyLabelInteractions(label: CSS2DObject): void {
@@ -1402,10 +1436,10 @@ export class ArmyManager {
           if (loadedCount === totalTextures) {
             // Use player texture for agent as fallback
             this.pointsRenderers = {
-              player: new PointsLabelRenderer(this.scene, loadedTextures.player!, 1000, 5, 0, 1.3, true),
-              enemy: new PointsLabelRenderer(this.scene, loadedTextures.enemy!, 1000, 5, 0, 1.3, true),
-              ally: new PointsLabelRenderer(this.scene, loadedTextures.ally!, 1000, 5, 0, 1.3, true),
-              agent: new PointsLabelRenderer(this.scene, loadedTextures.player!, 1000, 5, 0, 1.3, true),
+              player: new PointsLabelRenderer(this.scene, loadedTextures.player!, 1000, 5, 0, 1.3, true, this.frustumManager),
+              enemy: new PointsLabelRenderer(this.scene, loadedTextures.enemy!, 1000, 5, 0, 1.3, true, this.frustumManager),
+              ally: new PointsLabelRenderer(this.scene, loadedTextures.ally!, 1000, 5, 0, 1.3, true, this.frustumManager),
+              agent: new PointsLabelRenderer(this.scene, loadedTextures.player!, 1000, 5, 0, 1.3, true, this.frustumManager),
             };
 
             console.log("[ArmyManager] Points-based icon renderers initialized with params:", {
@@ -1771,6 +1805,11 @@ ${
   }
 
   public destroy() {
+    if (this.unsubscribeFrustum) {
+      this.unsubscribeFrustum();
+      this.unsubscribeFrustum = undefined;
+    }
+
     if (this.unsubscribeAccountStore) {
       this.unsubscribeAccountStore();
       this.unsubscribeAccountStore = undefined;

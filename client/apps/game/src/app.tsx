@@ -1,7 +1,7 @@
 import { MusicRouterProvider } from "@/audio";
-import { cleanupTracing } from "@/tracing";
+import { cleanupTracing } from "@/tracing/cleanup";
 import { ErrorBoundary, TransactionNotification, WorldLoading } from "@/ui/shared";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import type { Account, AccountInterface } from "starknet";
 import { env } from "../env";
@@ -21,13 +21,14 @@ import {
 } from "./ui/features/landing";
 import { StoryEventToastBridge, StoryEventToastProvider } from "./ui/features/story-events";
 import { LandingLayout } from "./ui/layouts/landing";
-import { World } from "./ui/layouts/world";
 import { PlayOverlayManager } from "./ui/layouts/play-overlay-manager";
 import { ConstructionGate } from "./ui/modules/construction-gate";
 import { LoadingScreen } from "./ui/modules/loading-screen";
 import { MobileBlocker } from "./ui/modules/mobile-blocker";
 import { getRandomBackgroundImage } from "./ui/utils/utils";
-import { FactoryPage } from "./ui/features/admin";
+
+const World = lazy(() => import("./ui/layouts/world").then((module) => ({ default: module.World })));
+const FactoryPage = lazy(() => import("./ui/features/admin").then((module) => ({ default: module.FactoryPage })));
 
 type ReadyAppProps = {
   backgroundImage: string;
@@ -46,7 +47,9 @@ const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
           <StoryEventToastProvider>
             <StoryEventToastBridge />
             <TransactionNotification />
-            <World backgroundImage={backgroundImage} />
+            <Suspense fallback={<LoadingScreen backgroundImage={backgroundImage} />}>
+              <World backgroundImage={backgroundImage} />
+            </Suspense>
             <WorldLoading />
           </StoryEventToastProvider>
         </ErrorBoundary>
@@ -135,14 +138,14 @@ function App() {
 
   useEffect(() => {
     const handleBeforeUnload = () => {
-      cleanupTracing();
+      void cleanupTracing();
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
-      cleanupTracing();
+      void cleanupTracing();
     };
   }, []);
 
@@ -171,7 +174,14 @@ function App() {
             </Route>
             <Route path="/play/*" element={<GameRoute backgroundImage={backgroundImage} />} />
             {/* Standalone factory route that does not require game bootstrap/sync */}
-            <Route path="/factory" element={<FactoryPage />} />
+            <Route
+              path="/factory"
+              element={
+                <Suspense fallback={<LoadingScreen backgroundImage={backgroundImage} />}>
+                  <FactoryPage />
+                </Suspense>
+              }
+            />
             {/* Admin route removed; factory now lives at top-level /factory */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
