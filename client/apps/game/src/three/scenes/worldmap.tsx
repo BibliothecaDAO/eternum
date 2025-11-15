@@ -2,7 +2,7 @@ import { AudioManager } from "@/audio/core/AudioManager";
 import { toast } from "sonner";
 
 import { getMapFromToriiExact, getStructuresDataFromTorii } from "@/dojo/queries";
-import { BoundsModelConfig, ToriiStreamManager } from "@/dojo/torii-stream-manager";
+import { BoundsModelConfig, GlobalModelStreamConfig, ToriiStreamManager } from "@/dojo/torii-stream-manager";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
@@ -101,20 +101,20 @@ const CHUNK_STREAM_MODELS: BoundsModelConfig[] = [
   { model: "s1_eternum-Structure", colField: "base.coord_x", rowField: "base.coord_y" },
   { model: "s1_eternum-QuestTile", colField: "coord.x", rowField: "coord.y" },
 ];
-const GLOBAL_STREAM_MODELS = [
-  "s1_eternum-BattleEvent",
-  "s1_eternum-ExplorerMoveEvent",
-  "s1_eternum-StoryEvent",
-  "s1_eternum-LiquidityEvent",
-  "s1_eternum-SeasonEnded",
-  "s1_eternum-Hyperstructure",
-  "s1_eternum-HyperstructureRequirements",
-  "s1_eternum-HyperstructureGlobals",
-  "s1_eternum-StructureBuildings",
-  "s1_eternum-ProductionBoostBonus",
-  "s1_eternum-Building",
-  "s1_eternum-AddressName",
-  "s1_eternum-Quest",
+const GLOBAL_STREAM_MODELS: GlobalModelStreamConfig[] = [
+  { model: "s1_eternum-BattleEvent", keyCount: 4 },
+  { model: "s1_eternum-ExplorerMoveEvent", keyCount: 1 },
+  { model: "s1_eternum-StoryEvent", keyCount: 3 },
+  { model: "s1_eternum-LiquidityEvent", keyCount: 2 },
+  { model: "s1_eternum-SeasonEnded", keyCount: 1 },
+  { model: "s1_eternum-Hyperstructure", keyCount: 1 },
+  { model: "s1_eternum-HyperstructureRequirements", keyCount: 1 },
+  { model: "s1_eternum-HyperstructureGlobals", keyCount: 1 },
+  { model: "s1_eternum-StructureBuildings", keyCount: 1 },
+  { model: "s1_eternum-ProductionBoostBonus", keyCount: 1 },
+  { model: "s1_eternum-Building", keyCount: 4 },
+  { model: "s1_eternum-AddressName", keyCount: 1 },
+  { model: "s1_eternum-Quest", keyCount: 2 },
 ];
 
 export default class WorldmapScene extends HexagonScene {

@@ -27,6 +27,12 @@ export interface ToriiStreamManagerConfig {
   clauseBuilder?: (descriptor: BoundsDescriptor) => Clause | null;
 }
 
+export interface GlobalModelStreamConfig {
+  model: string;
+  keyCount?: number;
+  patternMatching?: PatternMatching;
+}
+
 const defaultClauseBuilder = (descriptor: BoundsDescriptor): Clause | null => {
   const { models, additionalClauses } = descriptor;
 
@@ -124,7 +130,7 @@ export class ToriiStreamManager {
     this.currentSubscription = subscription;
   }
 
-  async setGlobalModels(models: string[]): Promise<void> {
+  async setGlobalModels(models: GlobalModelStreamConfig[]): Promise<void> {
     if (!models.length) {
       this.cancelGlobalSubscription();
       return;
@@ -161,10 +167,41 @@ export class ToriiStreamManager {
   }
 }
 
-const buildModelKeysClause = (models: string[]): Clause => ({
-  Keys: {
-    keys: [undefined],
-    pattern_matching: "FixedLen" as PatternMatching,
-    models,
-  },
-});
+const buildModelKeysClause = (models: GlobalModelStreamConfig[]): Clause => {
+  const grouped = models.reduce<
+    Map<
+      string,
+      {
+        keys: Array<string | undefined>;
+        pattern_matching: PatternMatching;
+        models: string[];
+      }
+    >
+  >((acc, { model, keyCount = 1, patternMatching = "FixedLen" }) => {
+    const normalizedKeyCount = Math.max(0, keyCount);
+    const signature = `${patternMatching}:${normalizedKeyCount}`;
+    let entry = acc.get(signature);
+
+    if (!entry) {
+      entry = {
+        keys: normalizedKeyCount > 0 ? new Array(normalizedKeyCount).fill(undefined) : [undefined],
+        pattern_matching: patternMatching,
+        models: [],
+      };
+      acc.set(signature, entry);
+    }
+
+    entry.models.push(model);
+    return acc;
+  }, new Map());
+
+  const clauses: Clause[] = Array.from(grouped.values()).map(({ keys, pattern_matching, models }) => ({
+    Keys: {
+      keys,
+      pattern_matching,
+      models,
+    },
+  }));
+
+  return buildCompositeClause(clauses);
+};
