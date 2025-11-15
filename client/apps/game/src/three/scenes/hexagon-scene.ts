@@ -543,6 +543,7 @@ export abstract class HexagonScene {
             }
             const tmp = new InstancedBiome(gltf, maxInstances, false, biome);
             this.biomeModels.set(biome as BiomeType, tmp);
+            this.onBiomeModelLoaded(tmp);
             this.scene.add(tmp.group);
             resolve();
           },
@@ -592,6 +593,10 @@ export abstract class HexagonScene {
 
   protected shouldUpdateBiomeAnimations(): boolean {
     return true;
+  }
+
+  protected onBiomeModelLoaded(_model: InstancedBiome): void {
+    // Derived scenes can override to configure biome meshes on load.
   }
 
   update(deltaTime: number): void {

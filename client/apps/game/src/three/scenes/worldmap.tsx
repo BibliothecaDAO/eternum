@@ -10,6 +10,7 @@ import { getBiomeVariant, HEX_SIZE } from "@/three/constants";
 import { ArmyManager } from "@/three/managers/army-manager";
 import { BattleDirectionManager } from "@/three/managers/battle-direction-manager";
 import { ChestManager } from "@/three/managers/chest-manager";
+import InstancedBiome from "@/three/managers/instanced-biome";
 import Minimap from "@/three/managers/minimap";
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
 import { SelectionPulseManager } from "@/three/managers/selection-pulse-manager";
@@ -2722,6 +2723,7 @@ export default class WorldmapScene extends HexagonScene {
   private updateCurrentChunkBounds(startRow: number, startCol: number) {
     const bounds = this.computeChunkBounds(startRow, startCol);
     this.currentChunkBounds = bounds;
+    this.biomeModels.forEach((biome) => biome.setWorldBounds(bounds));
     this.structureManager.setChunkBounds(bounds);
   }
 
@@ -2969,6 +2971,12 @@ export default class WorldmapScene extends HexagonScene {
       return true;
     }
     return this.frustumManager.isBoxVisible(this.currentChunkBounds.box);
+  }
+
+  protected override onBiomeModelLoaded(model: InstancedBiome): void {
+    if (this.currentChunkBounds) {
+      model.setWorldBounds(this.currentChunkBounds);
+    }
   }
 
   public clearTileEntityCache() {

@@ -10,7 +10,7 @@ import { BuildingType, ClientComponents, ID, RelicEffect, StructureType } from "
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
-import { Euler, Group, Object3D, Scene, Vector3 } from "three";
+import { Box3, Euler, Group, Object3D, Scene, Sphere, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { GuardArmy } from "../../../../../../packages/core/src/stores/map-data-store";
 import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
@@ -131,7 +131,7 @@ export class StructureManager {
   };
   private frustumManager?: FrustumManager;
   private frustumVisibilityDirty = false;
-  private currentChunkBounds?: { box: THREE.Box3; sphere: THREE.Sphere };
+  private currentChunkBounds?: { box: Box3; sphere: Sphere };
   private unsubscribeFrustum?: () => void;
   private readonly handleStructureRecordRemoved = (structure: StructureInfo) => {
     const entityNumericId = Number(structure.entityId);
@@ -456,6 +456,9 @@ export class StructureManager {
         this.structureModels.set(structureType, models);
         models.forEach((model) => {
           this.scene.add(model.group);
+          if (this.currentChunkBounds) {
+            model.setWorldBounds(this.currentChunkBounds);
+          }
         });
         return models;
       })
@@ -1121,8 +1124,11 @@ export class StructureManager {
     return undefined;
   }
 
-  public setChunkBounds(bounds?: { box: THREE.Box3; sphere: THREE.Sphere }) {
+  public setChunkBounds(bounds?: { box: Box3; sphere: Sphere }) {
     this.currentChunkBounds = bounds ?? undefined;
+    this.structureModels.forEach((models) => {
+      models.forEach((model) => model.setWorldBounds(bounds));
+    });
   }
 
   private isChunkVisible(): boolean {
