@@ -16,9 +16,9 @@ const envSchema = z.object({
   VITE_PUBLIC_CLIENT_FEE_RECIPIENT: z.string().startsWith("0x"),
 
   // API endpoints
-  VITE_PUBLIC_TORII: z.string().url(),
-  VITE_PUBLIC_NODE_URL: z.string().url(),
-  VITE_PUBLIC_TORII_RELAY: z.string(),
+  VITE_PUBLIC_TORII: z.string().url().optional(),
+  VITE_PUBLIC_NODE_URL: z.string().url().optional(),
+  VITE_PUBLIC_TORII_RELAY: z.string().optional(),
   VITE_PUBLIC_SCORE_TO_BEAT_TORII_ENDPOINTS: z.string().optional().default(""),
   // Optional external endpoints
   VITE_PUBLIC_CARTRIDGE_API_BASE: z.string().url().optional().default("https://api.cartridge.gg"),
@@ -41,7 +41,7 @@ const envSchema = z.object({
     .default("false"),
   // Version and chain info
   VITE_PUBLIC_GAME_VERSION: z.string().optional().default(""),
-  VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "slot", "slottest", "local"]), // Add other chains as needed
+  VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "slot", "slottest", "local"]).optional().default("local"), // Add other chains as needed
 
   VITE_PUBLIC_CONSTRUCTION_FLAG: z
     .string()
