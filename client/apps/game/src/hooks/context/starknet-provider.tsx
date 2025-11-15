@@ -12,7 +12,7 @@ import { useAccountStore } from "../store/use-account-store";
 import { buildPolicies } from "./policies";
 import { useControllerAccount } from "./use-controller-account";
 
-const slot: string = env.VITE_PUBLIC_SLOT ?? "";
+const slot: string = env.VITE_PUBLIC_SLOT;
 const namespace: string = "s1_eternum";
 
 // ==============================================
@@ -46,8 +46,6 @@ const chain_id = isLocal
         ? constants.StarknetChainId.SN_SEPOLIA
         : constants.StarknetChainId.SN_MAIN;
 
-const PUBLIC_NODE_URL = env.VITE_PUBLIC_NODE_URL ?? "https://api.cartridge.gg/x/starknet/sepolia";
-
 const controller = new ControllerConnector({
   chains: [
     {
@@ -57,8 +55,8 @@ const controller = new ControllerConnector({
           ? SLOT_RPC_URL
           : isSlottest
             ? SLOT_RPC_URL_TEST
-            : PUBLIC_NODE_URL !== "https://api.cartridge.gg/x/eternum-blitz-slot-test/katana"
-              ? PUBLIC_NODE_URL
+            : env.VITE_PUBLIC_NODE_URL !== "http://localhost:5050"
+              ? env.VITE_PUBLIC_NODE_URL
               : "https://api.cartridge.gg/x/starknet/sepolia",
     },
   ],
@@ -106,17 +104,17 @@ const katanaLocalChain = {
 
 export function StarknetProvider({ children }: { children: React.ReactNode }) {
   const rpc = useCallback(() => {
-    return { nodeUrl: PUBLIC_NODE_URL };
+    return { nodeUrl: env.VITE_PUBLIC_NODE_URL };
   }, []);
 
   const { connectors: predeployedConnectors } = usePredeployedAccounts({
-    rpc: PUBLIC_NODE_URL,
+    rpc: env.VITE_PUBLIC_NODE_URL as string,
     id: "katana",
     name: "Katana",
   });
 
   const paymasterRpc = useCallback(() => {
-    return { nodeUrl: PUBLIC_NODE_URL };
+    return { nodeUrl: env.VITE_PUBLIC_NODE_URL };
   }, []);
 
   return (

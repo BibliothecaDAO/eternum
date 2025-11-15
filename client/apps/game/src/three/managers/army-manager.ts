@@ -1443,13 +1443,14 @@ export class ArmyManager {
 
           // When all textures are loaded, create the renderers
           if (loadedCount === totalTextures) {
+            const scaledPointSize = 5 * 0.5;
             // Use player texture for agent as fallback
             this.pointsRenderers = {
               player: new PointsLabelRenderer(
                 this.scene,
                 loadedTextures.player!,
                 1000,
-                5,
+                scaledPointSize,
                 0,
                 1.3,
                 true,
@@ -1459,7 +1460,7 @@ export class ArmyManager {
                 this.scene,
                 loadedTextures.enemy!,
                 1000,
-                5,
+                scaledPointSize,
                 0,
                 1.3,
                 true,
@@ -1469,7 +1470,7 @@ export class ArmyManager {
                 this.scene,
                 loadedTextures.ally!,
                 1000,
-                5,
+                scaledPointSize,
                 0,
                 1.3,
                 true,
@@ -1479,7 +1480,7 @@ export class ArmyManager {
                 this.scene,
                 loadedTextures.player!,
                 1000,
-                5,
+                scaledPointSize,
                 0,
                 1.3,
                 true,
@@ -1489,7 +1490,7 @@ export class ArmyManager {
 
             console.log("[ArmyManager] Points-based icon renderers initialized with params:", {
               maxPoints: 1000,
-              pointSize: 5,
+              pointSize: scaledPointSize,
               hoverScale: 0,
               hoverBrightness: 1.3,
               sizeAttenuation: true,
