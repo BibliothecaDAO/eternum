@@ -131,6 +131,7 @@ export class StructureManager {
   };
   private frustumManager?: FrustumManager;
   private frustumVisibilityDirty = false;
+  private currentChunkBounds?: { box: THREE.Box3; sphere: THREE.Sphere };
   private unsubscribeFrustum?: () => void;
   private readonly handleStructureRecordRemoved = (structure: StructureInfo) => {
     const entityNumericId = Number(structure.entityId);
@@ -1120,10 +1121,23 @@ export class StructureManager {
     return undefined;
   }
 
+  public setChunkBounds(bounds?: { box: THREE.Box3; sphere: THREE.Sphere }) {
+    this.currentChunkBounds = bounds ?? undefined;
+  }
+
+  private isChunkVisible(): boolean {
+    if (!this.frustumManager || !this.currentChunkBounds) {
+      return true;
+    }
+    return this.frustumManager.isBoxVisible(this.currentChunkBounds.box);
+  }
+
   updateAnimations(deltaTime: number) {
-    this.structureModels.forEach((models) => {
-      models.forEach((model) => model.updateAnimations(deltaTime));
-    });
+    if (this.isChunkVisible()) {
+      this.structureModels.forEach((models) => {
+        models.forEach((model) => model.updateAnimations(deltaTime));
+      });
+    }
 
     if (this.frustumVisibilityDirty) {
       this.applyFrustumVisibilityToLabels();

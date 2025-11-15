@@ -123,6 +123,7 @@ export default class WorldmapScene extends HexagonScene {
   private chunkSwitchPadding = 0.45;
   private lastChunkSwitchPosition?: Vector3;
   private hasChunkSwitchAnchor: boolean = false;
+  private currentChunkBounds?: { box: Box3; sphere: Sphere };
   private wheelHandler: ((event: WheelEvent) => void) | null = null;
   private wheelAccumulator = 0;
   private wheelResetTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -2718,6 +2719,12 @@ export default class WorldmapScene extends HexagonScene {
     return { box, sphere };
   }
 
+  private updateCurrentChunkBounds(startRow: number, startCol: number) {
+    const bounds = this.computeChunkBounds(startRow, startCol);
+    this.currentChunkBounds = bounds;
+    this.structureManager.setChunkBounds(bounds);
+  }
+
   private worldToChunkCoordinates(x: number, z: number): { chunkX: number; chunkZ: number } {
     const chunkX = Math.floor(x / (this.chunkSize * HEX_SIZE * Math.sqrt(3)));
     const chunkZ = Math.floor(z / (this.chunkSize * HEX_SIZE * 1.5));
@@ -2820,6 +2827,7 @@ export default class WorldmapScene extends HexagonScene {
     this.clearEntitySelection();
 
     this.currentChunk = chunkKey;
+    this.updateCurrentChunkBounds(startRow, startCol);
 
     await this.updateToriiStreamBoundsForChunk(startRow, startCol);
 
@@ -2908,6 +2916,8 @@ export default class WorldmapScene extends HexagonScene {
     const memoryMonitor = (window as any).__gameRenderer?.memoryMonitor;
     const preChunkStats = memoryMonitor?.getCurrentStats(`chunk-refresh-pre-${chunkKey}`);
 
+    this.updateCurrentChunkBounds(startRow, startCol);
+
     const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
     this.updatePinnedChunks(surroundingChunks);
     surroundingChunks.forEach((chunk) => this.computeTileEntities(chunk));
@@ -2949,6 +2959,16 @@ export default class WorldmapScene extends HexagonScene {
     this.structureManager.updateAnimations(deltaTime);
     this.chestManager.update(deltaTime);
     this.updateMinimapThrottled?.();
+  }
+
+  protected override shouldUpdateBiomeAnimations(): boolean {
+    if (!this.currentChunkBounds) {
+      return true;
+    }
+    if (!this.frustumManager) {
+      return true;
+    }
+    return this.frustumManager.isBoxVisible(this.currentChunkBounds.box);
   }
 
   public clearTileEntityCache() {

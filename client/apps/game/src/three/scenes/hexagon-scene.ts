@@ -590,6 +590,10 @@ export abstract class HexagonScene {
     this.setupGroundMeshGUI();
   }
 
+  protected shouldUpdateBiomeAnimations(): boolean {
+    return true;
+  }
+
   update(deltaTime: number): void {
     this.interactiveHexManager.update();
     this.updateLights();
@@ -598,13 +602,15 @@ export abstract class HexagonScene {
     if (this.shouldEnableStormEffects()) {
       this.updateStormEffects();
     }
-    this.biomeModels.forEach((biome) => {
-      try {
-        biome.updateAnimations(deltaTime);
-      } catch (error) {
-        console.error(`Error updating biome animations:`, error);
-      }
-    });
+    if (this.shouldUpdateBiomeAnimations()) {
+      this.biomeModels.forEach((biome) => {
+        try {
+          biome.updateAnimations(deltaTime);
+        } catch (error) {
+          console.error(`Error updating biome animations:`, error);
+        }
+      });
+    }
   }
 
   private updateLights = throttle(() => {

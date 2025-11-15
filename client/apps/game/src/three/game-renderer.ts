@@ -63,6 +63,7 @@ export default class GameRenderer {
   private stats!: Stats;
   private memoryMonitor?: MemoryMonitor;
   private memoryStatsElement?: HTMLDivElement;
+  private statsDomElement?: HTMLElement;
 
   // Camera settings
   private cameraDistance = 10; // Maintain the same distance
@@ -238,6 +239,7 @@ export default class GameRenderer {
   initStats() {
     this.stats = new (Stats as any)();
     document.body.appendChild(this.stats.dom);
+    this.statsDomElement = this.stats.dom;
 
     // Initialize memory monitoring
     this.initMemoryMonitoring();
@@ -827,6 +829,9 @@ export default class GameRenderer {
       }
 
       // Clean up renderer resources
+      if (this.renderer?.domElement && this.renderer.domElement.parentElement) {
+        this.renderer.domElement.parentElement.removeChild(this.renderer.domElement);
+      }
       if (this.renderer) {
         this.renderer.dispose();
       }
@@ -865,6 +870,13 @@ export default class GameRenderer {
       // Clean up memory monitoring
       if (this.memoryStatsElement && this.memoryStatsElement.parentNode) {
         this.memoryStatsElement.parentNode.removeChild(this.memoryStatsElement);
+      }
+      if (this.statsDomElement && this.statsDomElement.parentNode) {
+        this.statsDomElement.parentNode.removeChild(this.statsDomElement);
+        this.statsDomElement = undefined;
+      }
+      if (this.labelRendererElement) {
+        this.labelRendererElement.replaceChildren();
       }
 
       console.log("GameRenderer: Destroyed and cleaned up successfully");
