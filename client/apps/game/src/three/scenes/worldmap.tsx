@@ -101,7 +101,21 @@ const CHUNK_STREAM_MODELS: BoundsModelConfig[] = [
   { model: "s1_eternum-Structure", colField: "base.coord_x", rowField: "base.coord_y" },
   { model: "s1_eternum-QuestTile", colField: "coord.x", rowField: "coord.y" },
 ];
-const GLOBAL_STREAM_MODELS = ["s1_eternum-BattleEvent"];
+const GLOBAL_STREAM_MODELS = [
+  "s1_eternum-BattleEvent",
+  "s1_eternum-ExplorerMoveEvent",
+  "s1_eternum-StoryEvent",
+  "s1_eternum-LiquidityEvent",
+  "s1_eternum-SeasonEnded",
+  "s1_eternum-Hyperstructure",
+  "s1_eternum-HyperstructureRequirements",
+  "s1_eternum-HyperstructureGlobals",
+  "s1_eternum-StructureBuildings",
+  "s1_eternum-ProductionBoostBonus",
+  "s1_eternum-Building",
+  "s1_eternum-AddressName",
+  "s1_eternum-Quest",
+];
 
 export default class WorldmapScene extends HexagonScene {
   private chunkSize = 8; // Size of each chunk
