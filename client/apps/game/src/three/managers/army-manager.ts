@@ -1445,10 +1445,46 @@ export class ArmyManager {
           if (loadedCount === totalTextures) {
             // Use player texture for agent as fallback
             this.pointsRenderers = {
-              player: new PointsLabelRenderer(this.scene, loadedTextures.player!, 1000, 5, 0, 1.3, true, this.frustumManager),
-              enemy: new PointsLabelRenderer(this.scene, loadedTextures.enemy!, 1000, 5, 0, 1.3, true, this.frustumManager),
-              ally: new PointsLabelRenderer(this.scene, loadedTextures.ally!, 1000, 5, 0, 1.3, true, this.frustumManager),
-              agent: new PointsLabelRenderer(this.scene, loadedTextures.player!, 1000, 5, 0, 1.3, true, this.frustumManager),
+              player: new PointsLabelRenderer(
+                this.scene,
+                loadedTextures.player!,
+                1000,
+                5,
+                0,
+                1.3,
+                true,
+                this.frustumManager,
+              ),
+              enemy: new PointsLabelRenderer(
+                this.scene,
+                loadedTextures.enemy!,
+                1000,
+                5,
+                0,
+                1.3,
+                true,
+                this.frustumManager,
+              ),
+              ally: new PointsLabelRenderer(
+                this.scene,
+                loadedTextures.ally!,
+                1000,
+                5,
+                0,
+                1.3,
+                true,
+                this.frustumManager,
+              ),
+              agent: new PointsLabelRenderer(
+                this.scene,
+                loadedTextures.player!,
+                1000,
+                5,
+                0,
+                1.3,
+                true,
+                this.frustumManager,
+              ),
             };
 
             console.log("[ArmyManager] Points-based icon renderers initialized with params:", {

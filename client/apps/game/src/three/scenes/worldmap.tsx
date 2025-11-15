@@ -59,7 +59,18 @@ import {
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Account, AccountInterface } from "starknet";
-import { Box3, Color, Group, InstancedBufferAttribute, Matrix4, Object3D, Raycaster, Sphere, Vector2, Vector3 } from "three";
+import {
+  Box3,
+  Color,
+  Group,
+  InstancedBufferAttribute,
+  Matrix4,
+  Object3D,
+  Raycaster,
+  Sphere,
+  Vector2,
+  Vector3,
+} from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { env } from "../../../env";
 import { FXManager } from "../managers/fx-manager";
@@ -2647,7 +2658,13 @@ export default class WorldmapScene extends HexagonScene {
 
     if (chunkChanged || force) {
       // Create and track the global chunk switch promise
-      this.globalChunkSwitchPromise = this.performChunkSwitch(chunkKey, startCol, startRow, force, cameraPosition.clone());
+      this.globalChunkSwitchPromise = this.performChunkSwitch(
+        chunkKey,
+        startCol,
+        startRow,
+        force,
+        cameraPosition.clone(),
+      );
 
       try {
         await this.globalChunkSwitchPromise;
