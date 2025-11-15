@@ -153,12 +153,7 @@ export const useSyncPlayerStructures = () => {
       }
 
       try {
-        const subscription = await syncEntitiesDebounced(
-          setup.network.toriiClient,
-          setup,
-          clause,
-          false,
-        );
+        const subscription = await syncEntitiesDebounced(setup.network.toriiClient, setup, clause, false);
 
         if (streamRequestIdRef.current !== requestId) {
           subscription.cancel();
@@ -219,10 +214,5 @@ export const useSyncPlayerStructures = () => {
     }
 
     syncPlayerStructureStream(fetchedStructures);
-  }, [
-    account.account?.address,
-    fetchedStructures,
-    setup.network?.toriiClient,
-    syncPlayerStructureStream,
-  ]);
+  }, [account.account?.address, fetchedStructures, setup.network?.toriiClient, syncPlayerStructureStream]);
 };
