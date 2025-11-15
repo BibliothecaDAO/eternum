@@ -327,6 +327,13 @@ export class PointsLabelRenderer {
   }
 
   /**
+   * Get a snapshot of entity IDs currently rendered as points
+   */
+  public getEntityIds(): ID[] {
+    return Array.from(this.entityIdToIndex.keys());
+  }
+
+  /**
    * Check if an entity has a point
    */
   public hasPoint(entityId: ID): boolean {

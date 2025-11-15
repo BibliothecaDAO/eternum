@@ -728,8 +728,9 @@ export class StructureManager {
     }
   }
 
-  async updateChunk(chunkKey: string) {
-    if (this.currentChunk === chunkKey) {
+  async updateChunk(chunkKey: string, options?: { force?: boolean }) {
+    const force = options?.force ?? false;
+    if (!force && this.currentChunk === chunkKey) {
       return;
     }
 
@@ -746,12 +747,18 @@ export class StructureManager {
     }
 
     // Check again if chunk key is still different (might have changed while waiting)
-    if (this.currentChunk === chunkKey) {
+    if (!force && this.currentChunk === chunkKey) {
       return;
     }
 
-    console.log(`[CHUNK SYNC] Switching structure chunk from ${this.currentChunk} to ${chunkKey}`);
-    this.currentChunk = chunkKey;
+    const previousChunk = this.currentChunk;
+    const isSwitch = previousChunk !== chunkKey;
+    if (isSwitch) {
+      console.log(`[CHUNK SYNC] Switching structure chunk from ${this.currentChunk} to ${chunkKey}`);
+      this.currentChunk = chunkKey;
+    } else if (force) {
+      console.log(`[CHUNK SYNC] Refreshing structure chunk ${chunkKey}`);
+    }
 
     // Create and track the chunk switch promise
     this.chunkSwitchPromise = Promise.resolve().then(() => {
@@ -761,7 +768,7 @@ export class StructureManager {
 
     try {
       await this.chunkSwitchPromise;
-      console.log(`[CHUNK SYNC] Structure chunk switch to ${chunkKey} completed`);
+      console.log(`[CHUNK SYNC] Structure chunk ${isSwitch ? "switch" : "refresh"} for ${chunkKey} completed`);
     } finally {
       this.chunkSwitchPromise = null;
     }

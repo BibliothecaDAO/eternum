@@ -385,10 +385,11 @@ export class ArmyManager {
     return false;
   }
 
-  async updateChunk(chunkKey: string) {
+  async updateChunk(chunkKey: string, options?: { force?: boolean }) {
+    const force = options?.force ?? false;
     await this.armyModel.loadPromise;
 
-    if (this.currentChunkKey === chunkKey) {
+    if (!force && this.currentChunkKey === chunkKey) {
       return;
     }
 
@@ -403,19 +404,26 @@ export class ArmyManager {
     }
 
     // Check again if chunk key is still different (might have changed while waiting)
-    if (this.currentChunkKey === chunkKey) {
+    if (!force && this.currentChunkKey === chunkKey) {
       return;
     }
 
-    console.log(`[CHUNK SYNC] Switching army chunk from ${this.currentChunkKey} to ${chunkKey}`);
-    this.currentChunkKey = chunkKey;
+    const previousChunkKey = this.currentChunkKey;
+
+    if (this.currentChunkKey !== chunkKey) {
+      console.log(`[CHUNK SYNC] Switching army chunk from ${this.currentChunkKey} to ${chunkKey}`);
+      this.currentChunkKey = chunkKey;
+    } else if (force) {
+      console.log(`[CHUNK SYNC] Refreshing army chunk ${chunkKey}`);
+    }
 
     // Create and track the chunk switch promise
     this.chunkSwitchPromise = this.renderVisibleArmies(chunkKey);
 
     try {
       await this.chunkSwitchPromise;
-      console.log(`[CHUNK SYNC] Army chunk switch to ${chunkKey} completed`);
+      const actionLabel = previousChunkKey === chunkKey ? "refresh" : "switch";
+      console.log(`[CHUNK SYNC] Army chunk ${actionLabel} for ${chunkKey} completed`);
     } finally {
       this.chunkSwitchPromise = null;
     }
@@ -692,8 +700,8 @@ export class ArmyManager {
         this.pointsRenderers.ally,
         this.pointsRenderers.agent,
       ].forEach((renderer) => {
-        this.armies.forEach((_, entityId) => {
-          if (!visibleArmyIds.has(entityId) && renderer.hasPoint(entityId)) {
+        renderer.getEntityIds().forEach((entityId) => {
+          if (!visibleArmyIds.has(entityId)) {
             renderer.removePoint(entityId);
           }
         });
@@ -1168,6 +1176,19 @@ export class ArmyManager {
     this.armyModel.removeLabel(entityId);
     this.entityIdLabels.delete(entityId);
     console.debug(`[ArmyManager] Removed entity ${entityId} from caches and labels`);
+
+    if (this.pointsRenderers) {
+      [
+        this.pointsRenderers.player,
+        this.pointsRenderers.enemy,
+        this.pointsRenderers.ally,
+        this.pointsRenderers.agent,
+      ].forEach((renderer) => {
+        if (renderer.hasPoint(entityId)) {
+          renderer.removePoint(entityId);
+        }
+      });
+    }
 
     if (this.currentChunkKey) {
       console.debug(`[ArmyManager] Rendering visible armies after removing entity ${entityId}`);

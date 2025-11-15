@@ -117,6 +117,7 @@ export default class WorldmapScene extends HexagonScene {
   private totalStructures: number = 0;
 
   private currentChunk: string = "null";
+  private isChunkTransitioning: boolean = false;
 
   private armyManager: ArmyManager;
   private pendingArmyMovements: Set<ID> = new Set();
@@ -1312,16 +1313,21 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     // Check if army is currently being rendered or is in chunk transition
-    if (this.globalChunkSwitchPromise) {
-      // Defer selection until chunk switch completes
-      this.globalChunkSwitchPromise.then(() => {
-        // Retry selection after chunk switch
+    if (this.isChunkTransitioning) {
+      const retrySelection = () => {
         if (this.armyManager.hasArmy(selectedEntityId)) {
           this.onArmySelection(selectedEntityId, playerAddress);
         } else {
           console.warn(`[DEBUG] Army ${selectedEntityId} not available after chunk switch`);
         }
-      });
+      };
+
+      // Defer selection until chunk switch completes
+      if (this.globalChunkSwitchPromise) {
+        this.globalChunkSwitchPromise.then(retrySelection);
+      } else {
+        setTimeout(retrySelection, 0);
+      }
       return;
     }
 
@@ -2656,8 +2662,9 @@ export default class WorldmapScene extends HexagonScene {
       return false;
     }
 
-    if (chunkChanged || force) {
+    if (chunkChanged) {
       // Create and track the global chunk switch promise
+      this.isChunkTransitioning = true;
       this.globalChunkSwitchPromise = this.performChunkSwitch(
         chunkKey,
         startCol,
@@ -2666,6 +2673,17 @@ export default class WorldmapScene extends HexagonScene {
         cameraPosition.clone(),
       );
 
+      try {
+        await this.globalChunkSwitchPromise;
+        return true;
+      } finally {
+        this.globalChunkSwitchPromise = null;
+        this.isChunkTransitioning = false;
+      }
+    }
+
+    if (force) {
+      this.globalChunkSwitchPromise = this.refreshCurrentChunk(chunkKey, startCol, startRow);
       try {
         await this.globalChunkSwitchPromise;
         return true;
@@ -2741,6 +2759,44 @@ export default class WorldmapScene extends HexagonScene {
     if (switchPosition) {
       this.lastChunkSwitchPosition = switchPosition;
       this.hasChunkSwitchAnchor = true;
+    }
+  }
+
+  private async refreshCurrentChunk(chunkKey: string, startCol: number, startRow: number) {
+    const memoryMonitor = (window as any).__gameRenderer?.memoryMonitor;
+    const preChunkStats = memoryMonitor?.getCurrentStats(`chunk-refresh-pre-${chunkKey}`);
+
+    const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
+    this.pinnedChunkKeys = new Set(surroundingChunks);
+    surroundingChunks.forEach((chunk) => this.computeTileEntities(chunk));
+
+    await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
+
+    const { row: chunkCenterRow, col: chunkCenterCol } = this.getChunkCenter(startRow, startCol);
+    this.interactiveHexManager.updateVisibleHexes(
+      chunkCenterRow,
+      chunkCenterCol,
+      this.renderChunkSize.width,
+      this.renderChunkSize.height,
+    );
+
+    await this.armyManager.updateChunk(chunkKey, { force: true });
+    await this.structureManager.updateChunk(chunkKey, { force: true });
+    await this.questManager.updateChunk(chunkKey, { force: true });
+    await this.chestManager.updateChunk(chunkKey, { force: true });
+
+    if (memoryMonitor) {
+      const postChunkStats = memoryMonitor.getCurrentStats(`chunk-refresh-post-${chunkKey}`);
+      if (preChunkStats && postChunkStats) {
+        const memoryDelta = postChunkStats.heapUsedMB - preChunkStats.heapUsedMB;
+        console.log(
+          `[CHUNK SYNC] Chunk refresh memory impact: ${memoryDelta > 0 ? "+" : ""}${memoryDelta.toFixed(1)}MB`,
+        );
+
+        if (Math.abs(memoryDelta) > 20) {
+          console.warn(`[CHUNK SYNC] Large memory change during chunk refresh: ${memoryDelta.toFixed(1)}MB`);
+        }
+      }
     }
   }
 

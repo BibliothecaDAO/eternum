@@ -141,8 +141,9 @@ export class QuestManager {
     }
   }
 
-  async updateChunk(chunkKey: string) {
-    if (this.currentChunkKey === chunkKey) {
+  async updateChunk(chunkKey: string, options?: { force?: boolean }) {
+    const force = options?.force ?? false;
+    if (!force && this.currentChunkKey === chunkKey) {
       return;
     }
 
@@ -157,12 +158,18 @@ export class QuestManager {
     }
 
     // Check again if chunk key is still different (might have changed while waiting)
-    if (this.currentChunkKey === chunkKey) {
+    if (!force && this.currentChunkKey === chunkKey) {
       return;
     }
 
-    console.log(`[CHUNK SYNC] Switching quest chunk from ${this.currentChunkKey} to ${chunkKey}`);
-    this.currentChunkKey = chunkKey;
+    const previousChunk = this.currentChunkKey;
+    const isSwitch = previousChunk !== chunkKey;
+    if (isSwitch) {
+      console.log(`[CHUNK SYNC] Switching quest chunk from ${this.currentChunkKey} to ${chunkKey}`);
+      this.currentChunkKey = chunkKey;
+    } else if (force) {
+      console.log(`[CHUNK SYNC] Refreshing quest chunk ${chunkKey}`);
+    }
 
     // Create and track the chunk switch promise
     this.chunkSwitchPromise = Promise.resolve().then(() => {
@@ -171,7 +178,7 @@ export class QuestManager {
 
     try {
       await this.chunkSwitchPromise;
-      console.log(`[CHUNK SYNC] Quest chunk switch to ${chunkKey} completed`);
+      console.log(`[CHUNK SYNC] Quest chunk ${isSwitch ? "switch" : "refresh"} for ${chunkKey} completed`);
     } finally {
       this.chunkSwitchPromise = null;
     }
