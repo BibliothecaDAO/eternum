@@ -1,5 +1,5 @@
 import { BiomeType, HexPosition } from "@bibliothecadao/types";
-import { getFeltCenterOffset } from "./utils";
+import { FELT_CENTER } from "./utils";
 
 export type ActionPath = {
   hex: HexPosition;
@@ -24,7 +24,7 @@ export class ActionPaths {
   private readonly FELT_CENTER: number;
   constructor() {
     this.paths = new Map();
-    this.FELT_CENTER = getFeltCenterOffset();
+    this.FELT_CENTER = FELT_CENTER();
   }
 
   set(key: string, value: ActionPath[]): void {
@@ -79,9 +79,8 @@ export class ActionPaths {
   }
 
   static posKey(pos: HexPosition, normalized = false): string {
-    const FELT_CENTER = getFeltCenterOffset();
-    const col = normalized ? pos.col + FELT_CENTER : pos.col;
-    const row = normalized ? pos.row + FELT_CENTER : pos.row;
+    const col = normalized ? pos.col + FELT_CENTER() : pos.col;
+    const row = normalized ? pos.row + FELT_CENTER() : pos.row;
     return `${col},${row}`;
   }
 

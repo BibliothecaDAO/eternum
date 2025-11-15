@@ -42,7 +42,10 @@ export class Particles {
     }
 
     const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute("position", new THREE.Float32BufferAttribute(this.pointsPositions, 3));
+    const positionAttribute = new THREE.Float32BufferAttribute(this.pointsPositions, 3);
+    geometry.setAttribute("position", positionAttribute);
+    // Use the attribute's buffer so future writes update the GPU without reallocation
+    this.pointsPositions = positionAttribute.array as Float32Array;
 
     const material = new THREE.PointsMaterial({
       color: PARICLE_COLOR,
@@ -103,7 +106,10 @@ export class Particles {
       this.pointsPositions[i * 3 + 2] = Math.sin(this.particleAngles[i]) * PARTICLE_RADIUS;
     }
 
-    this.points.geometry.setAttribute("position", new THREE.Float32BufferAttribute(this.pointsPositions, 3));
+    const positionAttribute = this.points.geometry.getAttribute("position") as THREE.BufferAttribute;
+    if (positionAttribute) {
+      positionAttribute.needsUpdate = true;
+    }
   }
 
   public dispose(): void {

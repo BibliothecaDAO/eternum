@@ -14,6 +14,7 @@ export default class InstancedModel {
   private mixer: AnimationMixer | null = null;
   private animation: AnimationClip | null = null;
   private animationActions: Map<number, THREE.AnimationAction> = new Map();
+  private worldBounds?: { box: THREE.Box3; sphere: THREE.Sphere };
   timeOffsets: Float32Array;
   // Animation throttling to reduce morph texture uploads
   private lastAnimationUpdate = 0;
@@ -173,9 +174,32 @@ export default class InstancedModel {
       if (child instanceof THREE.InstancedMesh) {
         child.instanceMatrix.needsUpdate = true;
         child.computeBoundingSphere();
-        child.frustumCulled = false;
+        this.applyWorldBounds(child);
       }
     });
+  }
+
+  private applyWorldBounds(mesh: THREE.InstancedMesh) {
+    if (this.worldBounds) {
+      mesh.frustumCulled = true;
+      const geometry = mesh.geometry;
+      geometry.boundingSphere = geometry.boundingSphere ?? new THREE.Sphere();
+      geometry.boundingSphere.copy(this.worldBounds.sphere);
+      geometry.boundingBox = geometry.boundingBox ?? new THREE.Box3();
+      geometry.boundingBox.copy(this.worldBounds.box);
+    } else {
+      mesh.frustumCulled = false;
+    }
+  }
+
+  public setWorldBounds(bounds?: { box: THREE.Box3; sphere: THREE.Sphere }) {
+    this.worldBounds = bounds
+      ? {
+          box: bounds.box.clone(),
+          sphere: bounds.sphere.clone(),
+        }
+      : undefined;
+    this.instancedMeshes.forEach((mesh) => this.applyWorldBounds(mesh));
   }
 
   clone() {

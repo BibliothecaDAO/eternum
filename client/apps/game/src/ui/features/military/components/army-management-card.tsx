@@ -199,11 +199,15 @@ export const ArmyCreate = ({
     } else {
       if (guardSlot !== undefined) {
         await armyManager.addTroopsToGuard(account, troopType, troopTier, troopCount, guardSlot);
-        await queryClient.invalidateQueries({
-          queryKey: ["guards", String(owner_entity)],
-          exact: true,
-          refetchType: "active",
-        });
+        queryClient
+          .invalidateQueries({
+            queryKey: ["guards", String(owner_entity)],
+            exact: true,
+            refetchType: "active",
+          })
+          .catch((error) => {
+            console.error("Failed to refresh guards after defense update:", error);
+          });
       }
     }
 

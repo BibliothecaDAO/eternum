@@ -2,6 +2,7 @@ import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
+import { POLLING_INTERVALS } from "@/config/polling";
 import {
   formatArmies,
   getAddressName,
@@ -80,8 +81,8 @@ const ResourceArrivalsStoreManager = () => {
     // Initial update
     updateArrivals();
 
-    // Set up interval to run every 20 seconds
-    const intervalId = setInterval(updateArrivals, 20000);
+    // Set up interval to run periodically (configurable)
+    const intervalId = setInterval(updateArrivals, POLLING_INTERVALS.resourceArrivalsMs);
 
     // Cleanup interval on unmount
     return () => clearInterval(intervalId);

@@ -227,7 +227,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
               const buildingCosts = getBuildingCosts(entityId, dojo.setup.components, building, useSimpleCost);
 
-              if (!buildingCosts || buildingCosts.length === 0) return;
+              if (!buildingCosts) return;
 
               const hasBalance = checkBalance(buildingCosts);
 

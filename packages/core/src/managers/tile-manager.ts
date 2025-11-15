@@ -16,7 +16,7 @@ import {
 import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
-import { ResourceManager, getBuildingCosts, getBuildingCount, getFeltCenterOffset, setBuildingCount } from "..";
+import { FELT_CENTER, ResourceManager, getBuildingCosts, getBuildingCount, setBuildingCount } from "..";
 import { configManager } from "./config-manager";
 
 export class TileManager {
@@ -31,7 +31,7 @@ export class TileManager {
   ) {
     this.col = hexCoords.col;
     this.row = hexCoords.row;
-    this.FELT_CENTER = getFeltCenterOffset();
+    this.FELT_CENTER = FELT_CENTER();
   }
 
   getHexCoords = () => {

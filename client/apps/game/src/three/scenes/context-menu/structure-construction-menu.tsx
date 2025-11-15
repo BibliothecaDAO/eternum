@@ -202,11 +202,8 @@ export const createConstructionMenu = ({
     requiresStandardCost?: boolean;
   }): ContextMenuAction | null => {
     const buildingCosts = getBuildingCosts(structureEntityId, components, building, simpleCostEnabled);
-    const hasCosts = Array.isArray(buildingCosts)
-      ? buildingCosts.length > 0
-      : Boolean(buildingCosts && Object.keys(buildingCosts).length > 0);
 
-    if (!hasCosts) {
+    if (!buildingCosts) {
       return null;
     }
 
