@@ -2421,16 +2421,69 @@ export default class WorldmapScene extends HexagonScene {
 
   private updatePinnedChunks(newChunkKeys: string[]): void {
     const nextPinned = new Set(newChunkKeys);
+    const prevPinned = this.pinnedChunkKeys;
+    const newlyPinned: string[] = [];
+
+    // Track which chunks became newly active so we can refresh their structures
+    nextPinned.forEach((chunkKey) => {
+      if (!prevPinned.has(chunkKey)) {
+        newlyPinned.push(chunkKey);
+      }
+    });
 
     // Any chunk that drops out of the pinned set needs to be refetched when revisited.
     // Remove it from the fetched cache so computeTileEntities will request fresh data.
-    this.pinnedChunkKeys.forEach((chunkKey) => {
+    prevPinned.forEach((chunkKey) => {
       if (!nextPinned.has(chunkKey)) {
         this.fetchedChunks.delete(chunkKey);
       }
     });
 
     this.pinnedChunkKeys = nextPinned;
+
+    if (newlyPinned.length > 0) {
+      this.refreshStructuresForChunks(newlyPinned);
+    }
+  }
+
+  private refreshStructuresForChunks(chunkKeys: string[]): void {
+    const toriiClient = this.dojo.network?.toriiClient;
+    const contractComponents = this.dojo.network?.contractComponents;
+
+    if (!toriiClient || !contractComponents) {
+      return;
+    }
+
+    const structuresToSync: { entityId: ID; position: HexPosition }[] = [];
+    const seen = new Set<ID>();
+
+    chunkKeys.forEach((chunkKey) => {
+      const [startRow, startCol] = chunkKey.split(",").map(Number);
+      const endRow = startRow + this.chunkSize - 1;
+      const endCol = startCol + this.chunkSize - 1;
+
+      this.structuresPositions.forEach((pos, entityId) => {
+        if (seen.has(entityId)) {
+          return;
+        }
+        if (pos.col >= startCol && pos.col <= endCol && pos.row >= startRow && pos.row <= endRow) {
+          const contractCoords = new Position({ x: pos.col, y: pos.row }).getContract();
+          structuresToSync.push({
+            entityId,
+            position: { col: contractCoords.x, row: contractCoords.y },
+          });
+          seen.add(entityId);
+        }
+      });
+    });
+
+    if (structuresToSync.length === 0) {
+      return;
+    }
+
+    void getStructuresDataFromTorii(toriiClient, contractComponents as any, structuresToSync).catch((error) => {
+      console.error("[WorldmapScene] Failed to refresh structures for chunks", chunkKeys, error);
+    });
   }
 
   private async computeTileEntities(chunkKey: string): Promise<void> {
