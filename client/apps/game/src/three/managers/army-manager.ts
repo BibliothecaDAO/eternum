@@ -710,11 +710,7 @@ export class ArmyManager {
     this.frustumVisibilityDirty = true;
   }
 
-  private isArmyVisible(
-    army: { entityId: ID; hexCoords: Position; isMine: boolean; color: string },
-    startRow: number,
-    startCol: number,
-  ) {
+  private isArmyVisible(army: ArmyData, startRow: number, startCol: number) {
     const entityIdNumber = Number(army.entityId);
     const worldPos = this.armyModel.getEntityWorldPosition(entityIdNumber);
 
@@ -750,7 +746,20 @@ export class ArmyManager {
       x <= startCol + this.renderChunkSize.width / 2 &&
       y >= startRow - this.renderChunkSize.height / 2 &&
       y <= startRow + this.renderChunkSize.height / 2;
-    return isVisible;
+    if (!isVisible) {
+      return false;
+    }
+
+    if (!this.frustumManager) {
+      return true;
+    }
+
+    let frustumPoint = worldPos?.clone();
+    if (!frustumPoint) {
+      const worldFromHex = getWorldPositionForHex({ col: x, row: y });
+      frustumPoint = worldFromHex;
+    }
+    return this.frustumManager.isPointVisible(frustumPoint);
   }
 
   private getVisibleArmiesForChunk(startRow: number, startCol: number): Array<ArmyData> {

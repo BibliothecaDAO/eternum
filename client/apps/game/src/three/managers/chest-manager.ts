@@ -11,6 +11,7 @@ import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { createChestLabel } from "../utils/labels/label-factory";
+import { FrustumManager } from "../utils/frustum-manager";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { gltfLoader } from "../utils/utils";
 import { PointsLabelRenderer } from "./points-label-renderer";
@@ -36,18 +37,21 @@ export class ChestManager {
   private animationClips: THREE.AnimationClip[] = [];
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private pointsRenderer?: PointsLabelRenderer; // Points-based icon renderer
+  private frustumManager?: FrustumManager;
 
   constructor(
     scene: THREE.Scene,
     renderChunkSize: RenderChunkSize,
     labelsGroup?: THREE.Group,
     hexagonScene?: HexagonScene,
+    frustumManager?: FrustumManager,
   ) {
     this.scene = scene;
     this.hexagonScene = hexagonScene;
     this.labelsGroup = labelsGroup || new THREE.Group();
     this.renderChunkSize = renderChunkSize;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
+    this.frustumManager = frustumManager;
     this.loadModel().then(() => {
       if (this.currentChunkKey) {
         this.renderVisibleChests(this.currentChunkKey);
@@ -229,12 +233,23 @@ export class ChestManager {
 
   private isChestVisible(chest: ChestData, startRow: number, startCol: number) {
     const { x, y } = chest.hexCoords.getNormalized();
-    const isVisible =
+    const insideChunk =
       x >= startCol - this.renderChunkSize.width / 2 &&
       x <= startCol + this.renderChunkSize.width / 2 &&
       y >= startRow - this.renderChunkSize.height / 2 &&
       y <= startRow + this.renderChunkSize.height / 2;
-    return isVisible;
+
+    if (!insideChunk) {
+      return false;
+    }
+
+    if (!this.frustumManager) {
+      return true;
+    }
+
+    const worldPos = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
+    worldPos.y += 0.05;
+    return this.frustumManager.isPointVisible(worldPos);
   }
 
   private getVisibleChestsForChunk(chests: Map<ID, ChestData>, startRow: number, startCol: number): ChestData[] {

@@ -987,7 +987,7 @@ export class StructureManager {
   }
 
   private getVisibleStructures(structures: Map<ID, StructureInfo>): StructureInfo[] {
-    return Array.from(structures.values()).filter((structure) => this.isInCurrentChunk(structure.hexCoords));
+    return Array.from(structures.values()).filter((structure) => this.isStructureVisible(structure));
   }
 
   private isInCurrentChunk(hexCoords: { col: number; row: number }): boolean {
@@ -998,6 +998,20 @@ export class StructureManager {
       hexCoords.row >= chunkRow - this.renderChunkSize.height / 2 &&
       hexCoords.row < chunkRow + this.renderChunkSize.height / 2
     );
+  }
+
+  private isStructureVisible(structure: StructureInfo): boolean {
+    if (!this.isInCurrentChunk(structure.hexCoords)) {
+      return false;
+    }
+
+    if (!this.frustumManager) {
+      return true;
+    }
+
+    const position = getWorldPositionForHex(structure.hexCoords);
+    position.y += 0.05;
+    return this.frustumManager.isPointVisible(position);
   }
 
   public getEntityIdFromInstance(structureType: StructureType, instanceId: number): ID | undefined {

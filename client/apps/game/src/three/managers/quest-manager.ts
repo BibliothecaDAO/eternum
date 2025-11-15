@@ -9,6 +9,7 @@ import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
+import { FrustumManager } from "../utils/frustum-manager";
 import { QuestLabelData, QuestLabelType } from "../utils/labels/label-factory";
 import { LabelManager } from "../utils/labels/label-manager";
 import { gltfLoader } from "../utils/utils";
@@ -29,17 +30,20 @@ export class QuestManager {
   private labelManager: LabelManager;
   questHexCoords: Map<number, Set<number>> = new Map();
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
+  private frustumManager?: FrustumManager;
 
   constructor(
     scene: THREE.Scene,
     renderChunkSize: RenderChunkSize,
     labelsGroup?: THREE.Group,
     hexagonScene?: HexagonScene,
+    frustumManager?: FrustumManager,
   ) {
     this.scene = scene;
     this.hexagonScene = hexagonScene;
     this.renderChunkSize = renderChunkSize;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
+    this.frustumManager = frustumManager;
 
     // Initialize the label manager
     this.labelManager = new LabelManager({
@@ -179,14 +183,25 @@ export class QuestManager {
     return basePosition;
   };
 
-  private isQuestVisible(quest: { entityId: ID; hexCoords: Position }, startRow: number, startCol: number) {
+  private isQuestVisible(quest: QuestData, startRow: number, startCol: number) {
     const { x, y } = quest.hexCoords.getNormalized();
-    const isVisible =
+    const insideChunk =
       x >= startCol - this.renderChunkSize.width / 2 &&
       x <= startCol + this.renderChunkSize.width / 2 &&
       y >= startRow - this.renderChunkSize.height / 2 &&
       y <= startRow + this.renderChunkSize.height / 2;
-    return isVisible;
+
+    if (!insideChunk) {
+      return false;
+    }
+
+    if (!this.frustumManager) {
+      return true;
+    }
+
+    const worldPos = this.getQuestWorldPosition(quest.entityId, quest.hexCoords);
+    worldPos.y += 0.05;
+    return this.frustumManager.isPointVisible(worldPos);
   }
 
   private getVisibleQuestsForChunk(quests: Map<ID, QuestData>, startRow: number, startCol: number): QuestData[] {
