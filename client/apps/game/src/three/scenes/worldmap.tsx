@@ -2419,6 +2419,20 @@ export default class WorldmapScene extends HexagonScene {
     this.updateHexagonGridPromise = null;
   }
 
+  private updatePinnedChunks(newChunkKeys: string[]): void {
+    const nextPinned = new Set(newChunkKeys);
+
+    // Any chunk that drops out of the pinned set needs to be refetched when revisited.
+    // Remove it from the fetched cache so computeTileEntities will request fresh data.
+    this.pinnedChunkKeys.forEach((chunkKey) => {
+      if (!nextPinned.has(chunkKey)) {
+        this.fetchedChunks.delete(chunkKey);
+      }
+    });
+
+    this.pinnedChunkKeys = nextPinned;
+  }
+
   private async computeTileEntities(chunkKey: string): Promise<void> {
     // Skip if we've already fetched this chunk
     if (this.fetchedChunks.has(chunkKey)) {
@@ -2475,8 +2489,10 @@ export default class WorldmapScene extends HexagonScene {
         minRow + FELT_CENTER(),
         maxRow + FELT_CENTER(),
       );
-      // Only add to fetched chunks on success
-      this.fetchedChunks.add(chunkKey);
+      // Only add to the fetched cache if the chunk is still pinned (still relevant)
+      if (this.pinnedChunkKeys.has(chunkKey)) {
+        this.fetchedChunks.add(chunkKey);
+      }
     } catch (error) {
       console.error("Error fetching tile entities:", error);
       // Don't add to fetchedChunks on error so it can be retried
@@ -2755,7 +2771,7 @@ export default class WorldmapScene extends HexagonScene {
 
     // Load surrounding chunks for better UX (3x3 grid)
     const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
-    this.pinnedChunkKeys = new Set(surroundingChunks);
+    this.updatePinnedChunks(surroundingChunks);
 
     // Start loading all surrounding chunks (they will deduplicate automatically)
     surroundingChunks.forEach((chunk) => this.computeTileEntities(chunk));
@@ -2835,7 +2851,7 @@ export default class WorldmapScene extends HexagonScene {
     const preChunkStats = memoryMonitor?.getCurrentStats(`chunk-refresh-pre-${chunkKey}`);
 
     const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
-    this.pinnedChunkKeys = new Set(surroundingChunks);
+    this.updatePinnedChunks(surroundingChunks);
     surroundingChunks.forEach((chunk) => this.computeTileEntities(chunk));
 
     await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
