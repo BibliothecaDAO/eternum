@@ -59,7 +59,7 @@ import {
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Account, AccountInterface } from "starknet";
-import { Color, Group, InstancedBufferAttribute, Matrix4, Object3D, Raycaster, Vector2, Vector3 } from "three";
+import { Box3, Color, Group, InstancedBufferAttribute, Matrix4, Object3D, Raycaster, Sphere, Vector2, Vector3 } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { env } from "../../../env";
 import { FXManager } from "../managers/fx-manager";
@@ -2495,6 +2495,7 @@ export default class WorldmapScene extends HexagonScene {
 
     const cachedChunk = this.cachedMatrices.get(chunkKey)!;
 
+    const { box, sphere } = this.computeChunkBounds(startRow, startCol);
     for (const [biome, model] of this.biomeModels) {
       const existing = cachedChunk.get(biome);
       if (existing) {
@@ -2510,6 +2511,13 @@ export default class WorldmapScene extends HexagonScene {
       }
       cachedChunk.set(biome, { matrices, count });
     }
+
+    cachedChunk.set("__bounds__", {
+      matrices: null,
+      count: 0,
+      box,
+      sphere,
+    } as any);
 
     this.touchMatrixCache(chunkKey);
     this.ensureMatrixCacheLimit();
@@ -2529,8 +2537,20 @@ export default class WorldmapScene extends HexagonScene {
     const chunkKey = `${startRow},${startCol}`;
     const cachedMatrices = this.cachedMatrices.get(chunkKey);
     if (cachedMatrices) {
+      if (this.frustumManager) {
+        const bounds = cachedMatrices.get("__bounds__") as any;
+        if (bounds && bounds.box) {
+          const visible = this.frustumManager.isBoxVisible(bounds.box);
+          if (!visible) {
+            return false;
+          }
+        }
+      }
       this.touchMatrixCache(chunkKey);
       for (const [biome, { matrices, count }] of cachedMatrices) {
+        if (biome === "__bounds__") {
+          continue;
+        }
         const hexMesh = this.biomeModels.get(biome as any)!;
         if (matrices) {
           hexMesh.setMatricesAndCount(matrices, count);
@@ -2542,6 +2562,33 @@ export default class WorldmapScene extends HexagonScene {
       return true;
     }
     return false;
+  }
+
+  private computeChunkBounds(startRow: number, startCol: number) {
+    const { row: centerRow, col: centerCol } = this.getChunkCenter(startRow, startCol);
+    const halfWidth = this.renderChunkSize.width / 2;
+    const halfHeight = this.renderChunkSize.height / 2;
+
+    const minCol = centerCol - halfWidth;
+    const maxCol = centerCol + halfWidth;
+    const minRow = centerRow - halfHeight;
+    const maxRow = centerRow + halfHeight;
+
+    const corners = [
+      getWorldPositionForHex({ col: minCol, row: minRow }),
+      getWorldPositionForHex({ col: minCol, row: maxRow }),
+      getWorldPositionForHex({ col: maxCol, row: minRow }),
+      getWorldPositionForHex({ col: maxCol, row: maxRow }),
+    ];
+
+    const box = new Box3().setFromPoints(corners);
+    box.min.y = -1;
+    box.max.y = 5;
+
+    const sphere = new Sphere();
+    box.getBoundingSphere(sphere);
+
+    return { box, sphere };
   }
 
   private worldToChunkCoordinates(x: number, z: number): { chunkX: number; chunkZ: number } {
