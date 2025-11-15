@@ -482,11 +482,15 @@ export const UnifiedArmyCreationModal = ({
           guardSlot,
         );
         if (activeStructureId > 0) {
-          await queryClient.invalidateQueries({
-            queryKey: ["guards", String(activeStructureId)],
-            exact: true,
-            refetchType: "active",
-          });
+          queryClient
+            .invalidateQueries({
+              queryKey: ["guards", String(activeStructureId)],
+              exact: true,
+              refetchType: "active",
+            })
+            .catch((error) => {
+              console.error("Failed to refresh guards after defense creation:", error);
+            });
         }
       }
     } catch (error) {

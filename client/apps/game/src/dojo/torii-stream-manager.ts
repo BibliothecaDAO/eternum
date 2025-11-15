@@ -177,15 +177,16 @@ const buildModelKeysClause = (models: GlobalModelStreamConfig[]): Clause => {
         models: string[];
       }
     >
-  >((acc, { model, keyCount = 1, patternMatching = "FixedLen" }) => {
-    const normalizedKeyCount = Math.max(0, keyCount);
-    const signature = `${patternMatching}:${normalizedKeyCount}`;
+  >((acc, { model, keyCount, patternMatching }) => {
+    const normalizedKeyCount = typeof keyCount === "number" ? Math.max(0, keyCount) : 0;
+    const normalizedPattern = patternMatching ?? ("VariableLen" as PatternMatching);
+    const signature = `${normalizedPattern}:${normalizedKeyCount}`;
     let entry = acc.get(signature);
 
     if (!entry) {
       entry = {
         keys: normalizedKeyCount > 0 ? new Array(normalizedKeyCount).fill(undefined) : [undefined],
-        pattern_matching: patternMatching,
+        pattern_matching: normalizedPattern,
         models: [],
       };
       acc.set(signature, entry);

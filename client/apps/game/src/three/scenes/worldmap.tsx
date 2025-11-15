@@ -102,19 +102,19 @@ const CHUNK_STREAM_MODELS: BoundsModelConfig[] = [
   { model: "s1_eternum-QuestTile", colField: "coord.x", rowField: "coord.y" },
 ];
 const GLOBAL_STREAM_MODELS: GlobalModelStreamConfig[] = [
-  { model: "s1_eternum-BattleEvent", keyCount: 4 },
-  { model: "s1_eternum-ExplorerMoveEvent", keyCount: 1 },
-  { model: "s1_eternum-StoryEvent", keyCount: 3 },
-  { model: "s1_eternum-LiquidityEvent", keyCount: 2 },
-  { model: "s1_eternum-SeasonEnded", keyCount: 1 },
-  { model: "s1_eternum-Hyperstructure", keyCount: 1 },
-  { model: "s1_eternum-HyperstructureRequirements", keyCount: 1 },
-  { model: "s1_eternum-HyperstructureGlobals", keyCount: 1 },
-  { model: "s1_eternum-StructureBuildings", keyCount: 1 },
-  { model: "s1_eternum-ProductionBoostBonus", keyCount: 1 },
-  { model: "s1_eternum-Building", keyCount: 4 },
-  { model: "s1_eternum-AddressName", keyCount: 1 },
-  { model: "s1_eternum-Quest", keyCount: 2 },
+  { model: "s1_eternum-BattleEvent" },
+  { model: "s1_eternum-ExplorerMoveEvent" },
+  { model: "s1_eternum-StoryEvent" },
+  { model: "s1_eternum-LiquidityEvent" },
+  { model: "s1_eternum-SeasonEnded" },
+  { model: "s1_eternum-Hyperstructure" },
+  { model: "s1_eternum-HyperstructureRequirements" },
+  { model: "s1_eternum-HyperstructureGlobals" },
+  { model: "s1_eternum-StructureBuildings" },
+  { model: "s1_eternum-ProductionBoostBonus" },
+  { model: "s1_eternum-Building" },
+  { model: "s1_eternum-AddressName" },
+  { model: "s1_eternum-Quest" },
 ];
 
 export default class WorldmapScene extends HexagonScene {
