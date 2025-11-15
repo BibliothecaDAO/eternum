@@ -57,9 +57,9 @@ const controller = new ControllerConnector({
           ? SLOT_RPC_URL
           : isSlottest
             ? SLOT_RPC_URL_TEST
-        : PUBLIC_NODE_URL !== "http://localhost:5050"
-          ? PUBLIC_NODE_URL
-          : "https://api.cartridge.gg/x/starknet/sepolia",
+            : PUBLIC_NODE_URL !== "https://api.cartridge.gg/x/eternum-blitz-slot-test/katana"
+              ? PUBLIC_NODE_URL
+              : "https://api.cartridge.gg/x/starknet/sepolia",
     },
   ],
   defaultChainId: isLocal
