@@ -2,8 +2,11 @@ import { ToriiSetting } from "@/types";
 import { Chain, getConfigFromNetwork } from "@config";
 import { env } from "./../../env";
 
+const FALLBACK_CHAIN = (env.VITE_PUBLIC_CHAIN ?? "sepolia") as Chain;
+const REMOTE_TORII_URL = env.VITE_PUBLIC_TORII ?? "https://api.cartridge.gg/x/eternum/torii";
+
 export const ETERNUM_CONFIG = () => {
-  const config = getConfigFromNetwork(env.VITE_PUBLIC_CHAIN! as Chain);
+  const config = getConfigFromNetwork(FALLBACK_CHAIN);
   return config;
 };
 
@@ -30,7 +33,7 @@ export const TORII_SETTING = async (): Promise<string> => {
 export const DEFAULT_TORII_SETTING = ToriiSetting.Remote;
 
 const settingToUrl = (setting: ToriiSetting) => {
-  return setting === ToriiSetting.Local ? "http://localhost:8080" : env.VITE_PUBLIC_TORII;
+  return setting === ToriiSetting.Local ? "http://localhost:8080" : REMOTE_TORII_URL;
 };
 
 const getOppositeSetting = (setting: ToriiSetting) => {
