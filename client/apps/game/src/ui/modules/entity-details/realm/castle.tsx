@@ -79,18 +79,21 @@ export const Castle = () => {
     if (!getNextRealmLevel) return false;
 
     const cost = configManager.realmUpgradeCosts[getNextRealmLevel];
+    if (!cost) return false;
 
     return Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
       const balance = getBalance(structureEntityId, resourceCost.resource, currentDefaultTick, dojo.setup.components);
       return divideByPrecision(balance.balance) >= resourceCost.amount;
     });
-  }, [getBalance, structureEntityId]);
+  }, [getNextRealmLevel, structureEntityId, currentDefaultTick, dojo.setup.components]);
 
   const missingResources = useMemo(() => {
     if (!getNextRealmLevel) return [];
 
     const cost = configManager.realmUpgradeCosts[getNextRealmLevel];
+    if (!cost) return [];
+
     const missing: { resource: number; amount: number; current: number }[] = [];
 
     Object.keys(cost).forEach((resourceId) => {
@@ -108,7 +111,7 @@ export const Castle = () => {
     });
 
     return missing;
-  }, [getNextRealmLevel, structureEntityId, currentDefaultTick]);
+  }, [getNextRealmLevel, structureEntityId, currentDefaultTick, dojo.setup.components]);
 
   const levelUpRealm = async () => {
     setIsLevelUpLoading(true);
