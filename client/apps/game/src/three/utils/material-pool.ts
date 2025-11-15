@@ -56,7 +56,7 @@ export class MaterialPool {
 
     const key: MaterialKey = {
       textureUrl,
-      transparent: sourceMaterial.transparent,
+      transparent: overrides?.transparent ?? sourceMaterial.transparent,
       side: sourceMaterial.side,
       opacity: overrides?.opacity ?? sourceMaterial.opacity,
       materialType: overrides?.materialType ?? "basic",
