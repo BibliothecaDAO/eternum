@@ -90,6 +90,7 @@ import {
 } from "../utils/navigation";
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { openStructureContextMenu } from "./context-menu/structure-context-menu";
+import throttle from "lodash/throttle";
 
 //const dummyObject = new Object3D();
 const dummyVector = new Vector3();
@@ -170,6 +171,7 @@ export default class WorldmapScene extends HexagonScene {
   private structurePulseColorCache: Map<string, { base: Color; pulse: Color }> = new Map();
   private armyStructureOwners: Map<ID, ID> = new Map();
   private minimap!: Minimap;
+  private updateMinimapThrottled?: ReturnType<typeof throttle>;
   private followCameraTimeout: ReturnType<typeof setTimeout> | null = null;
   private notifiedBattleEvents = new Set<string>();
   private previouslyHoveredHex: HexPosition | null = null;
@@ -626,6 +628,9 @@ export default class WorldmapScene extends HexagonScene {
     this.selectionPulseManager = new SelectionPulseManager(this.scene);
 
     this.minimap = new Minimap(this, this.camera);
+    this.updateMinimapThrottled = throttle(() => {
+      this.minimap.update();
+    }, 100);
 
     // Initialize SceneShortcutManager for WorldMap shortcuts
     this.shortcutManager = new SceneShortcutManager("worldmap", this.sceneManager);
@@ -2943,7 +2948,7 @@ export default class WorldmapScene extends HexagonScene {
     this.selectedHexManager.update(deltaTime);
     this.structureManager.updateAnimations(deltaTime);
     this.chestManager.update(deltaTime);
-    this.minimap.update();
+    this.updateMinimapThrottled?.();
   }
 
   public clearTileEntityCache() {
@@ -3153,6 +3158,7 @@ export default class WorldmapScene extends HexagonScene {
     this.disposeStateSyncSubscription();
 
     this.resourceFXManager.destroy();
+    this.updateMinimapThrottled?.cancel();
     this.stopRelicValidationTimer();
     this.clearCache();
     this.minimap.dispose();

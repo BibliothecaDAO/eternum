@@ -145,6 +145,7 @@ export class ArmyManager {
   // Reusable objects for memory optimization
   private readonly tempPosition: Vector3 = new Vector3();
   private readonly tempCosmeticPosition: Vector3 = new Vector3();
+  private readonly tempIconPosition: Vector3 = new Vector3();
 
   constructor(
     scene: Scene,
@@ -660,7 +661,7 @@ export class ArmyManager {
 
       // Add point icon for this army (always visible)
       if (this.pointsRenderers) {
-        const iconPosition = position.clone();
+        const iconPosition = this.tempIconPosition.copy(position);
         iconPosition.y += 2.1; // Match CSS2D label height
         const renderer = army.isDaydreamsAgent
           ? this.pointsRenderers.agent
@@ -1248,7 +1249,7 @@ export class ArmyManager {
           const instanceData = instanceDataMap.get(army.entityId);
           if (instanceData && instanceData.isMoving) {
             // Get current interpolated position
-            const iconPosition = instanceData.position.clone();
+            const iconPosition = this.tempIconPosition.copy(instanceData.position);
             iconPosition.y += 2.1; // Match CSS2D label height
 
             // Update point in appropriate renderer
