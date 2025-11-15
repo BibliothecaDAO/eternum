@@ -59,7 +59,18 @@ import {
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Account, AccountInterface } from "starknet";
-import { Color, Group, InstancedBufferAttribute, Matrix4, Object3D, Raycaster, Vector2, Vector3 } from "three";
+import {
+  Box3,
+  Color,
+  Group,
+  InstancedBufferAttribute,
+  Matrix4,
+  Object3D,
+  Raycaster,
+  Sphere,
+  Vector2,
+  Vector3,
+} from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { env } from "../../../env";
 import { FXManager } from "../managers/fx-manager";
@@ -86,6 +97,9 @@ const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
 export default class WorldmapScene extends HexagonScene {
   private chunkSize = 8; // Size of each chunk
+  private chunkSwitchPadding = 0.45;
+  private lastChunkSwitchPosition?: Vector3;
+  private hasChunkSwitchAnchor: boolean = false;
   private wheelHandler: ((event: WheelEvent) => void) | null = null;
   private wheelAccumulator = 0;
   private wheelResetTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -103,6 +117,7 @@ export default class WorldmapScene extends HexagonScene {
   private totalStructures: number = 0;
 
   private currentChunk: string = "null";
+  private isChunkTransitioning: boolean = false;
 
   private armyManager: ArmyManager;
   private pendingArmyMovements: Set<ID> = new Set();
@@ -190,7 +205,8 @@ export default class WorldmapScene extends HexagonScene {
   private cachedMatrices: Map<string, Map<string, { matrices: InstancedBufferAttribute | null; count: number }>> =
     new Map();
   private cachedMatrixOrder: string[] = [];
-  private readonly maxMatrixCacheSize = 6;
+  private readonly maxMatrixCacheSize = 16;
+  private pinnedChunkKeys: Set<string> = new Set();
   private updateHexagonGridPromise: Promise<void> | null = null;
   private hexGridFrameHandle: number | null = null;
   private currentHexGridTask: symbol | null = null;
@@ -281,6 +297,7 @@ export default class WorldmapScene extends HexagonScene {
       this.dojo,
       (entityId: ID) => this.applyPendingRelicEffects(entityId),
       (entityId: ID) => this.clearPendingRelicEffects(entityId),
+      this.frustumManager,
     );
 
     // Expose material sharing debug to global console
@@ -294,6 +311,7 @@ export default class WorldmapScene extends HexagonScene {
       this.dojo,
       (entityId: ID) => this.applyPendingRelicEffects(entityId),
       (entityId: ID) => this.clearPendingRelicEffects(entityId),
+      this.frustumManager,
     );
 
     // Initialize the quest manager
@@ -1295,16 +1313,21 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     // Check if army is currently being rendered or is in chunk transition
-    if (this.globalChunkSwitchPromise) {
-      // Defer selection until chunk switch completes
-      this.globalChunkSwitchPromise.then(() => {
-        // Retry selection after chunk switch
+    if (this.isChunkTransitioning) {
+      const retrySelection = () => {
         if (this.armyManager.hasArmy(selectedEntityId)) {
           this.onArmySelection(selectedEntityId, playerAddress);
         } else {
           console.warn(`[DEBUG] Army ${selectedEntityId} not available after chunk switch`);
         }
-      });
+      };
+
+      // Defer selection until chunk switch completes
+      if (this.globalChunkSwitchPromise) {
+        this.globalChunkSwitchPromise.then(retrySelection);
+      } else {
+        setTimeout(retrySelection, 0);
+      }
       return;
     }
 
@@ -1982,15 +2005,22 @@ export default class WorldmapScene extends HexagonScene {
     const startCol = parseInt(this.currentChunk.split(",")[1]);
     const { row: chunkCenterRow, col: chunkCenterCol } = this.getChunkCenter(startRow, startCol);
 
-    if (
+    const insideChunkBounds =
       col >= chunkCenterCol - this.renderChunkSize.width / 2 &&
       col <= chunkCenterCol + this.renderChunkSize.width / 2 &&
       row >= chunkCenterRow - this.renderChunkSize.height / 2 &&
-      row <= chunkCenterRow + this.renderChunkSize.height / 2
-    ) {
+      row <= chunkCenterRow + this.renderChunkSize.height / 2;
+
+    if (!insideChunkBounds) {
+      return false;
+    }
+
+    if (!this.frustumManager) {
       return true;
     }
-    return false;
+
+    const worldPosition = getWorldPositionForHex({ col, row });
+    return this.frustumManager.isPointVisible(worldPosition);
   }
 
   private getSurroundingChunkKeys(centerRow: number, centerCol: number): string[] {
@@ -2073,6 +2103,7 @@ export default class WorldmapScene extends HexagonScene {
     this.cachedMatrixOrder = [];
     MatrixPool.getInstance().clear();
     InstancedMatrixAttributePool.getInstance().clear();
+    this.pinnedChunkKeys.clear();
   }
 
   private computeInteractiveHexes(startRow: number, startCol: number, width: number, height: number) {
@@ -2445,13 +2476,31 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private ensureMatrixCacheLimit() {
-    while (this.cachedMatrixOrder.length > this.maxMatrixCacheSize) {
+    if (this.cachedMatrixOrder.length <= this.maxMatrixCacheSize) {
+      return;
+    }
+
+    let safetyCounter = this.cachedMatrixOrder.length;
+    while (this.cachedMatrixOrder.length > this.maxMatrixCacheSize && safetyCounter > 0) {
+      safetyCounter--;
       const oldestKey = this.cachedMatrixOrder.shift();
       if (!oldestKey) {
         break;
       }
+
+      if (this.pinnedChunkKeys.has(oldestKey)) {
+        this.cachedMatrixOrder.push(oldestKey);
+        continue;
+      }
+
       this.disposeCachedMatrices(oldestKey);
       this.cachedMatrices.delete(oldestKey);
+    }
+
+    if (this.cachedMatrixOrder.length > this.maxMatrixCacheSize) {
+      console.warn(
+        `[CACHE] Unable to evict matrices below limit because pinned chunks exceed capacity (${this.maxMatrixCacheSize})`,
+      );
     }
   }
 
@@ -2463,6 +2512,7 @@ export default class WorldmapScene extends HexagonScene {
 
     const cachedChunk = this.cachedMatrices.get(chunkKey)!;
 
+    const { box, sphere } = this.computeChunkBounds(startRow, startCol);
     for (const [biome, model] of this.biomeModels) {
       const existing = cachedChunk.get(biome);
       if (existing) {
@@ -2478,6 +2528,13 @@ export default class WorldmapScene extends HexagonScene {
       }
       cachedChunk.set(biome, { matrices, count });
     }
+
+    cachedChunk.set("__bounds__", {
+      matrices: null,
+      count: 0,
+      box,
+      sphere,
+    } as any);
 
     this.touchMatrixCache(chunkKey);
     this.ensureMatrixCacheLimit();
@@ -2497,8 +2554,20 @@ export default class WorldmapScene extends HexagonScene {
     const chunkKey = `${startRow},${startCol}`;
     const cachedMatrices = this.cachedMatrices.get(chunkKey);
     if (cachedMatrices) {
+      if (this.frustumManager) {
+        const bounds = cachedMatrices.get("__bounds__") as any;
+        if (bounds && bounds.box) {
+          const visible = this.frustumManager.isBoxVisible(bounds.box);
+          if (!visible) {
+            return false;
+          }
+        }
+      }
       this.touchMatrixCache(chunkKey);
       for (const [biome, { matrices, count }] of cachedMatrices) {
+        if (biome === "__bounds__") {
+          continue;
+        }
         const hexMesh = this.biomeModels.get(biome as any)!;
         if (matrices) {
           hexMesh.setMatricesAndCount(matrices, count);
@@ -2512,10 +2581,50 @@ export default class WorldmapScene extends HexagonScene {
     return false;
   }
 
+  private computeChunkBounds(startRow: number, startCol: number) {
+    const { row: centerRow, col: centerCol } = this.getChunkCenter(startRow, startCol);
+    const halfWidth = this.renderChunkSize.width / 2;
+    const halfHeight = this.renderChunkSize.height / 2;
+
+    const minCol = centerCol - halfWidth;
+    const maxCol = centerCol + halfWidth;
+    const minRow = centerRow - halfHeight;
+    const maxRow = centerRow + halfHeight;
+
+    const corners = [
+      getWorldPositionForHex({ col: minCol, row: minRow }),
+      getWorldPositionForHex({ col: minCol, row: maxRow }),
+      getWorldPositionForHex({ col: maxCol, row: minRow }),
+      getWorldPositionForHex({ col: maxCol, row: maxRow }),
+    ];
+
+    const box = new Box3().setFromPoints(corners);
+    box.min.y = -1;
+    box.max.y = 5;
+
+    const sphere = new Sphere();
+    box.getBoundingSphere(sphere);
+
+    return { box, sphere };
+  }
+
   private worldToChunkCoordinates(x: number, z: number): { chunkX: number; chunkZ: number } {
     const chunkX = Math.floor(x / (this.chunkSize * HEX_SIZE * Math.sqrt(3)));
     const chunkZ = Math.floor(z / (this.chunkSize * HEX_SIZE * 1.5));
     return { chunkX, chunkZ };
+  }
+
+  private shouldDelayChunkSwitch(cameraPosition: Vector3): boolean {
+    if (!this.hasChunkSwitchAnchor || !this.lastChunkSwitchPosition) {
+      return false;
+    }
+
+    const chunkWorldWidth = this.chunkSize * HEX_SIZE * Math.sqrt(3);
+    const chunkWorldDepth = this.chunkSize * HEX_SIZE * 1.5;
+    const dx = Math.abs(cameraPosition.x - this.lastChunkSwitchPosition.x);
+    const dz = Math.abs(cameraPosition.z - this.lastChunkSwitchPosition.z);
+
+    return dx < chunkWorldWidth * this.chunkSwitchPadding && dz < chunkWorldDepth * this.chunkSwitchPadding;
   }
 
   private getChunkCenter(startRow: number, startCol: number): { row: number; col: number } {
@@ -2526,7 +2635,7 @@ export default class WorldmapScene extends HexagonScene {
     };
   }
 
-  async updateVisibleChunks(force: boolean = false) {
+  async updateVisibleChunks(force: boolean = false): Promise<boolean> {
     // Wait for any ongoing global chunk switch to complete first
     if (this.globalChunkSwitchPromise) {
       try {
@@ -2547,19 +2656,52 @@ export default class WorldmapScene extends HexagonScene {
     const startRow = chunkZ * this.chunkSize;
     const chunkKey = `${startRow},${startCol}`;
 
-    if (this.currentChunk !== chunkKey || force) {
+    const chunkChanged = this.currentChunk !== chunkKey;
+
+    if (!force && chunkChanged && this.shouldDelayChunkSwitch(cameraPosition)) {
+      return false;
+    }
+
+    if (chunkChanged) {
       // Create and track the global chunk switch promise
-      this.globalChunkSwitchPromise = this.performChunkSwitch(chunkKey, startCol, startRow, force);
+      this.isChunkTransitioning = true;
+      this.globalChunkSwitchPromise = this.performChunkSwitch(
+        chunkKey,
+        startCol,
+        startRow,
+        force,
+        cameraPosition.clone(),
+      );
 
       try {
         await this.globalChunkSwitchPromise;
+        return true;
+      } finally {
+        this.globalChunkSwitchPromise = null;
+        this.isChunkTransitioning = false;
+      }
+    }
+
+    if (force) {
+      this.globalChunkSwitchPromise = this.refreshCurrentChunk(chunkKey, startCol, startRow);
+      try {
+        await this.globalChunkSwitchPromise;
+        return true;
       } finally {
         this.globalChunkSwitchPromise = null;
       }
     }
+
+    return false;
   }
 
-  private async performChunkSwitch(chunkKey: string, startCol: number, startRow: number, force: boolean) {
+  private async performChunkSwitch(
+    chunkKey: string,
+    startCol: number,
+    startRow: number,
+    force: boolean,
+    switchPosition?: Vector3,
+  ) {
     // Track memory usage during chunk switch
     const memoryMonitor = (window as any).__gameRenderer?.memoryMonitor;
     const preChunkStats = memoryMonitor?.getCurrentStats(`chunk-switch-pre-${chunkKey}`);
@@ -2569,12 +2711,13 @@ export default class WorldmapScene extends HexagonScene {
 
     this.currentChunk = chunkKey;
 
-    if (!force) {
+    if (force) {
       this.removeCachedMatricesForChunk(startRow, startCol);
     }
 
     // Load surrounding chunks for better UX (3x3 grid)
     const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
+    this.pinnedChunkKeys = new Set(surroundingChunks);
 
     // Start loading all surrounding chunks (they will deduplicate automatically)
     surroundingChunks.forEach((chunk) => this.computeTileEntities(chunk));
@@ -2609,6 +2752,49 @@ export default class WorldmapScene extends HexagonScene {
 
         if (Math.abs(memoryDelta) > 20) {
           console.warn(`[CHUNK SYNC] Large memory change during chunk switch: ${memoryDelta.toFixed(1)}MB`);
+        }
+      }
+    }
+
+    if (switchPosition) {
+      this.lastChunkSwitchPosition = switchPosition;
+      this.hasChunkSwitchAnchor = true;
+    }
+  }
+
+  private async refreshCurrentChunk(chunkKey: string, startCol: number, startRow: number) {
+    const memoryMonitor = (window as any).__gameRenderer?.memoryMonitor;
+    const preChunkStats = memoryMonitor?.getCurrentStats(`chunk-refresh-pre-${chunkKey}`);
+
+    const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
+    this.pinnedChunkKeys = new Set(surroundingChunks);
+    surroundingChunks.forEach((chunk) => this.computeTileEntities(chunk));
+
+    await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
+
+    const { row: chunkCenterRow, col: chunkCenterCol } = this.getChunkCenter(startRow, startCol);
+    this.interactiveHexManager.updateVisibleHexes(
+      chunkCenterRow,
+      chunkCenterCol,
+      this.renderChunkSize.width,
+      this.renderChunkSize.height,
+    );
+
+    await this.armyManager.updateChunk(chunkKey, { force: true });
+    await this.structureManager.updateChunk(chunkKey, { force: true });
+    await this.questManager.updateChunk(chunkKey, { force: true });
+    await this.chestManager.updateChunk(chunkKey, { force: true });
+
+    if (memoryMonitor) {
+      const postChunkStats = memoryMonitor.getCurrentStats(`chunk-refresh-post-${chunkKey}`);
+      if (preChunkStats && postChunkStats) {
+        const memoryDelta = postChunkStats.heapUsedMB - preChunkStats.heapUsedMB;
+        console.log(
+          `[CHUNK SYNC] Chunk refresh memory impact: ${memoryDelta > 0 ? "+" : ""}${memoryDelta.toFixed(1)}MB`,
+        );
+
+        if (Math.abs(memoryDelta) > 20) {
+          console.warn(`[CHUNK SYNC] Large memory change during chunk refresh: ${memoryDelta.toFixed(1)}MB`);
         }
       }
     }

@@ -23,6 +23,7 @@ import {
 import { StructureInfo } from "../types";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
+import { FrustumManager } from "../utils/frustum-manager";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { createStructureLabel, updateStructureLabel } from "../utils/labels/label-factory";
 import { LabelPool } from "../utils/labels/label-pool";
@@ -128,6 +129,9 @@ export class StructureManager {
     bank: PointsLabelRenderer;
     fragmentMine: PointsLabelRenderer;
   };
+  private frustumManager?: FrustumManager;
+  private frustumVisibilityDirty = false;
+  private unsubscribeFrustum?: () => void;
   private readonly handleStructureRecordRemoved = (structure: StructureInfo) => {
     const entityNumericId = Number(structure.entityId);
     this.attachmentManager.removeAttachments(entityNumericId);
@@ -144,6 +148,7 @@ export class StructureManager {
     dojoContext?: SetupResult,
     applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>,
     clearPendingRelicEffectsCallback?: (entityId: ID) => void,
+    frustumManager?: FrustumManager,
   ) {
     this.scene = scene;
     this.renderChunkSize = renderChunkSize;
@@ -156,6 +161,13 @@ export class StructureManager {
     this.components = dojoContext?.components as ClientComponents | undefined;
     this.applyPendingRelicEffectsCallback = applyPendingRelicEffectsCallback;
     this.clearPendingRelicEffectsCallback = clearPendingRelicEffectsCallback;
+    this.frustumManager = frustumManager;
+    if (this.frustumManager) {
+      this.frustumVisibilityDirty = true;
+      this.unsubscribeFrustum = this.frustumManager.onChange(() => {
+        this.frustumVisibilityDirty = true;
+      });
+    }
     this.isBlitz = getIsBlitz();
     this.structureModelPaths = getStructureModelPaths(this.isBlitz);
 
@@ -208,24 +220,98 @@ export class StructureManager {
           loadedCount++;
 
           if (loadedCount === totalTextures) {
+            const scaledPointSize = 5 * 0.5;
             this.pointsRenderers = {
-              myVillage: new PointsLabelRenderer(this.scene, loadedTextures.myVillage!, 1000, 5, 0, 1.3, true),
-              enemyVillage: new PointsLabelRenderer(this.scene, loadedTextures.enemyVillage!, 1000, 5, 0, 1.3, true),
-              allyVillage: new PointsLabelRenderer(this.scene, loadedTextures.allyVillage!, 1000, 5, 0, 1.3, true),
-              myRealm: new PointsLabelRenderer(this.scene, loadedTextures.myRealm!, 1000, 5, 0, 1.3, true),
-              enemyRealm: new PointsLabelRenderer(this.scene, loadedTextures.enemyRealm!, 1000, 5, 0, 1.3, true),
-              allyRealm: new PointsLabelRenderer(this.scene, loadedTextures.allyRealm!, 1000, 5, 0, 1.3, true),
+              myVillage: new PointsLabelRenderer(
+                this.scene,
+                loadedTextures.myVillage!,
+                1000,
+                scaledPointSize,
+                0,
+                1.3,
+                true,
+                this.frustumManager,
+              ),
+              enemyVillage: new PointsLabelRenderer(
+                this.scene,
+                loadedTextures.enemyVillage!,
+                1000,
+                scaledPointSize,
+                0,
+                1.3,
+                true,
+                this.frustumManager,
+              ),
+              allyVillage: new PointsLabelRenderer(
+                this.scene,
+                loadedTextures.allyVillage!,
+                1000,
+                scaledPointSize,
+                0,
+                1.3,
+                true,
+                this.frustumManager,
+              ),
+              myRealm: new PointsLabelRenderer(
+                this.scene,
+                loadedTextures.myRealm!,
+                1000,
+                scaledPointSize,
+                0,
+                1.3,
+                true,
+                this.frustumManager,
+              ),
+              enemyRealm: new PointsLabelRenderer(
+                this.scene,
+                loadedTextures.enemyRealm!,
+                1000,
+                scaledPointSize,
+                0,
+                1.3,
+                true,
+                this.frustumManager,
+              ),
+              allyRealm: new PointsLabelRenderer(
+                this.scene,
+                loadedTextures.allyRealm!,
+                1000,
+                scaledPointSize,
+                0,
+                1.3,
+                true,
+                this.frustumManager,
+              ),
               hyperstructure: new PointsLabelRenderer(
                 this.scene,
                 loadedTextures.hyperstructure!,
                 1000,
-                5,
+                scaledPointSize,
                 0,
                 1.3,
                 true,
+                this.frustumManager,
               ),
-              bank: new PointsLabelRenderer(this.scene, loadedTextures.bank!, 1000, 5, 0, 1.3, true),
-              fragmentMine: new PointsLabelRenderer(this.scene, loadedTextures.fragmentMine!, 1000, 5, 0, 1.3, true),
+              bank: new PointsLabelRenderer(
+                this.scene,
+                loadedTextures.bank!,
+                1000,
+                scaledPointSize,
+                0,
+                1.3,
+                true,
+                this.frustumManager,
+              ),
+              fragmentMine: new PointsLabelRenderer(
+                this.scene,
+                loadedTextures.fragmentMine!,
+                1000,
+                scaledPointSize,
+                0,
+                1.3,
+                true,
+                this.frustumManager,
+              ),
             };
 
             console.log("[StructureManager] Points-based icon renderers initialized");
@@ -263,6 +349,11 @@ export class StructureManager {
   };
 
   public destroy() {
+    if (this.unsubscribeFrustum) {
+      this.unsubscribeFrustum();
+      this.unsubscribeFrustum = undefined;
+    }
+
     if (this.unsubscribeAccountStore) {
       this.unsubscribeAccountStore();
       this.unsubscribeAccountStore = undefined;
@@ -637,8 +728,9 @@ export class StructureManager {
     }
   }
 
-  async updateChunk(chunkKey: string) {
-    if (this.currentChunk === chunkKey) {
+  async updateChunk(chunkKey: string, options?: { force?: boolean }) {
+    const force = options?.force ?? false;
+    if (!force && this.currentChunk === chunkKey) {
       return;
     }
 
@@ -655,12 +747,18 @@ export class StructureManager {
     }
 
     // Check again if chunk key is still different (might have changed while waiting)
-    if (this.currentChunk === chunkKey) {
+    if (!force && this.currentChunk === chunkKey) {
       return;
     }
 
-    console.log(`[CHUNK SYNC] Switching structure chunk from ${this.currentChunk} to ${chunkKey}`);
-    this.currentChunk = chunkKey;
+    const previousChunk = this.currentChunk;
+    const isSwitch = previousChunk !== chunkKey;
+    if (isSwitch) {
+      console.log(`[CHUNK SYNC] Switching structure chunk from ${this.currentChunk} to ${chunkKey}`);
+      this.currentChunk = chunkKey;
+    } else if (force) {
+      console.log(`[CHUNK SYNC] Refreshing structure chunk ${chunkKey}`);
+    }
 
     // Create and track the chunk switch promise
     this.chunkSwitchPromise = Promise.resolve().then(() => {
@@ -670,7 +768,7 @@ export class StructureManager {
 
     try {
       await this.chunkSwitchPromise;
-      console.log(`[CHUNK SYNC] Structure chunk switch to ${chunkKey} completed`);
+      console.log(`[CHUNK SYNC] Structure chunk ${isSwitch ? "switch" : "refresh"} for ${chunkKey} completed`);
     } finally {
       this.chunkSwitchPromise = null;
     }
@@ -914,6 +1012,8 @@ export class StructureManager {
         });
       });
     }
+
+    this.frustumVisibilityDirty = true;
   }
 
   private getRendererForStructure(structure: StructureInfo): PointsLabelRenderer | null {
@@ -958,7 +1058,7 @@ export class StructureManager {
   }
 
   private getVisibleStructures(structures: Map<ID, StructureInfo>): StructureInfo[] {
-    return Array.from(structures.values()).filter((structure) => this.isInCurrentChunk(structure.hexCoords));
+    return Array.from(structures.values()).filter((structure) => this.isStructureVisible(structure));
   }
 
   private isInCurrentChunk(hexCoords: { col: number; row: number }): boolean {
@@ -969,6 +1069,20 @@ export class StructureManager {
       hexCoords.row >= chunkRow - this.renderChunkSize.height / 2 &&
       hexCoords.row < chunkRow + this.renderChunkSize.height / 2
     );
+  }
+
+  private isStructureVisible(structure: StructureInfo): boolean {
+    if (!this.isInCurrentChunk(structure.hexCoords)) {
+      return false;
+    }
+
+    if (!this.frustumManager) {
+      return true;
+    }
+
+    const position = getWorldPositionForHex(structure.hexCoords);
+    position.y += 0.05;
+    return this.frustumManager.isPointVisible(position);
   }
 
   public getEntityIdFromInstance(structureType: StructureType, instanceId: number): ID | undefined {
@@ -1010,6 +1124,22 @@ export class StructureManager {
     this.structureModels.forEach((models) => {
       models.forEach((model) => model.updateAnimations(deltaTime));
     });
+
+    if (this.frustumVisibilityDirty) {
+      this.applyFrustumVisibilityToLabels();
+      this.frustumVisibilityDirty = false;
+    }
+  }
+
+  private applyFrustumVisibilityToLabels() {
+    if (!this.frustumManager) {
+      return;
+    }
+
+    this.entityIdLabels.forEach((label) => {
+      const isVisible = this.frustumManager!.isPointVisible(label.position);
+      label.element.style.display = isVisible ? "" : "none";
+    });
   }
 
   // Label Management Methods
@@ -1032,6 +1162,7 @@ export class StructureManager {
     this.entityIdLabels.set(structure.entityId, label);
     this.labelsGroup.add(label);
     this.updateStructureLabelData(structure, label);
+    this.frustumVisibilityDirty = true;
   }
 
   private removeEntityIdLabel(entityId: ID) {
@@ -1045,6 +1176,7 @@ export class StructureManager {
       this.labelsGroup.remove(label);
       this.labelPool.release(label);
       this.entityIdLabels.delete(normalizedEntityId);
+      this.frustumVisibilityDirty = true;
     }
   }
 
@@ -1077,6 +1209,7 @@ export class StructureManager {
         this.labelsGroup.remove(label);
       });
     }
+    this.frustumVisibilityDirty = true;
   }
 
   public removeLabelsExcept(entityId?: ID) {
@@ -1102,6 +1235,7 @@ export class StructureManager {
       }
       this.entityIdLabels.delete(labelEntityId);
     });
+    this.frustumVisibilityDirty = true;
   }
 
   public showLabels() {
@@ -1150,6 +1284,7 @@ export class StructureManager {
         renderer.setHover(normalizedEntityId);
       }
     }
+    this.frustumVisibilityDirty = true;
   }
 
   public hideLabel(entityId: ID): void {
@@ -1159,6 +1294,7 @@ export class StructureManager {
     if (this.pointsRenderers) {
       Object.values(this.pointsRenderers).forEach((renderer) => renderer.clearHover());
     }
+    this.frustumVisibilityDirty = true;
   }
 
   public hideAllLabels(): void {
@@ -1168,6 +1304,7 @@ export class StructureManager {
     if (this.pointsRenderers) {
       Object.values(this.pointsRenderers).forEach((renderer) => renderer.clearHover());
     }
+    this.frustumVisibilityDirty = true;
   }
 
   // Relic effect management methods

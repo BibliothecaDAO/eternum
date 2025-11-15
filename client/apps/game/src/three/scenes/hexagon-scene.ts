@@ -9,6 +9,7 @@ import { InteractiveHexManager } from "@/three/managers/interactive-hex-manager"
 import { ThunderBoltManager } from "@/three/managers/thunderbolt-manager";
 import { type SceneManager } from "@/three/scene-manager";
 import { GUIManager, LocationManager } from "@/three/utils/";
+import { FrustumManager } from "@/three/utils/frustum-manager";
 import { MatrixPool } from "@/three/utils/matrix-pool";
 import { gltfLoader } from "@/three/utils/utils";
 import { LeftView, RightView } from "@/types";
@@ -64,6 +65,7 @@ export abstract class HexagonScene {
   protected worldUpdateListener!: WorldUpdateListener;
   protected highlightHexManager!: HighlightHexManager;
   protected locationManager!: LocationManager;
+  protected frustumManager!: FrustumManager;
   protected thunderBoltManager!: ThunderBoltManager;
   protected dayNightCycleManager!: DayNightCycleManager;
   protected GUIFolder!: any;
@@ -108,6 +110,7 @@ export abstract class HexagonScene {
     protected sceneManager: SceneManager,
   ) {
     this.initializeScene();
+    this.frustumManager = new FrustumManager(this.camera, this.controls);
     this.setupLighting();
     this.setupInputHandlers();
     this.setupGUI();
@@ -117,6 +120,7 @@ export abstract class HexagonScene {
   private notifyControlsChanged(): void {
     this.controls.update();
     this.controls.dispatchEvent({ type: "change" });
+    this.frustumManager?.forceUpdate();
   }
 
   private initializeScene(): void {

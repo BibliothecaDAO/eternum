@@ -11,6 +11,7 @@ import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { createChestLabel } from "../utils/labels/label-factory";
+import { FrustumManager } from "../utils/frustum-manager";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { gltfLoader } from "../utils/utils";
 import { PointsLabelRenderer } from "./points-label-renderer";
@@ -36,18 +37,21 @@ export class ChestManager {
   private animationClips: THREE.AnimationClip[] = [];
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private pointsRenderer?: PointsLabelRenderer; // Points-based icon renderer
+  private frustumManager?: FrustumManager;
 
   constructor(
     scene: THREE.Scene,
     renderChunkSize: RenderChunkSize,
     labelsGroup?: THREE.Group,
     hexagonScene?: HexagonScene,
+    frustumManager?: FrustumManager,
   ) {
     this.scene = scene;
     this.hexagonScene = hexagonScene;
     this.labelsGroup = labelsGroup || new THREE.Group();
     this.renderChunkSize = renderChunkSize;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
+    this.frustumManager = frustumManager;
     this.loadModel().then(() => {
       if (this.currentChunkKey) {
         this.renderVisibleChests(this.currentChunkKey);
@@ -185,8 +189,9 @@ export class ChestManager {
     }
   }
 
-  async updateChunk(chunkKey: string) {
-    if (this.currentChunkKey === chunkKey) {
+  async updateChunk(chunkKey: string, options?: { force?: boolean }) {
+    const force = options?.force ?? false;
+    if (!force && this.currentChunkKey === chunkKey) {
       return;
     }
 
@@ -201,12 +206,18 @@ export class ChestManager {
     }
 
     // Check again if chunk key is still different (might have changed while waiting)
-    if (this.currentChunkKey === chunkKey) {
+    if (!force && this.currentChunkKey === chunkKey) {
       return;
     }
 
-    console.log(`[CHUNK SYNC] Switching chest chunk from ${this.currentChunkKey} to ${chunkKey}`);
-    this.currentChunkKey = chunkKey;
+    const previousChunk = this.currentChunkKey;
+    const isSwitch = previousChunk !== chunkKey;
+    if (isSwitch) {
+      console.log(`[CHUNK SYNC] Switching chest chunk from ${this.currentChunkKey} to ${chunkKey}`);
+      this.currentChunkKey = chunkKey;
+    } else if (force) {
+      console.log(`[CHUNK SYNC] Refreshing chest chunk ${chunkKey}`);
+    }
 
     // Create and track the chunk switch promise
     this.chunkSwitchPromise = Promise.resolve().then(() => {
@@ -215,7 +226,7 @@ export class ChestManager {
 
     try {
       await this.chunkSwitchPromise;
-      console.log(`[CHUNK SYNC] Chest chunk switch to ${chunkKey} completed`);
+      console.log(`[CHUNK SYNC] Chest chunk ${isSwitch ? "switch" : "refresh"} for ${chunkKey} completed`);
     } finally {
       this.chunkSwitchPromise = null;
     }
@@ -229,12 +240,23 @@ export class ChestManager {
 
   private isChestVisible(chest: ChestData, startRow: number, startCol: number) {
     const { x, y } = chest.hexCoords.getNormalized();
-    const isVisible =
+    const insideChunk =
       x >= startCol - this.renderChunkSize.width / 2 &&
       x <= startCol + this.renderChunkSize.width / 2 &&
       y >= startRow - this.renderChunkSize.height / 2 &&
       y <= startRow + this.renderChunkSize.height / 2;
-    return isVisible;
+
+    if (!insideChunk) {
+      return false;
+    }
+
+    if (!this.frustumManager) {
+      return true;
+    }
+
+    const worldPos = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
+    worldPos.y += 0.05;
+    return this.frustumManager.isPointVisible(worldPos);
   }
 
   private getVisibleChestsForChunk(chests: Map<ID, ChestData>, startRow: number, startCol: number): ChestData[] {
