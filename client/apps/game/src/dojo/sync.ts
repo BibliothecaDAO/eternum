@@ -22,7 +22,7 @@ function isToriiDeleteNotification(entity: ToriiEntity): boolean {
   return Object.keys(entity.models).length === 0;
 }
 
-const syncEntitiesDebounced = async <S extends Schema>(
+export const syncEntitiesDebounced = async <S extends Schema>(
   client: ToriiClient,
   setupResult: SetupResult,
   entityKeyClause: Clause | undefined | null,
@@ -189,9 +189,8 @@ export const initialSync = async (
     setInitialSyncProgress(0);
   }
 
-  entityStreamSubscription = await syncEntitiesDebounced(setup.network.toriiClient, setup, null, logging);
-
-  console.log("[syncEntitiesDebounced COMPLETED]");
+  // Legacy global sync disabled while ToriiStreamManager handles scoped subscriptions
+  console.log("[syncEntitiesDebounced SKIPPED - managed by ToriiStreamManager]");
 
   let highestProgress = reportProgress ? 0 : -1;
   const updateProgress = (value: number) => {

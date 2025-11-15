@@ -2,6 +2,7 @@ import { AudioManager } from "@/audio/core/AudioManager";
 import { toast } from "sonner";
 
 import { getMapFromToriiExact, getStructuresDataFromTorii } from "@/dojo/queries";
+import { BoundsModelConfig, ToriiStreamManager } from "@/dojo/torii-stream-manager";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
@@ -94,6 +95,13 @@ import { openStructureContextMenu } from "./context-menu/structure-context-menu"
 const dummyVector = new Vector3();
 const dummy = new Object3D();
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
+const CHUNK_STREAM_MODELS: BoundsModelConfig[] = [
+  { model: "s1_eternum-Tile", colField: "col", rowField: "row" },
+  { model: "s1_eternum-ExplorerTroops", colField: "coord.x", rowField: "coord.y" },
+  { model: "s1_eternum-Structure", colField: "base.coord_x", rowField: "base.coord_y" },
+  { model: "s1_eternum-QuestTile", colField: "coord.x", rowField: "coord.y" },
+];
+const GLOBAL_STREAM_MODELS = ["s1_eternum-BattleEvent"];
 
 export default class WorldmapScene extends HexagonScene {
   private chunkSize = 8; // Size of each chunk
@@ -251,6 +259,7 @@ export default class WorldmapScene extends HexagonScene {
 
   // Hover-based label expansion manager
   private hoverLabelManager: HoverLabelManager;
+  private toriiStreamManager?: ToriiStreamManager;
 
   constructor(
     dojoContext: SetupResult,
@@ -319,6 +328,18 @@ export default class WorldmapScene extends HexagonScene {
 
     // Initialize the chest manager
     this.chestManager = new ChestManager(this.scene, this.renderChunkSize, this.chestLabelsGroup, this);
+
+    const toriiClient = this.dojo.network?.toriiClient;
+    if (toriiClient) {
+      this.toriiStreamManager = new ToriiStreamManager({
+        client: toriiClient,
+        setup: this.dojo,
+        logging: Boolean(import.meta.env.DEV),
+      });
+      this.toriiStreamManager
+        .setGlobalModels(GLOBAL_STREAM_MODELS)
+        .catch((error) => console.error("[WorldmapScene] Failed to start global Torii stream", error));
+    }
 
     // Initialize the battle direction manager
     this.battleDirectionManager = new BattleDirectionManager(
@@ -1573,6 +1594,7 @@ export default class WorldmapScene extends HexagonScene {
 
   onSwitchOff() {
     this.disposeStoreSubscriptions();
+    this.toriiStreamManager?.shutdown();
 
     // Remove label groups from scene
     this.scene.remove(this.armyLabelsGroup);
@@ -2711,6 +2733,8 @@ export default class WorldmapScene extends HexagonScene {
 
     this.currentChunk = chunkKey;
 
+    await this.updateToriiStreamBoundsForChunk(startRow, startCol);
+
     if (force) {
       this.removeCachedMatricesForChunk(startRow, startCol);
     }
@@ -2759,6 +2783,36 @@ export default class WorldmapScene extends HexagonScene {
     if (switchPosition) {
       this.lastChunkSwitchPosition = switchPosition;
       this.hasChunkSwitchAnchor = true;
+    }
+  }
+
+  private async updateToriiStreamBoundsForChunk(startRow: number, startCol: number) {
+    if (!this.toriiStreamManager) {
+      return;
+    }
+
+    const { row: chunkCenterRow, col: chunkCenterCol } = this.getChunkCenter(startRow, startCol);
+    const halfWidth = this.renderChunkSize.width / 2;
+    const halfHeight = this.renderChunkSize.height / 2;
+
+    const minCol = chunkCenterCol - halfWidth;
+    const maxCol = chunkCenterCol + halfWidth;
+    const minRow = chunkCenterRow - halfHeight;
+    const maxRow = chunkCenterRow + halfHeight;
+
+    const feltCenter = FELT_CENTER();
+
+    try {
+      await this.toriiStreamManager.switchBounds({
+        minCol: minCol + feltCenter,
+        maxCol: maxCol + feltCenter,
+        minRow: minRow + feltCenter,
+        maxRow: maxRow + feltCenter,
+        padding: this.renderChunkSize.width,
+        models: CHUNK_STREAM_MODELS,
+      });
+    } catch (error) {
+      console.error("[WorldmapScene] Failed to update Torii stream bounds", error);
     }
   }
 
