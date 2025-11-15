@@ -43,10 +43,10 @@ const defaultClauseBuilder = (descriptor: BoundsDescriptor): Clause | null => {
 
   const clauses: Clause[] = models.map(({ model, colField, rowField }) =>
     AndComposeClause([
-      MemberClause(model, colField, "Gte", paddedMinCol),
-      MemberClause(model, colField, "Lte", paddedMaxCol),
-      MemberClause(model, rowField, "Gte", paddedMinRow),
-      MemberClause(model, rowField, "Lte", paddedMaxRow),
+      MemberClause(model as `${string}-${string}`, colField, "Gte", paddedMinCol),
+      MemberClause(model as `${string}-${string}`, colField, "Lte", paddedMaxCol),
+      MemberClause(model as `${string}-${string}`, rowField, "Gte", paddedMinRow),
+      MemberClause(model as `${string}-${string}`, rowField, "Lte", paddedMaxRow),
     ]).build(),
   );
 
