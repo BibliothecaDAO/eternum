@@ -193,21 +193,40 @@ export const initialSync = async (
 
   console.log("[syncEntitiesDebounced COMPLETED]");
 
-  let start = performance.now();
-  let end;
+  let highestProgress = reportProgress ? 0 : -1;
+  const updateProgress = (value: number) => {
+    if (!reportProgress) {
+      return;
+    }
+    if (value <= highestProgress) {
+      return;
+    }
+    highestProgress = value;
+    setInitialSyncProgress(value);
+  };
 
-  // BANKS
-  await getBankStructuresFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
-  end = performance.now();
-  console.log("[sync] bank structures query", end - start);
-  if (reportProgress) {
-    setInitialSyncProgress(10);
-  }
+  const runTimedTask = async (label: string, targetProgress: number, task: () => Promise<void>) => {
+    const start = performance.now();
+    await task();
+    const end = performance.now();
+    console.log(`[sync] ${label}`, end - start);
+    updateProgress(targetProgress);
+  };
+
+  const parallelTasks: Promise<void>[] = [];
+
+  // BANKS (kicked off immediately so the request overlaps with other sync work)
+  parallelTasks.push(
+    runTimedTask("bank structures query", 10, async () => {
+      await getBankStructuresFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+    }),
+  );
 
   // // SPECTATOR REALM
   const firstNonOwnedStructure = await sqlApi.fetchFirstStructure();
 
   if (firstNonOwnedStructure) {
+    const start = performance.now();
     state.setStructureEntityId(firstNonOwnedStructure.entity_id, {
       spectator: true,
       worldMapPosition: { col: firstNonOwnedStructure.coord_x, row: firstNonOwnedStructure.coord_y },
@@ -218,44 +237,36 @@ export const initialSync = async (
         position: { col: firstNonOwnedStructure.coord_x, row: firstNonOwnedStructure.coord_y },
       },
     ]);
-    end = performance.now();
+    const end = performance.now();
     console.log("[sync] first structure query", end - start);
-    if (reportProgress) {
-      setInitialSyncProgress(25);
-    }
+    updateProgress(25);
   }
 
-  start = performance.now();
-  await getConfigFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
-  end = performance.now();
-  console.log("[sync] config query", end - start);
-  if (reportProgress) {
-    setInitialSyncProgress(50);
-  }
+  parallelTasks.push(
+    runTimedTask("config query", 50, async () => {
+      await getConfigFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+    }),
+  );
 
-  start = performance.now();
-  await getAddressNamesFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
-  end = performance.now();
-  console.log("[sync] address names query", end - start);
-  if (reportProgress) {
-    setInitialSyncProgress(75);
-  }
+  parallelTasks.push(
+    runTimedTask("address names query", 75, async () => {
+      await getAddressNamesFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+    }),
+  );
 
-  start = performance.now();
-  await getGuildsFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
-  end = performance.now();
-  console.log("[sync] guilds query", end - start);
-  if (reportProgress) {
-    setInitialSyncProgress(90);
-  }
+  parallelTasks.push(
+    runTimedTask("guilds query", 90, async () => {
+      await getGuildsFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+    }),
+  );
 
-  start = performance.now();
-  await MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).refresh();
-  end = performance.now();
-  console.log("[sync] fetching the map data store", end - start);
-  if (reportProgress) {
-    setInitialSyncProgress(100);
-  }
+  parallelTasks.push(
+    runTimedTask("fetching the map data store", 100, async () => {
+      await MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).refresh();
+    }),
+  );
+
+  await Promise.all(parallelTasks);
 };
 
 export const resubscribeEntityStream = async (

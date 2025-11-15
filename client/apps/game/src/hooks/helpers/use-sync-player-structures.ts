@@ -1,4 +1,5 @@
 import { getStructuresDataFromTorii } from "@/dojo/queries";
+import { POLLING_INTERVALS } from "@/config/polling";
 import { sqlApi } from "@/services/api";
 import { useDojo } from "@bibliothecadao/react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -32,8 +33,8 @@ export const useSyncPlayerStructures = () => {
     // Initial fetch
     fetchStructures();
 
-    // Set up interval to fetch every 10 seconds
-    const intervalId = setInterval(fetchStructures, 10000);
+    // Set up interval to fetch periodically (configurable)
+    const intervalId = setInterval(fetchStructures, POLLING_INTERVALS.playerStructuresMs);
 
     // Clean up interval on unmount
     return () => clearInterval(intervalId);

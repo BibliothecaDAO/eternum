@@ -1,3 +1,4 @@
+import { POLLING_INTERVALS } from "@/config/polling";
 import { sqlApi } from "@/services/api";
 import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
@@ -59,8 +60,8 @@ export const useStoryEvents = (limit: number = 100) => {
         };
       });
     },
-    staleTime: 30000, // 30 seconds
-    refetchInterval: 3000, // Auto-refresh every 3 seconds
+    staleTime: POLLING_INTERVALS.storyEventsStaleMs,
+    refetchInterval: POLLING_INTERVALS.storyEventsMs,
   });
 };
 
@@ -100,6 +101,8 @@ export const useStoryEventsLoading = () => {
         };
       });
     },
+    staleTime: POLLING_INTERVALS.storyEventsStaleMs,
+    refetchInterval: POLLING_INTERVALS.storyEventsMs,
   }).isLoading;
 };
 
@@ -139,6 +142,8 @@ export const useStoryEventsError = () => {
         };
       });
     },
+    staleTime: POLLING_INTERVALS.storyEventsStaleMs,
+    refetchInterval: POLLING_INTERVALS.storyEventsMs,
   }).error?.message;
 };
 
