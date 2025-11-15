@@ -103,18 +103,12 @@ const CHUNK_STREAM_MODELS: BoundsModelConfig[] = [
 ];
 const GLOBAL_STREAM_MODELS: GlobalModelStreamConfig[] = [
   { model: "s1_eternum-BattleEvent" },
-  { model: "s1_eternum-ExplorerMoveEvent" },
+  { model: "s1_eternum-ExplorerMoveEvent" }, // rewards
   { model: "s1_eternum-StoryEvent" },
-  { model: "s1_eternum-LiquidityEvent" },
-  { model: "s1_eternum-SeasonEnded" },
-  { model: "s1_eternum-Hyperstructure" },
-  { model: "s1_eternum-HyperstructureRequirements" },
-  { model: "s1_eternum-HyperstructureGlobals" },
   { model: "s1_eternum-StructureBuildings" },
   { model: "s1_eternum-ProductionBoostBonus" },
   { model: "s1_eternum-Building" },
-  { model: "s1_eternum-AddressName" },
-  { model: "s1_eternum-Quest" },
+  { model: "s1_eternum-OpenRelicChestEvent" }, // get relic crate output
 ];
 
 export default class WorldmapScene extends HexagonScene {
