@@ -60,6 +60,7 @@ import {
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import throttle from "lodash/throttle";
 import { Account, AccountInterface } from "starknet";
 import {
   Box3,
@@ -91,7 +92,6 @@ import {
 } from "../utils/navigation";
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { openStructureContextMenu } from "./context-menu/structure-context-menu";
-import throttle from "lodash/throttle";
 
 //const dummyObject = new Object3D();
 const dummyVector = new Vector3();
@@ -246,7 +246,7 @@ export default class WorldmapScene extends HexagonScene {
     new Map();
 
   // Relic effect validation timer
-  private relicValidationInterval: NodeJS.Timeout | null = null;
+  private relicValidationInterval: ReturnType<typeof setTimeout> | null = null;
 
   // Global chunk switching coordination
   private globalChunkSwitchPromise: Promise<void> | null = null;
@@ -263,9 +263,10 @@ export default class WorldmapScene extends HexagonScene {
 
   private fetchedChunks: Set<string> = new Set();
   private pendingChunks: Map<string, Promise<void>> = new Map();
-  private pendingArmyRemovals: Map<ID, NodeJS.Timeout> = new Map();
+  private pendingArmyRemovals: Map<ID, ReturnType<typeof setTimeout>> = new Map();
   private pendingArmyRemovalMeta: Map<ID, { scheduledAt: number; chunkKey: string; reason: "tile" | "zero" }> =
     new Map();
+  private deferredChunkRemovals: Map<ID, { reason: "tile" | "zero"; scheduledAt: number }> = new Map();
 
   private fxManager: FXManager;
   private resourceFXManager: ResourceFXManager;
@@ -1637,6 +1638,7 @@ export default class WorldmapScene extends HexagonScene {
     this.pendingArmyRemovals.forEach((timeout) => clearTimeout(timeout));
     this.pendingArmyRemovals.clear();
     this.pendingArmyRemovalMeta.clear();
+    this.deferredChunkRemovals.clear();
     this.armyLastUpdateAt.clear();
 
     this.armyStructureOwners.clear();
@@ -1727,10 +1729,9 @@ export default class WorldmapScene extends HexagonScene {
 
           if (this.currentChunk !== meta.chunkKey) {
             console.debug(
-              `[WorldMap] Aborting tile-based removal for entity ${entityId} due to chunk switch (${meta.chunkKey} -> ${this.currentChunk})`,
+              `[WorldMap] Deferring tile-based removal for entity ${entityId} due to chunk switch (${meta.chunkKey} -> ${this.currentChunk})`,
             );
-            this.pendingArmyRemovalMeta.delete(entityId);
-            this.pendingArmyRemovals.delete(entityId);
+            this.deferArmyRemovalDuringChunkSwitch(entityId, reason, meta.scheduledAt);
             return;
           }
 
@@ -1768,6 +1769,38 @@ export default class WorldmapScene extends HexagonScene {
     schedule(initialDelay);
   }
 
+  private deferArmyRemovalDuringChunkSwitch(entityId: ID, reason: "tile" | "zero", scheduledAt: number) {
+    const timeout = this.pendingArmyRemovals.get(entityId);
+    if (timeout) {
+      clearTimeout(timeout);
+      this.pendingArmyRemovals.delete(entityId);
+    }
+
+    this.pendingArmyRemovalMeta.delete(entityId);
+    this.deferredChunkRemovals.set(entityId, { reason, scheduledAt });
+  }
+
+  private retryDeferredChunkRemovals() {
+    if (this.deferredChunkRemovals.size === 0) {
+      return;
+    }
+
+    const deferred = Array.from(this.deferredChunkRemovals.entries());
+    this.deferredChunkRemovals.clear();
+
+    deferred.forEach(([entityId, { reason, scheduledAt }]) => {
+      const lastUpdate = this.armyLastUpdateAt.get(entityId) ?? 0;
+      if (lastUpdate > scheduledAt) {
+        console.debug(
+          `[WorldMap] Skipping deferred removal for entity ${entityId} - newer tile data detected after chunk switch (${lastUpdate - scheduledAt}ms delta)`,
+        );
+        return;
+      }
+
+      this.scheduleArmyRemoval(entityId, reason);
+    });
+  }
+
   private cancelPendingArmyRemoval(entityId: ID) {
     const timeout = this.pendingArmyRemovals.get(entityId);
     if (!timeout) return;
@@ -1775,6 +1808,7 @@ export default class WorldmapScene extends HexagonScene {
     clearTimeout(timeout);
     this.pendingArmyRemovals.delete(entityId);
     this.pendingArmyRemovalMeta.delete(entityId);
+    this.deferredChunkRemovals.delete(entityId);
     console.debug(`[WorldMap] Cancelled pending removal for entity ${entityId}`);
   }
 
@@ -2794,6 +2828,7 @@ export default class WorldmapScene extends HexagonScene {
 
       try {
         await this.globalChunkSwitchPromise;
+        this.retryDeferredChunkRemovals();
         return true;
       } finally {
         this.globalChunkSwitchPromise = null;
@@ -2805,6 +2840,7 @@ export default class WorldmapScene extends HexagonScene {
       this.globalChunkSwitchPromise = this.refreshCurrentChunk(chunkKey, startCol, startRow);
       try {
         await this.globalChunkSwitchPromise;
+        this.retryDeferredChunkRemovals();
         return true;
       } finally {
         this.globalChunkSwitchPromise = null;
@@ -2958,10 +2994,7 @@ export default class WorldmapScene extends HexagonScene {
     const results = await Promise.allSettled(updateTasks.map((task) => task.promise));
     results.forEach((result, index) => {
       if (result.status === "rejected") {
-        console.error(
-          `[CHUNK SYNC] ${updateTasks[index].label} manager failed for chunk ${chunkKey}`,
-          result.reason,
-        );
+        console.error(`[CHUNK SYNC] ${updateTasks[index].label} manager failed for chunk ${chunkKey}`, result.reason);
       }
     });
   }

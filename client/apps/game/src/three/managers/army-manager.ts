@@ -22,8 +22,13 @@ import {
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { shortString } from "starknet";
+import * as THREE from "three";
 import { Color, Euler, Group, Raycaster, Scene, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
+import { env } from "../../../env";
 import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
 import {
   CosmeticAttachmentManager,
@@ -38,15 +43,10 @@ import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions"
 import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions } from "../utils/labels/label-transitions";
-import { env } from "../../../env";
-import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { shortString } from "starknet";
 import { MemoryMonitor } from "../utils/memory-monitor";
 import { findShortestPath } from "../utils/pathfinding";
 import { FXManager } from "./fx-manager";
 import { PointsLabelRenderer } from "./points-label-renderer";
-import * as THREE from "three";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
@@ -413,8 +413,9 @@ export class ArmyManager {
     }
 
     const previousChunkKey = this.currentChunkKey;
+    const chunkChanged = previousChunkKey !== chunkKey;
 
-    if (this.currentChunkKey !== chunkKey) {
+    if (chunkChanged) {
       console.log(`[CHUNK SYNC] Switching army chunk from ${this.currentChunkKey} to ${chunkKey}`);
       this.currentChunkKey = chunkKey;
     } else if (force) {
@@ -422,7 +423,8 @@ export class ArmyManager {
     }
 
     // Create and track the chunk switch promise
-    this.chunkSwitchPromise = this.renderVisibleArmies(chunkKey, options);
+    const renderOptions = { force: force || chunkChanged };
+    this.chunkSwitchPromise = this.renderVisibleArmies(chunkKey, renderOptions);
 
     try {
       await this.chunkSwitchPromise;
@@ -509,8 +511,13 @@ export class ArmyManager {
       sourceHex = path[0];
     }
 
-    let position = this.armyModel.getEntityWorldPosition(numericId);
-    if (!position) {
+    const isMoving = this.armyModel.isEntityMoving(numericId);
+    let position: Vector3;
+    if (isMoving) {
+      position =
+        this.armyModel.getEntityWorldPosition(numericId)?.clone() ??
+        this.getArmyWorldPosition(army.entityId, sourceHex);
+    } else {
       position = this.getArmyWorldPosition(army.entityId, sourceHex);
     }
 
@@ -1252,6 +1259,8 @@ export class ArmyManager {
     console.debug(`[ArmyManager] Preparing world cleanup for entity ${entityId}`);
     const worldPosition = this.getArmyWorldPosition(entityId, army.hexCoords);
 
+    const hadVisibleEntry = this.visibleArmyIndices.has(entityId);
+    const freedSlot = hadVisibleEntry ? this.visibleArmyOrder.length - 1 : undefined;
     const removedFromChunk = this.removeVisibleArmy(entityId);
     if (!removedFromChunk) {
       this.removeArmyPointIcon(entityId);
@@ -1268,6 +1277,8 @@ export class ArmyManager {
       this.armyModel.updateAllInstances();
       this.frustumVisibilityDirty = true;
     }
+
+    this.armyModel.releaseEntity(numericEntityId, freedSlot);
 
     if (!playDefeatFx) {
       return;
