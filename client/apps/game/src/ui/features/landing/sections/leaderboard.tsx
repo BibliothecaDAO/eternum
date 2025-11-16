@@ -42,18 +42,15 @@ const getRelativeTimeLabel = (timestamp: number | null, fallback: string) => {
 };
 
 const SCORE_TO_BEAT_ENDPOINTS: string[] = [
-  "https://api.cartridge.gg/x/war-game-1/torii/sql",
-  "https://api.cartridge.gg/x/war-game-2/torii/sql",
-  "https://api.cartridge.gg/x/war-game-3/torii/sql",
-  "https://api.cartridge.gg/x/war-game-4/torii/sql",
-  "https://api.cartridge.gg/x/war-game-5/torii/sql",
-  "https://api.cartridge.gg/x/war-game-6/torii/sql",
-  "https://api.cartridge.gg/x/war-game-7/torii/sql",
-  "https://api.cartridge.gg/x/war-game-8/torii/sql",
-  "https://api.cartridge.gg/x/war-game-9/torii/sql",
+  "https://api.cartridge.gg/x/warr-game-1/torii/sql",
+  "https://api.cartridge.gg/x/warr-game-2/torii/sql",
+  "https://api.cartridge.gg/x/warr-game-3/torii/sql",
+  "https://api.cartridge.gg/x/warr-game-4/torii/sql",
+  "https://api.cartridge.gg/x/warr-game-5/torii/sql",
+  "https://api.cartridge.gg/x/warr-game-6/torii/sql",
 ];
 
-const SCORE_TO_BEAT_TAB_ENABLED = false; // Temporarily hide the Score to Beat tab until it's ready again.
+const SCORE_TO_BEAT_TAB_ENABLED = true; // Temporarily hide the Score to Beat tab until it's ready again.
 
 const describeEndpoint = (endpoint: string) => {
   if (!endpoint) {
