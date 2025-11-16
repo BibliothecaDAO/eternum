@@ -259,6 +259,11 @@ export const createConstructionMenu = ({
 
       const icon = resource.img ?? undefined;
 
+       const requiresStandardCost =
+         typedResourceId === ResourcesIds.Dragonhide ||
+         typedResourceId === ResourcesIds.Mithral ||
+         typedResourceId === ResourcesIds.Adamantine;
+
       return createActionWithAvailability({
         suffix: `resource-${resourceId}`,
         label: resource.trait,
@@ -266,6 +271,7 @@ export const createConstructionMenu = ({
         building,
         resource: typedResourceId,
         iconResource: typedResourceId,
+        requiresStandardCost,
       });
     })
     .filter((action): action is ContextMenuAction => action !== null);

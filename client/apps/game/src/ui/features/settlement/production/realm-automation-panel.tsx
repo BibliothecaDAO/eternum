@@ -10,6 +10,7 @@ import {
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import Button from "@/ui/design-system/atoms/button";
 import { configManager, getBlockTimestamp, ResourceManager } from "@bibliothecadao/eternum";
+import { buildRealmResourceSnapshot, type RealmResourceSnapshot } from "@/ui/features/infrastructure/automation/model/automation-processor";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import clsx from "clsx";
@@ -29,7 +30,7 @@ type RealmAutomationPanelProps = {
   entityType?: "realm" | "village";
 };
 
-const sliderStep = 5;
+const sliderStep = 1;
 
 const formatSignedPerSecond = (value: number): string => {
   if (!Number.isFinite(value) || Math.abs(value) < 0.0001) return "0/s";
@@ -118,6 +119,19 @@ export const RealmAutomationPanel = ({
     if (!missingResources.length) return;
     missingResources.forEach((resourceId) => ensureResourceConfig(realmEntityId, resourceId));
   }, [ensureResourceConfig, missingResources, realmEntityId, hydrated]);
+
+  const realmSnapshot: RealmResourceSnapshot | null = useMemo(() => {
+    const numericRealmId = Number(realmEntityId);
+    if (!components || !Number.isFinite(numericRealmId) || numericRealmId <= 0) {
+      return null;
+    }
+    const { currentDefaultTick } = getBlockTimestamp();
+    return buildRealmResourceSnapshot({
+      components,
+      realmId: numericRealmId,
+      currentTick: currentDefaultTick,
+    });
+  }, [components, realmEntityId]);
 
   const extraResources = useMemo(() => {
     if (!realmAutomation) return [];
@@ -218,12 +232,9 @@ export const RealmAutomationPanel = ({
     };
 
     setLastSavedSnapshot(snapshot);
-
-    if (!hasLocalChanges) {
-      setDraftPercentages(snapshotPercentages);
-      setDraftPresetId(snapshot.presetId);
-    }
-  }, [realmAutomation, realmResources, createBaselinePercentages, hasLocalChanges]);
+    setDraftPercentages(snapshotPercentages);
+    setDraftPresetId(snapshot.presetId);
+  }, [realmAutomation, realmResources, createBaselinePercentages]);
 
   const draftAutomation = useMemo(() => {
     if (!realmAutomation) return undefined;
@@ -332,18 +343,9 @@ export const RealmAutomationPanel = ({
 
   const netUsagePerSecondRecord = useMemo(() => {
     const record: Record<number, number> = {};
-    const numericRealmId = Number(realmEntityId);
-    if (!components || !Number.isFinite(numericRealmId) || numericRealmId <= 0) {
+    if (!realmSnapshot) {
       return record;
     }
-
-    const manager = new ResourceManager(components, numericRealmId);
-    const resourceComponent = manager.getResource();
-    if (!resourceComponent) {
-      return record;
-    }
-
-    const { currentDefaultTick } = getBlockTimestamp();
 
     const relevantResourceIds = new Set<ResourcesIds>();
     realmResources.forEach((id) => relevantResourceIds.add(id));
@@ -367,20 +369,8 @@ export const RealmAutomationPanel = ({
 
     automationRows.forEach(({ resourceId, percentages, complexInputs, simpleInputs }) => {
       const typedResourceId = resourceId as ResourcesIds;
-      let baseOutputPerSecond = 0;
-      try {
-        const productionInfo = ResourceManager.balanceAndProduction(resourceComponent, typedResourceId);
-        const productionData = ResourceManager.calculateResourceProductionData(
-          typedResourceId,
-          productionInfo,
-          currentDefaultTick || 0,
-        );
-        if (Number.isFinite(productionData.productionPerSecond)) {
-          baseOutputPerSecond = productionData.productionPerSecond;
-        }
-      } catch (_error) {
-        baseOutputPerSecond = 0;
-      }
+      const snapshotEntry = realmSnapshot.get(typedResourceId);
+      const baseOutputPerSecond = snapshotEntry?.productionPerSecond ?? 0;
 
       if (baseOutputPerSecond <= 0) {
         return;
@@ -418,20 +408,8 @@ export const RealmAutomationPanel = ({
       }
     });
 
-    let contractLaborPerSecond = 0;
-    try {
-      const laborProduction = ResourceManager.balanceAndProduction(resourceComponent, ResourcesIds.Labor);
-      const laborData = ResourceManager.calculateResourceProductionData(
-        ResourcesIds.Labor,
-        laborProduction,
-        currentDefaultTick || 0,
-      );
-      if (Number.isFinite(laborData.productionPerSecond)) {
-        contractLaborPerSecond = laborData.productionPerSecond;
-      }
-    } catch (_error) {
-      contractLaborPerSecond = 0;
-    }
+    const laborEntry = realmSnapshot.get(ResourcesIds.Labor);
+    const contractLaborPerSecond = laborEntry?.productionPerSecond ?? 0;
 
     if (contractLaborPerSecond > 0) {
       addOutput(ResourcesIds.Labor, contractLaborPerSecond);
@@ -452,7 +430,7 @@ export const RealmAutomationPanel = ({
     });
 
     return record;
-  }, [automationRows, components, realmEntityId, realmAutomation?.resources, realmResources, aggregatedUsageList]);
+  }, [automationRows, realmSnapshot, realmAutomation?.resources, realmResources, aggregatedUsageList]);
 
   const handlePresetSelect = useCallback(
     (presetId: RealmPresetId) => {

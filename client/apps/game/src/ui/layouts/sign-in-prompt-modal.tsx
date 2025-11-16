@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useAccount } from "@starknet-react/core";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Controller } from "@/ui/modules/controller/controller";
 import { ModalContainer } from "@/ui/shared";
@@ -9,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 export const SignInPromptModal = () => {
   const setModal = useUIStore((state) => state.setModal);
   const account = useAccountStore((state) => state.account);
+  const { isConnected } = useAccount();
   const navigate = useNavigate();
 
   const handleClose = () => {
@@ -16,13 +18,13 @@ export const SignInPromptModal = () => {
   };
 
   useEffect(() => {
-    if (!account) {
+    if (!account && !isConnected) {
       return;
     }
 
     setModal(null, false);
     navigate("/play");
-  }, [account, navigate, setModal]);
+  }, [account, isConnected, navigate, setModal]);
 
   return (
     <ModalContainer>
