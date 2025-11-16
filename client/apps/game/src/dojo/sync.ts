@@ -127,7 +127,7 @@ export const syncEntitiesDebounced = async <S extends Schema>(
 
     // Debounce the processing to batch updates
     if (!isProcessing) {
-      setTimeout(processNextInQueue, 50); // Small delay to allow batching
+      setTimeout(processNextInQueue, 200); // Small delay to allow batching
     }
   };
 

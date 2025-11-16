@@ -12,14 +12,15 @@ export class ResourceInventoryManager {
   }
 
   private readonly _optimisticOffloadAll = (receiverEntityId: ID, inventoryResources: Resource[]) => {
-    let removeResourceOverride: () => void;
+    const removeResourceOverrides: Array<() => void> = [];
     inventoryResources.forEach((resource) => {
       const resourceManager = new ResourceManager(this.components, receiverEntityId);
-      removeResourceOverride = resourceManager.optimisticResourceUpdate(resource.resourceId, -resource.amount);
+      const removeOverride = resourceManager.optimisticResourceUpdate(resource.resourceId, resource.amount);
+      removeResourceOverrides.push(removeOverride);
     });
 
     return () => {
-      removeResourceOverride();
+      removeResourceOverrides.forEach((removeOverride) => removeOverride());
     };
   };
 

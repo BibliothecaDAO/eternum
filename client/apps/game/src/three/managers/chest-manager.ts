@@ -30,6 +30,8 @@ export class ChestManager {
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
   private labelsGroup: THREE.Group;
   private entityIdMap: Map<number, ID> = new Map();
+  private chestInstanceOrder: ID[] = [];
+  private chestInstanceIndices: Map<ID, number> = new Map();
   private scale: number = 1;
   private currentCameraView: CameraView;
   chestHexCoords: Map<number, Set<number>> = new Map();
@@ -273,70 +275,136 @@ export class ChestManager {
   }
 
   private renderVisibleChests(chunkKey: string) {
-    const _chests = this.chests.getChests();
-    const visibleChestIds = new Set<ID>();
-    const [startRow, startCol] = chunkKey.split(",").map(Number);
-
-    this.visibleChests = this.getVisibleChestsForChunk(_chests, startRow, startCol);
-
-    if (this.chestModel) {
-      this.chestModel.setCount(0);
-      this.entityIdMap.clear();
-
-      this.visibleChests.forEach((chest) => {
-        visibleChestIds.add(chest.entityId);
-        const position = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
-        position.y += 0.05;
-        const { x, y } = chest.hexCoords.getContract();
-
-        const existingLabel = this.entityIdLabels.get(chest.entityId);
-        if (existingLabel) {
-          const updatedPosition = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
-          updatedPosition.y += 1.5;
-          existingLabel.position.copy(updatedPosition);
-        }
-
-        this.dummy.position.copy(position);
-
-        const rotationSeed = hashCoordinates(x, y);
-        const rotationIndex = Math.floor(rotationSeed * 6);
-        const randomRotation = (rotationIndex * Math.PI) / 3;
-        this.dummy.rotation.y = randomRotation;
-        this.dummy.updateMatrix();
-
-        const currentCount = this.chestModel.getCount();
-        this.chestModel.setMatrixAt(currentCount, this.dummy.matrix);
-        this.chestModel.setCount(currentCount + 1);
-        this.entityIdMap.set(currentCount, chest.entityId);
-
-        // Add point icon for this chest (always visible)
-        if (this.pointsRenderer) {
-          const iconPosition = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
-          iconPosition.y += 2; // Same height as CSS2D labels
-          this.pointsRenderer.setPoint({
-            entityId: chest.entityId,
-            position: iconPosition,
-          });
-        }
-      });
-
-      this.chestModel.needsUpdate();
+    if (!this.chestModel) {
+      return;
     }
 
-    // Remove labels and points for chests that are no longer visible
+    const allChests = this.chests.getChests();
+    const [startRow, startCol] = chunkKey.split(",").map(Number);
+    const visibleChests = this.getVisibleChestsForChunk(allChests, startRow, startCol);
+    const visibleChestIds = new Set<ID>(visibleChests.map((chest) => chest.entityId));
+
+    this.visibleChests = visibleChests;
+
+    for (let i = this.chestInstanceOrder.length - 1; i >= 0; i--) {
+      const entityId = this.chestInstanceOrder[i];
+      if (!visibleChestIds.has(entityId)) {
+        this.removeChestInstance(entityId);
+      }
+    }
+
+    visibleChests.forEach((chest) => {
+      if (!this.chestInstanceIndices.has(chest.entityId)) {
+        this.addChestInstance(chest);
+      } else {
+        this.updateChestInstance(chest);
+      }
+    });
+
+    this.chestModel.setCount(this.chestInstanceOrder.length);
+    this.chestModel.needsUpdate();
+
     this.entityIdLabels.forEach((label, entityId) => {
-      if (!this.visibleChests.find((chest) => chest.entityId === entityId)) {
+      if (!visibleChestIds.has(entityId)) {
         this.removeEntityIdLabel(entityId);
       }
     });
 
-    // Remove points for chests no longer visible
     if (this.pointsRenderer) {
-      _chests.forEach((chest, entityId) => {
-        if (!visibleChestIds.has(entityId) && this.pointsRenderer!.hasPoint(entityId)) {
+      this.pointsRenderer.getEntityIds().forEach((entityId) => {
+        if (!visibleChestIds.has(entityId)) {
           this.pointsRenderer!.removePoint(entityId);
         }
       });
+    }
+  }
+
+  private addChestInstance(chest: ChestData) {
+    const index = this.chestInstanceOrder.length;
+    this.chestInstanceOrder.push(chest.entityId);
+    this.chestInstanceIndices.set(chest.entityId, index);
+    this.entityIdMap.set(index, chest.entityId);
+    this.writeChestInstance(chest, index);
+    this.updateChestLabelPosition(chest);
+    this.updateChestPoint(chest);
+  }
+
+  private updateChestInstance(chest: ChestData) {
+    const index = this.chestInstanceIndices.get(chest.entityId);
+    if (index === undefined) {
+      return;
+    }
+    this.writeChestInstance(chest, index);
+    this.entityIdMap.set(index, chest.entityId);
+    this.updateChestLabelPosition(chest);
+    this.updateChestPoint(chest);
+  }
+
+  private removeChestInstance(entityId: ID) {
+    const index = this.chestInstanceIndices.get(entityId);
+    if (index === undefined) {
+      return;
+    }
+
+    const lastIndex = this.chestInstanceOrder.length - 1;
+    const lastEntityId = this.chestInstanceOrder[lastIndex];
+
+    if (index !== lastIndex) {
+      this.chestInstanceOrder[index] = lastEntityId;
+      this.chestInstanceIndices.set(lastEntityId, index);
+      const lastChest = this.chests.getChest(lastEntityId);
+      if (lastChest) {
+        this.writeChestInstance(lastChest, index);
+      }
+      this.entityIdMap.set(index, lastEntityId);
+    }
+
+    this.chestInstanceOrder.pop();
+    this.chestInstanceIndices.delete(entityId);
+    this.entityIdMap.delete(lastIndex);
+    this.removeChestPoint(entityId);
+    this.removeEntityIdLabel(entityId);
+  }
+
+  private writeChestInstance(chest: ChestData, index: number) {
+    const position = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
+    position.y += 0.05;
+    const { x, y } = chest.hexCoords.getContract();
+
+    this.dummy.position.copy(position);
+    const rotationSeed = hashCoordinates(x, y);
+    const rotationIndex = Math.floor(rotationSeed * 6);
+    const randomRotation = (rotationIndex * Math.PI) / 3;
+    this.dummy.rotation.y = randomRotation;
+    this.dummy.updateMatrix();
+    this.chestModel.setMatrixAt(index, this.dummy.matrix);
+  }
+
+  private updateChestLabelPosition(chest: ChestData) {
+    const existingLabel = this.entityIdLabels.get(chest.entityId);
+    if (!existingLabel) {
+      return;
+    }
+    const updatedPosition = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
+    updatedPosition.y += 1.5;
+    existingLabel.position.copy(updatedPosition);
+  }
+
+  private updateChestPoint(chest: ChestData) {
+    if (!this.pointsRenderer) {
+      return;
+    }
+    const iconPosition = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
+    iconPosition.y += 2;
+    this.pointsRenderer.setPoint({
+      entityId: chest.entityId,
+      position: iconPosition,
+    });
+  }
+
+  private removeChestPoint(entityId: ID) {
+    if (this.pointsRenderer && this.pointsRenderer.hasPoint(entityId)) {
+      this.pointsRenderer.removePoint(entityId);
     }
   }
 

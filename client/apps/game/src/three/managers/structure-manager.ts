@@ -78,6 +78,12 @@ interface PendingLabelUpdate {
   battleTimerLeft?: number;
 }
 
+interface StructureInstanceBinding {
+  modelIndex: number;
+  instanceIndex: number;
+  wonderInstanceIndex?: number;
+}
+
 export class StructureManager {
   private scene: Scene;
   private structureModels: Map<StructureType, InstancedModel[]> = new Map();
@@ -86,6 +92,8 @@ export class StructureManager {
   private isUpdatingVisibleStructures = false;
   private hasPendingVisibleStructuresUpdate = false;
   private entityIdMaps: Map<StructureType, Map<number, ID>> = new Map();
+  private structureInstanceBindings: Map<StructureType, Map<ID, StructureInstanceBinding>> = new Map();
+  private structureInstanceOrders: Map<StructureType, Map<number, ID[]>> = new Map();
   private wonderEntityIdMaps: Map<number, ID> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
   private labelPool = new LabelPool();
