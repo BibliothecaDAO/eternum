@@ -433,13 +433,20 @@ export const LandingLeaderboard = () => {
     }
 
     const rows = [
-      ["Rank", "Display name", "Address", "Score"],
-      ...scoreToBeatTopTen.map((entry, index) => [
-        `${index + 1}`,
-        entry.displayName ?? displayAddress(entry.address),
-        entry.address,
-        `${entry.combinedPoints ?? 0}`,
-      ]),
+      ["Rank", "Display name", "Address", "Score", "Run 1 score", "Run 2 score"],
+      ...scoreToBeatTopTen.map((entry, index) => {
+        const run1 = entry.runs[0]?.points ?? "";
+        const run2 = entry.runs[1]?.points ?? "";
+
+        return [
+          `${index + 1}`,
+          entry.displayName ?? displayAddress(entry.address),
+          entry.address,
+          `${entry.combinedPoints ?? 0}`,
+          `${run1}`,
+          `${run2}`,
+        ];
+      }),
     ];
 
     const csvContent = rows
@@ -576,8 +583,7 @@ export const LandingLeaderboard = () => {
                   <span className="text-base font-semibold text-white/70">pts</span>
                 </p>
                 <p className="mt-2 text-sm text-white/70">
-                  {(topScoreToBeatLabel ?? "Unknown captain").trim()} owns the bragging rights with the best two runs in
-                  Blitz.
+                  {(topScoreToBeatLabel ?? "Unknown captain").trim()} has conquered Realms Blitz.
                 </p>
                 {topScoreToBeatAddressLabel &&
                 topScoreToBeatLabel &&
