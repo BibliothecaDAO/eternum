@@ -3,7 +3,7 @@ import { memo, useMemo } from "react";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { BottomHudEmptyState } from "@/ui/features/world/components/hud-bottom";
-import { HexPosition, ID, RelicRecipientType } from "@bibliothecadao/types";
+import { EntityType, HexPosition, ID, RelicRecipientType } from "@bibliothecadao/types";
 
 import { CompactArmyChip } from "@/ui/features/military/components/compact-army-chip";
 import clsx from "clsx";
@@ -28,7 +28,14 @@ interface ArmyBannerEntityDetailContentProps extends Omit<ArmyBannerEntityDetail
 }
 
 const ArmyBannerEntityDetailContent = memo(
-  ({ armyEntityId, className, bannerPosition, compact = true, variant }: ArmyBannerEntityDetailContentProps) => {
+  ({
+    armyEntityId,
+    className,
+    bannerPosition,
+    compact = true,
+    showButtons = false,
+    variant,
+  }: ArmyBannerEntityDetailContentProps) => {
     const {
       explorer,
       explorerResources,
@@ -116,6 +123,9 @@ const ArmyBannerEntityDetailContent = memo(
                 resources={explorerResources}
                 activeRelicIds={activeRelicIds}
                 recipientType={RelicRecipientType.Explorer}
+                entityId={armyEntityId}
+                entityType={EntityType.ARMY}
+                allowRelicActivation={derivedData.isMine}
                 variant={isBanner ? "tight" : "default"}
               />
             ) : (

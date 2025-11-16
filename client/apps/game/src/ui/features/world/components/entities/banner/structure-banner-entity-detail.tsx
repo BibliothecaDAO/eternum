@@ -5,7 +5,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CompactDefenseDisplay } from "@/ui/features/military";
 import { BottomHudEmptyState } from "@/ui/features/world/components/hud-bottom";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
-import { ID, RelicRecipientType } from "@bibliothecadao/types";
+import { EntityType, ID, RelicRecipientType } from "@bibliothecadao/types";
 
 import { CompactStructureInfo } from "@/ui/features/military/components/compact-structure-info";
 import { ActiveRelicEffects } from "../active-relic-effects";
@@ -201,6 +201,9 @@ const StructureBannerEntityDetailContent = memo(
                   resources={resources}
                   activeRelicIds={activeRelicIds}
                   recipientType={RelicRecipientType.Structure}
+                  entityId={structureEntityId}
+                  entityType={EntityType.STRUCTURE}
+                  allowRelicActivation={isMine}
                   variant="tight"
                   maxItems={maxInventory}
                 />

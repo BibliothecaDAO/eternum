@@ -1,13 +1,18 @@
-import { memo, useMemo } from "react";
+import { memo, useCallback, useMemo } from "react";
 
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import type { RelicHolderPreview } from "@/ui/features/relics/components/player-relic-tray";
+import { RelicActivationSelector } from "@/ui/features/relics/components/relic-activation-selector";
 import { BottomHudEmptyState } from "@/ui/features/world/components/hud-bottom";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp, ResourceManager } from "@bibliothecadao/eternum";
 import {
   ClientComponents,
+  EntityType,
   getRelicInfo,
+  ID,
   isRelic,
   RelicRecipientType,
   resources as resourceDefs,
@@ -20,10 +25,13 @@ interface CompactEntityInventoryProps {
   resources?: ComponentValue<ClientComponents["Resource"]["schema"]> | null;
   activeRelicIds?: number[];
   recipientType: RelicRecipientType;
+  entityId?: ID;
+  entityType?: EntityType;
   className?: string;
   variant?: "default" | "tight";
   showLabels?: boolean;
   maxItems?: number;
+  allowRelicActivation?: boolean;
 }
 
 interface DisplayItem {
@@ -82,14 +90,42 @@ export const CompactEntityInventory = memo(
     resources,
     activeRelicIds,
     recipientType,
+    entityId,
+    entityType,
     className,
     variant = "default",
     showLabels = false,
     maxItems,
+    allowRelicActivation = false,
   }: CompactEntityInventoryProps) => {
+    const toggleModal = useUIStore((state) => state.toggleModal);
     const items = useMemo(
       () => buildDisplayItems(resources, activeRelicIds, recipientType),
       [resources, activeRelicIds, recipientType],
+    );
+
+    const handleRelicClick = useCallback(
+      (item: DisplayItem) => {
+        if (!allowRelicActivation || !item.isRelic || item.isActive || !item.canActivate) return;
+        if (!entityId || entityType === undefined) return;
+
+        const holder: RelicHolderPreview = {
+          entityId: Number(entityId),
+          amount: item.amount,
+          recipientType,
+          entityType,
+        };
+
+        toggleModal(
+          <RelicActivationSelector
+            resourceId={item.resourceId}
+            displayAmount={currencyFormat(item.amount, 0)}
+            holders={[holder]}
+            onClose={() => toggleModal(null)}
+          />,
+        );
+      },
+      [allowRelicActivation, entityId, entityType, recipientType, toggleModal],
     );
 
     if (items.length === 0) {
@@ -117,6 +153,13 @@ export const CompactEntityInventory = memo(
         <div className={cn(baseGrid)}>
           {effectiveItems.map((item) => {
             const resourceDef = resourceDefs.find((r) => r.id === item.resourceId);
+            const isClickableRelic =
+              allowRelicActivation &&
+              item.isRelic &&
+              item.canActivate &&
+              !item.isActive &&
+              entityId &&
+              entityType != null;
             const itemClasses = cn(
               "flex h-full w-full flex-col items-center justify-center rounded-md border text-center",
               compactItemClass,
@@ -125,10 +168,16 @@ export const CompactEntityInventory = memo(
                   ? "border-relic2/60 bg-relic/15"
                   : "border-relic2/40 bg-relic/10"
                 : "border-gold/25 bg-dark/40",
+              isClickableRelic &&
+                "cursor-pointer transition-colors duration-150 hover:border-gold/60 hover:bg-gold/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60",
             );
 
             return (
-              <div key={`inventory-item-${item.resourceId}`} className={itemClasses}>
+              <div
+                key={`inventory-item-${item.resourceId}`}
+                className={itemClasses}
+                onClick={() => handleRelicClick(item)}
+              >
                 <ResourceIcon resource={ResourcesIds[item.resourceId]} size={iconSize} withTooltip={false} />
                 <span className={cn(amountClass, "font-semibold text-gold/90")}>{currencyFormat(item.amount, 0)}</span>
                 {showLabels && resourceDef && (
