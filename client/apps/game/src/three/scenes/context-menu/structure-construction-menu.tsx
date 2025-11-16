@@ -259,10 +259,10 @@ export const createConstructionMenu = ({
 
       const icon = resource.img ?? undefined;
 
-       const requiresStandardCost =
-         typedResourceId === ResourcesIds.Dragonhide ||
-         typedResourceId === ResourcesIds.Mithral ||
-         typedResourceId === ResourcesIds.Adamantine;
+      const requiresStandardCost =
+        typedResourceId === ResourcesIds.Dragonhide ||
+        typedResourceId === ResourcesIds.Mithral ||
+        typedResourceId === ResourcesIds.Adamantine;
 
       return createActionWithAvailability({
         suffix: `resource-${resourceId}`,

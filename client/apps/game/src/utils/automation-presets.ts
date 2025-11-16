@@ -314,14 +314,16 @@ export const getAutomationOverallocation = (
     const { resourceId, percentages } = setting;
     const rawComplexInputs = configManager.complexSystemResourceInputs[resourceId] ?? [];
     const complexInputs = rawComplexInputs.filter(
-      (input) => !isAutomationResourceBlocked(input.resource, entityType, "input") && input.resource !== ResourcesIds.Wheat,
+      (input) =>
+        !isAutomationResourceBlocked(input.resource, entityType, "input") && input.resource !== ResourcesIds.Wheat,
     );
 
     const rawSimpleInputs = configManager.simpleSystemResourceInputs[resourceId] ?? [];
     const laborAllowed = !LABOR_PRESET_BANNED_RESOURCES.has(resourceId as ResourcesIds);
     const simpleInputs = laborAllowed
       ? rawSimpleInputs.filter(
-          (input) => !isAutomationResourceBlocked(input.resource, entityType, "input") && input.resource !== ResourcesIds.Wheat,
+          (input) =>
+            !isAutomationResourceBlocked(input.resource, entityType, "input") && input.resource !== ResourcesIds.Wheat,
         )
       : [];
 

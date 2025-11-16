@@ -35,9 +35,7 @@ export const SignInPromptModal = () => {
             <p className="text-center mb-4">
               You need to connect your Cartridge Controller account before entering Blitz.
             </p>
-            <p className="text-center mb-8 text-sm">
-              Use the button below to sign in, then try again.
-            </p>
+            <p className="text-center mb-8 text-sm">Use the button below to sign in, then try again.</p>
             <div className="flex flex-col items-center gap-4">
               <div className="w-full max-w-xs">
                 <Controller className="w-full justify-center" />

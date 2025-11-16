@@ -10,7 +10,10 @@ import {
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import Button from "@/ui/design-system/atoms/button";
 import { configManager, getBlockTimestamp, ResourceManager } from "@bibliothecadao/eternum";
-import { buildRealmResourceSnapshot, type RealmResourceSnapshot } from "@/ui/features/infrastructure/automation/model/automation-processor";
+import {
+  buildRealmResourceSnapshot,
+  type RealmResourceSnapshot,
+} from "@/ui/features/infrastructure/automation/model/automation-processor";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import clsx from "clsx";
