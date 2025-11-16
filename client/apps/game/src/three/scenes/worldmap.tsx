@@ -2856,12 +2856,8 @@ export default class WorldmapScene extends HexagonScene {
       this.renderChunkSize.height,
     );
 
-    // Update all managers in sequence to prevent race conditions
-    // Changed from Promise.all to sequential execution
-    await this.armyManager.updateChunk(chunkKey);
-    await this.structureManager.updateChunk(chunkKey);
-    await this.questManager.updateChunk(chunkKey);
-    await this.chestManager.updateChunk(chunkKey);
+    // Update all managers concurrently once shared prerequisites are ready
+    await this.updateManagersForChunk(chunkKey, { force });
 
     // Track memory usage after chunk switch
     if (memoryMonitor) {
@@ -2934,10 +2930,7 @@ export default class WorldmapScene extends HexagonScene {
       this.renderChunkSize.height,
     );
 
-    await this.armyManager.updateChunk(chunkKey, { force: true });
-    await this.structureManager.updateChunk(chunkKey, { force: true });
-    await this.questManager.updateChunk(chunkKey, { force: true });
-    await this.chestManager.updateChunk(chunkKey, { force: true });
+    await this.updateManagersForChunk(chunkKey, { force: true });
 
     if (memoryMonitor) {
       const postChunkStats = memoryMonitor.getCurrentStats(`chunk-refresh-post-${chunkKey}`);
@@ -2952,6 +2945,25 @@ export default class WorldmapScene extends HexagonScene {
         }
       }
     }
+  }
+
+  private async updateManagersForChunk(chunkKey: string, options?: { force?: boolean }) {
+    const updateTasks = [
+      { label: "army", promise: this.armyManager.updateChunk(chunkKey, options) },
+      { label: "structure", promise: this.structureManager.updateChunk(chunkKey, options) },
+      { label: "quest", promise: this.questManager.updateChunk(chunkKey, options) },
+      { label: "chest", promise: this.chestManager.updateChunk(chunkKey, options) },
+    ];
+
+    const results = await Promise.allSettled(updateTasks.map((task) => task.promise));
+    results.forEach((result, index) => {
+      if (result.status === "rejected") {
+        console.error(
+          `[CHUNK SYNC] ${updateTasks[index].label} manager failed for chunk ${chunkKey}`,
+          result.reason,
+        );
+      }
+    });
   }
 
   update(deltaTime: number) {
