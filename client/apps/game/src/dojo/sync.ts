@@ -144,7 +144,7 @@ export const syncEntitiesDebounced = async <S extends Schema>(
   });
 
   // Handle event message updates
-  const eventSub = await client.onEventMessageUpdated(null, (data: any) => {
+  const eventSub = await client.onEventMessageUpdated(entityKeyClause, (data: any) => {
     if (logging) console.log("Event message updated", data.hashed_keys);
 
     try {
@@ -189,8 +189,7 @@ export const initialSync = async (
     setInitialSyncProgress(0);
   }
 
-  // Legacy global sync disabled while ToriiStreamManager handles scoped subscriptions
-  console.log("[syncEntitiesDebounced SKIPPED - managed by ToriiStreamManager]");
+  entityStreamSubscription = await syncEntitiesDebounced(setup.network.toriiClient, setup, null, logging);
 
   let highestProgress = reportProgress ? 0 : -1;
   const updateProgress = (value: number) => {

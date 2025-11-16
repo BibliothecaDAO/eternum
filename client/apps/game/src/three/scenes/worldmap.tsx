@@ -2,7 +2,7 @@ import { AudioManager } from "@/audio/core/AudioManager";
 import { toast } from "sonner";
 
 import { getMapFromToriiExact, getStructuresDataFromTorii } from "@/dojo/queries";
-import { BoundsModelConfig, GlobalModelStreamConfig, ToriiStreamManager } from "@/dojo/torii-stream-manager";
+import { BoundsModelConfig, ToriiStreamManager } from "@/dojo/torii-stream-manager";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
@@ -60,6 +60,7 @@ import {
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import throttle from "lodash/throttle";
 import { Account, AccountInterface } from "starknet";
 import {
   Box3,
@@ -91,7 +92,6 @@ import {
 } from "../utils/navigation";
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { openStructureContextMenu } from "./context-menu/structure-context-menu";
-import throttle from "lodash/throttle";
 
 //const dummyObject = new Object3D();
 const dummyVector = new Vector3();
@@ -103,21 +103,15 @@ const CHUNK_STREAM_MODELS: BoundsModelConfig[] = [
   { model: "s1_eternum-Structure", colField: "base.coord_x", rowField: "base.coord_y" },
   { model: "s1_eternum-QuestTile", colField: "coord.x", rowField: "coord.y" },
 ];
-const GLOBAL_STREAM_MODELS: GlobalModelStreamConfig[] = [
-  { model: "s1_eternum-BattleEvent" },
-  { model: "s1_eternum-ExplorerMoveEvent" },
-  { model: "s1_eternum-StoryEvent" },
-  { model: "s1_eternum-LiquidityEvent" },
-  { model: "s1_eternum-SeasonEnded" },
-  { model: "s1_eternum-Hyperstructure" },
-  { model: "s1_eternum-HyperstructureRequirements" },
-  { model: "s1_eternum-HyperstructureGlobals" },
-  { model: "s1_eternum-StructureBuildings" },
-  { model: "s1_eternum-ProductionBoostBonus" },
-  { model: "s1_eternum-Building" },
-  { model: "s1_eternum-AddressName" },
-  { model: "s1_eternum-Quest" },
-];
+// const GLOBAL_STREAM_MODELS: GlobalModelStreamConfig[] = [
+//   { model: "s1_eternum-BattleEvent" },
+//   { model: "s1_eternum-ExplorerMoveEvent" }, // rewards
+//   { model: "s1_eternum-StoryEvent" },
+//   { model: "s1_eternum-StructureBuildings" },
+//   { model: "s1_eternum-ProductionBoostBonus" },
+//   { model: "s1_eternum-Building" },
+//   { model: "s1_eternum-OpenRelicChestEvent" }, // get relic crate output
+// ];
 
 export default class WorldmapScene extends HexagonScene {
   private chunkSize = 8; // Size of each chunk
@@ -354,9 +348,9 @@ export default class WorldmapScene extends HexagonScene {
         setup: this.dojo,
         logging: Boolean(import.meta.env.DEV),
       });
-      this.toriiStreamManager
-        .setGlobalModels(GLOBAL_STREAM_MODELS)
-        .catch((error) => console.error("[WorldmapScene] Failed to start global Torii stream", error));
+      // this.toriiStreamManager
+      //   .setGlobalModels(GLOBAL_STREAM_MODELS)
+      //   .catch((error) => console.error("[WorldmapScene] Failed to start global Torii stream", error));
     }
 
     // Initialize the battle direction manager
