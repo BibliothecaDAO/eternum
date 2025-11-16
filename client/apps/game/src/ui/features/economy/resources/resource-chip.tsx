@@ -28,6 +28,7 @@ export const ResourceChip = ({
   storageCapacityUsed = 0,
   activeRelicEffects,
   canOpenProduction = false,
+  disableButtons = false,
   onManageProduction,
 }: {
   resourceId: ID;
@@ -39,6 +40,7 @@ export const ResourceChip = ({
   storageCapacityUsed?: number;
   activeRelicEffects: RelicEffectWithEndTick[];
   canOpenProduction?: boolean;
+  disableButtons?: boolean;
   onManageProduction?: (resourceId: ResourcesIds) => void;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
@@ -373,7 +375,8 @@ export const ResourceChip = ({
             })
           }
           onMouseLeave={() => setTooltip(null)}
-          className="ml-2 p-1 hover:bg-gold/20 rounded"
+          disabled={disableButtons}
+          className="ml-2 p-1 hover:bg-gold/20 rounded disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Factory className={`${size === "large" ? "h-6 w-6" : "h-5 w-5"} text-gold`} />
         </button>
@@ -385,7 +388,8 @@ export const ResourceChip = ({
             event.stopPropagation();
             togglePopup(resourceId.toString());
           }}
-          className="ml-2 p-1 hover:bg-gold/20 rounded"
+          disabled={disableButtons}
+          className="ml-2 p-1 hover:bg-gold/20 rounded disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -421,7 +425,7 @@ export const ResourceChip = ({
               );
             });
           }}
-          disabled={relicTimeRemaining > 0}
+          disabled={disableButtons || relicTimeRemaining > 0}
           onMouseEnter={(event) =>
             setTooltip({
               anchorElement: event.currentTarget,
@@ -430,7 +434,7 @@ export const ResourceChip = ({
             })
           }
           onMouseLeave={() => setTooltip(null)}
-          className="ml-2 p-1 hover:bg-gold/20 rounded"
+          className="ml-2 p-1 hover:bg-gold/20 rounded disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Sparkles className={`${size === "large" ? "h-6 w-6" : "h-5 w-5"} text-gold`} />
         </button>
