@@ -91,7 +91,7 @@ export class StructureManager {
   private structureModelPaths: Record<string, string[]>;
   private isUpdatingVisibleStructures = false;
   private hasPendingVisibleStructuresUpdate = false;
-  private entityIdMaps: Map<StructureType, Map<number, Map<number, ID>>> = new Map();
+  private entityIdMaps: Map<StructureType, Map<number, ID>> = new Map();
   private structureInstanceBindings: Map<StructureType, Map<ID, StructureInstanceBinding>> = new Map();
   private structureInstanceOrders: Map<StructureType, Map<number, ID[]>> = new Map();
   private wonderEntityIdMaps: Map<number, ID> = new Map();
