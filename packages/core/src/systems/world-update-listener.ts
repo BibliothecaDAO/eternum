@@ -36,7 +36,7 @@ import {
   unpackBuildingCounts,
 } from "../utils";
 import { MAP_DATA_REFRESH_INTERVAL } from "../utils/constants";
-import { getAddressName } from "../utils/entities";
+import { getAddressName, getStructureName } from "../utils/entities";
 import { getBlockTimestamp } from "../utils/timestamp";
 import { DataEnhancer } from "./data-enhancer";
 import {
@@ -479,8 +479,11 @@ export class WorldUpdateListener {
 
                 this.dataEnhancer.updateStructureOwner(rawOccupierId, ownerAddress, ownerName);
 
+                const structureName = structureComponent ? getStructureName(structureComponent, true).name : "";
+
                 return {
                   entityId: rawOccupierId,
+                  structureName,
                   hexCoords: {
                     col: currentState.col,
                     row: currentState.row,

@@ -5,7 +5,6 @@ import { getIsBlitz } from "@bibliothecadao/eternum";
 import { getCharacterName } from "@/utils/agent";
 import { BuildingType, ResourcesIds, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { CameraView } from "../../scenes/hexagon-scene";
-import { resolveCameraView } from "./label-view";
 import {
   createContentContainer,
   createDirectionIndicators,
@@ -19,6 +18,7 @@ import {
 } from "./label-components";
 import { getOwnershipStyle, LABEL_STYLES, LABEL_TYPE_CONFIGS } from "./label-config";
 import { LabelData, LabelTypeDefinition } from "./label-types";
+import { resolveCameraView } from "./label-view";
 
 /**
  * Structure icon paths
@@ -86,6 +86,7 @@ export interface StructureLabelData extends LabelData {
 // For backward compatibility with existing StructureInfo type
 export interface StructureInfoCompat {
   entityId: number;
+  structureName: string;
   hexCoords: { col: number; row: number }; // Different from Position
   structureType: StructureType;
   stage: number;
@@ -517,6 +518,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
       owner: data.owner,
       isMine: data.isMine,
       cameraView,
+      structureName: data.structureName,
     });
 
     contentContainer.appendChild(ownerText);
@@ -648,6 +650,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
     return labelDiv;
   },
 
+  // add here
   updateElement: (element: HTMLElement, data: StructureLabelData, inputView: CameraView): void => {
     const cameraView = resolveCameraView(inputView);
     const isBlitz = getIsBlitz();
@@ -768,6 +771,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
         owner: data.owner,
         isMine: data.isMine,
         cameraView,
+        structureName: data.structureName,
       });
 
       ownerDisplay.replaceWith(updatedOwnerDisplay);

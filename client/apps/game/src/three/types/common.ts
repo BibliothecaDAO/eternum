@@ -15,6 +15,7 @@ export enum HyperstructureTypesNames {
 }
 
 export interface StructureInfo {
+  structureName: string;
   entityId: ID;
   hexCoords: { col: number; row: number };
   stage: number;
