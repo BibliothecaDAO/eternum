@@ -195,8 +195,22 @@ export interface OwnerDisplayOptions {
   isDaydreamsAgent?: boolean;
 }
 
+export interface OwnerDisplayOptions {
+  owner: {
+    address: bigint;
+    ownerName?: string;
+    guildName?: string;
+  };
+  isMine: boolean;
+  isAlly?: boolean;
+  cameraView: CameraView;
+  color?: string;
+  isDaydreamsAgent?: boolean;
+  structureName?: string;
+}
+
 export const createOwnerDisplayElement = (options: OwnerDisplayOptions): HTMLElement => {
-  const { owner, isMine, isAlly, color, isDaydreamsAgent, cameraView: inputView } = options;
+  const { owner, isMine, isAlly, color, isDaydreamsAgent, cameraView: inputView, structureName } = options;
   const cameraView = resolveCameraView(inputView);
 
   const container = document.createElement("div");
@@ -206,14 +220,22 @@ export const createOwnerDisplayElement = (options: OwnerDisplayOptions): HTMLEle
   }
   container.setAttribute("data-component", "owner");
 
-  // Create name element
+  // Create name element with optional structure name
   const displayName = cleanText(owner.ownerName);
   const nameSpan = document.createElement("span");
-  if (cameraView === CameraView.Medium && displayName.length > 14) {
-    nameSpan.textContent = `${displayName.slice(0, 12)}…`;
-    nameSpan.title = displayName;
+
+  console.debug("structureName", structureName);
+
+  let fullText = displayName;
+  if (structureName) {
+    fullText = `${displayName} - ${structureName}`;
+  }
+
+  if (cameraView === CameraView.Medium && fullText.length > 14) {
+    nameSpan.textContent = `${fullText.slice(0, 12)}…`;
+    nameSpan.title = fullText;
   } else {
-    nameSpan.textContent = displayName;
+    nameSpan.textContent = fullText;
   }
   nameSpan.classList.add("font-medium");
 

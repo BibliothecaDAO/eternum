@@ -67,6 +67,7 @@ export type ExplorerTroopsSystemUpdate = {
 
 export type StructureTileSystemUpdate = {
   entityId: ID;
+  structureName: string;
   hexCoords: HexPosition;
   structureType: StructureType;
   stage: StructureProgress;

@@ -14,6 +14,7 @@ interface StructureProductionPanelProps {
   compact?: boolean;
   smallTextClass: string;
   showProductionSummary?: boolean;
+  showTooltip?: boolean;
 }
 
 interface ResourceProductionSummaryItem {
@@ -34,6 +35,7 @@ export const StructureProductionPanel = memo(
     compact = false,
     smallTextClass,
     showProductionSummary = true,
+    showTooltip = true,
   }: StructureProductionPanelProps) => {
     const [timerTick, setTimerTick] = useState(0);
 
@@ -185,6 +187,7 @@ export const StructureProductionPanel = memo(
                   timeRemainingSeconds={effectiveRemainingSeconds}
                   totalCount={summary.totalBuildings}
                   size={productionBadgeSize}
+                  showTooltip={showTooltip}
                 />
               );
             })}

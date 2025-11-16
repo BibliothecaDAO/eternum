@@ -4,7 +4,6 @@ import { getIsBlitz } from "@bibliothecadao/eternum";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { INITIAL_VISIBILITY_STATE, buildToggleConfig, type MiniMapToggleKey, type VisibilityState } from "./config";
-import { MiniMapControlPanel } from "./control-panel";
 import { MiniMapCanvas } from "./minimap-canvas";
 import { MiniMapToggleList } from "./toggle-list";
 
@@ -204,7 +203,7 @@ export const MiniMapNavigation = ({ variant = "floating", className }: MiniMapNa
             isEmbedded ? "pb-2" : "rounded-xl border border-white/10 bg-black/50 px-2 py-2",
           )}
         >
-          <div className="flex w-1/2 min-w-0 max-w-full justify-start overflow-x-auto overflow-y-hidden whitespace-nowrap scrollbar-hide">
+          <div className="flex w-full min-w-0 max-w-full justify-start overflow-x-auto overflow-y-hidden whitespace-nowrap scrollbar-hide">
             <MiniMapToggleList
               toggles={toggleConfigs}
               visibility={visibilityStates}
@@ -214,7 +213,7 @@ export const MiniMapNavigation = ({ variant = "floating", className }: MiniMapNa
               onLeave={hideTooltip}
             />
           </div>
-          <div className="flex w-1/2 justify-end">
+          {/* <div className="flex w-1/2 justify-end">
             <MiniMapControlPanel
               isExpanded={isExpanded}
               onCenter={handleCenter}
@@ -224,7 +223,7 @@ export const MiniMapNavigation = ({ variant = "floating", className }: MiniMapNa
               onHover={showTooltip}
               onLeave={hideTooltip}
             />
-          </div>
+          </div> */}
         </div>
       )}
 

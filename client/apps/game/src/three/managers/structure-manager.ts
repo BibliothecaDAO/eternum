@@ -10,6 +10,7 @@ import { BuildingType, ClientComponents, ID, RelicEffect, StructureType } from "
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
+import * as THREE from "three";
 import { Box3, Euler, Group, Object3D, Scene, Sphere, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { GuardArmy } from "../../../../../../packages/core/src/stores/map-data-store";
@@ -23,14 +24,13 @@ import {
 import { StructureInfo } from "../types";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
-import { FrustumManager } from "../utils/frustum-manager";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
+import { FrustumManager } from "../utils/frustum-manager";
 import { createStructureLabel, updateStructureLabel } from "../utils/labels/label-factory";
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { FXManager } from "./fx-manager";
 import { PointsLabelRenderer } from "./points-label-renderer";
-import * as THREE from "three";
 
 const INITIAL_STRUCTURE_CAPACITY = 64;
 const WONDER_MODEL_INDEX = 4;
@@ -664,6 +664,7 @@ export class StructureManager {
     // Add the structure to the structures map with the complete owner info
     this.structures.addStructure(
       entityId,
+      update.structureName,
       key,
       normalizedCoord,
       update.initialized,
@@ -1670,6 +1671,7 @@ class Structures {
 
   addStructure(
     entityId: ID,
+    structureName: string,
     structureType: StructureType,
     hexCoords: { col: number; row: number },
     initialized: boolean,
@@ -1701,6 +1703,7 @@ class Structures {
     }
     this.structures.get(structureType)!.set(normalizedEntityId, {
       entityId: normalizedEntityId,
+      structureName,
       hexCoords,
       stage,
       initialized,

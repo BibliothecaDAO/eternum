@@ -72,6 +72,7 @@ const buildLeftNavigationItems = ({
       tooltipLocation: "top",
       label: "Details",
       size: DEFAULT_BUTTON_SIZE,
+      disabled: disableButtons,
       active: view === LeftView.EntityView,
       onClick: toggleView(LeftView.EntityView),
     },
