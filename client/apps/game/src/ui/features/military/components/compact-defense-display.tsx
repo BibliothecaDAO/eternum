@@ -189,7 +189,7 @@ export const CompactDefenseDisplay = ({
             </span>
           </>
         ) : (
-          <>
+          <div className="flex items-center gap-1">
             <span
               className={`px-1 py-0.5 rounded text-[10px] font-bold border relative ${getTierStyle(defense.troops.tier)}`}
             >
@@ -209,7 +209,7 @@ export const CompactDefenseDisplay = ({
               />
             )}
             <span className={cn(valueTextClass, "text-gold/90 font-medium")}>{currencyFormat(troopCount, 0)}</span>
-          </>
+          </div>
         )}
       </div>
     );
@@ -250,7 +250,7 @@ export const CompactDefenseDisplay = ({
               </div>
             )}
             {totalTroopCount > 0 && (
-              <div className="flex items-center ">
+              <div className="flex items-center gap-1">
                 <span className={cn(labelTextClass, "uppercase tracking-wide text-gold/70 font-semibold")}>Total</span>
                 <span className={cn(valueTextClass, "text-gold font-bold")}>{currencyFormat(totalTroopCount, 0)}</span>
               </div>
