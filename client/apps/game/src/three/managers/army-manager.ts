@@ -3,6 +3,7 @@ import { ArmyModel } from "@/three/managers/army-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { ModelType } from "@/three/types/army";
 import { GUIManager, LABEL_STYLES } from "@/three/utils/";
+import { FrustumManager } from "@/three/utils/frustum-manager";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
 import type { SetupResult } from "@bibliothecadao/dojo";
 import { Position } from "@bibliothecadao/eternum";
@@ -21,8 +22,13 @@ import {
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { shortString } from "starknet";
+import * as THREE from "three";
 import { Color, Euler, Group, Raycaster, Scene, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
+import { env } from "../../../env";
 import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
 import {
   CosmeticAttachmentManager,
@@ -37,15 +43,10 @@ import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions"
 import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions } from "../utils/labels/label-transitions";
-import { env } from "../../../env";
-import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { shortString } from "starknet";
 import { MemoryMonitor } from "../utils/memory-monitor";
 import { findShortestPath } from "../utils/pathfinding";
 import { FXManager } from "./fx-manager";
 import { PointsLabelRenderer } from "./points-label-renderer";
-import * as THREE from "three";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
@@ -105,9 +106,12 @@ export class ArmyManager {
   private currentChunkKey: string | null = "190,170";
   private renderChunkSize: RenderChunkSize;
   private visibleArmies: ArmyData[] = [];
+  private visibleArmyOrder: ID[] = [];
+  private visibleArmyIndices: Map<ID, number> = new Map();
   private renderQueuePromise: Promise<void> | null = null;
   private renderQueueActive = false;
   private pendingRenderChunkKey: string | null = null;
+  private pendingRenderOptions: { force?: boolean } | null = null;
   private armyPaths: Map<ID, Position[]> = new Map();
   private lastKnownVisibleHexes: Map<ID, { col: number; row: number }> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
@@ -126,10 +130,13 @@ export class ArmyManager {
     ally: PointsLabelRenderer;
     agent: PointsLabelRenderer;
   };
+  private frustumManager?: FrustumManager;
+  private frustumVisibilityDirty = false;
+  private unsubscribeFrustum?: () => void;
   private pendingExplorerTroopsUpdate: Map<ID, PendingExplorerTroopsUpdate> = new Map();
   private lastKnownArmiesTick: number = 0;
-  private tickCheckTimeout: NodeJS.Timeout | null = null;
-  private cleanupTimeout: NodeJS.Timeout | null = null;
+  private tickCheckTimeout: ReturnType<typeof setTimeout> | null = null;
+  private cleanupTimeout: ReturnType<typeof setTimeout> | null = null;
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private memoryMonitor?: MemoryMonitor;
   private unsubscribeAccountStore?: () => void;
@@ -141,6 +148,7 @@ export class ArmyManager {
   // Reusable objects for memory optimization
   private readonly tempPosition: Vector3 = new Vector3();
   private readonly tempCosmeticPosition: Vector3 = new Vector3();
+  private readonly tempIconPosition: Vector3 = new Vector3();
 
   constructor(
     scene: Scene,
@@ -150,12 +158,20 @@ export class ArmyManager {
     dojoContext?: SetupResult,
     applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>,
     clearPendingRelicEffectsCallback?: (entityId: ID) => void,
+    frustumManager?: FrustumManager,
   ) {
     this.scene = scene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.armyModel = new ArmyModel(scene, labelsGroup, this.currentCameraView);
     this.scale = new Vector3(0.3, 0.3, 0.3);
     this.renderChunkSize = renderChunkSize;
+    this.frustumManager = frustumManager;
+    if (this.frustumManager) {
+      this.frustumVisibilityDirty = true;
+      this.unsubscribeFrustum = this.frustumManager.onChange(() => {
+        this.frustumVisibilityDirty = true;
+      });
+    }
     this.onMouseMove = this.onMouseMove.bind(this);
     this.onRightClick = this.onRightClick.bind(this);
     this.labelsGroup = labelsGroup || new Group();
@@ -373,10 +389,11 @@ export class ArmyManager {
     return false;
   }
 
-  async updateChunk(chunkKey: string) {
+  async updateChunk(chunkKey: string, options?: { force?: boolean }) {
+    const force = options?.force ?? false;
     await this.armyModel.loadPromise;
 
-    if (this.currentChunkKey === chunkKey) {
+    if (!force && this.currentChunkKey === chunkKey) {
       return;
     }
 
@@ -391,30 +408,40 @@ export class ArmyManager {
     }
 
     // Check again if chunk key is still different (might have changed while waiting)
-    if (this.currentChunkKey === chunkKey) {
+    if (!force && this.currentChunkKey === chunkKey) {
       return;
     }
 
-    console.log(`[CHUNK SYNC] Switching army chunk from ${this.currentChunkKey} to ${chunkKey}`);
-    this.currentChunkKey = chunkKey;
+    const previousChunkKey = this.currentChunkKey;
+    const chunkChanged = previousChunkKey !== chunkKey;
+
+    if (chunkChanged) {
+      console.log(`[CHUNK SYNC] Switching army chunk from ${this.currentChunkKey} to ${chunkKey}`);
+      this.currentChunkKey = chunkKey;
+    } else if (force) {
+      console.log(`[CHUNK SYNC] Refreshing army chunk ${chunkKey}`);
+    }
 
     // Create and track the chunk switch promise
-    this.chunkSwitchPromise = this.renderVisibleArmies(chunkKey);
+    const renderOptions = { force: force || chunkChanged };
+    this.chunkSwitchPromise = this.renderVisibleArmies(chunkKey, renderOptions);
 
     try {
       await this.chunkSwitchPromise;
-      console.log(`[CHUNK SYNC] Army chunk switch to ${chunkKey} completed`);
+      const actionLabel = previousChunkKey === chunkKey ? "refresh" : "switch";
+      console.log(`[CHUNK SYNC] Army chunk ${actionLabel} for ${chunkKey} completed`);
     } finally {
       this.chunkSwitchPromise = null;
     }
   }
 
-  private renderVisibleArmies(chunkKey: string): Promise<void> {
+  private renderVisibleArmies(chunkKey: string, options?: { force?: boolean }): Promise<void> {
     if (!chunkKey) {
       return Promise.resolve();
     }
 
     this.pendingRenderChunkKey = chunkKey;
+    this.pendingRenderOptions = options ?? null;
     return this.processRenderQueue();
   }
 
@@ -428,9 +455,11 @@ export class ArmyManager {
       try {
         while (this.pendingRenderChunkKey) {
           const chunkKey = this.pendingRenderChunkKey;
+          const renderOptions = this.pendingRenderOptions;
           this.pendingRenderChunkKey = null;
+          this.pendingRenderOptions = null;
           if (chunkKey) {
-            await this.executeRenderForChunk(chunkKey);
+            await this.executeRenderForChunk(chunkKey, renderOptions ?? undefined);
           }
         }
       } finally {
@@ -457,12 +486,152 @@ export class ArmyManager {
     armies.forEach((army) => {
       const { x, y } = army.hexCoords.getContract();
       const biome = Biome.getBiome(x, y);
-      const modelType = this.armyModel.getModelTypeForEntity(army.entityId, army.category, army.tier, biome);
+      const numericId = this.toNumericId(army.entityId);
+      const modelType = this.armyModel.getModelTypeForEntity(numericId, army.category, army.tier, biome);
       modelTypesByEntity.set(army.entityId, modelType);
       requiredModelTypes.add(modelType);
     });
 
     return { modelTypesByEntity, requiredModelTypes };
+  }
+
+  private addVisibleArmy(army: ArmyData, modelType: ModelType): void {
+    const slot = this.visibleArmyOrder.length;
+    this.visibleArmyOrder.push(army.entityId);
+    this.visibleArmyIndices.set(army.entityId, slot);
+    this.refreshArmyInstance(army, slot, modelType);
+  }
+
+  private refreshArmyInstance(army: ArmyData, slot: number, modelType: ModelType): void {
+    const numericId = this.toNumericId(army.entityId);
+    const path = this.armyPaths.get(army.entityId);
+
+    let sourceHex = army.hexCoords;
+    if (path && path.length > 0) {
+      sourceHex = path[0];
+    }
+
+    const isMoving = this.armyModel.isEntityMoving(numericId);
+    let position: Vector3;
+    if (isMoving) {
+      position =
+        this.armyModel.getEntityWorldPosition(numericId)?.clone() ??
+        this.getArmyWorldPosition(army.entityId, sourceHex);
+    } else {
+      position = this.getArmyWorldPosition(army.entityId, sourceHex);
+    }
+
+    this.armyModel.assignModelToEntity(numericId, modelType);
+
+    if (army.isDaydreamsAgent) {
+      this.armyModel.setIsAgent(true);
+    }
+
+    const { x, y } = army.hexCoords.getContract();
+    const rotationSeed = hashCoordinates(x, y);
+    const rotationIndex = Math.floor(rotationSeed * 6);
+    const randomRotation = (rotationIndex * Math.PI) / 3;
+
+    this.armyModel.updateInstance(
+      numericId,
+      slot,
+      position,
+      this.scale,
+      new Euler(0, randomRotation, 0),
+      new Color(army.color),
+    );
+
+    this.recordLastKnownHexFromWorld(army.entityId, position);
+
+    const activeLabel = this.entityIdLabels.get(army.entityId);
+    if (activeLabel) {
+      activeLabel.position.copy(position);
+      activeLabel.position.y += 1.5;
+    }
+
+    this.updateArmyPointIcon(army, position);
+
+    const updatedArmy = { ...army, matrixIndex: slot };
+    this.armies.set(army.entityId, updatedArmy);
+    this.armyModel.rebindMovementMatrixIndex(numericId, slot);
+  }
+
+  private removeVisibleArmy(entityId: ID): boolean {
+    const index = this.visibleArmyIndices.get(entityId);
+    if (index === undefined) {
+      return false;
+    }
+
+    const lastIndex = this.visibleArmyOrder.length - 1;
+    const lastEntityId = this.visibleArmyOrder[lastIndex];
+
+    if (index !== lastIndex) {
+      this.visibleArmyOrder[index] = lastEntityId;
+      this.visibleArmyIndices.set(lastEntityId, index);
+
+      const swappedArmy = this.armies.get(lastEntityId);
+      if (swappedArmy) {
+        swappedArmy.matrixIndex = index;
+        this.armies.set(lastEntityId, swappedArmy);
+      }
+      this.armyModel.rebindMovementMatrixIndex(this.toNumericId(lastEntityId), index);
+    }
+
+    this.visibleArmyOrder.pop();
+    this.visibleArmyIndices.delete(entityId);
+
+    const storedArmy = this.armies.get(entityId);
+    if (storedArmy) {
+      this.armies.set(entityId, { ...storedArmy, matrixIndex: undefined });
+    }
+
+    this.lastKnownVisibleHexes.delete(entityId);
+    this.removeArmyPointIcon(entityId);
+    this.removeEntityIdLabel(entityId);
+
+    const numericId = this.toNumericId(entityId);
+    if (this.activeArmyAttachmentEntities.has(numericId)) {
+      this.attachmentManager.removeAttachments(numericId);
+      this.activeArmyAttachmentEntities.delete(numericId);
+      this.armyAttachmentSignatures.delete(numericId);
+    }
+
+    return true;
+  }
+
+  private updateArmyPointIcon(army: ArmyData, position: Vector3): void {
+    if (!this.pointsRenderers) {
+      return;
+    }
+
+    const iconPosition = this.tempIconPosition.copy(position);
+    iconPosition.y += 2.1; // Match CSS2D label height
+    const renderer = army.isDaydreamsAgent
+      ? this.pointsRenderers.agent
+      : army.isMine
+        ? this.pointsRenderers.player
+        : this.pointsRenderers.enemy;
+    renderer.setPoint({
+      entityId: army.entityId,
+      position: iconPosition,
+    });
+  }
+
+  private removeArmyPointIcon(entityId: ID): void {
+    if (!this.pointsRenderers) {
+      return;
+    }
+
+    [
+      this.pointsRenderers.player,
+      this.pointsRenderers.enemy,
+      this.pointsRenderers.ally,
+      this.pointsRenderers.agent,
+    ].forEach((renderer) => {
+      if (renderer.hasPoint(entityId)) {
+        renderer.removePoint(entityId);
+      }
+    });
   }
 
   private getAttachmentSignature(templates: CosmeticAttachmentTemplate[]): string {
@@ -480,7 +649,7 @@ export class ArmyManager {
 
     visibleArmies.forEach((army) => {
       const templates = army.attachments ?? [];
-      const entityId = Number(army.entityId);
+      const entityId = this.toNumericId(army.entityId);
 
       if (templates.length === 0) {
         if (this.activeArmyAttachmentEntities.has(entityId)) {
@@ -529,7 +698,7 @@ export class ArmyManager {
       .instanceData as Map<number, ArmyInstanceData> | undefined;
 
     this.visibleArmies.forEach((army) => {
-      const entityId = Number(army.entityId);
+      const entityId = this.toNumericId(army.entityId);
       if (!this.activeArmyAttachmentEntities.has(entityId)) {
         return;
       }
@@ -558,7 +727,7 @@ export class ArmyManager {
     });
   }
 
-  private async executeRenderForChunk(chunkKey: string): Promise<void> {
+  private async executeRenderForChunk(chunkKey: string, options?: { force?: boolean }): Promise<void> {
     const [startRow, startCol] = chunkKey.split(",").map(Number);
     const computeVisibleArmies = () => this.getVisibleArmiesForChunk(startRow, startCol);
 
@@ -577,132 +746,65 @@ export class ArmyManager {
       await this.armyModel.preloadModels(requiredModelTypes);
     }
 
-    // Reset all model instances before applying the latest snapshot
-    this.armyModel.resetInstanceCounts();
+    let buffersDirty = false;
 
-    const updatedVisibleArmies: ArmyData[] = [];
-    let currentCount = 0;
+    const desiredIds = new Set(visibleArmies.map((army) => army.entityId));
+    const toRemove = this.visibleArmyOrder.filter((entityId) => !desiredIds.has(entityId));
+
+    toRemove.forEach((entityId) => {
+      if (this.removeVisibleArmy(entityId)) {
+        buffersDirty = true;
+      }
+    });
 
     visibleArmies.forEach((army) => {
-      const numericId = Number(army.entityId);
-
-      const path = this.armyPaths.get(army.entityId);
-
-      let sourceHex = army.hexCoords;
-      if (path && path.length > 0) {
-        sourceHex = path[0];
+      if (this.visibleArmyIndices.has(army.entityId)) {
+        return;
       }
-
-      let position = this.armyModel.getEntityWorldPosition(numericId);
-
-      if (!position) {
-        position = this.getArmyWorldPosition(army.entityId, sourceHex);
-      }
-
-      const { x, y } = army.hexCoords.getContract();
       const modelType = modelTypesByEntity.get(army.entityId);
-
       if (!modelType) {
         return;
       }
-
-      this.armyModel.assignModelToEntity(army.entityId, modelType);
-
-      if (army.isDaydreamsAgent) {
-        this.armyModel.setIsAgent(true);
-      }
-
-      const rotationSeed = hashCoordinates(x, y);
-      const rotationIndex = Math.floor(rotationSeed * 6);
-      const randomRotation = (rotationIndex * Math.PI) / 3;
-
-      this.armyModel.updateInstance(
-        army.entityId,
-        currentCount,
-        position,
-        this.scale,
-        new Euler(0, randomRotation, 0),
-        new Color(army.color),
-      );
-
-      this.recordLastKnownHexFromWorld(army.entityId, position);
-
-      const updatedArmy = { ...army, matrixIndex: currentCount };
-      updatedVisibleArmies.push(updatedArmy);
-      this.armies.set(army.entityId, updatedArmy);
-      this.armyModel.rebindMovementMatrixIndex(army.entityId, currentCount);
-
-      const activeLabel = this.entityIdLabels.get(army.entityId);
-      if (activeLabel) {
-        activeLabel.position.copy(position);
-        activeLabel.position.y += 1.5;
-      }
-
-      // Add point icon for this army (always visible)
-      if (this.pointsRenderers) {
-        const iconPosition = position.clone();
-        iconPosition.y += 2.1; // Match CSS2D label height
-        const renderer = army.isDaydreamsAgent
-          ? this.pointsRenderers.agent
-          : army.isMine
-            ? this.pointsRenderers.player
-            : this.pointsRenderers.enemy; // TODO: Add ally check when implemented
-        renderer.setPoint({
-          entityId: army.entityId,
-          position: iconPosition,
-        });
-        console.log(
-          `[ArmyManager] Added point icon for army ${army.entityId} at position`,
-          iconPosition,
-          `renderer type: ${army.isDaydreamsAgent ? "agent" : army.isMine ? "player" : "enemy"}, count: ${renderer.getCount()}`,
-        );
-      } else {
-        console.warn(`[ArmyManager] pointsRenderers not initialized yet for army ${army.entityId}`);
-      }
-
-      currentCount++;
+      this.addVisibleArmy(army, modelType);
+      buffersDirty = true;
     });
 
-    this.armyModel.setVisibleCount(currentCount);
+    if (options?.force) {
+      visibleArmies.forEach((army) => {
+        const slot = this.visibleArmyIndices.get(army.entityId);
+        const modelType = modelTypesByEntity.get(army.entityId);
+        if (slot !== undefined && modelType) {
+          this.refreshArmyInstance(army, slot, modelType);
+          buffersDirty = true;
+        }
+      });
+    }
 
-    this.entityIdLabels.forEach((label, entityId) => {
-      if (!updatedVisibleArmies.some((army) => army.entityId === entityId)) {
+    const visibleArmySet = new Set(this.visibleArmyOrder);
+    this.entityIdLabels.forEach((_, entityId) => {
+      if (!visibleArmySet.has(entityId)) {
         this.removeEntityIdLabel(entityId);
       }
     });
 
-    // Remove points for armies no longer visible
-    if (this.pointsRenderers) {
-      const visibleArmyIds = new Set(updatedVisibleArmies.map((a) => a.entityId));
-      [
-        this.pointsRenderers.player,
-        this.pointsRenderers.enemy,
-        this.pointsRenderers.ally,
-        this.pointsRenderers.agent,
-      ].forEach((renderer) => {
-        this.armies.forEach((_, entityId) => {
-          if (!visibleArmyIds.has(entityId) && renderer.hasPoint(entityId)) {
-            renderer.removePoint(entityId);
-          }
-        });
-      });
-    }
+    this.visibleArmies = this.visibleArmyOrder
+      .map((entityId) => this.armies.get(entityId))
+      .filter((army): army is ArmyData => Boolean(army));
 
-    this.visibleArmies = updatedVisibleArmies;
-    this.syncVisibleArmyAttachments(updatedVisibleArmies);
+    this.syncVisibleArmyAttachments(this.visibleArmies);
     this.updateArmyAttachmentTransforms();
 
-    // Update all model instances
-    this.armyModel.updateAllInstances();
-    this.armyModel.computeBoundingSphere();
+    this.armyModel.setVisibleCount(this.visibleArmyOrder.length);
+
+    if (buffersDirty) {
+      this.armyModel.updateAllInstances();
+      this.armyModel.computeBoundingSphere();
+      this.frustumVisibilityDirty = true;
+    }
   }
 
-  private isArmyVisible(
-    army: { entityId: ID; hexCoords: Position; isMine: boolean; color: string },
-    startRow: number,
-    startCol: number,
-  ) {
-    const entityIdNumber = Number(army.entityId);
+  private isArmyVisible(army: ArmyData, startRow: number, startCol: number) {
+    const entityIdNumber = this.toNumericId(army.entityId);
     const worldPos = this.armyModel.getEntityWorldPosition(entityIdNumber);
 
     let x: number;
@@ -737,7 +839,20 @@ export class ArmyManager {
       x <= startCol + this.renderChunkSize.width / 2 &&
       y >= startRow - this.renderChunkSize.height / 2 &&
       y <= startRow + this.renderChunkSize.height / 2;
-    return isVisible;
+    if (!isVisible) {
+      return false;
+    }
+
+    if (!this.frustumManager) {
+      return true;
+    }
+
+    let frustumPoint = worldPos?.clone();
+    if (!frustumPoint) {
+      const worldFromHex = getWorldPositionForHex({ col: x, row: y });
+      frustumPoint = worldFromHex;
+    }
+    return this.frustumManager.isPointVisible(frustumPoint);
   }
 
   private getVisibleArmiesForChunk(startRow: number, startCol: number): Array<ArmyData> {
@@ -753,10 +868,11 @@ export class ArmyManager {
 
     // Monitor memory usage before adding army
     this.memoryMonitor?.getCurrentStats(`addArmy-${params.entityId}`);
+    const numericEntityId = this.toNumericId(params.entityId);
 
     const { x, y } = params.hexCoords.getContract();
     const biome = Biome.getBiome(x, y);
-    const baseModelType = this.armyModel.getModelTypeForEntity(params.entityId, params.category, params.tier, biome);
+    const baseModelType = this.armyModel.getModelTypeForEntity(numericEntityId, params.category, params.tier, biome);
 
     // Variables to hold the final values
     let finalTroopCount = params.troopCount || 0;
@@ -929,23 +1045,15 @@ export class ArmyManager {
     const resolvedModelType = cosmetic.modelType ?? baseModelType;
 
     await this.armyModel.preloadModels([resolvedModelType]);
-    this.armyModel.assignModelToEntity(params.entityId, resolvedModelType);
+    this.armyModel.assignModelToEntity(numericEntityId, resolvedModelType);
 
     const isMine = finalOwnerAddress ? isAddressEqualToAccount(finalOwnerAddress) : false;
 
     // Determine the color based on ownership (consistent with structure labels)
-    let color: string;
-    if (params.isDaydreamsAgent) {
-      color = COLORS.SELECTED;
-    } else if (isMine) {
-      color = LABEL_STYLES.MINE.textColor || "#d9f99d";
-    } else {
-      color = LABEL_STYLES.ENEMY.textColor || "#fecdd3";
-    }
+    const color = this.getArmyColor({ isMine, isDaydreamsAgent: params.isDaydreamsAgent });
 
     this.armies.set(params.entityId, {
       entityId: params.entityId,
-      matrixIndex: this.armies.size - 1,
       hexCoords: params.hexCoords,
       isMine,
       owningStructureId: finalOwningStructureId,
@@ -997,6 +1105,7 @@ export class ArmyManager {
     const armyData = this.armies.get(entityId);
     if (!armyData) return;
 
+    const numericEntityId = this.toNumericId(entityId);
     const startPos = armyData.hexCoords.getNormalized();
     const targetPos = hexCoords.getNormalized();
 
@@ -1019,7 +1128,7 @@ export class ArmyManager {
     if (path.length < 2) {
       this.armies.set(entityId, { ...armyData, hexCoords });
       this.armyPaths.delete(entityId);
-      this.armyModel.setMovementCompleteCallback(Number(entityId), undefined);
+      this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
       return;
     }
 
@@ -1028,9 +1137,17 @@ export class ArmyManager {
 
     // Update army position immediately to avoid starting from a "back" position
     this.armies.set(entityId, { ...armyData, hexCoords });
+
+    const matrixIndex = armyData.matrixIndex;
+    if (matrixIndex === undefined) {
+      this.armyPaths.delete(entityId);
+      this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
+      return;
+    }
+
     this.armyPaths.set(entityId, path);
 
-    this.armyModel.setMovementCompleteCallback(entityId, () => {
+    this.armyModel.setMovementCompleteCallback(numericEntityId, () => {
       this.armyPaths.delete(entityId);
     });
 
@@ -1038,7 +1155,7 @@ export class ArmyManager {
     // The updateRelicEffectPositions method will handle smooth positioning
 
     // Start movement in ArmyModel with troop information
-    this.armyModel.startMovement(entityId, worldPath, armyData.matrixIndex, armyData.category, armyData.tier);
+    this.armyModel.startMovement(numericEntityId, worldPath, matrixIndex, armyData.category, armyData.tier);
 
     // Monitor memory usage after army movement setup
     this.memoryMonitor?.getCurrentStats(`moveArmy-complete-${entityId}`);
@@ -1103,7 +1220,7 @@ export class ArmyManager {
 
     if (!this.armies.has(entityId)) return;
 
-    const numericEntityId = Number(entityId);
+    const numericEntityId = this.toNumericId(entityId);
     if (this.activeArmyAttachmentEntities.has(numericEntityId)) {
       this.attachmentManager.removeAttachments(numericEntityId);
       this.activeArmyAttachmentEntities.delete(numericEntityId);
@@ -1116,7 +1233,7 @@ export class ArmyManager {
     console.debug(`[ArmyManager] removeArmy invoked for entity ${entityId}`);
 
     this.armyPaths.delete(entityId);
-    this.armyModel.setMovementCompleteCallback(Number(entityId), undefined);
+    this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
     this.lastKnownVisibleHexes.delete(entityId);
 
     // Remove any relic effects
@@ -1142,23 +1259,26 @@ export class ArmyManager {
     console.debug(`[ArmyManager] Preparing world cleanup for entity ${entityId}`);
     const worldPosition = this.getArmyWorldPosition(entityId, army.hexCoords);
 
-    this.armies.delete(entityId);
-    this.armyModel.removeLabel(entityId);
-    this.entityIdLabels.delete(entityId);
-    console.debug(`[ArmyManager] Removed entity ${entityId} from caches and labels`);
-
-    if (this.currentChunkKey) {
-      console.debug(`[ArmyManager] Rendering visible armies after removing entity ${entityId}`);
-      void this.renderVisibleArmies(this.currentChunkKey)
-        .then(() => {
-          console.debug(`[ArmyManager] Render complete after removing entity ${entityId}`);
-        })
-        .catch((error) => {
-          console.error(`[ArmyManager] Failed to finalize removal for army ${entityId}:`, error);
-        });
-    } else {
-      console.warn(`[ArmyManager] Removal invoked with no active chunk for entity ${entityId}`);
+    const hadVisibleEntry = this.visibleArmyIndices.has(entityId);
+    const freedSlot = hadVisibleEntry ? this.visibleArmyOrder.length - 1 : undefined;
+    const removedFromChunk = this.removeVisibleArmy(entityId);
+    if (!removedFromChunk) {
+      this.removeArmyPointIcon(entityId);
+      this.removeEntityIdLabel(entityId);
     }
+
+    this.armies.delete(entityId);
+
+    if (removedFromChunk) {
+      this.visibleArmies = this.visibleArmyOrder
+        .map((visibleId) => this.armies.get(visibleId))
+        .filter((visible): visible is ArmyData => Boolean(visible));
+      this.armyModel.setVisibleCount(this.visibleArmyOrder.length);
+      this.armyModel.updateAllInstances();
+      this.frustumVisibilityDirty = true;
+    }
+
+    this.armyModel.releaseEntity(numericEntityId, freedSlot);
 
     if (!playDefeatFx) {
       return;
@@ -1202,10 +1322,10 @@ export class ArmyManager {
 
       if (instanceDataMap) {
         this.visibleArmies.forEach((army) => {
-          const instanceData = instanceDataMap.get(army.entityId);
+          const instanceData = instanceDataMap.get(this.toNumericId(army.entityId));
           if (instanceData && instanceData.isMoving) {
             // Get current interpolated position
-            const iconPosition = instanceData.position.clone();
+            const iconPosition = this.tempIconPosition.copy(instanceData.position);
             iconPosition.y += 2.1; // Match CSS2D label height
 
             // Update point in appropriate renderer
@@ -1226,16 +1346,40 @@ export class ArmyManager {
     // Update relic effect positions to follow moving armies
     this.updateArmyAttachmentTransforms();
     this.updateRelicEffectPositions();
+
+    if (this.frustumVisibilityDirty) {
+      this.applyFrustumVisibilityToLabels();
+      this.frustumVisibilityDirty = false;
+    }
   }
 
-  private getArmyWorldPosition = (_armyEntityId: ID, hexCoords: Position, isIntermediatePosition: boolean = false) => {
+  private applyFrustumVisibilityToLabels() {
+    if (!this.frustumManager) {
+      return;
+    }
+
+    this.entityIdLabels.forEach((label) => {
+      const isVisible = this.frustumManager!.isPointVisible(label.position);
+      label.element.style.display = isVisible ? "" : "none";
+    });
+  }
+
+  private getArmyWorldPosition = (_armyEntityId: ID, hexCoords: Position) => {
     const { x: hexCoordsX, y: hexCoordsY } = hexCoords.getNormalized();
     const basePosition = getWorldPositionForHex({ col: hexCoordsX, row: hexCoordsY });
-
-    if (isIntermediatePosition) return basePosition;
-
     return basePosition;
   };
+
+  private toNumericId(entityId: ID): number {
+    return typeof entityId === "number" ? entityId : Number(entityId ?? 0);
+  }
+
+  private getArmyColor(army: { isMine: boolean; isDaydreamsAgent: boolean }): string {
+    if (army.isDaydreamsAgent) {
+      return COLORS.SELECTED;
+    }
+    return army.isMine ? LABEL_STYLES.MINE.textColor || "#d9f99d" : LABEL_STYLES.ENEMY.textColor || "#fecdd3";
+  }
 
   private recordLastKnownHexFromWorld(entityId: ID, worldPosition: Vector3) {
     const { col, row } = getHexForWorldPosition(worldPosition);
@@ -1244,9 +1388,52 @@ export class ArmyManager {
   }
 
   recheckOwnership() {
-    this.armies.forEach((army) => {
-      army.isMine = isAddressEqualToAccount(army.owner.address);
+    const updatedVisible: ArmyData[] = [];
+
+    this.armies.forEach((army, entityId) => {
+      const nextIsMine = isAddressEqualToAccount(army.owner.address);
+      const nextColor = this.getArmyColor({ isMine: nextIsMine, isDaydreamsAgent: army.isDaydreamsAgent });
+
+      if (army.isMine === nextIsMine && army.color === nextColor) {
+        return;
+      }
+
+      army.isMine = nextIsMine;
+      army.color = nextColor;
+      this.armies.set(entityId, army);
+
+      const label = this.entityIdLabels.get(entityId);
+      if (label) {
+        this.updateArmyLabelData(entityId, army, label);
+      }
+
+      if (this.visibleArmyIndices.has(entityId)) {
+        updatedVisible.push(army);
+      }
     });
+
+    if (updatedVisible.length === 0) {
+      return;
+    }
+
+    updatedVisible.forEach((army) => {
+      const slot = this.visibleArmyIndices.get(army.entityId);
+      if (slot === undefined) {
+        return;
+      }
+      const numericId = this.toNumericId(army.entityId);
+      const { x, y } = army.hexCoords.getContract();
+      const biome = Biome.getBiome(x, y);
+      const modelType = this.armyModel.getModelTypeForEntity(numericId, army.category, army.tier, biome);
+      this.refreshArmyInstance(army, slot, modelType);
+    });
+
+    this.visibleArmies = this.visibleArmyOrder
+      .map((id) => this.armies.get(id))
+      .filter((army): army is ArmyData => Boolean(army));
+
+    this.armyModel.updateAllInstances();
+    this.frustumVisibilityDirty = true;
   }
 
   private async addEntityIdLabel(army: ArmyData, position: Vector3) {
@@ -1264,9 +1451,10 @@ export class ArmyManager {
     this.configureArmyLabelInteractions(label);
 
     this.entityIdLabels.set(army.entityId, label);
-    this.armyModel.addLabel(army.entityId, label);
+    this.armyModel.addLabel(this.toNumericId(army.entityId), label);
 
     this.updateArmyLabelData(army.entityId, army, label);
+    this.frustumVisibilityDirty = true;
   }
 
   public showLabel(entityId: ID): void {
@@ -1305,6 +1493,7 @@ export class ArmyManager {
           : this.pointsRenderers.enemy;
       renderer.setHover(entityId);
     }
+    this.frustumVisibilityDirty = true;
   }
 
   public hideLabel(entityId: ID): void {
@@ -1319,6 +1508,7 @@ export class ArmyManager {
         this.pointsRenderers.agent,
       ].forEach((renderer) => renderer.clearHover());
     }
+    this.frustumVisibilityDirty = true;
   }
 
   public hideAllLabels(): void {
@@ -1333,6 +1523,7 @@ export class ArmyManager {
         this.pointsRenderers.agent,
       ].forEach((renderer) => renderer.clearHover());
     }
+    this.frustumVisibilityDirty = true;
   }
 
   removeLabelsFromScene() {
@@ -1340,7 +1531,7 @@ export class ArmyManager {
   }
 
   removeLabelsExcept(entityId?: ID) {
-    this.armyModel.removeLabelsExcept(entityId ? Number(entityId) : undefined);
+    this.armyModel.removeLabelsExcept(entityId ? this.toNumericId(entityId) : undefined);
   }
 
   addLabelsToScene() {
@@ -1353,9 +1544,10 @@ export class ArmyManager {
       return;
     }
 
-    this.armyModel.removeLabel(Number(entityId));
+    this.armyModel.removeLabel(this.toNumericId(entityId));
     this.labelPool.release(label);
     this.entityIdLabels.delete(entityId);
+    this.frustumVisibilityDirty = true;
   }
 
   private configureArmyLabelInteractions(label: CSS2DObject): void {
@@ -1400,17 +1592,54 @@ export class ArmyManager {
 
           // When all textures are loaded, create the renderers
           if (loadedCount === totalTextures) {
+            const scaledPointSize = 5 * 0.5;
             // Use player texture for agent as fallback
             this.pointsRenderers = {
-              player: new PointsLabelRenderer(this.scene, loadedTextures.player!, 1000, 5, 0, 1.3, true),
-              enemy: new PointsLabelRenderer(this.scene, loadedTextures.enemy!, 1000, 5, 0, 1.3, true),
-              ally: new PointsLabelRenderer(this.scene, loadedTextures.ally!, 1000, 5, 0, 1.3, true),
-              agent: new PointsLabelRenderer(this.scene, loadedTextures.player!, 1000, 5, 0, 1.3, true),
+              player: new PointsLabelRenderer(
+                this.scene,
+                loadedTextures.player!,
+                1000,
+                scaledPointSize,
+                0,
+                1.3,
+                true,
+                this.frustumManager,
+              ),
+              enemy: new PointsLabelRenderer(
+                this.scene,
+                loadedTextures.enemy!,
+                1000,
+                scaledPointSize,
+                0,
+                1.3,
+                true,
+                this.frustumManager,
+              ),
+              ally: new PointsLabelRenderer(
+                this.scene,
+                loadedTextures.ally!,
+                1000,
+                scaledPointSize,
+                0,
+                1.3,
+                true,
+                this.frustumManager,
+              ),
+              agent: new PointsLabelRenderer(
+                this.scene,
+                loadedTextures.player!,
+                1000,
+                scaledPointSize,
+                0,
+                1.3,
+                true,
+                this.frustumManager,
+              ),
             };
 
             console.log("[ArmyManager] Points-based icon renderers initialized with params:", {
               maxPoints: 1000,
-              pointSize: 5,
+              pointSize: scaledPointSize,
               hoverScale: 0,
               hoverBrightness: 1.3,
               sizeAttenuation: true,
@@ -1511,7 +1740,7 @@ ${
       if (!army) return;
 
       // Get the current position of the army (might be interpolated during movement)
-      const instanceData = this.armyModel["instanceData"]?.get(entityId);
+      const instanceData = this.armyModel["instanceData"]?.get(this.toNumericId(entityId));
       if (instanceData && instanceData.isMoving) {
         // Army is currently moving, update relic effects to follow the current interpolated position
         // Use reusable vector to avoid cloning every frame
@@ -1771,6 +2000,11 @@ ${
   }
 
   public destroy() {
+    if (this.unsubscribeFrustum) {
+      this.unsubscribeFrustum();
+      this.unsubscribeFrustum = undefined;
+    }
+
     if (this.unsubscribeAccountStore) {
       this.unsubscribeAccountStore();
       this.unsubscribeAccountStore = undefined;
@@ -1807,7 +2041,7 @@ ${
     }
 
     this.entityIdLabels.forEach((label, entityId) => {
-      this.armyModel.removeLabel(Number(entityId));
+      this.armyModel.removeLabel(this.toNumericId(entityId));
       this.labelPool.release(label);
     });
     this.entityIdLabels.clear();

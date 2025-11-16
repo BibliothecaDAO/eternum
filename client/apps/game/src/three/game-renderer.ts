@@ -63,6 +63,7 @@ export default class GameRenderer {
   private stats!: Stats;
   private memoryMonitor?: MemoryMonitor;
   private memoryStatsElement?: HTMLDivElement;
+  private statsDomElement?: HTMLElement;
 
   // Camera settings
   private cameraDistance = 10; // Maintain the same distance
@@ -83,6 +84,17 @@ export default class GameRenderer {
   private cleanupIntervals: NodeJS.Timeout[] = [];
   private environmentTarget?: WebGLRenderTarget;
   private unsubscribeEnableMapZoom?: () => void;
+  private readonly handleWindowResize = () => this.onWindowResize();
+  private readonly handleDocumentFocus = (event: FocusEvent) => {
+    if (event.target instanceof HTMLInputElement && this.controls) {
+      this.controls.stopListenToKeyEvents();
+    }
+  };
+  private readonly handleDocumentBlur = (event: FocusEvent) => {
+    if (event.target instanceof HTMLInputElement && this.controls) {
+      this.controls.listenToKeyEvents(document.body);
+    }
+  };
 
   constructor(dojoContext: SetupResult) {
     this.graphicsSetting = GRAPHICS_SETTING;
@@ -227,6 +239,7 @@ export default class GameRenderer {
   initStats() {
     this.stats = new (Stats as any)();
     document.body.appendChild(this.stats.dom);
+    this.statsDomElement = this.stats.dom;
 
     // Initialize memory monitoring
     this.initMemoryMonitoring();
@@ -397,27 +410,8 @@ export default class GameRenderer {
       },
     );
 
-    document.addEventListener(
-      "focus",
-      (event) => {
-        // check if the focused element is input
-        if (event.target instanceof HTMLInputElement) {
-          this.controls.stopListenToKeyEvents();
-        }
-      },
-      true,
-    );
-
-    document.addEventListener(
-      "blur",
-      (event) => {
-        // check if the focused element is input
-        if (event.target instanceof HTMLInputElement) {
-          this.controls.listenToKeyEvents(document.body);
-        }
-      },
-      true,
-    );
+    document.addEventListener("focus", this.handleDocumentFocus, true);
+    document.addEventListener("blur", this.handleDocumentBlur, true);
 
     // Create HUD scene
     this.hudScene = new HUDScene(this.sceneManager, this.controls);
@@ -431,7 +425,7 @@ export default class GameRenderer {
   private setupListeners() {
     window.addEventListener("urlChanged", this.handleURLChange);
     window.addEventListener("popstate", this.handleURLChange);
-    window.addEventListener("resize", this.onWindowResize.bind(this));
+    window.addEventListener("resize", this.handleWindowResize);
   }
 
   private handleURLChange = () => {
@@ -835,6 +829,9 @@ export default class GameRenderer {
       }
 
       // Clean up renderer resources
+      if (this.renderer?.domElement && this.renderer.domElement.parentElement) {
+        this.renderer.domElement.parentElement.removeChild(this.renderer.domElement);
+      }
       if (this.renderer) {
         this.renderer.dispose();
       }
@@ -866,11 +863,20 @@ export default class GameRenderer {
       // Remove event listeners
       window.removeEventListener("urlChanged", this.handleURLChange);
       window.removeEventListener("popstate", this.handleURLChange);
-      window.removeEventListener("resize", this.onWindowResize.bind(this));
+      window.removeEventListener("resize", this.handleWindowResize);
+      document.removeEventListener("focus", this.handleDocumentFocus, true);
+      document.removeEventListener("blur", this.handleDocumentBlur, true);
 
       // Clean up memory monitoring
       if (this.memoryStatsElement && this.memoryStatsElement.parentNode) {
         this.memoryStatsElement.parentNode.removeChild(this.memoryStatsElement);
+      }
+      if (this.statsDomElement && this.statsDomElement.parentNode) {
+        this.statsDomElement.parentNode.removeChild(this.statsDomElement);
+        this.statsDomElement = undefined;
+      }
+      if (this.labelRendererElement) {
+        this.labelRendererElement.replaceChildren();
       }
 
       console.log("GameRenderer: Destroyed and cleaned up successfully");

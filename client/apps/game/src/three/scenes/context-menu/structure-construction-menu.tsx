@@ -202,11 +202,8 @@ export const createConstructionMenu = ({
     requiresStandardCost?: boolean;
   }): ContextMenuAction | null => {
     const buildingCosts = getBuildingCosts(structureEntityId, components, building, simpleCostEnabled);
-    const hasCosts = Array.isArray(buildingCosts)
-      ? buildingCosts.length > 0
-      : Boolean(buildingCosts && Object.keys(buildingCosts).length > 0);
 
-    if (!hasCosts) {
+    if (!buildingCosts) {
       return null;
     }
 
@@ -262,6 +259,11 @@ export const createConstructionMenu = ({
 
       const icon = resource.img ?? undefined;
 
+      const requiresStandardCost =
+        typedResourceId === ResourcesIds.Dragonhide ||
+        typedResourceId === ResourcesIds.Mithral ||
+        typedResourceId === ResourcesIds.Adamantine;
+
       return createActionWithAvailability({
         suffix: `resource-${resourceId}`,
         label: resource.trait,
@@ -269,6 +271,7 @@ export const createConstructionMenu = ({
         building,
         resource: typedResourceId,
         iconResource: typedResourceId,
+        requiresStandardCost,
       });
     })
     .filter((action): action is ContextMenuAction => action !== null);

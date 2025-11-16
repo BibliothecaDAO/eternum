@@ -227,12 +227,20 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
               const buildingCosts = getBuildingCosts(entityId, dojo.setup.components, building, useSimpleCost);
 
-              if (!buildingCosts || buildingCosts.length === 0) return;
+              if (!buildingCosts) return;
 
               const hasBalance = checkBalance(buildingCosts);
 
               const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
-              const canBuild = hasBalance && realm?.hasCapacity && hasEnoughPopulation;
+              const isLaborLockedResource =
+                useSimpleCost &&
+                (resourceId === ResourcesIds.Dragonhide ||
+                  resourceId === ResourcesIds.Mithral ||
+                  resourceId === ResourcesIds.Adamantine);
+              const canBuild = !isLaborLockedResource && hasBalance && realm?.hasCapacity && hasEnoughPopulation;
+              const disabledReason = isLaborLockedResource
+                ? "Switch to Resource mode to create this building."
+                : undefined;
 
               return (
                 <BuildingCard
@@ -263,6 +271,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                   }
                   hasFunds={hasBalance}
                   hasPopulation={hasEnoughPopulation}
+                  disabled={isLaborLockedResource}
+                  disabledReason={disabledReason}
                 />
               );
             })}

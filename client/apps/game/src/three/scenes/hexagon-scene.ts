@@ -9,6 +9,7 @@ import { InteractiveHexManager } from "@/three/managers/interactive-hex-manager"
 import { ThunderBoltManager } from "@/three/managers/thunderbolt-manager";
 import { type SceneManager } from "@/three/scene-manager";
 import { GUIManager, LocationManager } from "@/three/utils/";
+import { FrustumManager } from "@/three/utils/frustum-manager";
 import { MatrixPool } from "@/three/utils/matrix-pool";
 import { gltfLoader } from "@/three/utils/utils";
 import { LeftView, RightView } from "@/types";
@@ -64,6 +65,7 @@ export abstract class HexagonScene {
   protected worldUpdateListener!: WorldUpdateListener;
   protected highlightHexManager!: HighlightHexManager;
   protected locationManager!: LocationManager;
+  protected frustumManager!: FrustumManager;
   protected thunderBoltManager!: ThunderBoltManager;
   protected dayNightCycleManager!: DayNightCycleManager;
   protected GUIFolder!: any;
@@ -108,6 +110,7 @@ export abstract class HexagonScene {
     protected sceneManager: SceneManager,
   ) {
     this.initializeScene();
+    this.frustumManager = new FrustumManager(this.camera, this.controls);
     this.setupLighting();
     this.setupInputHandlers();
     this.setupGUI();
@@ -117,6 +120,7 @@ export abstract class HexagonScene {
   private notifyControlsChanged(): void {
     this.controls.update();
     this.controls.dispatchEvent({ type: "change" });
+    this.frustumManager?.forceUpdate();
   }
 
   private initializeScene(): void {
@@ -539,6 +543,7 @@ export abstract class HexagonScene {
             }
             const tmp = new InstancedBiome(gltf, maxInstances, false, biome);
             this.biomeModels.set(biome as BiomeType, tmp);
+            this.onBiomeModelLoaded(tmp);
             this.scene.add(tmp.group);
             resolve();
           },
@@ -586,6 +591,14 @@ export abstract class HexagonScene {
     this.setupGroundMeshGUI();
   }
 
+  protected shouldUpdateBiomeAnimations(): boolean {
+    return true;
+  }
+
+  protected onBiomeModelLoaded(_model: InstancedBiome): void {
+    // Derived scenes can override to configure biome meshes on load.
+  }
+
   update(deltaTime: number): void {
     this.interactiveHexManager.update();
     this.updateLights();
@@ -594,13 +607,15 @@ export abstract class HexagonScene {
     if (this.shouldEnableStormEffects()) {
       this.updateStormEffects();
     }
-    this.biomeModels.forEach((biome) => {
-      try {
-        biome.updateAnimations(deltaTime);
-      } catch (error) {
-        console.error(`Error updating biome animations:`, error);
-      }
-    });
+    if (this.shouldUpdateBiomeAnimations()) {
+      this.biomeModels.forEach((biome) => {
+        try {
+          biome.updateAnimations(deltaTime);
+        } catch (error) {
+          console.error(`Error updating biome animations:`, error);
+        }
+      });
+    }
   }
 
   private updateLights = throttle(() => {

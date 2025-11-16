@@ -1,4 +1,4 @@
-import { getFeltCenterOffset } from "../utils/utils";
+import { FELT_CENTER } from "../utils/utils";
 
 export class Position {
   private x: number;
@@ -12,7 +12,7 @@ export class Position {
     // if outside of square 1_000_000 x 1_000_000 around the center, it's already normalized
     const squareSize = 1_000_000;
     const halfSquareSize = squareSize / 2;
-    this.FELT_CENTER = getFeltCenterOffset();
+    this.FELT_CENTER = FELT_CENTER();
     this.normalized =
       Math.abs(x - this.FELT_CENTER) > halfSquareSize || Math.abs(y - this.FELT_CENTER) > halfSquareSize;
   }

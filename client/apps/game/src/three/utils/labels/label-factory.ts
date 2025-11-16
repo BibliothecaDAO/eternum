@@ -222,6 +222,8 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
     const cameraView = resolveCameraView(inputView);
     // Create base label
     const labelDiv = createLabelBase(data.isMine, cameraView, data.isDaydreamsAgent);
+    labelDiv.style.transform = "scale(0.5)";
+    labelDiv.style.transformOrigin = "center bottom";
 
     // Check if we have direction indicators and if view is expanded
     const hasDirections = data.attackedFromDegrees !== undefined || data.attackedTowardDegrees !== undefined;
@@ -480,6 +482,8 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
 
     // Create base label
     const labelDiv = createLabelBase(data.isMine, cameraView);
+    labelDiv.style.transform = "scale(0.5)";
+    labelDiv.style.transformOrigin = "center bottom";
 
     // Check if we have direction indicators and if view is expanded
     const hasDirections = data.attackedFromDegrees !== undefined || data.attackedTowardDegrees !== undefined;

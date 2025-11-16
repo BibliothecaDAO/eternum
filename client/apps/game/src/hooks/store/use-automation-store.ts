@@ -253,7 +253,9 @@ export const useAutomationStore = create<ProductionAutomationState>()(
             realmName: data?.realmName,
             entityType: data?.entityType ?? "realm",
             autoBalance: data?.autoBalance ?? true,
-            presetId: data?.presetId ?? null,
+            // Default to labor preset for new realms so bootstrapped
+            // resources start from a labor-friendly baseline.
+            presetId: data?.presetId ?? "labor",
             resources: {},
             createdAt: now,
             updatedAt: now,
@@ -394,22 +396,28 @@ export const useAutomationStore = create<ProductionAutomationState>()(
 
         let newConfig = baseConfig;
         if (realm && realm.presetId === null) {
-          const configWithResource: RealmAutomationConfig = {
-            ...realm,
-            resources: {
-              ...realm.resources,
-              [resourceId]: baseConfig,
-            },
-          };
-          const bootstrapAllocation = calculateResourceBootstrapAllocation(configWithResource, resourceId);
-          if (bootstrapAllocation && bootstrapAllocation.resourceToResource > 0) {
-            newConfig = {
-              ...baseConfig,
-              percentages: {
-                resourceToResource: bootstrapAllocation.resourceToResource,
-                laborToResource: bootstrapAllocation.laborToResource,
+          const hasExistingResources = Object.keys(realm.resources ?? {}).length > 0;
+          // Only bootstrap from the resource preset when there are already
+          // other resources configured; for the very first resource on a realm,
+          // prefer the default labor-friendly baseline (0% resource, 10% labor).
+          if (hasExistingResources) {
+            const configWithResource: RealmAutomationConfig = {
+              ...realm,
+              resources: {
+                ...realm.resources,
+                [resourceId]: baseConfig,
               },
             };
+            const bootstrapAllocation = calculateResourceBootstrapAllocation(configWithResource, resourceId);
+            if (bootstrapAllocation && bootstrapAllocation.resourceToResource > 0) {
+              newConfig = {
+                ...baseConfig,
+                percentages: {
+                  resourceToResource: bootstrapAllocation.resourceToResource,
+                  laborToResource: bootstrapAllocation.laborToResource,
+                },
+              };
+            }
           }
         }
 

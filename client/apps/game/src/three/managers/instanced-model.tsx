@@ -5,6 +5,7 @@ import {
   AnimationAction,
   AnimationClip,
   AnimationMixer,
+  Box3,
   Color,
   Group,
   InstancedBufferAttribute,
@@ -12,6 +13,7 @@ import {
   Matrix4,
   Mesh,
   MeshStandardMaterial,
+  Sphere,
   Vector3,
 } from "three";
 import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
@@ -41,6 +43,7 @@ export default class InstancedModel {
   private animation: AnimationClip | null = null;
   private animationActions: Map<number, AnimationAction> = new Map();
   private name: string;
+  private worldBounds?: { box: Box3; sphere: Sphere };
   timeOffsets: Float32Array;
 
   // Animation optimization
@@ -132,6 +135,7 @@ export default class InstancedModel {
         this.group.add(tmp);
         this.instancedMeshes.push(tmp);
         this.biomeMeshes.push(biomeMesh);
+        this.applyWorldBounds(tmp);
       }
     });
 
@@ -232,7 +236,7 @@ export default class InstancedModel {
       if (child instanceof InstancedMesh) {
         child.instanceMatrix.needsUpdate = true;
         child.computeBoundingSphere();
-        child.frustumCulled = false;
+        this.applyWorldBounds(child as any);
       }
     });
   }
@@ -361,6 +365,29 @@ export default class InstancedModel {
     }
     this.timeOffsets = updatedOffsets;
     this.capacity = newCapacity;
+  }
+
+  private applyWorldBounds(mesh: AnimatedInstancedMesh) {
+    if (this.worldBounds) {
+      mesh.frustumCulled = true;
+      const geometry = mesh.geometry;
+      geometry.boundingSphere = geometry.boundingSphere ?? new Sphere();
+      geometry.boundingSphere.copy(this.worldBounds.sphere);
+      geometry.boundingBox = geometry.boundingBox ?? new Box3();
+      geometry.boundingBox.copy(this.worldBounds.box);
+    } else {
+      mesh.frustumCulled = false;
+    }
+  }
+
+  public setWorldBounds(bounds?: { box: Box3; sphere: Sphere }) {
+    this.worldBounds = bounds
+      ? {
+          box: bounds.box.clone(),
+          sphere: bounds.sphere.clone(),
+        }
+      : undefined;
+    this.instancedMeshes.forEach((mesh) => this.applyWorldBounds(mesh));
   }
 
   public dispose(): void {

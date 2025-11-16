@@ -48,6 +48,7 @@ export class ArmyModel {
   private readonly entityModelMap: Map<number, ModelType> = new Map();
   private readonly movingInstances: Map<number, MovementData> = new Map();
   private readonly instanceData: Map<number, ArmyInstanceData> = new Map();
+  private readonly matrixIndexOwners: Map<number, number> = new Map();
   private readonly labels: Map<number, { label: CSS2DObject; entityId: number }> = new Map();
   private readonly labelsGroup: Group;
   private currentCameraView: CameraView = CameraView.Medium;
@@ -320,6 +321,18 @@ export class ArmyModel {
     }
   }
 
+  private clearInstanceSlot(matrixIndex: number): void {
+    this.models.forEach((modelData) => {
+      this.ensureModelCapacity(modelData, matrixIndex + 1);
+      modelData.instancedMeshes.forEach((mesh) => {
+        mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
+        mesh.instanceMatrix.needsUpdate = true;
+        mesh.userData.entityIdMap?.delete(matrixIndex);
+      });
+    });
+    this.setAnimationState(matrixIndex, false);
+  }
+
   // Instance Management Methods
   public async preloadModels(modelTypes: Iterable<ModelType>): Promise<void> {
     const loads: Promise<ModelData>[] = [];
@@ -359,6 +372,12 @@ export class ArmyModel {
     rotation?: Euler,
     color?: Color,
   ): void {
+    const previousOwner = this.matrixIndexOwners.get(index);
+    if (import.meta.env?.DEV && previousOwner !== undefined && previousOwner !== entityId) {
+      console.warn(`[ArmyModel] Matrix slot ${index} reassigned from entity ${previousOwner} to ${entityId}.`);
+    }
+    this.matrixIndexOwners.set(index, entityId);
+
     const state = this.storeInstanceState(entityId, index, position, scale, rotation, color);
 
     this.models.forEach((modelData, modelType) => {
@@ -379,6 +398,28 @@ export class ArmyModel {
       this.updateInstanceTransform(state.position, targetScale, state.rotation);
       this.updateInstanceMeshes(modelData, index, entityId, state.color);
     });
+  }
+
+  public releaseEntity(entityId: number, freedSlot?: number): void {
+    this.stopMovement(entityId);
+    this.movingInstances.delete(entityId);
+
+    const instanceData = this.instanceData.get(entityId);
+    const ownedMatrixIndex = instanceData?.matrixIndex;
+
+    if (ownedMatrixIndex !== undefined) {
+      this.matrixIndexOwners.delete(ownedMatrixIndex);
+    }
+
+    if (freedSlot !== undefined) {
+      this.clearInstanceSlot(freedSlot);
+      this.matrixIndexOwners.delete(freedSlot);
+    }
+
+    this.instanceData.delete(entityId);
+    this.entityModelMap.delete(entityId);
+    this.movementCompleteCallbacks.delete(entityId);
+    this.removeLabel(entityId);
   }
 
   private storeInstanceState(
@@ -1138,6 +1179,7 @@ export class ArmyModel {
     this.entityModelMap.clear();
     this.movingInstances.clear();
     this.instanceData.clear();
+    this.matrixIndexOwners.clear();
     this.labels.clear();
     this.movementCompleteCallbacks.clear();
 

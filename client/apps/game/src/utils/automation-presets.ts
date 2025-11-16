@@ -290,6 +290,74 @@ export const calculatePresetAllocations = (
   return allocations;
 };
 
+export const getAutomationOverallocation = (
+  automation: RealmAutomationConfig | undefined,
+): { resourceOver: boolean; laborOver: boolean } => {
+  if (!automation) {
+    return { resourceOver: false, laborOver: false };
+  }
+
+  const entityType = automation.entityType ?? "realm";
+
+  const resources = Object.values(automation.resources ?? {}).filter(
+    (setting) => !isAutomationResourceBlocked(setting.resourceId, entityType),
+  );
+
+  if (!resources.length) {
+    return { resourceOver: false, laborOver: false };
+  }
+
+  const resourceTotals = new Map<number, number>();
+  const laborTotals = new Map<number, number>();
+
+  resources.forEach((setting) => {
+    const { resourceId, percentages } = setting;
+    const rawComplexInputs = configManager.complexSystemResourceInputs[resourceId] ?? [];
+    const complexInputs = rawComplexInputs.filter(
+      (input) =>
+        !isAutomationResourceBlocked(input.resource, entityType, "input") && input.resource !== ResourcesIds.Wheat,
+    );
+
+    const rawSimpleInputs = configManager.simpleSystemResourceInputs[resourceId] ?? [];
+    const laborAllowed = !LABOR_PRESET_BANNED_RESOURCES.has(resourceId as ResourcesIds);
+    const simpleInputs = laborAllowed
+      ? rawSimpleInputs.filter(
+          (input) =>
+            !isAutomationResourceBlocked(input.resource, entityType, "input") && input.resource !== ResourcesIds.Wheat,
+        )
+      : [];
+
+    if (percentages.resourceToResource > 0) {
+      complexInputs.forEach(({ resource }) => {
+        resourceTotals.set(resource, (resourceTotals.get(resource) ?? 0) + percentages.resourceToResource);
+      });
+    }
+
+    if (percentages.laborToResource > 0) {
+      simpleInputs.forEach(({ resource }) => {
+        laborTotals.set(resource, (laborTotals.get(resource) ?? 0) + percentages.laborToResource);
+      });
+    }
+  });
+
+  let resourceOver = false;
+  let laborOver = false;
+
+  resourceTotals.forEach((value) => {
+    if (value > MAX_RESOURCE_ALLOCATION_PERCENT) {
+      resourceOver = true;
+    }
+  });
+
+  laborTotals.forEach((value) => {
+    if (value > MAX_RESOURCE_ALLOCATION_PERCENT) {
+      laborOver = true;
+    }
+  });
+
+  return { resourceOver, laborOver };
+};
+
 export const calculateResourceBootstrapAllocation = (
   automation: RealmAutomationConfig | undefined,
   resourceId: ResourcesIds,

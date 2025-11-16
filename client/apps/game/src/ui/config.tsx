@@ -1,7 +1,7 @@
-import { getFeltCenterOffset } from "@bibliothecadao/eternum";
+import { FELT_CENTER as FELT_CENTER_IMPORT } from "@bibliothecadao/eternum";
 import { BuildingType, ResourceMiningTypes } from "@bibliothecadao/types";
 
-export const FELT_CENTER = () => getFeltCenterOffset();
+export const FELT_CENTER = FELT_CENTER_IMPORT;
 
 export enum GraphicsSettings {
   LOW = "LOW",
