@@ -173,6 +173,7 @@ const StructureBannerEntityDetailContent = memo(
                 compact={isCompactLayout}
                 smallTextClass={isCompactLayout ? "text-xxs" : "text-xs"}
                 showProductionSummary={!isBanner}
+                showTooltip={false}
               />
             </EntityDetailSection>
           ) : (
