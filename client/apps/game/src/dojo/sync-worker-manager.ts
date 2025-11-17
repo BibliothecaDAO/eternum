@@ -29,6 +29,7 @@ export class ToriiSyncWorkerManager {
   private worker: Worker | null = null;
   private ready = false;
   private disposed = false;
+  private pendingMessages: Array<{ payload: ToriiEntity; origin: "entity" | "event" }> = [];
 
   constructor(private readonly options: ToriiSyncWorkerOptions = {}) {
     if (typeof window === "undefined" || typeof Worker === "undefined") {
@@ -63,18 +64,17 @@ export class ToriiSyncWorkerManager {
     return Boolean(this.worker) && !this.disposed;
   }
 
-  public enqueue(payload: Entity, origin: "entity" | "event") {
-    if (!this.worker || !this.ready || this.disposed) {
+  public enqueue(payload: ToriiEntity, origin: "entity" | "event") {
+    if (!this.worker || this.disposed) {
       return false;
     }
 
-    this.worker.postMessage({
-      type: "torii-event",
-      entityId: payload.hashed_keys,
-      payload,
-      origin,
-    });
+    if (!this.ready) {
+      this.pendingMessages.push({ payload, origin });
+      return true;
+    }
 
+    this.postToWorker(payload, origin);
     return true;
   }
 
@@ -90,6 +90,7 @@ export class ToriiSyncWorkerManager {
       return;
     }
     this.disposed = true;
+    this.pendingMessages = [];
     if (this.worker) {
       this.worker.postMessage({ type: "cancel-all" });
       this.worker.terminate();
@@ -101,6 +102,7 @@ export class ToriiSyncWorkerManager {
     switch (message.type) {
       case "ready":
         this.ready = true;
+        this.flushPendingMessages();
         break;
       case "batch-ready":
         if (import.meta.env.DEV) {
@@ -144,5 +146,26 @@ export class ToriiSyncWorkerManager {
       default:
         throw new Error("Unhandled worker message type");
     }
+  }
+
+  private flushPendingMessages() {
+    if (!this.worker || this.disposed || !this.ready) {
+      this.pendingMessages = [];
+      return;
+    }
+
+    this.pendingMessages.forEach(({ payload, origin }) => {
+      this.postToWorker(payload, origin);
+    });
+    this.pendingMessages = [];
+  }
+
+  private postToWorker(payload: ToriiEntity, origin: "entity" | "event") {
+    this.worker?.postMessage({
+      type: "torii-event",
+      entityId: payload.hashed_keys,
+      payload,
+      origin,
+    });
   }
 }
