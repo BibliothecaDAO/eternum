@@ -29,7 +29,7 @@ export class ToriiSyncWorkerManager {
   private worker: Worker | null = null;
   private ready = false;
   private disposed = false;
-  private pendingMessages: Array<{ payload: ToriiEntity; origin: "entity" | "event" }> = [];
+  private pendingMessages: Array<{ payload: Entity; origin: "entity" | "event" }> = [];
 
   constructor(private readonly options: ToriiSyncWorkerOptions = {}) {
     if (typeof window === "undefined" || typeof Worker === "undefined") {
@@ -64,7 +64,7 @@ export class ToriiSyncWorkerManager {
     return Boolean(this.worker) && !this.disposed;
   }
 
-  public enqueue(payload: ToriiEntity, origin: "entity" | "event") {
+  public enqueue(payload: Entity, origin: "entity" | "event") {
     if (!this.worker || this.disposed) {
       return false;
     }
@@ -160,7 +160,7 @@ export class ToriiSyncWorkerManager {
     this.pendingMessages = [];
   }
 
-  private postToWorker(payload: ToriiEntity, origin: "entity" | "event") {
+  private postToWorker(payload: Entity, origin: "entity" | "event") {
     this.worker?.postMessage({
       type: "torii-event",
       entityId: payload.hashed_keys,
