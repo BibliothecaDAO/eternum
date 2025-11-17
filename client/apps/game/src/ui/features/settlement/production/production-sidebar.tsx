@@ -461,7 +461,7 @@ export const ProductionSidebar = memo(
                 Apply preset to all {activeLabel.toLowerCase()}
               </div>
               <div className="flex flex-wrap gap-2">
-                {REALM_PRESETS.map((preset) => {
+                {REALM_PRESETS.filter((preset) => preset.id !== "custom").map((preset) => {
                   const isPending =
                     pendingPreset?.presetId === preset.id && pendingPreset?.tab === activeTab && !!pendingPreset;
                   return (

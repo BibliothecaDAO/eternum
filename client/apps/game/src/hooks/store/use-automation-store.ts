@@ -395,7 +395,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
         );
 
         let newConfig = baseConfig;
-        if (realm && realm.presetId === null) {
+        if (realm && (realm.presetId === null || realm.presetId === "custom")) {
           const hasExistingResources = Object.keys(realm.resources ?? {}).length > 0;
           // Only bootstrap from the resource preset when there are already
           // other resources configured; for the very first resource on a realm,
@@ -446,7 +446,11 @@ export const useAutomationStore = create<ProductionAutomationState>()(
         });
 
         const realmAfter = get().realms[realmId];
-        if (realmAfter?.presetId) {
+        if (
+          realmAfter?.presetId === "labor" ||
+          realmAfter?.presetId === "resource" ||
+          realmAfter?.presetId === "idle"
+        ) {
           get().setRealmPreset(realmId, realmAfter.presetId);
         }
 
@@ -475,7 +479,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
               ...state.realms,
               [realmId]: {
                 ...realm,
-                presetId: realm.presetId !== null ? null : realm.presetId,
+                presetId: "custom",
                 resources: sanitizeRealmResources(
                   {
                     ...realm.resources,

@@ -127,11 +127,14 @@ export const useAutomation = () => {
         let activeRealmConfig = realmConfig;
         const realmIdNum = Number(activeRealmConfig.realmId);
 
-        // If config is over-allocated and still using a preset mode,
-        // auto-apply a preset based on which side (resources vs labor)
-        // is over the cap. Manual/custom slider configs (presetId === null)
-        // are left untouched.
-        const hasPreset = activeRealmConfig.presetId !== null && activeRealmConfig.presetId !== undefined;
+        // If config is over-allocated and still using a preset mode
+        // (labor/resource/idle), auto-apply a preset based on which side
+        // (resources vs labor) is over the cap. Manual/custom slider configs
+        // (presetId === "custom" or null) are left untouched.
+        const hasPreset =
+          activeRealmConfig.presetId === "labor" ||
+          activeRealmConfig.presetId === "resource" ||
+          activeRealmConfig.presetId === "idle";
         if (hasPreset) {
           try {
             const { resourceOver, laborOver } = getAutomationOverallocation(activeRealmConfig);
