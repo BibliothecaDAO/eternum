@@ -754,7 +754,24 @@ export const ProductionOverviewPanel = () => {
             return (
               <div
                 key={card.id}
-                className="flex flex-col rounded-lg border border-gold/15 bg-black/25 p-3 text-[12px] text-gold/80 space-y-0 transition hover:border-gold/30 hover:bg-black/30"
+                role="button"
+                tabIndex={0}
+                className="flex flex-col rounded-lg border border-gold/15 bg-black/25 p-3 text-[12px] text-gold/80 space-y-0 transition hover:border-gold/30 hover:bg-black/30 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/60"
+                onClick={() => {
+                  if (Number.isFinite(realmIdNum) && card.position) {
+                    const position = new Position({ x: card.position.x, y: card.position.y });
+                    void goToStructure(realmIdNum, position, isMapView);
+                  }
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    if (Number.isFinite(realmIdNum) && card.position) {
+                      const position = new Position({ x: card.position.x, y: card.position.y });
+                      void goToStructure(realmIdNum, position, isMapView);
+                    }
+                  }
+                }}
               >
                 <div className="flex items-center justify-between gap-3 rounded border border-transparent px-1 py-1">
                   <div className="flex flex-col gap-1">

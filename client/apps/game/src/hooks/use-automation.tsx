@@ -127,32 +127,40 @@ export const useAutomation = () => {
         let activeRealmConfig = realmConfig;
         const realmIdNum = Number(activeRealmConfig.realmId);
 
-        // If config is over-allocated, auto-apply a preset based on which
-        // side (resources vs labor) is over the cap.
-        try {
-          const { resourceOver, laborOver } = getAutomationOverallocation(activeRealmConfig);
-          let presetToApply: "resource" | "labor" | "custom" | null = null;
-          if (resourceOver && !laborOver) {
-            presetToApply = "resource";
-          } else if (!resourceOver && laborOver) {
-            presetToApply = "labor";
-          } else if (resourceOver && laborOver) {
-            presetToApply = "custom";
-          }
-
-          if (presetToApply) {
-            setRealmPreset(activeRealmConfig.realmId, presetToApply);
-            const refreshed = getRealmConfig(activeRealmConfig.realmId);
-            if (refreshed) {
-              activeRealmConfig = refreshed;
+        // If config is over-allocated and still using a preset mode
+        // (labor/resource/idle), auto-apply a preset based on which side
+        // (resources vs labor) is over the cap. Manual/custom slider configs
+        // (presetId === "custom" or null) are left untouched.
+        const hasPreset =
+          activeRealmConfig.presetId === "labor" ||
+          activeRealmConfig.presetId === "resource" ||
+          activeRealmConfig.presetId === "idle";
+        if (hasPreset) {
+          try {
+            const { resourceOver, laborOver } = getAutomationOverallocation(activeRealmConfig);
+            let presetToApply: "resource" | "labor" | "custom" | null = null;
+            if (resourceOver && !laborOver) {
+              presetToApply = "resource";
+            } else if (!resourceOver && laborOver) {
+              presetToApply = "labor";
+            } else if (resourceOver && laborOver) {
+              presetToApply = "custom";
             }
+
+            if (presetToApply) {
+              setRealmPreset(activeRealmConfig.realmId, presetToApply);
+              const refreshed = getRealmConfig(activeRealmConfig.realmId);
+              if (refreshed) {
+                activeRealmConfig = refreshed;
+              }
+            }
+          } catch (error) {
+            console.error(
+              "[Automation] Failed to auto-apply preset for over-allocated realm",
+              activeRealmConfig.realmId,
+              error,
+            );
           }
-        } catch (error) {
-          console.error(
-            "[Automation] Failed to auto-apply preset for over-allocated realm",
-            activeRealmConfig.realmId,
-            error,
-          );
         }
 
         const snapshot =

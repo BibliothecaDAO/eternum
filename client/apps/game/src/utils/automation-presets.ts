@@ -391,7 +391,7 @@ export const inferRealmPreset = (automation?: RealmAutomationConfig): RealmPrese
   // If no automation context yet, default to labor since
   // the processor uses a 10% labor baseline for unconfigured resources.
   if (!automation) return "labor";
-  if (automation.presetId && automation.presetId !== "custom") {
+  if (automation.presetId) {
     return automation.presetId as RealmPresetId;
   }
 

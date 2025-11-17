@@ -521,12 +521,6 @@ export const RealmAutomationPanel = ({
       ),
     };
 
-    const targetPreset = draftPresetId ?? null;
-    const savedPreset = snapshot.presetId ?? null;
-    if (targetPreset !== savedPreset) {
-      setRealmPreset(realmEntityId, targetPreset);
-    }
-
     const resourceIds = new Set<number>([
       ...Object.keys(snapshot.percentages).map(Number),
       ...Object.keys(draftPercentages).map(Number),
@@ -537,6 +531,31 @@ export const RealmAutomationPanel = ({
       ...realmResources.map((resourceId) => Number(resourceId)),
       ...Object.keys(realmAutomation.resources ?? {}).map(Number),
     ]);
+
+    const normalizedPercentages: Record<number, ResourceAutomationPercentages> = {};
+    allResources.forEach((id) => {
+      const resourceId = Number(id) as ResourcesIds;
+      const source =
+        draftPercentages[resourceId] ?? snapshot.percentages[resourceId] ?? createBaselinePercentages(resourceId);
+      normalizedPercentages[resourceId] = {
+        resourceToResource: source.resourceToResource,
+        laborToResource: source.laborToResource,
+      };
+    });
+
+    if (draftPresetId) {
+      if (draftPresetId !== (snapshot.presetId ?? null)) {
+        setRealmPreset(realmEntityId, draftPresetId);
+      }
+
+      setLastSavedSnapshot({
+        presetId: draftPresetId,
+        percentages: normalizedPercentages,
+      });
+      setDraftPercentages(normalizedPercentages);
+      setDraftPresetId(draftPresetId);
+      return;
+    }
 
     resourceIds.forEach((id) => {
       const resourceId = Number(id) as ResourcesIds;
@@ -550,29 +569,18 @@ export const RealmAutomationPanel = ({
       }
     });
 
-    const normalizedPercentages: Record<number, ResourceAutomationPercentages> = {};
-    allResources.forEach((id) => {
-      const resourceId = Number(id) as ResourcesIds;
-      const source =
-        draftPercentages[resourceId] ?? snapshot.percentages[resourceId] ?? createBaselinePercentages(resourceId);
-      normalizedPercentages[resourceId] = {
-        resourceToResource: source.resourceToResource,
-        laborToResource: source.laborToResource,
-      };
-    });
-
     setLastSavedSnapshot({
-      presetId: targetPreset,
+      presetId: "custom",
       percentages: normalizedPercentages,
     });
     setDraftPercentages(normalizedPercentages);
-    setDraftPresetId(targetPreset);
+    setDraftPresetId("custom");
   }, [
     realmAutomation,
     hasLocalChanges,
     lastSavedSnapshot,
-    draftPresetId,
     draftPercentages,
+    draftPresetId,
     createBaselinePercentages,
     setRealmPreset,
     realmEntityId,
@@ -618,22 +626,42 @@ export const RealmAutomationPanel = ({
           </div>
         )}
         <div className="flex flex-wrap gap-2">
-          {REALM_PRESETS.map((preset) => (
-            <button
-              key={preset.id}
-              type="button"
-              className={clsx(
-                "px-3 py-1 rounded border text-xs transition-colors",
-                activePresetId === preset.id
-                  ? "border-gold text-gold bg-gold/10"
-                  : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold",
-              )}
-              title={preset.description}
-              onClick={() => handlePresetSelect(preset.id)}
-            >
-              {preset.label}
-            </button>
-          ))}
+          {REALM_PRESETS.filter((preset) => preset.id !== "custom").map((preset) => {
+            const isActive = activePresetId === preset.id;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                className={clsx(
+                  "px-3 py-1 rounded border text-xs transition-colors",
+                  isActive
+                    ? "border-gold text-gold bg-gold/10"
+                    : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold",
+                )}
+                title={preset.description}
+                onClick={() => handlePresetSelect(preset.id)}
+              >
+                {preset.label}
+              </button>
+            );
+          })}
+          {REALM_PRESETS.filter((preset) => preset.id === "custom").map((preset) => {
+            const isActive = activePresetId === preset.id;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                disabled
+                className={clsx(
+                  "px-3 py-1 rounded border text-xs transition-colors cursor-not-allowed",
+                  isActive ? "border-gold text-gold bg-gold/10" : "border-gold/15 text-gold/40",
+                )}
+                title={preset.description}
+              >
+                {preset.label}
+              </button>
+            );
+          })}
         </div>
         {hasLocalChanges && (
           <span className="text-[11px] text-warning">Unsaved changes pending. Save to apply automation updates.</span>

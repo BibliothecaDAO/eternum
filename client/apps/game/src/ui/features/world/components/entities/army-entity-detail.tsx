@@ -10,6 +10,7 @@ import { ID, RelicRecipientType } from "@bibliothecadao/types";
 import { ArmyWarning } from "../armies/army-warning";
 import { ActiveRelicEffects } from "./active-relic-effects";
 import { EntityInventoryTabs } from "./entity-inventory-tabs";
+import { dangerActionClasses, standardActionClasses } from "./action-button-classes";
 
 import { useArmyEntityDetail } from "./hooks/use-army-entity-detail";
 
@@ -65,10 +66,6 @@ export const ArmyEntityDetail = memo(
     const panelClasses = (...extras: Array<string | false | undefined>) =>
       cn("rounded-lg border border-gold/20 bg-dark-brown/70 shadow-md", compact ? "px-3 py-2" : "px-4 py-3", ...extras);
     const sectionsLayoutClass = `flex flex-col ${compact ? "gap-2" : "gap-3"} w-full`;
-    const actionButtonBase =
-      "inline-flex min-w-[104px] items-center justify-center gap-2 rounded-md px-3 py-1 text-xs font-semibold uppercase tracking-wide transition-colors focus:outline-none focus:ring-1 disabled:cursor-not-allowed disabled:opacity-60";
-    const standardActionClasses = `${actionButtonBase} border border-gold/60 bg-gold/10 text-gold hover:bg-gold/20 focus:ring-gold/30`;
-    const dangerActionClasses = `${actionButtonBase} border border-danger/60 bg-danger/20 text-danger hover:bg-danger/40 focus:ring-danger/40`;
 
     return (
       <div className={cn("flex flex-col", compact ? "gap-1" : "gap-3", className)}>

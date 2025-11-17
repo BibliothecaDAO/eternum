@@ -1,8 +1,10 @@
 import { useSyncPlayerStructures } from "@/hooks/helpers/use-sync-player-structures";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
 import { EndgameModal, NotLoggedInMessage } from "@/ui/shared";
+import { useQuery } from "@bibliothecadao/react";
 import { Leva } from "leva";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import { env } from "../../../env";
 import { StoryEventStream } from "../features";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
@@ -65,6 +67,45 @@ const RealmTransferManager = lazy(() =>
     default: module.RealmTransferManager,
   })),
 );
+
+const BottomHudViewSync = () => {
+  const { isMapView } = useQuery();
+  const isBottomHudMinimized = useUIStore((state) => state.isBottomHudMinimized);
+  const setIsBottomHudMinimized = useUIStore((state) => state.setIsBottomHudMinimized);
+
+  const autoMinimizedForLocalRef = useRef(false);
+  const prevIsMapViewRef = useRef<boolean | null>(null);
+
+  useEffect(() => {
+    if (prevIsMapViewRef.current === null) {
+      prevIsMapViewRef.current = isMapView;
+      return;
+    }
+
+    const prevIsMapView = prevIsMapViewRef.current;
+    prevIsMapViewRef.current = isMapView;
+
+    // World (map) -> Local (hex)
+    if (prevIsMapView && !isMapView) {
+      if (!isBottomHudMinimized) {
+        setIsBottomHudMinimized(true);
+        autoMinimizedForLocalRef.current = true;
+      } else {
+        autoMinimizedForLocalRef.current = false;
+      }
+    }
+
+    // Local (hex) -> World (map)
+    if (!prevIsMapView && isMapView) {
+      if (autoMinimizedForLocalRef.current) {
+        setIsBottomHudMinimized(false);
+      }
+      autoMinimizedForLocalRef.current = false;
+    }
+  }, [isMapView, isBottomHudMinimized, setIsBottomHudMinimized]);
+
+  return null;
+};
 
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   return (
@@ -139,6 +180,7 @@ const WorldInteractiveLayers = () => (
 
 const WorldHud = () => (
   <div>
+    <BottomHudViewSync />
     <LeftMiddleContainer>
       <LeftNavigationModule />
     </LeftMiddleContainer>
