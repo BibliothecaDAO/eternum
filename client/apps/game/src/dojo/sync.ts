@@ -294,31 +294,13 @@ export const initialSync = async (
     updateProgress(25);
   }
 
-  parallelTasks.push(
-    runTimedTask("config query", 50, async () => {
-      await getConfigFromTorii(setup.network.toriiClient, contractComponents);
-    }),
-  );
+  await getConfigFromTorii(setup.network.toriiClient, contractComponents);
 
-  parallelTasks.push(
-    runTimedTask("address names query", 75, async () => {
-      await getAddressNamesFromTorii(setup.network.toriiClient, contractComponents);
-    }),
-  );
+  await getAddressNamesFromTorii(setup.network.toriiClient, contractComponents);
+  await getGuildsFromTorii(setup.network.toriiClient, contractComponents);
 
-  parallelTasks.push(
-    runTimedTask("guilds query", 90, async () => {
-      await getGuildsFromTorii(setup.network.toriiClient, contractComponents);
-    }),
-  );
-
-  parallelTasks.push(
-    runTimedTask("fetching the map data store", 100, async () => {
-      await MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).refresh();
-    }),
-  );
-
-  await Promise.all(parallelTasks);
+  await MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).refresh();
+  updateProgress(100);
 };
 
 export const resubscribeEntityStream = async (
