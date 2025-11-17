@@ -103,6 +103,20 @@ export class ToriiSyncWorkerManager {
         this.ready = true;
         break;
       case "batch-ready":
+        if (import.meta.env.DEV) {
+          console.log(
+            "[sync-worker] batch",
+            message.batchId,
+            "upserts",
+            message.upserts.length,
+            "deletions",
+            message.deletions.length,
+            "queue",
+            message.queueSize,
+            "elapsed",
+            `${message.elapsedMs.toFixed(2)}ms`,
+          );
+        }
         this.options.onBatch?.({
           batchId: message.batchId,
           upserts: message.upserts,

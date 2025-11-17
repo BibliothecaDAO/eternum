@@ -122,6 +122,7 @@ class Minimap {
   private isMinimized: boolean = false; // Add minimized state
   private tilesRefreshIntervalId: number | null = null;
   private isFetchingTiles: boolean = false;
+  private isVisible: boolean = true;
 
   // Entity visibility toggles
   private showRealms: boolean = true;
@@ -635,6 +636,7 @@ class Minimap {
       this.canvas.style.display = "none";
     }
     useUIStore.getState().setShowMinimap(false);
+    this.isVisible = false;
     this.stopTilesRefreshLoop();
   }
 
@@ -643,6 +645,7 @@ class Minimap {
       this.canvas.style.display = "block";
     }
     useUIStore.getState().setShowMinimap(true);
+    this.isVisible = true;
     if (this.tilesRefreshIntervalId === null) {
       this.startTilesRefreshLoop();
     }
@@ -655,6 +658,11 @@ class Minimap {
   // Set minimized state
   setMinimized(minimized: boolean) {
     this.isMinimized = minimized;
+    if (this.isMinimized) {
+      this.stopTilesRefreshLoop();
+    } else if (this.isVisible && this.tilesRefreshIntervalId === null) {
+      this.startTilesRefreshLoop();
+    }
     if (this.context) {
       this.draw();
     }
@@ -936,17 +944,30 @@ class Minimap {
   private startTilesRefreshLoop() {
     this.stopTilesRefreshLoop();
 
+    if (!this.shouldPollTiles()) {
+      return;
+    }
+
     this.tilesRefreshIntervalId = window.setInterval(() => {
+      if (!this.shouldPollTiles()) {
+        return;
+      }
       void this.fetchTiles();
     }, 10_000);
   }
 
+  private shouldPollTiles() {
+    return this.isVisible && !this.isMinimized;
+  }
+
   private async fetchTiles() {
-    if (this.isFetchingTiles) return;
+    if (this.isFetchingTiles || !this.shouldPollTiles()) return;
     this.isFetchingTiles = true;
     const getTimestamp = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
     const startTime = getTimestamp();
-    console.log("fetchTiles");
+    if (import.meta.env.DEV) {
+      console.log("fetchTiles");
+    }
     try {
       const rawTiles = await sqlApi.fetchAllTiles();
       const fetchEndTime = getTimestamp();
@@ -970,9 +991,11 @@ class Minimap {
       const normalizeDuration = normalizeEndTime - fetchEndTime;
       const postProcessDuration = endTime - normalizeEndTime;
       const totalDuration = endTime - startTime;
-      console.log(
-        `[Minimap] fetchTiles finished in ${totalDuration.toFixed(2)}ms (fetch ${fetchDuration.toFixed(2)}ms, normalize ${normalizeDuration.toFixed(2)}ms, render ${postProcessDuration.toFixed(2)}ms)`,
-      );
+      if (import.meta.env.DEV) {
+        console.log(
+          `[Minimap] fetchTiles finished in ${totalDuration.toFixed(2)}ms (fetch ${fetchDuration.toFixed(2)}ms, normalize ${normalizeDuration.toFixed(2)}ms, render ${postProcessDuration.toFixed(2)}ms)`,
+        );
+      }
       if (totalDuration > FETCH_TILES_SLOW_THRESHOLD_MS) {
         console.warn(
           `[Minimap] fetchTiles slow: ${totalDuration.toFixed(2)}ms > ${FETCH_TILES_SLOW_THRESHOLD_MS}ms threshold`,
@@ -1080,7 +1103,9 @@ class Minimap {
   };
 
   public dispose(): void {
-    console.log("🧹 Minimap: Starting disposal");
+    if (import.meta.env.DEV) {
+      console.log("🧹 Minimap: Starting disposal");
+    }
 
     // Remove all event listeners
     if (this.canvas) {
@@ -1120,7 +1145,9 @@ class Minimap {
 
     this.stopTilesRefreshLoop();
 
-    console.log(`🧹 Minimap: Disposed ${imagesDisposed} images and cleaned up canvas`);
+    if (import.meta.env.DEV) {
+      console.log(`🧹 Minimap: Disposed ${imagesDisposed} images and cleaned up canvas`);
+    }
   }
 }
 

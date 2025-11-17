@@ -2292,7 +2292,7 @@ export default class WorldmapScene extends HexagonScene {
 
       const abortTask = () => {
         const released = releaseAllMatrices();
-        if (released > 0) {
+        if (released > 0 && import.meta.env.DEV) {
           console.log(`🔄 Released ${released} matrices back to pool (aborted)`);
         }
         resolveOnce();
@@ -2305,7 +2305,9 @@ export default class WorldmapScene extends HexagonScene {
           if (!hexMesh) {
             if (matrices.length > 0) {
               console.error(`❌ Missing biome model for: ${biome}`);
-              console.log(`Available biome models:`, Array.from(this.biomeModels.keys()));
+              if (import.meta.env.DEV) {
+                console.log(`Available biome models:`, Array.from(this.biomeModels.keys()));
+              }
             }
             continue;
           }
@@ -2315,7 +2317,9 @@ export default class WorldmapScene extends HexagonScene {
             continue;
           }
 
-          console.log(`✅ Applied ${matrices.length} ${biome} hexes`);
+          if (import.meta.env.DEV) {
+            console.log(`✅ Applied ${matrices.length} ${biome} hexes`);
+          }
 
           matrices.forEach((matrix, index) => {
             hexMesh.setMatrixAt(index, matrix);
@@ -2334,24 +2338,27 @@ export default class WorldmapScene extends HexagonScene {
         );
 
         const released = releaseAllMatrices();
-        console.log(`🔄 Released ${released} matrices back to pool`);
+        if (import.meta.env.DEV) {
+          console.log(`🔄 Released ${released} matrices back to pool`);
+        }
 
         if (memoryMonitor && preUpdateStats) {
           const postStats = memoryMonitor.getCurrentStats(`hex-grid-generated-${startRow}-${startCol}`);
           const memoryDelta = postStats.heapUsedMB - preUpdateStats.heapUsedMB;
           const poolStats = matrixPool.getStats();
-          console.log(
-            `[HEX GRID] OPTIMIZED generation memory impact: ${memoryDelta.toFixed(1)}MB (${rows}x${cols} hexes)`,
-          );
-          console.log(
-            `📊 Matrix Pool Stats: ${poolStats.available} available, ${poolStats.inUse} in use, ${poolStats.memoryEstimateMB.toFixed(1)}MB pool memory`,
-          );
-
-          console.log(`📊 Biome distribution:`, biomeCountsSnapshot);
+          if (import.meta.env.DEV) {
+            console.log(
+              `[HEX GRID] OPTIMIZED generation memory impact: ${memoryDelta.toFixed(1)}MB (${rows}x${cols} hexes)`,
+            );
+            console.log(
+              `📊 Matrix Pool Stats: ${poolStats.available} available, ${poolStats.inUse} in use, ${poolStats.memoryEstimateMB.toFixed(1)}MB pool memory`,
+            );
+            console.log(`📊 Biome distribution:`, biomeCountsSnapshot);
+          }
 
           if (memoryDelta > 15) {
             console.warn(`[HEX GRID] Unexpected memory usage: ${memoryDelta.toFixed(1)}MB`);
-          } else {
+          } else if (import.meta.env.DEV) {
             console.log(`✅ [HEX GRID] Memory optimization successful! Saved ~${(82 - memoryDelta).toFixed(1)}MB`);
           }
         }
@@ -2543,14 +2550,16 @@ export default class WorldmapScene extends HexagonScene {
     const minRow = chunkRow;
     const maxRow = chunkRow + this.chunkSize - 1;
 
-    console.log(
-      "[CHUNK KEY]",
-      chunkKey,
-      `cols: ${minCol}-${maxCol}`,
-      `rows: ${minRow}-${maxRow}`,
-      "fetched chunks",
-      this.fetchedChunks,
-    );
+    if (import.meta.env.DEV) {
+      console.log(
+        "[CHUNK KEY]",
+        chunkKey,
+        `cols: ${minCol}-${maxCol}`,
+        `rows: ${minRow}-${maxRow}`,
+        "fetched chunks",
+        this.fetchedChunks,
+      );
+    }
 
     // Create the promise and add it to pending chunks immediately
     const fetchPromise = this.executeTileEntitiesFetch(chunkKey, minCol, maxCol, minRow, maxRow);
@@ -2894,9 +2903,11 @@ export default class WorldmapScene extends HexagonScene {
       const postChunkStats = memoryMonitor.getCurrentStats(`chunk-switch-post-${chunkKey}`);
       if (preChunkStats && postChunkStats) {
         const memoryDelta = postChunkStats.heapUsedMB - preChunkStats.heapUsedMB;
-        console.log(
-          `[CHUNK SYNC] Chunk switch memory impact: ${memoryDelta > 0 ? "+" : ""}${memoryDelta.toFixed(1)}MB`,
-        );
+        if (import.meta.env.DEV) {
+          console.log(
+            `[CHUNK SYNC] Chunk switch memory impact: ${memoryDelta > 0 ? "+" : ""}${memoryDelta.toFixed(1)}MB`,
+          );
+        }
 
         if (Math.abs(memoryDelta) > 20) {
           console.warn(`[CHUNK SYNC] Large memory change during chunk switch: ${memoryDelta.toFixed(1)}MB`);
@@ -2966,9 +2977,11 @@ export default class WorldmapScene extends HexagonScene {
       const postChunkStats = memoryMonitor.getCurrentStats(`chunk-refresh-post-${chunkKey}`);
       if (preChunkStats && postChunkStats) {
         const memoryDelta = postChunkStats.heapUsedMB - preChunkStats.heapUsedMB;
-        console.log(
-          `[CHUNK SYNC] Chunk refresh memory impact: ${memoryDelta > 0 ? "+" : ""}${memoryDelta.toFixed(1)}MB`,
-        );
+        if (import.meta.env.DEV) {
+          console.log(
+            `[CHUNK SYNC] Chunk refresh memory impact: ${memoryDelta > 0 ? "+" : ""}${memoryDelta.toFixed(1)}MB`,
+          );
+        }
 
         if (Math.abs(memoryDelta) > 20) {
           console.warn(`[CHUNK SYNC] Large memory change during chunk refresh: ${memoryDelta.toFixed(1)}MB`);
