@@ -479,7 +479,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
               ...state.realms,
               [realmId]: {
                 ...realm,
-                presetId: "custom",
+                presetId: "custom" as RealmPresetId,
                 resources: sanitizeRealmResources(
                   {
                     ...realm.resources,

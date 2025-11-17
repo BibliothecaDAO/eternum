@@ -511,11 +511,14 @@ export const RealmAutomationPanel = ({
 
     const snapshot = lastSavedSnapshot ?? {
       presetId: realmAutomation.presetId ?? null,
-      percentages: Object.entries(realmAutomation.resources ?? {}).reduce((acc, [key, settings]) => {
-        if (!settings) return acc;
-        acc[Number(key)] = { ...settings.percentages };
-        return acc;
-      }, {} as Record<number, ResourceAutomationPercentages>),
+      percentages: Object.entries(realmAutomation.resources ?? {}).reduce(
+        (acc, [key, settings]) => {
+          if (!settings) return acc;
+          acc[Number(key)] = { ...settings.percentages };
+          return acc;
+        },
+        {} as Record<number, ResourceAutomationPercentages>,
+      ),
     };
 
     const resourceIds = new Set<number>([

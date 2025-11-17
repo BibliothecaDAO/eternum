@@ -5,7 +5,10 @@ import { getIsBlitz } from "@bibliothecadao/eternum";
 
 import Button from "@/ui/design-system/atoms/button";
 import { BuildingInfo, ProductionModal, ResourceInfo } from "@/ui/features/settlement";
-import { dangerActionClasses, standardActionClasses } from "@/ui/features/world/components/entities/action-button-classes";
+import {
+  dangerActionClasses,
+  standardActionClasses,
+} from "@/ui/features/world/components/entities/action-button-classes";
 import { RealmVillageDetails } from "@/ui/modules/entity-details/realm/realm-details";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ResourceIdToMiningType, TileManager, configManager, getEntityInfo } from "@bibliothecadao/eternum";
