@@ -5,6 +5,7 @@ import { getIsBlitz } from "@bibliothecadao/eternum";
 
 import Button from "@/ui/design-system/atoms/button";
 import { BuildingInfo, ProductionModal, ResourceInfo } from "@/ui/features/settlement";
+import { dangerActionClasses, standardActionClasses } from "@/ui/features/world/components/entities/action-button-classes";
 import { RealmVillageDetails } from "@/ui/modules/entity-details/realm/realm-details";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ResourceIdToMiningType, TileManager, configManager, getEntityInfo } from "@bibliothecadao/eternum";
@@ -180,32 +181,58 @@ export const BuildingEntityDetails = () => {
             )}
           </div>
           {buildingState.buildingType && selectedBuildingHex && isOwnedByPlayer && (
-            <div className="flex justify-between space-x-3 px-4 mb-4">
-              {buildingState.buildingType !== BuildingType.ResourceFish &&
-                buildingState.buildingType !== BuildingType.ResourceWheat && (
-                  <Button
-                    onClick={() => {
-                      toggleModal(<ProductionModal preSelectedResource={buildingState.resource} />);
-                    }}
-                    isLoading={isLoading}
-                    variant="gold"
-                    withoutSound
-                  >
-                    <div className="flex items-center gap-2">
-                      <PlusIcon className="w-4 h-4" />
-                      Add Production
-                    </div>
-                  </Button>
-                )}
+            <div className="mt-auto px-4 mb-4">
+              <div className="flex items-center gap-3">
+                {buildingState.buildingType !== BuildingType.ResourceFish &&
+                  buildingState.buildingType !== BuildingType.ResourceWheat &&
+                  buildingState.buildingType !== BuildingType.WorkersHut && (
+                    <Button
+                      onClick={() => {
+                        toggleModal(<ProductionModal preSelectedResource={buildingState.resource} />);
+                      }}
+                      isLoading={isLoading}
+                      variant="gold"
+                      withoutSound
+                      className="mr-auto"
+                    >
+                      <div className="flex items-center gap-2">
+                        <PlusIcon className="w-4 h-4" />
+                        Add Production
+                      </div>
+                    </Button>
+                  )}
 
-              <div className="flex items-center gap-2">
-                <Button onClick={handlePauseResumeProduction} isLoading={isLoading} variant="secondary" withoutSound>
-                  {isPaused ? <PlayIcon className="w-4 h-4" /> : <PauseIcon className="w-4 h-4" />}
-                  {/* {isPaused ? "Resume" : "Pause"} */}
-                </Button>
-                <Button disabled={!canDestroyBuilding} onClick={handleDestroyBuilding} variant="danger" withoutSound>
-                  {showDestroyConfirm ? "Confirm Destroy" : <Trash2Icon className="w-4 h-4" />}
-                </Button>
+                <div className="ml-auto flex items-center gap-2">
+                  {buildingState.buildingType !== BuildingType.WorkersHut && (
+                    <button
+                      type="button"
+                      onClick={handlePauseResumeProduction}
+                      disabled={isLoading}
+                      className={standardActionClasses}
+                    >
+                      {isPaused ? <PlayIcon className="w-4 h-4" /> : <PauseIcon className="w-4 h-4" />}
+                      <span>{isPaused ? "Resume" : "Pause"}</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    disabled={!canDestroyBuilding || isLoading}
+                    onClick={handleDestroyBuilding}
+                    className={dangerActionClasses}
+                  >
+                    {showDestroyConfirm ? (
+                      <>
+                        <Trash2Icon className="w-4 h-4" />
+                        <span>Confirm</span>
+                      </>
+                    ) : (
+                      <>
+                        <Trash2Icon className="w-4 h-4" />
+                        <span>Delete</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           )}
