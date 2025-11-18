@@ -16,7 +16,7 @@ on:
       factory_orchestrator_rpc_url:
         description: "Starknet RPC URL (public)"
         required: false
-        default: "https://api.cartridge.gg/x/eternum-blitz-slot-1/katana/rpc/v0_9"
+        default: "https://api.cartridge.gg/x/eternum-blitz-slot-3/katana/rpc/v0_9"
       factory_orchestrator_factory_address:
         description: "World Factory address (public)"
         required: false
