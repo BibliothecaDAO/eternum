@@ -452,6 +452,8 @@ export const useAutomationStore = create<ProductionAutomationState>()(
           return existing;
         }
 
+        const shouldReapplyResourcePreset = realm?.presetId === "resource";
+
         const baseConfig = createDefaultResourceSettings(
           resourceId,
           { autoManaged: options?.autoManaged ?? true, label: options?.label },
@@ -508,6 +510,13 @@ export const useAutomationStore = create<ProductionAutomationState>()(
           // quiet
           return nextState;
         });
+
+        if (shouldReapplyResourcePreset) {
+          // If the realm is currently using the resource preset,
+          // re-apply it so the new building/resource is included
+          // in the preset allocation across all resources.
+          store.setRealmPreset(realmId, "resource");
+        }
 
         return newConfig;
       },
