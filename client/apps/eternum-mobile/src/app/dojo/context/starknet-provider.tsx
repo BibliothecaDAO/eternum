@@ -22,8 +22,8 @@ const isLocal = env.VITE_PUBLIC_CHAIN === "local";
 
 // ==============================================
 
-const SLOT_CHAIN_ID = "0x57505f455445524e554d5f424c49545a5f534c4f545f31";
-const SLOT_RPC_URL = "https://api.cartridge.gg/x/eternum-blitz-slot-1/katana";
+const SLOT_CHAIN_ID = "0x57505f455445524e554d5f424c49545a5f534c4f545f33";
+const SLOT_RPC_URL = "https://api.cartridge.gg/x/eternum-blitz-slot-3/katana";
 
 const SLOT_CHAIN_ID_TEST = "0x57505f455445524e554d5f424c49545a5f534c4f545f54455354";
 const SLOT_RPC_URL_TEST = "https://api.cartridge.gg/x/eternum-blitz-slot-test/katana";

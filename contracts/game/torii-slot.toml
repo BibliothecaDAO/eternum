@@ -1,8 +1,8 @@
 # Please be mindful that changing the content of this file will impact the Eternum Launcher app
 
-rpc = "https://api.cartridge.gg/x/eternum-blitz-slot-1/katana"
+rpc = "https://api.cartridge.gg/x/eternum-blitz-slot-3/katana"
 
-world_address = "0x1fd44bf6d0a8137732db126c857d7ea7fd96b43694e3c41622cb6c12a4d5b6f"
+world_address = "0x017716cf3c3f482d6b2b0978aa58c58fb90fecea6b1886b85f967314aa6c5da6"
 
 db_dir = "torii-slot"
 
