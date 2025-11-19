@@ -671,7 +671,11 @@ export default class GameRenderer {
     this.hexceptionScene.setEnvironment(envMap, intensity);
     this.worldmapScene.setEnvironment(envMap, intensity);
 
-    if (this.environmentTarget && this.environmentTarget !== renderTarget && this.environmentTarget !== cachedHDRTarget) {
+    if (
+      this.environmentTarget &&
+      this.environmentTarget !== renderTarget &&
+      this.environmentTarget !== cachedHDRTarget
+    ) {
       this.environmentTarget.dispose();
     }
 

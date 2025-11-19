@@ -847,13 +847,13 @@ export abstract class HexagonScene {
 
     // Clear listeners
     this.cameraViewListeners.clear();
-    
+
     // Clean up any pending promises or model loading
     this.modelLoadPromises = [];
 
     // Finally, clear the scene
     this.scene.clear();
-    
+
     console.log(`[HexagonScene] Destroyed ${this.sceneName}`);
   }
 
