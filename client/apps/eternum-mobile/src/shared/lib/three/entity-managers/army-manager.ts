@@ -608,9 +608,9 @@ export class ArmyManager extends EntityManager<ArmyObject> {
     const armyObject = this.getObject(update.entityId);
 
     if (!armyObject) {
-      console.log(
-        `[ArmyManager] Army ${update.entityId} not found in renderer - update will be applied when army loads`,
-      );
+      // console.log(
+      //   `[ArmyManager] Army ${update.entityId} not found in renderer - update will be applied when army loads`,
+      // );
       return;
     }
 
@@ -659,14 +659,14 @@ export class ArmyManager extends EntityManager<ArmyObject> {
             const staminaConfig = configManager.getTroopStaminaConfig(troopTypeEnum, troopTierEnum);
             maxStamina = Number(staminaConfig.staminaMax);
           } catch (error) {
-            console.warn(`[ArmyManager] Failed to calculate maxStamina for ${troopType} ${troopTier}:`, error);
+            // console.warn(`[ArmyManager] Failed to calculate maxStamina for ${troopType} ${troopTier}:`, error);
             maxStamina = armyObject.maxStamina || 0;
           }
         } else {
-          console.warn(`[ArmyManager] Missing troopType or troopTier for army ${update.entityId}:`, {
-            armyObjectTroopType: armyObject.troopType,
-            armyObjectTroopTier: armyObject.troopTier,
-          });
+          // console.warn(`[ArmyManager] Missing troopType or troopTier for army ${update.entityId}:`, {
+          //   armyObjectTroopType: armyObject.troopType,
+          //   armyObjectTroopTier: armyObject.troopTier,
+          // });
           maxStamina = armyObject.maxStamina || 0;
         }
       } catch (error) {
@@ -835,7 +835,7 @@ export class ArmyManager extends EntityManager<ArmyObject> {
     }
 
     if (this.isObjectMoving(armyId)) {
-      console.log(`[ArmyManager] Cannot select army ${armyId} - it is currently moving`);
+      // console.log(`[ArmyManager] Cannot select army ${armyId} - it is currently moving`);
       return null;
     }
 

@@ -60,7 +60,7 @@ export class BattleDirectionManager {
       }
     }
 
-    console.log(`[RECALCULATE ARROWS FOR ENTITY ${entityId}]`, { entityId, attackerDegrees, defenderDegrees });
+    // console.log(`[RECALCULATE ARROWS FOR ENTITY ${entityId}]`, { entityId, attackerDegrees, defenderDegrees });
 
     // Update arrows using the appropriate callback
     this.updateArmyArrow(entityId, attackerDegrees, "attacker");

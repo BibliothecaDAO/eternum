@@ -381,7 +381,7 @@ export class StructureManager {
 
     // Clean up all pending label updates
     if (this.pendingLabelUpdates.size > 0) {
-      console.log(`[PENDING LABEL UPDATE] Clearing ${this.pendingLabelUpdates.size} pending updates on destroy`);
+      // console.log(`[PENDING LABEL UPDATE] Clearing ${this.pendingLabelUpdates.size} pending updates on destroy`);
       this.pendingLabelUpdates.clear();
     }
 
@@ -506,7 +506,7 @@ export class StructureManager {
   }
 
   async onUpdate(update: StructureTileSystemUpdate) {
-    console.log("[UPDATE STRUCTURE SYSTEM ON UPDATE]", update);
+    // console.log("[UPDATE STRUCTURE SYSTEM ON UPDATE]", update);
     const { entityId: rawEntityId, hexCoords, structureType, stage, level, owner, hasWonder } = update;
     const entityId = normalizeEntityId(rawEntityId);
     if (entityId === undefined) {
@@ -708,9 +708,9 @@ export class StructureManager {
       currentTime - lastUpdateTime > 2000 || lastUpdateTime === 0 || lastUpdateSource !== updateSource;
 
     if (isGenuineUpdate) {
-      console.log(
-        `[RELIC EFFECTS] Structure ${entityId} genuine update - clearing existing effects (source: ${updateSource})`,
-      );
+      // console.log(
+      //   `[RELIC EFFECTS] Structure ${entityId} genuine update - clearing existing effects (source: ${updateSource})`,
+      // );
       // This is a genuine structure update, clear existing relic effects
       const entityEffectsMap = this.structureRelicEffects.get(entityId);
       if (entityEffectsMap) {
@@ -723,7 +723,7 @@ export class StructureManager {
       this.structureUpdateTimestamps.set(entityId, currentTime);
       this.structureUpdateSources.set(entityId, updateSource);
     } else {
-      console.log(`[RELIC EFFECTS] Structure ${entityId} quick reload/chunk switch - preserving existing effects`);
+      // console.log(`[RELIC EFFECTS] Structure ${entityId} quick reload/chunk switch - preserving existing effects`);
     }
 
     // Always apply pending relic effects (for both genuine updates and chunk reloads)
@@ -749,9 +749,9 @@ export class StructureManager {
 
     // Wait for any ongoing chunk switch to complete first
     if (this.chunkSwitchPromise) {
-      console.log(
-        `[CHUNK SYNC] Waiting for previous structure chunk switch to complete before switching to ${chunkKey}`,
-      );
+      // console.log(
+      //   `[CHUNK SYNC] Waiting for previous structure chunk switch to complete before switching to ${chunkKey}`,
+      // );
       try {
         await this.chunkSwitchPromise;
       } catch (error) {
@@ -767,10 +767,10 @@ export class StructureManager {
     const previousChunk = this.currentChunk;
     const isSwitch = previousChunk !== chunkKey;
     if (isSwitch) {
-      console.log(`[CHUNK SYNC] Switching structure chunk from ${this.currentChunk} to ${chunkKey}`);
+      // console.log(`[CHUNK SYNC] Switching structure chunk from ${this.currentChunk} to ${chunkKey}`);
       this.currentChunk = chunkKey;
     } else if (force) {
-      console.log(`[CHUNK SYNC] Refreshing structure chunk ${chunkKey}`);
+      // console.log(`[CHUNK SYNC] Refreshing structure chunk ${chunkKey}`);
     }
 
     // Create and track the chunk switch promise
@@ -781,7 +781,7 @@ export class StructureManager {
 
     try {
       await this.chunkSwitchPromise;
-      console.log(`[CHUNK SYNC] Structure chunk ${isSwitch ? "switch" : "refresh"} for ${chunkKey} completed`);
+      // console.log(`[CHUNK SYNC] Structure chunk ${isSwitch ? "switch" : "refresh"} for ${chunkKey} completed`);
     } finally {
       this.chunkSwitchPromise = null;
     }
@@ -1488,7 +1488,7 @@ export class StructureManager {
       }));
 
       if (!existingPending) {
-        console.log(`[PENDING LABEL UPDATE] Storing new pending structure update for ${entityId}`);
+        // console.log(`[PENDING LABEL UPDATE] Storing new pending structure update for ${entityId}`);
         this.pendingLabelUpdates.set(entityId, {
           guardArmies,
           owner: { ...update.owner },
@@ -1498,7 +1498,7 @@ export class StructureManager {
           battleTimerLeft: getBattleTimerLeft(update.battleCooldownEnd),
         });
       } else if (currentTime >= existingPending.timestamp) {
-        console.log(`[PENDING LABEL UPDATE] Merging pending structure update for ${entityId}`);
+        // console.log(`[PENDING LABEL UPDATE] Merging pending structure update for ${entityId}`);
         existingPending.guardArmies = guardArmies;
         existingPending.owner = { ...update.owner };
         existingPending.timestamp = currentTime;
@@ -1507,7 +1507,7 @@ export class StructureManager {
         existingPending.battleTimerLeft = getBattleTimerLeft(update.battleCooldownEnd);
         this.pendingLabelUpdates.set(entityId, existingPending);
       } else {
-        console.log(`[PENDING LABEL UPDATE] Ignoring older pending structure update for ${entityId}`);
+        // console.log(`[PENDING LABEL UPDATE] Ignoring older pending structure update for ${entityId}`);
       }
       return;
     }
@@ -1548,7 +1548,7 @@ export class StructureManager {
       return;
     }
 
-    console.log("[UPDATING BATTLE DEGREES FOR STRUCTURE]", { entityId: normalizedEntityId, degrees, role });
+    // console.log("[UPDATING BATTLE DEGREES FOR STRUCTURE]", { entityId: normalizedEntityId, degrees, role });
     const structure = this.structures.getStructureByEntityId(normalizedEntityId);
     if (!structure) return;
 
@@ -1585,7 +1585,7 @@ export class StructureManager {
     if (!structure) {
       const currentTime = Date.now();
 
-      console.log(`[PENDING LABEL UPDATE] Storing pending building update for structure ${entityId}`);
+      // console.log(`[PENDING LABEL UPDATE] Storing pending building update for structure ${entityId}`);
 
       // Check if there's already a pending update for this structure
       const existingPending = this.pendingLabelUpdates.get(entityId);
@@ -1603,7 +1603,7 @@ export class StructureManager {
           updateType: "building",
         });
       } else {
-        console.log(`[PENDING LABEL UPDATE] Ignoring older pending building update for structure ${entityId}`);
+        // console.log(`[PENDING LABEL UPDATE] Ignoring older pending building update for structure ${entityId}`);
       }
       return;
     }

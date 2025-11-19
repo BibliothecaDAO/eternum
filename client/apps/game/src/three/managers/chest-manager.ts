@@ -10,8 +10,8 @@ import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
-import { createChestLabel } from "../utils/labels/label-factory";
 import { FrustumManager } from "../utils/frustum-manager";
+import { createChestLabel } from "../utils/labels/label-factory";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { gltfLoader } from "../utils/utils";
 import { PointsLabelRenderer } from "./points-label-renderer";
@@ -199,7 +199,7 @@ export class ChestManager {
 
     // Wait for any ongoing chunk switch to complete first
     if (this.chunkSwitchPromise) {
-      console.log(`[CHUNK SYNC] Waiting for previous chest chunk switch to complete before switching to ${chunkKey}`);
+      // console.log(`[CHUNK SYNC] Waiting for previous chest chunk switch to complete before switching to ${chunkKey}`);
       try {
         await this.chunkSwitchPromise;
       } catch (error) {
@@ -215,10 +215,10 @@ export class ChestManager {
     const previousChunk = this.currentChunkKey;
     const isSwitch = previousChunk !== chunkKey;
     if (isSwitch) {
-      console.log(`[CHUNK SYNC] Switching chest chunk from ${this.currentChunkKey} to ${chunkKey}`);
+      // console.log(`[CHUNK SYNC] Switching chest chunk from ${this.currentChunkKey} to ${chunkKey}`);
       this.currentChunkKey = chunkKey;
     } else if (force) {
-      console.log(`[CHUNK SYNC] Refreshing chest chunk ${chunkKey}`);
+      // console.log(`[CHUNK SYNC] Refreshing chest chunk ${chunkKey}`);
     }
 
     // Create and track the chunk switch promise
@@ -228,7 +228,7 @@ export class ChestManager {
 
     try {
       await this.chunkSwitchPromise;
-      console.log(`[CHUNK SYNC] Chest chunk ${isSwitch ? "switch" : "refresh"} for ${chunkKey} completed`);
+      // console.log(`[CHUNK SYNC] Chest chunk ${isSwitch ? "switch" : "refresh"} for ${chunkKey} completed`);
     } finally {
       this.chunkSwitchPromise = null;
     }

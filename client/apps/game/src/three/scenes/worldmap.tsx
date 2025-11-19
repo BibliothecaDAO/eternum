@@ -402,12 +402,12 @@ export default class WorldmapScene extends HexagonScene {
       this.cancelPendingArmyRemoval(update.entityId);
 
       if (update.removed) {
-        console.debug(`[WorldMap] Tile update indicates removal for entity ${update.entityId}`);
+        // console.debug(`[WorldMap] Tile update indicates removal for entity ${update.entityId}`);
         this.scheduleArmyRemoval(update.entityId, "tile");
         return;
       }
 
-      console.debug(`[WorldMap] Army tile update received for entity ${update.entityId}`);
+      // console.debug(`[WorldMap] Army tile update received for entity ${update.entityId}`);
       this.updateArmyHexes(update);
 
       // Add combat relationship
@@ -451,13 +451,13 @@ export default class WorldmapScene extends HexagonScene {
     // Listen for troop count and stamina changes
     this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {
       this.cancelPendingArmyRemoval(update.entityId);
-      console.debug(`[WorldMap] ExplorerTroops update received for entity ${update.entityId}`, {
-        troopCount: update.troopCount,
-        owner: update.ownerAddress,
-      });
+      // console.debug(`[WorldMap] ExplorerTroops update received for entity ${update.entityId}`, {
+      //   troopCount: update.troopCount,
+      //   owner: update.ownerAddress,
+      // });
 
       if (update.troopCount <= 0) {
-        console.debug(`[WorldMap] ExplorerTroops update indicates removal for entity ${update.entityId}`);
+        // console.debug(`[WorldMap] ExplorerTroops update indicates removal for entity ${update.entityId}`);
         this.scheduleArmyRemoval(update.entityId, "zero");
         return;
       }
@@ -467,7 +467,7 @@ export default class WorldmapScene extends HexagonScene {
 
     // Listen for dead army updates
     this.worldUpdateListener.Army.onDeadArmy((entityId) => {
-      console.debug(`[WorldMap] onDeadArmy received for entity ${entityId}`);
+      // console.debug(`[WorldMap] onDeadArmy received for entity ${entityId}`);
 
       // Remove the army visuals/hex before dropping tracking data so we can clean up the correct tile
       this.deleteArmy(entityId);
@@ -479,8 +479,8 @@ export default class WorldmapScene extends HexagonScene {
 
     // Listen for battle events and update army/structure labels
     this.worldUpdateListener.BattleEvent.onBattleUpdate((update: BattleEventSystemUpdate) => {
-      console.debug(`[WorldMap] BattleEvent update received for battle entity ${update.entityId}`);
-      console.log("🗺️ WorldMap: Received battle event update:", update);
+      // console.debug(`[WorldMap] BattleEvent update received for battle entity ${update.entityId}`);
+      // console.log("🗺️ WorldMap: Received battle event update:", update);
 
       // Update both attacker and defender information using the public methods
       const { attackerId, defenderId } = update.battleData;
@@ -1622,12 +1622,12 @@ export default class WorldmapScene extends HexagonScene {
     // Clean up labels
     this.minimap.hideMinimap();
     this.armyManager.removeLabelsFromScene();
-    console.debug("[WorldMap] Removing army labels from scene");
+    // console.debug("[WorldMap] Removing army labels from scene");
     this.structureManager.removeLabelsFromScene();
-    console.debug("[WorldMap] Removing structure labels from scene");
+    // console.debug("[WorldMap] Removing structure labels from scene");
     this.questManager.removeLabelsFromScene();
     this.chestManager.removeLabelsFromScene();
-    console.debug("[WorldMap] Removing quest labels from scene");
+    // console.debug("[WorldMap] Removing quest labels from scene");
 
     // Clear any pending army removals
     this.pendingArmyRemovals.forEach((timeout) => clearTimeout(timeout));
@@ -1655,7 +1655,7 @@ export default class WorldmapScene extends HexagonScene {
   public deleteArmy(entityId: ID, options: { playDefeatFx?: boolean } = {}) {
     const { playDefeatFx = true } = options;
     this.cancelPendingArmyRemoval(entityId);
-    console.debug(`[WorldMap] deleteArmy invoked for entity ${entityId}`);
+    // console.debug(`[WorldMap] deleteArmy invoked for entity ${entityId}`);
     this.armyManager.removeArmy(entityId, { playDefeatFx });
     const oldPos = this.armiesPositions.get(entityId);
     if (oldPos) {
@@ -1692,9 +1692,9 @@ export default class WorldmapScene extends HexagonScene {
     const retryDelay = 500;
     const maxPendingWaitMs = 10000; // Increased from 8000ms to 10000ms
 
-    console.debug(
-      `[WorldMap] Scheduling army removal for entity ${entityId} (reason: ${reason}, delay: ${initialDelay}ms, hasPendingMovement: ${hasPendingMovement})`,
-    );
+    // console.debug(
+    //   `[WorldMap] Scheduling army removal for entity ${entityId} (reason: ${reason}, delay: ${initialDelay}ms, hasPendingMovement: ${hasPendingMovement})`,
+    // );
 
     const scheduledAt = Date.now();
     this.pendingArmyRemovalMeta.set(entityId, {
@@ -1714,18 +1714,18 @@ export default class WorldmapScene extends HexagonScene {
         if (reason === "tile") {
           const lastUpdate = this.armyLastUpdateAt.get(entityId) ?? 0;
           if (lastUpdate > meta.scheduledAt) {
-            console.debug(
-              `[WorldMap] Skipping removal for entity ${entityId} - newer tile data detected (${lastUpdate - meta.scheduledAt}ms delta)`,
-            );
+            // console.debug(
+            //   `[WorldMap] Skipping removal for entity ${entityId} - newer tile data detected (${lastUpdate - meta.scheduledAt}ms delta)`,
+            // );
             this.pendingArmyRemovalMeta.delete(entityId);
             this.pendingArmyRemovals.delete(entityId);
             return;
           }
 
           if (this.currentChunk !== meta.chunkKey) {
-            console.debug(
-              `[WorldMap] Deferring tile-based removal for entity ${entityId} due to chunk switch (${meta.chunkKey} -> ${this.currentChunk})`,
-            );
+            // console.debug(
+            //   `[WorldMap] Deferring tile-based removal for entity ${entityId} due to chunk switch (${meta.chunkKey} -> ${this.currentChunk})`,
+            // );
             this.deferArmyRemovalDuringChunkSwitch(entityId, reason, meta.scheduledAt);
             return;
           }
@@ -1733,27 +1733,27 @@ export default class WorldmapScene extends HexagonScene {
           if (this.pendingArmyMovements.has(entityId)) {
             const elapsed = Date.now() - meta.scheduledAt;
             if (elapsed < maxPendingWaitMs) {
-              console.debug(
-                `[WorldMap] Army ${entityId} still has pending movement, retrying removal in ${retryDelay}ms (elapsed: ${elapsed.toFixed(
-                  0,
-                )}ms)`,
-              );
+              // console.debug(
+              //   `[WorldMap] Army ${entityId} still has pending movement, retrying removal in ${retryDelay}ms (elapsed: ${elapsed.toFixed(
+              //     0,
+              //   )}ms)`,
+              // );
               schedule(retryDelay);
               return;
             }
 
-            console.warn(
-              `[WorldMap] Pending movement timeout while removing entity ${entityId}, forcing cleanup after ${elapsed.toFixed(
-                0,
-              )}ms`,
-            );
+            // console.warn(
+            //   `[WorldMap] Pending movement timeout while removing entity ${entityId}, forcing cleanup after ${elapsed.toFixed(
+            //     0,
+            //   )}ms`,
+            // );
             this.pendingArmyMovements.delete(entityId);
           }
         }
 
         this.pendingArmyRemovals.delete(entityId);
         this.pendingArmyRemovalMeta.delete(entityId);
-        console.debug(`[WorldMap] Finalizing pending removal for entity ${entityId} (reason: ${reason})`);
+        // console.debug(`[WorldMap] Finalizing pending removal for entity ${entityId} (reason: ${reason})`);
         const playDefeatFx = reason !== "tile";
         this.deleteArmy(entityId, { playDefeatFx });
       }, delay);
@@ -1786,9 +1786,9 @@ export default class WorldmapScene extends HexagonScene {
     deferred.forEach(([entityId, { reason, scheduledAt }]) => {
       const lastUpdate = this.armyLastUpdateAt.get(entityId) ?? 0;
       if (lastUpdate > scheduledAt) {
-        console.debug(
-          `[WorldMap] Skipping deferred removal for entity ${entityId} - newer tile data detected after chunk switch (${lastUpdate - scheduledAt}ms delta)`,
-        );
+        // console.debug(
+        //   `[WorldMap] Skipping deferred removal for entity ${entityId} - newer tile data detected after chunk switch (${lastUpdate - scheduledAt}ms delta)`,
+        // );
         return;
       }
 
@@ -1804,7 +1804,7 @@ export default class WorldmapScene extends HexagonScene {
     this.pendingArmyRemovals.delete(entityId);
     this.pendingArmyRemovalMeta.delete(entityId);
     this.deferredChunkRemovals.delete(entityId);
-    console.debug(`[WorldMap] Cancelled pending removal for entity ${entityId}`);
+    // console.debug(`[WorldMap] Cancelled pending removal for entity ${entityId}`);
   }
 
   public deleteChest(entityId: ID) {
@@ -2911,13 +2911,13 @@ export default class WorldmapScene extends HexagonScene {
       if (preChunkStats && postChunkStats) {
         const memoryDelta = postChunkStats.heapUsedMB - preChunkStats.heapUsedMB;
         if (import.meta.env.DEV) {
-          console.log(
-            `[CHUNK SYNC] Chunk switch memory impact: ${memoryDelta > 0 ? "+" : ""}${memoryDelta.toFixed(1)}MB`,
-          );
+          // console.log(
+          //   `[CHUNK SYNC] Chunk switch memory impact: ${memoryDelta > 0 ? "+" : ""}${memoryDelta.toFixed(1)}MB`,
+          // );
         }
 
         if (Math.abs(memoryDelta) > 20) {
-          console.warn(`[CHUNK SYNC] Large memory change during chunk switch: ${memoryDelta.toFixed(1)}MB`);
+          // console.warn(`[CHUNK SYNC] Large memory change during chunk switch: ${memoryDelta.toFixed(1)}MB`);
         }
       }
     }
@@ -2991,7 +2991,7 @@ export default class WorldmapScene extends HexagonScene {
         }
 
         if (Math.abs(memoryDelta) > 20) {
-          console.warn(`[CHUNK SYNC] Large memory change during chunk refresh: ${memoryDelta.toFixed(1)}MB`);
+          // console.warn(`[CHUNK SYNC] Large memory change during chunk refresh: ${memoryDelta.toFixed(1)}MB`);
         }
       }
     }
@@ -3404,10 +3404,10 @@ export default class WorldmapScene extends HexagonScene {
         try {
           await this.updateVisibleChunks();
         } catch (error) {
-          console.error(
-            `[WorldMap] Failed to update visible chunks while cycling armies (entityId=${army.entityId}):`,
-            error,
-          );
+          // console.error(
+          //   `[WorldMap] Failed to update visible chunks while cycling armies (entityId=${army.entityId}):`,
+          //   error,
+          // );
         }
 
         // army.position is already in contract coordinates, pass it directly
@@ -3593,7 +3593,7 @@ export default class WorldmapScene extends HexagonScene {
    * Recalculate arrow directions for a specific entity
    */
   private recalculateArrowsForEntity(entityId: ID) {
-    console.log(`[RECALCULATE ARROWS FOR ENTITY] Recalculating arrows for entity ${entityId}`);
+    // console.log(`[RECALCULATE ARROWS FOR ENTITY] Recalculating arrows for entity ${entityId}`);
     this.battleDirectionManager.recalculateArrowsForEntity(entityId);
   }
 

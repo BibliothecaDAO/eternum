@@ -386,7 +386,7 @@ export class ArmyManager {
 
     // Wait for any ongoing chunk switch to complete first
     if (this.chunkSwitchPromise) {
-      console.log(`[CHUNK SYNC] Waiting for previous chunk switch to complete before switching to ${chunkKey}`);
+      // console.log(`[CHUNK SYNC] Waiting for previous chunk switch to complete before switching to ${chunkKey}`);
       try {
         await this.chunkSwitchPromise;
       } catch (error) {
@@ -403,7 +403,7 @@ export class ArmyManager {
     const chunkChanged = previousChunkKey !== chunkKey;
 
     if (chunkChanged) {
-      console.log(`[CHUNK SYNC] Switching army chunk from ${this.currentChunkKey} to ${chunkKey}`);
+      // console.log(`[CHUNK SYNC] Switching army chunk from ${this.currentChunkKey} to ${chunkKey}`);
       this.currentChunkKey = chunkKey;
     } else if (force) {
       console.log(`[CHUNK SYNC] Refreshing army chunk ${chunkKey}`);
@@ -416,7 +416,7 @@ export class ArmyManager {
     try {
       await this.chunkSwitchPromise;
       const actionLabel = previousChunkKey === chunkKey ? "refresh" : "switch";
-      console.log(`[CHUNK SYNC] Army chunk ${actionLabel} for ${chunkKey} completed`);
+      // console.log(`[CHUNK SYNC] Army chunk ${actionLabel} for ${chunkKey} completed`);
     } finally {
       this.chunkSwitchPromise = null;
     }
@@ -1278,7 +1278,7 @@ export class ArmyManager {
     // Monitor memory usage before removing army
     this.memoryMonitor?.getCurrentStats(`removeArmy-${entityId}`);
 
-    console.debug(`[ArmyManager] removeArmy invoked for entity ${entityId}`);
+    // console.debug(`[ArmyManager] removeArmy invoked for entity ${entityId}`);
 
     this.armyPaths.delete(entityId);
     this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
@@ -1308,17 +1308,17 @@ export class ArmyManager {
 
     // Clear any pending label updates for this army
     if (this.pendingExplorerTroopsUpdate.has(entityId)) {
-      console.log(`[PENDING LABEL UPDATE] Clearing pending update for removed army ${entityId}`);
+      // console.log(`[PENDING LABEL UPDATE] Clearing pending update for removed army ${entityId}`);
       this.pendingExplorerTroopsUpdate.delete(entityId);
     }
 
     const army = this.armies.get(entityId);
     if (!army) {
-      console.warn(`[ArmyManager] removeArmy called for missing entity ${entityId}`);
+      // console.warn(`[ArmyManager] removeArmy called for missing entity ${entityId}`);
       return;
     }
 
-    console.debug(`[ArmyManager] Preparing world cleanup for entity ${entityId}`);
+    // console.debug(`[ArmyManager] Preparing world cleanup for entity ${entityId}`);
     const worldPosition = this.getArmyWorldPosition(entityId, army.hexCoords);
 
     const hadVisibleEntry = this.visibleArmyIndices.has(entityId);
@@ -1346,7 +1346,7 @@ export class ArmyManager {
       return;
     }
 
-    console.debug(`[ArmyManager] Playing defeat FX for entity ${entityId}`);
+    // console.debug(`[ArmyManager] Playing defeat FX for entity ${entityId}`);
     const { promise, instance } = this.fxManager.playFxAtCoords(
       "skull",
       worldPosition.x,
@@ -1928,7 +1928,7 @@ ${
    */
   public updateArmyFromExplorerTroopsUpdate(update: ExplorerTroopsSystemUpdate): void {
     const army = this.armies.get(update.entityId);
-    console.log("[UPDATING ARMY LABEL FROM SYSTEM UPDATE]", { army });
+    // console.log("[UPDATING ARMY LABEL FROM SYSTEM UPDATE]", { army });
 
     // If army doesn't exist yet, store the update as pending
     if (!army) {
@@ -1940,7 +1940,7 @@ ${
 
       // Only store if this is newer than the existing pending update
       if (!existingPending || currentTick >= existingPending.updateTick) {
-        console.log(`[PENDING LABEL UPDATE] Storing pending update for army ${update.entityId} (tick: ${currentTick})`);
+        // console.log(`[PENDING LABEL UPDATE] Storing pending update for army ${update.entityId} (tick: ${currentTick})`);
         const ownerStructureId = (update as { ownerStructureId?: ID | null }).ownerStructureId ?? null;
         this.pendingExplorerTroopsUpdate.set(update.entityId, {
           troopCount: update.troopCount,
