@@ -3009,6 +3009,7 @@ export default class WorldmapScene extends HexagonScene {
   update(deltaTime: number) {
     super.update(deltaTime);
     this.armyManager.update(deltaTime);
+    this.fxManager.update(deltaTime);
     this.selectedHexManager.update(deltaTime);
     this.structureManager.updateAnimations(deltaTime);
     this.chestManager.update(deltaTime);
@@ -3235,7 +3236,6 @@ export default class WorldmapScene extends HexagonScene {
     this.currentHexGridTask = null;
 
     this.disposeStoreSubscriptions();
-    this.disposeStateSyncSubscription();
 
     this.resourceFXManager.destroy();
     this.updateMinimapThrottled?.cancel();
@@ -3243,19 +3243,10 @@ export default class WorldmapScene extends HexagonScene {
     this.clearCache();
     this.minimap.dispose();
 
-    // Clean up hover label manager
-    // this.hoverLabelManager.dispose();
-
     // Clean up selection pulse manager
     this.selectionPulseManager.dispose();
 
-    // Clean up input manager
-    this.inputManager.destroy();
-
-    // Clean up shortcuts when scene is actually destroyed
-    if (this.shortcutManager instanceof SceneShortcutManager) {
-      this.shortcutManager.cleanup();
-    }
+    super.destroy();
   }
 
   /**

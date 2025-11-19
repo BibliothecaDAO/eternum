@@ -764,6 +764,99 @@ export abstract class HexagonScene {
   }
 
   // Abstract methods
+  public destroy(): void {
+    console.log(`[HexagonScene] Destroying scene: ${this.sceneName}`);
+
+    this.cleanupLightning();
+    this.disposeStateSyncSubscription();
+
+    // Dispose of biome models
+    this.biomeModels.forEach((biome) => {
+      biome.dispose();
+    });
+    this.biomeModels.clear();
+
+    // Dispose of ground mesh
+    if (this.groundMesh) {
+      this.scene.remove(this.groundMesh);
+      this.groundMesh.geometry.dispose();
+      if (Array.isArray(this.groundMesh.material)) {
+        this.groundMesh.material.forEach((m) => m.dispose());
+      } else {
+        this.groundMesh.material.dispose();
+      }
+      // @ts-ignore
+      this.groundMesh = null;
+    }
+
+    // Clean up managers
+    if (this.interactiveHexManager) {
+      this.interactiveHexManager.destroy();
+    }
+    if (this.highlightHexManager) {
+      this.highlightHexManager.dispose();
+    }
+    if (this.thunderBoltManager) {
+      this.thunderBoltManager.cleanup();
+    }
+    if (this.dayNightCycleManager) {
+      this.dayNightCycleManager.dispose();
+    }
+    if (this.inputManager) {
+      this.inputManager.destroy();
+    }
+
+    // Clean up shortcuts
+    if (this.shortcutManager) {
+      this.shortcutManager.cleanup();
+    }
+
+    // Remove lights
+    if (this.hemisphereLight) {
+      this.scene.remove(this.hemisphereLight);
+      // @ts-ignore
+      this.hemisphereLight.dispose?.();
+    }
+    if (this.mainDirectionalLight) {
+      this.scene.remove(this.mainDirectionalLight);
+      this.scene.remove(this.mainDirectionalLight.target);
+      this.mainDirectionalLight.dispose();
+      if (this.mainDirectionalLight.shadow?.map) {
+        this.mainDirectionalLight.shadow.map.dispose();
+      }
+    }
+    if (this.stormLight) {
+      this.scene.remove(this.stormLight);
+      this.stormLight.dispose();
+    }
+    if (this.ambientPurpleLight) {
+      this.scene.remove(this.ambientPurpleLight);
+      this.ambientPurpleLight.dispose();
+    }
+
+    // Clean up light helper
+    if (this.lightHelper) {
+      this.scene.remove(this.lightHelper);
+      this.lightHelper.dispose();
+    }
+
+    // Clean up GUI folder if it exists
+    if (this.GUIFolder) {
+      this.GUIFolder.destroy();
+    }
+
+    // Clear listeners
+    this.cameraViewListeners.clear();
+    
+    // Clean up any pending promises or model loading
+    this.modelLoadPromises = [];
+
+    // Finally, clear the scene
+    this.scene.clear();
+    
+    console.log(`[HexagonScene] Destroyed ${this.sceneName}`);
+  }
+
   protected abstract onHexagonMouseMove(
     hex: {
       hexCoords: HexPosition;

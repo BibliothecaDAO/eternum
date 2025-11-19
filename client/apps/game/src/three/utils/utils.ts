@@ -27,7 +27,7 @@ export function loggedInAccount(): ContractAddress {
 
 import { calculateDistance } from "@bibliothecadao/eternum";
 import { HexPosition, Position } from "@bibliothecadao/types";
-import { Vector3, Quaternion, InstancedMesh } from "three";
+import { InstancedMesh, Quaternion, Vector3 } from "three";
 import { HEX_SIZE } from "../constants";
 import { MatrixPool } from "./matrix-pool";
 
@@ -37,6 +37,10 @@ export const hashCoordinates = (x: number, y: number): number => {
   return hash - Math.floor(hash);
 };
 
+const _matrixDecomposePos = new Vector3();
+const _matrixDecomposeQuat = new Quaternion();
+const _matrixDecomposeScale = new Vector3();
+
 export const getHexagonCoordinates = (
   instancedMesh: InstancedMesh,
   instanceId: number,
@@ -44,9 +48,11 @@ export const getHexagonCoordinates = (
   const matrixPool = MatrixPool.getInstance();
   const matrix = matrixPool.getMatrix();
   instancedMesh.getMatrixAt(instanceId, matrix);
-  const position = new Vector3();
-  matrix.decompose(position, new Quaternion(), new Vector3());
 
+  // Use shared objects for decomposition to avoid garbage creation
+  matrix.decompose(_matrixDecomposePos, _matrixDecomposeQuat, _matrixDecomposeScale);
+
+  const position = new Vector3().copy(_matrixDecomposePos);
   const hexCoords = getHexForWorldPosition(position);
 
   // Release matrix back to pool
