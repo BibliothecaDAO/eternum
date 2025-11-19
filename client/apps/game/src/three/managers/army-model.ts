@@ -117,7 +117,7 @@ export class ArmyModel {
     }
 
     // Initialize animation arrays
-    this.timeOffsets = new Float32Array(0); // Unused, keep for API compatibility if referenced elsewhere, otherwise can be removed
+    // this.timeOffsets = new Float32Array(0); // Unused, keep for API compatibility if referenced elsewhere, otherwise can be removed
     this.animationBuckets = new Uint8Array(MAX_INSTANCES);
     this.animationStates = new Float32Array(MAX_INSTANCES);
     this.initializeAnimationArrays();

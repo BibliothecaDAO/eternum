@@ -11,17 +11,9 @@ import { Position } from "@bibliothecadao/eternum";
 import { COLORS } from "@/ui/features";
 import { ExplorerTroopsSystemUpdate, ExplorerTroopsTileSystemUpdate, getBlockTimestamp } from "@bibliothecadao/eternum";
 
+import { gameWorkerManager } from "@/managers/game-worker-manager";
 import { Biome, configManager, StaminaManager } from "@bibliothecadao/eternum";
-import {
-  BiomeType,
-  ClientComponents,
-  ContractAddress,
-  HexEntityInfo,
-  ID,
-  RelicEffect,
-  TroopTier,
-  TroopType,
-} from "@bibliothecadao/types";
+import { ClientComponents, ContractAddress, ID, RelicEffect, TroopTier, TroopType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
@@ -44,7 +36,6 @@ import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory"
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { MemoryMonitor } from "../utils/memory-monitor";
-import { findShortestPath } from "../utils/pathfinding";
 import { FXManager } from "./fx-manager";
 import { PointsLabelRenderer } from "./points-label-renderer";
 
@@ -333,12 +324,7 @@ export class ArmyManager {
     }
   }
 
-  async onTileUpdate(
-    update: ExplorerTroopsTileSystemUpdate,
-    armyHexes: Map<number, Map<number, HexEntityInfo>>,
-    structureHexes: Map<number, Map<number, HexEntityInfo>>,
-    exploredTiles: Map<number, Map<number, BiomeType>>,
-  ) {
+  async onTileUpdate(update: ExplorerTroopsTileSystemUpdate) {
     await this.armyModel.loadPromise;
     const { entityId, hexCoords, ownerAddress, ownerName, guildName, troopType, troopTier, battleData } = update;
 
@@ -358,7 +344,7 @@ export class ArmyManager {
     const newPosition = new Position({ x: hexCoords.col, y: hexCoords.row });
 
     if (this.armies.has(entityId)) {
-      this.moveArmy(entityId, newPosition, armyHexes, structureHexes, exploredTiles);
+      this.moveArmy(entityId, newPosition);
     } else {
       this.addArmy({
         entityId,
@@ -1092,13 +1078,7 @@ export class ArmyManager {
     await this.renderVisibleArmies(this.currentChunkKey!);
   }
 
-  public async moveArmy(
-    entityId: ID,
-    hexCoords: Position,
-    armyHexes: Map<number, Map<number, HexEntityInfo>>,
-    structureHexes: Map<number, Map<number, HexEntityInfo>>,
-    exploredTiles: Map<number, Map<number, BiomeType>>,
-  ) {
+  public async moveArmy(entityId: ID, hexCoords: Position) {
     // Monitor memory usage before army movement
     this.memoryMonitor?.getCurrentStats(`moveArmy-start-${entityId}`);
 
@@ -1117,7 +1097,7 @@ export class ArmyManager {
     const minTravelCost = configManager.getMinTravelStaminaCost();
     const maxHex = Math.max(0, Math.floor(staminaMax / Math.max(minTravelCost, 1)));
 
-    const path = findShortestPath(armyData.hexCoords, hexCoords, exploredTiles, structureHexes, armyHexes, maxHex);
+    const path = await gameWorkerManager.findPath(armyData.hexCoords, hexCoords, maxHex);
 
     if (!path || path.length === 0) {
       // If no path is found, just teleport the army to the target position
