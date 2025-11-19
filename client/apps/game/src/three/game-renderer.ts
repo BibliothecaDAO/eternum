@@ -47,6 +47,8 @@ import { MaterialPool } from "./utils/material-pool";
 import { MemoryMonitor, MemorySpike } from "./utils/memory-monitor";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
+let cachedHDRTarget: WebGLRenderTarget | null = null;
+let cachedHDRPromise: Promise<WebGLRenderTarget> | null = null;
 
 export default class GameRenderer {
   private labelRenderer!: CSS2DRenderer;
@@ -652,22 +654,16 @@ export default class GameRenderer {
     const fallbackTarget = pmremGenerator.fromScene(new RoomEnvironment());
     this.setEnvironmentFromTarget(fallbackTarget, 0.1);
 
-    const hdriLoader = new RGBELoader();
-    hdriLoader.load(
-      "/textures/environment/models_env.hdr",
-      (texture) => {
-        const envTarget = pmremGenerator.fromEquirectangular(texture);
-        texture.dispose();
-
-        this.setEnvironmentFromTarget(envTarget, 0.1);
-
+    this.loadCachedEnvironmentMap(pmremGenerator)
+      .then((target) => {
+        this.setEnvironmentFromTarget(target, 0.1);
+      })
+      .catch((error) => {
+        console.error("Failed to load HDR environment map", error);
+      })
+      .finally(() => {
         pmremGenerator.dispose();
-      },
-      undefined,
-      () => {
-        pmremGenerator.dispose();
-      },
-    );
+      });
   }
 
   private setEnvironmentFromTarget(renderTarget: WebGLRenderTarget, intensity: number) {
@@ -675,11 +671,46 @@ export default class GameRenderer {
     this.hexceptionScene.setEnvironment(envMap, intensity);
     this.worldmapScene.setEnvironment(envMap, intensity);
 
-    if (this.environmentTarget && this.environmentTarget !== renderTarget) {
+    if (
+      this.environmentTarget &&
+      this.environmentTarget !== renderTarget &&
+      this.environmentTarget !== cachedHDRTarget
+    ) {
       this.environmentTarget.dispose();
     }
 
     this.environmentTarget = renderTarget;
+  }
+
+  private loadCachedEnvironmentMap(pmremGenerator: PMREMGenerator): Promise<WebGLRenderTarget> {
+    if (cachedHDRTarget) {
+      return Promise.resolve(cachedHDRTarget);
+    }
+
+    if (cachedHDRPromise) {
+      return cachedHDRPromise;
+    }
+
+    const hdriLoader = new RGBELoader();
+    cachedHDRPromise = new Promise<WebGLRenderTarget>((resolve, reject) => {
+      hdriLoader.load(
+        "/textures/environment/models_env.hdr",
+        (texture) => {
+          const envTarget = pmremGenerator.fromEquirectangular(texture);
+          texture.dispose();
+          cachedHDRTarget = envTarget;
+          cachedHDRPromise = null;
+          resolve(envTarget);
+        },
+        undefined,
+        (error) => {
+          cachedHDRPromise = null;
+          reject(error);
+        },
+      );
+    });
+
+    return cachedHDRPromise;
   }
 
   private getTargetPixelRatio() {
@@ -856,7 +887,9 @@ export default class GameRenderer {
       }
 
       if (this.environmentTarget) {
-        this.environmentTarget.dispose();
+        if (this.environmentTarget !== cachedHDRTarget) {
+          this.environmentTarget.dispose();
+        }
         this.environmentTarget = undefined;
       }
 

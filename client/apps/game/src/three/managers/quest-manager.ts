@@ -18,6 +18,7 @@ const MAX_INSTANCES = 1000;
 export class QuestManager {
   private scene: THREE.Scene;
   private questModels: Map<QuestType, InstancedModel[]> = new Map();
+  private questModelPromises: Map<QuestType, Promise<void>> = new Map();
   private renderChunkSize: RenderChunkSize;
   private hexagonScene?: HexagonScene;
   private dummy: THREE.Object3D = new THREE.Object3D();
@@ -57,11 +58,11 @@ export class QuestManager {
 
     // Register the quest label type
     this.labelManager.registerLabelType(QuestLabelType);
-    this.loadModels().then(() => {
-      if (this.currentChunkKey) {
-        this.renderVisibleQuests(this.currentChunkKey);
-      }
-    });
+    if (this.currentChunkKey) {
+      void this.renderVisibleQuests(this.currentChunkKey).catch((error) =>
+        console.error("[QuestManager] Failed to render initial quests", error),
+      );
+    }
 
     if (hexagonScene) {
       hexagonScene.addCameraViewListener(this.handleCameraViewChange);
@@ -86,39 +87,47 @@ export class QuestManager {
     this.labelManager.destroy();
   }
 
-  private async loadModels(): Promise<void> {
+  private loadQuestModel(questType: QuestType): Promise<void> {
+    if (this.questModels.has(questType)) {
+      return Promise.resolve();
+    }
+
+    if (this.questModelPromises.has(questType)) {
+      return this.questModelPromises.get(questType)!;
+    }
+
+    const modelPath = QuestModelPaths[QuestType[questType] as keyof typeof QuestModelPaths];
+    if (!modelPath) {
+      return Promise.resolve();
+    }
+
     const loader = gltfLoader;
-    for (const [key, modelPath] of Object.entries(QuestModelPaths)) {
-      const questType = parseInt(key) as QuestType;
-
-      if (questType === undefined) continue;
-      if (!modelPath) continue;
-
-      const loadPromise = new Promise<InstancedModel>((resolve, reject) => {
-        loader.load(
-          modelPath,
-          (gltf) => {
-            const instancedModel = new InstancedModel(gltf, MAX_INSTANCES, false, "Quest" + QuestType[questType]);
-            resolve(instancedModel);
-          },
-          undefined,
-          (error) => {
-            console.error(modelPath);
-            console.error(`An error occurred while loading the ${questType} model:`, error);
-            reject(error);
-          },
-        );
-      });
-
-      await loadPromise
-        .then((instancedModel) => {
+    const loadPromise = new Promise<void>((resolve, reject) => {
+      loader.load(
+        modelPath,
+        (gltf) => {
+          const instancedModel = new InstancedModel(gltf, MAX_INSTANCES, false, "Quest" + QuestType[questType]);
           this.questModels.set(questType, [instancedModel]);
           this.scene.add(instancedModel.group);
-        })
-        .catch((error) => {
-          console.error(`Failed to load models for ${QuestType[questType]}:`, error);
-        });
-    }
+          resolve();
+        },
+        undefined,
+        (error) => {
+          console.error(modelPath);
+          console.error(`An error occurred while loading the ${QuestType[questType]} model:`, error);
+          reject(error);
+        },
+      );
+    })
+      .catch(() => {
+        // Swallow error so callers can continue, but do not cache a failed load
+      })
+      .finally(() => {
+        this.questModelPromises.delete(questType);
+      });
+
+    this.questModelPromises.set(questType, loadPromise);
+    return loadPromise;
   }
 
   async onUpdate(update: QuestSystemUpdate) {
@@ -139,7 +148,9 @@ export class QuestManager {
 
     // SPAG Re-render if we have a current chunk
     if (this.currentChunkKey) {
-      this.renderVisibleQuests(this.currentChunkKey);
+      void this.renderVisibleQuests(this.currentChunkKey).catch((error) =>
+        console.error("[QuestManager] Failed to rerender quests after update", error),
+      );
     }
   }
 
@@ -174,8 +185,8 @@ export class QuestManager {
     }
 
     // Create and track the chunk switch promise
-    this.chunkSwitchPromise = Promise.resolve().then(() => {
-      this.renderVisibleQuests(chunkKey);
+    this.chunkSwitchPromise = this.renderVisibleQuests(chunkKey).catch((error) => {
+      console.error(`[CHUNK SYNC] Quest chunk ${chunkKey} render failed`, error);
     });
 
     try {
@@ -229,11 +240,25 @@ export class QuestManager {
     return visibleQuests;
   }
 
-  private renderVisibleQuests(chunkKey: string) {
+  private async renderVisibleQuests(chunkKey: string) {
     const questsByType = this.quests.getQuests();
     const visibleQuestIds = new Set<ID>();
     const aggregatedVisible: QuestData[] = [];
     const [startRow, startCol] = chunkKey.split(",").map(Number);
+
+    const loadTasks: Promise<void>[] = [];
+    questsByType.forEach((_quests, questType) => {
+      if (!this.questModels.has(questType)) {
+        loadTasks.push(
+          this.loadQuestModel(questType).catch((error) => {
+            console.error(`[QuestManager] Failed to load quest model for ${QuestType[questType]}:`, error);
+          }),
+        );
+      }
+    });
+    if (loadTasks.length) {
+      await Promise.all(loadTasks);
+    }
 
     questsByType.forEach((quests, questType) => {
       const visibleQuests = this.getVisibleQuestsForChunk(quests, startRow, startCol);

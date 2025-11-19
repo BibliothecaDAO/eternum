@@ -430,13 +430,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   destroy() {
-    // Clean up shortcuts when scene is actually destroyed
-    if (this.shortcutManager instanceof SceneShortcutManager) {
-      this.shortcutManager.cleanup();
-    }
-
     this.clearHoverLabel();
-    this.disposeStateSyncSubscription();
 
     // Clean up structure update subscription
     if (this.structureUpdateSubscription) {
@@ -465,11 +459,48 @@ export default class HexceptionScene extends HexagonScene {
     this.buildingInstances.clear();
     this.wonderInstances.clear();
 
-    // Clean up input manager event listeners
-    this.inputManager.destroy();
+    // Dispose of loaded building models (geometries and materials)
+    this.buildingModels.forEach((categoryMap) => {
+      categoryMap.forEach((data) => {
+        data.model.traverse((child: any) => {
+          if (child.isMesh) {
+            if (child.geometry) {
+              child.geometry.dispose();
+            }
+            if (child.material) {
+              if (Array.isArray(child.material)) {
+                child.material.forEach((m: any) => m.dispose());
+              } else {
+                child.material.dispose();
+              }
+            }
+          }
+        });
+      });
+      categoryMap.clear();
+    });
+    this.buildingModels.clear();
 
     // OPTIMIZED: Release any matrices back to the pool
     console.log("🧹 Hexception scene cleanup - releasing matrices");
+
+    // Dispose of pillars
+    if (this.pillars) {
+      this.scene.remove(this.pillars);
+      this.pillars.geometry.dispose();
+      if (Array.isArray(this.pillars.material)) {
+        this.pillars.material.forEach((m) => m.dispose());
+      } else {
+        this.pillars.material.dispose();
+      }
+      this.pillars = null;
+    }
+
+    if (this.buildingPreview) {
+      this.buildingPreview.dispose();
+    }
+
+    super.destroy();
   }
 
   protected async onHexagonClick(hexCoords: HexPosition | null): Promise<void> {

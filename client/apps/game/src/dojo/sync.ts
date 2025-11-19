@@ -3,7 +3,7 @@ import { type SetupResult } from "@bibliothecadao/dojo";
 
 import { sqlApi } from "@/services/api";
 import { MAP_DATA_REFRESH_INTERVAL, MapDataStore } from "@bibliothecadao/eternum";
-import type { Entity, Schema } from "@dojoengine/recs";
+import type { Component, Entity, Metadata, Schema } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
 import type { Clause, ToriiClient, Entity as ToriiEntity } from "@dojoengine/torii-wasm/types";
 import {
@@ -13,6 +13,7 @@ import {
   getGuildsFromTorii,
   getStructuresDataFromTorii,
 } from "./queries";
+import { ToriiSyncWorkerManager } from "./sync-worker-manager";
 
 export const EVENT_QUERY_LIMIT = 40_000;
 
@@ -22,146 +23,197 @@ function isToriiDeleteNotification(entity: ToriiEntity): boolean {
   return Object.keys(entity.models).length === 0;
 }
 
-export const syncEntitiesDebounced = async <S extends Schema>(
-  client: ToriiClient,
-  setupResult: SetupResult,
-  entityKeyClause: Clause | undefined | null,
-  logging = false,
-) => {
-  if (logging) console.log("Starting syncEntities");
+type BatchPayload = { upserts: ToriiEntity[]; deletions: string[] };
 
-  // Create a queue for updates
-  const updateQueue: Array<{ entityId: string; data: any }> = [];
+interface QueueProcessor {
+  queueUpdate: (entityId: string, data: ToriiEntity, origin?: "entity" | "event") => void;
+  dispose: () => void;
+}
+
+const createMainThreadQueueProcessor = (
+  applyBatch: (batch: BatchPayload) => void,
+  logging: boolean,
+): QueueProcessor => {
+  const updateQueue: Array<{ entityId: string; data: ToriiEntity }> = [];
   let isProcessing = false;
 
-  const {
-    network: { world },
-  } = setupResult;
-
-  // Function to process the next item in the queue
-  const processNextInQueue = async () => {
-    if (updateQueue.length === 0 || isProcessing) return;
-
-    isProcessing = true;
-    const batchSize = 10; // Process up to 10 updates at once
-    const batch: Record<string, any> = {};
-
-    // Take up to batchSize items from the queue
-    const itemsToProcess = updateQueue.splice(0, batchSize);
-
-    if (logging) console.log(`Processing batch of ${itemsToProcess.length} updates`);
-
-    // Prepare the batch
-    itemsToProcess.forEach(({ entityId, data }) => {
-      const isEntityDelete = isToriiDeleteNotification(data);
-      if (isEntityDelete) {
-        batch[entityId] = data;
-      }
-      // Deep merge logic for each entity
-      if (batch[entityId]) {
-        const entityHasBeenDeleted = isToriiDeleteNotification(batch[entityId]);
-        if (entityHasBeenDeleted) return;
-
-        batch[entityId] = mergeDeep(batch[entityId], data);
-      } else {
-        batch[entityId] = data;
-      }
-    });
-
-    if (Object.keys(batch).length > 0) {
-      try {
-        if (logging) console.log("Applying batch update", batch);
-
-        for (const entityId in batch) {
-          const value = batch[entityId];
-          // this is an entity that has been deleted
-          if (Object.keys(value.models).length === 0) {
-            world.deleteEntity(entityId as Entity);
-          }
-        }
-
-        const modelsArray = Object.values(batch).map((value) => {
-          return { hashed_keys: value.hashed_keys, models: value.models };
-        });
-
-        setEntities(modelsArray, world.components, logging);
-      } catch (error) {
-        console.error("Error processing entity batch:", error);
-      }
-    }
-
-    isProcessing = false;
-
-    // If there are more items, continue processing
-    if (updateQueue.length > 0) {
-      setTimeout(processNextInQueue, 0); // Use setTimeout to avoid blocking
-    }
-  };
-
-  // Deep merge to handle nested structs
-  const mergeDeep = (target: any, source: any) => {
+  const mergeDeep = (target: ToriiEntity, source: ToriiEntity): ToriiEntity => {
     if (!source) return target;
-    const output = { ...target };
+    const output = { ...target } as ToriiEntity;
+    const mutableOutput = output as unknown as Record<string, unknown>;
+    const sourceRecord = source as unknown as Record<string, unknown>;
 
-    Object.keys(source).forEach((key) => {
+    Object.keys(sourceRecord).forEach((key) => {
+      const sourceValue = sourceRecord[key];
+      const targetValue = mutableOutput[key];
+
       if (
-        source[key] &&
-        typeof source[key] === "object" &&
-        !Array.isArray(source[key]) &&
-        output[key] &&
-        typeof output[key] === "object" &&
-        !Array.isArray(output[key])
+        sourceValue &&
+        typeof sourceValue === "object" &&
+        !Array.isArray(sourceValue) &&
+        targetValue &&
+        typeof targetValue === "object" &&
+        !Array.isArray(targetValue)
       ) {
-        output[key] = mergeDeep(output[key], source[key]);
+        mutableOutput[key] = mergeDeep(targetValue as ToriiEntity, sourceValue as ToriiEntity);
       } else {
-        output[key] = source[key];
+        mutableOutput[key] = sourceValue;
       }
     });
 
     return output;
   };
 
-  // Function to add update to queue and trigger processing
-  const queueUpdate = (entityId: string, data: any) => {
-    updateQueue.push({ entityId, data });
+  const processNextInQueue = async () => {
+    if (updateQueue.length === 0 || isProcessing) return;
 
-    // Debounce the processing to batch updates
-    if (!isProcessing) {
-      setTimeout(processNextInQueue, 200); // Small delay to allow batching
+    isProcessing = true;
+    const batchSize = 10;
+    const batchRecord: Record<string, ToriiEntity> = {};
+
+    const itemsToProcess = updateQueue.splice(0, batchSize);
+    if (logging) console.log(`Processing batch of ${itemsToProcess.length} updates`);
+
+    itemsToProcess.forEach(({ entityId, data }) => {
+      const isEntityDelete = isToriiDeleteNotification(data);
+      if (isEntityDelete) {
+        batchRecord[entityId] = data;
+      }
+      if (batchRecord[entityId]) {
+        const entityHasBeenDeleted = isToriiDeleteNotification(batchRecord[entityId]);
+        if (entityHasBeenDeleted) return;
+        batchRecord[entityId] = mergeDeep(batchRecord[entityId], data);
+      } else {
+        batchRecord[entityId] = data;
+      }
+    });
+
+    const entityIds = Object.keys(batchRecord);
+    if (entityIds.length > 0) {
+      try {
+        if (logging) console.log("Applying batch update", batchRecord);
+        const deletions = entityIds.filter((id) => isToriiDeleteNotification(batchRecord[id]));
+        const upserts = entityIds
+          .filter((id) => !isToriiDeleteNotification(batchRecord[id]))
+          .map((id) => batchRecord[id]);
+
+        applyBatch({ upserts, deletions });
+      } catch (error) {
+        console.error("Error processing entity batch:", error);
+      }
+    }
+
+    isProcessing = false;
+    if (updateQueue.length > 0) {
+      setTimeout(processNextInQueue, 0);
     }
   };
 
-  // Handle entity updates
-  const entitySub = await client.onEntityUpdated(entityKeyClause, (data: any) => {
-    if (logging) console.log("Entity updated", data);
+  return {
+    queueUpdate: (entityId: string, data: ToriiEntity) => {
+      updateQueue.push({ entityId, data });
+      if (!isProcessing) {
+        setTimeout(processNextInQueue, 200);
+      }
+    },
+    dispose: () => {
+      updateQueue.length = 0;
+    },
+  };
+};
 
+const createWorkerQueueProcessor = (
+  applyBatch: (batch: BatchPayload) => void,
+  logging: boolean,
+): QueueProcessor | null => {
+  if (typeof window === "undefined" || typeof Worker === "undefined") {
+    return null;
+  }
+
+  try {
+    const manager = new ToriiSyncWorkerManager({
+      logging,
+      onBatch: (batch) => {
+        applyBatch({ upserts: batch.upserts, deletions: batch.deletions });
+      },
+      onError: (message, error) => {
+        console.error("[sync-worker] error", message, error);
+      },
+    });
+
+    if (!manager.isAvailable) {
+      manager.dispose();
+      return null;
+    }
+
+    return {
+      queueUpdate: (_entityId: string, data: ToriiEntity, origin?: "entity" | "event") => {
+        manager.enqueue(data, origin ?? "entity");
+      },
+      dispose: () => manager.dispose(),
+    };
+  } catch (error) {
+    console.error("[sync-worker] failed to initialize", error);
+    return null;
+  }
+};
+
+export const syncEntitiesDebounced = async (
+  client: ToriiClient,
+  setupResult: SetupResult,
+  entityKeyClause: Clause | undefined | null,
+  logging = true,
+) => {
+  if (logging) console.log("Starting syncEntities");
+
+  const {
+    network: { world },
+  } = setupResult;
+
+  const applyBatch = ({ upserts, deletions }: BatchPayload) => {
+    if (deletions.length > 0) {
+      deletions.forEach((entityId) => {
+        world.deleteEntity(entityId as Entity);
+      });
+    }
+
+    if (upserts.length > 0) {
+      const modelsArray = upserts.map((value) => {
+        return { hashed_keys: value.hashed_keys, models: value.models };
+      });
+      setEntities(modelsArray, world.components, logging);
+    }
+  };
+
+  const queueProcessor =
+    createWorkerQueueProcessor(applyBatch, logging) ?? createMainThreadQueueProcessor(applyBatch, logging);
+
+  const queueUpdate = (data: ToriiEntity, origin: "entity" | "event") => {
     try {
-      queueUpdate(data.hashed_keys, data);
+      queueProcessor.queueUpdate(data.hashed_keys, data, origin);
       setupResult.network.provider.recordStreamActivity();
     } catch (error) {
       console.error("Error queuing entity update:", error);
     }
+  };
+
+  const entitySub = await client.onEntityUpdated(entityKeyClause, (data: ToriiEntity) => {
+    if (logging) console.log("Entity updated", data);
+    queueUpdate(data, "entity");
   });
 
-  // Handle event message updates
-  const eventSub = await client.onEventMessageUpdated(entityKeyClause, (data: any) => {
+  const eventSub = await client.onEventMessageUpdated(entityKeyClause, (data: ToriiEntity) => {
     if (logging) console.log("Event message updated", data.hashed_keys);
-
-    try {
-      queueUpdate(data.hashed_keys, data);
-      setupResult.network.provider.recordStreamActivity();
-    } catch (error) {
-      console.error("Error queuing event message update:", error);
-    }
+    queueUpdate(data, "event");
   });
 
-  // Return combined subscription that can cancel both
   setupResult.network.provider.recordStreamActivity();
 
   return {
     cancel: () => {
       entitySub.cancel();
       eventSub.cancel();
+      queueProcessor.dispose();
     },
   };
 };
@@ -191,6 +243,8 @@ export const initialSync = async (
 
   entityStreamSubscription = await syncEntitiesDebounced(setup.network.toriiClient, setup, null, logging);
 
+  const contractComponents = setup.network.contractComponents as unknown as Component<Schema, Metadata, undefined>[];
+
   let highestProgress = reportProgress ? 0 : -1;
   const updateProgress = (value: number) => {
     if (!reportProgress) {
@@ -216,7 +270,7 @@ export const initialSync = async (
   // BANKS (kicked off immediately so the request overlaps with other sync work)
   parallelTasks.push(
     runTimedTask("bank structures query", 10, async () => {
-      await getBankStructuresFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+      await getBankStructuresFromTorii(setup.network.toriiClient, contractComponents);
     }),
   );
 
@@ -229,7 +283,7 @@ export const initialSync = async (
       spectator: true,
       worldMapPosition: { col: firstNonOwnedStructure.coord_x, row: firstNonOwnedStructure.coord_y },
     });
-    await getStructuresDataFromTorii(setup.network.toriiClient, setup.network.contractComponents as any, [
+    await getStructuresDataFromTorii(setup.network.toriiClient, contractComponents, [
       {
         entityId: firstNonOwnedStructure.entity_id,
         position: { col: firstNonOwnedStructure.coord_x, row: firstNonOwnedStructure.coord_y },

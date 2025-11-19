@@ -14,8 +14,7 @@ class FXInstance {
   public group: THREE.Group;
   public sprite: THREE.Sprite;
   public material: THREE.SpriteMaterial;
-  public clock: THREE.Clock;
-  public animationFrameId?: number;
+  public age: number = 0;
   public isDestroyed = false;
   public initialX: number;
   public initialY: number;
@@ -43,7 +42,6 @@ class FXInstance {
     animateCallback: (fx: FXInstance, elapsed: number) => boolean,
     isInfinite: boolean = false,
   ) {
-    this.clock = new THREE.Clock();
     this.group = new THREE.Group();
     this.group.renderOrder = Infinity;
     this.group.position.set(x, y, z);
@@ -83,7 +81,6 @@ class FXInstance {
     }
 
     scene.add(this.group);
-    this.animate();
   }
 
   public onComplete(resolve: () => void) {
@@ -93,14 +90,15 @@ class FXInstance {
   public startEnding() {
     if (!this.isEnding) {
       this.isEnding = true;
-      this.endStartTime = this.clock.getElapsedTime();
+      this.endStartTime = this.age;
     }
   }
 
-  private animate = () => {
-    if (this.isDestroyed) return;
+  public update(deltaTime: number): boolean {
+    if (this.isDestroyed) return false;
 
-    const elapsed = this.clock.getElapsedTime();
+    this.age += deltaTime;
+    const elapsed = this.age;
 
     if (this.label && this.label.element && this.labelBaseText) {
       const dotCount = Math.floor((elapsed * 2) % 4);
@@ -119,14 +117,12 @@ class FXInstance {
         const moveUp = fadeProgress * 0.5;
         this.group.position.y = this.initialY + moveUp;
 
-        // Skip regular animation when ending to prevent conflicts with travel effect
-        this.animationFrameId = requestAnimationFrame(this.animate);
-        return;
+        return true;
       } else {
         // End animation complete, destroy the instance
         this.resolvePromise?.();
         this.destroy();
-        return;
+        return false;
       }
     }
 
@@ -135,19 +131,15 @@ class FXInstance {
     if (!alive && !this.isInfinite) {
       this.resolvePromise?.();
       this.destroy();
-      return;
+      return false;
     }
 
-    this.animationFrameId = requestAnimationFrame(this.animate);
-  };
+    return true;
+  }
 
   public destroy() {
     if (this.isDestroyed) return;
     this.isDestroyed = true;
-
-    if (this.animationFrameId) {
-      cancelAnimationFrame(this.animationFrameId);
-    }
 
     if (this.label) {
       if (this.label.element) {
@@ -179,6 +171,12 @@ export class FXManager {
     this.scene = scene;
     this.defaultSize = defaultSize;
     this.registerBuiltInFX();
+  }
+
+  public update(deltaTime: number) {
+    this.activeFX.forEach((fx) => {
+      fx.update(deltaTime);
+    });
   }
 
   private registerBuiltInFX() {
