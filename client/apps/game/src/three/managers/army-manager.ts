@@ -1315,6 +1315,9 @@ export class ArmyManager {
     this.armyModel.updateMovements(deltaTime);
     this.armyModel.updateAnimations(deltaTime);
 
+    // Update FX
+    this.fxManager.update(deltaTime);
+
     // Update point icon positions for moving armies
     if (this.pointsRenderers) {
       const instanceDataMap = (this.armyModel as unknown as { instanceData?: Map<number, ArmyInstanceData> })
