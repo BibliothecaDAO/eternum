@@ -26,7 +26,7 @@ export interface PlayerLeaderboardData {
   relicCratePoints?: number;
   campsTaken?: number;
   campPoints?: number;
-  hyperstructuresHeld?: number;
+  hyperstructuresHeld?: number | null;
   hyperstructuresHeldPoints?: number;
 }
 
