@@ -367,7 +367,7 @@ export class WorldUpdateListener {
                 }
 
                 // console.debug(`[WorldUpdateListener] ExplorerTroops removed for entity ${deadArmyEntityId}`);
-                // return deadArmyEntityId;
+                return deadArmyEntityId;
               }
             }
           },
