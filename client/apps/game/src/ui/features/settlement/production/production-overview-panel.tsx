@@ -1,6 +1,7 @@
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { isAutomationResourceBlocked, useAutomationStore } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { inferRealmPreset } from "@/utils/automation-presets";
 import { ProductionModal } from "@/ui/features/settlement";
 import { ProductionStatusBadge } from "@/ui/shared";
 import {
@@ -581,17 +582,35 @@ export const ProductionOverviewPanel = () => {
 
       const statusLabel = (() => {
         if (!automation) {
+          // No explicit config yet; default baseline is labor-only automation.
           return "Burning labor";
         }
+
+        const presetId = inferRealmPreset(automation);
+
+        if (presetId === "idle") {
+          return "Idle";
+        }
+
+        if (presetId === "labor") {
+          return "Burning labor";
+        }
+
+        if (presetId === "resource") {
+          return "Burning resources";
+        }
+
         const hasLabor = Object.values(automation.resources ?? {}).some(
           (config) => (config?.percentages?.laborToResource ?? 0) > 0,
         );
         const hasResource = Object.values(automation.resources ?? {}).some(
           (config) => (config?.percentages?.resourceToResource ?? 0) > 0,
         );
+
         if (hasLabor && hasResource) return "Burning labor & resources";
         if (hasResource) return "Burning resources";
         if (hasLabor) return "Burning labor";
+
         return "Idle";
       })();
 
