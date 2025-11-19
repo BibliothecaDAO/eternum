@@ -39,6 +39,7 @@ interface PlayerWithStats extends PlayerCustom {
   riftsTakenPoints: number;
   hyperstructuresTaken: number;
   hyperstructuresTakenPoints: number;
+  hyperstructuresHeld: number;
   hyperstructuresHeldPoints: number;
 }
 
@@ -108,6 +109,7 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
       const riftsTakenPoints = entry?.riftPoints ?? entry?.campPoints ?? 0;
       const hyperstructuresTaken = entry?.hyperstructuresConquered ?? 0;
       const hyperstructuresTakenPoints = entry?.hyperstructurePoints ?? 0;
+      const hyperstructuresHeld = player.hyperstructures ?? 0;
       const hyperstructuresHeldPoints = entry?.hyperstructuresHeldPoints ?? 0;
 
       return {
@@ -123,6 +125,7 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
         riftsTakenPoints,
         hyperstructuresTaken,
         hyperstructuresTakenPoints,
+        hyperstructuresHeld,
         hyperstructuresHeldPoints,
       } satisfies PlayerWithStats;
     });
@@ -283,7 +286,7 @@ const PlayerRow = ({
   const cratesLabel = formatActivityValue(player.cratesOpened, player.cratesOpenedPoints);
   const riftsLabel = formatActivityValue(player.riftsTaken, player.riftsTakenPoints);
   const hyperstructuresTakenLabel = formatActivityValue(player.hyperstructuresTaken, player.hyperstructuresTakenPoints);
-  const hyperstructuresHeldLabel = formatActivityValue(null, player.hyperstructuresHeldPoints);
+  const hyperstructuresHeldLabel = formatActivityValue(player.hyperstructuresHeld, player.hyperstructuresHeldPoints);
   const hasShareholderPoints = (leaderboardEntry?.unregisteredPoints ?? 0) > 0;
 
   return (

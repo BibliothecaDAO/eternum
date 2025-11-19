@@ -86,7 +86,7 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
       },
       {
         label: "HS Held",
-        count: null,
+        count: highlight?.hyperstructuresHeld,
         singular: "",
         plural: "",
         points: highlight?.hyperstructuresHeldPoints,
