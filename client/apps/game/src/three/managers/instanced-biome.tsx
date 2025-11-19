@@ -15,18 +15,19 @@ export default class InstancedModel {
   private animation: AnimationClip | null = null;
   private animationActions: Map<number, THREE.AnimationAction> = new Map();
   private worldBounds?: { box: THREE.Box3; sphere: THREE.Sphere };
-  timeOffsets: Float32Array;
+  animationBuckets: Uint8Array;
   // Animation throttling to reduce morph texture uploads
   private lastAnimationUpdate = 0;
   private animationUpdateInterval = 1000 / 20; // 20 FPS
+  private readonly ANIMATION_BUCKETS = 20;
 
   constructor(gltf: any, count: number, enableRaycast: boolean = false, name: string = "") {
     this.group = new THREE.Group();
     this.count = count;
 
-    this.timeOffsets = new Float32Array(count);
+    this.animationBuckets = new Uint8Array(count);
     for (let i = 0; i < count; i++) {
-      this.timeOffsets[i] = Math.random() * 3;
+      this.animationBuckets[i] = Math.floor(Math.random() * this.ANIMATION_BUCKETS);
     }
     let renderOrder = 0;
     gltf.scene.traverse((child: any) => {
@@ -236,9 +237,22 @@ export default class InstancedModel {
         const action = this.animationActions.get(meshIndex)!;
         action.play();
 
+        // Optimization: Quantize animations into buckets to reduce mixer updates
+        // Calculate weights for each bucket once
+        const bucketWeights: number[][] = [];
+        const baseMesh = this.biomeMeshes[meshIndex];
+
+        for (let b = 0; b < this.ANIMATION_BUCKETS; b++) {
+          const t = time + (b * 3.0) / this.ANIMATION_BUCKETS;
+          this.mixer!.setTime(t);
+          // Clone the influences array to cache it
+          bucketWeights[b] = [...(baseMesh.morphTargetInfluences || [])];
+        }
+
         for (let i = 0; i < mesh.count; i++) {
-          this.mixer!.setTime(time + this.timeOffsets[i]);
-          mesh.setMorphAt(i, this.biomeMeshes[meshIndex]);
+          const bucket = this.animationBuckets[i];
+          // Pass a lightweight object with the pre-calculated weights
+          mesh.setMorphAt(i, { morphTargetInfluences: bucketWeights[bucket] } as any);
         }
         mesh.morphTexture!.needsUpdate = true;
         needsUpdate = true;

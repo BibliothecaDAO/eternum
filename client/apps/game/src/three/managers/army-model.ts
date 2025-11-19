@@ -63,9 +63,10 @@ export class ArmyModel {
 
   // Animation and state management
   private readonly animationStates: Float32Array;
-  private readonly timeOffsets: Float32Array;
+  private readonly animationBuckets: Uint8Array;
   private instanceCount = 0;
   private currentVisibleCount: number = 0;
+  private readonly ANIMATION_BUCKETS = 20;
 
   // Configuration constants
   private readonly SCALE_TRANSITION_SPEED = 5.0;
@@ -116,7 +117,8 @@ export class ArmyModel {
     }
 
     // Initialize animation arrays
-    this.timeOffsets = new Float32Array(MAX_INSTANCES);
+    this.timeOffsets = new Float32Array(0); // Unused, keep for API compatibility if referenced elsewhere, otherwise can be removed
+    this.animationBuckets = new Uint8Array(MAX_INSTANCES);
     this.animationStates = new Float32Array(MAX_INSTANCES);
     this.initializeAnimationArrays();
   }
@@ -124,7 +126,7 @@ export class ArmyModel {
   // Initialization methods
   private initializeAnimationArrays(): void {
     for (let i = 0; i < MAX_INSTANCES; i++) {
-      this.timeOffsets[i] = Math.random() * 3;
+      this.animationBuckets[i] = Math.floor(Math.random() * this.ANIMATION_BUCKETS);
       this.animationStates[i] = ANIMATION_STATE_IDLE;
     }
   }
@@ -510,8 +512,31 @@ export class ArmyModel {
       if (mesh.count === 0) return;
       hasAnimatedInstances = true;
 
+      // Pre-calculate weights for all buckets and states
+      // This significantly reduces CPU load by batching mixer updates
+      const idleWeights: number[][] = [];
+      const movingWeights: number[][] = [];
+      const actions = this.getOrCreateAnimationActions(modelData, 0); // Shared actions
+
+      // 1. Sample Idle Weights
+      this.updateAnimationState(actions, ANIMATION_STATE_IDLE);
+      for (let b = 0; b < this.ANIMATION_BUCKETS; b++) {
+        const t = time + (b * 3.0) / this.ANIMATION_BUCKETS;
+        modelData.mixer.setTime(t);
+        idleWeights[b] = [...(modelData.baseMeshes[meshIndex].morphTargetInfluences || [])];
+      }
+
+      // 2. Sample Moving Weights
+      this.updateAnimationState(actions, ANIMATION_STATE_MOVING);
+      for (let b = 0; b < this.ANIMATION_BUCKETS; b++) {
+        const t = time + (b * 3.0) / this.ANIMATION_BUCKETS;
+        modelData.mixer.setTime(t);
+        movingWeights[b] = [...(modelData.baseMeshes[meshIndex].morphTargetInfluences || [])];
+      }
+
+      // 3. Apply to instances
       for (let i = 0; i < mesh.count; i++) {
-        this.updateInstanceAnimation(modelData, mesh, meshIndex, i, time);
+        this.updateInstanceAnimationOptimized(mesh, i, idleWeights, movingWeights);
       }
 
       if (mesh.morphTexture) {
@@ -525,6 +550,22 @@ export class ArmyModel {
     }
   }
 
+  private updateInstanceAnimationOptimized(
+    mesh: AnimatedInstancedMesh,
+    instanceIndex: number,
+    idleWeights: number[][],
+    movingWeights: number[][],
+  ): void {
+    const animationState = this.animationStates[instanceIndex];
+
+    if (this.shouldSkipAnimation(animationState)) return;
+
+    const bucket = this.animationBuckets[instanceIndex];
+    const weights = animationState === ANIMATION_STATE_MOVING ? movingWeights[bucket] : idleWeights[bucket];
+
+    mesh.setMorphAt(instanceIndex, { morphTargetInfluences: weights } as any);
+  }
+
   private updateInstanceAnimation(
     modelData: ModelData,
     mesh: AnimatedInstancedMesh,
@@ -532,15 +573,7 @@ export class ArmyModel {
     instanceIndex: number,
     time: number,
   ): void {
-    const animationState = this.animationStates[instanceIndex];
-
-    if (this.shouldSkipAnimation(animationState)) return;
-
-    const actions = this.getOrCreateAnimationActions(modelData, instanceIndex);
-    this.updateAnimationState(actions, animationState);
-
-    modelData.mixer.setTime(time + this.timeOffsets[instanceIndex]);
-    mesh.setMorphAt(instanceIndex, modelData.baseMeshes[meshIndex] as any);
+    // Deprecated in favor of updateInstanceAnimationOptimized
   }
 
   private shouldSkipAnimation(animationState: number): boolean {
