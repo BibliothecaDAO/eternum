@@ -162,7 +162,7 @@ export class QuestManager {
 
     // Wait for any ongoing chunk switch to complete first
     if (this.chunkSwitchPromise) {
-      console.log(`[CHUNK SYNC] Waiting for previous quest chunk switch to complete before switching to ${chunkKey}`);
+      // console.log(`[CHUNK SYNC] Waiting for previous quest chunk switch to complete before switching to ${chunkKey}`);
       try {
         await this.chunkSwitchPromise;
       } catch (error) {
@@ -178,15 +178,15 @@ export class QuestManager {
     const previousChunk = this.currentChunkKey;
     const isSwitch = previousChunk !== chunkKey;
     if (isSwitch) {
-      console.log(`[CHUNK SYNC] Switching quest chunk from ${this.currentChunkKey} to ${chunkKey}`);
+      // console.log(`[CHUNK SYNC] Switching quest chunk from ${this.currentChunkKey} to ${chunkKey}`);
       this.currentChunkKey = chunkKey;
     } else if (force) {
-      console.log(`[CHUNK SYNC] Refreshing quest chunk ${chunkKey}`);
+      // console.log(`[CHUNK SYNC] Refreshing quest chunk ${chunkKey}`);
     }
 
     // Create and track the chunk switch promise
     this.chunkSwitchPromise = this.renderVisibleQuests(chunkKey).catch((error) => {
-      console.error(`[CHUNK SYNC] Quest chunk ${chunkKey} render failed`, error);
+      // console.error(`[CHUNK SYNC] Quest chunk ${chunkKey} render failed`, error);
     });
 
     try {

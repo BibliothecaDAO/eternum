@@ -1,9 +1,10 @@
+import { POLLING_INTERVALS } from "@/config/polling";
 import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
-import { POLLING_INTERVALS } from "@/config/polling";
 import {
+  configManager,
   formatArmies,
   getAddressName,
   getAllArrivals,
@@ -14,7 +15,6 @@ import {
   getIsBlitz,
   ResourceArrivalManager,
   SelectableArmy,
-  configManager,
 } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { SeasonEnded } from "@bibliothecadao/torii";
@@ -236,7 +236,6 @@ const RelicsStoreManager = () => {
       }
 
       try {
-        console.log("fetching relics data");
         const relicsData = await sqlApi.fetchAllPlayerRelics(account.address);
         console.log("relicsData", relicsData, account.address, isMountedRef.current);
         if (!isMountedRef.current) {

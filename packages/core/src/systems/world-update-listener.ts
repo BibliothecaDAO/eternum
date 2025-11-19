@@ -98,7 +98,7 @@ export class WorldUpdateListener {
       return entityId;
     }
 
-    console.log(`[WorldUpdateListener] entityId not in currentState, checking component:`, updateEntity);
+    // console.log(`[WorldUpdateListener] entityId not in currentState, checking component:`, updateEntity);
 
     const componentEntityId = getComponentEntityId();
 
@@ -106,7 +106,7 @@ export class WorldUpdateListener {
       return componentEntityId;
     }
 
-    console.log(`[WorldUpdateListener] entityId not in component, checking mapDataStore:`, updateEntity);
+    // console.log(`[WorldUpdateListener] entityId not in component, checking mapDataStore:`, updateEntity);
     const mapStoreEntityId = this.mapDataStore.getEntityIdFromEntity(String(updateEntity));
 
     if (!mapStoreEntityId) {
@@ -119,13 +119,13 @@ export class WorldUpdateListener {
   }
 
   private logMissingEntityId(context: string, details: unknown) {
-    const border = "❗".repeat(40);
-    console.error(
-      `\n${border}\n🚨❗️ CRITICAL: MISSING ENTITY ID DETECTED (${context}) ❗️🚨\n${border}\n` +
-        "🚫 This condition should NEVER happen. Investigate immediately! 🚫",
-    );
-    console.error(`🛑 [WorldUpdateListener] Missing entityId context: ${context} 🛑`, details);
-    console.trace(`🔍 [WorldUpdateListener] Missing entityId stack trace (${context})`);
+    // const border = "❗".repeat(40);
+    // console.error(
+    //   `\n${border}\n🚨❗️ CRITICAL: MISSING ENTITY ID DETECTED (${context}) ❗️🚨\n${border}\n` +
+    //     "🚫 This condition should NEVER happen. Investigate immediately! 🚫",
+    // );
+    // console.error(`🛑 [WorldUpdateListener] Missing entityId context: ${context} 🛑`, details);
+    // console.trace(`🔍 [WorldUpdateListener] Missing entityId stack trace (${context})`);
   }
 
   private setupSystem<T>(
@@ -138,7 +138,7 @@ export class WorldUpdateListener {
       const value = await getUpdate(update);
       if (value) {
         // Add console log for every update before calling the callback
-        console.log(`[WorldUpdateListener] [${component?.metadata?.name ?? "<unknown>"}] update:`, value);
+        // console.log(`[WorldUpdateListener] [${component?.metadata?.name ?? "<unknown>"}] update:`, value);
         callback(value);
       }
     };
@@ -163,13 +163,13 @@ export class WorldUpdateListener {
 
               if (!explorer) {
                 if (currentState) {
-                  console.debug(`[WorldUpdateListener] Tile update without explorer`, {
-                    entity: update.entity,
-                    occupierType: currentState.occupier_type,
-                    occupierId: currentState.occupier_id,
-                    prevOccupierId: _prevState?.occupier_id,
-                    prevOccupierType: _prevState?.occupier_type,
-                  });
+                  // console.debug(`[WorldUpdateListener] Tile update without explorer`, {
+                  //   entity: update.entity,
+                  //   occupierType: currentState.occupier_type,
+                  //   occupierId: currentState.occupier_id,
+                  //   prevOccupierId: _prevState?.occupier_id,
+                  //   prevOccupierType: _prevState?.occupier_type,
+                  // });
                 }
 
                 // When an army leaves a tile, verify it's actually dead before marking as removed
@@ -184,20 +184,20 @@ export class WorldUpdateListener {
 
                     // If ExplorerTroops still exists and has non-zero troops, the army is alive (just moving)
                     if (explorerTroops && explorerTroops.troops.count > 0n) {
-                      console.debug(
-                        `[WorldUpdateListener] Army ${_prevState.occupier_id} left tile but still exists (count: ${explorerTroops.troops.count}) - likely moving`,
-                      );
+                      // console.debug(
+                      //   `[WorldUpdateListener] Army ${_prevState.occupier_id} left tile but still exists (count: ${explorerTroops.troops.count}) - likely moving`,
+                      // );
                       // Don't send removal update - army is just moving
                       return;
                     }
 
-                    console.debug(
-                      `[WorldUpdateListener] Army ${_prevState.occupier_id} left tile and ExplorerTroops is gone or count=0 - marking as removed`,
-                    );
+                    // console.debug(
+                    //   `[WorldUpdateListener] Army ${_prevState.occupier_id} left tile and ExplorerTroops is gone or count=0 - marking as removed`,
+                    // );
                   } catch (error) {
-                    console.debug(
-                      `[WorldUpdateListener] Could not verify army ${_prevState.occupier_id} existence - assuming removed`,
-                    );
+                    // console.debug(
+                    //   `[WorldUpdateListener] Could not verify army ${_prevState.occupier_id} existence - assuming removed`,
+                    // );
                   }
 
                   // Army is confirmed dead or doesn't exist - mark as removed
@@ -344,18 +344,18 @@ export class WorldUpdateListener {
         );
       },
       onDeadArmy: (callback: (value: ID) => void) => {
-        console.debug(`[WorldUpdateListener] Subscribing to dead army updates`);
+        // console.debug(`[WorldUpdateListener] Subscribing to dead army updates`);
         this.setupSystem(
           this.setup.components.ExplorerTroops,
           callback,
           async (update: any): Promise<ID | undefined> => {
             if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
               const [currentState, prevState] = update.value;
-              console.debug(`[WorldUpdateListener] ExplorerTroops component update received`, {
-                entity: update.entity,
-                hasCurrentState: currentState !== undefined,
-                hasPrevState: prevState !== undefined,
-              });
+              // console.debug(`[WorldUpdateListener] ExplorerTroops component update received`, {
+              //   entity: update.entity,
+              //   hasCurrentState: currentState !== undefined,
+              //   hasPrevState: prevState !== undefined,
+              // });
               const explorer = getComponentValue(this.setup.components.ExplorerTroops, update.entity);
               if (!explorer && !prevState) return;
               if (!explorer && undefined === currentState && prevState) {
@@ -366,8 +366,8 @@ export class WorldUpdateListener {
                   return;
                 }
 
-                console.debug(`[WorldUpdateListener] ExplorerTroops removed for entity ${deadArmyEntityId}`);
-                return deadArmyEntityId;
+                // console.debug(`[WorldUpdateListener] ExplorerTroops removed for entity ${deadArmyEntityId}`);
+                // return deadArmyEntityId;
               }
             }
           },
@@ -519,7 +519,7 @@ export class WorldUpdateListener {
           this.setup.components.Structure,
           callback,
           async (update: any): Promise<StructureSystemUpdate | undefined> => {
-            console.log("[onStructureUpdate] raw update:", update);
+            // console.log("[onStructureUpdate] raw update:", update);
 
             if (isComponentUpdate(update, this.setup.components.Structure)) {
               const [currentState, _prevState] = update.value;
@@ -588,7 +588,7 @@ export class WorldUpdateListener {
                 ),
               };
 
-              console.log("[onStructureUpdate] StructureSystemUpdate:", structureSystemUpdate);
+              // console.log("[onStructureUpdate] StructureSystemUpdate:", structureSystemUpdate);
 
               return structureSystemUpdate;
             }
@@ -606,7 +606,7 @@ export class WorldUpdateListener {
 
               if (!currentState) return;
 
-              console.log("[onStructureBuildingsUpdate] currentState:", currentState);
+              // console.log("[onStructureBuildingsUpdate] currentState:", currentState);
 
               const entityId = currentState?.entity_id;
 
@@ -628,7 +628,7 @@ export class WorldUpdateListener {
               // Unpack the building counts
               const buildingCounts = unpackBuildingCounts(packedValues);
 
-              console.log("[onStructureBuildingsUpdate] unpacked buildingCounts:", buildingCounts);
+              // console.log("[onStructureBuildingsUpdate] unpacked buildingCounts:", buildingCounts);
 
               const activeProductions: ActiveProduction[] = [];
 
@@ -644,7 +644,7 @@ export class WorldUpdateListener {
                 }
               }
 
-              console.log("[onStructureBuildingsUpdate] activeProductions:", activeProductions);
+              // console.log("[onStructureBuildingsUpdate] activeProductions:", activeProductions);
 
               return {
                 entityId,
@@ -677,7 +677,7 @@ export class WorldUpdateListener {
                 newStateBiomeType === BiomeType.None ? BiomeType.Grassland : newStateBiomeType || BiomeType.Grassland,
             };
             // Log the update value
-            console.log("[onTileUpdate] TileSystemUpdate:", result);
+            // console.log("[onTileUpdate] TileSystemUpdate:", result);
             return result;
           },
           false,
@@ -1093,7 +1093,7 @@ export class WorldUpdateListener {
       this.setup.components.events.StoryEvent,
       (event: StoryEventSystemUpdate) => {
         // Add log before publishing event
-        console.log("[registerStoryEventStream] update:", event);
+        // console.log("[registerStoryEventStream] update:", event);
         storyEventBus.publish(event);
       },
       async (update: any): Promise<StoryEventSystemUpdate | undefined> => {
@@ -1162,7 +1162,7 @@ export class WorldUpdateListener {
       timestamp,
       exploreFind,
     };
-    console.log("[parseExplorerMoveEvent] update:", val);
+    // console.log("[parseExplorerMoveEvent] update:", val);
     return val;
   }
 
@@ -1266,7 +1266,7 @@ export class WorldUpdateListener {
       storyPayload,
       rawStory: currentState.story,
     };
-    console.log("[mapStoryEventPayload] update:", val);
+    // console.log("[mapStoryEventPayload] update:", val);
 
     return val;
   }
@@ -1489,7 +1489,7 @@ export class WorldUpdateListener {
 
         // Add a log for every sequential update before returning result
         if (result !== null && result !== undefined) {
-          console.log(`[processSequentialUpdate] update:`, result);
+          // console.log(`[processSequentialUpdate] update:`, result);
         }
 
         return result;
