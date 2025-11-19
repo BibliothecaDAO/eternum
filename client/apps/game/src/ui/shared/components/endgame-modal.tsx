@@ -68,7 +68,22 @@ export const EndgameModal = () => {
   const playerEntry = playerEntryState?.data ?? null;
   const playerEntryLoading = Boolean(playerEntryState?.isFetching);
 
-  const highlight = useMemo(() => (playerEntry ? toHighlightPlayer(playerEntry) : null), [playerEntry]);
+  const highlight = useMemo(() => {
+    if (!playerEntry) {
+      return null;
+    }
+
+    const base = toHighlightPlayer(playerEntry);
+
+    if (currentPlayerData && typeof currentPlayerData.hyperstructuresCount === "number") {
+      return {
+        ...base,
+        hyperstructuresHeld: currentPlayerData.hyperstructuresCount,
+      };
+    }
+
+    return base;
+  }, [playerEntry, currentPlayerData]);
   const championPlayer = useMemo(() => (championEntry ? toHighlightPlayer(championEntry) : null), [championEntry]);
 
   const { currentBlockTimestamp } = useBlockTimestamp();
