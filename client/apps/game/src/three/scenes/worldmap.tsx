@@ -344,11 +344,11 @@ export default class WorldmapScene extends HexagonScene {
 
     const toriiClient = this.dojo.network?.toriiClient;
     if (toriiClient) {
-      this.toriiStreamManager = new ToriiStreamManager({
-        client: toriiClient,
-        setup: this.dojo,
-        logging: Boolean(import.meta.env.DEV),
-      });
+      // this.toriiStreamManager = new ToriiStreamManager({
+      //   client: toriiClient,
+      //   setup: this.dojo,
+      //   logging: Boolean(import.meta.env.DEV),
+      // });
       // this.toriiStreamManager
       //   .setGlobalModels(GLOBAL_STREAM_MODELS)
       //   .catch((error) => console.error("[WorldmapScene] Failed to start global Torii stream", error));
@@ -2927,14 +2927,14 @@ export default class WorldmapScene extends HexagonScene {
     const feltCenter = FELT_CENTER();
 
     try {
-      await this.toriiStreamManager.switchBounds({
-        minCol: minCol + feltCenter,
-        maxCol: maxCol + feltCenter,
-        minRow: minRow + feltCenter,
-        maxRow: maxRow + feltCenter,
-        padding: this.renderChunkSize.width,
-        models: CHUNK_STREAM_MODELS,
-      });
+      // await this.toriiStreamManager.switchBounds({
+      //   minCol: minCol + feltCenter,
+      //   maxCol: maxCol + feltCenter,
+      //   minRow: minRow + feltCenter,
+      //   maxRow: maxRow + feltCenter,
+      //   padding: this.renderChunkSize.width,
+      //   models: CHUNK_STREAM_MODELS,
+      // });
     } catch (error) {
       console.error("[WorldmapScene] Failed to update Torii stream bounds", error);
     }
