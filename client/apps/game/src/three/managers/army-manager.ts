@@ -134,7 +134,8 @@ export class ArmyManager {
   private attachmentManager: CosmeticAttachmentManager;
   private armyAttachmentSignatures: Map<number, string> = new Map();
   private activeArmyAttachmentEntities: Set<number> = new Set();
-  private readonly armyAttachmentTransformScratch = new Map<string, AttachmentTransform>();
+  private armyAttachmentTransformScratch = new Map<string, AttachmentTransform>();
+  private chunkToArmies: Map<string, Set<ID>> = new Map();
 
   // Reusable objects for memory optimization
   private readonly tempPosition: Vector3 = new Vector3();
@@ -841,10 +842,74 @@ export class ArmyManager {
     return this.frustumManager.isPointVisible(frustumPoint);
   }
 
+  private getSpatialKey(col: number, row: number): string {
+    const bucketX = Math.floor(col / this.renderChunkSize.width);
+    const bucketY = Math.floor(row / this.renderChunkSize.height);
+    return `${bucketX},${bucketY}`;
+  }
+
+  private updateSpatialIndex(entityId: ID, oldHex: Position | undefined, newHex: Position) {
+    if (oldHex) {
+      const oldNorm = oldHex.getNormalized();
+      const oldKey = this.getSpatialKey(oldNorm.x, oldNorm.y);
+      const newNorm = newHex.getNormalized();
+      const newKey = this.getSpatialKey(newNorm.x, newNorm.y);
+
+      if (oldKey === newKey) return;
+
+      const oldSet = this.chunkToArmies.get(oldKey);
+      if (oldSet) {
+        oldSet.delete(entityId);
+        if (oldSet.size === 0) {
+          this.chunkToArmies.delete(oldKey);
+        }
+      }
+    }
+
+    const newNorm = newHex.getNormalized();
+    const newKey = this.getSpatialKey(newNorm.x, newNorm.y);
+    let newSet = this.chunkToArmies.get(newKey);
+    if (!newSet) {
+      newSet = new Set();
+      this.chunkToArmies.set(newKey, newSet);
+    }
+    newSet.add(entityId);
+  }
+
   private getVisibleArmiesForChunk(startRow: number, startCol: number): Array<ArmyData> {
-    const visibleArmies: ArmyData[] = Array.from(this.armies.values()).filter((army) => {
-      return this.isArmyVisible(army, startRow, startCol);
-    });
+    const visibleArmies: ArmyData[] = [];
+    const width = this.renderChunkSize.width;
+    const height = this.renderChunkSize.height;
+
+    // Calculate the range of buckets to query
+    // The view area is [startCol - width/2, startCol + width/2] roughly
+    // We want to cover any bucket that intersects this area.
+
+    const minCol = startCol - width / 2;
+    const maxCol = startCol + width / 2;
+    const minRow = startRow - height / 2;
+    const maxRow = startRow + height / 2;
+
+    const startBucketX = Math.floor(minCol / width);
+    const endBucketX = Math.floor(maxCol / width);
+    const startBucketY = Math.floor(minRow / height);
+    const endBucketY = Math.floor(maxRow / height);
+
+    for (let bx = startBucketX; bx <= endBucketX; bx++) {
+      for (let by = startBucketY; by <= endBucketY; by++) {
+        const key = `${bx},${by}`;
+        const armyIds = this.chunkToArmies.get(key);
+        if (armyIds) {
+          for (const id of armyIds) {
+            const army = this.armies.get(id);
+            // Double check visibility using the precise check
+            if (army && this.isArmyVisible(army, startRow, startCol)) {
+              visibleArmies.push(army);
+            }
+          }
+        }
+      }
+    }
 
     return visibleArmies;
   }
@@ -1066,6 +1131,8 @@ export class ArmyManager {
       battleTimerLeft: finalBattleTimerLeft,
     });
 
+    this.updateSpatialIndex(params.entityId, undefined, params.hexCoords);
+
     // Apply any pending relic effects for this army
     if (this.applyPendingRelicEffectsCallback) {
       try {
@@ -1116,6 +1183,7 @@ export class ArmyManager {
     const worldPath = path.map((pos) => this.getArmyWorldPosition(entityId, pos));
 
     // Update army position immediately to avoid starting from a "back" position
+    this.updateSpatialIndex(entityId, armyData.hexCoords, hexCoords);
     this.armies.set(entityId, { ...armyData, hexCoords });
 
     const matrixIndex = armyData.matrixIndex;
@@ -1218,6 +1286,20 @@ export class ArmyManager {
 
     // Remove any relic effects
     this.updateRelicEffects(entityId, []);
+
+    // Update spatial index (remove)
+    if (this.armies.has(entityId)) {
+      const army = this.armies.get(entityId)!;
+      const { x, y } = army.hexCoords.getNormalized();
+      const key = this.getSpatialKey(x, y);
+      const set = this.chunkToArmies.get(key);
+      if (set) {
+        set.delete(entityId);
+        if (set.size === 0) {
+          this.chunkToArmies.delete(key);
+        }
+      }
+    }
 
     // Clear any pending relic effects
     if (this.clearPendingRelicEffectsCallback) {
