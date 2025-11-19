@@ -2,6 +2,9 @@ import {
   MAX_RESOURCE_ALLOCATION_PERCENT,
   RealmAutomationConfig,
   ResourceAutomationSettings,
+  type ResourceAutomationPercentages,
+  DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES,
+  DONKEY_DEFAULT_RESOURCE_PERCENT,
   isAutomationResourceBlocked,
 } from "@/hooks/store/use-automation-store";
 import { configManager } from "@bibliothecadao/eternum";
@@ -288,6 +291,86 @@ export const calculatePresetAllocations = (
   }
 
   return allocations;
+};
+
+export const calculateLimitedPresetPercentages = (
+  automation: RealmAutomationConfig | undefined,
+  presetId: RealmPresetId,
+  resourceIds: ResourcesIds[],
+): Map<number, ResourceAutomationPercentages> => {
+  const result = new Map<number, ResourceAutomationPercentages>();
+
+  if (!automation || !resourceIds.length) {
+    return result;
+  }
+
+  const entityType = automation.entityType ?? "realm";
+  const uniqueIds = Array.from(new Set(resourceIds)).filter(
+    (resourceId) => !isAutomationResourceBlocked(resourceId, entityType),
+  );
+
+  if (!uniqueIds.length) {
+    return result;
+  }
+
+  const now = Date.now();
+  const limitedResources: Record<number, ResourceAutomationSettings> = {};
+
+  uniqueIds.forEach((resourceId) => {
+    const existing = automation.resources[resourceId];
+    if (existing) {
+      limitedResources[resourceId] = {
+        ...existing,
+        resourceId,
+      };
+      return;
+    }
+
+    const basePercentages =
+      resourceId === ResourcesIds.Donkey
+        ? { resourceToResource: DONKEY_DEFAULT_RESOURCE_PERCENT, laborToResource: 0 }
+        : {
+            resourceToResource: DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES.resourceToResource,
+            laborToResource: DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES.laborToResource,
+          };
+
+    limitedResources[resourceId] = {
+      resourceId,
+      autoManaged: true,
+      label: undefined,
+      updatedAt: now,
+      percentages: basePercentages,
+    };
+  });
+
+  const limitedAutomation: RealmAutomationConfig = {
+    ...automation,
+    resources: limitedResources,
+  };
+
+  const allocations = calculatePresetAllocations(limitedAutomation, presetId);
+
+  uniqueIds.forEach((resourceId) => {
+    if (presetId === "idle") {
+      result.set(resourceId, { resourceToResource: 0, laborToResource: 0 });
+      return;
+    }
+
+    const allocation = allocations.get(resourceId);
+    if (allocation) {
+      result.set(resourceId, {
+        resourceToResource: allocation.resourceToResource,
+        laborToResource: allocation.laborToResource,
+      });
+    } else {
+      result.set(resourceId, {
+        resourceToResource: 0,
+        laborToResource: 0,
+      });
+    }
+  });
+
+  return result;
 };
 
 export const getAutomationOverallocation = (
