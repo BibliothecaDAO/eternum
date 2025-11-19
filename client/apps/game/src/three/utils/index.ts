@@ -1,6 +1,5 @@
 export * from "./gui-manager";
 export * from "./location-manager";
-export * from "./pathfinding";
 export * from "./utils";
 // New modular label system exports
 export * from "./labels/label-types";

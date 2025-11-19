@@ -20,6 +20,7 @@ import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView, RightView } from "@/types";
 import { Position } from "@bibliothecadao/eternum";
+import { gameWorkerManager } from "../../managers/game-worker-manager";
 
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
 import { ChestModal, HelpModal } from "@/ui/features/military";
@@ -428,7 +429,7 @@ export default class WorldmapScene extends HexagonScene {
         this.exploredTiles.get(normalizedPos.x)!.set(normalizedPos.y, BiomeType.Grassland);
       }
 
-      await this.armyManager.onTileUpdate(update, this.armyHexes, this.structureHexes, this.exploredTiles);
+      await this.armyManager.onTileUpdate(update);
 
       this.invalidateAllChunkCachesContainingHex(normalizedPos.x, normalizedPos.y);
 
@@ -1867,6 +1868,7 @@ export default class WorldmapScene extends HexagonScene {
           const oldPos = this.armiesPositions.get(entityId);
           if (oldPos) {
             this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
+            gameWorkerManager.updateArmyHex(oldPos.col, oldPos.row, null);
             this.invalidateAllChunkCachesContainingHex(oldPos.col, oldPos.row);
           }
           this.armiesPositions.delete(entityId);
@@ -1891,6 +1893,7 @@ export default class WorldmapScene extends HexagonScene {
       this.armyHexes.get(oldPos.col)?.get(oldPos.row)?.id === entityId
     ) {
       this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
+      gameWorkerManager.updateArmyHex(oldPos.col, oldPos.row, null);
       this.invalidateAllChunkCachesContainingHex(oldPos.col, oldPos.row);
     }
 
@@ -1902,6 +1905,7 @@ export default class WorldmapScene extends HexagonScene {
     const armyHexData = { id: entityId, owner: actualOwnerAddress };
 
     this.armyHexes.get(newPos.col)?.set(newPos.row, armyHexData);
+    gameWorkerManager.updateArmyHex(newPos.col, newPos.row, armyHexData);
     this.invalidateAllChunkCachesContainingHex(newPos.col, newPos.row);
 
     // Verify what was actually stored
@@ -1936,7 +1940,9 @@ export default class WorldmapScene extends HexagonScene {
     if (!this.structureHexes.has(newCol)) {
       this.structureHexes.set(newCol, new Map());
     }
-    this.structureHexes.get(newCol)?.set(newRow, { id: entityId, owner: address });
+    const structureInfo = { id: entityId, owner: address };
+    this.structureHexes.get(newCol)?.set(newRow, structureInfo);
+    gameWorkerManager.updateStructureHex(newCol, newRow, structureInfo);
   }
 
   // update quest hexes on the map
@@ -2007,6 +2013,7 @@ export default class WorldmapScene extends HexagonScene {
     }
     if (!this.exploredTiles.get(col)!.has(row)) {
       this.exploredTiles.get(col)!.set(row, biome);
+      gameWorkerManager.updateExploredTile(col, row, biome);
     } else {
       return;
     }
