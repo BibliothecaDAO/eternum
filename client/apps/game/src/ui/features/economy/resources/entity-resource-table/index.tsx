@@ -1,13 +1,16 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ID } from "@bibliothecadao/types";
 import React, { useCallback, useEffect, useState } from "react";
 import { ViewToggle } from "./view-toggle";
 
 type TableComponent = React.ComponentType<{
   entityId: ID | undefined;
+  disableButtons?: boolean;
 }>;
 
 export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | undefined }) => {
   const [useNewVersion, setUseNewVersion] = useState(() => localStorage.getItem("useNewResourceTable") === "true");
+  const disableButtons = useUIStore((state) => state.disableButtons);
 
   const [hasInteractedWithToggle, setHasInteractedWithToggle] = useState(
     () => localStorage.getItem("hasUsedResourceTableToggle") === "true",
@@ -49,15 +52,17 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-center pb-2 border-b border-gold/20">
-        <ViewToggle
-          useNewVersion={useNewVersion}
-          onToggle={handleToggle}
-          showAnimation={!hasInteractedWithToggle}
-          variant="full"
-        />
-      </div>
-      <TableComponent entityId={entityId} />
+      {!disableButtons && (
+        <div className="flex justify-center pb-2 border-b border-gold/20">
+          <ViewToggle
+            useNewVersion={useNewVersion}
+            onToggle={handleToggle}
+            showAnimation={!hasInteractedWithToggle}
+            variant="full"
+          />
+        </div>
+      )}
+      <TableComponent entityId={entityId} disableButtons={disableButtons} />
     </div>
   );
 });

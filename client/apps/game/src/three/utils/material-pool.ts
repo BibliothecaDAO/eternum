@@ -48,11 +48,7 @@ export class MaterialPool {
   private generateMaterialKey(sourceMaterial: Material, overrides?: Partial<MaterialKey>): string {
     const sourceMap = (sourceMaterial as any).map;
     const textureUrl =
-      sourceMap?.image?.src ||
-      sourceMap?.source?.data?.src ||
-      sourceMap?.uuid ||
-      sourceMap?.name ||
-      "none";
+      sourceMap?.image?.src || sourceMap?.source?.data?.src || sourceMap?.uuid || sourceMap?.name || "none";
 
     const key: MaterialKey = {
       textureUrl,

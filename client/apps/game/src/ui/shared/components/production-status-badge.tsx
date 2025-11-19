@@ -26,6 +26,11 @@ interface ProductionStatusBadgeProps {
   onClick?: () => void;
   resourceId?: ResourcesIds;
   showInputIcons?: boolean;
+  className?: string;
+  showTooltip?: boolean;
+  cornerTopLeft?: string;
+  cornerTopRight?: string;
+  cornerBottomRight?: string;
 }
 
 export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
@@ -38,6 +43,11 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
   onClick,
   resourceId,
   showInputIcons = false,
+  className,
+  showTooltip = true,
+  cornerTopLeft,
+  cornerTopRight,
+  cornerBottomRight,
 }) => {
   const effectiveRemaining = timeRemainingSeconds === null ? null : Math.max(timeRemainingSeconds, 0);
   const progressPercent = !isProducing
@@ -49,10 +59,10 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
   const shouldPulse =
     isProducing && effectiveRemaining !== null && effectiveRemaining <= PRODUCTION_PULSE_THRESHOLD_SECONDS;
 
-  const wrapperSize = size === "sm" ? "h-10 w-10" : "h-9 w-9";
-  const iconPadding = size === "sm" ? "p-1.5" : "p-1";
-  const ringOffset = size === "sm" ? "-inset-[4px]" : "-inset-[3px]";
-  const progressOffset = size === "sm" ? "-inset-[3px]" : "-inset-[2.5px]";
+  const wrapperSize = size === "sm" ? "h-12 w-12" : "h-9 w-9";
+  const iconPadding = size === "sm" ? "p-2.5" : "p-1";
+  const ringOffset = size === "sm" ? "-inset-[6px]" : "-inset-[3px]";
+  const progressOffset = size === "sm" ? "-inset-[5px]" : "-inset-[2.5px]";
   const ringThickness = "border";
 
   const ringClasses = isProducing
@@ -68,7 +78,7 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
   const resolvedResourceId = showInputIcons ? (resourceId ?? resolveResourceIdFromLabel(resourceLabel)) : undefined;
   const inputDefinitions =
     resolvedResourceId !== undefined ? configManager.getResourceProductionResourceInputs(resolvedResourceId) : [];
-  const iconRadius = size === "sm" ? 28 : 24;
+  const iconRadius = size === "sm" ? 30 : 24;
   const arcSpan = Math.PI / 2;
   const angleStep = inputDefinitions.length <= 1 ? 0 : arcSpan / (inputDefinitions.length - 1);
   const inputIconPositions = showInputIcons
@@ -82,7 +92,12 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
 
   return (
     <div
-      className={clsx("relative inline-flex items-center justify-center", wrapperSize, onClick ? "cursor-pointer" : "")}
+      className={clsx(
+        "relative inline-flex items-center justify-center",
+        wrapperSize,
+        onClick ? "cursor-pointer" : "",
+        className,
+      )}
       onClick={onClick}
     >
       {showInputIcons && inputIconPositions.length > 0 && (
@@ -126,9 +141,29 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
           "shadow-[0_0_8px_rgba(0,0,0,0.45)]",
         )}
       >
-        <ResourceIcon resource={resourceLabel} size={size === "sm" ? "sm" : "xs"} tooltipText={tooltipText} />
+        <ResourceIcon
+          resource={resourceLabel}
+          size={size === "sm" ? "sm" : "xs"}
+          tooltipText={tooltipText}
+          withTooltip={showTooltip}
+        />
       </div>
-      {totalCount > 0 && (
+      {cornerTopLeft && (
+        <span className="absolute -top-1 -left-1 z-10 flex min-w-[14px] items-center justify-center rounded-full bg-black/80 px-1 text-[8px] font-semibold text-gold/90 shadow-md border border-gold/40">
+          {cornerTopLeft}
+        </span>
+      )}
+      {cornerTopRight && (
+        <span className="absolute -top-1 -right-1 z-10 flex min-w-[18px] items-center justify-center rounded-full bg-black/80 px-1 text-[8px] font-semibold text-gold/90 shadow-md border border-gold/40">
+          {cornerTopRight}
+        </span>
+      )}
+      {cornerBottomRight && (
+        <span className="absolute -bottom-1 -right-1 z-10 flex min-w-[18px] items-center justify-center rounded-full bg-black/80 px-1 text-[8px] font-semibold text-gold/80 shadow-md border border-gold/30">
+          {cornerBottomRight}
+        </span>
+      )}
+      {!cornerTopLeft && !cornerTopRight && !cornerBottomRight && totalCount > 0 && (
         <span className="absolute -top-1 -right-1 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[9px] font-semibold text-[#2a1f14] shadow-md">
           {totalCount}
         </span>

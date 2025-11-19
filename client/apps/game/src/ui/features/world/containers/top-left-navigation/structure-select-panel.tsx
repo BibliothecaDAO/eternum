@@ -24,6 +24,7 @@ import {
   Palette,
   Pencil,
   Pickaxe,
+  RotateCcw,
   Search,
   ShieldQuestion,
   Sparkles,
@@ -48,6 +49,7 @@ interface StructureSelectPanelProps {
   structures: Structure[];
   favorites: number[];
   structureGroups: StructureGroupsMap;
+  nameUpdateVersion: number;
   onToggleFavorite: (entityId: number) => void;
   onSelectStructure: (entityId: ID) => void;
   onRequestNameChange: (structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => void;
@@ -126,6 +128,7 @@ export const StructureSelectPanel = memo(
     structures,
     favorites,
     structureGroups,
+    nameUpdateVersion,
     onToggleFavorite,
     onSelectStructure,
     onRequestNameChange,
@@ -136,6 +139,7 @@ export const StructureSelectPanel = memo(
     const [sortMode, setSortMode] = useState<SortMode>("name");
     const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
     const [activeTab, setActiveTab] = useState(0);
+    const [metadataRefreshCounter, setMetadataRefreshCounter] = useState(0);
     const searchInputRef = useRef<HTMLInputElement>(null);
 
     const playHover = useUISound("ui.hover");
@@ -202,7 +206,16 @@ export const StructureSelectPanel = memo(
           groupColor: structureGroups[structure.entityId] ?? null,
         };
       });
-    }, [favorites, structures, isBlitz, structureTypeNameMapping, structureGroups, components.StructureBuildings]);
+    }, [
+      favorites,
+      structures,
+      isBlitz,
+      structureTypeNameMapping,
+      structureGroups,
+      nameUpdateVersion,
+      metadataRefreshCounter,
+      components.StructureBuildings,
+    ]);
     const selectedGroupColor = structureGroups[Number(structureEntityId)] ?? null;
     const selectedGroupConfig = selectedGroupColor ? STRUCTURE_GROUP_CONFIG[selectedGroupColor] : null;
     const selectedStructureMetadata = useMemo(
@@ -507,6 +520,21 @@ export const StructureSelectPanel = memo(
                       ) : (
                         <ArrowUpWideNarrow className="h-4 w-4" />
                       )}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="flex h-8 items-center justify-center rounded border border-gold/40 bg-brown/20 px-2 text-gold hover:border-gold/60"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        playClick();
+                        setMetadataRefreshCounter((counter) => counter + 1);
+                      }}
+                      onMouseEnter={() => playHover()}
+                      aria-label="Refresh structures"
+                      title="Refresh structures"
+                    >
+                      <RotateCcw className="h-4 w-4" />
                     </button>
                   </div>
                   <Tabs.List className={`flex flex-wrap gap-2 ${shouldHideTabs ? "hidden" : ""}`}>

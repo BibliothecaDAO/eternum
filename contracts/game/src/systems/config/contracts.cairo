@@ -344,7 +344,9 @@ pub mod config_systems {
 
             let tx_hash: u256 = starknet::get_tx_info().unbox().transaction_hash.into();
             let half_map: u256 = (CENTER_COL / 2).into();
-            world_config.map_center_offset = (tx_hash % half_map).try_into().unwrap();
+            let base_offset: u32 = (tx_hash % half_map).try_into().unwrap();
+            // make it always end with an even number
+            world_config.map_center_offset = (base_offset / 10_u32) * 10_u32; 
             world.write_model(@world_config);
         }
     }

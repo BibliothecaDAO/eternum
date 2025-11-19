@@ -1,7 +1,11 @@
 import { ReactComponent as EternumWordsLogo } from "@/assets/icons/blitz-words-logo-g.svg";
 import { useGameSelector } from "@/hooks/helpers/use-game-selector";
+import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Button } from "@/ui/design-system/atoms";
+import { SignInPromptModal } from "@/ui/layouts/sign-in-prompt-modal";
 import { Controller } from "@/ui/modules/controller/controller";
+import { useAccount } from "@starknet-react/core";
 import { useNavigate } from "react-router-dom";
 
 // Served from client/public/images/landing/wooden-panel.png
@@ -10,9 +14,23 @@ const LANDING_PANEL_IMAGE = "/borders/landing-frame-1.png";
 export const LandingWelcome = () => {
   const navigate = useNavigate();
   const { activeWorld, selectGame } = useGameSelector();
+  const account = useAccountStore((state) => state.account);
+  const { isConnected } = useAccount();
+  const setModal = useUIStore((state) => state.setModal);
 
   const handleSelectGame = async () => {
     await selectGame({ navigateAfter: true, navigateTo: "/play" });
+  };
+
+  const handleEnterBlitz = () => {
+    const hasAccount = Boolean(account) || isConnected;
+
+    if (!hasAccount) {
+      setModal(<SignInPromptModal />, true);
+      return;
+    }
+
+    navigate("/play");
   };
 
   const buttonClasses = "h-9 px-4 min-w-[96px] w-full sm:w-auto";
@@ -37,7 +55,7 @@ export const LandingWelcome = () => {
                 {activeWorld ? "Change Game" : "Select Game"}
               </Button>
               {activeWorld && (
-                <Button className={buttonClasses} onClick={() => navigate("/play")}>
+                <Button className={buttonClasses} onClick={handleEnterBlitz}>
                   Enter Blitz
                 </Button>
               )}

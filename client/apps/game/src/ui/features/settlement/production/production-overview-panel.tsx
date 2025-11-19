@@ -1,20 +1,30 @@
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { isAutomationResourceBlocked, useAutomationStore } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ProductionModal } from "@/ui/features/settlement";
+import { ProductionStatusBadge } from "@/ui/shared";
 import {
   configManager,
   getBlockTimestamp,
+  getEntityIdFromKeys,
   getIsBlitz,
   getStructureName,
   Position,
   ResourceManager,
 } from "@bibliothecadao/eternum";
-import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo, useQuery } from "@bibliothecadao/react";
-import { ResourcesIds, StructureType } from "@bibliothecadao/types";
+import {
+  useBuildings,
+  useDojo,
+  usePlayerOwnedRealmsInfo,
+  usePlayerOwnedVillagesInfo,
+  useQuery,
+} from "@bibliothecadao/react";
+import { getProducedResource, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { useComponentValue } from "@dojoengine/react";
+import { HasValue, runQuery } from "@dojoengine/recs";
 import { Search } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { formatTimeRemaining } from "../../economy/resources/entity-resource-table/utils";
 
 const formatTimestamp = (timestamp?: number) => {
   if (!timestamp) return "Never";
@@ -76,6 +86,215 @@ const formatSignedAmount = (value: number): string => {
   return value > 0 ? `+${label}` : `-${label}`;
 };
 
+interface RealmProductionRecapProps {
+  realmId: number;
+  position: { x: number; y: number };
+  metrics?: Record<number, ResourceProductionMetrics>;
+  typeLabel: string;
+}
+
+interface ResourceProductionSummaryItem {
+  resourceId: ResourcesIds;
+  totalBuildings: number;
+  activeBuildings: number;
+  isProducing: boolean;
+  timeRemainingSeconds: number | null;
+  productionPerSecond: number | null;
+  outputRemaining: number | null;
+  calculatedAt: number;
+}
+
+const RealmProductionRecap = ({ realmId, position, metrics, typeLabel }: RealmProductionRecapProps) => {
+  const {
+    setup: {
+      components: { Building, Resource },
+    },
+  } = useDojo();
+
+  const [timerTick, setTimerTick] = useState(0);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const interval = window.setInterval(() => {
+      setTimerTick((tick) => tick + 1);
+    }, 1000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  const currentTime = useMemo(() => Date.now(), [timerTick]);
+
+  const buildings = useMemo(() => {
+    return runQuery([
+      HasValue(Building, {
+        outer_entity_id: realmId,
+      }),
+    ]);
+  }, [Building, realmId]);
+
+  const resourceData = useComponentValue(Resource, getEntityIdFromKeys([BigInt(realmId)]));
+
+  const { currentDefaultTick } = getBlockTimestamp();
+
+  const buildingsData = useBuildings(position.x, position.y);
+  const productionBuildings = useMemo(
+    () => buildingsData.filter((building) => building && getProducedResource(building.category)),
+    [buildingsData],
+  );
+
+  const resourceProductionSummary = useMemo<ResourceProductionSummaryItem[]>(() => {
+    const summaries = new Map<ResourcesIds, { totalBuildings: number }>();
+
+    productionBuildings.forEach((building) => {
+      if (!building?.produced?.resource) return;
+
+      const resourceId = building.produced.resource as ResourcesIds;
+      if (resourceId === ResourcesIds.Labor) return;
+
+      const existing = summaries.get(resourceId);
+      if (existing) {
+        existing.totalBuildings += 1;
+      } else {
+        summaries.set(resourceId, { totalBuildings: 1 });
+      }
+    });
+
+    const calculatedAt = Date.now();
+
+    return Array.from(summaries.entries()).map(([resourceId, stats]) => {
+      let isProducing = false;
+      let timeRemainingSeconds: number | null = null;
+      let productionPerSecond: number | null = null;
+      let outputRemaining: number | null = null;
+      let activeBuildings = 0;
+
+      if (resourceData) {
+        const productionInfo = ResourceManager.balanceAndProduction(resourceData, resourceId);
+        const productionData = ResourceManager.calculateResourceProductionData(
+          resourceId,
+          productionInfo,
+          currentDefaultTick || 0,
+        );
+        isProducing = productionData.isProducing;
+        if (isProducing) {
+          const buildingCount = productionInfo.production.building_count;
+          activeBuildings = buildingCount > 0 ? buildingCount : stats.totalBuildings;
+        }
+
+        timeRemainingSeconds = Number.isFinite(productionData.timeRemainingSeconds)
+          ? productionData.timeRemainingSeconds
+          : null;
+        productionPerSecond = Number.isFinite(productionData.productionPerSecond)
+          ? productionData.productionPerSecond
+          : null;
+        outputRemaining = Number.isFinite(productionData.outputRemaining) ? productionData.outputRemaining : null;
+      }
+
+      return {
+        resourceId,
+        totalBuildings: stats.totalBuildings,
+        activeBuildings,
+        isProducing,
+        timeRemainingSeconds,
+        productionPerSecond,
+        outputRemaining,
+        calculatedAt,
+      };
+    });
+  }, [productionBuildings, resourceData, currentDefaultTick]);
+
+  const totalProductionBuildings = resourceProductionSummary.reduce(
+    (accumulator, summary) => accumulator + summary.totalBuildings,
+    0,
+  );
+  const activeProductionBuildings = resourceProductionSummary.reduce(
+    (accumulator, summary) => accumulator + summary.activeBuildings,
+    0,
+  );
+  const hasProduction = resourceProductionSummary.length > 0;
+
+  return (
+    <div className="mt-1 space-y-3 px-1">
+      <div className="flex items-center gap-2 text-[10px] uppercase tracking-wide text-gold/50">
+        <span>{typeLabel}</span>
+        <span className="text-gold/40">●</span>
+        <span>{`${buildings.size} buildings`}</span>
+        <span className="text-gold/40">●</span>
+        <span>
+          {hasProduction ? `${activeProductionBuildings}/${totalProductionBuildings} producing` : "no production"}
+        </span>
+      </div>
+      <div className="flex flex-wrap items-center gap-5">
+        {hasProduction ? (
+          [...resourceProductionSummary]
+            .sort((a, b) => {
+              if (a.resourceId === ResourcesIds.Wheat && b.resourceId !== ResourcesIds.Wheat) return -1;
+              if (b.resourceId === ResourcesIds.Wheat && a.resourceId !== ResourcesIds.Wheat) return 1;
+              return a.resourceId - b.resourceId;
+            })
+            .map((summary) => {
+              const resourceLabel = ResourcesIds[summary.resourceId];
+              const metric = metrics?.[summary.resourceId];
+              const elapsedSeconds = (currentTime - summary.calculatedAt) / 1000;
+              const effectiveRemainingSeconds =
+                summary.timeRemainingSeconds !== null
+                  ? Math.max(summary.timeRemainingSeconds - elapsedSeconds, 0)
+                  : null;
+              const isWheat = summary.resourceId === ResourcesIds.Wheat;
+              const formattedRemaining =
+                !isWheat && summary.isProducing && effectiveRemainingSeconds !== null
+                  ? formatTimeRemaining(Math.ceil(effectiveRemainingSeconds))
+                  : null;
+              const baseTooltipParts = summary.isProducing
+                ? [
+                    resourceLabel,
+                    `${summary.activeBuildings}/${summary.totalBuildings} producing`,
+                    formattedRemaining ? `${formattedRemaining} left` : null,
+                  ]
+                : [
+                    resourceLabel,
+                    `Idle (${summary.totalBuildings} building${summary.totalBuildings !== 1 ? "s" : ""})`,
+                  ];
+              const lastRunPart =
+                metric && metric.hasLastExecution ? `Last run: ${formatSignedAmount(metric.netAmount)}` : null;
+              const tooltipParts = [lastRunPart, ...baseTooltipParts].filter(Boolean);
+
+              const buildingsLabel = String(summary.totalBuildings);
+              const netLabel =
+                metric && metric.hasLastExecution
+                  ? formatSignedAmount(metric.netAmount)
+                  : metric
+                    ? formatSignedPerSecond(metric.netPerSecond).replace("/s", "")
+                    : undefined;
+              const cornerBottomRight = formattedRemaining ?? undefined;
+
+              return (
+                <ProductionStatusBadge
+                  key={summary.resourceId}
+                  className="scale-[1.1]"
+                  resourceLabel={resourceLabel as string}
+                  tooltipText={tooltipParts.join(" • ")}
+                  isProducing={summary.isProducing}
+                  timeRemainingSeconds={effectiveRemainingSeconds}
+                  size="sm"
+                  showTooltip={false}
+                  cornerTopLeft={buildingsLabel}
+                  cornerTopRight={netLabel}
+                  cornerBottomRight={cornerBottomRight}
+                />
+              );
+            })
+        ) : (
+          <span className="text-gold/70">No production buildings</span>
+        )}
+      </div>
+    </div>
+  );
+};
+
 type ResourceProductionMetrics = {
   resourceId: ResourcesIds;
   outputPerSecond: number;
@@ -107,7 +326,6 @@ export const ProductionOverviewPanel = () => {
   const upsertRealm = useAutomationStore((state) => state.upsertRealm);
   const removeRealm = useAutomationStore((state) => state.removeRealm);
   const hydrated = useAutomationStore((state) => state.hydrated);
-  const [expandedRealmId, setExpandedRealmId] = useState<string | null>(null);
 
   const playerRealms = usePlayerOwnedRealmsInfo();
   const playerVillages = usePlayerOwnedVillagesInfo();
@@ -120,9 +338,6 @@ export const ProductionOverviewPanel = () => {
   const isBlitz = getIsBlitz();
   const goToStructure = useGoToStructure(setup);
   const { isMapView } = useQuery();
-  const handleToggleRealm = useCallback((realmId: string) => {
-    setExpandedRealmId((current) => (current === realmId ? null : realmId));
-  }, []);
   const autoSelectionRef = useRef<string | null>(null);
 
   const selectedStructureType = useMemo(() => {
@@ -477,9 +692,9 @@ export const ProductionOverviewPanel = () => {
   return (
     <div className="flex flex-col gap-3">
       <div>
-        <h4 className="text-sm font-semibold text-gold">Production Automation Overview</h4>
+        <h4 className="text-sm font-semibold text-gold">Production Overview</h4>
         <p className="text-[11px] text-gold/60">
-          Tap any realm to inspect recent production, or click Modify to update the production automation.
+          Tap any resource to inspect recent production, or click modify to update the automation.
         </p>
       </div>
       <div className="flex items-center gap-2">
@@ -534,38 +749,36 @@ export const ProductionOverviewPanel = () => {
       ) : (
         <div className="flex flex-col gap-2">
           {filteredCards.map((card) => {
-            const isExpanded = expandedRealmId === card.id;
             const statusLabel = card.statusLabel;
-            const handleKeyToggle = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                handleToggleRealm(card.id);
-              }
-            };
+            const realmIdNum = Number(card.id);
             return (
               <div
                 key={card.id}
                 role="button"
                 tabIndex={0}
-                onClick={() => handleToggleRealm(card.id)}
-                onKeyDown={handleKeyToggle}
-                className={`rounded border border-gold/10 bg-black/20 p-3 text-xs text-gold/80 space-y-3 transition cursor-pointer focus:outline-none focus-visible:border-gold/50 ${
-                  isExpanded
-                    ? "border-gold/30 bg-black/15 shadow-[0_0_12px_rgba(255,204,102,0.15)]"
-                    : "hover:border-gold/20 hover:bg-black/25"
-                }`}
+                className="flex flex-col rounded-lg border border-gold/15 bg-black/25 p-3 text-[12px] text-gold/80 space-y-0 transition hover:border-gold/30 hover:bg-black/30 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/60"
+                onClick={() => {
+                  if (Number.isFinite(realmIdNum) && card.position) {
+                    const position = new Position({ x: card.position.x, y: card.position.y });
+                    void goToStructure(realmIdNum, position, isMapView);
+                  }
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    if (Number.isFinite(realmIdNum) && card.position) {
+                      const position = new Position({ x: card.position.x, y: card.position.y });
+                      void goToStructure(realmIdNum, position, isMapView);
+                    }
+                  }
+                }}
               >
-                <div className="flex items-center justify-between gap-3 rounded border border-transparent px-1 py-1 transition">
+                <div className="flex items-center justify-between gap-3 rounded border border-transparent px-1 py-1">
                   <div className="flex flex-col gap-1">
-                    <span className="font-semibold text-gold/90">{card.name}</span>
-                    <div className="flex items-center gap-2 text-[10px] uppercase tracking-wide text-gold/50">
-                      <span>{card.typeLabel}</span>
-                      <span className="text-gold/40">●</span>
-                      <span>{isExpanded ? "Tap to hide" : "Tap to expand"}</span>
-                    </div>
+                    <span className="text-lg font-semibold text-gold/90">{card.name}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="rounded border border-gold/20 bg-black/30 px-2 py-0.5 text-[10px] uppercase tracking-wide text-gold/70">
+                    <span className="rounded-full border border-gold/30 bg-black/40 px-2 py-0.5 text-[10px] uppercase tracking-wide text-gold/80">
                       {statusLabel}
                     </span>
                     <button
@@ -573,7 +786,6 @@ export const ProductionOverviewPanel = () => {
                       className="rounded border border-gold bg-gold px-2 py-0.5 text-[10px] uppercase tracking-wide text-black font-semibold transition-colors hover:bg-[#ffd84a] hover:border-gold focus:outline-none focus-visible:ring-1 focus-visible:ring-gold"
                       onClick={(event) => {
                         event.stopPropagation();
-                        const realmIdNum = Number(card.id);
                         if (Number.isFinite(realmIdNum) && card.position) {
                           const position = new Position({ x: card.position.x, y: card.position.y });
                           void goToStructure(realmIdNum, position, isMapView);
@@ -586,109 +798,19 @@ export const ProductionOverviewPanel = () => {
                   </div>
                 </div>
 
-                {card.resourceIds.length === 0 ? (
-                  <div className="rounded border border-gold/15 bg-black/20 px-3 py-2 text-[11px] text-gold/60">
-                    No automated resources
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                    {card.resourceIds.map((resourceId) => {
-                      const metrics = card.metrics[resourceId];
-                      const hasLastRun = metrics?.hasLastExecution ?? false;
-                      const hasDeficit = hasLastRun
-                        ? (metrics?.netAmount ?? 0) <= 0
-                        : (metrics?.netPerSecond ?? 0) <= 0;
-                      const netLabel = hasLastRun
-                        ? `Last run: ${formatSignedAmount(metrics?.netAmount ?? 0)}`
-                        : `Net rate ${formatSignedPerSecond(metrics?.netPerSecond ?? 0)}`;
+                <div className="flex-1">
+                  {Number.isFinite(realmIdNum) && card.position && (
+                    <RealmProductionRecap
+                      realmId={realmIdNum}
+                      position={card.position}
+                      metrics={card.metrics}
+                      typeLabel={card.typeLabel}
+                    />
+                  )}
+                </div>
 
-                      return (
-                        <div
-                          key={`${card.id}-${resourceId}`}
-                          className="rounded border border-gold/15 bg-black/25 p-3 space-y-2 transition"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              <ResourceIcon resource={ResourcesIds[resourceId]} size="sm" />
-                              <span className="text-sm font-semibold text-gold">{ResourcesIds[resourceId]}</span>
-                            </div>
-                            <span
-                              className={`text-[11px] font-semibold ${hasDeficit ? "text-red/80" : "text-gold/70"}`}
-                            >
-                              {netLabel}
-                            </span>
-                          </div>
-
-                          {isExpanded && (
-                            <div className="space-y-2 text-[11px] text-gold/70">
-                              {hasLastRun ? (
-                                <>
-                                  <div>Produced {formatAmount(metrics?.producedAmount ?? 0)}</div>
-                                  <div>Consumed {formatAmount(metrics?.consumedAmount ?? 0)}</div>
-                                  <div className={`${hasDeficit ? "text-red/80" : "text-gold/70"}`}>
-                                    Last run: {formatSignedAmount(metrics?.netAmount ?? 0)}
-                                  </div>
-                                </>
-                              ) : (
-                                <div>No automation run recorded yet.</div>
-                              )}
-                              <div className="text-[10px] text-gold/50">
-                                Net rate {formatSignedPerSecond(metrics?.netPerSecond ?? 0)}
-                              </div>
-                              {hasLastRun && metrics && metrics.inputBreakdown.length > 0 ? (
-                                <div className="space-y-1">
-                                  <span className="text-[10px] uppercase tracking-wide text-gold/50">
-                                    Inputs (last run)
-                                  </span>
-                                  <div className="grid grid-cols-2 gap-1">
-                                    {metrics.inputBreakdown.map((input) => (
-                                      <div
-                                        key={`input-${card.id}-${resourceId}-${input.resourceId}`}
-                                        className="flex items-center justify-between rounded border border-gold/15 bg-black/20 px-2 py-1 text-[10px] text-gold/70"
-                                      >
-                                        <span className="flex items-center gap-1">
-                                          <ResourceIcon resource={ResourcesIds[input.resourceId]} size="xs" />
-                                          {ResourcesIds[input.resourceId]}
-                                        </span>
-                                        <span className="text-red/70">-{formatAmount(input.amount)}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              ) : !hasLastRun && metrics && metrics.perSecondInputs.length > 0 ? (
-                                <div className="space-y-1">
-                                  <span className="text-[10px] uppercase tracking-wide text-gold/50">
-                                    Inputs (per second estimate)
-                                  </span>
-                                  <div className="grid grid-cols-2 gap-1">
-                                    {metrics.perSecondInputs.map((input) => (
-                                      <div
-                                        key={`input-${card.id}-${resourceId}-${input.resourceId}`}
-                                        className="flex items-center justify-between rounded border border-gold/15 bg-black/20 px-2 py-1 text-[10px] text-gold/70"
-                                      >
-                                        <span className="flex items-center gap-1">
-                                          <ResourceIcon resource={ResourcesIds[input.resourceId]} size="xs" />
-                                          {ResourcesIds[input.resourceId]}
-                                        </span>
-                                        <span className="text-red/70">-{formatPerSecondValue(input.perSecond)}/s</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              ) : (
-                                <span className="text-[10px] text-gold/60">No resource inputs recorded.</span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-                <div className="text-[10px] text-gold/50">
-                  {card.lastRun
-                    ? `Latest automation run ${formatRelative(card.lastRun)} (${formatTimestamp(card.lastRun)})`
-                    : "Automation has not executed yet."}
+                <div className="px-1 mt-5 text-[10px] text-gold/50 text-right self-end">
+                  {card.lastRun ? `Last run ${formatRelative(card.lastRun)}` : "Automation has not executed yet."}
                 </div>
               </div>
             );

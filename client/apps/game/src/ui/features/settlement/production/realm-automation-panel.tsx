@@ -10,6 +10,10 @@ import {
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import Button from "@/ui/design-system/atoms/button";
 import { configManager, getBlockTimestamp, ResourceManager } from "@bibliothecadao/eternum";
+import {
+  buildRealmResourceSnapshot,
+  type RealmResourceSnapshot,
+} from "@/ui/features/infrastructure/automation/model/automation-processor";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import clsx from "clsx";
@@ -29,7 +33,7 @@ type RealmAutomationPanelProps = {
   entityType?: "realm" | "village";
 };
 
-const sliderStep = 5;
+const sliderStep = 1;
 
 const formatSignedPerSecond = (value: number): string => {
   if (!Number.isFinite(value) || Math.abs(value) < 0.0001) return "0/s";
@@ -77,6 +81,7 @@ export const RealmAutomationPanel = ({
   } = useDojo();
   const upsertRealm = useAutomationStore((state) => state.upsertRealm);
   const setRealmPreset = useAutomationStore((state) => state.setRealmPreset);
+  const setRealmPresetConfig = useAutomationStore((state) => state.setRealmPresetConfig);
   const setResourcePercentages = useAutomationStore((state) => state.setResourcePercentages);
   const ensureResourceConfig = useAutomationStore((state) => state.ensureResourceConfig);
   const removeResourceConfig = useAutomationStore((state) => state.removeResourceConfig);
@@ -119,22 +124,18 @@ export const RealmAutomationPanel = ({
     missingResources.forEach((resourceId) => ensureResourceConfig(realmEntityId, resourceId));
   }, [ensureResourceConfig, missingResources, realmEntityId, hydrated]);
 
-  const extraResources = useMemo(() => {
-    if (!realmAutomation) return [];
-    const effectiveEntityType = realmAutomation.entityType ?? entityType;
-    return Object.keys(realmAutomation.resources ?? {})
-      .map((key) => Number(key) as ResourcesIds)
-      .filter(
-        (resourceId) =>
-          !isAutomationResourceBlocked(resourceId, effectiveEntityType) && !realmResources.includes(resourceId),
-      );
-  }, [realmAutomation, realmResources, entityType]);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    if (!extraResources.length) return;
-    extraResources.forEach((resourceId) => removeResourceConfig(realmEntityId, resourceId));
-  }, [extraResources, realmEntityId, removeResourceConfig, hydrated]);
+  const realmSnapshot: RealmResourceSnapshot | null = useMemo(() => {
+    const numericRealmId = Number(realmEntityId);
+    if (!components || !Number.isFinite(numericRealmId) || numericRealmId <= 0) {
+      return null;
+    }
+    const { currentDefaultTick } = getBlockTimestamp();
+    return buildRealmResourceSnapshot({
+      components,
+      realmId: numericRealmId,
+      currentTick: currentDefaultTick,
+    });
+  }, [components, realmEntityId]);
 
   const createBaselinePercentages = useCallback((resourceId: ResourcesIds): ResourceAutomationPercentages => {
     if (resourceId === ResourcesIds.Donkey) {
@@ -218,12 +219,9 @@ export const RealmAutomationPanel = ({
     };
 
     setLastSavedSnapshot(snapshot);
-
-    if (!hasLocalChanges) {
-      setDraftPercentages(snapshotPercentages);
-      setDraftPresetId(snapshot.presetId);
-    }
-  }, [realmAutomation, realmResources, createBaselinePercentages, hasLocalChanges]);
+    setDraftPercentages(snapshotPercentages);
+    setDraftPresetId(snapshot.presetId);
+  }, [realmAutomation, realmResources, createBaselinePercentages]);
 
   const draftAutomation = useMemo(() => {
     if (!realmAutomation) return undefined;
@@ -332,18 +330,9 @@ export const RealmAutomationPanel = ({
 
   const netUsagePerSecondRecord = useMemo(() => {
     const record: Record<number, number> = {};
-    const numericRealmId = Number(realmEntityId);
-    if (!components || !Number.isFinite(numericRealmId) || numericRealmId <= 0) {
+    if (!realmSnapshot) {
       return record;
     }
-
-    const manager = new ResourceManager(components, numericRealmId);
-    const resourceComponent = manager.getResource();
-    if (!resourceComponent) {
-      return record;
-    }
-
-    const { currentDefaultTick } = getBlockTimestamp();
 
     const relevantResourceIds = new Set<ResourcesIds>();
     realmResources.forEach((id) => relevantResourceIds.add(id));
@@ -367,20 +356,8 @@ export const RealmAutomationPanel = ({
 
     automationRows.forEach(({ resourceId, percentages, complexInputs, simpleInputs }) => {
       const typedResourceId = resourceId as ResourcesIds;
-      let baseOutputPerSecond = 0;
-      try {
-        const productionInfo = ResourceManager.balanceAndProduction(resourceComponent, typedResourceId);
-        const productionData = ResourceManager.calculateResourceProductionData(
-          typedResourceId,
-          productionInfo,
-          currentDefaultTick || 0,
-        );
-        if (Number.isFinite(productionData.productionPerSecond)) {
-          baseOutputPerSecond = productionData.productionPerSecond;
-        }
-      } catch (_error) {
-        baseOutputPerSecond = 0;
-      }
+      const snapshotEntry = realmSnapshot.get(typedResourceId);
+      const baseOutputPerSecond = snapshotEntry?.productionPerSecond ?? 0;
 
       if (baseOutputPerSecond <= 0) {
         return;
@@ -418,20 +395,8 @@ export const RealmAutomationPanel = ({
       }
     });
 
-    let contractLaborPerSecond = 0;
-    try {
-      const laborProduction = ResourceManager.balanceAndProduction(resourceComponent, ResourcesIds.Labor);
-      const laborData = ResourceManager.calculateResourceProductionData(
-        ResourcesIds.Labor,
-        laborProduction,
-        currentDefaultTick || 0,
-      );
-      if (Number.isFinite(laborData.productionPerSecond)) {
-        contractLaborPerSecond = laborData.productionPerSecond;
-      }
-    } catch (_error) {
-      contractLaborPerSecond = 0;
-    }
+    const laborEntry = realmSnapshot.get(ResourcesIds.Labor);
+    const contractLaborPerSecond = laborEntry?.productionPerSecond ?? 0;
 
     if (contractLaborPerSecond > 0) {
       addOutput(ResourcesIds.Labor, contractLaborPerSecond);
@@ -452,29 +417,44 @@ export const RealmAutomationPanel = ({
     });
 
     return record;
-  }, [automationRows, components, realmEntityId, realmAutomation?.resources, realmResources, aggregatedUsageList]);
+  }, [automationRows, realmSnapshot, realmAutomation?.resources, realmResources, aggregatedUsageList]);
 
   const handlePresetSelect = useCallback(
     (presetId: RealmPresetId) => {
       if (!draftAutomation) return;
 
-      const allocations = calculatePresetAllocations(draftAutomation, presetId);
-      setDraftPresetId(presetId);
+      // Limit preset calculation to resources actually produced in this realm.
+      const limitedResources: Record<number, ResourceAutomationSettings> = {};
+      realmResources.forEach((resourceId) => {
+        const existing = draftAutomation.resources[resourceId];
+        if (existing) {
+          limitedResources[resourceId] = existing;
+        } else {
+          limitedResources[resourceId] = {
+            resourceId,
+            autoManaged: true,
+            label: undefined,
+            updatedAt: draftAutomation.updatedAt,
+            percentages: draftPercentages[resourceId] ?? createBaselinePercentages(resourceId),
+          };
+        }
+      });
+
+      const limitedAutomation: typeof draftAutomation = {
+        ...draftAutomation,
+        resources: limitedResources,
+      };
+
+      const allocations = calculatePresetAllocations(limitedAutomation, presetId);
 
       if (allocations.size === 0 && presetId !== "idle") {
+        setDraftPresetId(presetId);
         return;
       }
 
       setDraftPercentages((prev) => {
-        const resourceKeys = new Set<number>([
-          ...Object.keys(prev).map(Number),
-          ...Object.keys(draftAutomation.resources ?? {}).map(Number),
-          ...realmResources.map((resourceId) => Number(resourceId)),
-        ]);
-
-        const updated: Record<number, ResourceAutomationPercentages> = {};
-        resourceKeys.forEach((key) => {
-          const resourceId = Number(key) as ResourcesIds;
+        const updated: Record<number, ResourceAutomationPercentages> = { ...prev };
+        realmResources.forEach((resourceId) => {
           if (presetId === "idle") {
             updated[resourceId] = { resourceToResource: 0, laborToResource: 0 };
             return;
@@ -489,8 +469,10 @@ export const RealmAutomationPanel = ({
 
         return updated;
       });
+
+      setDraftPresetId(presetId);
     },
-    [draftAutomation, realmResources],
+    [draftAutomation, realmResources, realmEntityId, entityType],
   );
 
   const handleSliderChange = useCallback(
@@ -540,22 +522,49 @@ export const RealmAutomationPanel = ({
       ),
     };
 
-    const targetPreset = draftPresetId ?? null;
-    const savedPreset = snapshot.presetId ?? null;
-    if (targetPreset !== savedPreset) {
-      setRealmPreset(realmEntityId, targetPreset);
-    }
-
     const resourceIds = new Set<number>([
       ...Object.keys(snapshot.percentages).map(Number),
       ...Object.keys(draftPercentages).map(Number),
     ]);
+
+    if (draftPresetId) {
+      // For preset saves, only persist percentages for resources actually produced in this realm.
+      const normalizedPercentages: Record<number, ResourceAutomationPercentages> = {};
+      realmResources.forEach((resourceId) => {
+        const source =
+          draftPercentages[resourceId] ?? snapshot.percentages[resourceId] ?? createBaselinePercentages(resourceId);
+        normalizedPercentages[resourceId] = {
+          resourceToResource: source.resourceToResource,
+          laborToResource: source.laborToResource,
+        };
+      });
+
+      setRealmPresetConfig(realmEntityId, draftPresetId, normalizedPercentages);
+      setLastSavedSnapshot({
+        presetId: draftPresetId,
+        percentages: normalizedPercentages,
+      });
+      setDraftPercentages(normalizedPercentages);
+      setDraftPresetId(draftPresetId);
+      return;
+    }
 
     const allResources = new Set<number>([
       ...resourceIds,
       ...realmResources.map((resourceId) => Number(resourceId)),
       ...Object.keys(realmAutomation.resources ?? {}).map(Number),
     ]);
+
+    const normalizedPercentages: Record<number, ResourceAutomationPercentages> = {};
+    allResources.forEach((id) => {
+      const resourceId = Number(id) as ResourcesIds;
+      const source =
+        draftPercentages[resourceId] ?? snapshot.percentages[resourceId] ?? createBaselinePercentages(resourceId);
+      normalizedPercentages[resourceId] = {
+        resourceToResource: source.resourceToResource,
+        laborToResource: source.laborToResource,
+      };
+    });
 
     resourceIds.forEach((id) => {
       const resourceId = Number(id) as ResourcesIds;
@@ -569,31 +578,21 @@ export const RealmAutomationPanel = ({
       }
     });
 
-    const normalizedPercentages: Record<number, ResourceAutomationPercentages> = {};
-    allResources.forEach((id) => {
-      const resourceId = Number(id) as ResourcesIds;
-      const source =
-        draftPercentages[resourceId] ?? snapshot.percentages[resourceId] ?? createBaselinePercentages(resourceId);
-      normalizedPercentages[resourceId] = {
-        resourceToResource: source.resourceToResource,
-        laborToResource: source.laborToResource,
-      };
-    });
-
     setLastSavedSnapshot({
-      presetId: targetPreset,
+      presetId: "custom",
       percentages: normalizedPercentages,
     });
     setDraftPercentages(normalizedPercentages);
-    setDraftPresetId(targetPreset);
+    setDraftPresetId("custom");
   }, [
     realmAutomation,
     hasLocalChanges,
     lastSavedSnapshot,
-    draftPresetId,
     draftPercentages,
+    draftPresetId,
     createBaselinePercentages,
     setRealmPreset,
+    setRealmPresetConfig,
     realmEntityId,
     setResourcePercentages,
     realmResources,
@@ -637,22 +636,42 @@ export const RealmAutomationPanel = ({
           </div>
         )}
         <div className="flex flex-wrap gap-2">
-          {REALM_PRESETS.map((preset) => (
-            <button
-              key={preset.id}
-              type="button"
-              className={clsx(
-                "px-3 py-1 rounded border text-xs transition-colors",
-                activePresetId === preset.id
-                  ? "border-gold text-gold bg-gold/10"
-                  : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold",
-              )}
-              title={preset.description}
-              onClick={() => handlePresetSelect(preset.id)}
-            >
-              {preset.label}
-            </button>
-          ))}
+          {REALM_PRESETS.filter((preset) => preset.id !== "custom").map((preset) => {
+            const isActive = activePresetId === preset.id;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                className={clsx(
+                  "px-3 py-1 rounded border text-xs transition-colors",
+                  isActive
+                    ? "border-gold text-gold bg-gold/10"
+                    : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold",
+                )}
+                title={preset.description}
+                onClick={() => handlePresetSelect(preset.id)}
+              >
+                {preset.label}
+              </button>
+            );
+          })}
+          {REALM_PRESETS.filter((preset) => preset.id === "custom").map((preset) => {
+            const isActive = activePresetId === preset.id;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                disabled
+                className={clsx(
+                  "px-3 py-1 rounded border text-xs transition-colors cursor-not-allowed",
+                  isActive ? "border-gold text-gold bg-gold/10" : "border-gold/15 text-gold/40",
+                )}
+                title={preset.description}
+              >
+                {preset.label}
+              </button>
+            );
+          })}
         </div>
         {hasLocalChanges && (
           <span className="text-[11px] text-warning">Unsaved changes pending. Save to apply automation updates.</span>

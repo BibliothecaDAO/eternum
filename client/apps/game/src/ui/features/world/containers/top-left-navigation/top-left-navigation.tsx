@@ -1,9 +1,8 @@
-import { useGoToStructure, useNavigateToMapView } from "@/hooks/helpers/use-navigate";
+import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getBlockTimestamp, getIsBlitz, Position } from "@bibliothecadao/eternum";
 
 import { useUISound } from "@/audio/hooks/useUISound";
-import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CapacityInfo, SecondaryMenuItems } from "@/ui/features/world";
 import { NameChangePopup } from "@/ui/shared";
@@ -41,6 +40,7 @@ export const TopLeftNavigation = memo(() => {
   const [structureNameChange, setStructureNameChange] = useState<ComponentValue<
     ClientComponents["Structure"]["schema"]
   > | null>(null);
+  const [structureNameVersion, setStructureNameVersion] = useState(0);
   const structures = useUIStore((state) => state.playerStructures);
 
   const { isMapView } = useQuery();
@@ -51,16 +51,17 @@ export const TopLeftNavigation = memo(() => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const followArmyCombats = useUIStore((state) => state.followArmyCombats);
   const setFollowArmyCombats = useUIStore((state) => state.setFollowArmyCombats);
-  const isSpectating = useUIStore((state) => state.isSpectating);
-  const worldMapReturnPosition = useUIStore((state) => state.worldMapReturnPosition);
   const lastControlledStructureEntityId = useUIStore((state) => state.lastControlledStructureEntityId);
 
-  const exitSpectatorMode = useUIStore((state) => state.exitSpectatorMode);
   const isFollowingArmy = useUIStore((state) => state.isFollowingArmy);
   const followingArmyMessage = useUIStore((state) => state.followingArmyMessage);
 
   const { favorites, toggleFavorite } = useFavoriteStructures();
   const { structureGroups, updateStructureGroup } = useStructureGroups();
+
+  const bumpStructureNameVersion = useCallback(() => {
+    setStructureNameVersion((version) => version + 1);
+  }, []);
 
   // force a refresh of getEntityInfo when the structure data arrives
   const structure = useComponentValue(setup.components.Structure, getEntityIdFromKeys([BigInt(structureEntityId)]));
@@ -80,7 +81,6 @@ export const TopLeftNavigation = memo(() => {
   console.log("[TopLeftNavigation] selectedStructure:", lastControlledStructureEntityId);
 
   const goToStructure = useGoToStructure(setup);
-  const navigateToMapView = useNavigateToMapView();
 
   const onSelectStructure = useCallback(
     (entityId: ID) => {
@@ -99,52 +99,14 @@ export const TopLeftNavigation = memo(() => {
   const handleNameChange = useCallback((structureEntityId: ID, newName: string) => {
     setEntityNameLocalStorage(structureEntityId, newName);
     setStructureNameChange(null);
+    bumpStructureNameVersion();
   }, []);
 
   const handleNameDelete = useCallback((structureEntityId: ID) => {
     deleteEntityNameLocalStorage(structureEntityId);
     setStructureNameChange(null);
+    bumpStructureNameVersion();
   }, []);
-  const handleReturnToMyRealms = useCallback(() => {
-    const fallbackId =
-      lastControlledStructureEntityId !== UNDEFINED_STRUCTURE_ENTITY_ID
-        ? lastControlledStructureEntityId
-        : structures[0]?.entityId;
-
-    const spectatedBase = isSpectating
-      ? getComponentValue(setup.components.Structure, getEntityIdFromKeys([BigInt(structureEntityId)]))?.base
-      : null;
-
-    const fallbackBase =
-      fallbackId !== undefined && fallbackId !== null && fallbackId !== UNDEFINED_STRUCTURE_ENTITY_ID
-        ? getComponentValue(setup.components.Structure, getEntityIdFromKeys([BigInt(fallbackId)]))?.base
-        : null;
-
-    const storedReturnPosition = worldMapReturnPosition;
-
-    exitSpectatorMode();
-
-    const mapTarget = spectatedBase
-      ? { x: spectatedBase.coord_x, y: spectatedBase.coord_y }
-      : storedReturnPosition
-        ? { x: storedReturnPosition.col, y: storedReturnPosition.row }
-        : fallbackBase
-          ? { x: fallbackBase.coord_x, y: fallbackBase.coord_y }
-          : null;
-
-    if (mapTarget) {
-      navigateToMapView(new Position({ x: mapTarget.x, y: mapTarget.y }));
-    }
-  }, [
-    exitSpectatorMode,
-    isSpectating,
-    lastControlledStructureEntityId,
-    navigateToMapView,
-    setup.components.Structure,
-    structureEntityId,
-    structures,
-    worldMapReturnPosition,
-  ]);
 
   const handleRequestNameChange = useCallback((structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => {
     setStructureNameChange(structure);
@@ -165,6 +127,7 @@ export const TopLeftNavigation = memo(() => {
             structures={structures}
             favorites={favorites}
             structureGroups={structureGroups}
+            nameUpdateVersion={structureNameVersion}
             onToggleFavorite={toggleFavorite}
             onSelectStructure={onSelectStructure}
             onRequestNameChange={handleRequestNameChange}

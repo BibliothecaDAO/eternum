@@ -11,6 +11,15 @@ import { ClientComponents, ResourcesIds } from "@bibliothecadao/types";
 
 export const PROCESS_INTERVAL_MS = 60 * 1000;
 
+export interface RealmResourceSnapshotEntry {
+  resourceId: ResourcesIds;
+  balanceHuman: number;
+  hasActiveProduction: boolean;
+  productionPerSecond: number;
+}
+
+export type RealmResourceSnapshot = Map<ResourcesIds, RealmResourceSnapshotEntry>;
+
 const ALL_RESOURCE_IDS = Object.values(ResourcesIds).filter((value) => typeof value === "number") as ResourcesIds[];
 
 export interface ResourceCycleCall {
@@ -38,8 +47,7 @@ export interface RealmProductionPlan {
 
 export interface BuildRealmProductionPlanArgs {
   realmConfig: RealmAutomationConfig;
-  components: ClientComponents | null | undefined;
-  currentTick?: number;
+  snapshot: RealmResourceSnapshot;
 }
 
 const ZERO_PLAN: RealmProductionPlan = {
@@ -69,10 +77,64 @@ const DEFAULT_PLAN_CALLSET: RealmProductionCallset = {
   laborToResource: [],
 };
 
+export interface BuildRealmResourceSnapshotArgs {
+  components: ClientComponents | null | undefined;
+  realmId: number;
+  currentTick?: number;
+}
+
+export const buildRealmResourceSnapshot = ({
+  components,
+  realmId,
+  currentTick,
+}: BuildRealmResourceSnapshotArgs): RealmResourceSnapshot => {
+  const snapshot: RealmResourceSnapshot = new Map();
+
+  if (!components) return snapshot;
+  if (!Number.isFinite(realmId) || realmId <= 0) return snapshot;
+  if (typeof currentTick !== "number" || !Number.isFinite(currentTick)) return snapshot;
+
+  const manager = new ResourceManager(components, realmId);
+  const resourceComponent = manager.getResource();
+  if (!resourceComponent) return snapshot;
+
+  for (const resourceId of ALL_RESOURCE_IDS) {
+    try {
+      const balanceAndProduction = ResourceManager.balanceAndProduction(resourceComponent, resourceId);
+      const { production } = balanceAndProduction;
+      const { balance: projectedBalance } = ResourceManager.balanceWithProduction(
+        resourceComponent,
+        currentTick,
+        resourceId,
+      );
+      const balanceHuman = divideByPrecision(Number(projectedBalance));
+      const hasActiveProduction = Boolean(production && production.building_count > 0);
+      const productionData = ResourceManager.calculateResourceProductionData(
+        resourceId,
+        balanceAndProduction,
+        currentTick,
+      );
+      const productionPerSecond = Number.isFinite(productionData.productionPerSecond)
+        ? productionData.productionPerSecond
+        : 0;
+
+      snapshot.set(resourceId, {
+        resourceId,
+        balanceHuman,
+        hasActiveProduction,
+        productionPerSecond,
+      });
+    } catch {
+      // ignore per-resource errors to avoid failing the whole snapshot
+    }
+  }
+
+  return snapshot;
+};
+
 export const buildRealmProductionPlan = ({
   realmConfig,
-  components,
-  currentTick,
+  snapshot,
 }: BuildRealmProductionPlanArgs): RealmProductionPlan => {
   if (!realmConfig) {
     return { ...ZERO_PLAN };
@@ -85,30 +147,15 @@ export const buildRealmProductionPlan = ({
 
   const entityType = realmConfig.entityType ?? "realm";
 
-  if (!components) {
-    return {
-      ...ZERO_PLAN,
-      realmId: realmIdNumber,
-      realmKey: realmConfig.realmId,
-      realmName: realmConfig.realmName,
-      evaluatedResourceIds: [],
-    };
-  }
-
-  const resourceManager = new ResourceManager(components, realmIdNumber);
-
   const configuredResourceIds = Object.keys(realmConfig.resources).map((key) => Number(key) as ResourcesIds);
   const resourceIdsToProcess = new Set<ResourcesIds>(configuredResourceIds);
 
-  const resourceComponent = resourceManager.getResource();
-  if (resourceComponent) {
-    for (const resourceId of ALL_RESOURCE_IDS) {
-      const production = ResourceManager.balanceAndProduction(resourceComponent, resourceId).production;
-      if (production && production.building_count > 0) {
-        resourceIdsToProcess.add(resourceId);
-      }
+  // Include any resources with active production from the snapshot
+  snapshot.forEach((entry) => {
+    if (entry.hasActiveProduction) {
+      resourceIdsToProcess.add(entry.resourceId);
     }
-  }
+  });
 
   if (resourceIdsToProcess.size === 0) {
     return {
@@ -181,21 +228,8 @@ export const buildRealmProductionPlan = ({
   const outputsByResource: Record<number, number> = {};
 
   const computeHumanBalance = (resourceId: ResourcesIds): number => {
-    try {
-      if (typeof currentTick === "number" && Number.isFinite(currentTick)) {
-        const { balance } = resourceManager.balanceWithProduction(currentTick, resourceId);
-        const human = divideByPrecision(Number(balance));
-        return human;
-      }
-    } catch (error) {
-      console.log("[Automation] balanceWithProduction fallback", {
-        realmId: realmConfig.realmId,
-        resourceId,
-        error,
-      });
-    }
-    const fallbackRaw = resourceManager.balance(resourceId);
-    return divideByPrecision(Number(fallbackRaw));
+    const entry = snapshot.get(resourceId);
+    return entry?.balanceHuman ?? 0;
   };
 
   resourcesToTrack.forEach((resourceId) => {

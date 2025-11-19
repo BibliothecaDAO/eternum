@@ -41,19 +41,17 @@ const getRelativeTimeLabel = (timestamp: number | null, fallback: string) => {
   return relative.format(-minutesAgo, "minute");
 };
 
-const SCORE_TO_BEAT_ENDPOINTS: string[] = [
-  "https://api.cartridge.gg/x/war-game-1/torii/sql",
-  "https://api.cartridge.gg/x/war-game-2/torii/sql",
-  "https://api.cartridge.gg/x/war-game-3/torii/sql",
-  "https://api.cartridge.gg/x/war-game-4/torii/sql",
-  "https://api.cartridge.gg/x/war-game-5/torii/sql",
-  "https://api.cartridge.gg/x/war-game-6/torii/sql",
-  "https://api.cartridge.gg/x/war-game-7/torii/sql",
-  "https://api.cartridge.gg/x/war-game-8/torii/sql",
-  "https://api.cartridge.gg/x/war-game-9/torii/sql",
+const SCORE_TO_BEAT_STORAGE_KEY = "landing-score-to-beat-endpoints";
+const DEFAULT_SCORE_TO_BEAT_ENDPOINT_NAMES: string[] = [
+  "warr-game-1",
+  "warr-game-2",
+  "warr-game-3",
+  "warr-game-4",
+  "warr-game-5",
+  "warr-game-6",
 ];
 
-const SCORE_TO_BEAT_TAB_ENABLED = false; // Temporarily hide the Score to Beat tab until it's ready again.
+const SCORE_TO_BEAT_TAB_ENABLED = true; // Temporarily hide the Score to Beat tab until it's ready again.
 
 const describeEndpoint = (endpoint: string) => {
   if (!endpoint) {
@@ -72,6 +70,49 @@ const describeEndpoint = (endpoint: string) => {
   } catch {
     return trimmed;
   }
+};
+
+const buildEndpointUrl = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const hasProtocol = /^https?:\/\//i.test(trimmed);
+  return hasProtocol ? trimmed : `https://api.cartridge.gg/x/${trimmed}/torii/sql`;
+};
+
+const parseEndpointInput = (value: string) => {
+  return Array.from(
+    new Set(
+      value
+        .split(/[\n,]+/)
+        .map((item) => item.trim())
+        .filter(Boolean),
+    ),
+  );
+};
+
+const loadStoredEndpointNames = (): string[] | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const stored = window.localStorage.getItem(SCORE_TO_BEAT_STORAGE_KEY);
+  if (!stored) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(stored);
+    if (Array.isArray(parsed)) {
+      return parsed.map((item) => String(item).trim()).filter(Boolean);
+    }
+  } catch {
+    // Ignore malformed data and fall back to defaults.
+  }
+
+  return null;
 };
 
 type LeaderboardTab = "score-to-beat" | "leaderboard";
@@ -204,6 +245,12 @@ export const LandingLeaderboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
 
   const navigate = useNavigate();
+  const [configuredEndpointNames, setConfiguredEndpointNames] = useState<string[]>(
+    DEFAULT_SCORE_TO_BEAT_ENDPOINT_NAMES,
+  );
+  const [endpointEditorValue, setEndpointEditorValue] = useState<string>(
+    DEFAULT_SCORE_TO_BEAT_ENDPOINT_NAMES.join("\n"),
+  );
 
   const entries = useLandingLeaderboardStore((state) => state.entries);
 
@@ -214,19 +261,72 @@ export const LandingLeaderboard = () => {
   const fetchLeaderboard = useLandingLeaderboardStore((state) => state.fetchLeaderboard);
 
   useEffect(() => {
+    const stored = loadStoredEndpointNames();
+    if (stored) {
+      setConfiguredEndpointNames(stored);
+      setEndpointEditorValue(stored.join("\n"));
+    }
+  }, []);
+
+  const resolvedScoreToBeatEndpoints = useMemo(
+    () =>
+      configuredEndpointNames
+        .map((name) => buildEndpointUrl(name))
+        .filter((endpoint): endpoint is string => Boolean(endpoint)),
+    [configuredEndpointNames],
+  );
+
+  const editedEndpointNames = useMemo(() => parseEndpointInput(endpointEditorValue), [endpointEditorValue]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(SCORE_TO_BEAT_STORAGE_KEY, JSON.stringify(configuredEndpointNames));
+  }, [configuredEndpointNames]);
+
+  const handleApplyScoreToBeatEndpoints = useCallback(() => {
+    setConfiguredEndpointNames(editedEndpointNames);
+    setEndpointEditorValue(editedEndpointNames.join("\n"));
+  }, [editedEndpointNames]);
+
+  const handleClearScoreToBeatEndpoints = useCallback(() => {
+    setConfiguredEndpointNames([]);
+    setEndpointEditorValue("");
+  }, []);
+
+  const handleRemoveEndpointName = useCallback((name: string) => {
+    setConfiguredEndpointNames((current) => {
+      const updated = current.filter((item) => item !== name);
+      setEndpointEditorValue(updated.join("\n"));
+      return updated;
+    });
+  }, []);
+
+  const isEndpointEditorDirty = useMemo(
+    () =>
+      editedEndpointNames.length !== configuredEndpointNames.length ||
+      editedEndpointNames.some((name, index) => name !== configuredEndpointNames[index]),
+    [configuredEndpointNames, editedEndpointNames],
+  );
+  const isSaveEndpointsDisabled = !isEndpointEditorDirty;
+  const [isEndpointEditorOpen, setIsEndpointEditorOpen] = useState(false);
+
+  useEffect(() => {
     console.log("entries", entries);
   }, [entries]);
 
   const {
     entries: scoreToBeatEntries,
-    endpoints: scoreToBeatEndpoints,
+    endpoints: scoreToBeatSyncedEndpoints,
     failedEndpoints: scoreToBeatFailedEndpoints,
     lastUpdatedAt: scoreToBeatLastUpdatedAt,
     isLoading: isScoreToBeatLoading,
     error: scoreToBeatError,
     refresh: refreshScoreToBeat,
     hasEndpointsConfigured: hasScoreToBeatConfiguration,
-  } = useScoreToBeat(SCORE_TO_BEAT_ENDPOINTS);
+  } = useScoreToBeat(resolvedScoreToBeatEndpoints);
 
   const [refreshCooldownMs, setRefreshCooldownMs] = useState(0);
 
@@ -333,13 +433,20 @@ export const LandingLeaderboard = () => {
     }
 
     const rows = [
-      ["Rank", "Display name", "Address", "Score"],
-      ...scoreToBeatTopTen.map((entry, index) => [
-        `${index + 1}`,
-        entry.displayName ?? displayAddress(entry.address),
-        entry.address,
-        `${entry.combinedPoints ?? 0}`,
-      ]),
+      ["Rank", "Display name", "Address", "Score", "Run 1 score", "Run 2 score"],
+      ...scoreToBeatTopTen.map((entry, index) => {
+        const run1 = entry.runs[0]?.points ?? "";
+        const run2 = entry.runs[1]?.points ?? "";
+
+        return [
+          `${index + 1}`,
+          entry.displayName ?? displayAddress(entry.address),
+          entry.address,
+          `${entry.combinedPoints ?? 0}`,
+          `${run1}`,
+          `${run2}`,
+        ];
+      }),
     ];
 
     const csvContent = rows
@@ -387,11 +494,12 @@ export const LandingLeaderboard = () => {
     document.body.removeChild(downloadLink);
     window.URL.revokeObjectURL(url);
   }, [filteredEntries]);
-  const totalScoreArenas = scoreToBeatEndpoints.length;
-  const failedScoreArenas = scoreToBeatFailedEndpoints.length;
-  const syncedScoreArenas = Math.max(0, totalScoreArenas - failedScoreArenas);
-  const scoreArenaLabel =
-    totalScoreArenas > 0 ? `${syncedScoreArenas}/${totalScoreArenas} arenas syncing` : "Waiting for arenas";
+  const totalScoreGames = resolvedScoreToBeatEndpoints.length;
+  const failedScoreGames = scoreToBeatFailedEndpoints.length;
+  const activeSyncedGames = scoreToBeatSyncedEndpoints.length || totalScoreGames;
+  const syncedScoreGames = Math.max(0, activeSyncedGames - failedScoreGames);
+  const scoreGameLabel =
+    totalScoreGames > 0 ? `${syncedScoreGames}/${totalScoreGames} games syncing` : "Waiting for games";
   const showScoreToBeatSection = SCORE_TO_BEAT_TAB_ENABLED && hasScoreToBeatConfiguration;
   const [activeTab, setActiveTab] = useState<LeaderboardTab>(showScoreToBeatSection ? "score-to-beat" : "leaderboard");
   const [expandedScoreToBeatAddress, setExpandedScoreToBeatAddress] = useState<string | null>(null);
@@ -400,6 +508,12 @@ export const LandingLeaderboard = () => {
     () => (showScoreToBeatSection ? LEADERBOARD_TABS : LEADERBOARD_TABS.filter((tab) => tab.id === "leaderboard")),
     [showScoreToBeatSection],
   );
+
+  useEffect(() => {
+    if (!showScoreToBeatSection && activeTab === "score-to-beat") {
+      setActiveTab("leaderboard");
+    }
+  }, [activeTab, showScoreToBeatSection]);
 
   useEffect(() => {
     if (
@@ -469,8 +583,7 @@ export const LandingLeaderboard = () => {
                   <span className="text-base font-semibold text-white/70">pts</span>
                 </p>
                 <p className="mt-2 text-sm text-white/70">
-                  {(topScoreToBeatLabel ?? "Unknown captain").trim()} owns the bragging rights with the best two runs in
-                  Blitz.
+                  {(topScoreToBeatLabel ?? "Unknown captain").trim()} has conquered Realms Blitz.
                 </p>
                 {topScoreToBeatAddressLabel &&
                 topScoreToBeatLabel &&
@@ -516,6 +629,79 @@ export const LandingLeaderboard = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="rounded-2xl border border-amber-100/20 bg-black/40 p-4 shadow-inner shadow-amber-500/5">
+          <button
+            type="button"
+            onClick={() => setIsEndpointEditorOpen((current) => !current)}
+            aria-expanded={isEndpointEditorOpen}
+            className="flex w-full flex-col gap-2 text-left sm:flex-row sm:items-start sm:justify-between focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200/70"
+          >
+            <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-white/60">
+              <span>{scoreGameLabel}</span>
+              {isScoreToBeatLoading ? <span className="text-amber-100">• syncing</span> : null}
+              <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/70">
+                {isEndpointEditorOpen ? "Hide" : "Edit"}
+              </span>
+            </div>
+          </button>
+          {isEndpointEditorOpen ? (
+            <div className="mt-3 space-y-3">
+              <textarea
+                value={endpointEditorValue}
+                onChange={(event) => setEndpointEditorValue(event.currentTarget.value)}
+                spellCheck={false}
+                rows={3}
+                placeholder="warr-game-1\nwarr-game-2"
+                className="w-full rounded-xl border border-white/10 bg-black/60 px-3 py-2 text-sm text-white outline-none transition focus:border-amber-200/70 focus:bg-black/70"
+              />
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleApplyScoreToBeatEndpoints}
+                  disabled={isSaveEndpointsDisabled}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-amber-200/50 bg-amber-200/20 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-amber-50 transition hover:border-amber-200/70 hover:bg-amber-200/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200/70 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Save games
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClearScoreToBeatEndpoints}
+                  disabled={configuredEndpointNames.length === 0 && endpointEditorValue.trim().length === 0}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white transition hover:border-white/40 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200/70 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Clear list
+                </button>
+              </div>
+              {configuredEndpointNames.length ? (
+                <div className="flex flex-wrap gap-2">
+                  {configuredEndpointNames.map((name) => (
+                    <span
+                      key={name}
+                      className="inline-flex items-center gap-2 rounded-full border border-amber-200/40 bg-amber-200/10 px-3 py-1 text-xs font-semibold text-amber-50"
+                    >
+                      {name}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveEndpointName(name)}
+                        className="rounded-full border border-white/20 bg-white/10 px-1 text-[10px] font-bold text-white/80 transition hover:border-white/40 hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200/70"
+                        aria-label={`Remove ${name} from tracked games`}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-white/60">No games selected. Add at least one to see the score to beat.</p>
+              )}
+            </div>
+          ) : (
+            <p className="mt-3 text-xs text-white/60">
+              Expand to define the games you want to track for score to beat.
+            </p>
+          )}
         </div>
 
         <div className="grid gap-3 md:grid-cols-2">
@@ -613,16 +799,16 @@ export const LandingLeaderboard = () => {
         ) : null}
 
         <div className="flex flex-wrap items-center gap-2 text-xs text-white/60">
-          <span>{scoreArenaLabel}</span>
+          <span>{scoreGameLabel}</span>
           {scoreToBeatUpdatedLabel ? (
             <>
               <span>·</span>
               <span>{scoreToBeatUpdatedLabel}</span>
             </>
           ) : null}
-          {failedScoreArenas > 0 ? (
+          {failedScoreGames > 0 ? (
             <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold text-red-200">
-              {failedScoreArenas} down
+              {failedScoreGames} down
             </span>
           ) : null}
         </div>

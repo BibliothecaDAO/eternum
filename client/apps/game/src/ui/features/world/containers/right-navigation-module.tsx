@@ -64,7 +64,7 @@ const buildRightNavigationItems = ({
       tooltipLocation: "top",
       label: "Balance",
       size: DEFAULT_BUTTON_SIZE,
-      disabled: disableButtons,
+      // disabled: disableButtons,
       active: view === RightView.ResourceTable,
       onClick: toggleView(RightView.ResourceTable),
     },

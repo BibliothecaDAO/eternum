@@ -22,11 +22,12 @@ import {
   Structure,
   StructureType,
 } from "@bibliothecadao/types";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { TransferAutomationAdvancedModal } from "./transfer-automation-modal";
 
-const ALL_RESOURCE_IDS = Object.values(ResourcesIds).filter((v) => typeof v === "number") as ResourcesIds[];
 const ESSENCE_SITE_ALLOWED_RESOURCES = new Set<ResourcesIds>([ResourcesIds.Donkey, ResourcesIds.Essence]);
 
 const SOURCE_ALLOWED_CATEGORIES = new Set<StructureType>([
@@ -62,18 +63,22 @@ export const TransferAutomationPanel = () => {
     if (!components) return totals;
     const clientComponents = components as ClientComponents;
     for (const ps of ownedSources) {
-      const rm = new ResourceManager(clientComponents, ps.entityId);
+      const entityKey = getEntityIdFromKeys([BigInt(ps.entityId)]);
+      const resourceComponent = getComponentValue(clientComponents.Resource, entityKey);
+      if (!resourceComponent) continue;
+
+      const balances = ResourceManager.getResourceBalancesWithProduction(resourceComponent, currentDefaultTick);
       const category = ps.category;
-      for (const rid of ALL_RESOURCE_IDS) {
-        try {
-          if (isMilitaryResource(rid) && category !== StructureType.Realm) {
-            continue;
-          }
-          const bal = rm.balanceWithProduction(currentDefaultTick, rid).balance ?? 0n;
-          const human = Number(bal) / RESOURCE_PRECISION;
-          if (human > 0) totals.set(rid, (totals.get(rid) ?? 0) + human);
-        } catch {
-          // ignore structures missing balance data
+
+      for (const { resourceId, amount } of balances) {
+        const rid = resourceId as ResourcesIds;
+        if (amount <= 0) continue;
+        if (isMilitaryResource(rid) && category !== StructureType.Realm) {
+          continue;
+        }
+        const human = Number(amount) / RESOURCE_PRECISION;
+        if (human > 0) {
+          totals.set(rid, (totals.get(rid) ?? 0) + human);
         }
       }
     }

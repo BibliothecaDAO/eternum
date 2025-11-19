@@ -294,12 +294,18 @@ export const initialSync = async (
     updateProgress(25);
   }
 
-  await getConfigFromTorii(setup.network.toriiClient, contractComponents);
+  await getConfigFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
 
-  await getAddressNamesFromTorii(setup.network.toriiClient, contractComponents);
-  await getGuildsFromTorii(setup.network.toriiClient, contractComponents);
+  updateProgress(50);
+
+  await getAddressNamesFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+  updateProgress(75);
+
+  await getGuildsFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+  updateProgress(90);
 
   await MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).refresh();
+
   updateProgress(100);
 };
 

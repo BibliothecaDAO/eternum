@@ -1,10 +1,12 @@
 import {
   buildExecutionSummary,
   buildRealmProductionPlan,
+  buildRealmResourceSnapshot,
   planHasExecutableCalls,
   PROCESS_INTERVAL_MS,
 } from "@/ui/features/infrastructure/automation/model/automation-processor";
 import { useAutomationStore } from "./store/use-automation-store";
+import { getAutomationOverallocation } from "@/utils/automation-presets";
 import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
 import {
   getStructureName,
@@ -35,7 +37,8 @@ export const useAutomation = () => {
   const realms = useAutomationStore((state) => state.realms);
   const setNextRunTimestamp = useAutomationStore((state) => state.setNextRunTimestamp);
   const recordExecution = useAutomationStore((state) => state.recordExecution);
-  const ensureResourceConfig = useAutomationStore((state) => state.ensureResourceConfig);
+  const setRealmPreset = useAutomationStore((state) => state.setRealmPreset);
+  const getRealmConfig = useAutomationStore((state) => state.getRealmConfig);
   const upsertRealm = useAutomationStore((state) => state.upsertRealm);
   const removeRealm = useAutomationStore((state) => state.removeRealm);
   const pruneForGame = useAutomationStore((state) => state.pruneForGame);
@@ -121,30 +124,59 @@ export const useAutomation = () => {
       const { currentDefaultTick } = getBlockTimestamp();
 
       for (const realmConfig of realmList) {
-        // Ensure resource configs exist for any active production before planning,
-        // so initial allocations follow the realm preset instead of defaulting to labor.
-        try {
-          const realmIdNum = Number(realmConfig.realmId);
-          if (Number.isFinite(realmIdNum) && realmIdNum > 0) {
-            const resourceManager = new ResourceManager(components, realmIdNum);
-            const resourceComponent = resourceManager.getResource();
-            if (resourceComponent) {
-              const ALL_RESOURCE_IDS = Object.values(ResourcesIds).filter(
-                (value) => typeof value === "number",
-              ) as ResourcesIds[];
-              for (const resourceId of ALL_RESOURCE_IDS) {
-                const prod = ResourceManager.balanceAndProduction(resourceComponent, resourceId).production;
-                if (prod && prod.building_count > 0) {
-                  ensureResourceConfig(realmConfig.realmId, resourceId);
-                }
+        let activeRealmConfig = realmConfig;
+        const realmIdNum = Number(activeRealmConfig.realmId);
+
+        // If config is over-allocated and still using a preset mode
+        // (labor/resource/idle), auto-apply a preset based on which side
+        // (resources vs labor) is over the cap. Manual/custom slider configs
+        // (presetId === "custom" or null) are left untouched.
+        const hasPreset =
+          activeRealmConfig.presetId === "labor" ||
+          activeRealmConfig.presetId === "resource" ||
+          activeRealmConfig.presetId === "idle";
+        if (hasPreset) {
+          try {
+            const { resourceOver, laborOver } = getAutomationOverallocation(activeRealmConfig);
+            let presetToApply: "resource" | "labor" | "custom" | null = null;
+            if (resourceOver && !laborOver) {
+              presetToApply = "resource";
+            } else if (!resourceOver && laborOver) {
+              presetToApply = "labor";
+            } else if (resourceOver && laborOver) {
+              presetToApply = "custom";
+            }
+
+            if (presetToApply) {
+              setRealmPreset(activeRealmConfig.realmId, presetToApply);
+              const refreshed = getRealmConfig(activeRealmConfig.realmId);
+              if (refreshed) {
+                activeRealmConfig = refreshed;
               }
             }
+          } catch (error) {
+            console.error(
+              "[Automation] Failed to auto-apply preset for over-allocated realm",
+              activeRealmConfig.realmId,
+              error,
+            );
           }
-        } catch (_e) {
-          // Quietly continue; planning below still handles defaults
         }
 
-        const plan = buildRealmProductionPlan({ realmConfig, components, currentTick: currentDefaultTick });
+        const snapshot =
+          Number.isFinite(realmIdNum) && realmIdNum > 0
+            ? buildRealmResourceSnapshot({
+                components,
+                realmId: realmIdNum,
+                currentTick: currentDefaultTick,
+              })
+            : new Map();
+
+        const plan = buildRealmProductionPlan({
+          realmConfig: activeRealmConfig,
+          snapshot,
+        });
+
         if (!planHasExecutableCalls(plan)) {
           continue;
         }
@@ -165,7 +197,7 @@ export const useAutomation = () => {
           });
 
           const summary = buildExecutionSummary(plan, Date.now());
-          recordExecution(realmConfig.realmId, summary);
+          recordExecution(activeRealmConfig.realmId, summary);
           anyExecuted = true;
 
           const producedResources = Object.entries(plan.outputsByResource);
@@ -176,14 +208,16 @@ export const useAutomation = () => {
                 return `${Math.round(amount).toLocaleString()} ${label}`;
               })
               .join(", ");
-            toast.success(`Automation executed for ${realmConfig.realmName ?? `Realm ${plan.realmId}`}: ${detail}`);
+            toast.success(
+              `Automation executed for ${activeRealmConfig.realmName ?? `Realm ${plan.realmId}`}: ${detail}`,
+            );
           } else {
-            toast.success(`Automation executed for ${realmConfig.realmName ?? `Realm ${plan.realmId}`}.`);
+            toast.success(`Automation executed for ${activeRealmConfig.realmName ?? `Realm ${plan.realmId}`}.`);
           }
         } catch (error) {
-          console.error(`Automation: Failed to execute plan for realm ${realmConfig.realmId}`, error);
+          console.error(`Automation: Failed to execute plan for realm ${activeRealmConfig.realmId}`, error);
           toast.error(
-            `Automation failed for ${realmConfig.realmName ?? realmConfig.realmId}. Check console for details.`,
+            `Automation failed for ${activeRealmConfig.realmName ?? activeRealmConfig.realmId}. Check console for details.`,
           );
         }
       }
@@ -192,7 +226,15 @@ export const useAutomation = () => {
     }
 
     return anyExecuted;
-  }, [components, realms, execute_realm_production_plan, recordExecution, ensureResourceConfig, starknetSignerAccount]);
+  }, [
+    components,
+    realms,
+    execute_realm_production_plan,
+    recordExecution,
+    starknetSignerAccount,
+    setRealmPreset,
+    getRealmConfig,
+  ]);
 
   const runAutomationIfDue = useCallback(async () => {
     const { currentBlockTimestamp } = getBlockTimestamp();
