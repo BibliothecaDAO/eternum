@@ -81,6 +81,7 @@ export const RealmAutomationPanel = ({
   } = useDojo();
   const upsertRealm = useAutomationStore((state) => state.upsertRealm);
   const setRealmPreset = useAutomationStore((state) => state.setRealmPreset);
+  const setRealmPresetConfig = useAutomationStore((state) => state.setRealmPresetConfig);
   const setResourcePercentages = useAutomationStore((state) => state.setResourcePercentages);
   const ensureResourceConfig = useAutomationStore((state) => state.ensureResourceConfig);
   const removeResourceConfig = useAutomationStore((state) => state.removeResourceConfig);
@@ -135,23 +136,6 @@ export const RealmAutomationPanel = ({
       currentTick: currentDefaultTick,
     });
   }, [components, realmEntityId]);
-
-  const extraResources = useMemo(() => {
-    if (!realmAutomation) return [];
-    const effectiveEntityType = realmAutomation.entityType ?? entityType;
-    return Object.keys(realmAutomation.resources ?? {})
-      .map((key) => Number(key) as ResourcesIds)
-      .filter(
-        (resourceId) =>
-          !isAutomationResourceBlocked(resourceId, effectiveEntityType) && !realmResources.includes(resourceId),
-      );
-  }, [realmAutomation, realmResources, entityType]);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    if (!extraResources.length) return;
-    extraResources.forEach((resourceId) => removeResourceConfig(realmEntityId, resourceId));
-  }, [extraResources, realmEntityId, removeResourceConfig, hydrated]);
 
   const createBaselinePercentages = useCallback((resourceId: ResourcesIds): ResourceAutomationPercentages => {
     if (resourceId === ResourcesIds.Donkey) {
@@ -439,23 +423,38 @@ export const RealmAutomationPanel = ({
     (presetId: RealmPresetId) => {
       if (!draftAutomation) return;
 
-      const allocations = calculatePresetAllocations(draftAutomation, presetId);
-      setDraftPresetId(presetId);
+      // Limit preset calculation to resources actually produced in this realm.
+      const limitedResources: Record<number, ResourceAutomationSettings> = {};
+      realmResources.forEach((resourceId) => {
+        const existing = draftAutomation.resources[resourceId];
+        if (existing) {
+          limitedResources[resourceId] = existing;
+        } else {
+          limitedResources[resourceId] = {
+            resourceId,
+            autoManaged: true,
+            label: undefined,
+            updatedAt: draftAutomation.updatedAt,
+            percentages: draftPercentages[resourceId] ?? createBaselinePercentages(resourceId),
+          };
+        }
+      });
+
+      const limitedAutomation: typeof draftAutomation = {
+        ...draftAutomation,
+        resources: limitedResources,
+      };
+
+      const allocations = calculatePresetAllocations(limitedAutomation, presetId);
 
       if (allocations.size === 0 && presetId !== "idle") {
+        setDraftPresetId(presetId);
         return;
       }
 
       setDraftPercentages((prev) => {
-        const resourceKeys = new Set<number>([
-          ...Object.keys(prev).map(Number),
-          ...Object.keys(draftAutomation.resources ?? {}).map(Number),
-          ...realmResources.map((resourceId) => Number(resourceId)),
-        ]);
-
-        const updated: Record<number, ResourceAutomationPercentages> = {};
-        resourceKeys.forEach((key) => {
-          const resourceId = Number(key) as ResourcesIds;
+        const updated: Record<number, ResourceAutomationPercentages> = { ...prev };
+        realmResources.forEach((resourceId) => {
           if (presetId === "idle") {
             updated[resourceId] = { resourceToResource: 0, laborToResource: 0 };
             return;
@@ -470,8 +469,10 @@ export const RealmAutomationPanel = ({
 
         return updated;
       });
+
+      setDraftPresetId(presetId);
     },
-    [draftAutomation, realmResources],
+    [draftAutomation, realmResources, realmEntityId, entityType],
   );
 
   const handleSliderChange = useCallback(
@@ -526,6 +527,28 @@ export const RealmAutomationPanel = ({
       ...Object.keys(draftPercentages).map(Number),
     ]);
 
+    if (draftPresetId) {
+      // For preset saves, only persist percentages for resources actually produced in this realm.
+      const normalizedPercentages: Record<number, ResourceAutomationPercentages> = {};
+      realmResources.forEach((resourceId) => {
+        const source =
+          draftPercentages[resourceId] ?? snapshot.percentages[resourceId] ?? createBaselinePercentages(resourceId);
+        normalizedPercentages[resourceId] = {
+          resourceToResource: source.resourceToResource,
+          laborToResource: source.laborToResource,
+        };
+      });
+
+      setRealmPresetConfig(realmEntityId, draftPresetId, normalizedPercentages);
+      setLastSavedSnapshot({
+        presetId: draftPresetId,
+        percentages: normalizedPercentages,
+      });
+      setDraftPercentages(normalizedPercentages);
+      setDraftPresetId(draftPresetId);
+      return;
+    }
+
     const allResources = new Set<number>([
       ...resourceIds,
       ...realmResources.map((resourceId) => Number(resourceId)),
@@ -542,20 +565,6 @@ export const RealmAutomationPanel = ({
         laborToResource: source.laborToResource,
       };
     });
-
-    if (draftPresetId) {
-      if (draftPresetId !== (snapshot.presetId ?? null)) {
-        setRealmPreset(realmEntityId, draftPresetId);
-      }
-
-      setLastSavedSnapshot({
-        presetId: draftPresetId,
-        percentages: normalizedPercentages,
-      });
-      setDraftPercentages(normalizedPercentages);
-      setDraftPresetId(draftPresetId);
-      return;
-    }
 
     resourceIds.forEach((id) => {
       const resourceId = Number(id) as ResourcesIds;
@@ -583,6 +592,7 @@ export const RealmAutomationPanel = ({
     draftPresetId,
     createBaselinePercentages,
     setRealmPreset,
+    setRealmPresetConfig,
     realmEntityId,
     setResourcePercentages,
     realmResources,

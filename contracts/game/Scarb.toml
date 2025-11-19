@@ -9,15 +9,15 @@ sierra-replace-ids = true
 
 [dependencies]
 starknet = "2.12.2"
-dojo = "1.7.1"
+dojo = "1.8.0"
 alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "v0.5.2" }
 alexandria_data_structures = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "v0.5.2" }
 achievement = { git = "https://github.com/cartridge-gg/arcade", rev = "817a0ef" }
-cubit = { git = "https://github.com/edisontim/cubit.git", branch = "feat/cairo-2.9.2" }
+cubit = { git = "https://github.com/credence0x/cubit.git", branch = "feat/cairo-2.9.2" }
 #budokan = { git = "https://github.com/credence0x/tournaments.git", rev="0e58edb" }
 
 [dev-dependencies]
-dojo_cairo_test = "1.7.1"
+dojo_cairo_test = "1.8.0"
 cairo_test = "2.12.2"
 openzeppelin_token = "2.0.0"
 openzeppelin = "2.0.0"

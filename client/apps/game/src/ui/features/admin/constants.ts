@@ -1,6 +1,6 @@
-import { env } from "../../../../env";
 import { getFactorySqlBaseUrl as getFactorySqlBaseUrlRuntime } from "@/runtime/world";
 import type { Chain } from "@contracts";
+import { env } from "../../../../env";
 import type { ChainType } from "./utils/manifest-loader";
 
 // Storage keys
@@ -33,7 +33,7 @@ export const getExplorerTxUrl = (chain: Chain | ChainType, txHash: string) => {
 // Factory addresses by chain (single source of truth for UI)
 export const FACTORY_ADDRESSES: Record<ChainType, string> = {
   sepolia: "0x07A6F094f15f8C18704bfb19fFEBCBC70b87e41674dE97EbeC7cb7Ffe5c9581B",
-  slot: "0x7c0da7c7b1347f31d58a6b95d29abbc0d6756f80304b9183f525b216fb50085",
+  slot: "0x4b4e92fbcc6fdc40db899b345da2c08cf617df30660e71d1adcfb1301d5a06e",
   local: "",
   mainnet: "",
   slottest: "",
@@ -48,7 +48,7 @@ export const getRpcUrlForChain = (chain: Chain | ChainType): string => {
     case "sepolia":
       return `${CARTRIDGE_API_BASE}/x/starknet/sepolia`;
     case "slot":
-      return `${CARTRIDGE_API_BASE}/x/eternum-blitz-slot-1/katana`;
+      return `${CARTRIDGE_API_BASE}/x/eternum-blitz-slot-3/katana`;
     case "slottest":
       return `${CARTRIDGE_API_BASE}/x/eternum-blitz-slot-test/katana`;
     default:
