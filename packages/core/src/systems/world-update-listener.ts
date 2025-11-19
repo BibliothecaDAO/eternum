@@ -98,7 +98,7 @@ export class WorldUpdateListener {
       return entityId;
     }
 
-    console.log(`[WorldUpdateListener] entityId not in currentState, checking component:`, updateEntity);
+// console.log(`[WorldUpdateListener] entityId not in currentState, checking component:`, updateEntity);
 
     const componentEntityId = getComponentEntityId();
 
@@ -106,7 +106,7 @@ export class WorldUpdateListener {
       return componentEntityId;
     }
 
-    console.log(`[WorldUpdateListener] entityId not in component, checking mapDataStore:`, updateEntity);
+// console.log(`[WorldUpdateListener] entityId not in component, checking mapDataStore:`, updateEntity);
     const mapStoreEntityId = this.mapDataStore.getEntityIdFromEntity(String(updateEntity));
 
     if (!mapStoreEntityId) {
@@ -138,7 +138,7 @@ export class WorldUpdateListener {
       const value = await getUpdate(update);
       if (value) {
         // Add console log for every update before calling the callback
-        console.log(`[WorldUpdateListener] [${component?.metadata?.name ?? "<unknown>"}] update:`, value);
+// console.log(`[WorldUpdateListener] [${component?.metadata?.name ?? "<unknown>"}] update:`, value);
         callback(value);
       }
     };
@@ -519,7 +519,7 @@ export class WorldUpdateListener {
           this.setup.components.Structure,
           callback,
           async (update: any): Promise<StructureSystemUpdate | undefined> => {
-            console.log("[onStructureUpdate] raw update:", update);
+// console.log("[onStructureUpdate] raw update:", update);
 
             if (isComponentUpdate(update, this.setup.components.Structure)) {
               const [currentState, _prevState] = update.value;
@@ -588,7 +588,7 @@ export class WorldUpdateListener {
                 ),
               };
 
-              console.log("[onStructureUpdate] StructureSystemUpdate:", structureSystemUpdate);
+// console.log("[onStructureUpdate] StructureSystemUpdate:", structureSystemUpdate);
 
               return structureSystemUpdate;
             }
@@ -606,7 +606,7 @@ export class WorldUpdateListener {
 
               if (!currentState) return;
 
-              console.log("[onStructureBuildingsUpdate] currentState:", currentState);
+// console.log("[onStructureBuildingsUpdate] currentState:", currentState);
 
               const entityId = currentState?.entity_id;
 
@@ -628,7 +628,7 @@ export class WorldUpdateListener {
               // Unpack the building counts
               const buildingCounts = unpackBuildingCounts(packedValues);
 
-              console.log("[onStructureBuildingsUpdate] unpacked buildingCounts:", buildingCounts);
+// console.log("[onStructureBuildingsUpdate] unpacked buildingCounts:", buildingCounts);
 
               const activeProductions: ActiveProduction[] = [];
 
@@ -644,7 +644,7 @@ export class WorldUpdateListener {
                 }
               }
 
-              console.log("[onStructureBuildingsUpdate] activeProductions:", activeProductions);
+// console.log("[onStructureBuildingsUpdate] activeProductions:", activeProductions);
 
               return {
                 entityId,
@@ -677,7 +677,7 @@ export class WorldUpdateListener {
                 newStateBiomeType === BiomeType.None ? BiomeType.Grassland : newStateBiomeType || BiomeType.Grassland,
             };
             // Log the update value
-            console.log("[onTileUpdate] TileSystemUpdate:", result);
+// console.log("[onTileUpdate] TileSystemUpdate:", result);
             return result;
           },
           false,
@@ -711,7 +711,7 @@ export class WorldUpdateListener {
                 paused,
               };
 
-              console.log("[onBuildingUpdate] BuildingSystemUpdate:", result);
+// console.log("[onBuildingUpdate] BuildingSystemUpdate:", result);
 
               return result;
             }
@@ -750,7 +750,7 @@ export class WorldUpdateListener {
                 occupierId: currentState?.occupier_id,
                 hexCoords: { col: currentState.col, row: currentState.row },
               };
-              console.log("[onQuestTileUpdate] update:", val);
+// console.log("[onQuestTileUpdate] update:", val);
               return val;
             }
           },
@@ -767,7 +767,7 @@ export class WorldUpdateListener {
           this.setup.components.events.ExplorerMoveEvent,
           (value: ExplorerMoveSystemUpdate) => {
             // Log the ExplorerMove update
-            console.log("[onExplorerMoveEventUpdate] ExplorerMoveSystemUpdate:", value);
+// console.log("[onExplorerMoveEventUpdate] ExplorerMoveSystemUpdate:", value);
             this.storeExplorerMoveEvent(value);
             callback(value);
           },
@@ -813,7 +813,7 @@ export class WorldUpdateListener {
                 occupierId: currentState?.occupier_id,
                 hexCoords: { col: currentState.col, row: currentState.row },
               };
-              console.log("[onChestTileUpdate] update:", result);
+// console.log("[onChestTileUpdate] update:", result);
               return result;
             }
           },
@@ -841,7 +841,7 @@ export class WorldUpdateListener {
                   return;
                 }
 
-                console.log("[onDeadChest] update:", deadChestEntityId);
+// console.log("[onDeadChest] update:", deadChestEntityId);
                 return deadChestEntityId;
               }
             }
@@ -869,7 +869,7 @@ export class WorldUpdateListener {
               entityId,
               level: currentState.base.level,
             };
-            console.log("[onLevelUpdate] StructureEntityListener:", val);
+// console.log("[onLevelUpdate] StructureEntityListener:", val);
             callback(val);
           }
         });
@@ -906,7 +906,7 @@ export class WorldUpdateListener {
                   entityId,
                   relicEffects,
                 };
-                console.log("[onExplorerTroopsRelicEffectUpdate] update:", val);
+// console.log("[onExplorerTroopsRelicEffectUpdate] update:", val);
                 return val;
               }
             }
@@ -942,7 +942,7 @@ export class WorldUpdateListener {
                 entityId: guardEntityId,
                 relicEffects,
               };
-              console.log("[onStructureGuardRelicEffectUpdate] update:", val);
+// console.log("[onStructureGuardRelicEffectUpdate] update:", val);
               return val;
             }
           },
@@ -978,7 +978,7 @@ export class WorldUpdateListener {
                 entityId: productionEntityId,
                 relicEffects,
               };
-              console.log("[onStructureProductionRelicEffectUpdate] update:", val);
+// console.log("[onStructureProductionRelicEffectUpdate] update:", val);
               return val;
             }
           },
@@ -992,7 +992,7 @@ export class WorldUpdateListener {
     return {
       subscribe: (listener: (event: StoryEventSystemUpdate) => void) => {
         const wrappedListener = (event: StoryEventSystemUpdate) => {
-          console.log("[StoryEvent] update:", event);
+// console.log("[StoryEvent] update:", event);
           listener(event);
         };
         return storyEventBus.subscribe(wrappedListener);
@@ -1010,21 +1010,21 @@ export class WorldUpdateListener {
             if (isComponentUpdate(update, this.setup.components.events.BattleEvent)) {
               const [currentState, _prevState] = update.value;
 
-              console.log("🛡️ BattleEvent received:", {
+// console.log("🛡️ BattleEvent received:", {
                 currentState,
                 prevState: _prevState,
                 updateType: "BattleEvent",
               });
 
               if (!currentState) {
-                console.log("❌ BattleEvent: No current state, returning undefined");
+// console.log("❌ BattleEvent: No current state, returning undefined");
                 return;
               }
 
               // Parse max_reward from the event
               const maxReward: Array<{ resourceType: number; amount: number }> = [];
               if (currentState.max_reward && Array.isArray(currentState.max_reward)) {
-                console.log("💰 BattleEvent: Parsing max_reward:", currentState.max_reward);
+// console.log("💰 BattleEvent: Parsing max_reward:", currentState.max_reward);
                 for (const reward of currentState.max_reward) {
                   // Assuming reward is [resourceType, amount] tuple
                   if (Array.isArray(reward) && reward.length === 2) {
@@ -1033,7 +1033,7 @@ export class WorldUpdateListener {
                       amount: divideByPrecision(Number(reward[1])),
                     };
                     maxReward.push(parsedReward);
-                    console.log("💰 BattleEvent: Added reward:", parsedReward);
+// console.log("💰 BattleEvent: Added reward:", parsedReward);
                   }
                 }
               }
@@ -1045,7 +1045,7 @@ export class WorldUpdateListener {
                   ? currentState.attacker_id
                   : currentState.defender_id;
 
-              console.log("🏆 BattleEvent: Winner determination:", {
+// console.log("🏆 BattleEvent: Winner determination:", {
                 winnerId: currentState.winner_id,
                 attackerOwner: currentState.attacker_owner,
                 defenderOwner: currentState.defender_owner,
@@ -1073,7 +1073,7 @@ export class WorldUpdateListener {
                 },
               };
 
-              console.log("✅ BattleEvent: Final result:", result);
+// console.log("✅ BattleEvent: Final result:", result);
               return result;
             }
           },
@@ -1093,7 +1093,7 @@ export class WorldUpdateListener {
       this.setup.components.events.StoryEvent,
       (event: StoryEventSystemUpdate) => {
         // Add log before publishing event
-        console.log("[registerStoryEventStream] update:", event);
+// console.log("[registerStoryEventStream] update:", event);
         storyEventBus.publish(event);
       },
       async (update: any): Promise<StoryEventSystemUpdate | undefined> => {
@@ -1123,7 +1123,7 @@ export class WorldUpdateListener {
       this.setup.components.events.ExplorerMoveEvent,
       (value: ExplorerMoveSystemUpdate) => {
         // Log before storing to cache
-        console.log("[registerExplorerMoveCache] ExplorerMoveSystemUpdate:", value);
+// console.log("[registerExplorerMoveCache] ExplorerMoveSystemUpdate:", value);
         this.storeExplorerMoveEvent(value);
       },
       async (update: any): Promise<ExplorerMoveSystemUpdate | undefined> => {
@@ -1162,7 +1162,7 @@ export class WorldUpdateListener {
       timestamp,
       exploreFind,
     };
-    console.log("[parseExplorerMoveEvent] update:", val);
+// console.log("[parseExplorerMoveEvent] update:", val);
     return val;
   }
 
@@ -1177,7 +1177,7 @@ export class WorldUpdateListener {
     }
 
     // Add log for store
-    console.log("[storeExplorerMoveEvent] storing:", event);
+// console.log("[storeExplorerMoveEvent] storing:", event);
 
     this.explorerMoveEventCache.set(key, event);
     this.explorerMoveEventOrder.push(key);
@@ -1200,7 +1200,7 @@ export class WorldUpdateListener {
     }
     const val = this.explorerMoveEventCache.get(key);
     if (val) {
-      console.log("[getCachedExplorerMoveEvent] hit:", val);
+// console.log("[getCachedExplorerMoveEvent] hit:", val);
     }
     return val;
   }
@@ -1266,7 +1266,7 @@ export class WorldUpdateListener {
       storyPayload,
       rawStory: currentState.story,
     };
-    console.log("[mapStoryEventPayload] update:", val);
+// console.log("[mapStoryEventPayload] update:", val);
 
     return val;
   }
@@ -1371,7 +1371,7 @@ export class WorldUpdateListener {
             ? { value: normalizedPayload }
             : null,
     };
-    console.log("[extractStoryVariant] update:", val);
+// console.log("[extractStoryVariant] update:", val);
 
     return val;
   }
@@ -1489,7 +1489,7 @@ export class WorldUpdateListener {
 
         // Add a log for every sequential update before returning result
         if (result !== null && result !== undefined) {
-          console.log(`[processSequentialUpdate] update:`, result);
+// console.log(`[processSequentialUpdate] update:`, result);
         }
 
         return result;

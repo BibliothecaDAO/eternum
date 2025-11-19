@@ -480,7 +480,7 @@ export default class WorldmapScene extends HexagonScene {
     // Listen for battle events and update army/structure labels
     this.worldUpdateListener.BattleEvent.onBattleUpdate((update: BattleEventSystemUpdate) => {
       console.debug(`[WorldMap] BattleEvent update received for battle entity ${update.entityId}`);
-      console.log("🗺️ WorldMap: Received battle event update:", update);
+      // console.log("🗺️ WorldMap: Received battle event update:", update);
 
       // Update both attacker and defender information using the public methods
       const { attackerId, defenderId } = update.battleData;
@@ -1025,7 +1025,7 @@ export default class WorldmapScene extends HexagonScene {
     const isMine = structure.owner === accountAddress;
 
     try {
-      console.log("[WorldmapScene] Syncing structure before entry", structure.id, hexCoords);
+      // console.log("[WorldmapScene] Syncing structure before entry", structure.id, hexCoords);
       await this.ensureStructureSynced(structure.id, hexCoords);
     } catch (error) {
       console.error("[WorldmapScene] Failed to sync structure before entry", error);
@@ -2300,7 +2300,7 @@ export default class WorldmapScene extends HexagonScene {
       const abortTask = () => {
         const released = releaseAllMatrices();
         if (released > 0 && import.meta.env.DEV) {
-          console.log(`🔄 Released ${released} matrices back to pool (aborted)`);
+          // console.log(`🔄 Released ${released} matrices back to pool (aborted)`);
         }
         resolveOnce();
       };
@@ -2313,7 +2313,7 @@ export default class WorldmapScene extends HexagonScene {
             if (matrices.length > 0) {
               console.error(`❌ Missing biome model for: ${biome}`);
               if (import.meta.env.DEV) {
-                console.log(`Available biome models:`, Array.from(this.biomeModels.keys()));
+                // console.log(`Available biome models:`, Array.from(this.biomeModels.keys()));
               }
             }
             continue;
@@ -2325,7 +2325,7 @@ export default class WorldmapScene extends HexagonScene {
           }
 
           if (import.meta.env.DEV) {
-            console.log(`✅ Applied ${matrices.length} ${biome} hexes`);
+            // console.log(`✅ Applied ${matrices.length} ${biome} hexes`);
           }
 
           matrices.forEach((matrix, index) => {
@@ -2346,7 +2346,7 @@ export default class WorldmapScene extends HexagonScene {
 
         const released = releaseAllMatrices();
         if (import.meta.env.DEV) {
-          console.log(`🔄 Released ${released} matrices back to pool`);
+          // console.log(`🔄 Released ${released} matrices back to pool`);
         }
 
         if (memoryMonitor && preUpdateStats) {
@@ -2360,13 +2360,13 @@ export default class WorldmapScene extends HexagonScene {
             console.log(
               `📊 Matrix Pool Stats: ${poolStats.available} available, ${poolStats.inUse} in use, ${poolStats.memoryEstimateMB.toFixed(1)}MB pool memory`,
             );
-            console.log(`📊 Biome distribution:`, biomeCountsSnapshot);
+            // console.log(`📊 Biome distribution:`, biomeCountsSnapshot);
           }
 
           if (memoryDelta > 15) {
             console.warn(`[HEX GRID] Unexpected memory usage: ${memoryDelta.toFixed(1)}MB`);
           } else if (import.meta.env.DEV) {
-            console.log(`✅ [HEX GRID] Memory optimization successful! Saved ~${(82 - memoryDelta).toFixed(1)}MB`);
+            // console.log(`✅ [HEX GRID] Memory optimization successful! Saved ~${(82 - memoryDelta).toFixed(1)}MB`);
           }
         }
 
@@ -3586,14 +3586,14 @@ export default class WorldmapScene extends HexagonScene {
    */
   private addCombatRelationship(attackerId: ID, defenderId: ID) {
     this.battleDirectionManager.addCombatRelationship(attackerId, defenderId);
-    console.log(`[ATTACKER-DEFENDER] Added relationship: ${attackerId} attacked ${defenderId}`);
+    // console.log(`[ATTACKER-DEFENDER] Added relationship: ${attackerId} attacked ${defenderId}`);
   }
 
   /**
    * Recalculate arrow directions for a specific entity
    */
   private recalculateArrowsForEntity(entityId: ID) {
-    console.log(`[RECALCULATE ARROWS FOR ENTITY] Recalculating arrows for entity ${entityId}`);
+    // console.log(`[RECALCULATE ARROWS FOR ENTITY] Recalculating arrows for entity ${entityId}`);
     this.battleDirectionManager.recalculateArrowsForEntity(entityId);
   }
 
@@ -3618,6 +3618,6 @@ export default class WorldmapScene extends HexagonScene {
     // Remove from battle direction relationships
     this.battleDirectionManager.removeEntityFromTracking(entityId);
 
-    console.log(`[ATTACKER-DEFENDER] Removed entity ${entityId} from tracking`);
+    // console.log(`[ATTACKER-DEFENDER] Removed entity ${entityId} from tracking`);
   }
 }
