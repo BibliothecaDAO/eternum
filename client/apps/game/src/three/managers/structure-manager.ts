@@ -22,6 +22,7 @@ import {
   resolveStructureMountTransforms,
 } from "../cosmetics";
 import { StructureInfo } from "../types";
+import { AnimationVisibilityContext } from "../types/animation";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
@@ -127,6 +128,9 @@ export class StructureManager {
   private readonly tempCosmeticPosition: Vector3 = new Vector3();
   private readonly tempCosmeticRotation: Euler = new Euler();
   private readonly structureAttachmentTransformScratch = new Map<string, AttachmentTransform>();
+  private readonly animationCullDistance = 140;
+  private animationCameraPosition: Vector3 = new Vector3();
+  private animationVisibilityContext?: AnimationVisibilityContext;
   private pointsRenderers?: {
     myVillage: PointsLabelRenderer;
     enemyVillage: PointsLabelRenderer;
@@ -1246,17 +1250,51 @@ export class StructureManager {
     return this.frustumManager.isBoxVisible(this.currentChunkBounds.box);
   }
 
-  updateAnimations(deltaTime: number) {
-    if (this.isChunkVisible()) {
-      this.structureModels.forEach((models) => {
-        models.forEach((model) => model.updateAnimations(deltaTime));
-      });
+  updateAnimations(deltaTime: number, visibility?: AnimationVisibilityContext) {
+    if (!this.isChunkVisible()) {
+      return;
     }
+
+    const context = this.resolveAnimationVisibilityContext(visibility);
+    this.structureModels.forEach((models) => {
+      models.forEach((model) => model.updateAnimations(deltaTime, context));
+    });
 
     if (this.frustumVisibilityDirty) {
       this.applyFrustumVisibilityToLabels();
       this.frustumVisibilityDirty = false;
     }
+  }
+
+  private resolveAnimationVisibilityContext(
+    provided?: AnimationVisibilityContext,
+  ): AnimationVisibilityContext | undefined {
+    if (provided) {
+      return provided;
+    }
+
+    if (!this.hexagonScene) {
+      return undefined;
+    }
+
+    const camera = this.hexagonScene.getCamera();
+    if (!camera) {
+      return undefined;
+    }
+
+    this.animationCameraPosition.copy(camera.position);
+
+    if (!this.animationVisibilityContext) {
+      this.animationVisibilityContext = {
+        frustumManager: this.frustumManager,
+        cameraPosition: this.animationCameraPosition,
+        maxDistance: this.animationCullDistance,
+      };
+    } else {
+      this.animationVisibilityContext.frustumManager = this.frustumManager;
+    }
+
+    return this.animationVisibilityContext;
   }
 
   private applyFrustumVisibilityToLabels() {

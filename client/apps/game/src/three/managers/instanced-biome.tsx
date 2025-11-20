@@ -3,6 +3,7 @@ import { LAND_NAME } from "@/three/managers/instanced-model";
 import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
 import * as THREE from "three";
 import { AnimationClip, AnimationMixer } from "three";
+import { AnimationVisibilityContext } from "../types/animation";
 import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
 
 const zeroScaledMatrix = new THREE.Matrix4().makeScale(0, 0, 0);
@@ -212,7 +213,10 @@ export default class InstancedModel {
     this.group.updateMatrixWorld(true);
   }
 
-  updateAnimations(_deltaTime: number) {
+  updateAnimations(_deltaTime: number, visibility?: AnimationVisibilityContext) {
+    if (!this.shouldAnimate(visibility)) {
+      return;
+    }
     if (GRAPHICS_SETTING === GraphicsSettings.LOW) {
       return;
     }
@@ -307,5 +311,27 @@ export default class InstancedModel {
     this.group.clear();
 
     console.log(`InstancedBiome: Disposed and cleaned up`);
+  }
+
+  private shouldAnimate(context?: AnimationVisibilityContext): boolean {
+    if (!context) {
+      return true;
+    }
+
+    if (context.frustumManager && this.worldBounds?.box && !context.frustumManager.isBoxVisible(this.worldBounds.box)) {
+      return false;
+    }
+
+    if (
+      context.maxDistance !== undefined &&
+      context.cameraPosition &&
+      this.worldBounds?.sphere &&
+      context.cameraPosition.distanceTo(this.worldBounds.sphere.center) >
+        context.maxDistance + this.worldBounds.sphere.radius
+    ) {
+      return false;
+    }
+
+    return true;
   }
 }

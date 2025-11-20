@@ -3014,11 +3014,12 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   update(deltaTime: number) {
+    const animationContext = this.getAnimationVisibilityContext();
     super.update(deltaTime);
     this.armyManager.update(deltaTime);
     this.fxManager.update(deltaTime);
     this.selectedHexManager.update(deltaTime);
-    this.structureManager.updateAnimations(deltaTime);
+    this.structureManager.updateAnimations(deltaTime, animationContext);
     this.chestManager.update(deltaTime);
     this.updateMinimapThrottled?.();
   }
