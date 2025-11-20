@@ -8,6 +8,7 @@ import InstancedBiome from "@/three/managers/instanced-biome";
 import { InteractiveHexManager } from "@/three/managers/interactive-hex-manager";
 import { ThunderBoltManager } from "@/three/managers/thunderbolt-manager";
 import { type SceneManager } from "@/three/scene-manager";
+import { AnimationVisibilityContext } from "@/three/types/animation";
 import { GUIManager, LocationManager } from "@/three/utils/";
 import { FrustumManager } from "@/three/utils/frustum-manager";
 import { MatrixPool } from "@/three/utils/matrix-pool";
@@ -100,6 +101,9 @@ export abstract class HexagonScene {
   protected cameraDistance = 10; // Maintain the same distance
   protected cameraAngle = Math.PI / 3;
   protected currentCameraView = CameraView.Medium; // Track current camera view position
+  private animationCameraTarget: Vector3 = new Vector3();
+  private animationVisibilityContext?: AnimationVisibilityContext;
+  private readonly animationVisibilityDistance = 140;
 
   constructor(
     protected sceneName: SceneName,
@@ -608,14 +612,31 @@ export abstract class HexagonScene {
       this.updateStormEffects();
     }
     if (this.shouldUpdateBiomeAnimations()) {
+      const animationContext = this.getAnimationVisibilityContext();
       this.biomeModels.forEach((biome) => {
         try {
-          biome.updateAnimations(deltaTime);
+          biome.updateAnimations(deltaTime, animationContext);
         } catch (error) {
           console.error(`Error updating biome animations:`, error);
         }
       });
     }
+  }
+
+  protected getAnimationVisibilityContext(): AnimationVisibilityContext | undefined {
+    this.animationCameraTarget.copy(this.controls.target);
+
+    if (!this.animationVisibilityContext) {
+      this.animationVisibilityContext = {
+        frustumManager: this.frustumManager,
+        cameraPosition: this.animationCameraTarget,
+        maxDistance: this.animationVisibilityDistance,
+      };
+    } else {
+      this.animationVisibilityContext.frustumManager = this.frustumManager;
+    }
+
+    return this.animationVisibilityContext;
   }
 
   private updateLights = throttle(() => {
@@ -866,7 +887,7 @@ export abstract class HexagonScene {
   protected abstract onHexagonDoubleClick(hexCoords: HexPosition): void;
   protected abstract onHexagonClick(hexCoords: HexPosition | null): void;
   protected abstract onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void;
-  public abstract setup(): void;
+  public abstract setup(): void | Promise<void>;
   public abstract moveCameraToURLLocation(): void;
   public abstract onSwitchOff(): void;
 

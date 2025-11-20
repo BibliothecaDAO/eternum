@@ -16,6 +16,7 @@ import {
   Sphere,
   Vector3,
 } from "three";
+import { AnimationVisibilityContext } from "../types/animation";
 import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
 
 const BIG_DETAILS_NAME = "big_details";
@@ -250,7 +251,10 @@ export default class InstancedModel {
     this.group.updateMatrixWorld(true);
   }
 
-  updateAnimations(deltaTime: number) {
+  updateAnimations(deltaTime: number, visibility?: AnimationVisibilityContext) {
+    if (!this.shouldAnimate(visibility)) {
+      return;
+    }
     if (GRAPHICS_SETTING === GraphicsSettings.LOW) {
       return;
     }
@@ -433,5 +437,27 @@ export default class InstancedModel {
     this.group.clear();
 
     console.log(`InstancedModel "${this.name}": Disposed and cleaned up`);
+  }
+
+  private shouldAnimate(context?: AnimationVisibilityContext): boolean {
+    if (!context) {
+      return true;
+    }
+
+    if (context.frustumManager && this.worldBounds?.box && !context.frustumManager.isBoxVisible(this.worldBounds.box)) {
+      return false;
+    }
+
+    if (
+      context.maxDistance !== undefined &&
+      context.cameraPosition &&
+      this.worldBounds?.sphere &&
+      context.cameraPosition.distanceTo(this.worldBounds.sphere.center) >
+        context.maxDistance + this.worldBounds.sphere.radius
+    ) {
+      return false;
+    }
+
+    return true;
   }
 }

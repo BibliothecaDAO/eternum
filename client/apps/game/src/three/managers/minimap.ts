@@ -92,6 +92,9 @@ class Minimap {
   private worldmapScene: WorldmapScene;
   private canvas!: HTMLCanvasElement;
   private context!: CanvasRenderingContext2D;
+  private staticLayerCanvas!: HTMLCanvasElement;
+  private staticLayerContext!: CanvasRenderingContext2D;
+  private needsStaticRedraw: boolean = true;
   private camera!: THREE.PerspectiveCamera;
   private mapCenter: { col: number; row: number } = { col: 250, row: 150 };
   private mapSize: { width: number; height: number } = {
@@ -118,6 +121,7 @@ class Minimap {
   private lastMousePosition: { x: number; y: number } | null = null;
   private mouseStartPosition: { x: number; y: number } | null = null;
   private tiles: Tile[] = []; // SQL-fetched tiles
+  private tileMap: Map<string, Tile> = new Map(); // Fast lookup for tiles by coordinate
   private hoveredHexCoords: { col: number; row: number } | null = null; // New property for tracking hovered hex
   private isMinimized: boolean = false; // Add minimized state
   private tilesRefreshIntervalId: number | null = null;
@@ -172,6 +176,8 @@ class Minimap {
 
   private initializeCanvas(camera: THREE.PerspectiveCamera) {
     this.context = this.canvas.getContext("2d")!;
+    this.staticLayerCanvas = document.createElement("canvas");
+    this.staticLayerContext = this.staticLayerCanvas.getContext("2d", { alpha: false })!;
     this.camera = camera;
     this.scaleX = this.canvas.width / this.mapSize.width;
     this.scaleY = this.canvas.height / this.mapSize.height;
@@ -252,6 +258,9 @@ class Minimap {
       height: MINIMAP_CONFIG.SIZES.CAMERA.HEIGHT_FACTOR * this.scaleY,
     };
 
+    this.resizeStaticLayer();
+    this.needsStaticRedraw = true;
+
     // Adjust clustering radius based on zoom level and check if reclustering is needed
     const newRadius = Math.max(
       MINIMAP_CONFIG.CLUSTER.MIN_RADIUS,
@@ -299,33 +308,52 @@ class Minimap {
     this.drawHoveredCoordinates();
   }
 
-  private drawExploredTiles() {
-    if (!this.context) return;
+  private resizeStaticLayer() {
+    if (this.staticLayerCanvas.width !== this.canvas.width || this.staticLayerCanvas.height !== this.canvas.height) {
+      this.staticLayerCanvas.width = this.canvas.width;
+      this.staticLayerCanvas.height = this.canvas.height;
+    }
+  }
 
-    // Draw SQL-fetched tiles first
-    this.tiles.forEach((tile) => {
-      const cacheKey = `${tile.col},${tile.row}`;
-      let biomeColor;
+  private drawExploredTilesToStaticLayer() {
+    if (!this.staticLayerContext) return;
 
-      if (this.biomeCache.has(cacheKey)) {
-        biomeColor = this.biomeCache.get(cacheKey)!;
-      } else {
-        const biomeType = BiomeIdToType[tile.biome];
-        biomeColor = BIOME_COLORS[biomeType].getStyle();
-        this.biomeCache.set(cacheKey, biomeColor);
-      }
+    this.staticLayerContext.clearRect(0, 0, this.staticLayerCanvas.width, this.staticLayerCanvas.height);
 
-      if (this.scaledCoords.has(cacheKey)) {
-        const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
-        this.context.fillStyle = biomeColor;
-        this.context.fillRect(
+    // OPTIMIZED: Iterate only visible coordinates instead of all tiles
+    for (const [cacheKey, { scaledCol, scaledRow }] of this.scaledCoords) {
+      const tile = this.tileMap.get(cacheKey);
+      if (tile) {
+        let biomeColor;
+
+        if (this.biomeCache.has(cacheKey)) {
+          biomeColor = this.biomeCache.get(cacheKey)!;
+        } else {
+          const biomeType = BiomeIdToType[tile.biome];
+          biomeColor = BIOME_COLORS[biomeType].getStyle();
+          this.biomeCache.set(cacheKey, biomeColor);
+        }
+
+        this.staticLayerContext.fillStyle = biomeColor;
+        this.staticLayerContext.fillRect(
           scaledCol - this.scaleX * (tile.row % 2 !== 0 ? 1 : 0.5),
           scaledRow - this.scaleY / 2,
           this.scaleX,
           this.scaleY,
         );
       }
-    });
+    }
+    this.needsStaticRedraw = false;
+  }
+
+  private drawExploredTiles() {
+    if (!this.context) return;
+
+    if (this.needsStaticRedraw) {
+      this.drawExploredTilesToStaticLayer();
+    }
+
+    this.context.drawImage(this.staticLayerCanvas, 0, 0);
   }
 
   private drawStructures() {
@@ -680,6 +708,7 @@ class Minimap {
     this.mapCenter = { col, row };
     this.clampMapCenter();
     this.recomputeScales();
+    this.needsStaticRedraw = true;
   }
 
   // Set the map to maximum distance for screenshots
@@ -691,6 +720,8 @@ class Minimap {
     };
     this.clampMapCenter();
     this.recomputeScales();
+    this.resizeStaticLayer();
+    this.needsStaticRedraw = true;
     this.draw();
   }
 
@@ -699,6 +730,7 @@ class Minimap {
     this.mapCenter = { col: 0, row: 0 };
     this.clampMapCenter();
     this.recomputeScales();
+    this.needsStaticRedraw = true;
     this.draw();
   }
 
@@ -752,6 +784,7 @@ class Minimap {
       };
 
       this.recomputeScales();
+      this.needsStaticRedraw = true; // Dragging changes view, need redraw
       this.draw();
     } else if (!this.isMinimized) {
       // Redraw only when not dragging to show updated hover coordinates
@@ -771,6 +804,12 @@ class Minimap {
       if (distance < 3) {
         this.handleClick(event);
       }
+    }
+
+    // If dragging finished, we need to update static layer with new position
+    if (this.isDragging && !this.isMinimized) {
+      this.needsStaticRedraw = true;
+      this.draw();
     }
 
     this.isDragging = false;
@@ -809,6 +848,7 @@ class Minimap {
     this.clampMapCenter();
 
     this.recomputeScales();
+    this.needsStaticRedraw = true; // Zoom changed, need redraw
     // The recomputeScales method will set needsReclustering if the zoom level changed enough
   }
 
@@ -833,6 +873,8 @@ class Minimap {
 
   private handleResize = () => {
     this.recomputeScales();
+    this.resizeStaticLayer();
+    this.needsStaticRedraw = true;
     this.needsReclustering = true; // Force reclustering on resize
     if (this.context) this.draw();
   };
@@ -982,9 +1024,14 @@ class Minimap {
       });
       const normalizeEndTime = getTimestamp();
       this.tiles = normalizedTiles;
+      this.tileMap.clear();
+      this.tiles.forEach((tile) => {
+        this.tileMap.set(`${tile.col},${tile.row}`, tile);
+      });
       this.updateWorldBounds();
       this.clampMapCenter();
       this.recomputeScales();
+      this.needsStaticRedraw = true; // New tiles, need redraw
       this.draw(); // Redraw the minimap with new data
       const endTime = getTimestamp();
       const fetchDuration = fetchEndTime - startTime;
@@ -1062,6 +1109,7 @@ class Minimap {
     this.mapCenter = { col, row };
     this.clampMapCenter();
     this.recomputeScales();
+    this.needsStaticRedraw = true;
     this.draw();
   }
 
@@ -1134,9 +1182,15 @@ class Minimap {
       this.context.clearRect(0, 0, this.canvas?.width || 0, this.canvas?.height || 0);
     }
 
+    if (this.staticLayerContext) {
+      this.staticLayerContext.clearRect(0, 0, this.staticLayerCanvas?.width || 0, this.staticLayerCanvas?.height || 0);
+    }
+
     // Reset references
     this.canvas = null as any;
     this.context = null as any;
+    this.staticLayerCanvas = null as any;
+    this.staticLayerContext = null as any;
     this.hoveredHexCoords = null;
 
     if ((window as any).minimapInstance === this) {

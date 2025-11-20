@@ -22,6 +22,7 @@ import {
   resolveStructureMountTransforms,
 } from "../cosmetics";
 import { StructureInfo } from "../types";
+import { AnimationVisibilityContext } from "../types/animation";
 import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
@@ -123,9 +124,13 @@ export class StructureManager {
   private attachmentManager: CosmeticAttachmentManager;
   private structureAttachmentSignatures: Map<number, string> = new Map();
   private activeStructureAttachmentEntities: Set<number> = new Set();
+  private chunkToStructures: Map<string, Set<ID>> = new Map();
   private readonly tempCosmeticPosition: Vector3 = new Vector3();
   private readonly tempCosmeticRotation: Euler = new Euler();
   private readonly structureAttachmentTransformScratch = new Map<string, AttachmentTransform>();
+  private readonly animationCullDistance = 140;
+  private animationCameraPosition: Vector3 = new Vector3();
+  private animationVisibilityContext?: AnimationVisibilityContext;
   private pointsRenderers?: {
     myVillage: PointsLabelRenderer;
     enemyVillage: PointsLabelRenderer;
@@ -146,7 +151,53 @@ export class StructureManager {
     this.attachmentManager.removeAttachments(entityNumericId);
     this.activeStructureAttachmentEntities.delete(entityNumericId);
     this.structureAttachmentSignatures.delete(entityNumericId);
+
+    // Remove from spatial index
+    const { col, row } = structure.hexCoords;
+    const key = this.getSpatialKey(col, row);
+    const set = this.chunkToStructures.get(key);
+    if (set) {
+      set.delete(structure.entityId);
+      if (set.size === 0) {
+        this.chunkToStructures.delete(key);
+      }
+    }
   };
+
+  private getSpatialKey(col: number, row: number): string {
+    const bucketX = Math.floor(col / this.renderChunkSize.width);
+    const bucketY = Math.floor(row / this.renderChunkSize.height);
+    return `${bucketX},${bucketY}`;
+  }
+
+  private updateSpatialIndex(
+    entityId: ID,
+    oldHex: { col: number; row: number } | undefined,
+    newHex: { col: number; row: number },
+  ) {
+    if (oldHex) {
+      const oldKey = this.getSpatialKey(oldHex.col, oldHex.row);
+      const newKey = this.getSpatialKey(newHex.col, newHex.row);
+
+      if (oldKey === newKey) return;
+
+      const oldSet = this.chunkToStructures.get(oldKey);
+      if (oldSet) {
+        oldSet.delete(entityId);
+        if (oldSet.size === 0) {
+          this.chunkToStructures.delete(oldKey);
+        }
+      }
+    }
+
+    const newKey = this.getSpatialKey(newHex.col, newHex.row);
+    let newSet = this.chunkToStructures.get(newKey);
+    if (!newSet) {
+      newSet = new Set();
+      this.chunkToStructures.set(newKey, newSet);
+    }
+    newSet.add(entityId);
+  }
 
   constructor(
     scene: Scene,
@@ -429,6 +480,7 @@ export class StructureManager {
     this.structureHexCoords.clear();
     this.structureUpdateTimestamps.clear();
     this.structureUpdateSources.clear();
+    this.chunkToStructures.clear();
 
     // Clean up points renderers
     if (this.pointsRenderers) {
@@ -532,6 +584,10 @@ export class StructureManager {
     // Check for pending label updates and apply them if they exist
     // Check if structure already exists with valid owner before overwriting
     const existingStructure = this.structures.getStructureByEntityId(entityId);
+
+    // Update spatial index
+    this.updateSpatialIndex(entityId, existingStructure?.hexCoords, normalizedCoord);
+
     let finalOwner = {
       address: owner.address || 0n,
       ownerName: owner.ownerName || "",
@@ -847,17 +903,25 @@ export class StructureManager {
   }
 
   private async performVisibleStructuresUpdate(): Promise<void> {
-    const structuresMap = this.structures.getStructures();
-    const structureEntries = Array.from(structuresMap.entries());
     const visibleStructureIds = new Set<ID>();
     const attachmentRetain = new Set<number>();
 
+    // Get visible structures from spatial index
+    const [startRow, startCol] = this.currentChunk?.split(",").map(Number) || [0, 0];
+    const visibleStructures = this.getVisibleStructuresForChunk(startRow, startCol);
+
+    // Organize by type for model loading and rendering
+    const structuresByType = new Map<StructureType, StructureInfo[]>();
+    visibleStructures.forEach((structure) => {
+      if (!structuresByType.has(structure.structureType)) {
+        structuresByType.set(structure.structureType, []);
+      }
+      structuresByType.get(structure.structureType)!.push(structure);
+    });
+
     const preloadPromises: Promise<unknown>[] = [];
 
-    for (const [structureType, structures] of structureEntries) {
-      if (structures.size === 0) {
-        continue;
-      }
+    for (const [structureType] of structuresByType) {
       if (!this.structureModels.has(structureType)) {
         preloadPromises.push(this.ensureStructureModels(structureType));
       }
@@ -873,21 +937,24 @@ export class StructureManager {
 
     this.wonderEntityIdMaps.clear();
 
-    for (const [structureType, structures] of structureEntries) {
-      const visibleStructures = this.getVisibleStructures(structures);
+    // Reset all model counts
+    this.structureModels.forEach((models) => {
+      models.forEach((model) => model.setCount(0));
+    });
+    this.entityIdMaps.clear();
+
+    for (const [structureType, structures] of structuresByType) {
       const models = this.structureModels.get(structureType);
 
       if (!models || models.length === 0) {
         continue;
       }
 
-      models.forEach((model) => {
-        model.setCount(0);
-      });
+      if (!this.entityIdMaps.has(structureType)) {
+        this.entityIdMaps.set(structureType, new Map());
+      }
 
-      this.entityIdMaps.set(structureType, new Map());
-
-      visibleStructures.forEach((structure) => {
+      structures.forEach((structure) => {
         visibleStructureIds.add(structure.entityId);
         const position = getWorldPositionForHex(structure.hexCoords);
         position.y += 0.05;
@@ -1016,7 +1083,10 @@ export class StructureManager {
     // Remove points for structures no longer visible
     if (this.pointsRenderers) {
       Object.values(this.pointsRenderers).forEach((renderer) => {
-        structuresMap.forEach((structures) => {
+        // We need to iterate all points in renderer and remove if not in visibleStructureIds
+        // But PointsLabelRenderer doesn't expose iteration easily.
+        // Instead, we can iterate all known structures and remove those not visible
+        this.structures.getStructures().forEach((structures) => {
           structures.forEach((structure) => {
             if (!visibleStructureIds.has(structure.entityId) && renderer.hasPoint(structure.entityId)) {
               renderer.removePoint(structure.entityId);
@@ -1058,6 +1128,39 @@ export class StructureManager {
       return this.pointsRenderers.fragmentMine;
     }
     return null;
+  }
+
+  private getVisibleStructuresForChunk(startRow: number, startCol: number): StructureInfo[] {
+    const visibleStructures: StructureInfo[] = [];
+    const width = this.renderChunkSize.width;
+    const height = this.renderChunkSize.height;
+
+    const minCol = startCol - width / 2;
+    const maxCol = startCol + width / 2;
+    const minRow = startRow - height / 2;
+    const maxRow = startRow + height / 2;
+
+    const startBucketX = Math.floor(minCol / width);
+    const endBucketX = Math.floor(maxCol / width);
+    const startBucketY = Math.floor(minRow / height);
+    const endBucketY = Math.floor(maxRow / height);
+
+    for (let bx = startBucketX; bx <= endBucketX; bx++) {
+      for (let by = startBucketY; by <= endBucketY; by++) {
+        const key = `${bx},${by}`;
+        const structureIds = this.chunkToStructures.get(key);
+        if (structureIds) {
+          for (const id of structureIds) {
+            const structure = this.structures.getStructureByEntityId(id);
+            if (structure && this.isStructureVisible(structure)) {
+              visibleStructures.push(structure);
+            }
+          }
+        }
+      }
+    }
+
+    return visibleStructures;
   }
 
   private getAttachmentSignature(templates: CosmeticAttachmentTemplate[]): string {
@@ -1147,17 +1250,51 @@ export class StructureManager {
     return this.frustumManager.isBoxVisible(this.currentChunkBounds.box);
   }
 
-  updateAnimations(deltaTime: number) {
-    if (this.isChunkVisible()) {
-      this.structureModels.forEach((models) => {
-        models.forEach((model) => model.updateAnimations(deltaTime));
-      });
+  updateAnimations(deltaTime: number, visibility?: AnimationVisibilityContext) {
+    if (!this.isChunkVisible()) {
+      return;
     }
+
+    const context = this.resolveAnimationVisibilityContext(visibility);
+    this.structureModels.forEach((models) => {
+      models.forEach((model) => model.updateAnimations(deltaTime, context));
+    });
 
     if (this.frustumVisibilityDirty) {
       this.applyFrustumVisibilityToLabels();
       this.frustumVisibilityDirty = false;
     }
+  }
+
+  private resolveAnimationVisibilityContext(
+    provided?: AnimationVisibilityContext,
+  ): AnimationVisibilityContext | undefined {
+    if (provided) {
+      return provided;
+    }
+
+    if (!this.hexagonScene) {
+      return undefined;
+    }
+
+    const camera = this.hexagonScene.getCamera();
+    if (!camera) {
+      return undefined;
+    }
+
+    this.animationCameraPosition.copy(camera.position);
+
+    if (!this.animationVisibilityContext) {
+      this.animationVisibilityContext = {
+        frustumManager: this.frustumManager,
+        cameraPosition: this.animationCameraPosition,
+        maxDistance: this.animationCullDistance,
+      };
+    } else {
+      this.animationVisibilityContext.frustumManager = this.frustumManager;
+    }
+
+    return this.animationVisibilityContext;
   }
 
   private applyFrustumVisibilityToLabels() {
@@ -1167,7 +1304,24 @@ export class StructureManager {
 
     this.entityIdLabels.forEach((label) => {
       const isVisible = this.frustumManager!.isPointVisible(label.position);
-      label.element.style.display = isVisible ? "" : "none";
+      if (isVisible) {
+        if (label.parent !== this.labelsGroup) {
+          this.labelsGroup.add(label);
+          label.element.style.display = "";
+
+          // Force update data when showing again
+          const entityId = label.userData.entityId;
+          const structure = this.structures.getStructureByEntityId(entityId);
+          if (structure) {
+            updateStructureLabel(label.element, structure, this.currentCameraView);
+          }
+        }
+      } else {
+        if (label.parent === this.labelsGroup) {
+          this.labelsGroup.remove(label);
+          label.element.style.display = "none";
+        }
+      }
     });
   }
 
@@ -1659,6 +1813,10 @@ export class StructureManager {
    * Update a structure label with fresh data
    */
   private updateStructureLabelData(structure: StructureInfo, existingLabel: CSS2DObject): void {
+    // Optimization: Don't update DOM if label is culled/invisible
+    if (existingLabel.parent !== this.labelsGroup) {
+      return;
+    }
     // Update the existing label content in-place with correct camera view
     updateStructureLabel(existingLabel.element, structure, this.currentCameraView);
   }
