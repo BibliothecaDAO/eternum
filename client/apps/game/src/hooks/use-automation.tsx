@@ -8,8 +8,13 @@ import {
 import {
   useAutomationStore,
   type ResourceAutomationPercentages,
+  type ResourceAutomationSettings,
 } from "./store/use-automation-store";
-import { calculateLimitedPresetPercentages, getAutomationOverallocation, type RealmPresetId } from "@/utils/automation-presets";
+import {
+  calculateLimitedPresetPercentages,
+  getAutomationOverallocation,
+  type RealmPresetId,
+} from "@/utils/automation-presets";
 import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
 import {
   getStructureName,
@@ -148,16 +153,32 @@ export const useAutomation = () => {
         });
 
         // If config is over-allocated and still using a preset mode
-        // (labor/resource/idle), auto-apply a preset based on which side
-        // (resources vs labor) is over the cap. Manual/custom slider configs
-        // (presetId === "custom" or null) are left untouched.
+        // (labor/resource/idle/custom), auto-apply a preset based on which side
+        // (resources vs labor) is over the cap. Manual slider configs
+        // (presetId === null) are left untouched.
         const hasPreset =
           activeRealmConfig.presetId === "labor" ||
           activeRealmConfig.presetId === "resource" ||
-          activeRealmConfig.presetId === "idle";
+          activeRealmConfig.presetId === "idle" ||
+          activeRealmConfig.presetId === "custom";
         if (hasPreset) {
           try {
-            const { resourceOver, laborOver } = getAutomationOverallocation(activeRealmConfig);
+            let overAllocationConfig = activeRealmConfig;
+            if (producedResourceIds.length > 0) {
+              const limitedResources: Record<number, ResourceAutomationSettings> = {};
+              producedResourceIds.forEach((resourceId) => {
+                const existing = activeRealmConfig.resources[resourceId];
+                if (existing) {
+                  limitedResources[resourceId] = existing;
+                }
+              });
+              overAllocationConfig = {
+                ...activeRealmConfig,
+                resources: limitedResources,
+              };
+            }
+
+            const { resourceOver, laborOver } = getAutomationOverallocation(overAllocationConfig);
             let presetToApply: RealmPresetId | null = null;
             if (resourceOver && !laborOver) {
               presetToApply = "resource";
