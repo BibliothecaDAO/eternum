@@ -1425,7 +1425,25 @@ export class ArmyManager {
 
     this.entityIdLabels.forEach((label) => {
       const isVisible = this.frustumManager!.isPointVisible(label.position);
-      label.element.style.display = isVisible ? "" : "none";
+      if (isVisible) {
+        if (label.parent !== this.labelsGroup) {
+          this.labelsGroup.add(label);
+          label.element.style.display = "";
+
+          // Force update data when showing again to ensure it's fresh
+          const entityId = label.userData.entityId;
+          const army = this.armies.get(entityId);
+          if (army) {
+            // Use the internal update function directly to avoid the visibility check in the wrapper
+            updateArmyLabel(label.element, army, this.currentCameraView);
+          }
+        }
+      } else {
+        if (label.parent === this.labelsGroup) {
+          this.labelsGroup.remove(label);
+          label.element.style.display = "none";
+        }
+      }
     });
   }
 
@@ -1898,6 +1916,10 @@ ${
    * Update an army label with fresh data
    */
   private updateArmyLabelData(_entityId: ID, army: ArmyData, existingLabel: CSS2DObject): void {
+    // Optimization: Don't update DOM if label is culled/invisible
+    if (existingLabel.parent !== this.labelsGroup) {
+      return;
+    }
     // Update the existing label content in-place with correct camera view
     updateArmyLabel(existingLabel.element, army, this.currentCameraView);
   }

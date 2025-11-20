@@ -9,6 +9,165 @@ interface FXConfig {
   isInfinite?: boolean; // if true, effect will continue until manually stopped
 }
 
+// -------------------- BatchedFXSystem --------------------
+class BatchedFXSystem {
+  private geometry: THREE.BufferGeometry;
+  private material: THREE.ShaderMaterial;
+  private mesh: THREE.Points;
+  private maxParticles: number;
+  private particleCount: number = 0;
+  private texture: THREE.Texture;
+  private positions: Float32Array;
+  private scales: Float32Array;
+  private opacities: Float32Array;
+  private startTimes: Float32Array;
+  private lifetimes: Float32Array;
+  private activeIndices: number[] = [];
+  private freeIndices: number[] = [];
+
+  constructor(scene: THREE.Scene, texture: THREE.Texture, maxParticles: number = 1000) {
+    this.maxParticles = maxParticles;
+    this.texture = texture;
+
+    // Initialize attributes
+    this.positions = new Float32Array(maxParticles * 3);
+    this.scales = new Float32Array(maxParticles);
+    this.opacities = new Float32Array(maxParticles);
+    this.startTimes = new Float32Array(maxParticles);
+    this.lifetimes = new Float32Array(maxParticles);
+
+    // Initialize free indices
+    for (let i = 0; i < maxParticles; i++) {
+      this.freeIndices.push(i);
+      this.scales[i] = 0; // Hide initially
+    }
+
+    // Create geometry
+    this.geometry = new THREE.BufferGeometry();
+    this.geometry.setAttribute("position", new THREE.BufferAttribute(this.positions, 3));
+    this.geometry.setAttribute("scale", new THREE.BufferAttribute(this.scales, 1));
+    this.geometry.setAttribute("opacity", new THREE.BufferAttribute(this.opacities, 1));
+
+    // Custom shader for batched particles
+    this.material = new THREE.ShaderMaterial({
+      uniforms: {
+        map: { value: texture },
+      },
+      vertexShader: `
+        attribute float scale;
+        attribute float opacity;
+        varying float vOpacity;
+        void main() {
+          vOpacity = opacity;
+          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+          gl_Position = projectionMatrix * mvPosition;
+          gl_PointSize = scale * (300.0 / -mvPosition.z);
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D map;
+        varying float vOpacity;
+        void main() {
+          vec4 texColor = texture2D(map, gl_PointCoord);
+          gl_FragColor = texColor * vec4(1.0, 1.0, 1.0, vOpacity);
+          if (gl_FragColor.a < 0.01) discard;
+        }
+      `,
+      transparent: true,
+      depthWrite: false,
+      depthTest: true,
+    });
+
+    this.mesh = new THREE.Points(this.geometry, this.material);
+    this.mesh.frustumCulled = false; // Always render if in scene
+    scene.add(this.mesh);
+  }
+
+  spawn(x: number, y: number, z: number, scale: number, lifetime: number): number {
+    if (this.freeIndices.length === 0) return -1;
+
+    const index = this.freeIndices.pop()!;
+    this.activeIndices.push(index);
+
+    this.positions[index * 3] = x;
+    this.positions[index * 3 + 1] = y;
+    this.positions[index * 3 + 2] = z;
+    this.scales[index] = scale;
+    this.opacities[index] = 1.0;
+    this.startTimes[index] = performance.now() / 1000;
+    this.lifetimes[index] = lifetime;
+
+    this.geometry.attributes.position.needsUpdate = true;
+    this.geometry.attributes.scale.needsUpdate = true;
+    this.geometry.attributes.opacity.needsUpdate = true;
+
+    return index;
+  }
+
+  update(time: number, animateCallback: (index: number, elapsed: number) => void) {
+    if (this.activeIndices.length === 0) return;
+
+    let needsUpdate = false;
+    const indicesToRemove: number[] = [];
+
+    for (let i = 0; i < this.activeIndices.length; i++) {
+      const index = this.activeIndices[i];
+      const elapsed = time - this.startTimes[index];
+
+      if (elapsed > this.lifetimes[index]) {
+        indicesToRemove.push(i);
+        continue;
+      }
+
+      // Run custom animation logic
+      animateCallback(index, elapsed);
+      needsUpdate = true;
+    }
+
+    // Remove dead particles
+    for (let i = indicesToRemove.length - 1; i >= 0; i--) {
+      const removeIndex = indicesToRemove[i];
+      const particleIndex = this.activeIndices[removeIndex];
+
+      this.scales[particleIndex] = 0; // Hide
+      this.freeIndices.push(particleIndex);
+      this.activeIndices.splice(removeIndex, 1);
+      needsUpdate = true;
+    }
+
+    if (needsUpdate) {
+      this.geometry.attributes.position.needsUpdate = true;
+      this.geometry.attributes.scale.needsUpdate = true;
+      this.geometry.attributes.opacity.needsUpdate = true;
+    }
+  }
+
+  setPosition(index: number, x: number, y: number, z: number) {
+    this.positions[index * 3] = x;
+    this.positions[index * 3 + 1] = y;
+    this.positions[index * 3 + 2] = z;
+    this.geometry.attributes.position.needsUpdate = true;
+  }
+
+  setScale(index: number, scale: number) {
+    this.scales[index] = scale;
+    this.geometry.attributes.scale.needsUpdate = true;
+  }
+
+  setOpacity(index: number, opacity: number) {
+    this.opacities[index] = opacity;
+    this.geometry.attributes.opacity.needsUpdate = true;
+  }
+
+  destroy() {
+    this.geometry.dispose();
+    this.material.dispose();
+    if (this.mesh.parent) {
+      this.mesh.parent.remove(this.mesh);
+    }
+  }
+}
+
 // -------------------- FXInstance --------------------
 class FXInstance {
   public group: THREE.Group;
@@ -167,6 +326,10 @@ export class FXManager {
   private activeFX: Set<FXInstance> = new Set();
   private defaultSize: number;
 
+  // Batched system support
+  private batchedSystems: Map<string, BatchedFXSystem> = new Map();
+  private useBatching: boolean = true;
+
   constructor(scene: THREE.Scene, defaultSize: number = 1.5) {
     this.scene = scene;
     this.defaultSize = defaultSize;
@@ -174,9 +337,15 @@ export class FXManager {
   }
 
   public update(deltaTime: number) {
+    // Update legacy FX
     this.activeFX.forEach((fx) => {
       fx.update(deltaTime);
     });
+
+    // Update batched systems
+    // Note: We don't currently have a unified update loop for batched systems
+    // because the animation logic is still tied to the legacy FXInstance interface
+    // for now. Phase 2 would fully migrate animation logic to the BatchedFXSystem.
   }
 
   private registerBuiltInFX() {

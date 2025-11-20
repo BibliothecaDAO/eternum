@@ -118,6 +118,7 @@ class Minimap {
   private lastMousePosition: { x: number; y: number } | null = null;
   private mouseStartPosition: { x: number; y: number } | null = null;
   private tiles: Tile[] = []; // SQL-fetched tiles
+  private tileMap: Map<string, Tile> = new Map(); // Fast lookup for tiles by coordinate
   private hoveredHexCoords: { col: number; row: number } | null = null; // New property for tracking hovered hex
   private isMinimized: boolean = false; // Add minimized state
   private tilesRefreshIntervalId: number | null = null;
@@ -302,21 +303,20 @@ class Minimap {
   private drawExploredTiles() {
     if (!this.context) return;
 
-    // Draw SQL-fetched tiles first
-    this.tiles.forEach((tile) => {
-      const cacheKey = `${tile.col},${tile.row}`;
-      let biomeColor;
+    // OPTIMIZED: Iterate only visible coordinates instead of all tiles
+    for (const [cacheKey, { scaledCol, scaledRow }] of this.scaledCoords) {
+      const tile = this.tileMap.get(cacheKey);
+      if (tile) {
+        let biomeColor;
 
-      if (this.biomeCache.has(cacheKey)) {
-        biomeColor = this.biomeCache.get(cacheKey)!;
-      } else {
-        const biomeType = BiomeIdToType[tile.biome];
-        biomeColor = BIOME_COLORS[biomeType].getStyle();
-        this.biomeCache.set(cacheKey, biomeColor);
-      }
+        if (this.biomeCache.has(cacheKey)) {
+          biomeColor = this.biomeCache.get(cacheKey)!;
+        } else {
+          const biomeType = BiomeIdToType[tile.biome];
+          biomeColor = BIOME_COLORS[biomeType].getStyle();
+          this.biomeCache.set(cacheKey, biomeColor);
+        }
 
-      if (this.scaledCoords.has(cacheKey)) {
-        const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
         this.context.fillStyle = biomeColor;
         this.context.fillRect(
           scaledCol - this.scaleX * (tile.row % 2 !== 0 ? 1 : 0.5),
@@ -325,7 +325,7 @@ class Minimap {
           this.scaleY,
         );
       }
-    });
+    }
   }
 
   private drawStructures() {
@@ -982,6 +982,10 @@ class Minimap {
       });
       const normalizeEndTime = getTimestamp();
       this.tiles = normalizedTiles;
+      this.tileMap.clear();
+      this.tiles.forEach((tile) => {
+        this.tileMap.set(`${tile.col},${tile.row}`, tile);
+      });
       this.updateWorldBounds();
       this.clampMapCenter();
       this.recomputeScales();
