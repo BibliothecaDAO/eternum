@@ -149,6 +149,8 @@ export default class HexceptionScene extends HexagonScene {
   private playerStructures: Structure[] = [];
   private isBlitz: boolean;
   private structureUpdateSubscription: any | null = null;
+  private isInitialized = false;
+  private lastRealmKey?: string;
 
   constructor(
     controls: MapControls,
@@ -349,49 +351,60 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   setup() {
-    this.labels.forEach((label) => {
-      this.scene.remove(label.label);
-    });
-    this.labels = [];
-
     const col = this.locationManager.getCol();
     const row = this.locationManager.getRow();
-
     const contractPosition = new Position({ x: col, y: row }).getContract();
+    const realmKey = `${contractPosition.x},${contractPosition.y}`;
+    const realmChanged = !this.isInitialized || this.lastRealmKey !== realmKey;
 
-    this.centerColRow = [contractPosition.x, contractPosition.y];
-
-    this.tileManager.setTile({ col, row });
-
-    // remove all previous building instances
-    this.buildingInstances.forEach((instance) => {
-      this.scene.remove(instance);
-    });
-    this.buildingInstances.clear();
-
-    // remove all previous wonder instances
-    this.wonderInstances.forEach((instance) => {
-      this.scene.remove(instance);
-    });
-    this.wonderInstances.clear();
-
-    // clear all animation mixers
-    this.buildingMixers.clear();
-
-    // subscribe to buiding updates (create and destroy)
-    this.worldUpdateListener.Buildings.onBuildingUpdate(
-      { col: this.centerColRow[0], row: this.centerColRow[1] },
-      (update: BuildingSystemUpdate) => {
-        const { innerCol, innerRow, buildingType } = update;
-        if (buildingType === BuildingType.None && innerCol && innerRow) {
-          this.removeBuilding(innerCol, innerRow);
+    if (realmChanged) {
+      this.labels.forEach((label) => {
+        this.scene.remove(label.label);
+      });
+      this.labels = [];
+    } else {
+      this.labels.forEach((label) => {
+        if (label.label.parent !== this.scene) {
+          this.scene.add(label.label);
         }
-        this.updateHexceptionGrid(this.hexceptionRadius);
-      },
-    );
+      });
+    }
 
-    this.removeCastleFromScene();
-    this.updateHexceptionGrid(this.hexceptionRadius);
+    if (realmChanged) {
+      this.centerColRow = [contractPosition.x, contractPosition.y];
+      this.tileManager.setTile({ col, row });
+
+      // remove all previous building instances
+      this.buildingInstances.forEach((instance) => {
+        this.scene.remove(instance);
+      });
+      this.buildingInstances.clear();
+
+      // remove all previous wonder instances
+      this.wonderInstances.forEach((instance) => {
+        this.scene.remove(instance);
+      });
+      this.wonderInstances.clear();
+
+      // clear all animation mixers
+      this.buildingMixers.clear();
+
+      // subscribe to building updates (create and destroy)
+      this.worldUpdateListener.Buildings.onBuildingUpdate(
+        { col: this.centerColRow[0], row: this.centerColRow[1] },
+        (update: BuildingSystemUpdate) => {
+          const { innerCol, innerRow, buildingType } = update;
+          if (buildingType === BuildingType.None && innerCol && innerRow) {
+            this.removeBuilding(innerCol, innerRow);
+          }
+          this.updateHexceptionGrid(this.hexceptionRadius);
+        },
+      );
+
+      this.removeCastleFromScene();
+      this.updateHexceptionGrid(this.hexceptionRadius);
+    }
+
     this.controls.maxDistance = IS_FLAT_MODE ? 36 : 20;
     this.controls.enablePan = false;
     this.controls.enableZoom = useUIStore.getState().enableMapZoom;
@@ -416,6 +429,9 @@ export default class HexceptionScene extends HexagonScene {
       innerCol: BUILDINGS_CENTER[0],
       innerRow: BUILDINGS_CENTER[1],
     });
+
+    this.isInitialized = true;
+    this.lastRealmKey = realmKey;
   }
 
   onSwitchOff() {

@@ -235,6 +235,9 @@ export default class WorldmapScene extends HexagonScene {
   private readonly hexGridMinBatch = 120;
   private readonly hexGridMaxBatch = 900;
   private travelEffects: Map<string, () => void> = new Map();
+  private hasInitialized = false;
+  private initialSetupPromise: Promise<void> | null = null;
+  private cancelHexGridComputation?: () => void;
 
   // Pending relic effects store - holds relic effects for entities that aren't loaded yet
   private pendingRelicEffects: Map<ID, Map<RelicSource, Set<{ relicResourceId: number; effect: RelicEffect }>>> =
@@ -1559,7 +1562,7 @@ export default class WorldmapScene extends HexagonScene {
     return null;
   }
 
-  setup() {
+  async setup() {
     this.controls.maxDistance = 40;
     this.camera.far = 65;
     this.camera.updateProjectionMatrix();
@@ -1568,14 +1571,6 @@ export default class WorldmapScene extends HexagonScene {
     this.controls.enableZoom = useUIStore.getState().enableMapZoom;
     this.controls.zoomToCursor = false;
     this.highlightHexManager.setYOffset(0.025);
-
-    // Clear any cached chunk data before moving the camera, so subsequent loads rebuild fresh state
-    this.clearTileEntityCache();
-
-    this.moveCameraToURLLocation();
-    // this.changeCameraView(2);
-    this.minimap.moveMinimapCenterToUrlLocation();
-    this.minimap.showMinimap();
 
     // Configure thunder bolts for worldmap - dramatic storm effect
     this.getThunderBoltManager().setConfig({
@@ -1586,30 +1581,73 @@ export default class WorldmapScene extends HexagonScene {
       debug: false, // Disable logging for performance
     });
 
-    // Close left navigation on world map load
     useUIStore.getState().setLeftNavigationView(LeftView.None);
 
-    // Add label groups to scene
-    this.scene.add(this.armyLabelsGroup);
-    this.scene.add(this.structureLabelsGroup);
-    this.scene.add(this.questLabelsGroup);
-    this.scene.add(this.chestLabelsGroup);
+    if (!this.hasInitialized) {
+      if (!this.initialSetupPromise) {
+        this.initialSetupPromise = this.performInitialSetup();
+      }
+      try {
+        await this.initialSetupPromise;
+        this.hasInitialized = true;
+      } finally {
+        this.initialSetupPromise = null;
+      }
+    } else {
+      await this.resumeWorldmapScene();
+    }
+  }
 
-    // Update army and structure managers
+  private attachLabelGroupsToScene() {
+    const groups = [this.armyLabelsGroup, this.structureLabelsGroup, this.questLabelsGroup, this.chestLabelsGroup];
+    groups.forEach((group) => {
+      if (!group.parent) {
+        this.scene.add(group);
+      }
+    });
+  }
+
+  private async performInitialSetup() {
+    this.clearTileEntityCache();
+    this.moveCameraToURLLocation();
+    this.minimap.moveMinimapCenterToUrlLocation();
+    this.minimap.showMinimap();
+    this.attachLabelGroupsToScene();
     this.armyManager.addLabelsToScene();
     this.structureManager.showLabels();
     this.questManager.addLabelsToScene();
     this.chestManager.addLabelsToScene();
-
     this.registerStoreSubscriptions();
-
     this.setupCameraZoomHandler();
+    try {
+      await this.updateVisibleChunks(true);
+    } catch (error) {
+      console.error("Failed to update visible chunks during initial setup:", error);
+    }
+  }
 
-    // Ensure interactive hexes/chunks are initialized now that managers exist and caches are reset
-    this.updateVisibleChunks(true).catch((error) => console.error("Failed to update visible chunks:", error));
+  private async resumeWorldmapScene() {
+    this.moveCameraToURLLocation();
+    this.minimap.moveMinimapCenterToUrlLocation();
+    this.minimap.showMinimap();
+    this.attachLabelGroupsToScene();
+    this.armyManager.addLabelsToScene();
+    this.structureManager.showLabels();
+    this.questManager.addLabelsToScene();
+    this.chestManager.addLabelsToScene();
+    this.registerStoreSubscriptions();
+    this.setupCameraZoomHandler();
+    try {
+      await this.updateVisibleChunks();
+    } catch (error) {
+      console.error("Failed to update visible chunks while resuming worldmap scene:", error);
+    }
   }
 
   onSwitchOff() {
+    this.cancelHexGridComputation?.();
+    this.cancelHexGridComputation = undefined;
+
     this.disposeStoreSubscriptions();
     this.toriiStreamManager?.shutdown();
 
@@ -2191,6 +2229,9 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   async updateHexagonGrid(startRow: number, startCol: number, rows: number, cols: number) {
+    this.cancelHexGridComputation?.();
+    this.cancelHexGridComputation = undefined;
+
     const memoryMonitor = (window as any).__gameRenderer?.memoryMonitor;
     const preUpdateStats = memoryMonitor?.getCurrentStats(`hex-grid-update-${startRow}-${startCol}`);
 
@@ -2292,6 +2333,7 @@ export default class WorldmapScene extends HexagonScene {
       const resolveOnce = () => {
         if (!resolved) {
           resolved = true;
+          this.cancelHexGridComputation = undefined;
           cleanupTask();
           resolve();
         }
@@ -2303,6 +2345,10 @@ export default class WorldmapScene extends HexagonScene {
           console.log(`🔄 Released ${released} matrices back to pool (aborted)`);
         }
         resolveOnce();
+      };
+
+      this.cancelHexGridComputation = () => {
+        abortTask();
       };
 
       const finalizeSuccess = () => {

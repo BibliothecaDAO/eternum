@@ -887,7 +887,7 @@ export abstract class HexagonScene {
   protected abstract onHexagonDoubleClick(hexCoords: HexPosition): void;
   protected abstract onHexagonClick(hexCoords: HexPosition | null): void;
   protected abstract onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void;
-  public abstract setup(): void;
+  public abstract setup(): void | Promise<void>;
   public abstract moveCameraToURLLocation(): void;
   public abstract onSwitchOff(): void;
 
