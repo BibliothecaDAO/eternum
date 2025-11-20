@@ -5,8 +5,16 @@ import {
   planHasExecutableCalls,
   PROCESS_INTERVAL_MS,
 } from "@/ui/features/infrastructure/automation/model/automation-processor";
-import { useAutomationStore } from "./store/use-automation-store";
-import { getAutomationOverallocation } from "@/utils/automation-presets";
+import {
+  useAutomationStore,
+  type ResourceAutomationPercentages,
+  type ResourceAutomationSettings,
+} from "./store/use-automation-store";
+import {
+  calculateLimitedPresetPercentages,
+  getAutomationOverallocation,
+  type RealmPresetId,
+} from "@/utils/automation-presets";
 import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
 import {
   getStructureName,
@@ -38,6 +46,7 @@ export const useAutomation = () => {
   const setNextRunTimestamp = useAutomationStore((state) => state.setNextRunTimestamp);
   const recordExecution = useAutomationStore((state) => state.recordExecution);
   const setRealmPreset = useAutomationStore((state) => state.setRealmPreset);
+  const setRealmPresetConfig = useAutomationStore((state) => state.setRealmPresetConfig);
   const getRealmConfig = useAutomationStore((state) => state.getRealmConfig);
   const upsertRealm = useAutomationStore((state) => state.upsertRealm);
   const removeRealm = useAutomationStore((state) => state.removeRealm);
@@ -127,18 +136,50 @@ export const useAutomation = () => {
         let activeRealmConfig = realmConfig;
         const realmIdNum = Number(activeRealmConfig.realmId);
 
+        const snapshot =
+          Number.isFinite(realmIdNum) && realmIdNum > 0
+            ? buildRealmResourceSnapshot({
+                components,
+                realmId: realmIdNum,
+                currentTick: currentDefaultTick,
+              })
+            : new Map();
+
+        const producedResourceIds: ResourcesIds[] = [];
+        snapshot.forEach((entry) => {
+          if (entry.hasActiveProduction) {
+            producedResourceIds.push(entry.resourceId);
+          }
+        });
+
         // If config is over-allocated and still using a preset mode
-        // (labor/resource/idle), auto-apply a preset based on which side
-        // (resources vs labor) is over the cap. Manual/custom slider configs
-        // (presetId === "custom" or null) are left untouched.
+        // (labor/resource/idle/custom), auto-apply a preset based on which side
+        // (resources vs labor) is over the cap. Manual slider configs
+        // (presetId === null) are left untouched.
         const hasPreset =
           activeRealmConfig.presetId === "labor" ||
           activeRealmConfig.presetId === "resource" ||
-          activeRealmConfig.presetId === "idle";
+          activeRealmConfig.presetId === "idle" ||
+          activeRealmConfig.presetId === "custom";
         if (hasPreset) {
           try {
-            const { resourceOver, laborOver } = getAutomationOverallocation(activeRealmConfig);
-            let presetToApply: "resource" | "labor" | "custom" | null = null;
+            let overAllocationConfig = activeRealmConfig;
+            if (producedResourceIds.length > 0) {
+              const limitedResources: Record<number, ResourceAutomationSettings> = {};
+              producedResourceIds.forEach((resourceId) => {
+                const existing = activeRealmConfig.resources[resourceId];
+                if (existing) {
+                  limitedResources[resourceId] = existing;
+                }
+              });
+              overAllocationConfig = {
+                ...activeRealmConfig,
+                resources: limitedResources,
+              };
+            }
+
+            const { resourceOver, laborOver } = getAutomationOverallocation(overAllocationConfig);
+            let presetToApply: RealmPresetId | null = null;
             if (resourceOver && !laborOver) {
               presetToApply = "resource";
             } else if (!resourceOver && laborOver) {
@@ -148,10 +189,30 @@ export const useAutomation = () => {
             }
 
             if (presetToApply) {
-              setRealmPreset(activeRealmConfig.realmId, presetToApply);
-              const refreshed = getRealmConfig(activeRealmConfig.realmId);
-              if (refreshed) {
-                activeRealmConfig = refreshed;
+              if (producedResourceIds.length > 0) {
+                const limitedPercentagesMap = calculateLimitedPresetPercentages(
+                  activeRealmConfig,
+                  presetToApply,
+                  producedResourceIds,
+                );
+                if (limitedPercentagesMap.size > 0) {
+                  const percentages: Record<number, ResourceAutomationPercentages> = {};
+                  limitedPercentagesMap.forEach((value, key) => {
+                    percentages[key] = value;
+                  });
+                  setRealmPresetConfig(activeRealmConfig.realmId, presetToApply, percentages);
+                  const refreshed = getRealmConfig(activeRealmConfig.realmId);
+                  if (refreshed) {
+                    activeRealmConfig = refreshed;
+                  }
+                }
+              } else {
+                // Fallback: apply preset using full config when no produced resources detected.
+                setRealmPreset(activeRealmConfig.realmId, presetToApply);
+                const refreshed = getRealmConfig(activeRealmConfig.realmId);
+                if (refreshed) {
+                  activeRealmConfig = refreshed;
+                }
               }
             }
           } catch (error) {
@@ -162,15 +223,6 @@ export const useAutomation = () => {
             );
           }
         }
-
-        const snapshot =
-          Number.isFinite(realmIdNum) && realmIdNum > 0
-            ? buildRealmResourceSnapshot({
-                components,
-                realmId: realmIdNum,
-                currentTick: currentDefaultTick,
-              })
-            : new Map();
 
         const plan = buildRealmProductionPlan({
           realmConfig: activeRealmConfig,
@@ -233,6 +285,7 @@ export const useAutomation = () => {
     recordExecution,
     starknetSignerAccount,
     setRealmPreset,
+    setRealmPresetConfig,
     getRealmConfig,
   ]);
 
