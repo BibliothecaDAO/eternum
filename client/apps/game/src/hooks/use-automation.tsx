@@ -154,8 +154,8 @@ export const useAutomation = () => {
 
         // If config is over-allocated and still using a preset mode
         // (labor/resource/idle/custom), auto-apply a preset based on which side
-        // (resources vs labor) is over the cap. Manual slider configs
-        // (presetId === null) are left untouched.
+        // (resources vs labor) is over the cap. Manual slider configs flow
+        // through here as the "custom" preset so caps can still be enforced.
         const hasPreset =
           activeRealmConfig.presetId === "labor" ||
           activeRealmConfig.presetId === "resource" ||

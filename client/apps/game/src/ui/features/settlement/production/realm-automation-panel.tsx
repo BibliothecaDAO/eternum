@@ -89,7 +89,7 @@ export const RealmAutomationPanel = ({
   const realmAutomation = useAutomationStore((state) => state.realms[realmEntityId]);
 
   type Snapshot = {
-    presetId: RealmPresetId | null;
+    presetId: RealmPresetId;
     percentages: Record<number, ResourceAutomationPercentages>;
   };
 
@@ -169,8 +169,8 @@ export const RealmAutomationPanel = ({
       return false;
     }
 
-    const targetPreset = draftPresetId ?? null;
-    const savedPreset = lastSavedSnapshot.presetId ?? null;
+    const savedPreset = lastSavedSnapshot.presetId;
+    const targetPreset = draftPresetId ?? savedPreset;
     if (targetPreset !== savedPreset) {
       return true;
     }
@@ -214,7 +214,7 @@ export const RealmAutomationPanel = ({
     });
 
     const snapshot: Snapshot = {
-      presetId: realmAutomation.presetId ?? null,
+      presetId: realmAutomation.presetId,
       percentages: snapshotPercentages,
     };
 
@@ -251,7 +251,7 @@ export const RealmAutomationPanel = ({
     return {
       ...realmAutomation,
       resources,
-      presetId: draftPresetId ?? realmAutomation.presetId ?? null,
+      presetId: draftPresetId ?? realmAutomation.presetId,
     };
   }, [realmAutomation, draftPercentages, draftPresetId, realmResources, createBaselinePercentages]);
 
@@ -492,7 +492,7 @@ export const RealmAutomationPanel = ({
           [resourceId]: next,
         };
       });
-      setDraftPresetId(null);
+      setDraftPresetId("custom");
     },
     [realmAutomation, createBaselinePercentages],
   );
@@ -504,14 +504,14 @@ export const RealmAutomationPanel = ({
       restored[Number(key)] = { ...value };
     });
     setDraftPercentages(restored);
-    setDraftPresetId(lastSavedSnapshot.presetId ?? null);
+    setDraftPresetId(lastSavedSnapshot.presetId);
   }, [lastSavedSnapshot]);
 
   const handleSave = useCallback(() => {
     if (!realmAutomation || !hasLocalChanges) return;
 
     const snapshot = lastSavedSnapshot ?? {
-      presetId: realmAutomation.presetId ?? null,
+      presetId: realmAutomation.presetId,
       percentages: Object.entries(realmAutomation.resources ?? {}).reduce(
         (acc, [key, settings]) => {
           if (!settings) return acc;
@@ -527,7 +527,7 @@ export const RealmAutomationPanel = ({
       ...Object.keys(draftPercentages).map(Number),
     ]);
 
-    if (draftPresetId) {
+    if (draftPresetId && draftPresetId !== "custom") {
       // For preset saves, only persist percentages for resources actually produced in this realm.
       const normalizedPercentages: Record<number, ResourceAutomationPercentages> = {};
       realmResources.forEach((resourceId) => {
@@ -591,7 +591,6 @@ export const RealmAutomationPanel = ({
     draftPercentages,
     draftPresetId,
     createBaselinePercentages,
-    setRealmPreset,
     setRealmPresetConfig,
     realmEntityId,
     setResourcePercentages,

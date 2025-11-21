@@ -79,7 +79,7 @@ export interface RealmAutomationConfig {
   realmId: string;
   realmName?: string;
   entityType: RealmEntityType;
-  presetId?: RealmPresetId | null;
+  presetId: RealmPresetId;
   autoBalance: boolean;
   resources: Record<number, ResourceAutomationSettings>;
   createdAt: number;
@@ -102,7 +102,7 @@ interface ProductionAutomationState {
   hydrated: boolean;
   gameId: string;
   upsertRealm: (realmId: string, data?: RealmAutomationInput) => void;
-  setRealmPreset: (realmId: string, presetId: RealmPresetId | null) => void;
+  setRealmPreset: (realmId: string, presetId: RealmPresetId) => void;
   setRealmMetadata: (
     realmId: string,
     metadata: Pick<RealmAutomationConfig, "realmName" | "entityType" | "autoBalance">,
@@ -281,22 +281,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
           const target = state.realms[realmId];
           if (!target) return state;
 
-          // Null presetId means switch to manual custom mode (do not apply allocations)
-          if (presetId === null) {
-            const nextState = {
-              realms: {
-                ...state.realms,
-                [realmId]: {
-                  ...target,
-                  presetId: null,
-                  updatedAt: Date.now(),
-                },
-              },
-            };
-            return nextState;
-          }
-
-          const normalizedPreset = presetId as RealmPresetId;
+          const normalizedPreset = presetId;
           const allocations = calculatePresetAllocations(target, normalizedPreset);
           if (allocations.size === 0) {
             const nextState = {
@@ -461,7 +446,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
         );
 
         let newConfig = baseConfig;
-        if (realm && (realm.presetId === null || realm.presetId === "custom")) {
+        if (realm && realm.presetId === "custom") {
           const hasExistingResources = Object.keys(realm.resources ?? {}).length > 0;
           // Only bootstrap from the resource preset when there are already
           // other resources configured; for the very first resource on a realm,
@@ -543,7 +528,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
               ...state.realms,
               [realmId]: {
                 ...realm,
-                presetId: "custom" as RealmPresetId,
+                presetId: "custom",
                 resources: sanitizeRealmResources(
                   {
                     ...realm.resources,
@@ -626,7 +611,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
               [realmId]: {
                 ...realm,
                 resources: {},
-                presetId: null,
+                presetId: "labor",
                 updatedAt: Date.now(),
                 lastExecution: undefined,
               },
@@ -679,7 +664,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
     {
       name: "eternum-production-automation",
       storage: createJSONStorage(() => localStorage),
-      version: 5,
+      version: 6,
       partialize: (state) => ({
         realms: state.realms,
         nextRunTimestamp: state.nextRunTimestamp,
@@ -724,15 +709,14 @@ export const useAutomationStore = create<ProductionAutomationState>()(
             };
           }
 
-          let normalizedPreset: RealmPresetId | null = null;
-          if (typeof realm.presetId === "string") {
-            const raw = realm.presetId as string;
-            // Preserve recognized presets; map legacy 'both' to null (manual custom)
-            if (raw === "labor" || raw === "resource" || raw === "idle" || raw === "custom") {
-              normalizedPreset = raw as RealmPresetId;
-            } else {
-              normalizedPreset = null;
-            }
+          const rawPreset = realm.presetId;
+          let normalizedPreset: RealmPresetId = "labor";
+          if (rawPreset === "labor" || rawPreset === "resource" || rawPreset === "idle" || rawPreset === "custom") {
+            normalizedPreset = rawPreset;
+          } else if (rawPreset === null) {
+            normalizedPreset = "custom";
+          } else if (typeof rawPreset === "string") {
+            normalizedPreset = "custom";
           }
 
           nextRealms[realmId] = {
