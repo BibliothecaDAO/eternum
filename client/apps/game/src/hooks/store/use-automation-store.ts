@@ -34,7 +34,7 @@ export const isAutomationResourceBlocked = (
 export const MAX_RESOURCE_ALLOCATION_PERCENT = 90;
 export const DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES: ResourceAutomationPercentages = {
   resourceToResource: 0,
-  laborToResource: 10,
+  laborToResource: 5,
 };
 export const DONKEY_DEFAULT_RESOURCE_PERCENT = 10;
 
@@ -461,11 +461,11 @@ export const useAutomationStore = create<ProductionAutomationState>()(
         );
 
         let newConfig = baseConfig;
-        if (realm && (realm.presetId === null || realm.presetId === "custom")) {
-          const hasExistingResources = Object.keys(realm.resources ?? {}).length > 0;
-          // Only bootstrap from the resource preset when there are already
-          // other resources configured; for the very first resource on a realm,
-          // prefer the default labor-friendly baseline (0% resource, 10% labor).
+          if (realm && (realm.presetId === null || realm.presetId === "custom")) {
+            const hasExistingResources = Object.keys(realm.resources ?? {}).length > 0;
+            // Only bootstrap from the resource preset when there are already
+            // other resources configured; for the very first resource on a realm,
+            // prefer the default labor-friendly baseline (0% resource, 5% labor).
           if (hasExistingResources) {
             const configWithResource: RealmAutomationConfig = {
               ...realm,

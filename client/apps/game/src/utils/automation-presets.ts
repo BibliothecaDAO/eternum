@@ -13,7 +13,7 @@ import { ResourcesIds } from "@bibliothecadao/types";
 export type RealmPresetId = "labor" | "resource" | "idle" | "custom";
 
 export const REALM_PRESETS: { id: RealmPresetId; label: string; description?: string }[] = [
-  { id: "labor", label: "Labor", description: "Distribute labor evenly (max 10% per resource)." },
+  { id: "labor", label: "Labor", description: "Distribute labor evenly (max 5% per resource)." },
   { id: "resource", label: "Resource", description: "Distribute resource burn up to 90%." },
   { id: "custom", label: "Custom", description: "Manually tuned mix of labor/resource." },
   { id: "idle", label: "Idle", description: "Pause automation (0%)." },
@@ -31,10 +31,10 @@ export const LABOR_PRESET_BANNED_RESOURCES = new Set<ResourcesIds>([
 const computeLaborShare = (eligibleCount: number): number => {
   if (eligibleCount <= 0) return 0;
   const raw = Math.floor(90 / eligibleCount);
-  const capped = Math.min(10, raw);
+  const capped = Math.min(5, raw);
   const normalized = Math.floor(capped / 5) * 5;
   if (normalized > 0) return normalized;
-  return Math.min(10, 5);
+  return 5;
 };
 
 const computeUsageTotals = (
@@ -472,7 +472,7 @@ export const calculateResourceBootstrapAllocation = (
 
 export const inferRealmPreset = (automation?: RealmAutomationConfig): RealmPresetId => {
   // If no automation context yet, default to labor since
-  // the processor uses a 10% labor baseline for unconfigured resources.
+  // the processor uses a 5% labor baseline for unconfigured resources.
   if (!automation) return "labor";
   if (automation.presetId) {
     return automation.presetId as RealmPresetId;
