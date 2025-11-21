@@ -461,11 +461,11 @@ export const useAutomationStore = create<ProductionAutomationState>()(
         );
 
         let newConfig = baseConfig;
-          if (realm && (realm.presetId === null || realm.presetId === "custom")) {
-            const hasExistingResources = Object.keys(realm.resources ?? {}).length > 0;
-            // Only bootstrap from the resource preset when there are already
-            // other resources configured; for the very first resource on a realm,
-            // prefer the default labor-friendly baseline (0% resource, 5% labor).
+        if (realm && (realm.presetId === null || realm.presetId === "custom")) {
+          const hasExistingResources = Object.keys(realm.resources ?? {}).length > 0;
+          // Only bootstrap from the resource preset when there are already
+          // other resources configured; for the very first resource on a realm,
+          // prefer the default labor-friendly baseline (0% resource, 5% labor).
           if (hasExistingResources) {
             const configWithResource: RealmAutomationConfig = {
               ...realm,
