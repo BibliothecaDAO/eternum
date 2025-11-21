@@ -68,6 +68,7 @@ export const useAutomation = () => {
   const nextRunBlockTimestampRef = useRef<number>(automationEnabledAtRef.current);
   const scheduleNextCheckRef = useRef<() => void>();
   const automationTimeoutIdRef = useRef<number | null>(null);
+  const syncedRealmIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!components) {
@@ -79,7 +80,10 @@ export const useAutomation = () => {
   }, [components, pruneForGame]);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated) {
+      syncedRealmIdsRef.current.clear();
+      return;
+    }
     const blitzMode = getIsBlitz();
     const managedStructures = [...playerRealms, ...playerVillages];
     const activeIds = new Set(managedStructures.map((structure) => String(structure.entityId)));
@@ -91,8 +95,10 @@ export const useAutomation = () => {
     managedStructures.forEach((structure) => {
       const entityType = structure.structure?.category === StructureType.Village ? "village" : "realm";
       const name = getStructureName(structure.structure, blitzMode).name;
+      const realmId = String(structure.entityId);
+      syncedRealmIdsRef.current.add(realmId);
 
-      upsertRealm(String(structure.entityId), {
+      upsertRealm(realmId, {
         realmName: name,
         entityType,
       });
@@ -100,6 +106,10 @@ export const useAutomation = () => {
 
     Object.entries(useAutomationStore.getState().realms).forEach(([realmId, config]) => {
       const supportedType = config.entityType === "realm" || config.entityType === "village";
+      const hasSyncedThisSession = syncedRealmIdsRef.current.has(realmId);
+      if (!hasSyncedThisSession) {
+        return;
+      }
       if (!supportedType || !activeIds.has(realmId)) {
         removeRealm(realmId);
       }

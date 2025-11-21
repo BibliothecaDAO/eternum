@@ -196,6 +196,7 @@ export const RealmAutomationPanel = ({
   }, [draftPercentages, draftPresetId, lastSavedSnapshot, createBaselinePercentages]);
 
   useEffect(() => {
+    if (!hydrated) return;
     if (!realmAutomation) return;
 
     const snapshotPercentages: Record<number, ResourceAutomationPercentages> = {};
@@ -221,7 +222,7 @@ export const RealmAutomationPanel = ({
     setLastSavedSnapshot(snapshot);
     setDraftPercentages(snapshotPercentages);
     setDraftPresetId(snapshot.presetId);
-  }, [realmAutomation, realmResources, createBaselinePercentages]);
+  }, [realmAutomation, realmResources, createBaselinePercentages, hydrated]);
 
   const draftAutomation = useMemo(() => {
     if (!realmAutomation) return undefined;

@@ -190,6 +190,13 @@ const normalizePercentages = (
   };
 };
 
+const normalizePresetId = (preset?: RealmPresetId | string | null): RealmPresetId => {
+  if (preset === "labor" || preset === "resource" || preset === "idle" || preset === "custom") {
+    return preset;
+  }
+  return "labor";
+};
+
 const sanitizeRealmResources = (
   resources: Record<number, ResourceAutomationSettings> | undefined,
   entityType: RealmEntityType = "realm",
@@ -237,20 +244,25 @@ export const useAutomationStore = create<ProductionAutomationState>()(
             const sanitizedExisting: RealmAutomationConfig = {
               ...existing,
               resources: sanitizeRealmResources(existing.resources, existing.entityType),
+              presetId: normalizePresetId(existing.presetId),
             };
-            const nextState = {
+            let nextRealm = sanitizedExisting;
+            if (metadataChanged) {
+              nextRealm = {
+                ...sanitizedExisting,
+                ...data,
+                presetId: normalizePresetId(
+                  (data?.presetId as RealmPresetId | string | null | undefined) ?? sanitizedExisting.presetId,
+                ),
+                updatedAt: now,
+              };
+            }
+            return {
               realms: {
                 ...state.realms,
-                [realmId]: metadataChanged
-                  ? {
-                      ...sanitizedExisting,
-                      ...data,
-                      updatedAt: now,
-                    }
-                  : sanitizedExisting,
+                [realmId]: nextRealm,
               },
             };
-            return nextState;
           }
 
           const config: RealmAutomationConfig = {
@@ -260,12 +272,12 @@ export const useAutomationStore = create<ProductionAutomationState>()(
             autoBalance: data?.autoBalance ?? true,
             // Default to labor preset for new realms so bootstrapped
             // resources start from a labor-friendly baseline.
-            presetId: data?.presetId ?? "labor",
+            presetId: normalizePresetId(data?.presetId ?? "labor"),
             resources: {},
             createdAt: now,
             updatedAt: now,
           };
-          const nextState = {
+          return {
             realms: {
               ...state.realms,
               [realmId]: {
@@ -274,7 +286,6 @@ export const useAutomationStore = create<ProductionAutomationState>()(
               },
             },
           };
-          return nextState;
         }),
       setRealmPreset: (realmId, presetId) =>
         set((state) => {
@@ -732,12 +743,11 @@ export const useAutomationStore = create<ProductionAutomationState>()(
             ? (persistedState as any).nextRunTimestamp
             : null;
 
-        const result = {
+        return {
           realms: nextRealms,
           nextRunTimestamp,
           gameId: persistedGameId,
         };
-        return result;
       },
       onRehydrateStorage: () => {
         return (_state, error) => {
