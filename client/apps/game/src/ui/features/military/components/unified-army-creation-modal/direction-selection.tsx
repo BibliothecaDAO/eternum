@@ -26,11 +26,11 @@ const getHexPositions = (size: number) => {
   const spacing = size * 1.75;
   return {
     [Direction.EAST]: { x: spacing, y: 0 },
-    [Direction.SOUTH_EAST]: { x: spacing / 2, y: spacing * 0.866 },
-    [Direction.SOUTH_WEST]: { x: -spacing / 2, y: spacing * 0.866 },
+    [Direction.SOUTH_EAST]: { x: spacing / 2, y: -spacing * 0.866 },
+    [Direction.SOUTH_WEST]: { x: -spacing / 2, y: -spacing * 0.866 },
     [Direction.WEST]: { x: -spacing, y: 0 },
-    [Direction.NORTH_WEST]: { x: -spacing / 2, y: -spacing * 0.866 },
-    [Direction.NORTH_EAST]: { x: spacing / 2, y: -spacing * 0.866 },
+    [Direction.NORTH_WEST]: { x: -spacing / 2, y: spacing * 0.866 },
+    [Direction.NORTH_EAST]: { x: spacing / 2, y: spacing * 0.866 },
   };
 };
 
