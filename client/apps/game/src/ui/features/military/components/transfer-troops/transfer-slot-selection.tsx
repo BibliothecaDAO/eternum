@@ -173,7 +173,10 @@ export const TransferSlotSelection = ({
           const cardClasses = clsx(
             "p-2 flex flex-col gap-1 text-left transition-all duration-150 rounded border-2 relative",
             isActive && !isMismatch && !isSlotDisabled && "border-gold bg-gold/10",
-            !isActive && !isMismatch && !isSlotDisabled && "border-gold/30 bg-brown/5 hover:bg-gold/5 hover:border-gold/50",
+            !isActive &&
+              !isMismatch &&
+              !isSlotDisabled &&
+              "border-gold/30 bg-brown/5 hover:bg-gold/5 hover:border-gold/50",
             isSlotDisabled && "opacity-60 cursor-not-allowed bg-brown/5 border-brown/30",
             isMismatch && "border-danger/50 hover:border-danger/60",
           );
@@ -207,7 +210,6 @@ export const TransferSlotSelection = ({
                   <span>Cooldown — {cooldownSeconds}s</span>
                 </div>
               )}
-
             </button>
           );
         })}

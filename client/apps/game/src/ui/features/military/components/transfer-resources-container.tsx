@@ -2,7 +2,7 @@ import { MaxButton } from "@/ui/design-system/atoms";
 import Button from "@/ui/design-system/atoms/button";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { getBlockTimestamp, getIsBlitz } from "@bibliothecadao/eternum";
+import { getBlockTimestamp, getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 
 import {
   configManager,
@@ -15,7 +15,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
 import { ActorType, ID, RelicRecipientType, RELICS, resources, ResourcesIds } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getActorTypes, TransferDirection } from "./help-container";
 
 const STRUCTURE_RELIC_IDS = new Set<number>(
@@ -528,10 +528,7 @@ export const TransferResourcesContainer = ({
                 onClick={() =>
                   handleResourceAmountChange(
                     resource.resourceId,
-                    Math.min(
-                      displayAmount,
-                      (resourceAmounts[resource.resourceId] || 0) + 1,
-                    ),
+                    Math.min(displayAmount, (resourceAmounts[resource.resourceId] || 0) + 1),
                   )
                 }
               >
@@ -550,9 +547,48 @@ export const TransferResourcesContainer = ({
     );
   };
 
-  if (availableResources.length === 0) {
-    return <p className="text-gold/60">No relics available to transfer.</p>;
-  }
+  const formatActorLabel = (actorType?: ActorType, entityId?: ID, entityName?: string | null) => {
+    if (!actorType || !entityId) return "Unknown";
+    if (actorType === ActorType.Explorer) return `Explorer ${entityId}`;
+    if (actorType === ActorType.Structure && entityName) return entityName;
+    if (actorType === ActorType.Structure) return `Structure ${entityId}`;
+    return `Entity ${entityId}`;
+  };
+
+  const { data: selectedStructureInfo } = useQuery({
+    queryKey: ["transfer-selected-structure", String(selectedEntityId)],
+    queryFn: async () => {
+      if (!selectedEntityId || actorTypes?.selected !== ActorType.Structure) return null;
+      const res = await getStructureFromToriiClient(toriiClient, selectedEntityId);
+      return res.structure;
+    },
+    enabled: Boolean(selectedEntityId && actorTypes?.selected === ActorType.Structure),
+    staleTime: 10000,
+  });
+
+  const { data: targetStructureInfo } = useQuery({
+    queryKey: ["transfer-target-structure", String(targetEntityId)],
+    queryFn: async () => {
+      if (!targetEntityId || actorTypes?.target !== ActorType.Structure) return null;
+      const res = await getStructureFromToriiClient(toriiClient, targetEntityId);
+      return res.structure;
+    },
+    enabled: Boolean(targetEntityId && actorTypes?.target === ActorType.Structure),
+    staleTime: 10000,
+  });
+
+  const selectedStructureName = useMemo(() => {
+    if (!selectedStructureInfo) return null;
+    return getStructureName(selectedStructureInfo, getIsBlitz()).name;
+  }, [selectedStructureInfo]);
+
+  const targetStructureName = useMemo(() => {
+    if (!targetStructureInfo) return null;
+    return getStructureName(targetStructureInfo, getIsBlitz()).name;
+  }, [targetStructureInfo]);
+
+  const fromLabel = formatActorLabel(actorTypes?.selected, selectedEntityId, selectedStructureName ?? undefined);
+  const toLabel = formatActorLabel(actorTypes?.target, targetEntityId, targetStructureName ?? undefined);
 
   return (
     <div className="flex flex-col h-full relative pb-32">
@@ -563,8 +599,8 @@ export const TransferResourcesContainer = ({
           {/* Top section with capacity info */}
 
           {/* Add Select All / Unselect All buttons here */}
-          <div className="flex justify-end space-x-2 mb-3">
-            {
+          <div className="flex items-center justify-between mb-3 gap-3">
+            <div className="flex items-center gap-2">
               <Button
                 onClick={handleSelectAllResources}
                 variant="outline"
@@ -573,19 +609,23 @@ export const TransferResourcesContainer = ({
               >
                 Select All Available
               </Button>
-            }
-            <Button
-              onClick={handleUnselectAllResources}
-              variant="outline"
-              size="xs"
-              disabled={selectedResources.length === 0}
-            >
-              Unselect All
-            </Button>
+              <Button
+                onClick={handleUnselectAllResources}
+                variant="outline"
+                size="xs"
+                disabled={selectedResources.length === 0}
+              >
+                Unselect All
+              </Button>
+            </div>
+            <div className="text-xs text-gold/70 font-semibold whitespace-nowrap">
+              {fromLabel} → {toLabel}
+            </div>
           </div>
 
-          {/* Scrollable resources section */}
-          {showExplorerCapacity ? (
+          {availableResources.length === 0 ? (
+            <p className="text-gold/60">No relics available to transfer.</p>
+          ) : showExplorerCapacity ? (
             <div className="h-full grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div className="sticky top-0 z-10 sm:col-span-1">{renderExplorerCapacity()}</div>
               <div className="overflow-y-auto sm:col-span-2">

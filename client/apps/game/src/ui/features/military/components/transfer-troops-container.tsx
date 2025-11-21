@@ -1108,6 +1108,27 @@ export const TransferTroopsContainer = ({
     targetExplorerCount,
   ]);
 
+  const selectedTroopForSlots = useMemo(() => {
+    const troop = selectedExplorerTroops?.troops;
+    if (!troop) return undefined;
+    return { tier: troop.tier as TroopTier, category: troop.category as TroopType };
+  }, [selectedExplorerTroops?.troops]);
+
+  const targetTroopForSlots = useMemo(() => {
+    const troop = targetExplorerTroops?.troops;
+    if (!troop) return undefined;
+    const rawCount = troop.count;
+    const count =
+      typeof rawCount === "bigint"
+        ? rawCount
+        : typeof rawCount === "number"
+          ? rawCount
+          : typeof rawCount === "string"
+            ? Number(rawCount)
+            : undefined;
+    return { tier: troop.tier as TroopTier, category: troop.category as TroopType, count };
+  }, [targetExplorerTroops?.troops]);
+
   return (
     <div className="flex flex-col space-y-4">
       {isTargetLoading || isSelectedLoading ? (
@@ -1140,12 +1161,10 @@ export const TransferTroopsContainer = ({
                         disabledReason: balanceOptionDisabledReason,
                       }}
                       selectedTroop={
-                        transferDirection === TransferDirection.ExplorerToStructure
-                          ? selectedExplorerTroops?.troops
-                          : undefined
+                        transferDirection === TransferDirection.ExplorerToStructure ? selectedTroopForSlots : undefined
                       }
                       targetTroop={
-                        transferDirection === TransferDirection.StructureToExplorer ? targetExplorerTroops?.troops : undefined
+                        transferDirection === TransferDirection.StructureToExplorer ? targetTroopForSlots : undefined
                       }
                       frontlineSlot={frontlineSlot}
                       lastGuardSlot={lastGuardSlot}
