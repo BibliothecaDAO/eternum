@@ -99,61 +99,55 @@ export const HelpContainer = ({
   };
 
   return (
-    <div className="flex h-full flex-col items-center justify-center mx-auto mb-4">
-      <div className="px-6 h-full backdrop-blur-sm w-full flex flex-col">
-        {/* Transfer Type Selection */}
-        <div className="flex justify-center mb-6 mx-auto mt-4">
-          <div className="flex rounded-md overflow-hidden border border-gold/30 shadow-lg">
-            <button
-              className={`px-8 py-3 text-lg font-semibold transition-all duration-200 ${
-                transferType === TransferType.Troops
-                  ? "bg-gold/20 text-gold border-b-2 border-gold"
-                  : "bg-dark-brown text-gold/70 hover:text-gold hover:bg-brown-900/50"
-              }`}
-              onClick={() => setTransferType(TransferType.Troops)}
-            >
-              <div className="flex items-center">
-                <span className="mr-2">⚔️</span>
-                Transfer Troops
-              </div>
-            </button>
-            <button
-              className={`px-8 py-3 text-lg font-semibold transition-all duration-200 ${
-                transferType === TransferType.Relics
-                  ? "bg-gold/20 text-gold border-b-2 border-gold"
-                  : "bg-dark-brown text-gold/70 hover:text-gold hover:bg-brown-900/50"
-              }`}
-              onClick={() => setTransferType(TransferType.Relics)}
-            >
-              <div className="flex items-center">
-                <span className="mr-2">💰</span>
-                Transfer Relics
-              </div>
-            </button>
-          </div>
+    <div className="space-y-4">
+      <div className="rounded-xl border border-gold/25 bg-dark-brown/60 shadow-lg overflow-hidden">
+        <div className="flex border-b border-gold/20 bg-dark-brown/70">
+          <button
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold uppercase tracking-wide border-b-2 transition-all duration-200 ${
+              transferType === TransferType.Troops
+                ? "text-gold border-gold bg-gold/10"
+                : "text-gold/60 border-transparent hover:text-gold/90 hover:bg-gold/5"
+            }`}
+            onClick={() => setTransferType(TransferType.Troops)}
+          >
+            <span>⚔️</span>
+            <span>Transfer Troops</span>
+          </button>
+          <button
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold uppercase tracking-wide border-b-2 transition-all duration-200 ${
+              transferType === TransferType.Relics
+                ? "text-gold border-gold bg-gold/10"
+                : "text-gold/60 border-transparent hover:text-gold/90 hover:bg-gold/5"
+            }`}
+            onClick={() => setTransferType(TransferType.Relics)}
+          >
+            <span>💰</span>
+            <span>Transfer Relics</span>
+          </button>
         </div>
 
-        {/* Transfer Content - Use flex-grow to fill available space */}
-        <div className="flex-grow overflow-y-auto">
-          {transferType === TransferType.Relics ? (
-            <TransferResourcesContainer
-              selectedEntityId={currentSelected.id}
-              targetEntityId={currentTarget.id}
-              transferDirection={transferDirection}
-              onTransferComplete={handleTransferComplete}
-            />
-          ) : (
-            <TransferTroopsContainer
-              selectedEntityId={currentSelected.id}
-              targetEntityId={currentTarget.id}
-              selectedHex={currentSelected.hex}
-              targetHex={currentTarget.hex}
-              transferDirection={transferDirection}
-              onTransferComplete={handleTransferComplete}
-              onToggleDirection={handleToggleDirection}
-              canToggleDirection={allowBothDirections}
-            />
-          )}
+        <div className="bg-dark-brown/40">
+          <div className="max-h-[70vh] overflow-y-auto p-4">
+            {transferType === TransferType.Relics ? (
+              <TransferResourcesContainer
+                selectedEntityId={currentSelected.id}
+                targetEntityId={currentTarget.id}
+                transferDirection={transferDirection}
+                onTransferComplete={handleTransferComplete}
+              />
+            ) : (
+              <TransferTroopsContainer
+                selectedEntityId={currentSelected.id}
+                targetEntityId={currentTarget.id}
+                selectedHex={currentSelected.hex}
+                targetHex={currentTarget.hex}
+                transferDirection={transferDirection}
+                onTransferComplete={handleTransferComplete}
+                onToggleDirection={handleToggleDirection}
+                canToggleDirection={allowBothDirections}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>
