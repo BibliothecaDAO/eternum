@@ -246,17 +246,16 @@ export const useAutomationStore = create<ProductionAutomationState>()(
               resources: sanitizeRealmResources(existing.resources, existing.entityType),
               presetId: normalizePresetId(existing.presetId),
             };
-            let nextRealm = sanitizedExisting;
-            if (metadataChanged) {
-              nextRealm = {
-                ...sanitizedExisting,
-                ...data,
-                presetId: normalizePresetId(
-                  (data?.presetId as RealmPresetId | string | null | undefined) ?? sanitizedExisting.presetId,
-                ),
-                updatedAt: now,
-              };
-            }
+            const nextRealm: RealmAutomationConfig = metadataChanged
+              ? {
+                  ...sanitizedExisting,
+                  realmName: data?.realmName ?? sanitizedExisting.realmName,
+                  entityType: data?.entityType ?? sanitizedExisting.entityType,
+                  autoBalance: data?.autoBalance ?? sanitizedExisting.autoBalance,
+                  presetId: normalizePresetId(data?.presetId ?? sanitizedExisting.presetId),
+                  updatedAt: now,
+                }
+              : sanitizedExisting;
             return {
               realms: {
                 ...state.realms,
@@ -534,25 +533,26 @@ export const useAutomationStore = create<ProductionAutomationState>()(
             return state;
           }
 
-          const nextState = {
+          const nextRealm: RealmAutomationConfig = {
+            ...realm,
+            presetId: "custom",
+            resources: sanitizeRealmResources(
+              {
+                ...realm.resources,
+                [resourceId]: {
+                  ...current,
+                  percentages: updatedPercentages,
+                  updatedAt: Date.now(),
+                },
+              },
+              realm.entityType,
+            ),
+            updatedAt: Date.now(),
+          };
+          const nextState: Partial<ProductionAutomationState> = {
             realms: {
               ...state.realms,
-              [realmId]: {
-                ...realm,
-                presetId: "custom",
-                resources: sanitizeRealmResources(
-                  {
-                    ...realm.resources,
-                    [resourceId]: {
-                      ...current,
-                      percentages: updatedPercentages,
-                      updatedAt: Date.now(),
-                    },
-                  },
-                  realm.entityType,
-                ),
-                updatedAt: Date.now(),
-              },
+              [realmId]: nextRealm,
             },
           };
           // quiet
