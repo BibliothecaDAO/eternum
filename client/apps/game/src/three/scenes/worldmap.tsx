@@ -139,7 +139,7 @@ export default class WorldmapScene extends HexagonScene {
   private isChunkTransitioning: boolean = false;
   private chunkRefreshTimeout: number | null = null;
   private pendingChunkRefreshForce = false;
-  private readonly chunkRefreshDebounceMs = 120;
+  private readonly chunkRefreshDebounceMs = 200; // Increased from 120ms to reduce chunk switches during fast scrolling
   private toriiLoadingCounter = 0;
   private readonly chunkRowsAhead = 2;
   private readonly chunkRowsBehind = 1;
@@ -3026,11 +3026,14 @@ export default class WorldmapScene extends HexagonScene {
     this.currentChunk = chunkKey;
     this.updateCurrentChunkBounds(startRow, startCol);
 
-    // Trigger structure data fetch from Torii and WAIT for it
-    // This fixes the race condition where rendering happens before data arrives
-    await this.refreshStructuresForChunks([chunkKey]);
+    // Start structure data fetch in background - don't block on it
+    // This allows the hex grid to render immediately while data loads
+    const structureFetchPromise = this.refreshStructuresForChunks([chunkKey]).catch((error) => {
+      console.error("[WorldmapScene] Background structure fetch failed:", error);
+    });
 
-    await this.updateToriiStreamBoundsForChunk(startRow, startCol);
+    // Don't await - this is also async but not critical for initial render
+    void this.updateToriiStreamBoundsForChunk(startRow, startCol);
 
     if (force) {
       this.removeCachedMatricesForChunk(startRow, startCol);
@@ -3043,7 +3046,7 @@ export default class WorldmapScene extends HexagonScene {
     // Start loading all surrounding chunks (they will deduplicate automatically)
     surroundingChunks.forEach((chunk) => this.computeTileEntities(chunk));
 
-    // Calculate the starting position for the new chunk
+    // Calculate the starting position for the new chunk - this is the main visual update
     await this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
 
     // Update which interactive hexes are visible in the new chunk
@@ -3054,6 +3057,10 @@ export default class WorldmapScene extends HexagonScene {
       this.renderChunkSize.width,
       this.renderChunkSize.height,
     );
+
+    // Wait for structure data to arrive before updating managers
+    // This ensures structures appear after hex grid is visible
+    await structureFetchPromise;
 
     // Update all managers concurrently once shared prerequisites are ready
     await this.updateManagersForChunk(chunkKey, { force });
@@ -3117,8 +3124,10 @@ export default class WorldmapScene extends HexagonScene {
 
     this.updateCurrentChunkBounds(startRow, startCol);
 
-    // Trigger structure data fetch from Torii and WAIT for it
-    await this.refreshStructuresForChunks([chunkKey]);
+    // Start structure data fetch in background - don't block on it
+    const structureFetchPromise = this.refreshStructuresForChunks([chunkKey]).catch((error) => {
+      console.error("[WorldmapScene] Background structure refresh failed:", error);
+    });
 
     const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
     this.updatePinnedChunks(surroundingChunks);
@@ -3133,6 +3142,9 @@ export default class WorldmapScene extends HexagonScene {
       this.renderChunkSize.width,
       this.renderChunkSize.height,
     );
+
+    // Wait for structure data before updating managers
+    await structureFetchPromise;
 
     await this.updateManagersForChunk(chunkKey, { force: true });
 
