@@ -340,6 +340,7 @@ export const ProductionOverviewPanel = () => {
   const goToStructure = useGoToStructure(setup);
   const { isMapView } = useQuery();
   const autoSelectionRef = useRef<string | null>(null);
+  const syncedRealmIdsRef = useRef<Set<string>>(new Set());
 
   const selectedStructureType = useMemo(() => {
     if (structureEntityId === 0) {
@@ -357,7 +358,10 @@ export const ProductionOverviewPanel = () => {
   const isCampSelected = selectedStructureType === StructureType.Village;
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated) {
+      syncedRealmIdsRef.current.clear();
+      return;
+    }
     const managedStructures = [...playerRealms, ...playerVillages];
     const activeIds = new Set(managedStructures.map((structure) => String(structure.entityId)));
 
@@ -370,7 +374,9 @@ export const ProductionOverviewPanel = () => {
       const entityType = structure.structure?.category === StructureType.Village ? "village" : "realm";
       const structureName = getStructureName(structure.structure, isBlitz).name;
 
-      upsertRealm(String(structure.entityId), {
+      const realmId = String(structure.entityId);
+      syncedRealmIdsRef.current.add(realmId);
+      upsertRealm(realmId, {
         realmName: structureName,
         entityType,
       });
@@ -378,6 +384,10 @@ export const ProductionOverviewPanel = () => {
 
     Object.entries(useAutomationStore.getState().realms).forEach(([realmId, config]) => {
       const supportedType = config.entityType === "realm" || config.entityType === "village";
+      const hasSyncedThisSession = syncedRealmIdsRef.current.has(realmId);
+      if (!hasSyncedThisSession) {
+        return;
+      }
       if (!supportedType || !activeIds.has(realmId)) {
         removeRealm(realmId);
       }
