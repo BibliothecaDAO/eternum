@@ -2605,7 +2605,7 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
-  private refreshStructuresForChunks(chunkKeys: string[]): void {
+  private async refreshStructuresForChunks(chunkKeys: string[]): Promise<void> {
     const toriiClient = this.dojo.network?.toriiClient;
     const contractComponents = this.dojo.network?.contractComponents;
 
@@ -2640,9 +2640,11 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
-    void getStructuresDataFromTorii(toriiClient, contractComponents as any, structuresToSync).catch((error) => {
+    try {
+      await getStructuresDataFromTorii(toriiClient, contractComponents as any, structuresToSync);
+    } catch (error) {
       console.error("[WorldmapScene] Failed to refresh structures for chunks", chunkKeys, error);
-    });
+    }
   }
 
   private beginToriiFetch() {
@@ -3033,23 +3035,14 @@ export default class WorldmapScene extends HexagonScene {
     this.currentChunk = chunkKey;
     this.updateCurrentChunkBounds(startRow, startCol);
 
-    // Use chunk integration for awaited loading if available, otherwise fall back to fire-and-forget
-    if (this.chunkIntegration) {
-      // Update structure positions before loading
-      this.chunkIntegration.updateStructurePositions(this.structuresPositions);
+    // Trigger structure data fetch from Torii and WAIT for it
+    // This fixes the race condition where rendering happens before data arrives
+    await this.refreshStructuresForChunks([chunkKey]);
 
-      // Start the chunk loading through the lifecycle controller
-      // This will coordinate fetching and wait for hydration
-      try {
-        await this.chunkIntegration.switchToChunk(chunkKey);
-      } catch (error) {
-        console.warn(`[WorldmapScene] Chunk integration switchToChunk failed for ${chunkKey}, falling back:`, error);
-        // Fall back to legacy method
-        this.refreshStructuresForChunks([chunkKey]);
-      }
-    } else {
-      // Legacy: fire-and-forget (original behavior)
-      this.refreshStructuresForChunks([chunkKey]);
+    // Notify chunk integration of the switch (for tracking/debugging)
+    if (this.chunkIntegration) {
+      this.chunkIntegration.updateStructurePositions(this.structuresPositions);
+      this.chunkIntegration.controller.stateManager.setActiveChunk(chunkKey);
     }
 
     await this.updateToriiStreamBoundsForChunk(startRow, startCol);
@@ -3139,17 +3132,13 @@ export default class WorldmapScene extends HexagonScene {
 
     this.updateCurrentChunkBounds(startRow, startCol);
 
-    // Use chunk integration for awaited loading if available
+    // Trigger structure data fetch from Torii and WAIT for it
+    await this.refreshStructuresForChunks([chunkKey]);
+
+    // Notify chunk integration of the refresh (for tracking/debugging)
     if (this.chunkIntegration) {
       this.chunkIntegration.updateStructurePositions(this.structuresPositions);
-      try {
-        await this.chunkIntegration.switchToChunk(chunkKey);
-      } catch (error) {
-        console.warn(`[WorldmapScene] Chunk integration refresh failed for ${chunkKey}, falling back:`, error);
-        this.refreshStructuresForChunks([chunkKey]);
-      }
-    } else {
-      this.refreshStructuresForChunks([chunkKey]);
+      this.chunkIntegration.controller.stateManager.setActiveChunk(chunkKey);
     }
 
     const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);

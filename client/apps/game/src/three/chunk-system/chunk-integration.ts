@@ -172,36 +172,22 @@ export function createChunkIntegration(
   //
   // HYBRID APPROACH: The actual Torii fetching is still done by existing code
   // (refreshStructuresForChunks, computeTileEntities) in WorldmapScene.
-  // This fetch function registers expectations for hydration tracking.
   //
-  // The flow is:
-  // 1. WorldmapScene calls refreshStructuresForChunks (triggers Torii fetch)
-  // 2. Torii data arrives and WorldUpdateListener callbacks fire
-  // 3. Callbacks call notifyEntityHydrated which increments hydration count
-  // 4. When all expected entities arrive, hydration completes
-  // 5. Rendering proceeds
+  // This fetch function is a no-op placeholder. We DON'T register hydration
+  // expectations here because:
+  // 1. The actual fetch is done by WorldmapScene AFTER this function
+  // 2. We don't know exact entity counts until the fetch completes
+  // 3. Registering expectations would cause waitForHydration to block
   //
-  controller.fetchCoordinator.setFetchFunction(async (bounds: ChunkBounds, structurePositions: Map<ID, HexPosition>) => {
+  // Hydration tracking still works for debugging via notifyEntityHydrated calls.
+  //
+  controller.fetchCoordinator.setFetchFunction(async (bounds: ChunkBounds, _structurePositions: Map<ID, HexPosition>) => {
     if (debug) {
-      console.log(`[ChunkIntegration] Fetch coordination for bounds:`, bounds);
-      console.log(`[ChunkIntegration] Expected structures in bounds:`, structurePositions.size);
-    }
-
-    // Count expected entities based on known positions
-    const expectedStructureCount = structurePositions.size;
-
-    // Register expectations so hydration tracking knows what to wait for
-    // This enables the waitForHydration to know when we're "done"
-    if (expectedStructureCount > 0) {
-      controller.hydrationRegistry.expectEntities(
-        `${bounds.minRow},${bounds.minCol}`,
-        EntityType.Structure,
-        expectedStructureCount,
-      );
+      console.log(`[ChunkIntegration] Fetch placeholder for bounds:`, bounds);
     }
 
     // Return empty data - actual fetching is triggered separately by WorldmapScene
-    // The data will flow through WorldUpdateListener -> notifyEntityHydrated
+    // No expectations registered = waitForHydration returns immediately
     return {
       tiles: [],
       structures: [],
@@ -220,14 +206,12 @@ export function createChunkIntegration(
         console.log(`[ChunkIntegration] Switching to chunk ${chunkKey}`);
       }
 
-      // Use the controller's switchToChunk which handles:
-      // 1. State transition (IDLE -> FETCHING -> HYDRATING -> RENDERING -> ACTIVE)
-      // 2. Waiting for hydration
-      // 3. Rendering after hydration completes
-      await controller.switchToChunk(chunkKey);
+      // Just track the active chunk - don't go through full lifecycle
+      // The actual chunk loading is still handled by WorldmapScene's existing code
+      controller.stateManager.setActiveChunk(chunkKey);
 
       if (debug) {
-        console.log(`[ChunkIntegration] Chunk ${chunkKey} is now active`);
+        console.log(`[ChunkIntegration] Chunk ${chunkKey} tracked as active`);
       }
     },
 
