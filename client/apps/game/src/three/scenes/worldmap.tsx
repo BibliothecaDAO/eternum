@@ -374,8 +374,11 @@ export default class WorldmapScene extends HexagonScene {
       //   .catch((error) => console.error("[WorldmapScene] Failed to start global Torii stream", error));
     }
 
-    // Initialize chunk lifecycle integration for deterministic loading
-    this.initializeChunkIntegration();
+    // NOTE: Chunk integration system disabled for performance
+    // The core fix for chunk loading (awaiting refreshStructuresForChunks) doesn't require it.
+    // The chunk integration adds overhead via hydration tracking callbacks on every entity update.
+    // Uncomment if you need advanced chunk lifecycle debugging/tracking features.
+    // this.initializeChunkIntegration();
 
     // Initialize the battle direction manager
     this.battleDirectionManager = new BattleDirectionManager(
@@ -452,9 +455,6 @@ export default class WorldmapScene extends HexagonScene {
       }
 
       await this.armyManager.onTileUpdate(update);
-
-      // Notify chunk system of army hydration
-      this.notifyChunkEntityHydrated(update.entityId, "Army");
 
       this.invalidateAllChunkCachesContainingHex(normalizedPos.x, normalizedPos.y);
 
@@ -572,9 +572,6 @@ export default class WorldmapScene extends HexagonScene {
 
       await this.structureManager.onUpdate(value);
 
-      // Notify chunk system of structure hydration
-      this.notifyChunkEntityHydrated(value.entityId, "Structure");
-
       if (this.totalStructures !== this.structureManager.getTotalStructures()) {
         this.totalStructures = this.structureManager.getTotalStructures();
         this.clearCache();
@@ -592,18 +589,12 @@ export default class WorldmapScene extends HexagonScene {
     this.worldUpdateListener.Quest.onTileUpdate((update: QuestSystemUpdate) => {
       this.updateQuestHexes(update);
       this.questManager.onUpdate(update);
-
-      // Notify chunk system of quest hydration
-      this.notifyChunkEntityHydrated(update.entityId, "Quest");
     });
 
     // perform some updates for the chest manager
     this.worldUpdateListener.Chest.onTileUpdate((update: ChestSystemUpdate) => {
       this.updateChestHexes(update);
       this.chestManager.onUpdate(update);
-
-      // Notify chunk system of chest hydration (using occupierId as the entity ID)
-      this.notifyChunkEntityHydrated(update.occupierId, "Chest");
     });
     this.worldUpdateListener.Chest.onDeadChest((entityId) => {
       // If the chest is opened, remove it from the map
@@ -3039,12 +3030,6 @@ export default class WorldmapScene extends HexagonScene {
     // This fixes the race condition where rendering happens before data arrives
     await this.refreshStructuresForChunks([chunkKey]);
 
-    // Notify chunk integration of the switch (for tracking/debugging)
-    if (this.chunkIntegration) {
-      this.chunkIntegration.updateStructurePositions(this.structuresPositions);
-      this.chunkIntegration.controller.stateManager.setActiveChunk(chunkKey);
-    }
-
     await this.updateToriiStreamBoundsForChunk(startRow, startCol);
 
     if (force) {
@@ -3134,12 +3119,6 @@ export default class WorldmapScene extends HexagonScene {
 
     // Trigger structure data fetch from Torii and WAIT for it
     await this.refreshStructuresForChunks([chunkKey]);
-
-    // Notify chunk integration of the refresh (for tracking/debugging)
-    if (this.chunkIntegration) {
-      this.chunkIntegration.updateStructurePositions(this.structuresPositions);
-      this.chunkIntegration.controller.stateManager.setActiveChunk(chunkKey);
-    }
 
     const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
     this.updatePinnedChunks(surroundingChunks);
@@ -3441,64 +3420,54 @@ export default class WorldmapScene extends HexagonScene {
     super.destroy();
   }
 
-  /**
-   * Initialize the chunk lifecycle integration system.
-   * This provides deterministic chunk loading with guaranteed hydration before rendering.
-   */
-  private initializeChunkIntegration(): void {
-    const toriiClient = this.dojo.network?.toriiClient;
-    const contractComponents = this.dojo.network?.contractComponents;
-
-    if (!toriiClient || !contractComponents) {
-      console.warn("[WorldmapScene] Cannot initialize chunk integration - missing Torii client or components");
-      return;
-    }
-
-    // Dynamically import to avoid circular dependencies
-    import("@/three/chunk-system").then(({ createChunkIntegration, EntityType }) => {
-      this.chunkIntegration = createChunkIntegration(
-        {
-          toriiClient,
-          contractComponents: contractComponents as any,
-          structurePositions: this.structuresPositions,
-          chunkSize: this.chunkSize,
-          renderChunkSize: this.renderChunkSize,
-          debug: import.meta.env.DEV,
-        },
-        {
-          structureManager: this.structureManager,
-          armyManager: this.armyManager,
-          questManager: this.questManager,
-          chestManager: this.chestManager,
-        },
-      );
-
-      // Store EntityType for use in callbacks
-      (this as any)._chunkEntityType = EntityType;
-
-      if (import.meta.env.DEV) {
-        console.log("[WorldmapScene] Chunk integration initialized");
-      }
-    }).catch((error) => {
-      console.error("[WorldmapScene] Failed to initialize chunk integration:", error);
-    });
-  }
-
-  /**
-   * Notify the chunk system that an entity has been hydrated.
-   * Call this from WorldUpdateListener callbacks.
-   */
-  private notifyChunkEntityHydrated(entityId: ID, entityType: string): void {
-    if (!this.chunkIntegration) return;
-
-    const EntityType = (this as any)._chunkEntityType;
-    if (!EntityType) return;
-
-    const type = EntityType[entityType as keyof typeof EntityType];
-    if (type !== undefined) {
-      this.chunkIntegration.notifyEntityHydrated(entityId, type);
-    }
-  }
+  // NOTE: Chunk integration system is disabled for performance.
+  // The methods below are kept for future use if advanced chunk lifecycle debugging is needed.
+  // Uncomment initializeChunkIntegration() in constructor and these methods to re-enable.
+  //
+  // private initializeChunkIntegration(): void {
+  //   const toriiClient = this.dojo.network?.toriiClient;
+  //   const contractComponents = this.dojo.network?.contractComponents;
+  //
+  //   if (!toriiClient || !contractComponents) {
+  //     console.warn("[WorldmapScene] Cannot initialize chunk integration - missing Torii client or components");
+  //     return;
+  //   }
+  //
+  //   import("@/three/chunk-system").then(({ createChunkIntegration, EntityType }) => {
+  //     this.chunkIntegration = createChunkIntegration(
+  //       {
+  //         toriiClient,
+  //         contractComponents: contractComponents as any,
+  //         structurePositions: this.structuresPositions,
+  //         chunkSize: this.chunkSize,
+  //         renderChunkSize: this.renderChunkSize,
+  //         debug: import.meta.env.DEV,
+  //       },
+  //       {
+  //         structureManager: this.structureManager,
+  //         armyManager: this.armyManager,
+  //         questManager: this.questManager,
+  //         chestManager: this.chestManager,
+  //       },
+  //     );
+  //     (this as any)._chunkEntityType = EntityType;
+  //     if (import.meta.env.DEV) {
+  //       console.log("[WorldmapScene] Chunk integration initialized");
+  //     }
+  //   }).catch((error) => {
+  //     console.error("[WorldmapScene] Failed to initialize chunk integration:", error);
+  //   });
+  // }
+  //
+  // private notifyChunkEntityHydrated(entityId: ID, entityType: string): void {
+  //   if (!this.chunkIntegration) return;
+  //   const EntityType = (this as any)._chunkEntityType;
+  //   if (!EntityType) return;
+  //   const type = EntityType[entityType as keyof typeof EntityType];
+  //   if (type !== undefined) {
+  //     this.chunkIntegration.notifyEntityHydrated(entityId, type);
+  //   }
+  // }
 
   /**
    * Display a resource gain/loss effect at a hex position
