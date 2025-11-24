@@ -146,6 +146,7 @@ export class StructureManager {
   private frustumVisibilityDirty = false;
   private currentChunkBounds?: { box: Box3; sphere: Sphere };
   private unsubscribeFrustum?: () => void;
+  private chunkStride: number;
   private readonly handleStructureRecordRemoved = (structure: StructureInfo) => {
     const entityNumericId = Number(structure.entityId);
     this.attachmentManager.removeAttachments(entityNumericId);
@@ -165,8 +166,8 @@ export class StructureManager {
   };
 
   private getSpatialKey(col: number, row: number): string {
-    const bucketX = Math.floor(col / this.renderChunkSize.width);
-    const bucketY = Math.floor(row / this.renderChunkSize.height);
+    const bucketX = Math.floor(col / this.chunkStride);
+    const bucketY = Math.floor(row / this.chunkStride);
     return `${bucketX},${bucketY}`;
   }
 
@@ -209,6 +210,7 @@ export class StructureManager {
     applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>,
     clearPendingRelicEffectsCallback?: (entityId: ID) => void,
     frustumManager?: FrustumManager,
+    chunkStride?: number,
   ) {
     this.scene = scene;
     this.renderChunkSize = renderChunkSize;
@@ -230,6 +232,7 @@ export class StructureManager {
     }
     this.isBlitz = getIsBlitz();
     this.structureModelPaths = getStructureModelPaths(this.isBlitz);
+    this.chunkStride = chunkStride ?? Math.max(1, Math.floor(this.renderChunkSize.width / 2));
 
     // Subscribe to camera view changes if scene is provided
     if (hexagonScene) {
@@ -797,6 +800,19 @@ export class StructureManager {
     }
   }
 
+  private getChunkBounds(startRow: number, startCol: number) {
+    const centerCol = startCol + this.chunkStride / 2;
+    const centerRow = startRow + this.chunkStride / 2;
+    const halfWidth = this.renderChunkSize.width / 2;
+    const halfHeight = this.renderChunkSize.height / 2;
+    return {
+      minCol: centerCol - halfWidth,
+      maxCol: centerCol + halfWidth,
+      minRow: centerRow - halfHeight,
+      maxRow: centerRow + halfHeight,
+    };
+  }
+
   async updateChunk(chunkKey: string, options?: { force?: boolean }) {
     const force = options?.force ?? false;
     if (!force && this.currentChunk === chunkKey) {
@@ -1132,18 +1148,17 @@ export class StructureManager {
 
   private getVisibleStructuresForChunk(startRow: number, startCol: number): StructureInfo[] {
     const visibleStructures: StructureInfo[] = [];
-    const width = this.renderChunkSize.width;
-    const height = this.renderChunkSize.height;
+    const bounds = this.getChunkBounds(startRow, startCol);
 
-    const minCol = startCol - width / 2;
-    const maxCol = startCol + width / 2;
-    const minRow = startRow - height / 2;
-    const maxRow = startRow + height / 2;
+    const minCol = bounds.minCol;
+    const maxCol = bounds.maxCol;
+    const minRow = bounds.minRow;
+    const maxRow = bounds.maxRow;
 
-    const startBucketX = Math.floor(minCol / width);
-    const endBucketX = Math.floor(maxCol / width);
-    const startBucketY = Math.floor(minRow / height);
-    const endBucketY = Math.floor(maxRow / height);
+    const startBucketX = Math.floor(minCol / this.chunkStride);
+    const endBucketX = Math.floor(maxCol / this.chunkStride);
+    const startBucketY = Math.floor(minRow / this.chunkStride);
+    const endBucketY = Math.floor(maxRow / this.chunkStride);
 
     for (let bx = startBucketX; bx <= endBucketX; bx++) {
       for (let by = startBucketY; by <= endBucketY; by++) {
@@ -1179,11 +1194,12 @@ export class StructureManager {
 
   private isInCurrentChunk(hexCoords: { col: number; row: number }): boolean {
     const [chunkRow, chunkCol] = this.currentChunk?.split(",").map(Number) || [];
+    const bounds = this.getChunkBounds(chunkRow || 0, chunkCol || 0);
     return (
-      hexCoords.col >= chunkCol - this.renderChunkSize.width / 2 &&
-      hexCoords.col < chunkCol + this.renderChunkSize.width / 2 &&
-      hexCoords.row >= chunkRow - this.renderChunkSize.height / 2 &&
-      hexCoords.row < chunkRow + this.renderChunkSize.height / 2
+      hexCoords.col >= bounds.minCol &&
+      hexCoords.col < bounds.maxCol &&
+      hexCoords.row >= bounds.minRow &&
+      hexCoords.row < bounds.maxRow
     );
   }
 

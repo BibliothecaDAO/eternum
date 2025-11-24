@@ -136,6 +136,7 @@ export class ArmyManager {
   private activeArmyAttachmentEntities: Set<number> = new Set();
   private armyAttachmentTransformScratch = new Map<string, AttachmentTransform>();
   private chunkToArmies: Map<string, Set<ID>> = new Map();
+  private chunkStride: number;
 
   // Reusable objects for memory optimization
   private readonly tempPosition: Vector3 = new Vector3();
@@ -151,12 +152,14 @@ export class ArmyManager {
     applyPendingRelicEffectsCallback?: (entityId: ID) => Promise<void>,
     clearPendingRelicEffectsCallback?: (entityId: ID) => void,
     frustumManager?: FrustumManager,
+    chunkStride?: number,
   ) {
     this.scene = scene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.armyModel = new ArmyModel(scene, labelsGroup, this.currentCameraView);
     this.scale = new Vector3(0.3, 0.3, 0.3);
     this.renderChunkSize = renderChunkSize;
+    this.chunkStride = chunkStride ?? Math.max(1, Math.floor(this.renderChunkSize.width / 2));
     this.frustumManager = frustumManager;
     if (this.frustumManager) {
       this.frustumVisibilityDirty = true;
@@ -821,11 +824,8 @@ export class ArmyManager {
         );
       }
     }
-    const isVisible =
-      x >= startCol - this.renderChunkSize.width / 2 &&
-      x <= startCol + this.renderChunkSize.width / 2 &&
-      y >= startRow - this.renderChunkSize.height / 2 &&
-      y <= startRow + this.renderChunkSize.height / 2;
+    const bounds = this.getChunkBounds(startRow, startCol);
+    const isVisible = x >= bounds.minCol && x <= bounds.maxCol && y >= bounds.minRow && y <= bounds.maxRow;
     if (!isVisible) {
       return false;
     }
@@ -843,9 +843,22 @@ export class ArmyManager {
   }
 
   private getSpatialKey(col: number, row: number): string {
-    const bucketX = Math.floor(col / this.renderChunkSize.width);
-    const bucketY = Math.floor(row / this.renderChunkSize.height);
+    const bucketX = Math.floor(col / this.chunkStride);
+    const bucketY = Math.floor(row / this.chunkStride);
     return `${bucketX},${bucketY}`;
+  }
+
+  private getChunkBounds(startRow: number, startCol: number) {
+    const centerCol = startCol + this.chunkStride / 2;
+    const centerRow = startRow + this.chunkStride / 2;
+    const halfWidth = this.renderChunkSize.width / 2;
+    const halfHeight = this.renderChunkSize.height / 2;
+    return {
+      minCol: centerCol - halfWidth,
+      maxCol: centerCol + halfWidth,
+      minRow: centerRow - halfHeight,
+      maxRow: centerRow + halfHeight,
+    };
   }
 
   private updateSpatialIndex(entityId: ID, oldHex: Position | undefined, newHex: Position) {
@@ -878,22 +891,17 @@ export class ArmyManager {
 
   private getVisibleArmiesForChunk(startRow: number, startCol: number): Array<ArmyData> {
     const visibleArmies: ArmyData[] = [];
-    const width = this.renderChunkSize.width;
-    const height = this.renderChunkSize.height;
+    const bounds = this.getChunkBounds(startRow, startCol);
 
-    // Calculate the range of buckets to query
-    // The view area is [startCol - width/2, startCol + width/2] roughly
-    // We want to cover any bucket that intersects this area.
+    const minCol = bounds.minCol;
+    const maxCol = bounds.maxCol;
+    const minRow = bounds.minRow;
+    const maxRow = bounds.maxRow;
 
-    const minCol = startCol - width / 2;
-    const maxCol = startCol + width / 2;
-    const minRow = startRow - height / 2;
-    const maxRow = startRow + height / 2;
-
-    const startBucketX = Math.floor(minCol / width);
-    const endBucketX = Math.floor(maxCol / width);
-    const startBucketY = Math.floor(minRow / height);
-    const endBucketY = Math.floor(maxRow / height);
+    const startBucketX = Math.floor(minCol / this.chunkStride);
+    const endBucketX = Math.floor(maxCol / this.chunkStride);
+    const startBucketY = Math.floor(minRow / this.chunkStride);
+    const endBucketY = Math.floor(maxRow / this.chunkStride);
 
     for (let bx = startBucketX; bx <= endBucketX; bx++) {
       for (let by = startBucketY; by <= endBucketY; by++) {
