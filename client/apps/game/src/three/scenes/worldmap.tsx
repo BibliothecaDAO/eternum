@@ -2256,6 +2256,11 @@ export default class WorldmapScene extends HexagonScene {
     const targets = Array.from(this.hydratedChunkRefreshes);
     this.hydratedChunkRefreshes.clear();
 
+    // Skip if chunk is currently transitioning - the chunk switch will handle manager updates
+    if (this.isChunkTransitioning) {
+      return;
+    }
+
     if (this.globalChunkSwitchPromise) {
       try {
         await this.globalChunkSwitchPromise;
