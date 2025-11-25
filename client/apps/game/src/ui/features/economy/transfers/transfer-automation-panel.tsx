@@ -99,12 +99,16 @@ export const TransferAutomationPanel = () => {
   const [interval, setIntervalMinutes] = useState(5);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const allowMultiDestination = selectedResources.length === 1;
+  const allowMultiDestination = selectedResources.length > 0;
   const actualDestinationCount = allowMultiDestination ? destinationIds.length : Math.min(destinationIds.length, 1);
   const destinationCountForLimits = allowMultiDestination ? Math.max(1, destinationIds.length || 1) : 1;
 
   const hasMilitarySelection = useMemo(
     () => selectedResources.some((rid) => isMilitaryResource(rid)),
+    [selectedResources],
+  );
+  const hasNonDonkeySelection = useMemo(
+    () => selectedResources.some((rid) => rid !== ResourcesIds.Donkey),
     [selectedResources],
   );
 
@@ -348,37 +352,6 @@ export const TransferAutomationPanel = () => {
     });
   }, [hasRestrictedResourcesSelected]);
 
-  useEffect(() => {
-    if (selectedResources.length === 0) return;
-    setResourceConfigs((prev) => {
-      let mutated = false;
-      const next = { ...prev };
-      for (const rid of selectedResources) {
-        const existing = prev[rid];
-        if (!existing) continue;
-        const available = sourceBalances.get(rid) ?? 0;
-        let weightPerUnit = 0;
-        try {
-          weightPerUnit = configManager.getResourceWeightKg(rid as ResourcesIds);
-        } catch {
-          weightPerUnit = 0;
-        }
-        const totalCarryKg = donkeyCapacityKgPerUnit * donkeyAvailable;
-        const donkeyLimited = weightPerUnit > 0 ? Math.floor(totalCarryKg / weightPerUnit) : available;
-        const perDestinationResourceCap = Math.floor(available / destinationCountForLimits);
-        const perDestinationDonkeyCap = Math.floor(donkeyLimited / destinationCountForLimits);
-        const maxAmount = Math.max(0, Math.min(perDestinationResourceCap, perDestinationDonkeyCap));
-        const desired = Math.max(0, Math.floor(existing.amount ?? 0));
-        const clamped = Math.max(0, Math.min(maxAmount, desired));
-        if (clamped !== desired) {
-          next[rid] = { amount: clamped };
-          mutated = true;
-        }
-      }
-      return mutated ? next : prev;
-    });
-  }, [selectedResources, sourceBalances, donkeyAvailable, donkeyCapacityKgPerUnit, destinationCountForLimits]);
-
   // Computed preview for absolute amounts and donkey capacity (fast path)
   const transferPreview = useMemo(() => {
     if (!selectedSourceId || selectedResources.length === 0)
@@ -399,6 +372,58 @@ export const TransferAutomationPanel = () => {
     const need = calculateDonkeysNeeded(totalKg);
     return { perResource, totalKg, donkeys: { have: donkeyAvailable, need } };
   }, [selectedSourceId, selectedResources, resourceConfigs, sourceBalances, donkeyAvailable]);
+
+  const perTransferDonkeyNeed = transferPreview?.donkeys.need ?? 0;
+  const aggregatedDonkeyNeed =
+    transferPreview && hasNonDonkeySelection
+      ? actualDestinationCount > 0
+        ? transferPreview.donkeys.need * actualDestinationCount
+        : perTransferDonkeyNeed
+      : 0;
+  const donkeyShortage = Boolean(
+    transferPreview && actualDestinationCount > 0 && transferPreview.donkeys.have < aggregatedDonkeyNeed,
+  );
+
+  useEffect(() => {
+    if (selectedResources.length === 0) return;
+    setResourceConfigs((prev) => {
+      let mutated = false;
+      const next = { ...prev };
+      for (const rid of selectedResources) {
+        const existing = prev[rid];
+        if (!existing) continue;
+        let available = sourceBalances.get(rid) ?? 0;
+        if (rid === ResourcesIds.Donkey) {
+          available = Math.max(0, available - aggregatedDonkeyNeed);
+        }
+        let weightPerUnit = 0;
+        try {
+          weightPerUnit = configManager.getResourceWeightKg(rid as ResourcesIds);
+        } catch {
+          weightPerUnit = 0;
+        }
+        const totalCarryKg = donkeyCapacityKgPerUnit * donkeyAvailable;
+        const donkeyLimited = weightPerUnit > 0 ? Math.floor(totalCarryKg / weightPerUnit) : available;
+        const perDestinationResourceCap = Math.floor(available / destinationCountForLimits);
+        const perDestinationDonkeyCap = Math.floor(donkeyLimited / destinationCountForLimits);
+        const maxAmount = Math.max(0, Math.min(perDestinationResourceCap, perDestinationDonkeyCap));
+        const desired = Math.max(0, Math.floor(existing.amount ?? 0));
+        const clamped = Math.max(0, Math.min(maxAmount, desired));
+        if (clamped !== desired) {
+          next[rid] = { amount: clamped };
+          mutated = true;
+        }
+      }
+      return mutated ? next : prev;
+    });
+  }, [
+    selectedResources,
+    sourceBalances,
+    donkeyAvailable,
+    donkeyCapacityKgPerUnit,
+    destinationCountForLimits,
+    aggregatedDonkeyNeed,
+  ]);
 
   const addScheduled = useTransferAutomationStore((s) => s.add);
 
@@ -593,15 +618,6 @@ export const TransferAutomationPanel = () => {
     allowMultiDestination,
     allowEssenceDestinationPayload,
   ]);
-
-  const perTransferDonkeyNeed = transferPreview?.donkeys.need ?? 0;
-  const aggregatedDonkeyNeed =
-    transferPreview && actualDestinationCount > 0
-      ? transferPreview.donkeys.need * actualDestinationCount
-      : perTransferDonkeyNeed;
-  const donkeyShortage = Boolean(
-    transferPreview && actualDestinationCount > 0 && transferPreview.donkeys.have < aggregatedDonkeyNeed,
-  );
 
   const resetPanel = useCallback(() => {
     setSelectedResources([]);
@@ -798,7 +814,10 @@ export const TransferAutomationPanel = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {selectedResources.map((rid) => {
               const cfg = resourceConfigs[rid] ?? { amount: 0 };
-              const available = sourceBalances.get(rid) ?? 0;
+              let available = sourceBalances.get(rid) ?? 0;
+              if (rid === ResourcesIds.Donkey) {
+                available = Math.max(0, available - aggregatedDonkeyNeed);
+              }
               let weightPerUnit = 0;
               try {
                 weightPerUnit = configManager.getResourceWeightKg(rid as ResourcesIds);
@@ -856,6 +875,24 @@ export const TransferAutomationPanel = () => {
                       className="w-full accent-gold"
                       disabled={maxAmount === 0}
                     />
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      max={Math.max(0, maxAmount)}
+                      step={1}
+                      value={selectedAmount}
+                      onChange={(e) => {
+                        const rawValue = Number.parseInt(e.target.value, 10);
+                        const nextValue = Number.isFinite(rawValue) ? rawValue : 0;
+                        setResourceConfigs((prev) => ({
+                          ...prev,
+                          [rid]: { amount: Math.max(0, Math.min(maxAmount, nextValue)) },
+                        }));
+                      }}
+                      className="mt-2 w-full rounded border border-gold/30 bg-black/40 px-2 py-1 text-xs text-gold/80 placeholder:text-gold/40 focus:border-gold/60 focus:outline-none disabled:opacity-50"
+                      disabled={maxAmount === 0}
+                    />
                   </div>
                 </div>
               );
@@ -899,10 +936,28 @@ export const TransferAutomationPanel = () => {
                     max={30}
                     step={1}
                     value={interval}
-                    onChange={(e) => setIntervalMinutes(parseInt(e.target.value, 10))}
+                    onChange={(e) => {
+                      const rawValue = Number.parseInt(e.target.value, 10);
+                      const nextValue = Number.isFinite(rawValue) ? rawValue : 1;
+                      setIntervalMinutes(Math.max(1, Math.min(30, nextValue)));
+                    }}
                     className="w-32 accent-gold"
                   />
-                  <span className="text-xxs text-gold/60 w-12 text-right">{interval} min</span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={30}
+                    step={1}
+                    value={interval}
+                    onChange={(e) => {
+                      const rawValue = Number.parseInt(e.target.value, 10);
+                      const nextValue = Number.isFinite(rawValue) ? rawValue : 1;
+                      setIntervalMinutes(Math.max(1, Math.min(30, nextValue)));
+                    }}
+                    className="w-16 rounded border border-gold/30 bg-black/40 px-2 py-1 text-xxs text-gold/80 placeholder:text-gold/40 focus:border-gold/60 focus:outline-none"
+                  />
+                  <span className="text-xxs text-gold/60">min</span>
                 </>
               )}
             </div>
