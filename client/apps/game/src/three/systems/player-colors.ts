@@ -471,3 +471,139 @@ export const PLAYER_COLOR_PRESETS = COLOR_PALETTE;
 
 // Export utility functions
 export { generateEnemyColor, hslToHex };
+
+/**
+ * Debug utilities for visualizing and testing the player color system
+ */
+export const playerColorDebug = {
+  /**
+   * Generate a visual preview of the color palette for N players
+   * Returns an HTML string that can be injected into the DOM for testing
+   */
+  generatePalettePreview(playerCount: number): string {
+    const profiles: PlayerColorProfile[] = [];
+
+    // Add self
+    profiles.push(playerColorManager.getSelfProfile());
+
+    // Add ally
+    profiles.push(playerColorManager.getAllyProfile());
+
+    // Add agent
+    profiles.push(playerColorManager.getAgentProfile());
+
+    // Add enemies
+    for (let i = 0; i < playerCount - 3; i++) {
+      profiles.push(playerColorManager.getEnemyProfile(`test-enemy-${i}`));
+    }
+
+    let html = `
+      <div style="font-family: system-ui; padding: 20px; background: #1a1a2e; color: white;">
+        <h2 style="margin-bottom: 16px;">Player Color Palette (${playerCount} players)</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
+    `;
+
+    profiles.forEach((profile, index) => {
+      const label =
+        index === 0
+          ? "Self"
+          : index === 1
+            ? "Ally"
+            : index === 2
+              ? "AI Agent"
+              : `Enemy ${index - 2}`;
+      html += `
+        <div style="background: ${profile.backgroundColor}; border: 2px solid ${profile.borderColor}; border-radius: 8px; padding: 12px;">
+          <div style="font-weight: bold; color: ${profile.textColor}; margin-bottom: 8px;">${label}</div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <div style="width: 32px; height: 32px; border-radius: 4px; background: #${profile.primary.getHexString()};"></div>
+            <div style="width: 24px; height: 24px; border-radius: 4px; background: #${profile.secondary.getHexString()};"></div>
+            <div style="width: 20px; height: 20px; border-radius: 50%; background: #${profile.minimap.getHexString()};"></div>
+            <div style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #${profile.selection.getHexString()}; background: transparent;"></div>
+          </div>
+          <div style="font-size: 10px; color: #888; margin-top: 8px;">
+            Primary: #${profile.primary.getHexString()}<br>
+            Variant: ${profile.lightnessVariant} | Pattern: ${profile.patternIndex}
+          </div>
+        </div>
+      `;
+    });
+
+    html += `
+        </div>
+        <div style="margin-top: 20px; font-size: 12px; color: #666;">
+          <strong>Legend:</strong> Large square = Primary, Medium square = Secondary, Circle = Minimap, Ring = Selection
+        </div>
+      </div>
+    `;
+
+    return html;
+  },
+
+  /**
+   * Show the palette preview in a popup window
+   */
+  showPalettePreview(playerCount: number = 16): void {
+    const html = this.generatePalettePreview(playerCount);
+    const win = window.open("", "Player Color Preview", "width=800,height=600,scrollbars=yes");
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+    }
+  },
+
+  /**
+   * Log all currently assigned colors to the console
+   */
+  logAssignedColors(): void {
+    const stats = playerColorManager.getStats();
+    console.group("Player Color Manager Stats");
+    console.log(`Cached profiles: ${stats.cachedProfiles}`);
+    console.log(`Unique enemies: ${stats.uniqueEnemies}`);
+    console.groupEnd();
+
+    const enemies = playerColorManager.getAllEnemyProfiles();
+    if (enemies.length > 0) {
+      console.group("Enemy Color Assignments");
+      enemies.forEach((profile) => {
+        console.log(
+          `%c ${profile.playerId.slice(0, 16)}... `,
+          `background: #${profile.primary.getHexString()}; color: white; padding: 2px 8px; border-radius: 4px;`,
+        );
+      });
+      console.groupEnd();
+    }
+  },
+
+  /**
+   * Test color generation for a specific number of enemies
+   */
+  testColorGeneration(enemyCount: number): void {
+    console.group(`Testing color generation for ${enemyCount} enemies`);
+
+    const tempManager = new PlayerColorManager();
+    for (let i = 0; i < enemyCount; i++) {
+      const profile = tempManager.getEnemyProfile(`test-${i}`);
+      console.log(
+        `Enemy ${i}: %c ████ `,
+        `color: #${profile.primary.getHexString()};`,
+        `Hue index: ${i % ENEMY_HUES.length}, Variant: ${profile.lightnessVariant}`,
+      );
+    }
+
+    console.groupEnd();
+  },
+
+  /**
+   * Reset all color assignments (useful for testing)
+   */
+  reset(): void {
+    playerColorManager.clearCache();
+    console.log("Player color assignments cleared");
+  },
+};
+
+// Expose debug utilities globally in development
+if (typeof window !== "undefined") {
+  (window as unknown as { playerColorDebug: typeof playerColorDebug }).playerColorDebug = playerColorDebug;
+}

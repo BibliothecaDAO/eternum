@@ -1,6 +1,7 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { ArmyModel } from "@/three/managers/army-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
+import { playerColorManager, PlayerColorProfile } from "@/three/systems/player-colors";
 import { ModelType } from "@/three/types/army";
 import { GUIManager, LABEL_STYLES } from "@/three/utils/";
 import { FrustumManager } from "@/three/utils/frustum-manager";
@@ -8,7 +9,6 @@ import { isAddressEqualToAccount } from "@/three/utils/utils";
 import type { SetupResult } from "@bibliothecadao/dojo";
 import { Position } from "@bibliothecadao/eternum";
 
-import { COLORS } from "@/ui/features";
 import { ExplorerTroopsSystemUpdate, ExplorerTroopsTileSystemUpdate, getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import { gameWorkerManager } from "@/managers/game-worker-manager";
@@ -1108,8 +1108,13 @@ export class ArmyManager {
 
     const isMine = finalOwnerAddress ? isAddressEqualToAccount(finalOwnerAddress) : false;
 
-    // Determine the color based on ownership (consistent with structure labels)
-    const color = this.getArmyColor({ isMine, isDaydreamsAgent: params.isDaydreamsAgent });
+    // Determine the color based on ownership using the centralized player color system
+    // This ensures each unique player gets a distinct, consistent color across the game
+    const color = this.getArmyColor({
+      isMine,
+      isDaydreamsAgent: params.isDaydreamsAgent,
+      owner: { address: finalOwnerAddress || 0n },
+    });
 
     this.armies.set(params.entityId, {
       entityId: params.entityId,
@@ -1465,11 +1470,35 @@ export class ArmyManager {
     return typeof entityId === "number" ? entityId : Number(entityId ?? 0);
   }
 
-  private getArmyColor(army: { isMine: boolean; isDaydreamsAgent: boolean }): string {
-    if (army.isDaydreamsAgent) {
-      return COLORS.SELECTED;
-    }
-    return army.isMine ? LABEL_STYLES.MINE.textColor || "#d9f99d" : LABEL_STYLES.ENEMY.textColor || "#fecdd3";
+  /**
+   * Get the color profile for an army based on ownership
+   * Uses the centralized PlayerColorManager for consistent colors across the game
+   */
+  private getArmyColorProfile(army: {
+    isMine: boolean;
+    isAlly?: boolean;
+    isDaydreamsAgent: boolean;
+    owner?: { address: bigint };
+  }): PlayerColorProfile {
+    return playerColorManager.getProfileForUnit(
+      army.isMine,
+      army.isAlly ?? false,
+      army.isDaydreamsAgent,
+      army.owner?.address,
+    );
+  }
+
+  /**
+   * Get the primary color hex string for an army (backward compatible)
+   */
+  private getArmyColor(army: {
+    isMine: boolean;
+    isAlly?: boolean;
+    isDaydreamsAgent: boolean;
+    owner?: { address: bigint };
+  }): string {
+    const profile = this.getArmyColorProfile(army);
+    return `#${profile.primary.getHexString()}`;
   }
 
   private recordLastKnownHexFromWorld(entityId: ID, worldPosition: Vector3) {
@@ -1483,7 +1512,11 @@ export class ArmyManager {
 
     this.armies.forEach((army, entityId) => {
       const nextIsMine = isAddressEqualToAccount(army.owner.address);
-      const nextColor = this.getArmyColor({ isMine: nextIsMine, isDaydreamsAgent: army.isDaydreamsAgent });
+      const nextColor = this.getArmyColor({
+        isMine: nextIsMine,
+        isDaydreamsAgent: army.isDaydreamsAgent,
+        owner: army.owner,
+      });
 
       if (army.isMine === nextIsMine && army.color === nextColor) {
         return;
