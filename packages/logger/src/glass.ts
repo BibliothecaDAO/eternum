@@ -119,3 +119,4 @@ export class BrowserLoggerGlass {
     this.container.style.display = this.isVisible ? "block" : "none";
   }
 }
+

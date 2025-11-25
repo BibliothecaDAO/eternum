@@ -10,3 +10,4 @@ export interface AnimationVisibilityContext {
    */
   maxDistance?: number;
 }
+
