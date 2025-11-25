@@ -80,9 +80,7 @@ export const useAutomation = () => {
         return false;
       }
       const timestamp =
-        typeof blockTimestampSeconds === "number"
-          ? blockTimestampSeconds
-          : getBlockTimestamp().currentBlockTimestamp;
+        typeof blockTimestampSeconds === "number" ? blockTimestampSeconds : getBlockTimestamp().currentBlockTimestamp;
       return timestamp >= gameEndAt;
     },
     [gameEndAt],
