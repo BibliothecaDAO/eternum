@@ -2155,16 +2155,7 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     const worldPosition = getWorldPositionForHex({ col, row });
-
-    // Prefer centralized visibility manager (cached results)
-    if (this.visibilityManager) {
-      return this.visibilityManager.isPointVisible(worldPosition);
-    }
-    // Fallback to legacy frustum manager
-    if (this.frustumManager) {
-      return this.frustumManager.isPointVisible(worldPosition);
-    }
-    return true;
+    return this.visibilityManager.isPointVisible(worldPosition);
   }
 
   private getSurroundingChunkKeys(centerRow: number, centerCol: number): string[] {
@@ -2845,18 +2836,8 @@ export default class WorldmapScene extends HexagonScene {
     const cachedMatrices = this.cachedMatrices.get(chunkKey);
     if (cachedMatrices) {
       const bounds = cachedMatrices.get("__bounds__") as any;
-      if (bounds && bounds.box) {
-        // Prefer centralized visibility manager (cached results)
-        let visible = true;
-        if (this.visibilityManager) {
-          visible = this.visibilityManager.isBoxVisible(bounds.box);
-        } else if (this.frustumManager) {
-          // Fallback to legacy frustum manager
-          visible = this.frustumManager.isBoxVisible(bounds.box);
-        }
-        if (!visible) {
-          return false;
-        }
+      if (bounds && bounds.box && !this.visibilityManager.isBoxVisible(bounds.box)) {
+        return false;
       }
       this.touchMatrixCache(chunkKey);
       for (const [biome, { matrices, count }] of cachedMatrices) {
@@ -3215,15 +3196,7 @@ export default class WorldmapScene extends HexagonScene {
     if (!this.currentChunkBounds) {
       return true;
     }
-    // Prefer centralized visibility manager (cached results)
-    if (this.visibilityManager) {
-      return this.visibilityManager.isBoxVisible(this.currentChunkBounds.box);
-    }
-    // Fallback to legacy frustum manager
-    if (this.frustumManager) {
-      return this.frustumManager.isBoxVisible(this.currentChunkBounds.box);
-    }
-    return true;
+    return this.visibilityManager.isBoxVisible(this.currentChunkBounds.box);
   }
 
   protected override onBiomeModelLoaded(model: InstancedBiome): void {
