@@ -358,6 +358,16 @@ export default class InstancedModel {
       return true;
     }
 
+    // Prefer centralized visibility manager for better performance (cached per-frame results)
+    if (context.visibilityManager && this.worldBounds) {
+      return context.visibilityManager.shouldAnimate(
+        this.worldBounds.box,
+        this.worldBounds.sphere?.center,
+        this.worldBounds.sphere?.radius ?? 0,
+      );
+    }
+
+    // Fallback to legacy frustum manager check (deprecated path)
     if (context.frustumManager && this.worldBounds?.box && !context.frustumManager.isBoxVisible(this.worldBounds.box)) {
       return false;
     }

@@ -2154,12 +2154,17 @@ export default class WorldmapScene extends HexagonScene {
       return false;
     }
 
-    if (!this.frustumManager) {
-      return true;
-    }
-
     const worldPosition = getWorldPositionForHex({ col, row });
-    return this.frustumManager.isPointVisible(worldPosition);
+
+    // Prefer centralized visibility manager (cached results)
+    if (this.visibilityManager) {
+      return this.visibilityManager.isPointVisible(worldPosition);
+    }
+    // Fallback to legacy frustum manager
+    if (this.frustumManager) {
+      return this.frustumManager.isPointVisible(worldPosition);
+    }
+    return true;
   }
 
   private getSurroundingChunkKeys(centerRow: number, centerCol: number): string[] {
@@ -2839,13 +2844,18 @@ export default class WorldmapScene extends HexagonScene {
     const chunkKey = `${startRow},${startCol}`;
     const cachedMatrices = this.cachedMatrices.get(chunkKey);
     if (cachedMatrices) {
-      if (this.frustumManager) {
-        const bounds = cachedMatrices.get("__bounds__") as any;
-        if (bounds && bounds.box) {
-          const visible = this.frustumManager.isBoxVisible(bounds.box);
-          if (!visible) {
-            return false;
-          }
+      const bounds = cachedMatrices.get("__bounds__") as any;
+      if (bounds && bounds.box) {
+        // Prefer centralized visibility manager (cached results)
+        let visible = true;
+        if (this.visibilityManager) {
+          visible = this.visibilityManager.isBoxVisible(bounds.box);
+        } else if (this.frustumManager) {
+          // Fallback to legacy frustum manager
+          visible = this.frustumManager.isBoxVisible(bounds.box);
+        }
+        if (!visible) {
+          return false;
         }
       }
       this.touchMatrixCache(chunkKey);
@@ -2898,6 +2908,10 @@ export default class WorldmapScene extends HexagonScene {
     this.currentChunkBounds = bounds;
     this.biomeModels.forEach((biome) => biome.setWorldBounds(bounds));
     this.structureManager.setChunkBounds(bounds);
+
+    // Register chunk bounds with centralized visibility manager
+    const chunkKey = `${startRow},${startCol}`;
+    this.visibilityManager?.registerChunk(chunkKey, bounds);
   }
 
   private worldToChunkCoordinates(x: number, z: number): { chunkX: number; chunkZ: number } {
@@ -3201,10 +3215,15 @@ export default class WorldmapScene extends HexagonScene {
     if (!this.currentChunkBounds) {
       return true;
     }
-    if (!this.frustumManager) {
-      return true;
+    // Prefer centralized visibility manager (cached results)
+    if (this.visibilityManager) {
+      return this.visibilityManager.isBoxVisible(this.currentChunkBounds.box);
     }
-    return this.frustumManager.isBoxVisible(this.currentChunkBounds.box);
+    // Fallback to legacy frustum manager
+    if (this.frustumManager) {
+      return this.frustumManager.isBoxVisible(this.currentChunkBounds.box);
+    }
+    return true;
   }
 
   protected override onBiomeModelLoaded(model: InstancedBiome): void {
