@@ -198,6 +198,10 @@ export const RealmAutomationPanel = ({
   useEffect(() => {
     if (!hydrated) return;
     if (!realmAutomation) return;
+    if (hasLocalChanges) {
+      // Avoid clobbering slider edits while automation updates the store in the background.
+      return;
+    }
 
     const snapshotPercentages: Record<number, ResourceAutomationPercentages> = {};
     const existingResources = realmAutomation.resources ?? {};
@@ -222,7 +226,7 @@ export const RealmAutomationPanel = ({
     setLastSavedSnapshot(snapshot);
     setDraftPercentages(snapshotPercentages);
     setDraftPresetId(snapshot.presetId);
-  }, [realmAutomation, realmResources, createBaselinePercentages, hydrated]);
+  }, [realmAutomation, realmResources, createBaselinePercentages, hydrated, hasLocalChanges]);
 
   const draftAutomation = useMemo(() => {
     if (!realmAutomation) return undefined;

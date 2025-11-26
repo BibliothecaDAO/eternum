@@ -10,19 +10,14 @@ import {
   type ResourceAutomationPercentages,
   type ResourceAutomationSettings,
 } from "./store/use-automation-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import {
   calculateLimitedPresetPercentages,
   getAutomationOverallocation,
   type RealmPresetId,
 } from "@/utils/automation-presets";
 import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
-import {
-  getStructureName,
-  getIsBlitz,
-  getBlockTimestamp,
-  ResourceManager,
-  configManager,
-} from "@bibliothecadao/eternum";
+import { getStructureName, getIsBlitz, getBlockTimestamp, configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
@@ -57,6 +52,7 @@ export const useAutomation = () => {
   const setNextRunTimestampRef = useRef(setNextRunTimestamp);
   const playerRealms = usePlayerOwnedRealmsInfo();
   const playerVillages = usePlayerOwnedVillagesInfo();
+  const gameEndAt = useUIStore((state) => state.gameEndAt);
   const realmResourcesSignatureRef = useRef<string>("");
   const initialBlockTimestampMsRef = useRef<number | null>(null);
   if (initialBlockTimestampMsRef.current === null) {
@@ -69,6 +65,32 @@ export const useAutomation = () => {
   const scheduleNextCheckRef = useRef<() => void>();
   const automationTimeoutIdRef = useRef<number | null>(null);
   const syncedRealmIdsRef = useRef<Set<string>>(new Set());
+
+  const stopAutomation = useCallback(() => {
+    if (automationTimeoutIdRef.current !== null) {
+      window.clearTimeout(automationTimeoutIdRef.current);
+      automationTimeoutIdRef.current = null;
+    }
+    setNextRunTimestampRef.current(null);
+  }, []);
+
+  const isGameOver = useCallback(
+    (blockTimestampSeconds?: number) => {
+      if (typeof gameEndAt !== "number") {
+        return false;
+      }
+      const timestamp =
+        typeof blockTimestampSeconds === "number" ? blockTimestampSeconds : getBlockTimestamp().currentBlockTimestamp;
+      return timestamp >= gameEndAt;
+    },
+    [gameEndAt],
+  );
+
+  useEffect(() => {
+    if (isGameOver()) {
+      stopAutomation();
+    }
+  }, [isGameOver, stopAutomation]);
 
   useEffect(() => {
     if (!components) {
@@ -118,6 +140,11 @@ export const useAutomation = () => {
 
   const processRealms = useCallback(async (): Promise<boolean> => {
     if (processingRef.current) return false;
+
+    if (isGameOver()) {
+      console.log("Automation: Game has ended. Skipping automation pass.");
+      return false;
+    }
 
     if (!starknetSignerAccount || !starknetSignerAccount.address || starknetSignerAccount.address === "0x0") {
       console.log("Automation: Missing Starknet signer. Skipping automation pass.");
@@ -297,11 +324,17 @@ export const useAutomation = () => {
     setRealmPreset,
     setRealmPresetConfig,
     getRealmConfig,
+    isGameOver,
   ]);
 
   const runAutomationIfDue = useCallback(async () => {
     const { currentBlockTimestamp } = getBlockTimestamp();
     const blockTimestampMs = currentBlockTimestamp * 1000;
+
+    if (isGameOver(currentBlockTimestamp)) {
+      stopAutomation();
+      return;
+    }
 
     const lastRunMs = lastRunBlockTimestampRef.current ?? blockTimestampMs;
     const nextEligibleMs = Math.max(lastRunMs + PROCESS_INTERVAL_MS, automationEnabledAtRef.current);
@@ -323,9 +356,13 @@ export const useAutomation = () => {
       setNextRunTimestampRef.current(nextRunBlockTimestampRef.current);
       scheduleNextCheckRef.current?.();
     }
-  }, [setNextRunTimestampRef]);
+  }, [isGameOver, setNextRunTimestampRef, stopAutomation]);
 
   const scheduleNextCheck = useCallback(() => {
+    if (isGameOver()) {
+      stopAutomation();
+      return;
+    }
     if (automationTimeoutIdRef.current !== null) {
       window.clearTimeout(automationTimeoutIdRef.current);
     }
@@ -335,7 +372,7 @@ export const useAutomation = () => {
     automationTimeoutIdRef.current = window.setTimeout(() => {
       void runAutomationIfDue();
     }, delay);
-  }, [runAutomationIfDue]);
+  }, [isGameOver, runAutomationIfDue, stopAutomation]);
 
   useEffect(() => {
     processRealmsRef.current = processRealms;
@@ -350,6 +387,11 @@ export const useAutomation = () => {
   }, [setNextRunTimestamp]);
 
   useEffect(() => {
+    if (isGameOver()) {
+      stopAutomation();
+      return;
+    }
+
     const signature = Object.entries(realms)
       .filter(([, realm]) => realm.entityType === "realm" || realm.entityType === "village")
       .map(([realmId, realm]) => {
@@ -373,9 +415,18 @@ export const useAutomation = () => {
       }
       scheduleNextCheckRef.current?.();
     }
-  }, [realms]);
+  }, [realms, isGameOver, stopAutomation]);
 
   useEffect(() => {
+    if (isGameOver()) {
+      stopAutomation();
+      return () => {
+        if (automationTimeoutIdRef.current !== null) {
+          window.clearTimeout(automationTimeoutIdRef.current);
+        }
+      };
+    }
+
     setNextRunTimestampRef.current(nextRunBlockTimestampRef.current);
     scheduleNextCheck();
     return () => {
@@ -383,5 +434,5 @@ export const useAutomation = () => {
         window.clearTimeout(automationTimeoutIdRef.current);
       }
     };
-  }, [scheduleNextCheck]);
+  }, [isGameOver, scheduleNextCheck, stopAutomation]);
 };
