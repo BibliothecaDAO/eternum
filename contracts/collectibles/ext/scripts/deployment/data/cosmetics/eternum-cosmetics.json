@@ -75,6 +75,16 @@
                     "traitValueId": 11,
                     "traitValueName": "11",
                     "traitValueNameOverwrite": false
+                },
+                {
+                    "traitValueId": 12,
+                    "traitValueName": "12",
+                    "traitValueNameOverwrite": true
+                },
+                {
+                    "traitValueId": 13,
+                    "traitValueName": "13",
+                    "traitValueNameOverwrite": true
                 }
             ]        
         },
@@ -240,61 +250,21 @@
             "traits": "Epoch:Season 1,Epoch Item:11,Rarity:Common,Type:Troop Base", 
             "ipfsCid": "bafybeield35i6xi7vpwuq2qklnrt7blaiugeyqiuvox3km6xdnlrpmvv3q", 
             "overwrite": false 
+        },
+        { 
+            "traits": "Epoch:Season 1,Epoch Item:12,Rarity:Epic,Type:Realm Aura", 
+            "ipfsCid": "bafybeiaqg3dgm7ioqq5fsqeq4szee5vklcmvllwtc4kn6vmwnxlqpkqeha", 
+            "overwrite": true 
+        },
+        { 
+            "traits": "Epoch:Season 1,Epoch Item:13,Rarity:Epic,Type:Realm Skin", 
+            "ipfsCid": "bafybeigyexp2eh557i65fblgn7ahpqrru76gtid7qw4usess66elypf57m", 
+            "overwrite": true 
         }
     ],
     "mintCData": [
         {
-            "traits": "Epoch:Season 1,Epoch Item:1,Rarity:Epic,Type:Realm Skin",
-            "toAddress": "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8",
-            "count": 1
-        },
-        {
-            "traits": "Epoch:Season 1,Epoch Item:2,Rarity:Legendary,Type:Troop Armor,Troop Type:Knight", 
-            "toAddress": "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8",
-            "count": 1
-        },
-        {
-            "traits": "Epoch:Season 1,Epoch Item:3,Rarity:Legendary,Type:Troop Aura", 
-            "toAddress": "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8",
-            "count": 1
-        },
-        {
-            "traits": "Epoch:Season 1,Epoch Item:4,Rarity:Epic,Type:Realm Aura", 
-            "toAddress": "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8",
-            "count": 1
-        },
-        {
-            "traits": "Epoch:Season 1,Epoch Item:5,Rarity:Rare,Type:Realm Skin", 
-            "toAddress": "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8",
-            "count": 1
-        },
-        {
-            "traits": "Epoch:Season 1,Epoch Item:6,Rarity:Rare,Type:Realm Aura", 
-            "toAddress": "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8",
-            "count": 1
-        },
-        {
-            "traits": "Epoch:Season 1,Epoch Item:7,Rarity:Uncommon,Type:Troop Primary,Troop Type:Paladin", 
-            "toAddress": "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8",
-            "count": 1
-        },
-                {
-            "traits": "Epoch:Season 1,Epoch Item:8,Rarity:Uncommon,Type:Troop Secondary,Troop Type:Paladin", 
-            "toAddress": "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8",
-            "count": 1
-        },
-        {
-            "traits": "Epoch:Season 1,Epoch Item:9,Rarity:Common,Type:Troop Primary,Troop Type:Crossbowman", 
-            "toAddress": "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8",
-            "count": 1
-        },
-        {
-            "traits": "Epoch:Season 1,Epoch Item:10,Rarity:Common,Type:Troop Secondary,Troop Type:Crossbowman", 
-            "toAddress": "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8",
-            "count": 1
-        },
-        {
-            "traits": "Epoch:Season 1,Epoch Item:11,Rarity:Common,Type:Troop Base", 
+            "traits": "Epoch:Season 1,Epoch Item:12,Rarity:Epic,Type:Realm Aura",
             "toAddress": "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8",
             "count": 1
         }
