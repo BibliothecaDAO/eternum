@@ -26,6 +26,11 @@ export default class InstancedModel {
   // Reused every frame to avoid allocations in the hot path
   private bucketWeightsBuffer: Float32Array | null = null;
 
+  // Bucket-to-indices mapping for cache-friendly batch updates
+  // Built once on initialization, maps bucket number to array of instance indices
+  private bucketToIndices: Map<number, Uint16Array> = new Map();
+  private bucketIndicesBuilt: boolean = false;
+
   constructor(gltf: any, count: number, enableRaycast: boolean = false, name: string = "") {
     this.group = new THREE.Group();
     this.count = count;
@@ -217,6 +222,43 @@ export default class InstancedModel {
     this.group.updateMatrixWorld(true);
   }
 
+  /**
+   * Builds bucket-to-indices mapping for cache-friendly batch updates.
+   * Called once lazily on first animation update.
+   */
+  private buildBucketIndices(instanceCount: number): void {
+    if (this.bucketIndicesBuilt && instanceCount <= this.count) {
+      return;
+    }
+
+    // Count instances per bucket
+    const bucketCounts = new Uint16Array(this.ANIMATION_BUCKETS);
+    for (let i = 0; i < instanceCount; i++) {
+      bucketCounts[this.animationBuckets[i]]++;
+    }
+
+    // Create arrays for each bucket
+    this.bucketToIndices.clear();
+    const bucketCurrentIndex = new Uint16Array(this.ANIMATION_BUCKETS);
+
+    for (let b = 0; b < this.ANIMATION_BUCKETS; b++) {
+      if (bucketCounts[b] > 0) {
+        this.bucketToIndices.set(b, new Uint16Array(bucketCounts[b]));
+      }
+    }
+
+    // Populate bucket arrays with instance indices
+    for (let i = 0; i < instanceCount; i++) {
+      const bucket = this.animationBuckets[i];
+      const indices = this.bucketToIndices.get(bucket);
+      if (indices) {
+        indices[bucketCurrentIndex[bucket]++] = i;
+      }
+    }
+
+    this.bucketIndicesBuilt = true;
+  }
+
   updateAnimations(_deltaTime: number, visibility?: AnimationVisibilityContext) {
     if (!this.shouldAnimate(visibility)) {
       return;
@@ -237,9 +279,13 @@ export default class InstancedModel {
 
       this.instancedMeshes.forEach((mesh, meshIndex) => {
         // Skip if no instances to animate
-        if (mesh.count === 0) {
+        const instanceCount = mesh.count;
+        if (instanceCount === 0) {
           return;
         }
+
+        // Build bucket indices lazily (once per model)
+        this.buildBucketIndices(instanceCount);
 
         // Create a single action for each mesh if it doesn't exist
         if (!this.animationActions.has(meshIndex)) {
@@ -277,20 +323,38 @@ export default class InstancedModel {
         // Direct texture data manipulation - much faster than setMorphAt per instance
         const morphTexture = mesh.morphTexture;
         if (morphTexture && morphTexture.image && morphTexture.image.data) {
-          // morphTexture.image.data is a Float32Array for morph target textures
           const textureData = morphTexture.image.data as unknown as Float32Array;
           const textureWidth = morphTexture.image.width;
 
-          // Each row in the morph texture corresponds to one instance
-          // Each column corresponds to one morph target influence
-          for (let i = 0; i < mesh.count; i++) {
-            const bucket = this.animationBuckets[i];
-            const srcOffset = bucket * morphCount;
-            const dstOffset = i * textureWidth;
+          // OPTIMIZED: Batch by bucket for cache locality
+          // Process all instances in the same bucket together, using TypedArray.set()
+          // for bulk copies when morphCount is small enough
+          for (let bucket = 0; bucket < this.ANIMATION_BUCKETS; bucket++) {
+            const indices = this.bucketToIndices.get(bucket);
+            if (!indices || indices.length === 0) continue;
 
-            // Copy morph weights for this instance from the bucket
-            for (let m = 0; m < morphCount; m++) {
-              textureData[dstOffset + m] = this.bucketWeightsBuffer[srcOffset + m];
+            const srcOffset = bucket * morphCount;
+
+            // For small morphCount (typical case: 1-4 morph targets), use subarray.set()
+            // For larger morphCount, the overhead of subarray creation isn't worth it
+            if (morphCount <= 8) {
+              const bucketWeights = this.bucketWeightsBuffer.subarray(srcOffset, srcOffset + morphCount);
+              for (let idx = 0; idx < indices.length; idx++) {
+                const i = indices[idx];
+                if (i >= instanceCount) continue;
+                const dstOffset = i * textureWidth;
+                textureData.set(bucketWeights, dstOffset);
+              }
+            } else {
+              // Fallback for many morph targets: direct copy is still faster than setMorphAt
+              for (let idx = 0; idx < indices.length; idx++) {
+                const i = indices[idx];
+                if (i >= instanceCount) continue;
+                const dstOffset = i * textureWidth;
+                for (let m = 0; m < morphCount; m++) {
+                  textureData[dstOffset + m] = this.bucketWeightsBuffer[srcOffset + m];
+                }
+              }
             }
           }
 
@@ -316,8 +380,10 @@ export default class InstancedModel {
     // Dispose of animation actions
     this.animationActions.clear();
 
-    // Clear pre-allocated buffer
+    // Clear pre-allocated buffers and bucket indices
     this.bucketWeightsBuffer = null;
+    this.bucketToIndices.clear();
+    this.bucketIndicesBuilt = false;
 
     // Dispose of instanced meshes and their resources
     this.instancedMeshes.forEach((mesh) => {

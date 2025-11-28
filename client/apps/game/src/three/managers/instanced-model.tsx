@@ -34,6 +34,9 @@ interface AnimatedInstancedMesh extends InstancedMesh {
   animated: boolean;
 }
 
+// Number of time offset buckets for batched animation updates
+const ANIMATION_BUCKETS = 16;
+
 export default class InstancedModel {
   public group: Group;
   public instancedMeshes: AnimatedInstancedMesh[] = [];
@@ -53,6 +56,12 @@ export default class InstancedModel {
   private lastWonderUpdate = 0;
   private wonderUpdateInterval = 1000 / 30; // 30 FPS for wonder rotation
 
+  // Batched animation optimization: group instances by time offset bucket
+  private animationBuckets: Uint8Array | null = null;
+  private bucketToIndices: Map<number, Uint16Array> = new Map();
+  private bucketWeightsBuffer: Float32Array | null = null;
+  private bucketIndicesBuilt: boolean = false;
+
   constructor(
     gltf: any,
     initialCapacity: number = DEFAULT_INITIAL_CAPACITY,
@@ -65,8 +74,11 @@ export default class InstancedModel {
     this.capacity = Math.max(initialCapacity, 1);
 
     this.timeOffsets = new Float32Array(this.capacity);
+    this.animationBuckets = new Uint8Array(this.capacity);
     for (let i = 0; i < this.capacity; i++) {
       this.timeOffsets[i] = Math.random() * 3;
+      // Assign each instance to a bucket based on its time offset
+      this.animationBuckets[i] = Math.floor((this.timeOffsets[i] / 3) * ANIMATION_BUCKETS) % ANIMATION_BUCKETS;
     }
 
     gltf.scene.traverse((child: any) => {
@@ -251,6 +263,54 @@ export default class InstancedModel {
     this.group.updateMatrixWorld(true);
   }
 
+  /**
+   * Builds bucket-to-indices mapping for cache-friendly batch updates.
+   * Called once lazily on first animation update.
+   */
+  private buildBucketIndices(instanceCount: number): void {
+    if (this.bucketIndicesBuilt && instanceCount <= this.count) {
+      return;
+    }
+
+    if (!this.animationBuckets) return;
+
+    // Count instances per bucket
+    const bucketCounts = new Uint16Array(ANIMATION_BUCKETS);
+    for (let i = 0; i < instanceCount; i++) {
+      bucketCounts[this.animationBuckets[i]]++;
+    }
+
+    // Create arrays for each bucket
+    this.bucketToIndices.clear();
+    const bucketCurrentIndex = new Uint16Array(ANIMATION_BUCKETS);
+
+    for (let b = 0; b < ANIMATION_BUCKETS; b++) {
+      if (bucketCounts[b] > 0) {
+        this.bucketToIndices.set(b, new Uint16Array(bucketCounts[b]));
+      }
+    }
+
+    // Populate bucket arrays with instance indices
+    for (let i = 0; i < instanceCount; i++) {
+      const bucket = this.animationBuckets[i];
+      const indices = this.bucketToIndices.get(bucket);
+      if (indices) {
+        indices[bucketCurrentIndex[bucket]++] = i;
+      }
+    }
+
+    this.bucketIndicesBuilt = true;
+  }
+
+  /**
+   * Computes representative time offset for each bucket.
+   * Each bucket represents a range of time offsets, we use the bucket center.
+   */
+  private getBucketTimeOffset(bucket: number): number {
+    // Map bucket back to time offset range [0, 3)
+    return ((bucket + 0.5) / ANIMATION_BUCKETS) * 3;
+  }
+
   updateAnimations(deltaTime: number, visibility?: AnimationVisibilityContext) {
     if (!this.shouldAnimate(visibility)) {
       return;
@@ -272,6 +332,13 @@ export default class InstancedModel {
 
       this.instancedMeshes.forEach((mesh, meshIndex) => {
         if (!mesh.animated) return;
+
+        const instanceCount = mesh.count;
+        if (instanceCount === 0) return;
+
+        // Build bucket indices lazily (once per model)
+        this.buildBucketIndices(instanceCount);
+
         if (!this.animationActions.has(meshIndex)) {
           const action = this.mixer!.clipAction(this.animation!);
           this.animationActions.set(meshIndex, action);
@@ -280,15 +347,68 @@ export default class InstancedModel {
         const action = this.animationActions.get(meshIndex)!;
         action.play();
 
-        // Batch morph updates instead of doing them individually
-        for (let i = 0; i < mesh.count; i++) {
-          this.mixer!.setTime(time + this.timeOffsets[i]);
-          mesh.setMorphAt(i, this.biomeMeshes[meshIndex]);
+        const baseMesh = this.biomeMeshes[meshIndex];
+        const morphInfluences = baseMesh.morphTargetInfluences;
+        if (!morphInfluences || morphInfluences.length === 0) {
+          return;
         }
 
-        // Only set needsUpdate once per mesh instead of every frame
-        mesh.morphTexture!.needsUpdate = true;
-        needsUpdate = true;
+        const morphCount = morphInfluences.length;
+
+        // Initialize or resize the pre-allocated buffer if needed
+        const requiredSize = ANIMATION_BUCKETS * morphCount;
+        if (!this.bucketWeightsBuffer || this.bucketWeightsBuffer.length < requiredSize) {
+          this.bucketWeightsBuffer = new Float32Array(requiredSize);
+        }
+
+        // Calculate weights for each bucket once, store in pre-allocated buffer
+        for (let b = 0; b < ANIMATION_BUCKETS; b++) {
+          const bucketTime = time + this.getBucketTimeOffset(b);
+          this.mixer!.setTime(bucketTime);
+          const offset = b * morphCount;
+          for (let m = 0; m < morphCount; m++) {
+            this.bucketWeightsBuffer[offset + m] = morphInfluences[m];
+          }
+        }
+
+        // Direct texture data manipulation - much faster than setMorphAt per instance
+        const morphTexture = mesh.morphTexture;
+        if (morphTexture && morphTexture.image && morphTexture.image.data) {
+          const textureData = morphTexture.image.data as unknown as Float32Array;
+          const textureWidth = morphTexture.image.width;
+
+          // OPTIMIZED: Batch by bucket for cache locality
+          for (let bucket = 0; bucket < ANIMATION_BUCKETS; bucket++) {
+            const indices = this.bucketToIndices.get(bucket);
+            if (!indices || indices.length === 0) continue;
+
+            const srcOffset = bucket * morphCount;
+
+            // For small morphCount (typical case), use subarray.set()
+            if (morphCount <= 8) {
+              const bucketWeights = this.bucketWeightsBuffer.subarray(srcOffset, srcOffset + morphCount);
+              for (let idx = 0; idx < indices.length; idx++) {
+                const i = indices[idx];
+                if (i >= instanceCount) continue;
+                const dstOffset = i * textureWidth;
+                textureData.set(bucketWeights, dstOffset);
+              }
+            } else {
+              // Fallback for many morph targets
+              for (let idx = 0; idx < indices.length; idx++) {
+                const i = indices[idx];
+                if (i >= instanceCount) continue;
+                const dstOffset = i * textureWidth;
+                for (let m = 0; m < morphCount; m++) {
+                  textureData[dstOffset + m] = this.bucketWeightsBuffer[srcOffset + m];
+                }
+              }
+            }
+          }
+
+          morphTexture.needsUpdate = true;
+          needsUpdate = true;
+        }
       });
 
       if (needsUpdate) {
@@ -368,6 +488,20 @@ export default class InstancedModel {
       updatedOffsets[i] = Math.random() * 3;
     }
     this.timeOffsets = updatedOffsets;
+
+    // Also resize animation buckets array
+    const updatedBuckets = new Uint8Array(newCapacity);
+    if (this.animationBuckets) {
+      updatedBuckets.set(this.animationBuckets);
+    }
+    for (let i = this.capacity; i < newCapacity; i++) {
+      updatedBuckets[i] = Math.floor((updatedOffsets[i] / 3) * ANIMATION_BUCKETS) % ANIMATION_BUCKETS;
+    }
+    this.animationBuckets = updatedBuckets;
+
+    // Invalidate bucket indices so they get rebuilt on next animation update
+    this.bucketIndicesBuilt = false;
+
     this.capacity = newCapacity;
   }
 
@@ -404,6 +538,12 @@ export default class InstancedModel {
 
     // Dispose of animation actions
     this.animationActions.clear();
+
+    // Clear animation optimization buffers
+    this.bucketWeightsBuffer = null;
+    this.bucketToIndices.clear();
+    this.animationBuckets = null;
+    this.bucketIndicesBuilt = false;
 
     // Dispose of instanced meshes and their resources
     this.instancedMeshes.forEach((mesh) => {
