@@ -95,6 +95,13 @@ import {
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { openStructureContextMenu } from "./context-menu/structure-context-menu";
 
+interface CachedMatrixEntry {
+  matrices: InstancedBufferAttribute | null;
+  count: number;
+  box?: Box3;
+  sphere?: Sphere;
+}
+
 //const dummyObject = new Object3D();
 const dummy = new Object3D();
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
@@ -195,7 +202,7 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
-    const existing = getComponentValue(components.Structure, entityKey);
+    const existing = getComponentValue(components.Structure, entityKey as any);
     if (existing) {
       return;
     }
@@ -214,7 +221,7 @@ export default class WorldmapScene extends HexagonScene {
     document.body.style.cursor = "wait";
 
     try {
-      const typedContractComponents = contractComponents as Parameters<typeof getStructuresDataFromTorii>[1];
+      const typedContractComponents = contractComponents as any;
       await getStructuresDataFromTorii(toriiClient, typedContractComponents, [
         {
           entityId: numericId,
@@ -228,8 +235,7 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
-  private cachedMatrices: Map<string, Map<string, { matrices: InstancedBufferAttribute | null; count: number }>> =
-    new Map();
+  private cachedMatrices: Map<string, Map<string, CachedMatrixEntry>> = new Map();
   private cachedMatrixOrder: string[] = [];
   private readonly maxMatrixCacheSize = 16;
   private pinnedChunkKeys: Set<string> = new Set();
@@ -2173,7 +2179,7 @@ export default class WorldmapScene extends HexagonScene {
       dummy.updateMatrix();
 
       const biomeVariant = getBiomeVariant(biome, col, row);
-      const hexMesh = this.biomeModels.get(biomeVariant)!;
+      const hexMesh = this.biomeModels.get(biomeVariant as BiomeType)!;
       const currentCount = hexMesh.getCount();
       hexMesh.setMatrixAt(currentCount, dummy.matrix);
       hexMesh.setCount(currentCount + 1);
@@ -2659,7 +2665,7 @@ export default class WorldmapScene extends HexagonScene {
     });
   }
 
-  private addWorldUpdateSubscription(unsub: () => void) {
+  private addWorldUpdateSubscription(unsub: any) {
     if (typeof unsub === "function") {
       this.worldUpdateUnsubscribes.push(unsub);
     }
@@ -2712,7 +2718,7 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     try {
-      const typedContractComponents = contractComponents as Parameters<typeof getStructuresDataFromTorii>[1];
+      const typedContractComponents = contractComponents as any;
       await getStructuresDataFromTorii(toriiClient, typedContractComponents, structuresToSync);
     } catch (error) {
       console.error("[WorldmapScene] Failed to refresh structures for chunks", chunkKeys, error);
@@ -2788,7 +2794,7 @@ export default class WorldmapScene extends HexagonScene {
     try {
       await getMapFromToriiExact(
         this.dojo.network.toriiClient,
-        this.dojo.network.contractComponents as Parameters<typeof getMapFromToriiExact>[1],
+        this.dojo.network.contractComponents as unknown as Parameters<typeof getMapFromToriiExact>[1],
         minCol + FELT_CENTER(),
         maxCol + FELT_CENTER(),
         minRow + FELT_CENTER(),
@@ -2914,10 +2920,8 @@ export default class WorldmapScene extends HexagonScene {
     const chunkKey = `${startRow},${startCol}`;
     const cachedMatrices = this.cachedMatrices.get(chunkKey);
     if (cachedMatrices) {
-      const bounds = cachedMatrices.get("__bounds__") as
-        | { matrices: null; count: number; box: Box3; sphere: Sphere }
-        | undefined;
-      if (bounds && bounds.box && !this.visibilityManager.isBoxVisible(bounds.box)) {
+      const bounds = cachedMatrices.get("__bounds__");
+      if (bounds?.box && !this.visibilityManager.isBoxVisible(bounds.box)) {
         return false;
       }
       this.touchMatrixCache(chunkKey);
