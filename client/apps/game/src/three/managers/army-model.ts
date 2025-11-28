@@ -67,6 +67,9 @@ export class ArmyModel {
   private instanceCount = 0;
   private currentVisibleCount: number = 0;
   private readonly ANIMATION_BUCKETS = 20;
+  private readonly freeSlots: number[] = [];
+  private readonly freeSlotSet: Set<number> = new Set();
+  private nextInstanceIndex = 0;
 
   // Configuration constants
   private readonly SCALE_TRANSITION_SPEED = 5.0;
@@ -366,6 +369,52 @@ export class ArmyModel {
     return this.models.get(modelType);
   }
 
+  public allocateInstanceSlot(entityId: number): number {
+    const existingSlot = this.instanceData.get(entityId)?.matrixIndex;
+    if (existingSlot !== undefined) {
+      this.matrixIndexOwners.set(existingSlot, entityId);
+      return existingSlot;
+    }
+
+    const reusedSlot = this.freeSlots.pop();
+    const slot = reusedSlot !== undefined ? reusedSlot : this.nextInstanceIndex++;
+    if (reusedSlot !== undefined) {
+      this.freeSlotSet.delete(reusedSlot);
+    }
+    this.matrixIndexOwners.set(slot, entityId);
+    return slot;
+  }
+
+  public freeInstanceSlot(entityId: number, slot?: number): void {
+    const instanceData = this.instanceData.get(entityId);
+    const resolvedSlot = slot ?? instanceData?.matrixIndex;
+    if (resolvedSlot === undefined) {
+      return;
+    }
+
+    this.clearMovementState(entityId);
+    this.clearInstanceSlot(resolvedSlot);
+    this.matrixIndexOwners.delete(resolvedSlot);
+
+    if (this.freeSlotSet.has(resolvedSlot)) return;
+
+    this.freeSlotSet.add(resolvedSlot);
+    this.freeSlots.push(resolvedSlot);
+
+    if (instanceData) {
+      instanceData.matrixIndex = undefined;
+    }
+  }
+
+  public rebindInstanceSlot(entityId: number, newSlot: number): void {
+    const instanceData = this.instanceData.get(entityId);
+    if (instanceData) {
+      instanceData.matrixIndex = newSlot;
+    }
+    this.matrixIndexOwners.set(newSlot, entityId);
+    this.rebindMovementMatrixIndex(entityId, newSlot);
+  }
+
   public updateInstance(
     entityId: number,
     index: number,
@@ -403,21 +452,7 @@ export class ArmyModel {
   }
 
   public releaseEntity(entityId: number, freedSlot?: number): void {
-    this.stopMovement(entityId);
-    this.movingInstances.delete(entityId);
-
-    const instanceData = this.instanceData.get(entityId);
-    const ownedMatrixIndex = instanceData?.matrixIndex;
-
-    if (ownedMatrixIndex !== undefined) {
-      this.matrixIndexOwners.delete(ownedMatrixIndex);
-    }
-
-    if (freedSlot !== undefined) {
-      this.clearInstanceSlot(freedSlot);
-      this.matrixIndexOwners.delete(freedSlot);
-    }
-
+    this.freeInstanceSlot(entityId, freedSlot);
     this.instanceData.delete(entityId);
     this.entityModelMap.delete(entityId);
     this.movementCompleteCallbacks.delete(entityId);
@@ -918,6 +953,21 @@ export class ArmyModel {
     return fallbackModel;
   }
 
+  private clearMovementState(entityId: number): void {
+    const movement = this.movingInstances.get(entityId);
+    if (movement) {
+      this.setAnimationState(movement.matrixIndex, false);
+      this.movingInstances.delete(entityId);
+    }
+
+    const instanceData = this.instanceData.get(entityId);
+    if (instanceData) {
+      instanceData.isMoving = false;
+      instanceData.path = undefined;
+    }
+    this.movementCompleteCallbacks.delete(entityId);
+  }
+
   private stopMovement(entityId: number): void {
     const movement = this.movingInstances.get(entityId);
     if (!movement) return;
@@ -1155,16 +1205,36 @@ export class ArmyModel {
     });
   }
 
-  public setVisibleCount(count: number): void {
-    if (count === this.currentVisibleCount) return;
+  public setVisibleSlots(slots: Iterable<number>): void {
+    let maxIndex = -1;
+    let activeCount = 0;
 
-    this.currentVisibleCount = count;
+    for (const slot of slots) {
+      if (slot === undefined || slot === null) continue;
+      activeCount++;
+      if (slot > maxIndex) {
+        maxIndex = slot;
+      }
+    }
+
+    this.currentVisibleCount = activeCount;
+    const drawCount = maxIndex >= 0 ? maxIndex + 1 : 0;
+
     this.models.forEach((modelData) => {
-      this.ensureModelCapacity(modelData, count);
+      this.ensureModelCapacity(modelData, drawCount);
       modelData.instancedMeshes.forEach((mesh) => {
-        mesh.count = count;
+        mesh.count = drawCount;
       });
     });
+  }
+
+  public setVisibleCount(count: number): void {
+    if (count < 0) return;
+    const slots: number[] = [];
+    for (let i = 0; i < count; i++) {
+      slots.push(i);
+    }
+    this.setVisibleSlots(slots);
   }
 
   public setAnimationState(index: number, isWalking: boolean): void {

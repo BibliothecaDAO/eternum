@@ -7,7 +7,6 @@ import WorldmapScene from "@/three/scenes/worldmap";
 import { GUIManager } from "@/three/utils/";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
 import { SetupResult } from "@bibliothecadao/dojo";
-import throttle from "lodash/throttle";
 import {
   BloomEffect,
   BrightnessContrastEffect,
@@ -384,14 +383,11 @@ export default class GameRenderer {
     if (this.graphicsSetting !== GraphicsSettings.HIGH) {
       this.controls.enableDamping = false;
     }
-    this.controls.addEventListener(
-      "change",
-      throttle(() => {
-        if (this.sceneManager?.getCurrentScene() === SceneName.WorldMap) {
-          this.worldmapScene.updateVisibleChunks();
-        }
-      }, 30),
-    );
+    this.controls.addEventListener("change", () => {
+      if (this.sceneManager?.getCurrentScene() === SceneName.WorldMap) {
+        this.worldmapScene.requestChunkRefresh();
+      }
+    });
     this.controls.keys = {
       LEFT: "KeyA",
       UP: "KeyW",

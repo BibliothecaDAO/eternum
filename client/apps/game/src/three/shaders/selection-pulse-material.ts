@@ -1,4 +1,5 @@
 import { Color, ShaderMaterial } from "three";
+import { playerColorManager, PlayerColorProfile } from "../systems/player-colors";
 
 const vertexShader = `
 varying vec3 vPosition;
@@ -84,4 +85,52 @@ export const selectionPulseMaterial = new ShaderMaterial({
  */
 export function updateSelectionPulseMaterial(deltaTime: number) {
   selectionPulseMaterial.uniforms.time.value += deltaTime;
+}
+
+/**
+ * Set player-specific selection colors based on ownership
+ * This allows the selection ring to reflect the owner's color for visual consistency
+ *
+ * @param isMine - Is this the current player's unit?
+ * @param isAlly - Is this an ally's unit?
+ * @param isDaydreamsAgent - Is this an AI agent?
+ * @param ownerAddress - Owner's wallet address for enemy color assignment
+ */
+export function setSelectionColorForPlayer(
+  isMine: boolean,
+  isAlly: boolean,
+  isDaydreamsAgent: boolean,
+  ownerAddress?: bigint | string,
+): void {
+  const profile = playerColorManager.getProfileForUnit(isMine, isAlly, isDaydreamsAgent, ownerAddress);
+  setSelectionColorFromProfile(profile);
+}
+
+/**
+ * Set selection colors directly from a PlayerColorProfile
+ */
+export function setSelectionColorFromProfile(profile: PlayerColorProfile): void {
+  selectionPulseMaterial.uniforms.color.value.copy(profile.selection);
+  // Use a brighter version of the primary color for the pulse
+  const pulseCol = profile.primary.clone();
+  pulseCol.offsetHSL(0, -0.1, 0.2); // Make it slightly lighter and less saturated
+  selectionPulseMaterial.uniforms.pulseColor.value.copy(pulseCol);
+}
+
+/**
+ * Reset selection colors to default (bright blue)
+ */
+export function resetSelectionColors(): void {
+  selectionPulseMaterial.uniforms.color.value.setRGB(0.2, 0.8, 1.0);
+  selectionPulseMaterial.uniforms.pulseColor.value.setRGB(1.0, 1.0, 0.8);
+}
+
+/**
+ * Get current selection colors for debugging
+ */
+export function getSelectionColors(): { baseColor: Color; pulseColor: Color } {
+  return {
+    baseColor: selectionPulseMaterial.uniforms.color.value.clone(),
+    pulseColor: selectionPulseMaterial.uniforms.pulseColor.value.clone(),
+  };
 }

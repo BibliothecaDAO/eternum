@@ -9,6 +9,10 @@ import { InteractiveHexManager } from "@/three/managers/interactive-hex-manager"
 import { ThunderBoltManager } from "@/three/managers/thunderbolt-manager";
 import { type SceneManager } from "@/three/scene-manager";
 import { AnimationVisibilityContext } from "@/three/types/animation";
+import {
+  CentralizedVisibilityManager,
+  getVisibilityManager,
+} from "@/three/utils/centralized-visibility-manager";
 import { GUIManager, LocationManager } from "@/three/utils/";
 import { FrustumManager } from "@/three/utils/frustum-manager";
 import { MatrixPool } from "@/three/utils/matrix-pool";
@@ -67,6 +71,7 @@ export abstract class HexagonScene {
   protected highlightHexManager!: HighlightHexManager;
   protected locationManager!: LocationManager;
   protected frustumManager!: FrustumManager;
+  protected visibilityManager!: CentralizedVisibilityManager;
   protected thunderBoltManager!: ThunderBoltManager;
   protected dayNightCycleManager!: DayNightCycleManager;
   protected GUIFolder!: any;
@@ -115,6 +120,12 @@ export abstract class HexagonScene {
   ) {
     this.initializeScene();
     this.frustumManager = new FrustumManager(this.camera, this.controls);
+    // Initialize centralized visibility manager (singleton)
+    this.visibilityManager = getVisibilityManager({
+      debug: false,
+      animationMaxDistance: this.animationVisibilityDistance,
+    });
+    this.visibilityManager.initialize(this.camera, this.controls);
     this.setupLighting();
     this.setupInputHandlers();
     this.setupGUI();
@@ -125,6 +136,7 @@ export abstract class HexagonScene {
     this.controls.update();
     this.controls.dispatchEvent({ type: "change" });
     this.frustumManager?.forceUpdate();
+    this.visibilityManager?.markDirty();
   }
 
   private initializeScene(): void {
@@ -626,13 +638,18 @@ export abstract class HexagonScene {
   protected getAnimationVisibilityContext(): AnimationVisibilityContext | undefined {
     this.animationCameraTarget.copy(this.controls.target);
 
+    // Begin frame for centralized visibility manager (computes all visibility once)
+    this.visibilityManager?.beginFrame();
+
     if (!this.animationVisibilityContext) {
       this.animationVisibilityContext = {
-        frustumManager: this.frustumManager,
+        visibilityManager: this.visibilityManager,
+        frustumManager: this.frustumManager, // Keep for backward compatibility
         cameraPosition: this.animationCameraTarget,
         maxDistance: this.animationVisibilityDistance,
       };
     } else {
+      this.animationVisibilityContext.visibilityManager = this.visibilityManager;
       this.animationVisibilityContext.frustumManager = this.frustumManager;
     }
 
