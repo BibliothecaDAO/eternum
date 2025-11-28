@@ -83,6 +83,7 @@ import { QuestManager } from "../managers/quest-manager";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { SceneName } from "../types/common";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
+import { getChunkCenter as getChunkCenterAligned, getRenderBounds } from "../utils/chunk-geometry";
 import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
 import { MatrixPool } from "../utils/matrix-pool";
 import { MemoryMonitor } from "../utils/memory-monitor";
@@ -114,8 +115,8 @@ const CHUNK_STREAM_MODELS: BoundsModelConfig[] = [
 // ];
 
 export default class WorldmapScene extends HexagonScene {
-  private chunkSize = 30; // Size of each chunk (stride ~ half render window)
-  private chunkSwitchPadding = 0.15; // tighter padding so we switch earlier with larger chunks
+  private chunkSize = 24; // Smaller stride to reduce edge gaps
+  private chunkSwitchPadding = 0.05; // switch earlier when crossing boundaries
   private lastChunkSwitchPosition?: Vector3;
   private hasChunkSwitchAnchor: boolean = false;
   private currentChunkBounds?: { box: Box3; sphere: Sphere };
@@ -127,10 +128,8 @@ export default class WorldmapScene extends HexagonScene {
   private wheelStepsThisGesture = 0;
   private readonly wheelGestureTimeoutMs = 50;
   private renderChunkSize = {
-    width: 60,
-    height: 44,
-    // width: 20,
-    // height: 14,
+    width: 64,
+    height: 64,
   };
 
   private totalStructures: number = 0;
@@ -142,8 +141,8 @@ export default class WorldmapScene extends HexagonScene {
   private readonly chunkRefreshDebounceMs = 200; // Increased from 120ms to reduce chunk switches during fast scrolling
   private toriiLoadingCounter = 0;
   private readonly chunkRowsAhead = 2;
-  private readonly chunkRowsBehind = 1;
-  private readonly chunkColsEachSide = 1;
+  private readonly chunkRowsBehind = 2;
+  private readonly chunkColsEachSide = 2;
   private hydratedChunkRefreshes: Set<string> = new Set();
   private hydratedRefreshScheduled = false;
   private cameraPositionScratch: Vector3 = new Vector3();
@@ -291,6 +290,8 @@ export default class WorldmapScene extends HexagonScene {
 
   // Chunk lifecycle integration for deterministic loading
   private chunkIntegration?: import("@/three/chunk-system").ChunkIntegration;
+  private worldUpdateUnsubscribes: Array<() => void> = [];
+  private visibilityChangeHandler?: () => void;
 
   constructor(
     dojoContext: SetupResult,
@@ -338,6 +339,7 @@ export default class WorldmapScene extends HexagonScene {
       (entityId: ID) => this.applyPendingRelicEffects(entityId),
       (entityId: ID) => this.clearPendingRelicEffects(entityId),
       this.frustumManager,
+      this.visibilityManager,
       this.chunkSize,
     );
 
@@ -353,6 +355,7 @@ export default class WorldmapScene extends HexagonScene {
       (entityId: ID) => this.applyPendingRelicEffects(entityId),
       (entityId: ID) => this.clearPendingRelicEffects(entityId),
       this.frustumManager,
+      this.visibilityManager,
       this.chunkSize,
     );
 
@@ -379,6 +382,16 @@ export default class WorldmapScene extends HexagonScene {
     // The chunk integration adds overhead via hydration tracking callbacks on every entity update.
     // Uncomment if you need advanced chunk lifecycle debugging/tracking features.
     // this.initializeChunkIntegration();
+
+    // Force visibility/chunk refresh when returning from background tab to avoid missing armies/tiles.
+    this.visibilityChangeHandler = () => {
+      if (document.visibilityState !== "visible") {
+        return;
+      }
+      this.visibilityManager?.forceUpdate();
+      void this.updateVisibleChunks(true);
+    };
+    document.addEventListener("visibilitychange", this.visibilityChangeHandler);
 
     // Initialize the battle direction manager
     this.battleDirectionManager = new BattleDirectionManager(
@@ -423,8 +436,9 @@ export default class WorldmapScene extends HexagonScene {
     });
 
     // Store the unsubscribe function for Army updates
-    this.worldUpdateListener.Army.onTileUpdate(async (update: ExplorerTroopsTileSystemUpdate) => {
-      this.cancelPendingArmyRemoval(update.entityId);
+    this.addWorldUpdateSubscription(
+      this.worldUpdateListener.Army.onTileUpdate(async (update: ExplorerTroopsTileSystemUpdate) => {
+        this.cancelPendingArmyRemoval(update.entityId);
 
       if (update.removed) {
         // console.debug(`[WorldMap] Tile update indicates removal for entity ${update.entityId}`);
@@ -466,16 +480,18 @@ export default class WorldmapScene extends HexagonScene {
       // Recalculate arrows for this army when it moves
       this.recalculateArrowsForEntity(armyEntityId);
 
-      // Check if any other entities had relationships with this army at its previous position
-      // and update their arrows too
-      if (prevPosition) {
-        this.recalculateArrowsForEntitiesRelatedTo(armyEntityId);
-      }
-    });
+        // Check if any other entities had relationships with this army at its previous position
+        // and update their arrows too
+        if (prevPosition) {
+          this.recalculateArrowsForEntitiesRelatedTo(armyEntityId);
+        }
+      }),
+    );
 
     // Listen for troop count and stamina changes
-    this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {
-      this.cancelPendingArmyRemoval(update.entityId);
+    this.addWorldUpdateSubscription(
+      this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {
+        this.cancelPendingArmyRemoval(update.entityId);
       // console.debug(`[WorldMap] ExplorerTroops update received for entity ${update.entityId}`, {
       //   troopCount: update.troopCount,
       //   owner: update.ownerAddress,
@@ -486,26 +502,30 @@ export default class WorldmapScene extends HexagonScene {
         this.scheduleArmyRemoval(update.entityId, "zero");
         return;
       }
-      this.updateArmyHexes(update);
-      this.armyManager.updateArmyFromExplorerTroopsUpdate(update);
-    });
+        this.updateArmyHexes(update);
+        this.armyManager.updateArmyFromExplorerTroopsUpdate(update);
+      }),
+    );
 
     // Listen for dead army updates
-    this.worldUpdateListener.Army.onDeadArmy((entityId) => {
-      // console.debug(`[WorldMap] onDeadArmy received for entity ${entityId}`);
+    this.addWorldUpdateSubscription(
+      this.worldUpdateListener.Army.onDeadArmy((entityId) => {
+        // console.debug(`[WorldMap] onDeadArmy received for entity ${entityId}`);
 
-      // Remove the army visuals/hex before dropping tracking data so we can clean up the correct tile
-      this.deleteArmy(entityId);
+        // Remove the army visuals/hex before dropping tracking data so we can clean up the correct tile
+        this.deleteArmy(entityId);
 
-      // Remove from attacker-defender tracking
-      this.removeEntityFromTracking(entityId);
-      this.updateVisibleChunks().catch((error) => console.error("Failed to update visible chunks:", error));
-    });
+        // Remove from attacker-defender tracking
+        this.removeEntityFromTracking(entityId);
+        this.updateVisibleChunks().catch((error) => console.error("Failed to update visible chunks:", error));
+      }),
+    );
 
     // Listen for battle events and update army/structure labels
-    this.worldUpdateListener.BattleEvent.onBattleUpdate((update: BattleEventSystemUpdate) => {
-      // console.debug(`[WorldMap] BattleEvent update received for battle entity ${update.entityId}`);
-      // console.log("🗺️ WorldMap: Received battle event update:", update);
+    this.addWorldUpdateSubscription(
+      this.worldUpdateListener.BattleEvent.onBattleUpdate((update: BattleEventSystemUpdate) => {
+        // console.debug(`[WorldMap] BattleEvent update received for battle entity ${update.entityId}`);
+        // console.log("🗺️ WorldMap: Received battle event update:", update);
 
       // Update both attacker and defender information using the public methods
       const { attackerId, defenderId } = update.battleData;
@@ -539,25 +559,31 @@ export default class WorldmapScene extends HexagonScene {
       }
 
       this.notifyArmyUnderAttack(update);
-    });
+      }),
+    );
 
     // Listen for structure guard updates
-    this.worldUpdateListener.Structure.onStructureUpdate((update) => {
-      this.updateStructureHexes(update);
-      this.structureManager.updateStructureLabelFromStructureUpdate(update);
-    });
+    this.addWorldUpdateSubscription(
+      this.worldUpdateListener.Structure.onStructureUpdate((update) => {
+        this.updateStructureHexes(update);
+        this.structureManager.updateStructureLabelFromStructureUpdate(update);
+      }),
+    );
 
     // Listen for structure building updates
-    this.worldUpdateListener.Structure.onStructureBuildingsUpdate((update) => {
-      this.structureManager.updateStructureLabelFromBuildingUpdate(update);
-    });
+    this.addWorldUpdateSubscription(
+      this.worldUpdateListener.Structure.onStructureBuildingsUpdate((update) => {
+        this.structureManager.updateStructureLabelFromBuildingUpdate(update);
+      }),
+    );
 
     // Store the unsubscribe function for Tile updates
-    this.worldUpdateListener.Tile.onTileUpdate((value) => this.updateExploredHex(value));
+    this.addWorldUpdateSubscription(this.worldUpdateListener.Tile.onTileUpdate((value) => this.updateExploredHex(value)));
 
     // Store the unsubscribe function for Structure updates
-    this.worldUpdateListener.Structure.onTileUpdate(async (value) => {
-      this.updateStructureHexes(value);
+    this.addWorldUpdateSubscription(
+      this.worldUpdateListener.Structure.onTileUpdate(async (value) => {
+        this.updateStructureHexes(value);
 
       const optimisticStructure = this.structureManager.structures.removeStructure(
         Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID),
@@ -572,50 +598,66 @@ export default class WorldmapScene extends HexagonScene {
 
       await this.structureManager.onUpdate(value);
 
-      if (this.totalStructures !== this.structureManager.getTotalStructures()) {
-        this.totalStructures = this.structureManager.getTotalStructures();
-        this.clearCache();
-        this.updateVisibleChunks(true).catch((error) => console.error("Failed to update visible chunks:", error));
-      }
-    });
+        if (this.totalStructures !== this.structureManager.getTotalStructures()) {
+          this.totalStructures = this.structureManager.getTotalStructures();
+          this.clearCache();
+          this.updateVisibleChunks(true).catch((error) => console.error("Failed to update visible chunks:", error));
+        }
+      }),
+    );
 
     // Store the unsubscribe function for Structure contributions
-    this.worldUpdateListener.Structure.onContribution((value) => {
-      this.structureManager.structures.updateStructureStage(value.entityId, value.structureType, value.stage);
-      this.structureManager.updateChunk(this.currentChunk);
-    });
+    this.addWorldUpdateSubscription(
+      this.worldUpdateListener.Structure.onContribution((value) => {
+        this.structureManager.structures.updateStructureStage(value.entityId, value.structureType, value.stage);
+        this.structureManager.updateChunk(this.currentChunk);
+      }),
+    );
 
     // perform some updates for the quest manager
-    this.worldUpdateListener.Quest.onTileUpdate((update: QuestSystemUpdate) => {
-      this.updateQuestHexes(update);
-      this.questManager.onUpdate(update);
-    });
+    this.addWorldUpdateSubscription(
+      this.worldUpdateListener.Quest.onTileUpdate((update: QuestSystemUpdate) => {
+        this.updateQuestHexes(update);
+        this.questManager.onUpdate(update);
+      }),
+    );
 
     // perform some updates for the chest manager
-    this.worldUpdateListener.Chest.onTileUpdate((update: ChestSystemUpdate) => {
-      this.updateChestHexes(update);
-      this.chestManager.onUpdate(update);
-    });
-    this.worldUpdateListener.Chest.onDeadChest((entityId) => {
-      // If the chest is opened, remove it from the map
-      this.deleteChest(entityId);
-    });
+    this.addWorldUpdateSubscription(
+      this.worldUpdateListener.Chest.onTileUpdate((update: ChestSystemUpdate) => {
+        this.updateChestHexes(update);
+        this.chestManager.onUpdate(update);
+      }),
+    );
+    this.addWorldUpdateSubscription(
+      this.worldUpdateListener.Chest.onDeadChest((entityId) => {
+        // If the chest is opened, remove it from the map
+        this.deleteChest(entityId);
+      }),
+    );
 
     // Store the unsubscribe function for Relic Effect updates
-    this.worldUpdateListener.RelicEffect.onExplorerTroopsUpdate(async (update: RelicEffectSystemUpdate) => {
-      this.handleRelicEffectUpdate(update);
-    });
+    this.addWorldUpdateSubscription(
+      this.worldUpdateListener.RelicEffect.onExplorerTroopsUpdate(async (update: RelicEffectSystemUpdate) => {
+        this.handleRelicEffectUpdate(update);
+      }),
+    );
 
-    this.worldUpdateListener.RelicEffect.onStructureGuardUpdate((update: RelicEffectSystemUpdate) => {
-      this.handleRelicEffectUpdate(update, RelicSource.Guard);
-    });
+    this.addWorldUpdateSubscription(
+      this.worldUpdateListener.RelicEffect.onStructureGuardUpdate((update: RelicEffectSystemUpdate) => {
+        this.handleRelicEffectUpdate(update, RelicSource.Guard);
+      }),
+    );
 
-    this.worldUpdateListener.RelicEffect.onStructureProductionUpdate((update: RelicEffectSystemUpdate) => {
-      this.handleRelicEffectUpdate(update, RelicSource.Production);
-    });
+    this.addWorldUpdateSubscription(
+      this.worldUpdateListener.RelicEffect.onStructureProductionUpdate((update: RelicEffectSystemUpdate) => {
+        this.handleRelicEffectUpdate(update, RelicSource.Production);
+      }),
+    );
 
-    this.worldUpdateListener.ExplorerMove.onExplorerMoveEventUpdate((update: ExplorerMoveSystemUpdate) => {
-      const { explorerId, resourceId, amount } = update;
+    this.addWorldUpdateSubscription(
+      this.worldUpdateListener.ExplorerMove.onExplorerMoveEventUpdate((update: ExplorerMoveSystemUpdate) => {
+        const { explorerId, resourceId, amount } = update;
 
       // Find the army position using explorerId
       setTimeout(() => {
@@ -645,7 +687,8 @@ export default class WorldmapScene extends HexagonScene {
           console.warn(`Could not find army with ID ${explorerId} for resource gain display`);
         }
       }, 500);
-    });
+      }),
+    );
 
     // add particles
     this.selectedHexManager = new SelectedHexManager(this.scene);
@@ -1672,6 +1715,7 @@ export default class WorldmapScene extends HexagonScene {
     this.cancelHexGridComputation = undefined;
 
     this.disposeStoreSubscriptions();
+    this.disposeWorldUpdateSubscriptions();
     this.toriiStreamManager?.shutdown();
 
     // Remove label groups from scene
@@ -2063,7 +2107,7 @@ export default class WorldmapScene extends HexagonScene {
       const chunkCol = parseInt(this.currentChunk.split(",")[1]);
       this.exploredTiles.get(col)?.delete(row);
       this.removeCachedMatricesForChunk(chunkRow, chunkCol);
-      this.removeCachedMatricesAroundColRow(chunkRow, chunkCol);
+      this.removeCachedMatricesAroundChunk(chunkRow, chunkCol);
       this.currentChunk = "null"; // reset the current chunk to force a recomputation
       this.updateVisibleChunks().catch((error) => console.error("Failed to update visible chunks:", error));
       return;
@@ -2176,8 +2220,10 @@ export default class WorldmapScene extends HexagonScene {
     const startRow = parseInt(chunkKey.split(",")[0]);
     const startCol = parseInt(chunkKey.split(",")[1]);
     const chunks: string[] = [];
-    for (let i = -this.renderChunkSize.width / 2; i <= this.renderChunkSize.width / 2; i += this.chunkSize) {
-      for (let j = -this.renderChunkSize.width / 2; j <= this.renderChunkSize.height / 2; j += this.chunkSize) {
+    const halfHeight = this.renderChunkSize.height / 2;
+    const halfWidth = this.renderChunkSize.width / 2;
+    for (let i = -halfHeight; i <= halfHeight; i += this.chunkSize) {
+      for (let j = -halfWidth; j <= halfWidth; j += this.chunkSize) {
         const { x, z } = getWorldPositionForHex({ row: startRow + i, col: startCol + j });
         const { chunkX, chunkZ } = this.worldToChunkCoordinates(x, z);
         const _chunkKey = `${chunkZ * this.chunkSize},${chunkX * this.chunkSize}`;
@@ -2189,13 +2235,15 @@ export default class WorldmapScene extends HexagonScene {
     return chunks;
   }
 
-  removeCachedMatricesAroundColRow(col: number, row: number) {
-    for (let i = -this.renderChunkSize.width / 2; i <= this.renderChunkSize.width / 2; i += this.chunkSize) {
-      for (let j = -this.renderChunkSize.width / 2; j <= this.renderChunkSize.height / 2; j += this.chunkSize) {
+  removeCachedMatricesAroundChunk(chunkRow: number, chunkCol: number) {
+    const halfHeight = this.renderChunkSize.height / 2;
+    const halfWidth = this.renderChunkSize.width / 2;
+    for (let i = -halfHeight; i <= halfHeight; i += this.chunkSize) {
+      for (let j = -halfWidth; j <= halfWidth; j += this.chunkSize) {
         if (i === 0 && j === 0) {
           continue;
         }
-        this.removeCachedMatricesForChunk(row + i, col + j);
+        this.removeCachedMatricesForChunk(chunkRow + i, chunkCol + j);
       }
     }
   }
@@ -2236,6 +2284,9 @@ export default class WorldmapScene extends HexagonScene {
     MatrixPool.getInstance().clear();
     InstancedMatrixAttributePool.getInstance().clear();
     this.pinnedChunkKeys.clear();
+    if (this.currentChunk !== "null") {
+      this.visibilityManager?.unregisterChunk(this.currentChunk);
+    }
   }
 
   private scheduleHydratedChunkRefresh(chunkKey: string) {
@@ -2271,6 +2322,7 @@ export default class WorldmapScene extends HexagonScene {
       }
       try {
         await this.updateManagersForChunk(chunkKey, { force: true });
+        this.hydratedChunkRefreshes.delete(chunkKey);
         this.retryDeferredChunkRemovals();
       } catch (error) {
         console.error(`[CHUNK SYNC] Hydrated chunk refresh failed for ${chunkKey}`, error);
@@ -2574,6 +2626,7 @@ export default class WorldmapScene extends HexagonScene {
     const nextPinned = new Set(newChunkKeys);
     const prevPinned = this.pinnedChunkKeys;
     const newlyPinned: string[] = [];
+    const removedPinned: string[] = [];
 
     // Track which chunks became newly active so we can refresh their structures
     nextPinned.forEach((chunkKey) => {
@@ -2587,6 +2640,7 @@ export default class WorldmapScene extends HexagonScene {
     prevPinned.forEach((chunkKey) => {
       if (!nextPinned.has(chunkKey)) {
         this.fetchedChunks.delete(chunkKey);
+        removedPinned.push(chunkKey);
       }
     });
 
@@ -2595,6 +2649,29 @@ export default class WorldmapScene extends HexagonScene {
     if (newlyPinned.length > 0) {
       this.refreshStructuresForChunks(newlyPinned);
     }
+
+    removedPinned.forEach((chunkKey) => {
+      if (chunkKey !== this.currentChunk) {
+        this.visibilityManager?.unregisterChunk(chunkKey);
+      }
+    });
+  }
+
+  private addWorldUpdateSubscription(unsub: unknown) {
+    if (typeof unsub === "function") {
+      this.worldUpdateUnsubscribes.push(unsub);
+    }
+  }
+
+  private disposeWorldUpdateSubscriptions() {
+    this.worldUpdateUnsubscribes.forEach((unsub) => {
+      try {
+        unsub();
+      } catch (error) {
+        console.warn("[WorldmapScene] Failed to unsubscribe world update listener", error);
+      }
+    });
+    this.worldUpdateUnsubscribes = [];
   }
 
   private async refreshStructuresForChunks(chunkKeys: string[]): Promise<void> {
@@ -2718,7 +2795,7 @@ export default class WorldmapScene extends HexagonScene {
       // Only add to the fetched cache if the chunk is still pinned (still relevant)
       if (this.pinnedChunkKeys.has(chunkKey)) {
         this.fetchedChunks.add(chunkKey);
-        if (chunkKey === this.currentChunk) {
+        if (chunkKey === this.currentChunk && !this.isChunkTransitioning) {
           this.scheduleHydratedChunkRefresh(chunkKey);
         }
       }
@@ -2858,15 +2935,12 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private computeChunkBounds(startRow: number, startCol: number) {
-    const { row: centerRow, col: centerCol } = this.getChunkCenter(startRow, startCol);
-    const halfWidth = this.renderChunkSize.width / 2;
-    const halfHeight = this.renderChunkSize.height / 2;
-
-    const minCol = centerCol - halfWidth;
-    const maxCol = centerCol + halfWidth;
-    const minRow = centerRow - halfHeight;
-    const maxRow = centerRow + halfHeight;
-
+    const { minCol, maxCol, minRow, maxRow } = getRenderBounds(
+      startRow,
+      startCol,
+      this.renderChunkSize,
+      this.chunkSize,
+    );
     const corners = [
       getWorldPositionForHex({ col: minCol, row: minRow }),
       getWorldPositionForHex({ col: minCol, row: maxRow }),
@@ -2915,11 +2989,7 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private getChunkCenter(startRow: number, startCol: number): { row: number; col: number } {
-    const halfChunk = this.chunkSize / 2;
-    return {
-      row: Math.round(startRow + halfChunk),
-      col: Math.round(startCol + halfChunk),
-    };
+    return getChunkCenterAligned(startRow, startCol, this.chunkSize);
   }
 
   private getCameraGroundIntersection(): Vector3 {
@@ -2966,6 +3036,9 @@ export default class WorldmapScene extends HexagonScene {
         console.warn(`Previous global chunk switch failed:`, error);
       }
     }
+
+    // Ensure visibility state is fresh before computing chunk visibility
+    this.visibilityManager?.beginFrame();
 
     const focusPoint = this.getCameraGroundIntersection().clone();
 
@@ -3023,13 +3096,19 @@ export default class WorldmapScene extends HexagonScene {
     // Clear any existing selections to prevent interaction during switch
     this.clearEntitySelection();
 
+    const oldChunk = this.currentChunk;
     this.currentChunk = chunkKey;
     this.updateCurrentChunkBounds(startRow, startCol);
+    if (oldChunk && oldChunk !== chunkKey) {
+      this.visibilityManager?.unregisterChunk(oldChunk);
+    }
 
-    // Start structure data fetch in background - don't block on it
-    // This allows the hex grid to render immediately while data loads
+    // Kick off data fetches for deterministic ordering
     const structureFetchPromise = this.refreshStructuresForChunks([chunkKey]).catch((error) => {
-      console.error("[WorldmapScene] Background structure fetch failed:", error);
+      console.error("[WorldmapScene] Structure fetch failed:", error);
+    });
+    const tileFetchPromise = this.computeTileEntities(chunkKey).catch((error) => {
+      console.error("[WorldmapScene] Tile fetch failed:", error);
     });
 
     // Don't await - this is also async but not critical for initial render
@@ -3058,9 +3137,17 @@ export default class WorldmapScene extends HexagonScene {
       this.renderChunkSize.height,
     );
 
-    // Wait for structure data to arrive before updating managers
-    // This ensures structures appear after hex grid is visible
-    await structureFetchPromise;
+    // Wait for core data (tiles + structures) before updating managers to avoid empty renders
+    await Promise.all([structureFetchPromise, tileFetchPromise]);
+    this.hydratedChunkRefreshes.delete(chunkKey);
+
+    // If user navigated away during fetch, skip updating this chunk
+    if (this.currentChunk !== chunkKey) {
+      return;
+    }
+
+    // Ensure visibility state is fresh before manager renders
+    this.visibilityManager?.forceUpdate();
 
     // Update all managers concurrently once shared prerequisites are ready
     await this.updateManagersForChunk(chunkKey, { force });
@@ -3124,9 +3211,12 @@ export default class WorldmapScene extends HexagonScene {
 
     this.updateCurrentChunkBounds(startRow, startCol);
 
-    // Start structure data fetch in background - don't block on it
+    // Start deterministic data fetches
     const structureFetchPromise = this.refreshStructuresForChunks([chunkKey]).catch((error) => {
       console.error("[WorldmapScene] Background structure refresh failed:", error);
+    });
+    const tileFetchPromise = this.computeTileEntities(chunkKey).catch((error) => {
+      console.error("[WorldmapScene] Tile refresh failed:", error);
     });
 
     const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
@@ -3143,8 +3233,9 @@ export default class WorldmapScene extends HexagonScene {
       this.renderChunkSize.height,
     );
 
-    // Wait for structure data before updating managers
-    await structureFetchPromise;
+    // Wait for data before updating managers
+    await Promise.all([structureFetchPromise, tileFetchPromise]);
+    this.hydratedChunkRefreshes.delete(chunkKey);
 
     await this.updateManagersForChunk(chunkKey, { force: true });
 
@@ -3413,6 +3504,7 @@ export default class WorldmapScene extends HexagonScene {
     this.currentHexGridTask = null;
 
     this.disposeStoreSubscriptions();
+    this.disposeWorldUpdateSubscriptions();
 
     this.resourceFXManager.destroy();
     this.updateMinimapThrottled?.cancel();
@@ -3425,6 +3517,11 @@ export default class WorldmapScene extends HexagonScene {
 
     // Clean up chunk integration
     this.chunkIntegration?.destroy();
+
+    if (this.visibilityChangeHandler) {
+      document.removeEventListener("visibilitychange", this.visibilityChangeHandler);
+      this.visibilityChangeHandler = undefined;
+    }
 
     super.destroy();
   }

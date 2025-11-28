@@ -41,6 +41,8 @@ export interface VisibilityManagerConfig {
   debug?: boolean;
   /** Maximum distance for animation visibility (world units) */
   animationMaxDistance?: number;
+  /** Maximum number of registered chunks to retain (oldest evicted when exceeded) */
+  maxRegisteredChunks?: number;
 }
 
 /**
@@ -93,6 +95,7 @@ export class CentralizedVisibilityManager {
 
   // Registered chunks
   private chunkBounds: Map<string, ChunkBoundsData> = new Map();
+  private chunkRegistrationOrder: string[] = [];
 
   // Configuration
   private config: VisibilityManagerConfig;
@@ -106,6 +109,7 @@ export class CentralizedVisibilityManager {
     this.config = {
       debug: false,
       animationMaxDistance: 140,
+      maxRegisteredChunks: 256,
       ...config,
     };
 
@@ -199,10 +203,16 @@ export class CentralizedVisibilityManager {
    * Register a chunk's bounds for visibility tracking.
    */
   registerChunk(chunkKey: string, bounds: ChunkBoundsData): void {
+    if (!this.chunkBounds.has(chunkKey)) {
+      this.chunkRegistrationOrder.push(chunkKey);
+    }
+
     this.chunkBounds.set(chunkKey, {
       box: bounds.box.clone(),
       sphere: bounds.sphere.clone(),
     });
+    this.enforceChunkLimit();
+    this.isDirty = true;
 
     if (this.config.debug) {
       console.log(`[CentralizedVisibilityManager] Registered chunk: ${chunkKey}`);
@@ -215,6 +225,11 @@ export class CentralizedVisibilityManager {
   unregisterChunk(chunkKey: string): void {
     this.chunkBounds.delete(chunkKey);
     this.frameState.visibleChunks.delete(chunkKey);
+    const idx = this.chunkRegistrationOrder.indexOf(chunkKey);
+    if (idx !== -1) {
+      this.chunkRegistrationOrder.splice(idx, 1);
+    }
+    this.isDirty = true;
 
     if (this.config.debug) {
       console.log(`[CentralizedVisibilityManager] Unregistered chunk: ${chunkKey}`);
@@ -395,6 +410,7 @@ export class CentralizedVisibilityManager {
       cachedBoxChecks: this.frameState.boxVisibility.size,
       cachedSphereChecks: this.frameState.sphereVisibility.size,
       cachedPointChecks: this.frameState.pointVisibility.size,
+      chunkCapacity: this.config.maxRegisteredChunks ?? null,
     };
   }
 
@@ -472,6 +488,26 @@ export class CentralizedVisibilityManager {
         console.error("[CentralizedVisibilityManager] Listener error:", error);
       }
     });
+  }
+
+  private enforceChunkLimit(): void {
+    if (!this.config.maxRegisteredChunks || this.config.maxRegisteredChunks <= 0) {
+      return;
+    }
+
+    while (this.chunkRegistrationOrder.length > this.config.maxRegisteredChunks) {
+      const oldest = this.chunkRegistrationOrder.shift();
+      if (!oldest) {
+        break;
+      }
+      this.chunkBounds.delete(oldest);
+      this.frameState.visibleChunks.delete(oldest);
+      if (this.config.debug) {
+        console.warn(
+          `[CentralizedVisibilityManager] Evicted chunk ${oldest} to maintain cap of ${this.config.maxRegisteredChunks}`,
+        );
+      }
+    }
   }
 }
 
