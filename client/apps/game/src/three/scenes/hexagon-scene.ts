@@ -1,6 +1,6 @@
 import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
-import { HEX_SIZE, biomeModelPaths } from "@/three/constants";
+import { CAMERA_CONFIG, FOG_CONFIG, HEX_SIZE, biomeModelPaths } from "@/three/constants";
 import { DayNightCycleManager } from "@/three/effects/day-night-cycle";
 import { HighlightHexManager } from "@/three/managers/highlight-hex-manager";
 import { InputManager } from "@/three/managers/input-manager";
@@ -103,8 +103,8 @@ export abstract class HexagonScene {
     { delay: 700, duration: 40 },
   ];
 
-  protected cameraDistance = 10; // Maintain the same distance
-  protected cameraAngle = Math.PI / 3;
+  protected cameraDistance = CAMERA_CONFIG.defaultDistance; // Maintain the same distance
+  protected cameraAngle = CAMERA_CONFIG.defaultAngle;
   protected currentCameraView = CameraView.Medium; // Track current camera view position
   private animationCameraTarget: Vector3 = new Vector3();
   private animationVisibilityContext?: AnimationVisibilityContext;
@@ -150,7 +150,7 @@ export abstract class HexagonScene {
     this.thunderBoltManager = new ThunderBoltManager(this.scene, this.controls);
     this.scene.background = new Color(0x2a1a3e);
     this.state = useUIStore.getState();
-    this.fog = new Fog(0x2d1b4e, 15, 35);
+    this.fog = new Fog(FOG_CONFIG.color, FOG_CONFIG.near, FOG_CONFIG.far);
     if (!IS_FLAT_MODE && GRAPHICS_SETTING === GraphicsSettings.HIGH) {
       // this.scene.fog = this.fog; // Disabled due to zoom level issues
     }
