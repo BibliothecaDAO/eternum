@@ -3,7 +3,7 @@ import { ArmyModel } from "@/three/managers/army-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playerColorManager, PlayerColorProfile } from "@/three/systems/player-colors";
 import { ModelType } from "@/three/types/army";
-import { GUIManager, LABEL_STYLES } from "@/three/utils/";
+import { GUIManager } from "@/three/utils/";
 import { FrustumManager } from "@/three/utils/frustum-manager";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
 import type { SetupResult } from "@bibliothecadao/dojo";
@@ -430,8 +430,6 @@ export class ArmyManager {
 
     try {
       await this.chunkSwitchPromise;
-      const actionLabel = previousChunkKey === chunkKey ? "refresh" : "switch";
-      // console.log(`[CHUNK SYNC] Army chunk ${actionLabel} for ${chunkKey} completed`);
     } finally {
       this.chunkSwitchPromise = null;
     }

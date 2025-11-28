@@ -2,7 +2,7 @@ import { AudioManager } from "@/audio/core/AudioManager";
 import { toast } from "sonner";
 
 import { getMapFromToriiExact, getStructuresDataFromTorii } from "@/dojo/queries";
-import { BoundsModelConfig, ToriiStreamManager } from "@/dojo/torii-stream-manager";
+import { ToriiStreamManager } from "@/dojo/torii-stream-manager";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
@@ -98,12 +98,6 @@ import { openStructureContextMenu } from "./context-menu/structure-context-menu"
 //const dummyObject = new Object3D();
 const dummy = new Object3D();
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
-const CHUNK_STREAM_MODELS: BoundsModelConfig[] = [
-  { model: "s1_eternum-Tile", colField: "col", rowField: "row" },
-  { model: "s1_eternum-ExplorerTroops", colField: "coord.x", rowField: "coord.y" },
-  { model: "s1_eternum-Structure", colField: "base.coord_x", rowField: "base.coord_y" },
-  { model: "s1_eternum-QuestTile", colField: "coord.x", rowField: "coord.y" },
-];
 // const GLOBAL_STREAM_MODELS: GlobalModelStreamConfig[] = [
 //   { model: "s1_eternum-BattleEvent" },
 //   { model: "s1_eternum-ExplorerMoveEvent" }, // rewards
@@ -183,7 +177,7 @@ export default class WorldmapScene extends HexagonScene {
   private notifiedBattleEvents = new Set<string>();
   private previouslyHoveredHex: HexPosition | null = null;
   private async ensureStructureSynced(structureId: ID, hexCoords: HexPosition) {
-    const components = this.dojo.components as any;
+    const components = this.dojo.components as SetupResult["components"];
     const toriiClient = this.dojo.network?.toriiClient;
     const contractComponents = this.dojo.network?.contractComponents;
 
@@ -193,9 +187,9 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
-    let entityKey: any;
+    let entityKey: string | undefined;
     try {
-      entityKey = getEntityIdFromKeys([BigInt(structureId)]);
+      entityKey = getEntityIdFromKeys([BigInt(structureId)]) as string;
     } catch (error) {
       console.warn("[WorldmapScene] Unable to build entity key for structure", structureId, error);
       return;
@@ -220,7 +214,8 @@ export default class WorldmapScene extends HexagonScene {
     document.body.style.cursor = "wait";
 
     try {
-      await getStructuresDataFromTorii(toriiClient, contractComponents as any, [
+      const typedContractComponents = contractComponents as Parameters<typeof getStructuresDataFromTorii>[1];
+      await getStructuresDataFromTorii(toriiClient, typedContractComponents, [
         {
           entityId: numericId,
           position: { col: contractCoords.x, row: contractCoords.y },
@@ -344,7 +339,8 @@ export default class WorldmapScene extends HexagonScene {
     );
 
     // Expose material sharing debug to global console
-    (window as any).testMaterialSharing = () => this.armyManager.logMaterialSharingStats();
+    (window as { testMaterialSharing?: () => void }).testMaterialSharing = () =>
+      this.armyManager.logMaterialSharingStats();
     this.structureManager = new StructureManager(
       this.scene,
       this.renderChunkSize,
@@ -440,45 +436,45 @@ export default class WorldmapScene extends HexagonScene {
       this.worldUpdateListener.Army.onTileUpdate(async (update: ExplorerTroopsTileSystemUpdate) => {
         this.cancelPendingArmyRemoval(update.entityId);
 
-      if (update.removed) {
-        // console.debug(`[WorldMap] Tile update indicates removal for entity ${update.entityId}`);
-        this.scheduleArmyRemoval(update.entityId, "tile");
-        return;
-      }
+        if (update.removed) {
+          // console.debug(`[WorldMap] Tile update indicates removal for entity ${update.entityId}`);
+          this.scheduleArmyRemoval(update.entityId, "tile");
+          return;
+        }
 
-      // console.debug(`[WorldMap] Army tile update received for entity ${update.entityId}`);
-      this.updateArmyHexes(update);
+        // console.debug(`[WorldMap] Army tile update received for entity ${update.entityId}`);
+        this.updateArmyHexes(update);
 
-      // Add combat relationship
-      if (update.battleData?.latestAttackerId) {
-        this.addCombatRelationship(update.battleData.latestAttackerId, update.entityId);
-      }
-      if (update.battleData?.latestDefenderId) {
-        this.addCombatRelationship(update.entityId, update.battleData.latestDefenderId);
-      }
+        // Add combat relationship
+        if (update.battleData?.latestAttackerId) {
+          this.addCombatRelationship(update.battleData.latestAttackerId, update.entityId);
+        }
+        if (update.battleData?.latestDefenderId) {
+          this.addCombatRelationship(update.entityId, update.battleData.latestDefenderId);
+        }
 
-      // Ensure army spawn location is marked as explored for pathfinding
-      // This fixes the bug where newly spawned armies can't see movement options
-      const normalizedPos = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
-      if (!this.exploredTiles.has(normalizedPos.x)) {
-        this.exploredTiles.set(normalizedPos.x, new Map());
-      }
-      if (!this.exploredTiles.get(normalizedPos.x)!.has(normalizedPos.y)) {
-        // Mark spawn location as grassland (default safe biome for pathfinding)
-        this.exploredTiles.get(normalizedPos.x)!.set(normalizedPos.y, BiomeType.Grassland);
-      }
+        // Ensure army spawn location is marked as explored for pathfinding
+        // This fixes the bug where newly spawned armies can't see movement options
+        const normalizedPos = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
+        if (!this.exploredTiles.has(normalizedPos.x)) {
+          this.exploredTiles.set(normalizedPos.x, new Map());
+        }
+        if (!this.exploredTiles.get(normalizedPos.x)!.has(normalizedPos.y)) {
+          // Mark spawn location as grassland (default safe biome for pathfinding)
+          this.exploredTiles.get(normalizedPos.x)!.set(normalizedPos.y, BiomeType.Grassland);
+        }
 
-      await this.armyManager.onTileUpdate(update);
+        await this.armyManager.onTileUpdate(update);
 
-      this.invalidateAllChunkCachesContainingHex(normalizedPos.x, normalizedPos.y);
+        this.invalidateAllChunkCachesContainingHex(normalizedPos.x, normalizedPos.y);
 
-      // Update positions for the moved army
-      const armyEntityId = update.entityId;
-      const prevPosition = this.armiesPositions.get(armyEntityId);
-      // this.armiesPositions.set(armyEntityId, normalizedPos);
+        // Update positions for the moved army
+        const armyEntityId = update.entityId;
+        const prevPosition = this.armiesPositions.get(armyEntityId);
+        // this.armiesPositions.set(armyEntityId, normalizedPos);
 
-      // Recalculate arrows for this army when it moves
-      this.recalculateArrowsForEntity(armyEntityId);
+        // Recalculate arrows for this army when it moves
+        this.recalculateArrowsForEntity(armyEntityId);
 
         // Check if any other entities had relationships with this army at its previous position
         // and update their arrows too
@@ -492,16 +488,16 @@ export default class WorldmapScene extends HexagonScene {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {
         this.cancelPendingArmyRemoval(update.entityId);
-      // console.debug(`[WorldMap] ExplorerTroops update received for entity ${update.entityId}`, {
-      //   troopCount: update.troopCount,
-      //   owner: update.ownerAddress,
-      // });
+        // console.debug(`[WorldMap] ExplorerTroops update received for entity ${update.entityId}`, {
+        //   troopCount: update.troopCount,
+        //   owner: update.ownerAddress,
+        // });
 
-      if (update.troopCount <= 0) {
-        // console.debug(`[WorldMap] ExplorerTroops update indicates removal for entity ${update.entityId}`);
-        this.scheduleArmyRemoval(update.entityId, "zero");
-        return;
-      }
+        if (update.troopCount <= 0) {
+          // console.debug(`[WorldMap] ExplorerTroops update indicates removal for entity ${update.entityId}`);
+          this.scheduleArmyRemoval(update.entityId, "zero");
+          return;
+        }
         this.updateArmyHexes(update);
         this.armyManager.updateArmyFromExplorerTroopsUpdate(update);
       }),
@@ -527,38 +523,38 @@ export default class WorldmapScene extends HexagonScene {
         // console.debug(`[WorldMap] BattleEvent update received for battle entity ${update.entityId}`);
         // console.log("🗺️ WorldMap: Received battle event update:", update);
 
-      // Update both attacker and defender information using the public methods
-      const { attackerId, defenderId } = update.battleData;
+        // Update both attacker and defender information using the public methods
+        const { attackerId, defenderId } = update.battleData;
 
-      // Add combat relationship
-      if (attackerId && defenderId) {
-        this.addCombatRelationship(attackerId, defenderId);
-        this.recalculateArrowsForEntity(attackerId);
-        this.recalculateArrowsForEntity(defenderId);
-      }
-
-      const uiStore = useUIStore.getState();
-      const followArmyCombats = uiStore.followArmyCombats;
-      const currentScene = this.sceneManager.getCurrentScene();
-
-      if (followArmyCombats && currentScene === SceneName.WorldMap) {
-        const attackerPosition =
-          attackerId !== undefined
-            ? (this.armiesPositions.get(attackerId) ?? this.structuresPositions.get(attackerId))
-            : undefined;
-        const defenderPosition =
-          defenderId !== undefined
-            ? (this.armiesPositions.get(defenderId) ?? this.structuresPositions.get(defenderId))
-            : undefined;
-
-        const targetPosition = defenderPosition ?? attackerPosition;
-
-        if (targetPosition) {
-          this.focusCameraOnEvent(targetPosition.col, targetPosition.row, "Following Army Combat");
+        // Add combat relationship
+        if (attackerId && defenderId) {
+          this.addCombatRelationship(attackerId, defenderId);
+          this.recalculateArrowsForEntity(attackerId);
+          this.recalculateArrowsForEntity(defenderId);
         }
-      }
 
-      this.notifyArmyUnderAttack(update);
+        const uiStore = useUIStore.getState();
+        const followArmyCombats = uiStore.followArmyCombats;
+        const currentScene = this.sceneManager.getCurrentScene();
+
+        if (followArmyCombats && currentScene === SceneName.WorldMap) {
+          const attackerPosition =
+            attackerId !== undefined
+              ? (this.armiesPositions.get(attackerId) ?? this.structuresPositions.get(attackerId))
+              : undefined;
+          const defenderPosition =
+            defenderId !== undefined
+              ? (this.armiesPositions.get(defenderId) ?? this.structuresPositions.get(defenderId))
+              : undefined;
+
+          const targetPosition = defenderPosition ?? attackerPosition;
+
+          if (targetPosition) {
+            this.focusCameraOnEvent(targetPosition.col, targetPosition.row, "Following Army Combat");
+          }
+        }
+
+        this.notifyArmyUnderAttack(update);
       }),
     );
 
@@ -578,25 +574,27 @@ export default class WorldmapScene extends HexagonScene {
     );
 
     // Store the unsubscribe function for Tile updates
-    this.addWorldUpdateSubscription(this.worldUpdateListener.Tile.onTileUpdate((value) => this.updateExploredHex(value)));
+    this.addWorldUpdateSubscription(
+      this.worldUpdateListener.Tile.onTileUpdate((value) => this.updateExploredHex(value)),
+    );
 
     // Store the unsubscribe function for Structure updates
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Structure.onTileUpdate(async (value) => {
         this.updateStructureHexes(value);
 
-      const optimisticStructure = this.structureManager.structures.removeStructure(
-        Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID),
-      );
-      if (optimisticStructure) {
-        this.dojo.components.Structure.removeOverride(DUMMY_HYPERSTRUCTURE_ENTITY_ID.toString());
-        this.structureManager.structureHexCoords
-          .get(optimisticStructure.hexCoords.col)
-          ?.delete(optimisticStructure.hexCoords.row);
-        this.structureManager.updateChunk(this.currentChunk);
-      }
+        const optimisticStructure = this.structureManager.structures.removeStructure(
+          Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID),
+        );
+        if (optimisticStructure) {
+          this.dojo.components.Structure.removeOverride(DUMMY_HYPERSTRUCTURE_ENTITY_ID.toString());
+          this.structureManager.structureHexCoords
+            .get(optimisticStructure.hexCoords.col)
+            ?.delete(optimisticStructure.hexCoords.row);
+          this.structureManager.updateChunk(this.currentChunk);
+        }
 
-      await this.structureManager.onUpdate(value);
+        await this.structureManager.onUpdate(value);
 
         if (this.totalStructures !== this.structureManager.getTotalStructures()) {
           this.totalStructures = this.structureManager.getTotalStructures();
@@ -659,34 +657,40 @@ export default class WorldmapScene extends HexagonScene {
       this.worldUpdateListener.ExplorerMove.onExplorerMoveEventUpdate((update: ExplorerMoveSystemUpdate) => {
         const { explorerId, resourceId, amount } = update;
 
-      // Find the army position using explorerId
-      setTimeout(() => {
-        const armyPosition = this.armiesPositions.get(explorerId);
+        // Find the army position using explorerId
+        setTimeout(() => {
+          const armyPosition = this.armiesPositions.get(explorerId);
 
-        if (armyPosition) {
-          // Check if user has camera follow enabled and is on worldmap
-          const followArmyMoves = useUIStore.getState().followArmyMoves;
-          const currentScene = this.sceneManager.getCurrentScene();
+          if (armyPosition) {
+            // Check if user has camera follow enabled and is on worldmap
+            const followArmyMoves = useUIStore.getState().followArmyMoves;
+            const currentScene = this.sceneManager.getCurrentScene();
 
-          if (followArmyMoves && currentScene === SceneName.WorldMap) {
-            this.focusCameraOnEvent(armyPosition.col, armyPosition.row, "Following Army Movement");
+            if (followArmyMoves && currentScene === SceneName.WorldMap) {
+              this.focusCameraOnEvent(armyPosition.col, armyPosition.row, "Following Army Movement");
+            }
+            if (resourceId === 0) {
+              return;
+            }
+            const resource = findResourceById(resourceId);
+            const ownerAddress = this.getEntityOwnerAddress(explorerId);
+            const isOwnArmy = ownerAddress !== undefined && isAddressEqualToAccount(ownerAddress);
+            if (isOwnArmy) {
+              // Play the sound for the resource gain only when it belongs to the local player
+              playResourceSound(resourceId, this.state.isSoundOn, this.state.effectsLevel);
+            }
+            // Display the resource gain at the army's position
+            this.displayResourceGain(
+              resourceId,
+              amount,
+              armyPosition.col,
+              armyPosition.row,
+              resource?.trait + " found",
+            );
+          } else {
+            console.warn(`Could not find army with ID ${explorerId} for resource gain display`);
           }
-          if (resourceId === 0) {
-            return;
-          }
-          const resource = findResourceById(resourceId);
-          const ownerAddress = this.getEntityOwnerAddress(explorerId);
-          const isOwnArmy = ownerAddress !== undefined && isAddressEqualToAccount(ownerAddress);
-          if (isOwnArmy) {
-            // Play the sound for the resource gain only when it belongs to the local player
-            playResourceSound(resourceId, this.state.isSoundOn, this.state.effectsLevel);
-          }
-          // Display the resource gain at the army's position
-          this.displayResourceGain(resourceId, amount, armyPosition.col, armyPosition.row, resource?.trait + " found");
-        } else {
-          console.warn(`Could not find army with ID ${explorerId} for resource gain display`);
-        }
-      }, 500);
+        }, 500);
       }),
     );
 
@@ -1957,8 +1961,8 @@ export default class WorldmapScene extends HexagonScene {
       const existingArmy = this.armiesPositions.has(entityId);
       if (existingArmy) {
         // Try to find existing army data in armyHexes to preserve owner
-        for (const [col, rowMap] of this.armyHexes) {
-          for (const [row, armyData] of rowMap) {
+        for (const rowMap of this.armyHexes.values()) {
+          for (const armyData of rowMap.values()) {
             if (armyData.id === entityId && armyData.owner !== 0n) {
               actualOwnerAddress = armyData.owner;
               break;
@@ -2012,9 +2016,6 @@ export default class WorldmapScene extends HexagonScene {
     this.armyHexes.get(newPos.col)?.set(newPos.row, armyHexData);
     gameWorkerManager.updateArmyHex(newPos.col, newPos.row, armyHexData);
     this.invalidateAllChunkCachesContainingHex(newPos.col, newPos.row);
-
-    // Verify what was actually stored
-    const storedArmy = this.armyHexes.get(newPos.col)?.get(newPos.row);
 
     // Remove from pending movements when position is updated from blockchain
     if (this.pendingArmyMovements.has(entityId)) {
@@ -2172,7 +2173,7 @@ export default class WorldmapScene extends HexagonScene {
       dummy.updateMatrix();
 
       const biomeVariant = getBiomeVariant(biome, col, row);
-      const hexMesh = this.biomeModels.get(biomeVariant as any)!;
+      const hexMesh = this.biomeModels.get(biomeVariant)!;
       const currentCount = hexMesh.getCount();
       hexMesh.setMatrixAt(currentCount, dummy.matrix);
       hexMesh.setCount(currentCount + 1);
@@ -2340,7 +2341,8 @@ export default class WorldmapScene extends HexagonScene {
     this.cancelHexGridComputation?.();
     this.cancelHexGridComputation = undefined;
 
-    const memoryMonitor = (window as any).__gameRenderer?.memoryMonitor;
+    const memoryMonitor = (window as { __gameRenderer?: { memoryMonitor?: MemoryMonitor } }).__gameRenderer
+      ?.memoryMonitor;
     const preUpdateStats = memoryMonitor?.getCurrentStats(`hex-grid-update-${startRow}-${startCol}`);
 
     const matrixPoolInstance = MatrixPool.getInstance();
@@ -2461,7 +2463,7 @@ export default class WorldmapScene extends HexagonScene {
 
       const finalizeSuccess = () => {
         for (const [biome, matrices] of Object.entries(biomeHexes)) {
-          const hexMesh = this.biomeModels.get(biome as any);
+          const hexMesh = this.biomeModels.get(biome as BiomeType);
 
           if (!hexMesh) {
             if (matrices.length > 0) {
@@ -2657,7 +2659,7 @@ export default class WorldmapScene extends HexagonScene {
     });
   }
 
-  private addWorldUpdateSubscription(unsub: unknown) {
+  private addWorldUpdateSubscription(unsub: () => void) {
     if (typeof unsub === "function") {
       this.worldUpdateUnsubscribes.push(unsub);
     }
@@ -2710,7 +2712,8 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     try {
-      await getStructuresDataFromTorii(toriiClient, contractComponents as any, structuresToSync);
+      const typedContractComponents = contractComponents as Parameters<typeof getStructuresDataFromTorii>[1];
+      await getStructuresDataFromTorii(toriiClient, typedContractComponents, structuresToSync);
     } catch (error) {
       console.error("[WorldmapScene] Failed to refresh structures for chunks", chunkKeys, error);
     }
@@ -2781,12 +2784,11 @@ export default class WorldmapScene extends HexagonScene {
     minRow: number,
     maxRow: number,
   ): Promise<void> {
-    const start = performance.now();
     this.beginToriiFetch();
     try {
       await getMapFromToriiExact(
         this.dojo.network.toriiClient,
-        this.dojo.network.contractComponents as any,
+        this.dojo.network.contractComponents as Parameters<typeof getMapFromToriiExact>[1],
         minCol + FELT_CENTER(),
         maxCol + FELT_CENTER(),
         minRow + FELT_CENTER(),
@@ -2888,11 +2890,11 @@ export default class WorldmapScene extends HexagonScene {
     }
 
     cachedChunk.set("__bounds__", {
-      matrices: null,
+      matrices: null as InstancedBufferAttribute | null,
       count: 0,
       box,
       sphere,
-    } as any);
+    });
 
     this.touchMatrixCache(chunkKey);
     this.ensureMatrixCacheLimit();
@@ -2912,7 +2914,9 @@ export default class WorldmapScene extends HexagonScene {
     const chunkKey = `${startRow},${startCol}`;
     const cachedMatrices = this.cachedMatrices.get(chunkKey);
     if (cachedMatrices) {
-      const bounds = cachedMatrices.get("__bounds__") as any;
+      const bounds = cachedMatrices.get("__bounds__") as
+        | { matrices: null; count: number; box: Box3; sphere: Sphere }
+        | undefined;
       if (bounds && bounds.box && !this.visibilityManager.isBoxVisible(bounds.box)) {
         return false;
       }
@@ -2921,7 +2925,7 @@ export default class WorldmapScene extends HexagonScene {
         if (biome === "__bounds__") {
           continue;
         }
-        const hexMesh = this.biomeModels.get(biome as any)!;
+        const hexMesh = this.biomeModels.get(biome as BiomeType)!;
         if (matrices) {
           hexMesh.setMatricesAndCount(matrices, count);
         } else {
@@ -3090,7 +3094,8 @@ export default class WorldmapScene extends HexagonScene {
     switchPosition?: Vector3,
   ) {
     // Track memory usage during chunk switch
-    const memoryMonitor = (window as any).__gameRenderer?.memoryMonitor;
+    const memoryMonitor = (window as { __gameRenderer?: { memoryMonitor?: MemoryMonitor } }).__gameRenderer
+      ?.memoryMonitor;
     const preChunkStats = memoryMonitor?.getCurrentStats(`chunk-switch-pre-${chunkKey}`);
 
     // Clear any existing selections to prevent interaction during switch
@@ -3184,29 +3189,22 @@ export default class WorldmapScene extends HexagonScene {
     const halfWidth = this.renderChunkSize.width / 2;
     const halfHeight = this.renderChunkSize.height / 2;
 
-    const minCol = chunkCenterCol - halfWidth;
-    const maxCol = chunkCenterCol + halfWidth;
-    const minRow = chunkCenterRow - halfHeight;
-    const maxRow = chunkCenterRow + halfHeight;
+    const bounds = {
+      minCol: chunkCenterCol - halfWidth + FELT_CENTER(),
+      maxCol: chunkCenterCol + halfWidth + FELT_CENTER(),
+      minRow: chunkCenterRow - halfHeight + FELT_CENTER(),
+      maxRow: chunkCenterRow + halfHeight + FELT_CENTER(),
+      padding: this.renderChunkSize.width,
+      // models intentionally omitted while streaming is disabled
+    };
 
-    const feltCenter = FELT_CENTER();
-
-    try {
-      // await this.toriiStreamManager.switchBounds({
-      //   minCol: minCol + feltCenter,
-      //   maxCol: maxCol + feltCenter,
-      //   minRow: minRow + feltCenter,
-      //   maxRow: maxRow + feltCenter,
-      //   padding: this.renderChunkSize.width,
-      //   models: CHUNK_STREAM_MODELS,
-      // });
-    } catch (error) {
-      console.error("[WorldmapScene] Failed to update Torii stream bounds", error);
-    }
+    // Streaming is currently disabled; keep bounds calculation for future re-enable.
+    void bounds;
   }
 
   private async refreshCurrentChunk(chunkKey: string, startCol: number, startRow: number) {
-    const memoryMonitor = (window as any).__gameRenderer?.memoryMonitor;
+    const memoryMonitor = (window as { __gameRenderer?: { memoryMonitor?: MemoryMonitor } }).__gameRenderer
+      ?.memoryMonitor;
     const preChunkStats = memoryMonitor?.getCurrentStats(`chunk-refresh-pre-${chunkKey}`);
 
     this.updateCurrentChunkBounds(startRow, startCol);
@@ -3697,7 +3695,8 @@ export default class WorldmapScene extends HexagonScene {
         }
       }
 
-      if (removedCount > 0) {
+      if (removedCount > 0 && import.meta.env.DEV) {
+        console.debug(`[Relic Effects] Removed ${removedCount} stale relic instances during validation`);
       }
     } catch (error) {
       console.error("Error during relic effect validation:", error);
@@ -3723,10 +3722,12 @@ export default class WorldmapScene extends HexagonScene {
         try {
           await this.updateVisibleChunks();
         } catch (error) {
-          // console.error(
-          //   `[WorldMap] Failed to update visible chunks while cycling armies (entityId=${army.entityId}):`,
-          //   error,
-          // );
+          if (import.meta.env.DEV) {
+            console.error(
+              `[WorldMap] Failed to update visible chunks while cycling armies (entityId=${army.entityId}):`,
+              error,
+            );
+          }
         }
 
         // army.position is already in contract coordinates, pass it directly
