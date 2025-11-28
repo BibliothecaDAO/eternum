@@ -1299,6 +1299,9 @@ export class StructureManager {
       this.applyFrustumVisibilityToLabels();
       this.frustumVisibilityDirty = false;
     }
+
+    // Flush batched label pool operations to minimize layout thrashing
+    this.labelPool.flushBatch();
   }
 
   private resolveAnimationVisibilityContext(

@@ -1437,6 +1437,9 @@ export class ArmyManager {
       this.applyFrustumVisibilityToLabels();
       this.frustumVisibilityDirty = false;
     }
+
+    // Flush batched label pool operations to minimize layout thrashing
+    this.labelPool.flushBatch();
   }
 
   private applyFrustumVisibilityToLabels() {
