@@ -1716,8 +1716,6 @@ export const BlitzOnboarding = () => {
           onObtainEntryToken={requiresEntryToken ? handleObtainEntryToken : undefined}
           isObtainingEntryToken={isObtainingEntryToken}
           availableEntryTokenIds={availableEntryTokenIds}
-          selectedEntryTokenId={selectedEntryTokenId}
-          onSelectEntryToken={setSelectedEntryTokenId}
           entryTokenStatus={entryTokenStatus}
           hasSufficientFeeBalance={hasSufficientFeeBalance}
           isFeeBalanceLoading={isFeeBalanceLoading}
