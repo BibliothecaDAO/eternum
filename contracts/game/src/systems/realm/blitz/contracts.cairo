@@ -5,7 +5,8 @@ pub trait IBlitzRealmSystems<T> {
     fn obtain_entry_token(ref self: T);
     fn register(ref self: T, name: felt252, entry_token_id: u128, cosmetic_token_ids: Span<u128>);
     fn make_hyperstructures(ref self: T, count: u8);
-    fn create(ref self: T) -> Array<ID>;
+    fn assign_realm_positions(ref self: T);
+    fn settle_realms(ref self: T, settlement_count: u8) -> Array<ID>;
 }
 
 #[dojo::contract]
@@ -22,7 +23,7 @@ pub mod blitz_realm_systems {
         BlitzHypersSettlementConfig, BlitzHypersSettlementConfigImpl, BlitzRealmPlayerRegister, BlitzEntryTokenRegister,
         BlitzRealmPositionRegister, BlitzRegistrationConfig, BlitzRegistrationConfigImpl, BlitzSettlementConfig,
         BlitzSettlementConfigImpl, MapConfig, RealmCountConfig, SeasonConfigImpl, TroopLimitConfig, TroopStaminaConfig,
-        WorldConfigUtilImpl, BlitzCosmeticAttrsRegister
+        WorldConfigUtilImpl, BlitzCosmeticAttrsRegister, BlitzRealmSettleFinish
     };
     use crate::models::events::{RealmCreatedStory, Story, StoryEvent};
     use crate::models::map::TileImpl;
@@ -345,7 +346,7 @@ pub mod blitz_realm_systems {
             );
         }
 
-        fn create(ref self: ContractState) -> Array<ID> {
+        fn assign_realm_positions(ref self: ContractState) {
             // check that season is still active
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonConfigImpl::get(world).assert_started_and_not_over();
@@ -398,22 +399,57 @@ pub mod blitz_realm_systems {
                 ref world, selector!("blitz_registration_config"), blitz_registration_config,
             );
 
+            world
+                .write_model(
+                    @BlitzRealmSettleFinish {
+                        player: caller,
+                        coords: player_position_register.coords,
+                        structure_ids: array![].span(),
+                        labor_prod_started: false,
+                    },
+                );
+        }
+
+        fn settle_realms(ref self: ContractState, settlement_count: u8) -> Array<ID> {
+            // check that season is still active
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
+
+            let caller: ContractAddress = starknet::get_caller_address();
+            let mut player_settle_finish: BlitzRealmSettleFinish = world.read_model(caller);
+            assert!(
+                player_settle_finish.coords.len() > 0,
+                "Eternum: Player has no assigned realm positions",
+            );
+            assert!(
+                player_settle_finish.structure_ids.len() != player_settle_finish.coords.len(),
+                "Eternum: Player has already created realms",
+            );
+
+
             // get realm count
             let realm_count_selector: felt252 = selector!("realm_count_config");
             let mut realm_count: RealmCountConfig = WorldConfigUtilImpl::get_member(world, realm_count_selector);
 
-            let mut coords = player_position_register.coords;
-            let mut structure_ids: Array<ID> = array![];
-            while coords.len() > 0 {
+            let mut coords = player_settle_finish.coords;
+            let mut structure_ids: Array<ID> = player_settle_finish.structure_ids.into();
+            let resources = blitz_produceable_resources();
+            let (realm_internal_systems_address, _) = world.dns(@"realm_internal_systems").unwrap();
+
+            
+            assert!(
+                coords.len() >= settlement_count.into(),
+                "Eternum: Not enough assigned coords to settle realms",
+            );
+            for _ in 0..settlement_count {
+                 // create realm structure
                 realm_count.count += 1;
                 let realm_id = realm_count.count.into();
                 let coord = *coords.pop_front().unwrap();
-                let resources = blitz_produceable_resources();
-                let (realm_internal_systems_address, _) = world.dns(@"realm_internal_systems").unwrap();
                 let structure_id = IRealmInternalSystemsDispatcher { contract_address: realm_internal_systems_address }
-                    .create_internal(caller, realm_id, resources, 0, 1, coord, false);
+                    .create_internal(caller, realm_id, resources.clone(), 0, 1, coord, false);
 
-                // set infinite labor production
+                 // set infinite labor production
                 let labor_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::LABOR);
                 let mut structure_weight = WeightStoreImpl::retrieve(ref world, structure_id);
                 let mut structure_labor_resource = SingleResourceStoreImpl::retrieve(
@@ -453,6 +489,11 @@ pub mod blitz_realm_systems {
 
             // update realm count
             WorldConfigUtilImpl::set_member(ref world, realm_count_selector, realm_count);
+
+            // update player allocated realms
+            player_settle_finish.structure_ids = structure_ids.span();
+            player_settle_finish.coords = coords;
+            world.write_model(@player_settle_finish);
 
             structure_ids
         }

@@ -1,5 +1,5 @@
 [package]
-cairo-version = "2.12.2"
+cairo-version = "2.13.1"
 name = "eternum"
 version = "1.0.0"
 edition = "2024_07"
@@ -8,7 +8,7 @@ edition = "2024_07"
 sierra-replace-ids = true
 
 [dependencies]
-starknet = "2.12.2"
+starknet = "2.13.1"
 dojo = "1.8.0"
 alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "v0.5.2" }
 alexandria_data_structures = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "v0.5.2" }
@@ -18,7 +18,7 @@ cubit = { git = "https://github.com/credence0x/cubit.git", branch = "feat/cairo-
 
 [dev-dependencies]
 dojo_cairo_test = "1.8.0"
-cairo_test = "2.12.2"
+cairo_test = "2.13.1"
 openzeppelin_token = "2.0.0"
 openzeppelin = "2.0.0"
 

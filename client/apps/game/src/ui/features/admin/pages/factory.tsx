@@ -52,11 +52,11 @@ import { env } from "../../../../../env";
 import { AdminHeader } from "../components/admin-header";
 import {
   CARTRIDGE_API_BASE,
-  DEFAULT_MAX_ACTIONS,
   DEFAULT_NAMESPACE,
   DEFAULT_TORII_NAMESPACE,
   DEFAULT_VERSION,
   FACTORY_ADDRESSES,
+  getDefaultMaxActionsForChain,
   getExplorerTxUrl,
   getRpcUrlForChain,
 } from "../constants";
@@ -274,7 +274,7 @@ export const FactoryPage = () => {
   const [version, setVersion] = useState<string>(DEFAULT_VERSION);
   const [namespace, setNamespace] = useState<string>(DEFAULT_NAMESPACE);
   const [worldName, setWorldName] = useState<string>("");
-  const [maxActions, setMaxActions] = useState<number>(DEFAULT_MAX_ACTIONS);
+  const [maxActions, setMaxActions] = useState<number>(() => getDefaultMaxActionsForChain(currentChain));
   const [defaultNamespaceWriterAll, setDefaultNamespaceWriterAll] = useState<boolean>(true);
   const [manifestJson, setManifestJson] = useState<string>("");
   const [parsedManifest, setParsedManifest] = useState<ManifestData | null>(null);
