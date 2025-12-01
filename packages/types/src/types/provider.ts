@@ -36,7 +36,11 @@ export interface BlitzRealmMakeHyperstructuresProps extends SystemSigner {
   count: BigNumberish;
 }
 
-export interface BlitzRealmCreateProps extends SystemSigner {}
+export interface BlitzRealmAssignRealmPositionsProps extends SystemSigner {}
+
+export interface BlitzRealmSettleRealmsProps extends SystemSigner {
+  settlement_count: BigNumberish;
+}
 
 export interface BlitzRealmObtainEntryTokenProps extends SystemSigner {
   feeToken?: string;

@@ -1871,6 +1871,42 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    BlitzRealmPositionRegister: (() => {
+      return defineComponent(
+        world,
+        {
+          spot_number: RecsType.Number,
+          coords: RecsType.BigIntArray,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "BlitzRealmPositionRegister",
+            types: ["u16", "Span<(i16, i16)>"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    BlitzRealmSettleFinish: (() => {
+      return defineComponent(
+        world,
+        {
+          player: RecsType.BigInt,
+          coords: RecsType.BigIntArray,
+          structure_ids: RecsType.BigIntArray,
+          labor_prod_started: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "BlitzRealmSettleFinish",
+            types: ["ContractAddress", "Span<(i16, i16)>", "Span<u32>", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     ...eventsComponents(world),
   };
 }

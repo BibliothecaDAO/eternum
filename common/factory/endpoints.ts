@@ -10,6 +10,8 @@ export function getFactorySqlBaseUrl(chain: Chain, cartridgeApiBase?: string): s
     (typeof process !== "undefined" ? (process as any).env?.CARTRIDGE_API_BASE : undefined) ||
     "https://api.cartridge.gg";
   switch (chain) {
+    case "mainnet":
+      return `${base}/x/eternum-factory-mainnet/torii/sql`;
     case "sepolia":
       return `${base}/x/eternum-factory-sepolia/torii/sql`;
     case "slot":

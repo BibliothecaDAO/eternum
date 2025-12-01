@@ -1,7 +1,7 @@
 {
-  "Collectibles: Realms: Loot Chest": "",
-  "Collectibles: Realms: Cosmetic Items": "",
-  "Collectibles: Timelock Maker": "",
+  "Collectibles: Realms: Loot Chest": "0x1943078d36c49d9830444188fcac8ad3bc2f045946f7b557b1a48082eac3b1d",
+  "Collectibles: Realms: Cosmetic Items": "0x1d4ca776c24017ef64e8c94b0c4120578eca3f17832d32d42eeb82e4fec3049",
+  "Collectibles: Timelock Maker": "0x70e7aea02752d5e57e78fd455caf9b6a412730ad604a2037d17118d93733711",
   "collectiblesClassHash": "0x181c70595dd7db697c37ceb35c74fab69a037836b99cc80c17fd92a16289e26",
   "seasonPass": "0x60e8836acbebb535dfcd237ff01f20be503aae407b67bb6e3b5869afae97156",
   "realms": "0x7ae27a31bb6526e3de9cf02f081f6ce0615ac12a6d7b85ee58b8ad7947a2809",
@@ -9,8 +9,6 @@
   "strk": "0x04718f5a0Fc34cC1AF16A1cdee98fFB20C31f5cD61D6Ab07201858f4287c938D",
   "villagePass": "0x7ad410c472c1d61ce318dd617a479c977c85275afbf7991a1e1461ffe626a3d",
   "marketplace": "0x0489d2220e8b61f43a02786e76e93bc63e07c564fdca823254e8a20072a840a7",
-  "lootChests": "0x572fe34a769058c62a66f0c4854d08ccfd21fcbb4f0b1685a1868b84c6ee266",
-  "cosmeticItems": "0x1f36515d7d307c9d3e41df48f29e9a6b4bbc445d0fbdbbce944a4678cd52b02",
   "resources": {
     "STONE": [1, "0x439a1c010e3e1bb2d43d43411000893c0042bd88f6c701611a0ea914d426da4"],
     "COAL": [2, "0xce635e3f241b0ae78c46a929d84a9101910188f9c4024eaa7559556503c31a"],

@@ -57,7 +57,7 @@ const controller = new ControllerConnector({
             ? SLOT_RPC_URL_TEST
             : env.VITE_PUBLIC_NODE_URL !== "http://localhost:5050"
               ? env.VITE_PUBLIC_NODE_URL
-              : "https://api.cartridge.gg/x/starknet/sepolia",
+              : env.VITE_PUBLIC_NODE_URL,
     },
   ],
   defaultChainId: isLocal
@@ -69,7 +69,7 @@ const controller = new ControllerConnector({
         : env.VITE_PUBLIC_CHAIN === "mainnet"
           ? constants.StarknetChainId.SN_MAIN
           : constants.StarknetChainId.SN_SEPOLIA,
-  policies: chain_id === constants.StarknetChainId.SN_MAIN ? undefined : buildPolicies(dojoConfig.manifest),
+  policies: buildPolicies(dojoConfig.manifest),
   slot,
   namespace,
 });
@@ -126,7 +126,9 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
             ? [getSlotChain(SLOT_CHAIN_ID)]
             : isSlottest
               ? [getSlotChain(SLOT_CHAIN_ID_TEST)]
-              : [mainnet, sepolia]
+              : env.VITE_PUBLIC_CHAIN === "mainnet"
+                ? [mainnet]
+              : [sepolia]
       }
       provider={jsonRpcProvider({ rpc })}
       paymasterProvider={isLocal ? paymasterRpcProvider({ rpc: paymasterRpc }) : undefined}

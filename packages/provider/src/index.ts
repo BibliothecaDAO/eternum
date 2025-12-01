@@ -519,20 +519,57 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
-   * Create Blitz Realms
+   * Assign Blitz realm positions for the player
    *
-   * @param props - Properties for creation
+   * @param props - Properties for assignment
    * @param props.signer - Account executing the transaction
    * @returns Transaction receipt
    */
-  public async blitz_realm_create(props: SystemProps.BlitzRealmCreateProps) {
+  public async blitz_realm_assign_realm_positions(
+    props: SystemProps.BlitzRealmAssignRealmPositionsProps,
+  ): Promise<GetTransactionReceiptResponse> {
     const { signer } = props;
-    const call = this.createProviderCall(signer, {
+    const calls = [];
+
+    if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
+      const requestRandomCall: Call = {
+        contractAddress: this.VRF_PROVIDER_ADDRESS!,
+        entrypoint: "request_random",
+        calldata: [getContractByName(this.manifest, `${NAMESPACE}-blitz_realm_systems`), 0, signer.address],
+      };
+
+      calls.push(requestRandomCall);
+    }
+
+    calls.push({
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-blitz_realm_systems`),
-      entrypoint: "create",
+      entrypoint: "assign_realm_positions",
       calldata: [],
     });
-    return await this.promiseQueue.enqueue(call);
+    return await this.promiseQueue.enqueue(this.createProviderCall(signer, calls));
+  }
+
+  /**
+   * Settle Blitz realms for the player
+   *
+   * @param props - Properties for settlement
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async blitz_realm_settle_realms(
+    props: SystemProps.BlitzRealmSettleRealmsProps,
+  ): Promise<GetTransactionReceiptResponse> {
+    const { signer, settlement_count } = props;
+
+    const calls: Call[] = [
+      {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-blitz_realm_systems`),
+        entrypoint: "settle_realms",
+        calldata: [settlement_count],
+      },
+    ];
+
+    return await this.promiseQueue.enqueue(this.createProviderCall(signer, calls));
   }
 
   /**
@@ -3390,11 +3427,23 @@ export class EternumProvider extends EnhancedDojoProvider {
 
   public async open_chest(props: SystemProps.OpenChestProps) {
     const { signer, explorer_id, chest_coord } = props;
-    return await this.executeAndCheckTransaction(signer, {
+    const calls = [];
+    if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
+      const requestRandomCall: Call = {
+        contractAddress: this.VRF_PROVIDER_ADDRESS!,
+        entrypoint: "request_random",
+        calldata: [getContractByName(this.manifest, `${NAMESPACE}-relic_systems`), 0, signer.address],
+      };
+
+      calls.push(requestRandomCall);
+    }
+
+    calls.push({
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-relic_systems`),
       entrypoint: "open_chest",
       calldata: [explorer_id, chest_coord.x, chest_coord.y],
     });
+    return await this.promiseQueue.enqueue(this.createProviderCall(signer, calls));
   }
 
   public async apply_relic(props: SystemProps.ApplyRelicProps) {

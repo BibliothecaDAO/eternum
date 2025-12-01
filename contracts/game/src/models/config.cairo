@@ -952,6 +952,16 @@ pub struct BlitzRealmPositionRegister {
 
 #[derive(Copy, Drop, Serde, Introspect)]
 #[dojo::model]
+pub struct BlitzRealmSettleFinish {
+    #[key]
+    pub player: ContractAddress,
+    pub coords: Span<Coord>,
+    pub structure_ids: Span<ID>,
+    pub labor_prod_started: bool,
+}
+
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
 pub struct BlitzRealmPlayerRegister {
     #[key]
     pub player: ContractAddress,

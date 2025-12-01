@@ -140,7 +140,7 @@
     "images:compress": "node scripts/compress-images-with-sharp.js",
     "images:compress:dry-run": "node scripts/compress-images-with-sharp.js --dry-run",
     "images:compress:webp": "node scripts/compress-images-with-sharp.js --webp",
-    "dispatch:torii": "node scripts/dispatch-torii.mjs"
+    "manifest:copy-abis": "node scripts/copy-abis.mjs"
   },
   "bin": {
     "dispatch-torii": "scripts/dispatch-torii.mjs"
