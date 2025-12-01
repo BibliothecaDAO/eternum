@@ -573,6 +573,45 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
+   * Assign Blitz realm positions and immediately settle realms in a single transaction
+   *
+   * @param props - Properties for settlement
+   * @param props.signer - Account executing the transaction
+   * @param props.settlement_count - Number of realms to settle
+   * @returns Transaction receipt
+   */
+  public async blitz_realm_assign_and_settle_realms(
+    props: SystemProps.BlitzRealmSettleRealmsProps,
+  ): Promise<GetTransactionReceiptResponse> {
+    const { signer, settlement_count } = props;
+    const calls: Call[] = [];
+
+    if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
+      const requestRandomCall: Call = {
+        contractAddress: this.VRF_PROVIDER_ADDRESS!,
+        entrypoint: "request_random",
+        calldata: [getContractByName(this.manifest, `${NAMESPACE}-blitz_realm_systems`), 0, signer.address],
+      };
+
+      calls.push(requestRandomCall);
+    }
+
+    calls.push({
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-blitz_realm_systems`),
+      entrypoint: "assign_realm_positions",
+      calldata: [],
+    });
+
+    calls.push({
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-blitz_realm_systems`),
+      entrypoint: "settle_realms",
+      calldata: [settlement_count],
+    });
+
+    return await this.promiseQueue.enqueue(this.createProviderCall(signer, calls));
+  }
+
+  /**
    * Wait for a transaction to complete and check for errors
    *
    * @param transactionHash - Hash of transaction to wait for

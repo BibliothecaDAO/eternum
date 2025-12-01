@@ -1876,14 +1876,14 @@ export function defineContractComponents(world: World) {
         world,
         {
           spot_number: RecsType.Number,
-          coords: RecsType.BigIntArray,
+          coords: RecsType.NumberArray,
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "BlitzRealmPositionRegister",
-            types: ["u16", "Span<(i16, i16)>"],
-            customTypes: [],
+            types: ["u16", "Span<Coord>"],
+            customTypes: ["Coord"],
           },
         },
       );
@@ -1893,16 +1893,16 @@ export function defineContractComponents(world: World) {
         world,
         {
           player: RecsType.BigInt,
-          coords: RecsType.BigIntArray,
-          structure_ids: RecsType.BigIntArray,
+          coords: RecsType.NumberArray,
+          structure_ids: RecsType.NumberArray,
           labor_prod_started: RecsType.Boolean,
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "BlitzRealmSettleFinish",
-            types: ["ContractAddress", "Span<(i16, i16)>", "Span<u32>", "bool"],
-            customTypes: [],
+            types: ["ContractAddress", "Span<Coord>", "Span<u32>", "bool"],
+            customTypes: ["Coord"],
           },
         },
       );

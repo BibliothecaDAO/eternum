@@ -62,6 +62,12 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.blitz_realm_settle_realms(props);
   };
 
+  const blitz_realm_assign_and_settle_realms = async (
+    props: SystemProps.BlitzRealmSettleRealmsProps,
+  ): Promise<GetTransactionReceiptResponse> => {
+    return await provider.blitz_realm_assign_and_settle_realms(props);
+  };
+
   const create_order = async (props: SystemProps.CreateOrderProps): Promise<GetTransactionReceiptResponse> => {
     return await provider.create_order(props);
   };
@@ -474,6 +480,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     blitz_realm_make_hyperstructures: withAuth(blitz_realm_make_hyperstructures),
     blitz_realm_assign_realm_positions: withAuth(blitz_realm_assign_realm_positions),
     blitz_realm_settle_realms: withAuth(blitz_realm_settle_realms),
+    blitz_realm_assign_and_settle_realms: withAuth(blitz_realm_assign_and_settle_realms),
 
     send_resources: withAuth(send_resources),
     send_resources_multiple: withAuth(send_resources_multiple),
