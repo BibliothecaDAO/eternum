@@ -33,7 +33,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: radial-gradient(circle at 20% 20%, rgba(191, 149, 63, 0.08), #000000);
+        background: radial-gradient(circle at 20% 20%, rgba(191, 149, 63, 0.04), #000000);
         color: inherit;
         padding: 32px 12px 48px;
       }
@@ -102,12 +102,12 @@
         left: -486px;
         top: -136px;
         background: url("../../public/images/logos/Eternum-Mark-Black.png") center/contain no-repeat;
-        opacity: 0.1;
+        opacity: 0.05;
         filter: invert(1) brightness(1.6);
         z-index: 1;
       }
 
-      .bg-mark-glow {
+      /* .bg-mark-glow {
         width: 927px;
         height: 812px;
         left: -486px;
@@ -116,7 +116,7 @@
         mix-blend-mode: screen;
         opacity: 0.35;
         z-index: 1;
-      }
+      } */
 
       .bg-smoke {
         width: 1198px;
@@ -146,6 +146,18 @@
         mix-blend-mode: exclusion;
         opacity: 0.5;
         z-index: 2;
+      }
+
+      .dark-overlay {
+        background: radial-gradient(
+          120% 120% at 50% 50%,
+          rgba(0, 0, 0, 0) 0%,
+          rgba(0, 0, 0, 0.65) 60%,
+          rgba(0, 0, 0, 0.8) 100%
+        );
+        mix-blend-mode: multiply;
+        opacity: 0.8;
+        z-index: 3;
       }
 
       .border-frame {
@@ -252,6 +264,7 @@
         line-height: 24px;
         color: #ffffff;
         opacity: 0.75;
+        white-space: nowrap;
       }
 
       .stat-tiles {
@@ -291,7 +304,7 @@
         line-height: 555px;
         text-align: center;
         color: #ffffff;
-        opacity: 0.3;
+        opacity: 0.12; /* Increased transparency */
         z-index: 3;
         pointer-events: none;
       }
@@ -301,11 +314,11 @@
         width: 290px;
         height: 219px;
         left: 515px;
-        top: calc(50% - 109.5px - 2.5px);
+        top: calc(50% - 109.5px - 40px);
         display: flex;
-        align-items: flex-end;
+        align-items: baseline;
         justify-content: center;
-        gap: 10px;
+        gap: 8px;
         z-index: 4;
       }
 
@@ -313,7 +326,7 @@
         font-family: "Montserrat", sans-serif;
         font-weight: 800;
         font-size: 312px;
-        line-height: 219px;
+        line-height: 1;
         display: inline-block;
         background: linear-gradient(180deg, #fcf6ba 0%, #b38728 50%, #bf953f 100%);
         -webkit-text-fill-color: transparent;
@@ -326,7 +339,7 @@
         font-family: "Montserrat", sans-serif;
         font-weight: 800;
         font-size: 120px;
-        line-height: 160px;
+        line-height: 1;
         display: inline-block;
         background: linear-gradient(180deg, #fcf6ba 0%, #b38728 50%, #bf953f 100%);
         -webkit-text-fill-color: transparent;
@@ -412,7 +425,6 @@
         width: 134px;
         height: 31px;
         object-fit: contain;
-        filter: brightness(10);
       }
 
       .powered .copy {
