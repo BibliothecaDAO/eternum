@@ -11,6 +11,7 @@ import { Bridge } from "@/ui/features/infrastructure";
 import { ProductionOverviewPanel } from "@/ui/features/settlement/production/production-overview-panel";
 import { StoryEventsChronicles } from "@/ui/features/story-events";
 import { construction, military, trade } from "@/ui/features/world";
+import { BOTTOM_PANEL_RESERVED_SPACE } from "@/ui/features/world/components/bottom-panels/constants";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
@@ -309,7 +310,6 @@ export const LeftNavigationModule = memo(() => {
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const structures = useUIStore((state) => state.playerStructures);
-  const isBottomHudMinimized = useUIStore((state) => state.isBottomHudMinimized);
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
 
   const toggleModal = useUIStore((state) => state.toggleModal);
@@ -317,14 +317,13 @@ export const LeftNavigationModule = memo(() => {
 
   const isBlitz = getIsBlitz();
 
-  const isBottomHudVisible = isMapView && !showBlankOverlay;
   const navHeight = useMemo(() => {
-    if (!isBottomHudVisible) {
+    if (!isMapView || showBlankOverlay) {
       return "calc(100vh - 48px)";
     }
 
-    return isBottomHudMinimized ? "calc(100vh - 180px)" : "calc(100vh - 30vh)";
-  }, [isBottomHudVisible, isBottomHudMinimized]);
+    return `calc(100vh - ${BOTTOM_PANEL_RESERVED_SPACE}px)`;
+  }, [isMapView, showBlankOverlay]);
 
   const structureInfo = useMemo(
     () => getEntityInfo(structureEntityId, ContractAddress(account.address), components, isBlitz),

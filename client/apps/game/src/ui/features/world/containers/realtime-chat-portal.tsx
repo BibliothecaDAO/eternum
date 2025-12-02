@@ -1,15 +1,18 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { RealtimeChatShell, type InitializeRealtimeClientParams } from "@/ui/features/social";
+import { BOTTOM_PANEL_MARGIN, BOTTOM_PANEL_RESERVED_SPACE } from "@/ui/features/world/components/bottom-panels/constants";
 import clsx from "clsx";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { useQuery } from "@bibliothecadao/react";
 
 export const RealtimeChatPortal = () => {
   const ConnectedAccount = useAccountStore((state) => state.account);
   const accountName = useAccountStore((state) => state.accountName);
   const isModalOpen = useUIStore((state) => state.showModal);
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
+  const { isMapView } = useQuery();
 
   const [chatPortalTarget, setChatPortalTarget] = useState<HTMLElement | null>(null);
 
@@ -51,13 +54,16 @@ export const RealtimeChatPortal = () => {
   }
 
   const isOverlayActive = isModalOpen || showBlankOverlay;
+  const shouldOffsetForPanels = isMapView && !showBlankOverlay;
+  const bottomOffset = shouldOffsetForPanels ? BOTTOM_PANEL_RESERVED_SPACE : BOTTOM_PANEL_MARGIN;
 
   return createPortal(
     <div
       className={clsx(
-        "flex justify-end fixed right-0 bottom-6 transition-opacity duration-200",
+        "flex justify-end fixed right-0 transition-opacity duration-200",
         isOverlayActive ? "pointer-events-none z-[10] opacity-0" : "pointer-events-auto z-[45] opacity-100",
       )}
+      style={{ bottom: `${bottomOffset}px` }}
     >
       <RealtimeChatShell
         initializer={realtimeInitializer}

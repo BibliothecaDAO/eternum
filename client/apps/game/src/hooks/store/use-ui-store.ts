@@ -137,9 +137,6 @@ interface UIStore {
   setRightNavigationView: (view: RightView) => void;
   showMinimap: boolean;
   setShowMinimap: (show: boolean) => void;
-  isBottomHudMinimized: boolean;
-  setIsBottomHudMinimized: (minimized: boolean) => void;
-  toggleBottomHudMinimized: () => void;
   selectedPlayer: ContractAddress | null;
   setSelectedPlayer: (player: ContractAddress | null) => void;
   hasAcceptedTS: boolean;
@@ -258,9 +255,6 @@ export const useUIStore = create(
     setRightNavigationView: (view: RightView) => set({ rightNavigationView: view, tooltip: null }),
     showMinimap: false,
     setShowMinimap: (show: boolean) => set({ showMinimap: show }),
-    isBottomHudMinimized: false,
-    setIsBottomHudMinimized: (minimized: boolean) => set({ isBottomHudMinimized: minimized }),
-    toggleBottomHudMinimized: () => set((state) => ({ isBottomHudMinimized: !state.isBottomHudMinimized })),
     selectedPlayer: null,
     setSelectedPlayer: (player: ContractAddress | null) => set({ selectedPlayer: player }),
     hasAcceptedTS: localStorage.getItem("hasAcceptedTS") ? localStorage.getItem("hasAcceptedTS") === "true" : false,
