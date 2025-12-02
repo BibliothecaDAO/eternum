@@ -163,6 +163,10 @@
         background: linear-gradient(148.15deg, rgba(10, 10, 10, 0) 11.96%, #434343 79.96%);
       }
 
+      .card-emerald .gradient-overlay {
+        background: linear-gradient(148.15deg, rgba(10, 10, 10, 0) 11.96%, #4e8b87 79.96%);
+      }
+
       .card-neutral .gradient-overlay {
         background: linear-gradient(148.15deg, rgba(10, 10, 10, 0) 11.96%, #691c87 79.96%);
       }
@@ -195,6 +199,12 @@
       .card-silver .border-frame {
         box-shadow:
           inset 0 0 40px rgba(172, 172, 172, 0.16),
+          0 0 0 1px rgba(0, 0, 0, 0.35);
+      }
+
+      .card-emerald .border-frame {
+        box-shadow:
+          inset 0 0 40px rgba(78, 139, 135, 0.2),
           0 0 0 1px rgba(0, 0, 0, 0.35);
       }
 
@@ -288,6 +298,10 @@
         color: #bdbdbd;
       }
 
+      .card-emerald .points-value {
+        color: #4e7e8b;
+      }
+
       .card-neutral .points-value {
         color: #651886;
       }
@@ -374,6 +388,12 @@
         text-stroke: 2px rgba(0, 0, 0, 0.6);
       }
 
+      .card-emerald .rank-ghost {
+        width: 834px;
+        left: calc(50% - 834px / 2 + 81px);
+        opacity: 0.18;
+      }
+
       .card-neutral .rank-ghost {
         width: 794px;
         left: calc(50% - 794px / 2 + 81px);
@@ -402,6 +422,11 @@
       .card-silver .rank-main {
         width: 396px;
         left: 462px;
+      }
+
+      .card-emerald .rank-main {
+        width: 514px;
+        left: 403px;
       }
 
       .card-neutral .rank-main {
@@ -433,6 +458,12 @@
         background-clip: text;
       }
 
+      .card-emerald .rank-number {
+        background: linear-gradient(180deg, #7bffe6 0%, #2c4063 50%, #112b26 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+      }
+
       .card-neutral .rank-number {
         background: linear-gradient(180deg, #691c87 0%, #2c0745 50%, #230537 100%);
         -webkit-background-clip: text;
@@ -460,6 +491,12 @@
 
       .card-silver .rank-suffix {
         background: linear-gradient(180deg, #f8f8f8 0%, #acacac 50%, #929292 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+      }
+
+      .card-emerald .rank-suffix {
+        background: linear-gradient(180deg, #7bffe6 0%, #2c4063 50%, #112b26 100%);
         -webkit-background-clip: text;
         background-clip: text;
       }
@@ -852,6 +889,76 @@
           <div class="player">
             <div class="name">player</div>
             <div class="address">0x3d19...8ace</div>
+          </div>
+
+          <div class="powered">
+            <img src="../../public/images/logos/Starknet.png" alt="Starknet" />
+            <div class="copy">Powered by Starknet</div>
+          </div>
+
+          <img class="realms-logo" src="../../public/images/logos/realms-world-white.svg" alt="Realms World logo" />
+
+          <div class="bg-layer border-frame"></div>
+        </div>
+
+        <div class="blitz-card card-emerald" role="img" aria-label="Realms Blitz leaderboard sixteenth place card">
+          <div class="bg-mark"></div>
+          <div class="bg-smoke"></div>
+          <div class="bg-texture"></div>
+          <div class="bg-layer gradient-overlay"></div>
+          <div class="bg-layer dark-overlay"></div>
+
+          <div class="rank-ghost" data-ghost="16" aria-hidden="true">16</div>
+          <div class="rank-main" aria-label="16th place">
+            <span class="rank-number">16</span>
+            <span class="rank-suffix">TH</span>
+          </div>
+
+          <img class="corner-mark" src="../../public/images/logos/Eternum-Mark-Black.png" alt="Eternum mark" />
+
+          <div class="title-stack">
+            <span class="eyebrow">Realms Blitz</span>
+            <span class="title">Leaderboard</span>
+          </div>
+
+          <div class="points">
+            <div class="points-label">Points Secured</div>
+            <div class="points-value">11,000</div>
+
+            <div class="stat stat-tiles">
+              <div class="stat-label">Tiles Explored</div>
+              <div class="stat-value">88 - 2k Pts</div>
+            </div>
+
+            <div class="stat stat-crates">
+              <div class="stat-label">Crates Opened</div>
+              <div class="stat-value">1 - 1k Pts</div>
+            </div>
+
+            <div class="stat stat-rifts">
+              <div class="stat-label">Rifts & Camps</div>
+              <div class="stat-value">0 - 0 Pts</div>
+            </div>
+
+            <div class="stat stat-hs-taken">
+              <div class="stat-label">HS Taken</div>
+              <div class="stat-value">0 - 0 Pts</div>
+            </div>
+
+            <div class="stat stat-hs-held">
+              <div class="stat-label">HS Held</div>
+              <div class="stat-value">500 Pts</div>
+            </div>
+          </div>
+
+          <div class="cta">
+            <div class="cta-title">Play Now</div>
+            <div class="cta-subtitle">sandbox.blitz.realms.world</div>
+          </div>
+
+          <div class="player">
+            <div class="name">player</div>
+            <div class="address">0x7c54...e1a2</div>
           </div>
 
           <div class="powered">
