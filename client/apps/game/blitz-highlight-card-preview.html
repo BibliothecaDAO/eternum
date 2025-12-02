@@ -48,6 +48,16 @@
         text-align: center;
       }
 
+      .cards-grid {
+        width: 100%;
+        display: flex;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        gap: 28px;
+        overflow-x: auto;
+        padding: 8px 6px 12px;
+      }
+
       h1 {
         margin: 0;
         font-size: 18px;
@@ -80,6 +90,7 @@
         background: #000000;
         overflow: hidden;
         box-shadow: 0 40px 120px rgba(0, 0, 0, 0.65);
+        flex: 0 0 auto;
       }
 
       .bg-layer {
@@ -148,6 +159,10 @@
         z-index: 2;
       }
 
+      .card-silver .gradient-overlay {
+        background: linear-gradient(148.15deg, rgba(10, 10, 10, 0) 11.96%, #434343 79.96%);
+      }
+
       .dark-overlay {
         background: radial-gradient(
           120% 120% at 50% 50%,
@@ -167,6 +182,12 @@
           inset 0 0 40px rgba(191, 149, 63, 0.18),
           0 0 0 1px rgba(0, 0, 0, 0.35);
         z-index: 6;
+      }
+
+      .card-silver .border-frame {
+        box-shadow:
+          inset 0 0 40px rgba(172, 172, 172, 0.16),
+          0 0 0 1px rgba(0, 0, 0, 0.35);
       }
 
       .corner-mark {
@@ -243,6 +264,10 @@
         color: #bf953f;
       }
 
+      .card-silver .points-value {
+        color: #bdbdbd;
+      }
+
       .stat {
         position: absolute;
       }
@@ -309,6 +334,18 @@
         pointer-events: none;
       }
 
+      .card-silver .rank-ghost {
+        width: 474px;
+        left: calc(50% - 474px / 2 + 81px);
+        -webkit-text-stroke: 2.6px rgba(255, 255, 255, 0.14);
+        text-stroke: 2.6px rgba(255, 255, 255, 0.14);
+      }
+
+      .card-silver .rank-ghost::after {
+        -webkit-text-stroke: 2px rgba(0, 0, 0, 0.6);
+        text-stroke: 2px rgba(0, 0, 0, 0.6);
+      }
+
       .rank-main {
         position: absolute;
         width: 290px;
@@ -320,6 +357,11 @@
         justify-content: center;
         gap: 8px;
         z-index: 4;
+      }
+
+      .card-silver .rank-main {
+        width: 396px;
+        left: 462px;
       }
 
       .rank-number {
@@ -335,6 +377,12 @@
         text-fill-color: transparent;
       }
 
+      .card-silver .rank-number {
+        background: linear-gradient(180deg, #f8f8f8 0%, #acacac 50%, #929292 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+      }
+
       .rank-suffix {
         font-family: "Montserrat", sans-serif;
         font-weight: 800;
@@ -348,6 +396,11 @@
         text-fill-color: transparent;
       }
 
+      .card-silver .rank-suffix {
+        background: linear-gradient(180deg, #f8f8f8 0%, #acacac 50%, #929292 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+      }
       .cta {
         position: absolute;
         width: 192px;
@@ -450,80 +503,152 @@
   </head>
   <body>
     <main class="page">
-      <h1>Blitz Leaderboard Gold Cover</h1>
+      <h1>Blitz Leaderboard Covers</h1>
       <p class="hint">
-        Figma recreation for the #1 score cover. Textures load from <code>client/public/images/score-cards</code>; logos
-        are pulled from the existing public assets.
+        Figma recreations for #1 gold and #2 silver covers. Textures load from
+        <code>client/public/images/score-cards</code>; logos are pulled from the existing public assets.
       </p>
 
-      <div class="blitz-card" role="img" aria-label="Realms Blitz leaderboard first place card">
-        <div class="bg-mark"></div>
-        <div class="bg-mark-glow"></div>
-        <div class="bg-smoke"></div>
-        <div class="bg-texture"></div>
-        <div class="bg-layer gradient-overlay"></div>
+      <div class="cards-grid">
+        <div class="blitz-card card-gold" role="img" aria-label="Realms Blitz leaderboard first place card">
+          <div class="bg-mark"></div>
+          <div class="bg-smoke"></div>
+          <div class="bg-texture"></div>
+          <div class="bg-layer gradient-overlay"></div>
+          <div class="bg-layer dark-overlay"></div>
 
-        <div class="rank-ghost" aria-hidden="true">1</div>
-        <div class="rank-main" aria-label="1st place">
-          <span class="rank-number">1</span>
-          <span class="rank-suffix">ST</span>
-        </div>
-
-        <img class="corner-mark" src="../../public/images/logos/Eternum-Mark-Black.png" alt="Eternum mark" />
-
-        <div class="title-stack">
-          <span class="eyebrow">Realms Blitz</span>
-          <span class="title">Leaderboard</span>
-        </div>
-
-        <div class="points">
-          <div class="points-label">Points Secured</div>
-          <div class="points-value">64,000</div>
-
-          <div class="stat stat-tiles">
-            <div class="stat-label">Tiles Explored</div>
-            <div class="stat-value">119 - 3k Pts</div>
+          <div class="rank-ghost" data-ghost="1" aria-hidden="true">1</div>
+          <div class="rank-main" aria-label="1st place">
+            <span class="rank-number">1</span>
+            <span class="rank-suffix">ST</span>
           </div>
 
-          <div class="stat stat-crates">
-            <div class="stat-label">Crates Opened</div>
-            <div class="stat-value">3 - 3k Pts</div>
+          <img class="corner-mark" src="../../public/images/logos/Eternum-Mark-Black.png" alt="Eternum mark" />
+
+          <div class="title-stack">
+            <span class="eyebrow">Realms Blitz</span>
+            <span class="title">Leaderboard</span>
           </div>
 
-          <div class="stat stat-rifts">
-            <div class="stat-label">Rifts & Camps</div>
-            <div class="stat-value">0 - 0 Pts</div>
+          <div class="points">
+            <div class="points-label">Points Secured</div>
+            <div class="points-value">64,000</div>
+
+            <div class="stat stat-tiles">
+              <div class="stat-label">Tiles Explored</div>
+              <div class="stat-value">119 - 3k Pts</div>
+            </div>
+
+            <div class="stat stat-crates">
+              <div class="stat-label">Crates Opened</div>
+              <div class="stat-value">3 - 3k Pts</div>
+            </div>
+
+            <div class="stat stat-rifts">
+              <div class="stat-label">Rifts & Camps</div>
+              <div class="stat-value">0 - 0 Pts</div>
+            </div>
+
+            <div class="stat stat-hs-taken">
+              <div class="stat-label">HS Taken</div>
+              <div class="stat-value">2 - 6k Pts</div>
+            </div>
+
+            <div class="stat stat-hs-held">
+              <div class="stat-label">HS Held</div>
+              <div class="stat-value">2k Pts</div>
+            </div>
           </div>
 
-          <div class="stat stat-hs-taken">
-            <div class="stat-label">HS Taken</div>
-            <div class="stat-value">2 - 6k Pts</div>
+          <div class="cta">
+            <div class="cta-title">Play Now</div>
+            <div class="cta-subtitle">sandbox.blitz.realms.world</div>
           </div>
 
-          <div class="stat stat-hs-held">
-            <div class="stat-label">HS Held</div>
-            <div class="stat-value">2k Pts</div>
+          <div class="player">
+            <div class="name">player</div>
+            <div class="address">0x6b52...7311</div>
           </div>
+
+          <div class="powered">
+            <img src="../../public/images/logos/Starknet.png" alt="Starknet" />
+            <div class="copy">Powered by Starknet</div>
+          </div>
+
+          <img class="realms-logo" src="../../public/images/logos/realms-world-white.svg" alt="Realms World logo" />
+
+          <div class="bg-layer border-frame"></div>
         </div>
 
-        <div class="cta">
-          <div class="cta-title">Play Now</div>
-          <div class="cta-subtitle">sandbox.blitz.realms.world</div>
+        <div class="blitz-card card-silver" role="img" aria-label="Realms Blitz leaderboard second place card">
+          <div class="bg-mark"></div>
+          <div class="bg-smoke"></div>
+          <div class="bg-texture"></div>
+          <div class="bg-layer gradient-overlay"></div>
+          <div class="bg-layer dark-overlay"></div>
+
+          <div class="rank-ghost" data-ghost="2" aria-hidden="true">2</div>
+          <div class="rank-main" aria-label="2nd place">
+            <span class="rank-number">2</span>
+            <span class="rank-suffix">ND</span>
+          </div>
+
+          <img class="corner-mark" src="../../public/images/logos/Eternum-Mark-Black.png" alt="Eternum mark" />
+
+          <div class="title-stack">
+            <span class="eyebrow">Realms Blitz</span>
+            <span class="title">Leaderboard</span>
+          </div>
+
+          <div class="points">
+            <div class="points-label">Points Secured</div>
+            <div class="points-value">48,200</div>
+
+            <div class="stat stat-tiles">
+              <div class="stat-label">Tiles Explored</div>
+              <div class="stat-value">102 - 2k Pts</div>
+            </div>
+
+            <div class="stat stat-crates">
+              <div class="stat-label">Crates Opened</div>
+              <div class="stat-value">2 - 2k Pts</div>
+            </div>
+
+            <div class="stat stat-rifts">
+              <div class="stat-label">Rifts & Camps</div>
+              <div class="stat-value">1 - 1k Pts</div>
+            </div>
+
+            <div class="stat stat-hs-taken">
+              <div class="stat-label">HS Taken</div>
+              <div class="stat-value">1 - 3k Pts</div>
+            </div>
+
+            <div class="stat stat-hs-held">
+              <div class="stat-label">HS Held</div>
+              <div class="stat-value">1k Pts</div>
+            </div>
+          </div>
+
+          <div class="cta">
+            <div class="cta-title">Play Now</div>
+            <div class="cta-subtitle">sandbox.blitz.realms.world</div>
+          </div>
+
+          <div class="player">
+            <div class="name">player</div>
+            <div class="address">0x92c1...a7f9</div>
+          </div>
+
+          <div class="powered">
+            <img src="../../public/images/logos/Starknet.png" alt="Starknet" />
+            <div class="copy">Powered by Starknet</div>
+          </div>
+
+          <img class="realms-logo" src="../../public/images/logos/realms-world-white.svg" alt="Realms World logo" />
+
+          <div class="bg-layer border-frame"></div>
         </div>
-
-        <div class="player">
-          <div class="name">player</div>
-          <div class="address">0x6b52...7311</div>
-        </div>
-
-        <div class="powered">
-          <img src="../../public/images/logos/Starknet.png" alt="Starknet" />
-          <div class="copy">Powered by Starknet</div>
-        </div>
-
-        <img class="realms-logo" src="../../public/images/logos/realms-world-white.svg" alt="Realms World logo" />
-
-        <div class="bg-layer border-frame"></div>
       </div>
     </main>
   </body>
