@@ -16,6 +16,7 @@ import {
   LandingAccount,
   LandingCosmetics,
   LandingLeaderboard,
+  LandingMarkets,
   LandingPlayer,
   LandingWelcome,
 } from "./ui/features/landing";
@@ -170,6 +171,7 @@ function App() {
               <Route path="cosmetics" element={<LandingCosmetics />} />
               <Route path="account" element={<LandingAccount />} />
               <Route path="player" element={<LandingPlayer />} />
+              <Route path="markets" element={<LandingMarkets />} />
               <Route path="leaderboard" element={<LandingLeaderboard />} />
             </Route>
             <Route path="/play/*" element={<GameRoute backgroundImage={backgroundImage} />} />
