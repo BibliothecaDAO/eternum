@@ -10,6 +10,7 @@ pub trait IPrizeDistributionSystems<T> {
         ref self: T, trial_id: u128, total_player_count_committed: u16, players_list: Array<ContractAddress>,
     );
     fn blitz_get_ranked(ref self: T, rank: u16) -> Span<ContractAddress>;
+    fn blitz_get_winner(ref self: T) -> Option<u256>;
 
 }
 
@@ -512,6 +513,28 @@ use core::num::traits::zero::Zero;
                 players.append(rank_list.player);
             }
             return players.span();
+        }
+
+        fn blitz_get_winner(ref self: ContractState) -> Option<u256> {
+
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+
+            let players_rank_final: PlayersRankFinal = world.read_model(WORLD_CONFIG_ID);
+            assert!(players_rank_final.trial_id.is_non_zero(), "Eternum: rankings not finalized");
+
+            let final_trial_id = players_rank_final.trial_id;
+            let winner_rank: u16 = 1;
+            let rank_prize: RankPrize = world.read_model((final_trial_id, winner_rank));
+            if rank_prize.total_players_same_rank_count == 1 {
+                let winner_index: u16 = 0;
+                let rank_list: RankList = world.read_model((final_trial_id, winner_rank, winner_index));
+                let winner_felt: felt252 = rank_list.player.into();
+                assert!(winner_felt != 0, "Eternum: Invalid winner address");
+                
+                return Option::Some(winner_felt.into());
+            }
+    
+            return Option::None;
         }
 
     }
