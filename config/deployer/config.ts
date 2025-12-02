@@ -106,7 +106,10 @@ export class GameConfigDeployer {
     await setBlitzRegistrationConfig(config);
     await this.sleepNonLocal();
 
-    await grantCollectibleMinterRole(config);
+    await grantCollectibleLootChestMinterRole(config);
+    await this.sleepNonLocal();
+
+    await grantCollectibleEliteNftMinterRole(config);
     await this.sleepNonLocal();
 
     await setWonderBonusConfig(config);
@@ -1545,6 +1548,7 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
   const collectibles_cosmetics_address = config.config.blitz.registration.collectible_cosmetics_address;
   const collectibles_timelock_address = config.config.blitz.registration.collectible_timelock_address;
   const collectibles_lootchest_address = config.config.blitz.registration.collectibles_lootchest_address;
+  const collectibles_elitenft_address = config.config.blitz.registration.collectible_elitenft_address;
 
   const registrationCalldata = {
     signer: config.account,
@@ -1561,6 +1565,7 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
     collectibles_cosmetics_address,
     collectibles_timelock_address,
     collectibles_lootchest_address,
+    collectibles_elitenft_address,
   };
 
   console.log(
@@ -1586,6 +1591,7 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
     │  ${chalk.gray("Collectible Cosmetics Address:")} ${chalk.white(shortHexAddress(registrationCalldata.collectibles_cosmetics_address))}
     │  ${chalk.gray("Collectible Timelock Address:")} ${chalk.white(shortHexAddress(registrationCalldata.collectibles_timelock_address))}
     │  ${chalk.gray("Collectible LootChest Address:")} ${chalk.white(shortHexAddress(registrationCalldata.collectibles_lootchest_address))}
+    │  ${chalk.gray("Collectible EliteNFT Address:")} ${chalk.white(shortHexAddress(registrationCalldata.collectibles_elitenft_address))}
     │
     └────────────────────────────────`),
   );
@@ -1647,7 +1653,7 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
   console.log(chalk.green(`    ✔ Season configured `) + chalk.gray(setSeasonTx.statusReceipt));
 };
 
-export const grantCollectibleMinterRole = async (config: Config) => {
+export const grantCollectibleLootChestMinterRole = async (config: Config) => {
   if (!config.config.blitz?.mode?.on) {
     console.log(chalk.yellow("⏭️  Skipping minter role grant (Blitz mode is off)"));
     return;
@@ -1660,7 +1666,7 @@ export const grantCollectibleMinterRole = async (config: Config) => {
 
   console.log(
     chalk.cyan(`\n
-  🎫 Grant Collectible Minter Role
+  🎫 Grant Collectible Minter Role For Loot Chest
   ═══════════════════════════════`),
   );
 
@@ -1684,6 +1690,45 @@ export const grantCollectibleMinterRole = async (config: Config) => {
   });
 
   console.log(chalk.green(`    ✔ Minter role granted `) + chalk.gray(grantRoleTx.statusReceipt) + "\n");
+};
+
+export const grantCollectibleEliteNftMinterRole = async (config: Config) => {
+  if (!config.config.blitz?.mode?.on) {
+    console.log(chalk.yellow("⏭️  Skipping minter role grant (Blitz mode is off)"));
+    return;
+  }
+
+  if (!config.config.blitz?.registration?.collectibles_elitenft_address) {
+    console.log(chalk.yellow("⏭️  Skipping minter role grant (No elite NFT address configured)"));
+    return;
+  }
+
+  console.log(
+    chalk.cyan(`\n
+  🎫 Grant Collectible Minter Role For Elite NFT
+  ═══════════════════════════════`),
+  );
+
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Granting Minter Role")}
+    │  ${chalk.gray("Granting minter role for Elite NFT Contract to prize_distribution_systems...")}
+    └────────────────────────────────`),
+  );
+
+  const collectibles_elitenft_address = config.config.blitz.registration.collectibles_elitenft_address;
+  const prizeDistributionSystemsAddr = getContractByName(
+    config.provider.manifest,
+    `${NAMESPACE}-prize_distribution_systems`,
+  );
+
+  const grantRoleTx = await config.provider.grant_collectible_minter_role({
+    signer: config.account,
+    collectible_address: collectibles_elitenft_address,
+    minter_address: prizeDistributionSystemsAddr,
+  });
+
+  console.log(chalk.green(`    ✔ Minter role granted for Elite NFT `) + chalk.gray(grantRoleTx.statusReceipt) + "\n");
 };
 
 export const createBanks = async (config: Config) => {

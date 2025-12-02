@@ -350,12 +350,13 @@ export function defineContractComponents(world: World) {
           rank: RecsType.Number,
           total_players_same_rank_count: RecsType.Number,
           total_prize_amount: RecsType.BigInt,
+          grant_elite_nft: RecsType.Boolean,
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "RankPrize",
-            types: ["u128", "u16", "u16", "u128"],
+            types: ["u128", "u16", "u16", "u128", "bool"],
             customTypes: [],
           },
         },
@@ -1522,6 +1523,7 @@ export function defineContractComponents(world: World) {
             collectibles_cosmetics_address: RecsType.BigInt,
             collectibles_timelock_address: RecsType.BigInt,
             collectibles_lootchest_address: RecsType.BigInt,
+            collectibles_elitenft_address: RecsType.BigInt,
             registration_count: RecsType.Number,
             registration_count_max: RecsType.Number,
             registration_start_at: RecsType.Number,
@@ -1717,6 +1719,7 @@ export function defineContractComponents(world: World) {
               "ContractAddress", // BlitzHypersSettlementConfig collectibles_cosmetics_address
               "ContractAddress", // BlitzHypersSettlementConfig collectibles_timelock_address
               "ContractAddress", // BlitzHypersSettlementConfig collectibles_lootchest_address
+              "ContractAddress", // BlitzHypersSettlementConfig collectibles_elitenft_address
               "u16", // BlitzRegistrationConfig registration_count
               "u16", // BlitzRegistrationConfig registration_count_max
               "u32", // BlitzRegistrationConfig registration_start_at
