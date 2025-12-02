@@ -230,7 +230,7 @@ const BLITZ_COLLECTIBLE_LOOTCHEST_ADDRESS = await getSeasonAddresses(process.env
   "Collectibles: Realms: Loot Chest"
 ];
 const BLITZ_COLLECTIBLE_ELITENFT_ADDRESS = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)![
-  "Collectibles: Realms: Elite NFT"
+  "Collectibles: Realms: Elite Invite"
 ];
 export const EternumGlobalConfig: Config = {
   agent: {

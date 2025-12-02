@@ -1548,7 +1548,7 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
   const collectibles_cosmetics_address = config.config.blitz.registration.collectible_cosmetics_address;
   const collectibles_timelock_address = config.config.blitz.registration.collectible_timelock_address;
   const collectibles_lootchest_address = config.config.blitz.registration.collectibles_lootchest_address;
-  const collectibles_elitenft_address = config.config.blitz.registration.collectible_elitenft_address;
+  const collectibles_elitenft_address = config.config.blitz.registration.collectibles_elitenft_address;
 
   const registrationCalldata = {
     signer: config.account,
