@@ -9,6 +9,8 @@ pub trait IPrizeDistributionSystems<T> {
     fn blitz_prize_player_rank(
         ref self: T, trial_id: u128, total_player_count_committed: u16, players_list: Array<ContractAddress>,
     );
+    fn blitz_get_ranked(ref self: T, rank: u16) -> Span<ContractAddress>;
+
 }
 
 
@@ -26,7 +28,7 @@ use core::num::traits::zero::Zero;
     use crate::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
     use crate::models::config::{BlitzRegistrationConfig, BlitzRegistrationConfigImpl, SeasonConfigImpl, WorldConfigUtilImpl, BlitzRealmPlayerRegister, BlitzPreviousGame};
     use crate::models::events::{PrizeDistributedStory, PrizeDistributionFinalStory, Story, StoryEvent};
-    use crate::models::rank::{PlayerRank, PlayersRankFinal, PlayersRankTrial, RankPrize};
+    use crate::models::rank::{PlayerRank, PlayersRankFinal, PlayersRankTrial, RankPrize, RankList};
     use crate::models::season::{SeasonPrize};
     use crate::models::record::{BlitzFeeSplitRecord, BlitzFeeSplitRecordImpl, WorldRecordImpl};
     use crate::systems::realm::utils::contracts::{IERC20Dispatcher, IERC20DispatcherTrait};
@@ -168,9 +170,25 @@ use core::num::traits::zero::Zero;
                 paid: true,
             };
 
+            let rank_prize = RankPrize {
+                trial_id: SYSTEM_TRIAL_ID,
+                rank: 1,
+                total_players_same_rank_count: 1,
+                total_prize_amount: prize_amount,
+            };
+            
+            let rank_list = RankList {
+                trial_id: SYSTEM_TRIAL_ID,
+                rank: 1,
+                index: 0,
+                player: registered_player,
+            };
+
             world.write_model(@player_rank_trial);
             world.write_model(@player_rank_final);
             world.write_model(@player_rank);
+            world.write_model(@rank_prize);
+            world.write_model(@rank_list);
 
 
             // transfer full amount that player paid to register
@@ -422,6 +440,16 @@ use core::num::traits::zero::Zero;
                 rank_prize.total_players_same_rank_count += 1;
                 rank_prize.total_prize_amount += position_prize_amount;
                 world.write_model(@rank_prize);
+
+                // update rank list model
+                world.write_model(
+                    @RankList {
+                        trial_id: trial.trial_id,
+                        rank: player_rank.rank,
+                        index: rank_prize.total_players_same_rank_count - 1,
+                        player,
+                    }
+                );
             };
 
             // ensure all the players with points were included in the players_list
@@ -467,6 +495,25 @@ use core::num::traits::zero::Zero;
             // update the trial with the new last rank and points
             world.write_model(@trial);
         }
+
+        fn blitz_get_ranked(ref self: ContractState, rank: u16) -> Span<ContractAddress> {
+
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+
+            let players_rank_final: PlayersRankFinal = world.read_model(WORLD_CONFIG_ID);
+            assert!(players_rank_final.trial_id.is_non_zero(), "Eternum: rankings not finalized");
+
+            let final_trial_id = players_rank_final.trial_id;
+            let mut players: Array<ContractAddress> = array![];
+
+            let rank_prize: RankPrize = world.read_model((final_trial_id, rank));
+            for index in 0..rank_prize.total_players_same_rank_count {
+                let rank_list: RankList = world.read_model((final_trial_id, rank, index));
+                players.append(rank_list.player);
+            }
+            return players.span();
+        }
+
     }
 
     pub fn get_dispatcher(world: @WorldStorage) -> super::IPrizeDistributionSystemsDispatcher {

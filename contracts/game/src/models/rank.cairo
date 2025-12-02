@@ -43,3 +43,15 @@ pub struct RankPrize {
     pub total_players_same_rank_count: u16,
     pub total_prize_amount: u128,
 }
+
+#[derive(Introspect, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct RankList {
+    #[key]
+    pub trial_id: u128,
+    #[key]
+    pub rank: u16,
+    #[key]
+    pub index: u16,
+    pub player: ContractAddress,
+}
