@@ -10,7 +10,9 @@ blocks_chunk_size = 10240 # Blocks to process before DB commit
 
 pending = true # Enable indexing pending blocks
 
-polling_interval = 500 # Polling interval in milliseconds
+polling_interval = 250 # Polling interval in milliseconds
+controllers = true
+pre_confirmed = true
 
 max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
 
