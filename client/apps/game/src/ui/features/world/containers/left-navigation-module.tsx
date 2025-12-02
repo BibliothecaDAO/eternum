@@ -1,14 +1,17 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { LeftView } from "@/types";
+import { LeftView, RightView } from "@/types";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
-import { getIsBlitz } from "@bibliothecadao/eternum";
+import { getEntityInfo, getIsBlitz } from "@bibliothecadao/eternum";
 
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { ResourceArrivals as AllResourceArrivals, MarketModal } from "@/ui/features/economy/trading";
+import { TransferAutomationPanel } from "@/ui/features/economy/transfers/transfer-automation-panel";
+import { Bridge } from "@/ui/features/infrastructure";
+import { ProductionOverviewPanel } from "@/ui/features/settlement/production/production-overview-panel";
+import { StoryEventsChronicles } from "@/ui/features/story-events";
 import { construction, military, trade } from "@/ui/features/world";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
-import { getEntityInfo } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { motion } from "framer-motion";
@@ -17,7 +20,7 @@ import { lazy, memo, Suspense, useMemo } from "react";
 
 type CircleButtonProps = ComponentProps<typeof CircleButton>;
 
-type LeftNavigationItem = {
+type NavigationItem = {
   id: MenuEnum;
 } & Pick<
   CircleButtonProps,
@@ -33,9 +36,10 @@ type LeftNavigationItem = {
   | "tooltipLocation"
 >;
 
-type LeftNavigationContext = {
+type RealmNavigationContext = {
   view: LeftView;
   setView: (view: LeftView) => void;
+  setRightView: (view: RightView) => void;
   disableButtons: boolean;
   isRealmOrVillage: boolean;
   isMapView: boolean;
@@ -44,14 +48,22 @@ type LeftNavigationContext = {
   toggleModal: (content: ReactNode | null) => void;
   isTradeOpen: boolean;
   isBlitz: boolean;
-  availableRelicsNumber: number;
+};
+
+type EconomyNavigationContext = {
+  rightView: RightView;
+  setRightView: (view: RightView) => void;
+  setLeftView: (view: LeftView) => void;
+  disableButtons: boolean;
+  isBlitz: boolean;
 };
 
 const DEFAULT_BUTTON_SIZE: CircleButtonProps["size"] = "lg";
 
-const buildLeftNavigationItems = ({
+const buildRealmNavigationItems = ({
   view,
   setView,
+  setRightView,
   disableButtons,
   isRealmOrVillage,
   isMapView,
@@ -60,11 +72,13 @@ const buildLeftNavigationItems = ({
   toggleModal,
   isTradeOpen,
   isBlitz,
-  availableRelicsNumber,
-}: LeftNavigationContext): LeftNavigationItem[] => {
-  const toggleView = (targetView: LeftView) => () => setView(view === targetView ? LeftView.None : targetView);
+}: RealmNavigationContext): NavigationItem[] => {
+  const toggleView = (targetView: LeftView) => () => {
+    setRightView(RightView.None);
+    setView(view === targetView ? LeftView.None : targetView);
+  };
 
-  const items: LeftNavigationItem[] = [
+  const items: NavigationItem[] = [
     {
       id: MenuEnum.entityDetails,
       className: "entity-details-selector",
@@ -167,6 +181,87 @@ const buildLeftNavigationItems = ({
   return items.filter((item) => allowedMenus.includes(item.id));
 };
 
+const buildEconomyNavigationItems = ({
+  rightView,
+  setRightView,
+  setLeftView,
+  disableButtons,
+  isBlitz,
+}: EconomyNavigationContext): NavigationItem[] => {
+  const toggleView = (targetView: RightView) => () => {
+    setLeftView(LeftView.None);
+    setRightView(rightView === targetView ? RightView.None : targetView);
+  };
+
+  const items: NavigationItem[] = [
+    {
+      id: MenuEnum.resourceTable,
+      className: "resource-table-selector",
+      image: BuildingThumbs.resources,
+      tooltipLocation: "top",
+      label: "Balance",
+      size: DEFAULT_BUTTON_SIZE,
+      disabled: false,
+      active: rightView === RightView.ResourceTable,
+      onClick: toggleView(RightView.ResourceTable),
+    },
+    {
+      id: MenuEnum.production,
+      className: "production-selector",
+      image: BuildingThumbs.production,
+      tooltipLocation: "top",
+      label: "Production",
+      size: DEFAULT_BUTTON_SIZE,
+      disabled: disableButtons,
+      active: rightView === RightView.Production,
+      onClick: toggleView(RightView.Production),
+    },
+    {
+      id: MenuEnum.transfer,
+      className: "transfer-selector",
+      image: BuildingThumbs.transfer,
+      tooltipLocation: "top",
+      label: "Transfers",
+      size: DEFAULT_BUTTON_SIZE,
+      disabled: disableButtons,
+      active: rightView === RightView.Transfer,
+      onClick: toggleView(RightView.Transfer),
+    },
+    {
+      id: MenuEnum.bridge,
+      className: "bridge-selector",
+      image: BuildingThumbs.bridge,
+      tooltipLocation: "top",
+      label: "Bridge",
+      size: DEFAULT_BUTTON_SIZE,
+      disabled: disableButtons,
+      active: rightView === RightView.Bridge,
+      onClick: toggleView(RightView.Bridge),
+    },
+    {
+      id: MenuEnum.storyEvents,
+      className: "story-events-selector",
+      image: BuildingThumbs.storyEvents,
+      tooltipLocation: "top",
+      label: "Activity Chronicles",
+      size: DEFAULT_BUTTON_SIZE,
+      disabled: false,
+      active: rightView === RightView.StoryEvents,
+      onClick: toggleView(RightView.StoryEvents),
+    },
+  ];
+
+  const allowedMenus: MenuEnum[] = [
+    MenuEnum.resourceTable,
+    MenuEnum.production,
+    MenuEnum.transfer,
+    MenuEnum.storyEvents,
+    ...(isBlitz ? [] : [MenuEnum.bridge]),
+  ];
+
+  return items.filter((item) => allowedMenus.includes(item.id));
+};
+
 const EntityDetails = lazy(() =>
   import("@/ui/modules/entity-details/entity-details").then((module) => ({ default: module.EntityDetails })),
 );
@@ -191,6 +286,11 @@ const EternumHyperstructuresMenu = lazy(() =>
 //     default: module.RelicsModule,
 //   })),
 // );
+const EntityResourceTable = lazy(() =>
+  import("@/ui/features/economy/resources").then((module) => ({
+    default: module.EntityResourceTable,
+  })),
+);
 
 export const LeftNavigationModule = memo(() => {
   const {
@@ -200,14 +300,15 @@ export const LeftNavigationModule = memo(() => {
 
   const arrivedArrivalsNumber = useUIStore((state) => state.arrivedArrivalsNumber);
   const pendingArrivalsNumber = useUIStore((state) => state.pendingArrivalsNumber);
-  const availableRelicsNumber = useUIStore((state) => state.availableRelicsNumber);
-
   const view = useUIStore((state) => state.leftNavigationView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
+  const rightView = useUIStore((state) => state.rightNavigationView);
+  const setRightView = useUIStore((state) => state.setRightNavigationView);
   const disableButtons = useUIStore((state) => state.disableButtons);
   const isTradeOpen = useUIStore((state) => state.openedPopups.includes(trade));
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const structures = useUIStore((state) => state.playerStructures);
   const isBottomHudMinimized = useUIStore((state) => state.isBottomHudMinimized);
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
 
@@ -238,11 +339,12 @@ export const LeftNavigationModule = memo(() => {
     [structureInfo],
   );
 
-  const navigationItems = useMemo(
+  const realmNavigationItems = useMemo(
     () =>
-      buildLeftNavigationItems({
+      buildRealmNavigationItems({
         view,
         setView,
+        setRightView,
         disableButtons,
         isRealmOrVillage,
         isMapView,
@@ -251,11 +353,11 @@ export const LeftNavigationModule = memo(() => {
         toggleModal,
         isTradeOpen,
         isBlitz,
-        availableRelicsNumber,
       }),
     [
       view,
       setView,
+      setRightView,
       disableButtons,
       isRealmOrVillage,
       isMapView,
@@ -264,8 +366,19 @@ export const LeftNavigationModule = memo(() => {
       toggleModal,
       isTradeOpen,
       isBlitz,
-      availableRelicsNumber,
     ],
+  );
+
+  const economyNavigationItems = useMemo(
+    () =>
+      buildEconomyNavigationItems({
+        rightView,
+        setRightView,
+        setLeftView: setView,
+        disableButtons,
+        isBlitz,
+      }),
+    [rightView, setRightView, setView, disableButtons, isBlitz],
   );
 
   const slideLeft = {
@@ -274,12 +387,13 @@ export const LeftNavigationModule = memo(() => {
   };
 
   const ConnectedAccount = useAccountStore((state) => state.account);
+  const isPanelCollapsed = view === LeftView.None && rightView === RightView.None;
   return (
     <div className="flex flex-col">
       <div className="flex-grow overflow-hidden">
         <div
-          className={`transition-all duration-200 space-x-1 flex z-0 w-screen pr-2 md:pr-0 md:w-[600px] text-gold md:pt-16 pointer-events-none ${
-            isOffscreen(view) ? "-translate-x-[92%]" : ""
+          className={`transition-all duration-200 space-x-1 flex z-0 w-screen pr-2 md:pr-0 md:w-[900px] text-gold md:pt-16 pointer-events-none ${
+            isPanelCollapsed ? "-translate-x-[92%]" : ""
           }`}
           style={{ height: navHeight, maxHeight: navHeight }}
         >
@@ -298,6 +412,36 @@ export const LeftNavigationModule = memo(() => {
               {view === LeftView.ResourceArrivals && (
                 <AllResourceArrivals hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
               )}
+              {rightView === RightView.ResourceTable && !!structureEntityId && (
+                <div className="entity-resource-table-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
+                  <EntityResourceTable entityId={structureEntityId} />
+                </div>
+              )}
+              {rightView === RightView.Production && (
+                <div className="production-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
+                  <ProductionOverviewPanel />
+                </div>
+              )}
+              {rightView === RightView.Bridge && (
+                <div className="bridge-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
+                  <Bridge structures={structures} />
+                </div>
+              )}
+              {rightView === RightView.Transfer && (
+                <div className="transfer-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
+                  <TransferAutomationPanel />
+                </div>
+              )}
+              {rightView === RightView.StoryEvents && (
+                <div className="story-events-selector flex h-full flex-col flex-1 overflow-y-auto">
+                  <StoryEventsChronicles />
+                </div>
+              )}
+              {isPanelCollapsed && (
+                <div className="flex h-full items-center justify-center p-8 text-center text-sm text-gold/70">
+                  Select a module to view details.
+                </div>
+              )}
               {/* {view === LeftView.RelicsView && <RelicsModule />} */}
             </Suspense>
           </BaseContainer>
@@ -309,12 +453,35 @@ export const LeftNavigationModule = memo(() => {
               className="flex flex-col justify-center pointer-events-auto"
               style={{ height: navHeight, maxHeight: navHeight }}
             >
-              <div className="flex flex-col mb-auto space-y-1">
-                {navigationItems.map((item) => (
-                  <div key={item.id}>
-                    <CircleButton {...item} />
+              <div className="flex flex-col mb-auto space-y-6">
+                {realmNavigationItems.length > 0 && (
+                  <div>
+                    <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-gold/60">
+                      Realm
+                    </p>
+                    <div className="flex flex-col space-y-1">
+                      {realmNavigationItems.map((item) => (
+                        <div key={item.id}>
+                          <CircleButton {...item} />
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ))}
+                )}
+                {economyNavigationItems.length > 0 && (
+                  <div>
+                    <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-gold/60">
+                      Economy
+                    </p>
+                    <div className="flex flex-col space-y-1">
+                      {economyNavigationItems.map((item) => (
+                        <div key={item.id}>
+                          <CircleButton {...item} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
@@ -325,7 +492,3 @@ export const LeftNavigationModule = memo(() => {
 });
 
 LeftNavigationModule.displayName = "LeftNavigationModule";
-
-const isOffscreen = (view: LeftView) => {
-  return view === LeftView.None;
-};

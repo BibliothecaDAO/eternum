@@ -33,7 +33,6 @@ const WorldContextMenu = lazy(() =>
 
 const TopCenterContainer = lazy(() => import("../shared/containers/top-center-container"));
 const LeftMiddleContainer = lazy(() => import("../shared/containers/left-middle-container"));
-const RightMiddleContainer = lazy(() => import("../shared/containers/right-middle-container"));
 const TopLeftContainer = lazy(() => import("../shared/containers/top-left-container"));
 const Tooltip = lazy(() =>
   import("../design-system/molecules/tooltip").then((module) => ({ default: module.Tooltip })),
@@ -46,14 +45,14 @@ const LeftNavigationModule = lazy(() =>
     default: module.LeftNavigationModule,
   })),
 );
-const RightNavigationModule = lazy(() =>
-  import("../features/world/containers/right-navigation-module").then((module) => ({
-    default: module.RightNavigationModule,
-  })),
-);
 const TopLeftNavigation = lazy(() =>
   import("../features/world/containers/top-left-navigation/top-left-navigation").then((module) => ({
     default: module.TopLeftNavigation,
+  })),
+);
+const RealtimeChatPortal = lazy(() =>
+  import("../features/world/containers/realtime-chat-portal").then((module) => ({
+    default: module.RealtimeChatPortal,
   })),
 );
 const BottomHud = lazy(() =>
@@ -189,13 +188,11 @@ const WorldHud = () => (
       <TopMiddleNavigation />
     </TopCenterContainer>
 
-    <RightMiddleContainer>
-      <RightNavigationModule />
-    </RightMiddleContainer>
-
     <TopLeftContainer>
       <TopLeftNavigation />
     </TopLeftContainer>
+
+    <RealtimeChatPortal />
 
     <BottomHud />
   </div>

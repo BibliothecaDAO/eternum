@@ -57,8 +57,8 @@ export function StoryEventStream() {
   }
 
   return (
-    <div className="pointer-events-none fixed bottom-8 left-6 z-[1100] flex w-full max-w-xs flex-col">
-      <ul role="log" aria-live="polite" className="flex flex-col gap-1.5">
+    <div className="pointer-events-none fixed top-24 right-6 z-[1100] flex w-full max-w-sm flex-col items-end">
+      <ul role="log" aria-live="polite" className="flex flex-col gap-1.5 w-full max-w-xs">
         <AnimatePresence initial={false}>
           {orderedEvents.map((item) => (
             <StreamItem key={item.id} item={item} />

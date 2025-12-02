@@ -35,8 +35,8 @@ type RealmAutomationPanelProps = {
 
 const sliderStep = 1;
 
-const formatSignedPerSecond = (value: number): string => {
-  if (!Number.isFinite(value) || Math.abs(value) < 0.0001) return "0/s";
+const formatPerCycle = (value: number): string => {
+  if (!Number.isFinite(value) || Math.abs(value) < 0.0001) return "0/c";
   const abs = Math.abs(value);
   const label =
     abs >= 1000
@@ -49,7 +49,7 @@ const formatSignedPerSecond = (value: number): string => {
             ? abs.toFixed(2)
             : abs.toFixed(3);
   const sign = value > 0 ? "+" : "-";
-  return `${sign}${label}/s`;
+  return `${sign}${label}/c`;
 };
 
 const resolveResourceLabel = (resourceId: number): string => {
@@ -318,6 +318,74 @@ export const RealmAutomationPanel = ({
     return record;
   }, [aggregatedUsageMap]);
 
+  const aggregatedConsumptionMap = useMemo(() => {
+    const totals = new Map<number, number>();
+
+    automationRows.forEach(({ percentages, complexInputs, simpleInputs }) => {
+      const resourceRatio = Math.min(1, Math.max(0, percentages.resourceToResource / MAX_RESOURCE_ALLOCATION_PERCENT));
+      const laborRatio = Math.min(1, Math.max(0, percentages.laborToResource / MAX_RESOURCE_ALLOCATION_PERCENT));
+
+      if (resourceRatio > 0) {
+        complexInputs.forEach((input) => {
+          totals.set(input.resource, (totals.get(input.resource) ?? 0) + resourceRatio * input.amount);
+        });
+      }
+
+      if (laborRatio > 0) {
+        simpleInputs.forEach((input) => {
+          totals.set(input.resource, (totals.get(input.resource) ?? 0) + laborRatio * input.amount);
+        });
+      }
+    });
+
+    return totals;
+  }, [automationRows]);
+
+  const aggregatedProductionMap = useMemo(() => {
+    const totals = new Map<number, number>();
+
+    automationRows.forEach(({ resourceId, percentages }) => {
+      const resourceRatio = Math.min(1, Math.max(0, percentages.resourceToResource / MAX_RESOURCE_ALLOCATION_PERCENT));
+      const laborRatio = Math.min(1, Math.max(0, percentages.laborToResource / MAX_RESOURCE_ALLOCATION_PERCENT));
+
+      if (resourceRatio > 0) {
+        const complexOutput = configManager.complexSystemResourceOutput[resourceId]?.amount ?? 0;
+        if (complexOutput > 0) {
+          totals.set(resourceId, (totals.get(resourceId) ?? 0) + resourceRatio * complexOutput);
+        }
+      }
+
+      if (laborRatio > 0) {
+        const simpleOutput = configManager.simpleSystemResourceOutput[resourceId]?.amount ?? 0;
+        if (simpleOutput > 0) {
+          totals.set(resourceId, (totals.get(resourceId) ?? 0) + laborRatio * simpleOutput);
+        }
+      }
+    });
+
+    return totals;
+  }, [automationRows]);
+
+  const usageDisplayList = useMemo(() => {
+    const resourceIds = new Set<number>([
+      ...aggregatedUsageMap.keys(),
+      ...aggregatedConsumptionMap.keys(),
+      ...aggregatedProductionMap.keys(),
+    ]);
+
+    return Array.from(resourceIds)
+      .map((resourceId) => {
+        const producedPerCycle = aggregatedProductionMap.get(resourceId) ?? 0;
+        const consumedPerCycle = aggregatedConsumptionMap.get(resourceId) ?? 0;
+        return {
+          resourceId,
+          percent: aggregatedUsageMap.get(resourceId) ?? 0,
+          perCycle: producedPerCycle - consumedPerCycle,
+        };
+      })
+      .sort((a, b) => a.resourceId - b.resourceId);
+  }, [aggregatedUsageMap, aggregatedConsumptionMap, aggregatedProductionMap]);
+
   const activePresetId = useMemo(
     () => inferRealmPreset(draftAutomation ?? realmAutomation),
     [draftAutomation, realmAutomation],
@@ -332,97 +400,6 @@ export const RealmAutomationPanel = ({
     () => overallocatedEntries.map(({ resourceId }) => resolveResourceLabel(resourceId)),
     [overallocatedEntries],
   );
-
-  const netUsagePerSecondRecord = useMemo(() => {
-    const record: Record<number, number> = {};
-    if (!realmSnapshot) {
-      return record;
-    }
-
-    const relevantResourceIds = new Set<ResourcesIds>();
-    realmResources.forEach((id) => relevantResourceIds.add(id));
-    aggregatedUsageList.forEach((item) => relevantResourceIds.add(item.resourceId as ResourcesIds));
-    Object.keys(realmAutomation?.resources ?? {}).forEach((key) => {
-      relevantResourceIds.add(Number(key) as ResourcesIds);
-    });
-
-    const perSecondOutputs = new Map<number, number>();
-    const perSecondConsumptionTotals = new Map<number, number>();
-
-    const addOutput = (resourceId: number, amount: number) => {
-      if (!Number.isFinite(amount) || amount <= 0) return;
-      perSecondOutputs.set(resourceId, (perSecondOutputs.get(resourceId) ?? 0) + amount);
-    };
-
-    const addConsumption = (resourceId: number, amount: number) => {
-      if (!Number.isFinite(amount) || amount <= 0) return;
-      perSecondConsumptionTotals.set(resourceId, (perSecondConsumptionTotals.get(resourceId) ?? 0) + amount);
-    };
-
-    automationRows.forEach(({ resourceId, percentages, complexInputs, simpleInputs }) => {
-      const typedResourceId = resourceId as ResourcesIds;
-      const snapshotEntry = realmSnapshot.get(typedResourceId);
-      const baseOutputPerSecond = snapshotEntry?.productionPerSecond ?? 0;
-
-      if (baseOutputPerSecond <= 0) {
-        return;
-      }
-
-      const resourceRatio = Math.min(1, Math.max(0, percentages.resourceToResource / MAX_RESOURCE_ALLOCATION_PERCENT));
-      const laborRatio = Math.min(1, Math.max(0, percentages.laborToResource / MAX_RESOURCE_ALLOCATION_PERCENT));
-      const outputRatio = Math.min(1, resourceRatio + laborRatio);
-      const producedPerSecond = baseOutputPerSecond * outputRatio;
-
-      if (producedPerSecond > 0) {
-        addOutput(resourceId, producedPerSecond);
-      }
-
-      if (resourceRatio > 0 && complexInputs.length > 0) {
-        const complexOutput = configManager.complexSystemResourceOutput[resourceId]?.amount ?? 0;
-        if (complexOutput > 0) {
-          const ratio = (baseOutputPerSecond / complexOutput) * resourceRatio;
-          complexInputs.forEach((input) => addConsumption(input.resource, ratio * input.amount));
-        }
-      }
-
-      if (laborRatio > 0 && simpleInputs.length > 0) {
-        const simpleOutput = configManager.simpleSystemResourceOutput[resourceId]?.amount ?? 0;
-        if (simpleOutput > 0) {
-          const ratio = (baseOutputPerSecond / simpleOutput) * laborRatio;
-          simpleInputs.forEach((input) => addConsumption(input.resource, ratio * input.amount));
-        }
-
-        const laborOutput = configManager.laborOutputPerResource[resourceId]?.amount ?? 0;
-        if (laborOutput > 0) {
-          const laborPerSecond = (baseOutputPerSecond / laborOutput) * laborRatio;
-          addConsumption(ResourcesIds.Labor, laborPerSecond);
-        }
-      }
-    });
-
-    const laborEntry = realmSnapshot.get(ResourcesIds.Labor);
-    const contractLaborPerSecond = laborEntry?.productionPerSecond ?? 0;
-
-    if (contractLaborPerSecond > 0) {
-      addOutput(ResourcesIds.Labor, contractLaborPerSecond);
-    }
-
-    const finalResourceIds = new Set<number>([
-      ...perSecondOutputs.keys(),
-      ...perSecondConsumptionTotals.keys(),
-      ...Array.from(relevantResourceIds),
-      ...aggregatedUsageList.map((item) => item.resourceId),
-      ResourcesIds.Labor,
-    ]);
-
-    finalResourceIds.forEach((resourceId) => {
-      const produced = perSecondOutputs.get(resourceId) ?? 0;
-      const consumed = perSecondConsumptionTotals.get(resourceId) ?? 0;
-      record[resourceId] = produced - consumed;
-    });
-
-    return record;
-  }, [automationRows, realmSnapshot, realmAutomation?.resources, realmResources, aggregatedUsageList]);
 
   const handlePresetSelect = useCallback(
     (presetId: RealmPresetId) => {
@@ -684,16 +661,14 @@ export const RealmAutomationPanel = ({
 
       <section className="space-y-2">
         <h5 className="text-sm font-semibold text-gold">Resource Usage</h5>
-        {aggregatedUsageList.length === 0 ? (
+        {usageDisplayList.length === 0 ? (
           <p className="text-xs text-gold/60">No resources allocated yet.</p>
         ) : (
           <ul className="grid grid-cols-4 gap-2">
-            {aggregatedUsageList.map(({ resourceId, percent }) => {
+            {usageDisplayList.map(({ resourceId, percent, perCycle }) => {
               const label = resolveResourceLabel(resourceId);
               const isOverBudget = percent > MAX_RESOURCE_ALLOCATION_PERCENT;
-              const netPerSecond = netUsagePerSecondRecord[resourceId] ?? 0;
-              const netLabel = formatSignedPerSecond(netPerSecond);
-              const netClass = netPerSecond < 0 ? "text-danger/80" : netPerSecond > 0 ? "text-gold/70" : "text-gold/40";
+              const perCycleLabel = formatPerCycle(perCycle);
               return (
                 <li
                   key={`usage-${resourceId}`}
@@ -706,7 +681,7 @@ export const RealmAutomationPanel = ({
                   <div className="flex-1 flex items-center justify-between gap-2">
                     <span>{label}</span>
                     <div className="flex items-center gap-2">
-                      <span className={netClass}>{netLabel}</span>
+                      <span className="text-gold/50">{perCycleLabel}</span>
                       <span className="text-gold/40">•</span>
                       <span className="font-semibold text-gold">{Math.round(percent)}%</span>
                     </div>
