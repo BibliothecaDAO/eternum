@@ -45,11 +45,11 @@
 | `resolver.ts`              | ✅ Complete | Merges player selections + global attachments            |
 | `attachment-manager.ts`    | ✅ Complete | Object pooling + placeholder upgrade flow                |
 | `mount-resolver.ts`        | ✅ Complete | Humanoid/boat/structure mount transforms                 |
-| `debug-controller.ts`      | ⚠️ Stub     | `resolveOverride()` returns `undefined`                  |
+| `debug-controller.ts`      | ✅ Complete | Global overrides with GUI + console API                  |
 | Manager integration        | ✅ Partial  | Attachments spawn; model swapping not wired              |
-| Bootstrap preloading       | ❌ Missing  | `preloadAllCosmeticAssets` not called in setup           |
-| GUI controls               | ❌ Missing  | No debug folder in `GUIManager`                          |
-| Console API                | ❌ Missing  | No `window.CosmeticsDebug`                               |
+| Bootstrap preloading       | ✅ Complete | `preloadAllCosmeticAssets` called in `performInitialSetup` |
+| GUI controls               | ✅ Complete | "Cosmetics Debug" folder in `GUIManager`                 |
+| Console API                | ✅ Complete | `window.CosmeticsDebug` with full API                    |
 
 ### 1. Cosmetic Registry (Data-Driven Source of Truth)
 

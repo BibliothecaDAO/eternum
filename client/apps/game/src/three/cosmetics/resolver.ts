@@ -1,5 +1,5 @@
 import type { ModelType } from "../types/army";
-import { cosmeticDebugController } from "./debug-controller";
+import { cosmeticDebugController, type DebugOverrideParams } from "./debug-controller";
 import { ensureCosmeticAsset } from "./asset-cache";
 import { playerCosmeticsStore } from "./player-cosmetics-store";
 import {
@@ -126,13 +126,13 @@ export function resolveArmyCosmetic(params: ArmyCosmeticParams): CosmeticResolut
   const selectionAttachments =
     typeof armySelection === "object" && armySelection ? (armySelection.attachments ?? []) : [];
 
-  const debugOverride = cosmeticDebugController.resolveOverride?.({
+  const debugOverride = cosmeticDebugController.resolveOverride({
     owner,
     kind: "army",
     baseType: params.troopType,
     variant: params.tier,
     target,
-  } as any);
+  } satisfies DebugOverrideParams);
 
   if (debugOverride) {
     return debugOverride;
@@ -171,13 +171,13 @@ export function resolveStructureCosmetic(params: StructureCosmeticParams): Cosme
   const selectionAttachments =
     typeof structureSelection === "object" && structureSelection ? (structureSelection.attachments ?? []) : [];
 
-  const debugOverride = cosmeticDebugController.resolveOverride?.({
+  const debugOverride = cosmeticDebugController.resolveOverride({
     owner,
     kind: "structure",
     baseType: params.structureType,
-    variant: params.stage,
+    variant: params.stage ?? 0,
     target,
-  } as any);
+  } satisfies DebugOverrideParams);
 
   if (debugOverride) {
     return debugOverride;
