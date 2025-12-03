@@ -577,11 +577,7 @@ export const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardPr
 
     const cardMarkup = (
       <foreignObject width="100%" height="100%">
-        <div
-          xmlns="http://www.w3.org/1999/xhtml"
-          className={`blitz-card-root card-${theme}`}
-          aria-label={`${title} ${subtitle} card`}
-        >
+        <div className={`blitz-card-root card-${theme}`} aria-label={`${title} ${subtitle} card`}>
           <style dangerouslySetInnerHTML={{ __html: CARD_STYLES }} />
 
           <div className="bg-mark" />
