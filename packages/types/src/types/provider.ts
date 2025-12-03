@@ -36,7 +36,11 @@ export interface BlitzRealmMakeHyperstructuresProps extends SystemSigner {
   count: BigNumberish;
 }
 
-export interface BlitzRealmCreateProps extends SystemSigner {}
+export interface BlitzRealmAssignRealmPositionsProps extends SystemSigner {}
+
+export interface BlitzRealmSettleRealmsProps extends SystemSigner {
+  settlement_count: BigNumberish;
+}
 
 export interface BlitzRealmObtainEntryTokenProps extends SystemSigner {
   feeToken?: string;
@@ -706,6 +710,7 @@ export interface SetBlitzRegistrationConfigProps extends SystemSigner {
   collectibles_cosmetics_address: BigNumberish;
   collectibles_timelock_address: BigNumberish;
   collectibles_lootchest_address: BigNumberish;
+  collectibles_elitenft_address: BigNumberish;
   registration_count_max: BigNumberish;
   registration_start_at: BigNumberish;
   entry_token_class_hash: BigNumberish;

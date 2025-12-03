@@ -35,7 +35,7 @@
     "indexer:stop:local": "cd ./contracts/game && ./ext/scripts/indexer.sh --kill --network local",
     "katana:stop:local": "cd ./contracts/game && ./ext/scripts/katana.sh --kill",
     "contract:start:local": "pnpm run katana:start:local && pnpm run game:migrate:local && pnpm run indexer:start:local && pnpm run config:deploy:local",
-    "contract:start:local:blitz": "pnpm run katana:start:local && pnpm run game:migrate:local && pnpm run collectibles:deploy:timelockmaker:local && pnpm run collectibles:loot-chests:deploy:local && pnpm run collectibles:cosmetics:deploy:local && pnpm run config:deploy:local && pnpm run indexer:start:local",
+    "contract:start:local:blitz": "pnpm run katana:start:local && pnpm run game:migrate:local && pnpm run collectibles:deploy:timelockmaker:local && pnpm run collectibles:loot-chests:deploy:local && pnpm run collectibles:elite-invite:deploy:local && pnpm run collectibles:cosmetics:deploy:local && pnpm run config:deploy:local && pnpm run indexer:start:local",
     "contract:stop:local": "pnpm run katana:stop:local && pnpm run indexer:stop:local",
     "_comment_slot_network_": "_______________________________________________",
     "_comment_slot_network1": "These are all you commands you need to run (in this order)",
@@ -123,6 +123,20 @@
     "collectibles:loot-chests:update:slot": "cd ./contracts/collectibles/ext/scripts/deployment && pnpm run update:loot-chests:slot",
     "collectibles:loot-chests:update:sepolia": "cd ./contracts/collectibles/ext/scripts/deployment && pnpm run update:loot-chests:sepolia",
     "collectibles:loot-chests:update:mainnet": "cd ./contracts/collectibles/ext/scripts/deployment && pnpm run update:loot-chests:mainnet",
+    "collectibles:elite-invite:deploy:local": "cd ./contracts/collectibles/ext/scripts && ./deploy.sh elite-invite local",
+    "collectibles:elite-invite:deploy:slot": "cd ./contracts/collectibles/ext/scripts && ./deploy.sh elite-invite slot",
+    "collectibles:elite-invite:deploy:slottest": "cd ./contracts/collectibles/ext/scripts && ./deploy.sh elite-invite slottest",
+    "collectibles:elite-invite:deploy:sepolia": "cd ./contracts/collectibles/ext/scripts && ./deploy.sh elite-invite sepolia",
+    "collectibles:elite-invite:deploy:mainnet": "cd ./contracts/collectibles/ext/scripts && ./deploy.sh elite-invite mainnet",
+    "collectibles:elite-invite:mint:local": "cd ./contracts/collectibles/ext/scripts/deployment && pnpm run mint:elite-invite:local",
+    "collectibles:elite-invite:mint:slot": "cd ./contracts/collectibles/ext/scripts/deployment && pnpm run mint:elite-invite:slot",
+    "collectibles:elite-invite:mint:slottest": "cd ./contracts/collectibles/ext/scripts/deployment && pnpm run mint:elite-invite:slottest",
+    "collectibles:elite-invite:mint:sepolia": "cd ./contracts/collectibles/ext/scripts/deployment && pnpm run mint:elite-invite:sepolia",
+    "collectibles:elite-invite:mint:mainnet": "cd ./contracts/collectibles/ext/scripts/deployment && pnpm run mint:elite-invite:mainnet",
+    "collectibles:elite-invite:update:local": "cd ./contracts/collectibles/ext/scripts/deployment && pnpm run update:elite-invite:local",
+    "collectibles:elite-invite:update:slot": "cd ./contracts/collectibles/ext/scripts/deployment && pnpm run update:elite-invite:slot",
+    "collectibles:elite-invite:update:sepolia": "cd ./contracts/collectibles/ext/scripts/deployment && pnpm run update:elite-invite:sepolia",
+    "collectibles:elite-invite:update:mainnet": "cd ./contracts/collectibles/ext/scripts/deployment && pnpm run update:elite-invite:mainnet",
     "collectibles:deploy:timelockmaker:local": "cd ./contracts/collectibles/ext/scripts && ./build.sh && cd deployment && pnpm run deploy:timelockmaker:local",
     "collectibles:deploy:timelockmaker:slot": "cd ./contracts/collectibles/ext/scripts && ./build.sh && cd deployment && pnpm run deploy:timelockmaker:slot",
     "collectibles:deploy:timelockmaker:slottest": "cd ./contracts/collectibles/ext/scripts && ./build.sh && cd deployment && pnpm run deploy:timelockmaker:slottest",
@@ -140,7 +154,7 @@
     "images:compress": "node scripts/compress-images-with-sharp.js",
     "images:compress:dry-run": "node scripts/compress-images-with-sharp.js --dry-run",
     "images:compress:webp": "node scripts/compress-images-with-sharp.js --webp",
-    "dispatch:torii": "node scripts/dispatch-torii.mjs"
+    "manifest:copy-abis": "node scripts/copy-abis.mjs"
   },
   "bin": {
     "dispatch-torii": "scripts/dispatch-torii.mjs"

@@ -9,6 +9,9 @@ pub trait IPrizeDistributionSystems<T> {
     fn blitz_prize_player_rank(
         ref self: T, trial_id: u128, total_player_count_committed: u16, players_list: Array<ContractAddress>,
     );
+    fn blitz_get_ranked(ref self: T, rank: u16) -> Span<ContractAddress>;
+    fn blitz_get_winner(ref self: T) -> Option<u256>;
+
 }
 
 
@@ -26,7 +29,7 @@ use core::num::traits::zero::Zero;
     use crate::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
     use crate::models::config::{BlitzRegistrationConfig, BlitzRegistrationConfigImpl, SeasonConfigImpl, WorldConfigUtilImpl, BlitzRealmPlayerRegister, BlitzPreviousGame};
     use crate::models::events::{PrizeDistributedStory, PrizeDistributionFinalStory, Story, StoryEvent};
-    use crate::models::rank::{PlayerRank, PlayersRankFinal, PlayersRankTrial, RankPrize};
+    use crate::models::rank::{PlayerRank, PlayersRankFinal, PlayersRankTrial, RankPrize, RankPrizeImpl, RankList};
     use crate::models::season::{SeasonPrize};
     use crate::models::record::{BlitzFeeSplitRecord, BlitzFeeSplitRecordImpl, WorldRecordImpl};
     use crate::systems::realm::utils::contracts::{IERC20Dispatcher, IERC20DispatcherTrait};
@@ -168,9 +171,26 @@ use core::num::traits::zero::Zero;
                 paid: true,
             };
 
+            let rank_prize = RankPrize {
+                trial_id: SYSTEM_TRIAL_ID,
+                rank: 1,
+                total_players_same_rank_count: 1,
+                total_prize_amount: prize_amount,
+                grant_elite_nft: false,
+            };
+            
+            let rank_list = RankList {
+                trial_id: SYSTEM_TRIAL_ID,
+                rank: 1,
+                index: 0,
+                player: registered_player,
+            };
+
             world.write_model(@player_rank_trial);
             world.write_model(@player_rank_final);
             world.write_model(@player_rank);
+            world.write_model(@rank_prize);
+            world.write_model(@rank_list);
 
 
             // transfer full amount that player paid to register
@@ -226,6 +246,9 @@ use core::num::traits::zero::Zero;
             let lootchest_erc721_dispatcher = ICollectibleDispatcher {
                 contract_address: blitz_registration_config.collectibles_lootchest_address,
             };
+            let elite_nft_erc721_dispatcher = ICollectibleDispatcher {
+                contract_address: blitz_registration_config.collectibles_elitenft_address,
+            };
             let season_prize: SeasonPrize = world.read_model(WORLD_CONFIG_ID);
 
             let rng_library_dispatcher = rng_library::get_dispatcher(@world);
@@ -249,7 +272,7 @@ use core::num::traits::zero::Zero;
                 // transfer ERC20 prize to player
                 assert!(reward_token.transfer(player, amount.into()), "Eternum: Failed to transfer prize");
 
-                // transfer ERC721 prize to player
+                // transfer ERC721 Chest prize to player
                 if game_chest_reward.allocated_chests > game_chest_reward.distributed_chests {
 
                     let mut player_points: PlayerRegisteredPoints = world.read_model(player);
@@ -265,6 +288,13 @@ use core::num::traits::zero::Zero;
                         game_chest_reward.distributed_chests += 1;
                         lootchest_erc721_dispatcher.mint(player, blitz_registration_config.collectibles_lootchest_attrs_raw());
                     }
+                }
+
+                // transfer ERC721 Elite Invite NFT prize to player
+                if rank_prize.grant_elite_nft 
+                    && elite_nft_erc721_dispatcher.contract_address.is_non_zero() {
+
+                    elite_nft_erc721_dispatcher.mint(player, blitz_registration_config.collectibles_elitenft_attrs_raw());
                 }
 
                 // emit event
@@ -366,15 +396,15 @@ use core::num::traits::zero::Zero;
             let calc_prize_pool: Fixed = FixedTrait::new(prize_pool_amount, false);
             let calc_winner_count: u16 = iPrizeDistributionCalcImpl::get_winner_count(
                 registered_player_count, trial.total_player_count_committed,
-            )
-                .into();
+            );
             let calc_s_parameter: Fixed = iPrizeDistributionCalcImpl::get_s_parameter(registered_player_count);
             let calc_sum_position_weights: Fixed = iPrizeDistributionCalcImpl::get_sum_rank_weights(
                 calc_winner_count, calc_s_parameter,
             );
 
             for player in players_list {
-                // ensure that the list is ordered based on points from first to last (descending order)
+                // ensure that the list is ordered based on points from first (winner, highest point)
+                // to last (descending order)
                 let mut player_points: PlayerRegisteredPoints = world.read_model(player);
                 assert!(player_points.registered_points > 0, "Eternum: Player {:?} has no points", player);
                 assert!(
@@ -421,7 +451,18 @@ use core::num::traits::zero::Zero;
                 let mut rank_prize: RankPrize = world.read_model((trial.trial_id, player_rank.rank));
                 rank_prize.total_players_same_rank_count += 1;
                 rank_prize.total_prize_amount += position_prize_amount;
+                rank_prize.check_grant_elite_nft(trial.total_player_count_revealed, trial.total_player_count_committed);
                 world.write_model(@rank_prize);
+
+                // update rank list model
+                world.write_model(
+                    @RankList {
+                        trial_id: trial.trial_id,
+                        rank: player_rank.rank,
+                        index: rank_prize.total_players_same_rank_count - 1,
+                        player,
+                    }
+                );
             };
 
             // ensure all the players with points were included in the players_list
@@ -467,6 +508,47 @@ use core::num::traits::zero::Zero;
             // update the trial with the new last rank and points
             world.write_model(@trial);
         }
+
+        fn blitz_get_ranked(ref self: ContractState, rank: u16) -> Span<ContractAddress> {
+
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+
+            let players_rank_final: PlayersRankFinal = world.read_model(WORLD_CONFIG_ID);
+            assert!(players_rank_final.trial_id.is_non_zero(), "Eternum: rankings not finalized");
+
+            let final_trial_id = players_rank_final.trial_id;
+            let mut players: Array<ContractAddress> = array![];
+
+            let rank_prize: RankPrize = world.read_model((final_trial_id, rank));
+            for index in 0..rank_prize.total_players_same_rank_count {
+                let rank_list: RankList = world.read_model((final_trial_id, rank, index));
+                players.append(rank_list.player);
+            }
+            return players.span();
+        }
+
+        fn blitz_get_winner(ref self: ContractState) -> Option<u256> {
+
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+
+            let players_rank_final: PlayersRankFinal = world.read_model(WORLD_CONFIG_ID);
+            assert!(players_rank_final.trial_id.is_non_zero(), "Eternum: rankings not finalized");
+
+            let final_trial_id = players_rank_final.trial_id;
+            let winner_rank: u16 = 1;
+            let rank_prize: RankPrize = world.read_model((final_trial_id, winner_rank));
+            if rank_prize.total_players_same_rank_count == 1 {
+                let winner_index: u16 = 0;
+                let rank_list: RankList = world.read_model((final_trial_id, winner_rank, winner_index));
+                let winner_felt: felt252 = rank_list.player.into();
+                assert!(winner_felt != 0, "Eternum: Invalid winner address");
+
+                return Option::Some(winner_felt.into());
+            }
+    
+            return Option::None;
+        }
+
     }
 
     pub fn get_dispatcher(world: @WorldStorage) -> super::IPrizeDistributionSystemsDispatcher {

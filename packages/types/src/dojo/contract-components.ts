@@ -350,12 +350,13 @@ export function defineContractComponents(world: World) {
           rank: RecsType.Number,
           total_players_same_rank_count: RecsType.Number,
           total_prize_amount: RecsType.BigInt,
+          grant_elite_nft: RecsType.Boolean,
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "RankPrize",
-            types: ["u128", "u16", "u16", "u128"],
+            types: ["u128", "u16", "u16", "u128", "bool"],
             customTypes: [],
           },
         },
@@ -1522,6 +1523,7 @@ export function defineContractComponents(world: World) {
             collectibles_cosmetics_address: RecsType.BigInt,
             collectibles_timelock_address: RecsType.BigInt,
             collectibles_lootchest_address: RecsType.BigInt,
+            collectibles_elitenft_address: RecsType.BigInt,
             registration_count: RecsType.Number,
             registration_count_max: RecsType.Number,
             registration_start_at: RecsType.Number,
@@ -1717,6 +1719,7 @@ export function defineContractComponents(world: World) {
               "ContractAddress", // BlitzHypersSettlementConfig collectibles_cosmetics_address
               "ContractAddress", // BlitzHypersSettlementConfig collectibles_timelock_address
               "ContractAddress", // BlitzHypersSettlementConfig collectibles_lootchest_address
+              "ContractAddress", // BlitzHypersSettlementConfig collectibles_elitenft_address
               "u16", // BlitzRegistrationConfig registration_count
               "u16", // BlitzRegistrationConfig registration_count_max
               "u32", // BlitzRegistrationConfig registration_start_at
@@ -1867,6 +1870,42 @@ export function defineContractComponents(world: World) {
             name: "BlitzCosmeticAttrsRegister",
             types: ["ContractAddress", "Span<u128>"],
             customTypes: [],
+          },
+        },
+      );
+    })(),
+    BlitzRealmPositionRegister: (() => {
+      return defineComponent(
+        world,
+        {
+          spot_number: RecsType.Number,
+          coords: RecsType.NumberArray,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "BlitzRealmPositionRegister",
+            types: ["u16", "Span<Coord>"],
+            customTypes: ["Coord"],
+          },
+        },
+      );
+    })(),
+    BlitzRealmSettleFinish: (() => {
+      return defineComponent(
+        world,
+        {
+          player: RecsType.BigInt,
+          coords: RecsType.NumberArray,
+          structure_ids: RecsType.NumberArray,
+          labor_prod_started: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "BlitzRealmSettleFinish",
+            types: ["ContractAddress", "Span<Coord>", "Span<u32>", "bool"],
+            customTypes: ["Coord"],
           },
         },
       );

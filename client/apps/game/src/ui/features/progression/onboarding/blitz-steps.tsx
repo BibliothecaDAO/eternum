@@ -82,6 +82,12 @@ enum GameState {
   GAME_ACTIVE = "GAME_ACTIVE",
 }
 
+type SettleStage = "idle" | "assigning" | "settling" | "done" | "error";
+
+const getBlitzHyperstructureCountForChain = (chain: string): number => {
+  return chain === "mainnet" ? 1 : 4;
+};
+
 // Countdown timer component
 const CountdownTimer = ({ targetTime, label }: { targetTime: number; label: string }) => {
   const [timeRemaining, setTimeRemaining] = useState<string>("");
@@ -662,11 +668,15 @@ const DevOptionsState = ({
   onDevModeSettle,
   onDevModeObtainEntryToken,
   devMode,
+  availableEntryTokenIds,
+  isLoadingEntryTokens,
 }: {
   onDevModeRegister: () => Promise<void>;
   onDevModeSettle: () => Promise<void>;
   onDevModeObtainEntryToken?: () => Promise<void>;
   devMode: boolean;
+  availableEntryTokenIds?: bigint[];
+  isLoadingEntryTokens?: boolean;
 }) => {
   const [isDevModeRegistering, setIsDevModeRegistering] = useState(false);
   const [isDevModeSettling, setIsDevModeSettling] = useState(false);
@@ -781,10 +791,11 @@ const RegistrationState = ({
   requiresEntryToken,
   onObtainEntryToken,
   isObtainingEntryToken,
-  availableEntryTokenId,
+  availableEntryTokenIds,
   entryTokenStatus,
   hasSufficientFeeBalance,
   isFeeBalanceLoading,
+  isLoadingEntryTokens,
 }: {
   entryTokenBalance: bigint;
   registrationCount: number;
@@ -797,17 +808,18 @@ const RegistrationState = ({
   requiresEntryToken: boolean;
   onObtainEntryToken?: () => Promise<void> | void;
   isObtainingEntryToken?: boolean;
-  availableEntryTokenId?: bigint | null;
+  availableEntryTokenIds?: bigint[];
   entryTokenStatus: "idle" | "minting" | "timeout" | "error";
   hasSufficientFeeBalance: boolean;
   isFeeBalanceLoading: boolean;
+  isLoadingEntryTokens?: boolean;
 }) => {
   const { setup } = useDojo();
 
   const [isRegistering, setIsRegistering] = useState(false);
   const onSpectatorModeClick = useSpectatorModeClick(setup);
 
-  const tokenReady = !requiresEntryToken || Boolean(availableEntryTokenId);
+  const tokenReady = !requiresEntryToken || (availableEntryTokenIds?.length ?? 0) > 0;
 
   const handleRegister = async () => {
     setIsRegistering(true);
@@ -857,17 +869,34 @@ const RegistrationState = ({
                     </div>
                   )}
                 </Button>
-                <p className="text-xs text-gold/60 text-center">
-                  {availableEntryTokenId
-                    ? `Token #${availableEntryTokenId.toString()} will be used for registration`
-                    : entryTokenStatus === "minting"
-                      ? "Minting your entry token..."
-                      : entryTokenStatus === "timeout"
-                        ? "Minted! Still waiting for the token to appear. If it doesn't show, try again shortly."
-                        : entryTokenStatus === "error"
-                          ? "Mint failed. Please try again."
-                          : "Mint an entry token before registering. Tokens are locked automatically during registration."}
-                </p>
+                <div className="space-y-2">
+                  {entryTokenStatus === "minting" && (
+                    <p className="text-xs text-gold/60 text-center">Minting your entry token...</p>
+                  )}
+                  {entryTokenStatus === "error" && (
+                    <p className="text-xs text-red-300 text-center">Mint failed. Please try again.</p>
+                  )}
+                  {isLoadingEntryTokens && (
+                    <p className="text-xs text-gold/60 text-center">Checking for entry tokens…</p>
+                  )}
+                  {!isLoadingEntryTokens && entryTokenStatus === "timeout" && entryTokenBalance === 0n && (
+                    <p className="text-xs text-gold/60 text-center">
+                      Minted! Still waiting for the token to appear. If it does not show, try again shortly.
+                    </p>
+                  )}
+                  {!isLoadingEntryTokens && (availableEntryTokenIds?.length ?? 0) > 0 && (
+                    <p className="text-xs text-gold/60 text-center">
+                      We detected an entry token in your wallet. You can now register.
+                    </p>
+                  )}
+                  {!isLoadingEntryTokens &&
+                    (availableEntryTokenIds?.length ?? 0) === 0 &&
+                    entryTokenBalance > 0n && (
+                      <p className="text-xs text-gold/60 text-center">
+                        We could not confirm an entry token yet. It will be detected automatically once available.
+                      </p>
+                    )}
+                </div>
                 {requiresEntryToken && entryTokenBalance < 1 && (
                   <p className="text-xs text-red-300 text-center">
                     Insufficient fee balance — auto top-up occurs when obtaining an entry token (non‑mainnet).
@@ -910,11 +939,17 @@ const GameActiveState = ({
   gameEndAt,
   isRegistered,
   onSettle,
+  settleStage,
+  assignedRealmCount,
+  settledRealmCount,
 }: {
   hasSettled: boolean;
   gameEndAt?: number;
   isRegistered: boolean;
   onSettle: () => Promise<void>;
+  settleStage: SettleStage;
+  assignedRealmCount: number;
+  settledRealmCount: number;
 }) => {
   const {
     setup,
@@ -925,6 +960,7 @@ const GameActiveState = ({
   const realmEntities = usePlayerOwnedRealmEntities();
   const onSpectatorModeClick = useSpectatorModeClick(setup);
   const [isSettling, setIsSettling] = useState(false);
+  const canPlay = hasSettled && assignedRealmCount > 0 && settledRealmCount === assignedRealmCount;
 
   const handleSettle = async () => {
     setIsSettling(true);
@@ -971,7 +1007,7 @@ const GameActiveState = ({
       <div className="space-y-4">
         {isRegistered ? (
           <>
-            {hasSettled ? (
+            {canPlay ? (
               <Button
                 onClick={handlePlay}
                 forceUppercase={false}
@@ -979,15 +1015,71 @@ const GameActiveState = ({
               >
                 <div className="flex items-center justify-center">
                   <Sword className="w-5 h-5 mr-2 fill-brown" />
-                  <span>Play Blitz</span>
+                  <span>Play Blitz</span> 
                 </div>
               </Button>
             ) : (
               <>
-                <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 text-center mb-4">
+                <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 text-center mb-4 space-y-3">
                   <p className="text-gold text-sm">
-                    In Blitz mode, your settlement location will be automatically assigned for balanced gameplay
+                    In Blitz mode, your settlement location will be automatically assigned for balanced gameplay.
                   </p>
+                  <div className="mt-1 text-left text-xs text-gold/80 space-y-1">
+                    {(() => {
+                      const totalAssigned = assignedRealmCount;
+                      const totalSettled = settledRealmCount;
+                      const remainingToSettle = Math.max(0, totalAssigned - totalSettled);
+
+                      const steps = [
+                        { index: 1, label: "Assign realm positions" },
+                        { index: 2, label: "Create realms & start labor" },
+                      ];
+
+                      return steps.map(({ index, label }) => {
+                        let isDone = false;
+                        let isActive = false;
+                        let statusIcon = "";
+
+                        if (index === 1) {
+                          isDone = totalAssigned > 0;
+                          isActive = !isDone && settleStage === "assigning";
+                        } else if (index === 2) {
+                          if (totalAssigned === 0) {
+                            isDone = false;
+                            isActive = false;
+                          } else {
+                            const fullySettled = remainingToSettle === 0 && totalSettled > 0;
+                            const partiallySettled = remainingToSettle > 0 && totalSettled > 0;
+                            isDone = fullySettled;
+                            isActive = !fullySettled && (partiallySettled || settleStage === "settling");
+                          }
+                        }
+
+                        statusIcon = isDone ? "✓" : isActive ? "…" : "";
+                        const statusClass = isDone
+                          ? "text-emerald-300"
+                          : isActive
+                            ? "text-gold"
+                            : "text-gold/60";
+
+                        return (
+                          <div key={label} className="flex items-center justify-between">
+                            <span>
+                              {index}. {label}
+                            </span>
+                            <span className={statusClass}>{statusIcon}</span>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                  {assignedRealmCount > 0 && (
+                    <div className="mt-2 text-xs text-gold/70">
+                      <span>
+                        Settled realms: {settledRealmCount} / {assignedRealmCount}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <Button
                   onClick={handleSettle}
@@ -1025,6 +1117,7 @@ export const BlitzOnboarding = () => {
   const navigate = useNavigate();
   const [gameState, setGameState] = useState<GameState>(GameState.NO_GAME);
   const [addressNameFelt, setAddressNameFelt] = useState<string>("");
+  const [settleStage, setSettleStage] = useState<SettleStage>("idle");
   const { activeWorld, selectGame } = useGameSelector();
   const { setup, network, masterAccount } = useDojo();
   const {
@@ -1032,9 +1125,11 @@ export const BlitzOnboarding = () => {
     components,
     systemCalls: {
       blitz_realm_register,
-      blitz_realm_create,
       blitz_realm_make_hyperstructures,
       blitz_realm_obtain_entry_token,
+      blitz_realm_assign_realm_positions,
+      blitz_realm_settle_realms,
+      blitz_realm_assign_and_settle_realms,
     },
   } = setup;
 
@@ -1071,16 +1166,20 @@ export const BlitzOnboarding = () => {
     refetch: refetchEntryTokenBalance,
     getEntryTokenIdByIndex,
   } = useEntryTokenBalance();
-  const [availableEntryTokenId, setAvailableEntryTokenId] = useState<bigint | null>(null);
+  const [availableEntryTokenIds, setAvailableEntryTokenIds] = useState<bigint[]>([]);
+  const [selectedEntryTokenId, setSelectedEntryTokenId] = useState<bigint | null>(null);
+  const [isLoadingEntryTokens, setIsLoadingEntryTokens] = useState(false);
   const [isObtainingEntryToken, setIsObtainingEntryToken] = useState(false);
   const [entryTokenStatus, setEntryTokenStatus] = useState<"idle" | "minting" | "timeout" | "error">("idle");
-  const [hasQueriedEntryToken, setHasQueriedEntryToken] = useState(false);
   const [isToppingUp, setIsToppingUp] = useState(false);
   const playerRegistered = useComponentValue(
     components.BlitzRealmPlayerRegister,
     getEntityIdFromKeys([BigInt(account.address)]),
   );
-
+  const playerSettleFinish = useComponentValue(
+    components.BlitzRealmSettleFinish,
+    getEntityIdFromKeys([BigInt(account.address)]),
+  );  
   const { connector } = useAccount();
 
   const playerSettled = useEntityQuery([HasValue(components.Structure, { owner: BigInt(account.address) })]).length > 0;
@@ -1117,76 +1216,76 @@ export const BlitzOnboarding = () => {
   const isNotMainnet = env.VITE_PUBLIC_CHAIN !== "mainnet";
   const canTopUpBalance = Boolean(isNotMainnet && feeTokenAddressHex && masterAccount);
 
+  const assignedRealmCount = useMemo(() => {
+    if (!playerSettleFinish) return 0;
+    const coordsCount = (playerSettleFinish as any).coords?.length ?? 0;
+    const settledCount = (playerSettleFinish as any).structure_ids?.length ?? 0;
+    return coordsCount + settledCount;
+  }, [playerSettleFinish]);
+
+  const settledRealmCount = useMemo(() => {
+    if (!playerSettleFinish) return 0;
+    return (playerSettleFinish as any).structure_ids?.length ?? 0;
+  }, [playerSettleFinish]);
+
+  const loadAvailableEntryTokens = useCallback(async () => {
+    if (!requiresEntryToken || !blitzConfig || !account?.address || entryTokenBalance === 0n) {
+      setAvailableEntryTokenIds([]);
+      setSelectedEntryTokenId(null);
+      return;
+    }
+
+    setIsLoadingEntryTokens(true);
+    try {
+      const maxTokens =
+        entryTokenBalance > BigInt(Number.MAX_SAFE_INTEGER) ? Number.MAX_SAFE_INTEGER : Number(entryTokenBalance);
+      const entryTokenAddressHex = toHexString(blitzConfig.entry_token_address) as `0x${string}`;
+      const ids: bigint[] = [];
+
+      const maxToShow = Math.min(maxTokens, 16);
+      for (let i = 0; i < maxToShow; i++) {
+        const tokenId = await getEntryTokenIdByIndex(
+          account.address,
+          {
+            entryTokenAddress: entryTokenAddressHex,
+            onDebug: (message, context) => console.debug(`[EntryTokenList] ${message}`, context),
+          },
+          BigInt(i),
+        );
+        if (tokenId && !ids.includes(tokenId)) {
+          ids.push(tokenId);
+        }
+      }
+
+      setAvailableEntryTokenIds(ids);
+      if (!ids.length) {
+        setEntryTokenStatus("timeout");
+      } else {
+        setEntryTokenStatus("idle");
+      }
+    } catch (error) {
+      console.error("Failed to load entry tokens", error);
+      setEntryTokenStatus("error");
+    } finally {
+      setIsLoadingEntryTokens(false);
+    }
+  }, [account?.address, blitzConfig?.entry_token_address, entryTokenBalance, requiresEntryToken]);
+
   const formatTokenAmount = (value: bigint) => {
     const decimals = 18n; // Default to 18 decimals
     return (value / 10n ** decimals).toString();
   };
 
   useEffect(() => {
-    if (!requiresEntryToken) {
-      setAvailableEntryTokenId(null);
-      setEntryTokenStatus("idle");
-      setHasQueriedEntryToken(false);
-      return;
-    }
+    void loadAvailableEntryTokens();
+  }, [loadAvailableEntryTokens]);
 
-    if (availableEntryTokenId || hasQueriedEntryToken || entryTokenBalance === 0n) {
-      return;
-    }
-
-    const maxTokens =
-      entryTokenBalance > BigInt(Number.MAX_SAFE_INTEGER) ? Number.MAX_SAFE_INTEGER : Number(entryTokenBalance);
-    const randomIndex = maxTokens > 1 ? BigInt(Math.floor(Math.random() * maxTokens)) : 0n;
-
-    setHasQueriedEntryToken(true);
-
-    (async () => {
-      const entryTokenAddressHex = toHexString(blitzConfig?.entry_token_address!);
-      console.log("Entry token random lookup", {
-        owner: account.address,
-        entryTokenAddressHex,
-        balance: entryTokenBalance.toString(),
-        randomIndex: randomIndex.toString(),
-      });
-
-      const tokenId = await getEntryTokenIdByIndex(
-        account.address,
-        {
-          entryTokenAddress: entryTokenAddressHex as `0x${string}`,
-          validate: (candidate) => {
-            const registerComponent = components.BlitzEntryTokenRegister;
-            if (!registerComponent) return true;
-            const registerRecord = getComponentValue(registerComponent, getEntityIdFromKeys([candidate]));
-            const available = !registerRecord?.registered;
-            if (!available) {
-              console.log("Entry token already registered", { tokenId: candidate.toString() });
-            }
-            return available;
-          },
-          onDebug: (message, context) => console.debug(`[EntryTokenLookup] ${message}`, context),
-        },
-        randomIndex,
-      );
-
-      console.log("Entry token lookup result", { tokenId: tokenId?.toString() });
-
-      if (tokenId) {
-        setAvailableEntryTokenId(tokenId);
-        setEntryTokenStatus("idle");
-      } else {
-        setEntryTokenStatus("timeout");
-      }
-    })();
-  }, [
-    account.address,
-    availableEntryTokenId,
-    blitzConfig,
-    components.BlitzEntryTokenRegister,
-    entryTokenBalance,
-    getEntryTokenIdByIndex,
-    hasQueriedEntryToken,
-    requiresEntryToken,
-  ]);
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      void loadAvailableEntryTokens();
+    }, 7_000);
+    return () => clearInterval(intervalId);
+  }, [loadAvailableEntryTokens]);
 
   // Determine current game state based on time
   useEffect(() => {
@@ -1293,8 +1392,8 @@ export const BlitzOnboarding = () => {
       });
 
       await refetchEntryTokenBalance?.();
-      setAvailableEntryTokenId(null);
-      setHasQueriedEntryToken(false);
+      setSelectedEntryTokenId(null);
+      void loadAvailableEntryTokens();
       setEntryTokenStatus("idle");
     } catch (error) {
       console.error("Failed to obtain entry token", error);
@@ -1331,22 +1430,22 @@ export const BlitzOnboarding = () => {
     if (!account?.address) return;
 
     if (requiresEntryToken && blitzConfig) {
-      if (!availableEntryTokenId) {
+      const tokenIdToUse =
+        selectedEntryTokenId ?? (availableEntryTokenIds.length > 0 ? availableEntryTokenIds[0] : null);
+      if (!tokenIdToUse) {
         throw new Error("No entry token available. Obtain one before registering.");
       }
 
       await blitz_realm_register({
         signer: account,
         name: addressNameFelt,
-        tokenId: Number(availableEntryTokenId),
+        tokenId: Number(tokenIdToUse),
         entryTokenAddress: toHexString(blitzConfig.entry_token_address),
         lockId: ENTRY_TOKEN_LOCK_ID,
       });
 
       await refetchEntryTokenBalance?.();
       await refetchFeeTokenBalance?.();
-      setAvailableEntryTokenId(null);
-      setHasQueriedEntryToken(false);
       setEntryTokenStatus("idle");
       return;
     }
@@ -1356,13 +1455,102 @@ export const BlitzOnboarding = () => {
 
   const handleMakeHyperstructures = async () => {
     if (!account?.address) return;
-    await blitz_realm_make_hyperstructures({ count: 4, signer: account });
+    const hyperstructureCount = getBlitzHyperstructureCountForChain(env.VITE_PUBLIC_CHAIN);
+    await blitz_realm_make_hyperstructures({ count: hyperstructureCount, signer: account });
   };
 
   // Settlement handler
   const handleSettle = async () => {
     if (!account?.address) return;
-    await blitz_realm_create({ signer: account });
+    try {
+      const isCurrentlyRegistered = !!playerRegistered?.registered;
+      const hasAssignedPositions = assignedRealmCount > 0;
+      const isMainnet = env.VITE_PUBLIC_CHAIN === "mainnet";
+
+      if (isCurrentlyRegistered) {
+        setSettleStage("assigning");
+        if (isMainnet) {
+          const initialSettleCount = 1;
+          console.log(
+            `[Blitz] Settling realms (mainnet): starting assign_and_settle_realms with settlement_count=${initialSettleCount}`,
+          );
+          await blitz_realm_assign_and_settle_realms({
+            signer: account,
+            settlement_count: initialSettleCount,
+          });
+          console.log(
+            `[Blitz] Settling realms (mainnet): assign_and_settle_realms with settlement_count=${initialSettleCount} completed`,
+          );
+
+          // Automatically settle remaining realms (up to 2 more calls) in this session
+          setSettleStage("settling");
+          const extraCalls = 2;
+          for (let i = 0; i < extraCalls; i++) {
+            console.log(
+              `[Blitz] Settling realms (mainnet): starting extra settle_realms call ${i + 1}/${extraCalls} with settlement_count=1`,
+            );
+            await blitz_realm_settle_realms({ signer: account, settlement_count: 1 });
+            console.log(
+              `[Blitz] Settling realms (mainnet): extra settle_realms call ${i + 1}/${extraCalls} with settlement_count=1 completed`,
+            );
+          }
+
+          setSettleStage("done");
+          return;
+        } else {
+          const initialSettleCount = 3;
+          console.log(
+            `[Blitz] Settling realms: starting assign_and_settle_realms with settlement_count=${initialSettleCount}`,
+          );
+          await blitz_realm_assign_and_settle_realms({
+            signer: account,
+            settlement_count: initialSettleCount,
+          });
+          console.log(
+            `[Blitz] Settling realms: assign_and_settle_realms with settlement_count=${initialSettleCount} completed`,
+          );
+          setSettleStage("done");
+          return;
+        }
+      }
+
+      const remainingToSettle = Math.max(0, assignedRealmCount - settledRealmCount);
+
+      if (remainingToSettle <= 0) {
+        console.log("[Blitz] Settling realms: nothing to settle (no remaining assigned positions)", {assignedRealmCount, settledRealmCount});
+        setSettleStage("done");
+        return;
+      }
+
+      setSettleStage("settling");
+      if (isMainnet) {
+        const maxCalls = Math.min(remainingToSettle, 3);
+        for (let i = 0; i < maxCalls; i++) {
+          console.log(
+            `[Blitz] Settling realms (mainnet): starting settle_realms call ${i + 1}/${maxCalls} with settlement_count=1`,
+          );
+          await blitz_realm_settle_realms({ signer: account, settlement_count: 1 });
+          console.log(
+            `[Blitz] Settling realms (mainnet): settle_realms call ${i + 1}/${maxCalls} with settlement_count=1 completed`,
+          );
+        }
+      } else {
+        const settlementCountPerCall = Math.min(3, remainingToSettle);
+        console.log(
+          `[Blitz] Settling realms: starting settle_realms with settlement_count=${settlementCountPerCall}`,
+        );
+        await blitz_realm_settle_realms({ signer: account, settlement_count: settlementCountPerCall });
+        console.log(
+          `[Blitz] Settling realms: settle_realms with settlement_count=${settlementCountPerCall} completed`,
+        );
+      }
+
+      setSettleStage("done");
+    } catch (error) {
+      console.error("[Blitz] Settling realms failed", error);
+      setSettleStage("error");
+      throw error;
+    }
   };
 
   const handleSelectGame = async () => {
@@ -1400,11 +1588,14 @@ export const BlitzOnboarding = () => {
   const canMakeHyperstructures = now >= registration_start_at;
 
   const gameActiveSection =
-    gameState === GameState.GAME_ACTIVE ? (
+    gameState === GameState.GAME_ACTIVE || devMode ? (
       <GameActiveState
         isRegistered={playerRegistered?.registered || !!playerSettled}
         onSettle={handleSettle}
         hasSettled={!!playerSettled}
+        settleStage={settleStage}
+        assignedRealmCount={assignedRealmCount}
+        settledRealmCount={settledRealmCount}
         gameEndAt={seasonConfig?.endAt}
       />
     ) : null;
@@ -1506,6 +1697,8 @@ export const BlitzOnboarding = () => {
           onDevModeSettle={handleSettle}
           onDevModeObtainEntryToken={requiresEntryToken ? handleObtainEntryToken : undefined}
           devMode={devMode || false}
+          availableEntryTokenIds={availableEntryTokenIds}
+          isLoadingEntryTokens={isLoadingEntryTokens}
         />
       )}
       {gameState === GameState.NO_GAME && registration_start_at && <NoGameState />}
@@ -1522,10 +1715,11 @@ export const BlitzOnboarding = () => {
           requiresEntryToken={requiresEntryToken}
           onObtainEntryToken={requiresEntryToken ? handleObtainEntryToken : undefined}
           isObtainingEntryToken={isObtainingEntryToken}
-          availableEntryTokenId={availableEntryTokenId}
+          availableEntryTokenIds={availableEntryTokenIds}
           entryTokenStatus={entryTokenStatus}
           hasSufficientFeeBalance={hasSufficientFeeBalance}
           isFeeBalanceLoading={isFeeBalanceLoading}
+          isLoadingEntryTokens={isLoadingEntryTokens}
         />
       )}
       {/* Always show Factory Games list */}
