@@ -6,12 +6,10 @@ import { Button } from "@/ui/design-system/atoms";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { BlitzHighlightCardWithSelector } from "@/ui/shared/components/blitz-highlight-card";
 import {
-  BLITZ_CARD_DIMENSIONS,
   BLITZ_DEFAULT_SHARE_ORIGIN,
   BlitzHighlightPlayer,
   buildBlitzShareMessage,
 } from "@/ui/shared/lib/blitz-highlight";
-import { copySvgToClipboard } from "@/ui/shared/lib/copy-svg";
 import { displayAddress } from "@/ui/utils/utils";
 import { Copy, Share2 } from "lucide-react";
 import { toast } from "sonner";
@@ -157,29 +155,6 @@ export const LandingPlayer = () => {
     }
   }, [fetchLeaderboard, fetchPlayerEntry, playerAddress, isRefreshing, isCooldownActive]);
 
-  const handleCopyImage = useCallback(async () => {
-    if (!highlightPlayer || !cardRef.current) {
-      toast.error("Final standings are still loading.");
-      return;
-    }
-
-    setIsCopyingImage(true);
-
-    try {
-      await copySvgToClipboard(cardRef.current, {
-        width: BLITZ_CARD_DIMENSIONS.width,
-        height: BLITZ_CARD_DIMENSIONS.height,
-        successMessage: "Blitz highlight copied to your clipboard.",
-        errorMessage: "Unable to copy the highlight image.",
-        unsupportedMessage: "Copying images is not supported in this environment.",
-      });
-    } catch {
-      // Errors are surfaced via toast inside copySvgToClipboard.
-    } finally {
-      setIsCopyingImage(false);
-    }
-  }, [highlightPlayer]);
-
   const handleShareOnX = useCallback(() => {
     if (!highlightPlayer) {
       toast.error("Final standings are still loading.");
@@ -324,7 +299,7 @@ export const LandingPlayer = () => {
 
           <div className="mt-4 flex flex-col gap-2 sm:mt-5 sm:gap-2.5 md:flex-row xl:mt-6">
             <Button
-              onClick={handleCopyImage}
+              onClick={() => {}}
               variant="gold"
               className="w-full flex-1 justify-center gap-2 !px-4 !py-2 sm:!py-2.5 xl:!py-3 md:!px-6"
               forceUppercase={false}

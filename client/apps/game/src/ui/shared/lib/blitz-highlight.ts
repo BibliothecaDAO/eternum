@@ -23,8 +23,8 @@ export interface BlitzHighlightPlayer {
 }
 
 export const BLITZ_CARD_DIMENSIONS = {
-  width: 640,
-  height: 360,
+  width: 960,
+  height: 540,
 };
 
 export const BLITZ_CARD_RADII = [40, 88, 136, 184, 232];
