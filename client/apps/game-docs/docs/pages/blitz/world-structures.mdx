@@ -1,3 +1,6 @@
+import ResourceIcon from "@/components/ResourceIcon";
+import { table } from "@/components/styles";
+
 # 🏗️ World Structures
 
 All World Structures in Blitz are initially occupied by bandit forces that must be defeated by a player before it can be
@@ -28,3 +31,49 @@ moment they're discovered. Lords have a 1/50 chance of finding one of these stru
 Camps act in a similar capacity to Villages in Eternum, in the sense that they perform as small, discoverable Realms
 that can boost production and act as forward bases. Camps are restricted to the Settlement level and cannot be upgraded.
 Lords have a 1/30 chance of finding one of these structures when exploring a hex.
+
+### Starting Materials
+
+When a camp is claimed, it spawns with an initial stockpile of materials.
+
+<div style={table.container}>
+  <div style={table.wrapper}>
+    <table style={table.table}>
+      <thead style={table.tableHead}>
+        <tr>
+          <th style={table.headerCell}>Resource</th>
+          <th style={table.headerCell}>Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style={table.tableRow}>
+          <td style={table.cell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <ResourceIcon id={35} name="Wheat" size="md" />
+              Wheat
+            </div>
+          </td>
+          <td style={table.cell}>500</td>
+        </tr>
+        <tr style={table.tableRow}>
+          <td style={table.cell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <ResourceIcon id={23} name="Labor" size="md" />
+              Labor
+            </div>
+          </td>
+          <td style={table.cell}>2,500</td>
+        </tr>
+        <tr style={table.tableRow}>
+          <td style={table.cell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <ResourceIcon id={25} name="Donkey" size="md" />
+              Donkeys
+            </div>
+          </td>
+          <td style={table.cell}>200</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
