@@ -6,11 +6,13 @@ import { Button } from "@/ui/design-system/atoms";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { BlitzHighlightCardWithSelector } from "@/ui/shared/components/blitz-highlight-card";
 import {
+  BLITZ_CARD_DIMENSIONS,
   BLITZ_DEFAULT_SHARE_ORIGIN,
   BlitzHighlightPlayer,
   buildBlitzShareMessage,
 } from "@/ui/shared/lib/blitz-highlight";
 import { displayAddress } from "@/ui/utils/utils";
+import { toPng } from "html-to-image";
 import { Copy, Share2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -60,7 +62,7 @@ export const LandingPlayer = () => {
   );
   const lastLeaderboardFetchAt = useLandingLeaderboardStore((state) => state.lastFetchAt);
 
-  const cardRef = useRef<SVGSVGElement | null>(null);
+  const cardRef = useRef<HTMLDivElement | null>(null);
   const [isCopyingImage, setIsCopyingImage] = useState(false);
   const [refreshCooldownMs, setRefreshCooldownMs] = useState(0);
 
@@ -172,6 +174,73 @@ export const LandingPlayer = () => {
     window.open(shareIntent.toString(), "_blank", "noopener,noreferrer");
   }, [highlightPlayer, shareMessage]);
 
+  const handleCopyImage = useCallback(async () => {
+    if (typeof window === "undefined") {
+      toast.error("Copying the image is not supported in this environment.");
+      return;
+    }
+
+    if (!highlightPlayer || !cardRef.current) {
+      toast.error("Your highlight card is still loading.");
+      return;
+    }
+
+    if (!("ClipboardItem" in window) || !navigator.clipboard?.write) {
+      toast.error("Copying images is not supported in this browser.");
+      return;
+    }
+
+    setIsCopyingImage(true);
+
+    try {
+      const cardNode = cardRef.current.querySelector(".blitz-card-root") as HTMLElement | null;
+
+      if (!cardNode) {
+        throw new Error("Unable to find the highlight card markup.");
+      }
+
+      const { width, height } = BLITZ_CARD_DIMENSIONS;
+      const fontReady =
+        typeof document !== "undefined" && "fonts" in document ? document.fonts.ready.catch(() => undefined) : null;
+      const waiters = fontReady ? [fontReady] : [];
+      await Promise.all(waiters);
+
+      const dataUrl = await toPng(cardNode, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: "#030d14",
+        canvasWidth: width,
+        canvasHeight: height,
+        style: {
+          width: `${width}px`,
+          height: `${height}px`,
+        },
+      });
+
+      const blob = await fetch(dataUrl).then((response) => response.blob());
+      const clipboardItem = new ClipboardItem({ "image/png": blob });
+
+      try {
+        await navigator.clipboard.write([clipboardItem]);
+        toast.success("Copied highlight image to clipboard!");
+      } catch (clipboardError) {
+        const link = document.createElement("a");
+        link.href = dataUrl;
+        link.download = `realms-highlight-${Date.now()}.png`;
+        link.style.display = "none";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        toast.info("Clipboard not available; downloaded image instead.");
+      }
+    } catch (caughtError) {
+      console.error("Failed to copy highlight image", caughtError);
+      toast.error("Copy failed. Please try again.");
+    } finally {
+      setIsCopyingImage(false);
+    }
+  }, [highlightPlayer]);
+
   const handleCopyMessage = useCallback(async () => {
     if (!shareMessage.trim()) {
       toast.error("Nothing to copy yet.");
@@ -281,9 +350,8 @@ export const LandingPlayer = () => {
 
           <div className="mt-4 flex justify-center sm:mt-5 xl:mt-6">
             {highlightPlayer ? (
-              <div className="w-full max-w-[420px] sm:max-w-[620px] xl:max-w-[780px] 2xl:max-w-[940px]">
+              <div className="w-full max-w-[420px] sm:max-w-[620px] xl:max-w-[780px] 2xl:max-w-[940px]" ref={cardRef}>
                 <BlitzHighlightCardWithSelector
-                  cardRef={cardRef}
                   title="Realms Blitz"
                   subtitle="Blitz Leaderboard"
                   winnerLine={championLabel}
@@ -299,7 +367,7 @@ export const LandingPlayer = () => {
 
           <div className="mt-4 flex flex-col gap-2 sm:mt-5 sm:gap-2.5 md:flex-row xl:mt-6">
             <Button
-              onClick={() => {}}
+              onClick={handleCopyImage}
               variant="gold"
               className="w-full flex-1 justify-center gap-2 !px-4 !py-2 sm:!py-2.5 xl:!py-3 md:!px-6"
               forceUppercase={false}
