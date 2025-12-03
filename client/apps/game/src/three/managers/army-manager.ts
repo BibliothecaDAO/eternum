@@ -505,7 +505,7 @@ export class ArmyManager {
     this.refreshArmyInstance(army, slot, modelType);
   }
 
-  private refreshArmyInstance(army: ArmyData, slot: number, modelType: ModelType): void {
+  private refreshArmyInstance(army: ArmyData, slot: number, modelType: ModelType, reResolveCosmetics?: boolean): void {
     const numericId = this.toNumericId(army.entityId);
     const path = this.armyPaths.get(army.entityId);
 
@@ -528,6 +528,42 @@ export class ArmyManager {
 
     if (army.isDaydreamsAgent) {
       this.armyModel.setIsAgent(true);
+    }
+
+    // Handle cosmetic model assignment
+    let cosmeticId = army.cosmeticId;
+    let cosmeticAssetPaths = army.cosmeticAssetPaths;
+
+    // Re-resolve cosmetics if requested (for debug mode)
+    if (reResolveCosmetics) {
+      const cosmetic = resolveArmyCosmetic({
+        owner: army.owner.address,
+        troopType: army.category,
+        tier: army.tier,
+        defaultModelType: modelType,
+      });
+      cosmeticId = cosmetic.cosmeticId;
+      cosmeticAssetPaths = cosmetic.registryEntry?.assetPaths;
+
+      // Update army data with new cosmetic info
+      army.cosmeticId = cosmeticId;
+      army.cosmeticAssetPaths = cosmeticAssetPaths;
+      army.attachments = cosmetic.attachments;
+    }
+
+    // Check if this is a custom cosmetic skin (not base/default)
+    const hasCosmeticSkin =
+      cosmeticAssetPaths &&
+      cosmeticAssetPaths.length > 0 &&
+      cosmeticId &&
+      !cosmeticId.endsWith(":base") &&
+      !cosmeticId.endsWith(":default");
+
+    if (hasCosmeticSkin) {
+      this.armyModel.assignCosmeticToEntity(numericId, cosmeticId!, cosmeticAssetPaths![0]);
+    } else {
+      // Clear any existing cosmetic assignment
+      this.armyModel.clearCosmeticForEntity(numericId);
     }
 
     const { x, y } = army.hexCoords.getContract();
@@ -780,7 +816,8 @@ export class ArmyManager {
         const slot = this.visibleArmyIndices.get(army.entityId);
         const modelType = modelTypesByEntity.get(army.entityId);
         if (slot !== undefined && modelType) {
-          this.refreshArmyInstance(army, slot, modelType);
+          // Re-resolve cosmetics on force refresh to pick up debug override changes
+          this.refreshArmyInstance(army, slot, modelType, true);
           buffersDirty = true;
         }
       });
@@ -1113,8 +1150,22 @@ export class ArmyManager {
     });
     const resolvedModelType = cosmetic.modelType ?? baseModelType;
 
+    // Extract cosmetic asset paths for potential custom model
+    const cosmeticAssetPaths = cosmetic.registryEntry?.assetPaths;
+    const hasCosmeticSkin =
+      cosmeticAssetPaths &&
+      cosmeticAssetPaths.length > 0 &&
+      cosmetic.cosmeticId &&
+      !cosmetic.cosmeticId.endsWith(":base") &&
+      !cosmetic.cosmeticId.endsWith(":default");
+
     await this.armyModel.preloadModels([resolvedModelType]);
     this.armyModel.assignModelToEntity(numericEntityId, resolvedModelType);
+
+    // If there's a custom cosmetic skin, assign it to the entity
+    if (hasCosmeticSkin) {
+      this.armyModel.assignCosmeticToEntity(numericEntityId, cosmetic.cosmeticId, cosmeticAssetPaths[0]);
+    }
 
     const isMine = finalOwnerAddress ? isAddressEqualToAccount(finalOwnerAddress) : false;
 
@@ -1137,6 +1188,7 @@ export class ArmyManager {
         guildName: finalGuildName,
       },
       cosmeticId: cosmetic.cosmeticId,
+      cosmeticAssetPaths,
       attachments: cosmetic.attachments,
       color,
       category: params.category,

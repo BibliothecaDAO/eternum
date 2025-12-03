@@ -26,7 +26,7 @@ const BUILDINGS_MODELS_PATH = "/models/new-buildings-opt/";
 const QUEST_MODELS_PATH = "/models/quests/";
 
 enum BiomeFilenames {
-  Bare = "bare.glb",
+  Bare = "bare_2_0_baked.glb",
   Beach = "beach.glb",
   TemperateDeciduousForest = "deciduousForest_alt.glb",
   TemperateDeciduousForestAlt = "deciduousForest.glb",
@@ -35,17 +35,17 @@ enum BiomeFilenames {
   GrasslandAlt = "grassland.glb",
   Ocean = "ocean.glb",
   Outline = "outline.glb",
-  Scorched = "scorched.glb",
-  Tundra = "tundra.glb",
-  TemperateDesert = "temperateDesert.glb",
+  Scorched = "scorched_2_0_baked.glb",
+  Tundra = "tundra_2_0_no_light_baked.glb",
+  TemperateDesert = "temperate_desert_2_0_baked.glb",
   Shrubland = "shrubland_alt.glb",
   ShrublandAlt = "shrubland.glb",
   Snow = "snow.glb",
   Taiga = "taiga.glb",
-  TemperateRainForest = "temperateRainforest.glb",
+  TemperateRainForest = "temperate_rainforest_2_0.glb",
   SubtropicalDesert = "subtropicalDesert.glb",
   TropicalRainForest = "tropicalRainforest.glb",
-  TropicalSeasonalForest = "tropicalSeasonalForest.glb",
+  TropicalSeasonalForest = "tropical_seasonal_forest_2_0_no_light_baked.glb",
   Empty = "empty.glb",
 }
 

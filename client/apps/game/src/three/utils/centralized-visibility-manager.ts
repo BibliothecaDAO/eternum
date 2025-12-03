@@ -402,6 +402,7 @@ export class CentralizedVisibilityManager {
     cachedBoxChecks: number;
     cachedSphereChecks: number;
     cachedPointChecks: number;
+    chunkCapacity: number | null;
   } {
     return {
       frameId: this.currentFrameId,

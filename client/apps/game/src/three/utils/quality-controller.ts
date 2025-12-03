@@ -500,7 +500,7 @@ export class QualityController {
     const previous = { ...this.currentFeatures };
 
     // Apply the degradation
-    (this.currentFeatures as Record<string, unknown>)[step.feature] = step.value;
+    (this.currentFeatures as unknown as Record<string, unknown>)[step.feature] = step.value;
     this.degradationLevel++;
 
     this.emitEvent({
@@ -535,7 +535,7 @@ export class QualityController {
 
     // Restore the feature to its base preset value
     const baseValue = QUALITY_PRESETS[this.baseSetting][step.feature];
-    (this.currentFeatures as Record<string, unknown>)[step.feature] = baseValue;
+    (this.currentFeatures as unknown as Record<string, unknown>)[step.feature] = baseValue;
 
     this.emitEvent({
       type: "quality-change",

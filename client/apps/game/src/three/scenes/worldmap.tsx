@@ -77,6 +77,7 @@ import {
 } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { env } from "../../../env";
+import { preloadAllCosmeticAssets } from "../cosmetics";
 import { FXManager } from "../managers/fx-manager";
 import { HoverLabelManager } from "../managers/hover-label-manager";
 import { QuestManager } from "../managers/quest-manager";
@@ -876,7 +877,7 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
     this.mainDirectionalLight.castShadow = true;
-    this.mainDirectionalLight.shadow.mapSize.set(2048, 2048);
+    this.mainDirectionalLight.shadow.mapSize.set(1024, 1024);
     this.mainDirectionalLight.shadow.camera.left = -60;
     this.mainDirectionalLight.shadow.camera.right = 60;
     this.mainDirectionalLight.shadow.camera.top = 45;
@@ -1700,6 +1701,17 @@ export default class WorldmapScene extends HexagonScene {
     } catch (error) {
       console.error("Failed to update visible chunks during initial setup:", error);
     }
+
+    // Fire-and-forget cosmetic asset preloading (non-blocking)
+    preloadAllCosmeticAssets({
+      onProgress: ({ loaded, total }) => {
+        if (loaded === total) {
+          console.log(`[Cosmetics] Preloaded ${total} cosmetic assets`);
+        }
+      },
+    }).catch((error) => {
+      console.warn("[Cosmetics] Some assets failed to preload:", error);
+    });
   }
 
   private async resumeWorldmapScene() {
@@ -2566,8 +2578,8 @@ export default class WorldmapScene extends HexagonScene {
 
         if (!IS_FLAT_MODE) {
           tempPosition.y += 0.05;
-          rotationMatrix.makeRotationY(randomRotation);
-          tempMatrix.multiply(rotationMatrix);
+          // rotationMatrix.makeRotationY(randomRotation);
+          // tempMatrix.multiply(rotationMatrix);
         } else {
           tempPosition.y += 0.05;
         }

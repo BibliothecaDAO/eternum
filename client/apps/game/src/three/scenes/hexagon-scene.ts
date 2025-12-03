@@ -212,13 +212,13 @@ export abstract class HexagonScene {
     this.mainDirectionalLight.castShadow = true;
     this.mainDirectionalLight.shadow.mapSize.width = 2048;
     this.mainDirectionalLight.shadow.mapSize.height = 2048;
-    this.mainDirectionalLight.shadow.camera.left = -22;
-    this.mainDirectionalLight.shadow.camera.right = 18;
-    this.mainDirectionalLight.shadow.camera.top = 14;
-    this.mainDirectionalLight.shadow.camera.bottom = -12;
+    this.mainDirectionalLight.shadow.camera.left = -20;
+    this.mainDirectionalLight.shadow.camera.right = 20;
+    this.mainDirectionalLight.shadow.camera.top = 13;
+    this.mainDirectionalLight.shadow.camera.bottom = -13;
     this.mainDirectionalLight.shadow.camera.far = 38;
     this.mainDirectionalLight.shadow.camera.near = 8;
-    this.mainDirectionalLight.shadow.bias = -0.0285;
+    this.mainDirectionalLight.shadow.bias = -0.02;
     this.mainDirectionalLight.position.set(0, 9, 0);
     this.mainDirectionalLight.target.position.set(0, 0, 5.2);
   }
@@ -931,11 +931,13 @@ export abstract class HexagonScene {
     switch (position) {
       case CameraView.Close: // Close view
         this.mainDirectionalLight.castShadow = true;
+        this.mainDirectionalLight.shadow.bias = -0.025;
         this.cameraDistance = 10;
         this.cameraAngle = Math.PI / 6; // 30 degrees
         break;
       case CameraView.Medium: // Medium view
         this.mainDirectionalLight.castShadow = true;
+        this.mainDirectionalLight.shadow.bias = -0.02;
         this.cameraDistance = 20;
         this.cameraAngle = Math.PI / 3; // 60 degrees
         break;
