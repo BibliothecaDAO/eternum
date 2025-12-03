@@ -10,7 +10,6 @@ import type { Config } from "@bibliothecadao/types";
 import { getSeasonAddresses, type Chain } from "@contracts";
 import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
 
-
 /**
  * Configuration specific to the Cartridge Slot network environment.
  * Overrides specific values from the common configuration while inheriting defaults.

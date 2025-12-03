@@ -47,8 +47,7 @@ export const DEFAULT_MAX_ACTIONS_BY_CHAIN: Record<ChainType, number> = {
   local: 300,
 };
 
-export const getDefaultMaxActionsForChain = (chain: ChainType): number =>
-  DEFAULT_MAX_ACTIONS_BY_CHAIN[chain];
+export const getDefaultMaxActionsForChain = (chain: ChainType): number => DEFAULT_MAX_ACTIONS_BY_CHAIN[chain];
 
 // Public API: reuse runtime helper for SQL base URL
 export const getFactorySqlBaseUrl = (chain: Chain) => getFactorySqlBaseUrlRuntime(chain);

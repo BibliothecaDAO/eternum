@@ -128,7 +128,7 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
               ? [getSlotChain(SLOT_CHAIN_ID_TEST)]
               : env.VITE_PUBLIC_CHAIN === "mainnet"
                 ? [mainnet]
-              : [sepolia]
+                : [sepolia]
       }
       provider={jsonRpcProvider({ rpc })}
       paymasterProvider={isLocal ? paymasterRpcProvider({ rpc: paymasterRpc }) : undefined}
