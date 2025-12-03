@@ -8,7 +8,7 @@ db_dir = "torii"
 events_chunk_size = 1024  # Size of events page to fetch
 blocks_chunk_size = 10240 # Blocks to process before DB commit
 
-pending = false # Enable indexing pending blocks
+pending = true # Enable indexing pending blocks
 
 polling_interval = 250 # Polling interval in milliseconds
 controllers = true
