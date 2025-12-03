@@ -12,7 +12,7 @@ pending = true # Enable indexing pending blocks
 
 polling_interval = 250 # Polling interval in milliseconds
 controllers = true
-pre_confirmed = true
+preconfirmed = true
 
 max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
 
