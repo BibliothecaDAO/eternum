@@ -1,9 +1,11 @@
+import { useGoToStructure, useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import {
   ProcessedStoryEvent,
   useStoryEvents,
   useStoryEventsError,
   useStoryEventsLoading,
 } from "@/hooks/store/use-story-events-store";
+import { sqlApi } from "@/services/api";
 import Button from "@/ui/design-system/atoms/button";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import clsx from "clsx";
@@ -30,6 +32,9 @@ import {
   Trophy,
 } from "lucide-react";
 import React, { type ComponentType, useCallback, useEffect, useMemo, useState } from "react";
+
+import { MAP_DATA_REFRESH_INTERVAL, MapDataStore, Position } from "@bibliothecadao/eternum";
+import { useDojo, useQuery } from "@bibliothecadao/react";
 type SortOrder = "newest" | "oldest";
 
 interface StoryTypeConfig {
@@ -236,6 +241,13 @@ interface ChroniclesFilterState {
 
 type DetailSegment = { label?: string; value: string };
 
+interface EventLocation {
+  coordX: number;
+  coordY: number;
+  entityId: number;
+  type: "structure" | "army";
+}
+
 const parseDetailSegments = (description?: string): DetailSegment[] => {
   if (!description) return [];
   return description
@@ -337,7 +349,12 @@ const LiveStatusIndicator: React.FC<{ isRefreshing: boolean }> = ({ isRefreshing
   </div>
 );
 
-const ActivityHighlight: React.FC<{ event: ProcessedStoryEvent | null }> = ({ event }) => {
+const ActivityHighlight: React.FC<{
+  event: ProcessedStoryEvent | null;
+  eventLocation: EventLocation | null;
+  onNavigateToEvent?: (event: ProcessedStoryEvent) => void;
+  isNavigating: boolean;
+}> = ({ event, eventLocation, onNavigateToEvent, isNavigating }) => {
   if (!event) {
     return (
       <div className="flex flex-col items-center justify-center rounded-md border border-amber-400/20 bg-black/30 px-4 py-6 text-center">
@@ -389,6 +406,22 @@ const ActivityHighlight: React.FC<{ event: ProcessedStoryEvent | null }> = ({ ev
         >
           {storyConfig.label}
         </span>
+        {event.story === "BattleStory" && (
+          <Button
+            variant="outline"
+            size="xs"
+            disabled={!eventLocation || isNavigating}
+            onClick={() => event && eventLocation && onNavigateToEvent?.(event)}
+            className={clsx(
+              "gap-1 border-amber-400/60 text-amber-50 hover:bg-amber-500/15 disabled:border-amber-400/20 disabled:text-amber-300/70",
+              isNavigating && "cursor-wait",
+            )}
+            forceUppercase={false}
+          >
+            <Navigation className="h-3 w-3" />
+            {eventLocation ? (isNavigating ? "Locating…" : "View hex") : "Location unavailable"}
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -619,7 +652,10 @@ const TimelineEventCard: React.FC<{
   event: ProcessedStoryEvent;
   isActive: boolean;
   onSelect: () => void;
-}> = ({ event, isActive, onSelect }) => {
+  eventLocation: EventLocation | null;
+  onNavigateToEvent?: (event: ProcessedStoryEvent) => void;
+  isNavigating: boolean;
+}> = ({ event, isActive, onSelect, eventLocation, onNavigateToEvent, isNavigating }) => {
   const storyKey = resolveStoryKey(event.story);
   const storyConfig = STORY_TYPE_CONFIG[storyKey];
   const StoryIcon = storyConfig.icon;
@@ -648,9 +684,30 @@ const TimelineEventCard: React.FC<{
               )}
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-1 rounded border border-amber-400/20 bg-black/40 px-2 py-1 text-[10px] text-amber-400/70">
-            <Clock className="h-3 w-3" />
-            <span>{getRelativeTime(event.timestampMs)}</span>
+          <div className="flex shrink-0 flex-col items-end gap-2 text-right sm:flex-row sm:items-center sm:gap-2">
+            <div className="flex items-center gap-1 rounded border border-amber-400/20 bg-black/40 px-2 py-1 text-[10px] text-amber-400/70">
+              <Clock className="h-3 w-3" />
+              <span>{getRelativeTime(event.timestampMs)}</span>
+            </div>
+            {event.story === "BattleStory" && (
+              <button
+                type="button"
+                disabled={!eventLocation || isNavigating}
+                onClick={(evt) => {
+                  evt.stopPropagation();
+                  if (!eventLocation || isNavigating) return;
+                  onNavigateToEvent?.(event);
+                }}
+                className={clsx(
+                  "inline-flex items-center gap-1 rounded border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide transition-colors",
+                  "border-amber-400/60 bg-black/30 text-amber-50 hover:bg-amber-500/10",
+                  (!eventLocation || isNavigating) && "cursor-not-allowed border-amber-400/15 text-amber-400/60",
+                )}
+              >
+                <Navigation className="h-3 w-3" />
+                {eventLocation ? (isNavigating ? "Locating…" : "View hex") : "No hex"}
+              </button>
+            )}
           </div>
         </div>
 
@@ -705,6 +762,13 @@ export const StoryEventsChronicles: React.FC = () => {
   const storyEvents = useStoryEvents(350);
   const isLoading = useStoryEventsLoading();
   const error = useStoryEventsError();
+  const { setup } = useDojo();
+  const { isMapView } = useQuery();
+  const goToStructure = useGoToStructure(setup);
+  const navigateToMapView = useNavigateToMapView();
+  const mapDataStore = useMemo(() => MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi), []);
+  const [mapDataVersion, setMapDataVersion] = useState(0);
+  const [navigatingEventId, setNavigatingEventId] = useState<string | null>(null);
 
   const [filterState, setFilterState] = useState<ChroniclesFilterState>({
     searchTerm: "",
@@ -715,7 +779,57 @@ export const StoryEventsChronicles: React.FC = () => {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [filtersCollapsed, setFiltersCollapsed] = useState(false);
 
+  useEffect(() => {
+    const handleRefresh = () => setMapDataVersion((version) => version + 1);
+    mapDataStore.onRefresh(handleRefresh);
+    return () => mapDataStore.offRefresh(handleRefresh);
+  }, [mapDataStore]);
+
+  useEffect(() => {
+    if (mapDataStore.getStructureCount() === 0) {
+      void mapDataStore.refresh().catch((error) => {
+        console.error("[StoryEventsChronicles] Failed to hydrate map data store", error);
+      });
+    }
+  }, [mapDataStore]);
+
   const allEvents = storyEvents.data ?? [];
+
+  const getEventLocation = useCallback(
+    (event: ProcessedStoryEvent | null): EventLocation | null => {
+      if (!event || event.story !== "BattleStory") return null;
+
+      const candidateIds: number[] = [];
+      const addCandidate = (value: unknown) => {
+        if (value === null || value === undefined) return;
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric)) return;
+        if (!candidateIds.includes(numeric)) {
+          candidateIds.push(numeric);
+        }
+      };
+
+      addCandidate(event.entity_id);
+      addCandidate(event.battle_attacker_id);
+      addCandidate(event.battle_defender_id);
+      addCandidate(event.battle_winner_id);
+
+      for (const candidate of candidateIds) {
+        const structure = mapDataStore.getStructureById(candidate);
+        if (structure) {
+          return { entityId: candidate, coordX: structure.coordX, coordY: structure.coordY, type: "structure" };
+        }
+
+        const army = mapDataStore.getArmyById(candidate);
+        if (army) {
+          return { entityId: candidate, coordX: army.coordX, coordY: army.coordY, type: "army" };
+        }
+      }
+
+      return null;
+    },
+    [mapDataStore, mapDataVersion],
+  );
 
   const sortedEvents = useMemo(() => {
     const copy = [...allEvents];
@@ -782,6 +896,10 @@ export const StoryEventsChronicles: React.FC = () => {
     if (!selectedEventId) return storyFilteredEvents[0] ?? null;
     return storyFilteredEvents.find((e) => e.id === selectedEventId) ?? storyFilteredEvents[0] ?? null;
   }, [storyFilteredEvents, selectedEventId]);
+  const highlightedLocation = useMemo(
+    () => getEventLocation(highlightedEvent),
+    [getEventLocation, highlightedEvent],
+  );
 
   const handleRefresh = useCallback(() => {
     storyEvents.refetch();
@@ -790,6 +908,32 @@ export const StoryEventsChronicles: React.FC = () => {
   const handleResetFilters = useCallback(() => {
     setFilterState({ searchTerm: "", storyType: "all", sortOrder: "newest" });
   }, []);
+
+  const handleNavigateToEvent = useCallback(
+    async (event: ProcessedStoryEvent) => {
+      const location = getEventLocation(event);
+      if (!location) {
+        console.warn("[StoryEventsChronicles] Unable to resolve location for event", event.id);
+        return;
+      }
+
+      setNavigatingEventId(event.id);
+      const position = new Position({ x: location.coordX, y: location.coordY });
+
+      try {
+        if (location.type === "structure") {
+          await goToStructure(location.entityId, position, isMapView);
+        } else {
+          navigateToMapView(position);
+        }
+      } catch (error) {
+        console.error("[StoryEventsChronicles] Failed to navigate to event location", error);
+      } finally {
+        setNavigatingEventId(null);
+      }
+    },
+    [getEventLocation, goToStructure, isMapView, navigateToMapView],
+  );
 
   const canShowMore = visibleCount < storyFilteredEvents.length;
 
@@ -845,7 +989,12 @@ export const StoryEventsChronicles: React.FC = () => {
           onToggle={() => setFiltersCollapsed((c) => !c)}
         />
         <div className="flex flex-col gap-5">
-          <ActivityHighlight event={highlightedEvent} />
+          <ActivityHighlight
+            event={highlightedEvent}
+            eventLocation={highlightedLocation}
+            onNavigateToEvent={handleNavigateToEvent}
+            isNavigating={Boolean(highlightedEvent && navigatingEventId === highlightedEvent.id)}
+          />
 
           <section
             key={`${filterState.storyType}-${filterState.searchTerm}-${filterState.sortOrder}`}

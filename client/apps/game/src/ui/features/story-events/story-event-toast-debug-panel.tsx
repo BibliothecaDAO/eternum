@@ -60,7 +60,7 @@ export function StoryEventToastDebugPanel() {
 
   const triggerRandom = () => {
     const sample = demoEvents[Math.floor(Math.random() * demoEvents.length)];
-    pushToast(buildStoryEventPresentation(sample, components));
+    pushToast(buildStoryEventPresentation(sample, components), sample);
   };
 
   return (
