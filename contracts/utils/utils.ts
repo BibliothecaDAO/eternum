@@ -17,6 +17,7 @@ export interface SeasonAddresses {
   "Collectibles: Realms: Loot Chest": string;
   "Collectibles: Realms: Cosmetic Items": string;
   "Collectibles: Timelock Maker": string;
+  "Collectibles: Realms: Elite Invite": string;
   /** Class hash of the collectibles ERC721 contract */
   collectiblesClassHash?: string;
   /** Address of the village pass contract */
