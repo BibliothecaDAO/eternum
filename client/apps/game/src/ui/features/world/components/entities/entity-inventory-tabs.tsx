@@ -1,7 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
-import { BottomHudEmptyState } from "@/ui/features/world/components/hud-bottom";
 import { RelicActivationPopup } from "@/ui/features/economy/resources/relic-activation-popup";
 import { divideByPrecision, getBlockTimestamp, ResourceManager } from "@bibliothecadao/eternum";
 import { ClientComponents, getRelicInfo, ID, isRelic, RelicRecipientType } from "@bibliothecadao/types";
@@ -121,11 +120,7 @@ const InventorySection = ({
   };
 
   if (!items.length) {
-    return (
-      <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={`${textSize} text-gold/60 italic`}>
-        {isRelicSection ? "No relics stored." : "No resources stored."}
-      </BottomHudEmptyState>
-    );
+    return <p className={`${textSize} text-gold/60 italic`}>{isRelicSection ? "No relics stored." : "No resources stored."}</p>;
   }
 
   return (

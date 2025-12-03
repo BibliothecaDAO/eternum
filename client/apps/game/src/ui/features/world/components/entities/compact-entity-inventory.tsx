@@ -5,7 +5,6 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import type { RelicHolderPreview } from "@/ui/features/relics/components/player-relic-tray";
 import { RelicActivationSelector } from "@/ui/features/relics/components/relic-activation-selector";
-import { BottomHudEmptyState } from "@/ui/features/world/components/hud-bottom";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp, ResourceManager } from "@bibliothecadao/eternum";
 import {
@@ -129,11 +128,7 @@ export const CompactEntityInventory = memo(
     );
 
     if (items.length === 0) {
-      return (
-        <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName="text-xxs text-gold/60 italic">
-          No inventory.
-        </BottomHudEmptyState>
-      );
+      return <p className="text-xxs text-gold/60 italic">No inventory.</p>;
     }
 
     const effectiveItems = maxItems && Number.isFinite(maxItems) ? items.slice(0, maxItems) : items;

@@ -3,7 +3,6 @@ import { memo, useCallback, useMemo } from "react";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { BottomHudEmptyState } from "@/ui/features/world/components/hud-bottom";
 import { currencyFormat } from "@/ui/utils/utils";
 import { EntityWithRelics, PlayerRelicsData } from "@bibliothecadao/torii";
 import { EntityType, ID, RelicRecipientType } from "@bibliothecadao/types";
@@ -160,7 +159,7 @@ export const PlayerRelicTray = memo(({ variant = "floating", className }: Player
             />
           </div>
         ) : (
-          <BottomHudEmptyState className="flex-1">No relics discovered yet.</BottomHudEmptyState>
+          <div className="flex flex-1 items-center text-xs font-medium text-gold/60 italic">No relics discovered yet.</div>
         )}
         {playerRelicsLoading && (
           <div className="flex items-center gap-1 text-[10px] uppercase tracking-[0.2em] text-gold/60">

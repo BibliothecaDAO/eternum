@@ -2,7 +2,6 @@ import { Loader } from "lucide-react";
 import { memo, useMemo } from "react";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { BottomHudEmptyState } from "@/ui/features/world/components/hud-bottom";
 import { EntityType, HexPosition, ID, RelicRecipientType } from "@bibliothecadao/types";
 
 import { CompactArmyChip } from "@/ui/features/military/components/compact-army-chip";
@@ -91,9 +90,7 @@ const ArmyBannerEntityDetailContent = memo(
                 structureResources={structureResources}
               />
             ) : (
-              <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={emptyTextClass}>
-                No proximity warnings.
-              </BottomHudEmptyState>
+              <p className={emptyTextClass}>No proximity warnings.</p>
             )}
           </EntityDetailSection>
 
@@ -104,9 +101,7 @@ const ArmyBannerEntityDetailContent = memo(
             {bannerArmyInfo ? (
               <CompactArmyChip army={bannerArmyInfo} className="border border-gold/25 bg-dark/60" />
             ) : (
-              <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={emptyTextClass}>
-                Army data unavailable.
-              </BottomHudEmptyState>
+              <p className={emptyTextClass}>Army data unavailable.</p>
             )}
           </EntityDetailSection>
 
@@ -129,9 +124,7 @@ const ArmyBannerEntityDetailContent = memo(
                 variant={isBanner ? "tight" : "default"}
               />
             ) : (
-              <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={emptyTextClass}>
-                No supplies carried.
-              </BottomHudEmptyState>
+              <p className={emptyTextClass}>No supplies carried.</p>
             )}
           </EntityDetailSection>
 
@@ -145,18 +138,14 @@ const ArmyBannerEntityDetailContent = memo(
                   {`${relicEffects.length} active relic${relicEffects.length > 1 ? "s" : ""}.`}
                 </span>
               ) : (
-                <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={emptyTextClass}>
-                  No relics assigned.
-                </BottomHudEmptyState>
+                <p className={emptyTextClass}>No relics assigned.</p>
               )
             ) : relicEffects.length > 0 ? (
               <div className="max-h-[200px] overflow-auto pr-1">
                 <ActiveRelicEffects relicEffects={relicEffects} entityId={armyEntityId} compact={isCompactLayout} />
               </div>
             ) : (
-              <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={emptyTextClass}>
-                No relics assigned.
-              </BottomHudEmptyState>
+              <p className={emptyTextClass}>No relics assigned.</p>
             )}
           </EntityDetailSection>
         </div>

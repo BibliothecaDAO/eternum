@@ -17,7 +17,7 @@ import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { motion } from "framer-motion";
 import type { ComponentProps, ReactNode } from "react";
-import { lazy, memo, Suspense, useMemo } from "react";
+import { lazy, memo, Suspense, useEffect, useMemo } from "react";
 
 type CircleButtonProps = ComponentProps<typeof CircleButton>;
 
@@ -170,7 +170,7 @@ const buildRealmNavigationItems = ({
   ];
 
   const allowedMenus: MenuEnum[] = [
-    MenuEnum.entityDetails,
+    ...(isMapView ? [] : [MenuEnum.entityDetails]),
     MenuEnum.military,
     ...(isMapView ? [] : [MenuEnum.construction]),
     MenuEnum.hyperstructures,
@@ -316,6 +316,12 @@ export const LeftNavigationModule = memo(() => {
   const { isMapView } = useQuery();
 
   const isBlitz = getIsBlitz();
+
+  useEffect(() => {
+    if (isMapView && view === LeftView.EntityView) {
+      setView(LeftView.None);
+    }
+  }, [isMapView, view, setView]);
 
   const navHeight = useMemo(() => {
     if (!isMapView || showBlankOverlay) {

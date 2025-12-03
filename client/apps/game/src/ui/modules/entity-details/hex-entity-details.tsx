@@ -56,6 +56,19 @@ export const HexEntityDetails = () => {
     return isTileOccupierChest(tile?.occupier_type || 0);
   }, [tile]);
 
+  const isQuest = useMemo(() => {
+    return isTileOccupierQuest(tile?.occupier_type || 0);
+  }, [tile]);
+
+  const tileTypeLabel = useMemo(() => {
+    if (!tile) return "Hex Tile";
+    if (!hasOccupier) return "Biome Tile";
+    if (isStructure) return "Structure Tile";
+    if (isChest) return "Relic Tile";
+    if (isQuest) return "Quest Tile";
+    return "Army Tile";
+  }, [tile, hasOccupier, isStructure, isChest, isQuest]);
+
   if (!selectedHex) {
     return (
       <div className="h-full flex items-center justify-center p-4">
@@ -72,8 +85,8 @@ export const HexEntityDetails = () => {
       {/* Header with hex coordinates */}
       {selectedHex && (
         <div className="mb-2 flex-shrink-0 text-center text-sm font-medium">
-          <span className="rounded-md bg-slate-800/80 px-2 py-1  ring-1 ring-slate-600/40">
-            Hex coords: ({selectedHex.col - FELT_CENTER()}, {selectedHex.row - FELT_CENTER()})
+          <span className="rounded-md bg-slate-800/80 px-2 py-1 ring-1 ring-slate-600/40">
+            {tileTypeLabel} · ({selectedHex.col - FELT_CENTER()}, {selectedHex.row - FELT_CENTER()})
           </span>
         </div>
       )}
@@ -115,7 +128,7 @@ export const HexEntityDetails = () => {
                 </div>
               ) : isChest ? (
                 <RelicCrateEntityDetail crateEntityId={tile.occupier_id} compact={false} layoutVariant="default" />
-              ) : isTileOccupierQuest(tile.occupier_type) ? (
+              ) : isQuest ? (
                 <QuestEntityDetail questEntityId={tile.occupier_id} compact={false} className="max-w-md mx-auto" />
               ) : (
                 <ArmyEntityDetail armyEntityId={tile.occupier_id} compact={false} showButtons={true} />

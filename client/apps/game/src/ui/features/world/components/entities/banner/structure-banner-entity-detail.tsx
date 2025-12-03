@@ -3,7 +3,6 @@ import { memo, useMemo } from "react";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CompactDefenseDisplay } from "@/ui/features/military";
-import { BottomHudEmptyState } from "@/ui/features/world/components/hud-bottom";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
 import { EntityType, ID, RelicRecipientType } from "@bibliothecadao/types";
 
@@ -110,9 +109,7 @@ const StructureBannerEntityDetailContent = memo(
                   variant={defenseDisplayVariant}
                 />
               ) : (
-                <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={emptyTextClass}>
-                  {defenseEmptyCopy}
-                </BottomHudEmptyState>
+                <p className={emptyTextClass}>{defenseEmptyCopy}</p>
               )}
             </div>
           </EntityDetailSection>
@@ -181,9 +178,7 @@ const StructureBannerEntityDetailContent = memo(
               compact={compact}
               className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-2 sm:row-start-1")}
             >
-              <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={emptyTextClass}>
-                {productionFallbackCopy}
-              </BottomHudEmptyState>
+              <p className={emptyTextClass}>{productionFallbackCopy}</p>
             </EntityDetailSection>
           )}
 
@@ -227,9 +222,7 @@ const StructureBannerEntityDetailContent = memo(
               compact={compact}
               className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-1 sm:row-start-2")}
             >
-              <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={emptyTextClass}>
-                {inventoryFallbackCopy}
-              </BottomHudEmptyState>
+              <p className={emptyTextClass}>{inventoryFallbackCopy}</p>
             </EntityDetailSection>
           )}
 
