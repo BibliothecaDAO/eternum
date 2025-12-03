@@ -889,13 +889,11 @@ const RegistrationState = ({
                       We detected an entry token in your wallet. You can now register.
                     </p>
                   )}
-                  {!isLoadingEntryTokens &&
-                    (availableEntryTokenIds?.length ?? 0) === 0 &&
-                    entryTokenBalance > 0n && (
-                      <p className="text-xs text-gold/60 text-center">
-                        We could not confirm an entry token yet. It will be detected automatically once available.
-                      </p>
-                    )}
+                  {!isLoadingEntryTokens && (availableEntryTokenIds?.length ?? 0) === 0 && entryTokenBalance > 0n && (
+                    <p className="text-xs text-gold/60 text-center">
+                      We could not confirm an entry token yet. It will be detected automatically once available.
+                    </p>
+                  )}
                 </div>
                 {requiresEntryToken && entryTokenBalance < 1 && (
                   <p className="text-xs text-red-300 text-center">
@@ -1015,7 +1013,7 @@ const GameActiveState = ({
               >
                 <div className="flex items-center justify-center">
                   <Sword className="w-5 h-5 mr-2 fill-brown" />
-                  <span>Play Blitz</span> 
+                  <span>Play Blitz</span>
                 </div>
               </Button>
             ) : (
@@ -1056,11 +1054,7 @@ const GameActiveState = ({
                         }
 
                         statusIcon = isDone ? "✓" : isActive ? "…" : "";
-                        const statusClass = isDone
-                          ? "text-emerald-300"
-                          : isActive
-                            ? "text-gold"
-                            : "text-gold/60";
+                        const statusClass = isDone ? "text-emerald-300" : isActive ? "text-gold" : "text-gold/60";
 
                         return (
                           <div key={label} className="flex items-center justify-between">
@@ -1179,7 +1173,7 @@ export const BlitzOnboarding = () => {
   const playerSettleFinish = useComponentValue(
     components.BlitzRealmSettleFinish,
     getEntityIdFromKeys([BigInt(account.address)]),
-  );  
+  );
   const { connector } = useAccount();
 
   const playerSettled = useEntityQuery([HasValue(components.Structure, { owner: BigInt(account.address) })]).length > 0;
@@ -1517,7 +1511,10 @@ export const BlitzOnboarding = () => {
       const remainingToSettle = Math.max(0, assignedRealmCount - settledRealmCount);
 
       if (remainingToSettle <= 0) {
-        console.log("[Blitz] Settling realms: nothing to settle (no remaining assigned positions)", {assignedRealmCount, settledRealmCount});
+        console.log("[Blitz] Settling realms: nothing to settle (no remaining assigned positions)", {
+          assignedRealmCount,
+          settledRealmCount,
+        });
         setSettleStage("done");
         return;
       }
@@ -1536,13 +1533,9 @@ export const BlitzOnboarding = () => {
         }
       } else {
         const settlementCountPerCall = Math.min(3, remainingToSettle);
-        console.log(
-          `[Blitz] Settling realms: starting settle_realms with settlement_count=${settlementCountPerCall}`,
-        );
+        console.log(`[Blitz] Settling realms: starting settle_realms with settlement_count=${settlementCountPerCall}`);
         await blitz_realm_settle_realms({ signer: account, settlement_count: settlementCountPerCall });
-        console.log(
-          `[Blitz] Settling realms: settle_realms with settlement_count=${settlementCountPerCall} completed`,
-        );
+        console.log(`[Blitz] Settling realms: settle_realms with settlement_count=${settlementCountPerCall} completed`);
       }
 
       setSettleStage("done");
