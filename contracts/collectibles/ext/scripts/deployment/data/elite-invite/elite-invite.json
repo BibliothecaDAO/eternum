@@ -1,0 +1,42 @@
+{
+    "name": "Realms: Elite Invite",
+    "symbol": "REI",
+    "description": "Elite Invite Realms:Blitz",
+    "defaultIpfsCid": "QmWqqT4awbuzaHM7e5EBf9GGzNDQRz4WauUDSctVe9ZeBW",
+    "defaultIpfsCidOverwrite": false,
+    "traits": [
+        {
+            "traitTypeNameOverwrite": false,
+            "traitTypeId": 0,
+            "traitTypeName": "Epoch",
+            "traitValues": [
+                {
+                    "traitValueId": 1,
+                    "traitValueName": "Season 1",
+                    "traitValueNameOverwrite": false
+                }
+            ]
+        },
+        {
+            "traitTypeNameOverwrite": false,
+            "traitTypeId": 1,
+            "traitTypeName": "ID",
+            "traitValues": [
+                {
+                    "traitValueId": 1,
+                    "traitValueName": "Blitz Elite Invite",
+                    "traitValueNameOverwrite": false
+                }
+            ]
+        }
+    ],
+    "traitsCombinedIpfsCid": [
+       { 
+            "traits": "Epoch:Season 1,ID:Blitz Elite Invite", 
+            "ipfsCid": "QmWqqT4awbuzaHM7e5EBf9GGzNDQRz4WauUDSctVe9ZeBW", 
+            "overwrite": false 
+        }
+    ],
+    "mintCData": [
+        ]
+}

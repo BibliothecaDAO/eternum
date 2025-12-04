@@ -11,12 +11,13 @@
 #
 # USAGE:
 #   ./deploy.sh [type] [network]  - Builds and deploys the Realms Collectible contracts
-#                                   where [type] is required (cosmetics or loot-chests)
+#                                   where [type] is required (cosmetics, loot-chests, or elite-invite)
 #                                   and [network] is optional and defaults to 'local'
 #   Examples:
 #   ./deploy.sh cosmetics           - Deploys cosmetics to local
 #   ./deploy.sh cosmetics local     - Deploys cosmetics to local
 #   ./deploy.sh loot-chests slot    - Deploys loot-chests to slot
+#   ./deploy.sh elite-invite slot   - Deploys elite-invite to slot
 #   ./deploy.sh cosmetics sepolia   - Deploys cosmetics to sepolia
 #   ./deploy.sh loot-chests mainnet - Deploys loot-chests to mainnet
 #
@@ -88,13 +89,13 @@ TYPE=$1
 if [ -z "$TYPE" ]; then
     echo -e "${RED}Error: Collectible type is required${NC}"
     echo -e "Usage: ./deploy.sh [type] [network]"
-    echo -e "Valid types: cosmetics, loot-chests"
+    echo -e "Valid types: cosmetics, loot-chests, elite-invite"
     exit 1
 fi
 
-if [ "$TYPE" != "cosmetics" ] && [ "$TYPE" != "loot-chests" ]; then
+if [ "$TYPE" != "cosmetics" ] && [ "$TYPE" != "loot-chests" ] && [ "$TYPE" != "elite-invite" ]; then
     echo -e "${RED}Error: Invalid collectible type '${TYPE}'${NC}"
-    echo -e "Valid types: cosmetics, loot-chests"
+    echo -e "Valid types: cosmetics, loot-chests, elite-invite"
     exit 1
 fi
 

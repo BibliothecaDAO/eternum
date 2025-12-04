@@ -11,8 +11,8 @@ import {
   BlitzHighlightPlayer,
   buildBlitzShareMessage,
 } from "@/ui/shared/lib/blitz-highlight";
-import { copySvgToClipboard } from "@/ui/shared/lib/copy-svg";
 import { displayAddress } from "@/ui/utils/utils";
+import { toPng } from "html-to-image";
 import { Copy, Share2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -62,7 +62,7 @@ export const LandingPlayer = () => {
   );
   const lastLeaderboardFetchAt = useLandingLeaderboardStore((state) => state.lastFetchAt);
 
-  const cardRef = useRef<SVGSVGElement | null>(null);
+  const cardRef = useRef<HTMLDivElement | null>(null);
   const [isCopyingImage, setIsCopyingImage] = useState(false);
   const [refreshCooldownMs, setRefreshCooldownMs] = useState(0);
 
@@ -157,29 +157,6 @@ export const LandingPlayer = () => {
     }
   }, [fetchLeaderboard, fetchPlayerEntry, playerAddress, isRefreshing, isCooldownActive]);
 
-  const handleCopyImage = useCallback(async () => {
-    if (!highlightPlayer || !cardRef.current) {
-      toast.error("Final standings are still loading.");
-      return;
-    }
-
-    setIsCopyingImage(true);
-
-    try {
-      await copySvgToClipboard(cardRef.current, {
-        width: BLITZ_CARD_DIMENSIONS.width,
-        height: BLITZ_CARD_DIMENSIONS.height,
-        successMessage: "Blitz highlight copied to your clipboard.",
-        errorMessage: "Unable to copy the highlight image.",
-        unsupportedMessage: "Copying images is not supported in this environment.",
-      });
-    } catch {
-      // Errors are surfaced via toast inside copySvgToClipboard.
-    } finally {
-      setIsCopyingImage(false);
-    }
-  }, [highlightPlayer]);
-
   const handleShareOnX = useCallback(() => {
     if (!highlightPlayer) {
       toast.error("Final standings are still loading.");
@@ -196,6 +173,73 @@ export const LandingPlayer = () => {
 
     window.open(shareIntent.toString(), "_blank", "noopener,noreferrer");
   }, [highlightPlayer, shareMessage]);
+
+  const handleCopyImage = useCallback(async () => {
+    if (typeof window === "undefined") {
+      toast.error("Copying the image is not supported in this environment.");
+      return;
+    }
+
+    if (!highlightPlayer || !cardRef.current) {
+      toast.error("Your highlight card is still loading.");
+      return;
+    }
+
+    if (!("ClipboardItem" in window) || !navigator.clipboard?.write) {
+      toast.error("Copying images is not supported in this browser.");
+      return;
+    }
+
+    setIsCopyingImage(true);
+
+    try {
+      const cardNode = cardRef.current.querySelector(".blitz-card-root") as HTMLElement | null;
+
+      if (!cardNode) {
+        throw new Error("Unable to find the highlight card markup.");
+      }
+
+      const { width, height } = BLITZ_CARD_DIMENSIONS;
+      const fontReady =
+        typeof document !== "undefined" && "fonts" in document ? document.fonts.ready.catch(() => undefined) : null;
+      const waiters = fontReady ? [fontReady] : [];
+      await Promise.all(waiters);
+
+      const dataUrl = await toPng(cardNode, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: "#030d14",
+        canvasWidth: width,
+        canvasHeight: height,
+        style: {
+          width: `${width}px`,
+          height: `${height}px`,
+        },
+      });
+
+      const blob = await fetch(dataUrl).then((response) => response.blob());
+      const clipboardItem = new ClipboardItem({ "image/png": blob });
+
+      try {
+        await navigator.clipboard.write([clipboardItem]);
+        toast.success("Copied highlight image to clipboard!");
+      } catch (clipboardError) {
+        const link = document.createElement("a");
+        link.href = dataUrl;
+        link.download = `realms-highlight-${Date.now()}.png`;
+        link.style.display = "none";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        toast.info("Clipboard not available; downloaded image instead.");
+      }
+    } catch (caughtError) {
+      console.error("Failed to copy highlight image", caughtError);
+      toast.error("Copy failed. Please try again.");
+    } finally {
+      setIsCopyingImage(false);
+    }
+  }, [highlightPlayer]);
 
   const handleCopyMessage = useCallback(async () => {
     if (!shareMessage.trim()) {
@@ -306,9 +350,8 @@ export const LandingPlayer = () => {
 
           <div className="mt-4 flex justify-center sm:mt-5 xl:mt-6">
             {highlightPlayer ? (
-              <div className="w-full max-w-[420px] sm:max-w-[620px] xl:max-w-[780px] 2xl:max-w-[940px]">
+              <div className="w-full max-w-[420px] sm:max-w-[620px] xl:max-w-[780px] 2xl:max-w-[940px]" ref={cardRef}>
                 <BlitzHighlightCardWithSelector
-                  cardRef={cardRef}
                   title="Realms Blitz"
                   subtitle="Blitz Leaderboard"
                   winnerLine={championLabel}

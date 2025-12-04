@@ -134,6 +134,7 @@ export const getConfigFromTorii = async <S extends Schema>(
     "s1_eternum-PlayerRegisteredPoints",
     "s1_eternum-BlitzRealmPlayerRegister",
     "s1_eternum-BlitzEntryTokenRegister",
+    "s1_eternum-BlitzRealmSettleFinish",
     // Blitz prize models (single key)
     "s1_eternum-PlayersRankTrial",
     "s1_eternum-PlayersRankFinal",

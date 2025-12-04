@@ -1,0 +1,34 @@
+# Please be mindful that changing the content of this file will impact the Eternum Launcher app
+
+rpc = "https://api.cartridge.gg/x/starknet/mainnet"
+
+world_address = "0x0438ae7f2f209d544f19414a045d69e42c9bb813fed14c44c4d4e4998b63ce97"
+
+db_dir = "torii-mainnet"
+
+[indexing]
+events_chunk_size = 1024  # Size of events page to fetch
+blocks_chunk_size = 10240 # Blocks to process before DB commit
+
+pending = true # Enable indexing pending blocks
+
+polling_interval = 500 # Polling interval in milliseconds
+
+max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
+
+transactions = true
+
+contracts = []
+
+namespaces = ["wf"]
+
+world_block = 0
+
+[sql]
+all_model_indices = false
+
+[server]
+http_cors_origins = ["*"]
+
+[events]
+raw = false

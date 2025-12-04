@@ -50,10 +50,22 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.blitz_realm_make_hyperstructures(props);
   };
 
-  const blitz_realm_create = async (
-    props: SystemProps.BlitzRealmCreateProps,
+  const blitz_realm_assign_realm_positions = async (
+    props: SystemProps.BlitzRealmAssignRealmPositionsProps,
   ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.blitz_realm_create(props);
+    return await provider.blitz_realm_assign_realm_positions(props);
+  };
+
+  const blitz_realm_settle_realms = async (
+    props: SystemProps.BlitzRealmSettleRealmsProps,
+  ): Promise<GetTransactionReceiptResponse> => {
+    return await provider.blitz_realm_settle_realms(props);
+  };
+
+  const blitz_realm_assign_and_settle_realms = async (
+    props: SystemProps.BlitzRealmSettleRealmsProps,
+  ): Promise<GetTransactionReceiptResponse> => {
+    return await provider.blitz_realm_assign_and_settle_realms(props);
   };
 
   const create_order = async (props: SystemProps.CreateOrderProps): Promise<GetTransactionReceiptResponse> => {
@@ -466,7 +478,9 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     blitz_realm_obtain_entry_token: withAuth(blitz_realm_obtain_entry_token),
     blitz_realm_register: withAuth(blitz_realm_register),
     blitz_realm_make_hyperstructures: withAuth(blitz_realm_make_hyperstructures),
-    blitz_realm_create: withAuth(blitz_realm_create),
+    blitz_realm_assign_realm_positions: withAuth(blitz_realm_assign_realm_positions),
+    blitz_realm_settle_realms: withAuth(blitz_realm_settle_realms),
+    blitz_realm_assign_and_settle_realms: withAuth(blitz_realm_assign_and_settle_realms),
 
     send_resources: withAuth(send_resources),
     send_resources_multiple: withAuth(send_resources_multiple),
