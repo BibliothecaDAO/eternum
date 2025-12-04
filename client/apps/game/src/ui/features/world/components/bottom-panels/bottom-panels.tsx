@@ -147,10 +147,10 @@ export const BottomPanels = memo(() => {
       aria-hidden={!shouldShow}
       style={{ bottom: `${BOTTOM_PANEL_MARGIN}px` }}
     >
-      <div className="w-full md:w-auto md:max-w-[520px] lg:max-w-[560px]">
+      <div className="w-full md:w-auto md:max-w-[460px] lg:max-w-[480px]">
         <RealmPanel />
       </div>
-      <div className="w-full md:w-[520px] lg:w-[560px] md:ml-auto">
+      <div className="w-full md:w-[460px] lg:w-[480px] md:ml-auto">
         <TilePanel />
       </div>
     </div>
