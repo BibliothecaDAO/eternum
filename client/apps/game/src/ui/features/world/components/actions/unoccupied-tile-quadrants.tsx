@@ -33,7 +33,7 @@ const unoccupiedTileTroopConfig: Record<
   },
 };
 
-const formatQuadrantBiomeLabel = (biome: BiomeType | string) => {
+export const formatQuadrantBiomeLabel = (biome: BiomeType | string) => {
   const label = biome.toString();
   return label
     .replace(/_/g, " ")
@@ -43,7 +43,7 @@ const formatQuadrantBiomeLabel = (biome: BiomeType | string) => {
     .trim();
 };
 
-const getQuadrantBonusStyles = (bonus: number) => {
+export const getQuadrantBonusStyles = (bonus: number) => {
   if (bonus > 1) {
     return {
       containerClass: "border-green-500/60 bg-green-900/30 shadow-green-500/20",
@@ -62,7 +62,13 @@ const getQuadrantBonusStyles = (bonus: number) => {
   };
 };
 
-const BiomeQuadrant = ({ biome, onSimulateBattle }: { biome: BiomeType; onSimulateBattle: () => void }) => {
+interface BiomeSummaryCardProps {
+  biome: BiomeType;
+  onSimulateBattle?: () => void;
+  showSimulateAction?: boolean;
+}
+
+export const BiomeSummaryCard = ({ biome, onSimulateBattle, showSimulateAction = false }: BiomeSummaryCardProps) => {
   const troopBonuses = useMemo(
     () =>
       unoccupiedTileTroopTypes
@@ -88,30 +94,33 @@ const BiomeQuadrant = ({ biome, onSimulateBattle }: { biome: BiomeType; onSimula
           <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Biome</span>
           <span className="text-sm font-semibold text-gold">{formatQuadrantBiomeLabel(biome)}</span>
         </div>
-        <Button
-          variant="outline"
-          size="xs"
-          className="gap-2 rounded-full border-gold/60 px-3 py-1 text-[11px]"
-          forceUppercase={false}
-          onClick={onSimulateBattle}
-          withoutSound
-        >
-          <CrosshairIcon className="h-3.5 w-3.5" />
-          Simulate battle
-        </Button>
+        {showSimulateAction && onSimulateBattle ? (
+          <Button
+            variant="outline"
+            size="xs"
+            className="gap-2 rounded-full border-gold/60 px-3 py-1 text-[11px]"
+            forceUppercase={false}
+            onClick={onSimulateBattle}
+            withoutSound
+          >
+            <CrosshairIcon className="h-3.5 w-3.5" />
+            Simulate battle
+          </Button>
+        ) : null}
       </div>
       <div className="flex flex-col gap-2">
         <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Army bonuses</span>
-        <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-1.5">
           {troopBonuses.map(({ troopType, config, bonus, styles }) => (
             <div
               key={troopType}
-              className={`flex items-center justify-between rounded-lg border px-2.5 py-1.5 shadow-sm ${styles.containerClass}`}
+              className={`flex items-center justify-between rounded-lg border px-3 py-2 shadow-sm ${styles.containerClass}`}
             >
-              <ResourceIcon resource={config.resourceName} size="sm" withTooltip={false} />
-              <span className={`text-xs font-semibold ${styles.textClass}`}>
-                {bonus === 1 ? "0%" : formatBiomeBonus(bonus)}
-              </span>
+              <div className="flex items-center gap-2">
+                <ResourceIcon resource={config.resourceName} size="sm" withTooltip={false} />
+                <span className="text-[11px] font-semibold text-gold/90">{config.label}</span>
+              </div>
+              <span className={`text-sm font-semibold ${styles.textClass}`}>{bonus === 1 ? "0%" : formatBiomeBonus(bonus)}</span>
             </div>
           ))}
         </div>
@@ -135,7 +144,7 @@ export const UnoccupiedTileQuadrants = ({ biome }: { biome: BiomeType }) => {
   return (
     <div className="h-full min-h-0 overflow-auto">
       <EntityDetailSection compact className="flex h-full flex-col overflow-hidden" tone="highlight">
-        <BiomeQuadrant biome={biome} onSimulateBattle={handleSimulateBattle} />
+        <BiomeSummaryCard biome={biome} onSimulateBattle={handleSimulateBattle} showSimulateAction />
       </EntityDetailSection>
     </div>
   );

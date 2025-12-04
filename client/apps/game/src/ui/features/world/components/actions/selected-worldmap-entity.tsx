@@ -1,9 +1,10 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { UnoccupiedTileQuadrants } from "@/ui/features/world/components/actions/unoccupied-tile-quadrants";
+import { BiomeSummaryCard, UnoccupiedTileQuadrants } from "@/ui/features/world/components/actions/unoccupied-tile-quadrants";
 import { ArmyBannerEntityDetail } from "@/ui/features/world/components/entities/banner/army-banner-entity-detail";
 import { StructureBannerEntityDetail } from "@/ui/features/world/components/entities/banner/structure-banner-entity-detail";
 import { QuestEntityDetail } from "@/ui/features/world/components/entities/quest-entity-detail";
-import { RelicCrateEntityDetail } from "@/ui/features/world/components/entities/relic-crate-entity-detail";
+import { EntityDetailSection } from "@/ui/features/world/components/entities/layout";
+import { ID } from "@bibliothecadao/types";
 import {
   Biome,
   getEntityIdFromKeys,
@@ -54,18 +55,22 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
   const isQuest = isTileOccupierQuest(occupierType);
   const isExplored = !!tile && Number(tile.biome) !== 0;
 
+  const renderUnexploredMessage = () => (
+    <div className="flex h-full min-h-[140px] flex-col items-center justify-center gap-2 text-center">
+      <p className="text-xs font-medium text-gold/60 italic text-center">
+        Unexplored Territory.
+        <br />
+        Send an explorer to discover what lies here.
+      </p>
+    </div>
+  );
+
   if (!tile) {
-    return null;
+    return renderUnexploredMessage();
   }
 
   if (!isExplored) {
-    return (
-      <div className="flex min-h-0 flex-col items-center justify-center gap-2 text-center">
-        <p className="text-xs font-medium text-gold/60 italic">
-          Unexplored Territory. Send an explorer to discover what lies here.
-        </p>
-      </div>
-    );
+    return renderUnexploredMessage();
   }
 
   if (!hasOccupier) {
@@ -93,7 +98,14 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
           {...sharedDetailProps}
         />
       ) : isChest ? (
-        <RelicCrateEntityDetail crateEntityId={occupierEntityId} {...sharedDetailProps} />
+        <div className="grid h-full min-h-0 gap-2 overflow-auto sm:grid-cols-[minmax(0,200px)_1fr]">
+          <EntityDetailSection compact tone="highlight" className="h-full">
+            <BiomeSummaryCard biome={biome} />
+          </EntityDetailSection>
+          <EntityDetailSection compact tone="highlight" className="h-full">
+            <RelicCrateSummaryPanel crateEntityId={occupierEntityId} />
+          </EntityDetailSection>
+        </div>
       ) : isQuest ? (
         <QuestEntityDetail questEntityId={occupierEntityId} className="h-full" {...sharedDetailProps} />
       ) : (
@@ -104,6 +116,20 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
           {...sharedDetailProps}
         />
       )}
+    </div>
+  );
+};
+
+const RelicCrateSummaryPanel = ({ crateEntityId }: { crateEntityId: ID }) => {
+  return (
+    <div className="flex h-full flex-col gap-3">
+      <div className="flex flex-col gap-1 text-left">
+        <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Relic Crate</span>
+        <span className="text-sm font-semibold text-gold">Crate #{crateEntityId}</span>
+        <p className="text-xxs text-gold/70">Move an army adjacent to the crate to claim its relics before rivals arrive.</p>
+        <p className="text-xxs text-gold/70">The crate contains a cache of 3 relics that can empower armies or structures.</p>
+        <p className="text-xxs text-gold/70">Cracking open a relic crate also grants 1000 Victory Points.</p>
+      </div>
     </div>
   );
 };
