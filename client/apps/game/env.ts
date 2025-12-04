@@ -14,6 +14,7 @@ const envSchema = z.object({
     .default("0x1e41641859757cd7c00c58456b367aeeb5c11a2e73049e303035969be7a6b0b"),
 
   VITE_PUBLIC_CLIENT_FEE_RECIPIENT: z.string().startsWith("0x"),
+  VITE_PUBLIC_PM_ADDRESS: z.string().startsWith("0x").optional(),
 
   // API endpoints
   VITE_PUBLIC_TORII: z.string().url().optional().default("https://api.cartridge.gg/x/eternum-blitz-slot-test/torii"),
