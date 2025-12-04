@@ -5,16 +5,21 @@ import HexceptionScene from "@/three/scenes/hexception";
 import HUDScene from "@/three/scenes/hud-scene";
 import WorldmapScene from "@/three/scenes/worldmap";
 import { GUIManager } from "@/three/utils/";
-import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
+import {
+  CAMERA_CONFIG,
+  CAMERA_FAR_PLANE,
+  CONTROL_CONFIG,
+  POST_PROCESSING_CONFIG,
+  type PostProcessingConfig,
+} from "@/three/constants";
+import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
 import { SetupResult } from "@bibliothecadao/dojo";
-import throttle from "lodash/throttle";
 import {
   BloomEffect,
-  BrightnessContrastEffect,
+  Effect,
   EffectComposer,
   EffectPass,
   FXAAEffect,
-  HueSaturationEffect,
   RenderPass,
   ToneMappingEffect,
   ToneMappingMode,
@@ -68,8 +73,8 @@ export default class GameRenderer {
   private statsDomElement?: HTMLElement;
 
   // Camera settings
-  private cameraDistance = 10; // Maintain the same distance
-  private cameraAngle = Math.PI / 3;
+  private cameraDistance = CAMERA_CONFIG.defaultDistance; // Maintain the same distance
+  private cameraAngle = CAMERA_CONFIG.defaultAngle;
 
   // Components
   private transitionManager!: TransitionManager;
@@ -119,7 +124,12 @@ export default class GameRenderer {
   }
 
   private initializeCamera() {
-    this.camera = new PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, IS_FLAT_MODE ? 50 : 30);
+    this.camera = new PerspectiveCamera(
+      CAMERA_CONFIG.fov,
+      window.innerWidth / window.innerHeight,
+      CAMERA_CONFIG.near,
+      CAMERA_FAR_PLANE,
+    );
     const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
     const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
     this.camera.position.set(0, cameraHeight, cameraDepth);
@@ -369,36 +379,30 @@ export default class GameRenderer {
 
     // Adjust OrbitControls for new camera angle
     this.controls = new MapControls(this.camera, this.renderer.domElement);
-    this.controls.enableRotate = false;
+    this.controls.enableRotate = CONTROL_CONFIG.enableRotate;
     const zoomSetting = useUIStore.getState().enableMapZoom;
     console.log(`[GameRenderer] Setting enableZoom to: ${zoomSetting}`);
     this.controls.enableZoom = zoomSetting;
-    this.controls.enablePan = true;
-    this.controls.panSpeed = 2;
-    this.controls.zoomToCursor = true;
-    this.controls.minDistance = 5;
-    this.controls.maxDistance = 20;
-    this.controls.enableDamping = true;
-    this.controls.dampingFactor = 0.05;
+    this.controls.enablePan = CONTROL_CONFIG.enablePan;
+    this.controls.panSpeed = CONTROL_CONFIG.panSpeed;
+    this.controls.zoomToCursor = CONTROL_CONFIG.zoomToCursor;
+    this.controls.minDistance = CONTROL_CONFIG.minDistance;
+    this.controls.maxDistance = CONTROL_CONFIG.maxDistance;
+    this.controls.enableDamping = CONTROL_CONFIG.enableDamping && this.graphicsSetting === GraphicsSettings.HIGH;
+    this.controls.dampingFactor = CONTROL_CONFIG.dampingFactor;
     this.controls.target.set(0, 0, 0);
-    if (this.graphicsSetting !== GraphicsSettings.HIGH) {
-      this.controls.enableDamping = false;
-    }
-    this.controls.addEventListener(
-      "change",
-      throttle(() => {
-        if (this.sceneManager?.getCurrentScene() === SceneName.WorldMap) {
-          this.worldmapScene.updateVisibleChunks();
-        }
-      }, 30),
-    );
+    this.controls.addEventListener("change", () => {
+      if (this.sceneManager?.getCurrentScene() === SceneName.WorldMap) {
+        this.worldmapScene.requestChunkRefresh();
+      }
+    });
     this.controls.keys = {
       LEFT: "KeyA",
       UP: "KeyW",
       RIGHT: "KeyD",
       BOTTOM: "KeyS",
     };
-    this.controls.keyPanSpeed = 75.0;
+    this.controls.keyPanSpeed = CONTROL_CONFIG.keyPanSpeed;
     this.controls.listenToKeyEvents(document.body);
 
     // Subscribe to zoom setting changes
@@ -475,122 +479,25 @@ export default class GameRenderer {
   }
 
   private setupPostProcessingEffects() {
-    if (this.graphicsSetting === GraphicsSettings.LOW) {
+    const effectsConfig = POST_PROCESSING_CONFIG[this.graphicsSetting];
+    if (!effectsConfig) {
       return; // Skip post-processing for low graphics settings
     }
 
-    // Create effects configuration object
-    const effectsConfig = this.createEffectsConfiguration(this.graphicsSetting);
-
-    // Create and configure all effects
-    const effects: any = [this.createToneMappingEffect(effectsConfig), new FXAAEffect()];
+    const effects: Effect[] = [this.createToneMappingEffect(effectsConfig), new FXAAEffect()];
 
     if (this.graphicsSetting === GraphicsSettings.HIGH) {
-      effects.push(this.createBloomEffect(0.25));
+      effects.push(this.createBloomEffect(effectsConfig.bloomIntensity));
       effects.push(this.createVignetteEffect(effectsConfig));
     } else if (this.graphicsSetting === GraphicsSettings.MID) {
-      effects.push(this.createBloomEffect(0.15));
+      effects.push(this.createBloomEffect(effectsConfig.bloomIntensity));
     }
 
     // Add all effects in a single pass
     this.composer.addPass(new EffectPass(this.camera, ...effects));
   }
 
-  private createEffectsConfiguration(setting: GraphicsSettings) {
-    if (setting === GraphicsSettings.HIGH) {
-      return {
-        brightness: 0,
-        contrast: 0,
-        hue: 0,
-        saturation: 0.6,
-        toneMapping: {
-          mode: ToneMappingMode.OPTIMIZED_CINEON,
-          exposure: 0.7,
-          whitePoint: 1.2,
-        },
-        vignette: {
-          darkness: 0.9,
-          offset: 0.35,
-        },
-      };
-    }
-
-    return {
-      brightness: 0,
-      contrast: 0,
-      hue: 0,
-      saturation: 0.4,
-      toneMapping: {
-        mode: ToneMappingMode.OPTIMIZED_CINEON,
-        exposure: 0.6,
-        whitePoint: 1.1,
-      },
-      vignette: {
-        darkness: 0.65,
-        offset: 0.25,
-      },
-    };
-  }
-
-  private createBrightnessContrastEffect(config: any) {
-    const effect = new BrightnessContrastEffect({
-      brightness: config.brightness,
-      contrast: config.contrast,
-    });
-
-    const folder = GUIManager.addFolder("BrightnesContrastt");
-    folder
-      .add(config, "brightness")
-      .name("Brightness")
-      .min(-1)
-      .max(1)
-      .step(0.01)
-      .onChange((value: number) => {
-        effect.brightness = value;
-      });
-    folder
-      .add(config, "contrast")
-      .name("Contrast")
-      .min(-1)
-      .max(1)
-      .step(0.01)
-      .onChange((value: number) => {
-        effect.contrast = value;
-      });
-
-    return effect;
-  }
-
-  private createHueSaturationEffect(config: any) {
-    const effect = new HueSaturationEffect({
-      hue: config.hue,
-      saturation: config.saturation,
-    });
-
-    const folder = GUIManager.addFolder("Hue & Saturation");
-    folder
-      .add(config, "hue")
-      .name("Hue")
-      .min(-Math.PI)
-      .max(Math.PI)
-      .step(0.01)
-      .onChange((value: number) => {
-        effect.hue = value;
-      });
-    folder
-      .add(config, "saturation")
-      .name("Saturation")
-      .min(-1)
-      .max(1)
-      .step(0.01)
-      .onChange((value: number) => {
-        effect.saturation = value;
-      });
-
-    return effect;
-  }
-
-  private createToneMappingEffect(config: any) {
+  private createToneMappingEffect(config: PostProcessingConfig) {
     const effect = new ToneMappingEffect({
       mode: config.toneMapping.mode,
     });
@@ -619,7 +526,7 @@ export default class GameRenderer {
     return effect;
   }
 
-  private createVignetteEffect(config: any) {
+  private createVignetteEffect(config: PostProcessingConfig) {
     const effect = new VignetteEffect({
       darkness: config.vignette.darkness,
       offset: config.vignette.offset,

@@ -18,7 +18,7 @@
 
 ## High-Level Architecture
 
-### Progress Updates (Phase 2)
+### Progress Updates (Phase 2) - COMPLETED
 
 - Resolver now maps registry data for armies/structures and exposes registry metadata to downstream systems.
 - Worldmap `ArmyManager` hydrates player cosmetics from recs and stores the resolved cosmetic id with each army
@@ -27,7 +27,29 @@
 - Registry now models attachment slots/mount points and resolver enforces compatibility while merging per-unit/global
   attachment selections.
 - Registry + asset cache unit coverage expanded (`asset-cache`, `resolver` smoke tests).
-- Next: wire attachment spawning, extend structure model selection, and surface debug overrides.
+- Mount resolver (`mount-resolver.ts`) provides humanoid/boat/structure mount point transforms.
+- `CosmeticAttachmentManager` integrated into both `ArmyManager` and `StructureManager` with:
+  - `spawnAttachments()` called during entity creation
+  - Signature-based change detection to avoid redundant spawns
+  - `retainOnly()` cleanup during chunk switches
+  - Transform updates via `updateAttachmentTransforms()`
+
+### Current State Summary
+
+| Component                  | Status      | Notes                                                    |
+| -------------------------- | ----------- | -------------------------------------------------------- |
+| `types.ts`                 | ✅ Complete | All interfaces defined                                   |
+| `registry.ts`              | ✅ Complete | Auto-seeds base models + sample cosmetics                |
+| `player-cosmetics-store.ts`| ✅ Complete | Hydrates from `BlitzCosmeticAttrsRegister`               |
+| `asset-cache.ts`           | ✅ Complete | GLTF/texture loading with retry + material pooling       |
+| `resolver.ts`              | ✅ Complete | Merges player selections + global attachments            |
+| `attachment-manager.ts`    | ✅ Complete | Object pooling + placeholder upgrade flow                |
+| `mount-resolver.ts`        | ✅ Complete | Humanoid/boat/structure mount transforms                 |
+| `debug-controller.ts`      | ✅ Complete | Global overrides with GUI + console API                  |
+| Manager integration        | ✅ Partial  | Attachments spawn; model swapping not wired              |
+| Bootstrap preloading       | ✅ Complete | `preloadAllCosmeticAssets` called in `performInitialSetup` |
+| GUI controls               | ✅ Complete | "Cosmetics Debug" folder in `GUIManager`                 |
+| Console API                | ✅ Complete | `window.CosmeticsDebug` with full API                    |
 
 ### 1. Cosmetic Registry (Data-Driven Source of Truth)
 

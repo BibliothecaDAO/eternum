@@ -3,6 +3,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import type WorldmapScene from "@/three/scenes/worldmap";
+import { playerColorManager } from "@/three/systems/player-colors";
 import { getExplorerInfoFromTileOccupier, getStructureInfoFromTileOccupier, Position } from "@bibliothecadao/eternum";
 
 import { getIsBlitz } from "@bibliothecadao/eternum";
@@ -79,9 +80,11 @@ interface EntityCluster {
     row: number;
     isMine: boolean;
     type?: StructureType; // Only for structures
+    ownerId?: string; // Owner address for player color distinction
   }[];
   isMine: boolean;
   type?: StructureType; // Only for structures
+  ownerId?: string; // Owner address for player color distinction
 }
 
 // Keep ArmyCluster for backward compatibility
@@ -418,14 +421,33 @@ class Minimap {
         const labelImg = this.labelImages.get(cluster.isMine ? "MY_ARMY" : "ARMY");
         if (!labelImg) return;
 
+        const drawX = scaledCol - this.armySize.width * (cluster.centerRow % 2 !== 0 ? 1 : 0.5);
+        const drawY = scaledRow - this.armySize.height / 2;
+
+        // Draw player-colored indicator ring behind the icon for enemy armies
+        // This allows distinguishing different enemy players on the minimap
+        if (!cluster.isMine && cluster.ownerId) {
+          const profile = playerColorManager.getEnemyProfile(cluster.ownerId);
+          const ringColor = `#${profile.minimap.getHexString()}`;
+
+          // Draw colored ring/glow behind the icon
+          this.context.save();
+          this.context.beginPath();
+          this.context.arc(
+            drawX + this.armySize.width / 2,
+            drawY + this.armySize.height / 2,
+            this.armySize.width * 0.6,
+            0,
+            Math.PI * 2,
+          );
+          this.context.fillStyle = ringColor;
+          this.context.globalAlpha = 0.6;
+          this.context.fill();
+          this.context.restore();
+        }
+
         // Draw the army icon
-        this.context.drawImage(
-          labelImg,
-          scaledCol - this.armySize.width * (cluster.centerRow % 2 !== 0 ? 1 : 0.5),
-          scaledRow - this.armySize.height / 2,
-          this.armySize.width,
-          this.armySize.height,
-        );
+        this.context.drawImage(labelImg, drawX, drawY, this.armySize.width, this.armySize.height);
       }
     });
   }
@@ -491,20 +513,28 @@ class Minimap {
     // Reset army clusters
     this.armyClusters = [];
 
-    const allArmies: HexPosition[] = this.tiles
+    const playerAddress = useAccountStore.getState().account?.address;
+
+    // Extract army data with owner information for player color distinction
+    const allArmies = this.tiles
       .map((tile) => {
         const explorerInfo = getExplorerInfoFromTileOccupier(tile.occupier_type);
         if (!explorerInfo) return null;
+        const ownerId = tile.occupier_id?.toString();
+        const isMine = playerAddress ? ownerId === playerAddress : false;
         return {
           col: tile.col,
           row: tile.row,
+          isMine,
+          ownerId,
         };
       })
-      .filter((army) => army !== null);
+      .filter((army): army is NonNullable<typeof army> => army !== null);
+
     if (allArmies.length === 0) return;
 
     // Use grid-based spatial partitioning for efficient clustering
-    const grid = new Map<string, Array<{ index: number; col: number; row: number; isMine: boolean }>>();
+    const grid = new Map<string, Array<{ index: number; col: number; row: number; isMine: boolean; ownerId?: string }>>();
 
     // Place armies in grid cells
     allArmies.forEach((army, index) => {
@@ -521,7 +551,8 @@ class Minimap {
         index,
         col: army.col,
         row: army.row,
-        isMine: false,
+        isMine: army.isMine,
+        ownerId: army.ownerId,
       });
     });
 
@@ -534,11 +565,13 @@ class Minimap {
         if (processedArmies.has(army.index)) continue;
 
         // Create a new cluster with this army
+        // Include ownerId for player-specific coloring on the minimap
         const cluster: EntityCluster = {
           centerCol: army.col,
           centerRow: army.row,
-          entities: [{ col: army.col, row: army.row, isMine: army.isMine }],
+          entities: [{ col: army.col, row: army.row, isMine: army.isMine, ownerId: army.ownerId }],
           isMine: army.isMine,
+          ownerId: army.ownerId,
         };
 
         processedArmies.add(army.index);
@@ -554,7 +587,8 @@ class Minimap {
             if (!neighborArmies) continue;
 
             for (const neighborArmy of neighborArmies) {
-              if (processedArmies.has(neighborArmy.index) || neighborArmy.isMine !== army.isMine) continue;
+              // Only cluster armies from the same owner for consistent coloring
+              if (processedArmies.has(neighborArmy.index) || neighborArmy.ownerId !== army.ownerId) continue;
 
               // Check actual distance
               const distance = this.hexDistance(army.col, army.row, neighborArmy.col, neighborArmy.row);
@@ -564,6 +598,7 @@ class Minimap {
                   col: neighborArmy.col,
                   row: neighborArmy.row,
                   isMine: neighborArmy.isMine,
+                  ownerId: neighborArmy.ownerId,
                 });
                 processedArmies.add(neighborArmy.index);
               }

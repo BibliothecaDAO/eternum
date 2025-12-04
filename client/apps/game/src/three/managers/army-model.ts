@@ -54,6 +54,11 @@ export class ArmyModel {
   private currentCameraView: CameraView = CameraView.Medium;
   private movementCompleteCallbacks: Map<number, () => void> = new Map();
 
+  // Cosmetic model management
+  private readonly cosmeticModels: Map<string, ModelData> = new Map();
+  private readonly pendingCosmeticModelLoads: Map<string, Promise<ModelData>> = new Map();
+  private readonly entityCosmeticMap: Map<number, string> = new Map(); // entityId -> cosmeticId
+
   // Reusable objects for matrix operations and memory optimization
   private readonly dummyMatrix: Matrix4 = new Matrix4();
   private readonly dummyEuler: Euler = new Euler();
@@ -67,6 +72,9 @@ export class ArmyModel {
   private instanceCount = 0;
   private currentVisibleCount: number = 0;
   private readonly ANIMATION_BUCKETS = 20;
+  private readonly freeSlots: number[] = [];
+  private readonly freeSlotSet: Set<number> = new Set();
+  private nextInstanceIndex = 0;
 
   // Configuration constants
   private readonly SCALE_TRANSITION_SPEED = 5.0;
@@ -168,6 +176,67 @@ export class ArmyModel {
 
     this.pendingModelLoads.set(modelType, pending);
     return pending;
+  }
+
+  /**
+   * Ensures a cosmetic model is loaded by cosmeticId and asset path.
+   */
+  private async ensureCosmeticModel(cosmeticId: string, assetPath: string): Promise<ModelData> {
+    if (this.cosmeticModels.has(cosmeticId)) {
+      return this.cosmeticModels.get(cosmeticId)!;
+    }
+
+    let pending = this.pendingCosmeticModelLoads.get(cosmeticId);
+    if (pending) {
+      return pending;
+    }
+
+    pending = new Promise<ModelData>((resolve, reject) => {
+      gltfLoader.load(
+        assetPath,
+        (gltf) => {
+          try {
+            const modelData = this.createModelData(gltf);
+            this.cosmeticModels.set(cosmeticId, modelData);
+            this.reapplyInstancesForCosmeticModel(cosmeticId, modelData);
+            resolve(modelData);
+          } catch (error) {
+            reject(error as Error);
+          }
+        },
+        undefined,
+        (error) => {
+          console.error(`[ArmyModel] Failed to load cosmetic model ${cosmeticId} from ${assetPath}:`, error);
+          reject(error);
+        },
+      );
+    }).finally(() => {
+      this.pendingCosmeticModelLoads.delete(cosmeticId);
+    });
+
+    this.pendingCosmeticModelLoads.set(cosmeticId, pending);
+    return pending;
+  }
+
+  private reapplyInstancesForCosmeticModel(cosmeticId: string, modelData: ModelData): void {
+    this.instanceData.forEach((instance, entityId) => {
+      if (this.entityCosmeticMap.get(entityId) !== cosmeticId) {
+        return;
+      }
+      if (instance.matrixIndex === undefined) {
+        return;
+      }
+      const position = instance.position;
+      const scale = instance.scale;
+      const rotation = instance.rotation;
+      const color = instance.color;
+
+      if (!position || !scale) {
+        return;
+      }
+
+      this.updateInstance(entityId, instance.matrixIndex, position, scale, rotation, color);
+    });
   }
 
   private reapplyInstancesForModel(modelType: ModelType, modelData: ModelData): void {
@@ -332,6 +401,15 @@ export class ArmyModel {
         mesh.userData.entityIdMap?.delete(matrixIndex);
       });
     });
+    // Also clear from cosmetic models
+    this.cosmeticModels.forEach((modelData) => {
+      this.ensureModelCapacity(modelData, matrixIndex + 1);
+      modelData.instancedMeshes.forEach((mesh) => {
+        mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
+        mesh.instanceMatrix.needsUpdate = true;
+        mesh.userData.entityIdMap?.delete(matrixIndex);
+      });
+    });
     this.setAnimationState(matrixIndex, false);
   }
 
@@ -360,10 +438,103 @@ export class ArmyModel {
     });
   }
 
+  /**
+   * Preloads a cosmetic model by ID and asset path.
+   */
+  public async preloadCosmeticModel(cosmeticId: string, assetPath: string): Promise<void> {
+    try {
+      await this.ensureCosmeticModel(cosmeticId, assetPath);
+    } catch (error) {
+      console.error(`Failed to preload cosmetic model ${cosmeticId}`, error);
+    }
+  }
+
+  /**
+   * Assigns a cosmetic model to an entity. This takes precedence over the base ModelType.
+   */
+  public assignCosmeticToEntity(entityId: number, cosmeticId: string, assetPath: string): void {
+    const oldCosmeticId = this.entityCosmeticMap.get(entityId);
+    if (oldCosmeticId === cosmeticId) return;
+    this.entityCosmeticMap.set(entityId, cosmeticId);
+    void this.ensureCosmeticModel(cosmeticId, assetPath).catch((error) => {
+      console.error(`Failed to load cosmetic model ${cosmeticId}`, error);
+    });
+  }
+
+  /**
+   * Clears cosmetic assignment for an entity, falling back to base ModelType.
+   */
+  public clearCosmeticForEntity(entityId: number): void {
+    this.entityCosmeticMap.delete(entityId);
+  }
+
+  /**
+   * Checks if an entity has a cosmetic model assigned.
+   */
+  public hasCosmeticModel(entityId: number): boolean {
+    const cosmeticId = this.entityCosmeticMap.get(entityId);
+    return cosmeticId !== undefined && this.cosmeticModels.has(cosmeticId);
+  }
+
   public getModelForEntity(entityId: number): ModelData | undefined {
+    // Check for cosmetic model first
+    const cosmeticId = this.entityCosmeticMap.get(entityId);
+    if (cosmeticId) {
+      const cosmeticModel = this.cosmeticModels.get(cosmeticId);
+      if (cosmeticModel) {
+        return cosmeticModel;
+      }
+    }
+    // Fall back to base model
     const modelType = this.entityModelMap.get(entityId);
     if (!modelType) return undefined;
     return this.models.get(modelType);
+  }
+
+  public allocateInstanceSlot(entityId: number): number {
+    const existingSlot = this.instanceData.get(entityId)?.matrixIndex;
+    if (existingSlot !== undefined) {
+      this.matrixIndexOwners.set(existingSlot, entityId);
+      return existingSlot;
+    }
+
+    const reusedSlot = this.freeSlots.pop();
+    const slot = reusedSlot !== undefined ? reusedSlot : this.nextInstanceIndex++;
+    if (reusedSlot !== undefined) {
+      this.freeSlotSet.delete(reusedSlot);
+    }
+    this.matrixIndexOwners.set(slot, entityId);
+    return slot;
+  }
+
+  public freeInstanceSlot(entityId: number, slot?: number): void {
+    const instanceData = this.instanceData.get(entityId);
+    const resolvedSlot = slot ?? instanceData?.matrixIndex;
+    if (resolvedSlot === undefined) {
+      return;
+    }
+
+    this.clearMovementState(entityId);
+    this.clearInstanceSlot(resolvedSlot);
+    this.matrixIndexOwners.delete(resolvedSlot);
+
+    if (this.freeSlotSet.has(resolvedSlot)) return;
+
+    this.freeSlotSet.add(resolvedSlot);
+    this.freeSlots.push(resolvedSlot);
+
+    if (instanceData) {
+      instanceData.matrixIndex = undefined;
+    }
+  }
+
+  public rebindInstanceSlot(entityId: number, newSlot: number): void {
+    const instanceData = this.instanceData.get(entityId);
+    if (instanceData) {
+      instanceData.matrixIndex = newSlot;
+    }
+    this.matrixIndexOwners.set(newSlot, entityId);
+    this.rebindMovementMatrixIndex(entityId, newSlot);
   }
 
   public updateInstance(
@@ -382,11 +553,17 @@ export class ArmyModel {
 
     const state = this.storeInstanceState(entityId, index, position, scale, rotation, color);
 
+    // Check if entity has a cosmetic model assigned
+    const activeCosmeticId = this.entityCosmeticMap.get(entityId);
+    const hasCosmeticModel = activeCosmeticId && this.cosmeticModels.has(activeCosmeticId);
+
+    // Update base models - hide them if entity has an active cosmetic model
     this.models.forEach((modelData, modelType) => {
-      const isActiveModel = modelType === this.entityModelMap.get(entityId);
+      const isActiveBaseModel = modelType === this.entityModelMap.get(entityId);
       let targetScale = this.zeroScale;
 
-      if (isActiveModel) {
+      // Only show base model if it's active AND there's no cosmetic override
+      if (isActiveBaseModel && !hasCosmeticModel) {
         if (modelType === ModelType.Boat) {
           targetScale = this.boatScale;
         } else if (modelType === ModelType.AgentIstarai || modelType === ModelType.AgentElisa) {
@@ -400,26 +577,23 @@ export class ArmyModel {
       this.updateInstanceTransform(state.position, targetScale, state.rotation);
       this.updateInstanceMeshes(modelData, index, entityId, state.color);
     });
+
+    // Update cosmetic models - show only the active one for this entity
+    this.cosmeticModels.forEach((modelData, cosmeticId) => {
+      const isActiveCosmeticModel = cosmeticId === activeCosmeticId;
+      const targetScale = isActiveCosmeticModel ? this.normalScale : this.zeroScale;
+
+      this.ensureModelCapacity(modelData, index + 1);
+      this.updateInstanceTransform(state.position, targetScale, state.rotation);
+      this.updateInstanceMeshes(modelData, index, entityId, state.color);
+    });
   }
 
   public releaseEntity(entityId: number, freedSlot?: number): void {
-    this.stopMovement(entityId);
-    this.movingInstances.delete(entityId);
-
-    const instanceData = this.instanceData.get(entityId);
-    const ownedMatrixIndex = instanceData?.matrixIndex;
-
-    if (ownedMatrixIndex !== undefined) {
-      this.matrixIndexOwners.delete(ownedMatrixIndex);
-    }
-
-    if (freedSlot !== undefined) {
-      this.clearInstanceSlot(freedSlot);
-      this.matrixIndexOwners.delete(freedSlot);
-    }
-
+    this.freeInstanceSlot(entityId, freedSlot);
     this.instanceData.delete(entityId);
     this.entityModelMap.delete(entityId);
+    this.entityCosmeticMap.delete(entityId);
     this.movementCompleteCallbacks.delete(entityId);
     this.removeLabel(entityId);
   }
@@ -495,6 +669,11 @@ export class ArmyModel {
     const time = now * 0.001;
 
     this.models.forEach((modelData) => {
+      this.updateModelAnimations(modelData, time, now);
+    });
+
+    // Also update cosmetic model animations
+    this.cosmeticModels.forEach((modelData) => {
       this.updateModelAnimations(modelData, time, now);
     });
   }
@@ -918,6 +1097,21 @@ export class ArmyModel {
     return fallbackModel;
   }
 
+  private clearMovementState(entityId: number): void {
+    const movement = this.movingInstances.get(entityId);
+    if (movement) {
+      this.setAnimationState(movement.matrixIndex, false);
+      this.movingInstances.delete(entityId);
+    }
+
+    const instanceData = this.instanceData.get(entityId);
+    if (instanceData) {
+      instanceData.isMoving = false;
+      instanceData.path = undefined;
+    }
+    this.movementCompleteCallbacks.delete(entityId);
+  }
+
   private stopMovement(entityId: number): void {
     const movement = this.movingInstances.get(entityId);
     if (!movement) return;
@@ -1153,18 +1347,56 @@ export class ArmyModel {
         }
       });
     });
+
+    // Also update cosmetic models
+    this.cosmeticModels.forEach((modelData) => {
+      modelData.instancedMeshes.forEach((mesh) => {
+        mesh.instanceMatrix.needsUpdate = true;
+        if (mesh.instanceColor) {
+          mesh.instanceColor.needsUpdate = true;
+        }
+      });
+    });
+  }
+
+  public setVisibleSlots(slots: Iterable<number>): void {
+    let maxIndex = -1;
+    let activeCount = 0;
+
+    for (const slot of slots) {
+      if (slot === undefined || slot === null) continue;
+      activeCount++;
+      if (slot > maxIndex) {
+        maxIndex = slot;
+      }
+    }
+
+    this.currentVisibleCount = activeCount;
+    const drawCount = maxIndex >= 0 ? maxIndex + 1 : 0;
+
+    this.models.forEach((modelData) => {
+      this.ensureModelCapacity(modelData, drawCount);
+      modelData.instancedMeshes.forEach((mesh) => {
+        mesh.count = drawCount;
+      });
+    });
+
+    // Also update cosmetic models
+    this.cosmeticModels.forEach((modelData) => {
+      this.ensureModelCapacity(modelData, drawCount);
+      modelData.instancedMeshes.forEach((mesh) => {
+        mesh.count = drawCount;
+      });
+    });
   }
 
   public setVisibleCount(count: number): void {
-    if (count === this.currentVisibleCount) return;
-
-    this.currentVisibleCount = count;
-    this.models.forEach((modelData) => {
-      this.ensureModelCapacity(modelData, count);
-      modelData.instancedMeshes.forEach((mesh) => {
-        mesh.count = count;
-      });
-    });
+    if (count < 0) return;
+    const slots: number[] = [];
+    for (let i = 0; i < count; i++) {
+      slots.push(i);
+    }
+    this.setVisibleSlots(slots);
   }
 
   public setAnimationState(index: number, isWalking: boolean): void {
@@ -1173,6 +1405,13 @@ export class ArmyModel {
 
   public computeBoundingSphere(): void {
     this.models.forEach((modelData) => {
+      modelData.instancedMeshes.forEach((mesh) => {
+        mesh.computeBoundingSphere();
+      });
+    });
+
+    // Also compute for cosmetic models
+    this.cosmeticModels.forEach((modelData) => {
       modelData.instancedMeshes.forEach((mesh) => {
         mesh.computeBoundingSphere();
       });
@@ -1233,9 +1472,23 @@ export class ArmyModel {
       this.scene.remove(modelData.group);
     });
 
+    // Dispose cosmetic models
+    this.cosmeticModels.forEach((modelData) => {
+      modelData.instancedMeshes.forEach((mesh) => {
+        const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+        ArmyModel.materialPool.releaseMaterial(material);
+        mesh.geometry.dispose();
+        this.scene.remove(mesh);
+      });
+      modelData.mixer.stopAllAction();
+      this.scene.remove(modelData.group);
+    });
+
     // Clear all data structures
     this.models.clear();
+    this.cosmeticModels.clear();
     this.entityModelMap.clear();
+    this.entityCosmeticMap.clear();
     this.movingInstances.clear();
     this.instanceData.clear();
     this.matrixIndexOwners.clear();
