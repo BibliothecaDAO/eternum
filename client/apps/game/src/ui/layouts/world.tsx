@@ -56,7 +56,7 @@ const RealtimeChatPortal = lazy(() =>
   })),
 );
 const SelectedTilePanel = lazy(() =>
-  import("../features/world/components/bottom-panels").then((module) => ({
+  import("../features/world/components/selected-tile-panel").then((module) => ({
     default: module.SelectedTilePanel,
   })),
 );

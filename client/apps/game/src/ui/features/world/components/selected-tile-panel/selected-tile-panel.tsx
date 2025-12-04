@@ -27,7 +27,7 @@ const PanelFrame = ({ title, children, className }: PanelFrameProps) => (
       "pointer-events-auto panel-wood panel-wood-corners border border-gold/20 bg-black/60 shadow-2xl flex h-full flex-col overflow-hidden",
       className,
     )}
-    style={{ height: `${BOTTOM_PANEL_HEIGHT}px` }}
+    style={{ height: BOTTOM_PANEL_HEIGHT }}
   >
     <header className="flex items-center justify-between border-b border-gold/20 px-4 py-2">
       <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-gold/70">{title}</p>
@@ -110,9 +110,9 @@ export const SelectedTilePanel = memo(() => {
         shouldShow ? "opacity-100 translate-y-0" : "pointer-events-none opacity-0 translate-y-6",
       )}
       aria-hidden={!shouldShow}
-      style={{ bottom: `${BOTTOM_PANEL_MARGIN}px` }}
+      style={{ bottom: BOTTOM_PANEL_MARGIN }}
     >
-      <div className="w-full md:w-[37%] lg:w-[27%] md:ml-auto">
+      <div className="w-full md:w-[38%] lg:w-[28%] md:ml-auto">
         <TilePanel />
       </div>
     </div>

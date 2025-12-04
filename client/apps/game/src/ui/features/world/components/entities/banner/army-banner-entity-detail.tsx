@@ -1,4 +1,4 @@
-import { Loader } from "lucide-react";
+import { Loader, Trash2 } from "lucide-react";
 import { memo, useMemo } from "react";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -33,6 +33,8 @@ const ArmyBannerEntityDetailContent = memo(
       derivedData,
       isLoadingExplorer,
       isLoadingStructure,
+      handleDeleteExplorer,
+      isLoadingDelete,
     } = useArmyEntityDetail({ armyEntityId });
     const activeRelicIds = useMemo(() => relicEffects.map((effect) => Number(effect.id)), [relicEffects]);
 
@@ -53,10 +55,24 @@ const ArmyBannerEntityDetailContent = memo(
     return (
       <EntityDetailSection compact={compact} tone={hasWarnings ? "highlight" : "default"} className={cn("flex flex-col gap-3", className)}>
         <div className="flex flex-col gap-1 text-gold/80">
-          <span className="text-xs">
-            {derivedData.isMine ? "🟢" : "🔴"} {ownerDisplay}
-            <span className="px-1 text-gold/50">·</span>
-            {stationedDisplay}
+          <span className="text-xs flex flex-wrap items-center gap-2">
+            <span>
+              {derivedData.isMine ? "🟢" : "🔴"} {ownerDisplay}
+              <span className="px-1 text-gold/50">·</span>
+              {stationedDisplay}
+            </span>
+            {derivedData.isMine ? (
+              <button
+                type="button"
+                onClick={handleDeleteExplorer}
+                disabled={isLoadingDelete}
+                className="inline-flex items-center rounded border border-red-500/40 p-1 text-red-200 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                title={isLoadingDelete ? "Deleting" : "Delete Army"}
+              >
+                {isLoadingDelete ? <Loader className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                <span className="sr-only">Delete Army</span>
+              </button>
+            ) : null}
           </span>
         </div>
 

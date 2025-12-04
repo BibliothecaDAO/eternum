@@ -11,7 +11,7 @@ import { Bridge } from "@/ui/features/infrastructure";
 import { ProductionOverviewPanel } from "@/ui/features/settlement/production/production-overview-panel";
 import { StoryEventsChronicles } from "@/ui/features/story-events";
 import { construction, military, trade } from "@/ui/features/world";
-import { BOTTOM_PANEL_RESERVED_SPACE } from "@/ui/features/world/components/bottom-panels/constants";
+import { BOTTOM_PANEL_RESERVED_SPACE } from "@/ui/features/world/components/selected-tile-panel/constants";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
@@ -328,7 +328,7 @@ export const LeftNavigationModule = memo(() => {
       return "calc(100vh - 48px)";
     }
 
-    return `calc(100vh - ${BOTTOM_PANEL_RESERVED_SPACE}px)`;
+    return `calc(100vh - (${BOTTOM_PANEL_RESERVED_SPACE}))`;
   }, [isMapView, showBlankOverlay]);
 
   const structureInfo = useMemo(
