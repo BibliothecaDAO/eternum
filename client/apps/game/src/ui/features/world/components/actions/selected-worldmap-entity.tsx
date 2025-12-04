@@ -98,23 +98,25 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
           {...sharedDetailProps}
         />
       ) : isChest ? (
-        <div className="grid h-full min-h-0 gap-2 overflow-auto sm:grid-cols-[minmax(0,200px)_1fr]">
-          <EntityDetailSection compact tone="highlight" className="h-full">
-            <BiomeSummaryCard biome={biome} />
-          </EntityDetailSection>
+        <div className="grid h-full min-h-0 gap-2 overflow-auto sm:grid-cols-2">
           <EntityDetailSection compact tone="highlight" className="h-full">
             <RelicCrateSummaryPanel crateEntityId={occupierEntityId} />
+          </EntityDetailSection>
+          <EntityDetailSection compact tone="highlight" className="h-full">
+            <BiomeSummaryCard biome={biome} />
           </EntityDetailSection>
         </div>
       ) : isQuest ? (
         <QuestEntityDetail questEntityId={occupierEntityId} className="h-full" {...sharedDetailProps} />
       ) : (
-        <ArmyBannerEntityDetail
-          armyEntityId={occupierEntityId}
-          showButtons={false}
-          bannerPosition={selectedHex}
-          {...sharedDetailProps}
-        />
+        <div className="grid h-full min-h-0 gap-2 overflow-auto sm:grid-cols-2">
+          <EntityDetailSection compact tone="highlight" className="h-full">
+            <ArmyBannerEntityDetail armyEntityId={occupierEntityId} showButtons={false} {...sharedDetailProps} />
+          </EntityDetailSection>
+          <EntityDetailSection compact tone="highlight" className="h-full">
+            <BiomeSummaryCard biome={biome} />
+          </EntityDetailSection>
+        </div>
       )}
     </div>
   );

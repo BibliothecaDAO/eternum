@@ -2,21 +2,17 @@ import { Loader } from "lucide-react";
 import { memo, useMemo } from "react";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { EntityType, HexPosition, ID, RelicRecipientType } from "@bibliothecadao/types";
-
 import { CompactArmyChip } from "@/ui/features/military/components/compact-army-chip";
-import clsx from "clsx";
 import { ArmyWarning } from "../../armies/army-warning";
-import { ActiveRelicEffects } from "../active-relic-effects";
 import { CompactEntityInventory } from "../compact-entity-inventory";
 import { useArmyEntityDetail, useBannerArmyInfo } from "../hooks/use-army-entity-detail";
 import { EntityDetailLayoutVariant, EntityDetailSection } from "../layout";
+import { HexPosition, ID, RelicRecipientType, EntityType } from "@bibliothecadao/types";
 
 export interface ArmyBannerEntityDetailProps {
   armyEntityId: ID;
   className?: string;
   compact?: boolean;
-  maxInventory?: number;
   showButtons?: boolean;
   bannerPosition?: HexPosition;
   layoutVariant?: EntityDetailLayoutVariant;
@@ -27,14 +23,7 @@ interface ArmyBannerEntityDetailContentProps extends Omit<ArmyBannerEntityDetail
 }
 
 const ArmyBannerEntityDetailContent = memo(
-  ({
-    armyEntityId,
-    className,
-    bannerPosition,
-    compact = true,
-    showButtons = false,
-    variant,
-  }: ArmyBannerEntityDetailContentProps) => {
+  ({ armyEntityId, className, compact = true, showButtons: _showButtons = false, variant: _variant }: ArmyBannerEntityDetailContentProps) => {
     const {
       explorer,
       explorerResources,
@@ -44,10 +33,7 @@ const ArmyBannerEntityDetailContent = memo(
       isLoadingExplorer,
       isLoadingStructure,
     } = useArmyEntityDetail({ armyEntityId });
-    const isBanner = variant === "banner";
-    const isCompactLayout = compact;
-
-    const bannerArmyInfo = useBannerArmyInfo(explorer, derivedData, armyEntityId, bannerPosition);
+    const bannerArmyInfo = useBannerArmyInfo(explorer, derivedData, armyEntityId);
     const activeRelicIds = useMemo(() => relicEffects.map((effect) => Number(effect.id)), [relicEffects]);
 
     if (isLoadingExplorer || (explorer?.owner && isLoadingStructure)) {
@@ -60,59 +46,41 @@ const ArmyBannerEntityDetailContent = memo(
 
     if (!explorer || !derivedData) return null;
 
-    const containerClass = cn(
-      "flex h-full min-h-0 flex-col overflow-auto",
-      isCompactLayout ? "gap-1.5" : "gap-2",
-      className,
-    );
-
-    const wantsGridLayout = true;
-    const gridContainerClass = wantsGridLayout
-      ? "grid flex-1 min-h-0 w-full grid-cols-1 gap-2 sm:grid-cols-2 sm:grid-rows-2 sm:auto-rows-fr"
-      : "flex min-h-0 flex-1 flex-col gap-2";
-    const cellBaseClass = wantsGridLayout ? "sm:col-span-1 sm:row-span-1" : undefined;
-    const subtleTextClass = clsx("text-gold/60", isCompactLayout ? "text-xxs" : "text-xs");
-    const emptyTextClass = clsx(isCompactLayout ? "text-xxs" : "text-xs", "text-gold/60", "italic");
+    const containerClass = cn("flex h-full min-h-0 flex-col overflow-auto", className);
     const hasWarnings = Boolean(structureResources && explorerResources);
+    const ownerDisplay = derivedData.addressName ?? `Army Owner`;
+    const stationedDisplay = derivedData.structureOwnerName ?? "Field deployment";
+    const alignmentColor = derivedData.isMine ? "bg-green-400" : "bg-red-400";
 
     return (
       <div className={containerClass}>
-        <div className={gridContainerClass}>
-          <EntityDetailSection
-            compact={compact}
-            className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-2 sm:row-start-1", "min-h-0")}
-            tone={hasWarnings ? "highlight" : "default"}
-          >
-            {hasWarnings && explorerResources && structureResources ? (
-              <ArmyWarning
-                army={explorer}
-                explorerResources={explorerResources}
-                structureResources={structureResources}
-              />
-            ) : (
-              <p className={emptyTextClass}>No proximity warnings.</p>
-            )}
-          </EntityDetailSection>
+        <EntityDetailSection compact={compact} tone={hasWarnings ? "highlight" : "default"} className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1 text-gold/80">
+            <span className="text-[10px] uppercase tracking-[0.2em] text-gold/60">Army #{armyEntityId}</span>
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className={cn("h-2 w-2 rounded-full", alignmentColor)} />
+              <span className="truncate">
+                {ownerDisplay}
+                <span className="px-1 text-gold/50">·</span>
+                {stationedDisplay}
+              </span>
+            </div>
+          </div>
 
-          <EntityDetailSection
-            compact={compact}
-            className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-1 sm:row-start-1", "min-h-0")}
-          >
-            {bannerArmyInfo ? (
+          {bannerArmyInfo ? (
+            <div className="flex flex-col gap-2">
               <CompactArmyChip army={bannerArmyInfo} className="border border-gold/25 bg-dark/60" />
-            ) : (
-              <p className={emptyTextClass}>Army data unavailable.</p>
-            )}
-          </EntityDetailSection>
+            </div>
+          ) : (
+            <p className="text-xxs text-gold/60 italic">Army data unavailable.</p>
+          )}
 
-          <EntityDetailSection
-            compact={compact}
-            className={cn(
-              cellBaseClass,
-              "min-h-0 flex flex-col overflow-auto",
-              wantsGridLayout && "sm:col-start-1 sm:row-start-2",
-            )}
-          >
+          {hasWarnings && explorerResources && structureResources ? (
+            <ArmyWarning army={explorer} explorerResources={explorerResources} structureResources={structureResources} />
+          ) : null}
+
+          <div className="flex flex-col gap-2">
+            <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Relics</span>
             {explorerResources ? (
               <CompactEntityInventory
                 resources={explorerResources}
@@ -121,34 +89,14 @@ const ArmyBannerEntityDetailContent = memo(
                 entityId={armyEntityId}
                 entityType={EntityType.ARMY}
                 allowRelicActivation={derivedData.isMine}
-                variant={isBanner ? "tight" : "default"}
+                variant="tight"
+                showLabels
               />
             ) : (
-              <p className={emptyTextClass}>No supplies carried.</p>
+              <p className="text-xxs text-gold/60 italic">No relics attached.</p>
             )}
-          </EntityDetailSection>
-
-          <EntityDetailSection
-            compact={compact}
-            className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-2 sm:row-start-2", "min-h-0")}
-          >
-            {isBanner ? (
-              relicEffects.length > 0 ? (
-                <span className={cn(subtleTextClass)}>
-                  {`${relicEffects.length} active relic${relicEffects.length > 1 ? "s" : ""}.`}
-                </span>
-              ) : (
-                <p className={emptyTextClass}>No relics assigned.</p>
-              )
-            ) : relicEffects.length > 0 ? (
-              <div className="max-h-[200px] overflow-auto pr-1">
-                <ActiveRelicEffects relicEffects={relicEffects} entityId={armyEntityId} compact={isCompactLayout} />
-              </div>
-            ) : (
-              <p className={emptyTextClass}>No relics assigned.</p>
-            )}
-          </EntityDetailSection>
-        </div>
+          </div>
+        </EntityDetailSection>
       </div>
     );
   },

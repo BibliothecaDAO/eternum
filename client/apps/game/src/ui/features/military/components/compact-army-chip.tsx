@@ -22,12 +22,10 @@ export const CompactArmyChip = ({ army, className }: { army: ArmyInfo; className
     return StaminaManager.getMaxStamina(army.troops.category as TroopType, army.troops.tier as TroopTier);
   }, [army.troops]);
 
-  const statusEmoji = army.isMine ? "🟢" : "🔴";
-
   return (
     <div className="flex w-full h-full justify-between gap-2">
       <div className="flex flex-col justify-between w-[55%]">
-        <div className="flex flex-col items-start">
+        <div className="flex flex-col items-start gap-1">
           <div
             className="text-xxs mr-1 truncate cursor-default max-w-full"
             onMouseEnter={() =>
@@ -38,16 +36,16 @@ export const CompactArmyChip = ({ army, className }: { army: ArmyInfo; className
             }
             onMouseLeave={() => setTooltip(null)}
           >
-            <span className="mr-0.5">{statusEmoji}</span>
-            <span className="truncate">{army.name}</span>
           </div>
-          <div className="flex flex-col items-end gap-0.5">
-            <StaminaResource entityId={army.entityId} stamina={stamina} maxStamina={maxStamina} />
-          </div>
+      <div className="flex flex-col w-[45%] gap-1">
+        <div className="rounded-lg border border-gold/20 bg-black/40 p-2">
+          <TroopChip troops={army.troops} className="h-auto" size="sm" />
         </div>
       </div>
-      <div className="flex flex-col w-[45%] gap-1">
-        <TroopChip troops={army.troops} className="h-auto" size="sm" />
+          <div className="flex flex-col items-start gap-0.5 w-full">
+            <StaminaResource entityId={army.entityId} stamina={stamina} maxStamina={maxStamina} className="w-full" />
+          </div>
+        </div>
       </div>
     </div>
   );
