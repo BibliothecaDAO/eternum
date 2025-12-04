@@ -111,7 +111,7 @@ const StructureBannerEntityDetailContent = memo(
               )}
             </Tabs.Panel>
 
-            <Tabs.Panel className="flex flex-col gap-2">
+            <Tabs.Panel className="flex flex-col gap-2 pt-4 pl-2">
               {resources ? (
                 <StructureProductionPanel
                   structure={structure}
@@ -136,7 +136,7 @@ const StructureBannerEntityDetailContent = memo(
                   recipientType={RelicRecipientType.Structure}
                   entityId={structureEntityId}
                   entityType={EntityType.STRUCTURE}
-                  allowRelicActivation={showButtons && isMine}
+                  allowRelicActivation={isMine}
                   variant="tight"
                   maxItems={maxInventory}
                 />
