@@ -131,9 +131,8 @@ const RelicCrateSummaryPanel = ({ crateEntityId }: { crateEntityId: ID }) => {
       <div className="flex flex-col gap-1 text-left">
         <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Relic Crate</span>
         <span className="text-sm font-semibold text-gold">Crate #{crateEntityId}</span>
-        <p className="text-xxs text-gold/70">Move an army adjacent to the crate to claim its relics before rivals arrive.</p>
-        <p className="text-xxs text-gold/70">The crate contains a cache of 3 relics that can empower armies or structures.</p>
-        <p className="text-xxs text-gold/70">Cracking open a relic crate also grants 1000 Victory Points.</p>
+        <p className="text-xxs text-gold/70">Claim it to discover 3 relics that can empower armies or structures.</p>
+        <p className="text-xxs text-gold/70">Cracking it open also grants you 1000 Victory Points !</p>
       </div>
     </div>
   );
