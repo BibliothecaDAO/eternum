@@ -616,9 +616,7 @@ export class StructureManager {
       return empty;
     }
 
-    pending = Promise.all(
-      assetPaths.map((modelPath) => this.loadCosmeticStructureModel(cosmeticId, modelPath)),
-    )
+    pending = Promise.all(assetPaths.map((modelPath) => this.loadCosmeticStructureModel(cosmeticId, modelPath)))
       .then((models) => {
         this.cosmeticStructureModels.set(cosmeticId, models);
         models.forEach((model) => {
@@ -1547,7 +1545,7 @@ export class StructureManager {
     this.entityIdLabels.forEach((label) => {
       const isVisible = this.visibilityManager
         ? this.visibilityManager.isPointVisible(label.position)
-        : this.frustumManager?.isPointVisible(label.position) ?? true;
+        : (this.frustumManager?.isPointVisible(label.position) ?? true);
       if (isVisible) {
         if (label.parent !== this.labelsGroup) {
           this.labelsGroup.add(label);

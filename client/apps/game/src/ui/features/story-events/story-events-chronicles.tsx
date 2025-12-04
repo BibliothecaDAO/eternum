@@ -896,10 +896,7 @@ export const StoryEventsChronicles: React.FC = () => {
     if (!selectedEventId) return storyFilteredEvents[0] ?? null;
     return storyFilteredEvents.find((e) => e.id === selectedEventId) ?? storyFilteredEvents[0] ?? null;
   }, [storyFilteredEvents, selectedEventId]);
-  const highlightedLocation = useMemo(
-    () => getEventLocation(highlightedEvent),
-    [getEventLocation, highlightedEvent],
-  );
+  const highlightedLocation = useMemo(() => getEventLocation(highlightedEvent), [getEventLocation, highlightedEvent]);
 
   const handleRefresh = useCallback(() => {
     storyEvents.refetch();
@@ -1021,14 +1018,20 @@ export const StoryEventsChronicles: React.FC = () => {
                         </span>
                       </div>
                       <ul className="space-y-4">
-                        {group.events.map((event) => (
-                          <TimelineEventCard
-                            key={event.id}
-                            event={event}
-                            isActive={event.id === selectedEventId}
-                            onSelect={() => setSelectedEventId(event.id)}
-                          />
-                        ))}
+                        {group.events.map((event) => {
+                          const eventLocation = getEventLocation(event);
+                          return (
+                            <TimelineEventCard
+                              key={event.id}
+                              event={event}
+                              isActive={event.id === selectedEventId}
+                              onSelect={() => setSelectedEventId(event.id)}
+                              eventLocation={eventLocation}
+                              onNavigateToEvent={handleNavigateToEvent}
+                              isNavigating={Boolean(navigatingEventId === event.id)}
+                            />
+                          );
+                        })}
                       </ul>
                     </li>
                   ))}

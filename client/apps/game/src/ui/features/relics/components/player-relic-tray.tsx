@@ -159,7 +159,9 @@ export const PlayerRelicTray = memo(({ variant = "floating", className }: Player
             />
           </div>
         ) : (
-          <div className="flex flex-1 items-center text-xs font-medium text-gold/60 italic">No relics discovered yet.</div>
+          <div className="flex flex-1 items-center text-xs font-medium text-gold/60 italic">
+            No relics discovered yet.
+          </div>
         )}
         {playerRelicsLoading && (
           <div className="flex items-center gap-1 text-[10px] uppercase tracking-[0.2em] text-gold/60">

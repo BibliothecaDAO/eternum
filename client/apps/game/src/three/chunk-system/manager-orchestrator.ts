@@ -86,10 +86,7 @@ export class ManagerOrchestrator {
    * @param manager - The manager to register
    * @param options - Registration options
    */
-  registerManager(
-    manager: EntityManager,
-    options: Partial<Omit<ManagerRegistration, "manager">> = {},
-  ): void {
+  registerManager(manager: EntityManager, options: Partial<Omit<ManagerRegistration, "manager">> = {}): void {
     const registration: ManagerRegistration = {
       manager,
       renderOrder: options.renderOrder ?? DEFAULT_RENDER_ORDER[manager.entityType] ?? 50,
@@ -222,10 +219,7 @@ export class ManagerOrchestrator {
         try {
           await registration.manager.prepareForChunk(chunkKey, bounds);
         } catch (error) {
-          console.error(
-            `[ManagerOrchestrator] Failed to prepare ${entityType} for chunk ${chunkKey}:`,
-            error,
-          );
+          console.error(`[ManagerOrchestrator] Failed to prepare ${entityType} for chunk ${chunkKey}:`, error);
 
           // If required manager fails, propagate error
           if (registration.required) {
@@ -263,15 +257,10 @@ export class ManagerOrchestrator {
         await registration.manager.renderChunk(chunkKey);
 
         if (this.config.debug) {
-          console.log(
-            `[ManagerOrchestrator] ${entityType} rendered in ${Date.now() - managerStart}ms`,
-          );
+          console.log(`[ManagerOrchestrator] ${entityType} rendered in ${Date.now() - managerStart}ms`);
         }
       } catch (error) {
-        console.error(
-          `[ManagerOrchestrator] Failed to render ${entityType} for chunk ${chunkKey}:`,
-          error,
-        );
+        console.error(`[ManagerOrchestrator] Failed to render ${entityType} for chunk ${chunkKey}:`, error);
 
         if (registration.required) {
           throw error;
@@ -304,10 +293,7 @@ export class ManagerOrchestrator {
       try {
         await registration.manager.unloadChunk(chunkKey);
       } catch (error) {
-        console.error(
-          `[ManagerOrchestrator] Failed to unload ${entityType} for chunk ${chunkKey}:`,
-          error,
-        );
+        console.error(`[ManagerOrchestrator] Failed to unload ${entityType} for chunk ${chunkKey}:`, error);
         // Continue unloading other managers even if one fails
       }
     }
@@ -331,10 +317,7 @@ export class ManagerOrchestrator {
         prefetchPromises.push(
           registration.manager.prefetch(chunkKey, bounds).catch((error) => {
             if (this.config.debug) {
-              console.warn(
-                `[ManagerOrchestrator] Prefetch failed for ${entityType}/${chunkKey}:`,
-                error,
-              );
+              console.warn(`[ManagerOrchestrator] Prefetch failed for ${entityType}/${chunkKey}:`, error);
             }
           }),
         );
@@ -366,10 +349,7 @@ export class ManagerOrchestrator {
    */
   hasPendingRenderWork(): boolean {
     for (const registration of this.managers.values()) {
-      if (
-        isIncrementalRenderManager(registration.manager) &&
-        registration.manager.hasPendingRenderWork()
-      ) {
+      if (isIncrementalRenderManager(registration.manager) && registration.manager.hasPendingRenderWork()) {
         return true;
       }
     }
@@ -453,10 +433,7 @@ export class ManagerOrchestrator {
       try {
         registration.manager.update(deltaTime);
       } catch (error) {
-        console.error(
-          `[ManagerOrchestrator] Update failed for ${registration.manager.entityType}:`,
-          error,
-        );
+        console.error(`[ManagerOrchestrator] Update failed for ${registration.manager.entityType}:`, error);
       }
     }
   }
@@ -500,10 +477,7 @@ export class ManagerOrchestrator {
       try {
         registration.manager.destroy();
       } catch (error) {
-        console.error(
-          `[ManagerOrchestrator] Destroy failed for ${registration.manager.entityType}:`,
-          error,
-        );
+        console.error(`[ManagerOrchestrator] Destroy failed for ${registration.manager.entityType}:`, error);
       }
     }
 
@@ -520,8 +494,6 @@ export class ManagerOrchestrator {
 /**
  * Create a new ManagerOrchestrator with default configuration.
  */
-export function createManagerOrchestrator(
-  config: Partial<ManagerOrchestratorConfig> = {},
-): ManagerOrchestrator {
+export function createManagerOrchestrator(config: Partial<ManagerOrchestratorConfig> = {}): ManagerOrchestrator {
   return new ManagerOrchestrator(config);
 }

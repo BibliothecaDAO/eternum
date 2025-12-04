@@ -63,9 +63,10 @@ const StructureBannerEntityDetailContent = memo(
     if (!structure || !structureDetails) return null;
     const defenseDisplayVariant: EntityDetailLayoutVariant = variant === "banner" || compact ? "banner" : "default";
     const structureName = getStructureName(structure, isBlitz).name;
-    const structureCategory = structure.base?.category as StructureType | undefined;
-    const showProductionTab =
-      structureCategory !== StructureType.Hyperstructure && structureCategory !== StructureType.FragmentMine;
+    const rawCategory = structure.base?.category;
+    const structureCategory = rawCategory === undefined ? undefined : (rawCategory as StructureType);
+    const isFragmentMine = Number(rawCategory) === StructureType.FragmentMine;
+    const showProductionTab = structureCategory !== StructureType.Hyperstructure && !isFragmentMine;
     const guardSlotsText =
       guardSlotsUsed !== undefined && guardSlotsMax !== undefined
         ? `${guardSlotsUsed}/${guardSlotsMax}`
@@ -127,9 +128,7 @@ const StructureBannerEntityDetailContent = memo(
                   />
                 ) : (
                   <p className="text-xxs text-gold/60 italic">
-                    {structureCategory === StructureType.FragmentMine
-                      ? "Essence Rifts do not produce resources."
-                      : "Production data unavailable."}
+                    {isFragmentMine ? "Essence Rifts do not produce resources." : "Production data unavailable."}
                   </p>
                 )}
               </Tabs.Panel>
@@ -167,7 +166,6 @@ const StructureBannerEntityDetailContent = memo(
             </Tabs.Tab>
           </Tabs.List>
         </Tabs>
-
       </EntityDetailSection>
     );
   },

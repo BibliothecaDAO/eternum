@@ -24,7 +24,13 @@ interface ArmyBannerEntityDetailContentProps extends Omit<ArmyBannerEntityDetail
 }
 
 const ArmyBannerEntityDetailContent = memo(
-  ({ armyEntityId, className, compact = true, showButtons: _showButtons = false, variant: _variant }: ArmyBannerEntityDetailContentProps) => {
+  ({
+    armyEntityId,
+    className,
+    compact = true,
+    showButtons: _showButtons = false,
+    variant: _variant,
+  }: ArmyBannerEntityDetailContentProps) => {
     const {
       explorer,
       explorerResources,
@@ -53,7 +59,11 @@ const ArmyBannerEntityDetailContent = memo(
     const stationedDisplay = derivedData.structureOwnerName ?? "Field deployment";
 
     return (
-      <EntityDetailSection compact={compact} tone={hasWarnings ? "highlight" : "default"} className={cn("flex flex-col gap-3", className)}>
+      <EntityDetailSection
+        compact={compact}
+        tone={hasWarnings ? "highlight" : "default"}
+        className={cn("flex flex-col gap-3", className)}
+      >
         <div className="flex flex-col gap-1 text-gold/80">
           <span className="text-xs flex flex-wrap items-center gap-2">
             <span>
@@ -141,7 +151,8 @@ const InlineStaminaBar = ({
 
   let fillClass = "bg-progress-bar-danger";
   if (staminaValue >= minTravelCost) {
-    fillClass = percentage > 66 ? "bg-progress-bar-good" : percentage > 33 ? "bg-progress-bar-medium" : "bg-progress-bar-danger";
+    fillClass =
+      percentage > 66 ? "bg-progress-bar-good" : percentage > 33 ? "bg-progress-bar-medium" : "bg-progress-bar-danger";
   }
 
   return (

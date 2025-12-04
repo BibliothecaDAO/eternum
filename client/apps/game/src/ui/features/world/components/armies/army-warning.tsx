@@ -104,9 +104,7 @@ export const ArmyWarning = ({ army, explorerResources, structureResources }: Arm
           </div>
         </div>
       )}
-      {!hasWarnings && (
-        <div className="min-h-0 text-xs font-medium text-gold/60 italic">✓ Enough food and stamina</div>
-      )}
+      {!hasWarnings && <div className="min-h-0 text-xs font-medium text-gold/60 italic">✓ Enough food and stamina</div>}
     </div>
   );
 };

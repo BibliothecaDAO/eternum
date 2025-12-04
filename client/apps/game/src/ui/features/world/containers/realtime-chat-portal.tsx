@@ -1,7 +1,10 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { RealtimeChatShell, type InitializeRealtimeClientParams } from "@/ui/features/social";
-import { BOTTOM_PANEL_MARGIN, BOTTOM_PANEL_RESERVED_SPACE } from "@/ui/features/world/components/selected-tile-panel/constants";
+import {
+  BOTTOM_PANEL_MARGIN,
+  BOTTOM_PANEL_RESERVED_SPACE,
+} from "@/ui/features/world/components/selected-tile-panel/constants";
 import clsx from "clsx";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
@@ -31,7 +34,7 @@ export const RealtimeChatPortal = () => {
     const walletAddress = ConnectedAccount?.address ?? undefined;
     const normalizedAccountName = accountName?.trim() ?? "";
     const hasUsername = normalizedAccountName.length > 0;
-    const playerId = hasUsername ? normalizedAccountName : walletAddress ?? "demo-player";
+    const playerId = hasUsername ? normalizedAccountName : (walletAddress ?? "demo-player");
     const displayName = hasUsername ? normalizedAccountName : undefined;
 
     return {

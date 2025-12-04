@@ -399,9 +399,7 @@ export const LeftNavigationModule = memo(() => {
                 <Suspense fallback={<div className="p-8">Loading...</div>}>
                   {view === LeftView.EntityView && <EntityDetails />}
                   {view === LeftView.MilitaryView && <Military entityId={structureEntityId} />}
-                  {view === LeftView.ConstructionView && (
-                    <SelectPreviewBuildingMenu entityId={structureEntityId} />
-                  )}
+                  {view === LeftView.ConstructionView && <SelectPreviewBuildingMenu entityId={structureEntityId} />}
                   {view === LeftView.HyperstructuresView &&
                     (isBlitz ? <BlitzHyperstructuresMenu /> : <EternumHyperstructuresMenu />)}
                   {view === LeftView.ResourceArrivals && (

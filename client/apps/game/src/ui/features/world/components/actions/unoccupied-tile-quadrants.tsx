@@ -122,7 +122,9 @@ export const BiomeSummaryCard = ({ biome, onSimulateBattle, showSimulateAction =
                 <ResourceIcon resource={config.resourceName} size="sm" withTooltip={false} />
                 <span className="text-[11px] font-semibold text-gold/90">{config.label}</span>
               </div>
-              <span className={`text-sm font-semibold ${styles.textClass}`}>{bonus === 1 ? "0%" : formatBiomeBonus(bonus)}</span>
+              <span className={`text-sm font-semibold ${styles.textClass}`}>
+                {bonus === 1 ? "0%" : formatBiomeBonus(bonus)}
+              </span>
             </div>
           ))}
         </div>

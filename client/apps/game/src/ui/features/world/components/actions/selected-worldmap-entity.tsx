@@ -1,5 +1,8 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { BiomeSummaryCard, UnoccupiedTileQuadrants } from "@/ui/features/world/components/actions/unoccupied-tile-quadrants";
+import {
+  BiomeSummaryCard,
+  UnoccupiedTileQuadrants,
+} from "@/ui/features/world/components/actions/unoccupied-tile-quadrants";
 import { ArmyBannerEntityDetail } from "@/ui/features/world/components/entities/banner/army-banner-entity-detail";
 import { StructureBannerEntityDetail } from "@/ui/features/world/components/entities/banner/structure-banner-entity-detail";
 import { QuestEntityDetail } from "@/ui/features/world/components/entities/quest-entity-detail";

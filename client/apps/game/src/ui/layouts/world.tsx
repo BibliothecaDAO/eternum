@@ -159,7 +159,7 @@ const WorldHud = () => (
       <TopLeftNavigation />
     </TopLeftContainer>
 
-      <SelectedTilePanel />
+    <SelectedTilePanel />
 
     <RealtimeChatPortal />
   </div>

@@ -499,7 +499,8 @@ function StreamItem({
           className={cn(
             "inline-flex items-center gap-2 rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide transition-colors",
             "border-amber-400/60 bg-amber-500/10 text-amber-50 hover:bg-amber-500/20",
-            (!location || isNavigating) && "cursor-not-allowed border-amber-400/20 text-amber-200/50 hover:bg-amber-500/10",
+            (!location || isNavigating) &&
+              "cursor-not-allowed border-amber-400/20 text-amber-200/50 hover:bg-amber-500/10",
           )}
         >
           <Navigation className="h-3 w-3" />
@@ -513,11 +514,7 @@ function StreamItem({
           <span className="px-1 text-amber-300">vs</span>
           <span>{defenderTroops}</span>
         </div>
-        {winnerLabel && (
-          <div className="font-semibold text-amber-200">
-            Winner: {formatWinnerName(winnerLabel)}
-          </div>
-        )}
+        {winnerLabel && <div className="font-semibold text-amber-200">Winner: {formatWinnerName(winnerLabel)}</div>}
       </div>
     </motion.li>
   );

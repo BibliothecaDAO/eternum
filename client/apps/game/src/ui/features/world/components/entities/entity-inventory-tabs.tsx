@@ -120,7 +120,11 @@ const InventorySection = ({
   };
 
   if (!items.length) {
-    return <p className={`${textSize} text-gold/60 italic`}>{isRelicSection ? "No relics stored." : "No resources stored."}</p>;
+    return (
+      <p className={`${textSize} text-gold/60 italic`}>
+        {isRelicSection ? "No relics stored." : "No resources stored."}
+      </p>
+    );
   }
 
   return (
