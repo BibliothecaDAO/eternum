@@ -97,10 +97,6 @@ const StructureBannerEntityDetailContent = memo(
         <Tabs variant="inventory" className="flex flex-1 flex-col gap-3">
           <Tabs.Panels className="flex-1">
             <Tabs.Panel className="flex flex-col gap-2">
-              <div className="flex flex-col text-gold">
-                <span className={tabLabelClass}>Slots Filled</span>
-                <span className={cn(bodyTextClass, "font-semibold text-gold")}>{guardSlotsText}</span>
-              </div>
               {guards.length > 0 ? (
                 <CompactDefenseDisplay
                   troops={guards.map((army) => ({ slot: army.slot, troops: army.troops }))}

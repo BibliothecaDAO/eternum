@@ -195,19 +195,16 @@ export const CompactDefenseDisplay = ({
             >
               <span className="relative z-10">{defense.troops.tier}</span>
             </span>
-            {!isBanner && (
-              <ResourceIcon
-                withTooltip={false}
-                resource={
-                  resources.find(
-                    (r) =>
-                      r.id ===
-                      getTroopResourceId(defense.troops.category as TroopType, defense.troops.tier as TroopTier),
-                  )?.trait || ""
-                }
-                size={isBanner ? "xs" : "sm"}
-              />
-            )}
+            <ResourceIcon
+              withTooltip={false}
+              resource={
+                resources.find(
+                  (r) => r.id === getTroopResourceId(defense.troops.category as TroopType, defense.troops.tier as TroopTier),
+                )?.trait || ""
+              }
+              size={isBanner ? "xs" : "sm"}
+              className="shrink-0"
+            />
             <span className={cn(valueTextClass, "text-gold/90 font-medium")}>{currencyFormat(troopCount, 0)}</span>
           </div>
         )}
@@ -238,11 +235,11 @@ export const CompactDefenseDisplay = ({
 
   if (isBanner) {
     return (
-      <div className={cn("flex items-start overflow-x-auto scrollbar-hide", containerGapClass, className)}>
+      <div className={cn("flex flex-col", containerGapClass, className)}>
         {showHeaderRow && (
-          <div className="flex flex-col gap-1 bg-brown-900/80 border border-gold/25 rounded-md px-2 flex-shrink-0">
+          <div className="flex items-center gap-2 w-full">
             {hasSlotInfo && (
-              <div className="flex items-center gap-1">
+              <div className={cn("flex items-center justify-between bg-brown-900/80 border border-gold/25 rounded-md px-2 py-0.5 gap-1", slotMinWidth)}>
                 <span className={cn(labelTextClass, "uppercase tracking-wide text-gold/70 font-semibold")}>Slots</span>
                 <span className={cn(valueTextClass, "text-gold font-bold")}>
                   {effectiveSlotsUsed}/{slotCapForDisplay}
@@ -250,14 +247,14 @@ export const CompactDefenseDisplay = ({
               </div>
             )}
             {totalTroopCount > 0 && (
-              <div className="flex items-center gap-1">
+              <div className={cn("flex items-center justify-between bg-brown-900/90 border border-gold/30 rounded-md px-2 py-0.5 gap-1", slotMinWidth)}>
                 <span className={cn(labelTextClass, "uppercase tracking-wide text-gold/70 font-semibold")}>Total</span>
                 <span className={cn(valueTextClass, "text-gold font-bold")}>{currencyFormat(totalTroopCount, 0)}</span>
               </div>
             )}
           </div>
         )}
-        <div className={cn("flex items-end", "gap-2", "pb-1")}>
+        <div className="grid grid-cols-2 gap-2 pb-1 justify-items-start w-full">
           {displayedTroops
             .slice()
             .sort((a, b) => b.slot - a.slot)
@@ -272,7 +269,7 @@ export const CompactDefenseDisplay = ({
       {showHeaderRow && (
         <div className={cn("flex flex-wrap items-center flex-shrink-0", isBanner ? "gap-1" : "gap-1.5")}>
           {hasSlotInfo && (
-            <div className="flex items-center bg-brown-900/80 border border-gold/25 rounded-md px-2 py-0.5 gap-1">
+            <div className={cn("flex items-center justify-between bg-brown-900/80 border border-gold/25 rounded-md px-2 py-0.5 gap-1", slotMinWidth)}>
               <span className={cn(labelTextClass, "uppercase tracking-wide text-gold/70 font-semibold")}>
                 {isBanner ? "Slots" : "Defense Slots"}
               </span>
@@ -282,7 +279,7 @@ export const CompactDefenseDisplay = ({
             </div>
           )}
           {totalTroopCount > 0 && (
-            <div className="flex items-center bg-brown-900/90 border border-gold/30 rounded-md px-2 py-0.5 gap-1">
+            <div className={cn("flex items-center justify-between bg-brown-900/90 border border-gold/30 rounded-md px-2 py-0.5 gap-1", slotMinWidth)}>
               <span className={cn(labelTextClass, "uppercase tracking-wide text-gold/70 font-semibold")}>
                 {isBanner ? "Total" : "Total Troops"}
               </span>
@@ -291,13 +288,19 @@ export const CompactDefenseDisplay = ({
           )}
         </div>
       )}
-      <div className={cn("flex items-end", isBanner ? "gap-1" : "gap-2", isBanner ? "pb-0" : "pb-1")}>
+      <div className={cn("grid grid-cols-2", "gap-2", "justify-items-start", isBanner ? "pb-0" : "pb-1")}>
         {displayedTroops
           .slice()
           .sort((a, b) => b.slot - a.slot)
           .map((defense) => renderSlot(defense))}
         {!isBanner && (
-          <div className={cn("flex flex-col items-center text-center flex-shrink-0", slotGapClass, slotMinWidth)}>
+          <div
+            className={cn(
+              "flex flex-col items-center text-center flex-shrink-0 col-span-2 sm:col-span-1",
+              slotGapClass,
+              slotMinWidth,
+            )}
+          >
             <span className={cn(labelTextClass, "uppercase tracking-wide text-gold/70")}>Incoming</span>
             <div
               className="rounded-full border border-gold/40 flex items-center justify-center bg-brown-900/50"
