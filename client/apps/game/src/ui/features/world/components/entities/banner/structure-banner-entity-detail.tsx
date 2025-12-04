@@ -5,7 +5,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { CompactDefenseDisplay } from "@/ui/features/military";
 import { getStructureName } from "@bibliothecadao/eternum";
-import { EntityType, ID, RelicRecipientType } from "@bibliothecadao/types";
+import { EntityType, ID, RelicRecipientType, StructureType } from "@bibliothecadao/types";
 
 import { ActiveRelicEffects } from "../active-relic-effects";
 import { CompactEntityInventory } from "../compact-entity-inventory";
@@ -63,6 +63,9 @@ const StructureBannerEntityDetailContent = memo(
     if (!structure || !structureDetails) return null;
     const defenseDisplayVariant: EntityDetailLayoutVariant = variant === "banner" || compact ? "banner" : "default";
     const structureName = getStructureName(structure, isBlitz).name;
+    const structureCategory = structure.base?.category as StructureType | undefined;
+    const showProductionTab =
+      structureCategory !== StructureType.Hyperstructure && structureCategory !== StructureType.FragmentMine;
     const guardSlotsText =
       guardSlotsUsed !== undefined && guardSlotsMax !== undefined
         ? `${guardSlotsUsed}/${guardSlotsMax}`
@@ -111,22 +114,26 @@ const StructureBannerEntityDetailContent = memo(
               )}
             </Tabs.Panel>
 
-            <Tabs.Panel className="flex flex-col gap-2 pt-4 pl-2">
-              {resources ? (
-                <StructureProductionPanel
-                  structure={structure}
-                  resources={resources}
-                  compact
-                  smallTextClass="text-xxs"
-                  showProductionSummary={variant !== "banner"}
-                  showTooltip={false}
-                />
-              ) : (
-                <p className="text-xxs text-gold/60 italic">
-                  {isHyperstructure ? "Hyperstructures do not produce resources." : "Production data unavailable."}
-                </p>
-              )}
-            </Tabs.Panel>
+            {showProductionTab && (
+              <Tabs.Panel className="flex flex-col gap-2 pt-4 pl-2">
+                {resources ? (
+                  <StructureProductionPanel
+                    structure={structure}
+                    resources={resources}
+                    compact
+                    smallTextClass="text-xxs"
+                    showProductionSummary={variant !== "banner"}
+                    showTooltip={false}
+                  />
+                ) : (
+                  <p className="text-xxs text-gold/60 italic">
+                    {structureCategory === StructureType.FragmentMine
+                      ? "Essence Rifts do not produce resources."
+                      : "Production data unavailable."}
+                  </p>
+                )}
+              </Tabs.Panel>
+            )}
 
             <Tabs.Panel className="flex flex-col gap-2">
               {resources ? (
@@ -150,9 +157,11 @@ const StructureBannerEntityDetailContent = memo(
             <Tabs.Tab className="!mx-0 flex flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 py-2 text-center transition hover:bg-dark/60">
               <Shield className="h-4 w-4 text-gold" />
             </Tabs.Tab>
-            <Tabs.Tab className="!mx-0 flex flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 py-2 text-center transition hover:bg-dark/60">
-              <Factory className="h-4 w-4 text-gold" />
-            </Tabs.Tab>
+            {showProductionTab && (
+              <Tabs.Tab className="!mx-0 flex flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 py-2 text-center transition hover:bg-dark/60">
+                <Factory className="h-4 w-4 text-gold" />
+              </Tabs.Tab>
+            )}
             <Tabs.Tab className="!mx-0 flex flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 py-2 text-center transition hover:bg-dark/60">
               <Coins className="h-4 w-4 text-gold" />
             </Tabs.Tab>
