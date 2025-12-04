@@ -1,7 +1,7 @@
 import { BattleViewInfo, LeftView, RightView } from "@/types";
 import { ContextMenuState } from "@/types/context-menu";
 import { SelectableArmy } from "@bibliothecadao/eternum";
-import { ContractAddress, ID } from "@bibliothecadao/types";
+import { BiomeType, ContractAddress, ID } from "@bibliothecadao/types";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 
@@ -129,6 +129,8 @@ interface UIStore {
   modalContent: React.ReactNode;
   toggleModal: (content: React.ReactNode) => void;
   showModal: boolean;
+  combatSimulationBiome: BiomeType | null;
+  setCombatSimulationBiome: (biome: BiomeType | null) => void;
   battleView: BattleViewInfo | null;
   setBattleView: (participants: BattleViewInfo | null) => void;
   leftNavigationView: LeftView;
@@ -247,6 +249,8 @@ export const useUIStore = create(
       set({ modalContent: content, showModal: !!content, tooltip: null });
     },
     showModal: false,
+    combatSimulationBiome: null,
+    setCombatSimulationBiome: (biome: BiomeType | null) => set({ combatSimulationBiome: biome }),
     battleView: null,
     setBattleView: (participants: BattleViewInfo | null) => set({ battleView: participants }),
     leftNavigationView: LeftView.None,

@@ -67,6 +67,12 @@ const RealmTransferManager = lazy(() =>
   })),
 );
 
+const CombatSimulation = lazy(() =>
+  import("../modules/simulation/combat-simulation").then((module) => ({
+    default: module.CombatSimulation,
+  })),
+);
+
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   return (
     <>
@@ -91,6 +97,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         <Suspense fallback={<WorldSuspenseFallback backgroundImage={backgroundImage} />}>
           <RealmTransferManager zIndex={100} />
           <PlayOverlayManager backgroundImage={backgroundImage} />
+          <CombatSimulation />
           <WorldInteractiveLayers />
 
           <StoryEventStream />

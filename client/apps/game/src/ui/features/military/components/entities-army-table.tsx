@@ -4,7 +4,6 @@ import { Headline } from "@/ui/design-system/molecules/headline";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
 import { battleSimulation } from "@/ui/features";
-import { CombatSimulation } from "@/ui/modules/simulation/combat-simulation";
 import { divideByPrecisionFormatted } from "@/ui/utils/utils";
 import { Position, getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
@@ -99,7 +98,6 @@ export const EntitiesArmyTable = () => {
           )}
         </div>
       </div>
-      <CombatSimulation />
       {!hasAnyArmies ? (
         <div className="text-center mt-8 p-6 bg-gold/10 rounded-lg">
           <p className="text-gold mb-2">You don't have any Field Armies</p>
