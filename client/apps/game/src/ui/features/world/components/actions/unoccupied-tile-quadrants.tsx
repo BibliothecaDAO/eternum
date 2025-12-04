@@ -89,24 +89,26 @@ export const BiomeSummaryCard = ({ biome, onSimulateBattle, showSimulateAction =
 
   return (
     <div className="flex h-full flex-col gap-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between gap-2">
           <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Biome</span>
-          <span className="text-sm font-semibold text-gold">{formatQuadrantBiomeLabel(biome)}</span>
+          {showSimulateAction && onSimulateBattle ? (
+            <Button
+              variant="outline"
+              size="xs"
+              className="gap-2 rounded-full border-gold/60 px-3 py-1 text-[11px]"
+              forceUppercase={false}
+              onClick={onSimulateBattle}
+              withoutSound
+            >
+              <CrosshairIcon className="h-3.5 w-3.5" />
+              Battle
+            </Button>
+          ) : null}
         </div>
-        {showSimulateAction && onSimulateBattle ? (
-          <Button
-            variant="outline"
-            size="xs"
-            className="gap-2 rounded-full border-gold/60 px-3 py-1 text-[11px]"
-            forceUppercase={false}
-            onClick={onSimulateBattle}
-            withoutSound
-          >
-            <CrosshairIcon className="h-3.5 w-3.5" />
-            Battle
-          </Button>
-        ) : null}
+        <span className="text-sm font-semibold text-gold truncate" title={formatQuadrantBiomeLabel(biome)}>
+          {formatQuadrantBiomeLabel(biome)}
+        </span>
       </div>
       <div className="flex flex-col gap-2">
         <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Army bonuses</span>
