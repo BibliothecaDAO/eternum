@@ -2,20 +2,20 @@ import { Loader } from "lucide-react";
 import { memo, useMemo } from "react";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { StaminaResource } from "@/ui/design-system/molecules/stamina-resource";
+import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg";
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
 import { ArmyWarning } from "../../armies/army-warning";
 import { CompactEntityInventory } from "../compact-entity-inventory";
 import { useArmyEntityDetail } from "../hooks/use-army-entity-detail";
 import { EntityDetailLayoutVariant, EntityDetailSection } from "../layout";
-import { HexPosition, ID, RelicRecipientType, EntityType } from "@bibliothecadao/types";
+import { HexPosition, ID, RelicRecipientType, EntityType, BiomeType, TroopType } from "@bibliothecadao/types";
+import { configManager } from "@bibliothecadao/eternum";
 
 export interface ArmyBannerEntityDetailProps {
   armyEntityId: ID;
   className?: string;
   compact?: boolean;
   showButtons?: boolean;
-  bannerPosition?: HexPosition;
   layoutVariant?: EntityDetailLayoutVariant;
 }
 
@@ -63,12 +63,7 @@ const ArmyBannerEntityDetailContent = memo(
         <div className="flex flex-col gap-2">
           <TroopChip troops={explorer.troops} size="sm" className="w-full" />
           {derivedData.stamina && derivedData.maxStamina ? (
-            <StaminaResource
-              entityId={armyEntityId}
-              stamina={derivedData.stamina}
-              maxStamina={derivedData.maxStamina}
-              className="w-full"
-            />
+            <InlineStaminaBar stamina={derivedData.stamina} maxStamina={derivedData.maxStamina} />
           ) : null}
         </div>
 
@@ -99,7 +94,7 @@ const ArmyBannerEntityDetailContent = memo(
 ArmyBannerEntityDetailContent.displayName = "ArmyBannerEntityDetailContent";
 
 export const ArmyBannerEntityDetail = memo(
-  ({ armyEntityId, className, compact = true, showButtons = false, bannerPosition, layoutVariant }: ArmyBannerEntityDetailProps) => {
+  ({ armyEntityId, className, compact = true, showButtons = false, layoutVariant }: ArmyBannerEntityDetailProps) => {
     const resolvedVariant: EntityDetailLayoutVariant = layoutVariant ?? (compact ? "default" : "banner");
 
     return (
@@ -108,7 +103,6 @@ export const ArmyBannerEntityDetail = memo(
         className={className}
         compact={compact}
         showButtons={showButtons}
-        bannerPosition={bannerPosition}
         variant={resolvedVariant}
       />
     );
@@ -116,3 +110,34 @@ export const ArmyBannerEntityDetail = memo(
 );
 
 ArmyBannerEntityDetail.displayName = "ArmyBannerEntityDetail";
+
+const InlineStaminaBar = ({
+  stamina,
+  maxStamina,
+}: {
+  stamina: { amount: bigint; updated_tick: bigint };
+  maxStamina: number;
+}) => {
+  if (!stamina || maxStamina === 0) return null;
+  const staminaValue = Number(stamina.amount);
+  const percentage = (staminaValue / maxStamina) * 100;
+  const minTravelCost = configManager.getTravelStaminaCost(BiomeType.Ocean, TroopType.Crossbowman);
+
+  let fillClass = "bg-progress-bar-danger";
+  if (staminaValue >= minTravelCost) {
+    fillClass = percentage > 66 ? "bg-progress-bar-good" : percentage > 33 ? "bg-progress-bar-medium" : "bg-progress-bar-danger";
+  }
+
+  return (
+    <div className="flex items-center gap-2 text-xxs text-gold/80">
+      <Lightning className="h-3 w-3 fill-order-power" />
+      <div className="flex-1 h-2 rounded-full border border-gray-600 overflow-hidden">
+        <div
+          className={`${fillClass} h-full rounded-full transition-all duration-300`}
+          style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}
+        />
+      </div>
+      <span className="whitespace-nowrap">{`${staminaValue}/${maxStamina}`}</span>
+    </div>
+  );
+};
