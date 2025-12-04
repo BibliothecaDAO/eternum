@@ -11,13 +11,11 @@ import { Bridge } from "@/ui/features/infrastructure";
 import { ProductionOverviewPanel } from "@/ui/features/settlement/production/production-overview-panel";
 import { StoryEventsChronicles } from "@/ui/features/story-events";
 import { construction, military, trade } from "@/ui/features/world";
-import { BOTTOM_PANEL_RESERVED_SPACE } from "@/ui/features/world/components/selected-tile-panel/constants";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
-import { motion } from "framer-motion";
 import type { ComponentProps, ReactNode } from "react";
-import { lazy, memo, Suspense, useEffect, useMemo } from "react";
+import { lazy, memo, Suspense, useEffect, useMemo, useState } from "react";
 
 type CircleButtonProps = ComponentProps<typeof CircleButton>;
 
@@ -60,6 +58,10 @@ type EconomyNavigationContext = {
 };
 
 const DEFAULT_BUTTON_SIZE: CircleButtonProps["size"] = "lg";
+
+const HEADER_HEIGHT = 64;
+const PANEL_WIDTH = 420;
+const HANDLE_WIDTH = 14;
 
 const buildRealmNavigationItems = ({
   view,
@@ -323,13 +325,7 @@ export const LeftNavigationModule = memo(() => {
     }
   }, [isMapView, view, setView]);
 
-  const navHeight = useMemo(() => {
-    if (!isMapView || showBlankOverlay) {
-      return "calc(100vh - 48px)";
-    }
-
-    return `calc(100vh - (${BOTTOM_PANEL_RESERVED_SPACE}))`;
-  }, [isMapView, showBlankOverlay]);
+  const navHeight = `calc(100vh - ${HEADER_HEIGHT}px)`;
 
   const structureInfo = useMemo(
     () => getEntityInfo(structureEntityId, ContractAddress(account.address), components, isBlitz),
@@ -386,111 +382,95 @@ export const LeftNavigationModule = memo(() => {
     [rightView, setRightView, setView, disableButtons, isBlitz],
   );
 
-  const slideLeft = {
-    hidden: { x: "-100%" },
-    visible: { x: "0%", transition: { duration: 0.5 } },
-  };
-
   const ConnectedAccount = useAccountStore((state) => state.account);
-  const isPanelCollapsed = view === LeftView.None && rightView === RightView.None;
+
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const computedWidth = isCollapsed ? HANDLE_WIDTH : PANEL_WIDTH + HANDLE_WIDTH;
+  const panelHeightStyle = { height: navHeight, maxHeight: navHeight };
+  const showEmptyState = view === LeftView.None && rightView === RightView.None;
+
+  const combinedNavigationItems = [...realmNavigationItems, ...economyNavigationItems];
+
   return (
-    <div className="flex flex-col">
-      <div className="flex-grow overflow-hidden">
-        <div
-          className={`transition-all duration-200 space-x-1 flex z-0 w-screen pr-2 md:pr-0 md:w-[900px] text-gold md:pt-16 pointer-events-none ${
-            isPanelCollapsed ? "-translate-x-[92%]" : ""
-          }`}
-          style={{ height: navHeight, maxHeight: navHeight }}
-        >
+    <div className="pointer-events-none h-full" style={{ ...panelHeightStyle, marginTop: `${HEADER_HEIGHT}px` }}>
+      <div className="flex h-full pointer-events-auto" style={{ width: `${computedWidth}px` }}>
+        {!isCollapsed && (
           <BaseContainer
-            className="w-full panel-wood pointer-events-auto overflow-y-auto panel-wood-corners overflow-x-hidden"
-            style={{ height: navHeight, maxHeight: navHeight }}
+            className="pointer-events-auto flex h-full w-full flex-col panel-wood panel-wood-corners overflow-hidden shadow-2xl"
+            style={{ ...panelHeightStyle, width: `${PANEL_WIDTH}px` }}
           >
-            <Suspense fallback={<div className="p-8">Loading...</div>}>
-              {view === LeftView.EntityView && <EntityDetails />}
-              {view === LeftView.MilitaryView && <Military entityId={structureEntityId} />}
-              {!isMapView && view === LeftView.ConstructionView && (
-                <SelectPreviewBuildingMenu entityId={structureEntityId} />
-              )}
-              {view === LeftView.HyperstructuresView &&
-                (isBlitz ? <BlitzHyperstructuresMenu /> : <EternumHyperstructuresMenu />)}
-              {view === LeftView.ResourceArrivals && (
-                <AllResourceArrivals hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
-              )}
-              {rightView === RightView.ResourceTable && !!structureEntityId && (
-                <div className="entity-resource-table-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
-                  <EntityResourceTable entityId={structureEntityId} />
-                </div>
-              )}
-              {rightView === RightView.Production && (
-                <div className="production-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
-                  <ProductionOverviewPanel />
-                </div>
-              )}
-              {rightView === RightView.Bridge && (
-                <div className="bridge-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
-                  <Bridge structures={structures} />
-                </div>
-              )}
-              {rightView === RightView.Transfer && (
-                <div className="transfer-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
-                  <TransferAutomationPanel />
-                </div>
-              )}
-              {rightView === RightView.StoryEvents && (
-                <div className="story-events-selector flex h-full flex-col flex-1 overflow-y-auto">
-                  <StoryEventsChronicles />
-                </div>
-              )}
-              {isPanelCollapsed && (
-                <div className="flex h-full items-center justify-center p-8 text-center text-sm text-gold/70">
-                  Select a module to view details.
-                </div>
-              )}
-              {/* {view === LeftView.RelicsView && <RelicsModule />} */}
-            </Suspense>
-          </BaseContainer>
-          {ConnectedAccount && (
-            <motion.div
-              variants={slideLeft}
-              initial="hidden"
-              animate="visible"
-              className="flex flex-col justify-center pointer-events-auto"
-              style={{ height: navHeight, maxHeight: navHeight }}
-            >
-              <div className="flex flex-col mb-auto space-y-6">
-                {realmNavigationItems.length > 0 && (
-                  <div>
-                    <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-gold/60">
-                      Realm
-                    </p>
-                    <div className="flex flex-col space-y-1">
-                      {realmNavigationItems.map((item) => (
-                        <div key={item.id}>
-                          <CircleButton {...item} />
-                        </div>
-                      ))}
+            <div className="flex-1 overflow-hidden">
+              <div className="h-full overflow-y-auto pr-1">
+                <Suspense fallback={<div className="p-8">Loading...</div>}>
+                  {view === LeftView.EntityView && <EntityDetails />}
+                  {view === LeftView.MilitaryView && <Military entityId={structureEntityId} />}
+                  {!isMapView && view === LeftView.ConstructionView && (
+                    <SelectPreviewBuildingMenu entityId={structureEntityId} />
+                  )}
+                  {view === LeftView.HyperstructuresView &&
+                    (isBlitz ? <BlitzHyperstructuresMenu /> : <EternumHyperstructuresMenu />)}
+                  {view === LeftView.ResourceArrivals && (
+                    <AllResourceArrivals hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
+                  )}
+                  {rightView === RightView.ResourceTable && !!structureEntityId && (
+                    <div className="entity-resource-table-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
+                      <EntityResourceTable entityId={structureEntityId} />
                     </div>
-                  </div>
-                )}
-                {economyNavigationItems.length > 0 && (
-                  <div>
-                    <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-gold/60">
-                      Economy
-                    </p>
-                    <div className="flex flex-col space-y-1">
-                      {economyNavigationItems.map((item) => (
-                        <div key={item.id}>
-                          <CircleButton {...item} />
-                        </div>
-                      ))}
+                  )}
+                  {rightView === RightView.Production && (
+                    <div className="production-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
+                      <ProductionOverviewPanel />
                     </div>
-                  </div>
-                )}
+                  )}
+                  {rightView === RightView.Bridge && (
+                    <div className="bridge-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
+                      <Bridge structures={structures} />
+                    </div>
+                  )}
+                  {rightView === RightView.Transfer && (
+                    <div className="transfer-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
+                      <TransferAutomationPanel />
+                    </div>
+                  )}
+                  {rightView === RightView.StoryEvents && (
+                    <div className="story-events-selector flex h-full flex-col flex-1 overflow-y-auto">
+                      <StoryEventsChronicles />
+                    </div>
+                  )}
+                  {showEmptyState && (
+                    <div className="flex h-full items-center justify-center p-8 text-center text-sm text-gold/70">
+                      Select a module to view details.
+                    </div>
+                  )}
+                  {/* {view === LeftView.RelicsView && <RelicsModule />} */}
+                </Suspense>
               </div>
-            </motion.div>
-          )}
-        </div>
+            </div>
+            {ConnectedAccount && combinedNavigationItems.length > 0 && (
+              <div className="border-t border-gold/20 bg-black/40 px-3 py-3">
+                <div className="flex flex-wrap gap-2">
+                  {combinedNavigationItems.map((item) => (
+                    <CircleButton key={item.id} {...item} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </BaseContainer>
+        )}
+        <button
+          type="button"
+          onClick={() => setIsCollapsed((prev) => !prev)}
+          className="relative flex h-full w-[14px] items-center justify-center bg-black/20 text-gold/60 transition pointer-events-auto hover:bg-gold/20"
+          aria-label={isCollapsed ? "Open navigation panel" : "Collapse navigation panel"}
+          style={{ width: `${HANDLE_WIDTH}px` }}
+        >
+          <span className="sr-only">Toggle navigation panel</span>
+          <div className="pointer-events-none flex flex-col items-center gap-1">
+            <span className="h-12 w-px bg-gold/40" />
+            <span className="text-[10px] leading-none">{isCollapsed ? "⟩" : "⟨"}</span>
+          </div>
+        </button>
       </div>
     </div>
   );

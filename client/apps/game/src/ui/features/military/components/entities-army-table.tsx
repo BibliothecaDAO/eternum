@@ -3,13 +3,12 @@ import Button from "@/ui/design-system/atoms/button";
 import { Headline } from "@/ui/design-system/molecules/headline";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
-import { battleSimulation } from "@/ui/features";
 import { divideByPrecisionFormatted } from "@/ui/utils/utils";
 import { Position, getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
 import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
 import { ArmyInfo, ClientComponents, ID, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import { HasValue, runQuery } from "@dojoengine/recs";
-import { CrosshairIcon, ShieldIcon, SwordIcon } from "lucide-react";
+import { ShieldIcon, SwordIcon } from "lucide-react";
 import { ArmyChip, NavigateToPositionIcon } from "./army-chip";
 import { UnifiedArmyCreationModal } from "./unified-army-creation-modal";
 
@@ -24,7 +23,6 @@ export const EntitiesArmyTable = () => {
   } = useDojo();
 
   const playerStructures = useUIStore((state) => state.playerStructures);
-  const togglePopup = useUIStore((state) => state.togglePopup);
   const toggleModal = useUIStore((state) => state.toggleModal);
 
   // Check if any structure has armies
@@ -37,24 +35,6 @@ export const EntitiesArmyTable = () => {
     <>
       <div className="mt-8 flex w-full justify-center px-3">
         <div className="flex w-full max-w-3xl flex-col gap-4 rounded-xl border border-gold/30 bg-brown/15 px-4 py-4 sm:px-6 sm:py-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-col gap-1">
-              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-gold/70">Military operations</span>
-              <span className="text-xs text-gold/60 sm:text-sm">
-                Plan your next move: run a simulation or deploy new attack and defense armies.
-              </span>
-            </div>
-            <Button
-              variant="primary"
-              size="md"
-              className="flex items-center gap-2 whitespace-nowrap"
-              onClick={() => togglePopup(battleSimulation)}
-            >
-              <CrosshairIcon className="h-4 w-4" />
-              Simulate battle
-            </Button>
-          </div>
-
           {playerStructures.length > 0 && (
             <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end">
               <span className="text-xs font-semibold uppercase tracking-wide text-gold/70 sm:text-sm">
