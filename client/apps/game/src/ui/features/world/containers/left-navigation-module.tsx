@@ -85,9 +85,9 @@ const buildRealmNavigationItems = ({
     {
       id: MenuEnum.entityDetails,
       className: "entity-details-selector",
-      image: BuildingThumbs.hex,
+      image: BuildingThumbs.home,
       tooltipLocation: "top",
-      label: "Details",
+      label: "Realm Info",
       size: DEFAULT_BUTTON_SIZE,
       disabled: disableButtons,
       active: view === LeftView.EntityView,
@@ -111,7 +111,7 @@ const buildRealmNavigationItems = ({
       tooltipLocation: "top",
       label: construction,
       size: DEFAULT_BUTTON_SIZE,
-      disabled: disableButtons || !isRealmOrVillage || isMapView,
+      disabled: disableButtons || !isRealmOrVillage,
       active: view === LeftView.ConstructionView,
       onClick: toggleView(LeftView.ConstructionView),
     },
@@ -172,9 +172,9 @@ const buildRealmNavigationItems = ({
   ];
 
   const allowedMenus: MenuEnum[] = [
-    ...(isMapView ? [] : [MenuEnum.entityDetails]),
+    MenuEnum.entityDetails,
     MenuEnum.military,
-    ...(isMapView ? [] : [MenuEnum.construction]),
+    MenuEnum.construction,
     MenuEnum.hyperstructures,
     MenuEnum.resourceArrivals,
     MenuEnum.relics,
@@ -319,12 +319,6 @@ export const LeftNavigationModule = memo(() => {
 
   const isBlitz = getIsBlitz();
 
-  useEffect(() => {
-    if (isMapView && view === LeftView.EntityView) {
-      setView(LeftView.None);
-    }
-  }, [isMapView, view, setView]);
-
   const navHeight = `calc(100vh - ${HEADER_HEIGHT}px)`;
 
   const structureInfo = useMemo(
@@ -405,7 +399,7 @@ export const LeftNavigationModule = memo(() => {
                 <Suspense fallback={<div className="p-8">Loading...</div>}>
                   {view === LeftView.EntityView && <EntityDetails />}
                   {view === LeftView.MilitaryView && <Military entityId={structureEntityId} />}
-                  {!isMapView && view === LeftView.ConstructionView && (
+                  {view === LeftView.ConstructionView && (
                     <SelectPreviewBuildingMenu entityId={structureEntityId} />
                   )}
                   {view === LeftView.HyperstructuresView &&
