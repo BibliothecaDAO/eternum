@@ -1726,7 +1726,9 @@ export default class WorldmapScene extends HexagonScene {
     this.registerStoreSubscriptions();
     this.setupCameraZoomHandler();
     try {
-      await this.updateVisibleChunks();
+      // Force chunk refresh when resuming to ensure proper re-initialization
+      // This fixes the bug where chunks don't load when switching back from Hexception view
+      await this.updateVisibleChunks(true);
     } catch (error) {
       console.error("Failed to update visible chunks while resuming worldmap scene:", error);
     }
@@ -1774,6 +1776,12 @@ export default class WorldmapScene extends HexagonScene {
       this.wheelHandler = null;
     }
     this.resetWheelState();
+
+    // Reset chunk state to ensure clean re-initialization when returning to world view
+    this.currentChunk = "null";
+    this.fetchedChunks.clear();
+    this.pendingChunks.clear();
+    this.pinnedChunkKeys.clear();
 
     // Note: Don't clean up shortcuts here - they should persist across scene switches
     // Shortcuts will be cleaned up when the scene is actually destroyed
