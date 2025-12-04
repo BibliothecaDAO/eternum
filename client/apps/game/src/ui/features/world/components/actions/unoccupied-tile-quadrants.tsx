@@ -104,7 +104,7 @@ export const BiomeSummaryCard = ({ biome, onSimulateBattle, showSimulateAction =
             withoutSound
           >
             <CrosshairIcon className="h-3.5 w-3.5" />
-            Simulate battle
+            Battle
           </Button>
         ) : null}
       </div>

@@ -4,6 +4,7 @@ import { ArmyBannerEntityDetail } from "@/ui/features/world/components/entities/
 import { StructureBannerEntityDetail } from "@/ui/features/world/components/entities/banner/structure-banner-entity-detail";
 import { QuestEntityDetail } from "@/ui/features/world/components/entities/quest-entity-detail";
 import { EntityDetailSection } from "@/ui/features/world/components/entities/layout";
+import { battleSimulation } from "@/ui/features/world/components/config";
 import { ID } from "@bibliothecadao/types";
 import {
   Biome,
@@ -15,7 +16,7 @@ import {
 import { useDojo } from "@bibliothecadao/react";
 import { HexPosition } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 
 export const SelectedWorldmapEntity = () => {
   const selectedHex = useUIStore((state) => state.selectedHex);
@@ -30,6 +31,9 @@ export const SelectedWorldmapEntity = () => {
 const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPosition }) => {
   const { setup } = useDojo();
   const tileComponent = setup.components.Tile;
+  const openPopup = useUIStore((state) => state.openPopup);
+  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
+  const setCombatSimulationBiome = useUIStore((state) => state.setCombatSimulationBiome);
 
   const gridTemplateColumns = "var(--selected-worldmap-entity-grid-cols, 1fr)";
   const gridTemplateRows = "var(--selected-worldmap-entity-grid-rows, auto)";
@@ -47,6 +51,12 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
   const biome = useMemo(() => {
     return Biome.getBiome(selectedHex.col || 0, selectedHex.row || 0);
   }, [selectedHex.col, selectedHex.row]);
+  const handleSimulateBattle = useCallback(() => {
+    setCombatSimulationBiome(biome);
+    if (!isPopupOpen(battleSimulation)) {
+      openPopup(battleSimulation);
+    }
+  }, [biome, isPopupOpen, openPopup, setCombatSimulationBiome]);
 
   const hasOccupier = !!tile && Number(tile.occupier_id) !== 0;
   const occupierType = tile?.occupier_type ?? 0;
@@ -100,7 +110,7 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
             {...sharedDetailProps}
           />
           <EntityDetailSection compact tone="highlight" className="h-full flex">
-            <BiomeSummaryCard biome={biome} />
+            <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
           </EntityDetailSection>
         </div>
       ) : isChest ? (
@@ -109,7 +119,7 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
             <RelicCrateSummaryPanel crateEntityId={occupierEntityId} />
           </EntityDetailSection>
           <EntityDetailSection compact tone="highlight" className="h-full flex">
-            <BiomeSummaryCard biome={biome} />
+            <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
           </EntityDetailSection>
         </div>
       ) : isQuest ? (
@@ -123,7 +133,7 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
             {...sharedDetailProps}
           />
           <EntityDetailSection compact tone="highlight" className="h-full flex">
-            <BiomeSummaryCard biome={biome} />
+            <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
           </EntityDetailSection>
         </div>
       )}
