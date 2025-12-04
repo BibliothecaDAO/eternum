@@ -1,1 +1,1 @@
-export * from "./bottom-panels";
+export * from "./selected-tile-panel";

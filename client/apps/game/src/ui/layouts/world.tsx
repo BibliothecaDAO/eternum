@@ -55,9 +55,9 @@ const RealtimeChatPortal = lazy(() =>
     default: module.RealtimeChatPortal,
   })),
 );
-const BottomPanels = lazy(() =>
+const SelectedTilePanel = lazy(() =>
   import("../features/world/components/bottom-panels").then((module) => ({
-    default: module.BottomPanels,
+    default: module.SelectedTilePanel,
   })),
 );
 
@@ -159,7 +159,7 @@ const WorldHud = () => (
       <TopLeftNavigation />
     </TopLeftContainer>
 
-    <BottomPanels />
+      <SelectedTilePanel />
 
     <RealtimeChatPortal />
   </div>

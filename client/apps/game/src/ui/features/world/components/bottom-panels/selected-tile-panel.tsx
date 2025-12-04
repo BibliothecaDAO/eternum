@@ -1,9 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { FELT_CENTER } from "@/ui/config";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
-import { StructureBannerEntityDetail } from "@/ui/features/world/components/entities/banner/structure-banner-entity-detail";
 import {
   getEntityIdFromKeys,
   isTileOccupierChest,
@@ -19,12 +17,11 @@ import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN } from "./constants";
 
 interface PanelFrameProps {
   title: string;
-  badge?: string;
   children: ReactNode;
   className?: string;
 }
 
-const PanelFrame = ({ title, badge, children, className }: PanelFrameProps) => (
+const PanelFrame = ({ title, children, className }: PanelFrameProps) => (
   <section
     className={cn(
       "pointer-events-auto panel-wood panel-wood-corners border border-gold/20 bg-black/60 shadow-2xl flex h-full flex-col overflow-hidden",
@@ -34,42 +31,10 @@ const PanelFrame = ({ title, badge, children, className }: PanelFrameProps) => (
   >
     <header className="flex items-center justify-between border-b border-gold/20 px-4 py-2">
       <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-gold/70">{title}</p>
-      {badge && (
-        <span className="rounded-full border border-gold/40 bg-black/40 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-gold/80">
-          {badge}
-        </span>
-      )}
     </header>
     <div className="flex-1 min-h-0 overflow-hidden px-3 py-2">{children}</div>
   </section>
 );
-
-const RealmPanel = () => {
-  const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const isSpectating = useUIStore((state) => state.isSpectating);
-  const hasSelection = structureEntityId !== UNDEFINED_STRUCTURE_ENTITY_ID;
-
-  return (
-    <PanelFrame title="Selected Realm" badge={isSpectating ? "Spectating" : undefined}>
-      {hasSelection ? (
-        <div className="h-full min-h-0 overflow-hidden">
-          <StructureBannerEntityDetail
-            structureEntityId={structureEntityId}
-            className="h-full min-h-0"
-            compact
-            layoutVariant="banner"
-            showButtons={false}
-            maxInventory={8}
-          />
-        </div>
-      ) : (
-        <div className="flex min-h-[140px] flex-col items-center justify-center text-center">
-          <p className="text-xs text-gold/70">Select a realm or structure to inspect its status.</p>
-        </div>
-      )}
-    </PanelFrame>
-  );
-};
 
 const TilePanel = () => {
   const selectedHex = useUIStore((state) => state.selectedHex);
@@ -133,7 +98,7 @@ const TilePanel = () => {
   );
 };
 
-export const BottomPanels = memo(() => {
+export const SelectedTilePanel = memo(() => {
   const { isMapView } = useQuery();
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const shouldShow = isMapView && !showBlankOverlay;
@@ -141,20 +106,17 @@ export const BottomPanels = memo(() => {
   return (
     <div
       className={cn(
-        "pointer-events-none fixed inset-x-0 z-[35] flex flex-col gap-4 px-0 transition-all duration-300 md:flex-row md:items-end md:justify-between",
+        "pointer-events-none fixed inset-x-0 z-[35] flex flex-col gap-4 px-0 transition-all duration-300 md:flex-row md:items-end md:justify-end",
         shouldShow ? "opacity-100 translate-y-0" : "pointer-events-none opacity-0 translate-y-6",
       )}
       aria-hidden={!shouldShow}
       style={{ bottom: `${BOTTOM_PANEL_MARGIN}px` }}
     >
-      <div className="w-full md:w-auto md:max-w-[460px] lg:max-w-[480px]">
-        <RealmPanel />
-      </div>
-      <div className="w-full md:w-[460px] lg:w-[480px] md:ml-auto">
+      <div className="w-full md:w-auto md:max-w-[460px] lg:max-w-[480px] md:ml-auto">
         <TilePanel />
       </div>
     </div>
   );
 });
 
-BottomPanels.displayName = "BottomPanels";
+SelectedTilePanel.displayName = "SelectedTilePanel";

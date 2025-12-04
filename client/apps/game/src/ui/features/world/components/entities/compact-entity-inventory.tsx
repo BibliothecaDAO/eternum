@@ -31,6 +31,9 @@ interface CompactEntityInventoryProps {
   showLabels?: boolean;
   maxItems?: number;
   allowRelicActivation?: boolean;
+  sortMode?: InventorySortMode;
+  filterMode?: InventoryFilterMode;
+  maxHeight?: number;
 }
 
 interface DisplayItem {
@@ -96,6 +99,9 @@ export const CompactEntityInventory = memo(
     showLabels = false,
     maxItems,
     allowRelicActivation = false,
+    sortMode = "default",
+    filterMode = "all",
+    maxHeight,
   }: CompactEntityInventoryProps) => {
     const toggleModal = useUIStore((state) => state.toggleModal);
     const items = useMemo(
@@ -145,7 +151,10 @@ export const CompactEntityInventory = memo(
 
     return (
       <div className={cn("flex flex-col gap-1", className)}>
-        <div className={cn(baseGrid)}>
+        <div
+          className={cn(baseGrid, maxHeight ? "overflow-y-auto pr-1" : undefined)}
+          style={maxHeight ? { maxHeight } : undefined}
+        >
           {effectiveItems.map((item) => {
             const resourceDef = resourceDefs.find((r) => r.id === item.resourceId);
             const isClickableRelic =
