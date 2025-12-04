@@ -99,10 +99,10 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
         />
       ) : isChest ? (
         <div className="grid h-full min-h-0 gap-2 overflow-auto sm:grid-cols-2">
-          <EntityDetailSection compact tone="highlight" className="h-full">
+          <EntityDetailSection compact tone="highlight" className="h-full flex">
             <RelicCrateSummaryPanel crateEntityId={occupierEntityId} />
           </EntityDetailSection>
-          <EntityDetailSection compact tone="highlight" className="h-full">
+          <EntityDetailSection compact tone="highlight" className="h-full flex">
             <BiomeSummaryCard biome={biome} />
           </EntityDetailSection>
         </div>
@@ -110,10 +110,13 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
         <QuestEntityDetail questEntityId={occupierEntityId} className="h-full" {...sharedDetailProps} />
       ) : (
         <div className="grid h-full min-h-0 gap-2 overflow-auto sm:grid-cols-2">
-          <EntityDetailSection compact tone="highlight" className="h-full">
-            <ArmyBannerEntityDetail armyEntityId={occupierEntityId} showButtons={false} {...sharedDetailProps} />
-          </EntityDetailSection>
-          <EntityDetailSection compact tone="highlight" className="h-full">
+          <ArmyBannerEntityDetail
+            armyEntityId={occupierEntityId}
+            showButtons={false}
+            className="h-full"
+            {...sharedDetailProps}
+          />
+          <EntityDetailSection compact tone="highlight" className="h-full flex">
             <BiomeSummaryCard biome={biome} />
           </EntityDetailSection>
         </div>

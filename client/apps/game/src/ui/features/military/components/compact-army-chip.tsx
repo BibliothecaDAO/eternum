@@ -23,29 +23,23 @@ export const CompactArmyChip = ({ army, className }: { army: ArmyInfo; className
   }, [army.troops]);
 
   return (
-    <div className="flex w-full h-full justify-between gap-2">
-      <div className="flex flex-col justify-between w-[55%]">
-        <div className="flex flex-col items-start gap-1">
-          <div
-            className="text-xxs mr-1 truncate cursor-default max-w-full"
-            onMouseEnter={() =>
-              setTooltip({
-                content: `Army ID: ${army.entityId}`,
-                position: "bottom",
-              })
-            }
-            onMouseLeave={() => setTooltip(null)}
-          >
-          </div>
-      <div className="flex flex-col w-[45%] gap-1">
-        <div className="rounded-lg border border-gold/20 bg-black/40 p-2">
-          <TroopChip troops={army.troops} className="h-auto" size="sm" />
-        </div>
+    <div className={`flex w-full flex-col gap-1 ${className ?? ""}`}>
+      <div
+        className="text-xxs mr-1 truncate cursor-default max-w-full text-gold/80"
+        onMouseEnter={() =>
+          setTooltip({
+            content: `Army ID: ${army.entityId}`,
+            position: "bottom",
+          })
+        }
+        onMouseLeave={() => setTooltip(null)}
+      >
+        <span className="truncate">{army.name}</span>
       </div>
-          <div className="flex flex-col items-start gap-0.5 w-full">
-            <StaminaResource entityId={army.entityId} stamina={stamina} maxStamina={maxStamina} className="w-full" />
-          </div>
-        </div>
+      <TroopChip troops={army.troops} className="h-auto w-full" size="sm" />
+      <div className="flex flex-col items-start gap-0.5 w-full">
+        <span className="text-[10px] uppercase tracking-[0.2em] text-gold/60">Stamina</span>
+        <StaminaResource entityId={army.entityId} stamina={stamina} maxStamina={maxStamina} className="w-full" />
       </div>
     </div>
   );
