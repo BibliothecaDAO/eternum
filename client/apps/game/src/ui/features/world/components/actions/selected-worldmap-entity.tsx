@@ -91,12 +91,18 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
       style={{ gridTemplateColumns, gridTemplateRows, gridAutoRows }}
     >
       {isStructure ? (
-        <StructureBannerEntityDetail
-          structureEntityId={occupierEntityId}
-          maxInventory={12}
-          showButtons={false}
-          {...sharedDetailProps}
-        />
+        <div className="grid h-full min-h-0 gap-2 overflow-auto sm:grid-cols-2">
+          <StructureBannerEntityDetail
+            structureEntityId={occupierEntityId}
+            maxInventory={12}
+            showButtons={false}
+            className="h-full"
+            {...sharedDetailProps}
+          />
+          <EntityDetailSection compact tone="highlight" className="h-full flex">
+            <BiomeSummaryCard biome={biome} />
+          </EntityDetailSection>
+        </div>
       ) : isChest ? (
         <div className="grid h-full min-h-0 gap-2 overflow-auto sm:grid-cols-2">
           <EntityDetailSection compact tone="highlight" className="h-full flex">
