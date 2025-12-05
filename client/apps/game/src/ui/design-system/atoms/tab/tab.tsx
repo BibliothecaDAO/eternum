@@ -24,8 +24,8 @@ export const Tab = ({ className, children, noText, ...props }: TabProps) => {
       }
       {...props}
     >
-      {() => (
-        <span className="flex items-center gap-1">
+      {({ selected }) => (
+        <span data-selected={selected ? "true" : "false"} className="flex items-center gap-1">
           {children}
         </span>
       )}

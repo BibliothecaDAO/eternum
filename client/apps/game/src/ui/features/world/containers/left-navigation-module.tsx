@@ -220,9 +220,10 @@ const LeftPanelHeader = ({
         className="text-xs text-gold"
       >
         <Tabs.List>
-          {structureTabs.map((tab) => {
+          {structureTabs.map((tab, index) => {
             const Icon = tab.icon;
             const count = structuresWithMetadata.filter((structure) => tab.categories.includes(structure.category)).length;
+            const isActiveTab = activeTab === index;
             return (
               <Tabs.Tab
                 key={tab.key}
@@ -231,7 +232,7 @@ const LeftPanelHeader = ({
                 className="!mx-0"
               >
                 <span className="flex items-center gap-1">
-                  <span className="text-[12px] font-semibold text-gold/60 transition-none group-data-[headlessui-state=selected]:text-[#f4c24d]">
+                  <span className={`text-[12px] font-semibold transition-none ${isActiveTab ? "text-[#f4c24d]" : "text-gold/60"}`}>
                     {count}
                   </span>
                   <Icon className="h-4 w-4" />
