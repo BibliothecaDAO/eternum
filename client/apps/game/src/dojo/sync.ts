@@ -207,17 +207,17 @@ export const syncEntitiesDebounced = async (
     queueUpdate(data, "entity");
   });
 
-  const eventSub = await client.onEventMessageUpdated(entityKeyClause, (data: ToriiEntity) => {
-    if (logging) console.log("Event message updated", data.hashed_keys);
-    queueUpdate(data, "event");
-  });
+  // const eventSub = await client.onEventMessageUpdated(entityKeyClause, (data: ToriiEntity) => {
+  //   if (logging) console.log("Event message updated", data.hashed_keys);
+  //   queueUpdate(data, "event");
+  // });
 
   setupResult.network.provider.recordStreamActivity();
 
   return {
     cancel: () => {
       entitySub.cancel();
-      eventSub.cancel();
+      // eventSub.cancel();
       queueProcessor.dispose();
     },
   };
