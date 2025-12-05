@@ -153,23 +153,34 @@ class Minimap {
     // Expose the minimap instance globally for UI access
     (window as any).minimapInstance = this;
 
-    this.waitForMinimapElement().then((canvas) => {
-      this.canvas = canvas;
-      this.loadLabelImages();
-      this.initializeCanvas(camera);
-      this.canvas.addEventListener("canvasResized", this.handleResize);
-      this.fetchTiles(); // Start fetching tiles
-      this.startTilesRefreshLoop();
-    });
+    this.waitForMinimapElement()
+      .then((canvas) => {
+        this.canvas = canvas;
+        this.loadLabelImages();
+        this.initializeCanvas(camera);
+        this.canvas.addEventListener("canvasResized", this.handleResize);
+        this.fetchTiles(); // Start fetching tiles
+        this.startTilesRefreshLoop();
+      })
+      .catch((error) => {
+        console.warn("Minimap: Failed to initialize minimap:", error);
+      });
   }
 
   private async waitForMinimapElement(): Promise<HTMLCanvasElement> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
+      const MAX_ATTEMPTS = 300; // ~5 seconds at 60fps
+      let attempts = 0;
+
       const checkElement = () => {
         const element = document.getElementById("minimap") as HTMLCanvasElement;
         if (element) {
           resolve(element);
+        } else if (attempts >= MAX_ATTEMPTS) {
+          console.error("Minimap: minimap element not found after max attempts");
+          reject(new Error("minimap element not found"));
         } else {
+          attempts++;
           requestAnimationFrame(checkElement);
         }
       };
