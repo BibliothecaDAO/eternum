@@ -5,7 +5,7 @@ import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import Button from "@/ui/design-system/atoms/button";
 import { Tabs } from "@/ui/design-system/atoms";
 import { SecondaryPopup } from "@/ui/design-system/molecules/secondary-popup";
-import { configManager, getEntityInfo, getIsBlitz, getStructureName, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
+import { configManager, getEntityInfo, getIsBlitz, getStructureName, Position, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { ResourceArrivals as AllResourceArrivals, MarketModal } from "@/ui/features/economy/trading";
 import { TransferAutomationPanel } from "@/ui/features/economy/transfers/transfer-automation-panel";
@@ -13,6 +13,7 @@ import { Bridge } from "@/ui/features/infrastructure";
 import { ProductionOverviewPanel } from "@/ui/features/settlement/production/production-overview-panel";
 import { StoryEventsChronicles } from "@/ui/features/story-events";
 import { construction, military, trade } from "@/ui/features/world";
+import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import {
   STRUCTURE_GROUP_COLORS,
   STRUCTURE_GROUP_CONFIG,
@@ -22,14 +23,17 @@ import {
 } from "@/ui/features/world/containers/top-left-navigation/structure-groups";
 import { useFavoriteStructures } from "@/ui/features/world/containers/top-left-navigation/favorites";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
-import { useDojo } from "@bibliothecadao/react";
+import { useComponentValue } from "@dojoengine/react";
+import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ClientComponents, ContractAddress, ID, RealmLevels, Structure, StructureType, getLevelName } from "@bibliothecadao/types";
-import type { ComponentProps, ReactNode } from "react";
+import type { ComponentProps, ReactNode, MouseEvent } from "react";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { Castle, Crown, Pencil, Pickaxe, Sparkles, Star, Tent } from "lucide-react";
+import { ArrowUp, Castle, Crown, Loader2, Pencil, Pickaxe, Sparkles, Star, Tent, ChevronsUp, ChevronUp, ShieldCheck } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useGoToStructure } from "@/hooks/helpers/use-navigate";
+import clsx from "clsx";
 
 type CircleButtonProps = ComponentProps<typeof CircleButton>;
 
@@ -48,6 +52,18 @@ type NavigationItem = {
   | "size"
   | "tooltipLocation"
 >;
+
+type StructureWithMetadata = Structure & {
+  displayName: string;
+  originalName: string;
+  realmLevel: number;
+  realmLevelLabel: string | null;
+  population: number;
+  populationCapacity: number;
+  groupColor: StructureGroupColor | null;
+  isFavorite: boolean;
+  canUpgrade: boolean;
+};
 
 type RealmNavigationContext = {
   view: LeftView;
@@ -105,6 +121,17 @@ const LeftPanelHeader = ({
 }: LeftPanelHeaderProps) => {
   const [activeTab, setActiveTab] = useState(0);
 
+  const structureEntityKey = useMemo(() => {
+    try {
+      return getEntityIdFromKeys([BigInt(structureEntityId)]);
+    } catch {
+      return null;
+    }
+  }, [structureEntityId]);
+
+  const liveStructure = useComponentValue(components.Structure, structureEntityKey as any);
+  const liveStructureBuildings = useComponentValue(components.StructureBuildings, structureEntityKey as any);
+
   const structureTabs = useMemo(
     () =>
       [
@@ -131,7 +158,7 @@ const LeftPanelHeader = ({
     [isBlitz],
   );
 
-  const structuresWithMetadata = useMemo(() => {
+  const structuresWithMetadata = useMemo<StructureWithMetadata[]>(() => {
     // Force recomputation when a local rename occurs.
     void nameUpdateVersion;
     return structures.map((structure) => {
@@ -187,11 +214,26 @@ const LeftPanelHeader = ({
   const selectedStructureMetadata = structuresWithMetadata.find((structure) => structure.entityId === structureEntityId);
   const selectedGroupColor = selectedStructureMetadata?.groupColor ?? null;
   const selectedGroupConfig = selectedGroupColor ? STRUCTURE_GROUP_CONFIG[selectedGroupColor] : null;
+  const normalizedLevelRaw =
+    liveStructure?.base?.level ?? selectedStructureMetadata?.realmLevel ?? selectedStructureMetadata?.structure.base?.level ?? 0;
+  const normalizedLevel =
+    typeof normalizedLevelRaw === "bigint" ? Number(normalizedLevelRaw) : Number(normalizedLevelRaw ?? 0);
   const levelLabel =
-    selectedStructureMetadata?.realmLevelLabel ??
-    (selectedStructureMetadata ? `Level ${selectedStructureMetadata.realmLevel}` : "Level —");
+    selectedStructureMetadata?.category === StructureType.Realm || selectedStructureMetadata?.category === StructureType.Village
+      ? getLevelName(Math.min(Math.max(normalizedLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels)
+      : selectedStructureMetadata
+        ? `Level ${normalizedLevel}`
+        : "Level —";
+  const hasBasePopulation =
+    selectedStructureMetadata?.category === StructureType.Realm || selectedStructureMetadata?.category === StructureType.Village;
+  const basePopulationCapacity = hasBasePopulation ? configManager.getBasePopulationCapacity() : 0;
+  const normalizedBasePopulationCapacity = hasBasePopulation ? Math.max(Number(basePopulationCapacity ?? 0), 6) : 0;
+  const livePopulation = Number(liveStructureBuildings?.population.current ?? selectedStructureMetadata?.population ?? 0);
+  const livePopulationCapacity =
+    Number(liveStructureBuildings?.population.max ?? selectedStructureMetadata?.populationCapacity ?? 0) +
+    normalizedBasePopulationCapacity;
   const populationCapacityLabel = selectedStructureMetadata
-    ? `${selectedStructureMetadata.population}/${selectedStructureMetadata.populationCapacity}`
+    ? `${livePopulation}/${livePopulationCapacity}`
     : null;
   const showDetailedStats = Boolean(
     selectedStructureMetadata &&
@@ -241,12 +283,6 @@ const LeftPanelHeader = ({
               <span className="text-xs text-gold/70">Pop {populationCapacityLabel}</span>
             </>
           )}
-          {showDetailedStats && selectedStructureMetadata?.canUpgrade && (
-            <>
-              <span className="text-gold/40">•</span>
-              <span className="text-[10px] uppercase tracking-wide text-emerald-300">Upgradeable</span>
-            </>
-          )}
         </div>
       </div>
 
@@ -285,70 +321,18 @@ const LeftPanelHeader = ({
 
         {selectOptions.length > 0 ? (
           <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
-            {selectOptions.map((structure) => {
-              const isSelected = structure.entityId === structureEntityId;
-              const isRealm = structure.category === StructureType.Realm;
-              const isVillage = structure.category === StructureType.Village;
-              const levelLabel = structure.realmLevelLabel ?? `Level ${structure.realmLevel}`;
-              const showInfoLine = isRealm || isVillage;
-              const capacityDisplay = `${structure.population}/${structure.populationCapacity}`;
-              const infoLine = showInfoLine ? `${levelLabel} • Pop ${capacityDisplay}` : "";
-              const canUpgrade = isRealm && structure.canUpgrade;
-
-              return (
-                <button
-                  type="button"
-                  key={structure.entityId}
-                  onClick={() => onSelectStructure(structure.entityId)}
-                  className={`w-full rounded-lg border px-3 py-2 text-left transition ${
-                    isSelected
-                      ? "border-gold bg-black/60"
-                      : "border-gold/20 bg-black/20 hover:border-gold/40 hover:bg-black/30"
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onToggleFavorite(structure.entityId);
-                      }}
-                      className="rounded border border-transparent p-1 text-gold/60 hover:text-gold"
-                      title={structure.isFavorite ? "Remove from favorites" : "Favorite structure"}
-                    >
-                      <Star className={`h-4 w-4 ${structure.isFavorite ? "fill-current text-gold" : "text-gold/60"}`} />
-                    </button>
-                    <div className="flex flex-1 items-center gap-2">
-                      {structure.groupColor && (
-                        <span className={`h-2 w-2 rounded-full ${STRUCTURE_GROUP_CONFIG[structure.groupColor].dotClass}`} />
-                      )}
-                      <span
-                        className={`text-sm font-semibold ${
-                          structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor].textClass : "text-gold"
-                        }`}
-                      >
-                        {structure.displayName}
-                      </span>
-                      {canUpgrade && (
-                        <span className="text-[10px] uppercase tracking-wide text-emerald-300">Upgradeable</span>
-                      )}
-                      {showInfoLine && <span className="text-xxs text-gold/70">• {infoLine}</span>}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onRequestNameChange(structure.structure);
-                      }}
-                      className="rounded border border-gold/30 p-1 text-gold/70 hover:bg-gold/10"
-                      title="Rename structure"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                  </div>
-                </button>
-              );
-            })}
+            {selectOptions.map((structure) => (
+              <StructureListItem
+                key={structure.entityId}
+                structure={structure}
+                isSelected={structure.entityId === structureEntityId}
+                onSelectStructure={onSelectStructure}
+                onToggleFavorite={onToggleFavorite}
+                onRequestNameChange={onRequestNameChange}
+                structureGroups={structureGroups}
+                components={components}
+              />
+            ))}
           </div>
         ) : (
           <div className="rounded border border-gold/20 bg-black/30 px-3 py-2 text-xs text-gold/70">
@@ -357,6 +341,107 @@ const LeftPanelHeader = ({
         )}
       </div>
     </div>
+  );
+};
+
+type StructureListItemProps = {
+  structure: StructureWithMetadata;
+  isSelected: boolean;
+  onSelectStructure: (entityId: ID) => void;
+  onToggleFavorite: (entityId: ID) => void;
+  onRequestNameChange: (structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => void;
+  structureGroups: StructureGroupsMap;
+  components: ClientComponents;
+};
+
+const StructureListItem = ({
+  structure,
+  isSelected,
+  onSelectStructure,
+  onToggleFavorite,
+  onRequestNameChange,
+  structureGroups,
+  components,
+}: StructureListItemProps) => {
+  const entityKey = useMemo(() => {
+    try {
+      return getEntityIdFromKeys([BigInt(structure.entityId)]);
+    } catch {
+      return null;
+    }
+  }, [structure.entityId]);
+
+  const liveStructure = useComponentValue(components.Structure, entityKey as any);
+  const liveStructureBuildings = useComponentValue(components.StructureBuildings, entityKey as any);
+
+  const rawLevel = liveStructure?.base?.level ?? structure.structure.base?.level ?? 0;
+  const normalizedLevel = typeof rawLevel === "bigint" ? Number(rawLevel) : Number(rawLevel ?? 0);
+  const levelLabel =
+    structure.category === StructureType.Realm || structure.category === StructureType.Village
+      ? getLevelName(Math.min(Math.max(normalizedLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels)
+      : null;
+
+  const hasBasePopulation = structure.category === StructureType.Realm || structure.category === StructureType.Village;
+  const basePopulationCapacity = hasBasePopulation ? configManager.getBasePopulationCapacity() : 0;
+  const normalizedBasePopulationCapacity = hasBasePopulation ? Math.max(Number(basePopulationCapacity ?? 0), 6) : 0;
+
+  const population = Number(liveStructureBuildings?.population.current ?? structure.population ?? 0);
+  const populationCapacity =
+    Number(liveStructureBuildings?.population.max ?? structure.populationCapacity ?? 0) + normalizedBasePopulationCapacity;
+
+  const showInfoLine = hasBasePopulation;
+  const capacityDisplay = `${population}/${populationCapacity}`;
+  const infoLine = showInfoLine ? `${levelLabel ?? `Level ${normalizedLevel}`} • Pop ${capacityDisplay}` : "";
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelectStructure(structure.entityId)}
+      className={`w-full rounded-lg border px-3 py-2 text-left transition ${
+        isSelected ? "border-gold bg-black/60" : "border-gold/20 bg-black/20 hover:border-gold/40 hover:bg-black/30"
+      }`}
+    >
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onToggleFavorite(structure.entityId);
+          }}
+          className="rounded border border-transparent p-1 text-gold/60 hover:text-gold"
+          title={structure.isFavorite ? "Remove from favorites" : "Favorite structure"}
+        >
+          <Star className={`h-4 w-4 ${structure.isFavorite ? "fill-current text-gold" : "text-gold/60"}`} />
+        </button>
+        <div className="flex flex-1 items-center gap-2">
+          {structure.groupColor && (
+            <span className={`h-2 w-2 rounded-full ${STRUCTURE_GROUP_CONFIG[structure.groupColor].dotClass}`} />
+          )}
+          <span
+            className={`text-sm font-semibold ${
+              structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor].textClass : "text-gold"
+            }`}
+          >
+            {structure.displayName}
+          </span>
+          {showInfoLine && <span className="text-xxs text-gold/70">• {infoLine}</span>}
+        </div>
+        {structure.category === StructureType.Realm && (
+          <StructureLevelUpButton structureEntityId={structure.entityId} className="ml-auto" />
+        )}
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onRequestNameChange(structure.structure);
+          }}
+          className="rounded border border-gold/30 p-1 text-gold/70 hover:bg-gold/10"
+          title="Rename structure"
+        >
+          <Pencil className="h-4 w-4" />
+        </button>
+      </div>
+    </button>
   );
 };
 
@@ -390,8 +475,8 @@ const StructureEditPopup = ({
   return (
     <SecondaryPopup width="420" name="structure-edit-popup" containerClassName="pointer-events-auto">
       <SecondaryPopup.Head onClose={onCancel}>Edit Structure</SecondaryPopup.Head>
-      <SecondaryPopup.Body width="100%" height="320px">
-        <div className="flex h-full flex-col gap-4 p-4">
+      <SecondaryPopup.Body width="100%" height="auto" maxHeightCap={420} className="max-h-[420px]">
+        <div className="flex flex-col gap-4 p-4">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-gold/60">Structure Name</p>
             <input
@@ -454,6 +539,83 @@ const StructureEditPopup = ({
         </div>
       </SecondaryPopup.Body>
     </SecondaryPopup>
+  );
+};
+
+type StructureLevelUpButtonProps = {
+  structureEntityId: ID | null;
+  className?: string;
+};
+
+const StructureLevelUpButton = ({ structureEntityId, className }: StructureLevelUpButtonProps) => {
+  const [isUpgrading, setIsUpgrading] = useState(false);
+  const [hasUpgraded, setHasUpgraded] = useState(false);
+  const upgradeInfo = useStructureUpgrade(typeof structureEntityId === "number" ? structureEntityId : null);
+
+  if (!upgradeInfo) {
+    return null;
+  }
+
+  const meetsRequirements = (upgradeInfo.missingRequirements?.length ?? 0) === 0;
+  const canUpgrade = upgradeInfo.isOwner && !upgradeInfo.isMaxLevel && meetsRequirements;
+  const isDisabled = !canUpgrade || isUpgrading || hasUpgraded;
+  const shouldGlow = canUpgrade && !isDisabled;
+  const nextLevel = upgradeInfo.nextLevel ?? 0;
+
+  const renderIcon = () => {
+    if (upgradeInfo.isMaxLevel) {
+      return <ShieldCheck className="h-3.5 w-3.5" />;
+    }
+    if (nextLevel >= 3) {
+      return (
+        <span className="relative flex h-4 w-4 items-center justify-center">
+          <ChevronUp className="absolute h-3 w-3 -translate-y-[6px]" />
+          <ChevronUp className="absolute h-3 w-3" />
+          <ChevronUp className="absolute h-3 w-3 translate-y-[6px]" />
+        </span>
+      );
+    }
+    if (nextLevel === 2) {
+      return <ChevronsUp className="h-3.5 w-3.5" />;
+    }
+    return <ChevronUp className="h-3.5 w-3.5" />;
+  };
+
+  const handleUpgrade = async (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    if (isDisabled) return;
+
+    setIsUpgrading(true);
+    try {
+      await upgradeInfo.handleUpgrade();
+      setHasUpgraded(true);
+    } catch (error) {
+      console.error("Failed to upgrade structure", error);
+    } finally {
+      setIsUpgrading(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleUpgrade}
+      disabled={isDisabled}
+      className={clsx(
+        "inline-flex items-center justify-center rounded-md border px-2 py-1 text-xxs font-semibold uppercase tracking-wide transition",
+        shouldGlow
+          ? "border-gold/60 bg-gold/10 text-gold hover:bg-gold/25 shadow-[0_0_12px_rgba(255,204,102,0.55)] animate-pulse"
+          : "border-gold/20 bg-black/30 text-gold/50 cursor-not-allowed",
+        className,
+      )}
+      aria-label="Level up realm"
+    >
+      {isUpgrading ? (
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+      ) : (
+        renderIcon()
+      )}
+    </button>
   );
 };
 
@@ -691,8 +853,10 @@ const EntityResourceTable = lazy(() =>
 export const LeftNavigationModule = memo(() => {
   const {
     account: { account },
-    setup: { components },
+    setup,
   } = useDojo();
+  const components = setup.components;
+  const { isMapView } = useQuery();
 
   const arrivedArrivalsNumber = useUIStore((state) => state.arrivedArrivalsNumber);
   const pendingArrivalsNumber = useUIStore((state) => state.pendingArrivalsNumber);
@@ -708,6 +872,7 @@ export const LeftNavigationModule = memo(() => {
   const structures = useUIStore((state) => state.playerStructures);
   const { structureGroups, updateStructureGroup } = useStructureGroups();
   const { favorites, toggleFavorite } = useFavoriteStructures();
+  const goToStructure = useGoToStructure(setup);
 
   const [structureNameChange, setStructureNameChange] = useState<ComponentValue<ClientComponents["Structure"]["schema"]> | null>(null);
   const [structureNameVersion, setStructureNameVersion] = useState(0);
@@ -798,6 +963,21 @@ export const LeftNavigationModule = memo(() => {
   const structureNameMetadata = structureNameChange ? getStructureName(structureNameChange, isBlitz) : null;
   const editingStructureId = structureNameChange?.entity_id ? Number(structureNameChange.entity_id) : null;
 
+  const handleSelectStructure = useCallback(
+    (entityId: ID) => {
+      const target = structures.find((structure) => structure.entityId === entityId);
+      const coords = target?.structure?.base;
+
+      if (coords && coords.coord_x !== undefined && coords.coord_y !== undefined) {
+        void goToStructure(entityId, new Position({ x: coords.coord_x, y: coords.coord_y }), isMapView);
+        return;
+      }
+
+      setStructureEntityId(entityId);
+    },
+    [structures, goToStructure, isMapView, setStructureEntityId],
+  );
+
   return (
     <>
       <div className="pointer-events-none h-full" style={{ ...panelHeightStyle, marginTop: `${HEADER_HEIGHT}px` }}>
@@ -811,7 +991,7 @@ export const LeftNavigationModule = memo(() => {
                 structureEntityId={structureEntityId}
                 structures={structures}
                 structureInfo={structureInfo}
-                onSelectStructure={setStructureEntityId}
+                onSelectStructure={handleSelectStructure}
                 isBlitz={isBlitz}
                 components={components}
                 structureGroups={structureGroups}
