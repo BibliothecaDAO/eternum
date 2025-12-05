@@ -1,0 +1,22 @@
+import type { Market } from "@pm/sdk";
+import { HStack } from "@pm/ui";
+
+const formatTvl = (value: unknown) => {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return null;
+  if (Math.abs(num) >= 1) {
+    return num.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  }
+  return num.toPrecision(2);
+};
+
+export const MarketTvl = ({ market }: { market: Market }) => {
+  const tvl = formatTvl((market as any).tvl ?? (market as any).liquidity ?? (market as any).poolSize);
+
+  return (
+    <HStack className="gap-2 text-sm text-gold">
+      <span className="text-xs uppercase text-gold/70">TVL</span>
+      <span className="font-semibold text-white">{tvl ?? "--"}</span>
+    </HStack>
+  );
+};

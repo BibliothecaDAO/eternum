@@ -7,7 +7,8 @@
       "@config-deployer/config": ["src/types/config-deployer-stub.d.ts"],
       "@config-deployer/*": ["../../../config/deployer/*"],
       "@contracts": ["../../../contracts/utils/utils"],
-      "@manifests/*": ["../../../contracts/game/*"]
+      "@manifests/*": ["../../../contracts/game/*"],
+      "@pm/*": ["src/pm/*"]
     },
     "target": "ESNext",
     "useDefineForClassFields": true,

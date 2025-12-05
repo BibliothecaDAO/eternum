@@ -4,3 +4,4 @@ export { LandingAccount } from "./sections/account";
 export { LandingPlayer } from "./sections/player";
 export { LandingLeaderboard } from "./sections/leaderboard";
 export { LandingMarkets } from "./sections/markets";
+export { LandingCreateMarket } from "./sections/create-market";
