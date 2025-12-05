@@ -109,7 +109,7 @@ const StructureBannerEntityDetailContent = memo(
                 <HyperstructureVPDisplay
                   realmCount={hyperstructureRealmCount}
                   isOwned={isHyperstructureOwned}
-                  className="self-start"
+                  className="w-full"
                 />
               )}
               {guards.length > 0 ? (
