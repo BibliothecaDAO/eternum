@@ -3,9 +3,8 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView, RightView } from "@/types";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import { Tabs } from "@/ui/design-system/atoms";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import { NameChangePopup } from "@/ui/shared";
-import { deleteEntityNameLocalStorage, getEntityInfo, getIsBlitz, getStructureName, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
+import { configManager, deleteEntityNameLocalStorage, getEntityInfo, getIsBlitz, getStructureName, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { ResourceArrivals as AllResourceArrivals, MarketModal } from "@/ui/features/economy/trading";
 import { TransferAutomationPanel } from "@/ui/features/economy/transfers/transfer-automation-panel";
@@ -20,13 +19,14 @@ import {
   getNextStructureGroupColor,
   useStructureGroups,
 } from "@/ui/features/world/containers/top-left-navigation/structure-groups";
+import { useFavoriteStructures } from "@/ui/features/world/containers/top-left-navigation/favorites";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ClientComponents, ContractAddress, ID, RealmLevels, Structure, StructureType, getLevelName } from "@bibliothecadao/types";
 import type { ComponentProps, ReactNode } from "react";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { Castle, Crown, Palette, Pencil, Pickaxe, Sparkles, Tent } from "lucide-react";
+import { Castle, Crown, Palette, Pencil, Pickaxe, Sparkles, Star, Tent } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { lazy, memo, Suspense, useCallback, useMemo, useState } from "react";
 
@@ -82,6 +82,8 @@ type LeftPanelHeaderProps = {
   onUpdateStructureGroup: (entityId: number, color: StructureGroupColor | null) => void;
   onRequestNameChange: (structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => void;
   nameUpdateVersion: number;
+  favorites: number[];
+  onToggleFavorite: (entityId: number) => void;
 };
 
 const DEFAULT_BUTTON_SIZE: CircleButtonProps["size"] = "lg";
@@ -89,13 +91,6 @@ const DEFAULT_BUTTON_SIZE: CircleButtonProps["size"] = "lg";
 const HEADER_HEIGHT = 64;
 const PANEL_WIDTH = 420;
 const HANDLE_WIDTH = 14;
-
-const InfoStat = ({ label, value }: { label: string; value: string }) => (
-  <div className="flex flex-col">
-    <span className="text-xxs uppercase tracking-wide text-gold/60">{label}</span>
-    <span className="text-sm text-gold truncate">{value}</span>
-  </div>
-);
 
 const LeftPanelHeader = ({
   structureEntityId,
@@ -109,6 +104,8 @@ const LeftPanelHeader = ({
   onUpdateStructureGroup,
   onRequestNameChange,
   nameUpdateVersion,
+  favorites,
+  onToggleFavorite,
 }: LeftPanelHeaderProps) => {
   const [activeTab, setActiveTab] = useState(0);
 
@@ -153,7 +150,17 @@ const LeftPanelHeader = ({
         ? getComponentValue(components.StructureBuildings, structureEntity)
         : null;
       const population = Number(structureBuildings?.population.current ?? 0);
+      const hasBasePopulation =
+        structure.category === StructureType.Realm || structure.category === StructureType.Village;
+      const basePopulationCapacity = hasBasePopulation ? configManager.getBasePopulationCapacity() : 0;
+      const normalizedBasePopulationCapacity = hasBasePopulation
+        ? Math.max(Number(basePopulationCapacity ?? 0), 6)
+        : 0;
+      const populationCapacity =
+        Number(structureBuildings?.population.max ?? 0) + normalizedBasePopulationCapacity;
       const groupColor = structureGroups[structure.entityId] ?? null;
+
+      const isFavorite = favorites.includes(structure.entityId);
 
       return {
         ...structure,
@@ -162,10 +169,15 @@ const LeftPanelHeader = ({
         realmLevel: normalizedLevel,
         realmLevelLabel,
         population,
+        populationCapacity,
         groupColor,
+        isFavorite,
+        canUpgrade:
+          structure.category === StructureType.Realm &&
+          normalizedLevel < configManager.getMaxLevel(structure.category as StructureType),
       };
     });
-  }, [structures, isBlitz, components.StructureBuildings, structureGroups, nameUpdateVersion]);
+  }, [structures, isBlitz, components.StructureBuildings, structureGroups, nameUpdateVersion, favorites]);
 
   const currentTab = structureTabs[activeTab] ?? structureTabs[0];
   const filteredStructures =
@@ -176,140 +188,178 @@ const LeftPanelHeader = ({
 
   const selectedStructureMetadata = structuresWithMetadata.find((structure) => structure.entityId === structureEntityId);
   const selectedGroupColor = selectedStructureMetadata?.groupColor ?? null;
-  const selectValue = structureEntityId ? structureEntityId.toString() : undefined;
-  const typeLabel =
-    StructureType[structureInfo?.structureCategory ?? structureInfo?.structure?.base?.category ?? StructureType.Realm] ??
-    "Structure";
   const levelLabel =
-    selectedStructureMetadata?.realmLevelLabel ?? (selectedStructureMetadata ? `Level ${selectedStructureMetadata.realmLevel}` : "Level —");
-  const coords = structureInfo?.position ? `${structureInfo.position.x}, ${structureInfo.position.y}` : "—";
-  const statusLabel = structureInfo
-    ? structureInfo.isMine
-      ? "Controlled"
-      : isSpectating
-        ? "Spectating"
-        : "Not Owned"
-    : "Select a Structure";
-  const populationLabel = selectedStructureMetadata ? `${selectedStructureMetadata.population}` : "—";
+    selectedStructureMetadata?.realmLevelLabel ??
+    (selectedStructureMetadata ? `Level ${selectedStructureMetadata.realmLevel}` : "Level —");
+  const populationCapacityLabel = selectedStructureMetadata
+    ? `${selectedStructureMetadata.population}/${selectedStructureMetadata.populationCapacity}`
+    : null;
+  const showDetailedStats = Boolean(
+    selectedStructureMetadata &&
+      (selectedStructureMetadata.category === StructureType.Realm ||
+        selectedStructureMetadata.category === StructureType.Village),
+  );
   const headerTitle =
     selectedStructureMetadata?.displayName ??
     structureInfo?.name?.name ??
-    (structuresWithMetadata.length > 0 ? "Select a structure" : "No structures");
-
-  const handleCycleColor = () => {
-    if (!structureEntityId) {
-      return;
+      (structuresWithMetadata.length > 0 ? "Select a structure" : "No structures");
+  const ActiveStructureIcon = useMemo<LucideIcon | null>(() => {
+    if (!selectedStructureMetadata) {
+      return null;
     }
-    const nextColor = getNextStructureGroupColor(selectedGroupColor ?? null);
-    onUpdateStructureGroup(structureEntityId, nextColor);
-  };
-
-  const handleEditName = () => {
-    if (structureInfo?.structure) {
-      onRequestNameChange(structureInfo.structure);
+    for (const tab of structureTabs) {
+      if (tab.categories.includes(selectedStructureMetadata.category)) {
+        return tab.icon;
+      }
     }
-  };
+    return null;
+  }, [selectedStructureMetadata, structureTabs]);
 
   return (
-    <div className="space-y-3 border-b border-gold/20 bg-black/60 px-4 py-4">
-      <Tabs
-        selectedIndex={activeTab}
-        onChange={setActiveTab}
-        variant="selection"
-        size="small"
-        className="text-xs text-gold"
-      >
-        <Tabs.List>
-          {structureTabs.map((tab, index) => {
-            const Icon = tab.icon;
-            const count = structuresWithMetadata.filter((structure) => tab.categories.includes(structure.category)).length;
-            const isActiveTab = activeTab === index;
-            return (
-              <Tabs.Tab
-                key={tab.key}
-                aria-label={tab.label}
-                title={tab.label}
-                className="!mx-0"
-              >
-                <span className="flex items-center gap-1">
-                  <span className={`text-[12px] font-semibold transition-none ${isActiveTab ? "text-[#f4c24d]" : "text-gold/60"}`}>
-                    {count}
-                  </span>
-                  <Icon className="h-4 w-4" />
-                </span>
-                <span className="sr-only">{tab.label}</span>
-              </Tabs.Tab>
-            );
-          })}
-        </Tabs.List>
-      </Tabs>
-
-      <div>
-        <p className="text-xxs uppercase tracking-[0.2em] text-gold/60">Active Structure</p>
-        <div className="flex items-center gap-2">
+    <div className="border-b border-gold/20 bg-black/60 px-4 py-4 space-y-4">
+      <div className="border-b border-gold/20 pb-3">
+        <div className="flex flex-wrap items-center gap-2 text-sm text-gold">
+          {ActiveStructureIcon && (
+            <span className="text-gold">
+              <ActiveStructureIcon className="h-5 w-5" />
+            </span>
+          )}
           {selectedGroupColor && (
             <span className={`h-2 w-2 rounded-full ${STRUCTURE_GROUP_CONFIG[selectedGroupColor].dotClass}`} />
           )}
-          <p className="text-lg font-semibold text-gold truncate">{headerTitle}</p>
-          <div className="ml-auto flex items-center gap-1">
-            <button
-              type="button"
-              className="rounded border border-gold/30 p-1 text-gold/80 hover:bg-gold/10"
-              onClick={handleCycleColor}
-              title="Cycle structure color"
-            >
-              <Palette className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              className="rounded border border-gold/30 p-1 text-gold/80 hover:bg-gold/10"
-              onClick={handleEditName}
-              title="Rename structure"
-            >
-              <Pencil className="h-4 w-4" />
-            </button>
-          </div>
+          <p className="truncate text-base font-semibold text-gold sm:text-lg">{headerTitle}</p>
+          {showDetailedStats && populationCapacityLabel && (
+            <>
+              <span className="text-gold/40">•</span>
+              <span className="text-xs text-gold/70">{levelLabel}</span>
+              <span className="text-gold/40">•</span>
+              <span className="text-xs text-gold/70">Pop {populationCapacityLabel}</span>
+            </>
+          )}
+          {showDetailedStats && selectedStructureMetadata?.canUpgrade && (
+            <>
+              <span className="text-gold/40">•</span>
+              <span className="text-[10px] uppercase tracking-wide text-emerald-300">Upgradeable</span>
+            </>
+          )}
         </div>
       </div>
 
-      {selectOptions.length > 0 ? (
-        <Select value={selectValue} onValueChange={(value) => onSelectStructure(Number(value))}>
-          <SelectTrigger className="border border-gold/30 bg-black/40 text-left text-sm font-medium text-gold">
-            <SelectValue placeholder="Select a structure" />
-          </SelectTrigger>
-          <SelectContent className="panel-wood bg-dark-wood text-gold max-h-72">
-            {selectOptions.map((structure) => (
-              <SelectItem key={structure.entityId} value={structure.entityId.toString()}>
-                <div className="flex flex-col text-left">
-                  <span className="text-sm font-semibold flex items-center gap-2">
-                    {structure.groupColor && (
-                      <span
-                        className={`h-2 w-2 rounded-full ${STRUCTURE_GROUP_CONFIG[structure.groupColor].dotClass}`}
-                      />
-                    )}
-                    {structure.displayName}
+      <div className="space-y-3">
+        <Tabs
+          selectedIndex={activeTab}
+          onChange={setActiveTab}
+          variant="selection"
+          size="small"
+          className="text-xs text-gold"
+        >
+          <Tabs.List>
+            {structureTabs.map((tab, index) => {
+              const Icon = tab.icon;
+              const count = structuresWithMetadata.filter((structure) => tab.categories.includes(structure.category)).length;
+              const isActiveTab = activeTab === index;
+              return (
+                <Tabs.Tab
+                  key={tab.key}
+                  aria-label={tab.label}
+                  title={tab.label}
+                  className="!mx-0"
+                >
+                  <span className="flex items-center gap-1">
+                    <span className={`text-[12px] font-semibold transition-none ${isActiveTab ? "text-[#f4c24d]" : "text-gold/60"}`}>
+                      {count}
+                    </span>
+                    <Icon className="h-4 w-4" />
                   </span>
-                  <span className="text-xxs text-gold/70">
-                    {StructureType[structure.category] ?? "Structure"} •{" "}
-                    {structure.realmLevelLabel ?? `Level ${structure.realmLevel}`} • Pop {structure.population}
-                  </span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      ) : (
-        <div className="rounded border border-gold/20 bg-black/30 px-3 py-2 text-xs text-gold/70">
-          No structures available for this category.
-        </div>
-      )}
+                  <span className="sr-only">{tab.label}</span>
+                </Tabs.Tab>
+              );
+            })}
+          </Tabs.List>
+        </Tabs>
 
-      <div className="grid grid-cols-2 gap-3">
-        <InfoStat label="Type" value={typeLabel} />
-        <InfoStat label="Realm Level" value={levelLabel} />
-        <InfoStat label="Population" value={populationLabel} />
-        <InfoStat label="Coordinates" value={coords} />
-        <InfoStat label="Status" value={statusLabel} />
+        {selectOptions.length > 0 ? (
+          <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+            {selectOptions.map((structure) => {
+              const isSelected = structure.entityId === structureEntityId;
+              const isRealm = structure.category === StructureType.Realm;
+              const isVillage = structure.category === StructureType.Village;
+              const levelLabel = structure.realmLevelLabel ?? `Level ${structure.realmLevel}`;
+              const showInfoLine = isRealm || isVillage;
+              const capacityDisplay = `${structure.population}/${structure.populationCapacity}`;
+              const infoLine = showInfoLine ? `${levelLabel} • Pop ${capacityDisplay}` : "";
+              const canUpgrade = isRealm && structure.canUpgrade;
+
+              return (
+                <button
+                  type="button"
+                  key={structure.entityId}
+                  onClick={() => onSelectStructure(structure.entityId)}
+                  className={`w-full rounded-lg border px-3 py-2 text-left transition ${
+                    isSelected
+                      ? "border-gold bg-black/60"
+                      : "border-gold/20 bg-black/20 hover:border-gold/40 hover:bg-black/30"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onToggleFavorite(structure.entityId);
+                      }}
+                      className="rounded border border-transparent p-1 text-gold/60 hover:text-gold"
+                      title={structure.isFavorite ? "Remove from favorites" : "Favorite structure"}
+                    >
+                      <Star className={`h-4 w-4 ${structure.isFavorite ? "fill-current text-gold" : "text-gold/60"}`} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        const nextColor = getNextStructureGroupColor(structure.groupColor ?? null);
+                        onUpdateStructureGroup(structure.entityId, nextColor);
+                      }}
+                      className="rounded border border-transparent p-1 text-gold/60 hover:text-gold"
+                      title="Cycle structure color"
+                    >
+                      <Palette
+                        className={`h-4 w-4 ${
+                          structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor].textClass : ""
+                        }`}
+                      />
+                    </button>
+                    <div className="flex flex-1 items-center gap-2">
+                      {structure.groupColor && (
+                        <span className={`h-2 w-2 rounded-full ${STRUCTURE_GROUP_CONFIG[structure.groupColor].dotClass}`} />
+                      )}
+                      <span className="text-sm font-semibold text-gold">{structure.displayName}</span>
+                      {canUpgrade && (
+                        <span className="text-[10px] uppercase tracking-wide text-emerald-300">Upgradeable</span>
+                      )}
+                      {showInfoLine && <span className="text-xxs text-gold/70">• {infoLine}</span>}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onRequestNameChange(structure.structure);
+                      }}
+                      className="rounded border border-gold/30 p-1 text-gold/70 hover:bg-gold/10"
+                      title="Rename structure"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="rounded border border-gold/20 bg-black/30 px-3 py-2 text-xs text-gold/70">
+            No structures available for this category.
+          </div>
+        )}
       </div>
     </div>
   );
@@ -568,6 +618,7 @@ export const LeftNavigationModule = memo(() => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const isSpectating = useUIStore((state) => state.isSpectating);
   const { structureGroups, updateStructureGroup } = useStructureGroups();
+  const { favorites, toggleFavorite } = useFavoriteStructures();
 
   const [structureNameChange, setStructureNameChange] = useState<ComponentValue<ClientComponents["Structure"]["schema"]> | null>(null);
   const [structureNameVersion, setStructureNameVersion] = useState(0);
@@ -684,10 +735,12 @@ export const LeftNavigationModule = memo(() => {
                 isSpectating={isSpectating}
                 components={components}
                 structureGroups={structureGroups}
-                onUpdateStructureGroup={updateStructureGroup}
-                onRequestNameChange={handleRequestNameChange}
-                nameUpdateVersion={structureNameVersion}
-              />
+              onUpdateStructureGroup={updateStructureGroup}
+              onRequestNameChange={handleRequestNameChange}
+              nameUpdateVersion={structureNameVersion}
+              favorites={favorites}
+              onToggleFavorite={toggleFavorite}
+            />
               <div className="flex-1 overflow-hidden">
                 <div className="h-full overflow-y-auto pr-1">
                   <Suspense fallback={<div className="p-8">Loading...</div>}>
