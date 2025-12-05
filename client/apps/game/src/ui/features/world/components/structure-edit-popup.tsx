@@ -41,13 +41,20 @@ export const StructureEditPopup = ({
         <div className="flex flex-col gap-4 p-4">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-gold/60">Structure Name</p>
-            <input
-              type="text"
-              value={newName}
-              onChange={(event) => setNewName(event.target.value)}
-              className="mt-2 w-full rounded border border-gold/30 bg-black/60 px-3 py-2 text-sm text-gold placeholder-gold/50 focus:border-gold/60 focus:outline-none"
-              placeholder="Enter new name"
-            />
+            <div className="mt-2 flex items-center gap-2">
+              <input
+                type="text"
+                value={newName}
+                onChange={(event) => setNewName(event.target.value)}
+                className="w-full rounded border border-gold/30 bg-black/60 px-3 py-2 text-sm text-gold placeholder-gold/50 focus:border-gold/60 focus:outline-none"
+                placeholder="Enter new name"
+              />
+              {originalName && originalName !== currentName && (
+                <Button variant="default" size="sm" onClick={() => setNewName(originalName)}>
+                  Restore
+                </Button>
+              )}
+            </div>
             {originalName && originalName !== currentName && (
               <p className="mt-1 text-xxs text-gold/60">Original name: {originalName}</p>
             )}
@@ -68,7 +75,6 @@ export const StructureEditPopup = ({
                   }`}
                 >
                   <span className="text-gold">—</span>
-                  <span>No Color</span>
                 </button>
                 {STRUCTURE_GROUP_COLORS.map((color) => {
                   const isSelected = groupColor === color.value;
@@ -78,11 +84,12 @@ export const StructureEditPopup = ({
                       key={color.value}
                       onClick={() => onUpdateColor(color.value)}
                       className={`flex items-center gap-2 rounded border px-2 py-1 text-xs transition ${
-                        isSelected ? "border-gold text-gold" : "border-gold/30 text-gold/70 hover:border-gold/50"
+                        isSelected
+                          ? "border-gold text-gold ring-1 ring-gold/60"
+                          : "border-gold/30 text-gold/70 hover:border-gold/50"
                       }`}
                     >
                       <span className={`h-3 w-3 rounded-full ${color.dotClass}`} />
-                      <span>{color.label}</span>
                     </button>
                   );
                 })}
@@ -90,12 +97,12 @@ export const StructureEditPopup = ({
             </div>
           )}
 
-          <div className="mt-auto flex items-center justify-end gap-2 border-t border-gold/20 pt-4">
-            <Button variant="default" onClick={onCancel}>
-              Cancel
-            </Button>
+          <div className="mt-auto flex items-center justify-start gap-2 border-t border-gold/20 pt-4">
             <Button variant="gold" disabled={isNameUnchanged || isNameEmpty} onClick={() => onConfirm(trimmedName)}>
               Save Changes
+            </Button>
+            <Button variant="default" onClick={onCancel}>
+              Cancel
             </Button>
           </div>
         </div>

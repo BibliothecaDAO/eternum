@@ -286,6 +286,16 @@ const LeftPanelHeader = ({
               <span className="text-xs text-gold/70">{populationCapacityLabel}</span>
             </>
           )}
+          {selectedStructureMetadata && (
+            <button
+              type="button"
+              onClick={() => onRequestNameChange(selectedStructureMetadata.structure)}
+              className="ml-auto rounded border border-gold/30 p-1 text-gold/70 hover:bg-gold/10"
+              title="Rename structure"
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -418,11 +428,11 @@ const StructureListItem = ({
         </button>
         <div className="flex flex-1 items-center gap-2">
           {structure.groupColor && (
-            <span className={`h-2 w-2 rounded-full ${STRUCTURE_GROUP_CONFIG[structure.groupColor].dotClass}`} />
+            <span className={`h-2 w-2 rounded-full ${STRUCTURE_GROUP_CONFIG[structure.groupColor]?.dotClass ?? ""}`} />
           )}
           <span
             className={`text-sm font-semibold ${
-              structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor].textClass : "text-gold"
+              structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? "text-gold" : "text-gold"
             }`}
           >
             {structure.displayName}
@@ -436,17 +446,6 @@ const StructureListItem = ({
         {structure.category === StructureType.Realm && (
           <StructureLevelUpButton structureEntityId={structure.entityId} className="ml-auto" />
         )}
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onRequestNameChange(structure.structure);
-          }}
-          className="rounded border border-gold/30 p-1 text-gold/70 hover:bg-gold/10"
-          title="Rename structure"
-        >
-          <Pencil className="h-4 w-4" />
-        </button>
       </div>
     </button>
   );
@@ -466,14 +465,17 @@ const StructureLevelUpButton = ({ structureEntityId, className }: StructureLevel
     return null;
   }
 
+  const currentLevel = upgradeInfo.currentLevel ?? 0;
+  const maxLevel = configManager.getMaxLevel(StructureType.Realm);
+  const isAtMaxLevel = upgradeInfo.isMaxLevel || currentLevel >= maxLevel;
   const meetsRequirements = (upgradeInfo.missingRequirements?.length ?? 0) === 0;
-  const canUpgrade = upgradeInfo.isOwner && !upgradeInfo.isMaxLevel && meetsRequirements;
-  const isDisabled = !canUpgrade || isUpgrading || hasUpgraded;
+  const canUpgrade = upgradeInfo.isOwner && !isAtMaxLevel && meetsRequirements;
+  const isDisabled = !canUpgrade || isUpgrading || hasUpgraded || isAtMaxLevel;
   const shouldGlow = canUpgrade && !isDisabled;
   const nextLevel = upgradeInfo.nextLevel ?? 0;
 
   const renderIcon = () => {
-    if (upgradeInfo.isMaxLevel) {
+    if (isAtMaxLevel) {
       return <ShieldCheck className="h-3.5 w-3.5" />;
     }
     if (nextLevel >= 3) {
