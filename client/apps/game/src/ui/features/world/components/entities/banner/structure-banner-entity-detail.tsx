@@ -86,7 +86,7 @@ const StructureBannerEntityDetailContent = memo(
     return (
       <EntityDetailSection compact={compact} className={cn("flex h-full min-h-0 flex-col gap-2", className)}>
         <div className="flex flex-col gap-1 text-gold">
-          <span className={cn("font-semibold", bodyTextClass)}>
+          <span className={cn(bodyTextClass, "font-normal")}>
             {isMine ? "🟢" : "🔴"} {ownerDisplayName}
             <span className="px-1 text-gold/50">·</span>
             {structureName}

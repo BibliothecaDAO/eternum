@@ -64,9 +64,9 @@ const ArmyBannerEntityDetailContent = memo(
         tone={hasWarnings ? "highlight" : "default"}
         className={cn("flex flex-col gap-3", className)}
       >
-        <div className="flex flex-col gap-1 text-gold/80">
+        <div className="flex flex-col gap-1 text-gold">
           <span className="text-xs flex flex-wrap items-center gap-2">
-            <span>
+            <span className="font-normal text-gold">
               {derivedData.isMine ? "🟢" : "🔴"} {ownerDisplay}
               <span className="px-1 text-gold/50">·</span>
               {stationedDisplay}
