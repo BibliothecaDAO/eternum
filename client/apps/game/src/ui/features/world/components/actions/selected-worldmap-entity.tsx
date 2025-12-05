@@ -104,7 +104,7 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
       style={{ gridTemplateColumns, gridTemplateRows, gridAutoRows }}
     >
       {isStructure ? (
-        <div className="grid h-full min-h-0 gap-2 overflow-auto sm:grid-cols-2">
+        <div className="grid h-full min-h-0 gap-2 overflow-auto sm:grid-cols-[1.1fr_0.9fr]">
           <StructureBannerEntityDetail
             structureEntityId={occupierEntityId}
             maxInventory={12}
@@ -117,7 +117,7 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
           </EntityDetailSection>
         </div>
       ) : isChest ? (
-        <div className="grid h-full min-h-0 gap-2 overflow-auto sm:grid-cols-2">
+        <div className="grid h-full min-h-0 gap-2 overflow-auto sm:grid-cols-[1.1fr_0.9fr]">
           <EntityDetailSection compact tone="highlight" className="h-full flex">
             <RelicCrateSummaryPanel crateEntityId={occupierEntityId} />
           </EntityDetailSection>
@@ -128,7 +128,7 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
       ) : isQuest ? (
         <QuestEntityDetail questEntityId={occupierEntityId} className="h-full" {...sharedDetailProps} />
       ) : (
-        <div className="grid h-full min-h-0 gap-2 overflow-auto sm:grid-cols-2">
+        <div className="grid h-full min-h-0 gap-2 overflow-auto sm:grid-cols-[1.1fr_0.9fr]">
           <ArmyBannerEntityDetail
             armyEntityId={occupierEntityId}
             showButtons={false}

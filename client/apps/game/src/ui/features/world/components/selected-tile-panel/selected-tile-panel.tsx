@@ -112,7 +112,7 @@ export const SelectedTilePanel = memo(() => {
       aria-hidden={!shouldShow}
       style={{ bottom: BOTTOM_PANEL_MARGIN }}
     >
-      <div className="w-full md:w-[38%] lg:w-[28%] md:ml-auto">
+      <div className="w-full md:w-[37%] lg:w-[27%] md:ml-auto">
         <TilePanel />
       </div>
     </div>
