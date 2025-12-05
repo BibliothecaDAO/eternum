@@ -4,6 +4,7 @@ import { memo, useMemo } from "react";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { CompactDefenseDisplay } from "@/ui/features/military";
+import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
 import { getStructureName } from "@bibliothecadao/eternum";
 import { EntityType, ID, RelicRecipientType, StructureType } from "@bibliothecadao/types";
 
@@ -45,6 +46,7 @@ const StructureBannerEntityDetailContent = memo(
       guardSlotsUsed,
       guardSlotsMax,
       isMine,
+      hyperstructureRealmCount,
       isHyperstructure,
       isBlitz,
       isLoadingStructure,
@@ -78,6 +80,8 @@ const StructureBannerEntityDetailContent = memo(
     const bodyTextClass = compact ? "text-xs" : "text-sm";
     const labelTextClass = compact ? "text-xxs" : "text-xs";
     const tabLabelClass = cn("uppercase tracking-[0.25em] text-gold/70", labelTextClass);
+    const isHyperstructureOwned = structure.owner !== undefined && structure.owner !== null && structure.owner !== 0n;
+    const showHyperstructureVP = isHyperstructure && hyperstructureRealmCount !== undefined;
 
     return (
       <EntityDetailSection compact={compact} className={cn("flex h-full min-h-0 flex-col gap-2", className)}>
@@ -101,6 +105,13 @@ const StructureBannerEntityDetailContent = memo(
         <Tabs variant="inventory" className="flex flex-1 flex-col gap-3">
           <Tabs.Panels className="flex-1">
             <Tabs.Panel className="flex flex-col gap-2">
+              {showHyperstructureVP && (
+                <HyperstructureVPDisplay
+                  realmCount={hyperstructureRealmCount}
+                  isOwned={isHyperstructureOwned}
+                  className="self-start"
+                />
+              )}
               {guards.length > 0 ? (
                 <CompactDefenseDisplay
                   troops={guards.map((army) => ({ slot: army.slot, troops: army.troops }))}
