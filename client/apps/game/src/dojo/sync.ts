@@ -36,6 +36,7 @@ const createMainThreadQueueProcessor = (
 ): QueueProcessor => {
   const updateQueue: Array<{ entityId: string; data: ToriiEntity }> = [];
   let isProcessing = false;
+  let pendingTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   const mergeDeep = (target: ToriiEntity, source: ToriiEntity): ToriiEntity => {
     if (!source) return target;
@@ -105,7 +106,7 @@ const createMainThreadQueueProcessor = (
 
     isProcessing = false;
     if (updateQueue.length > 0) {
-      setTimeout(processNextInQueue, 0);
+      pendingTimeoutId = setTimeout(processNextInQueue, 0);
     }
   };
 
@@ -113,10 +114,14 @@ const createMainThreadQueueProcessor = (
     queueUpdate: (entityId: string, data: ToriiEntity) => {
       updateQueue.push({ entityId, data });
       if (!isProcessing) {
-        setTimeout(processNextInQueue, 200);
+        pendingTimeoutId = setTimeout(processNextInQueue, 200);
       }
     },
     dispose: () => {
+      if (pendingTimeoutId !== null) {
+        clearTimeout(pendingTimeoutId);
+        pendingTimeoutId = null;
+      }
       updateQueue.length = 0;
     },
   };
@@ -202,17 +207,17 @@ export const syncEntitiesDebounced = async (
     queueUpdate(data, "entity");
   });
 
-  const eventSub = await client.onEventMessageUpdated(entityKeyClause, (data: ToriiEntity) => {
-    if (logging) console.log("Event message updated", data.hashed_keys);
-    queueUpdate(data, "event");
-  });
+  // const eventSub = await client.onEventMessageUpdated(entityKeyClause, (data: ToriiEntity) => {
+  //   if (logging) console.log("Event message updated", data.hashed_keys);
+  //   queueUpdate(data, "event");
+  // });
 
   setupResult.network.provider.recordStreamActivity();
 
   return {
     cancel: () => {
       entitySub.cancel();
-      eventSub.cancel();
+      // eventSub.cancel();
       queueProcessor.dispose();
     },
   };
