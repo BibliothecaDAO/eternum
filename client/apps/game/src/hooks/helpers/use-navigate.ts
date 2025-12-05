@@ -11,7 +11,24 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useUIStore } from "../store/use-ui-store";
 
-const toWorldMapPosition = (position: Position): { col: number; row: number } | undefined => {
+type PositionLike = Position | { x?: number; y?: number; col?: number; row?: number };
+
+const normalizeToPosition = (value?: PositionLike): Position => {
+  if (value instanceof Position || (value && typeof (value as Position).toMapLocationUrl === "function")) {
+    return value as Position;
+  }
+
+  const candidate = value ?? {};
+  const x = Number(candidate.x ?? candidate.col ?? 0);
+  const y = Number(candidate.y ?? candidate.row ?? 0);
+
+  return new Position({
+    x: Number.isFinite(x) ? x : 0,
+    y: Number.isFinite(y) ? y : 0,
+  });
+};
+
+const toWorldMapPosition = (position: PositionLike): { col: number; row: number } | undefined => {
   const positionAny = position as unknown as {
     getContract?: () => { col?: number; row?: number; x?: number; y?: number };
     getNormalized?: () => { x?: number; y?: number };
@@ -185,11 +202,17 @@ export const useGoToStructure = (setupResult: SetupResult | null) => {
     [setupResult],
   );
 
-  return async (structureEntityId: ID, position: Position, isMapView: boolean, options?: { spectator?: boolean }) => {
-    const worldMapPosition = toWorldMapPosition(position);
+  return async (
+    structureEntityId: ID,
+    positionInput: PositionLike,
+    isMapView: boolean,
+    options?: { spectator?: boolean },
+  ) => {
+    const targetPosition = normalizeToPosition(positionInput);
+    const worldMapPosition = toWorldMapPosition(targetPosition);
 
     try {
-      await ensureStructureSynced(structureEntityId, position, worldMapPosition);
+      await ensureStructureSynced(structureEntityId, targetPosition, worldMapPosition);
     } catch (error) {
       console.error("[useGoToStructure] Unexpected error while syncing structure", error);
     }
@@ -200,10 +223,10 @@ export const useGoToStructure = (setupResult: SetupResult | null) => {
     });
 
     if (isMapView) {
-      navigateToMapView(position);
+      navigateToMapView(targetPosition);
       return;
     }
 
-    navigateToHexView(position);
+    navigateToHexView(targetPosition);
   };
 };

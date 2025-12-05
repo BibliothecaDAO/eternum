@@ -165,14 +165,14 @@ export const TopLeftNavigation = memo(() => {
                 className="sr-only peer"
                 checked={isMapView}
                 onChange={(e) => {
-                  const checked = e.target.checked;
-                  playClick();
-                  goToStructure(
-                    // if there's a controlled structure, needs to go back there
-                    lastControlledStructureEntityId || structureEntityId,
-                    new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
-                    checked,
-                  );
+                const checked = e.target.checked;
+                playClick();
+                goToStructure(
+                  // if there's a controlled structure, needs to go back there
+                  lastControlledStructureEntityId || structureEntityId,
+                  new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
+                  checked,
+                );
                 }}
               />
               <div className="w-9 h-5 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all bg-gold/30"></div>

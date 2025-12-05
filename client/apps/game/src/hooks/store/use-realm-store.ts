@@ -5,6 +5,30 @@ import { ID, RelicRecipientType, Structure } from "@bibliothecadao/types";
 
 const idsMatch = (left: unknown, right: unknown) => String(left) === String(right);
 
+const normalizeStructureId = (value: ID | unknown): ID | null => {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value === "bigint") {
+    return Number(value);
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  if (value && typeof value === "object") {
+    const candidate = (value as { entityId?: unknown }).entityId;
+    if (candidate !== undefined) {
+      return normalizeStructureId(candidate);
+    }
+  }
+
+  return null;
+};
+
 const removeRelicFromCollection = <T extends { entityId: unknown; relics?: Array<{ resourceId: unknown }> }>(
   collection: T[],
   targetEntityId: ID,
@@ -69,14 +93,20 @@ export const createRealmStoreSlice = (set: any) => ({
     options?: { spectator?: boolean; worldMapPosition?: { col: number; row: number } },
   ) =>
     set((state: RealmStore) => {
-      const ownsStructure = state.playerStructures.some((structure) => idsMatch(structure.entityId, structureEntityId));
+      const normalizedId = normalizeStructureId(structureEntityId);
+      if (normalizedId === null) {
+        console.warn("[RealmStore] Ignoring invalid structure id", structureEntityId);
+        return state;
+      }
+
+      const ownsStructure = state.playerStructures.some((structure) => idsMatch(structure.entityId, normalizedId));
       const shouldSpectate = options?.spectator ?? !ownsStructure;
       const currentStructureIsOwned = state.playerStructures.some((structure) =>
         idsMatch(structure.entityId, state.structureEntityId),
       );
 
       const updates: Partial<RealmStore> = {
-        structureEntityId,
+        structureEntityId: normalizedId,
         isSpectating: shouldSpectate,
       };
 
@@ -93,16 +123,24 @@ export const createRealmStoreSlice = (set: any) => ({
           updates.lastControlledStructureEntityId = state.structureEntityId;
         }
       } else {
-        updates.lastControlledStructureEntityId = structureEntityId;
+        updates.lastControlledStructureEntityId = normalizedId;
       }
 
       return updates;
     }),
   setLastControlledStructureEntityId: (structureEntityId: ID) =>
-    set({
-      lastControlledStructureEntityId: structureEntityId,
-      structureEntityId,
-      isSpectating: false,
+    set((state: RealmStore) => {
+      const normalizedId = normalizeStructureId(structureEntityId);
+      if (normalizedId === null) {
+        console.warn("[RealmStore] Ignoring invalid structure id", structureEntityId);
+        return state;
+      }
+
+      return {
+        lastControlledStructureEntityId: normalizedId,
+        structureEntityId: normalizedId,
+        isSpectating: false,
+      };
     }),
   exitSpectatorMode: () =>
     set((state: RealmStore) => {

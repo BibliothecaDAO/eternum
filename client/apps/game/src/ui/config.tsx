@@ -133,6 +133,7 @@ export const BuildingThumbs = {
   discord: `${prefix}discord.png`,
   rewards: `${prefix}rewards.png`,
   production: `${prefix}production.png`,
+  house: `${prefix}house.png`,
   home: `${prefix}home.png`,
   time: `${prefix}time.png`,
   leave: `${prefix}leave.png`,

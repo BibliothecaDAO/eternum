@@ -1,6 +1,7 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export const STRUCTURE_GROUPS_STORAGE_KEY = "structureGroups";
+const STRUCTURE_GROUPS_EVENT = "structureGroups:updated";
 
 export const STRUCTURE_GROUP_COLORS = [
   { value: "gold" as const, label: "Gold", textClass: "text-gold", dotClass: "bg-gold" },
@@ -82,6 +83,7 @@ export const saveStructureGroups = (groups: StructureGroupsMap): void => {
 
   try {
     window.localStorage.setItem(STRUCTURE_GROUPS_STORAGE_KEY, JSON.stringify(groups));
+    window.dispatchEvent(new CustomEvent(STRUCTURE_GROUPS_EVENT, { detail: groups }));
   } catch (error) {
     console.warn("Failed to persist structure groups", error);
   }
@@ -125,6 +127,33 @@ export const useStructureGroups = () => {
       saveStructureGroups(next);
       return next;
     });
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handleCustomUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<StructureGroupsMap>;
+      if (customEvent.detail) {
+        setStructureGroups(customEvent.detail);
+      }
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === STRUCTURE_GROUPS_STORAGE_KEY) {
+        setStructureGroups(loadStructureGroups());
+      }
+    };
+
+    window.addEventListener(STRUCTURE_GROUPS_EVENT, handleCustomUpdate as EventListener);
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.removeEventListener(STRUCTURE_GROUPS_EVENT, handleCustomUpdate as EventListener);
+      window.removeEventListener("storage", handleStorage);
+    };
   }, []);
 
   return { structureGroups, updateStructureGroup };
