@@ -208,11 +208,6 @@ const LeftPanelHeader = ({
     currentTab?.categories?.length === 0
       ? structuresWithMetadata
       : structuresWithMetadata.filter((structure) => currentTab.categories.includes(structure.category));
-  const selectOptions = filteredStructures.length > 0 ? filteredStructures : structuresWithMetadata;
-  const sortedSelectOptions = useMemo(
-    () => [...selectOptions].sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite)),
-    [selectOptions],
-  );
 
   const selectedStructureMetadata = structuresWithMetadata.find((structure) => structure.entityId === structureEntityId);
   const selectedGroupColor = selectedStructureMetadata?.groupColor ?? null;
@@ -272,7 +267,7 @@ const LeftPanelHeader = ({
             <span className={`h-2 w-2 rounded-full ${selectedGroupConfig?.dotClass ?? ""}`} />
           )}
           <p
-            className={`truncate text-2xl font-bold ${
+            className={`truncate font-[Cinzel] text-xl sm:text-2xl font-semibold ${
               selectedGroupConfig ? selectedGroupConfig.textClass : "text-gold"
             }`}
           >
@@ -352,9 +347,11 @@ const LeftPanelHeader = ({
           </Tabs.List>
         </Tabs>
 
-        {sortedSelectOptions.length > 0 ? (
-          <div className="max-h-[210px] space-y-2 overflow-y-auto pr-1">
-            {sortedSelectOptions.map((structure) => (
+        {filteredStructures.length > 0 ? (
+          <div className="max-h-[9.5rem] space-y-2 overflow-y-auto pr-1">
+            {[...filteredStructures]
+              .sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite))
+              .map((structure) => (
               <StructureListItem
                 key={structure.entityId}
                 structure={structure}
@@ -365,7 +362,7 @@ const LeftPanelHeader = ({
                 structureGroups={structureGroups}
                 components={components}
               />
-            ))}
+              ))}
           </div>
         ) : (
           <div className="rounded border border-gold/20 bg-black/30 px-3 py-2 text-xs text-gold/70">
