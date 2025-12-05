@@ -29,7 +29,7 @@ import { ClientComponents, ContractAddress, ID, RealmLevels, Structure, Structur
 import type { ComponentProps, ReactNode, MouseEvent } from "react";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { ArrowUp, Castle, Crown, Loader2, Pencil, Pickaxe, Sparkles, Star, Tent, ChevronsUp, ChevronUp, ShieldCheck } from "lucide-react";
+import { Castle, Crown, Loader2, Pencil, Pickaxe, Sparkles, Star, Tent, ChevronsUp, ChevronUp, ShieldCheck } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
@@ -210,6 +210,10 @@ const LeftPanelHeader = ({
       ? structuresWithMetadata
       : structuresWithMetadata.filter((structure) => currentTab.categories.includes(structure.category));
   const selectOptions = filteredStructures.length > 0 ? filteredStructures : structuresWithMetadata;
+  const sortedSelectOptions = useMemo(
+    () => [...selectOptions].sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite)),
+    [selectOptions],
+  );
 
   const selectedStructureMetadata = structuresWithMetadata.find((structure) => structure.entityId === structureEntityId);
   const selectedGroupColor = selectedStructureMetadata?.groupColor ?? null;
@@ -280,7 +284,7 @@ const LeftPanelHeader = ({
               <span className="text-gold/40">•</span>
               <span className="text-xs text-gold/70">{levelLabel}</span>
               <span className="text-gold/40">•</span>
-              <span className="text-xs text-gold/70">Pop {populationCapacityLabel}</span>
+              <span className="text-xs text-gold/70">{populationCapacityLabel}</span>
             </>
           )}
         </div>
@@ -319,9 +323,9 @@ const LeftPanelHeader = ({
           </Tabs.List>
         </Tabs>
 
-        {selectOptions.length > 0 ? (
-          <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
-            {selectOptions.map((structure) => (
+        {sortedSelectOptions.length > 0 ? (
+          <div className="max-h-[210px] space-y-2 overflow-y-auto pr-1">
+            {sortedSelectOptions.map((structure) => (
               <StructureListItem
                 key={structure.entityId}
                 structure={structure}
@@ -391,7 +395,7 @@ const StructureListItem = ({
 
   const showInfoLine = hasBasePopulation;
   const capacityDisplay = `${population}/${populationCapacity}`;
-  const infoLine = showInfoLine ? `${levelLabel ?? `Level ${normalizedLevel}`} • Pop ${capacityDisplay}` : "";
+  const infoLineLabel = levelLabel ?? `Level ${normalizedLevel}`;
 
   return (
     <button
@@ -424,7 +428,11 @@ const StructureListItem = ({
           >
             {structure.displayName}
           </span>
-          {showInfoLine && <span className="text-xxs text-gold/70">• {infoLine}</span>}
+        {showInfoLine && (
+          <span className="text-xxs text-gold/70">
+            {infoLineLabel} • {capacityDisplay}
+          </span>
+        )}
         </div>
         {structure.category === StructureType.Realm && (
           <StructureLevelUpButton structureEntityId={structure.entityId} className="ml-auto" />
