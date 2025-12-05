@@ -532,7 +532,9 @@ use core::num::traits::zero::Zero;
             let mut world: WorldStorage = self.world(DEFAULT_NS());
 
             let players_rank_final: PlayersRankFinal = world.read_model(WORLD_CONFIG_ID);
-            assert!(players_rank_final.trial_id.is_non_zero(), "Eternum: rankings not finalized");
+            if players_rank_final.trial_id.is_non_zero() {
+                return Option::None;
+            }
 
             let final_trial_id = players_rank_final.trial_id;
             let winner_rank: u16 = 1;
