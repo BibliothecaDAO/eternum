@@ -15,6 +15,7 @@ export const Tab = ({ className, children, noText, ...props }: TabProps) => {
     <HeadlessTab
       className={({ selected }) =>
         clsx(
+          "group",
           VARIANTS[variant].tab.base,
           selected ? VARIANTS[variant].tab.active : VARIANTS[variant].tab.inactive,
           className,
@@ -23,9 +24,11 @@ export const Tab = ({ className, children, noText, ...props }: TabProps) => {
       }
       {...props}
     >
-      {() => {
-        return <>{children}</>;
-      }}
+      {() => (
+        <span className="flex items-center gap-1">
+          {children}
+        </span>
+      )}
     </HeadlessTab>
   );
 };

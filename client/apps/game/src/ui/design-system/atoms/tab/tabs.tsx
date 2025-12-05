@@ -41,6 +41,14 @@ export const VARIANTS: any = {
     },
     tabList: "flex w-full justify-start gap-4",
   },
+  selection: {
+    tab: {
+      base: "flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-gold/30 bg-black/30 px-2 py-2 text-gold/60 transition duration-150 !outline-none",
+      active: "border-[#f4c24d] text-[#f4c24d] bg-black/55",
+      inactive: "hover:border-gold/50 hover:text-gold/90",
+    },
+    tabList: "flex w-full gap-2",
+  },
 };
 
 interface TabsProps {

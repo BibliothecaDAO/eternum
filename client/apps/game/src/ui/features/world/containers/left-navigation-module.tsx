@@ -26,7 +26,8 @@ import { ClientComponents, ContractAddress, ID, RealmLevels, Structure, Structur
 import type { ComponentProps, ReactNode } from "react";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { Palette, Pencil } from "lucide-react";
+import { Castle, Crown, Palette, Pencil, Pickaxe, Sparkles, Tent } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { lazy, memo, Suspense, useCallback, useMemo, useState } from "react";
 
 type CircleButtonProps = ComponentProps<typeof CircleButton>;
@@ -112,24 +113,28 @@ const LeftPanelHeader = ({
   const [activeTab, setActiveTab] = useState(0);
 
   const structureTabs = useMemo(
-    () => [
-      { key: "realms", label: "Realms", categories: [StructureType.Realm] },
-      {
-        key: "villages",
-        label: isBlitz ? "Camps" : "Villages",
-        categories: [StructureType.Village],
-      },
-      {
-        key: "rifts",
-        label: isBlitz ? "Rifts" : "Essence Rifts",
-        categories: [StructureType.FragmentMine],
-      },
-      {
-        key: "hyperstructures",
-        label: "Hyperstructures",
-        categories: [StructureType.Hyperstructure],
-      },
-    ],
+    () =>
+      [
+        { key: "realms", label: "Realms", categories: [StructureType.Realm], icon: Crown },
+        {
+          key: "villages",
+          label: isBlitz ? "Camps" : "Villages",
+          categories: [StructureType.Village],
+          icon: isBlitz ? Tent : Castle,
+        },
+        {
+          key: "rifts",
+          label: isBlitz ? "Rifts" : "Essence Rifts",
+          categories: [StructureType.FragmentMine],
+          icon: Pickaxe,
+        },
+        {
+          key: "hyperstructures",
+          label: "Hyperstructures",
+          categories: [StructureType.Hyperstructure],
+          icon: Sparkles,
+        },
+      ] satisfies { key: string; label: string; categories: StructureType[]; icon: LucideIcon }[],
     [isBlitz],
   );
 
@@ -210,14 +215,31 @@ const LeftPanelHeader = ({
       <Tabs
         selectedIndex={activeTab}
         onChange={setActiveTab}
-        variant="inventory"
+        variant="selection"
         size="small"
         className="text-xs text-gold"
       >
         <Tabs.List>
-          {structureTabs.map((tab) => (
-            <Tabs.Tab key={tab.key}>{tab.label}</Tabs.Tab>
-          ))}
+          {structureTabs.map((tab) => {
+            const Icon = tab.icon;
+            const count = structuresWithMetadata.filter((structure) => tab.categories.includes(structure.category)).length;
+            return (
+              <Tabs.Tab
+                key={tab.key}
+                aria-label={tab.label}
+                title={tab.label}
+                className="!mx-0"
+              >
+                <span className="flex items-center gap-1">
+                  <span className="text-[12px] font-semibold text-gold/60 transition-none group-data-[headlessui-state=selected]:text-[#f4c24d]">
+                    {count}
+                  </span>
+                  <Icon className="h-4 w-4" />
+                </span>
+                <span className="sr-only">{tab.label}</span>
+              </Tabs.Tab>
+            );
+          })}
         </Tabs.List>
       </Tabs>
 
