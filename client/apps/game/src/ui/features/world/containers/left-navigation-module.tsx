@@ -2,9 +2,10 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView, RightView } from "@/types";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
+import Button from "@/ui/design-system/atoms/button";
 import { Tabs } from "@/ui/design-system/atoms";
-import { NameChangePopup } from "@/ui/shared";
-import { configManager, deleteEntityNameLocalStorage, getEntityInfo, getIsBlitz, getStructureName, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
+import { SecondaryPopup } from "@/ui/design-system/molecules/secondary-popup";
+import { configManager, getEntityInfo, getIsBlitz, getStructureName, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { ResourceArrivals as AllResourceArrivals, MarketModal } from "@/ui/features/economy/trading";
 import { TransferAutomationPanel } from "@/ui/features/economy/transfers/transfer-automation-panel";
@@ -13,22 +14,22 @@ import { ProductionOverviewPanel } from "@/ui/features/settlement/production/pro
 import { StoryEventsChronicles } from "@/ui/features/story-events";
 import { construction, military, trade } from "@/ui/features/world";
 import {
+  STRUCTURE_GROUP_COLORS,
   STRUCTURE_GROUP_CONFIG,
   StructureGroupColor,
   StructureGroupsMap,
-  getNextStructureGroupColor,
   useStructureGroups,
 } from "@/ui/features/world/containers/top-left-navigation/structure-groups";
 import { useFavoriteStructures } from "@/ui/features/world/containers/top-left-navigation/favorites";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
-import { useDojo, useQuery } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { ClientComponents, ContractAddress, ID, RealmLevels, Structure, StructureType, getLevelName } from "@bibliothecadao/types";
 import type { ComponentProps, ReactNode } from "react";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { Castle, Crown, Palette, Pencil, Pickaxe, Sparkles, Star, Tent } from "lucide-react";
+import { Castle, Crown, Pencil, Pickaxe, Sparkles, Star, Tent } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { lazy, memo, Suspense, useCallback, useMemo, useState } from "react";
+import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 
 type CircleButtonProps = ComponentProps<typeof CircleButton>;
 
@@ -54,7 +55,6 @@ type RealmNavigationContext = {
   setRightView: (view: RightView) => void;
   disableButtons: boolean;
   isRealmOrVillage: boolean;
-  isMapView: boolean;
   arrivedArrivalsNumber: number;
   pendingArrivalsNumber: number;
   toggleModal: (content: ReactNode | null) => void;
@@ -76,10 +76,8 @@ type LeftPanelHeaderProps = {
   structureInfo: ReturnType<typeof getEntityInfo> | null;
   onSelectStructure: (entityId: ID) => void;
   isBlitz: boolean;
-  isSpectating: boolean;
   components: ClientComponents;
   structureGroups: StructureGroupsMap;
-  onUpdateStructureGroup: (entityId: number, color: StructureGroupColor | null) => void;
   onRequestNameChange: (structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => void;
   nameUpdateVersion: number;
   favorites: number[];
@@ -98,10 +96,8 @@ const LeftPanelHeader = ({
   structureInfo,
   onSelectStructure,
   isBlitz,
-  isSpectating,
   components,
   structureGroups,
-  onUpdateStructureGroup,
   onRequestNameChange,
   nameUpdateVersion,
   favorites,
@@ -136,6 +132,8 @@ const LeftPanelHeader = ({
   );
 
   const structuresWithMetadata = useMemo(() => {
+    // Force recomputation when a local rename occurs.
+    void nameUpdateVersion;
     return structures.map((structure) => {
       const { name, originalName } = getStructureName(structure.structure, isBlitz);
       const baseLevel = structure.structure.base?.level;
@@ -188,6 +186,7 @@ const LeftPanelHeader = ({
 
   const selectedStructureMetadata = structuresWithMetadata.find((structure) => structure.entityId === structureEntityId);
   const selectedGroupColor = selectedStructureMetadata?.groupColor ?? null;
+  const selectedGroupConfig = selectedGroupColor ? STRUCTURE_GROUP_CONFIG[selectedGroupColor] : null;
   const levelLabel =
     selectedStructureMetadata?.realmLevelLabel ??
     (selectedStructureMetadata ? `Level ${selectedStructureMetadata.realmLevel}` : "Level —");
@@ -220,14 +219,20 @@ const LeftPanelHeader = ({
       <div className="border-b border-gold/20 pb-3">
         <div className="flex flex-wrap items-center gap-2 text-sm text-gold">
           {ActiveStructureIcon && (
-            <span className="text-gold">
+            <span className={selectedGroupConfig ? selectedGroupConfig.textClass : "text-gold"}>
               <ActiveStructureIcon className="h-5 w-5" />
             </span>
           )}
           {selectedGroupColor && (
-            <span className={`h-2 w-2 rounded-full ${STRUCTURE_GROUP_CONFIG[selectedGroupColor].dotClass}`} />
+            <span className={`h-2 w-2 rounded-full ${selectedGroupConfig?.dotClass ?? ""}`} />
           )}
-          <p className="truncate text-base font-semibold text-gold sm:text-lg">{headerTitle}</p>
+          <p
+            className={`truncate text-base font-semibold sm:text-lg ${
+              selectedGroupConfig ? selectedGroupConfig.textClass : "text-gold"
+            }`}
+          >
+            {headerTitle}
+          </p>
           {showDetailedStats && populationCapacityLabel && (
             <>
               <span className="text-gold/40">•</span>
@@ -313,27 +318,17 @@ const LeftPanelHeader = ({
                     >
                       <Star className={`h-4 w-4 ${structure.isFavorite ? "fill-current text-gold" : "text-gold/60"}`} />
                     </button>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        const nextColor = getNextStructureGroupColor(structure.groupColor ?? null);
-                        onUpdateStructureGroup(structure.entityId, nextColor);
-                      }}
-                      className="rounded border border-transparent p-1 text-gold/60 hover:text-gold"
-                      title="Cycle structure color"
-                    >
-                      <Palette
-                        className={`h-4 w-4 ${
-                          structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor].textClass : ""
-                        }`}
-                      />
-                    </button>
                     <div className="flex flex-1 items-center gap-2">
                       {structure.groupColor && (
                         <span className={`h-2 w-2 rounded-full ${STRUCTURE_GROUP_CONFIG[structure.groupColor].dotClass}`} />
                       )}
-                      <span className="text-sm font-semibold text-gold">{structure.displayName}</span>
+                      <span
+                        className={`text-sm font-semibold ${
+                          structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor].textClass : "text-gold"
+                        }`}
+                      >
+                        {structure.displayName}
+                      </span>
                       {canUpgrade && (
                         <span className="text-[10px] uppercase tracking-wide text-emerald-300">Upgradeable</span>
                       )}
@@ -365,13 +360,109 @@ const LeftPanelHeader = ({
   );
 };
 
+type StructureEditPopupProps = {
+  currentName: string;
+  originalName: string;
+  groupColor: StructureGroupColor | null;
+  onConfirm: (newName: string) => void;
+  onCancel: () => void;
+  onUpdateColor?: (color: StructureGroupColor | null) => void;
+};
+
+const StructureEditPopup = ({
+  currentName,
+  originalName,
+  groupColor,
+  onConfirm,
+  onCancel,
+  onUpdateColor,
+}: StructureEditPopupProps) => {
+  const [newName, setNewName] = useState(currentName);
+
+  useEffect(() => {
+    setNewName(currentName);
+  }, [currentName]);
+
+  const trimmedName = newName.trim();
+  const isNameUnchanged = trimmedName === currentName.trim();
+  const isNameEmpty = trimmedName === "";
+
+  return (
+    <SecondaryPopup width="420" name="structure-edit-popup" containerClassName="pointer-events-auto">
+      <SecondaryPopup.Head onClose={onCancel}>Edit Structure</SecondaryPopup.Head>
+      <SecondaryPopup.Body width="100%" height="320px">
+        <div className="flex h-full flex-col gap-4 p-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-gold/60">Structure Name</p>
+            <input
+              type="text"
+              value={newName}
+              onChange={(event) => setNewName(event.target.value)}
+              className="mt-2 w-full rounded border border-gold/30 bg-black/60 px-3 py-2 text-sm text-gold placeholder-gold/50 focus:border-gold/60 focus:outline-none"
+              placeholder="Enter new name"
+            />
+            {originalName && originalName !== currentName && (
+              <p className="mt-1 text-xxs text-gold/60">Original name: {originalName}</p>
+            )}
+            <p className="mt-2 text-xxs text-gold/50">
+              This change is only visible locally and does not sync with other players.
+            </p>
+          </div>
+
+          {onUpdateColor && (
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-gold/60">Structure Color</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => onUpdateColor(null)}
+                  className={`flex items-center gap-2 rounded border px-2 py-1 text-xs transition ${
+                    groupColor === null ? "border-gold text-gold" : "border-gold/30 text-gold/70 hover:border-gold/50"
+                  }`}
+                >
+                  <span className="text-gold">—</span>
+                  <span>No Color</span>
+                </button>
+                {STRUCTURE_GROUP_COLORS.map((color) => {
+                  const isSelected = groupColor === color.value;
+                  return (
+                    <button
+                      type="button"
+                      key={color.value}
+                      onClick={() => onUpdateColor(color.value)}
+                      className={`flex items-center gap-2 rounded border px-2 py-1 text-xs transition ${
+                        isSelected ? "border-gold text-gold" : "border-gold/30 text-gold/70 hover:border-gold/50"
+                      }`}
+                    >
+                      <span className={`h-3 w-3 rounded-full ${color.dotClass}`} />
+                      <span>{color.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="mt-auto flex items-center justify-end gap-2 border-t border-gold/20 pt-4">
+            <Button variant="default" onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button variant="gold" disabled={isNameUnchanged || isNameEmpty} onClick={() => onConfirm(trimmedName)}>
+              Save Changes
+            </Button>
+          </div>
+        </div>
+      </SecondaryPopup.Body>
+    </SecondaryPopup>
+  );
+};
+
 const buildRealmNavigationItems = ({
   view,
   setView,
   setRightView,
   disableButtons,
   isRealmOrVillage,
-  isMapView,
   arrivedArrivalsNumber,
   pendingArrivalsNumber,
   toggleModal,
@@ -615,8 +706,6 @@ export const LeftNavigationModule = memo(() => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
   const structures = useUIStore((state) => state.playerStructures);
-  const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
-  const isSpectating = useUIStore((state) => state.isSpectating);
   const { structureGroups, updateStructureGroup } = useStructureGroups();
   const { favorites, toggleFavorite } = useFavoriteStructures();
 
@@ -633,27 +722,21 @@ export const LeftNavigationModule = memo(() => {
     bumpStructureNameVersion();
   }, [bumpStructureNameVersion]);
 
-  const handleNameDelete = useCallback((entityId: ID) => {
-    deleteEntityNameLocalStorage(entityId);
-    setStructureNameChange(null);
-    bumpStructureNameVersion();
-  }, [bumpStructureNameVersion]);
-
   const handleRequestNameChange = useCallback((structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => {
     setStructureNameChange(structure);
   }, []);
 
   const toggleModal = useUIStore((state) => state.toggleModal);
-  const { isMapView } = useQuery();
 
   const isBlitz = getIsBlitz();
 
   const navHeight = `calc(100vh - ${HEADER_HEIGHT}px)`;
 
-  const structureInfo = useMemo(
-    () => getEntityInfo(structureEntityId, ContractAddress(account.address), components, isBlitz),
-    [structureEntityId, account.address, components, isBlitz, structureNameVersion],
-  );
+  const structureInfo = useMemo(() => {
+    // Include structureNameVersion to refresh cached info when renames happen locally.
+    void structureNameVersion;
+    return getEntityInfo(structureEntityId, ContractAddress(account.address), components, isBlitz);
+  }, [structureEntityId, account.address, components, isBlitz, structureNameVersion]);
 
   const isRealmOrVillage = useMemo(
     () =>
@@ -671,7 +754,6 @@ export const LeftNavigationModule = memo(() => {
         setRightView,
         disableButtons,
         isRealmOrVillage,
-        isMapView,
         arrivedArrivalsNumber,
         pendingArrivalsNumber,
         toggleModal,
@@ -684,7 +766,6 @@ export const LeftNavigationModule = memo(() => {
       setRightView,
       disableButtons,
       isRealmOrVillage,
-      isMapView,
       arrivedArrivalsNumber,
       pendingArrivalsNumber,
       toggleModal,
@@ -715,7 +796,7 @@ export const LeftNavigationModule = memo(() => {
 
   const combinedNavigationItems = [...realmNavigationItems, ...economyNavigationItems];
   const structureNameMetadata = structureNameChange ? getStructureName(structureNameChange, isBlitz) : null;
-  const editingStructureId = structureNameChange?.entity_id ? Number(structureNameChange.entity_id) : structureEntityId;
+  const editingStructureId = structureNameChange?.entity_id ? Number(structureNameChange.entity_id) : null;
 
   return (
     <>
@@ -732,15 +813,13 @@ export const LeftNavigationModule = memo(() => {
                 structureInfo={structureInfo}
                 onSelectStructure={setStructureEntityId}
                 isBlitz={isBlitz}
-                isSpectating={isSpectating}
                 components={components}
                 structureGroups={structureGroups}
-              onUpdateStructureGroup={updateStructureGroup}
-              onRequestNameChange={handleRequestNameChange}
-              nameUpdateVersion={structureNameVersion}
-              favorites={favorites}
-              onToggleFavorite={toggleFavorite}
-            />
+                onRequestNameChange={handleRequestNameChange}
+                nameUpdateVersion={structureNameVersion}
+                favorites={favorites}
+                onToggleFavorite={toggleFavorite}
+              />
               <div className="flex-1 overflow-hidden">
                 <div className="h-full overflow-y-auto pr-1">
                   <Suspense fallback={<div className="p-8">Loading...</div>}>
@@ -812,13 +891,14 @@ export const LeftNavigationModule = memo(() => {
           </button>
         </div>
       </div>
-      {structureNameChange && structureNameMetadata && (
-        <NameChangePopup
+      {structureNameChange && structureNameMetadata && editingStructureId && (
+        <StructureEditPopup
           currentName={structureNameMetadata.name}
           originalName={structureNameMetadata.originalName ?? structureNameMetadata.name}
+          groupColor={structureGroups[editingStructureId] ?? null}
           onConfirm={(newName) => handleNameChange(editingStructureId, newName)}
           onCancel={() => setStructureNameChange(null)}
-          onDelete={() => handleNameDelete(editingStructureId)}
+          onUpdateColor={(color) => updateStructureGroup(editingStructureId, color)}
         />
       )}
     </>
