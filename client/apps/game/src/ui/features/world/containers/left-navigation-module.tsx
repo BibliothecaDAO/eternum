@@ -2,9 +2,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView, RightView } from "@/types";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
-import Button from "@/ui/design-system/atoms/button";
 import { Tabs } from "@/ui/design-system/atoms";
-import { SecondaryPopup } from "@/ui/design-system/molecules/secondary-popup";
 import { configManager, getEntityInfo, getIsBlitz, getStructureName, Position, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { ResourceArrivals as AllResourceArrivals, MarketModal } from "@/ui/features/economy/trading";
@@ -31,9 +29,10 @@ import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Castle, Crown, Loader2, Pencil, Pickaxe, Sparkles, Star, Tent, ChevronsUp, ChevronUp, ShieldCheck } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, memo, Suspense, useCallback, useMemo, useState } from "react";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import clsx from "clsx";
+import { StructureEditPopup } from "@/ui/features/world/components/structure-edit-popup";
 
 type CircleButtonProps = ComponentProps<typeof CircleButton>;
 
@@ -450,103 +449,6 @@ const StructureListItem = ({
         </button>
       </div>
     </button>
-  );
-};
-
-type StructureEditPopupProps = {
-  currentName: string;
-  originalName: string;
-  groupColor: StructureGroupColor | null;
-  onConfirm: (newName: string) => void;
-  onCancel: () => void;
-  onUpdateColor?: (color: StructureGroupColor | null) => void;
-};
-
-const StructureEditPopup = ({
-  currentName,
-  originalName,
-  groupColor,
-  onConfirm,
-  onCancel,
-  onUpdateColor,
-}: StructureEditPopupProps) => {
-  const [newName, setNewName] = useState(currentName);
-
-  useEffect(() => {
-    setNewName(currentName);
-  }, [currentName]);
-
-  const trimmedName = newName.trim();
-  const isNameUnchanged = trimmedName === currentName.trim();
-  const isNameEmpty = trimmedName === "";
-
-  return (
-    <SecondaryPopup width="420" name="structure-edit-popup" containerClassName="pointer-events-auto">
-      <SecondaryPopup.Head onClose={onCancel}>Edit Structure</SecondaryPopup.Head>
-      <SecondaryPopup.Body width="100%" height="auto" maxHeightCap={420} className="max-h-[420px]">
-        <div className="flex flex-col gap-4 p-4">
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-gold/60">Structure Name</p>
-            <input
-              type="text"
-              value={newName}
-              onChange={(event) => setNewName(event.target.value)}
-              className="mt-2 w-full rounded border border-gold/30 bg-black/60 px-3 py-2 text-sm text-gold placeholder-gold/50 focus:border-gold/60 focus:outline-none"
-              placeholder="Enter new name"
-            />
-            {originalName && originalName !== currentName && (
-              <p className="mt-1 text-xxs text-gold/60">Original name: {originalName}</p>
-            )}
-            <p className="mt-2 text-xxs text-gold/50">
-              This change is only visible locally and does not sync with other players.
-            </p>
-          </div>
-
-          {onUpdateColor && (
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-gold/60">Structure Color</p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => onUpdateColor(null)}
-                  className={`flex items-center gap-2 rounded border px-2 py-1 text-xs transition ${
-                    groupColor === null ? "border-gold text-gold" : "border-gold/30 text-gold/70 hover:border-gold/50"
-                  }`}
-                >
-                  <span className="text-gold">—</span>
-                  <span>No Color</span>
-                </button>
-                {STRUCTURE_GROUP_COLORS.map((color) => {
-                  const isSelected = groupColor === color.value;
-                  return (
-                    <button
-                      type="button"
-                      key={color.value}
-                      onClick={() => onUpdateColor(color.value)}
-                      className={`flex items-center gap-2 rounded border px-2 py-1 text-xs transition ${
-                        isSelected ? "border-gold text-gold" : "border-gold/30 text-gold/70 hover:border-gold/50"
-                      }`}
-                    >
-                      <span className={`h-3 w-3 rounded-full ${color.dotClass}`} />
-                      <span>{color.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          <div className="mt-auto flex items-center justify-end gap-2 border-t border-gold/20 pt-4">
-            <Button variant="default" onClick={onCancel}>
-              Cancel
-            </Button>
-            <Button variant="gold" disabled={isNameUnchanged || isNameEmpty} onClick={() => onConfirm(trimmedName)}>
-              Save Changes
-            </Button>
-          </div>
-        </div>
-      </SecondaryPopup.Body>
-    </SecondaryPopup>
   );
 };
 
