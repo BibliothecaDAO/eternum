@@ -1,30 +1,21 @@
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getBlockTimestamp, getIsBlitz, Position } from "@bibliothecadao/eternum";
+import { getBlockTimestamp, getEntityInfo, getIsBlitz, Position } from "@bibliothecadao/eternum";
 
 import { useUISound } from "@/audio/hooks/useUISound";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { CapacityInfo, SecondaryMenuItems } from "@/ui/features/world";
-import { NameChangePopup } from "@/ui/shared";
-import {
-  deleteEntityNameLocalStorage,
-  getEntityInfo,
-  getStructureName,
-  setEntityNameLocalStorage,
-} from "@bibliothecadao/eternum";
+import { SecondaryMenuItems } from "@/ui/features/world";
+import { GameEndTimer } from "./game-end-timer";
+import { TickProgress } from "./tick-progress";
+import { useLandingLeaderboardStore } from "@/ui/features/landing/lib/use-landing-leaderboard-store";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { ClientComponents, ContractAddress, ID } from "@bibliothecadao/types";
+import { ContractAddress } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
-import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";
 import { EyeIcon, Swords } from "lucide-react";
-import { memo, useCallback, useMemo, useState } from "react";
-import { useFavoriteStructures } from "./favorites";
-import { GameEndTimer } from "./game-end-timer";
-import { useStructureGroups } from "./structure-groups";
-import { StructureSelectPanel } from "./structure-select-panel";
-import { TickProgress } from "./tick-progress";
+import { memo, useCallback, useEffect, useMemo } from "react";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -36,12 +27,6 @@ export const TopLeftNavigation = memo(() => {
     setup,
     account: { account },
   } = useDojo();
-  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
-  const [structureNameChange, setStructureNameChange] = useState<ComponentValue<
-    ClientComponents["Structure"]["schema"]
-  > | null>(null);
-  const [structureNameVersion, setStructureNameVersion] = useState(0);
-  const structures = useUIStore((state) => state.playerStructures);
 
   const { isMapView } = useQuery();
 
@@ -52,16 +37,13 @@ export const TopLeftNavigation = memo(() => {
   const followArmyCombats = useUIStore((state) => state.followArmyCombats);
   const setFollowArmyCombats = useUIStore((state) => state.setFollowArmyCombats);
   const lastControlledStructureEntityId = useUIStore((state) => state.lastControlledStructureEntityId);
+  const isSpectating = useUIStore((state) => state.isSpectating);
+  const playerStructures = useUIStore((state) => state.playerStructures);
+  const accountName = useAccountStore((state) => state.accountName);
 
   const isFollowingArmy = useUIStore((state) => state.isFollowingArmy);
   const followingArmyMessage = useUIStore((state) => state.followingArmyMessage);
-
-  const { favorites, toggleFavorite } = useFavoriteStructures();
-  const { structureGroups, updateStructureGroup } = useStructureGroups();
-
-  const bumpStructureNameVersion = useCallback(() => {
-    setStructureNameVersion((version) => version + 1);
-  }, []);
+  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
   // force a refresh of getEntityInfo when the structure data arrives
   const structure = useComponentValue(setup.components.Structure, getEntityIdFromKeys([BigInt(structureEntityId)]));
@@ -71,8 +53,8 @@ export const TopLeftNavigation = memo(() => {
   );
 
   const selectedStructure = useMemo(() => {
-    return { ...entityInfo, isFavorite: favorites.includes(entityInfo.entityId) };
-  }, [structureEntityId, favorites, entityInfo]);
+    return entityInfo;
+  }, [structureEntityId, entityInfo]);
 
   const selectedStructurePosition = useMemo(() => {
     return new Position(selectedStructure?.position || { x: 0, y: 0 }).getNormalized();
@@ -82,139 +64,150 @@ export const TopLeftNavigation = memo(() => {
 
   const goToStructure = useGoToStructure(setup);
 
-  const onSelectStructure = useCallback(
-    (entityId: ID) => {
-      const structurePosition = getComponentValue(
-        setup.components.Structure,
-        getEntityIdFromKeys([BigInt(entityId)]),
-      )?.base;
+  const normalizeAddress = useCallback((value: string) => value.trim().toLowerCase(), []);
 
-      if (!structurePosition) return;
+  const leaderboardEntries = useLandingLeaderboardStore((state) => state.entries);
+  const playerEntries = useLandingLeaderboardStore((state) => state.playerEntries);
+  const fetchLeaderboardEntries = useLandingLeaderboardStore((state) => state.fetchLeaderboard);
+  const fetchPlayerEntry = useLandingLeaderboardStore((state) => state.fetchPlayerEntry);
 
-      goToStructure(entityId, new Position({ x: structurePosition.coord_x, y: structurePosition.coord_y }), isMapView);
-    },
-    [goToStructure, isMapView, setup.components.Structure],
-  );
+  useEffect(() => {
+    void fetchLeaderboardEntries({ limit: 50 });
+  }, [fetchLeaderboardEntries]);
 
-  const handleNameChange = useCallback((structureEntityId: ID, newName: string) => {
-    setEntityNameLocalStorage(structureEntityId, newName);
-    setStructureNameChange(null);
-    bumpStructureNameVersion();
+  useEffect(() => {
+    if (account.address) {
+      void fetchPlayerEntry(account.address);
+    }
+  }, [account.address, fetchPlayerEntry]);
+
+  const formatPoints = useCallback((points: number | null | undefined) => {
+    if (points === null || points === undefined) {
+      return "0";
+    }
+    const rounded = Math.round(points);
+    return Number.isFinite(rounded) ? rounded.toLocaleString() : "0";
   }, []);
 
-  const handleNameDelete = useCallback((structureEntityId: ID) => {
-    deleteEntityNameLocalStorage(structureEntityId);
-    setStructureNameChange(null);
-    bumpStructureNameVersion();
-  }, []);
-
-  const handleRequestNameChange = useCallback((structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => {
-    setStructureNameChange(structure);
-  }, []);
+  const playerEntry = useMemo(() => {
+    const normalizedAccount = normalizeAddress(account.address);
+    return (
+      leaderboardEntries.find((entry) => normalizeAddress(entry.address) === normalizedAccount) ??
+      playerEntries[normalizedAccount]?.data ??
+      null
+    );
+  }, [account.address, leaderboardEntries, normalizeAddress, playerEntries]);
 
   return (
     <div className="pointer-events-auto w-screen flex justify-between">
       <motion.div
-        className="top-left-navigation-selector flex flex-wrap bg-dark-wood panel-wood panel-wood-corners w-full"
+        className="top-left-navigation-selector flex flex-nowrap items-center gap-3 bg-dark-wood panel-wood panel-wood-corners w-full px-3 py-2"
         variants={slideDown}
         initial="hidden"
         animate="visible"
       >
-        <div className="flex max-w-[150px] w-24 md:min-w-72 text-gold justify-center text-center relative">
-          <StructureSelectPanel
-            structureEntityId={structureEntityId}
-            selectedStructure={selectedStructure}
-            structures={structures}
-            favorites={favorites}
-            structureGroups={structureGroups}
-            nameUpdateVersion={structureNameVersion}
-            onToggleFavorite={toggleFavorite}
-            onSelectStructure={onSelectStructure}
-            onRequestNameChange={handleRequestNameChange}
-            onUpdateStructureGroup={updateStructureGroup}
-          />
-        </div>
+        <div className="flex flex-1 min-w-0 items-center gap-3 overflow-hidden">
+          <div className="flex flex-1 min-w-0 flex-nowrap items-center gap-3">
+            <div className="flex max-w-[420px] flex-shrink-0 flex-wrap items-center gap-2 truncate text-gold font-[Cinzel]">
+              {isSpectating ? (
+                <EyeIcon className="h-4 w-4 text-gold" aria-hidden="true" />
+              ) : (
+                <Swords className="h-4 w-4 text-gold" aria-hidden="true" />
+              )}
+              <span className="truncate text-base font-semibold">{accountName ?? playerEntry?.displayName ?? "Player"}</span>
+              {isSpectating && playerStructures.length === 0 ? (
+                <span className="text-xs text-gold/70 font-[Cinzel]">· Spectating</span>
+              ) : playerEntry?.rank ? (
+                <span className="text-xs text-gold/70 font-[Cinzel]">
+                  · Rank #{playerEntry.rank} · {formatPoints(playerEntry.points)} pts
+                </span>
+              ) : (
+                <span className="text-xs text-gold/70 font-[Cinzel]">· Spectating</span>
+              )}
+            </div>
 
-        <CapacityInfo
-          structureEntityId={structureEntityId}
-          className="storage-selector flex flex-col md:flex-row gap-1  self-center"
-        />
-        <div className="world-navigation-selector text-xs md:text-base flex md:flex-row gap-2 md:gap-2 justify-between p-1 md:px-4 relative ">
-          <div className="cycle-selector flex justify-center md:justify-start gap-2">
-            <TickProgress />
-            <GameEndTimer />
-          </div>
-          <div className="map-button-selector flex items-center justify-center md:justify-start gap-2 px-4">
-            <span
-              onClick={() => {
-                playClick();
-                goToStructure(
-                  structureEntityId,
-                  new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
-                  false,
-                );
-              }}
-              onMouseEnter={() => playHover()}
-              className={cn("text-xs", !isMapView && "text-gold font-bold")}
-            >
-              Local
-            </span>
-            <label className="relative inline-flex items-center cursor-pointer" onMouseEnter={() => playHover()}>
-              <input
-                type="checkbox"
-                className="sr-only peer"
-                checked={isMapView}
-                onChange={(e) => {
-                const checked = e.target.checked;
-                playClick();
-                goToStructure(
-                  // if there's a controlled structure, needs to go back there
-                  lastControlledStructureEntityId || structureEntityId,
-                  new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
-                  checked,
-                );
-                }}
-              />
-              <div className="w-9 h-5 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all bg-gold/30"></div>
-            </label>
-            <span
-              onClick={() => {
-                playClick();
-                goToStructure(
-                  structureEntityId,
-                  new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
-                  true,
-                );
-              }}
-              onMouseEnter={() => playHover()}
-              className={cn("text-xs", isMapView && "text-gold font-bold")}
-            >
-              World
-            </span>
-            <div className="relative flex gap-2">
-              <button
-                type="button"
-                className={cn(
-                  "rounded-full p-2 transition-all duration-300 border-2",
-                  followArmyCombats
-                    ? "bg-gold/30 hover:bg-gold/40 border-gold shadow-lg shadow-gold/20 animate-pulse"
-                    : "bg-gold/10 hover:bg-gold/20 border-gold/30",
-                )}
-                onClick={() => {
-                  setFollowArmyCombats(!followArmyCombats);
-                  playClick();
-                }}
-                onMouseEnter={() => playHover()}
-                aria-pressed={followArmyCombats}
-                title={followArmyCombats ? "Stop following army combat" : "Follow army combat"}
-              >
-                <Swords className={cn("w-4 h-4", followArmyCombats ? "text-gold animate-pulse" : "text-gold/60")} />
-              </button>
+            <div className="h-6 w-px bg-gold/20" />
+
+            <div className="flex flex-shrink-0 flex-nowrap items-center gap-3 text-xs md:text-base">
+              <div className="cycle-selector flex justify-center md:justify-start gap-2 whitespace-nowrap">
+                <TickProgress />
+                <GameEndTimer />
+              </div>
+              <div className="map-button-selector flex items-center justify-center md:justify-start gap-2 px-3 whitespace-nowrap">
+                <span
+                  onClick={() => {
+                    playClick();
+                    goToStructure(
+                      structureEntityId,
+                      new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
+                      false,
+                    );
+                  }}
+                  onMouseEnter={() => playHover()}
+                  className={cn("text-xs", !isMapView && "text-gold font-bold")}
+                >
+                  Local
+                </span>
+                <label className="relative inline-flex items-center cursor-pointer" onMouseEnter={() => playHover()}>
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={isMapView}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      playClick();
+                      goToStructure(
+                        // if there's a controlled structure, needs to go back there
+                        lastControlledStructureEntityId || structureEntityId,
+                        new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
+                        checked,
+                      );
+                    }}
+                  />
+                  <div className="w-9 h-5 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all bg-gold/30"></div>
+                </label>
+                <span
+                  onClick={() => {
+                    playClick();
+                    goToStructure(
+                      structureEntityId,
+                      new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
+                      true,
+                    );
+                  }}
+                  onMouseEnter={() => playHover()}
+                  className={cn("text-xs", isMapView && "text-gold font-bold")}
+                >
+                  World
+                </span>
+                <div className="relative flex gap-2">
+                  <button
+                    type="button"
+                    className={cn(
+                      "rounded-full p-2 transition-all duration-300 border-2",
+                      followArmyCombats
+                        ? "bg-gold/30 hover:bg-gold/40 border-gold shadow-lg shadow-gold/20 animate-pulse"
+                        : "bg-gold/10 hover:bg-gold/20 border-gold/30",
+                    )}
+                    onClick={() => {
+                      setFollowArmyCombats(!followArmyCombats);
+                      playClick();
+                    }}
+                    onMouseEnter={() => playHover()}
+                    aria-pressed={followArmyCombats}
+                    title={followArmyCombats ? "Stop following army combat" : "Follow army combat"}
+                  >
+                    <Swords className={cn("w-4 h-4", followArmyCombats ? "text-gold animate-pulse" : "text-gold/60")} />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <SecondaryMenuItems />
+        <div className="flex-shrink-0 ml-auto">
+          <SecondaryMenuItems />
+        </div>
 
         {/* Camera Following Status Indicator */}
         {isFollowingArmy && (
@@ -230,16 +223,6 @@ export const TopLeftNavigation = memo(() => {
               </div>
             </div>
           </div>
-        )}
-
-        {structureNameChange && selectedStructure.structure && (
-          <NameChangePopup
-            currentName={getStructureName(structureNameChange, getIsBlitz()).name}
-            originalName={getStructureName(structureNameChange, getIsBlitz()).originalName}
-            onConfirm={(newName) => handleNameChange(structureNameChange.entity_id, newName)}
-            onCancel={() => setStructureNameChange(null)}
-            onDelete={() => handleNameDelete(structureNameChange.entity_id)}
-          />
         )}
       </motion.div>
     </div>
