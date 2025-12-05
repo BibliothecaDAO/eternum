@@ -272,7 +272,7 @@ const LeftPanelHeader = ({
             <span className={`h-2 w-2 rounded-full ${selectedGroupConfig?.dotClass ?? ""}`} />
           )}
           <p
-            className={`truncate text-base font-semibold sm:text-lg ${
+            className={`truncate text-2xl font-bold ${
               selectedGroupConfig ? selectedGroupConfig.textClass : "text-gold"
             }`}
           >
@@ -312,18 +312,38 @@ const LeftPanelHeader = ({
               const Icon = tab.icon;
               const count = structuresWithMetadata.filter((structure) => tab.categories.includes(structure.category)).length;
               const isActiveTab = activeTab === index;
+              const isDisabledTab = count === 0 && tab.key !== "realms";
               return (
                 <Tabs.Tab
                   key={tab.key}
                   aria-label={tab.label}
                   title={tab.label}
-                  className="!mx-0"
+                  disabled={isDisabledTab}
+                  className={clsx(
+                    "!mx-0 border",
+                    isActiveTab
+                      ? "border-gold/60 bg-black/40 text-[#f4c24d]"
+                      : "border-gold/25 bg-black/20 text-gold/70 hover:border-gold/40 hover:text-gold/90",
+                    isDisabledTab && "opacity-60 hover:border-gold/25 hover:text-gold/60",
+                  )}
                 >
                   <span className="flex items-center gap-1">
-                    <span className={`text-[12px] font-semibold transition-none ${isActiveTab ? "text-[#f4c24d]" : "text-gold/60"}`}>
+                    <span
+                      className={clsx(
+                        "text-[12px] font-semibold transition-none",
+                        isActiveTab ? "text-[#f4c24d]" : "text-gold/60",
+                        isDisabledTab && "text-gold/40",
+                      )}
+                    >
                       {count}
                     </span>
-                    <Icon className="h-4 w-4" />
+                    <Icon
+                      className={clsx(
+                        "h-4 w-4",
+                        isActiveTab ? "text-[#f4c24d]" : "text-gold/60",
+                        isDisabledTab && "text-gold/40",
+                      )}
+                    />
                   </span>
                   <span className="sr-only">{tab.label}</span>
                 </Tabs.Tab>

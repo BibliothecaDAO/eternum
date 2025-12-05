@@ -16,6 +16,7 @@ export const Tab = ({ className, children, noText, ...props }: TabProps) => {
       className={({ selected }) =>
         clsx(
           "group",
+          "disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none",
           VARIANTS[variant].tab.base,
           selected ? VARIANTS[variant].tab.active : VARIANTS[variant].tab.inactive,
           className,
