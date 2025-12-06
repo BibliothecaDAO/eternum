@@ -1239,8 +1239,7 @@ export const BlitzDonkeyProduction = () => {
               </td>
               <td style={styles.productionCellStyle}>
                 <div style={styles.resourceItemStyle}>
-                  <ResourceIcon id={ResourcesIds.Donkey} name="Donkey" size="md" />
-                  1
+                  <ResourceIcon id={ResourcesIds.Donkey} name="Donkey" size="md" />1
                 </div>
               </td>
             </tr>

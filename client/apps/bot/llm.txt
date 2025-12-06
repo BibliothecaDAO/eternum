@@ -403,7 +403,7 @@ The number of VP awarded for each feat described above is as follows:
       <tbody>
         <tr style={table.tableRow}>
           <td style={table.cell}>Explore a tile</td>
-          <td style={table.cell}>25 VP</td>
+          <td style={table.cell}>10 VP</td>
         </tr>
 
         <tr style={table.tableRow}>
@@ -524,6 +524,9 @@ accumulate Victory Points and secure a position at the top of the leaderboard.
 file: docs/pages/blitz/world-structures.mdx
 meta: {}
 
+import ResourceIcon from "@/components/ResourceIcon";
+import { table } from "@/components/styles";
+
 # 🏗️ World Structures
 
 All World Structures in Blitz are initially occupied by bandit forces that must be defeated by a player before it can be
@@ -554,6 +557,61 @@ moment they're discovered. Lords have a 1/50 chance of finding one of these stru
 Camps act in a similar capacity to Villages in Eternum, in the sense that they perform as small, discoverable Realms
 that can boost production and act as forward bases. Camps are restricted to the Settlement level and cannot be upgraded.
 Lords have a 1/30 chance of finding one of these structures when exploring a hex.
+
+### Starting Materials
+
+When a camp is claimed, it spawns with an initial stockpile of materials.
+
+<div style={table.container}>
+  <div style={table.wrapper}>
+    <table style={table.table}>
+      <thead style={table.tableHead}>
+        <tr>
+          <th style={table.headerCell}>Resource</th>
+          <th style={table.headerCell}>Amount</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr style={table.tableRow}>
+          <td style={table.cell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <ResourceIcon id={35} name="Wheat" size="md" />
+
+              Wheat
+            </div>
+          </td>
+
+          <td style={table.cell}>500</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <ResourceIcon id={23} name="Labor" size="md" />
+
+              Labor
+            </div>
+          </td>
+
+          <td style={table.cell}>2,500</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <ResourceIcon id={25} name="Donkey" size="md" />
+
+              Donkeys
+            </div>
+          </td>
+
+          <td style={table.cell}>200</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
 
 
@@ -729,6 +787,35 @@ meta: {
 
 *This changelog reflects all documentation updates made since the previous release. For detailed information about
 specific changes, please refer to the individual documentation pages.*
+
+
+
+---
+
+file: docs/pages/changelog/8-december-2025.mdx
+meta: {
+  "layout": "docs"
+}
+
+# 8th December 2025
+
+## Balance Updates
+
+* [Blitz/Production](/blitz/materials/production): Updated resource recipes, troop upgrade inputs, and donkey production output rate.
+* [Blitz/Buildings](/blitz/realms/buildings): Adjusted T2/T3 resource and military building costs for both labor and resource modes.
+
+## Starting Resources
+
+* [Blitz/Realms](/blitz/realms/realm): Increased starting labor per Realm to 1,200.
+* [Blitz/World Structures](/blitz/world-structures): Documented revised camp spawn stockpiles (500 Wheat, 2,500 Labor, 200 Donkeys).
+
+## Victory Points
+
+* [Blitz/Victory](/blitz/victory): Exploration VP reduced to 10 per tile.
+
+***
+
+*This changelog reflects all documentation updates made since the previous release.*
 
 
 
@@ -3144,11 +3231,11 @@ have the same requirements in labor and resource mode.
     buildingType={7}
     description={["Produces Ironwood resource"]}
     laborCosts={[
-  { resource: ResourcesIds.Labor, amount: 600 }, // Labor
+  { resource: ResourcesIds.Labor, amount: 720 }, // Labor
 ]}
     resourceCosts={[
   { resource: ResourcesIds.Labor, amount: 120 }, // Labor
-  { resource: ResourcesIds.Wood, amount: 90 }, // Wood
+  { resource: ResourcesIds.Wood, amount: 120 }, // Wood
   { resource: ResourcesIds.Coal, amount: 60 }, // Coal
   { resource: ResourcesIds.Copper, amount: 30 }, // Copper
 ]}
@@ -3160,11 +3247,11 @@ have the same requirements in labor and resource mode.
     buildingType={13}
     description={["Produces Cold Iron resource"]}
     laborCosts={[
-  { resource: ResourcesIds.Labor, amount: 600 }, // Labor
+  { resource: ResourcesIds.Labor, amount: 720 }, // Labor
 ]}
     resourceCosts={[
   { resource: ResourcesIds.Labor, amount: 120 }, // Labor
-  { resource: ResourcesIds.Wood, amount: 90 }, // Wood
+  { resource: ResourcesIds.Wood, amount: 120 }, // Wood
   { resource: ResourcesIds.Coal, amount: 60 }, // Coal
   { resource: ResourcesIds.Copper, amount: 30 }, // Copper
 ]}
@@ -3176,11 +3263,11 @@ have the same requirements in labor and resource mode.
     buildingType={9}
     description={["Produces Gold resource"]}
     laborCosts={[
-  { resource: ResourcesIds.Labor, amount: 600 }, // Labor
+  { resource: ResourcesIds.Labor, amount: 720 }, // Labor
 ]}
     resourceCosts={[
   { resource: ResourcesIds.Labor, amount: 120 }, // Labor
-  { resource: ResourcesIds.Wood, amount: 90 }, // Wood
+  { resource: ResourcesIds.Wood, amount: 120 }, // Wood
   { resource: ResourcesIds.Coal, amount: 60 }, // Coal
   { resource: ResourcesIds.Copper, amount: 30 }, // Copper
 ]}
@@ -3192,10 +3279,10 @@ have the same requirements in labor and resource mode.
     buildingType={21}
     description={["Produces Adamantine resource", "Only available in resource mode"]}
     resourceCosts={[
-  { resource: ResourcesIds.Labor, amount: 180 }, // Labor
-  { resource: ResourcesIds.Wood, amount: 120 }, // Wood
-  { resource: ResourcesIds.Copper, amount: 90 }, // Copper
-  { resource: ResourcesIds.Ironwood, amount: 30 }, // Ironwood
+  { resource: ResourcesIds.Labor, amount: 240 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 180 }, // Wood
+  { resource: ResourcesIds.Copper, amount: 120 }, // Copper
+  { resource: ResourcesIds.Ironwood, amount: 60 }, // Ironwood
   { resource: ResourcesIds.Essence, amount: 600 }, // Essence
 ]}
     standardOnly={true}
@@ -3207,10 +3294,10 @@ have the same requirements in labor and resource mode.
     buildingType={11}
     description={["Produces Mithral resource", "Only available in resource mode"]}
     resourceCosts={[
-  { resource: ResourcesIds.Labor, amount: 180 }, // Labor
-  { resource: ResourcesIds.Wood, amount: 120 }, // Wood
-  { resource: ResourcesIds.Copper, amount: 90 }, // Copper
-  { resource: ResourcesIds.ColdIron, amount: 30 }, // Cold Iron
+  { resource: ResourcesIds.Labor, amount: 240 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 180 }, // Wood
+  { resource: ResourcesIds.Copper, amount: 120 }, // Copper
+  { resource: ResourcesIds.ColdIron, amount: 60 }, // Cold Iron
   { resource: ResourcesIds.Essence, amount: 600 }, // Essence
 ]}
     standardOnly={true}
@@ -3225,10 +3312,10 @@ have the same requirements in labor and resource mode.
   "Only available in resource mode",
 ]}
     resourceCosts={[
-  { resource: ResourcesIds.Labor, amount: 180 }, // Labor
-  { resource: ResourcesIds.Wood, amount: 120 }, // Wood
-  { resource: ResourcesIds.Copper, amount: 90 }, // Copper
-  { resource: ResourcesIds.Gold, amount: 30 }, // Gold
+  { resource: ResourcesIds.Labor, amount: 240 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 180 }, // Wood
+  { resource: ResourcesIds.Copper, amount: 120 }, // Copper
+  { resource: ResourcesIds.Gold, amount: 60 }, // Gold
   { resource: ResourcesIds.Essence, amount: 600 }, // Essence
 ]}
     standardOnly={true}
@@ -3320,7 +3407,7 @@ available for construction in resource mode.
     buildingType={29}
     description={["Produces T2 Knights", "Only available in resource mode"]}
     resourceCosts={[
-  { resource: ResourcesIds.Labor, amount: 300 }, // Labor
+  { resource: ResourcesIds.Labor, amount: 360 }, // Labor
   { resource: ResourcesIds.Wood, amount: 240 }, // Wood
   { resource: ResourcesIds.Copper, amount: 180 }, // Copper
   { resource: ResourcesIds.ColdIron, amount: 60 }, // Cold Iron
@@ -3334,10 +3421,10 @@ available for construction in resource mode.
     buildingType={30}
     description={["Produces T3 Knights", "Only available in resource mode"]}
     resourceCosts={[
-  { resource: ResourcesIds.Labor, amount: 420 }, // Labor
-  { resource: ResourcesIds.Wood, amount: 300 }, // Wood
+  { resource: ResourcesIds.Labor, amount: 540 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 360 }, // Wood
   { resource: ResourcesIds.ColdIron, amount: 240 }, // Cold Iron
-  { resource: ResourcesIds.Mithral, amount: 90 }, // Mithral
+  { resource: ResourcesIds.Mithral, amount: 120 }, // Mithral
   { resource: ResourcesIds.Essence, amount: 1200 }, // Essence
 ]}
   />
@@ -3373,7 +3460,7 @@ available for construction in resource mode.
     buildingType={32}
     description={["Produces T2 Crossbowmen", "Only available in resource mode"]}
     resourceCosts={[
-  { resource: ResourcesIds.Labor, amount: 300 }, // Labor
+  { resource: ResourcesIds.Labor, amount: 360 }, // Labor
   { resource: ResourcesIds.Wood, amount: 240 }, // Wood
   { resource: ResourcesIds.Copper, amount: 180 }, // Copper
   { resource: ResourcesIds.Ironwood, amount: 60 }, // Ironwood
@@ -3387,10 +3474,10 @@ available for construction in resource mode.
     buildingType={33}
     description={["Produces T3 Crossbowmen", "Only available in resource mode"]}
     resourceCosts={[
-  { resource: ResourcesIds.Labor, amount: 420 }, // Labor
-  { resource: ResourcesIds.Wood, amount: 300 }, // Wood
+  { resource: ResourcesIds.Labor, amount: 540 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 360 }, // Wood
   { resource: ResourcesIds.Ironwood, amount: 240 }, // Ironwood
-  { resource: ResourcesIds.Adamantine, amount: 90 }, // Adamantine
+  { resource: ResourcesIds.Adamantine, amount: 120 }, // Adamantine
   { resource: ResourcesIds.Essence, amount: 1200 }, // Essence
 ]}
   />
@@ -3426,7 +3513,7 @@ available for construction in resource mode.
     buildingType={35}
     description={["Produces T2 Paladins", "Only available in resource mode"]}
     resourceCosts={[
-  { resource: ResourcesIds.Labor, amount: 300 }, // Labor
+  { resource: ResourcesIds.Labor, amount: 360 }, // Labor
   { resource: ResourcesIds.Wood, amount: 240 }, // Wood
   { resource: ResourcesIds.Copper, amount: 180 }, // Copper
   { resource: ResourcesIds.Gold, amount: 60 }, // Gold
@@ -3440,10 +3527,10 @@ available for construction in resource mode.
     buildingType={36}
     description={["Produces T3 Paladins", "Only available in resource mode"]}
     resourceCosts={[
-  { resource: ResourcesIds.Labor, amount: 420 }, // Labor
-  { resource: ResourcesIds.Wood, amount: 300 }, // Wood
+  { resource: ResourcesIds.Labor, amount: 540 }, // Labor
+  { resource: ResourcesIds.Wood, amount: 360 }, // Wood
   { resource: ResourcesIds.Gold, amount: 240 }, // Gold
-  { resource: ResourcesIds.Dragonhide, amount: 90 }, // Dragonhide
+  { resource: ResourcesIds.Dragonhide, amount: 120 }, // Dragonhide
   { resource: ResourcesIds.Essence, amount: 1200 } // Essence 
 ]}
   />
@@ -3570,7 +3657,7 @@ sequence for an example of 24 players is visualized below:
             </div>
           </td>
 
-          <td style={table.cell}>1,000</td>
+          <td style={table.cell}>1,200</td>
         </tr>
 
         <tr style={table.tableRow}>
