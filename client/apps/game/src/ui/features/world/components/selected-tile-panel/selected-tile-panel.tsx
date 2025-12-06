@@ -12,7 +12,6 @@ import {
   isTileOccupierChest,
   isTileOccupierQuest,
   isTileOccupierStructure,
-  getRealmInfo,
   Position as PositionInterface,
 } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
@@ -230,14 +229,6 @@ const LocalTilePanel = () => {
   const [isPaused, setIsPaused] = useState<boolean>(!!building?.paused);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [showDestroyConfirm, setShowDestroyConfirm] = useState(false);
-  const realmInfo = useMemo(() => {
-    if (!structureBase) return null;
-    try {
-      return getRealmInfo(getEntityIdFromKeys([BigInt(structureBase.outerCol), BigInt(structureBase.outerRow)]), setup.components);
-    } catch {
-      return null;
-    }
-  }, [structureBase, setup.components]);
 
   useEffect(() => {
     setIsPaused(!!building?.paused);
@@ -265,63 +256,6 @@ const LocalTilePanel = () => {
     buildingCategory !== BuildingType.ResourceFish &&
     buildingCategory !== BuildingType.ResourceWheat &&
     buildingCategory !== BuildingType.WorkersHut;
-
-  const populationSuggestions = useMemo(() => {
-    if (!realmInfo) return null;
-    const baseCapacity = configManager.getBasePopulationCapacity();
-    const capacity = (realmInfo.capacity ?? 0) + baseCapacity;
-    const population = realmInfo.population ?? 0;
-    const available = capacity - population;
-    return { available, needsHousing: available < 2 };
-  }, [realmInfo]);
-
-  const wheatFarmSuggestions = useMemo(() => {
-    if (!structureBase) return null;
-    const radius = 7;
-    let wheatCount = 0;
-    for (let q = -radius; q <= radius; q++) {
-      for (let r = -radius; r <= radius; r++) {
-        const innerCol = BUILDINGS_CENTER[0] + q;
-        const innerRow = BUILDINGS_CENTER[1] + r;
-        const buildingValue = getComponentValue(
-          buildingComponent,
-          getEntityIdFromKeys([
-            BigInt(structureBase.outerCol),
-            BigInt(structureBase.outerRow),
-            BigInt(innerCol),
-            BigInt(innerRow),
-          ]),
-        ) as any;
-        const category = buildingValue?.category;
-        const normalizedCategory = typeof category === "bigint" ? Number(category) : category;
-        if (normalizedCategory === BuildingType.ResourceWheat) {
-          wheatCount += 1;
-        }
-      }
-    }
-    const realmLevel = realmInfo?.level ?? 0;
-    const requiredByLevel = [2, 4, 6, 8];
-    const required = requiredByLevel[Math.min(requiredByLevel.length - 1, realmLevel)] ?? 2;
-    return { wheatCount, required, needsFarms: wheatCount < required };
-  }, [buildingComponent, realmInfo?.level, structureBase]);
-
-  const suggestions = useMemo(() => {
-    const items: string[] = [];
-    if (populationSuggestions?.needsHousing) {
-      items.push("Housing low: build a Workers Hut to add population capacity.");
-    }
-    if (wheatFarmSuggestions?.needsFarms) {
-      items.push(
-        `Farms needed: build Wheat Farms (have ${wheatFarmSuggestions.wheatCount}/${wheatFarmSuggestions.required}).`,
-      );
-    }
-    return items;
-  }, [
-    populationSuggestions?.needsHousing,
-    wheatFarmSuggestions?.needsFarms,
-    wheatFarmSuggestions?.required,
-    wheatFarmSuggestions?.wheatCount,
-  ]);
 
   const panelTitle = selectedBuildingHex
     ? `${buildingName} · (${selectedBuildingHex.innerCol}, ${selectedBuildingHex.innerRow})`
@@ -621,24 +555,11 @@ const LocalTilePanel = () => {
               )}
             </div>
           </div>
-        ) : building ? (
+        ) : (
           <div className="flex min-h-[140px] flex-col items-center justify-center text-center">
             <p className="text-xs text-gold/70">
               Empty tile. Pick a building from the menu to start construction here.
             </p>
-            {suggestions.length > 0 && (
-              <div className="mt-3 space-y-1 text-left">
-                {suggestions.map((item) => (
-                  <div key={item} className="text-xxs text-gold/70">
-                    • {item}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="flex min-h-[140px] flex-col items-center justify-center text-center">
-            <p className="text-xs text-gold/70">Loading tile details...</p>
           </div>
         )
       ) : (
