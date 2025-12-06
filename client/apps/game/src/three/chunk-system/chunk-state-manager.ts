@@ -239,9 +239,7 @@ export class ChunkStateManager {
     }
 
     if (this.config.debug) {
-      console.log(
-        `[ChunkStateManager] Chunk ${chunkKey}: ${currentPhase} -> ${targetPhase} (${duration}ms)`,
-      );
+      console.log(`[ChunkStateManager] Chunk ${chunkKey}: ${currentPhase} -> ${targetPhase} (${duration}ms)`);
     }
 
     // Emit event
@@ -258,9 +256,7 @@ export class ChunkStateManager {
         chunkKey,
         totalDuration: state.totalLoadDuration ?? duration,
         entityCounts: new Map(state.hydratedEntities).size
-          ? new Map(
-              Array.from(state.hydratedEntities.entries()).map(([type, set]) => [type, set.size]),
-            )
+          ? new Map(Array.from(state.hydratedEntities.entries()).map(([type, set]) => [type, set.size]))
           : new Map(),
       });
     } else if (currentPhase === ChunkLifecyclePhase.ACTIVE) {
@@ -531,10 +527,7 @@ export class ChunkStateManager {
    * @param handler - Event handler
    * @returns Unsubscribe function
    */
-  on<K extends keyof ChunkLifecycleEvents>(
-    event: K,
-    handler: ChunkEventHandler<K>,
-  ): () => void {
+  on<K extends keyof ChunkLifecycleEvents>(event: K, handler: ChunkEventHandler<K>): () => void {
     if (!this.listeners[event]) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       this.listeners[event] = new Set() as any;
@@ -554,10 +547,7 @@ export class ChunkStateManager {
    * @param event - Event name
    * @param data - Event data
    */
-  private emit<K extends keyof ChunkLifecycleEvents>(
-    event: K,
-    data: ChunkLifecycleEvents[K],
-  ): void {
+  private emit<K extends keyof ChunkLifecycleEvents>(event: K, data: ChunkLifecycleEvents[K]): void {
     const handlers = this.listeners[event] as Set<ChunkEventHandler<K>> | undefined;
     if (!handlers) return;
 
@@ -630,8 +620,6 @@ export class ChunkStateManager {
 /**
  * Create a new ChunkStateManager with default configuration.
  */
-export function createChunkStateManager(
-  config: Partial<ChunkStateManagerConfig> = {},
-): ChunkStateManager {
+export function createChunkStateManager(config: Partial<ChunkStateManagerConfig> = {}): ChunkStateManager {
   return new ChunkStateManager(config);
 }

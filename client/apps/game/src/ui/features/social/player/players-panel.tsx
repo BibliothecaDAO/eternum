@@ -273,7 +273,9 @@ export const PlayersPanel = ({
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gold/50">Claim a Hyperstructure from bandits</span>
-                  <span className="text-gold font-semibold">{VICTORY_POINT_VALUES.claimHyperstructureFromBandits} VP</span>
+                  <span className="text-gold font-semibold">
+                    {VICTORY_POINT_VALUES.claimHyperstructureFromBandits} VP
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gold/50">Open a Relic Crest</span>

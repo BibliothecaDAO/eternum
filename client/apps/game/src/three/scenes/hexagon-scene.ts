@@ -9,10 +9,7 @@ import { InteractiveHexManager } from "@/three/managers/interactive-hex-manager"
 import { ThunderBoltManager } from "@/three/managers/thunderbolt-manager";
 import { type SceneManager } from "@/three/scene-manager";
 import { AnimationVisibilityContext } from "@/three/types/animation";
-import {
-  CentralizedVisibilityManager,
-  getVisibilityManager,
-} from "@/three/utils/centralized-visibility-manager";
+import { CentralizedVisibilityManager, getVisibilityManager } from "@/three/utils/centralized-visibility-manager";
 import { GUIManager, LocationManager } from "@/three/utils/";
 import { FrustumManager } from "@/three/utils/frustum-manager";
 import { MatrixPool } from "@/three/utils/matrix-pool";
