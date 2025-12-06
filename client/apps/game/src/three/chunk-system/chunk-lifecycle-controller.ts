@@ -138,10 +138,7 @@ export class ChunkLifecycleController {
     });
 
     this.spatialIndex = createSpatialIndex(this.config.spatialBucketSize);
-    this.spatialIndex.setChunkDimensions(
-      this.config.renderChunkSize.width,
-      this.config.renderChunkSize.height,
-    );
+    this.spatialIndex.setChunkDimensions(this.config.renderChunkSize.width, this.config.renderChunkSize.height);
 
     // Forward events from state manager
     this.setupEventForwarding();
@@ -369,11 +366,7 @@ export class ChunkLifecycleController {
 
       // Register hydration expectations
       if (chunkData.structures.length > 0) {
-        this.hydrationRegistry.expectEntities(
-          chunkKey,
-          EntityType.Structure,
-          chunkData.structures.length,
-        );
+        this.hydrationRegistry.expectEntities(chunkKey, EntityType.Structure, chunkData.structures.length);
       }
       if (chunkData.armies.length > 0) {
         this.hydrationRegistry.expectEntities(chunkKey, EntityType.Army, chunkData.armies.length);
@@ -389,16 +382,10 @@ export class ChunkLifecycleController {
       await this.stateManager.transitionTo(chunkKey, ChunkLifecyclePhase.HYDRATING);
 
       // Wait for hydration (with timeout)
-      const hydrationResult = await this.hydrationRegistry.waitForHydration(
-        chunkKey,
-        this.config.hydrationTimeoutMs,
-      );
+      const hydrationResult = await this.hydrationRegistry.waitForHydration(chunkKey, this.config.hydrationTimeoutMs);
 
       if (!hydrationResult.success && this.config.debug) {
-        console.warn(
-          `[ChunkLifecycleController] Hydration incomplete for ${chunkKey}:`,
-          hydrationResult.progress,
-        );
+        console.warn(`[ChunkLifecycleController] Hydration incomplete for ${chunkKey}:`, hydrationResult.progress);
       }
 
       // === PHASE: RENDERING ===
@@ -415,16 +402,11 @@ export class ChunkLifecycleController {
       await this.stateManager.transitionTo(chunkKey, ChunkLifecyclePhase.ACTIVE);
 
       if (this.config.debug) {
-        console.log(
-          `[ChunkLifecycleController] Chunk ${chunkKey} loaded in ${Date.now() - startTime}ms`,
-        );
+        console.log(`[ChunkLifecycleController] Chunk ${chunkKey} loaded in ${Date.now() - startTime}ms`);
       }
     } catch (error) {
       // Handle error
-      await this.stateManager.transitionToError(
-        chunkKey,
-        error instanceof Error ? error : new Error(String(error)),
-      );
+      await this.stateManager.transitionToError(chunkKey, error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -494,11 +476,7 @@ export class ChunkLifecycleController {
 
     // Filter to chunks not already loaded or loading
     this.prefetchQueue = surrounding.filter((key) => {
-      return (
-        !this.stateManager.isReady(key) &&
-        !this.stateManager.isLoading(key) &&
-        !this.loadingChunks.has(key)
-      );
+      return !this.stateManager.isReady(key) && !this.stateManager.isLoading(key) && !this.loadingChunks.has(key);
     });
   }
 
@@ -576,10 +554,8 @@ export class ChunkLifecycleController {
     const row = Math.floor(position.z / (hexHeight * 0.75));
 
     // Convert hex coordinates to chunk coordinates
-    const chunkCol =
-      Math.floor(col / this.config.renderChunkSize.width) * this.config.renderChunkSize.width;
-    const chunkRow =
-      Math.floor(row / this.config.renderChunkSize.height) * this.config.renderChunkSize.height;
+    const chunkCol = Math.floor(col / this.config.renderChunkSize.width) * this.config.renderChunkSize.width;
+    const chunkRow = Math.floor(row / this.config.renderChunkSize.height) * this.config.renderChunkSize.height;
 
     return createChunkKey(chunkRow, chunkCol);
   }
@@ -622,10 +598,7 @@ export class ChunkLifecycleController {
    * @param handler - Event handler
    * @returns Unsubscribe function
    */
-  on<K extends keyof ChunkLifecycleEvents>(
-    event: K,
-    handler: ChunkEventHandler<K>,
-  ): () => void {
+  on<K extends keyof ChunkLifecycleEvents>(event: K, handler: ChunkEventHandler<K>): () => void {
     return this.stateManager.on(event, handler);
   }
 

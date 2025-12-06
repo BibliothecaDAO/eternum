@@ -504,14 +504,7 @@ export const playerColorDebug = {
     `;
 
     profiles.forEach((profile, index) => {
-      const label =
-        index === 0
-          ? "Self"
-          : index === 1
-            ? "Ally"
-            : index === 2
-              ? "AI Agent"
-              : `Enemy ${index - 2}`;
+      const label = index === 0 ? "Self" : index === 1 ? "Ally" : index === 2 ? "AI Agent" : `Enemy ${index - 2}`;
       html += `
         <div style="background: ${profile.backgroundColor}; border: 2px solid ${profile.borderColor}; border-radius: 8px; padding: 12px;">
           <div style="font-weight: bold; color: ${profile.textColor}; margin-bottom: 8px;">${label}</div>

@@ -84,10 +84,7 @@ export class CosmeticDebugController {
 
     // Army controls
     const armyFolder = this.guiFolder.addFolder("Army");
-    armyFolder
-      .add(this.state, "armyCosmeticId", this.armyOptions)
-      .name("Skin")
-      .onChange(this.onStateChange.bind(this));
+    armyFolder.add(this.state, "armyCosmeticId", this.armyOptions).name("Skin").onChange(this.onStateChange.bind(this));
     armyFolder
       .add(this.state, "armyAttachmentId", this.armyAttachmentOptions)
       .name("Attachment")
@@ -106,9 +103,7 @@ export class CosmeticDebugController {
 
     this.guiFolder.add({ clear: () => this.clearOverrides() }, "clear").name("Clear Overrides");
 
-    this.guiFolder
-      .add({ refresh: () => this.refreshRegistry() }, "refresh")
-      .name("Refresh Registry Options");
+    this.guiFolder.add({ refresh: () => this.refreshRegistry() }, "refresh").name("Refresh Registry Options");
   }
 
   private onStateChange(): void {
@@ -311,10 +306,7 @@ CosmeticsDebug.help()                    - Show this help
     if (attachmentEntry) ensureCosmeticAsset(attachmentEntry);
 
     // Collect attachments from both skin and attachment override
-    const attachments = [
-      ...(skinEntry?.attachments ?? []),
-      ...(attachmentEntry?.attachments ?? []),
-    ];
+    const attachments = [...(skinEntry?.attachments ?? []), ...(attachmentEntry?.attachments ?? [])];
 
     return {
       cosmeticId: skinEntry?.id ?? attachmentEntry?.id ?? "debug-override",

@@ -36,20 +36,20 @@
 
 ### Current State Summary
 
-| Component                  | Status      | Notes                                                    |
-| -------------------------- | ----------- | -------------------------------------------------------- |
-| `types.ts`                 | ✅ Complete | All interfaces defined                                   |
-| `registry.ts`              | ✅ Complete | Auto-seeds base models + sample cosmetics                |
-| `player-cosmetics-store.ts`| ✅ Complete | Hydrates from `BlitzCosmeticAttrsRegister`               |
-| `asset-cache.ts`           | ✅ Complete | GLTF/texture loading with retry + material pooling       |
-| `resolver.ts`              | ✅ Complete | Merges player selections + global attachments            |
-| `attachment-manager.ts`    | ✅ Complete | Object pooling + placeholder upgrade flow                |
-| `mount-resolver.ts`        | ✅ Complete | Humanoid/boat/structure mount transforms                 |
-| `debug-controller.ts`      | ✅ Complete | Global overrides with GUI + console API                  |
-| Manager integration        | ✅ Partial  | Attachments spawn; model swapping not wired              |
-| Bootstrap preloading       | ✅ Complete | `preloadAllCosmeticAssets` called in `performInitialSetup` |
-| GUI controls               | ✅ Complete | "Cosmetics Debug" folder in `GUIManager`                 |
-| Console API                | ✅ Complete | `window.CosmeticsDebug` with full API                    |
+| Component                   | Status      | Notes                                                      |
+| --------------------------- | ----------- | ---------------------------------------------------------- |
+| `types.ts`                  | ✅ Complete | All interfaces defined                                     |
+| `registry.ts`               | ✅ Complete | Auto-seeds base models + sample cosmetics                  |
+| `player-cosmetics-store.ts` | ✅ Complete | Hydrates from `BlitzCosmeticAttrsRegister`                 |
+| `asset-cache.ts`            | ✅ Complete | GLTF/texture loading with retry + material pooling         |
+| `resolver.ts`               | ✅ Complete | Merges player selections + global attachments              |
+| `attachment-manager.ts`     | ✅ Complete | Object pooling + placeholder upgrade flow                  |
+| `mount-resolver.ts`         | ✅ Complete | Humanoid/boat/structure mount transforms                   |
+| `debug-controller.ts`       | ✅ Complete | Global overrides with GUI + console API                    |
+| Manager integration         | ✅ Partial  | Attachments spawn; model swapping not wired                |
+| Bootstrap preloading        | ✅ Complete | `preloadAllCosmeticAssets` called in `performInitialSetup` |
+| GUI controls                | ✅ Complete | "Cosmetics Debug" folder in `GUIManager`                   |
+| Console API                 | ✅ Complete | `window.CosmeticsDebug` with full API                      |
 
 ### 1. Cosmetic Registry (Data-Driven Source of Truth)
 

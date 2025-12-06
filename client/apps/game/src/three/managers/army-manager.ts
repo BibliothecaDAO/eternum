@@ -787,11 +787,13 @@ export class ArmyManager {
 
     const desiredOrder = visibleArmies.map((army) => army.entityId);
     const desiredIds = new Set(desiredOrder);
-    const toRemove = this.visibleArmyOrder.filter((entityId) => !desiredIds.has(entityId)).sort((a, b) => {
-      const aNum = this.toNumericId(a);
-      const bNum = this.toNumericId(b);
-      return aNum - bNum;
-    });
+    const toRemove = this.visibleArmyOrder
+      .filter((entityId) => !desiredIds.has(entityId))
+      .sort((a, b) => {
+        const aNum = this.toNumericId(a);
+        const bNum = this.toNumericId(b);
+        return aNum - bNum;
+      });
 
     toRemove.forEach((entityId) => {
       const removalResult = this.removeVisibleArmy(entityId);
@@ -1498,7 +1500,7 @@ export class ArmyManager {
     this.entityIdLabels.forEach((label) => {
       const isVisible = this.visibilityManager
         ? this.visibilityManager.isPointVisible(label.position)
-        : this.frustumManager?.isPointVisible(label.position) ?? true;
+        : (this.frustumManager?.isPointVisible(label.position) ?? true);
       if (isVisible) {
         if (label.parent !== this.labelsGroup) {
           this.labelsGroup.add(label);

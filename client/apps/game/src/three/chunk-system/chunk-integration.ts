@@ -181,21 +181,23 @@ export function createChunkIntegration(
   //
   // Hydration tracking still works for debugging via notifyEntityHydrated calls.
   //
-  controller.fetchCoordinator.setFetchFunction(async (bounds: ChunkBounds, _structurePositions: Map<ID, HexPosition>) => {
-    if (debug) {
-      console.log(`[ChunkIntegration] Fetch placeholder for bounds:`, bounds);
-    }
+  controller.fetchCoordinator.setFetchFunction(
+    async (bounds: ChunkBounds, _structurePositions: Map<ID, HexPosition>) => {
+      if (debug) {
+        console.log(`[ChunkIntegration] Fetch placeholder for bounds:`, bounds);
+      }
 
-    // Return empty data - actual fetching is triggered separately by WorldmapScene
-    // No expectations registered = waitForHydration returns immediately
-    return {
-      tiles: [],
-      structures: [],
-      armies: [],
-      quests: [],
-      chests: [],
-    };
-  });
+      // Return empty data - actual fetching is triggered separately by WorldmapScene
+      // No expectations registered = waitForHydration returns immediately
+      return {
+        tiles: [],
+        structures: [],
+        armies: [],
+        quests: [],
+        chests: [],
+      };
+    },
+  );
 
   // Create the integration API
   const integration: ChunkIntegration = {
