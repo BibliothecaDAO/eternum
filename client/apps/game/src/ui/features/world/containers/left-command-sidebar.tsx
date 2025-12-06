@@ -587,7 +587,7 @@ const buildRealmNavigationItems = ({
       label: "Realm Info",
       size: DEFAULT_BUTTON_SIZE,
       disabled: disableButtons,
-      active: view === LeftView.EntityView,
+      active: view === LeftView.EntityView || view === LeftView.None,
       onClick: toggleView(LeftView.EntityView),
     },
     {
@@ -913,7 +913,7 @@ export const LeftCommandSidebar = memo(() => {
 
   const computedWidth = isCollapsed ? HANDLE_WIDTH : PANEL_WIDTH + HANDLE_WIDTH;
   const panelHeightStyle = { height: navHeight, maxHeight: navHeight };
-  const showEmptyState = view === LeftView.None && rightView === RightView.None;
+  const showEmptyState = false;
 
   const combinedNavigationItems = [...realmNavigationItems, ...economyNavigationItems];
   const structureNameMetadata = structureNameChange ? getStructureName(structureNameChange, isBlitz) : null;
@@ -959,7 +959,7 @@ export const LeftCommandSidebar = memo(() => {
               <div className="flex-1 overflow-hidden">
                 <div className="h-full overflow-y-auto pr-1">
                   <Suspense fallback={<div className="p-8">Loading...</div>}>
-                    {view === LeftView.EntityView && <EntityDetails />}
+                    {(view === LeftView.EntityView || view === LeftView.None) && <EntityDetails />}
                     {view === LeftView.MilitaryView && <Military entityId={structureEntityId} />}
                     {view === LeftView.ConstructionView && <SelectPreviewBuildingMenu entityId={structureEntityId} />}
                     {view === LeftView.HyperstructuresView &&

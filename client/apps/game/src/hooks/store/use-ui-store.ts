@@ -255,7 +255,7 @@ export const useUIStore = create(
     setCombatSimulationBiome: (biome: BiomeType | null) => set({ combatSimulationBiome: biome }),
     battleView: null,
     setBattleView: (participants: BattleViewInfo | null) => set({ battleView: participants }),
-    leftNavigationView: LeftView.None,
+    leftNavigationView: LeftView.EntityView,
     setLeftNavigationView: (view: LeftView) => set({ leftNavigationView: view, tooltip: null }),
     rightNavigationView: RightView.None,
     setRightNavigationView: (view: RightView) => set({ rightNavigationView: view, tooltip: null }),
