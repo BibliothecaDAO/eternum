@@ -7,6 +7,7 @@ import {
   MIN_REFRESH_INTERVAL_MS,
   useLandingLeaderboardStore,
 } from "@/ui/features/landing/lib/use-landing-leaderboard-store";
+import { VICTORY_POINT_VALUES, formatHyperstructureControlVpRange } from "@/config/victory-points";
 import { EndSeasonButton, PlayerCustom, PlayerList, RegisterPointsButton } from "@/ui/features/social";
 import { getEntityIdFromKeys, normalizeDiacriticalMarks } from "@/ui/utils/utils";
 import { getGuildFromPlayerAddress, getIsBlitz, getStructureName, toHexString } from "@bibliothecadao/eternum";
@@ -262,25 +263,29 @@ export const PlayersPanel = ({
               <div className="flex flex-col gap-1 text-xs">
                 <div className="flex items-center justify-between">
                   <span className="text-gold/50">Explore a tile</span>
-                  <span className="text-gold font-semibold">25 VP</span>
+                  <span className="text-gold font-semibold">{VICTORY_POINT_VALUES.exploreTile} VP</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gold/50">Claim an Essence Rift or Camp from bandits</span>
-                  <span className="text-gold font-semibold">500 VP</span>
+                  <span className="text-gold font-semibold">
+                    {VICTORY_POINT_VALUES.claimWorldStructureFromBandits} VP
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gold/50">Claim a Hyperstructure from bandits</span>
-                  <span className="text-gold font-semibold">3000 VP</span>
+                  <span className="text-gold font-semibold">
+                    {VICTORY_POINT_VALUES.claimHyperstructureFromBandits} VP
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gold/50">Open a Relic Crest</span>
-                  <span className="text-gold font-semibold">1000 VP</span>
+                  <span className="text-gold font-semibold">{VICTORY_POINT_VALUES.openRelicChest} VP</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gold/50">
                     Control a Hyperstructure (1 point per realm settled in 8 tile radius)
                   </span>
-                  <span className="text-gold font-semibold">0 - 6 VP/s</span>
+                  <span className="text-gold font-semibold">{formatHyperstructureControlVpRange()}</span>
                 </div>
               </div>
             </div>
