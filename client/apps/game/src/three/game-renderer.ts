@@ -91,6 +91,7 @@ export default class GameRenderer {
   private cleanupIntervals: NodeJS.Timeout[] = [];
   private environmentTarget?: WebGLRenderTarget;
   private unsubscribeEnableMapZoom?: () => void;
+  private memoryMonitorTimeoutId?: ReturnType<typeof setTimeout>;
   private readonly handleWindowResize = () => this.onWindowResize();
   private readonly handleDocumentFocus = (event: FocusEvent) => {
     if (event.target instanceof HTMLInputElement && this.controls) {
@@ -112,10 +113,14 @@ export default class GameRenderer {
     this.initializeRaycaster();
     this.setupGUIControls();
 
-    this.waitForLabelRendererElement().then((labelRendererElement) => {
-      this.labelRendererElement = labelRendererElement;
-      this.initializeLabelRenderer();
-    });
+    this.waitForLabelRendererElement()
+      .then((labelRendererElement) => {
+        this.labelRendererElement = labelRendererElement;
+        this.initializeLabelRenderer();
+      })
+      .catch((error) => {
+        console.warn("GameRenderer: Failed to initialize label renderer:", error);
+      });
   }
 
   private initializeRaycaster() {
@@ -213,12 +218,19 @@ export default class GameRenderer {
   }
 
   private async waitForLabelRendererElement(): Promise<HTMLDivElement> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
+      const MAX_ATTEMPTS = 300; // ~5 seconds at 60fps
+      let attempts = 0;
+
       const checkElement = () => {
         const element = document.getElementById("labelrenderer") as HTMLDivElement;
         if (element) {
           resolve(element);
+        } else if (attempts >= MAX_ATTEMPTS) {
+          console.error("GameRenderer: labelrenderer element not found after max attempts");
+          reject(new Error("labelrenderer element not found"));
         } else {
+          attempts++;
           requestAnimationFrame(checkElement);
         }
       };
@@ -350,7 +362,7 @@ export default class GameRenderer {
       }
 
       // Schedule next update (every second)
-      setTimeout(updateMemoryStats, 1000);
+      this.memoryMonitorTimeoutId = setTimeout(updateMemoryStats, 1000);
     };
 
     // Start monitoring
@@ -755,6 +767,12 @@ export default class GameRenderer {
     this.isDestroyed = true;
 
     try {
+      // Clean up memory monitor timeout
+      if (this.memoryMonitorTimeoutId) {
+        clearTimeout(this.memoryMonitorTimeoutId);
+        this.memoryMonitorTimeoutId = undefined;
+      }
+
       if (this.unsubscribeEnableMapZoom) {
         this.unsubscribeEnableMapZoom();
         this.unsubscribeEnableMapZoom = undefined;
