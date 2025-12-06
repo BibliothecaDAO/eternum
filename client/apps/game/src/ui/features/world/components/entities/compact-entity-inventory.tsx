@@ -6,7 +6,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import type { RelicHolderPreview } from "@/ui/features/relics/components/player-relic-tray";
 import { RelicActivationSelector } from "@/ui/features/relics/components/relic-activation-selector";
 import { currencyFormat } from "@/ui/utils/utils";
-import { getBlockTimestamp, ResourceManager } from "@bibliothecadao/eternum";
+import { getBlockTimestamp, isMilitaryResource, ResourceManager } from "@bibliothecadao/eternum";
 import {
   ClientComponents,
   EntityType,
@@ -19,6 +19,7 @@ import {
 } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
 import { Sparkles } from "lucide-react";
+import { findResourceById } from "@bibliothecadao/types";
 
 interface CompactEntityInventoryProps {
   resources?: ComponentValue<ClientComponents["Resource"]["schema"]> | null;
@@ -29,7 +30,6 @@ interface CompactEntityInventoryProps {
   className?: string;
   variant?: "default" | "tight";
   showLabels?: boolean;
-  maxItems?: number;
   allowRelicActivation?: boolean;
 }
 
@@ -54,6 +54,19 @@ const buildDisplayItems = (
   );
 
   const activeRelicSet = new Set(activeRelicIds);
+  const categoryPriority = (resourceId: number) => {
+    const label = ResourcesIds[resourceId] as string | undefined;
+    if (label && label.toLowerCase() === "lords") return 0;
+    if (isRelic(resourceId)) return 1;
+    if (resourceId === ResourcesIds.Essence) return 2;
+    if (resourceId === ResourcesIds.Labor) return 3;
+    if (isMilitaryResource(resourceId as ResourcesIds)) return 4;
+    if (resourceId === ResourcesIds.Donkey) return 5;
+    const trait = findResourceById(resourceId)?.trait;
+    if (trait && trait.toLowerCase() === "food") return 6;
+    if (trait && trait.toLowerCase() === "material") return 7;
+    return 9;
+  };
 
   const items: DisplayItem[] = balances
     .map((resource) => {
@@ -74,13 +87,12 @@ const buildDisplayItems = (
     .filter(Boolean) as DisplayItem[];
 
   return items.sort((a, b) => {
-    if (a.isRelic && b.isRelic) {
-      if (a.isActive && !b.isActive) return -1;
-      if (!a.isActive && b.isActive) return 1;
-    }
-    if (a.isRelic && !b.isRelic) return -1;
-    if (!a.isRelic && b.isRelic) return 1;
-    return b.amount - a.amount;
+    const priA = categoryPriority(a.resourceId);
+    const priB = categoryPriority(b.resourceId);
+    if (priA !== priB) return priA - priB;
+    const labelA = ResourcesIds[a.resourceId] as string;
+    const labelB = ResourcesIds[b.resourceId] as string;
+    return labelA.localeCompare(labelB);
   });
 };
 
@@ -94,7 +106,6 @@ export const CompactEntityInventory = memo(
     className,
     variant = "default",
     showLabels = false,
-    maxItems,
     allowRelicActivation = false,
   }: CompactEntityInventoryProps) => {
     const toggleModal = useUIStore((state) => state.toggleModal);
@@ -131,9 +142,6 @@ export const CompactEntityInventory = memo(
       return <p className="text-xxs text-gold/60 italic">No inventory.</p>;
     }
 
-    const effectiveItems = maxItems && Number.isFinite(maxItems) ? items.slice(0, maxItems) : items;
-    const showMoreIndicator = effectiveItems.length < items.length;
-
     const baseGrid =
       variant === "tight"
         ? "grid grid-cols-[repeat(auto-fit,minmax(48px,1fr))] gap-1"
@@ -146,7 +154,7 @@ export const CompactEntityInventory = memo(
     return (
       <div className={cn("flex flex-col gap-1", className)}>
         <div className={cn(baseGrid)}>
-          {effectiveItems.map((item) => {
+          {items.map((item) => {
             const resourceDef = resourceDefs.find((r) => r.id === item.resourceId);
             const isClickableRelic =
               allowRelicActivation &&
@@ -185,11 +193,6 @@ export const CompactEntityInventory = memo(
             );
           })}
         </div>
-        {showMoreIndicator && (
-          <div className="text-[9px] uppercase tracking-[0.2em] text-gold/50">
-            +{items.length - effectiveItems.length} more
-          </div>
-        )}
       </div>
     );
   },

@@ -30,6 +30,19 @@ import { Info, Trash2 } from "lucide-react";
 
 import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN } from "./constants";
 
+const compactResourceFormatter = new Intl.NumberFormat("en-US", {
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+
+const formatResourceAmount = (value: number): string => {
+  const flooredValue = Math.floor(value);
+  if (flooredValue >= 1000) {
+    return compactResourceFormatter.format(flooredValue);
+  }
+  return flooredValue.toLocaleString();
+};
+
 interface PanelFrameProps {
   title: string;
   children: ReactNode;
@@ -460,7 +473,7 @@ const LocalTilePanel = () => {
                         >
                           <ResourceIcon withTooltip={false} resource={name} size="xs" />
                           <span className={cn("text-xxs", hasEnough ? "text-gold font-semibold" : "text-red-200")}>
-                            {Math.floor(balance).toLocaleString()}
+                            {formatResourceAmount(balance)}
                           </span>
                           <span className={cn("text-xxs", hasEnough ? "text-gold/70" : "text-red-200")}>/ {entry.amount}</span>
                         </div>
@@ -532,7 +545,7 @@ const LocalTilePanel = () => {
                                 {name}
                               </span>
                               <span className="text-gold/80">
-                                {Math.floor(req.current).toLocaleString()} / {req.amount.toLocaleString()}
+                                {formatResourceAmount(req.current)} / {req.amount.toLocaleString()}
                               </span>
                             </div>
                             <div className="h-1.5 rounded bg-gold/10">
