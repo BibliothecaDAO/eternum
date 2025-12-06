@@ -5,8 +5,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import type { RelicHolderPreview } from "@/ui/features/relics/components/player-relic-tray";
 import { RelicActivationSelector } from "@/ui/features/relics/components/relic-activation-selector";
-import { currencyFormat } from "@/ui/utils/utils";
-import { getBlockTimestamp, isMilitaryResource, ResourceManager } from "@bibliothecadao/eternum";
+import { divideByPrecision, getBlockTimestamp, isMilitaryResource, ResourceManager } from "@bibliothecadao/eternum";
 import {
   ClientComponents,
   EntityType,
@@ -41,6 +40,19 @@ interface DisplayItem {
   canActivate: boolean;
 }
 
+const compactInventoryFormatter = new Intl.NumberFormat("en-US", {
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+
+const formatInventoryAmount = (value: number): string => {
+  const flooredValue = Math.floor(value);
+  if (flooredValue >= 1000) {
+    return compactInventoryFormatter.format(flooredValue);
+  }
+  return flooredValue.toLocaleString();
+};
+
 const buildDisplayItems = (
   resourceComponent?: ComponentValue<ClientComponents["Resource"]["schema"]> | null,
   activeRelicIds: number[] = [],
@@ -70,7 +82,7 @@ const buildDisplayItems = (
 
   const items: DisplayItem[] = balances
     .map((resource) => {
-      const amount = Number(resource.amount);
+      const amount = divideByPrecision(Number(resource.amount));
       if (amount <= 0) return null;
 
       const resourceId = Number(resource.resourceId);
@@ -129,7 +141,7 @@ export const CompactEntityInventory = memo(
         toggleModal(
           <RelicActivationSelector
             resourceId={item.resourceId}
-            displayAmount={currencyFormat(item.amount, 0)}
+            displayAmount={formatInventoryAmount(item.amount)}
             holders={[holder]}
             onClose={() => toggleModal(null)}
           />,
@@ -182,7 +194,7 @@ export const CompactEntityInventory = memo(
                 onClick={() => handleRelicClick(item)}
               >
                 <ResourceIcon resource={ResourcesIds[item.resourceId]} size={iconSize} withTooltip={false} />
-                <span className={cn(amountClass, "font-semibold text-gold/90")}>{currencyFormat(item.amount, 0)}</span>
+                <span className={cn(amountClass, "font-semibold text-gold/90")}>{formatInventoryAmount(item.amount)}</span>
                 {showLabels && resourceDef && (
                   <span className="text-[9px] text-gold/60 truncate" title={resourceDef.trait}>
                     {resourceDef.ticker ?? resourceDef.trait}
