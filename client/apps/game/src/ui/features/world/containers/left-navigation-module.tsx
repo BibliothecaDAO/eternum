@@ -24,7 +24,7 @@ import { BaseContainer } from "@/ui/shared/containers/base-container";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ClientComponents, ContractAddress, ID, RealmLevels, Structure, StructureType, getLevelName } from "@bibliothecadao/types";
-import type { ComponentProps, ReactNode, MouseEvent } from "react";
+import type { ComponentProps, ReactNode, MouseEvent, KeyboardEvent } from "react";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Castle, Crown, Loader2, Pencil, Pickaxe, Sparkles, Star, Tent, ChevronsUp, ChevronUp, ShieldCheck } from "lucide-react";
@@ -423,10 +423,21 @@ const StructureListItem = ({
   const capacityDisplay = `${population}/${populationCapacity}`;
   const infoLineLabel = levelLabel ?? `Level ${normalizedLevel}`;
 
+  const handleSelectStructure = () => onSelectStructure(structure.entityId);
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handleSelectStructure();
+    }
+  };
+
   return (
-    <button
-      type="button"
-      onClick={() => onSelectStructure(structure.entityId)}
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={handleSelectStructure}
+      onKeyDown={handleKeyDown}
       className={`w-full rounded-lg border px-3 py-2 text-left transition ${
         isSelected ? "border-gold bg-black/60" : "border-gold/20 bg-black/20 hover:border-gold/40 hover:bg-black/30"
       }`}
@@ -464,7 +475,7 @@ const StructureListItem = ({
           <StructureLevelUpButton structureEntityId={structure.entityId} className="ml-auto" />
         )}
       </div>
-    </button>
+    </div>
   );
 };
 
