@@ -1,5 +1,5 @@
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
-import { isAutomationResourceBlocked, useAutomationStore } from "@/hooks/store/use-automation-store";
+import { isAutomationResourceBlocked, useAutomationStore, RealmAutomationConfig } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { inferRealmPreset } from "@/utils/automation-presets";
 import { ProductionModal } from "@/ui/features/settlement";
@@ -24,7 +24,7 @@ import { getProducedResource, ResourcesIds, StructureType } from "@bibliothecada
 import { useComponentValue } from "@dojoengine/react";
 import { HasValue, runQuery } from "@dojoengine/recs";
 import { Search } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import { formatTimeRemaining } from "../../economy/resources/entity-resource-table/utils";
 
 const formatTimestamp = (timestamp?: number) => {
@@ -87,11 +87,69 @@ const formatSignedAmount = (value: number): string => {
   return value > 0 ? `+${label}` : `-${label}`;
 };
 
+export const resolveAutomationStatusLabel = (automation?: RealmAutomationConfig | null): string => {
+  if (!automation) {
+    return "Burning labor";
+  }
+
+  const presetId = inferRealmPreset(automation);
+
+  if (presetId === "idle") {
+    return "Idle";
+  }
+
+  if (presetId === "labor") {
+    return "Burning labor";
+  }
+
+  if (presetId === "resource") {
+    return "Burning resources";
+  }
+
+  const hasLabor = Object.values(automation.resources ?? {}).some(
+    (config) => (config?.percentages?.laborToResource ?? 0) > 0,
+  );
+  const hasResource = Object.values(automation.resources ?? {}).some(
+    (config) => (config?.percentages?.resourceToResource ?? 0) > 0,
+  );
+
+  if (hasLabor && hasResource) return "Burning labor & resources";
+  if (hasResource) return "Burning resources";
+  if (hasLabor) return "Burning labor";
+
+  return "Idle";
+};
+
+export const ProductionStatusPill = ({ statusLabel }: { statusLabel: string }) => (
+  <span className="rounded-full border border-gold/30 bg-black/40 px-2 py-0.5 text-[10px] uppercase tracking-wide text-gold/80">
+    {statusLabel}
+  </span>
+);
+
+export const ProductionModifyButton = ({
+  onClick,
+  disabled = false,
+}: {
+  onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
+  disabled?: boolean;
+}) => (
+  <button
+    type="button"
+    disabled={disabled}
+    className={`rounded border border-gold bg-gold px-2 py-0.5 text-[10px] uppercase tracking-wide text-black font-semibold transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-gold ${
+      disabled ? "opacity-60 cursor-not-allowed" : "hover:bg-[#ffd84a] hover:border-gold"
+    }`}
+    onClick={onClick}
+  >
+    Modify
+  </button>
+);
+
 interface RealmProductionRecapProps {
   realmId: number;
   position: { x: number; y: number };
   metrics?: Record<number, ResourceProductionMetrics>;
-  typeLabel: string;
+  typeLabel?: string;
 }
 
 interface ResourceProductionSummaryItem {
@@ -217,16 +275,26 @@ export const RealmProductionRecap = ({ realmId, position, metrics, typeLabel }: 
   );
   const hasProduction = resourceProductionSummary.length > 0;
 
+  const headerSegments = useMemo(() => {
+    const segments = [
+      `${buildings.size} buildings`,
+      hasProduction ? `${activeProductionBuildings}/${totalProductionBuildings} producing` : "no production",
+    ];
+    if (typeLabel) {
+      segments.unshift(typeLabel);
+    }
+    return segments;
+  }, [activeProductionBuildings, buildings.size, hasProduction, totalProductionBuildings, typeLabel]);
+
   return (
     <div className="mt-1 space-y-3 px-1">
       <div className="flex items-center gap-2 text-[10px] uppercase tracking-wide text-gold/50">
-        <span>{typeLabel}</span>
-        <span className="text-gold/40">●</span>
-        <span>{`${buildings.size} buildings`}</span>
-        <span className="text-gold/40">●</span>
-        <span>
-          {hasProduction ? `${activeProductionBuildings}/${totalProductionBuildings} producing` : "no production"}
-        </span>
+        {headerSegments.map((segment, index) => (
+          <span key={`${segment}-${index}`} className="flex items-center gap-2">
+            {index > 0 && <span className="text-gold/40">●</span>}
+            <span>{segment}</span>
+          </span>
+        ))}
       </div>
       <div className="flex flex-wrap items-center gap-5">
         {hasProduction ? (
@@ -590,40 +658,6 @@ export const ProductionOverviewPanel = () => {
 
       const displayedResourceIds = [...uniqueResourceIds].sort((a, b) => a - b).slice(0, 8);
 
-      const statusLabel = (() => {
-        if (!automation) {
-          // No explicit config yet; default baseline is labor-only automation.
-          return "Burning labor";
-        }
-
-        const presetId = inferRealmPreset(automation);
-
-        if (presetId === "idle") {
-          return "Idle";
-        }
-
-        if (presetId === "labor") {
-          return "Burning labor";
-        }
-
-        if (presetId === "resource") {
-          return "Burning resources";
-        }
-
-        const hasLabor = Object.values(automation.resources ?? {}).some(
-          (config) => (config?.percentages?.laborToResource ?? 0) > 0,
-        );
-        const hasResource = Object.values(automation.resources ?? {}).some(
-          (config) => (config?.percentages?.resourceToResource ?? 0) > 0,
-        );
-
-        if (hasLabor && hasResource) return "Burning labor & resources";
-        if (hasResource) return "Burning resources";
-        if (hasLabor) return "Burning labor";
-
-        return "Idle";
-      })();
-
       cards.push({
         id: String(realm.entityId),
         name: realmName,
@@ -632,7 +666,7 @@ export const ProductionOverviewPanel = () => {
         position: { x: realm.position.x, y: realm.position.y },
         resourceIds: displayedResourceIds,
         lastRun: automation?.lastExecution?.executedAt,
-        statusLabel,
+        statusLabel: resolveAutomationStatusLabel(automation),
         metrics,
       });
 
@@ -807,12 +841,8 @@ export const ProductionOverviewPanel = () => {
                     <span className="text-lg font-semibold text-gold/90">{card.name}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="rounded-full border border-gold/30 bg-black/40 px-2 py-0.5 text-[10px] uppercase tracking-wide text-gold/80">
-                      {statusLabel}
-                    </span>
-                    <button
-                      type="button"
-                      className="rounded border border-gold bg-gold px-2 py-0.5 text-[10px] uppercase tracking-wide text-black font-semibold transition-colors hover:bg-[#ffd84a] hover:border-gold focus:outline-none focus-visible:ring-1 focus-visible:ring-gold"
+                    <ProductionStatusPill statusLabel={statusLabel} />
+                    <ProductionModifyButton
                       onClick={(event) => {
                         event.stopPropagation();
                         if (Number.isFinite(realmIdNum) && card.position) {
@@ -821,9 +851,7 @@ export const ProductionOverviewPanel = () => {
                         }
                         toggleModal(<ProductionModal />);
                       }}
-                    >
-                      Modify
-                    </button>
+                    />
                   </div>
                 </div>
 

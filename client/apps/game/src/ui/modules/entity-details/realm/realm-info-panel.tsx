@@ -1,19 +1,43 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useAutomationStore } from "@/hooks/store/use-automation-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CompactEntityInventory } from "@/ui/features/world/components/entities/compact-entity-inventory";
-import { StructureProductionPanel } from "@/ui/features/world/components/entities/structure-production-panel";
-import { getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
-import { ClientComponents, ContractAddress, EntityType, RelicRecipientType, StructureType } from "@bibliothecadao/types";
+import {
+  ProductionModifyButton,
+  ProductionStatusPill,
+  RealmProductionRecap,
+  resolveAutomationStatusLabel,
+} from "@/ui/features/settlement/production/production-overview-panel";
+import { ProductionModal } from "@/ui/features/settlement";
+import { useGoToStructure } from "@/hooks/helpers/use-navigate";
+import { Position } from "@bibliothecadao/eternum";
+import { useDojo, useQuery } from "@bibliothecadao/react";
+import { ClientComponents, EntityType, RelicRecipientType, StructureType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { memo, useMemo } from "react";
+import { memo, useCallback, useMemo } from "react";
+
+const formatRelative = (timestamp?: number) => {
+  if (!timestamp) return null;
+  const diffMs = Date.now() - timestamp;
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+  if (diffMinutes < 1) return "just now";
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}d ago`;
+};
 
 export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const toggleModal = useUIStore((state) => state.toggleModal);
+  const automationRealms = useAutomationStore((state) => state.realms);
   const { setup } = useDojo();
   const components = setup.components as ClientComponents;
+  const { isMapView } = useQuery();
+  const goToStructure = useGoToStructure(setup);
 
   const structure = useComponentValue(
     components.Structure,
@@ -28,10 +52,37 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   const isRealm = structure?.base?.category === StructureType.Realm;
   const isVillage = structure?.base?.category === StructureType.Village;
 
-  const structureName = useMemo(() => {
-    if (!structure) return null;
-    return getStructureName(structure, getIsBlitz()).name;
+  const realmId = useMemo(() => {
+    if (!structureEntityId) return null;
+    const numericId = Number(structureEntityId);
+    return Number.isFinite(numericId) ? numericId : null;
+  }, [structureEntityId]);
+
+  const structurePosition = useMemo(() => {
+    const x = structure?.base?.coord_x;
+    const y = structure?.base?.coord_y;
+    if (x === undefined || y === undefined) return null;
+    const numericX = Number(x);
+    const numericY = Number(y);
+    return Number.isFinite(numericX) && Number.isFinite(numericY) ? { x: numericX, y: numericY } : null;
   }, [structure]);
+
+  const automationConfig = useMemo(() => {
+    if (!realmId) return null;
+    return automationRealms[String(realmId)];
+  }, [automationRealms, realmId]);
+  const statusLabel = resolveAutomationStatusLabel(automationConfig);
+  const formattedLastRun = automationConfig?.lastExecution?.executedAt
+    ? formatRelative(automationConfig.lastExecution.executedAt)
+    : null;
+  const lastRunLabel = formattedLastRun ? `Last run ${formattedLastRun}` : "Automation has not executed yet.";
+
+  const handleModifyClick = useCallback(() => {
+    if (!realmId || !structurePosition) return;
+    const position = new Position({ x: structurePosition.x, y: structurePosition.y });
+    void goToStructure(realmId, position, isMapView);
+    toggleModal(<ProductionModal />);
+  }, [realmId, structurePosition, goToStructure, isMapView, toggleModal]);
 
   if (!structure || (!isRealm && !isVillage)) {
     return (
@@ -41,33 +92,27 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
     );
   }
 
-  const hasResources = Boolean(resources);
-
   return (
     <div className={cn("flex h-full flex-col gap-3 p-3 text-gold", className)}>
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col leading-tight">
-          <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">{isRealm ? "Realm" : "Village"}</span>
-          <span className="text-sm font-semibold text-gold">{structureName ?? "Structure"}</span>
-        </div>
-      </div>
-
       <div className="rounded border border-gold/20 bg-black/50 p-2">
-        <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Production</span>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Production</span>
+          <div className="flex items-center gap-2">
+            <ProductionStatusPill statusLabel={statusLabel} />
+            <ProductionModifyButton onClick={handleModifyClick} disabled={!realmId || !structurePosition} />
+          </div>
+        </div>
         <div className="mt-2">
-          {hasResources ? (
-            <StructureProductionPanel
-              structure={structure}
-              resources={resources as ComponentValue<ClientComponents["Resource"]["schema"]>}
-              compact
-              smallTextClass="text-xxs"
-              showProductionSummary={false}
-              showTooltip={false}
+          {realmId && structurePosition ? (
+            <RealmProductionRecap
+              realmId={realmId}
+              position={structurePosition}
             />
           ) : (
-            <p className="text-xxs text-gold/60 italic">No production data.</p>
+            <p className="text-xxs text-gold/60 italic">Production data unavailable.</p>
           )}
         </div>
+        <div className="mt-3 text-right text-[10px] text-gold/50">{lastRunLabel}</div>
       </div>
 
       <div className="rounded border border-gold/20 bg-black/50 p-2">

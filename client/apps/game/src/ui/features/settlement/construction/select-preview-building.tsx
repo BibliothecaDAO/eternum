@@ -2,6 +2,7 @@ import { usePlayResourceSound } from "@/audio";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 
+import Button from "@/ui/design-system/atoms/button";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { Headline } from "@/ui/design-system/molecules/headline";
 import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
@@ -18,19 +19,23 @@ import {
   getBalance,
   getBlockTimestamp,
   getBuildingCosts,
+  getBuildingCount,
   getConsumedBy,
   getIsBlitz,
   getRealmInfo,
   hasEnoughPopulationForBuilding,
   ResourceIdToMiningType,
+  TileManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import {
+  BUILDINGS_CENTER,
   BiomeType,
   BuildingType,
   BuildingTypeToString,
   findResourceById,
   getBuildingFromResource,
+  getNeighborHexes,
   ID,
   isEconomyBuilding,
   ResourceMiningTypes,
@@ -40,8 +45,9 @@ import {
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
-import { InfoIcon } from "lucide-react";
-import React, { useEffect, useMemo, useState } from "react";
+import { InfoIcon, Plus } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 
 const ARMY_TYPES = ["Archery", "Stable", "Barracks"] as const;
 type ArmyTypeLabel = (typeof ARMY_TYPES)[number];
@@ -64,6 +70,38 @@ const formatBiomeLabel = (biome: BiomeType | string | null | undefined) => {
     .trim();
 };
 
+const generateBuildablePositions = (radius: number) => {
+  const positions: Array<{ col: number; row: number }> = [];
+  const seen = new Set<string>();
+
+  const addPosition = (col: number, row: number) => {
+    const key = `${col},${row}`;
+    if (seen.has(key)) return;
+    positions.push({ col, row });
+    seen.add(key);
+  };
+
+  const start = { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] };
+  addPosition(start.col, start.row);
+
+  let currentLayer = [start];
+  for (let i = 0; i < radius; i++) {
+    const nextLayer: Array<{ col: number; row: number }> = [];
+    currentLayer.forEach((pos) => {
+      getNeighborHexes(pos.col, pos.row).forEach((neighbor) => {
+        const key = `${neighbor.col},${neighbor.row}`;
+        if (!seen.has(key)) {
+          addPosition(neighbor.col, neighbor.row);
+          nextLayer.push(neighbor);
+        }
+      });
+    });
+    currentLayer = nextLayer;
+  }
+
+  return positions;
+};
+
 export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?: string; entityId: number }) => {
   const dojo = useDojo();
 
@@ -73,8 +111,96 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const previewBuilding = useUIStore((state) => state.previewBuilding);
   const useSimpleCost = useUIStore((state) => state.useSimpleCost);
   const setUseSimpleCost = useUIStore((state) => state.setUseSimpleCost);
+  const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
 
   const realm = getRealmInfo(getEntityIdFromKeys([BigInt(entityId)]), dojo.setup.components);
+  const structureBuildings = useComponentValue(
+    dojo.setup.components.StructureBuildings,
+    getEntityIdFromKeys([BigInt(entityId)]),
+  );
+
+  const reservedSpotsRef = useRef<Set<string>>(new Set());
+  const [pendingBuilds, setPendingBuilds] = useState<Record<string, boolean>>({});
+
+  const getBuildingCountFor = useCallback(
+    (buildingType: BuildingType) => {
+      if (!structureBuildings) return 0;
+      const packedCounts = [
+        structureBuildings.packed_counts_1 || 0n,
+        structureBuildings.packed_counts_2 || 0n,
+        structureBuildings.packed_counts_3 || 0n,
+      ];
+      return getBuildingCount(buildingType, packedCounts) || 0;
+    },
+    [structureBuildings],
+  );
+
+  const handleAutoBuild = useCallback(
+    async (target: { type: BuildingType; resource?: ResourcesIds }) => {
+      if (!realm?.position) {
+        toast.error("Select a realm before building.");
+        return;
+      }
+      const buildingKey = target.type.toString();
+      const outerCol = Number(realm.position.x);
+      const outerRow = Number(realm.position.y);
+      const tileManager = new TileManager(dojo.setup.components, dojo.setup.systemCalls, { col: outerCol, row: outerRow });
+      const reserved = reservedSpotsRef.current;
+      let reservedKey: string | null = null;
+
+      setPendingBuilds((prev) => ({ ...prev, [buildingKey]: true }));
+
+      try {
+        const buildRadius = Math.max(1, Number(tileManager.getRealmLevel(entityId)) + 1);
+        const candidates = generateBuildablePositions(buildRadius);
+        const centerKey = `${BUILDINGS_CENTER[0]},${BUILDINGS_CENTER[1]}`;
+
+        const availableSpot = candidates.find((pos) => {
+          const key = `${pos.col},${pos.row}`;
+          if (key === centerKey) return false;
+          if (reserved.has(key)) return false;
+          return !tileManager.isHexOccupied({ col: pos.col, row: pos.row });
+        });
+
+        if (!availableSpot) {
+          toast.error("No empty building tiles available.");
+          return;
+        }
+
+        reservedKey = `${availableSpot.col},${availableSpot.row}`;
+        reserved.add(reservedKey);
+
+        await tileManager.placeBuilding(
+          dojo.account.account,
+          entityId,
+          target.type,
+          { col: availableSpot.col, row: availableSpot.row },
+          useSimpleCost,
+        );
+
+        setPreviewBuilding(null);
+        setSelectedBuildingHex({
+          outerCol,
+          outerRow,
+          innerCol: availableSpot.col,
+          innerRow: availableSpot.row,
+        });
+      } catch (error) {
+        console.error("Failed to auto-build", error);
+        toast.error("Building failed. Please try again.");
+      } finally {
+        if (reservedKey) {
+          reserved.delete(reservedKey);
+        }
+        setPendingBuilds((prev) => {
+          const next = { ...prev };
+          delete next[buildingKey];
+          return next;
+        });
+      }
+    },
+    [dojo.account.account, dojo.setup.components, dojo.setup.systemCalls, entityId, realm?.position, setPreviewBuilding, setSelectedBuildingHex, useSimpleCost],
+  );
 
   const realmBiome = useMemo<BiomeType | null>(() => {
     if (!realm?.position) return null;
@@ -241,6 +367,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
               const disabledReason = isLaborLockedResource
                 ? "Switch to Resource mode to create this building."
                 : undefined;
+              const buildKey = building.toString();
+              const isPending = Boolean(pendingBuilds[buildKey]);
+              const count = getBuildingCountFor(building);
 
               return (
                 <BuildingCard
@@ -273,6 +402,10 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                   hasPopulation={hasEnoughPopulation}
                   disabled={isLaborLockedResource}
                   disabledReason={disabledReason}
+                  count={count}
+                  onBuild={() => handleAutoBuild({ type: building, resource: resourceId })}
+                  buildDisabled={!canBuild || isPending}
+                  buildLoading={isPending}
                 />
               );
             })}
@@ -315,6 +448,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                   building === BuildingType.WorkersHut
                     ? hasBalance
                     : hasBalance && realm?.hasCapacity && hasEnoughPopulation;
+                const buildKey = building.toString();
+                const isPending = Boolean(pendingBuilds[buildKey]);
+                const count = getBuildingCountFor(building);
 
                 const isFarm = building === BuildingType.ResourceWheat;
                 const isFishingVillage = building === BuildingType.ResourceFish;
@@ -358,6 +494,10 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     toolTip={<BuildingInfo buildingId={building} entityId={entityId} useSimpleCost={useSimpleCost} />}
                     hasFunds={hasBalance}
                     hasPopulation={hasEnoughPopulation}
+                    count={count}
+                    onBuild={() => handleAutoBuild({ type: building })}
+                    buildDisabled={!canBuild || isPending}
+                    buildLoading={isPending}
                   />
                 );
               })}
@@ -480,6 +620,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                               isTierLockedInSimpleMode && info?.tier
                                 ? `Switch to Resource mode to build Tier ${info.tier} military buildings.`
                                 : undefined;
+                            const buildKey = building.toString();
+                            const isPending = Boolean(pendingBuilds[buildKey]);
+                            const count = getBuildingCountFor(building);
 
                             return (
                               <BuildingCard
@@ -516,6 +659,10 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                                 hasPopulation={hasEnoughPopulation}
                                 disabled={isTierLockedInSimpleMode}
                                 disabledReason={disabledReason}
+                                count={count}
+                                onBuild={() => handleAutoBuild({ type: building })}
+                                buildDisabled={!canBuild || isPending}
+                                buildLoading={isPending}
                                 badge={
                                   info?.tier ? (
                                     <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wider bg-brown/90 text-gold rounded px-2 py-[2px]">
@@ -536,7 +683,18 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         })(),
       },
     ],
-    [realm, entityId, previewBuilding, playResourceSound, useSimpleCost, armyGroups, activeArmyType],
+    [
+      realm,
+      entityId,
+      previewBuilding,
+      playResourceSound,
+      useSimpleCost,
+      armyGroups,
+      activeArmyType,
+      pendingBuilds,
+      handleAutoBuild,
+      getBuildingCountFor,
+    ],
   );
 
   return (
@@ -598,6 +756,10 @@ const BuildingCard = ({
   disabled = false,
   disabledReason,
   badge,
+  onBuild,
+  buildDisabled,
+  buildLoading,
+  count = 0,
 }: {
   buildingId: BuildingType;
   onClick: () => void;
@@ -612,6 +774,10 @@ const BuildingCard = ({
   disabled?: boolean;
   disabledReason?: string;
   badge?: React.ReactNode;
+  onBuild?: () => void;
+  buildDisabled?: boolean;
+  buildLoading?: boolean;
+  count?: number;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const isDisabled = disabled;
@@ -644,7 +810,37 @@ const BuildingCard = ({
         alt={buildingName}
         className="absolute inset-0 w-full h-full object-contain"
       />
-      {badge && <div className="absolute top-2 left-2 z-10">{badge}</div>}
+      <div className="absolute top-2 left-2 right-2 z-10 flex items-start justify-between gap-2">
+        <div className="flex flex-col items-start gap-2">
+          <span className="rounded-full bg-amber-500/80 px-2.5 py-1 text-[11px] font-semibold text-black shadow">
+            {count}
+          </span>
+          <button
+            type="button"
+            disabled={Boolean(buildDisabled || isDisabled || lacksRequirements)}
+            onClick={(event) => {
+              event.stopPropagation();
+              if (buildDisabled || isDisabled || lacksRequirements) return;
+              onBuild?.();
+            }}
+            className={clsx(
+              "flex h-8 w-8 items-center justify-center rounded-full border border-amber-500 bg-amber-400/90 text-black shadow transition transform",
+              !buildDisabled && !isDisabled && !lacksRequirements && "hover:scale-105 hover:bg-amber-300",
+              (buildDisabled || isDisabled || lacksRequirements) && "opacity-50 cursor-not-allowed",
+            )}
+          >
+            {buildLoading ? "…" : <Plus className="h-4 w-4" />}
+          </button>
+        </div>
+        <div className="ml-auto flex items-center gap-2">
+          {resourceName && (
+            <div className="rounded p-1 bg-brown/40">
+              <ResourceIcon withTooltip={false} resource={resourceName} size="lg" />
+            </div>
+          )}
+          {badge && <div>{badge}</div>}
+        </div>
+      </div>
       {(lacksRequirements || showDisabledMessage) && (
         <div className="absolute inset-0 bg-brown/60 p-4 text-xs flex justify-center text-center">
           {showDisabledMessage ? (
@@ -657,24 +853,21 @@ const BuildingCard = ({
           )}
         </div>
       )}
-      <div className="absolute bottom-0 left-0 right-0 p-2">
-        <h6 className="truncate">{buildingName}</h6>
-        <InfoIcon
-          onMouseEnter={() => {
-            setTooltip({
-              content: toolTip,
-              position: "right",
-            });
-          }}
-          onMouseLeave={() => {
-            setTooltip(null);
-          }}
-          className="w-4 h-4 absolute top-2 right-2"
-        />
-      </div>
-      <div className="flex relative flex-col items-end p-2 rounded">
-        <div className="rounded p-1 bg-brown/10">
-          {resourceName && <ResourceIcon withTooltip={false} resource={resourceName} size="lg" />}
+      <div className="absolute inset-x-0 bottom-0 p-2 space-y-2">
+        <div className="flex items-center justify-between">
+          <h6 className="truncate text-left">{buildingName}</h6>
+          <InfoIcon
+            onMouseEnter={() => {
+              setTooltip({
+                content: toolTip,
+                position: "right",
+              });
+            }}
+            onMouseLeave={() => {
+              setTooltip(null);
+            }}
+            className="w-4 h-4"
+          />
         </div>
       </div>
     </div>
