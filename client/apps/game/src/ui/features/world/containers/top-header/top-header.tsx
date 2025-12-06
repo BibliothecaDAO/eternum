@@ -22,7 +22,7 @@ const slideDown = {
   visible: { y: "0%", transition: { duration: 0.3 } },
 };
 
-export const TopLeftNavigation = memo(() => {
+export const TopHeader = memo(() => {
   const {
     setup,
     account: { account },
@@ -60,7 +60,7 @@ export const TopLeftNavigation = memo(() => {
     return new Position(selectedStructure?.position || { x: 0, y: 0 }).getNormalized();
   }, [selectedStructure]);
 
-  console.log("[TopLeftNavigation] selectedStructure:", lastControlledStructureEntityId);
+  console.log("[TopHeader] selectedStructure:", lastControlledStructureEntityId);
 
   const goToStructure = useGoToStructure(setup);
 
@@ -101,7 +101,7 @@ export const TopLeftNavigation = memo(() => {
   return (
     <div className="pointer-events-auto w-screen flex justify-between">
       <motion.div
-        className="top-left-navigation-selector flex flex-nowrap items-center gap-3 bg-dark-wood panel-wood panel-wood-corners w-full px-3 py-2"
+        className="top-header-bar flex flex-nowrap items-center gap-3 bg-dark-wood panel-wood panel-wood-corners w-full px-3 py-2"
         variants={slideDown}
         initial="hidden"
         animate="visible"
@@ -229,4 +229,4 @@ export const TopLeftNavigation = memo(() => {
   );
 });
 
-TopLeftNavigation.displayName = "TopLeftNavigation";
+TopHeader.displayName = "TopHeader";

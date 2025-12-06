@@ -5,7 +5,7 @@ import { SecondaryPopup } from "@/ui/design-system/molecules/secondary-popup";
 import {
   STRUCTURE_GROUP_COLORS,
   StructureGroupColor,
-} from "@/ui/features/world/containers/top-left-navigation/structure-groups";
+} from "@/ui/features/world/containers/top-header/structure-groups";
 
 type StructureEditPopupProps = {
   currentName: string;

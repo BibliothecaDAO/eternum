@@ -40,14 +40,14 @@ const Tooltip = lazy(() =>
 const TopMiddleNavigation = lazy(() =>
   import("../features/world/containers/top-navigation").then((module) => ({ default: module.TopNavigation })),
 );
-const LeftNavigationModule = lazy(() =>
-  import("../features/world/containers/left-navigation-module").then((module) => ({
-    default: module.LeftNavigationModule,
+const LeftCommandSidebar = lazy(() =>
+  import("../features/world/containers/left-command-sidebar").then((module) => ({
+    default: module.LeftCommandSidebar,
   })),
 );
-const TopLeftNavigation = lazy(() =>
-  import("../features/world/containers/top-left-navigation/top-left-navigation").then((module) => ({
-    default: module.TopLeftNavigation,
+const TopHeader = lazy(() =>
+  import("../features/world/containers/top-header/top-header").then((module) => ({
+    default: module.TopHeader,
   })),
 );
 const RealtimeChatPortal = lazy(() =>
@@ -148,7 +148,7 @@ const WorldInteractiveLayers = () => (
 const WorldHud = () => (
   <div>
     <LeftMiddleContainer>
-      <LeftNavigationModule />
+      <LeftCommandSidebar />
     </LeftMiddleContainer>
 
     <TopCenterContainer>
@@ -156,7 +156,7 @@ const WorldHud = () => (
     </TopCenterContainer>
 
     <TopLeftContainer>
-      <TopLeftNavigation />
+      <TopHeader />
     </TopLeftContainer>
 
     <SelectedTilePanel />

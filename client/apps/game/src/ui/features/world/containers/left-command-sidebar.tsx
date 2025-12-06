@@ -18,8 +18,8 @@ import {
   StructureGroupColor,
   StructureGroupsMap,
   useStructureGroups,
-} from "@/ui/features/world/containers/top-left-navigation/structure-groups";
-import { useFavoriteStructures } from "@/ui/features/world/containers/top-left-navigation/favorites";
+} from "@/ui/features/world/containers/top-header/structure-groups";
+import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo, useQuery } from "@bibliothecadao/react";
@@ -790,7 +790,7 @@ const EntityResourceTable = lazy(() =>
   })),
 );
 
-export const LeftNavigationModule = memo(() => {
+export const LeftCommandSidebar = memo(() => {
   const {
     account: { account },
     setup,
@@ -1025,4 +1025,4 @@ export const LeftNavigationModule = memo(() => {
   );
 });
 
-LeftNavigationModule.displayName = "LeftNavigationModule";
+LeftCommandSidebar.displayName = "LeftCommandSidebar";

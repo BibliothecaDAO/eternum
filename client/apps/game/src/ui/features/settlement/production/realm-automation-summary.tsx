@@ -8,7 +8,7 @@ import {
 } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { CircularProgress } from "@/ui/features/world/containers/top-left-navigation/circular-progress";
+import { CircularProgress } from "@/ui/features/world/containers/top-header/circular-progress";
 import { ProductionModal } from "@/ui/features/settlement";
 import { REALM_PRESETS, inferRealmPreset } from "@/utils/automation-presets";
 import { configManager } from "@bibliothecadao/eternum";

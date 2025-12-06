@@ -2,6 +2,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { FELT_CENTER } from "@/ui/config";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
+import { BuildingEntityDetails } from "@/ui/modules/entity-details/building-entity-details";
 import {
   getEntityIdFromKeys,
   isTileOccupierChest,
@@ -10,6 +11,7 @@ import {
   Position as PositionInterface,
 } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
+import { BuildingType, BuildingTypeToString } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { memo, ReactNode, useMemo } from "react";
 
@@ -36,7 +38,7 @@ const PanelFrame = ({ title, children, className }: PanelFrameProps) => (
   </section>
 );
 
-const TilePanel = () => {
+const MapTilePanel = () => {
   const selectedHex = useUIStore((state) => state.selectedHex);
   const { setup } = useDojo();
   const tileComponent = setup.components.Tile;
@@ -98,10 +100,68 @@ const TilePanel = () => {
   );
 };
 
+const LocalTilePanel = () => {
+  const { setup } = useDojo();
+  const buildingComponent = setup.components.Building;
+  const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
+
+  const building = useMemo(() => {
+    if (!selectedBuildingHex || !buildingComponent) return null;
+    const entityKeys = [
+      BigInt(selectedBuildingHex.outerCol),
+      BigInt(selectedBuildingHex.outerRow),
+      BigInt(selectedBuildingHex.innerCol),
+      BigInt(selectedBuildingHex.innerRow),
+    ];
+
+    return getComponentValue(buildingComponent, getEntityIdFromKeys(entityKeys));
+  }, [buildingComponent, selectedBuildingHex]);
+
+  const buildingCategory = useMemo(() => {
+    if (!building) return null;
+    return typeof building.category === "bigint" ? Number(building.category) : building.category;
+  }, [building]);
+
+  const hasBuilding = buildingCategory !== null && buildingCategory !== BuildingType.None;
+  const buildingName = hasBuilding
+    ? BuildingTypeToString[buildingCategory as keyof typeof BuildingTypeToString] ?? "Building"
+    : building
+      ? "Empty Tile"
+      : "Local Tile";
+
+  const panelTitle = selectedBuildingHex
+    ? `${buildingName} · (${selectedBuildingHex.innerCol}, ${selectedBuildingHex.innerRow})`
+    : "No Tile Selected";
+
+  return (
+    <PanelFrame title={panelTitle}>
+      {selectedBuildingHex ? (
+        hasBuilding ? (
+          <div className="h-full min-h-0 overflow-hidden">
+            <BuildingEntityDetails />
+          </div>
+        ) : building ? (
+          <div className="flex min-h-[140px] flex-col items-center justify-center text-center">
+            <p className="text-xs text-gold/70">This tile is empty. Select a building to view its details.</p>
+          </div>
+        ) : (
+          <div className="flex min-h-[140px] flex-col items-center justify-center text-center">
+            <p className="text-xs text-gold/70">Loading tile details...</p>
+          </div>
+        )
+      ) : (
+        <div className="flex min-h-[140px] flex-col items-center justify-center text-center">
+          <p className="text-xs text-gold/70">Tap a building tile to view its details.</p>
+        </div>
+      )}
+    </PanelFrame>
+  );
+};
+
 export const SelectedTilePanel = memo(() => {
   const { isMapView } = useQuery();
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
-  const shouldShow = isMapView && !showBlankOverlay;
+  const shouldShow = !showBlankOverlay;
 
   return (
     <div
@@ -113,7 +173,7 @@ export const SelectedTilePanel = memo(() => {
       style={{ bottom: BOTTOM_PANEL_MARGIN }}
     >
       <div className="w-full md:w-[37%] lg:w-[27%] md:ml-auto">
-        <TilePanel />
+        {isMapView ? <MapTilePanel /> : <LocalTilePanel />}
       </div>
     </div>
   );
