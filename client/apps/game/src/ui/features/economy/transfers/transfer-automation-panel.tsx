@@ -658,14 +658,8 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
 
   return (
     <div className="p-3 md:p-4 space-y-3">
-      <div className="flex items-start justify-end gap-3">
-        <Button variant="outline" size="xs" forceUppercase={false} onClick={resetPanel}>
-          Reset
-        </Button>
-      </div>
-
       <section className="space-y-2">
-        <div className="flex items-center">
+        <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1 rounded-full border border-gold/40 bg-brown/40 px-1 py-0.5 text-xxs font-semibold uppercase tracking-widest">
             <button
               type="button"
@@ -689,6 +683,9 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
               Military
             </button>
           </div>
+          <Button variant="outline" size="xs" forceUppercase={false} onClick={resetPanel}>
+            Reset
+          </Button>
         </div>
         {restrictToEssencePayload && (
           <p className="text-xxs text-gold/60">Essence rifts can only transfer Donkeys and Essence.</p>

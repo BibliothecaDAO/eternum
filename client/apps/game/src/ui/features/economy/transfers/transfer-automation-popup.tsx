@@ -23,7 +23,7 @@ export const TransferAutomationPopup = () => {
     <SecondaryPopup name={TRANSFER_POPUP_NAME} className="pointer-events-auto" width="900">
       <SecondaryPopup.Head onClose={handleClose}>Transfers</SecondaryPopup.Head>
       <SecondaryPopup.Body height="auto">
-        <Tabs selectedIndex={selectedTab} onChange={(index: number) => setSelectedTab(index)} className="flex flex-col gap-3">
+        <Tabs selectedIndex={selectedTab} onChange={(index: number) => setSelectedTab(index)} className="flex flex-col gap-2">
           <Tabs.List className="grid grid-cols-2 gap-2">
             <Tabs.Tab className="!mx-0 flex items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 py-2 text-center text-sm font-semibold uppercase tracking-wide text-gold transition hover:bg-dark/60">
               Transfer
