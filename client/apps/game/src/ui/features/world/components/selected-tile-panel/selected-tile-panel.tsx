@@ -185,16 +185,13 @@ const LocalTilePanel = () => {
     return typeof building.category === "bigint" ? Number(building.category) : building.category;
   }, [building]);
 
-  const forceEmptyState = leftView === LeftView.ConstructionView;
-
   const isCastleTile =
     !!selectedBuildingHex &&
     selectedBuildingHex.innerCol === BUILDINGS_CENTER[0] &&
     selectedBuildingHex.innerRow === BUILDINGS_CENTER[1];
 
-  const hasBuilding = !forceEmptyState && buildingCategory !== null && buildingCategory !== BuildingType.None;
+  const hasBuilding = buildingCategory !== null && buildingCategory !== BuildingType.None;
   const buildingName = (() => {
-    if (forceEmptyState) return "Empty Tile";
     if (isCastleTile) return "Castle";
     if (hasBuilding) {
       return BuildingTypeToString[buildingCategory as keyof typeof BuildingTypeToString] ?? "Building";
