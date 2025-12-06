@@ -1,5 +1,6 @@
 import { sqlApi } from "@/services/api";
 import { SecondaryPopup } from "@/ui/design-system/molecules/secondary-popup";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import {
   ArmyManager,
   configManager,
@@ -32,7 +33,7 @@ import {
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   getStructureDefenseSlotLimit,
@@ -78,6 +79,7 @@ export const UnifiedArmyCreationModal = ({
     account: { account },
   } = useDojo();
   const queryClient = useQueryClient();
+  const toggleModal = useUIStore((state) => state.toggleModal);
 
   const playerRealms = usePlayerOwnedRealmsInfo();
   const playerVillages = usePlayerOwnedVillagesInfo();
@@ -593,10 +595,14 @@ export const UnifiedArmyCreationModal = ({
 
   const modalBaseTitle = armyType ? "Create Attack Army" : "Create Defense Army";
   const modalTitle = structureName ? `${structureName} - ${modalBaseTitle}` : modalBaseTitle;
+  const handleClose = useCallback(() => {
+    onClose?.();
+    toggleModal(null);
+  }, [onClose, toggleModal]);
 
   return (
     <SecondaryPopup width="800" name="unified-army-creation-modal" containerClassName="absolute left-0 top-0">
-      <SecondaryPopup.Head onClose={onClose}>{modalTitle}</SecondaryPopup.Head>
+      <SecondaryPopup.Head onClose={handleClose}>{modalTitle}</SecondaryPopup.Head>
       <SecondaryPopup.Body width="100%" height="auto">
         <div className="p-3">
           <div className="flex gap-2">
