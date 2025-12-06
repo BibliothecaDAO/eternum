@@ -79,7 +79,6 @@ export const UnifiedArmyCreationModal = ({
     account: { account },
   } = useDojo();
   const queryClient = useQueryClient();
-  const toggleModal = useUIStore((state) => state.toggleModal);
 
   const playerRealms = usePlayerOwnedRealmsInfo();
   const playerVillages = usePlayerOwnedVillagesInfo();
@@ -595,8 +594,12 @@ export const UnifiedArmyCreationModal = ({
 
   const modalBaseTitle = armyType ? "Create Attack Army" : "Create Defense Army";
   const modalTitle = structureName ? `${structureName} - ${modalBaseTitle}` : modalBaseTitle;
+  const toggleModal = useUIStore((state) => state.toggleModal);
   const handleClose = useCallback(() => {
-    onClose?.();
+    if (onClose) {
+      onClose();
+      return;
+    }
     toggleModal(null);
   }, [onClose, toggleModal]);
 

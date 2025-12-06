@@ -10,13 +10,15 @@ import {
 } from "@/ui/features/settlement/production/production-overview-panel";
 import { ProductionModal } from "@/ui/features/settlement";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
-import { Position } from "@bibliothecadao/eternum";
+import { Position, getStructureArmyRelicEffects, getStructureRelicEffects, getBlockTimestamp } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ClientComponents, EntityType, RelicRecipientType, StructureType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { memo, useCallback, useMemo } from "react";
+import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
+import { ArrowLeftRight } from "lucide-react";
 
 const formatRelative = (timestamp?: number) => {
   if (!timestamp) return null;
@@ -33,6 +35,9 @@ const formatRelative = (timestamp?: number) => {
 export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const toggleModal = useUIStore((state) => state.toggleModal);
+  const openPopup = useUIStore((state) => state.openPopup);
+  const isTransferPopupOpen = useUIStore((state) => state.isPopupOpen(TRANSFER_POPUP_NAME));
+  const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
   const automationRealms = useAutomationStore((state) => state.realms);
   const { setup } = useDojo();
   const components = setup.components as ClientComponents;
@@ -84,6 +89,29 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
     toggleModal(<ProductionModal />);
   }, [realmId, structurePosition, goToStructure, isMapView, toggleModal]);
 
+  const handleOpenTransfer = useCallback(() => {
+    if (!structureEntityId) return;
+    setTransferPanelSourceId(structureEntityId);
+    if (!isTransferPopupOpen) {
+      openPopup(TRANSFER_POPUP_NAME);
+    }
+  }, [isTransferPopupOpen, openPopup, setTransferPanelSourceId, structureEntityId]);
+
+  const productionBoostBonus = useComponentValue(
+    components.ProductionBoostBonus,
+    structureEntityId ? getEntityIdFromKeys([BigInt(structureEntityId)]) : undefined,
+  );
+
+  const activeRelicIds = useMemo(() => {
+    if (!structure) return [];
+    const { currentArmiesTick } = getBlockTimestamp();
+    const structureRelicEffects = productionBoostBonus
+      ? getStructureRelicEffects(productionBoostBonus, currentArmiesTick)
+      : [];
+    const armyRelicEffects = getStructureArmyRelicEffects(structure, currentArmiesTick);
+    return [...structureRelicEffects, ...armyRelicEffects].map((effect) => Number(effect.id));
+  }, [productionBoostBonus, structure]);
+
   if (!structure || (!isRealm && !isVillage)) {
     return (
       <div className={cn("p-3 text-xxs text-gold/70", className)}>
@@ -116,7 +144,23 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
       </div>
 
       <div className="rounded border border-gold/20 bg-black/50 p-2">
-        <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Balance</span>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Balance</span>
+          <button
+            type="button"
+            onClick={handleOpenTransfer}
+            disabled={!structureEntityId}
+            className={cn(
+              "flex items-center gap-1 rounded-full border border-gold/30 bg-black/40 px-2.5 py-1 text-xxs font-semibold text-gold/80 transition",
+              !structureEntityId && "cursor-not-allowed opacity-50",
+              structureEntityId && "hover:bg-gold/10 hover:text-gold",
+            )}
+            aria-label="Open transfer panel"
+            title="Open transfer panel"
+          >
+            <ArrowLeftRight className="h-4 w-4" />
+          </button>
+        </div>
         <div className="mt-2">
           <CompactEntityInventory
             resources={resources}
@@ -126,6 +170,8 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
             variant="tight"
             showLabels={false}
             maxItems={12}
+            allowRelicActivation
+            activeRelicIds={activeRelicIds}
           />
         </div>
       </div>
