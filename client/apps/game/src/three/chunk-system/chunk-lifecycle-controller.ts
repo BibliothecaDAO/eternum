@@ -283,6 +283,9 @@ export class ChunkLifecycleController {
         if (this.config.debug) {
           console.log(`[ChunkLifecycleController] Chunk ${chunkKey} already ready`);
         }
+        // Still update prefetch queue for ready chunks
+        this.updatePrefetchQueue(chunkKey);
+        this.processPrefetchQueue();
         return;
       }
 
@@ -293,11 +296,17 @@ export class ChunkLifecycleController {
           console.log(`[ChunkLifecycleController] Waiting for existing load of ${chunkKey}`);
         }
         await existingLoad;
+        this.updatePrefetchQueue(chunkKey);
+        this.processPrefetchQueue();
         return;
       }
 
       // Load the chunk
       await this.loadChunk(chunkKey, ChunkPriority.CRITICAL);
+
+      // Kick prefetch after successful load
+      this.updatePrefetchQueue(chunkKey);
+      this.processPrefetchQueue();
     } catch (error) {
       console.error(`[ChunkLifecycleController] Failed to switch to chunk ${chunkKey}:`, error);
 
@@ -477,10 +486,10 @@ export class ChunkLifecycleController {
   private updatePrefetchQueue(centerChunkKey: string): void {
     const { startRow, startCol } = parseChunkKey(centerChunkKey);
 
-    // Get surrounding chunks
+    // Get surrounding chunks based on chunk stride (not render size) to align with legacy keys
     const surrounding: string[] = [];
-    const rowStep = this.config.renderChunkSize.height;
-    const colStep = this.config.renderChunkSize.width;
+    const rowStep = this.config.chunkSize;
+    const colStep = this.config.chunkSize;
 
     // 3x3 grid around center
     for (let dr = -1; dr <= 1; dr++) {
@@ -576,10 +585,8 @@ export class ChunkLifecycleController {
     const row = Math.floor(position.z / (hexHeight * 0.75));
 
     // Convert hex coordinates to chunk coordinates
-    const chunkCol =
-      Math.floor(col / this.config.renderChunkSize.width) * this.config.renderChunkSize.width;
-    const chunkRow =
-      Math.floor(row / this.config.renderChunkSize.height) * this.config.renderChunkSize.height;
+    const chunkCol = Math.floor(col / this.config.chunkSize) * this.config.chunkSize;
+    const chunkRow = Math.floor(row / this.config.chunkSize) * this.config.chunkSize;
 
     return createChunkKey(chunkRow, chunkCol);
   }

@@ -25,6 +25,7 @@ import {
   ChunkLifecycleControllerConfig,
 } from "./chunk-lifecycle-controller";
 import { EntityType, ChunkPriority, ChunkBounds } from "./types";
+import { ChunkFetchFunction } from "./data-fetch-coordinator";
 import { createStructureManagerAdapter, createArmyManagerAdapter } from "./adapters";
 
 /**
@@ -48,6 +49,9 @@ export interface ChunkIntegrationConfig {
     width: number;
     height: number;
   };
+
+  /** Optional fetch function override */
+  fetchFunction?: ChunkFetchFunction;
 
   /** Enable debug logging */
   debug?: boolean;
@@ -146,6 +150,7 @@ export function createChunkIntegration(
     questManager?: QuestManager;
     chestManager?: ChestManager;
   },
+  options: { registerManagerAdapters?: boolean } = {},
 ): ChunkIntegration {
   const debug = config.debug ?? false;
 
@@ -158,12 +163,14 @@ export function createChunkIntegration(
 
   const controller = createChunkLifecycleController(controllerConfig);
 
-  // Create and register manager adapters
-  const structureAdapter = createStructureManagerAdapter(managers.structureManager, { debug });
-  const armyAdapter = createArmyManagerAdapter(managers.armyManager, { debug });
+  // Create and register manager adapters (optional to avoid double-rendering when integrating with legacy flow)
+  if (options.registerManagerAdapters !== false) {
+    const structureAdapter = createStructureManagerAdapter(managers.structureManager, { debug });
+    const armyAdapter = createArmyManagerAdapter(managers.armyManager, { debug });
 
-  controller.orchestrator.registerManager(structureAdapter, { renderOrder: 10 });
-  controller.orchestrator.registerManager(armyAdapter, { renderOrder: 20 });
+    controller.orchestrator.registerManager(structureAdapter, { renderOrder: 10 });
+    controller.orchestrator.registerManager(armyAdapter, { renderOrder: 20 });
+  }
 
   // Store structure positions for data fetching
   controller.fetchCoordinator.setStructurePositions(config.structurePositions);
@@ -181,21 +188,25 @@ export function createChunkIntegration(
   //
   // Hydration tracking still works for debugging via notifyEntityHydrated calls.
   //
-  controller.fetchCoordinator.setFetchFunction(async (bounds: ChunkBounds, _structurePositions: Map<ID, HexPosition>) => {
-    if (debug) {
-      console.log(`[ChunkIntegration] Fetch placeholder for bounds:`, bounds);
-    }
+  const fetchFunction =
+    config.fetchFunction ??
+    (async (bounds: ChunkBounds, _structurePositions: Map<ID, HexPosition>) => {
+      if (debug) {
+        console.log(`[ChunkIntegration] Fetch placeholder for bounds:`, bounds);
+      }
 
-    // Return empty data - actual fetching is triggered separately by WorldmapScene
-    // No expectations registered = waitForHydration returns immediately
-    return {
-      tiles: [],
-      structures: [],
-      armies: [],
-      quests: [],
-      chests: [],
-    };
-  });
+      // Return empty data - actual fetching is triggered separately by WorldmapScene
+      // No expectations registered = waitForHydration returns immediately
+      return {
+        tiles: [],
+        structures: [],
+        armies: [],
+        quests: [],
+        chests: [],
+      };
+    });
+
+  controller.fetchCoordinator.setFetchFunction(fetchFunction);
 
   // Create the integration API
   const integration: ChunkIntegration = {
@@ -206,9 +217,7 @@ export function createChunkIntegration(
         console.log(`[ChunkIntegration] Switching to chunk ${chunkKey}`);
       }
 
-      // Just track the active chunk - don't go through full lifecycle
-      // The actual chunk loading is still handled by WorldmapScene's existing code
-      controller.stateManager.setActiveChunk(chunkKey);
+      await controller.switchToChunk(chunkKey);
 
       if (debug) {
         console.log(`[ChunkIntegration] Chunk ${chunkKey} tracked as active`);
