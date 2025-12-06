@@ -12,7 +12,7 @@ import { ProductionModal } from "@/ui/features/settlement";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { Position, getStructureArmyRelicEffects, getStructureRelicEffects, getBlockTimestamp } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { ClientComponents, EntityType, RelicRecipientType, StructureType } from "@bibliothecadao/types";
+import { ClientComponents, ContractAddress, EntityType, RelicRecipientType, StructureType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -39,7 +39,7 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   const isTransferPopupOpen = useUIStore((state) => state.isPopupOpen(TRANSFER_POPUP_NAME));
   const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
   const automationRealms = useAutomationStore((state) => state.realms);
-  const { setup } = useDojo();
+  const { setup, account } = useDojo();
   const components = setup.components as ClientComponents;
   const { isMapView } = useQuery();
   const goToStructure = useGoToStructure(setup);
@@ -56,6 +56,9 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
 
   const isRealm = structure?.base?.category === StructureType.Realm;
   const isVillage = structure?.base?.category === StructureType.Village;
+  const isHyperstructure = structure?.base?.category === StructureType.Hyperstructure;
+  const isFragmentMine = structure?.base?.category === StructureType.FragmentMine;
+  const isOwned = structure ? structure.owner === ContractAddress(account.account.address) : false;
 
   const realmId = useMemo(() => {
     if (!structureEntityId) return null;
@@ -112,7 +115,9 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
     return [...structureRelicEffects, ...armyRelicEffects].map((effect) => Number(effect.id));
   }, [productionBoostBonus, structure]);
 
-  if (!structure || (!isRealm && !isVillage)) {
+  const canShowBalanceOnly = (isHyperstructure || isFragmentMine) && isOwned;
+
+  if (!structure || (!isRealm && !isVillage && !canShowBalanceOnly)) {
     return (
       <div className={cn("p-3 text-xxs text-gold/70", className)}>
         Select a realm from the left panel to view production and balance.
@@ -122,26 +127,28 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
 
   return (
     <div className={cn("flex h-full flex-col gap-3 p-3 text-gold", className)}>
-      <div className="rounded border border-gold/20 bg-black/50 p-2">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Production</span>
-          <div className="flex items-center gap-2">
-            <ProductionStatusPill statusLabel={statusLabel} />
-            <ProductionModifyButton onClick={handleModifyClick} disabled={!realmId || !structurePosition} />
+      {(isRealm || isVillage) && (
+        <div className="rounded border border-gold/20 bg-black/50 p-2">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Production</span>
+            <div className="flex items-center gap-2">
+              <ProductionStatusPill statusLabel={statusLabel} />
+              <ProductionModifyButton onClick={handleModifyClick} disabled={!realmId || !structurePosition} />
+            </div>
           </div>
+          <div className="mt-2">
+            {realmId && structurePosition ? (
+              <RealmProductionRecap
+                realmId={realmId}
+                position={structurePosition}
+              />
+            ) : (
+              <p className="text-xxs text-gold/60 italic">Production data unavailable.</p>
+            )}
+          </div>
+          <div className="mt-3 text-right text-[10px] text-gold/50">{lastRunLabel}</div>
         </div>
-        <div className="mt-2">
-          {realmId && structurePosition ? (
-            <RealmProductionRecap
-              realmId={realmId}
-              position={structurePosition}
-            />
-          ) : (
-            <p className="text-xxs text-gold/60 italic">Production data unavailable.</p>
-          )}
-        </div>
-        <div className="mt-3 text-right text-[10px] text-gold/50">{lastRunLabel}</div>
-      </div>
+      )}
 
       <div className="rounded border border-gold/20 bg-black/50 p-2">
         <div className="flex items-center justify-between gap-2">

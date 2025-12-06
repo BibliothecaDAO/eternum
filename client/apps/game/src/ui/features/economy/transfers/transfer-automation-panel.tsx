@@ -21,6 +21,8 @@ import {
   ResourcesIds,
   Structure,
   StructureType,
+  findResourceById,
+  isRelic,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -76,35 +78,6 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
     account: { account },
   } = useDojo();
 
-  const resourceTotals = useMemo(() => {
-    const totals = new Map<ResourcesIds, number>();
-    if (!components) return totals;
-    const clientComponents = components as ClientComponents;
-    for (const ps of ownedSources) {
-      const entityKey = getEntityIdFromKeys([BigInt(ps.entityId)]);
-      const resourceComponent = getComponentValue(clientComponents.Resource, entityKey);
-      if (!resourceComponent) continue;
-
-      const balances = ResourceManager.getResourceBalancesWithProduction(resourceComponent, currentDefaultTick);
-      const category = ps.category;
-
-      for (const { resourceId, amount } of balances) {
-        const rid = resourceId as ResourcesIds;
-        if (amount <= 0) continue;
-        if (isMilitaryResource(rid) && category !== StructureType.Realm) {
-          continue;
-        }
-        const human = Number(amount) / RESOURCE_PRECISION;
-        if (human > 0) {
-          totals.set(rid, (totals.get(rid) ?? 0) + human);
-        }
-      }
-    }
-    return totals;
-  }, [components, ownedSources, currentDefaultTick]);
-
-  const availableResources = useMemo(() => new Set(resourceTotals.keys()), [resourceTotals]);
-
   // UI state
   const [selectedResources, setSelectedResources] = useState<ResourcesIds[]>([]);
   const [resourceConfigs, setResourceConfigs] = useState<Record<number, { amount: number }>>({});
@@ -129,6 +102,53 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
     () => selectedResources.some((rid) => rid !== ResourcesIds.Donkey),
     [selectedResources],
   );
+
+  const getResourcePriority = useCallback((resourceId: ResourcesIds) => {
+    const label = ResourcesIds[resourceId] as string | undefined;
+    if (label && label.toLowerCase() === "lords") return 0;
+    if (isRelic(resourceId)) return 1;
+    if (resourceId === ResourcesIds.Essence) return 2;
+    if (resourceId === ResourcesIds.Labor) return 3;
+    if (isMilitaryResource(resourceId)) return 4;
+    const trait = findResourceById(resourceId)?.trait;
+    if (trait && trait.toLowerCase() === "food") return 5;
+    if (trait && trait.toLowerCase() === "material") return 6;
+    return 9;
+  }, []);
+
+  const resourceTotals = useMemo(() => {
+    const totals = new Map<ResourcesIds, number>();
+    if (!components) return totals;
+    const clientComponents = components as ClientComponents;
+    const sourcesToUse =
+      selectedSourceId !== null
+        ? ownedSources.filter((ps) => Number(ps.entityId) === Number(selectedSourceId))
+        : ownedSources;
+
+    for (const ps of sourcesToUse) {
+      const entityKey = getEntityIdFromKeys([BigInt(ps.entityId)]);
+      const resourceComponent = getComponentValue(clientComponents.Resource, entityKey);
+      if (!resourceComponent) continue;
+
+      const balances = ResourceManager.getResourceBalancesWithProduction(resourceComponent, currentDefaultTick);
+      const category = ps.category;
+
+      for (const { resourceId, amount } of balances) {
+        const rid = resourceId as ResourcesIds;
+        if (amount <= 0) continue;
+        if (isMilitaryResource(rid) && category !== StructureType.Realm) {
+          continue;
+        }
+        const human = Number(amount) / RESOURCE_PRECISION;
+        if (human > 0) {
+          totals.set(rid, (totals.get(rid) ?? 0) + human);
+        }
+      }
+    }
+    return totals;
+  }, [components, ownedSources, currentDefaultTick, selectedSourceId]);
+
+  const availableResources = useMemo(() => new Set(resourceTotals.keys()), [resourceTotals]);
 
   useEffect(() => {
     if (initialSourceId === null || initialSourceId === undefined) return;
@@ -700,7 +720,16 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
               if (resourceFilter === "production") return !isMilitaryResource(rid as ResourcesIds);
               return true;
             })
-            .sort((a, b) => Number(a) - Number(b))
+            .sort((a, b) => {
+              const ra = a as ResourcesIds;
+              const rb = b as ResourcesIds;
+              const priA = getResourcePriority(ra);
+              const priB = getResourcePriority(rb);
+              if (priA !== priB) return priA - priB;
+              const labelA = ResourcesIds[ra] as string;
+              const labelB = ResourcesIds[rb] as string;
+              return labelA.localeCompare(labelB);
+            })
             .map((rid) => {
               const resourceId = rid as ResourcesIds;
               const sel = selectedResources.includes(resourceId);
