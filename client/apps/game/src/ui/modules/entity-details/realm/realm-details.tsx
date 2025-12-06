@@ -1,6 +1,6 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getIsBlitz } from "@bibliothecadao/eternum";
+import { configManager, getIsBlitz } from "@bibliothecadao/eternum";
 
 import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";
@@ -15,8 +15,13 @@ import {
   toHexString,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { ContractAddress, StructureType } from "@bibliothecadao/types";
+import { ContractAddress, RealmLevels, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useMemo } from "react";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { Crown as CrownIcon } from "lucide-react";
+import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
+import Button from "@/ui/design-system/atoms/button";
+import { ProductionModal } from "@/ui/features/settlement";
 
 export const RealmVillageDetails = () => {
   const dojo = useDojo();
@@ -91,5 +96,106 @@ export const RealmVillageDetails = () => {
         {(isRealm || isVillage) && <Castle />}
       </div>
     )
+  );
+};
+
+export const RealmUpgradeCompact = () => {
+  const dojo = useDojo();
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const toggleModal = useUIStore((state) => state.toggleModal);
+  const isLaborProductionEnabled = configManager.isLaborProductionEnabled();
+
+  const structure = useMemo(
+    () => getStructure(structureEntityId, ContractAddress(dojo.account.account.address), dojo.setup.components),
+    [structureEntityId, dojo.account.account.address, dojo.setup.components],
+  );
+
+  const upgradeInfo = useStructureUpgrade(structureEntityId);
+
+  if (!structure || !upgradeInfo) return null;
+
+  if (upgradeInfo.isMaxLevel) {
+    return (
+      <div className="p-3 text-sm text-gold/70">
+        <div className="flex items-center gap-2">
+          <CrownIcon className="h-4 w-4 text-gold" />
+          <span className="font-semibold">Max level reached</span>
+        </div>
+      </div>
+    );
+  }
+
+  const { nextLevel, missingRequirements, requirements, canUpgrade, handleUpgrade, nextLevelName, isOwner } = upgradeInfo;
+
+  const missingLabel =
+    missingRequirements.length > 0
+      ? missingRequirements
+          .map((req) => `${Math.max(0, Math.ceil(req.amount - req.current)).toLocaleString()} ${ResourcesIds[req.resource] ?? req.resource}`)
+          .join(", ")
+      : "";
+
+  return (
+    <div className="space-y-2">
+      {isLaborProductionEnabled && (
+        <div className="rounded border border-gold/20 bg-black/50 p-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ResourceIcon resource={ResourcesIds[ResourcesIds.Labor]} size="sm" />
+            <div className="flex flex-col leading-tight">
+              <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Labor Production</span>
+              <span className="text-sm font-semibold text-gold">+1 /s</span>
+            </div>
+          </div>
+          {isOwner && (
+            <Button
+              variant="primary"
+              withoutSound
+              size="sm"
+              className="px-3"
+              onClick={() => toggleModal(<ProductionModal preSelectedResource={ResourcesIds.Labor} />)}
+            >
+              Adjust
+            </Button>
+          )}
+        </div>
+      )}
+
+      <div className="rounded border border-gold/20 bg-black/40 p-3 space-y-3">
+        <div className="flex items-center gap-2 text-gold">
+          <CrownIcon className="h-4 w-4" />
+          <span className="text-sm font-semibold">Upgrade to {nextLevelName ?? RealmLevels[nextLevel]}</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {requirements.map((req) => {
+            const isMet = req.current >= req.amount;
+            return (
+              <div
+                key={`${req.resource}-${req.amount}`}
+                className={`flex items-center gap-2 rounded border px-2 py-1 ${
+                  isMet ? "border-gold/15 bg-gold/5" : "border-red-400/40 bg-red-500/5"
+                }`}
+              >
+                <ResourceIcon resource={ResourcesIds[req.resource]} size="sm" />
+                <div className={`text-xs ${isMet ? "text-gold" : "text-red-300"}`}>
+                  <span className="font-semibold">{Math.floor(req.current).toLocaleString()}</span>
+                  <span className={isMet ? "text-gold/50" : "text-red-200/70"}> / {req.amount.toLocaleString()}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {missingRequirements.length > 0 && <div className="text-xxs text-gold/70">Missing: {missingLabel}</div>}
+        {isOwner && (
+          <Button
+            variant={canUpgrade ? "gold" : "outline"}
+            size="md"
+            className="w-full"
+            disabled={!canUpgrade}
+            onClick={handleUpgrade}
+          >
+            {canUpgrade ? "Upgrade" : "Need resources"}
+          </Button>
+        )}
+      </div>
+    </div>
   );
 };

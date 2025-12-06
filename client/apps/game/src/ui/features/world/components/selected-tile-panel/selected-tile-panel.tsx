@@ -1,19 +1,31 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { FELT_CENTER } from "@/ui/config";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
-import { BuildingEntityDetails } from "@/ui/modules/entity-details/building-entity-details";
 import {
+  configManager,
+  divideByPrecision,
   getEntityIdFromKeys,
+  getConsumedBy,
+  getBuildingCosts,
+  getBalance,
+  getBlockTimestamp,
   isTileOccupierChest,
   isTileOccupierQuest,
   isTileOccupierStructure,
   Position as PositionInterface,
 } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { BUILDINGS_CENTER, BuildingType, BuildingTypeToString } from "@bibliothecadao/types";
+import { BUILDINGS_CENTER, BuildingType, BuildingTypeToString, ResourcesIds, findResourceById } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { memo, ReactNode, useEffect, useMemo } from "react";
+import { memo, ReactNode, useEffect, useMemo, useState } from "react";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
+import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
+import { RealmUpgradeCompact } from "@/ui/modules/entity-details/realm/realm-details";
+import { ProductionModal } from "@/ui/features/settlement";
+import Button from "@/ui/design-system/atoms/button";
+import { TileManager } from "@bibliothecadao/eternum";
+import { Trash2 } from "lucide-react";
 
 import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN } from "./constants";
 
@@ -101,12 +113,17 @@ const MapTilePanel = () => {
 };
 
 const LocalTilePanel = () => {
-  const { setup } = useDojo();
+  const { setup, account } = useDojo();
   const buildingComponent = setup.components.Building;
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const playerStructures = useUIStore((state) => state.playerStructures);
+  const useSimpleCost = useUIStore((state) => state.useSimpleCost);
+  const setTooltip = useUIStore((state) => state.setTooltip);
+  const structureUpgrade = useStructureUpgrade(structureEntityId ?? null);
+  const toggleModal = useUIStore((state) => state.toggleModal);
+  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
   const structureBase = useMemo(() => {
     const structure = playerStructures.find((entry) => entry.entityId === structureEntityId);
@@ -168,16 +185,373 @@ const LocalTilePanel = () => {
     return "Local Tile";
   })();
 
+  const producedResource = useMemo<ResourcesIds | undefined>(() => {
+    if (!hasBuilding || buildingCategory === null) return undefined;
+    return configManager.getResourceBuildingProduced(buildingCategory as BuildingType);
+  }, [buildingCategory, hasBuilding]);
+
+  const producedPerTick = useMemo(() => {
+    if (producedResource === undefined) return 0;
+    return divideByPrecision(configManager.getResourceOutputs(producedResource));
+  }, [producedResource]);
+
+  const producedResourceName = useMemo(() => {
+    return producedResource !== undefined ? findResourceById(producedResource)?.trait ?? null : null;
+  }, [producedResource]);
+
+  const ongoingCost = useMemo(() => {
+    if (producedResource === undefined) return [];
+    const costs =
+      (useSimpleCost
+        ? configManager.simpleSystemResourceInputs[producedResource]
+        : configManager.complexSystemResourceInputs[producedResource]) ?? {};
+    const values = Array.isArray(costs) ? costs : Object.values(costs);
+    return values.filter((entry) => entry && entry.resource !== undefined);
+  }, [producedResource, useSimpleCost]);
+
+  const consumedBy = useMemo(() => {
+    if (producedResource === undefined) return [];
+    return getConsumedBy(producedResource) ?? [];
+  }, [producedResource]);
+
+  const populationConfig = useMemo(() => {
+    if (!hasBuilding || buildingCategory === null) return null;
+    return configManager.getBuildingCategoryConfig(buildingCategory as BuildingType);
+  }, [buildingCategory, hasBuilding]);
+
+  const populationCost = populationConfig?.population_cost ?? 0;
+  const populationCapacity = populationConfig?.capacity_grant ?? 0;
+  const [isPaused, setIsPaused] = useState<boolean>(!!building?.paused);
+  const [isActionLoading, setIsActionLoading] = useState(false);
+  const [showDestroyConfirm, setShowDestroyConfirm] = useState(false);
+
+  useEffect(() => {
+    setIsPaused(!!building?.paused);
+  }, [building?.paused]);
+  useEffect(() => {
+    setShowDestroyConfirm(false);
+  }, [selectedBuildingHex?.outerCol, selectedBuildingHex?.outerRow, selectedBuildingHex?.innerCol, selectedBuildingHex?.innerRow]);
+
+  const buildCost = useMemo(() => {
+    if (!hasBuilding || buildingCategory === null) return [];
+    const rawCost =
+      getBuildingCosts(structureEntityId ?? 0, setup.components, buildingCategory as BuildingType, useSimpleCost) ?? [];
+    const values = Array.isArray(rawCost) ? rawCost : Object.values(rawCost);
+    return values.filter((entry) => entry && entry.resource !== undefined);
+  }, [buildingCategory, hasBuilding, setup.components, structureEntityId, useSimpleCost]);
+
+  const isOwnedByPlayer = useMemo(() => {
+    if (!building) return false;
+    const ownerId = typeof building.outer_entity_id === "bigint" ? Number(building.outer_entity_id) : building.outer_entity_id;
+    return playerStructures.some((structure) => structure.entityId === ownerId);
+  }, [building, playerStructures]);
+
+  const canAddProduction =
+    producedResource !== undefined &&
+    buildingCategory !== BuildingType.ResourceFish &&
+    buildingCategory !== BuildingType.ResourceWheat &&
+    buildingCategory !== BuildingType.WorkersHut;
+
   const panelTitle = selectedBuildingHex
     ? `${buildingName} · (${selectedBuildingHex.innerCol}, ${selectedBuildingHex.innerRow})`
     : "No Tile Selected";
+
+  const handleToggleProduction = async () => {
+    if (!selectedBuildingHex) return;
+    setIsActionLoading(true);
+    try {
+      const tileManager = new TileManager(setup.components, setup.systemCalls, {
+        col: selectedBuildingHex.outerCol,
+        row: selectedBuildingHex.outerRow,
+      });
+      if (isPaused) {
+        await tileManager.resumeProduction(
+          account.account,
+          structureEntityId,
+          selectedBuildingHex.innerCol,
+          selectedBuildingHex.innerRow,
+        );
+        setIsPaused(false);
+      } else {
+        await tileManager.pauseProduction(
+          account.account,
+          structureEntityId,
+          selectedBuildingHex.innerCol,
+          selectedBuildingHex.innerRow,
+        );
+        setIsPaused(true);
+      }
+    } catch (error) {
+      console.error("Failed to toggle production", error);
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleDestroy = async () => {
+    if (!selectedBuildingHex) return;
+    if (isCastleTile) return;
+    if (!showDestroyConfirm) {
+      setShowDestroyConfirm(true);
+      return;
+    }
+    setIsActionLoading(true);
+    try {
+      const tileManager = new TileManager(setup.components, setup.systemCalls, {
+        col: selectedBuildingHex.outerCol,
+        row: selectedBuildingHex.outerRow,
+      });
+      await tileManager.destroyBuilding(
+        account.account,
+        structureEntityId,
+        selectedBuildingHex.innerCol,
+        selectedBuildingHex.innerRow,
+      );
+    } catch (error) {
+      console.error("Failed to destroy building", error);
+    } finally {
+      setIsActionLoading(false);
+      setShowDestroyConfirm(false);
+    }
+  };
+
+  if (selectedBuildingHex && isCastleTile) {
+    return (
+      <PanelFrame title={panelTitle}>
+        <div className="h-full min-h-0 overflow-auto">
+          <RealmUpgradeCompact />
+        </div>
+      </PanelFrame>
+    );
+  }
 
   return (
     <PanelFrame title={panelTitle}>
       {selectedBuildingHex ? (
         hasBuilding ? (
           <div className="h-full min-h-0 overflow-hidden">
-            <BuildingEntityDetails />
+            <div className="flex flex-col gap-3 text-xs text-gold">
+              {isPaused && (
+                <div className="flex justify-end">
+                  <span className="rounded-full bg-red/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-red-200">
+                    Paused
+                  </span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <p className="text-xxs uppercase tracking-[0.2em] text-gold/60">
+                    {isCastleTile ? "Labor rate" : "Produces"}
+                  </p>
+                  {producedResource && producedResourceName ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-green-300">
+                        +{producedPerTick}
+                      </span>
+                      <ResourceIcon withTooltip={false} resource={producedResourceName} size="sm" />
+                      <button
+                        type="button"
+                        className="text-xxs uppercase tracking-[0.2em] text-gold/60 underline decoration-dotted"
+                        onMouseEnter={() =>
+                          setTooltip({
+                            position: "right",
+                            content: (
+                              <div className="space-y-2">
+                                <p className="text-xxs uppercase tracking-[0.25em] text-gold/60">Consumed By</p>
+                                {consumedBy.length > 0 ? (
+                                  <div className="flex flex-wrap gap-2">
+                    {consumedBy.map((resourceId) => {
+                                      const name = findResourceById(Number(resourceId))?.trait ?? `Resource ${resourceId}`;
+                                      return (
+                                        <div
+                                          key={resourceId}
+                                          className="flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-2 py-1"
+                                        >
+                                          <ResourceIcon withTooltip={false} resource={name} size="xs" />
+                                          <span className="text-xxs text-gold/80">{name}</span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                ) : (
+                                  <p className="text-xxs text-gold/60">Not consumed by other buildings.</p>
+                                )}
+                              </div>
+                            ),
+                          })
+                        }
+                        onMouseLeave={() => setTooltip(null)}
+                      >
+                        Consumed by
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-xxs text-gold/60">No production</p>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-xxs uppercase tracking-[0.2em] text-gold/60">Population</p>
+                  <div className="flex items-center gap-2 text-sm">
+                    {populationCost !== 0 && (
+                      <span className="rounded bg-black/40 px-2 py-1 text-xxs font-semibold text-gold">
+                        Cost +{populationCost}
+                      </span>
+                    )}
+                    {populationCapacity !== 0 && (
+                      <span className="rounded bg-black/40 px-2 py-1 text-xxs font-semibold text-gold">
+                        Capacity +{populationCapacity}
+                      </span>
+                    )}
+                    {populationCost === 0 && populationCapacity === 0 && (
+                      <span className="text-xxs text-gold/60">No population impact</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-xxs uppercase tracking-[0.2em] text-gold/60">Consumes</p>
+                {ongoingCost.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {ongoingCost.map((entry, index) => {
+                      const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
+                      return (
+                        <div
+                          key={`${entry.resource}-${index}`}
+                          className="flex items-center gap-2 rounded border border-gold/20 bg-black/40 px-2 py-1"
+                        >
+                          <span className="text-xxs font-semibold text-red-200">-{entry.amount}</span>
+                          <ResourceIcon withTooltip={false} resource={name} size="xs" />
+                          <span className="text-xxs text-gold/80">{name}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-xxs text-gold/60">No ongoing inputs</p>
+                )}
+              </div>
+
+              {buildCost.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-xxs uppercase tracking-[0.2em] text-gold/60">Build Cost</p>
+                  <div className="flex flex-wrap gap-2">
+                    {buildCost.map((entry, index) => {
+                      const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
+                      const balanceInfo = getBalance(
+                        structureEntityId ?? 0,
+                        entry.resource,
+                        currentDefaultTick,
+                        setup.components,
+                      );
+                      const balance = divideByPrecision(balanceInfo.balance);
+                      const hasEnough = balance >= entry.amount;
+                      return (
+                        <div
+                          key={`build-cost-${entry.resource}-${index}`}
+                          className={cn(
+                            "flex items-center gap-2 rounded border px-2 py-1 text-xxs",
+                            hasEnough ? "border-gold/20 bg-black/40 text-gold/80" : "border-red-400/50 bg-red-900/20 text-red-100",
+                          )}
+                        >
+                          <span className={cn("text-xxs", hasEnough ? "text-gold/80" : "text-red-200")}>
+                            {Math.floor(balance).toLocaleString()} / {entry.amount}
+                          </span>
+                          <ResourceIcon withTooltip={false} resource={name} size="xs" />
+                          <span className={cn("text-xxs", hasEnough ? "text-gold/80" : "text-red-100")}>{name}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {isOwnedByPlayer && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {canAddProduction && (
+                    <Button
+                      size="xs"
+                      variant="gold"
+                      disabled={isActionLoading}
+                      onClick={() => toggleModal(<ProductionModal preSelectedResource={producedResource} />)}
+                      className="text-xxs h-7"
+                    >
+                      + Production
+                    </Button>
+                  )}
+                  {buildingCategory !== BuildingType.WorkersHut && (
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      disabled={isActionLoading}
+                      onClick={handleToggleProduction}
+                      className="text-xxs h-7"
+                    >
+                      {isPaused ? "▶ Resume" : "⏸ Pause"}
+                    </Button>
+                  )}
+                  {!isCastleTile && (
+                    <Button
+                      size="xs"
+                      variant="danger"
+                      disabled={isActionLoading}
+                      onClick={handleDestroy}
+                      className="text-xxs h-7 flex items-center gap-2 bg-red-700 hover:bg-red-600 border-red-500 text-white"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      {showDestroyConfirm ? "Confirm" : "Delete"}
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {isCastleTile && structureUpgrade && (
+                <div className="space-y-2 rounded border border-gold/15 bg-black/40 p-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xxs uppercase tracking-[0.25em] text-gold/60">
+                      Upgrade {structureUpgrade.nextLevelName ? `to ${structureUpgrade.nextLevelName}` : "(max)"}
+                    </p>
+                    <span className="text-xxs text-gold/70">
+                      {structureUpgrade.nextLevelName ?? "Max level"}
+                    </span>
+                  </div>
+                  {structureUpgrade.nextLevel ? (
+                    <div className="space-y-1">
+                      {structureUpgrade.requirements.map((req) => {
+                        const name = findResourceById(Number(req.resource))?.trait ?? `Resource ${req.resource}`;
+                        const pct = Math.min(100, Math.floor((req.current * 100) / (req.amount || 1)));
+                        return (
+                          <div key={req.resource} className="space-y-1">
+                            <div className="flex items-center justify-between gap-2 text-xxs text-gold">
+                              <span className="flex items-center gap-1">
+                                <ResourceIcon withTooltip={false} resource={name} size="xs" />
+                                {name}
+                              </span>
+                              <span className="text-gold/80">
+                                {Math.floor(req.current).toLocaleString()} / {req.amount.toLocaleString()}
+                              </span>
+                            </div>
+                            <div className="h-1.5 rounded bg-gold/10">
+                              <div
+                                className="h-full rounded bg-gold"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {!structureUpgrade.isOwner && (
+                        <p className="text-xxs text-gold/60">Only the owner can upgrade.</p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-xxs text-gold/60">Castle at maximum level.</p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         ) : building ? (
           <div className="flex min-h-[140px] flex-col items-center justify-center text-center">
