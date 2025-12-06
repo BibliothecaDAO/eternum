@@ -105,7 +105,7 @@ interface ResourceProductionSummaryItem {
   calculatedAt: number;
 }
 
-const RealmProductionRecap = ({ realmId, position, metrics, typeLabel }: RealmProductionRecapProps) => {
+export const RealmProductionRecap = ({ realmId, position, metrics, typeLabel }: RealmProductionRecapProps) => {
   const {
     setup: {
       components: { Building, Resource },
