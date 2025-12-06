@@ -18,7 +18,6 @@ import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, RealmLevels, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { Crown as CrownIcon } from "lucide-react";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import Button from "@/ui/design-system/atoms/button";
 import { ProductionModal } from "@/ui/features/settlement";
@@ -136,7 +135,7 @@ export const RealmUpgradeCompact = () => {
 
   return (
     <div className="space-y-2">
-      <div className="rounded border border-gold/20 bg-black/50 p-3 flex items-center justify-between">
+      <div className="rounded border border-gold/20 bg-black/40 p-3 space-y-3">
         <div className="flex items-center gap-2">
           <ResourceIcon resource={ResourcesIds[ResourcesIds.Labor]} size="sm" />
           <div className="flex flex-col leading-tight">
@@ -144,25 +143,19 @@ export const RealmUpgradeCompact = () => {
             <span className="text-sm font-semibold text-gold">+1 /s</span>
           </div>
         </div>
-        <Button
-          variant={isOwner && isLaborProductionEnabled ? "primary" : "outline"}
-          withoutSound
-          size="sm"
-          className="px-3"
-          disabled={!isOwner || !isLaborProductionEnabled}
-          onClick={() => {
-            if (!isOwner || !isLaborProductionEnabled) return;
-            toggleModal(<ProductionModal preSelectedResource={ResourcesIds.Labor} />);
-          }}
-        >
-          Adjust
-        </Button>
-      </div>
-
-      <div className="rounded border border-gold/20 bg-black/40 p-3 space-y-3">
-        <div className="flex items-center gap-2 text-gold">
-          <CrownIcon className="h-4 w-4" />
-          <span className="text-sm font-semibold">Upgrade to {nextLevelName ?? RealmLevels[nextLevel]}</span>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-col leading-tight text-gold">
+            <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Upgrade</span>
+            <span className="text-sm font-semibold">to {nextLevelName ?? RealmLevels[nextLevel]}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex flex-col leading-tight">
+              <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Missing</span>
+              <span className="text-xxs font-semibold text-red-300">
+                {missingRequirements.length > 0 ? missingLabel : "None"}
+              </span>
+            </div>
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           {requirements.map((req) => {
@@ -183,11 +176,10 @@ export const RealmUpgradeCompact = () => {
             );
           })}
         </div>
-        {missingRequirements.length > 0 && <div className="text-xxs text-red-300">Missing: {missingLabel}</div>}
         {isOwner && (
           <Button
             variant={canUpgrade ? "gold" : "outline"}
-            size="md"
+            size="sm"
             className="w-full"
             disabled={!canUpgrade}
             onClick={handleUpgrade}
