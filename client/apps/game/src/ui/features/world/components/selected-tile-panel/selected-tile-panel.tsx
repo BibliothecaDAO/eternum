@@ -354,7 +354,7 @@ const LocalTilePanel = () => {
                               <div className="space-y-2">
                                 <p className="text-xxs uppercase tracking-[0.25em] text-gold/60">Consumed By</p>
                                 {consumedBy.length > 0 ? (
-                                  <div className="flex flex-wrap gap-2">
+                                  <div className="grid grid-cols-3 gap-2">
                                     {consumedBy.map((resourceId) => {
                                       const name = findResourceById(Number(resourceId))?.trait ?? `Resource ${resourceId}`;
                                       return (
@@ -552,7 +552,9 @@ const LocalTilePanel = () => {
           </div>
         ) : building ? (
           <div className="flex min-h-[140px] flex-col items-center justify-center text-center">
-            <p className="text-xs text-gold/70">This tile is empty. Select a building to view its details.</p>
+            <p className="text-xs text-gold/70">
+              Empty tile. Pick a building from the menu to start construction here.
+            </p>
           </div>
         ) : (
           <div className="flex min-h-[140px] flex-col items-center justify-center text-center">

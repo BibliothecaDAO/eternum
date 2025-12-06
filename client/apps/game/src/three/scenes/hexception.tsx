@@ -596,6 +596,12 @@ export default class HexceptionScene extends HexagonScene {
         });
         this.state.setLeftNavigationView(LeftView.EntityView);
       } else {
+        this.state.setSelectedBuildingHex({
+          outerCol,
+          outerRow,
+          innerCol: normalizedCoords.col,
+          innerRow: normalizedCoords.row,
+        });
         this.state.setLeftNavigationView(LeftView.ConstructionView);
       }
     }
