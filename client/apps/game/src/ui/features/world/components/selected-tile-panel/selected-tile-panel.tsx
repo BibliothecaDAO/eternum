@@ -11,9 +11,9 @@ import {
   Position as PositionInterface,
 } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { BuildingType, BuildingTypeToString } from "@bibliothecadao/types";
+import { BUILDINGS_CENTER, BuildingType, BuildingTypeToString } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { memo, ReactNode, useMemo } from "react";
+import { memo, ReactNode, useEffect, useMemo } from "react";
 
 import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN } from "./constants";
 
@@ -104,6 +104,37 @@ const LocalTilePanel = () => {
   const { setup } = useDojo();
   const buildingComponent = setup.components.Building;
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
+  const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const playerStructures = useUIStore((state) => state.playerStructures);
+
+  const structureBase = useMemo(() => {
+    const structure = playerStructures.find((entry) => entry.entityId === structureEntityId);
+    const base = structure?.structure?.base;
+    if (!base || base.coord_x === undefined || base.coord_y === undefined) {
+      return null;
+    }
+    return {
+      outerCol: Number(base.coord_x),
+      outerRow: Number(base.coord_y),
+    };
+  }, [playerStructures, structureEntityId]);
+
+  useEffect(() => {
+    if (!structureBase) return;
+    if (
+      !selectedBuildingHex ||
+      selectedBuildingHex.outerCol !== structureBase.outerCol ||
+      selectedBuildingHex.outerRow !== structureBase.outerRow
+    ) {
+      setSelectedBuildingHex({
+        outerCol: structureBase.outerCol,
+        outerRow: structureBase.outerRow,
+        innerCol: BUILDINGS_CENTER[0],
+        innerRow: BUILDINGS_CENTER[1],
+      });
+    }
+  }, [selectedBuildingHex, setSelectedBuildingHex, structureBase]);
 
   const building = useMemo(() => {
     if (!selectedBuildingHex || !buildingComponent) return null;
@@ -122,12 +153,20 @@ const LocalTilePanel = () => {
     return typeof building.category === "bigint" ? Number(building.category) : building.category;
   }, [building]);
 
+  const isCastleTile =
+    !!selectedBuildingHex &&
+    selectedBuildingHex.innerCol === BUILDINGS_CENTER[0] &&
+    selectedBuildingHex.innerRow === BUILDINGS_CENTER[1];
+
   const hasBuilding = buildingCategory !== null && buildingCategory !== BuildingType.None;
-  const buildingName = hasBuilding
-    ? BuildingTypeToString[buildingCategory as keyof typeof BuildingTypeToString] ?? "Building"
-    : building
-      ? "Empty Tile"
-      : "Local Tile";
+  const buildingName = (() => {
+    if (isCastleTile) return "Castle";
+    if (hasBuilding) {
+      return BuildingTypeToString[buildingCategory as keyof typeof BuildingTypeToString] ?? "Building";
+    }
+    if (building) return "Empty Tile";
+    return "Local Tile";
+  })();
 
   const panelTitle = selectedBuildingHex
     ? `${buildingName} · (${selectedBuildingHex.innerCol}, ${selectedBuildingHex.innerRow})`
