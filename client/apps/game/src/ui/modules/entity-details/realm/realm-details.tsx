@@ -136,28 +136,28 @@ export const RealmUpgradeCompact = () => {
 
   return (
     <div className="space-y-2">
-      {isLaborProductionEnabled && (
-        <div className="rounded border border-gold/20 bg-black/50 p-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Labor]} size="sm" />
-            <div className="flex flex-col leading-tight">
-              <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Labor Production</span>
-              <span className="text-sm font-semibold text-gold">+1 /s</span>
-            </div>
+      <div className="rounded border border-gold/20 bg-black/50 p-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <ResourceIcon resource={ResourcesIds[ResourcesIds.Labor]} size="sm" />
+          <div className="flex flex-col leading-tight">
+            <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Labor Production</span>
+            <span className="text-sm font-semibold text-gold">+1 /s</span>
           </div>
-          {isOwner && (
-            <Button
-              variant="primary"
-              withoutSound
-              size="sm"
-              className="px-3"
-              onClick={() => toggleModal(<ProductionModal preSelectedResource={ResourcesIds.Labor} />)}
-            >
-              Adjust
-            </Button>
-          )}
         </div>
-      )}
+        <Button
+          variant={isOwner && isLaborProductionEnabled ? "primary" : "outline"}
+          withoutSound
+          size="sm"
+          className="px-3"
+          disabled={!isOwner || !isLaborProductionEnabled}
+          onClick={() => {
+            if (!isOwner || !isLaborProductionEnabled) return;
+            toggleModal(<ProductionModal preSelectedResource={ResourcesIds.Labor} />);
+          }}
+        >
+          Adjust
+        </Button>
+      </div>
 
       <div className="rounded border border-gold/20 bg-black/40 p-3 space-y-3">
         <div className="flex items-center gap-2 text-gold">
@@ -183,7 +183,7 @@ export const RealmUpgradeCompact = () => {
             );
           })}
         </div>
-        {missingRequirements.length > 0 && <div className="text-xxs text-gold/70">Missing: {missingLabel}</div>}
+        {missingRequirements.length > 0 && <div className="text-xxs text-red-300">Missing: {missingLabel}</div>}
         {isOwner && (
           <Button
             variant={canUpgrade ? "gold" : "outline"}

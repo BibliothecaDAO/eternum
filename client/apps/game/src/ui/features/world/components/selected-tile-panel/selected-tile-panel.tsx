@@ -315,20 +315,14 @@ const LocalTilePanel = () => {
     }
   };
 
-  if (selectedBuildingHex && isCastleTile) {
-    return (
-      <PanelFrame title={panelTitle}>
-        <div className="h-full min-h-0 overflow-auto">
-          <RealmUpgradeCompact />
-        </div>
-      </PanelFrame>
-    );
-  }
-
   return (
     <PanelFrame title={panelTitle}>
       {selectedBuildingHex ? (
-        hasBuilding ? (
+        isCastleTile ? (
+          <div className="h-full min-h-0 overflow-auto">
+            <RealmUpgradeCompact />
+          </div>
+        ) : hasBuilding ? (
           <div className="h-full min-h-0 overflow-hidden">
             <div className="flex flex-col gap-3 text-xs text-gold">
               {isPaused && (
@@ -452,15 +446,17 @@ const LocalTilePanel = () => {
                         <div
                           key={`build-cost-${entry.resource}-${index}`}
                           className={cn(
-                            "flex items-center gap-2 rounded border px-2 py-1 text-xxs",
-                            hasEnough ? "border-gold/20 bg-black/40 text-gold/80" : "border-red-400/50 bg-red-900/20 text-red-100",
+                            "relative flex items-center gap-2 rounded p-2 text-xxs shadow-inner",
+                            hasEnough
+                              ? "bg-gold/5 border border-gold/5 text-gold/80"
+                              : "bg-red-900/20 border border-red-500/30 text-red-100",
                           )}
                         >
-                          <span className={cn("text-xxs", hasEnough ? "text-gold/80" : "text-red-200")}>
-                            {Math.floor(balance).toLocaleString()} / {entry.amount}
-                          </span>
                           <ResourceIcon withTooltip={false} resource={name} size="xs" />
-                          <span className={cn("text-xxs", hasEnough ? "text-gold/80" : "text-red-100")}>{name}</span>
+                          <span className={cn("text-xxs", hasEnough ? "text-gold font-semibold" : "text-red-200")}>
+                            {Math.floor(balance).toLocaleString()}
+                          </span>
+                          <span className={cn("text-xxs", hasEnough ? "text-gold/70" : "text-red-200")}>/ {entry.amount}</span>
                         </div>
                       );
                     })}
