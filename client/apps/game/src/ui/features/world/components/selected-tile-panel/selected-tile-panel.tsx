@@ -16,6 +16,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { BUILDINGS_CENTER, BuildingType, BuildingTypeToString, ResourcesIds, findResourceById } from "@bibliothecadao/types";
+import { LeftView } from "@/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { memo, ReactNode, useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -119,6 +120,7 @@ const LocalTilePanel = () => {
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const playerStructures = useUIStore((state) => state.playerStructures);
+  const leftView = useUIStore((state) => state.leftNavigationView);
   const useSimpleCost = useUIStore((state) => state.useSimpleCost);
   const setTooltip = useUIStore((state) => state.setTooltip);
   const structureUpgrade = useStructureUpgrade(structureEntityId ?? null);
@@ -170,13 +172,16 @@ const LocalTilePanel = () => {
     return typeof building.category === "bigint" ? Number(building.category) : building.category;
   }, [building]);
 
+  const forceEmptyState = leftView === LeftView.ConstructionView;
+
   const isCastleTile =
     !!selectedBuildingHex &&
     selectedBuildingHex.innerCol === BUILDINGS_CENTER[0] &&
     selectedBuildingHex.innerRow === BUILDINGS_CENTER[1];
 
-  const hasBuilding = buildingCategory !== null && buildingCategory !== BuildingType.None;
+  const hasBuilding = !forceEmptyState && buildingCategory !== null && buildingCategory !== BuildingType.None;
   const buildingName = (() => {
+    if (forceEmptyState) return "Empty Tile";
     if (isCastleTile) return "Castle";
     if (hasBuilding) {
       return BuildingTypeToString[buildingCategory as keyof typeof BuildingTypeToString] ?? "Building";

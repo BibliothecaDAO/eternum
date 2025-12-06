@@ -21,6 +21,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import Button from "@/ui/design-system/atoms/button";
 import { ProductionModal } from "@/ui/features/settlement";
+import { Crown as CrownIcon } from "lucide-react";
 
 export const RealmVillageDetails = () => {
   const dojo = useDojo();
