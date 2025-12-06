@@ -25,7 +25,7 @@ import { RealmUpgradeCompact } from "@/ui/modules/entity-details/realm/realm-det
 import { ProductionModal } from "@/ui/features/settlement";
 import Button from "@/ui/design-system/atoms/button";
 import { TileManager } from "@bibliothecadao/eternum";
-import { Trash2 } from "lucide-react";
+import { Info, Trash2 } from "lucide-react";
 
 import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN } from "./constants";
 
@@ -336,7 +336,7 @@ const LocalTilePanel = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <p className="text-xxs uppercase tracking-[0.2em] text-gold/60">
-                    {isCastleTile ? "Labor rate" : "Produces"}
+                    {isCastleTile ? "Labor rate" : "Produces per sec"}
                   </p>
                   {producedResource && producedResourceName ? (
                     <div className="flex items-center gap-2">
@@ -346,7 +346,7 @@ const LocalTilePanel = () => {
                       <ResourceIcon withTooltip={false} resource={producedResourceName} size="sm" />
                       <button
                         type="button"
-                        className="text-xxs uppercase tracking-[0.2em] text-gold/60 underline decoration-dotted"
+                        className="text-xxs uppercase tracking-[0.2em] text-gold/60"
                         onMouseEnter={() =>
                           setTooltip({
                             position: "right",
@@ -355,7 +355,7 @@ const LocalTilePanel = () => {
                                 <p className="text-xxs uppercase tracking-[0.25em] text-gold/60">Consumed By</p>
                                 {consumedBy.length > 0 ? (
                                   <div className="flex flex-wrap gap-2">
-                    {consumedBy.map((resourceId) => {
+                                    {consumedBy.map((resourceId) => {
                                       const name = findResourceById(Number(resourceId))?.trait ?? `Resource ${resourceId}`;
                                       return (
                                         <div
@@ -376,8 +376,9 @@ const LocalTilePanel = () => {
                           })
                         }
                         onMouseLeave={() => setTooltip(null)}
+                        aria-label="Show consumers"
                       >
-                        Consumed by
+                        <Info className="h-4 w-4 text-gold/70" />
                       </button>
                     </div>
                   ) : (
@@ -406,7 +407,7 @@ const LocalTilePanel = () => {
               </div>
 
               <div className="space-y-1">
-                <p className="text-xxs uppercase tracking-[0.2em] text-gold/60">Consumes</p>
+                <p className="text-xxs uppercase tracking-[0.2em] text-gold/60">Consumes per sec</p>
                 {ongoingCost.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {ongoingCost.map((entry, index) => {
