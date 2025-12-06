@@ -1406,6 +1406,19 @@ export default class WorldmapScene extends HexagonScene {
 
     this.highlightHexManager.highlightHexes(actionPaths.getHighlightedHexes());
 
+    if (hexCoords) {
+      void this.ensureStructureSynced(selectedEntityId, hexCoords);
+      const contractPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+      const worldMapPosition =
+        Number.isFinite(Number(contractPosition?.x)) && Number.isFinite(Number(contractPosition?.y))
+          ? { col: Number(contractPosition.x), row: Number(contractPosition.y) }
+          : undefined;
+      this.state.setStructureEntityId(selectedEntityId, {
+        worldMapPosition,
+        spectator: this.state.isSpectating,
+      });
+    }
+
     // Show selection pulse for the selected structure
     if (hexCoords) {
       const worldPos = getWorldPositionForHex(hexCoords);
