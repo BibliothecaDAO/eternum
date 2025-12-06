@@ -6,7 +6,7 @@ import { Tabs } from "@/ui/design-system/atoms";
 import { configManager, getEntityInfo, getIsBlitz, getStructureName, Position, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { ResourceArrivals as AllResourceArrivals, MarketModal } from "@/ui/features/economy/trading";
-import { TransferAutomationPanel } from "@/ui/features/economy/transfers/transfer-automation-panel";
+import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
 import { Bridge } from "@/ui/features/infrastructure";
 import { ProductionOverviewPanel } from "@/ui/features/settlement/production/production-overview-panel";
 import { StoryEventsChronicles } from "@/ui/features/story-events";
@@ -83,6 +83,8 @@ type EconomyNavigationContext = {
   setLeftView: (view: LeftView) => void;
   disableButtons: boolean;
   isBlitz: boolean;
+  onOpenTransfer: () => void;
+  isTransferOpen: boolean;
 };
 
 type LeftPanelHeaderProps = {
@@ -685,6 +687,8 @@ const buildEconomyNavigationItems = ({
   setLeftView,
   disableButtons,
   isBlitz,
+  onOpenTransfer,
+  isTransferOpen,
 }: EconomyNavigationContext): NavigationItem[] => {
   const toggleView = (targetView: RightView) => () => {
     setLeftView(LeftView.None);
@@ -722,8 +726,10 @@ const buildEconomyNavigationItems = ({
       label: "Transfers",
       size: DEFAULT_BUTTON_SIZE,
       disabled: disableButtons,
-      active: rightView === RightView.Transfer,
-      onClick: toggleView(RightView.Transfer),
+      active: isTransferOpen,
+      onClick: () => {
+        onOpenTransfer();
+      },
     },
     {
       id: MenuEnum.bridge,
@@ -806,6 +812,9 @@ export const LeftCommandSidebar = memo(() => {
   const setRightView = useUIStore((state) => state.setRightNavigationView);
   const disableButtons = useUIStore((state) => state.disableButtons);
   const isTradeOpen = useUIStore((state) => state.openedPopups.includes(trade));
+  const togglePopup = useUIStore((state) => state.togglePopup);
+  const isTransferPopupOpen = useUIStore((state) => state.isPopupOpen(TRANSFER_POPUP_NAME));
+  const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
@@ -830,6 +839,11 @@ export const LeftCommandSidebar = memo(() => {
   const handleRequestNameChange = useCallback((structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => {
     setStructureNameChange(structure);
   }, []);
+
+  const handleOpenTransferPopup = useCallback(() => {
+    setTransferPanelSourceId(null);
+    togglePopup(TRANSFER_POPUP_NAME);
+  }, [setTransferPanelSourceId, togglePopup]);
 
   const toggleModal = useUIStore((state) => state.toggleModal);
 
@@ -887,8 +901,10 @@ export const LeftCommandSidebar = memo(() => {
         setLeftView: setView,
         disableButtons,
         isBlitz,
+        onOpenTransfer: handleOpenTransferPopup,
+        isTransferOpen: isTransferPopupOpen,
       }),
-    [rightView, setRightView, setView, disableButtons, isBlitz],
+    [rightView, setRightView, setView, disableButtons, isBlitz, handleOpenTransferPopup, isTransferPopupOpen],
   );
 
   const ConnectedAccount = useAccountStore((state) => state.account);
@@ -964,11 +980,6 @@ export const LeftCommandSidebar = memo(() => {
                     {rightView === RightView.Bridge && (
                       <div className="bridge-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
                         <Bridge structures={structures} />
-                      </div>
-                    )}
-                    {rightView === RightView.Transfer && (
-                      <div className="transfer-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
-                        <TransferAutomationPanel />
                       </div>
                     )}
                     {rightView === RightView.StoryEvents && (

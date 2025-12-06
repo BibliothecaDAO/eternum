@@ -42,7 +42,11 @@ const isRealm = (structure: Structure | undefined) => structure?.category === St
 const isAllowedSource = (structure: Structure) => SOURCE_ALLOWED_CATEGORIES.has(structure.category);
 const isAllowedDestination = (structure: Structure) => DEST_ALLOWED_CATEGORIES.has(structure.category);
 
-export const TransferAutomationPanel = () => {
+interface TransferAutomationPanelProps {
+  initialSourceId?: number | null;
+}
+
+export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationPanelProps) => {
   const playerStructures = useUIStore((s) => s.playerStructures);
   const toggleModal = useUIStore((s) => s.toggleModal);
   const { currentDefaultTick } = useBlockTimestamp();
@@ -111,6 +115,11 @@ export const TransferAutomationPanel = () => {
     () => selectedResources.some((rid) => rid !== ResourcesIds.Donkey),
     [selectedResources],
   );
+
+  useEffect(() => {
+    if (initialSourceId === null || initialSourceId === undefined) return;
+    setSelectedSourceId((prev) => (prev === initialSourceId ? prev : initialSourceId));
+  }, [initialSourceId]);
 
   useEffect(() => {
     if (!statusMessage) return;

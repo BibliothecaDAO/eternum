@@ -146,6 +146,8 @@ interface UIStore {
   showToS: boolean;
   setShowToS: (show: boolean) => void;
   setModal: (content: React.ReactNode | null, show: boolean) => void;
+  transferPanelSourceId: number | null;
+  setTransferPanelSourceId: (entityId: number | null) => void;
   // labor
   useSimpleCost: boolean;
   setUseSimpleCost: (useSimpleCost: boolean) => void;
@@ -270,6 +272,8 @@ export const useUIStore = create(
     setShowToS: (show: boolean) => set({ showToS: show }),
     setModal: (content: React.ReactNode | null, show: boolean) =>
       set({ modalContent: content, showModal: show, tooltip: null }),
+    transferPanelSourceId: null,
+    setTransferPanelSourceId: (entityId: number | null) => set({ transferPanelSourceId: entityId }),
     ...createPopupsSlice(set, get),
     ...createThreeStoreSlice(set, get),
     ...createBuildModeStoreSlice(set),
