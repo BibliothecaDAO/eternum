@@ -72,7 +72,7 @@ export const RESOURCE_PRODUCTION_OUTPUT_AMOUNTS: ResourceOutputs = {
   [ResourcesIds.Adamantine]: 1,
   [ResourcesIds.Mithral]: 1,
   [ResourcesIds.Dragonhide]: 1,
-  [ResourcesIds.Donkey]: 0.1,
+  [ResourcesIds.Donkey]: 1,
   [ResourcesIds.Knight]: 5,
   [ResourcesIds.KnightT2]: 5,
   [ResourcesIds.KnightT3]: 5,
@@ -98,43 +98,43 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
   ],
   [ResourcesIds.Coal]: [
     { resource: ResourcesIds.Wheat, amount: 1 },
-    { resource: ResourcesIds.Wood, amount: 0.36 },
-    { resource: ResourcesIds.Copper, amount: 0.24 },
+    { resource: ResourcesIds.Wood, amount: 0.3 },
+    { resource: ResourcesIds.Copper, amount: 0.2 },
   ],
   [ResourcesIds.Copper]: [
     { resource: ResourcesIds.Wheat, amount: 1 },
-    { resource: ResourcesIds.Wood, amount: 0.36 },
-    { resource: ResourcesIds.Coal, amount: 0.24 },
+    { resource: ResourcesIds.Wood, amount: 0.3 },
+    { resource: ResourcesIds.Coal, amount: 0.2 },
   ],
   [ResourcesIds.Ironwood]: [
     { resource: ResourcesIds.Wheat, amount: 2 },
-    { resource: ResourcesIds.Coal, amount: 0.48 },
-    { resource: ResourcesIds.Copper, amount: 0.32 },
+    { resource: ResourcesIds.Coal, amount: 0.6 },
+    { resource: ResourcesIds.Copper, amount: 0.4 },
   ],
   [ResourcesIds.ColdIron]: [
     { resource: ResourcesIds.Wheat, amount: 2 },
-    { resource: ResourcesIds.Coal, amount: 0.48 },
-    { resource: ResourcesIds.Copper, amount: 0.32 },
+    { resource: ResourcesIds.Coal, amount: 0.6 },
+    { resource: ResourcesIds.Copper, amount: 0.4 },
   ],
   [ResourcesIds.Gold]: [
     { resource: ResourcesIds.Wheat, amount: 2 },
-    { resource: ResourcesIds.Coal, amount: 0.48 },
-    { resource: ResourcesIds.Copper, amount: 0.32 },
+    { resource: ResourcesIds.Coal, amount: 0.6 },
+    { resource: ResourcesIds.Copper, amount: 0.4 },
   ],
   [ResourcesIds.Adamantine]: [
     { resource: ResourcesIds.Wheat, amount: 3 },
-    { resource: ResourcesIds.Coal, amount: 0.6 },
-    { resource: ResourcesIds.Ironwood, amount: 0.4 },
+    { resource: ResourcesIds.Coal, amount: 0.9 },
+    { resource: ResourcesIds.Ironwood, amount: 0.6 },
   ],
   [ResourcesIds.Mithral]: [
     { resource: ResourcesIds.Wheat, amount: 3 },
-    { resource: ResourcesIds.Coal, amount: 0.6 },
-    { resource: ResourcesIds.ColdIron, amount: 0.4 },
+    { resource: ResourcesIds.Coal, amount: 0.9 },
+    { resource: ResourcesIds.ColdIron, amount: 0.6 },
   ],
   [ResourcesIds.Dragonhide]: [
     { resource: ResourcesIds.Wheat, amount: 3 },
-    { resource: ResourcesIds.Coal, amount: 0.6 },
-    { resource: ResourcesIds.Gold, amount: 0.4 },
+    { resource: ResourcesIds.Coal, amount: 0.9 },
+    { resource: ResourcesIds.Gold, amount: 0.6 },
   ],
   // All other resources not in the provided list have empty input arrays
   [ResourcesIds.Stone]: [],
@@ -159,14 +159,14 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
     { resource: ResourcesIds.Wheat, amount: 3 },
     { resource: ResourcesIds.Knight, amount: 10 },
     { resource: ResourcesIds.Copper, amount: 0.2 },
-    { resource: ResourcesIds.ColdIron, amount: 0.4 },
+    { resource: ResourcesIds.ColdIron, amount: 0.6 },
     { resource: ResourcesIds.Essence, amount: 1 },
   ],
   [ResourcesIds.KnightT3]: [
     { resource: ResourcesIds.Wheat, amount: 4 },
     { resource: ResourcesIds.KnightT2, amount: 10 },
-    { resource: ResourcesIds.ColdIron, amount: 0.2 },
-    { resource: ResourcesIds.Mithral, amount: 0.6 },
+    { resource: ResourcesIds.ColdIron, amount: 0.4 },
+    { resource: ResourcesIds.Mithral, amount: 0.8 },
     { resource: ResourcesIds.Essence, amount: 3 },
   ],
   [ResourcesIds.Crossbowman]: [
@@ -177,14 +177,14 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
     { resource: ResourcesIds.Wheat, amount: 3 },
     { resource: ResourcesIds.Crossbowman, amount: 10 },
     { resource: ResourcesIds.Copper, amount: 0.2 },
-    { resource: ResourcesIds.Ironwood, amount: 0.4 },
+    { resource: ResourcesIds.Ironwood, amount: 0.6 },
     { resource: ResourcesIds.Essence, amount: 1 },
   ],
   [ResourcesIds.CrossbowmanT3]: [
     { resource: ResourcesIds.Wheat, amount: 4 },
     { resource: ResourcesIds.CrossbowmanT2, amount: 10 },
-    { resource: ResourcesIds.Ironwood, amount: 0.2 },
-    { resource: ResourcesIds.Adamantine, amount: 0.6 },
+    { resource: ResourcesIds.Ironwood, amount: 0.4 },
+    { resource: ResourcesIds.Adamantine, amount: 0.8 },
     { resource: ResourcesIds.Essence, amount: 3 },
   ],
   [ResourcesIds.Paladin]: [
@@ -195,14 +195,14 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
     { resource: ResourcesIds.Wheat, amount: 3 },
     { resource: ResourcesIds.Paladin, amount: 10 },
     { resource: ResourcesIds.Copper, amount: 0.2 },
-    { resource: ResourcesIds.Gold, amount: 0.4 },
+    { resource: ResourcesIds.Gold, amount: 0.6 },
     { resource: ResourcesIds.Essence, amount: 1 },
   ],
   [ResourcesIds.PaladinT3]: [
     { resource: ResourcesIds.Wheat, amount: 4 },
     { resource: ResourcesIds.PaladinT2, amount: 10 },
-    { resource: ResourcesIds.Gold, amount: 0.2 },
-    { resource: ResourcesIds.Dragonhide, amount: 0.6 },
+    { resource: ResourcesIds.Gold, amount: 0.4 },
+    { resource: ResourcesIds.Dragonhide, amount: 0.8 },
     { resource: ResourcesIds.Essence, amount: 3 },
   ],
   [ResourcesIds.Wheat]: [],
@@ -215,7 +215,7 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
 
 export const STARTING_RESOURCES: ResourceCost[] = [
   { resource: ResourcesIds.Wheat, amount: 1_000 },
-  { resource: ResourcesIds.Labor, amount: 1_000 },
+  { resource: ResourcesIds.Labor, amount: 1_200 },
   { resource: ResourcesIds.Wood, amount: 180 },
   { resource: ResourcesIds.Coal, amount: 120 },
   { resource: ResourcesIds.Copper, amount: 60 },
@@ -238,7 +238,8 @@ export const VILLAGE_STARTING_RESOURCES: ResourceCost[] = [
 ];
 
 export const DISCOVERABLE_VILLAGE_STARTING_RESOURCES: ResourceMinMax[] = [
-  { resource: ResourcesIds.Labor, min_amount: 5_000, max_amount: 5_000 },
+  { resource: ResourcesIds.Wheat, min_amount: 500, max_amount: 500 },
+  { resource: ResourcesIds.Labor, min_amount: 2_500, max_amount: 2_500 },
   { resource: ResourcesIds.Donkey, min_amount: 200, max_amount: 200 },
 ];
 
