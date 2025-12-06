@@ -26,7 +26,6 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { TransferAutomationAdvancedModal } from "./transfer-automation-modal";
 
 const ESSENCE_SITE_ALLOWED_RESOURCES = new Set<ResourcesIds>([ResourcesIds.Donkey, ResourcesIds.Essence]);
 
@@ -48,7 +47,6 @@ interface TransferAutomationPanelProps {
 
 export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationPanelProps) => {
   const playerStructures = useUIStore((s) => s.playerStructures);
-  const toggleModal = useUIStore((s) => s.toggleModal);
   const { currentDefaultTick } = useBlockTimestamp();
   const isBlitz = getIsBlitz();
 
@@ -642,10 +640,6 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
     setStatusMessage(null);
   }, []);
 
-  const openAdvanced = useCallback(() => {
-    toggleModal(<TransferAutomationAdvancedModal />);
-  }, [toggleModal]);
-
   return (
     <div className="p-3 md:p-4 space-y-3">
       <div className="flex items-start justify-between gap-3">
@@ -723,50 +717,48 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
         </div>
       </section>
 
-      {selectedResources.length > 0 && (
-        <section className="space-y-2">
-          <div className="text-xs text-gold/70">Source Location</div>
-          <input
-            type="text"
-            value={sourceSearch}
-            onChange={(e) => setSourceSearch(e.target.value)}
-            placeholder="Filter by name or ID"
-            className="w-full px-2 py-1 text-xs rounded border border-gold/30 bg-black/30 text-gold/80 placeholder:text-gold/40 focus:border-gold/60 outline-none mb-2"
-          />
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {eligibleSources
-              .filter((ps) => {
-                const q = sourceSearch.trim();
-                if (!q) return true;
-                const isNumeric = /^\d+$/.test(q);
-                const name = getStructureName(ps.structure, isBlitz).name;
-                if (isNumeric) return String(ps.entityId).includes(q);
-                const norm = (s: string) =>
-                  s
-                    .toLowerCase()
-                    .normalize("NFD")
-                    .replace(/[\u0300-\u036f]/g, "");
-                return norm(name).includes(norm(q));
-              })
-              .map((ps) => {
-                const name = getStructureName(ps.structure, isBlitz).name;
-                const entityId = Number(ps.entityId);
-                const isSel = selectedSourceId === entityId;
-                return (
-                  <button
-                    key={ps.entityId}
-                    type="button"
-                    className={`text-left px-2 py-2 rounded border ${isSel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
-                    onClick={() => setSelectedSourceId(isSel ? null : entityId)}
-                  >
-                    <div className="text-sm font-semibold">{name}</div>
-                    <div className="text-xxs uppercase text-gold/60">{StructureType[ps.category]}</div>
-                  </button>
-                );
-              })}
-          </div>
-        </section>
-      )}
+      <section className="space-y-2">
+        <div className="text-xs text-gold/70">Source Location</div>
+        <input
+          type="text"
+          value={sourceSearch}
+          onChange={(e) => setSourceSearch(e.target.value)}
+          placeholder="Filter by name or ID"
+          className="w-full px-2 py-1 text-xs rounded border border-gold/30 bg-black/30 text-gold/80 placeholder:text-gold/40 focus:border-gold/60 outline-none mb-2"
+        />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {eligibleSources
+            .filter((ps) => {
+              const q = sourceSearch.trim();
+              if (!q) return true;
+              const isNumeric = /^\d+$/.test(q);
+              const name = getStructureName(ps.structure, isBlitz).name;
+              if (isNumeric) return String(ps.entityId).includes(q);
+              const norm = (s: string) =>
+                s
+                  .toLowerCase()
+                  .normalize("NFD")
+                  .replace(/[\u0300-\u036f]/g, "");
+              return norm(name).includes(norm(q));
+            })
+            .map((ps) => {
+              const name = getStructureName(ps.structure, isBlitz).name;
+              const entityId = Number(ps.entityId);
+              const isSel = selectedSourceId === entityId;
+              return (
+                <button
+                  key={ps.entityId}
+                  type="button"
+                  className={`text-left px-2 py-2 rounded border ${isSel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
+                  onClick={() => setSelectedSourceId(isSel ? null : entityId)}
+                >
+                  <div className="text-sm font-semibold">{name}</div>
+                  <div className="text-xxs uppercase text-gold/60">{StructureType[ps.category]}</div>
+                </button>
+              );
+            })}
+        </div>
+      </section>
 
       {selectedResources.length > 0 && selectedSourceId && (
         <section className="space-y-2">
@@ -997,9 +989,6 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
             </>
           )}
         </div>
-        <Button variant="outline" onClick={openAdvanced}>
-          Advanced
-        </Button>
       </div>
     </div>
   );
