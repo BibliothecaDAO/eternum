@@ -24,6 +24,7 @@ import {
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { Castle, Crown, Pickaxe, Sparkles, Tent } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -40,6 +41,21 @@ const isFragmentMine = (structure: Structure | undefined) => structure?.category
 const isRealm = (structure: Structure | undefined) => structure?.category === StructureType.Realm;
 const isAllowedSource = (structure: Structure) => SOURCE_ALLOWED_CATEGORIES.has(structure.category);
 const isAllowedDestination = (structure: Structure) => DEST_ALLOWED_CATEGORIES.has(structure.category);
+
+const getStructureIcon = (category: StructureType, isBlitz: boolean) => {
+  switch (category) {
+    case StructureType.Realm:
+      return Crown;
+    case StructureType.Village:
+      return isBlitz ? Tent : Castle;
+    case StructureType.FragmentMine:
+      return Pickaxe;
+    case StructureType.Hyperstructure:
+      return Sparkles;
+    default:
+      return Castle;
+  }
+};
 
 interface TransferAutomationPanelProps {
   initialSourceId?: number | null;
@@ -642,11 +658,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
 
   return (
     <div className="p-3 md:p-4 space-y-3">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h4 className="text-gold font-semibold">Transfer</h4>
-          <p className="text-xxs text-gold/60">Select resources, source, destination and frequency.</p>
-        </div>
+      <div className="flex items-start justify-end gap-3">
         <Button variant="outline" size="xs" forceUppercase={false} onClick={resetPanel}>
           Reset
         </Button>
@@ -718,7 +730,6 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       </section>
 
       <section className="space-y-2">
-        <div className="text-xs text-gold/70">Source Location</div>
         <input
           type="text"
           value={sourceSearch}
@@ -745,6 +756,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
               const name = getStructureName(ps.structure, isBlitz).name;
               const entityId = Number(ps.entityId);
               const isSel = selectedSourceId === entityId;
+              const Icon = getStructureIcon(ps.category, isBlitz);
               return (
                 <button
                   key={ps.entityId}
@@ -752,8 +764,10 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
                   className={`text-left px-2 py-2 rounded border ${isSel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
                   onClick={() => setSelectedSourceId(isSel ? null : entityId)}
                 >
-                  <div className="text-sm font-semibold">{name}</div>
-                  <div className="text-xxs uppercase text-gold/60">{StructureType[ps.category]}</div>
+                  <div className="flex items-center gap-2">
+                    <Icon className="h-4 w-4 text-gold" aria-hidden />
+                    <div className="text-sm font-semibold">{name}</div>
+                  </div>
                 </button>
               );
             })}
@@ -764,8 +778,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
         <section className="space-y-2">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-xs text-gold/70">
-              Destination
-              {allowMultiDestination && actualDestinationCount > 0 ? ` (${actualDestinationCount} selected)` : ""}
+              {allowMultiDestination && actualDestinationCount > 0 ? `${actualDestinationCount} selected` : ""}
             </div>
             <div className="flex flex-wrap items-center gap-3 text-xxs text-gold/60">
               <label className="flex items-center gap-2">
@@ -786,6 +799,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
               const name = getStructureName(ps.structure, isBlitz).name;
               const entityId = Number(ps.entityId);
               const isSel = destinationIds.includes(entityId);
+              const Icon = getStructureIcon(ps.category, isBlitz);
               return (
                 <button
                   key={`dst-${ps.entityId}`}
@@ -793,25 +807,19 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
                   className={`text-left px-2 py-2 rounded border ${isSel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
                   onClick={() => toggleDestinationSelection(entityId)}
                 >
-                  <div className="text-sm font-semibold">{name}</div>
-                  <div className="text-xxs uppercase text-gold/60">{StructureType[ps.category]}</div>
+                  <div className="flex items-center gap-2">
+                    <Icon className="h-4 w-4 text-gold" aria-hidden />
+                    <div className="text-sm font-semibold">{name}</div>
+                  </div>
                 </button>
               );
             })}
-          </div>
-        </section>
+        </div>
+      </section>
       )}
 
       {selectedResources.length > 0 && selectedSourceId && (
         <section className="space-y-2">
-          <div className="flex flex-col gap-1 text-xs text-gold/70">
-            <div>
-              Per-resource Amounts
-              {allowMultiDestination && actualDestinationCount > 1 && (
-                <span className="ml-1 text-xxs text-gold/50">(per destination)</span>
-              )}
-            </div>
-          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {selectedResources.map((rid) => {
               const cfg = resourceConfigs[rid] ?? { amount: 0 };
