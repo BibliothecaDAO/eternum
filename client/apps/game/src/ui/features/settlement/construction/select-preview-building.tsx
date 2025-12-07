@@ -9,7 +9,6 @@ import { Headline } from "@/ui/design-system/molecules/headline";
 import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { formatBiomeBonus } from "@/ui/features/military";
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { ProductionStatusBadge } from "@/ui/shared";
 import { adjustWonderLordsCost, getEntityIdFromKeys } from "@/ui/utils/utils";
@@ -635,6 +634,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
               <div className="flex flex-wrap items-center gap-2">
                 {armyGroups.map((group) => {
                   const isActive = activeArmyType === group.armyType;
+                  const bonusMultiplier = group.bonus ?? 1;
+                  const bonusPercent = Math.round((bonusMultiplier - 1) * 100);
+                  const bonusLabel = `${bonusPercent > 0 ? "+" : ""}${bonusPercent}%`;
+                  const isPositiveBonus = bonusPercent > 0;
+                  const isNegativeBonus = bonusPercent < 0;
                   return (
                     <button
                       key={group.armyType}
@@ -648,7 +652,17 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                       )}
                       onClick={() => setSelectedArmyType(group.armyType)}
                     >
-                      {group.armyType}
+                      <span className="flex items-center gap-1">
+                        <span>{group.armyType}</span>
+                        <span
+                          className={clsx(
+                            "text-[11px] font-semibold",
+                            isPositiveBonus ? "text-emerald-300" : isNegativeBonus ? "text-red-400" : "text-gold/80",
+                          )}
+                        >
+                          {bonusLabel}
+                        </span>
+                      </span>
                     </button>
                   );
                 })}
@@ -656,17 +670,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
               <div className="space-y-3">
                 {visibleGroups.map((group) => {
-                  const resourceTrait = (() => {
-                    const first = group.buildings[0];
-                    if (!first) return "";
-                    const buildingEnum = BuildingType[first as keyof typeof BuildingType];
-                    const info = getMilitaryBuildingInfo(buildingEnum);
-                    if (info?.resourceId) {
-                      return findResourceById(info.resourceId)?.trait || "";
-                    }
-                    return "";
-                  })();
-
                   return (
                     <div
                       key={group.armyType}
@@ -675,37 +678,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                         group.isRecommended && "border-emerald-500/40 shadow-emerald-500/10",
                       )}
                     >
-                      <div
-                        className={clsx(
-                          "flex justify-between items-center px-2 py-2 rounded-t-md bg-gold/5",
-                          group.isRecommended && "bg-emerald-900/20",
-                        )}
-                      >
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-medium">{group.armyType}</h4>
-                          {group.isRecommended && (
-                            <span className="text-[10px] uppercase tracking-wider text-emerald-200 border border-emerald-500/40 bg-emerald-900/40 rounded px-2 py-0.5">
-                              Recommended
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {group.bonus !== undefined && (
-                            <span
-                              className={clsx(
-                                "text-xs font-semibold",
-                                group.isRecommended ? "text-emerald-200" : "text-gold/60",
-                              )}
-                            >
-                              {formatBiomeBonus(group.bonus)}
-                            </span>
-                          )}
-                          <div className="flex items-center gap-2 text-xs text-gold/70 bg-gold/5 rounded-md px-2 py-0.5">
-                            {resourceTrait && <ResourceIcon resource={resourceTrait} size="xs" className="mr-1" />}
-                            {group.buildings.length} buildings
-                          </div>
-                        </div>
-                      </div>
                       <div className="grid grid-cols-2 gap-2 p-2">
                         {group.buildings
                           .slice()
