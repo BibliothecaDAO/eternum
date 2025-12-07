@@ -82,25 +82,45 @@ const buildSmartPresetAllocations = (
   if (presentT1.length > 0) {
     if (!t1Complete) {
       // Incomplete tier-1 set: 5% on each available T1 (labor slider only).
-      assignTierSplit(allocations, presentT1, presentT1.map(() => 5), "labor");
+      assignTierSplit(
+        allocations,
+        presentT1,
+        presentT1.map(() => 5),
+        "labor",
+      );
     } else if (!hasHigherResources) {
       // Complete T1 only: 30% each on resource slider.
       assignTierSplit(allocations, SMART_T1_RESOURCES, [30, 30, 30], "resource");
     } else {
       // Complete T1 with army and/or higher tiers: 20% wood, 20% coal, 30% copper on resource slider.
       const orderedT1 = [ResourcesIds.Wood, ResourcesIds.Coal, ResourcesIds.Copper];
-      assignTierSplit(allocations, orderedT1.filter((id) => presentSet.has(id)), [20, 20, 30], "resource");
+      assignTierSplit(
+        allocations,
+        orderedT1.filter((id) => presentSet.has(id)),
+        [20, 20, 30],
+        "resource",
+      );
     }
   }
 
   if (t1Complete && presentT2.length > 0) {
     const weights = buildSequentialWeights(presentT2.length, [10, 5, 3]);
-    assignTierSplit(allocations, SMART_T2_RESOURCES.filter((id) => presentSet.has(id)), weights, "resource");
+    assignTierSplit(
+      allocations,
+      SMART_T2_RESOURCES.filter((id) => presentSet.has(id)),
+      weights,
+      "resource",
+    );
   }
 
   if (t1Complete && presentT3.length > 0) {
     const weights = buildSequentialWeights(presentT3.length, [10, 5, 3]);
-    assignTierSplit(allocations, SMART_T3_RESOURCES.filter((id) => presentSet.has(id)), weights, "resource");
+    assignTierSplit(
+      allocations,
+      SMART_T3_RESOURCES.filter((id) => presentSet.has(id)),
+      weights,
+      "resource",
+    );
   }
 
   // Army allocations (resource slider)
@@ -285,23 +305,24 @@ export const getAutomationOverallocation = (
     const { resourceId, percentages } = setting;
     const rawComplexInputs = configManager.complexSystemResourceInputs[resourceId] ?? [];
     const complexInputs = rawComplexInputs.filter(
-      (input) =>
+      (input: { resource: ResourcesIds }) =>
         !isAutomationResourceBlocked(input.resource, entityType, "input") && input.resource !== ResourcesIds.Wheat,
     );
 
     const rawSimpleInputs = configManager.simpleSystemResourceInputs[resourceId] ?? [];
     const simpleInputs = rawSimpleInputs.filter(
-      (input) => !isAutomationResourceBlocked(input.resource, entityType, "input") && input.resource !== ResourcesIds.Wheat,
+      (input: { resource: ResourcesIds }) =>
+        !isAutomationResourceBlocked(input.resource, entityType, "input") && input.resource !== ResourcesIds.Wheat,
     );
 
     if (percentages.resourceToResource > 0) {
-      complexInputs.forEach(({ resource }) => {
+      complexInputs.forEach(({ resource }: { resource: ResourcesIds }) => {
         resourceTotals.set(resource, (resourceTotals.get(resource) ?? 0) + percentages.resourceToResource);
       });
     }
 
     if (percentages.laborToResource > 0) {
-      simpleInputs.forEach(({ resource }) => {
+      simpleInputs.forEach(({ resource }: { resource: ResourcesIds }) => {
         laborTotals.set(resource, (laborTotals.get(resource) ?? 0) + percentages.laborToResource);
       });
     }

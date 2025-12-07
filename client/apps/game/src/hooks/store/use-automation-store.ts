@@ -704,7 +704,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
             lastExecution?: any;
           };
 
-            const sanitizedResources = sanitizeRealmResources(realm.resources, realm.entityType ?? "realm");
+          const sanitizedResources = sanitizeRealmResources(realm.resources, realm.entityType ?? "realm");
 
           let sanitizedLastExecution: RealmAutomationExecutionSummary | undefined;
           if (realm.lastExecution && typeof realm.lastExecution === "object") {
