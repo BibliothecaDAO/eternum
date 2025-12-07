@@ -696,17 +696,6 @@ const buildEconomyNavigationItems = ({
 
   const items: NavigationItem[] = [
     {
-      id: MenuEnum.resourceTable,
-      className: "resource-table-selector",
-      image: BuildingThumbs.resources,
-      tooltipLocation: "top",
-      label: "Balance",
-      size: DEFAULT_BUTTON_SIZE,
-      disabled: false,
-      active: rightView === RightView.ResourceTable,
-      onClick: toggleView(RightView.ResourceTable),
-    },
-    {
       id: MenuEnum.transfer,
       className: "transfer-selector",
       image: BuildingThumbs.transfer,
@@ -744,7 +733,6 @@ const buildEconomyNavigationItems = ({
   ];
 
   const allowedMenus: MenuEnum[] = [
-    MenuEnum.resourceTable,
     MenuEnum.transfer,
     MenuEnum.storyEvents,
     ...(isBlitz ? [] : [MenuEnum.bridge]),
@@ -777,12 +765,6 @@ const EternumHyperstructuresMenu = lazy(() =>
 //     default: module.RelicsModule,
 //   })),
 // );
-const EntityResourceTable = lazy(() =>
-  import("@/ui/features/economy/resources").then((module) => ({
-    default: module.EntityResourceTable,
-  })),
-);
-
 export const LeftCommandSidebar = memo(() => {
   const {
     account: { account },
@@ -961,11 +943,6 @@ export const LeftCommandSidebar = memo(() => {
                       (isBlitz ? <BlitzHyperstructuresMenu /> : <EternumHyperstructuresMenu />)}
                     {view === LeftView.ResourceArrivals && (
                       <AllResourceArrivals hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
-                    )}
-                    {rightView === RightView.ResourceTable && !!structureEntityId && (
-                      <div className="entity-resource-table-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
-                        <EntityResourceTable entityId={structureEntityId} />
-                      </div>
                     )}
                     {rightView === RightView.Bridge && (
                       <div className="bridge-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">

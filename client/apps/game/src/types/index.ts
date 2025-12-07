@@ -2,8 +2,6 @@ import { ID } from "@bibliothecadao/types";
 
 export enum RightView {
   None,
-  ResourceTable,
-  Production,
   Bridge,
   Automation,
   Transfer,
