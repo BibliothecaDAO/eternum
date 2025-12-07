@@ -147,6 +147,25 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
   const reservedSpotsRef = useRef<Set<string>>(new Set());
   const [pendingBuilds, setPendingBuilds] = useState<Record<string, boolean>>({});
+  const hasAvailableBuildingTile = useMemo(() => {
+    if (!realm?.position) return true;
+
+    const outerCol = Number(realm.position.x);
+    const outerRow = Number(realm.position.y);
+    const tileManager = new TileManager(dojo.setup.components, dojo.setup.systemCalls, { col: outerCol, row: outerRow });
+    const buildRadius = Math.max(1, Number(tileManager.getRealmLevel(entityId)) + 1);
+    const candidates = generateBuildablePositions(buildRadius);
+    const centerKey = `${BUILDINGS_CENTER[0]},${BUILDINGS_CENTER[1]}`;
+    const reserved = reservedSpotsRef.current;
+
+    return candidates.some((pos) => {
+      const key = `${pos.col},${pos.row}`;
+      if (key === centerKey) return false;
+      if (reserved.has(key)) return false;
+      return !tileManager.isHexOccupied({ col: pos.col, row: pos.row });
+    });
+  }, [dojo.setup.components, dojo.setup.systemCalls, entityId, realm?.position?.x, realm?.position?.y, pendingBuilds, structureBuildings]);
+  const isRealmFull = !hasAvailableBuildingTile;
 
   const getBuildingCountFor = useCallback(
     (buildingType: BuildingType) => {
@@ -439,9 +458,12 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                   resourceId === ResourcesIds.Mithral ||
                   resourceId === ResourcesIds.Adamantine);
               const canBuild = !isLaborLockedResource && hasBalance && realm?.hasCapacity && hasEnoughPopulation;
-              const disabledReason = isLaborLockedResource
-                ? "Switch to Resource mode to create this building."
-                : undefined;
+              const disabledReason = isRealmFull
+                ? "Realm full"
+                : isLaborLockedResource
+                  ? "Switch to Resource mode to create this building."
+                  : undefined;
+              const disabled = isLaborLockedResource || isRealmFull;
               const buildKey = building.toString();
               const isPending = Boolean(pendingBuilds[buildKey]);
               const count = getBuildingCountFor(building);
@@ -452,7 +474,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                   buildingId={building}
                   resourceId={resourceId}
                   onClick={() => {
-                    if (!canBuild) {
+                    if (!canBuild || isRealmFull) {
                       return;
                     }
                     if (previewBuilding?.type === building && previewBuilding?.resource === resourceId) {
@@ -477,11 +499,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                   }
                   hasFunds={hasBalance}
                   hasPopulation={hasEnoughPopulation}
-                  disabled={isLaborLockedResource}
+                  disabled={disabled}
                   disabledReason={disabledReason}
                   count={count}
                   onBuild={() => handleAutoBuild({ type: building, resource: resourceId })}
-                  buildDisabled={!canBuild || isPending}
+                  buildDisabled={!canBuild || isPending || isRealmFull}
                   buildLoading={isPending}
                 />
               );
@@ -529,6 +551,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                   building === BuildingType.WorkersHut
                     ? hasBalance
                     : hasBalance && realm?.hasCapacity && hasEnoughPopulation;
+                const disabledReason = isRealmFull ? "Realm full" : undefined;
+                const disabled = Boolean(disabledReason);
                 const buildKey = building.toString();
                 const isPending = Boolean(pendingBuilds[buildKey]);
                 const count = getBuildingCountFor(building);
@@ -548,7 +572,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     key={index}
                     buildingId={building}
                     onClick={() => {
-                      if (!canBuild) {
+                      if (!canBuild || isRealmFull) {
                         return;
                       }
                       if (previewBuilding?.type === building) {
@@ -577,10 +601,12 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     currentTime={currentTime}
                     toolTip={<BuildingInfo buildingId={building} entityId={entityId} useSimpleCost={useSimpleCost} />}
                     hasFunds={hasBalance}
-                  hasPopulation={hasEnoughPopulation}
-                  count={count}
-                  onBuild={() => handleAutoBuild({ type: building })}
-                    buildDisabled={!canBuild || isPending}
+                    hasPopulation={hasEnoughPopulation}
+                    disabled={disabled}
+                    disabledReason={disabledReason}
+                    count={count}
+                    onBuild={() => handleAutoBuild({ type: building })}
+                    buildDisabled={!canBuild || isPending || isRealmFull}
                     buildLoading={isPending}
                   />
                 );
@@ -707,9 +733,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                             const canBuild =
                               !isTierLockedInSimpleMode && hasBalance && realm?.hasCapacity && hasEnoughPopulation;
                             const disabledReason =
-                              isTierLockedInSimpleMode && info?.tier
-                                ? `Switch to Resource mode to build Tier ${info.tier} military buildings.`
-                                : undefined;
+                              isRealmFull
+                                ? "Realm full"
+                                : isTierLockedInSimpleMode && info?.tier
+                                  ? `Switch to Resource mode to build Tier ${info.tier} military buildings.`
+                                  : undefined;
                             const buildKey = building.toString();
                             const isPending = Boolean(pendingBuilds[buildKey]);
                             const count = getBuildingCountFor(building);
@@ -724,7 +752,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                                 key={index}
                                 buildingId={building}
                                 onClick={() => {
-                                  if (!canBuild) return;
+                                  if (!canBuild || isRealmFull) return;
                                   if (previewBuilding?.type === building) {
                                     setPreviewBuilding(null);
                                   } else {
@@ -749,11 +777,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                                 }
                                 hasFunds={hasBalance}
                                 hasPopulation={hasEnoughPopulation}
-                                disabled={isTierLockedInSimpleMode}
+                                disabled={isTierLockedInSimpleMode || isRealmFull}
                                 disabledReason={disabledReason}
                                 count={count}
                                 onBuild={() => handleAutoBuild({ type: building })}
-                                buildDisabled={!canBuild || isPending}
+                                buildDisabled={!canBuild || isPending || isRealmFull}
                                 buildLoading={isPending}
                               />
                             );
