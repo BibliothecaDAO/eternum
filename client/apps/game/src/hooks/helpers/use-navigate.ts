@@ -203,6 +203,27 @@ export const useGoToStructure = (setupResult: SetupResult | null) => {
     [setupResult],
   );
 
+  const updateSelectedHex = useCallback(
+    (worldMapPosition?: { col: number; row: number }) => {
+      if (!worldMapPosition) {
+        return;
+      }
+
+      const col = Number(worldMapPosition.col);
+      const row = Number(worldMapPosition.row);
+
+      if (!Number.isFinite(col) || !Number.isFinite(row)) {
+        return;
+      }
+
+      const nextSelection = { col, row };
+      setSelectedHex(nextSelection);
+      // World scene clears selection on URL changes; reapply next tick to keep the tile highlighted.
+      setTimeout(() => setSelectedHex(nextSelection), 0);
+    },
+    [setSelectedHex],
+  );
+
   return async (
     structureEntityId: ID,
     positionInput: PositionLike,
@@ -223,12 +244,7 @@ export const useGoToStructure = (setupResult: SetupResult | null) => {
       worldMapPosition,
     });
 
-    if (worldMapPosition) {
-      setSelectedHex({
-        col: Number(worldMapPosition.col),
-        row: Number(worldMapPosition.row),
-      });
-    }
+    updateSelectedHex(worldMapPosition);
 
     if (isMapView) {
       navigateToMapView(targetPosition);
