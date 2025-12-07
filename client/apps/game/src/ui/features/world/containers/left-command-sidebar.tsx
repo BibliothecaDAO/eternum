@@ -15,6 +15,15 @@ import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { ResourceArrivals as AllResourceArrivals, MarketModal } from "@/ui/features/economy/trading";
 import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
 import { Bridge } from "@/ui/features/infrastructure";
+import {
+  RealtimeChatShell,
+  useRealtimeChatActions,
+  useRealtimeChatInitializer,
+  useRealtimeConnection,
+  useRealtimeChatSelector,
+  useRealtimeTotals,
+  type InitializeRealtimeClientParams,
+} from "@/ui/features/social";
 import { StoryEventsChronicles } from "@/ui/features/story-events";
 import { construction, military, trade } from "@/ui/features/world";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
@@ -52,10 +61,11 @@ import {
   Tent,
   ChevronsUp,
   ChevronUp,
+  MessageCircle,
   ShieldCheck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { lazy, memo, Suspense, useCallback, useMemo, useState } from "react";
+import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import clsx from "clsx";
 import { StructureEditPopup } from "@/ui/features/world/components/structure-edit-popup";
@@ -64,6 +74,7 @@ type CircleButtonProps = ComponentProps<typeof CircleButton>;
 
 type NavigationItem = {
   id: MenuEnum;
+  children?: ReactNode;
 } & Pick<
   CircleButtonProps,
   | "active"
@@ -126,6 +137,57 @@ type LeftPanelHeaderProps = {
   nameUpdateVersion: number;
   favorites: number[];
   onToggleFavorite: (entityId: number) => void;
+};
+
+const connectionTone = {
+  connected: "bg-emerald-400 animate-pulse",
+  error: "bg-red-400",
+  default: "bg-neutral-500",
+} as const;
+
+const getConnectionToneClass = (status: string | undefined) => {
+  if (status === "connected") {
+    return connectionTone.connected;
+  }
+  if (status === "error") {
+    return connectionTone.error;
+  }
+  return connectionTone.default;
+};
+
+const useRealtimeChatConfig = () => {
+  const ConnectedAccount = useAccountStore((state) => state.account);
+  const accountName = useAccountStore((state) => state.accountName);
+
+  const defaultZoneId = "global";
+  const zoneIds = useMemo(() => [defaultZoneId], [defaultZoneId]);
+  const realtimeBaseUrl = (import.meta.env.VITE_PUBLIC_REALTIME_URL as string | undefined) ?? "";
+
+  const initializer = useMemo<InitializeRealtimeClientParams | null>(() => {
+    if (!realtimeBaseUrl) return null;
+
+    const walletAddress = ConnectedAccount?.address ?? undefined;
+    const normalizedAccountName = accountName?.trim() ?? "";
+    const hasUsername = normalizedAccountName.length > 0;
+    const playerId = hasUsername ? normalizedAccountName : (walletAddress ?? "demo-player");
+    const displayName = hasUsername ? normalizedAccountName : undefined;
+
+    return {
+      baseUrl: realtimeBaseUrl,
+      identity: {
+        playerId,
+        walletAddress,
+        displayName,
+      },
+      queryParams: {
+        walletAddress,
+        playerName: displayName,
+      },
+      joinZones: zoneIds,
+    };
+  }, [ConnectedAccount?.address, accountName, realtimeBaseUrl, zoneIds]);
+
+  return { initializer, defaultZoneId, zoneIds };
 };
 
 const DEFAULT_BUTTON_SIZE: CircleButtonProps["size"] = "lg";
@@ -763,6 +825,36 @@ const buildEconomyNavigationItems = ({
   return items.filter((item) => allowedMenus.includes(item.id));
 };
 
+type LeftPanelChatProps = {
+  initializer: InitializeRealtimeClientParams | null;
+  zoneIds: string[];
+  defaultZoneId: string;
+};
+
+const LeftPanelChat = ({ initializer, zoneIds, defaultZoneId }: LeftPanelChatProps) => {
+  if (!initializer) {
+    return (
+      <div className="flex h-full items-center justify-center p-4 text-sm text-gold/70">
+        Chat is unavailable. Check your realtime configuration.
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full">
+      <RealtimeChatShell
+        initializer={initializer}
+        zoneIds={zoneIds}
+        defaultZoneId={defaultZoneId}
+        autoInitializeClient={false}
+        displayMode="embedded"
+        showInlineToggle={false}
+        className="h-full"
+      />
+    </div>
+  );
+};
+
 const EntityDetails = lazy(() =>
   import("@/ui/modules/entity-details/entity-details").then((module) => ({ default: module.EntityDetails })),
 );
@@ -844,9 +936,35 @@ export const LeftCommandSidebar = memo(() => {
 
   const toggleModal = useUIStore((state) => state.toggleModal);
 
+  const {
+    initializer: realtimeInitializer,
+    defaultZoneId: chatDefaultZoneId,
+    zoneIds: chatZoneIds,
+  } = useRealtimeChatConfig();
+  useRealtimeChatInitializer(realtimeInitializer);
+  const chatActions = useRealtimeChatActions();
+  const { connectionStatus } = useRealtimeConnection();
+  const { unreadDirectTotal, unreadWorldTotal } = useRealtimeTotals();
+  const unreadChatTotal = unreadDirectTotal + unreadWorldTotal;
+  const isChatOpen = useRealtimeChatSelector((state) => state.isShellOpen);
+
   const isBlitz = getIsBlitz();
 
   const navHeight = `calc(100vh - ${HEADER_HEIGHT}px)`;
+
+  useEffect(() => {
+    if (view === LeftView.ChatView) {
+      chatActions.setShellOpen(true);
+    } else {
+      chatActions.setShellOpen(false);
+    }
+  }, [chatActions, view]);
+
+  useEffect(() => {
+    if (!isChatOpen && view === LeftView.ChatView) {
+      setView(LeftView.None);
+    }
+  }, [isChatOpen, setView, view]);
 
   const structureInfo = useMemo(() => {
     // Include structureNameVersion to refresh cached info when renames happen locally.
@@ -905,6 +1023,39 @@ export const LeftCommandSidebar = memo(() => {
     [rightView, view, setRightView, setView, disableButtons, isBlitz, handleOpenTransferPopup, isTransferPopupOpen],
   );
 
+  const chatNavigationItem = useMemo<NavigationItem>(() => {
+    const isActive = view === LeftView.ChatView;
+    return {
+      id: MenuEnum.chat,
+      className: "chat-selector",
+      label: "Chat",
+      size: DEFAULT_BUTTON_SIZE,
+      tooltipLocation: "top",
+      disabled: !realtimeInitializer,
+      active: isActive,
+      onClick: () => {
+        setRightView(RightView.None);
+        setView(isActive ? LeftView.None : LeftView.ChatView);
+      },
+      primaryNotification:
+        unreadChatTotal > 0
+          ? {
+              value: unreadChatTotal,
+              color: "red",
+              location: "topright" as const,
+            }
+          : undefined,
+      children: (
+        <div className="relative flex h-full w-full items-center justify-center">
+          <MessageCircle className="h-4 w-4 md:h-5 md:w-5" style={{ color: "#996929" }} />
+          <span
+            className={clsx("absolute bottom-1 right-1 h-2 w-2 rounded-full", getConnectionToneClass(connectionStatus))}
+          />
+        </div>
+      ),
+    };
+  }, [connectionStatus, realtimeInitializer, setRightView, setView, unreadChatTotal, view]);
+
   const ConnectedAccount = useAccountStore((state) => state.account);
 
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -912,6 +1063,7 @@ export const LeftCommandSidebar = memo(() => {
   const computedWidth = isCollapsed ? HANDLE_WIDTH : PANEL_WIDTH + HANDLE_WIDTH;
   const panelHeightStyle = { height: navHeight, maxHeight: navHeight };
   const showEmptyState = false;
+  const contentScrollClass = view === LeftView.ChatView ? "overflow-hidden" : "overflow-y-auto";
 
   const orderedIds: MenuEnum[] = [
     MenuEnum.entityDetails, // Realm Info
@@ -919,10 +1071,12 @@ export const LeftCommandSidebar = memo(() => {
     MenuEnum.military, // Army
     MenuEnum.resourceArrivals, // Donkey arrivals
     MenuEnum.transfer, // Transfers
+    MenuEnum.chat, // Chat
     MenuEnum.storyEvents, // Chronicles
   ];
+  const navigationItems = [...realmNavigationItems, chatNavigationItem, ...economyNavigationItems];
   const combinedNavigationItems = orderedIds
-    .map((id) => [...realmNavigationItems, ...economyNavigationItems].find((item) => item.id === id))
+    .map((id) => navigationItems.find((item) => item.id === id))
     .filter((item): item is NavigationItem => Boolean(item));
   const structureNameMetadata = structureNameChange ? getStructureName(structureNameChange, isBlitz) : null;
   const editingStructureId = structureNameChange?.entity_id ? Number(structureNameChange.entity_id) : null;
@@ -972,11 +1126,20 @@ export const LeftCommandSidebar = memo(() => {
                 onToggleFavorite={toggleFavorite}
               />
               <div className="flex-1 overflow-hidden">
-                <div className="h-full overflow-y-auto pr-1">
+                <div className={clsx("h-full pr-1", contentScrollClass)}>
                   <Suspense fallback={<div className="p-8">Loading...</div>}>
                     {view === LeftView.StoryEvents && (
                       <div className="story-events-selector flex h-full flex-col flex-1 overflow-y-auto">
                         <StoryEventsChronicles />
+                      </div>
+                    )}
+                    {view === LeftView.ChatView && (
+                      <div className="h-full">
+                        <LeftPanelChat
+                          initializer={realtimeInitializer}
+                          zoneIds={chatZoneIds}
+                          defaultZoneId={chatDefaultZoneId}
+                        />
                       </div>
                     )}
                     {view !== LeftView.StoryEvents && (view === LeftView.EntityView || view === LeftView.None) && (

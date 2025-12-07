@@ -50,11 +50,6 @@ const TopHeader = lazy(() =>
     default: module.TopHeader,
   })),
 );
-const RealtimeChatPortal = lazy(() =>
-  import("../features/world/containers/realtime-chat-portal").then((module) => ({
-    default: module.RealtimeChatPortal,
-  })),
-);
 const SelectedTilePanel = lazy(() =>
   import("../features/world/components/selected-tile-panel").then((module) => ({
     default: module.SelectedTilePanel,
@@ -160,8 +155,6 @@ const WorldHud = () => (
     </TopLeftContainer>
 
     <SelectedTilePanel />
-
-    <RealtimeChatPortal />
   </div>
 );
 

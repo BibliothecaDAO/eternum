@@ -158,5 +158,6 @@ export enum MenuEnum {
   automation = "automation",
   transfer = "transfer",
   relics = "relics",
+  chat = "chat",
   storyEvents = "storyEvents",
 }
