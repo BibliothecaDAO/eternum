@@ -777,7 +777,7 @@ export const StoryEventsChronicles: React.FC = () => {
   });
   const [visibleCount, setVisibleCount] = useState(DEFAULT_VISIBLE_EVENTS);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const [filtersCollapsed, setFiltersCollapsed] = useState(false);
+  const [filtersCollapsed, setFiltersCollapsed] = useState(true);
 
   useEffect(() => {
     const handleRefresh = () => setMapDataVersion((version) => version + 1);
