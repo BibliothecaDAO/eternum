@@ -590,17 +590,6 @@ const buildRealmNavigationItems = ({
       onClick: toggleView(LeftView.EntityView),
     },
     {
-      id: MenuEnum.military,
-      className: "military-selector",
-      image: BuildingThumbs.military,
-      tooltipLocation: "top",
-      label: military,
-      size: DEFAULT_BUTTON_SIZE,
-      disabled: disableButtons,
-      active: view === LeftView.MilitaryView,
-      onClick: toggleView(LeftView.MilitaryView),
-    },
-    {
       id: MenuEnum.construction,
       className: "construction-selector",
       image: BuildingThumbs.construction,
@@ -610,6 +599,17 @@ const buildRealmNavigationItems = ({
       disabled: disableButtons || !isRealmOrVillage,
       active: view === LeftView.ConstructionView,
       onClick: toggleView(LeftView.ConstructionView),
+    },
+    {
+      id: MenuEnum.military,
+      className: "military-selector",
+      image: BuildingThumbs.military,
+      tooltipLocation: "top",
+      label: military,
+      size: DEFAULT_BUTTON_SIZE,
+      disabled: disableButtons,
+      active: view === LeftView.MilitaryView,
+      onClick: toggleView(LeftView.MilitaryView),
     },
     {
       id: MenuEnum.resourceArrivals,
@@ -709,17 +709,6 @@ const buildEconomyNavigationItems = ({
       },
     },
     {
-      id: MenuEnum.bridge,
-      className: "bridge-selector",
-      image: BuildingThumbs.bridge,
-      tooltipLocation: "top",
-      label: "Bridge",
-      size: DEFAULT_BUTTON_SIZE,
-      disabled: disableButtons,
-      active: rightView === RightView.Bridge,
-      onClick: toggleView(RightView.Bridge),
-    },
-    {
       id: MenuEnum.storyEvents,
       className: "story-events-selector",
       image: BuildingThumbs.storyEvents,
@@ -735,7 +724,6 @@ const buildEconomyNavigationItems = ({
   const allowedMenus: MenuEnum[] = [
     MenuEnum.transfer,
     MenuEnum.storyEvents,
-    ...(isBlitz ? [] : [MenuEnum.bridge]),
   ];
 
   return items.filter((item) => allowedMenus.includes(item.id));
@@ -885,9 +873,17 @@ export const LeftCommandSidebar = memo(() => {
   const panelHeightStyle = { height: navHeight, maxHeight: navHeight };
   const showEmptyState = false;
 
-  const combinedNavigationItems = [...realmNavigationItems, ...economyNavigationItems].filter(
-    (item) => item.id !== MenuEnum.transfer,
-  );
+  const orderedIds: MenuEnum[] = [
+    MenuEnum.entityDetails, // Realm Info
+    MenuEnum.construction, // Buildings
+    MenuEnum.military, // Army
+    MenuEnum.transfer, // Transfers
+    MenuEnum.resourceArrivals, // Donkey arrivals
+    MenuEnum.storyEvents, // Chronicles
+  ];
+  const combinedNavigationItems = orderedIds
+    .map((id) => [...realmNavigationItems, ...economyNavigationItems].find((item) => item.id === id))
+    .filter((item): item is NavigationItem => Boolean(item));
   const structureNameMetadata = structureNameChange ? getStructureName(structureNameChange, isBlitz) : null;
   const editingStructureId = structureNameChange?.entity_id ? Number(structureNameChange.entity_id) : null;
 
