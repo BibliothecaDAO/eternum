@@ -510,7 +510,7 @@ const LocalTilePanel = () => {
                       variant="danger"
                       disabled={isActionLoading}
                       onClick={handleDestroy}
-                      className="text-xxs h-7 flex items-center gap-2 bg-red-700 hover:bg-red-600 border-red-500 text-white"
+                      className="text-xxs h-7 flex items-center gap-2"
                     >
                       <Trash2 className="h-3 w-3" />
                       {showDestroyConfirm ? "Confirm" : "Delete"}

@@ -404,6 +404,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
   const [selectedTab, setSelectedTab] = useState(1);
   const [selectedArmyType, setSelectedArmyType] = useState<ArmyTypeLabel | null>(null);
+  const [visitedTabs, setVisitedTabs] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (armyGroups.length === 0) {
@@ -438,7 +439,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
             <div className="resource-tab-selector">Resources</div>
           </div>
         ),
-        component: (
+        component: () => (
           <div className="resource-cards-selector grid grid-cols-2 gap-2 p-2">
             {realm?.resources.map((resourceId) => {
               const resource = findResourceById(resourceId)!;
@@ -518,7 +519,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
             <div>Economic</div>
           </div>
         ),
-        component: (
+        component: () => (
           <div className="economy-selector grid grid-cols-2 gap-2 p-2">
             {buildingTypes
               .filter((a) => isEconomyBuilding(BuildingType[a as keyof typeof BuildingType]))
@@ -793,7 +794,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
               </div>
             </div>
           );
-        })(),
+        }),
       },
     ],
     [
@@ -809,6 +810,17 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       getBuildingCountFor,
     ],
   );
+
+  useEffect(() => {
+    const currentKey = tabs[selectedTab]?.key;
+    if (!currentKey) return;
+    setVisitedTabs((prev) => {
+      if (prev.has(currentKey)) return prev;
+      const next = new Set(prev);
+      next.add(currentKey);
+      return next;
+    });
+  }, [selectedTab, tabs]);
 
   return (
     <div className={`${className}`}>
@@ -845,9 +857,10 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         </Tabs.List>
 
         <Tabs.Panels className="overflow-hidden">
-          {tabs.map((tab, index) => (
-            <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
-          ))}
+          {tabs.map((tab, index) => {
+            const shouldRender = visitedTabs.has(tab.key) || selectedTab === index;
+            return <Tabs.Panel key={index}>{shouldRender ? tab.component() : null}</Tabs.Panel>;
+          })}
         </Tabs.Panels>
       </Tabs>
     </div>
