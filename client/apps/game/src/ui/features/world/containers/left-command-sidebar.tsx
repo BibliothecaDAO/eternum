@@ -586,7 +586,7 @@ const buildRealmNavigationItems = ({
       label: "Realm Info",
       size: DEFAULT_BUTTON_SIZE,
       disabled: disableButtons,
-      active: view === LeftView.EntityView || view === LeftView.None,
+      active: view === LeftView.EntityView,
       onClick: toggleView(LeftView.EntityView),
     },
     {
@@ -885,7 +885,9 @@ export const LeftCommandSidebar = memo(() => {
   const panelHeightStyle = { height: navHeight, maxHeight: navHeight };
   const showEmptyState = false;
 
-  const combinedNavigationItems = [...realmNavigationItems, ...economyNavigationItems];
+  const combinedNavigationItems = [...realmNavigationItems, ...economyNavigationItems].filter(
+    (item) => item.id !== MenuEnum.transfer,
+  );
   const structureNameMetadata = structureNameChange ? getStructureName(structureNameChange, isBlitz) : null;
   const editingStructureId = structureNameChange?.entity_id ? Number(structureNameChange.entity_id) : null;
 
@@ -936,26 +938,29 @@ export const LeftCommandSidebar = memo(() => {
               <div className="flex-1 overflow-hidden">
                 <div className="h-full overflow-y-auto pr-1">
                   <Suspense fallback={<div className="p-8">Loading...</div>}>
-                    {rightView === RightView.StoryEvents ? (
+                    {rightView === RightView.StoryEvents && (
                       <div className="story-events-selector flex h-full flex-col flex-1 overflow-y-auto">
                         <StoryEventsChronicles />
                       </div>
-                    ) : (
-                      <>
-                        {(view === LeftView.EntityView || view === LeftView.None) && <EntityDetails />}
-                        {view === LeftView.MilitaryView && <Military entityId={structureEntityId} />}
-                        {view === LeftView.ConstructionView && <SelectPreviewBuildingMenu entityId={structureEntityId} />}
-                        {view === LeftView.HyperstructuresView &&
-                          (isBlitz ? <BlitzHyperstructuresMenu /> : <EternumHyperstructuresMenu />)}
-                        {view === LeftView.ResourceArrivals && (
-                          <AllResourceArrivals hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
-                        )}
-                        {rightView === RightView.Bridge && (
-                          <div className="bridge-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
-                            <Bridge structures={structures} />
-                          </div>
-                        )}
-                      </>
+                    )}
+                    {rightView !== RightView.StoryEvents && (view === LeftView.EntityView || view === LeftView.None) && (
+                      <EntityDetails />
+                    )}
+                    {rightView !== RightView.StoryEvents && view === LeftView.MilitaryView && (
+                      <Military entityId={structureEntityId} />
+                    )}
+                    {rightView !== RightView.StoryEvents && view === LeftView.ConstructionView && (
+                      <SelectPreviewBuildingMenu entityId={structureEntityId} />
+                    )}
+                    {rightView !== RightView.StoryEvents && view === LeftView.HyperstructuresView &&
+                      (isBlitz ? <BlitzHyperstructuresMenu /> : <EternumHyperstructuresMenu />)}
+                    {rightView !== RightView.StoryEvents && view === LeftView.ResourceArrivals && (
+                      <AllResourceArrivals hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
+                    )}
+                    {rightView === RightView.Bridge && (
+                      <div className="bridge-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
+                        <Bridge structures={structures} />
+                      </div>
                     )}
                     {showEmptyState && (
                       <div className="flex h-full items-center justify-center p-8 text-center text-sm text-gold/70">
