@@ -936,23 +936,26 @@ export const LeftCommandSidebar = memo(() => {
               <div className="flex-1 overflow-hidden">
                 <div className="h-full overflow-y-auto pr-1">
                   <Suspense fallback={<div className="p-8">Loading...</div>}>
-                    {(view === LeftView.EntityView || view === LeftView.None) && <EntityDetails />}
-                    {view === LeftView.MilitaryView && <Military entityId={structureEntityId} />}
-                    {view === LeftView.ConstructionView && <SelectPreviewBuildingMenu entityId={structureEntityId} />}
-                    {view === LeftView.HyperstructuresView &&
-                      (isBlitz ? <BlitzHyperstructuresMenu /> : <EternumHyperstructuresMenu />)}
-                    {view === LeftView.ResourceArrivals && (
-                      <AllResourceArrivals hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
-                    )}
-                    {rightView === RightView.Bridge && (
-                      <div className="bridge-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
-                        <Bridge structures={structures} />
-                      </div>
-                    )}
-                    {rightView === RightView.StoryEvents && (
+                    {rightView === RightView.StoryEvents ? (
                       <div className="story-events-selector flex h-full flex-col flex-1 overflow-y-auto">
                         <StoryEventsChronicles />
                       </div>
+                    ) : (
+                      <>
+                        {(view === LeftView.EntityView || view === LeftView.None) && <EntityDetails />}
+                        {view === LeftView.MilitaryView && <Military entityId={structureEntityId} />}
+                        {view === LeftView.ConstructionView && <SelectPreviewBuildingMenu entityId={structureEntityId} />}
+                        {view === LeftView.HyperstructuresView &&
+                          (isBlitz ? <BlitzHyperstructuresMenu /> : <EternumHyperstructuresMenu />)}
+                        {view === LeftView.ResourceArrivals && (
+                          <AllResourceArrivals hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
+                        )}
+                        {rightView === RightView.Bridge && (
+                          <div className="bridge-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
+                            <Bridge structures={structures} />
+                          </div>
+                        )}
+                      </>
                     )}
                     {showEmptyState && (
                       <div className="flex h-full items-center justify-center p-8 text-center text-sm text-gold/70">
