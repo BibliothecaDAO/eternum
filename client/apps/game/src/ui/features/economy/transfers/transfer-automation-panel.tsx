@@ -26,7 +26,7 @@ import {
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { Castle, Crown, Pickaxe, Sparkles, Tent } from "lucide-react";
+import { Castle, Crown, Pickaxe, Sparkles, Star, Tent } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -869,6 +869,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
               const entityId = Number(ps.entityId);
               const isSel = destinationIds.includes(entityId);
               const Icon = getStructureIcon(ps.category, isBlitz);
+              const isFavorite = favoriteDestinationIds.has(entityId);
               return (
                 <button
                   key={`dst-${ps.entityId}`}
@@ -877,6 +878,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
                   onClick={() => toggleDestinationSelection(entityId)}
                 >
                   <div className="flex items-center gap-2">
+                    {isFavorite && <Star className="h-4 w-4 fill-current text-gold" aria-hidden />}
                     <Icon className="h-4 w-4 text-gold" aria-hidden />
                     <div className="text-sm font-semibold">{name}</div>
                   </div>
