@@ -17,7 +17,7 @@ import {
 import { ResourcesIds } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import clsx from "clsx";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { REALM_PRESETS, RealmPresetId, calculatePresetAllocations, inferRealmPreset } from "@/utils/automation-presets";
 
 type RealmAutomationPanelProps = {
@@ -28,6 +28,20 @@ type RealmAutomationPanelProps = {
 };
 
 const sliderStep = 1;
+const clampPercent = (value: number): number => {
+  if (!Number.isFinite(value)) return 0;
+  if (value < 0) return 0;
+  if (value > MAX_RESOURCE_ALLOCATION_PERCENT) return MAX_RESOURCE_ALLOCATION_PERCENT;
+  return Math.round(value);
+};
+const ARMY_T2_T3_RESOURCES = new Set<ResourcesIds>([
+  ResourcesIds.KnightT2,
+  ResourcesIds.CrossbowmanT2,
+  ResourcesIds.PaladinT2,
+  ResourcesIds.KnightT3,
+  ResourcesIds.CrossbowmanT3,
+  ResourcesIds.PaladinT3,
+]);
 
 const formatPerCycle = (value: number): string => {
   if (!Number.isFinite(value) || Math.abs(value) < 0.0001) return "0/c";
@@ -705,12 +719,27 @@ export const RealmAutomationPanel = ({
             const overBudgetResources = impactedResources.filter(
               (id) => (aggregatedUsageRecord[id] ?? 0) > MAX_RESOURCE_ALLOCATION_PERCENT,
             );
+            const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+              const next = clampPercent(Number(event.target.value));
+              onChange(next);
+            };
 
             return (
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-xs text-gold/80">
                   <span>{sliderLabel}</span>
-                  <span className="font-semibold text-gold">{value}%</span>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      min={0}
+                      max={MAX_RESOURCE_ALLOCATION_PERCENT}
+                      step={sliderStep}
+                      value={value}
+                      onChange={handleInputChange}
+                      className="w-16 rounded border border-gold/30 bg-black/40 px-2 py-1 text-right text-xs text-gold focus:border-gold/60 focus:outline-none"
+                    />
+                    <span className="font-semibold text-gold">%</span>
+                  </div>
                 </div>
                 <input
                   type="range"
@@ -752,7 +781,7 @@ export const RealmAutomationPanel = ({
           };
 
           const isDonkeyResource = resourceId === ResourcesIds.Donkey;
-          const laborDisabled = isDonkeyResource;
+          const laborDisabled = isDonkeyResource || ARMY_T2_T3_RESOURCES.has(resourceId as ResourcesIds);
 
           return (
             <div

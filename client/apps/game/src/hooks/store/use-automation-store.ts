@@ -469,7 +469,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
               },
             };
             const bootstrapAllocation = calculateResourceBootstrapAllocation(configWithResource, resourceId);
-            if (bootstrapAllocation && bootstrapAllocation.resourceToResource > 0) {
+            if (bootstrapAllocation) {
               newConfig = {
                 ...baseConfig,
                 percentages: {
