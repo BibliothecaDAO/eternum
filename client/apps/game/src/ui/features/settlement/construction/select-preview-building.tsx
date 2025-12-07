@@ -48,7 +48,7 @@ import {
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
-import { InfoIcon, Plus } from "lucide-react";
+import { InfoIcon } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -565,17 +565,18 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     }}
                     active={previewBuilding?.type === building}
                     buildingName={BuildingTypeToString[building]}
-                  resourceName={
-                    configManager.getResourceBuildingProduced(building)
-                      ? (ResourcesIds[
-                          configManager.getResourceBuildingProduced(building)
-                        ] as keyof typeof ResourcesIds)
-                      : undefined
-                  }
-                  productionStatus={productionStatus}
-                  currentTime={currentTime}
-                  toolTip={<BuildingInfo buildingId={building} entityId={entityId} useSimpleCost={useSimpleCost} />}
-                  hasFunds={hasBalance}
+                    resourceName={
+                      configManager.getResourceBuildingProduced(building)
+                        ? (ResourcesIds[
+                            configManager.getResourceBuildingProduced(building)
+                          ] as keyof typeof ResourcesIds)
+                        : undefined
+                    }
+                    isWorkersHut={isWorkersHut}
+                    productionStatus={productionStatus}
+                    currentTime={currentTime}
+                    toolTip={<BuildingInfo buildingId={building} entityId={entityId} useSimpleCost={useSimpleCost} />}
+                    hasFunds={hasBalance}
                   hasPopulation={hasEnoughPopulation}
                   count={count}
                   onBuild={() => handleAutoBuild({ type: building })}
@@ -832,6 +833,7 @@ const BuildingCard = ({
   active,
   buildingName,
   resourceName,
+  isWorkersHut,
   productionStatus,
   currentTime,
   toolTip,
@@ -852,6 +854,7 @@ const BuildingCard = ({
   active: boolean;
   buildingName: string;
   resourceName?: string;
+  isWorkersHut?: boolean;
   productionStatus?: ResourceProductionStatus;
   currentTime?: number;
   toolTip: React.ReactElement;
@@ -937,9 +940,6 @@ const BuildingCard = ({
       />
       <div className="absolute top-2 left-2 right-2 z-10 flex items-start justify-between gap-2">
         <div className="flex flex-col items-start gap-2">
-          <span className="rounded-full bg-amber-500/80 px-2.5 py-1 text-[11px] font-semibold text-black shadow">
-            {count}
-          </span>
           <button
             type="button"
             disabled={Boolean(buildDisabled || isDisabled || lacksRequirements)}
@@ -949,15 +949,20 @@ const BuildingCard = ({
               onBuild?.();
             }}
             className={clsx(
-              "flex h-8 w-8 items-center justify-center rounded-full border border-amber-500 bg-amber-400/90 text-black shadow transition transform",
-              !buildDisabled && !isDisabled && !lacksRequirements && "hover:scale-105 hover:bg-amber-300",
-              (buildDisabled || isDisabled || lacksRequirements) && "opacity-50 cursor-not-allowed",
+              "flex items-center justify-center rounded-md border border-amber-500/80 bg-amber-400/90 px-2.5 py-1 text-[10px] font-semibold text-black shadow transition",
+              !buildDisabled && !isDisabled && !lacksRequirements && "hover:translate-y-[-1px] hover:bg-amber-300",
+              (buildDisabled || isDisabled || lacksRequirements) && "opacity-60 cursor-not-allowed",
             )}
           >
-            {buildLoading ? "…" : <Plus className="h-4 w-4" />}
+            {buildLoading ? "…" : "Build"}
           </button>
         </div>
         <div className="ml-auto flex items-center gap-2">
+          {isWorkersHut && (
+            <span className="inline-flex items-center justify-center rounded-full bg-black/80 px-2 py-0.5 text-[10px] font-semibold text-gold/90 shadow-md border border-gold/30">
+              {count}
+            </span>
+          )}
           {productionBadge ||
             (resourceName && (
               <div className="rounded p-1 bg-brown/40">
