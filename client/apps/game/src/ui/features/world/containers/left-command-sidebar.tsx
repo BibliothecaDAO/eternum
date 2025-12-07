@@ -77,6 +77,7 @@ type RealmNavigationContext = {
 };
 
 type EconomyNavigationContext = {
+  view: LeftView;
   rightView: RightView;
   setRightView: (view: RightView) => void;
   setLeftView: (view: LeftView) => void;
@@ -589,7 +590,7 @@ const buildRealmNavigationItems = ({
       label: "Realm Info",
       size: DEFAULT_BUTTON_SIZE,
       disabled: disableButtons,
-      active: view === LeftView.EntityView,
+      active: view === LeftView.EntityView || view === LeftView.None,
       onClick: toggleView(LeftView.EntityView),
     },
     {
@@ -685,6 +686,7 @@ const buildRealmNavigationItems = ({
 
 const buildEconomyNavigationItems = ({
   rightView,
+  view,
   setRightView,
   setLeftView,
   disableButtons,
@@ -719,8 +721,11 @@ const buildEconomyNavigationItems = ({
       label: "Activity Chronicles",
       size: DEFAULT_BUTTON_SIZE,
       disabled: false,
-      active: rightView === RightView.StoryEvents,
-      onClick: toggleView(RightView.StoryEvents),
+      active: view === LeftView.StoryEvents,
+      onClick: () => {
+        setRightView(RightView.None);
+        setLeftView(view === LeftView.StoryEvents ? LeftView.None : LeftView.StoryEvents);
+      },
     },
   ];
 
@@ -858,6 +863,7 @@ export const LeftCommandSidebar = memo(() => {
     () =>
       buildEconomyNavigationItems({
         rightView,
+        view,
         setRightView,
         setLeftView: setView,
         disableButtons,
@@ -865,7 +871,7 @@ export const LeftCommandSidebar = memo(() => {
         onOpenTransfer: handleOpenTransferPopup,
         isTransferOpen: isTransferPopupOpen,
       }),
-    [rightView, setRightView, setView, disableButtons, isBlitz, handleOpenTransferPopup, isTransferPopupOpen],
+    [rightView, view, setRightView, setView, disableButtons, isBlitz, handleOpenTransferPopup, isTransferPopupOpen],
   );
 
   const ConnectedAccount = useAccountStore((state) => state.account);
@@ -937,23 +943,23 @@ export const LeftCommandSidebar = memo(() => {
               <div className="flex-1 overflow-hidden">
                 <div className="h-full overflow-y-auto pr-1">
                   <Suspense fallback={<div className="p-8">Loading...</div>}>
-                    {rightView === RightView.StoryEvents && (
+                    {view === LeftView.StoryEvents && (
                       <div className="story-events-selector flex h-full flex-col flex-1 overflow-y-auto">
                         <StoryEventsChronicles />
                       </div>
                     )}
-                    {rightView !== RightView.StoryEvents && (view === LeftView.EntityView || view === LeftView.None) && (
+                    {view !== LeftView.StoryEvents && (view === LeftView.EntityView || view === LeftView.None) && (
                       <EntityDetails />
                     )}
-                    {rightView !== RightView.StoryEvents && view === LeftView.MilitaryView && (
+                    {view !== LeftView.StoryEvents && view === LeftView.MilitaryView && (
                       <Military entityId={structureEntityId} />
                     )}
-                    {rightView !== RightView.StoryEvents && view === LeftView.ConstructionView && (
+                    {view !== LeftView.StoryEvents && view === LeftView.ConstructionView && (
                       <SelectPreviewBuildingMenu entityId={structureEntityId} />
                     )}
-                    {rightView !== RightView.StoryEvents && view === LeftView.HyperstructuresView &&
+                    {view !== LeftView.StoryEvents && view === LeftView.HyperstructuresView &&
                       (isBlitz ? <BlitzHyperstructuresMenu /> : <EternumHyperstructuresMenu />)}
-                    {rightView !== RightView.StoryEvents && view === LeftView.ResourceArrivals && (
+                    {view !== LeftView.StoryEvents && view === LeftView.ResourceArrivals && (
                       <AllResourceArrivals hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
                     )}
                     {rightView === RightView.Bridge && (

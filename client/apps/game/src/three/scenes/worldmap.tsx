@@ -1007,7 +1007,8 @@ export default class WorldmapScene extends HexagonScene {
 
   private openBattleLogsPanel() {
     const uiStore = useUIStore.getState();
-    uiStore.setRightNavigationView(RightView.StoryEvents);
+    uiStore.setRightNavigationView(RightView.None);
+    uiStore.setLeftNavigationView(LeftView.StoryEvents);
   }
 
   private notifyArmyUnderAttack(update: BattleEventSystemUpdate) {
