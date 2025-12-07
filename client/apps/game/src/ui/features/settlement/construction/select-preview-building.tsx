@@ -97,9 +97,8 @@ const formatPerSecondValue = (value: number): string => {
   const abs = Math.abs(value);
   if (abs < 0.0001) return "0";
   if (abs >= 1000) return Math.round(abs).toLocaleString();
-  if (abs >= 100) return abs.toFixed(0);
-  if (abs >= 10) return abs.toFixed(1);
-  if (abs >= 1) return abs.toFixed(2);
+  if (abs >= 1) return abs.toFixed(0);
+  if (abs >= 0.1) return abs.toFixed(2);
   return abs.toFixed(3);
 };
 
@@ -755,13 +754,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                                 onBuild={() => handleAutoBuild({ type: building })}
                                 buildDisabled={!canBuild || isPending}
                                 buildLoading={isPending}
-                                badge={
-                                  info?.tier ? (
-                                    <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wider bg-brown/90 text-gold rounded px-2 py-[2px]">
-                                      Tier {info.tier}
-                                    </span>
-                                  ) : undefined
-                                }
                               />
                             );
                           })}
@@ -911,11 +903,7 @@ const BuildingCard = ({
         isProducing={productionStatus.isProducing}
         timeRemainingSeconds={effectiveRemainingSeconds}
         size="xs"
-        cornerTopLeft={
-          productionStatus.isProducing
-            ? `${activeProductionBuildings}/${totalProductionBuildings}`
-            : `${totalProductionBuildings}`
-        }
+        cornerTopLeft={totalProductionBuildings > 0 ? `${totalProductionBuildings}` : undefined}
         cornerTopRight={formatSignedPerSecond(productionStatus.productionPerSecond)?.replace("/s", "")}
         cornerBottomRight={formattedRemaining ?? undefined}
       />
