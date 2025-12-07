@@ -8,7 +8,6 @@ import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { ResourceArrivals as AllResourceArrivals, MarketModal } from "@/ui/features/economy/trading";
 import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
 import { Bridge } from "@/ui/features/infrastructure";
-import { ProductionOverviewPanel } from "@/ui/features/settlement/production/production-overview-panel";
 import { StoryEventsChronicles } from "@/ui/features/story-events";
 import { construction, military, trade } from "@/ui/features/world";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
@@ -708,17 +707,6 @@ const buildEconomyNavigationItems = ({
       onClick: toggleView(RightView.ResourceTable),
     },
     {
-      id: MenuEnum.production,
-      className: "production-selector",
-      image: BuildingThumbs.production,
-      tooltipLocation: "top",
-      label: "Production",
-      size: DEFAULT_BUTTON_SIZE,
-      disabled: disableButtons,
-      active: rightView === RightView.Production,
-      onClick: toggleView(RightView.Production),
-    },
-    {
       id: MenuEnum.transfer,
       className: "transfer-selector",
       image: BuildingThumbs.transfer,
@@ -757,7 +745,6 @@ const buildEconomyNavigationItems = ({
 
   const allowedMenus: MenuEnum[] = [
     MenuEnum.resourceTable,
-    MenuEnum.production,
     MenuEnum.transfer,
     MenuEnum.storyEvents,
     ...(isBlitz ? [] : [MenuEnum.bridge]),
@@ -978,11 +965,6 @@ export const LeftCommandSidebar = memo(() => {
                     {rightView === RightView.ResourceTable && !!structureEntityId && (
                       <div className="entity-resource-table-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
                         <EntityResourceTable entityId={structureEntityId} />
-                      </div>
-                    )}
-                    {rightView === RightView.Production && (
-                      <div className="production-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
-                        <ProductionOverviewPanel />
                       </div>
                     )}
                     {rightView === RightView.Bridge && (

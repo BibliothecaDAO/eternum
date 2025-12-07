@@ -2,12 +2,6 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useAutomationStore } from "@/hooks/store/use-automation-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CompactEntityInventory } from "@/ui/features/world/components/entities/compact-entity-inventory";
-import {
-  ProductionModifyButton,
-  ProductionStatusPill,
-  RealmProductionRecap,
-  resolveAutomationStatusLabel,
-} from "@/ui/features/settlement/production/production-overview-panel";
 import { ProductionModal } from "@/ui/features/settlement";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { Position, getStructureArmyRelicEffects, getStructureRelicEffects, getBlockTimestamp } from "@bibliothecadao/eternum";
@@ -19,6 +13,67 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { memo, useCallback, useMemo } from "react";
 import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
 import { ArrowLeftRight } from "lucide-react";
+import { StructureProductionPanel } from "@/ui/features/world/components/entities/structure-production-panel";
+import { inferRealmPreset } from "@/utils/automation-presets";
+import type { RealmAutomationConfig } from "@/hooks/store/use-automation-store";
+
+const ProductionStatusPill = ({ statusLabel }: { statusLabel: string }) => (
+  <span className="rounded-full border border-gold/30 bg-black/40 px-2 py-0.5 text-[10px] uppercase tracking-wide text-gold/80">
+    {statusLabel}
+  </span>
+);
+
+const ProductionModifyButton = ({
+  onClick,
+  disabled = false,
+}: {
+  onClick?: () => void;
+  disabled?: boolean;
+}) => (
+  <button
+    type="button"
+    disabled={disabled}
+    className={`rounded border border-gold bg-gold px-2 py-0.5 text-[10px] uppercase tracking-wide text-black font-semibold transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-gold ${
+      disabled ? "opacity-60 cursor-not-allowed" : "hover:bg-[#ffd84a] hover:border-gold"
+    }`}
+    onClick={onClick}
+  >
+    Modify
+  </button>
+);
+
+const resolveAutomationStatusLabel = (automation?: RealmAutomationConfig | null): string => {
+  if (!automation) {
+    return "Burning labor";
+  }
+
+  const presetId = inferRealmPreset(automation);
+
+  if (presetId === "idle") {
+    return "Idle";
+  }
+
+  if (presetId === "labor") {
+    return "Burning labor";
+  }
+
+  if (presetId === "resource") {
+    return "Burning resources";
+  }
+
+  const hasLabor = Object.values(automation.resources ?? {}).some(
+    (config) => (config?.percentages?.laborToResource ?? 0) > 0,
+  );
+  const hasResource = Object.values(automation.resources ?? {}).some(
+    (config) => (config?.percentages?.resourceToResource ?? 0) > 0,
+  );
+
+  if (hasLabor && hasResource) return "Burning labor & resources";
+  if (hasResource) return "Burning resources";
+  if (hasLabor) return "Burning labor";
+
+  return "Idle";
+};
 
 const formatRelative = (timestamp?: number) => {
   if (!timestamp) return null;
@@ -137,10 +192,13 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
             </div>
           </div>
           <div className="mt-2">
-            {realmId && structurePosition ? (
-              <RealmProductionRecap
-                realmId={realmId}
-                position={structurePosition}
+            {structure && resources ? (
+              <StructureProductionPanel
+                structure={structure}
+                resources={resources}
+                compact
+                smallTextClass="text-xxs"
+                showTooltip={false}
               />
             ) : (
               <p className="text-xxs text-gold/60 italic">Production data unavailable.</p>

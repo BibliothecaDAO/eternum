@@ -11,7 +11,6 @@ import { useBuildings, useDojo } from "@bibliothecadao/react";
 import { getProducedResource, RealmInfo as RealmInfoType, RELICS, ResourcesIds } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
-import { ProductionOverview } from "./production-overview";
 import { ProductionWorkflows } from "./production-workflows";
 
 export const ProductionBody = ({
@@ -85,26 +84,17 @@ export const ProductionBody = ({
   }, [realm.structure]);
 
   return (
-    <div className="space-y-6">
-      <ProductionOverview
-        realm={realm}
-        activeRelics={activeRelics}
-        wonderBonus={wonderBonus}
-        hasActivatedWonderBonus={hasActivatedWonderBonus || false}
-      />
-
-      <ProductionWorkflows
-        realm={realm}
-        realmDisplayName={realmDisplayName}
-        producedResources={producedResources}
-        productionBuildings={productionBuildings}
-        selectedResource={selectedResource}
-        onSelectResource={onSelectResource}
-        wonderBonus={wonderBonus}
-        productionBonus={productionBonus}
-        troopsBonus={troopsBonus}
-        realmEntityId={realm.entityId.toString()}
-      />
-    </div>
+    <ProductionWorkflows
+      realm={realm}
+      realmDisplayName={realmDisplayName}
+      producedResources={producedResources}
+      productionBuildings={productionBuildings}
+      selectedResource={selectedResource}
+      onSelectResource={onSelectResource}
+      wonderBonus={wonderBonus}
+      productionBonus={productionBonus}
+      troopsBonus={troopsBonus}
+      realmEntityId={realm.entityId.toString()}
+    />
   );
 };
