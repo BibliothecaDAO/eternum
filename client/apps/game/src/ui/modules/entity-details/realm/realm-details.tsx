@@ -16,7 +16,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, RealmLevels, ResourcesIds, StructureType } from "@bibliothecadao/types";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import Button from "@/ui/design-system/atoms/button";
@@ -102,7 +102,7 @@ export const RealmVillageDetails = () => {
 export const RealmUpgradeCompact = () => {
   const dojo = useDojo();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const [isUpgrading, setIsUpgrading] = useState(false);
 
   const structure = useMemo(
     () => getStructure(structureEntityId, ContractAddress(dojo.account.account.address), dojo.setup.components),
@@ -144,6 +144,18 @@ export const RealmUpgradeCompact = () => {
 
   const { nextLevel, missingRequirements, requirements, canUpgrade, handleUpgrade, nextLevelName, isOwner } =
     upgradeInfo;
+
+  const onUpgrade = async () => {
+    if (!canUpgrade || isUpgrading || !isOwner) return;
+    setIsUpgrading(true);
+    try {
+      await handleUpgrade();
+    } catch (error) {
+      console.error("Failed to upgrade realm", error);
+    } finally {
+      setIsUpgrading(false);
+    }
+  };
 
   const missingLabel =
     missingRequirements.length > 0
@@ -206,8 +218,9 @@ export const RealmUpgradeCompact = () => {
             variant={canUpgrade ? "gold" : "outline"}
             size="md"
             className="w-full"
-            disabled={!canUpgrade}
-            onClick={handleUpgrade}
+            disabled={!canUpgrade || isUpgrading}
+            isLoading={isUpgrading}
+            onClick={onUpgrade}
           >
             {canUpgrade ? "Upgrade" : "Need resources"}
           </Button>

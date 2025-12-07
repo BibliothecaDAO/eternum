@@ -7,7 +7,10 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { SecondaryMenuItems } from "@/ui/features/world";
 import { GameEndTimer } from "./game-end-timer";
 import { TickProgress } from "./tick-progress";
-import { useLandingLeaderboardStore } from "@/ui/features/landing/lib/use-landing-leaderboard-store";
+import {
+  MIN_REFRESH_INTERVAL_MS,
+  useLandingLeaderboardStore,
+} from "@/ui/features/landing/lib/use-landing-leaderboard-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
@@ -71,15 +74,20 @@ export const TopHeader = memo(() => {
   const fetchLeaderboardEntries = useLandingLeaderboardStore((state) => state.fetchLeaderboard);
   const fetchPlayerEntry = useLandingLeaderboardStore((state) => state.fetchPlayerEntry);
 
-  useEffect(() => {
-    void fetchLeaderboardEntries({ limit: 50 });
-  }, [fetchLeaderboardEntries]);
+  const headerRefreshIntervalMs = Math.max(MIN_REFRESH_INTERVAL_MS, 60_000);
 
   useEffect(() => {
-    if (account.address) {
-      void fetchPlayerEntry(account.address);
-    }
-  }, [account.address, fetchPlayerEntry]);
+    const refresh = () => {
+      void fetchLeaderboardEntries({ limit: 50, force: true });
+      if (account.address) {
+        void fetchPlayerEntry(account.address, { force: true });
+      }
+    };
+
+    refresh();
+    const intervalId = window.setInterval(refresh, headerRefreshIntervalMs);
+    return () => window.clearInterval(intervalId);
+  }, [account.address, fetchLeaderboardEntries, fetchPlayerEntry, headerRefreshIntervalMs]);
 
   const formatPoints = useCallback((points: number | null | undefined) => {
     if (points === null || points === undefined) {

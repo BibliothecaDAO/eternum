@@ -589,6 +589,11 @@ const StructureLevelUpButton = ({ structureEntityId, className }: StructureLevel
   const [hasUpgraded, setHasUpgraded] = useState(false);
   const upgradeInfo = useStructureUpgrade(typeof structureEntityId === "number" ? structureEntityId : null);
 
+  useEffect(() => {
+    // Re-enable the button once the realm level has changed and fresh data is available
+    setHasUpgraded(false);
+  }, [upgradeInfo?.currentLevel]);
+
   if (!upgradeInfo) {
     return null;
   }
