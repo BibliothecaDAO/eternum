@@ -22,13 +22,6 @@ export const AllResourceArrivals = memo(
 
     return (
       <div className={`p-2 flex flex-col space-y-1 overflow-y-auto gap-2 ${className}`}>
-        <Headline>
-          <div className="flex gap-2">
-            <div className="self-center">Transfers</div>
-            <HintModalButton section={HintSection.Transfers} />
-          </div>
-        </Headline>
-
         {playerStructures.map((structure) => (
           <StructureArrivals key={structure.entityId} structure={structure} />
         ))}

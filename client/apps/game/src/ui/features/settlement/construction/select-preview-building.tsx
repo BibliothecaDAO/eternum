@@ -828,7 +828,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
             </div>
             <span className={`ml-2 text-xs ${useSimpleCost ? "" : "text-gold/50"}`}>Labor</span>
           </label>
-          <HintModalButton className="" section={HintSection.Buildings} />
         </div>
       </div>
 
