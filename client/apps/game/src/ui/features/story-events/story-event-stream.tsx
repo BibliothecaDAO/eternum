@@ -187,6 +187,7 @@ export function StoryEventStream() {
   const { setup } = useDojo();
   const { isMapView } = useQuery();
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
+  const setSelectedHex = useUIStore((state) => state.setSelectedHex);
   const goToStructure = useGoToStructure(setup);
   const navigateToMapView = useNavigateToMapView();
   const mapDataStore = useMemo(() => MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi), []);
@@ -205,7 +206,7 @@ export function StoryEventStream() {
     const seenKeys = new Set<string>();
     const deduped: ProcessedStoryEvent[] = [];
     const sorted = storyEventLog
-      .filter((event) => event.story === "BattleStory" && event.timestampMs >= now - 15_000)
+      .filter((event) => event.story === "BattleStory" && event.timestampMs >= now - 20_000)
       .sort((a, b) => b.timestampMs - a.timestampMs);
     for (const event of sorted) {
       const key = event.tx_hash ?? event.id;
@@ -360,10 +361,23 @@ export function StoryEventStream() {
       setNavigatingId(event.id);
       const position = new Position({ x: location.coordX, y: location.coordY });
 
+      const updateSelection = () => {
+        const col = Number(location.coordX);
+        const row = Number(location.coordY);
+        if (!Number.isFinite(col) || !Number.isFinite(row)) {
+          return;
+        }
+        const next = { col, row };
+        setSelectedHex(next);
+        setTimeout(() => setSelectedHex(next), 0);
+      };
+
       try {
         if (location.type === "structure") {
+          updateSelection();
           await goToStructure(location.entityId, position, isMapView);
         } else {
+          updateSelection();
           navigateToMapView(position);
         }
       } catch (error) {
@@ -372,7 +386,7 @@ export function StoryEventStream() {
         setNavigatingId(null);
       }
     },
-    [getBattleLocation, goToStructure, isMapView, navigateToMapView],
+    [getBattleLocation, goToStructure, isMapView, navigateToMapView, setSelectedHex],
   );
 
   if (battleEvents.length === 0) {
@@ -504,7 +518,7 @@ function StreamItem({
           )}
         >
           <Navigation className="h-3 w-3" />
-          {locationLabel ? `View ${locationLabel.toLowerCase()}` : "View hex"}
+          {locationLabel || "Hex"}
         </button>
       </div>
 
