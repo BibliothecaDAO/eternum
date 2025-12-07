@@ -114,7 +114,9 @@ export const TopHeader = memo(() => {
               ) : (
                 <Swords className="h-4 w-4 text-gold" aria-hidden="true" />
               )}
-              <span className="truncate text-base font-semibold">{accountName ?? playerEntry?.displayName ?? "Player"}</span>
+              <span className="truncate text-base font-semibold">
+                {accountName ?? playerEntry?.displayName ?? "Player"}
+              </span>
               {isSpectating && playerStructures.length === 0 ? (
                 <span className="text-xs text-gold/70 font-[Cinzel]">· Spectating</span>
               ) : playerEntry?.rank ? (

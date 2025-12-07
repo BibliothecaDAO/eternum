@@ -12,7 +12,13 @@ import {
   getGuardsByStructure,
 } from "@bibliothecadao/eternum";
 import { useDojo, useExplorersByStructure, useQuery } from "@bibliothecadao/react";
-import { ClientComponents, ContractAddress, EntityType, RelicRecipientType, StructureType } from "@bibliothecadao/types";
+import {
+  ClientComponents,
+  ContractAddress,
+  EntityType,
+  RelicRecipientType,
+  StructureType,
+} from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -30,13 +36,7 @@ const ProductionStatusPill = ({ statusLabel }: { statusLabel: string }) => (
   </span>
 );
 
-const ProductionModifyButton = ({
-  onClick,
-  disabled = false,
-}: {
-  onClick?: () => void;
-  disabled?: boolean;
-}) => (
+const ProductionModifyButton = ({ onClick, disabled = false }: { onClick?: () => void; disabled?: boolean }) => (
   <button
     type="button"
     disabled={disabled}
@@ -184,19 +184,14 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   });
 
   const guards = useMemo(
-    () =>
-      structure
-        ? getGuardsByStructure(structure).filter((guard) => guard.troops && guard.troops.count > 0n)
-        : [],
+    () => (structure ? getGuardsByStructure(structure).filter((guard) => guard.troops && guard.troops.count > 0n) : []),
     [structure],
   );
 
   const attackArmyCount = explorers.length;
   const guardArmyCount = guards.length;
   const maxAttackArmies =
-    structure?.base?.troop_max_explorer_count !== undefined
-      ? Number(structure.base.troop_max_explorer_count)
-      : null;
+    structure?.base?.troop_max_explorer_count !== undefined ? Number(structure.base.troop_max_explorer_count) : null;
   const maxGuardArmies =
     structure?.base?.troop_max_guard_count !== undefined ? Number(structure.base.troop_max_guard_count) : null;
 

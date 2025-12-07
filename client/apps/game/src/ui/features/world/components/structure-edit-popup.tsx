@@ -35,7 +35,11 @@ export const StructureEditPopup = ({
   const isNameEmpty = trimmedName === "";
 
   return (
-    <SecondaryPopup width="480" name="structure-edit-popup" containerClassName="absolute left-0 top-0 pointer-events-auto">
+    <SecondaryPopup
+      width="480"
+      name="structure-edit-popup"
+      containerClassName="absolute left-0 top-0 pointer-events-auto"
+    >
       <SecondaryPopup.Head onClose={onCancel}>Edit Structure</SecondaryPopup.Head>
       <SecondaryPopup.Body width="100%" height="auto">
         <div className="flex flex-col gap-4 p-4">
@@ -50,7 +54,7 @@ export const StructureEditPopup = ({
                 placeholder="Enter new name"
               />
               {originalName && originalName !== currentName && (
-                <Button variant="default" size="sm" onClick={() => setNewName(originalName)}>
+                <Button variant="default" size="xs" onClick={() => setNewName(originalName)}>
                   Restore
                 </Button>
               )}

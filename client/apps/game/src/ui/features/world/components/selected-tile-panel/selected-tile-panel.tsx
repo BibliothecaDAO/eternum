@@ -15,7 +15,13 @@ import {
   Position as PositionInterface,
 } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { BUILDINGS_CENTER, BuildingType, BuildingTypeToString, ResourcesIds, findResourceById } from "@bibliothecadao/types";
+import {
+  BUILDINGS_CENTER,
+  BuildingType,
+  BuildingTypeToString,
+  ResourcesIds,
+  findResourceById,
+} from "@bibliothecadao/types";
 import { LeftView } from "@/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { memo, ReactNode, useEffect, useMemo, useState } from "react";
@@ -48,6 +54,31 @@ interface PanelFrameProps {
   children: ReactNode;
   className?: string;
 }
+
+interface ResourceAmountEntry {
+  resource: number;
+  amount: number;
+}
+
+const normalizeResourceEntries = (value: unknown): ResourceAmountEntry[] => {
+  if (!value) return [];
+
+  const toEntry = (entry: any): ResourceAmountEntry | null => {
+    if (!entry) return null;
+    const resource = Number(entry.resource ?? entry.resourceId);
+    const amount = Number(entry.amount);
+    if (!Number.isFinite(resource) || !Number.isFinite(amount)) return null;
+    return { resource, amount };
+  };
+
+  if (Array.isArray(value)) {
+    return value.map(toEntry).filter(Boolean) as ResourceAmountEntry[];
+  }
+
+  return Object.values(value as Record<string, unknown>)
+    .map(toEntry)
+    .filter(Boolean) as ResourceAmountEntry[];
+};
 
 const PanelFrame = ({ title, children, className }: PanelFrameProps) => (
   <section
@@ -211,17 +242,16 @@ const LocalTilePanel = () => {
   }, [producedResource]);
 
   const producedResourceName = useMemo(() => {
-    return producedResource !== undefined ? findResourceById(producedResource)?.trait ?? null : null;
+    return producedResource !== undefined ? (findResourceById(producedResource)?.trait ?? null) : null;
   }, [producedResource]);
 
-  const ongoingCost = useMemo(() => {
+  const ongoingCost = useMemo<ResourceAmountEntry[]>(() => {
     if (producedResource === undefined) return [];
     const costs =
       (useSimpleCost
         ? configManager.simpleSystemResourceInputs[producedResource]
-        : configManager.complexSystemResourceInputs[producedResource]) ?? {};
-    const values = Array.isArray(costs) ? costs : Object.values(costs);
-    return values.filter((entry) => entry && entry.resource !== undefined);
+        : configManager.complexSystemResourceInputs[producedResource]) ?? [];
+    return normalizeResourceEntries(costs);
   }, [producedResource, useSimpleCost]);
 
   const consumedBy = useMemo(() => {
@@ -245,19 +275,24 @@ const LocalTilePanel = () => {
   }, [building?.paused]);
   useEffect(() => {
     setShowDestroyConfirm(false);
-  }, [selectedBuildingHex?.outerCol, selectedBuildingHex?.outerRow, selectedBuildingHex?.innerCol, selectedBuildingHex?.innerRow]);
+  }, [
+    selectedBuildingHex?.outerCol,
+    selectedBuildingHex?.outerRow,
+    selectedBuildingHex?.innerCol,
+    selectedBuildingHex?.innerRow,
+  ]);
 
-  const buildCost = useMemo(() => {
+  const buildCost = useMemo<ResourceAmountEntry[]>(() => {
     if (!hasBuilding || buildingCategory === null) return [];
     const rawCost =
       getBuildingCosts(structureEntityId ?? 0, setup.components, buildingCategory as BuildingType, useSimpleCost) ?? [];
-    const values = Array.isArray(rawCost) ? rawCost : Object.values(rawCost);
-    return values.filter((entry) => entry && entry.resource !== undefined);
+    return normalizeResourceEntries(rawCost);
   }, [buildingCategory, hasBuilding, setup.components, structureEntityId, useSimpleCost]);
 
   const isOwnedByPlayer = useMemo(() => {
     if (!building) return false;
-    const ownerId = typeof building.outer_entity_id === "bigint" ? Number(building.outer_entity_id) : building.outer_entity_id;
+    const ownerId =
+      typeof building.outer_entity_id === "bigint" ? Number(building.outer_entity_id) : building.outer_entity_id;
     return playerStructures.some((structure) => structure.entityId === ownerId);
   }, [building, playerStructures]);
 
@@ -355,9 +390,7 @@ const LocalTilePanel = () => {
                   </p>
                   {producedResource && producedResourceName ? (
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-green-300">
-                        +{producedPerTick}
-                      </span>
+                      <span className="text-sm font-semibold text-green-300">+{producedPerTick}</span>
                       <ResourceIcon withTooltip={false} resource={producedResourceName} size="sm" />
                       <button
                         type="button"
@@ -371,7 +404,8 @@ const LocalTilePanel = () => {
                                 {consumedBy.length > 0 ? (
                                   <div className="grid grid-cols-3 gap-2">
                                     {consumedBy.map((resourceId) => {
-                                      const name = findResourceById(Number(resourceId))?.trait ?? `Resource ${resourceId}`;
+                                      const name =
+                                        findResourceById(Number(resourceId))?.trait ?? `Resource ${resourceId}`;
                                       return (
                                         <div
                                           key={resourceId}
@@ -558,9 +592,7 @@ const LocalTilePanel = () => {
                     <p className="text-xxs uppercase tracking-[0.25em] text-gold/60">
                       Upgrade {structureUpgrade.nextLevelName ? `to ${structureUpgrade.nextLevelName}` : "(max)"}
                     </p>
-                    <span className="text-xxs text-gold/70">
-                      {structureUpgrade.nextLevelName ?? "Max level"}
-                    </span>
+                    <span className="text-xxs text-gold/70">{structureUpgrade.nextLevelName ?? "Max level"}</span>
                   </div>
                   {structureUpgrade.nextLevel ? (
                     <div className="space-y-1">
@@ -579,10 +611,7 @@ const LocalTilePanel = () => {
                               </span>
                             </div>
                             <div className="h-1.5 rounded bg-gold/10">
-                              <div
-                                className="h-full rounded bg-gold"
-                                style={{ width: `${pct}%` }}
-                              />
+                              <div className="h-full rounded bg-gold" style={{ width: `${pct}%` }} />
                             </div>
                           </div>
                         );
@@ -628,9 +657,7 @@ export const SelectedTilePanel = memo(() => {
       aria-hidden={!shouldShow}
       style={{ bottom: BOTTOM_PANEL_MARGIN }}
     >
-      <div className="w-full md:w-[37%] lg:w-[27%] md:ml-auto">
-        {isMapView ? <MapTilePanel /> : <LocalTilePanel />}
-      </div>
+      <div className="w-full md:w-[37%] lg:w-[27%] md:ml-auto">{isMapView ? <MapTilePanel /> : <LocalTilePanel />}</div>
     </div>
   );
 });

@@ -3,7 +3,14 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView, RightView } from "@/types";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import { Tabs } from "@/ui/design-system/atoms";
-import { configManager, getEntityInfo, getIsBlitz, getStructureName, Position, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  getEntityInfo,
+  getIsBlitz,
+  getStructureName,
+  Position,
+  setEntityNameLocalStorage,
+} from "@bibliothecadao/eternum";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { ResourceArrivals as AllResourceArrivals, MarketModal } from "@/ui/features/economy/trading";
 import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
@@ -22,11 +29,31 @@ import { useFavoriteStructures } from "@/ui/features/world/containers/top-header
 import { BaseContainer } from "@/ui/shared/containers/base-container";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { ClientComponents, ContractAddress, ID, RealmLevels, Structure, StructureType, getLevelName } from "@bibliothecadao/types";
+import {
+  ClientComponents,
+  ContractAddress,
+  ID,
+  RealmLevels,
+  Structure,
+  StructureType,
+  getLevelName,
+} from "@bibliothecadao/types";
 import type { ComponentProps, ReactNode, MouseEvent, KeyboardEvent } from "react";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { Castle, Crown, Loader2, Pencil, Pickaxe, Sparkles, Star, Tent, ChevronsUp, ChevronUp, ShieldCheck } from "lucide-react";
+import {
+  Castle,
+  Crown,
+  Loader2,
+  Pencil,
+  Pickaxe,
+  Sparkles,
+  Star,
+  Tent,
+  ChevronsUp,
+  ChevronUp,
+  ShieldCheck,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { lazy, memo, Suspense, useCallback, useMemo, useState } from "react";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
@@ -133,29 +160,28 @@ const LeftPanelHeader = ({
   const liveStructure = useComponentValue(components.Structure, structureEntityKey as any);
   const liveStructureBuildings = useComponentValue(components.StructureBuildings, structureEntityKey as any);
 
-  const structureTabs = useMemo(
-    () =>
-      [
-        { key: "realms", label: "Realms", categories: [StructureType.Realm], icon: Crown },
-        {
-          key: "villages",
-          label: isBlitz ? "Camps" : "Villages",
-          categories: [StructureType.Village],
-          icon: isBlitz ? Tent : Castle,
-        },
-        {
-          key: "rifts",
-          label: isBlitz ? "Rifts" : "Essence Rifts",
-          categories: [StructureType.FragmentMine],
-          icon: Pickaxe,
-        },
-        {
-          key: "hyperstructures",
-          label: "Hyperstructures",
-          categories: [StructureType.Hyperstructure],
-          icon: Sparkles,
-        },
-      ] satisfies { key: string; label: string; categories: StructureType[]; icon: LucideIcon }[],
+  const structureTabs = useMemo<Array<{ key: string; label: string; categories: StructureType[]; icon: LucideIcon }>>(
+    () => [
+      { key: "realms", label: "Realms", categories: [StructureType.Realm], icon: Crown },
+      {
+        key: "villages",
+        label: isBlitz ? "Camps" : "Villages",
+        categories: [StructureType.Village],
+        icon: isBlitz ? Tent : Castle,
+      },
+      {
+        key: "rifts",
+        label: isBlitz ? "Rifts" : "Essence Rifts",
+        categories: [StructureType.FragmentMine],
+        icon: Pickaxe,
+      },
+      {
+        key: "hyperstructures",
+        label: "Hyperstructures",
+        categories: [StructureType.Hyperstructure],
+        icon: Sparkles,
+      },
+    ],
     [isBlitz],
   );
 
@@ -179,11 +205,8 @@ const LeftPanelHeader = ({
       const hasBasePopulation =
         structure.category === StructureType.Realm || structure.category === StructureType.Village;
       const basePopulationCapacity = hasBasePopulation ? configManager.getBasePopulationCapacity() : 0;
-      const normalizedBasePopulationCapacity = hasBasePopulation
-        ? Math.max(Number(basePopulationCapacity ?? 0), 6)
-        : 0;
-      const populationCapacity =
-        Number(structureBuildings?.population.max ?? 0) + normalizedBasePopulationCapacity;
+      const normalizedBasePopulationCapacity = hasBasePopulation ? Math.max(Number(basePopulationCapacity ?? 0), 6) : 0;
+      const populationCapacity = Number(structureBuildings?.population.max ?? 0) + normalizedBasePopulationCapacity;
       const groupColor = structureGroups[structure.entityId] ?? null;
 
       const isFavorite = favorites.includes(structure.entityId);
@@ -211,30 +234,37 @@ const LeftPanelHeader = ({
       ? structuresWithMetadata
       : structuresWithMetadata.filter((structure) => currentTab.categories.includes(structure.category));
 
-  const selectedStructureMetadata = structuresWithMetadata.find((structure) => structure.entityId === structureEntityId);
+  const selectedStructureMetadata = structuresWithMetadata.find(
+    (structure) => structure.entityId === structureEntityId,
+  );
   const selectedGroupColor = selectedStructureMetadata?.groupColor ?? null;
   const selectedGroupConfig = selectedGroupColor ? STRUCTURE_GROUP_CONFIG[selectedGroupColor] : null;
   const normalizedLevelRaw =
-    liveStructure?.base?.level ?? selectedStructureMetadata?.realmLevel ?? selectedStructureMetadata?.structure.base?.level ?? 0;
+    liveStructure?.base?.level ??
+    selectedStructureMetadata?.realmLevel ??
+    selectedStructureMetadata?.structure.base?.level ??
+    0;
   const normalizedLevel =
     typeof normalizedLevelRaw === "bigint" ? Number(normalizedLevelRaw) : Number(normalizedLevelRaw ?? 0);
   const levelLabel =
-    selectedStructureMetadata?.category === StructureType.Realm || selectedStructureMetadata?.category === StructureType.Village
+    selectedStructureMetadata?.category === StructureType.Realm ||
+    selectedStructureMetadata?.category === StructureType.Village
       ? getLevelName(Math.min(Math.max(normalizedLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels)
       : selectedStructureMetadata
         ? `Level ${normalizedLevel}`
         : "Level —";
   const hasBasePopulation =
-    selectedStructureMetadata?.category === StructureType.Realm || selectedStructureMetadata?.category === StructureType.Village;
+    selectedStructureMetadata?.category === StructureType.Realm ||
+    selectedStructureMetadata?.category === StructureType.Village;
   const basePopulationCapacity = hasBasePopulation ? configManager.getBasePopulationCapacity() : 0;
   const normalizedBasePopulationCapacity = hasBasePopulation ? Math.max(Number(basePopulationCapacity ?? 0), 6) : 0;
-  const livePopulation = Number(liveStructureBuildings?.population.current ?? selectedStructureMetadata?.population ?? 0);
+  const livePopulation = Number(
+    liveStructureBuildings?.population.current ?? selectedStructureMetadata?.population ?? 0,
+  );
   const livePopulationCapacity =
     Number(liveStructureBuildings?.population.max ?? selectedStructureMetadata?.populationCapacity ?? 0) +
     normalizedBasePopulationCapacity;
-  const populationCapacityLabel = selectedStructureMetadata
-    ? `${livePopulation}/${livePopulationCapacity}`
-    : null;
+  const populationCapacityLabel = selectedStructureMetadata ? `${livePopulation}/${livePopulationCapacity}` : null;
   const showDetailedStats = Boolean(
     selectedStructureMetadata &&
       (selectedStructureMetadata.category === StructureType.Realm ||
@@ -243,7 +273,7 @@ const LeftPanelHeader = ({
   const headerTitle =
     selectedStructureMetadata?.displayName ??
     structureInfo?.name?.name ??
-      (structuresWithMetadata.length > 0 ? "Select a structure" : "No structures");
+    (structuresWithMetadata.length > 0 ? "Select a structure" : "No structures");
   const ActiveStructureIcon = useMemo<LucideIcon | null>(() => {
     if (!selectedStructureMetadata) {
       return null;
@@ -265,9 +295,7 @@ const LeftPanelHeader = ({
               <ActiveStructureIcon className="h-5 w-5" />
             </span>
           )}
-          {selectedGroupColor && (
-            <span className={`h-2 w-2 rounded-full ${selectedGroupConfig?.dotClass ?? ""}`} />
-          )}
+          {selectedGroupColor && <span className={`h-2 w-2 rounded-full ${selectedGroupConfig?.dotClass ?? ""}`} />}
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <p
               className={`truncate min-w-0 font-[Cinzel] text-xl sm:text-2xl font-semibold ${
@@ -310,7 +338,9 @@ const LeftPanelHeader = ({
           <Tabs.List>
             {structureTabs.map((tab, index) => {
               const Icon = tab.icon;
-              const count = structuresWithMetadata.filter((structure) => tab.categories.includes(structure.category)).length;
+              const count = structuresWithMetadata.filter((structure) =>
+                tab.categories.includes(structure.category),
+              ).length;
               const isActiveTab = activeTab === index;
               const isDisabledTab = count === 0 && tab.key !== "realms";
               return (
@@ -357,16 +387,16 @@ const LeftPanelHeader = ({
             {[...filteredStructures]
               .sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite))
               .map((structure) => (
-              <StructureListItem
-                key={structure.entityId}
-                structure={structure}
-                isSelected={structure.entityId === structureEntityId}
-                onSelectStructure={onSelectStructure}
-                onToggleFavorite={onToggleFavorite}
-                onRequestNameChange={onRequestNameChange}
-                structureGroups={structureGroups}
-                components={components}
-              />
+                <StructureListItem
+                  key={structure.entityId}
+                  structure={structure}
+                  isSelected={structure.entityId === structureEntityId}
+                  onSelectStructure={onSelectStructure}
+                  onToggleFavorite={onToggleFavorite}
+                  onRequestNameChange={onRequestNameChange}
+                  structureGroups={structureGroups}
+                  components={components}
+                />
               ))}
           </div>
         ) : (
@@ -422,7 +452,8 @@ const StructureListItem = ({
 
   const population = Number(liveStructureBuildings?.population.current ?? structure.population ?? 0);
   const populationCapacity =
-    Number(liveStructureBuildings?.population.max ?? structure.populationCapacity ?? 0) + normalizedBasePopulationCapacity;
+    Number(liveStructureBuildings?.population.max ?? structure.populationCapacity ?? 0) +
+    normalizedBasePopulationCapacity;
 
   const showInfoLine = hasBasePopulation;
   const capacityDisplay = `${population}/${populationCapacity}`;
@@ -465,16 +496,18 @@ const StructureListItem = ({
           )}
           <span
             className={`text-sm font-semibold ${
-              structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? "text-gold" : "text-gold"
+              structure.groupColor
+                ? (STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? "text-gold")
+                : "text-gold"
             }`}
           >
             {structure.displayName}
           </span>
-        {showInfoLine && (
-          <span className="text-xxs text-gold/70">
-            {infoLineLabel} • {capacityDisplay}
-          </span>
-        )}
+          {showInfoLine && (
+            <span className="text-xxs text-gold/70">
+              {infoLineLabel} • {capacityDisplay}
+            </span>
+          )}
         </div>
         {structure.category === StructureType.Realm && (
           <StructureLevelUpButton structureEntityId={structure.entityId} className="ml-auto" />
@@ -555,11 +588,7 @@ const StructureLevelUpButton = ({ structureEntityId, className }: StructureLevel
       )}
       aria-label="Level up realm"
     >
-      {isUpgrading ? (
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-      ) : (
-        renderIcon()
-      )}
+      {isUpgrading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : renderIcon()}
     </button>
   );
 };
@@ -729,10 +758,7 @@ const buildEconomyNavigationItems = ({
     },
   ];
 
-  const allowedMenus: MenuEnum[] = [
-    MenuEnum.transfer,
-    MenuEnum.storyEvents,
-  ];
+  const allowedMenus: MenuEnum[] = [MenuEnum.transfer, MenuEnum.storyEvents];
 
   return items.filter((item) => allowedMenus.includes(item.id));
 };
@@ -789,18 +815,23 @@ export const LeftCommandSidebar = memo(() => {
   const { favorites, toggleFavorite } = useFavoriteStructures();
   const goToStructure = useGoToStructure(setup);
 
-  const [structureNameChange, setStructureNameChange] = useState<ComponentValue<ClientComponents["Structure"]["schema"]> | null>(null);
+  const [structureNameChange, setStructureNameChange] = useState<ComponentValue<
+    ClientComponents["Structure"]["schema"]
+  > | null>(null);
   const [structureNameVersion, setStructureNameVersion] = useState(0);
 
   const bumpStructureNameVersion = useCallback(() => {
     setStructureNameVersion((version) => version + 1);
   }, []);
 
-  const handleNameChange = useCallback((entityId: ID, newName: string) => {
-    setEntityNameLocalStorage(entityId, newName);
-    setStructureNameChange(null);
-    bumpStructureNameVersion();
-  }, [bumpStructureNameVersion]);
+  const handleNameChange = useCallback(
+    (entityId: ID, newName: string) => {
+      setEntityNameLocalStorage(entityId, newName);
+      setStructureNameChange(null);
+      bumpStructureNameVersion();
+    },
+    [bumpStructureNameVersion],
+  );
 
   const handleRequestNameChange = useCallback((structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => {
     setStructureNameChange(structure);
@@ -957,7 +988,8 @@ export const LeftCommandSidebar = memo(() => {
                     {view !== LeftView.StoryEvents && view === LeftView.ConstructionView && (
                       <SelectPreviewBuildingMenu entityId={structureEntityId} />
                     )}
-                    {view !== LeftView.StoryEvents && view === LeftView.HyperstructuresView &&
+                    {view !== LeftView.StoryEvents &&
+                      view === LeftView.HyperstructuresView &&
                       (isBlitz ? <BlitzHyperstructuresMenu /> : <EternumHyperstructuresMenu />)}
                     {view !== LeftView.StoryEvents && view === LeftView.ResourceArrivals && (
                       <AllResourceArrivals hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />

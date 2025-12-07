@@ -118,7 +118,8 @@ const getStructureIcon = (selectedStructure: SelectedStructure) => {
 
   if (selectedStructure.structureCategory && structureIcons[selectedStructure.structureCategory]) {
     const baseLevel = Number(selectedStructure.structure?.base?.level ?? 0);
-    const isEmpireRealm = selectedStructure.structureCategory === StructureType.Realm && baseLevel >= RealmLevels.Empire;
+    const isEmpireRealm =
+      selectedStructure.structureCategory === StructureType.Realm && baseLevel >= RealmLevels.Empire;
 
     if (isEmpireRealm) {
       return <ShieldQuestion />;
@@ -603,19 +604,21 @@ export const StructureSelectPanel = memo(
                                 const nextColor = getNextStructureGroupColor(structure.groupColor ?? null);
                                 onUpdateStructureGroup(structure.entityId, nextColor);
                               }}
-                            onMouseEnter={() => playHover()}
-                            title={
-                              structure.groupColor
-                                ? `Group: ${STRUCTURE_GROUP_CONFIG[structure.groupColor]?.label ?? "Group"}`
-                                : "Assign group color"
-                            }
-                          >
-                            <Palette
-                              className={`h-4 w-4 ${
-                                structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? "" : ""
-                              }`}
-                            />
-                          </button>
+                              onMouseEnter={() => playHover()}
+                              title={
+                                structure.groupColor
+                                  ? `Group: ${STRUCTURE_GROUP_CONFIG[structure.groupColor]?.label ?? "Group"}`
+                                  : "Assign group color"
+                              }
+                            >
+                              <Palette
+                                className={`h-4 w-4 ${
+                                  structure.groupColor
+                                    ? (STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? "")
+                                    : ""
+                                }`}
+                              />
+                            </button>
                             <button
                               className="p-1"
                               type="button"
@@ -640,7 +643,7 @@ export const StructureSelectPanel = memo(
                                   <span
                                     className={
                                       structure.groupColor
-                                        ? STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? ""
+                                        ? (STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? "")
                                         : ""
                                     }
                                   >

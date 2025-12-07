@@ -13,9 +13,14 @@ import { useUIStore } from "../store/use-ui-store";
 
 type PositionLike = Position | { x?: number; y?: number; col?: number; row?: number };
 
+const isPositionInstance = (value: PositionLike | undefined): value is Position => {
+  const candidate = value as unknown as { toMapLocationUrl?: () => string };
+  return value instanceof Position || typeof candidate?.toMapLocationUrl === "function";
+};
+
 const normalizeToPosition = (value?: PositionLike): Position => {
-  if (value instanceof Position || (value && typeof (value as Position).toMapLocationUrl === "function")) {
-    return value as Position;
+  if (isPositionInstance(value)) {
+    return value;
   }
 
   const candidate = value ?? {};

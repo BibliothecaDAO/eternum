@@ -159,7 +159,10 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
         )}
       />
       {isProducing && (
-        <span className={clsx("absolute pointer-events-none rounded-full", preset.progressOffset)} style={progressStyle} />
+        <span
+          className={clsx("absolute pointer-events-none rounded-full", preset.progressOffset)}
+          style={progressStyle}
+        />
       )}
       <div
         className={clsx(
@@ -168,12 +171,7 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
           "shadow-[0_0_8px_rgba(0,0,0,0.45)]",
         )}
       >
-        <ResourceIcon
-          resource={resourceLabel}
-          size={preset.icon}
-          tooltipText={tooltipText}
-          withTooltip={showTooltip}
-        />
+        <ResourceIcon resource={resourceLabel} size={preset.icon} tooltipText={tooltipText} withTooltip={showTooltip} />
       </div>
       {cornerTopLeft && (
         <span className="absolute -top-1 -left-1 z-10 flex min-w-[14px] items-center justify-center rounded-full bg-black/80 px-1 text-[8px] font-semibold text-gold/90 shadow-md border border-gold/40">

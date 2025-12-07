@@ -30,6 +30,7 @@ interface CompactEntityInventoryProps {
   variant?: "default" | "tight";
   showLabels?: boolean;
   allowRelicActivation?: boolean;
+  maxItems?: number;
 }
 
 interface DisplayItem {
@@ -119,12 +120,18 @@ export const CompactEntityInventory = memo(
     variant = "default",
     showLabels = false,
     allowRelicActivation = false,
+    maxItems,
   }: CompactEntityInventoryProps) => {
     const toggleModal = useUIStore((state) => state.toggleModal);
     const items = useMemo(
       () => buildDisplayItems(resources, activeRelicIds, recipientType),
       [resources, activeRelicIds, recipientType],
     );
+
+    const hasLimit = maxItems !== undefined && Number.isFinite(maxItems);
+    const limit = hasLimit ? Math.max(0, Number(maxItems)) : undefined;
+    const visibleItems = hasLimit && limit !== undefined ? items.slice(0, limit) : items;
+    const hiddenCount = hasLimit && limit !== undefined ? Math.max(items.length - limit, 0) : 0;
 
     const handleRelicClick = useCallback(
       (item: DisplayItem) => {
@@ -166,7 +173,7 @@ export const CompactEntityInventory = memo(
     return (
       <div className={cn("flex flex-col gap-1", className)}>
         <div className={cn(baseGrid)}>
-          {items.map((item) => {
+          {visibleItems.map((item) => {
             const resourceDef = resourceDefs.find((r) => r.id === item.resourceId);
             const isClickableRelic =
               allowRelicActivation &&
@@ -194,7 +201,9 @@ export const CompactEntityInventory = memo(
                 onClick={() => handleRelicClick(item)}
               >
                 <ResourceIcon resource={ResourcesIds[item.resourceId]} size={iconSize} withTooltip={false} />
-                <span className={cn(amountClass, "font-semibold text-gold/90")}>{formatInventoryAmount(item.amount)}</span>
+                <span className={cn(amountClass, "font-semibold text-gold/90")}>
+                  {formatInventoryAmount(item.amount)}
+                </span>
                 {showLabels && resourceDef && (
                   <span className="text-[9px] text-gold/60 truncate" title={resourceDef.trait}>
                     {resourceDef.ticker ?? resourceDef.trait}
@@ -205,6 +214,11 @@ export const CompactEntityInventory = memo(
             );
           })}
         </div>
+        {hiddenCount > 0 && (
+          <span className="text-[10px] text-gold/60">
+            Showing {visibleItems.length} of {items.length}
+          </span>
+        )}
       </div>
     );
   },

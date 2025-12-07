@@ -90,7 +90,9 @@ const StructureBannerEntityDetailContent = memo(
     const canOpenTransferPopup =
       isMine &&
       rawCategory !== undefined &&
-      [StructureType.Realm, StructureType.Village, StructureType.FragmentMine].includes(Number(rawCategory) as StructureType) &&
+      [StructureType.Realm, StructureType.Village, StructureType.FragmentMine].includes(
+        Number(rawCategory) as StructureType,
+      ) &&
       typeof structure.entity_id !== "undefined";
     const bodyTextClass = compact ? "text-xs" : "text-sm";
     const labelTextClass = compact ? "text-xxs" : "text-xs";

@@ -151,7 +151,10 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
     const outerCol = Number(realm.position.x);
     const outerRow = Number(realm.position.y);
-    const tileManager = new TileManager(dojo.setup.components, dojo.setup.systemCalls, { col: outerCol, row: outerRow });
+    const tileManager = new TileManager(dojo.setup.components, dojo.setup.systemCalls, {
+      col: outerCol,
+      row: outerRow,
+    });
     const buildRadius = Math.max(1, Number(tileManager.getRealmLevel(entityId)) + 1);
     const candidates = generateBuildablePositions(buildRadius);
     const centerKey = `${BUILDINGS_CENTER[0]},${BUILDINGS_CENTER[1]}`;
@@ -163,7 +166,15 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       if (reserved.has(key)) return false;
       return !tileManager.isHexOccupied({ col: pos.col, row: pos.row });
     });
-  }, [dojo.setup.components, dojo.setup.systemCalls, entityId, realm?.position?.x, realm?.position?.y, pendingBuilds, structureBuildings]);
+  }, [
+    dojo.setup.components,
+    dojo.setup.systemCalls,
+    entityId,
+    realm?.position?.x,
+    realm?.position?.y,
+    pendingBuilds,
+    structureBuildings,
+  ]);
   const isRealmFull = !hasAvailableBuildingTile;
 
   const getBuildingCountFor = useCallback(
@@ -188,7 +199,10 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       const buildingKey = target.type.toString();
       const outerCol = Number(realm.position.x);
       const outerRow = Number(realm.position.y);
-      const tileManager = new TileManager(dojo.setup.components, dojo.setup.systemCalls, { col: outerCol, row: outerRow });
+      const tileManager = new TileManager(dojo.setup.components, dojo.setup.systemCalls, {
+        col: outerCol,
+        row: outerRow,
+      });
       const reserved = reservedSpotsRef.current;
       let reservedKey: string | null = null;
 
@@ -243,7 +257,16 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         });
       }
     },
-    [dojo.account.account, dojo.setup.components, dojo.setup.systemCalls, entityId, realm?.position, setPreviewBuilding, setSelectedBuildingHex, useSimpleCost],
+    [
+      dojo.account.account,
+      dojo.setup.components,
+      dojo.setup.systemCalls,
+      entityId,
+      realm?.position,
+      setPreviewBuilding,
+      setSelectedBuildingHex,
+      useSimpleCost,
+    ],
   );
 
   const realmBiome = useMemo<BiomeType | null>(() => {
@@ -541,7 +564,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 if (!buildingCosts) return;
 
                 const hasBalance = checkBalance(buildingCosts);
-                const producedResourceId = configManager.getResourceBuildingProduced(building) as ResourcesIds | undefined;
+                const producedResourceId = configManager.getResourceBuildingProduced(building) as
+                  | ResourcesIds
+                  | undefined;
                 const productionStatus = producedResourceId
                   ? productionStatusByResource.get(producedResourceId as ResourcesIds)
                   : undefined;
@@ -621,7 +646,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
             <div>Military</div>
           </div>
         ),
-        component: (() => {
+        component: () => {
           if (armyGroups.length === 0) {
             return <div className="p-2 text-xs text-gold/60">No military buildings available.</div>;
           }
@@ -705,12 +730,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                             const isTierLockedInSimpleMode = useSimpleCost && (info?.tier ?? 0) > 1;
                             const canBuild =
                               !isTierLockedInSimpleMode && hasBalance && realm?.hasCapacity && hasEnoughPopulation;
-                            const disabledReason =
-                              isRealmFull
-                                ? "Realm full"
-                                : isTierLockedInSimpleMode && info?.tier
-                                  ? `Switch to Resource mode to build Tier ${info.tier} military buildings.`
-                                  : undefined;
+                            const disabledReason = isRealmFull
+                              ? "Realm full"
+                              : isTierLockedInSimpleMode && info?.tier
+                                ? `Switch to Resource mode to build Tier ${info.tier} military buildings.`
+                                : undefined;
                             const buildKey = building.toString();
                             const isPending = Boolean(pendingBuilds[buildKey]);
                             const count = getBuildingCountFor(building);
@@ -766,7 +790,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
               </div>
             </div>
           );
-        }),
+        },
       },
     ],
     [
@@ -891,7 +915,7 @@ const BuildingCard = ({
       ? productionStatus.timeRemainingSeconds !== null
         ? Math.max(productionStatus.timeRemainingSeconds - (currentTime - productionStatus.calculatedAt) / 1000, 0)
         : null
-      : productionStatus?.timeRemainingSeconds ?? null;
+      : (productionStatus?.timeRemainingSeconds ?? null);
   const totalProductionBuildings =
     productionStatus && productionStatus.totalBuildings > 0 ? productionStatus.totalBuildings : count;
   const activeProductionBuildings =

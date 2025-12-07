@@ -840,8 +840,8 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
                 </button>
               );
             })}
-        </div>
-      </section>
+          </div>
+        </section>
       )}
 
       {selectedResources.length > 0 && selectedSourceId && (

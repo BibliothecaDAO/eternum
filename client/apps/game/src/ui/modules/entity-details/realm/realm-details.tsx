@@ -142,14 +142,21 @@ export const RealmUpgradeCompact = () => {
     );
   }
 
-  const { nextLevel, missingRequirements, requirements, canUpgrade, handleUpgrade, nextLevelName, isOwner } = upgradeInfo;
+  const { nextLevel, missingRequirements, requirements, canUpgrade, handleUpgrade, nextLevelName, isOwner } =
+    upgradeInfo;
 
   const missingLabel =
     missingRequirements.length > 0
       ? missingRequirements
-          .map((req) => `${Math.max(0, Math.ceil(req.amount - req.current)).toLocaleString()} ${ResourcesIds[req.resource] ?? req.resource}`)
+          .map(
+            (req) =>
+              `${Math.max(0, Math.ceil(req.amount - req.current)).toLocaleString()} ${ResourcesIds[req.resource] ?? req.resource}`,
+          )
           .join(", ")
       : "";
+
+  const resolvedNextLevel = nextLevel != null ? RealmLevels[nextLevel as RealmLevels] : null;
+  const upgradeTargetLabel = nextLevelName ?? resolvedNextLevel ?? "Next level";
 
   return (
     <div className="space-y-2">
@@ -164,7 +171,7 @@ export const RealmUpgradeCompact = () => {
         <div className="flex items-start justify-between gap-3">
           <div className="flex flex-col leading-tight text-gold">
             <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Upgrade</span>
-            <span className="text-sm font-semibold">to {nextLevelName ?? RealmLevels[nextLevel]}</span>
+            <span className="text-sm font-semibold">to {upgradeTargetLabel}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="flex flex-col leading-tight">
@@ -197,7 +204,7 @@ export const RealmUpgradeCompact = () => {
         {isOwner && (
           <Button
             variant={canUpgrade ? "gold" : "outline"}
-            size="sm"
+            size="md"
             className="w-full"
             disabled={!canUpgrade}
             onClick={handleUpgrade}

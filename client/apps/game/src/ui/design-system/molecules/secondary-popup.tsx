@@ -192,8 +192,7 @@ SecondaryPopup.Body = ({
     };
   }, [ref]);
 
-  const resolvedMaxHeight =
-    maxHeightCap && maxHeight ? Math.min(maxHeight, maxHeightCap) : maxHeightCap ?? maxHeight;
+  const resolvedMaxHeight = maxHeightCap && maxHeight ? Math.min(maxHeight, maxHeightCap) : (maxHeightCap ?? maxHeight);
 
   return (
     <div
