@@ -27,10 +27,6 @@ const ActionInstructions = lazy(() =>
   })),
 );
 
-const WorldContextMenu = lazy(() =>
-  import("../features/world/components/context-menu").then((module) => ({ default: module.WorldContextMenu })),
-);
-
 const TopCenterContainer = lazy(() => import("../shared/containers/top-center-container"));
 const LeftMiddleContainer = lazy(() => import("../shared/containers/left-middle-container"));
 const TopLeftContainer = lazy(() => import("../shared/containers/top-left-container"));
@@ -135,7 +131,6 @@ const WorldInteractiveLayers = () => (
   <>
     <ActionInstructions />
     <ActionInfo />
-    <WorldContextMenu />
     <WorldHud />
   </>
 );
