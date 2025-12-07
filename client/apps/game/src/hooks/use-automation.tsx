@@ -190,12 +190,11 @@ export const useAutomation = () => {
         });
 
         // If config is over-allocated and still using a preset mode
-        // (labor/resource/idle/custom), auto-apply a preset based on which side
-        // (resources vs labor) is over the cap. Manual slider configs flow
-        // through here as the "custom" preset so caps can still be enforced.
+        // (smart/idle/custom), auto-apply the smart preset to bring inputs back
+        // within limits. Manual slider configs flow through here as the "custom"
+        // preset so caps can still be enforced.
         const hasPreset =
-          activeRealmConfig.presetId === "labor" ||
-          activeRealmConfig.presetId === "resource" ||
+          activeRealmConfig.presetId === "smart" ||
           activeRealmConfig.presetId === "idle" ||
           activeRealmConfig.presetId === "custom";
         if (hasPreset) {
@@ -217,12 +216,8 @@ export const useAutomation = () => {
 
             const { resourceOver, laborOver } = getAutomationOverallocation(overAllocationConfig);
             let presetToApply: RealmPresetId | null = null;
-            if (resourceOver && !laborOver) {
-              presetToApply = "resource";
-            } else if (!resourceOver && laborOver) {
-              presetToApply = "labor";
-            } else if (resourceOver && laborOver) {
-              presetToApply = "custom";
+            if (resourceOver || laborOver) {
+              presetToApply = "smart";
             }
 
             if (presetToApply) {

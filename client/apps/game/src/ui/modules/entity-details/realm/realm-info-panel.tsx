@@ -51,7 +51,7 @@ const ProductionModifyButton = ({ onClick, disabled = false }: { onClick?: () =>
 
 const resolveAutomationStatusLabel = (automation?: RealmAutomationConfig | null): string => {
   if (!automation) {
-    return "Burning labor";
+    return "Smart automation";
   }
 
   const presetId = inferRealmPreset(automation);
@@ -60,12 +60,8 @@ const resolveAutomationStatusLabel = (automation?: RealmAutomationConfig | null)
     return "Idle";
   }
 
-  if (presetId === "labor") {
-    return "Burning labor";
-  }
-
-  if (presetId === "resource") {
-    return "Burning resources";
+  if (presetId === "smart") {
+    return "Smart automation";
   }
 
   const hasLabor = Object.values(automation.resources ?? {}).some(

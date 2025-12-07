@@ -18,13 +18,7 @@ import { ResourcesIds } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  LABOR_PRESET_BANNED_RESOURCES,
-  REALM_PRESETS,
-  RealmPresetId,
-  calculatePresetAllocations,
-  inferRealmPreset,
-} from "@/utils/automation-presets";
+import { REALM_PRESETS, RealmPresetId, calculatePresetAllocations, inferRealmPreset } from "@/utils/automation-presets";
 
 type RealmAutomationPanelProps = {
   realmEntityId: string;
@@ -758,7 +752,7 @@ export const RealmAutomationPanel = ({
           };
 
           const isDonkeyResource = resourceId === ResourcesIds.Donkey;
-          const laborDisabled = isDonkeyResource || LABOR_PRESET_BANNED_RESOURCES.has(resourceId as ResourcesIds);
+          const laborDisabled = isDonkeyResource;
 
           return (
             <div
