@@ -433,8 +433,25 @@ const LocalTilePanel = () => {
                           className="flex items-center gap-2 rounded border border-gold/20 bg-black/40 px-2 py-1"
                         >
                           <span className="text-xxs font-semibold text-red-200">-{entry.amount}</span>
-                          <ResourceIcon withTooltip={false} resource={name} size="xs" />
-                          <span className="text-xxs text-gold/80">{name}</span>
+                          <button
+                            type="button"
+                            className="flex h-6 w-6 items-center justify-center rounded"
+                            onMouseEnter={() =>
+                              setTooltip({
+                                position: "top",
+                                content: (
+                                  <div className="flex items-center gap-2 text-xxs text-gold">
+                                    <ResourceIcon withTooltip={false} resource={name} size="xs" />
+                                    <span className="font-semibold">{name}</span>
+                                  </div>
+                                ),
+                              })
+                            }
+                            onMouseLeave={() => setTooltip(null)}
+                            aria-label={`Consumes ${entry.amount} ${name} per second`}
+                          >
+                            <ResourceIcon withTooltip={false} resource={name} size="xs" />
+                          </button>
                         </div>
                       );
                     })}
