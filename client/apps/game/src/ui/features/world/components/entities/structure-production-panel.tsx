@@ -50,14 +50,14 @@ export const StructureProductionPanel = memo(
     resources,
     compact = false,
     smallTextClass,
-  showProductionSummary = true,
-  showTooltip = true,
-  badgeVariant = "default",
-}: StructureProductionPanelProps) => {
-  const [timerTick, setTimerTick] = useState(0);
+    showProductionSummary = true,
+    showTooltip = true,
+    badgeVariant = "default",
+  }: StructureProductionPanelProps) => {
+    const [timerTick, setTimerTick] = useState(0);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+    useEffect(() => {
+      if (typeof window === "undefined") return;
 
       const interval = window.setInterval(() => {
         setTimerTick((tick) => tick + 1);
@@ -164,9 +164,7 @@ export const StructureProductionPanel = memo(
         )}
         <div
           className={
-            badgeVariant === "detailed"
-              ? "flex flex-wrap items-center gap-3"
-              : "flex flex-wrap items-center gap-2"
+            badgeVariant === "detailed" ? "flex flex-wrap items-center gap-3" : "flex flex-wrap items-center gap-2"
           }
         >
           {[...resourceProductionSummary]
