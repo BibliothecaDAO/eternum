@@ -65,7 +65,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import clsx from "clsx";
 import { StructureEditPopup } from "@/ui/features/world/components/structure-edit-popup";
@@ -960,10 +960,12 @@ export const LeftCommandSidebar = memo(() => {
     }
   }, [chatActions, view]);
 
+  const prevChatOpen = useRef(isChatOpen);
   useEffect(() => {
-    if (!isChatOpen && view === LeftView.ChatView) {
+    if (prevChatOpen.current && !isChatOpen && view === LeftView.ChatView) {
       setView(LeftView.None);
     }
+    prevChatOpen.current = isChatOpen;
   }, [isChatOpen, setView, view]);
 
   const structureInfo = useMemo(() => {
