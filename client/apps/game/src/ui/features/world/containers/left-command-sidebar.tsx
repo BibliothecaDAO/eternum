@@ -258,7 +258,7 @@ const LeftPanelHeader = ({
   return (
     <div className="border-b border-gold/20 bg-black/60 px-4 py-4 space-y-4">
       <div className="border-b border-gold/20 pb-3">
-        <div className="flex flex-wrap items-center gap-2 text-sm text-gold">
+        <div className="flex items-center gap-2 text-sm text-gold min-w-0">
           {ActiveStructureIcon && (
             <span className={selectedGroupConfig ? selectedGroupConfig.textClass : "text-gold"}>
               <ActiveStructureIcon className="h-5 w-5" />
@@ -267,26 +267,29 @@ const LeftPanelHeader = ({
           {selectedGroupColor && (
             <span className={`h-2 w-2 rounded-full ${selectedGroupConfig?.dotClass ?? ""}`} />
           )}
-          <p
-            className={`truncate font-[Cinzel] text-xl sm:text-2xl font-semibold ${
-              selectedGroupConfig ? selectedGroupConfig.textClass : "text-gold"
-            }`}
-          >
-            {headerTitle}
-          </p>
-          {showDetailedStats && populationCapacityLabel && (
-            <>
-              <span className="text-gold/40">•</span>
-              <span className="text-xs text-gold/70">{levelLabel}</span>
-              <span className="text-gold/40">•</span>
-              <span className="text-xs text-gold/70">{populationCapacityLabel}</span>
-            </>
-          )}
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <p
+              className={`truncate min-w-0 font-[Cinzel] text-xl sm:text-2xl font-semibold ${
+                selectedGroupConfig ? selectedGroupConfig.textClass : "text-gold"
+              }`}
+              title={headerTitle}
+            >
+              {headerTitle}
+            </p>
+            {showDetailedStats && populationCapacityLabel && (
+              <div className="flex items-center gap-2 flex-shrink-0 text-xs text-gold/70">
+                <span className="text-gold/40">•</span>
+                <span>{levelLabel}</span>
+                <span className="text-gold/40">•</span>
+                <span>{populationCapacityLabel}</span>
+              </div>
+            )}
+          </div>
           {selectedStructureMetadata && (
             <button
               type="button"
               onClick={() => onRequestNameChange(selectedStructureMetadata.structure)}
-              className="ml-auto rounded border border-gold/30 p-1 text-gold/70 hover:bg-gold/10"
+              className="flex-shrink-0 rounded border border-gold/30 p-1 text-gold/70 hover:bg-gold/10"
               title="Rename structure"
             >
               <Pencil className="h-4 w-4" />

@@ -4,18 +4,25 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CompactEntityInventory } from "@/ui/features/world/components/entities/compact-entity-inventory";
 import { ProductionModal } from "@/ui/features/settlement";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
-import { Position, getStructureArmyRelicEffects, getStructureRelicEffects, getBlockTimestamp } from "@bibliothecadao/eternum";
-import { useDojo, useQuery } from "@bibliothecadao/react";
+import {
+  Position,
+  getStructureArmyRelicEffects,
+  getStructureRelicEffects,
+  getBlockTimestamp,
+  getGuardsByStructure,
+} from "@bibliothecadao/eternum";
+import { useDojo, useExplorersByStructure, useQuery } from "@bibliothecadao/react";
 import { ClientComponents, ContractAddress, EntityType, RelicRecipientType, StructureType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { memo, useCallback, useMemo } from "react";
 import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
-import { ArrowLeftRight } from "lucide-react";
+import { ArrowLeftRight, Shield, Sword } from "lucide-react";
 import { StructureProductionPanel } from "@/ui/features/world/components/entities/structure-production-panel";
 import { inferRealmPreset } from "@/utils/automation-presets";
 import type { RealmAutomationConfig } from "@/hooks/store/use-automation-store";
+import { UnifiedArmyCreationModal } from "@/ui/features/military/components/unified-army-creation-modal";
 
 const ProductionStatusPill = ({ statusLabel }: { statusLabel: string }) => (
   <span className="rounded-full border border-gold/30 bg-black/40 px-2 py-0.5 text-[10px] uppercase tracking-wide text-gold/80">
@@ -172,6 +179,27 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
 
   const canShowBalanceOnly = (isHyperstructure || isFragmentMine) && isOwned;
 
+  const explorers = useExplorersByStructure({
+    structureEntityId: structureEntityId ?? 0,
+  });
+
+  const guards = useMemo(
+    () =>
+      structure
+        ? getGuardsByStructure(structure).filter((guard) => guard.troops && guard.troops.count > 0n)
+        : [],
+    [structure],
+  );
+
+  const attackArmyCount = explorers.length;
+  const guardArmyCount = guards.length;
+  const maxAttackArmies =
+    structure?.base?.troop_max_explorer_count !== undefined
+      ? Number(structure.base.troop_max_explorer_count)
+      : null;
+  const maxGuardArmies =
+    structure?.base?.troop_max_guard_count !== undefined ? Number(structure.base.troop_max_guard_count) : null;
+
   if (!structure || (!isRealm && !isVillage && !canShowBalanceOnly)) {
     return (
       <div className={cn("p-3 text-xxs text-gold/70", className)}>
@@ -240,6 +268,77 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
           />
         </div>
       </div>
+
+      {(isRealm || isVillage) && (
+        <div className="rounded border border-gold/20 bg-black/50 p-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Armies</span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className={cn(
+                  "rounded-full border border-gold/30 bg-black/40 px-2.5 py-1 text-xxs font-semibold text-gold/80 transition",
+                  (!isOwned || !structureEntityId) && "cursor-not-allowed opacity-50",
+                  isOwned &&
+                    structureEntityId &&
+                    "hover:bg-gold/10 hover:text-gold focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold",
+                )}
+                onClick={() => {
+                  if (!structureEntityId || !isOwned) return;
+                  toggleModal(<UnifiedArmyCreationModal structureId={Number(structureEntityId)} isExplorer />);
+                }}
+                disabled={!isOwned || !structureEntityId}
+                aria-label="Create attack army"
+                title="Create attack army"
+              >
+                <Sword className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  "rounded-full border border-gold/30 bg-black/40 px-2.5 py-1 text-xxs font-semibold text-gold/80 transition",
+                  (!isOwned || !structureEntityId) && "cursor-not-allowed opacity-50",
+                  isOwned &&
+                    structureEntityId &&
+                    "hover:bg-gold/10 hover:text-gold focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold",
+                )}
+                onClick={() => {
+                  if (!structureEntityId || !isOwned) return;
+                  const maxDefenseSlots = Number(structure?.base?.troop_max_guard_count ?? 0);
+                  toggleModal(
+                    <UnifiedArmyCreationModal
+                      structureId={Number(structureEntityId)}
+                      isExplorer={false}
+                      maxDefenseSlots={maxDefenseSlots}
+                    />,
+                  );
+                }}
+                disabled={!isOwned || !structureEntityId}
+                aria-label="Create defense army"
+                title="Create defense army"
+              >
+                <Shield className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <div className="rounded border border-gold/10 bg-[#1b140f]/80 p-2">
+              <div className="text-xxs uppercase tracking-[0.12em] text-gold/60">Attack Armies</div>
+              <div className="mt-1 text-sm font-semibold text-gold">
+                {attackArmyCount}
+                {maxAttackArmies !== null ? ` / ${maxAttackArmies}` : ""}
+              </div>
+            </div>
+            <div className="rounded border border-gold/10 bg-[#1b140f]/80 p-2">
+              <div className="text-xxs uppercase tracking-[0.12em] text-gold/60">Guard Armies</div>
+              <div className="mt-1 text-sm font-semibold text-gold">
+                {guardArmyCount}
+                {maxGuardArmies !== null ? ` / ${maxGuardArmies}` : ""}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 });
