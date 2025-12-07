@@ -464,7 +464,7 @@ const LocalTilePanel = () => {
               {buildCost.length > 0 && (
                 <div className="space-y-1">
                   <p className="text-xxs uppercase tracking-[0.2em] text-gold/60">Build Cost</p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5">
                     {buildCost.map((entry, index) => {
                       const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
                       const balanceInfo = getBalance(
@@ -476,21 +476,37 @@ const LocalTilePanel = () => {
                       const balance = divideByPrecision(balanceInfo.balance);
                       const hasEnough = balance >= entry.amount;
                       return (
-                        <div
+                        <button
+                          type="button"
                           key={`build-cost-${entry.resource}-${index}`}
                           className={cn(
-                            "relative flex items-center gap-2 rounded p-2 text-xxs shadow-inner",
+                            "relative flex items-center gap-1.5 rounded px-2 py-1 text-[10px] shadow-inner",
                             hasEnough
-                              ? "bg-gold/5 border border-gold/5 text-gold/80"
-                              : "bg-red-900/20 border border-red-500/30 text-red-100",
+                              ? "bg-gold/5 border border-gold/10 text-gold/80"
+                              : "bg-red-900/15 border border-red-500/30 text-red-100",
                           )}
+                          onMouseEnter={() =>
+                            setTooltip({
+                              position: "top",
+                              content: (
+                                <div className="flex items-center gap-2 text-xxs text-gold">
+                                  <ResourceIcon withTooltip={false} resource={name} size="xs" />
+                                  <span className="font-semibold">{name}</span>
+                                </div>
+                              ),
+                            })
+                          }
+                          onMouseLeave={() => setTooltip(null)}
+                          aria-label={`${name} build cost`}
                         >
                           <ResourceIcon withTooltip={false} resource={name} size="xs" />
-                          <span className={cn("text-xxs", hasEnough ? "text-gold font-semibold" : "text-red-200")}>
+                          <span className={cn("text-[10px]", hasEnough ? "text-gold font-semibold" : "text-red-200")}>
                             {formatResourceAmount(balance)}
                           </span>
-                          <span className={cn("text-xxs", hasEnough ? "text-gold/70" : "text-red-200")}>/ {entry.amount}</span>
-                        </div>
+                          <span className={cn("text-[10px]", hasEnough ? "text-gold/70" : "text-red-200")}>
+                            / {entry.amount}
+                          </span>
+                        </button>
                       );
                     })}
                   </div>
