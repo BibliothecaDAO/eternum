@@ -818,6 +818,7 @@ export const LeftCommandSidebar = memo(() => {
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
+  const setSelectedHex = useUIStore((state) => state.setSelectedHex);
   const structures = useUIStore((state) => state.playerStructures);
   const { structureGroups, updateStructureGroup } = useStructureGroups();
   const { favorites, toggleFavorite } = useFavoriteStructures();
@@ -925,13 +926,20 @@ export const LeftCommandSidebar = memo(() => {
       const coords = target?.structure?.base;
 
       if (coords && coords.coord_x !== undefined && coords.coord_y !== undefined) {
+        const col = Number(coords.coord_x);
+        const row = Number(coords.coord_y);
+
+        if (Number.isFinite(col) && Number.isFinite(row)) {
+          setSelectedHex({ col, row });
+        }
+
         void goToStructure(entityId, new Position({ x: coords.coord_x, y: coords.coord_y }), isMapView);
         return;
       }
 
       setStructureEntityId(entityId);
     },
-    [structures, goToStructure, isMapView, setStructureEntityId],
+    [structures, goToStructure, isMapView, setStructureEntityId, setSelectedHex],
   );
 
   return (

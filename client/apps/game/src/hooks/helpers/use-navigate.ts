@@ -142,6 +142,7 @@ export const useSpectatorModeClick = (setupResult: SetupResult | null) => {
 
 export const useGoToStructure = (setupResult: SetupResult | null) => {
   const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
+  const setSelectedHex = useUIStore((state) => state.setSelectedHex);
   const navigateToHexView = useNavigateToHexView();
   const navigateToMapView = useNavigateToMapView();
 
@@ -221,6 +222,13 @@ export const useGoToStructure = (setupResult: SetupResult | null) => {
       spectator: options?.spectator ?? false,
       worldMapPosition,
     });
+
+    if (worldMapPosition) {
+      setSelectedHex({
+        col: Number(worldMapPosition.col),
+        row: Number(worldMapPosition.row),
+      });
+    }
 
     if (isMapView) {
       navigateToMapView(targetPosition);
