@@ -1,6 +1,7 @@
 import { usePlayResourceSound } from "@/audio";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
+import { formatTimeRemaining } from "@/ui/features/economy/resources/entity-resource-table/utils";
 
 import Button from "@/ui/design-system/atoms/button";
 import { Tabs } from "@/ui/design-system/atoms/tab";
@@ -10,6 +11,7 @@ import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { formatBiomeBonus } from "@/ui/features/military";
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";
+import { ProductionStatusBadge } from "@/ui/shared";
 import { adjustWonderLordsCost, getEntityIdFromKeys } from "@/ui/utils/utils";
 
 import {
@@ -24,6 +26,7 @@ import {
   getIsBlitz,
   getRealmInfo,
   hasEnoughPopulationForBuilding,
+  ResourceManager,
   ResourceIdToMiningType,
   TileManager,
 } from "@bibliothecadao/eternum";
@@ -58,18 +61,6 @@ type ArmyGroup = {
   bonus?: number;
 };
 
-const formatBiomeLabel = (biome: BiomeType | string | null | undefined) => {
-  if (!biome) return "";
-
-  const label = biome.toString();
-  return label
-    .replace(/_/g, " ")
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/([A-Z])([A-Z][a-z])/g, "$1 $2")
-    .replace(/\s+/g, " ")
-    .trim();
-};
-
 const generateBuildablePositions = (radius: number) => {
   const positions: Array<{ col: number; row: number }> = [];
   const seen = new Set<string>();
@@ -102,10 +93,38 @@ const generateBuildablePositions = (radius: number) => {
   return positions;
 };
 
+const formatPerSecondValue = (value: number): string => {
+  const abs = Math.abs(value);
+  if (abs < 0.0001) return "0";
+  if (abs >= 1000) return Math.round(abs).toLocaleString();
+  if (abs >= 100) return abs.toFixed(0);
+  if (abs >= 10) return abs.toFixed(1);
+  if (abs >= 1) return abs.toFixed(2);
+  return abs.toFixed(3);
+};
+
+const formatSignedPerSecond = (value: number | null | undefined): string | undefined => {
+  if (value === null || value === undefined || Number.isNaN(value)) return undefined;
+  if (Math.abs(value) < 0.0001) return "0/s";
+  const sign = value > 0 ? "+" : value < 0 ? "-" : "";
+  return `${sign}${formatPerSecondValue(value)}/s`;
+};
+
+type ResourceProductionStatus = {
+  resourceId: ResourcesIds;
+  isProducing: boolean;
+  timeRemainingSeconds: number | null;
+  productionPerSecond: number | null;
+  totalBuildings: number;
+  activeBuildings: number;
+  calculatedAt: number;
+};
+
 export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?: string; entityId: number }) => {
   const dojo = useDojo();
 
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
+  const [timerTick, setTimerTick] = useState(0);
 
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
@@ -118,6 +137,14 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     dojo.setup.components.StructureBuildings,
     getEntityIdFromKeys([BigInt(entityId)]),
   );
+  const resourceData = useComponentValue(dojo.setup.components.Resource, getEntityIdFromKeys([BigInt(entityId)]));
+  const currentTime = useMemo(() => Date.now(), [timerTick]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const interval = window.setInterval(() => setTimerTick((tick) => tick + 1), 1000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   const reservedSpotsRef = useRef<Set<string>>(new Set());
   const [pendingBuilds, setPendingBuilds] = useState<Record<string, boolean>>({});
@@ -279,6 +306,54 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     [isBlitz],
   );
 
+  const producedResourceIds = useMemo<ResourcesIds[]>(() => {
+    const ids = new Set<ResourcesIds>();
+    buildingTypes.forEach((key) => {
+      const building = BuildingType[key as keyof typeof BuildingType];
+      const produced = configManager.getResourceBuildingProduced(building);
+      if (produced !== undefined && produced !== null) {
+        ids.add(produced as ResourcesIds);
+      }
+    });
+    return Array.from(ids);
+  }, [buildingTypes]);
+
+  const productionStatusByResource = useMemo(() => {
+    const map = new Map<ResourcesIds, ResourceProductionStatus>();
+    if (!resourceData) return map;
+
+    const calculatedAt = Date.now();
+
+    producedResourceIds.forEach((resourceId) => {
+      const productionInfo = ResourceManager.balanceAndProduction(resourceData, resourceId);
+      if (!productionInfo?.production) return;
+
+      const productionData = ResourceManager.calculateResourceProductionData(
+        resourceId,
+        productionInfo,
+        currentDefaultTick || 0,
+      );
+
+      const totalBuildings = Number(productionInfo.production.building_count ?? 0);
+
+      map.set(resourceId, {
+        resourceId,
+        isProducing: productionData.isProducing,
+        timeRemainingSeconds: Number.isFinite(productionData.timeRemainingSeconds)
+          ? productionData.timeRemainingSeconds
+          : null,
+        productionPerSecond: Number.isFinite(productionData.productionPerSecond)
+          ? productionData.productionPerSecond
+          : null,
+        totalBuildings,
+        activeBuildings: productionData.isProducing ? (totalBuildings > 0 ? totalBuildings : 0) : 0,
+        calculatedAt,
+      });
+    });
+
+    return map;
+  }, [currentDefaultTick, producedResourceIds, resourceData]);
+
   const armyGroups = useMemo<ArmyGroup[]>(
     () =>
       ARMY_TYPES.reduce<ArmyGroup[]>((acc, armyType) => {
@@ -356,6 +431,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
               if (!buildingCosts) return;
 
               const hasBalance = checkBalance(buildingCosts);
+              const productionStatus = productionStatusByResource.get(resourceId as ResourcesIds);
 
               const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
               const isLaborLockedResource =
@@ -390,6 +466,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                   active={previewBuilding?.resource === resourceId}
                   buildingName={resource?.trait}
                   resourceName={resource?.trait}
+                  productionStatus={productionStatus}
+                  currentTime={currentTime}
                   toolTip={
                     <ResourceInfo
                       buildingId={building}
@@ -442,6 +520,10 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 if (!buildingCosts) return;
 
                 const hasBalance = checkBalance(buildingCosts);
+                const producedResourceId = configManager.getResourceBuildingProduced(building) as ResourcesIds | undefined;
+                const productionStatus = producedResourceId
+                  ? productionStatusByResource.get(producedResourceId as ResourcesIds)
+                  : undefined;
 
                 const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
                 const canBuild =
@@ -484,18 +566,20 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     }}
                     active={previewBuilding?.type === building}
                     buildingName={BuildingTypeToString[building]}
-                    resourceName={
-                      configManager.getResourceBuildingProduced(building)
-                        ? (ResourcesIds[
-                            configManager.getResourceBuildingProduced(building)
-                          ] as keyof typeof ResourcesIds)
-                        : undefined
-                    }
-                    toolTip={<BuildingInfo buildingId={building} entityId={entityId} useSimpleCost={useSimpleCost} />}
-                    hasFunds={hasBalance}
-                    hasPopulation={hasEnoughPopulation}
-                    count={count}
-                    onBuild={() => handleAutoBuild({ type: building })}
+                  resourceName={
+                    configManager.getResourceBuildingProduced(building)
+                      ? (ResourcesIds[
+                          configManager.getResourceBuildingProduced(building)
+                        ] as keyof typeof ResourcesIds)
+                      : undefined
+                  }
+                  productionStatus={productionStatus}
+                  currentTime={currentTime}
+                  toolTip={<BuildingInfo buildingId={building} entityId={entityId} useSimpleCost={useSimpleCost} />}
+                  hasFunds={hasBalance}
+                  hasPopulation={hasEnoughPopulation}
+                  count={count}
+                  onBuild={() => handleAutoBuild({ type: building })}
                     buildDisabled={!canBuild || isPending}
                     buildLoading={isPending}
                   />
@@ -610,6 +694,12 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                             const buildingCost =
                               getBuildingCosts(entityId, dojo.setup.components, building, useSimpleCost) ?? [];
                             const info = getMilitaryBuildingInfo(building);
+                            const producedResourceId = configManager.getResourceBuildingProduced(building) as
+                              | ResourcesIds
+                              | undefined;
+                            const productionStatus = producedResourceId
+                              ? productionStatusByResource.get(producedResourceId as ResourcesIds)
+                              : undefined;
 
                             const hasBalance = checkBalance(buildingCost);
                             const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
@@ -648,6 +738,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                                     configManager.getResourceBuildingProduced(building)
                                   ] as keyof typeof ResourcesIds
                                 }
+                                productionStatus={productionStatus}
+                                currentTime={currentTime}
                                 toolTip={
                                   <BuildingInfo
                                     buildingId={building}
@@ -699,7 +791,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
   return (
     <div className={`${className}`}>
-      <div className="flex justify-between items-center px-3 py-2  border-b border-gold/20">
+      <div className="flex justify-between items-center px-3 py-2 gap-3 border-b border-gold/20">
         <h6>Building Costs</h6>
         <div className="flex items-center gap-2">
           <label className="inline-flex items-center cursor-pointer">
@@ -748,6 +840,8 @@ const BuildingCard = ({
   active,
   buildingName,
   resourceName,
+  productionStatus,
+  currentTime,
   toolTip,
   hasFunds = true,
   hasPopulation = true,
@@ -766,6 +860,8 @@ const BuildingCard = ({
   active: boolean;
   buildingName: string;
   resourceName?: string;
+  productionStatus?: ResourceProductionStatus;
+  currentTime?: number;
   toolTip: React.ReactElement;
   hasFunds?: boolean;
   hasPopulation?: boolean;
@@ -783,6 +879,47 @@ const BuildingCard = ({
   const isDisabled = disabled;
   const lacksRequirements = !hasFunds || !hasPopulation;
   const showDisabledMessage = isDisabled && disabledReason;
+  const effectiveRemainingSeconds =
+    productionStatus && currentTime
+      ? productionStatus.timeRemainingSeconds !== null
+        ? Math.max(productionStatus.timeRemainingSeconds - (currentTime - productionStatus.calculatedAt) / 1000, 0)
+        : null
+      : productionStatus?.timeRemainingSeconds ?? null;
+  const totalProductionBuildings =
+    productionStatus && productionStatus.totalBuildings > 0 ? productionStatus.totalBuildings : count;
+  const activeProductionBuildings =
+    productionStatus?.isProducing && productionStatus.activeBuildings > 0
+      ? productionStatus.activeBuildings
+      : productionStatus?.isProducing
+        ? totalProductionBuildings
+        : 0;
+  const formattedRemaining =
+    productionStatus?.isProducing && effectiveRemainingSeconds !== null
+      ? formatTimeRemaining(Math.ceil(effectiveRemainingSeconds))
+      : null;
+  const productionBadge =
+    productionStatus && resourceName ? (
+      <ProductionStatusBadge
+        resourceLabel={resourceName}
+        tooltipText={
+          productionStatus.isProducing
+            ? `${activeProductionBuildings}/${totalProductionBuildings} producing${
+                formattedRemaining ? ` • ${formattedRemaining} left` : ""
+              }`
+            : `Idle (${totalProductionBuildings} building${totalProductionBuildings !== 1 ? "s" : ""})`
+        }
+        isProducing={productionStatus.isProducing}
+        timeRemainingSeconds={effectiveRemainingSeconds}
+        size="xs"
+        cornerTopLeft={
+          productionStatus.isProducing
+            ? `${activeProductionBuildings}/${totalProductionBuildings}`
+            : `${totalProductionBuildings}`
+        }
+        cornerTopRight={formatSignedPerSecond(productionStatus.productionPerSecond)?.replace("/s", "")}
+        cornerBottomRight={formattedRemaining ?? undefined}
+      />
+    ) : null;
 
   const handleClick = () => {
     if (isDisabled) return;
@@ -833,11 +970,12 @@ const BuildingCard = ({
           </button>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          {resourceName && (
-            <div className="rounded p-1 bg-brown/40">
-              <ResourceIcon withTooltip={false} resource={resourceName} size="lg" />
-            </div>
-          )}
+          {productionBadge ||
+            (resourceName && (
+              <div className="rounded p-1 bg-brown/40">
+                <ResourceIcon withTooltip={false} resource={resourceName} size="lg" />
+              </div>
+            ))}
           {badge && <div>{badge}</div>}
         </div>
       </div>
