@@ -4,6 +4,7 @@ import { useTransferPanelDraftStore } from "@/hooks/store/use-transfer-panel-dra
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
 import {
   calculateDonkeysNeeded,
   configManager,
@@ -21,8 +22,7 @@ import {
   ResourcesIds,
   Structure,
   StructureType,
-  findResourceById,
-  isRelic,
+  getResourceTiers,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -67,6 +67,8 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
   const playerStructures = useUIStore((s) => s.playerStructures);
   const { currentDefaultTick } = useBlockTimestamp();
   const isBlitz = getIsBlitz();
+  const { favorites } = useFavoriteStructures();
+  const favoriteDestinationIds = useMemo(() => new Set(favorites), [favorites]);
 
   const ownedSources = useMemo<Structure[]>(() => {
     return playerStructures.filter((structure) => isAllowedSource(structure));
@@ -103,18 +105,42 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
     [selectedResources],
   );
 
-  const getResourcePriority = useCallback((resourceId: ResourcesIds) => {
-    const label = ResourcesIds[resourceId] as string | undefined;
-    if (label && label.toLowerCase() === "lords") return 0;
-    if (isRelic(resourceId)) return 1;
-    if (resourceId === ResourcesIds.Essence) return 2;
-    if (resourceId === ResourcesIds.Labor) return 3;
-    if (isMilitaryResource(resourceId)) return 4;
-    const trait = findResourceById(resourceId)?.trait;
-    if (trait && trait.toLowerCase() === "food") return 5;
-    if (trait && trait.toLowerCase() === "material") return 6;
-    return 9;
+  const resourcePriorityMap = useMemo(() => {
+    const resourceTiers = getResourceTiers(getIsBlitz());
+    const tierOrder = [
+      "lords",
+      "relics",
+      "essence",
+      "labor",
+      "military",
+      "transport",
+      "food",
+      "common",
+      "uncommon",
+      "rare",
+      "unique",
+      "mythic",
+    ] as const;
+
+    const map = new Map<ResourcesIds, { group: number; position: number }>();
+    tierOrder.forEach((key, groupIndex) => {
+      const ids = (resourceTiers as Record<string, ResourcesIds[]>)[key] ?? [];
+      ids.forEach((id, index) => {
+        const isMaterialGroup = groupIndex >= tierOrder.indexOf("common");
+        map.set(id, { group: groupIndex, position: isMaterialGroup ? id : index });
+      });
+    });
+    return map;
   }, []);
+
+  const getResourcePriority = useCallback(
+    (resourceId: ResourcesIds) => {
+      const match = resourcePriorityMap.get(resourceId);
+      if (match) return match;
+      return { group: resourcePriorityMap.size + 1, position: resourceId };
+    },
+    [resourcePriorityMap],
+  );
 
   const resourceTotals = useMemo(() => {
     const totals = new Map<ResourcesIds, number>();
@@ -271,18 +297,34 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .replace(/[^a-z0-9 ]/g, "");
-    const list = baseList
+    const filtered = baseList
       .filter((ps) => Number(ps.entityId) !== Number(selectedSourceId))
       .filter((ps) => (allowEssenceDestinationPayload ? true : !isFragmentMine(ps)));
-    if (!q) return list;
-    return list.filter((ps) => {
-      const name = getStructureName(ps.structure, isBlitz).name;
-      if (isNumeric) {
-        return String(ps.entityId).includes(q);
-      }
-      return norm(name).includes(norm(q));
+    const searched = !q
+      ? filtered
+      : filtered.filter((ps) => {
+          const name = getStructureName(ps.structure, isBlitz).name;
+          if (isNumeric) {
+            return String(ps.entityId).includes(q);
+          }
+          return norm(name).includes(norm(q));
+        });
+    return [...searched].sort((a, b) => {
+      const aFav = favoriteDestinationIds.has(Number(a.entityId));
+      const bFav = favoriteDestinationIds.has(Number(b.entityId));
+      if (aFav && !bFav) return -1;
+      if (!aFav && bFav) return 1;
+      return 0;
     });
-  }, [ownedDestOnly, filteredOwnedDestinations, destSearch, isBlitz, selectedSourceId, allowEssenceDestinationPayload]);
+  }, [
+    ownedDestOnly,
+    filteredOwnedDestinations,
+    destSearch,
+    isBlitz,
+    selectedSourceId,
+    allowEssenceDestinationPayload,
+    favoriteDestinationIds,
+  ]);
 
   // Force single destination selection when multiple resources are selected
   useEffect(() => {
@@ -725,7 +767,8 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
               const rb = b as ResourcesIds;
               const priA = getResourcePriority(ra);
               const priB = getResourcePriority(rb);
-              if (priA !== priB) return priA - priB;
+              if (priA.group !== priB.group) return priA.group - priB.group;
+              if (priA.position !== priB.position) return priA.position - priB.position;
               const labelA = ResourcesIds[ra] as string;
               const labelB = ResourcesIds[rb] as string;
               return labelA.localeCompare(labelB);

@@ -5,7 +5,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import type { RelicHolderPreview } from "@/ui/features/relics/components/player-relic-tray";
 import { RelicActivationSelector } from "@/ui/features/relics/components/relic-activation-selector";
-import { divideByPrecision, getBlockTimestamp, isMilitaryResource, ResourceManager } from "@bibliothecadao/eternum";
+import { divideByPrecision, getBlockTimestamp, ResourceManager, getIsBlitz } from "@bibliothecadao/eternum";
 import {
   ClientComponents,
   EntityType,
@@ -15,10 +15,10 @@ import {
   RelicRecipientType,
   resources as resourceDefs,
   ResourcesIds,
+  getResourceTiers,
 } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
 import { Sparkles } from "lucide-react";
-import { findResourceById } from "@bibliothecadao/types";
 
 interface CompactEntityInventoryProps {
   resources?: ComponentValue<ClientComponents["Resource"]["schema"]> | null;
@@ -67,18 +67,37 @@ const buildDisplayItems = (
   );
 
   const activeRelicSet = new Set(activeRelicIds);
-  const categoryPriority = (resourceId: number) => {
-    const label = ResourcesIds[resourceId] as string | undefined;
-    if (label && label.toLowerCase() === "lords") return 0;
-    if (isRelic(resourceId)) return 1;
-    if (resourceId === ResourcesIds.Essence) return 2;
-    if (resourceId === ResourcesIds.Labor) return 3;
-    if (isMilitaryResource(resourceId as ResourcesIds)) return 4;
-    if (resourceId === ResourcesIds.Donkey) return 5;
-    const trait = findResourceById(resourceId)?.trait;
-    if (trait && trait.toLowerCase() === "food") return 6;
-    if (trait && trait.toLowerCase() === "material") return 7;
-    return 9;
+  const resourceTiers = getResourceTiers(getIsBlitz());
+  const tierOrder = [
+    "lords",
+    "relics",
+    "essence",
+    "labor",
+    "military",
+    "transport",
+    "food",
+    "common",
+    "uncommon",
+    "rare",
+    "unique",
+    "mythic",
+  ] as const;
+
+  const priorityMap = new Map<number, { group: number; position: number }>();
+  tierOrder.forEach((key, groupIndex) => {
+    const ids = (resourceTiers as Record<string, ResourcesIds[]>)[key] ?? [];
+    ids.forEach((id, index) => {
+      // Use resource id as position for materials to ensure stable asc sorting across buckets.
+      const isMaterialGroup = groupIndex >= tierOrder.indexOf("common");
+      priorityMap.set(id, { group: groupIndex, position: isMaterialGroup ? id : index });
+    });
+  });
+
+  const resolvePriority = (resourceId: number) => {
+    const match = priorityMap.get(resourceId);
+    if (match) return match;
+    // Fallback: send unknowns to the end, sorted by id.
+    return { group: tierOrder.length, position: resourceId };
   };
 
   const items: DisplayItem[] = balances
@@ -100,12 +119,13 @@ const buildDisplayItems = (
     .filter(Boolean) as DisplayItem[];
 
   return items.sort((a, b) => {
-    const priA = categoryPriority(a.resourceId);
-    const priB = categoryPriority(b.resourceId);
-    if (priA !== priB) return priA - priB;
-    const labelA = ResourcesIds[a.resourceId] as string;
-    const labelB = ResourcesIds[b.resourceId] as string;
-    return labelA.localeCompare(labelB);
+    const priA = resolvePriority(a.resourceId);
+    const priB = resolvePriority(b.resourceId);
+    if (priA.group !== priB.group) return priA.group - priB.group;
+    if (priA.position !== priB.position) return priA.position - priB.position;
+    // Stable fallback: higher amount first, then id.
+    if (b.amount !== a.amount) return b.amount - a.amount;
+    return a.resourceId - b.resourceId;
   });
 };
 
