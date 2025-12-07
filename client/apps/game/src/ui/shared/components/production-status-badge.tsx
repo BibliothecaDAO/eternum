@@ -22,7 +22,7 @@ interface ProductionStatusBadgeProps {
   isProducing: boolean;
   timeRemainingSeconds: number | null;
   totalCount?: number;
-  size?: "sm" | "xs";
+  size?: "sm" | "md" | "xs";
   onClick?: () => void;
   resourceId?: ResourcesIds;
   showInputIcons?: boolean;
@@ -59,10 +59,34 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
   const shouldPulse =
     isProducing && effectiveRemaining !== null && effectiveRemaining <= PRODUCTION_PULSE_THRESHOLD_SECONDS;
 
-  const wrapperSize = size === "sm" ? "h-12 w-12" : "h-9 w-9";
-  const iconPadding = size === "sm" ? "p-2.5" : "p-1";
-  const ringOffset = size === "sm" ? "-inset-[6px]" : "-inset-[3px]";
-  const progressOffset = size === "sm" ? "-inset-[5px]" : "-inset-[2.5px]";
+  const preset =
+    size === "md"
+      ? {
+          wrapper: "h-11 w-11",
+          iconPadding: "p-2",
+          ringOffset: "-inset-[5px]",
+          progressOffset: "-inset-[4px]",
+          icon: "sm" as const,
+          iconRadius: 28,
+        }
+      : size === "sm"
+        ? {
+            wrapper: "h-12 w-12",
+            iconPadding: "p-2.5",
+            ringOffset: "-inset-[6px]",
+            progressOffset: "-inset-[5px]",
+            icon: "sm" as const,
+            iconRadius: 30,
+          }
+        : {
+            wrapper: "h-9 w-9",
+            iconPadding: "p-1",
+            ringOffset: "-inset-[3px]",
+            progressOffset: "-inset-[2.5px]",
+            icon: "xs" as const,
+            iconRadius: 24,
+          };
+
   const ringThickness = "border";
 
   const ringClasses = isProducing
@@ -78,14 +102,13 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
   const resolvedResourceId = showInputIcons ? (resourceId ?? resolveResourceIdFromLabel(resourceLabel)) : undefined;
   const inputDefinitions =
     resolvedResourceId !== undefined ? configManager.getResourceProductionResourceInputs(resolvedResourceId) : [];
-  const iconRadius = size === "sm" ? 30 : 24;
   const arcSpan = Math.PI / 2;
   const angleStep = inputDefinitions.length <= 1 ? 0 : arcSpan / (inputDefinitions.length - 1);
   const inputIconPositions = showInputIcons
     ? inputDefinitions.map((input, index) => {
         const angle = Math.PI + index * angleStep;
-        const x = Math.cos(angle) * iconRadius;
-        const y = Math.sin(angle) * iconRadius;
+        const x = Math.cos(angle) * preset.iconRadius;
+        const y = Math.sin(angle) * preset.iconRadius;
         return { input, x, y };
       })
     : [];
@@ -94,7 +117,7 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
     <div
       className={clsx(
         "relative inline-flex items-center justify-center",
-        wrapperSize,
+        preset.wrapper,
         onClick ? "cursor-pointer" : "",
         className,
       )}
@@ -120,30 +143,34 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
       )}
       {shouldPulse && (
         <span
-          className={clsx("absolute pointer-events-none rounded-full bg-emerald-400/20", ringOffset, "animate-ping")}
+          className={clsx(
+            "absolute pointer-events-none rounded-full bg-emerald-400/20",
+            preset.ringOffset,
+            "animate-ping",
+          )}
         />
       )}
       <span
         className={clsx(
           "absolute pointer-events-none rounded-full backdrop-blur-sm",
-          ringOffset,
+          preset.ringOffset,
           ringThickness,
           ringClasses,
         )}
       />
       {isProducing && (
-        <span className={clsx("absolute pointer-events-none rounded-full", progressOffset)} style={progressStyle} />
+        <span className={clsx("absolute pointer-events-none rounded-full", preset.progressOffset)} style={progressStyle} />
       )}
       <div
         className={clsx(
           "relative z-[1] flex items-center justify-center rounded-full border border-gold/[0.08] bg-[#1d1510]/95",
-          iconPadding,
+          preset.iconPadding,
           "shadow-[0_0_8px_rgba(0,0,0,0.45)]",
         )}
       >
         <ResourceIcon
           resource={resourceLabel}
-          size={size === "sm" ? "sm" : "xs"}
+          size={preset.icon}
           tooltipText={tooltipText}
           withTooltip={showTooltip}
         />

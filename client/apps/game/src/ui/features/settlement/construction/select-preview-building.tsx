@@ -945,8 +945,7 @@ const BuildingCard = ({
         }
         isProducing={productionStatus.isProducing}
         timeRemainingSeconds={effectiveRemainingSeconds}
-        size="sm"
-        className="scale-[1.05]"
+        size="md"
         cornerTopLeft={totalProductionBuildings > 0 ? `${totalProductionBuildings}` : undefined}
         cornerTopRight={formatSignedPerSecond(productionStatus.productionPerSecond)?.replace("/s", "")}
         cornerBottomRight={formattedRemaining ?? undefined}
