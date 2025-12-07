@@ -107,7 +107,7 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
         <div className="grid h-full min-h-0 gap-2 overflow-auto sm:grid-cols-[1.1fr_0.9fr]">
           <StructureBannerEntityDetail
             structureEntityId={occupierEntityId}
-            maxInventory={12}
+            maxInventory={14}
             showButtons={false}
             className="h-full"
             {...sharedDetailProps}

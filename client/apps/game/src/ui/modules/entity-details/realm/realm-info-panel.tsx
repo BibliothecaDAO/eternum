@@ -218,6 +218,8 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
                 compact
                 smallTextClass="text-xxs"
                 showTooltip={false}
+                showProductionSummary={false}
+                badgeVariant="detailed"
               />
             ) : (
               <p className="text-xxs text-gold/60 italic">Production data unavailable.</p>
@@ -253,7 +255,7 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
             entityType={EntityType.STRUCTURE}
             variant="tight"
             showLabels={false}
-            maxItems={12}
+            maxItems={14}
             allowRelicActivation
             activeRelicIds={activeRelicIds}
           />
