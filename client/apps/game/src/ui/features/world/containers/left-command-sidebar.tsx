@@ -886,8 +886,8 @@ export const LeftCommandSidebar = memo(() => {
     MenuEnum.entityDetails, // Realm Info
     MenuEnum.construction, // Buildings
     MenuEnum.military, // Army
-    MenuEnum.transfer, // Transfers
     MenuEnum.resourceArrivals, // Donkey arrivals
+    MenuEnum.transfer, // Transfers
     MenuEnum.storyEvents, // Chronicles
   ];
   const combinedNavigationItems = orderedIds
