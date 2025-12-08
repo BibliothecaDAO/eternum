@@ -1,4 +1,4 @@
-import type { Market } from "@pm/sdk";
+import { MarketClass } from "@/pm/class";
 import { HStack } from "@pm/ui";
 
 const formatTvl = (value: unknown) => {
@@ -10,9 +10,9 @@ const formatTvl = (value: unknown) => {
   return num.toPrecision(2);
 };
 
-export const MarketTvl = ({ market }: { market: Market }) => {
-  const tvl = formatTvl((market as any).tvl ?? (market as any).liquidity ?? (market as any).poolSize);
-
+export const MarketTvl = ({ market }: { market: MarketClass }) => {
+  const tvl = market.tvl ?? 0;
+  console.log({ tvl });
   return (
     <HStack className="gap-2 text-sm text-gold">
       <span className="text-xs uppercase text-gold/70">TVL</span>

@@ -62,7 +62,8 @@
     "uuid": "^11.1.0",
     "vite-plugin-pwa": "^0.20.5",
     "wouter": "^2.12.1",
-    "zustand": "^5.0.5"
+    "zustand": "^5.0.5",
+    "bignumber.js": "catalog:"
   },
   "devDependencies": {
     "@types/lodash": "^4.14.202",

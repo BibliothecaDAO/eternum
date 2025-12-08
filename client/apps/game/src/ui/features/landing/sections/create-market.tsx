@@ -38,19 +38,19 @@ const DEFAULT_FEE_SHARE_CURVE_RANGE = {
   end: 0,
 };
 const getOracleParams = (blitzOracleAddress: string) => [
+  "0",
+  BigInt(blitzOracleAddress),
+  "0x0",
+  "0x626c69747a5f6765745f77696e6e6572",
+  "0x10",
+  "0",
   // "0",
-  // BigInt(blitzOracleAddress),
+  // "3038007332165199338266024285300727230862136446917353564549635676187981469583",
   // "0x0",
-  // "0x626c69747a5f6765745f77696e6e6572",
-  // "0x10",
+  // "0x6765745f736561736f6e5f77696e6e6572",
+  // "0x11",
+  // "1",
   // "0",
-    "0",
-    "3038007332165199338266024285300727230862136446917353564549635676187981469583",
-    "0x0",
-    "0x6765745f736561736f6e5f77696e6e6572",
-    "0x11",
-    "1",
-    "0"
 ];
 const DEFAULT_ORACLE_EXTRA_PARAMS = ["0"];
 const buildOracleValueTypeEnum = () =>
@@ -104,9 +104,7 @@ const normalizeVariants = (value: unknown): unknown => {
   }
   if (Array.isArray(value)) return value.map((item) => normalizeVariants(item));
   if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, nestedValue]) => [key, normalizeVariants(nestedValue)]),
-    );
+    return Object.fromEntries(Object.entries(value).map(([key, nestedValue]) => [key, normalizeVariants(nestedValue)]));
   }
   return value;
 };
@@ -151,12 +149,13 @@ const buildMarketParams = (
   const fundingAmount = uint256.bnToUint256(fundingBase);
   const startAt = server.startAt ?? nowSec;
   const endAt = server.endAt && server.endAt !== 0 ? server.endAt : startAt;
-  const resolveAt = endAt + 1;
+  const resolveAt = endAt + 60;
 
   // const titleData = stringToHexData(`Who wins ${server.name}?`);
   // const questionData = stringToHexData(`Predict the winner on ${server.name}`);
-  const titleData = stringToHexData(`prediction-market-${server.name}`);
-  const questionData = stringToHexData("");
+  const paddedName = server.name.padEnd(10, " ");
+  const titleData = stringToHexData(paddedName);
+  const questionData = stringToHexData("Who will be the winner?");
 
   const params = normalizeVariants({
     oracle: DEFAULT_ORACLE_ADDRESS,
@@ -193,24 +192,19 @@ export const LandingCreateMarket = () => {
   const [forms, setForms] = useState<Record<string, MarketServerFormState>>({});
   const [creatingServer, setCreatingServer] = useState<string | null>(null);
   const [blitzOracleAddresses, setBlitzOracleAddresses] = useState<Partial<Record<string, string | null>>>({});
-  console.log({blitzOracleAddresses})
+  console.log({ blitzOracleAddresses });
   const oracleFetchInFlight = useRef(new Set<string>());
 
   const resolveBlitzOracleAddress = useCallback(async (worldName: string) => {
     const chain = env.VITE_PUBLIC_CHAIN as ChainType;
     const profile = await buildWorldProfile(chain as Chain, worldName);
     const baseManifest = getGameManifest(chain as Chain);
-    const patched = patchManifestWithFactory(
-      baseManifest as any,
-      profile.worldAddress,
-      profile.contractsBySelector,
-    );
+    const patched = patchManifestWithFactory(baseManifest as any, profile.worldAddress, profile.contractsBySelector);
     const address = (patched as any)?.contracts?.find(
       (contract: any) => contract.tag === "s1_eternum-prize_distribution_systems",
     )?.address;
     return address ?? null;
   }, []);
-
 
   useEffect(() => {
     servers.forEach((server) => {
@@ -363,11 +357,11 @@ export const LandingCreateMarket = () => {
 
       try {
         setCreatingServer(server.name);
-        // await account.estimateInvokeFee([approveCall, createMarketCall], {
-        //   blockIdentifier: "pre_confirmed",
-        // });
+        await account.estimateInvokeFee([approveCall, createMarketCall], {
+          blockIdentifier: "pre_confirmed",
+        });
 
-        const resultTx = await account.execute([createMarketCall]);
+        const resultTx = await account.execute([approveCall, createMarketCall]);
 
         if ("waitForTransaction" in account && typeof account.waitForTransaction === "function") {
           await account.waitForTransaction(resultTx.transaction_hash);
@@ -391,7 +385,10 @@ export const LandingCreateMarket = () => {
   }, [startedServers.length]);
 
   return (
-    <section aria-label="Prediction markets" className="relative h-[70vh] w-full max-w-5xl space-y-8 overflow-y-auto rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 via-black/40 to-black/90 p-8 text-white shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl md:max-h-[80vh]">
+    <section
+      aria-label="Prediction markets"
+      className="relative h-[70vh] w-full max-w-5xl space-y-8 overflow-y-auto rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 via-black/40 to-black/90 p-8 text-white shadow-[0_35px_70px_-25px_rgba(12,10,35,0.85)] backdrop-blur-xl md:max-h-[80vh]"
+    >
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 rounded-2xl border border-gold/30 bg-black/40 p-6 shadow-lg shadow-black/30">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -404,11 +401,7 @@ export const LandingCreateMarket = () => {
           <div className="flex flex-col gap-1 text-right text-[11px] text-gold/70 sm:items-end">
             <span className="text-xs font-semibold uppercase tracking-wide text-gold/70">Market contract address</span>
             <span className="text-sm text-gold">{marketAddress || "Not configured"}</span>
-            <button
-              type="button"
-              onClick={() => void refresh()}
-              className="text-gold hover:text-gold/80"
-            >
+            <button type="button" onClick={() => void refresh()} className="text-gold hover:text-gold/80">
               Refresh servers
             </button>
           </div>
@@ -425,7 +418,8 @@ export const LandingCreateMarket = () => {
             const oracleReady = Boolean(blitzOracleAddress);
             const oracleLoading = blitzOracleAddress === undefined;
             const totalWeight =
-              server.players.reduce((acc, player) => acc + (form.weights[player.address] ?? 1), 0) + (form.noneWeight ?? 0);
+              server.players.reduce((acc, player) => acc + (form.weights[player.address] ?? 1), 0) +
+              (form.noneWeight ?? 0);
             const canCreate = server.playersLoaded && server.players.length > 0 && totalWeight > 0 && oracleReady;
 
             const disableReason = (() => {

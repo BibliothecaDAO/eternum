@@ -1,5 +1,6 @@
-import type { Market, MarketOutcome } from "@pm/sdk";
+import { MarketClass, MarketOutcome } from "@/pm/class";
 import { HStack } from "@pm/ui";
+import { MaybeController } from "./MaybeController";
 
 const cx = (...classes: Array<string | null | undefined | false>) => classes.filter(Boolean).join(" ");
 
@@ -11,8 +12,8 @@ const formatOdds = (value: unknown) => {
   return num.toFixed(2);
 };
 
-const getOutcomes = (market: Market): MarketOutcome[] => {
-  const outcomes = (market as any).outcomes;
+const getOutcomes = (market: MarketClass): MarketOutcome[] => {
+  const outcomes = market.getMarketOutcomes();
   if (!Array.isArray(outcomes)) return [];
   return outcomes as MarketOutcome[];
 };
@@ -22,7 +23,7 @@ export const MarketOdds = ({
   selectable = false,
   onClick,
 }: {
-  market: Market;
+  market: MarketClass;
   selectable?: boolean;
   onClick?: () => void;
 }) => {
@@ -35,8 +36,7 @@ export const MarketOdds = ({
   return (
     <div className="flex flex-col gap-2">
       {outcomes.map((outcome, idx) => {
-        const label = outcome?.label || (outcome as any)?.name || `Outcome ${idx + 1}`;
-        const odds = formatOdds(outcome?.probability ?? (outcome as any)?.price ?? (outcome as any)?.odds);
+        const odds = formatOdds(outcome?.odds ?? (outcome as any)?.price ?? (outcome as any)?.odds);
 
         return (
           <div
@@ -48,7 +48,7 @@ export const MarketOdds = ({
             onClick={selectable ? onClick : undefined}
           >
             <HStack className="gap-2 text-white/90">
-              <span className="text-sm">{label}</span>
+              <MaybeController address={outcome.name} />
             </HStack>
             <span className="text-gold">{odds ?? "--"}</span>
           </div>

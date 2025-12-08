@@ -23,8 +23,23 @@ const formatStatus = (status?: unknown) => {
 };
 
 export const MarketStatusBadge = ({ market }: { market: Market }) => {
-  const statusRaw = (market as any).status || (market as any).state || "unknown";
-  const normalized = typeof statusRaw === "string" ? statusRaw.toLowerCase() : "unknown";
+  const statusRaw = (market as any).status || (market as any).state;
+  const now = Math.floor(Date.now() / 1_000);
+
+  const startAt = Number((market as any).start_at ?? (market as any).created_at);
+  const resolveAt = Number((market as any).resolve_at);
+  const resolvedAt = Number((market as any).resolved_at);
+
+  const computedStatus =
+    Number.isFinite(resolvedAt) && resolvedAt > 0
+      ? "resolved"
+      : Number.isFinite(resolveAt) && resolveAt <= now
+        ? "resolvable"
+        : Number.isFinite(startAt) && startAt > now
+          ? "upcoming"
+          : undefined;
+
+  const normalized = (computedStatus ?? (typeof statusRaw === "string" ? statusRaw : "unknown")).toLowerCase();
   const style = STATUS_STYLES[normalized] || STATUS_STYLES.default;
 
   return (
@@ -34,7 +49,7 @@ export const MarketStatusBadge = ({ market }: { market: Market }) => {
         style,
       )}
     >
-      {formatStatus(statusRaw)}
+      {formatStatus(computedStatus ?? statusRaw ?? normalized)}
     </span>
   );
 };

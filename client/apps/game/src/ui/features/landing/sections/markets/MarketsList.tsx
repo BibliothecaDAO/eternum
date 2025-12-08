@@ -12,18 +12,17 @@ import { MarketTvl } from "./MarketTvl";
 export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersParams }) {
   const { markets } = useMarkets({ marketFilters });
 
-  console.log({ raschelMarkets: markets });
-
   const sortedMarkets = useMemo(() => {
     const getCreatedAt = (value: unknown) => {
       const num = Number(value ?? 0);
       return Number.isFinite(num) ? num : 0;
     };
 
-    return markets.slice().sort((a, b) => getCreatedAt(b.created_at) - getCreatedAt(a.created_at));
+    return markets
+      .filter(Boolean)
+      .slice()
+      .sort((a, b) => getCreatedAt(b.created_at) - getCreatedAt(a.created_at));
   }, [markets]);
-
-  console.log({ sortedMarkets });
 
   if (sortedMarkets.length === 0) {
     return <p className="text-sm text-gold/70">No markets are available yet.</p>;
@@ -34,7 +33,8 @@ export function MarketsList({ marketFilters }: { marketFilters: MarketFiltersPar
       {sortedMarkets.map((market, idx) => {
         const href = (() => {
           try {
-            return `/markets/0x${BigInt(market.market_id ?? idx).toString(16)}`;
+            if (market?.market_id == null) return "#";
+            return `/markets/0x${BigInt(market.market_id).toString(16)}`;
           } catch {
             return "#";
           }
