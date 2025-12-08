@@ -47,7 +47,7 @@ import {
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
-import { InfoIcon } from "lucide-react";
+import { InfoIcon, Trash } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -146,6 +146,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
   const reservedSpotsRef = useRef<Set<string>>(new Set());
   const [pendingBuilds, setPendingBuilds] = useState<Record<string, boolean>>({});
+  const [pendingDestroys, setPendingDestroys] = useState<Record<string, boolean>>({});
   const hasAvailableBuildingTile = useMemo(() => {
     if (!realm?.position) return true;
 
@@ -266,6 +267,60 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       setPreviewBuilding,
       setSelectedBuildingHex,
       useSimpleCost,
+    ],
+  );
+
+  const handleDestroyBuilding = useCallback(
+    async (target: { type: BuildingType; resource?: ResourcesIds }) => {
+      if (!realm?.position) {
+        toast.error("Select a realm before destroying.");
+        return;
+      }
+
+      const buildingKey = target.type.toString();
+      const outerCol = Number(realm.position.x);
+      const outerRow = Number(realm.position.y);
+      const tileManager = new TileManager(dojo.setup.components, dojo.setup.systemCalls, {
+        col: outerCol,
+        row: outerRow,
+      });
+
+      const existing = tileManager.existingBuildings().find((building) => building.category === target.type);
+      if (!existing) {
+        toast.error("No building of this type found to destroy.");
+        return;
+      }
+
+      setPendingDestroys((prev) => ({ ...prev, [buildingKey]: true }));
+
+      try {
+        await tileManager.destroyBuilding(dojo.account.account, entityId, existing.col, existing.row);
+        if (
+          previewBuilding?.type === target.type &&
+          (!target.resource || previewBuilding?.resource === target.resource)
+        ) {
+          setPreviewBuilding(null);
+        }
+      } catch (error) {
+        console.error("Failed to destroy building", error);
+        toast.error("Destroy failed. Please try again.");
+      } finally {
+        setPendingDestroys((prev) => {
+          const next = { ...prev };
+          delete next[buildingKey];
+          return next;
+        });
+      }
+    },
+    [
+      dojo.account.account,
+      dojo.setup.components,
+      dojo.setup.systemCalls,
+      entityId,
+      previewBuilding?.resource,
+      previewBuilding?.type,
+      realm?.position,
+      setPreviewBuilding,
     ],
   );
 
@@ -490,6 +545,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
               const buildKey = building.toString();
               const isPending = Boolean(pendingBuilds[buildKey]);
               const count = getBuildingCountFor(building);
+              const destroyPending = Boolean(pendingDestroys[buildKey]);
+              const destroyDisabled = count <= 0 || destroyPending;
 
               return (
                 <BuildingCard
@@ -528,6 +585,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                   onBuild={() => handleAutoBuild({ type: building, resource: resourceId })}
                   buildDisabled={!canBuild || isPending || isRealmFull}
                   buildLoading={isPending}
+                  onDestroy={() => handleDestroyBuilding({ type: building, resource: resourceId })}
+                  destroyDisabled={destroyDisabled}
+                  destroyLoading={destroyPending}
                 />
               );
             })}
@@ -581,6 +641,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 const buildKey = building.toString();
                 const isPending = Boolean(pendingBuilds[buildKey]);
                 const count = getBuildingCountFor(building);
+                const destroyPending = Boolean(pendingDestroys[buildKey]);
+                const destroyDisabled = count <= 0 || destroyPending;
 
                 const isFarm = building === BuildingType.ResourceWheat;
                 const isFishingVillage = building === BuildingType.ResourceFish;
@@ -633,6 +695,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     onBuild={() => handleAutoBuild({ type: building })}
                     buildDisabled={!canBuild || isPending || isRealmFull}
                     buildLoading={isPending}
+                    onDestroy={() => handleDestroyBuilding({ type: building })}
+                    destroyDisabled={destroyDisabled}
+                    destroyLoading={destroyPending}
                   />
                 );
               })}
@@ -738,6 +803,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                             const buildKey = building.toString();
                             const isPending = Boolean(pendingBuilds[buildKey]);
                             const count = getBuildingCountFor(building);
+                            const destroyPending = Boolean(pendingDestroys[buildKey]);
+                            const destroyDisabled = count <= 0 || destroyPending;
 
                             return (
                               <BuildingCard
@@ -780,6 +847,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                                 onBuild={() => handleAutoBuild({ type: building })}
                                 buildDisabled={!canBuild || isPending || isRealmFull}
                                 buildLoading={isPending}
+                                onDestroy={() => handleDestroyBuilding({ type: building })}
+                                destroyDisabled={destroyDisabled}
+                                destroyLoading={destroyPending}
                               />
                             );
                           })}
@@ -802,7 +872,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       armyGroups,
       activeArmyType,
       pendingBuilds,
+      pendingDestroys,
       handleAutoBuild,
+      handleDestroyBuilding,
       getBuildingCountFor,
     ],
   );
@@ -884,6 +956,9 @@ const BuildingCard = ({
   buildDisabled,
   buildLoading,
   count = 0,
+  onDestroy,
+  destroyDisabled,
+  destroyLoading,
 }: {
   buildingId: BuildingType;
   onClick: () => void;
@@ -905,6 +980,9 @@ const BuildingCard = ({
   buildDisabled?: boolean;
   buildLoading?: boolean;
   count?: number;
+  onDestroy?: () => void;
+  destroyDisabled?: boolean;
+  destroyLoading?: boolean;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const isDisabled = disabled;
@@ -992,6 +1070,25 @@ const BuildingCard = ({
           >
             {buildLoading ? "…" : "Build"}
           </button>
+          {onDestroy && (
+            <button
+              type="button"
+              disabled={Boolean(destroyDisabled)}
+              onClick={(event) => {
+                event.stopPropagation();
+                if (destroyDisabled) return;
+                onDestroy();
+              }}
+              className={clsx(
+                "flex items-center justify-center rounded-md border border-red-700/80 bg-red-900/90 px-2.5 py-1 text-[10px] font-semibold text-white shadow transition",
+                !destroyDisabled && "hover:translate-y-[-1px] hover:bg-red-800",
+                destroyDisabled && "opacity-60 cursor-not-allowed",
+              )}
+              aria-label="Destroy building"
+            >
+              {destroyLoading ? "…" : <Trash className="w-3 h-3" />}
+            </button>
+          )}
         </div>
         <div className="ml-auto flex items-center gap-2">
           {isWorkersHut && (
