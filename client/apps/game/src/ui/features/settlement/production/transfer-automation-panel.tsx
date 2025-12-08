@@ -94,7 +94,7 @@ export const TransferAutomationPanel = () => {
           name: realm.realmName ?? `Realm ${realm.realmId}`,
           type: realm.entityType ?? "realm",
           lastRun: exec.executedAt,
-          presetId: (realm.presetId ?? "custom") as RealmPresetId,
+          presetId: realm.presetId,
           totalCycles,
           outgoing,
           incoming,

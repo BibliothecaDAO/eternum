@@ -14,7 +14,7 @@ export function StoryEventToastBridge() {
   useEffect(() => {
     const unsubscribe = storyEventBus.subscribe((event) => {
       const presentation = buildStoryEventPresentation(event, components);
-      pushToast(presentation);
+      pushToast(presentation, event);
     });
 
     return () => {

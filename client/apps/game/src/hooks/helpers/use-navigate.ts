@@ -11,7 +11,29 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useUIStore } from "../store/use-ui-store";
 
-const toWorldMapPosition = (position: Position): { col: number; row: number } | undefined => {
+type PositionLike = Position | { x?: number; y?: number; col?: number; row?: number };
+
+const isPositionInstance = (value: PositionLike | undefined): value is Position => {
+  const candidate = value as unknown as { toMapLocationUrl?: () => string };
+  return value instanceof Position || typeof candidate?.toMapLocationUrl === "function";
+};
+
+const normalizeToPosition = (value?: PositionLike): Position => {
+  if (isPositionInstance(value)) {
+    return value;
+  }
+
+  const candidate = value ?? {};
+  const x = Number(candidate.x ?? candidate.col ?? 0);
+  const y = Number(candidate.y ?? candidate.row ?? 0);
+
+  return new Position({
+    x: Number.isFinite(x) ? x : 0,
+    y: Number.isFinite(y) ? y : 0,
+  });
+};
+
+const toWorldMapPosition = (position: PositionLike): { col: number; row: number } | undefined => {
   const positionAny = position as unknown as {
     getContract?: () => { col?: number; row?: number; x?: number; y?: number };
     getNormalized?: () => { x?: number; y?: number };
@@ -125,6 +147,7 @@ export const useSpectatorModeClick = (setupResult: SetupResult | null) => {
 
 export const useGoToStructure = (setupResult: SetupResult | null) => {
   const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
+  const setSelectedHex = useUIStore((state) => state.setSelectedHex);
   const navigateToHexView = useNavigateToHexView();
   const navigateToMapView = useNavigateToMapView();
 
@@ -185,11 +208,38 @@ export const useGoToStructure = (setupResult: SetupResult | null) => {
     [setupResult],
   );
 
-  return async (structureEntityId: ID, position: Position, isMapView: boolean, options?: { spectator?: boolean }) => {
-    const worldMapPosition = toWorldMapPosition(position);
+  const updateSelectedHex = useCallback(
+    (worldMapPosition?: { col: number; row: number }) => {
+      if (!worldMapPosition) {
+        return;
+      }
+
+      const col = Number(worldMapPosition.col);
+      const row = Number(worldMapPosition.row);
+
+      if (!Number.isFinite(col) || !Number.isFinite(row)) {
+        return;
+      }
+
+      const nextSelection = { col, row };
+      setSelectedHex(nextSelection);
+      // World scene clears selection on URL changes; reapply next tick to keep the tile highlighted.
+      setTimeout(() => setSelectedHex(nextSelection), 0);
+    },
+    [setSelectedHex],
+  );
+
+  return async (
+    structureEntityId: ID,
+    positionInput: PositionLike,
+    isMapView: boolean,
+    options?: { spectator?: boolean },
+  ) => {
+    const targetPosition = normalizeToPosition(positionInput);
+    const worldMapPosition = toWorldMapPosition(targetPosition);
 
     try {
-      await ensureStructureSynced(structureEntityId, position, worldMapPosition);
+      await ensureStructureSynced(structureEntityId, targetPosition, worldMapPosition);
     } catch (error) {
       console.error("[useGoToStructure] Unexpected error while syncing structure", error);
     }
@@ -199,11 +249,13 @@ export const useGoToStructure = (setupResult: SetupResult | null) => {
       worldMapPosition,
     });
 
+    updateSelectedHex(worldMapPosition);
+
     if (isMapView) {
-      navigateToMapView(position);
+      navigateToMapView(targetPosition);
       return;
     }
 
-    navigateToHexView(position);
+    navigateToHexView(targetPosition);
   };
 };

@@ -389,9 +389,7 @@ export interface ChunkLifecycleEvents {
 /**
  * Event handler type for chunk lifecycle events.
  */
-export type ChunkEventHandler<K extends keyof ChunkLifecycleEvents> = (
-  event: ChunkLifecycleEvents[K],
-) => void;
+export type ChunkEventHandler<K extends keyof ChunkLifecycleEvents> = (event: ChunkLifecycleEvents[K]) => void;
 
 // ============================================================================
 // Configuration Types
@@ -458,21 +456,9 @@ export const VALID_PHASE_TRANSITIONS: Record<ChunkLifecyclePhase, ChunkLifecycle
     ChunkLifecyclePhase.IDLE,
     ChunkLifecyclePhase.ERROR,
   ],
-  [ChunkLifecyclePhase.FETCHING]: [
-    ChunkLifecyclePhase.HYDRATING,
-    ChunkLifecyclePhase.ERROR,
-    ChunkLifecyclePhase.IDLE,
-  ],
-  [ChunkLifecyclePhase.HYDRATING]: [
-    ChunkLifecyclePhase.RENDERING,
-    ChunkLifecyclePhase.ERROR,
-    ChunkLifecyclePhase.IDLE,
-  ],
-  [ChunkLifecyclePhase.RENDERING]: [
-    ChunkLifecyclePhase.ACTIVE,
-    ChunkLifecyclePhase.ERROR,
-    ChunkLifecyclePhase.IDLE,
-  ],
+  [ChunkLifecyclePhase.FETCHING]: [ChunkLifecyclePhase.HYDRATING, ChunkLifecyclePhase.ERROR, ChunkLifecyclePhase.IDLE],
+  [ChunkLifecyclePhase.HYDRATING]: [ChunkLifecyclePhase.RENDERING, ChunkLifecyclePhase.ERROR, ChunkLifecyclePhase.IDLE],
+  [ChunkLifecyclePhase.RENDERING]: [ChunkLifecyclePhase.ACTIVE, ChunkLifecyclePhase.ERROR, ChunkLifecyclePhase.IDLE],
   [ChunkLifecyclePhase.ACTIVE]: [ChunkLifecyclePhase.UNLOADING, ChunkLifecyclePhase.RENDERING],
   [ChunkLifecyclePhase.UNLOADING]: [ChunkLifecyclePhase.IDLE],
   [ChunkLifecyclePhase.ERROR]: [ChunkLifecyclePhase.IDLE, ChunkLifecyclePhase.FETCHING],
@@ -503,12 +489,7 @@ export function parseChunkKey(chunkKey: string): { startRow: number; startCol: n
 /**
  * Calculate bounds for a chunk.
  */
-export function calculateChunkBounds(
-  startRow: number,
-  startCol: number,
-  width: number,
-  height: number,
-): ChunkBounds {
+export function calculateChunkBounds(startRow: number, startCol: number, width: number, height: number): ChunkBounds {
   return {
     minCol: startCol,
     maxCol: startCol + width,

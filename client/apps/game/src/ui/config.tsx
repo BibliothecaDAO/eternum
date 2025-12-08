@@ -133,6 +133,7 @@ export const BuildingThumbs = {
   discord: `${prefix}discord.png`,
   rewards: `${prefix}rewards.png`,
   production: `${prefix}production.png`,
+  house: `${prefix}house.png`,
   home: `${prefix}home.png`,
   time: `${prefix}time.png`,
   leave: `${prefix}leave.png`,
@@ -157,5 +158,6 @@ export enum MenuEnum {
   automation = "automation",
   transfer = "transfer",
   relics = "relics",
+  chat = "chat",
   storyEvents = "storyEvents",
 }

@@ -10,14 +10,7 @@
  */
 
 import { ID } from "@bibliothecadao/types";
-import {
-  ChunkBounds,
-  EntityType,
-  SpatialEntry,
-  SpatialIndexConfig,
-  SpatialIndexStats,
-  createChunkKey,
-} from "./types";
+import { ChunkBounds, EntityType, SpatialEntry, SpatialIndexConfig, SpatialIndexStats, createChunkKey } from "./types";
 
 /**
  * Internal bucket structure.

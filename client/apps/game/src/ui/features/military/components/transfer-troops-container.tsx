@@ -25,12 +25,12 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeftRight, ArrowRight, Timer } from "lucide-react";
+import { AlertTriangle, ArrowLeftRight, ArrowRight } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getStructureDefenseSlotLimit, getUnlockedGuardSlots, MAX_GUARD_SLOT_COUNT } from "../utils/defense-slot-utils";
 import { TransferDirection } from "./help-container";
 import { TransferBalanceCardData, TransferBalanceCards } from "./transfer-troops/transfer-balance-cards";
-import { TroopBadge } from "./transfer-troops/transfer-troop-badge";
+import { TransferSlotSelection } from "./transfer-troops/transfer-slot-selection";
 
 interface TransferTroopsContainerProps {
   selectedEntityId: ID;
@@ -199,16 +199,17 @@ export const TransferTroopsContainer = ({
   const targetGuardSlotSet = useMemo(() => new Set(targetStructureGuardSlots), [targetStructureGuardSlots]);
 
   const orderedGuardSlots = useMemo(() => [...availableGuards].sort((a, b) => b - a), [availableGuards]);
+  const visualGuardSlots = useMemo(
+    () =>
+      [...availableGuards].sort(
+        (a, b) =>
+          DISPLAYED_SLOT_NUMBER_MAP[a as keyof typeof DISPLAYED_SLOT_NUMBER_MAP] -
+          DISPLAYED_SLOT_NUMBER_MAP[b as keyof typeof DISPLAYED_SLOT_NUMBER_MAP],
+      ),
+    [availableGuards],
+  );
   const lastGuardSlot = orderedGuardSlots[0];
   const frontlineSlot = orderedGuardSlots[orderedGuardSlots.length - 1];
-
-  const getDefenseLabel = (slotId?: number) => {
-    if (slotId === undefined || slotId === null) {
-      return null;
-    }
-    const slotDisplayNumber = DISPLAYED_SLOT_NUMBER_MAP[slotId as keyof typeof DISPLAYED_SLOT_NUMBER_MAP];
-    return GUARD_SLOT_NAMES[slotId as keyof typeof GUARD_SLOT_NAMES] ?? `Slot ${slotDisplayNumber}`;
-  };
 
   // starts from highest slot to lowest slot
   const advanceLabel =
@@ -339,7 +340,7 @@ export const TransferTroopsContainer = ({
     }
 
     if (!isStructureOwnerOfExplorer) {
-      return "Explorer is not owned by this structure. Claim control before sending from balance.";
+      return "Explorer is not owned by this structure";
     }
 
     return null;
@@ -1107,26 +1108,26 @@ export const TransferTroopsContainer = ({
     targetExplorerCount,
   ]);
 
-  // ------ NEW: Show selected slot somewhere (for user clarity) ------
-  // We'll display the current selected guard slot (or "Structure balance") out of the available slots, if relevant
-  let selectedSlotDisplay: React.ReactNode = null;
-  if (guardSelectionRequired && guardSlot !== null) {
-    if (guardSlot === BALANCE_SLOT) {
-      selectedSlotDisplay = (
-        <div className="mb-2 rounded-md border border-gold/40 bg-gold/10 px-3 py-1 text-sm text-gold/90 w-fit">
-          <strong>Selected slot:</strong> Structure balance
-        </div>
-      );
-    } else if (typeof guardSlot === "number") {
-      selectedSlotDisplay = (
-        <div className="mb-2 rounded-md border border-gold/40 bg-gold/10 px-3 py-1 text-sm text-gold/90 w-fit">
-          <strong>Selected slot:</strong> Guard slot {guardSlot} (
-          {GUARD_SLOT_NAMES[guardSlot as keyof typeof GUARD_SLOT_NAMES]})
-        </div>
-      );
-    }
-  }
-  // ---- End slot display ----
+  const selectedTroopForSlots = useMemo(() => {
+    const troop = selectedExplorerTroops?.troops;
+    if (!troop) return undefined;
+    return { tier: troop.tier as TroopTier, category: troop.category as TroopType };
+  }, [selectedExplorerTroops?.troops]);
+
+  const targetTroopForSlots = useMemo(() => {
+    const troop = targetExplorerTroops?.troops;
+    if (!troop) return undefined;
+    const rawCount = troop.count;
+    const count =
+      typeof rawCount === "bigint"
+        ? rawCount
+        : typeof rawCount === "number"
+          ? rawCount
+          : typeof rawCount === "string"
+            ? Number(rawCount)
+            : undefined;
+    return { tier: troop.tier as TroopTier, category: troop.category as TroopType, count };
+  }, [targetExplorerTroops?.troops]);
 
   return (
     <div className="flex flex-col space-y-4">
@@ -1138,207 +1139,37 @@ export const TransferTroopsContainer = ({
             <div className="flex items-start justify-center gap-4">
               <div className="space-y-4 rounded-md border border-gold/30 bg-dark-brown/60 p-4 max-w-3xl">
                 {guardSelectionRequired && (
-                  <div className="space-y-3 max-h-[350px] overflow-y-auto">
-                    {orderedGuardSlots.length > 0 && (
-                      <div className="flex items-center justify-between rounded-md border border-gold/20 bg-dark-brown/40 px-3 py-2 text-[10px] uppercase tracking-wide text-gold/70">
-                        <span className="flex items-center gap-1">
-                          <ArrowRight className="h-3 w-3 text-gold/70" strokeWidth={2} />
-                          Enemy advance
-                        </span>
-                        <span className="text-gold/60">{displayAdvanceLabel}</span>
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                      {canShowStructureBalanceOption && structureBalanceTroopInfo && (
-                        <button
-                          key="structure-balance"
-                          type="button"
-                          onClick={() => {
-                            if (!balanceOptionDisabled) {
-                              setGuardSlot(BALANCE_SLOT);
-                            }
-                          }}
-                          className={[
-                            "flex flex-col rounded-md border p-3 text-left transition-all duration-150 ease-in-out",
-                            balanceOptionDisabled
-                              ? "cursor-not-allowed bg-dark-brown border-gold/20 opacity-70"
-                              : "cursor-pointer bg-dark-brown border-gold/30 hover:bg-gold/10",
-                            guardSlot === BALANCE_SLOT &&
-                              !balanceOptionDisabled &&
-                              "bg-gold/20 border-gold ring-2 ring-gold/50",
-                            guardSlot === BALANCE_SLOT && balanceOptionDisabled && "bg-gold/10 border-gold/40",
-                            balanceOptionMismatch && "border-danger/60 bg-danger/10",
-                          ]
-                            .filter((value): value is string => Boolean(value))
-                            .join(" ")}
-                          aria-pressed={guardSlot === BALANCE_SLOT}
-                          disabled={balanceOptionDisabled}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="font-semibold text-gold">Structure balance</span>
-                            {balanceOptionDisabledReason && <AlertTriangle className="h-4 w-4 text-danger" />}
-                          </div>
-                          <div className="text-sm text-gold/80">
-                            <TroopBadge
-                              category={structureBalanceTroopInfo.category}
-                              tier={structureBalanceTroopInfo.tier}
-                              label={structureBalanceTroopInfo.category}
-                            />
-                          </div>
-                          <div className="text-sm text-gold/60">
-                            Available: {formatNumber(structureBalanceTroopInfo.count, 0)}
-                          </div>
-                          {balanceOptionDisabledReason && (
-                            <div className="mt-2 flex items-start gap-2 text-xs text-danger/80">
-                              <AlertTriangle className="mt-[2px] h-4 w-4 flex-shrink-0" />
-                              <span>{balanceOptionDisabledReason}</span>
-                            </div>
-                          )}
-                        </button>
-                      )}
-
-                      {orderedGuardSlots.map((slotId) => {
-                        const guards =
-                          transferDirection === TransferDirection.StructureToExplorer ? selectedGuards : targetGuards;
-                        const guardData = guards.find((guard) => guard.slot === slotId);
-                        const slotLabel =
-                          getDefenseLabel(slotId) ||
-                          `Slot ${DISPLAYED_SLOT_NUMBER_MAP[slotId as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]}`;
-                        if (!guardData || !guardData.troops) {
-                          return (
-                            <div
-                              key={slotId}
-                              className="rounded-md border border-danger/40 bg-danger/10 p-3 text-sm text-danger/70"
-                            >
-                              {slotLabel} - Empty
-                            </div>
-                          );
+                  <div className="space-y-3">
+                    <TransferSlotSelection
+                      transferDirection={transferDirection}
+                      slots={visualGuardSlots}
+                      orderedSlots={orderedGuardSlots}
+                      guards={
+                        transferDirection === TransferDirection.StructureToExplorer ? selectedGuards : targetGuards
+                      }
+                      selectedSlot={guardSlot}
+                      onSelect={(slot) => {
+                        if (slot === BALANCE_SLOT || typeof slot === "number") {
+                          setGuardSlot(slot as GuardSelection);
                         }
-
-                        const troopInfo = guardData.troops;
-                        const guardCooldownEnd = guardData.cooldownEnd ?? 0;
-                        const cooldownSeconds = Math.max(0, guardCooldownEnd - currentBlockTimestamp);
-                        const isCooldownActive = guardCooldownEnd > currentBlockTimestamp;
-                        const isActive = guardSlot === slotId;
-                        const isSourceGuardSelection = transferDirection === TransferDirection.StructureToExplorer;
-                        const isReceivingGuardSelection = transferDirection === TransferDirection.ExplorerToStructure;
-                        const isSourceSlotOutOfTroops = isSourceGuardSelection && troopInfo.count <= 0;
-                        const isCooldownLocked = isReceivingGuardSelection && isCooldownActive;
-                        const isSlotDisabled = isSourceSlotOutOfTroops || isCooldownLocked;
-                        const orderIndex = orderedGuardSlots.indexOf(slotId);
-                        const orderNumber = orderIndex;
-                        const isFrontline = frontlineSlot === slotId;
-                        const isFinalLine = lastGuardSlot === slotId;
-                        const orderBadgeClass = [
-                          "border rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wide font-semibold",
-                          isFrontline
-                            ? "border-danger/50 bg-danger/10 text-danger/80"
-                            : isFinalLine
-                              ? "border-gold/40 bg-gold/10 text-gold/80"
-                              : "border-gold/20 bg-dark-brown/60 text-gold/60",
-                        ]
-                          .filter((value): value is string => Boolean(value))
-                          .join(" ");
-                        const orderBadgeText = isFrontline
-                          ? "Hit first"
-                          : isFinalLine
-                            ? "Hit last"
-                            : `Order ${orderNumber}`;
-
-                        const isMismatch =
-                          transferDirection === TransferDirection.ExplorerToStructure
-                            ? troopInfo.count !== 0 &&
-                              selectedExplorerTroops?.troops &&
-                              (selectedExplorerTroops.troops.tier !== troopInfo.tier ||
-                                selectedExplorerTroops.troops.category !== troopInfo.category)
-                            : transferDirection === TransferDirection.StructureToExplorer &&
-                              targetExplorerTroops?.troops &&
-                              targetExplorerTroops.troops.count !== 0n &&
-                              (targetExplorerTroops.troops.tier !== troopInfo.tier ||
-                                targetExplorerTroops.troops.category !== troopInfo.category);
-
-                        const cardClasses = [
-                          "flex flex-col rounded-md border p-3 text-left transition-all duration-150 ease-in-out",
-                          isSlotDisabled
-                            ? "cursor-not-allowed bg-dark-brown border-gold/20 opacity-70"
-                            : "cursor-pointer",
-                          isActive && !isMismatch && !isSlotDisabled && "bg-gold/20 border-gold ring-2 ring-gold/50",
-                          isActive && isMismatch && !isSlotDisabled && "bg-danger/10 border-danger/60",
-                          isActive && isSlotDisabled && "bg-dark-brown border-gold/20 opacity-70",
-                          !isActive &&
-                            !isMismatch &&
-                            !isSlotDisabled &&
-                            "bg-dark-brown border-gold/30 hover:bg-gold/10",
-                          !isActive &&
-                            isMismatch &&
-                            !isSlotDisabled &&
-                            "bg-danger/10 border-danger/50 hover:border-danger/60",
-                        ]
-                          .filter((value): value is string => Boolean(value))
-                          .join(" ");
-
-                        return (
-                          <button
-                            key={slotId}
-                            type="button"
-                            onClick={() => {
-                              if (isSlotDisabled) {
-                                return;
-                              }
-                              setGuardSlot(slotId);
-                            }}
-                            className={cardClasses}
-                            disabled={isSlotDisabled}
-                            aria-disabled={isSlotDisabled}
-                            aria-pressed={isActive}
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="font-semibold text-gold">
-                                {slotLabel} - Slot{" "}
-                                {DISPLAYED_SLOT_NUMBER_MAP[slotId as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]}
-                              </span>
-                              <div className="flex items-center gap-1">
-                                {orderedGuardSlots.length > 0 && (
-                                  <span className={orderBadgeClass}>{orderBadgeText}</span>
-                                )}
-                                {isMismatch && <AlertTriangle className="h-4 w-4 text-danger" />}
-                              </div>
-                            </div>
-                            <div className="text-sm text-gold/80">
-                              <TroopBadge
-                                category={troopInfo.category}
-                                tier={troopInfo.tier}
-                                label={troopInfo.category}
-                              />
-                            </div>
-                            <div className="text-sm text-gold/60">Available: {formatNumber(troopInfo.count, 0)}</div>
-                            {isCooldownActive ? (
-                              <div className="mt-2 flex items-start gap-2 text-xs text-gold/80">
-                                <Timer className="mt-[2px] h-3 w-3 flex-shrink-0" />
-                                <span>
-                                  {isCooldownLocked
-                                    ? `Cannot add troops for ${formatTime(cooldownSeconds)}`
-                                    : `Cooldown active — ready in ${formatTime(cooldownSeconds)}`}
-                                </span>
-                              </div>
-                            ) : (
-                              <div className="text-xs text-gold/60">&nbsp;</div>
-                            )}
-                            {isMismatch && (
-                              <div className="mt-2 flex items-start gap-2 text-xs text-danger/80">
-                                <AlertTriangle className="mt-[2px] h-4 w-4 flex-shrink-0" />
-                                <span>
-                                  {transferDirection === TransferDirection.ExplorerToStructure
-                                    ? `Slot holds Tier ${troopInfo.tier} ${troopInfo.category}. Explorer has Tier ${selectedExplorerTroops?.troops.tier} ${selectedExplorerTroops?.troops.category}.`
-                                    : `Explorer expects Tier ${targetExplorerTroops?.troops.tier} ${targetExplorerTroops?.troops.category}. Slot holds Tier ${troopInfo.tier} ${troopInfo.category}.`}
-                                </span>
-                              </div>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
+                      }}
+                      balanceOption={{
+                        key: BALANCE_SLOT,
+                        visible: canShowStructureBalanceOption && !!structureBalanceTroopInfo,
+                        troop: structureBalanceTroopInfo,
+                        disabled: balanceOptionDisabled,
+                        disabledReason: balanceOptionDisabledReason,
+                      }}
+                      selectedTroop={
+                        transferDirection === TransferDirection.ExplorerToStructure ? selectedTroopForSlots : undefined
+                      }
+                      targetTroop={
+                        transferDirection === TransferDirection.StructureToExplorer ? targetTroopForSlots : undefined
+                      }
+                      frontlineSlot={frontlineSlot}
+                      lastGuardSlot={lastGuardSlot}
+                      currentBlockTimestamp={currentBlockTimestamp}
+                    />
                   </div>
                 )}
 

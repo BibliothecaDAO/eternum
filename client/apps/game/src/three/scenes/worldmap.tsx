@@ -1009,7 +1009,8 @@ export default class WorldmapScene extends HexagonScene {
 
   private openBattleLogsPanel() {
     const uiStore = useUIStore.getState();
-    uiStore.setRightNavigationView(RightView.StoryEvents);
+    uiStore.setRightNavigationView(RightView.None);
+    uiStore.setLeftNavigationView(LeftView.StoryEvents);
   }
 
   private notifyArmyUnderAttack(update: BattleEventSystemUpdate) {
@@ -1407,6 +1408,19 @@ export default class WorldmapScene extends HexagonScene {
     this.state.updateEntityActionActionPaths(actionPaths.getPaths());
 
     this.highlightHexManager.highlightHexes(actionPaths.getHighlightedHexes());
+
+    if (hexCoords) {
+      void this.ensureStructureSynced(selectedEntityId, hexCoords);
+      const contractPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+      const worldMapPosition =
+        Number.isFinite(Number(contractPosition?.x)) && Number.isFinite(Number(contractPosition?.y))
+          ? { col: Number(contractPosition.x), row: Number(contractPosition.y) }
+          : undefined;
+      this.state.setStructureEntityId(selectedEntityId, {
+        worldMapPosition,
+        spectator: this.state.isSpectating,
+      });
+    }
 
     // Show selection pulse for the selected structure
     if (hexCoords) {

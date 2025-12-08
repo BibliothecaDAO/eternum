@@ -10,7 +10,7 @@ import {
 import { ContractAddress, ResourceCost, ResourcesIds } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 
-export { getEntityIdFromKeys };
+export { getEntityIdFromKeys, divideByPrecision };
 
 export const formatStringNumber = (number: number, decimals: number): string => {
   return number.toLocaleString("en-US", {

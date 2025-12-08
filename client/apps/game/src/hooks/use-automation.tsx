@@ -5,16 +5,19 @@ import {
   planHasExecutableCalls,
   PROCESS_INTERVAL_MS,
 } from "@/ui/features/infrastructure/automation/model/automation-processor";
-import { useAutomationStore } from "./store/use-automation-store";
-import { getAutomationOverallocation } from "@/utils/automation-presets";
-import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
 import {
-  getStructureName,
-  getIsBlitz,
-  getBlockTimestamp,
-  ResourceManager,
-  configManager,
-} from "@bibliothecadao/eternum";
+  useAutomationStore,
+  type ResourceAutomationPercentages,
+  type ResourceAutomationSettings,
+} from "./store/use-automation-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import {
+  calculateLimitedPresetPercentages,
+  getAutomationOverallocation,
+  type RealmPresetId,
+} from "@/utils/automation-presets";
+import { useDojo, usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
+import { getStructureName, getIsBlitz, getBlockTimestamp, configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
@@ -38,6 +41,7 @@ export const useAutomation = () => {
   const setNextRunTimestamp = useAutomationStore((state) => state.setNextRunTimestamp);
   const recordExecution = useAutomationStore((state) => state.recordExecution);
   const setRealmPreset = useAutomationStore((state) => state.setRealmPreset);
+  const setRealmPresetConfig = useAutomationStore((state) => state.setRealmPresetConfig);
   const getRealmConfig = useAutomationStore((state) => state.getRealmConfig);
   const upsertRealm = useAutomationStore((state) => state.upsertRealm);
   const removeRealm = useAutomationStore((state) => state.removeRealm);
@@ -48,6 +52,7 @@ export const useAutomation = () => {
   const setNextRunTimestampRef = useRef(setNextRunTimestamp);
   const playerRealms = usePlayerOwnedRealmsInfo();
   const playerVillages = usePlayerOwnedVillagesInfo();
+  const gameEndAt = useUIStore((state) => state.gameEndAt);
   const realmResourcesSignatureRef = useRef<string>("");
   const initialBlockTimestampMsRef = useRef<number | null>(null);
   if (initialBlockTimestampMsRef.current === null) {
@@ -59,6 +64,33 @@ export const useAutomation = () => {
   const nextRunBlockTimestampRef = useRef<number>(automationEnabledAtRef.current);
   const scheduleNextCheckRef = useRef<() => void>();
   const automationTimeoutIdRef = useRef<number | null>(null);
+  const syncedRealmIdsRef = useRef<Set<string>>(new Set());
+
+  const stopAutomation = useCallback(() => {
+    if (automationTimeoutIdRef.current !== null) {
+      window.clearTimeout(automationTimeoutIdRef.current);
+      automationTimeoutIdRef.current = null;
+    }
+    setNextRunTimestampRef.current(null);
+  }, []);
+
+  const isGameOver = useCallback(
+    (blockTimestampSeconds?: number) => {
+      if (typeof gameEndAt !== "number") {
+        return false;
+      }
+      const timestamp =
+        typeof blockTimestampSeconds === "number" ? blockTimestampSeconds : getBlockTimestamp().currentBlockTimestamp;
+      return timestamp >= gameEndAt;
+    },
+    [gameEndAt],
+  );
+
+  useEffect(() => {
+    if (isGameOver()) {
+      stopAutomation();
+    }
+  }, [isGameOver, stopAutomation]);
 
   useEffect(() => {
     if (!components) {
@@ -70,7 +102,10 @@ export const useAutomation = () => {
   }, [components, pruneForGame]);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated) {
+      syncedRealmIdsRef.current.clear();
+      return;
+    }
     const blitzMode = getIsBlitz();
     const managedStructures = [...playerRealms, ...playerVillages];
     const activeIds = new Set(managedStructures.map((structure) => String(structure.entityId)));
@@ -82,8 +117,10 @@ export const useAutomation = () => {
     managedStructures.forEach((structure) => {
       const entityType = structure.structure?.category === StructureType.Village ? "village" : "realm";
       const name = getStructureName(structure.structure, blitzMode).name;
+      const realmId = String(structure.entityId);
+      syncedRealmIdsRef.current.add(realmId);
 
-      upsertRealm(String(structure.entityId), {
+      upsertRealm(realmId, {
         realmName: name,
         entityType,
       });
@@ -91,6 +128,10 @@ export const useAutomation = () => {
 
     Object.entries(useAutomationStore.getState().realms).forEach(([realmId, config]) => {
       const supportedType = config.entityType === "realm" || config.entityType === "village";
+      const hasSyncedThisSession = syncedRealmIdsRef.current.has(realmId);
+      if (!hasSyncedThisSession) {
+        return;
+      }
       if (!supportedType || !activeIds.has(realmId)) {
         removeRealm(realmId);
       }
@@ -99,6 +140,11 @@ export const useAutomation = () => {
 
   const processRealms = useCallback(async (): Promise<boolean> => {
     if (processingRef.current) return false;
+
+    if (isGameOver()) {
+      console.log("Automation: Game has ended. Skipping automation pass.");
+      return false;
+    }
 
     if (!starknetSignerAccount || !starknetSignerAccount.address || starknetSignerAccount.address === "0x0") {
       console.log("Automation: Missing Starknet signer. Skipping automation pass.");
@@ -127,31 +173,78 @@ export const useAutomation = () => {
         let activeRealmConfig = realmConfig;
         const realmIdNum = Number(activeRealmConfig.realmId);
 
+        const snapshot =
+          Number.isFinite(realmIdNum) && realmIdNum > 0
+            ? buildRealmResourceSnapshot({
+                components,
+                realmId: realmIdNum,
+                currentTick: currentDefaultTick,
+              })
+            : new Map();
+
+        const producedResourceIds: ResourcesIds[] = [];
+        snapshot.forEach((entry) => {
+          if (entry.hasActiveProduction) {
+            producedResourceIds.push(entry.resourceId);
+          }
+        });
+
         // If config is over-allocated and still using a preset mode
-        // (labor/resource/idle), auto-apply a preset based on which side
-        // (resources vs labor) is over the cap. Manual/custom slider configs
-        // (presetId === "custom" or null) are left untouched.
+        // (smart/idle/custom), auto-apply the smart preset to bring inputs back
+        // within limits. Manual slider configs flow through here as the "custom"
+        // preset so caps can still be enforced.
         const hasPreset =
-          activeRealmConfig.presetId === "labor" ||
-          activeRealmConfig.presetId === "resource" ||
-          activeRealmConfig.presetId === "idle";
+          activeRealmConfig.presetId === "smart" ||
+          activeRealmConfig.presetId === "idle" ||
+          activeRealmConfig.presetId === "custom";
         if (hasPreset) {
           try {
-            const { resourceOver, laborOver } = getAutomationOverallocation(activeRealmConfig);
-            let presetToApply: "resource" | "labor" | "custom" | null = null;
-            if (resourceOver && !laborOver) {
-              presetToApply = "resource";
-            } else if (!resourceOver && laborOver) {
-              presetToApply = "labor";
-            } else if (resourceOver && laborOver) {
-              presetToApply = "custom";
+            let overAllocationConfig = activeRealmConfig;
+            if (producedResourceIds.length > 0) {
+              const limitedResources: Record<number, ResourceAutomationSettings> = {};
+              producedResourceIds.forEach((resourceId) => {
+                const existing = activeRealmConfig.resources[resourceId];
+                if (existing) {
+                  limitedResources[resourceId] = existing;
+                }
+              });
+              overAllocationConfig = {
+                ...activeRealmConfig,
+                resources: limitedResources,
+              };
+            }
+
+            const { resourceOver, laborOver } = getAutomationOverallocation(overAllocationConfig);
+            let presetToApply: RealmPresetId | null = null;
+            if (resourceOver || laborOver) {
+              presetToApply = "smart";
             }
 
             if (presetToApply) {
-              setRealmPreset(activeRealmConfig.realmId, presetToApply);
-              const refreshed = getRealmConfig(activeRealmConfig.realmId);
-              if (refreshed) {
-                activeRealmConfig = refreshed;
+              if (producedResourceIds.length > 0) {
+                const limitedPercentagesMap = calculateLimitedPresetPercentages(
+                  activeRealmConfig,
+                  presetToApply,
+                  producedResourceIds,
+                );
+                if (limitedPercentagesMap.size > 0) {
+                  const percentages: Record<number, ResourceAutomationPercentages> = {};
+                  limitedPercentagesMap.forEach((value, key) => {
+                    percentages[key] = value;
+                  });
+                  setRealmPresetConfig(activeRealmConfig.realmId, presetToApply, percentages);
+                  const refreshed = getRealmConfig(activeRealmConfig.realmId);
+                  if (refreshed) {
+                    activeRealmConfig = refreshed;
+                  }
+                }
+              } else {
+                // Fallback: apply preset using full config when no produced resources detected.
+                setRealmPreset(activeRealmConfig.realmId, presetToApply);
+                const refreshed = getRealmConfig(activeRealmConfig.realmId);
+                if (refreshed) {
+                  activeRealmConfig = refreshed;
+                }
               }
             }
           } catch (error) {
@@ -162,15 +255,6 @@ export const useAutomation = () => {
             );
           }
         }
-
-        const snapshot =
-          Number.isFinite(realmIdNum) && realmIdNum > 0
-            ? buildRealmResourceSnapshot({
-                components,
-                realmId: realmIdNum,
-                currentTick: currentDefaultTick,
-              })
-            : new Map();
 
         const plan = buildRealmProductionPlan({
           realmConfig: activeRealmConfig,
@@ -233,12 +317,19 @@ export const useAutomation = () => {
     recordExecution,
     starknetSignerAccount,
     setRealmPreset,
+    setRealmPresetConfig,
     getRealmConfig,
+    isGameOver,
   ]);
 
   const runAutomationIfDue = useCallback(async () => {
     const { currentBlockTimestamp } = getBlockTimestamp();
     const blockTimestampMs = currentBlockTimestamp * 1000;
+
+    if (isGameOver(currentBlockTimestamp)) {
+      stopAutomation();
+      return;
+    }
 
     const lastRunMs = lastRunBlockTimestampRef.current ?? blockTimestampMs;
     const nextEligibleMs = Math.max(lastRunMs + PROCESS_INTERVAL_MS, automationEnabledAtRef.current);
@@ -260,9 +351,13 @@ export const useAutomation = () => {
       setNextRunTimestampRef.current(nextRunBlockTimestampRef.current);
       scheduleNextCheckRef.current?.();
     }
-  }, [setNextRunTimestampRef]);
+  }, [isGameOver, setNextRunTimestampRef, stopAutomation]);
 
   const scheduleNextCheck = useCallback(() => {
+    if (isGameOver()) {
+      stopAutomation();
+      return;
+    }
     if (automationTimeoutIdRef.current !== null) {
       window.clearTimeout(automationTimeoutIdRef.current);
     }
@@ -272,7 +367,7 @@ export const useAutomation = () => {
     automationTimeoutIdRef.current = window.setTimeout(() => {
       void runAutomationIfDue();
     }, delay);
-  }, [runAutomationIfDue]);
+  }, [isGameOver, runAutomationIfDue, stopAutomation]);
 
   useEffect(() => {
     processRealmsRef.current = processRealms;
@@ -287,6 +382,11 @@ export const useAutomation = () => {
   }, [setNextRunTimestamp]);
 
   useEffect(() => {
+    if (isGameOver()) {
+      stopAutomation();
+      return;
+    }
+
     const signature = Object.entries(realms)
       .filter(([, realm]) => realm.entityType === "realm" || realm.entityType === "village")
       .map(([realmId, realm]) => {
@@ -310,9 +410,18 @@ export const useAutomation = () => {
       }
       scheduleNextCheckRef.current?.();
     }
-  }, [realms]);
+  }, [realms, isGameOver, stopAutomation]);
 
   useEffect(() => {
+    if (isGameOver()) {
+      stopAutomation();
+      return () => {
+        if (automationTimeoutIdRef.current !== null) {
+          window.clearTimeout(automationTimeoutIdRef.current);
+        }
+      };
+    }
+
     setNextRunTimestampRef.current(nextRunBlockTimestampRef.current);
     scheduleNextCheck();
     return () => {
@@ -320,5 +429,5 @@ export const useAutomation = () => {
         window.clearTimeout(automationTimeoutIdRef.current);
       }
     };
-  }, [scheduleNextCheck]);
+  }, [isGameOver, scheduleNextCheck, stopAutomation]);
 };

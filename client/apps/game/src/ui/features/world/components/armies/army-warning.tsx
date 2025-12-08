@@ -13,7 +13,6 @@ import {
 import { ClientComponents, getNeighborHexes, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
-import { BottomHudEmptyState } from "../hud-bottom";
 
 interface ArmyWarningProps {
   army: ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
@@ -105,11 +104,7 @@ export const ArmyWarning = ({ army, explorerResources, structureResources }: Arm
           </div>
         </div>
       )}
-      {!hasWarnings && (
-        <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName="text-xs font-medium !text-gold/60 italic">
-          ✓ Enough food and stamina
-        </BottomHudEmptyState>
-      )}
+      {!hasWarnings && <div className="min-h-0 text-xs font-medium text-gold/60 italic">✓ Enough food and stamina</div>}
     </div>
   );
 };

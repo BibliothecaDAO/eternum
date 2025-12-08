@@ -46,6 +46,12 @@ export const SelectBiome: React.FC<SelectBiomeProps> = ({
     }
   }, []);
 
+  React.useEffect(() => {
+    if (defaultValue !== undefined) {
+      setSelectedBiome(defaultValue?.toString() || "");
+    }
+  }, [defaultValue]);
+
   return (
     <Select
       value={selectedBiome}

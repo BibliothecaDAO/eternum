@@ -15,6 +15,8 @@ export const Tab = ({ className, children, noText, ...props }: TabProps) => {
     <HeadlessTab
       className={({ selected }) =>
         clsx(
+          "group",
+          "disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none",
           VARIANTS[variant].tab.base,
           selected ? VARIANTS[variant].tab.active : VARIANTS[variant].tab.inactive,
           className,
@@ -23,9 +25,11 @@ export const Tab = ({ className, children, noText, ...props }: TabProps) => {
       }
       {...props}
     >
-      {() => {
-        return <>{children}</>;
-      }}
+      {({ selected }) => (
+        <span data-selected={selected ? "true" : "false"} className="flex items-center gap-1">
+          {children}
+        </span>
+      )}
     </HeadlessTab>
   );
 };

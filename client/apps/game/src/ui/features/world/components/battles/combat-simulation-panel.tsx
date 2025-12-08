@@ -1,4 +1,5 @@
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { SelectBiome } from "@/ui/design-system/molecules/select-biome";
 import { SelectRelic } from "@/ui/design-system/molecules/select-relic";
 import { SelectTier } from "@/ui/design-system/molecules/select-tier";
@@ -185,6 +186,8 @@ export const CombatSimulationPanel = () => {
   const [defenderRelics, setDefenderRelics] = useState<ResourcesIds[]>([]);
   const [showParameters, setShowParameters] = useState(false);
   const [parameters, setParameters] = useState<CombatParameters>(CombatSimulator.getDefaultParameters());
+  const simulationBiome = useUIStore((state) => state.combatSimulationBiome);
+  const setSimulationBiome = useUIStore((state) => state.setCombatSimulationBiome);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -196,6 +199,12 @@ export const CombatSimulationPanel = () => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
+  useEffect(() => {
+    if (simulationBiome) {
+      setBiome(simulationBiome);
+      setSimulationBiome(null);
+    }
+  }, [simulationBiome, setSimulationBiome]);
 
   const combatSimulator = useMemo(() => new CombatSimulator(parameters), [parameters]);
 

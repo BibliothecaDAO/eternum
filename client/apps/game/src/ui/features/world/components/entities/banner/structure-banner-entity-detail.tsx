@@ -1,24 +1,20 @@
-import { Loader } from "lucide-react";
-import { memo, useMemo } from "react";
+import { ArrowLeftRight, Coins, Factory, Loader, Shield } from "lucide-react";
+import { memo, useCallback, useMemo } from "react";
 
+import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { Tabs } from "@/ui/design-system/atoms/tab";
 import { CompactDefenseDisplay } from "@/ui/features/military";
-import { BottomHudEmptyState } from "@/ui/features/world/components/hud-bottom";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
-import { EntityType, ID, RelicRecipientType } from "@bibliothecadao/types";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
+import { getStructureName } from "@bibliothecadao/eternum";
+import { EntityType, ID, RelicRecipientType, StructureType } from "@bibliothecadao/types";
 
-import { CompactStructureInfo } from "@/ui/features/military/components/compact-structure-info";
 import { ActiveRelicEffects } from "../active-relic-effects";
 import { CompactEntityInventory } from "../compact-entity-inventory";
-import { EntityInventoryTabs } from "../entity-inventory-tabs";
 import { useStructureEntityDetail } from "../hooks/use-structure-entity-detail";
-import {
-  EntityDetailLayoutVariant,
-  EntityDetailSection,
-  EntityDetailStat,
-  EntityDetailStatList,
-  getLayoutTextClasses,
-} from "../layout";
+import { EntityDetailLayoutVariant, EntityDetailSection } from "../layout";
 import { StructureProductionPanel } from "../structure-production-panel";
 
 export interface StructureBannerEntityDetailProps {
@@ -56,29 +52,24 @@ const StructureBannerEntityDetailContent = memo(
       hyperstructureRealmCount,
       isHyperstructure,
       isBlitz,
-      progress,
       isLoadingStructure,
     } = useStructureEntityDetail({ structureEntityId });
-    const isBanner = variant === "banner";
-    const isCompactLayout = compact;
+    const openPopup = useUIStore((state) => state.openPopup);
+    const isTransferPopupOpen = useUIStore((state) => state.isPopupOpen(TRANSFER_POPUP_NAME));
+    const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
 
-    const containerClass = cn("flex h-full min-h-0 flex-col", isCompactLayout ? "gap-2" : "gap-3", className);
-
-    const wantsGridLayout = true;
-    const gridContainerClass = wantsGridLayout
-      ? "grid flex-1 min-h-0 w-full grid-cols-1 gap-2 sm:grid-cols-2 sm:grid-rows-2 sm:auto-rows-fr"
-      : "flex flex-col gap-3";
-
-    const subtleTextClass = cn("text-gold/60", getLayoutTextClasses(isCompactLayout, "body"));
-    const emptyTextClass = cn(getLayoutTextClasses(isCompactLayout, "body"), "text-gold/60 italic");
-
-    const defenseEmptyCopy = isBanner ? "None" : "No defenders stationed.";
-    const productionFallbackCopy = isBanner ? "Production unavailable" : "Buildings & Production data unavailable.";
-    const inventoryFallbackCopy = isBanner ? "Empty" : "No resources stored.";
-
-    const cellBaseClass = wantsGridLayout ? "sm:col-span-1 sm:row-span-1" : undefined;
     const activeRelicIds = useMemo(() => relicEffects.map((effect) => Number(effect.id)), [relicEffects]);
-    const defenseDisplayVariant: EntityDetailLayoutVariant = isBanner || isCompactLayout ? "banner" : "default";
+
+    const rawCategory = structure?.base?.category;
+    const handleOpenTransferPopup = useCallback(() => {
+      if (!structure?.entity_id) return;
+      const entityId = Number(structure.entity_id);
+      if (!Number.isFinite(entityId)) return;
+      setTransferPanelSourceId(entityId);
+      if (!isTransferPopupOpen) {
+        openPopup(TRANSFER_POPUP_NAME);
+      }
+    }, [isTransferPopupOpen, openPopup, setTransferPanelSourceId, structure?.entity_id]);
 
     if (isLoadingStructure) {
       return (
@@ -89,17 +80,66 @@ const StructureBannerEntityDetailContent = memo(
     }
 
     if (!structure || !structureDetails) return null;
+    const defenseDisplayVariant: EntityDetailLayoutVariant = variant === "banner" || compact ? "banner" : "default";
+    const structureName = getStructureName(structure, isBlitz).name;
+    const structureCategory = rawCategory === undefined ? undefined : (rawCategory as StructureType);
+    const isFragmentMine = Number(rawCategory) === StructureType.FragmentMine;
+    const isCamp = Number(rawCategory) === StructureType.Village;
+    const showBalanceInline = isFragmentMine || isCamp;
+    const showProductionTab = structureCategory !== StructureType.Hyperstructure && !isFragmentMine;
+    const canOpenTransferPopup =
+      isMine &&
+      rawCategory !== undefined &&
+      [StructureType.Realm, StructureType.Village, StructureType.FragmentMine].includes(
+        Number(rawCategory) as StructureType,
+      ) &&
+      typeof structure.entity_id !== "undefined";
+    const bodyTextClass = compact ? "text-xs" : "text-sm";
+    const labelTextClass = compact ? "text-xxs" : "text-xs";
+    const isHyperstructureOwned = structure.owner !== undefined && structure.owner !== null && structure.owner !== 0n;
+    const showHyperstructureVP = isHyperstructure && hyperstructureRealmCount !== undefined;
 
     return (
-      <div className={containerClass}>
-        <div className={gridContainerClass}>
-          <EntityDetailSection
-            compact={compact}
-            className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-1 sm:row-start-1", "min-h-0")}
-            tone={guards.length > 0 ? "default" : "highlight"}
-          >
-            <div className="flex flex-row gap-2">
-              <CompactStructureInfo isMine={isMine} ownerDisplayName={ownerDisplayName} structure={structure} />
+      <EntityDetailSection compact={compact} className={cn("flex h-full min-h-0 flex-col gap-2", className)}>
+        <div className="flex items-center gap-2 text-gold">
+          <span className={cn(bodyTextClass, "font-normal flex-1")}>
+            {isMine ? "🟢" : "🔴"} {ownerDisplayName}
+            <span className="px-1 text-gold/50">·</span>
+            {structureName}
+          </span>
+          {canOpenTransferPopup && (
+            <Button
+              size="xs"
+              variant="outline"
+              forceUppercase={false}
+              className="border-gold/30 bg-dark/40 text-gold hover:bg-dark/60 !px-2 !py-1 min-w-0"
+              onClick={handleOpenTransferPopup}
+              aria-label="Open transfer panel"
+            >
+              <ArrowLeftRight className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+
+        {relicEffects.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <span className={cn(labelTextClass, "uppercase tracking-[0.25em] text-gold/70")}>Active Relic Effects</span>
+            <div className="max-h-[200px] overflow-auto pr-1">
+              <ActiveRelicEffects relicEffects={relicEffects} entityId={structureEntityId} compact />
+            </div>
+          </div>
+        )}
+
+        <Tabs variant="inventory" className="flex flex-1 flex-col gap-3">
+          <Tabs.Panels className="flex-1">
+            <Tabs.Panel className="flex flex-col gap-2">
+              {showHyperstructureVP && (
+                <HyperstructureVPDisplay
+                  realmCount={hyperstructureRealmCount}
+                  isOwned={isHyperstructureOwned}
+                  className="w-full"
+                />
+              )}
               {guards.length > 0 ? (
                 <CompactDefenseDisplay
                   troops={guards.map((army) => ({ slot: army.slot, troops: army.troops }))}
@@ -110,143 +150,86 @@ const StructureBannerEntityDetailContent = memo(
                   variant={defenseDisplayVariant}
                 />
               ) : (
-                <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={emptyTextClass}>
-                  {defenseEmptyCopy}
-                </BottomHudEmptyState>
-              )}
-            </div>
-          </EntityDetailSection>
-
-          {isHyperstructure ? (
-            <EntityDetailSection
-              compact={compact}
-              className={cn(
-                cellBaseClass,
-                wantsGridLayout && "sm:col-start-2 sm:row-start-1",
-                "min-h-0 flex flex-col gap-3",
-              )}
-              tone="highlight"
-            >
-              {hyperstructureRealmCount !== undefined && (
-                <HyperstructureVPDisplay
-                  realmCount={hyperstructureRealmCount}
-                  isOwned={structure?.owner !== undefined && structure?.owner !== null && structure?.owner !== 0n}
-                  className="mt-0"
-                />
+                <p className="text-xxs text-gold/60 italic">No defenders stationed.</p>
               )}
 
-              {!isBlitz && (
+              {showBalanceInline && (
                 <div className="flex flex-col gap-2">
-                  <EntityDetailStatList compact={compact} columns={wantsGridLayout ? 2 : 1} className="items-center">
-                    <EntityDetailStat
-                      compact={compact}
-                      label="Progress"
-                      value={`${progress?.percentage ?? 0}%`}
-                      emphasizeValue
-                      className="justify-center"
+                  <span className={cn(labelTextClass, "uppercase tracking-[0.25em] text-gold/70")}>Balance</span>
+                  {resources ? (
+                    <CompactEntityInventory
+                      resources={resources}
+                      activeRelicIds={activeRelicIds}
+                      recipientType={RelicRecipientType.Structure}
+                      entityId={structureEntityId}
+                      entityType={EntityType.STRUCTURE}
+                      allowRelicActivation={isMine}
+                      variant="tight"
+                      maxItems={maxInventory}
                     />
-                    {progress?.percentage !== 100 && (
-                      <EntityDetailStat
-                        compact={compact}
-                        label="Status"
-                        value={progress?.percentage === 0 ? "Not started" : "In progress"}
-                      />
-                    )}
-                  </EntityDetailStatList>
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-dark/50">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-gold via-brilliance to-lightest transition-all duration-500"
-                      style={{ width: `${progress?.percentage ?? 0}%` }}
-                    />
-                  </div>
+                  ) : (
+                    <p className="text-xxs text-gold/60 italic">No resources stored.</p>
+                  )}
                 </div>
               )}
-            </EntityDetailSection>
-          ) : resources ? (
-            <EntityDetailSection
-              compact={compact}
-              className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-2 sm:row-start-1", "min-h-0")}
-            >
-              <StructureProductionPanel
-                structure={structure}
-                resources={resources}
-                compact={isCompactLayout}
-                smallTextClass={isCompactLayout ? "text-xxs" : "text-xs"}
-                showProductionSummary={!isBanner}
-                showTooltip={false}
-              />
-            </EntityDetailSection>
-          ) : (
-            <EntityDetailSection
-              compact={compact}
-              className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-2 sm:row-start-1")}
-            >
-              <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={emptyTextClass}>
-                {productionFallbackCopy}
-              </BottomHudEmptyState>
-            </EntityDetailSection>
-          )}
+            </Tabs.Panel>
 
-          {resources ? (
-            <EntityDetailSection
-              compact={compact}
-              className={cn(
-                cellBaseClass,
-                "min-h-0 flex flex-col overflow-auto",
-                wantsGridLayout && "sm:col-start-1 sm:row-start-2",
-              )}
-            >
-              {isBanner ? (
-                <CompactEntityInventory
-                  resources={resources}
-                  activeRelicIds={activeRelicIds}
-                  recipientType={RelicRecipientType.Structure}
-                  entityId={structureEntityId}
-                  entityType={EntityType.STRUCTURE}
-                  allowRelicActivation={isMine}
-                  variant="tight"
-                  maxItems={maxInventory}
-                />
-              ) : (
-                <div className="min-h-0 flex-1 overflow-auto pr-1">
-                  <EntityInventoryTabs
+            {showProductionTab && (
+              <Tabs.Panel className="flex flex-col gap-2 pt-4 pl-2">
+                {resources ? (
+                  <StructureProductionPanel
+                    structure={structure}
+                    resources={resources}
+                    compact
+                    smallTextClass="text-xxs"
+                    showProductionSummary={variant !== "banner"}
+                    showTooltip={false}
+                  />
+                ) : (
+                  <p className="text-xxs text-gold/60 italic">
+                    {isFragmentMine ? "Essence Rifts do not produce resources." : "Production data unavailable."}
+                  </p>
+                )}
+              </Tabs.Panel>
+            )}
+
+            {!showBalanceInline && (
+              <Tabs.Panel className="flex flex-col gap-2">
+                {resources ? (
+                  <CompactEntityInventory
                     resources={resources}
                     activeRelicIds={activeRelicIds}
-                    entityId={structureEntityId}
-                    entityOwnerId={structureEntityId}
                     recipientType={RelicRecipientType.Structure}
+                    entityId={structureEntityId}
+                    entityType={EntityType.STRUCTURE}
+                    allowRelicActivation={isMine}
+                    variant="tight"
                     maxItems={maxInventory}
-                    compact={isCompactLayout}
-                    allowRelicActivation={showButtons && isMine}
                   />
-                </div>
-              )}
-            </EntityDetailSection>
-          ) : (
-            <EntityDetailSection
-              compact={compact}
-              className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-1 sm:row-start-2")}
-            >
-              <BottomHudEmptyState tone="subtle" className="min-h-0" textClassName={emptyTextClass}>
-                {inventoryFallbackCopy}
-              </BottomHudEmptyState>
-            </EntityDetailSection>
-          )}
+                ) : (
+                  <p className="text-xxs text-gold/60 italic">No resources stored.</p>
+                )}
+              </Tabs.Panel>
+            )}
+          </Tabs.Panels>
 
-          <EntityDetailSection
-            compact={compact}
-            className={cn(cellBaseClass, wantsGridLayout && "sm:col-start-2 sm:row-start-2", "min-h-0")}
-          />
-        </div>
-
-        {relicEffects.length > 0 && !isBanner && (
-          <EntityDetailSection compact={compact}>
-            <div className="max-h-[240px] overflow-auto pr-1">
-              <ActiveRelicEffects relicEffects={relicEffects} entityId={structureEntityId} compact={isCompactLayout} />
-            </div>
-          </EntityDetailSection>
-        )}
-      </div>
+          <Tabs.List className="mt-auto flex w-full items-center justify-between gap-2">
+            <Tabs.Tab className="!mx-0 flex flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 py-2 text-center transition hover:bg-dark/60">
+              <Shield className="h-4 w-4 text-gold" />
+            </Tabs.Tab>
+            {showProductionTab && (
+              <Tabs.Tab className="!mx-0 flex flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 py-2 text-center transition hover:bg-dark/60">
+                <Factory className="h-4 w-4 text-gold" />
+              </Tabs.Tab>
+            )}
+            {!showBalanceInline && (
+              <Tabs.Tab className="!mx-0 flex flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 py-2 text-center transition hover:bg-dark/60">
+                <Coins className="h-4 w-4 text-gold" />
+              </Tabs.Tab>
+            )}
+          </Tabs.List>
+        </Tabs>
+      </EntityDetailSection>
     );
   },
 );

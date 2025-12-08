@@ -99,11 +99,7 @@ export {
 } from "./entity-hydration-registry";
 
 // Chunk State Manager
-export {
-  ChunkStateManager,
-  createChunkStateManager,
-  type ChunkStateManagerConfig,
-} from "./chunk-state-manager";
+export { ChunkStateManager, createChunkStateManager, type ChunkStateManagerConfig } from "./chunk-state-manager";
 
 // Data Fetch Coordinator
 export {
@@ -115,11 +111,7 @@ export {
 } from "./data-fetch-coordinator";
 
 // Manager Orchestrator
-export {
-  ManagerOrchestrator,
-  createManagerOrchestrator,
-  type ManagerOrchestratorConfig,
-} from "./manager-orchestrator";
+export { ManagerOrchestrator, createManagerOrchestrator, type ManagerOrchestratorConfig } from "./manager-orchestrator";
 
 // Chunk Lifecycle Controller (Main Entry Point)
 export {

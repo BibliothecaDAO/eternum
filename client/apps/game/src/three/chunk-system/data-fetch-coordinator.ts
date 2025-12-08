@@ -291,9 +291,7 @@ export class DataFetchCoordinator {
     if (this.pendingFetches.size === 0) return;
 
     // Sort by priority and take up to maxBatchSize
-    const sorted = Array.from(this.pendingFetches.values()).sort(
-      (a, b) => a.priority - b.priority,
-    );
+    const sorted = Array.from(this.pendingFetches.values()).sort((a, b) => a.priority - b.priority);
     const batch = sorted.slice(0, this.config.maxBatchSize);
 
     if (this.config.debug) {
@@ -380,12 +378,7 @@ export class DataFetchCoordinator {
     // Get structure positions within bounds
     const structuresInBounds = new Map<ID, HexPosition>();
     for (const [entityId, pos] of this.structurePositions) {
-      if (
-        pos.col >= bounds.minCol &&
-        pos.col < bounds.maxCol &&
-        pos.row >= bounds.minRow &&
-        pos.row < bounds.maxRow
-      ) {
+      if (pos.col >= bounds.minCol && pos.col < bounds.maxCol && pos.row >= bounds.minRow && pos.row < bounds.maxRow) {
         structuresInBounds.set(entityId, pos);
       }
     }
@@ -423,8 +416,7 @@ export class DataFetchCoordinator {
   } {
     return {
       ...this.stats,
-      averageFetchTime:
-        this.stats.totalFetches > 0 ? this.stats.totalFetchTime / this.stats.totalFetches : 0,
+      averageFetchTime: this.stats.totalFetches > 0 ? this.stats.totalFetchTime / this.stats.totalFetches : 0,
       pendingCount: this.pendingFetches.size,
       inFlightCount: this.inFlightFetches.size,
     };
@@ -468,8 +460,6 @@ export class DataFetchCoordinator {
 /**
  * Create a new DataFetchCoordinator with default configuration.
  */
-export function createDataFetchCoordinator(
-  config: Partial<DataFetchCoordinatorConfig> = {},
-): DataFetchCoordinator {
+export function createDataFetchCoordinator(config: Partial<DataFetchCoordinatorConfig> = {}): DataFetchCoordinator {
   return new DataFetchCoordinator(config);
 }

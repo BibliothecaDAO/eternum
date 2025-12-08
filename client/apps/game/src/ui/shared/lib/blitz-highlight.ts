@@ -23,8 +23,8 @@ export interface BlitzHighlightPlayer {
 }
 
 export const BLITZ_CARD_DIMENSIONS = {
-  width: 640,
-  height: 360,
+  width: 960,
+  height: 540,
 };
 
 export const BLITZ_CARD_RADII = [40, 88, 136, 184, 232];
@@ -99,9 +99,10 @@ export const buildBlitzShareMessage = ({
 }: BlitzShareMessageOptions = {}): string => {
   const placement = rank && rank > 0 ? formatOrdinal(rank) : "a top spot";
   const pointsLabel = currencyIntlFormat(points ?? 0, 0);
-  const resolvedOrigin = origin?.trim() || DEFAULT_FALLBACK_ORIGIN;
 
-  return `Secured ${placement} on ${eventLabel} with ${pointsLabel} pts 👑\n\nParticipate in the most insane fully onchain game powered by Starknet here:\n${resolvedOrigin}`;
+  return `Secured ${placement} on ${eventLabel} with ${pointsLabel} pts 👑
+
+Participate in the most insane fully onchain game powered by Starknet. @realms_gg`;
 };
 
 export const BLITZ_DEFAULT_SHARE_ORIGIN = DEFAULT_FALLBACK_ORIGIN;

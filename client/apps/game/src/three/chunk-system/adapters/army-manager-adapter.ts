@@ -193,9 +193,6 @@ export class ArmyManagerAdapter implements EntityManager {
 /**
  * Create a new ArmyManagerAdapter.
  */
-export function createArmyManagerAdapter(
-  manager: ArmyManager,
-  options: { debug?: boolean } = {},
-): ArmyManagerAdapter {
+export function createArmyManagerAdapter(manager: ArmyManager, options: { debug?: boolean } = {}): ArmyManagerAdapter {
   return new ArmyManagerAdapter(manager, options);
 }

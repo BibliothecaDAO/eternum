@@ -545,7 +545,10 @@ class Minimap {
     if (allArmies.length === 0) return;
 
     // Use grid-based spatial partitioning for efficient clustering
-    const grid = new Map<string, Array<{ index: number; col: number; row: number; isMine: boolean; ownerId?: string }>>();
+    const grid = new Map<
+      string,
+      Array<{ index: number; col: number; row: number; isMine: boolean; ownerId?: string }>
+    >();
 
     // Place armies in grid cells
     allArmies.forEach((army, index) => {

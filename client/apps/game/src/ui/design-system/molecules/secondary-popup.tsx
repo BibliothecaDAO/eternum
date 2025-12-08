@@ -158,11 +158,15 @@ SecondaryPopup.Body = ({
   height = null,
   withWrapper = false,
   children,
+  className,
+  maxHeightCap,
 }: {
   width?: string | null;
   height?: string | null;
   withWrapper?: boolean;
   children: React.ReactNode;
+  className?: string;
+  maxHeightCap?: number;
 }) => {
   const ref = useRef<HTMLDivElement>(null);
   const [maxHeight, setMaxHeight] = useState<number | null>(null);
@@ -188,6 +192,8 @@ SecondaryPopup.Body = ({
     };
   }, [ref]);
 
+  const resolvedMaxHeight = maxHeightCap && maxHeight ? Math.min(maxHeight, maxHeightCap) : (maxHeightCap ?? maxHeight);
+
   return (
     <div
       ref={ref}
@@ -196,11 +202,12 @@ SecondaryPopup.Body = ({
         height ? "" : "min-h-[438px]",
         withWrapper ? "p-3" : "",
         `relative z-10 flex flex-col bg-dark-brown/50 overflow-auto bg-hex-bg bg-repeat`,
+        className,
       )}
       style={{
         width: width ? width : "",
         height: height ? height : "",
-        maxHeight: maxHeight ? `${maxHeight}px` : "",
+        maxHeight: resolvedMaxHeight ? `${resolvedMaxHeight}px` : "",
       }}
     >
       {withWrapper ? (
