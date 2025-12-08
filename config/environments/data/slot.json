@@ -24,11 +24,11 @@
         },
         {
           "resource": 3,
-          "amount": 0.36
+          "amount": 0.3
         },
         {
           "resource": 4,
-          "amount": 0.24
+          "amount": 0.2
         }
       ],
       "3": [
@@ -52,11 +52,11 @@
         },
         {
           "resource": 3,
-          "amount": 0.36
+          "amount": 0.3
         },
         {
           "resource": 2,
-          "amount": 0.24
+          "amount": 0.2
         }
       ],
       "5": [
@@ -66,11 +66,11 @@
         },
         {
           "resource": 2,
-          "amount": 0.48
+          "amount": 0.6
         },
         {
           "resource": 4,
-          "amount": 0.32
+          "amount": 0.4
         }
       ],
       "6": [],
@@ -81,11 +81,11 @@
         },
         {
           "resource": 2,
-          "amount": 0.48
+          "amount": 0.6
         },
         {
           "resource": 4,
-          "amount": 0.32
+          "amount": 0.4
         }
       ],
       "8": [],
@@ -96,11 +96,11 @@
         },
         {
           "resource": 2,
-          "amount": 0.6
+          "amount": 0.9
         },
         {
           "resource": 11,
-          "amount": 0.4
+          "amount": 0.6
         }
       ],
       "10": [],
@@ -111,11 +111,11 @@
         },
         {
           "resource": 2,
-          "amount": 0.48
+          "amount": 0.6
         },
         {
           "resource": 4,
-          "amount": 0.32
+          "amount": 0.4
         }
       ],
       "12": [],
@@ -132,11 +132,11 @@
         },
         {
           "resource": 2,
-          "amount": 0.6
+          "amount": 0.9
         },
         {
           "resource": 5,
-          "amount": 0.4
+          "amount": 0.6
         }
       ],
       "20": [],
@@ -148,11 +148,11 @@
         },
         {
           "resource": 2,
-          "amount": 0.6
+          "amount": 0.9
         },
         {
           "resource": 7,
-          "amount": 0.4
+          "amount": 0.6
         }
       ],
       "23": [],
@@ -188,7 +188,7 @@
         },
         {
           "resource": 11,
-          "amount": 0.4
+          "amount": 0.6
         },
         {
           "resource": 38,
@@ -206,11 +206,11 @@
         },
         {
           "resource": 11,
-          "amount": 0.2
+          "amount": 0.4
         },
         {
           "resource": 9,
-          "amount": 0.6
+          "amount": 0.8
         },
         {
           "resource": 38,
@@ -242,7 +242,7 @@
         },
         {
           "resource": 5,
-          "amount": 0.4
+          "amount": 0.6
         },
         {
           "resource": 38,
@@ -260,11 +260,11 @@
         },
         {
           "resource": 5,
-          "amount": 0.2
+          "amount": 0.4
         },
         {
           "resource": 19,
-          "amount": 0.6
+          "amount": 0.8
         },
         {
           "resource": 38,
@@ -296,7 +296,7 @@
         },
         {
           "resource": 7,
-          "amount": 0.4
+          "amount": 0.6
         },
         {
           "resource": 38,
@@ -314,11 +314,11 @@
         },
         {
           "resource": 7,
-          "amount": 0.2
+          "amount": 0.4
         },
         {
           "resource": 22,
-          "amount": 0.6
+          "amount": 0.8
         },
         {
           "resource": 38,
@@ -355,7 +355,7 @@
       "22": 1,
       "23": 1,
       "24": 3,
-      "25": 0.1,
+      "25": 1,
       "26": 5,
       "27": 5,
       "28": 5,
@@ -543,7 +543,7 @@
       "22": 1,
       "23": 1,
       "24": 3,
-      "25": 0.1,
+      "25": 1,
       "26": 5,
       "27": 5,
       "28": 5,
@@ -788,7 +788,7 @@
     },
     "limit": {
       "explorerMaxPartyCount": 10,
-      "explorerAndGuardMaxTroopCount": 100000,
+      "explorerAndGuardMaxTroopCount": 30000,
       "guardResurrectionDelay": 600,
       "mercenariesTroopLowerBound": 1000,
       "mercenariesTroopUpperBound": 2000,
@@ -975,7 +975,7 @@
         },
         {
           "resource": 3,
-          "amount": 90
+          "amount": 120
         },
         {
           "resource": 2,
@@ -994,7 +994,7 @@
         },
         {
           "resource": 3,
-          "amount": 90
+          "amount": 120
         },
         {
           "resource": 2,
@@ -1009,19 +1009,19 @@
       "11": [
         {
           "resource": 23,
-          "amount": 180
+          "amount": 240
         },
         {
           "resource": 3,
-          "amount": 120
+          "amount": 180
         },
         {
           "resource": 4,
-          "amount": 90
+          "amount": 120
         },
         {
           "resource": 11,
-          "amount": 30
+          "amount": 60
         },
         {
           "resource": 38,
@@ -1036,7 +1036,7 @@
         },
         {
           "resource": 3,
-          "amount": 90
+          "amount": 120
         },
         {
           "resource": 2,
@@ -1057,19 +1057,19 @@
       "21": [
         {
           "resource": 23,
-          "amount": 180
+          "amount": 240
         },
         {
           "resource": 3,
-          "amount": 120
+          "amount": 180
         },
         {
           "resource": 4,
-          "amount": 90
+          "amount": 120
         },
         {
           "resource": 5,
-          "amount": 30
+          "amount": 60
         },
         {
           "resource": 38,
@@ -1081,19 +1081,19 @@
       "24": [
         {
           "resource": 23,
-          "amount": 180
+          "amount": 240
         },
         {
           "resource": 3,
-          "amount": 120
+          "amount": 180
         },
         {
           "resource": 4,
-          "amount": 90
+          "amount": 120
         },
         {
           "resource": 7,
-          "amount": 30
+          "amount": 60
         },
         {
           "resource": 38,
@@ -1129,7 +1129,7 @@
       "29": [
         {
           "resource": 23,
-          "amount": 300
+          "amount": 360
         },
         {
           "resource": 3,
@@ -1151,11 +1151,11 @@
       "30": [
         {
           "resource": 23,
-          "amount": 420
+          "amount": 540
         },
         {
           "resource": 3,
-          "amount": 300
+          "amount": 360
         },
         {
           "resource": 11,
@@ -1163,7 +1163,7 @@
         },
         {
           "resource": 9,
-          "amount": 90
+          "amount": 120
         },
         {
           "resource": 38,
@@ -1187,7 +1187,7 @@
       "32": [
         {
           "resource": 23,
-          "amount": 300
+          "amount": 360
         },
         {
           "resource": 3,
@@ -1209,11 +1209,11 @@
       "33": [
         {
           "resource": 23,
-          "amount": 420
+          "amount": 540
         },
         {
           "resource": 3,
-          "amount": 300
+          "amount": 360
         },
         {
           "resource": 5,
@@ -1221,7 +1221,7 @@
         },
         {
           "resource": 19,
-          "amount": 90
+          "amount": 120
         },
         {
           "resource": 38,
@@ -1245,7 +1245,7 @@
       "35": [
         {
           "resource": 23,
-          "amount": 300
+          "amount": 360
         },
         {
           "resource": 3,
@@ -1267,11 +1267,11 @@
       "36": [
         {
           "resource": 23,
-          "amount": 420
+          "amount": 540
         },
         {
           "resource": 3,
-          "amount": 300
+          "amount": 360
         },
         {
           "resource": 7,
@@ -1279,7 +1279,7 @@
         },
         {
           "resource": 22,
-          "amount": 90
+          "amount": 120
         },
         {
           "resource": 38,
@@ -1324,14 +1324,14 @@
       "7": [
         {
           "resource": 23,
-          "amount": 600
+          "amount": 720
         }
       ],
       "8": [],
       "9": [
         {
           "resource": 23,
-          "amount": 600
+          "amount": 720
         }
       ],
       "10": [],
@@ -1340,7 +1340,7 @@
       "13": [
         {
           "resource": 23,
-          "amount": 600
+          "amount": 720
         }
       ],
       "14": [],
@@ -1408,7 +1408,7 @@
     "hyperstructurePointsPerCycle": "1000000",
     "pointsForHyperstructureClaimAgainstBandits": "3000000000",
     "pointsForNonHyperstructureClaimAgainstBandits": "500000000",
-    "pointsForTileExploration": "25000000",
+    "pointsForTileExploration": "10000000",
     "pointsForRelicDiscovery": "1000000000"
   },
   "season": {
@@ -1446,7 +1446,7 @@
     },
     {
       "resource": 23,
-      "amount": 1000
+      "amount": 1200
     },
     {
       "resource": 3,
@@ -1480,9 +1480,14 @@
   "villageStartingResources": [],
   "discoverableVillageStartingResources": [
     {
+      "resource": 35,
+      "min_amount": 500,
+      "max_amount": 500
+    },
+    {
       "resource": 23,
-      "min_amount": 5000,
-      "max_amount": 5000
+      "min_amount": 2500,
+      "max_amount": 2500
     },
     {
       "resource": 25,
