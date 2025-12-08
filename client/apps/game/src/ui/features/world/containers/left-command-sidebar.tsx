@@ -12,6 +12,7 @@ import {
   setEntityNameLocalStorage,
 } from "@bibliothecadao/eternum";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ResourceArrivals as AllResourceArrivals, MarketModal } from "@/ui/features/economy/trading";
 import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
 import { Bridge } from "@/ui/features/infrastructure";
@@ -45,6 +46,7 @@ import {
   RealmLevels,
   Structure,
   StructureType,
+  ResourcesIds,
   getLevelName,
 } from "@bibliothecadao/types";
 import type { ComponentProps, ReactNode, MouseEvent, KeyboardEvent } from "react";
@@ -62,6 +64,7 @@ import {
   ChevronsUp,
   ChevronUp,
   MessageCircle,
+  Info,
   ShieldCheck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -588,6 +591,7 @@ const StructureLevelUpButton = ({ structureEntityId, className }: StructureLevel
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [hasUpgraded, setHasUpgraded] = useState(false);
   const upgradeInfo = useStructureUpgrade(typeof structureEntityId === "number" ? structureEntityId : null);
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   useEffect(() => {
     // Re-enable the button once the realm level has changed and fresh data is available
@@ -606,6 +610,56 @@ const StructureLevelUpButton = ({ structureEntityId, className }: StructureLevel
   const isDisabled = !canUpgrade || isUpgrading || hasUpgraded || isAtMaxLevel;
   const shouldGlow = canUpgrade && !isDisabled;
   const nextLevel = upgradeInfo.nextLevel ?? 0;
+
+  const requirementsContent = useMemo(() => {
+    if (!upgradeInfo) return null;
+    if (upgradeInfo.isMaxLevel) {
+      return <div className="text-xs text-gold/80">Castle fully upgraded.</div>;
+    }
+    if (!upgradeInfo.requirements?.length) {
+      return <div className="text-xs text-gold/80">No upgrade requirements found.</div>;
+    }
+
+    return (
+      <div className="min-w-[220px] space-y-2 text-gold">
+        <div className="flex items-center justify-between">
+          <span className="text-xxs uppercase tracking-[0.25em] text-gold/60">Upgrade</span>
+          {upgradeInfo.nextLevelName && <span className="text-xxs text-gold/80">to {upgradeInfo.nextLevelName}</span>}
+        </div>
+        <div className="space-y-1">
+          {upgradeInfo.requirements.map((req) => {
+            const isMet = req.current >= req.amount;
+            return (
+              <div
+                key={`${req.resource}-${req.amount}`}
+                className={clsx(
+                  "flex items-center gap-2 rounded border px-2 py-1",
+                  isMet ? "border-gold/20 bg-gold/5" : "border-red-400/40 bg-red-500/5",
+                )}
+              >
+                <ResourceIcon resource={ResourcesIds[req.resource]} size="xs" withTooltip={false} />
+                <span className="flex-1 text-xs text-gold/80">{ResourcesIds[req.resource]}</span>
+                <span className={clsx("text-xs font-semibold", isMet ? "text-gold" : "text-red-300")}>
+                  {Math.floor(req.current).toLocaleString()} / {req.amount.toLocaleString()}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }, [upgradeInfo]);
+
+  const showRequirementsTooltip = (event: MouseEvent<HTMLButtonElement>) => {
+    if (!requirementsContent) return;
+    setTooltip({
+      anchorElement: event.currentTarget,
+      position: "bottom",
+      content: requirementsContent,
+    });
+  };
+
+  const hideRequirementsTooltip = () => setTooltip(null);
 
   const renderIcon = () => {
     if (isAtMaxLevel) {
@@ -642,21 +696,34 @@ const StructureLevelUpButton = ({ structureEntityId, className }: StructureLevel
   };
 
   return (
-    <button
-      type="button"
-      onClick={handleUpgrade}
-      disabled={isDisabled}
-      className={clsx(
-        "inline-flex items-center justify-center rounded-md border px-2 py-1 text-xxs font-semibold uppercase tracking-wide transition",
-        shouldGlow
-          ? "border-gold/60 bg-gold/10 text-gold hover:bg-gold/25 shadow-[0_0_12px_rgba(255,204,102,0.55)] animate-pulse"
-          : "border-gold/20 bg-black/30 text-gold/50 cursor-not-allowed",
-        className,
-      )}
-      aria-label="Level up realm"
-    >
-      {isUpgrading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : renderIcon()}
-    </button>
+    <div className={clsx("flex items-center gap-2", className)}>
+      <button
+        type="button"
+        onClick={handleUpgrade}
+        disabled={isDisabled}
+        className={clsx(
+          "inline-flex items-center justify-center rounded-md border px-2 py-1 text-xxs font-semibold uppercase tracking-wide transition",
+          shouldGlow
+            ? "border-gold/60 bg-gold/10 text-gold hover:bg-gold/25 shadow-[0_0_12px_rgba(255,204,102,0.55)] animate-pulse"
+            : "border-gold/20 bg-black/30 text-gold/50 cursor-not-allowed",
+        )}
+        aria-label="Level up realm"
+      >
+        {isUpgrading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : renderIcon()}
+      </button>
+      <button
+        type="button"
+        onMouseEnter={showRequirementsTooltip}
+        onMouseLeave={hideRequirementsTooltip}
+        onFocus={showRequirementsTooltip as never}
+        onBlur={hideRequirementsTooltip}
+        onClick={(event) => event.stopPropagation()}
+        className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-gold/30 bg-black/40 text-gold/70 hover:text-gold focus:outline-none focus:ring-1 focus:ring-gold/40"
+        aria-label="View upgrade requirements"
+      >
+        <Info className="h-3.5 w-3.5" />
+      </button>
+    </div>
   );
 };
 
