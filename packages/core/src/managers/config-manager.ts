@@ -502,7 +502,6 @@ export class ClientConfigManager {
   getTroopConfig() {
     // Default config structure matching the expected types
     const defaultTroopConfig = {
-      troop_max_size: 30_000,
       troop_damage_config: {
         damage_biome_bonus_num: 0,
         damage_beta_small: 0n,
@@ -552,7 +551,6 @@ export class ClientConfigManager {
       const { troop_damage_config, troop_limit_config, troop_stamina_config } = worldConfig;
 
       return {
-        troop_max_size: 30_000,
         troop_damage_config,
         troop_limit_config: {
           ...troop_limit_config,

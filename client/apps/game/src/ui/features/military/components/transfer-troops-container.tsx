@@ -25,7 +25,7 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeftRight, ArrowRight } from "lucide-react";
+import { AlertTriangle, ArrowLeftRight } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getStructureDefenseSlotLimit, getUnlockedGuardSlots, MAX_GUARD_SLOT_COUNT } from "../utils/defense-slot-utils";
 import { TransferDirection } from "./help-container";
@@ -70,7 +70,7 @@ export const TransferTroopsContainer = ({
   const [troopAmount, setTroopAmount] = useState<number>(0);
   const [guardSlot, setGuardSlot] = useState<GuardSelection>(null);
 
-  const troopMaxSizeRaw = configManager.getTroopConfig().troop_max_size;
+  const troopMaxSizeRaw = configManager.getTroopConfig().troop_limit_config.explorer_guard_max_troop_count;
   const parsedTroopCap = Number(troopMaxSizeRaw ?? 0);
   const troopCapacityLimit = Number.isFinite(parsedTroopCap) && parsedTroopCap > 0 ? parsedTroopCap : null;
 

@@ -113,7 +113,7 @@ export const UnifiedArmyCreationModal = ({
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const previousStructureIdRef = useRef<number | null>(null);
 
-  const troopMaxSizeRaw = configManager.getTroopConfig().troop_max_size;
+  const troopMaxSizeRaw = configManager.getTroopConfig().troop_limit_config.explorer_guard_max_troop_count;
   const parsedTroopCap = Number(troopMaxSizeRaw ?? 0);
   const hasTroopCap = Number.isFinite(parsedTroopCap) && parsedTroopCap > 0;
   const troopCapacityLimit = hasTroopCap ? parsedTroopCap : null;
