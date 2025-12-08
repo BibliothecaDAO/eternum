@@ -132,6 +132,25 @@ export const RealmAutomationPanel = ({
     missingResources.forEach((resourceId) => ensureResourceConfig(realmEntityId, resourceId));
   }, [ensureResourceConfig, missingResources, realmEntityId, hydrated]);
 
+  const removedResources = useMemo(() => {
+    if (!realmAutomation) return [];
+    const configuredIds = Object.keys(realmAutomation.resources ?? {}).map((key) => Number(key) as ResourcesIds);
+    return configuredIds.filter(
+      (resourceId) => !realmResources.includes(resourceId) && !isAutomationResourceBlocked(resourceId, entityType),
+    );
+  }, [realmAutomation, realmResources, entityType]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    if (!realmAutomation) return;
+    if (!removedResources.length) return;
+
+    removedResources.forEach((resourceId) => removeResourceConfig(realmEntityId, resourceId));
+    if (realmAutomation.presetId === "smart") {
+      setRealmPreset(realmEntityId, "smart");
+    }
+  }, [hydrated, realmAutomation, realmEntityId, removedResources, removeResourceConfig, setRealmPreset]);
+
   const realmSnapshot: RealmResourceSnapshot | null = useMemo(() => {
     const numericRealmId = Number(realmEntityId);
     if (!components || !Number.isFinite(numericRealmId) || numericRealmId <= 0) {

@@ -41,8 +41,11 @@ type SplitMode = "resource" | "labor";
 
 const buildSequentialWeights = (count: number, baseWeights: number[]): number[] => {
   if (count <= 0) return [];
-  const capped = baseWeights.length ? baseWeights : [0];
-  return Array.from({ length: count }, (_, index) => capped[Math.min(index, capped.length - 1)] ?? 0);
+  if (count === 1) return [baseWeights[0] ?? 0];
+  if (count === 2) return [baseWeights[1] ?? baseWeights[0] ?? 0, baseWeights[1] ?? baseWeights[0] ?? 0];
+  // For 3 or more, keep the last weight for every entry to flatten allocation.
+  const fallback = baseWeights[2] ?? baseWeights[baseWeights.length - 1] ?? 0;
+  return Array.from({ length: count }, () => fallback);
 };
 
 const assignTierSplit = (
@@ -125,20 +128,25 @@ const buildSmartPresetAllocations = (
 
   // Army allocations (resource slider)
   if (presentArmyT3.length > 0) {
-    assignTierSplit(allocations, presentArmyT3, [50, 25, 15], "resource");
+    assignTierSplit(allocations, presentArmyT3, buildSequentialWeights(presentArmyT3.length, [50, 25, 15]), "resource");
     if (presentArmyT2.length > 0) {
-      assignTierSplit(allocations, presentArmyT2, [30, 15, 10], "resource");
+      assignTierSplit(
+        allocations,
+        presentArmyT2,
+        buildSequentialWeights(presentArmyT2.length, [30, 15, 10]),
+        "resource",
+      );
     }
     if (presentArmyT1.length > 0) {
-      assignTierSplit(allocations, presentArmyT1, [10, 5, 3], "resource");
+      assignTierSplit(allocations, presentArmyT1, buildSequentialWeights(presentArmyT1.length, [10, 5, 3]), "resource");
     }
   } else if (presentArmyT2.length > 0) {
-    assignTierSplit(allocations, presentArmyT2, [30, 15, 10], "resource");
+    assignTierSplit(allocations, presentArmyT2, buildSequentialWeights(presentArmyT2.length, [30, 15, 10]), "resource");
     if (presentArmyT1.length > 0) {
-      assignTierSplit(allocations, presentArmyT1, [10, 5, 3], "resource");
+      assignTierSplit(allocations, presentArmyT1, buildSequentialWeights(presentArmyT1.length, [10, 5, 3]), "resource");
     }
   } else if (presentArmyT1.length > 0) {
-    assignTierSplit(allocations, presentArmyT1, [30, 20, 10], "resource");
+    assignTierSplit(allocations, presentArmyT1, buildSequentialWeights(presentArmyT1.length, [30, 20, 10]), "resource");
   }
 
   // Ensure every resource has an entry, defaulting to zero.
