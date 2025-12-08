@@ -1013,7 +1013,7 @@ const GameActiveState = ({
               >
                 <div className="flex items-center justify-center">
                   <Sword className="w-5 h-5 mr-2 fill-brown" />
-                  <span>Play Blitz</span>
+                  <span>Play Blitz </span>
                 </div>
               </Button>
             ) : (
